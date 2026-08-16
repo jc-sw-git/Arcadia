@@ -1,0 +1,38 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/scanners",
+    "crates/wrapper",
+    "crates/cli",
+]
+
+# The GUI crate (eframe/egui) is intentionally not a member yet — it pulls a
+# large dependency tree. It gets added once the CLI-driven core is stable.
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["jc-sw-git"]
+repository = "https://github.com/jc-sw-git/SteamButler"
+rust-version = "1.74"
+
+[workspace.dependencies]
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+crc32fast = "1"
+dirs = "5"
+clap = { version = "4", features = ["derive"] }
+
+steambutler-core = { path = "crates/core" }
+steambutler-scanners = { path = "crates/scanners" }
+
+[profile.release]
+# The wrapper binary ships alongside every SISR-wrapped shortcut — keep it small.
+opt-level = "z"
+lto = true
+strip = true
+panic = "abort"

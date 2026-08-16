@@ -1,0 +1,18 @@
+# Rust
+/target
+**/*.rs.bk
+Cargo.lock.orig
+
+# Keep Cargo.lock for the workspace (it produces binaries)
+!/Cargo.lock
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local scratch / captured test data (Steam configs, artwork dumps, etc.)
+/scratch
+/local
+*.vdf.bak

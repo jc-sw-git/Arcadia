@@ -70,3 +70,29 @@ pub fn shortcuts_vdf(userdata_dir: &std::path::Path) -> PathBuf {
 pub fn grid_dir(userdata_dir: &std::path::Path) -> PathBuf {
     userdata_dir.join("config").join("grid")
 }
+
+/// Best-effort check whether Steam is currently running. Writing `shortcuts.vdf`
+/// while Steam runs loses the change (Steam rewrites the file on exit), so the
+/// apply step refuses when this returns `true`.
+pub fn is_running() -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("tasklist")
+            .args(["/FI", "IMAGENAME eq steam.exe", "/NH"])
+            .output()
+            .map(|o| {
+                String::from_utf8_lossy(&o.stdout)
+                    .to_lowercase()
+                    .contains("steam.exe")
+            })
+            .unwrap_or(false)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        std::process::Command::new("pgrep")
+            .args(["-x", "steam"])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    }
+}

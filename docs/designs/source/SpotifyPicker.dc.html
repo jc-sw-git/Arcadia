@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Spotify – Musik wählen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F14}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background-color:#2A3440;border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background-color:#3A4552}
+*::-webkit-scrollbar-corner{background:transparent}
+@supports (-moz-appearance:none){*{scrollbar-width:thin;scrollbar-color:#2A3440 transparent}}
+.hg button,.hg input{font-family:inherit}
+.gl{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;box-sizing:border-box;border-radius:14px;background:#2A3440;color:#F2F5F8;font-size:13px;font-weight:800;flex-shrink:0}
+.gl.r{width:28px;padding:0;border-radius:50%}
+.gl.d{background:#06101C}
+.tab{display:flex;align-items:center;gap:10px;height:48px;padding:0 22px;border-radius:24px;border:0;background:transparent;color:#9AA7B4;font-size:18px;font-weight:600;cursor:pointer;white-space:nowrap}
+.tab:hover{color:#F2F5F8;background:#1E2630}
+.tab.on{background:#F2F5F8;color:#0B0F14}
+.it{display:flex;align-items:center;gap:16px;width:100%;height:76px;padding:0 16px 0 10px;border-radius:12px;border:0;background:transparent;color:#E8EDF2;cursor:pointer;text-align:left;box-sizing:border-box;flex-shrink:0}
+.it:hover{background:#1A212B}
+.it.on{background:#1E2630;box-shadow:inset 0 0 0 2px #F2F5F8}
+.art{width:56px;height:56px;flex-shrink:0;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800}
+.type{font-size:12px;font-weight:800;letter-spacing:.08em;padding:4px 8px;border-radius:8px;background:#2A3440;color:#C5CED7}
+.btn{display:flex;align-items:center;gap:10px;height:56px;padding:0 24px 0 14px;border-radius:28px;border:0;background:#1E2630;color:#E8EDF2;font-size:18px;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box}
+.btn:hover{background:#2A3440}
+.btn.pri{background:#3B9EFF;color:#06101C;font-weight:800}
+.sw{appearance:none;-webkit-appearance:none;width:56px;height:32px;border-radius:16px;background:#2A3440;position:relative;cursor:pointer;margin:0;flex-shrink:0}
+.sw:checked{background:#3B9EFF}
+.sw::after{content:'';position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#F2F5F8;transition:left .15s}
+.sw:checked::after{left:28px}
+.sw:disabled{opacity:.4;cursor:not-allowed}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:17px;font-weight:600}
+.dv{height:44px;padding:0 16px;border-radius:22px;border:2px solid #2A3440;background:transparent;color:#C5CED7;font-size:15px;font-weight:600;cursor:pointer;text-align:left}
+.dv.on{border-color:#3B9EFF;background:#1E2630;color:#F2F5F8}
+</style>
+</helmet>
+<div class="hg" style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #0B0F14; color: #E8EDF2; font-family: 'Figtree', system-ui, sans-serif">
+  <div aria-hidden="true" style="position: absolute; left: 476px; top: 140px; font-size: 40px; font-weight: 800; color: #2A3440">Darstellung</div>
+  <div style="position: absolute; inset: 0; background: rgba(5, 8, 12, 0.82)"></div>
+
+  <div role="dialog" aria-modal="true" aria-label="Musik wählen" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 1480px; height: 900px; background: #151B23; border-radius: 20px; box-shadow: 0 40px 100px rgba(0,0,0,.6); display: flex; flex-direction: column; overflow: hidden">
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 34px 48px 22px">
+      <div style="display: flex; align-items: center; gap: 18px">
+        <span style="width: 52px; height: 52px; border-radius: 14px; background: #12301F; color: #6FD99A; display: flex; align-items: center; justify-content: center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M7.5 9.5c3-1 6.5-.7 9 .8M8 12.6c2.5-.7 5.2-.4 7.3.8M8.6 15.4c1.9-.5 3.9-.3 5.5.6"></path></svg></span>
+        <div>
+          <h2 style="margin: 0; font-size: 30px; font-weight: 800">Hintergrundmusik wählen</h2>
+          <p style="margin: 4px 0 0; font-size: 16px; color: #9AA7B4">Spotify · [Spotify-Konto]</p>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <span class="gl">LB</span>
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+          <button class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button>
+        </sc-for>
+        <span class="gl">RB</span>
+      </div>
+    </div>
+
+    <div style="flex: 1; min-height: 0; display: flex; gap: 32px; padding: 0 48px">
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; min-height: 0">
+        <sc-if value="{{isSearch}}" hint-placeholder-val="{{ false }}">
+          <label style="display: flex; align-items: center; gap: 14px; height: 60px; padding: 0 22px; border-radius: 30px; background: #0F141A; box-shadow: 0 0 0 2px #2A3440; flex-shrink: 0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9AA7B4" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+            <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">In Spotify suchen</span>
+            <input value="synth" readOnly="{{ true }}" style="flex: 1; border: 0; outline: none; background: transparent; color: #F2F5F8; font-size: 22px; font-weight: 600">
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #9AA7B4"><span class="gl r">A</span>Bildschirmtastatur</span>
+          </label>
+        </sc-if>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4; padding: 4px 10px 0">
+          <span>{{listTitle}}</span>
+          <span>{{listMeta}}</span>
+        </div>
+        <div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding: 4px">
+          <sc-for list="{{items}}" as="i" hint-placeholder-count="8">
+            <button class="{{i.cls}}" onClick="{{i.pick}}" aria-pressed="{{i.on}}">
+              <span class="art" style="background: {{i.bg}}; color: {{i.fg}}">{{i.mono}}</span>
+              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+                <span style="font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{i.title}}</span>
+                <span style="font-size: 15px; color: #9AA7B4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{i.sub}}</span>
+              </span>
+              <span class="type">{{i.type}}</span>
+              <span style="width: 64px; text-align: right; font-size: 15px; color: #9AA7B4; font-variant-numeric: tabular-nums">{{i.meta}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <aside style="width: 400px; flex-shrink: 0; display: flex; flex-direction: column; gap: 22px; background: #0F141A; border-radius: 16px; padding: 24px; box-sizing: border-box; margin-bottom: 8px">
+        <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">AUSGEWÄHLT</span>
+        <div style="display: flex; align-items: center; gap: 16px">
+          <span class="art" style="width: 96px; height: 96px; border-radius: 10px; font-size: 40px; background: {{sel.bg}}; color: {{sel.fg}}">{{sel.mono}}</span>
+          <span style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+            <span style="font-size: 21px; font-weight: 800">{{sel.title}}</span>
+            <span style="font-size: 15px; color: #9AA7B4">{{sel.type}} · {{sel.sub}}</span>
+          </span>
+        </div>
+        <div style="height: 1px; background: #1E2630"></div>
+        <label class="opt">Zufällige Reihenfolge<input type="checkbox" class="sw" checked="{{shuffleOn}}" disabled="{{isSong}}" onChange="{{toggleShuffle}}"></label>
+        <label class="opt">Wiederholen<input type="checkbox" class="sw" checked="{{repeat}}" onChange="{{toggleRepeat}}"></label>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 17px; font-weight: 600">Wiedergabe auf</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <sc-for list="{{devices}}" as="d" hint-placeholder-count="2">
+              <button class="{{d.cls}}" onClick="{{d.pick}}" aria-pressed="{{d.on}}">{{d.name}}</button>
+            </sc-for>
+          </div>
+        </div>
+        <span style="margin-top: auto; font-size: 14px; line-height: 1.45; color: #9AA7B4">Beim Spielstart pausiert Arcadia die Musik über Spotify und setzt sie danach fort.</span>
+      </aside>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 22px 48px; border-top: 1px solid #1E2630">
+      <a class="btn" href="Appearance.dc.html"><span class="gl r">B</span>Abbrechen</a>
+      <a class="btn pri" href="Appearance.dc.html"><span class="gl r d">A</span>Übernehmen</a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  state = { tab: 'pl', sel: 'pl0', shuffle: true, repeat: true, dev: 'pc' };
+
+  renderVals() {
+    const s = this.state;
+    const P = [
+      ['Late Night Loading', 'Playlist von dir', '42 Songs', 200],
+      ['Boss Fight Energy', 'Playlist von dir', '67 Songs', 0],
+      ['Chill Lobby', 'Playlist von dir', '31 Songs', 160],
+      ['Retro Arcade', 'Playlist von dir', '88 Songs', 280],
+      ['Rainy Day Focus', 'Playlist von dir', '54 Songs', 220],
+      ['Synthwave Drive', 'Gefolgte Playlist', '120 Songs', 320],
+      ['Menu Music Classics', 'Gefolgte Playlist', '75 Songs', 40]
+    ];
+    const S = [
+      ['Pixel Harbor', 'Neon Coast · Afterglow', '3:42', 190],
+      ['Slow Respawn', 'Lowpoly · Checkpoints', '4:05', 260],
+      ['Save Point', 'Mira Vale · Save Point', '2:58', 120],
+      ['Cartridge Dreams', 'The 8-Bit Hours · Cartridge Dreams', '3:31', 30],
+      ['Loading Screen Lullaby', 'Quiet Hours · Idle', '5:12', 210],
+      ['Final Lap', 'Turbo Nights · Overdrive', '3:19', 350],
+      ['Overworld', 'Mira Vale · Save Point', '4:44', 100],
+      ['Hearth & Hall', 'Lantern Folk · Hearth & Hall', '3:57', 30]
+    ];
+    const R = [
+      ['Synthwave Drive', 'Playlist · Gefolgt', '120 Songs', 320, 'PLAYLIST'],
+      ['Synth Lounge', 'Album · Neon Coast', '11 Songs', 190, 'ALBUM'],
+      ['Synthetic Sunrise', 'Turbo Nights · Overdrive', '4:10', 350, 'SONG'],
+      ['Synth City', 'Lowpoly · Checkpoints', '3:36', 260, 'SONG'],
+      ['Deep Synth Focus', 'Playlist · Spotify', '95 Songs', 230, 'PLAYLIST']
+    ];
+    const mk = (prefix, rows, typeOf) => rows.map((r, i) => {
+      const id = prefix + i;
+      const h = r[3];
+      return {
+        id: id,
+        title: r[0],
+        sub: r[1],
+        meta: r[2],
+        type: typeOf(r),
+        mono: r[0].charAt(0),
+        bg: h === 0 ? 'hsl(0 0% 22%)' : 'hsl(' + h + ' 35% 26%)',
+        fg: h === 0 ? 'hsl(0 0% 75%)' : 'hsl(' + h + ' 60% 72%)',
+        on: s.sel === id,
+        cls: s.sel === id ? 'it on' : 'it',
+        pick: () => this.setState({ sel: id })
+      };
+    });
+    const lists = {
+      pl: mk('pl', P, () => 'PLAYLIST'),
+      songs: mk('so', S, () => 'SONG'),
+      search: mk('se', R, (r) => r[4])
+    };
+    const all = lists.pl.concat(lists.songs, lists.search);
+    const sel = all.filter((x) => x.id === s.sel)[0] || lists.pl[0];
+    const typeName = { PLAYLIST: 'Playlist', SONG: 'Song', ALBUM: 'Album' };
+    const isSong = sel.type === 'SONG';
+    const tabs = [['pl', 'Playlists'], ['songs', 'Gespeicherte Songs'], ['search', 'Suchen']].map((t) => ({
+      label: t[1],
+      cls: t[0] === s.tab ? 'tab on' : 'tab',
+      pick: () => this.setState({ tab: t[0] })
+    }));
+    const meta = { pl: '7 Playlists', songs: '214 Songs', search: '5 Treffer' };
+    const titles = { pl: 'DEINE PLAYLISTS', songs: 'GESPEICHERTE SONGS', search: 'ERGEBNISSE FÜR „SYNTH“' };
+    const devices = [['pc', 'Dieser PC (Spotify-App)'], ['tv', 'Wohnzimmer-TV']].map((d) => ({
+      name: d[1],
+      on: d[0] === s.dev,
+      cls: d[0] === s.dev ? 'dv on' : 'dv',
+      pick: () => this.setState({ dev: d[0] })
+    }));
+    return {
+      tabs: tabs,
+      isSearch: s.tab === 'search',
+      items: lists[s.tab],
+      listTitle: titles[s.tab],
+      listMeta: meta[s.tab],
+      sel: { title: sel.title, sub: sel.meta + ' · ' + sel.sub, type: typeName[sel.type], mono: sel.mono, bg: sel.bg, fg: sel.fg },
+      isSong: isSong,
+      shuffleOn: s.shuffle && !isSong,
+      toggleShuffle: () => this.setState({ shuffle: !s.shuffle }),
+      repeat: s.repeat,
+      toggleRepeat: () => this.setState({ repeat: !s.repeat }),
+      devices: devices
+    };
+  }
+}
+</script>
+</body>
+</html>

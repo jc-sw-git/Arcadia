@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Lokalisierung – Big Picture</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F14}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background-color:#2A3440;border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background-color:#3A4552}
+*::-webkit-scrollbar-corner{background:transparent}
+@supports (-moz-appearance:none){*{scrollbar-width:thin;scrollbar-color:#2A3440 transparent}}
+.hg button{font-family:inherit}
+.gl{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;box-sizing:border-box;border-radius:14px;background:#2A3440;color:#F2F5F8;font-size:13px;font-weight:800}
+.gl.r{width:28px;padding:0;border-radius:50%}
+.hint{display:flex;align-items:center;gap:10px}
+.nav{display:flex;align-items:center;gap:14px;height:56px;padding:0 20px;border-radius:12px;border:0;background:transparent;color:#9AA7B4;font-size:19px;font-weight:600;cursor:pointer;text-align:left;width:100%;text-decoration:none;box-sizing:border-box}
+.nav:hover{background:#151B23;color:#E8EDF2}
+.nav.on{background:#1E2630;color:#F2F5F8}
+.sec{margin:0;font-size:14px;font-weight:700;letter-spacing:.12em;color:#9AA7B4}
+.lang{display:flex;align-items:center;gap:16px;width:100%;height:68px;padding:0 20px;border-radius:14px;border:0;background:#151B23;color:#E8EDF2;cursor:pointer;text-align:left}
+.lang:hover{background:#1E2630}
+.lang.on{box-shadow:0 0 0 3px #F2F5F8;background:#1E2630}
+.radio{width:24px;height:24px;border-radius:50%;border:2px solid #5A6878;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lang.on .radio{border-color:#3B9EFF}
+.lang.on .radio::after{content:'';width:11px;height:11px;border-radius:50%;background:#3B9EFF}
+.code{width:48px;height:34px;flex-shrink:0;border-radius:8px;background:#2A3440;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;letter-spacing:.05em}
+.pill{display:flex;align-items:center;gap:10px;height:48px;padding:0 16px 0 8px;border-radius:24px;border:2px solid #2A3440;background:transparent;color:#C5CED7;font-size:16px;font-weight:600;cursor:pointer;white-space:nowrap}
+.pill:hover{border-color:#3A4552;color:#F2F5F8}
+.pill.on{background:#3B9EFF;border-color:#3B9EFF;color:#06101C}
+.pill.on .code{background:#06101C;color:#F2F5F8}
+.pill .code{width:40px;height:30px;font-size:12px}
+.qk{display:flex;align-items:center;gap:10px;height:48px;padding:0 16px 0 10px;border-radius:24px;border:2px solid #2A3440;background:transparent;color:#9AA7B4;font-size:16px;font-weight:600;cursor:pointer;white-space:nowrap}
+.qk:hover{border-color:#3A4552;color:#F2F5F8}
+.qk.on{border-color:#3B9EFF;background:#1E2630;color:#F2F5F8}
+.qk:disabled{cursor:not-allowed;opacity:1}
+.box{width:22px;height:22px;border-radius:6px;border:2px solid #5A6878;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#06101C}
+.qk.on .box{background:#3B9EFF;border-color:#3B9EFF}
+.seg{height:48px;padding:0 22px;border-radius:24px;border:0;background:transparent;color:#9AA7B4;font-size:17px;font-weight:600;cursor:pointer;white-space:nowrap}
+.seg:hover{color:#F2F5F8}
+.seg.on{background:#3B9EFF;color:#06101C}
+.kc{width:44px;height:44px;border-radius:8px;background:#1E2630;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600}
+.sw{appearance:none;-webkit-appearance:none;width:56px;height:32px;border-radius:16px;background:#2A3440;position:relative;cursor:pointer;margin:0;flex-shrink:0}
+.sw:checked{background:#3B9EFF}
+.sw::after{content:'';position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#F2F5F8;transition:left .15s}
+.sw:checked::after{left:28px}
+</style>
+</helmet>
+<div class="hg" style="width: 1920px; height: 1080px; overflow: hidden; background: #0B0F14; color: #E8EDF2; font-family: 'Figtree', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 104px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 80px">
+    <div style="display: flex; align-items: center; gap: 14px">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#3B9EFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 30V16a13 13 0 0 1 26 0v14"></path><path d="M11 30v-8h12v8"></path></svg>
+      <span style="font-size: 24px; font-weight: 800; letter-spacing: 0.06em">ARCADIA</span>
+      <span style="font-size: 24px; color: #5A6878; margin-left: 8px">Einstellungen</span>
+    </div>
+    <span style="font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums">{{clock}}</span>
+  </header>
+
+  <div style="flex: 1; min-height: 0; display: flex; gap: 56px; padding: 16px 80px 0">
+    <nav aria-label="Einstellungen" style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+      <a class="nav" href="Launchers.dc.html">Launcher</a>
+      <span class="nav">Bibliothek</span>
+      <a class="nav" href="BigPicture.dc.html">Big Picture</a>
+      <span class="nav">Controller</span>
+      <a class="nav" href="Appearance.dc.html">Darstellung</a>
+      <span class="nav on">Lokalisierung</span>
+      <span class="nav">Steam-Integration</span>
+      <span class="nav">Über</span>
+    </nav>
+
+    <main style="flex: 1; min-width: 0; display: flex; gap: 48px; overflow-y: auto; padding: 4px 4px 24px">
+      <div style="width: 760px; flex-shrink: 0; display: flex; flex-direction: column; gap: 32px">
+        <h1 style="margin: 0; font-size: 40px; font-weight: 800">Lokalisierung</h1>
+
+        <section style="display: flex; flex-direction: column; gap: 12px">
+          <h2 class="sec">SPRACHE DER OBERFLÄCHE</h2>
+          <label style="display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 64px; padding: 0 20px; border-radius: 14px; background: #151B23; font-size: 18px; font-weight: 600">
+            <span>Systemsprache verwenden <span style="font-weight: 400; color: #9AA7B4">· Windows: Deutsch</span></span>
+            <input type="checkbox" class="sw" checked="{{sys}}" onChange="{{toggleSys}}">
+          </label>
+          <div role="radiogroup" aria-label="Sprache" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+            <sc-for list="{{langs}}" as="l" hint-placeholder-count="4">
+              <button class="{{l.cls}}" onClick="{{l.pick}}" role="radio" aria-checked="{{l.on}}">
+                <span class="radio"></span>
+                <span class="code">{{l.code}}</span>
+                <span style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+                  <span style="font-size: 19px; font-weight: 700">{{l.native}}</span>
+                  <span style="font-size: 14px; color: #9AA7B4">{{l.sub}}</span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="display: flex; flex-direction: column; gap: 14px">
+          <h2 class="sec">BILDSCHIRMTASTATUR</h2>
+          <p style="margin: 0; font-size: 16px; color: #9AA7B4">Unabhängig von der Sprache der Oberfläche.</p>
+          <span style="font-size: 17px; font-weight: 600">Standard-Layout</span>
+          <div role="radiogroup" aria-label="Standard-Layout" style="display: flex; flex-wrap: wrap; gap: 10px">
+            <sc-for list="{{kbDefaults}}" as="k" hint-placeholder-count="5">
+              <button class="{{k.cls}}" onClick="{{k.pick}}" role="radio" aria-checked="{{k.on}}"><span class="code">{{k.code}}</span>{{k.name}}</button>
+            </sc-for>
+          </div>
+          <span style="font-size: 17px; font-weight: 600; margin-top: 8px">Schnellauswahl in der Tastatur</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px">
+            <sc-for list="{{kbQuick}}" as="q" hint-placeholder-count="5">
+              <button class="{{q.cls}}" onClick="{{q.pick}}" disabled="{{q.locked}}" aria-pressed="{{q.on}}">
+                <span class="box"><sc-if value="{{q.on}}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if></span>
+                {{q.label}}
+              </button>
+            </sc-for>
+          </div>
+          <p style="margin: 0; font-size: 15px; color: #9AA7B4">Das Standard-Layout ist immer in der Schnellauswahl enthalten. Gewechselt wird in der Tastatur über das Globus-Symbol.</p>
+        </section>
+
+        <section style="display: flex; flex-direction: column; gap: 14px">
+          <h2 class="sec">UHRZEIT</h2>
+          <div role="radiogroup" aria-label="Uhrzeitformat" style="align-self: flex-start; display: flex; gap: 4px; background: #151B23; padding: 4px; border-radius: 28px">
+            <button class="{{c24}}" onClick="{{set24}}" role="radio" aria-checked="{{is24}}">24 Stunden · 21:58</button>
+            <button class="{{c12}}" onClick="{{set12}}" role="radio" aria-checked="{{is12}}">12 Stunden · 9:58 PM</button>
+          </div>
+        </section>
+      </div>
+
+      <section aria-label="Vorschau" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; padding-top: 72px">
+        <h2 class="sec">VORSCHAU</h2>
+        <div style="background: #151B23; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 14px">
+            <span style="font-size: 26px; font-weight: 800">Steam <span style="font-size: 16px; font-weight: 400; color: #9AA7B4">{{t.count}}</span></span>
+            <span style="font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums">{{clock}}</span>
+          </div>
+          <span style="font-size: 16px; color: #9AA7B4">{{t.last}}</span>
+          <span style="align-self: flex-start; display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 24px 0 12px; border-radius: 26px; background: #3B9EFF; color: #06101C; font-size: 19px; font-weight: 800"><span class="gl r" style="background: #06101C">A</span>{{t.play}}</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 20px; padding-top: 16px; border-top: 1px solid #1E2630; font-size: 15px; color: #C5CED7">
+            <span class="hint"><span class="gl r">B</span>{{t.back}}</span>
+            <span class="hint"><span class="gl r">X</span>{{t.search}}</span>
+            <span class="hint"><span class="gl r">Y</span>{{t.view}}</span>
+          </div>
+        </div>
+        <div style="background: #151B23; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <span style="font-size: 17px; color: #9AA7B4">Bildschirmtastatur</span>
+            <span style="font-size: 17px; font-weight: 700">{{kbName}}</span>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap">
+            <sc-for list="{{kbRow}}" as="c" hint-placeholder-count="10">
+              <span class="kc">{{c.ch}}</span>
+            </sc-for>
+          </div>
+          <span style="font-size: 15px; color: #9AA7B4">Schnellauswahl: {{quickLabel}}</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer style="height: 72px; flex-shrink: 0; border-top: 1px solid #1E2630; display: flex; align-items: center; justify-content: flex-end; padding: 0 80px; box-sizing: border-box">
+    <div style="display: flex; align-items: center; gap: 28px; font-size: 16px; color: #C5CED7">
+      <span class="hint"><span class="gl r">A</span>Auswählen</span>
+      <span class="hint"><span class="gl r">B</span>Zurück</span>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  state = { lang: 'de', sys: false, kbDefault: 'de', quick: { de: true, us: true, gb: false, fr: true, es: true }, h24: true };
+
+  renderVals() {
+    const T = {
+      de: { native: 'Deutsch', sub: 'German', count: '128 Spiele', last: 'Zuletzt gespielt: vor 3 Tagen', play: 'Spielen', back: 'Zurück', search: 'Suchen', view: 'Ansicht' },
+      en: { native: 'English', sub: 'Englisch', count: '128 games', last: 'Last played: 3 days ago', play: 'Play', back: 'Back', search: 'Search', view: 'View' },
+      fr: { native: 'Français', sub: 'Französisch', count: '128 jeux', last: 'Dernière partie : il y a 3 jours', play: 'Jouer', back: 'Retour', search: 'Rechercher', view: 'Affichage' },
+      es: { native: 'Español', sub: 'Spanisch', count: '128 juegos', last: 'Jugado por última vez: hace 3 días', play: 'Jugar', back: 'Atrás', search: 'Buscar', view: 'Vista' }
+    };
+    const KB = {
+      de: { code: 'DE', name: 'Deutsch', layout: 'QWERTZ', row: 'qwertzuiopü' },
+      us: { code: 'EN', name: 'English (US)', layout: 'QWERTY', row: 'qwertyuiop\'' },
+      gb: { code: 'UK', name: 'English (UK)', layout: 'QWERTY', row: 'qwertyuiop£' },
+      fr: { code: 'FR', name: 'Français', layout: 'AZERTY', row: 'azertyuiopé' },
+      es: { code: 'ES', name: 'Español', layout: 'QWERTY', row: 'qwertyuiopñ' }
+    };
+    const s = this.state;
+    const cur = s.sys ? 'de' : s.lang;
+    const langs = ['de', 'en', 'fr', 'es'].map((c) => ({
+      code: c.toUpperCase(),
+      native: T[c].native,
+      sub: T[c].sub,
+      on: c === cur,
+      cls: c === cur ? 'lang on' : 'lang',
+      pick: () => this.setState({ lang: c, sys: false })
+    }));
+    const ids = ['de', 'us', 'gb', 'fr', 'es'];
+    const kbDefaults = ids.map((id) => ({
+      code: KB[id].code,
+      name: KB[id].name + ' · ' + KB[id].layout,
+      on: id === s.kbDefault,
+      cls: id === s.kbDefault ? 'pill on' : 'pill',
+      pick: () => {
+        const q = Object.assign({}, s.quick);
+        q[id] = true;
+        this.setState({ kbDefault: id, quick: q });
+      }
+    }));
+    const kbQuick = ids.map((id) => {
+      const on = !!s.quick[id] || id === s.kbDefault;
+      return {
+        label: KB[id].name + (id === s.kbDefault ? ' (Standard)' : ''),
+        on: on,
+        locked: id === s.kbDefault,
+        cls: on ? 'qk on' : 'qk',
+        pick: () => {
+          const q = Object.assign({}, s.quick);
+          q[id] = !q[id];
+          this.setState({ quick: q });
+        }
+      };
+    });
+    const quickLabel = ids.filter((id) => s.quick[id] || id === s.kbDefault).map((id) => KB[id].code).join(' · ');
+    return {
+      langs: langs,
+      t: T[cur],
+      sys: s.sys,
+      toggleSys: () => this.setState({ sys: !s.sys }),
+      kbDefaults: kbDefaults,
+      kbQuick: kbQuick,
+      kbName: KB[s.kbDefault].name + ' · ' + KB[s.kbDefault].layout,
+      kbRow: KB[s.kbDefault].row.split('').map((ch) => ({ ch: ch })),
+      quickLabel: quickLabel,
+      clock: s.h24 ? '21:58' : '9:58 PM',
+      is24: s.h24,
+      is12: !s.h24,
+      c24: s.h24 ? 'seg on' : 'seg',
+      c12: s.h24 ? 'seg' : 'seg on',
+      set24: () => this.setState({ h24: true }),
+      set12: () => this.setState({ h24: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

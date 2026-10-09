@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Artwork ändern – Big Picture</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F14}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background-color:#2A3440;border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background-color:#3A4552}
+*::-webkit-scrollbar-corner{background:transparent}
+@supports (-moz-appearance:none){*{scrollbar-width:thin;scrollbar-color:#2A3440 transparent}}
+.hg button{font-family:inherit}
+.gl{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;box-sizing:border-box;border-radius:14px;background:#2A3440;color:#F2F5F8;font-size:13px;font-weight:800;flex-shrink:0}
+.gl.r{width:28px;padding:0;border-radius:50%}
+.gl.d{background:#06101C}
+.hint{display:flex;align-items:center;gap:10px}
+.tab{display:flex;align-items:center;gap:10px;height:48px;padding:0 22px;border-radius:24px;border:0;background:transparent;color:#9AA7B4;font-size:18px;font-weight:600;cursor:pointer}
+.tab:hover{color:#F2F5F8;background:#1E2630}
+.tab.on{background:#F2F5F8;color:#0B0F14}
+.cand{position:relative;padding:0;border:0;border-radius:8px;cursor:pointer;background:none;display:block;width:100%}
+.cand .im{border-radius:8px;transition:box-shadow .12s}
+.cand:hover .im{box-shadow:0 0 0 2px #5A6878}
+.cand.on .im{box-shadow:0 0 0 3px #F2F5F8,0 12px 30px rgba(0,0,0,.5)}
+.tag{position:absolute;left:8px;top:8px;font-size:12px;font-weight:800;letter-spacing:.06em;padding:4px 8px;border-radius:8px;background:#0B0F14;color:#F2F5F8}
+.chk{position:absolute;right:8px;top:8px;width:28px;height:28px;border-radius:50%;background:#3B9EFF;color:#06101C;display:flex;align-items:center;justify-content:center}
+.up{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;border:2px dashed #2A3440;border-radius:8px;background:transparent;color:#C5CED7;font-size:15px;font-weight:600;cursor:pointer;box-sizing:border-box}
+.up:hover{border-color:#5A6878;color:#F2F5F8}
+.btn{display:flex;align-items:center;gap:10px;height:52px;padding:0 22px 0 14px;border-radius:26px;border:0;background:#1E2630;color:#E8EDF2;font-size:17px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#2A3440}
+.btn.pri{background:#3B9EFF;color:#06101C;font-weight:800}
+</style>
+</helmet>
+<div class="hg" style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: hsl(204 30% 17%); color: #E8EDF2; font-family: 'Figtree', system-ui, sans-serif">
+  <div aria-hidden="true" style="position: absolute; left: 80px; top: 240px; display: flex; flex-direction: column; gap: 20px">
+    <span style="font-size: 88px; font-weight: 800">Hollow Frontier</span>
+  </div>
+  <div style="position: absolute; inset: 0; background: rgba(5, 8, 12, 0.8)"></div>
+
+  <div role="dialog" aria-modal="true" aria-label="Artwork ändern" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 1400px; height: 880px; background: #151B23; border-radius: 20px; box-shadow: 0 40px 100px rgba(0,0,0,.6); display: flex; flex-direction: column; overflow: hidden">
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 36px 48px 24px">
+      <div>
+        <h2 style="margin: 0; font-size: 32px; font-weight: 800">Artwork ändern</h2>
+        <p style="margin: 6px 0 0; font-size: 17px; color: #9AA7B4">Hollow Frontier · Epic Games</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <span class="gl">LB</span>
+        <button class="{{coverTabCls}}" onClick="{{showCover}}">Cover</button>
+        <button class="{{bgTabCls}}" onClick="{{showBg}}">Hintergrund</button>
+        <span class="gl">RB</span>
+      </div>
+    </div>
+
+    <div style="flex: 1; min-height: 0; display: flex; gap: 40px; padding: 0 48px">
+      <div style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px">
+        <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">VORSCHAU</span>
+        <sc-if value="{{isCover}}" hint-placeholder-val="{{ true }}">
+          <div style="width: 300px; height: 450px; border-radius: 12px; background: {{selBg}}; display: flex; flex-direction: column; justify-content: space-between; padding: 22px; box-sizing: border-box">
+            <span style="font-size: 110px; font-weight: 800; line-height: 1; color: {{selFg}}">H</span>
+            <span style="font-size: 22px; font-weight: 700">Hollow Frontier</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{isBg}}" hint-placeholder-val="{{ false }}">
+          <div style="width: 340px; height: 191px; border-radius: 12px; background: {{selBg}}; position: relative; overflow: hidden">
+            <span style="position: absolute; right: -20px; top: -30px; width: 200px; height: 200px; border-radius: 50%; border: 2px solid {{selFg}}"></span>
+            <span style="position: absolute; left: 16px; bottom: 14px; font-size: 20px; font-weight: 800">Hollow Frontier</span>
+          </div>
+        </sc-if>
+        <span style="font-size: 16px; color: #C5CED7">{{selLabel}}</span>
+        <span style="font-size: 14px; line-height: 1.45; color: #9AA7B4">{{sizeHint}}</span>
+      </div>
+
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; min-height: 0">
+        <div style="display: flex; justify-content: space-between; align-items: baseline">
+          <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">VORSCHLÄGE · STEAMGRIDDB</span>
+          <span style="font-size: 15px; color: #9AA7B4">{{countLabel}}</span>
+        </div>
+        <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 6px">
+          <sc-if value="{{isCover}}" hint-placeholder-val="{{ true }}">
+            <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px">
+              <button class="up" style="aspect-ratio: 2 / 3"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6M5 20h14"></path></svg>Eigene Datei</button>
+              <sc-for list="{{items}}" as="c" hint-placeholder-count="11">
+                <button class="{{c.cls}}" onClick="{{c.pick}}" aria-label="{{c.aria}}">
+                  <div class="im" style="aspect-ratio: 2 / 3; background: {{c.bg}}; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; box-sizing: border-box">
+                    <span style="font-size: 40px; font-weight: 800; line-height: 1; color: {{c.fg}}; margin-top: 26px">H</span>
+                    <span style="font-size: 11px; font-weight: 700; text-align: left">Hollow Frontier</span>
+                  </div>
+                  <sc-if value="{{c.current}}" hint-placeholder-val="{{ false }}"><span class="tag">AKTUELL</span></sc-if>
+                  <sc-if value="{{c.on}}" hint-placeholder-val="{{ false }}"><span class="chk"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span></sc-if>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{isBg}}" hint-placeholder-val="{{ false }}">
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px">
+              <button class="up" style="aspect-ratio: 16 / 9"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6M5 20h14"></path></svg>Eigene Datei</button>
+              <sc-for list="{{items}}" as="c" hint-placeholder-count="8">
+                <button class="{{c.cls}}" onClick="{{c.pick}}" aria-label="{{c.aria}}">
+                  <div class="im" style="aspect-ratio: 16 / 9; background: {{c.bg}}; position: relative; overflow: hidden">
+                    <span style="position: absolute; right: -16px; top: -24px; width: 120px; height: 120px; border-radius: 50%; border: 2px solid {{c.fg}}"></span>
+                  </div>
+                  <sc-if value="{{c.current}}" hint-placeholder-val="{{ false }}"><span class="tag">AKTUELL</span></sc-if>
+                  <sc-if value="{{c.on}}" hint-placeholder-val="{{ false }}"><span class="chk"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span></sc-if>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 48px; border-top: 1px solid #1E2630">
+      <span style="display: flex; align-items: center; gap: 10px; font-size: 15px; color: #9AA7B4; max-width: 640px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v.5"></path></svg>
+        Selbst gewählte Artworks gelten als manuell gesetzt. Ob Aktualisierungen sie überschreiben dürfen, legst du unter Darstellung fest.
+      </span>
+      <div style="display: flex; gap: 12px">
+        <button class="btn"><span class="gl r">X</span>Standard wiederherstellen</button>
+        <a class="btn" href="GameDetail.dc.html" style="text-decoration: none"><span class="gl r">B</span>Abbrechen</a>
+        <button class="btn pri"><span class="gl r d">A</span>Übernehmen</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  state = { tab: 'cover', selCover: 3, selBg: 0 };
+
+  renderVals() {
+    const s = this.state;
+    const isCover = s.tab === 'cover';
+    const hues = isCover ? [204, 18, 280, 150, 340, 45, 190, 0, 230, 100, 310] : [204, 26, 160, 260, 330, 90, 210, 10];
+    const sel = isCover ? s.selCover : s.selBg;
+    const items = hues.map((h, i) => ({
+      bg: (h === 0 ? 'hsl(0 0% 18%)' : 'hsl(' + h + ' 30% 22%)'),
+      fg: (h === 0 ? 'hsl(0 0% 70%)' : 'hsl(' + h + ' 55% 66%)'),
+      current: i === 0,
+      on: i === sel,
+      aria: 'Vorschlag ' + (i + 1) + (i === 0 ? ', aktuell' : ''),
+      cls: i === sel ? 'cand on' : 'cand',
+      pick: () => this.setState(isCover ? { selCover: i } : { selBg: i })
+    }));
+    const it = items[sel];
+    return {
+      isCover: isCover,
+      isBg: !isCover,
+      coverTabCls: isCover ? 'tab on' : 'tab',
+      bgTabCls: isCover ? 'tab' : 'tab on',
+      showCover: () => this.setState({ tab: 'cover' }),
+      showBg: () => this.setState({ tab: 'bg' }),
+      items: items,
+      selBg: it.bg,
+      selFg: it.fg,
+      selLabel: sel === 0 ? 'Aktuelles Artwork' : 'Vorschlag ' + (sel + 1) + ' – noch nicht übernommen',
+      sizeHint: isCover ? 'Hochformat 2:3, empfohlen 600 × 900 px. Wird überall eingepasst.' : 'Querformat 16:9, empfohlen 1920 × 1080 px. Erscheint auf der Detailseite und in der Vorschau.',
+      countLabel: (isCover ? '24' : '15') + ' gefunden'
+    };
+  }
+}
+</script>
+</body>
+</html>

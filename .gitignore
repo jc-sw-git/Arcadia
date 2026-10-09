@@ -1,10 +1,16 @@
-# Rust
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# Rust (legacy/steambutler-rs)
 /target
+/legacy/steambutler-rs/target
 **/*.rs.bk
 Cargo.lock.orig
-
-# Keep Cargo.lock for the workspace (it produces binaries)
-!/Cargo.lock
 
 # Editor / OS
 .idea/

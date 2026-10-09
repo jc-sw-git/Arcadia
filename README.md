@@ -1,67 +1,81 @@
-# SteamButler
+# Arcadia
 
-Fügt Non-Steam-Games aus **Epic, GOG, Ubisoft, EA und Xbox/Game Pass** als
-Steam-fremde Spiele hinzu — inklusive Artwork, Launcher-„Regalen" (Collections)
-und automatischem Aufräumen deinstallierter Titel. Für Spiele, die den
-Steam-Input-Hook verlieren (v. a. Windows-Store/Game-Pass), erzeugt SteamButler
-einen kleinen Wrapper, der über [SISR](https://github.com/Alia5/SteamInputSteamRedirect)
-die passende Controller-Konfiguration aktiviert.
+Ein Game-Launcher, der alle anderen Launcher vereint. Jeder verbundene Launcher
+(Steam, Epic, GOG, Ubisoft, EA, Xbox, Battle.net, Amazon, eigene) bekommt einen
+eigenen Tab. Arcadia läuft im **Big-Picture-Modus** komplett per Controller und im
+**Desktop-Modus** mit Maus und Tastatur.
 
-> Status: **frühe Phase / Scaffold.** Der Epic-Scanner läuft, der Rest ist als
-> dokumentierte Stubs angelegt. Siehe [docs/architecture.md](docs/architecture.md)
-> für Design-Entscheidungen und offene Punkte.
-
-## Warum
-
-BoilR deckt Scannen + `shortcuts.vdf` + Artwork bereits ab, wird aber kaum noch
-gepflegt und kann keine Collections. SteamButler zielt auf drei Dinge, die dort
-fehlen: verlässliche Launcher-Regale, dynamisches Cleanup, und die
-SISR-Zwischenschicht für Hook-verlierende Titel.
-
-## Plattformen
-
-Primär **Windows** und **macOS**, mit dem Ziel, auch auf **SteamOS/Steam Deck**
-lauffähig zu bleiben. Der plattformspezifische Teil (Registry, UWP-Start,
-Wrapper) ist Windows-first; der geteilte Kern ist OS-agnostisch.
+> Status: **Grundgerüst.** Bibliothek mit Launcher-Tabs, paginiertem Raster,
+> Vorschau, Sortierung/Seitengröße und Controller-Steuerung läuft. Echter Launcher
+> bisher: Epic. Alles Weitere siehe [docs/roadmap.md](docs/roadmap.md).
+>
+> Arcadia ist aus SteamButler hervorgegangen. Der alte Rust-Code liegt als
+> Vorlage für die Portierung unter [`legacy/steambutler-rs`](legacy/steambutler-rs).
 
 ## Aufbau
 
-Cargo-Workspace:
+.NET 10, C#, Oberfläche mit [Avalonia UI](https://avaloniaui.net/) (Windows, macOS, Linux).
 
-| Crate | Zweck |
-|-------|-------|
-| `crates/core` | OS-agnostisch: AppID-CRC32, `shortcuts.vdf`, Domain-Modell, Steam-Pfade |
-| `crates/scanners` | Scanner-Trait + per-OS-Backends (Epic real, restliche Stubs) |
-| `crates/wrapper` | winziges SISR-Wrapper-Binary (`forceinputappid` + Lifecycle) |
-| `crates/cli` | Frontend zum Scannen/Testen (`steambutler`) |
-
-Eine GUI (`eframe`/`egui`) folgt, sobald der CLI-getriebene Kern steht.
+| Projekt | Zweck |
+|---------|-------|
+| `src/Arcadia.Core` | Plattformunabhängig: Modell (`Game`, `LauncherInfo`, `LaunchTarget`), Sortierung, Paginierung samt Seitengrößen-Regel, Such-Präfix (`/steam-epic …`) |
+| `src/Arcadia.Launchers` | Scanner je Launcher (Epic real, Demo-Daten), Spielstart |
+| `src/Arcadia.Input` | Controller-Eingabe (XInput unter Windows) |
+| `src/Arcadia.ControllerSupport` | „Steam Controller Support“: verwaltet SISR (Installation, Start/Stopp, Updates) und überwacht SISR, VIIPER, usbip-Treiber und Steam |
+| `src/Arcadia.App` | Avalonia-Oberfläche (MVVM mit CommunityToolkit.Mvvm) |
+| `tests/Arcadia.Core.Tests` | xUnit-Tests für Kern und Scanner |
 
 ## Build & Ausführen
 
+Voraussetzung: [.NET 10 SDK](https://dotnet.microsoft.com/download).
+
 ```bash
-cargo build
-cargo run -p steambutler-cli -- scan
-cargo run -p steambutler-cli -- steam
-cargo test
+dotnet build
+dotnet test
+dotnet run --project src/Arcadia.App -- --demo
 ```
 
-### Windows (GNU-Toolchain)
+| Argument | Wirkung |
+|----------|---------|
+| `--demo` | Ergänzt fiktive Bibliotheken für Steam, GOG, Ubisoft, EA, Xbox, Battle.net und Amazon |
+| `--fullscreen` | Startet im Vollbild (umschalten mit `F11`) |
 
-Lokal entwickelt wird mit der GNU-Toolchain (`stable-x86_64-pc-windows-gnu`).
-Deren „self-contained"-mingw ist unvollständig (kein `as`), daher braucht der
-lokale Build ein vollständiges mingw-w64 auf dem PATH — z. B.
-[WinLibs](https://winlibs.com/) (MSVCRT-Runtime, passend zum `-gnu`-Target):
+## Steuerung
 
-```powershell
-winget install BrechtSanders.WinLibs.POSIX.MSVCRT
-rustup set default-host x86_64-pc-windows-gnu
-```
+| Aktion | Controller | Tastatur |
+|--------|-----------|----------|
+| Navigieren | D-Pad / linker Stick | Pfeiltasten |
+| Spielen bzw. Update starten | A | Enter / Leertaste |
+| Zurück / Dialog schließen | B | Esc |
+| Launcher wechseln | LB / RB | Q / E, Strg+Tab |
+| Seite wechseln | LT / RT | Bild ↑ / Bild ↓ |
+| Ansicht (Sortierung, pro Seite) | Y | V |
+| Einstellungen | View (⧉) | F2 |
 
-CI baut zusätzlich nativ auf `windows-latest` (MSVC), `macos-latest` und
-`ubuntu-latest` — die committete `rust-toolchain.toml` pinnt nur den Channel,
-nicht den Host.
+Maus: Klick wählt ein Spiel aus, Doppelklick startet es.
+
+## Steam Controller Support
+
+Steam reicht den Steam Controller an Programme, die es nicht selbst gestartet hat, nur als
+Maus und Tastatur weiter. Ist „Steam Controller Support“ in den Einstellungen eingeschaltet,
+betreibt Arcadia deshalb [SISR](https://github.com/Alia5/SISR): Es nimmt den Controller von
+Steam Input entgegen und stellt ihn systemweit als Xbox-Controller bereit — für Arcadia und für
+Spiele aus anderen Launchern.
+
+- Arcadia lädt SISR von GitHub (SHA-256-geprüft) nach `%LOCALAPPDATA%\Arcadia\sisr`, startet es
+  unsichtbar und beendet es mit Arcadia.
+- Bei Spielen aus dem Steam-Launcher pausiert SISR (sonst doppelte Eingaben); pro Spiel umstellbar.
+- Überwacht werden SISR, VIIPER, der usbip-Treiber (min. 0.9.8.1), Steam und Steams
+  Debug-Schnittstelle; Probleme erscheinen als Warnung mit „Beheben“-Knopf.
+- Neue SISR-Versionen werden täglich geprüft und zum Update angeboten.
+
+Logs: `%LOCALAPPDATA%\Arcadia\logs\` (`arcadia.log`, `sisr.log`). Drittsoftware: siehe
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Lizenz
 
-MIT — siehe [LICENSE](LICENSE).
+Copyright (C) 2026 Juri Himmelreich
+
+Arcadia ist freie Software unter der **GNU General Public License v3.0** — siehe
+[LICENSE](LICENSE). Wer Arcadia oder eine abgewandelte Version weitergibt, muss sie ebenfalls
+unter GPL-3.0 inklusive Quellcode weitergeben. Drittsoftware: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

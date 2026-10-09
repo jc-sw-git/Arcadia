@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Darstellung – Big Picture</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F14}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background-color:#2A3440;border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background-color:#3A4552}
+*::-webkit-scrollbar-corner{background:transparent}
+@supports (-moz-appearance:none){*{scrollbar-width:thin;scrollbar-color:#2A3440 transparent}}
+.hg button,.hg input{font-family:inherit}
+.gl{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;box-sizing:border-box;border-radius:14px;background:#2A3440;color:#F2F5F8;font-size:13px;font-weight:800;flex-shrink:0}
+.gl.r{width:28px;padding:0;border-radius:50%}
+.hint{display:flex;align-items:center;gap:10px}
+.nav{display:flex;align-items:center;gap:14px;height:56px;padding:0 20px;border-radius:12px;border:0;background:transparent;color:#9AA7B4;font-size:19px;font-weight:600;cursor:pointer;text-align:left;width:100%;text-decoration:none;box-sizing:border-box}
+.nav:hover{background:#151B23;color:#E8EDF2}
+.nav.on{background:#1E2630;color:#F2F5F8}
+.sec{margin:0;font-size:14px;font-weight:700;letter-spacing:.12em;color:#9AA7B4}
+.row{display:flex;align-items:center;gap:18px;min-height:72px;padding:12px 20px;border-radius:14px;background:#151B23;box-sizing:border-box;cursor:pointer}
+.row:hover{background:#1A212B}
+.row.focus{box-shadow:0 0 0 3px #F2F5F8}
+.row.dim{opacity:.45;cursor:not-allowed}
+.ico{width:44px;height:44px;flex-shrink:0;border-radius:12px;background:#1E2630;display:flex;align-items:center;justify-content:center;color:#C5CED7}
+.sw{appearance:none;-webkit-appearance:none;width:56px;height:32px;border-radius:16px;background:#2A3440;position:relative;cursor:pointer;margin:0;flex-shrink:0}
+.sw:checked{background:#3B9EFF}
+.sw::after{content:'';position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#F2F5F8;transition:left .15s}
+.sw:checked::after{left:28px}
+.sw:disabled{cursor:not-allowed}
+.st{display:flex;align-items:center;gap:6px;font-size:16px;font-weight:600;color:#C5CED7;white-space:nowrap}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;height:48px;padding:0 20px;border-radius:24px;border:0;background:#1E2630;color:#E8EDF2;font-size:16px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#2A3440}
+.btn.pri{background:#3B9EFF;color:#06101C;font-weight:700}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.seg{height:44px;padding:0 18px;border-radius:22px;border:0;background:transparent;color:#9AA7B4;font-size:16px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.seg:hover{color:#F2F5F8}
+.seg.on{background:#3B9EFF;color:#06101C}
+.seg:disabled{opacity:.45;cursor:not-allowed}
+.lbl{font-size:18px;font-weight:700}
+a.btn{box-sizing:border-box}
+.vol{-webkit-appearance:none;appearance:none;height:8px;border-radius:4px;cursor:pointer;margin:0}
+.vol::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#F2F5F8;border:0;box-shadow:0 0 0 4px rgba(59,158,255,.35)}
+.vol::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#F2F5F8;border:0}
+.vol:disabled{cursor:not-allowed}
+.sub{font-size:14px;color:#9AA7B4;line-height:1.4}
+</style>
+</helmet>
+<div class="hg" style="width: 1920px; height: 1080px; overflow: hidden; background: #0B0F14; color: #E8EDF2; font-family: 'Figtree', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 104px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 80px">
+    <div style="display: flex; align-items: center; gap: 14px">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#3B9EFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 30V16a13 13 0 0 1 26 0v14"></path><path d="M11 30v-8h12v8"></path></svg>
+      <span style="font-size: 24px; font-weight: 800; letter-spacing: 0.06em">ARCADIA</span>
+      <span style="font-size: 24px; color: #5A6878; margin-left: 8px">Einstellungen</span>
+    </div>
+    <span style="font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums">21:59</span>
+  </header>
+
+  <div style="flex: 1; min-height: 0; display: flex; gap: 56px; padding: 16px 80px 0">
+    <nav aria-label="Einstellungen" style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+      <a class="nav" href="Launchers.dc.html">Launcher</a>
+      <span class="nav">Bibliothek</span>
+      <a class="nav" href="BigPicture.dc.html">Big Picture</a>
+      <span class="nav">Controller</span>
+      <span class="nav on">Darstellung</span>
+      <a class="nav" href="Language.dc.html">Lokalisierung</a>
+      <span class="nav">Steam-Integration</span>
+      <span class="nav">Über</span>
+    </nav>
+
+    <main style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; overflow-y: auto; padding: 4px 4px 24px">
+      <h1 style="margin: 0; font-size: 40px; font-weight: 800">Darstellung</h1>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; align-items: start">
+
+        <div style="display: flex; flex-direction: column; gap: 14px">
+          <h2 class="sec">STATUSLEISTE</h2>
+          <div aria-label="Vorschau der Statusleiste" style="height: 72px; border-radius: 14px; background: #11161D; box-shadow: inset 0 0 0 1px #1E2630; display: flex; align-items: center; justify-content: flex-end; gap: 18px; padding: 0 24px">
+            <sc-if value="{{on.problem}}" hint-placeholder-val="{{ true }}">
+              <span style="color: #F5B868; display: flex"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Problem mit Launcher"><path d="M12 3.5L2.5 20h19z"></path><path d="M12 10v4.5M12 17.2v.3"></path></svg></span>
+            </sc-if>
+            <sc-if value="{{on.update}}" hint-placeholder-val="{{ true }}">
+              <span style="position: relative; color: #8CC6FF; display: flex"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Arcadia-Update verfügbar"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v4.5h-4.5"></path></svg><span style="position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; border-radius: 50%; background: #3B9EFF; box-shadow: 0 0 0 2px #11161D"></span></span>
+            </sc-if>
+            <sc-if value="{{on.battery}}" hint-placeholder-val="{{ true }}">
+              <span class="st"><svg width="26" height="16" viewBox="0 0 26 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="1" width="21" height="14" rx="3"></rect><path d="M24.5 6v4"></path><rect x="4" y="4" width="12" height="8" rx="1" fill="currentColor" stroke="none"></rect></svg>72 %</span>
+            </sc-if>
+            <sc-if value="{{on.date}}" hint-placeholder-val="{{ true }}">
+              <span class="st" style="color: #9AA7B4">Fr., 9. Okt.</span>
+            </sc-if>
+            <sc-if value="{{on.clock}}" hint-placeholder-val="{{ true }}">
+              <span style="font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums">21:59</span>
+            </sc-if>
+            <sc-if value="{{none}}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: 15px; color: #5A6878">Statusleiste ausgeblendet</span>
+            </sc-if>
+          </div>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+            <label class="{{r.cls}}">
+              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                <span class="lbl">{{r.label}}</span>
+                <span class="sub">{{r.desc}}</span>
+              </span>
+              <input type="checkbox" class="sw" checked="{{r.on}}" onChange="{{r.toggle}}">
+            </label>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 36px">
+          <section style="display: flex; flex-direction: column; gap: 14px">
+            <h2 class="sec">ARTWORK</h2>
+            <div style="display: flex; flex-direction: column; gap: 14px; background: #151B23; border-radius: 14px; padding: 20px">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+                <span style="display: flex; flex-direction: column; gap: 4px">
+                  <span class="lbl">Fehlende Cover und Hintergründe</span>
+                  <span class="sub">{{artStatus}}</span>
+                </span>
+                <button class="btn pri" onClick="{{scanArt}}" disabled="{{scanning}}">{{scanLabel}}</button>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+                <span class="sub">Quelle: SteamGridDB und die Daten der Launcher</span>
+                <button class="btn">Alle Artworks aktualisieren</button>
+              </div>
+              <div style="height: 1px; background: #1E2630"></div>
+              <label style="display: flex; align-items: center; gap: 18px; cursor: pointer">
+                <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                  <span class="lbl">Manuell gesetzte Artworks überschreiben</span>
+                  <span class="sub">Aus: Selbst gewählte Cover und Hintergründe bleiben bei Aktualisierungen erhalten</span>
+                </span>
+                <input type="checkbox" class="sw" checked="{{overwrite}}" onChange="{{toggleOverwrite}}">
+              </label>
+              <div style="height: 1px; background: #1E2630"></div>
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <span class="lbl">Bei mehreren Treffern</span>
+                <div role="radiogroup" aria-label="Bei mehreren Treffern" style="align-self: flex-start; display: flex; gap: 4px; background: #0B0F14; padding: 4px; border-radius: 26px">
+                  <button class="{{pickAskCls}}" onClick="{{setAsk}}" role="radio" aria-checked="{{isAsk}}">Selbst auswählen</button>
+                  <button class="{{pickAutoCls}}" onClick="{{setAuto}}" role="radio" aria-checked="{{isAutoPick}}">Ersten Treffer nehmen</button>
+                </div>
+                <span class="sub">{{pickNote}}</span>
+              </div>
+            </div>
+          </section>
+
+          <section style="display: flex; flex-direction: column; gap: 14px">
+            <h2 class="sec">SOUNDS &amp; MUSIK</h2>
+            <label class="row">
+              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                <span class="lbl">Oberflächen-Sounds</span>
+                <span class="sub">Tastentöne, Navigation, Warnmeldungen</span>
+              </span>
+              <input type="checkbox" class="sw" checked="{{sounds}}" onChange="{{toggleSounds}}">
+            </label>
+            <label class="row">
+              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                <span class="lbl">Hintergrundmusik</span>
+                <span class="sub">Läuft im Big-Picture-Modus, pausiert beim Spielstart</span>
+              </span>
+              <input type="checkbox" class="sw" checked="{{music}}" onChange="{{toggleMusic}}">
+            </label>
+            <div style="display: flex; flex-direction: column; gap: 14px; background: #151B23; border-radius: 14px; padding: 20px; opacity: {{musicOpacity}}">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+                <span class="lbl">Musikquelle</span>
+                <div role="radiogroup" aria-label="Musikquelle" style="display: flex; gap: 4px; background: #0B0F14; padding: 4px; border-radius: 26px">
+                  <button class="{{srcFileCls}}" onClick="{{pickFile}}" disabled="{{musicOff}}" role="radio" aria-checked="{{isFile}}">Audiodatei</button>
+                  <button class="{{srcSpotCls}}" onClick="{{pickSpot}}" disabled="{{musicOff}}" role="radio" aria-checked="{{isSpot}}">Spotify</button>
+                </div>
+              </div>
+              <sc-if value="{{isFile}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; align-items: center; gap: 14px">
+                  <span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg></span>
+                  <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                    <span style="font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">arcadia-lounge.mp3</span>
+                    <span class="sub" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">C:\Users\Musik\arcadia-lounge.mp3 · Wiederholen</span>
+                  </span>
+                  <button class="btn" disabled="{{musicOff}}">Datei wählen …</button>
+                </div>
+                <span class="sub">MP3, AAC/M4A, OGG, Opus, FLAC oder WAV – einzelne Datei oder Ordner als Playlist</span>
+              </sc-if>
+              <sc-if value="{{isSpot}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; gap: 14px">
+                  <span class="ico" style="background: #12301F; color: #6FD99A"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M7.5 9.5c3-1 6.5-.7 9 .8M8 12.6c2.5-.7 5.2-.4 7.3.8M8.6 15.4c1.9-.5 3.9-.3 5.5.6"></path></svg></span>
+                  <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                    <span style="font-size: 17px; font-weight: 600">Late Night Loading</span>
+                    <span class="sub">Playlist · 42 Songs · Zufällige Reihenfolge · Verbunden als [Spotify-Konto]</span>
+                  </span>
+                  <a class="btn" href="SpotifyPicker.dc.html" style="text-decoration: none">Song wählen …</a>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+                  <span class="sub">Benötigt Spotify Premium und ein aktives Spotify-Connect-Gerät.</span>
+                  <a href="SpotifyConnect.dc.html" style="font-size: 15px; font-weight: 600; color: #C5CED7">Konto wechseln</a>
+                </div>
+              </sc-if>
+              <div style="height: 1px; background: #1E2630"></div>
+              <label style="display: flex; align-items: center; gap: 16px">
+                <span class="lbl" style="width: 110px; flex-shrink: 0">Lautstärke</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9AA7B4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"></path></svg>
+                <input type="range" class="vol" min="0" max="100" step="5" value="{{vol}}" onChange="{{setVol}}" disabled="{{musicOff}}" style="flex: 1; background: linear-gradient(to right, #3B9EFF {{volPct}}, #2A3440 {{volPct}})" aria-label="Lautstärke der Hintergrundmusik">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9AA7B4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"></path><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"></path></svg>
+                <span style="width: 52px; text-align: right; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums">{{vol}} %</span>
+              </label>
+              <span class="sub">Relativ zur Systemlautstärke. Mit dem Controller: D-Pad links/rechts in 5er-Schritten.</span>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer style="height: 72px; flex-shrink: 0; border-top: 1px solid #1E2630; display: flex; align-items: center; justify-content: flex-end; padding: 0 80px; box-sizing: border-box">
+    <div style="display: flex; align-items: center; gap: 28px; font-size: 16px; color: #C5CED7">
+      <span class="hint"><span class="gl r">A</span>Ein / Aus</span>
+      <span class="hint"><span class="gl r">B</span>Zurück</span>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  state = { clock: true, date: true, update: true, battery: true, problem: true, overwrite: false, sounds: true, music: true, src: 'spotify', scan: 'idle', pick: 'ask', vol: 40 };
+
+  renderVals() {
+    const s = this.state;
+    const defs = [
+      { id: 'clock', label: 'Uhrzeit', desc: 'Format (12 oder 24 Stunden) unter Lokalisierung' },
+      { id: 'date', label: 'Datum', desc: 'Kurzform, z. B. Fr., 9. Okt.' },
+      { id: 'update', label: 'Arcadia-Update verfügbar', desc: 'Symbol, sobald eine neue Arcadia-Version bereitsteht' },
+      { id: 'battery', label: 'Akkustand des Controllers', desc: 'Nur wenn der verbundene Controller seinen Akkustand meldet' },
+      { id: 'problem', label: 'Probleme mit Launchern', desc: 'Wenn ein Launcher nicht erreichbar oder die Anmeldung abgelaufen ist' }
+    ];
+    const rows = defs.map((d, i) => ({
+      label: d.label,
+      desc: d.desc,
+      on: s[d.id],
+      cls: i === 0 ? 'row focus' : 'row',
+      toggle: () => { const n = {}; n[d.id] = !s[d.id]; this.setState(n); }
+    }));
+    const artStatus = s.scan === 'idle'
+      ? '14 Spiele ohne Cover, 6 ohne Hintergrund'
+      : (s.scan === 'run' ? 'Suche läuft … 9 von 20 geprüft' : 'Fertig: 17 Artworks ergänzt, 3 nicht gefunden');
+    return {
+      rows: rows,
+      on: s,
+      none: !s.clock && !s.date && !s.update && !s.battery && !s.problem,
+      artStatus: artStatus,
+      scanning: s.scan === 'run',
+      scanLabel: s.scan === 'run' ? 'Suche läuft …' : 'Jetzt suchen',
+      scanArt: () => {
+        this.setState({ scan: 'run' });
+        setTimeout(() => this.setState({ scan: 'done' }), 1600);
+      },
+      isAsk: s.pick === 'ask',
+      isAutoPick: s.pick === 'auto',
+      pickAskCls: s.pick === 'ask' ? 'seg on' : 'seg',
+      pickAutoCls: s.pick === 'auto' ? 'seg on' : 'seg',
+      setAsk: () => this.setState({ pick: 'ask' }),
+      setAuto: () => this.setState({ pick: 'auto' }),
+      pickNote: s.pick === 'ask'
+        ? 'Spiele mit mehreren Treffern landen in einer Auswahlliste – 5 warten gerade auf deine Entscheidung.'
+        : 'Es wird automatisch der am besten bewertete Treffer von SteamGridDB übernommen.',
+      vol: s.vol,
+      volPct: s.vol + '%',
+      setVol: (e) => this.setState({ vol: Number(e.target.value) }),
+      overwrite: s.overwrite,
+      toggleOverwrite: () => this.setState({ overwrite: !s.overwrite }),
+      sounds: s.sounds,
+      toggleSounds: () => this.setState({ sounds: !s.sounds }),
+      music: s.music,
+      musicOff: !s.music,
+      musicOpacity: s.music ? '1' : '.45',
+      toggleMusic: () => this.setState({ music: !s.music }),
+      isFile: s.src === 'file',
+      isSpot: s.src === 'spotify',
+      srcFileCls: s.src === 'file' ? 'seg on' : 'seg',
+      srcSpotCls: s.src === 'spotify' ? 'seg on' : 'seg',
+      pickFile: () => this.setState({ src: 'file' }),
+      pickSpot: () => this.setState({ src: 'spotify' })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Colors from the Big Picture designs. -->
+  <Styles.Resources>
+    <Color x:Key="BgColor">#0B0F14</Color>
+    <SolidColorBrush x:Key="Bg" Color="#0B0F14" />
+    <SolidColorBrush x:Key="Surface" Color="#151B23" />
+    <SolidColorBrush x:Key="SurfaceRaised" Color="#1E2630" />
+    <SolidColorBrush x:Key="SurfaceSunken" Color="#0F141A" />
+    <SolidColorBrush x:Key="Line" Color="#2A3440" />
+    <SolidColorBrush x:Key="LineStrong" Color="#3A4552" />
+    <SolidColorBrush x:Key="Text" Color="#E8EDF2" />
+    <SolidColorBrush x:Key="TextStrong" Color="#F2F5F8" />
+    <SolidColorBrush x:Key="TextSoft" Color="#C5CED7" />
+    <SolidColorBrush x:Key="TextMuted" Color="#9AA7B4" />
+    <SolidColorBrush x:Key="TextFaint" Color="#5A6878" />
+    <SolidColorBrush x:Key="Accent" Color="#3B9EFF" />
+    <SolidColorBrush x:Key="AccentHover" Color="#5AAEFF" />
+    <SolidColorBrush x:Key="AccentSoft" Color="#8CC6FF" />
+    <SolidColorBrush x:Key="OnAccent" Color="#06101C" />
+    <SolidColorBrush x:Key="Warning" Color="#F5B868" />
+  </Styles.Resources>
+
+  <!-- A button that draws only what we give it; the Fluent hover/press visuals don't fit the design. -->
+  <Style Selector="Button.plain">
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Chrome"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+          <ContentPresenter Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Button.plain:disabled">
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+
+  <!-- Controller glyphs (A, B, LB, â€¦). -->
+  <Style Selector="Border.glyph">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+    <Setter Property="MinWidth" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="8,0" />
+  </Style>
+  <Style Selector="Border.glyph.round">
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="Border.glyph.dark">
+    <Setter Property="Background" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Border.glyph > TextBlock">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- Round button with a glyph (LB/RB, LT/RT). -->
+  <Style Selector="Button.glyphButton">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="Height" Value="36" />
+    <Setter Property="MinWidth" Value="52" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+  </Style>
+  <Style Selector="Button.glyphButton:pointerover">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+
+  <!-- Launcher tabs. -->
+  <Style Selector="Button.tab">
+    <Setter Property="Height" Value="48" />
+    <Setter Property="Padding" Value="12,0,20,0" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.tab:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Button.tab.selected">
+    <Setter Property="Background" Value="{StaticResource TextStrong}" />
+    <Setter Property="Foreground" Value="{StaticResource Bg}" />
+  </Style>
+
+  <!-- Cover tiles. -->
+  <Style Selector="Button.tile">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Margin" Value="10" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.14" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.tile:pointerover /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="0 0 0 2 #5A6878" />
+  </Style>
+  <Style Selector="Button.tile.focused">
+    <Setter Property="RenderTransform" Value="scale(1.07)" />
+    <Setter Property="ZIndex" Value="2" />
+  </Style>
+  <Style Selector="Button.tile.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="0 0 0 3 #F2F5F8, 0 18 40 0 #A6000000" />
+  </Style>
+
+  <!-- Pagination. -->
+  <Style Selector="Button.page">
+    <Setter Property="MinWidth" Value="40" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Padding" Value="6,0" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.page:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Button.page.current">
+    <Setter Property="Background" Value="{StaticResource TextStrong}" />
+    <Setter Property="Foreground" Value="{StaticResource Bg}" />
+  </Style>
+
+  <!-- Toolbar and preview buttons. -->
+  <Style Selector="Button.toolbar">
+    <Setter Property="Height" Value="48" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="Padding" Value="10,0,20,0" />
+    <Setter Property="Background" Value="{StaticResource Surface}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.toolbar:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.primary">
+    <Setter Property="Height" Value="60" />
+    <Setter Property="CornerRadius" Value="30" />
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+  </Style>
+  <Style Selector="Button.primary:pointerover">
+    <Setter Property="Background" Value="{StaticResource AccentHover}" />
+  </Style>
+
+  <!-- Options in the "Ansicht" dialog. -->
+  <Style Selector="Button.segment">
+    <Setter Property="Height" Value="44" />
+    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.size">
+    <Setter Property="Height" Value="64" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Margin" Value="6" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.size:disabled">
+    <Setter Property="Background" Value="#11161D" />
+    <Setter Property="Foreground" Value="#4A5563" />
+  </Style>
+  <Style Selector="Button.segment:pointerover, Button.size:pointerover">
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.segment.selected, Button.size.selected">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.segment.focused /template/ Border#Chrome, Button.size.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="0 0 0 3 #F2F5F8" />
+  </Style>
+
+  <!-- Settings rows and switches. -->
+  <Style Selector="Button.settingRow">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Padding" Value="20,14" />
+    <Setter Property="CornerRadius" Value="12" />
+  </Style>
+  <Style Selector="Button.settingRow:pointerover">
+    <Setter Property="Background" Value="#1A212B" />
+  </Style>
+  <Style Selector="Button.settingRow.focused /template/ Border#Chrome, Button.action.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="0 0 0 3 #F2F5F8" />
+  </Style>
+  <Style Selector="Button.action">
+    <Setter Property="Height" Value="48" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Button.action:pointerover">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Button.action.primaryAction">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Border.switch">
+    <Setter Property="Width" Value="56" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Background" Value="{StaticResource Line}" />
+    <Setter Property="Padding" Value="4" />
+  </Style>
+  <Style Selector="Border.switch.on">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Border.switch > Ellipse">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Fill" Value="{StaticResource TextStrong}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Border.switch.on > Ellipse">
+    <Setter Property="HorizontalAlignment" Value="Right" />
+  </Style>
+
+  <!-- Loading spinner: an open circle that keeps turning. -->
+  <Style Selector="Path.spinner">
+    <Setter Property="Data" Value="M12 3a9 9 0 1 1 -9 9" />
+    <Setter Property="Stroke" Value="{StaticResource Accent}" />
+    <Setter Property="StrokeThickness" Value="2.5" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Stretch" Value="None" />
+    <!-- Each spinner needs its own <RotateTransform /> as RenderTransform; its angle is animated. -->
+    <Style.Animations>
+      <Animation Duration="0:0:0.9" IterationCount="Infinite">
+        <KeyFrame Cue="0%">
+          <Setter Property="RotateTransform.Angle" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="RotateTransform.Angle" Value="360" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- Scrollbars that match the theme: thin, rounded, dark. -->
+  <Style Selector="ScrollBar">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ScrollBar /template/ Thumb">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+    <Setter Property="CornerRadius" Value="5" />
+  </Style>
+  <Style Selector="ScrollBar /template/ Thumb:pointerover">
+    <Setter Property="Background" Value="{StaticResource LineStrong}" />
+  </Style>
+</Styles>

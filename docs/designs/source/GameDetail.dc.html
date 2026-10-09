@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Spieldetails – Big Picture</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F14}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background-color:#2A3440;border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background-color:#3A4552}
+*::-webkit-scrollbar-corner{background:transparent}
+@supports (-moz-appearance:none){*{scrollbar-width:thin;scrollbar-color:#2A3440 transparent}}
+.hg button{font-family:inherit}
+.gl{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;box-sizing:border-box;border-radius:14px;background:#2A3440;color:#F2F5F8;font-size:13px;font-weight:800}
+.gl.r{width:28px;padding:0;border-radius:50%}
+.gl.d{background:#06101C;color:#F2F5F8}
+.hint{display:flex;align-items:center;gap:10px}
+.act{display:flex;align-items:center;gap:12px;height:60px;padding:0 24px;border-radius:30px;border:0;background:rgba(242,245,248,.1);color:#F2F5F8;font-size:18px;font-weight:600;cursor:pointer}
+.act:hover{background:rgba(242,245,248,.18)}
+.stat{background:#151B23;border-radius:14px;padding:24px 28px;display:flex;flex-direction:column;gap:8px}
+</style>
+</helmet>
+<div class="hg" style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #0B0F14; color: #E8EDF2; font-family: 'Figtree', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <div style="position: relative; height: 640px; flex-shrink: 0; background: hsl(204 30% 17%); overflow: hidden">
+    <div aria-hidden="true" style="position: absolute; right: -80px; top: -120px; width: 900px; height: 900px; border-radius: 50%; border: 2px solid hsl(204 40% 30%)"></div>
+    <div aria-hidden="true" style="position: absolute; right: 120px; top: 80px; width: 520px; height: 520px; border-radius: 50%; border: 2px solid hsl(204 40% 26%)"></div>
+    <span style="position: absolute; right: 80px; bottom: 32px; font-size: 14px; letter-spacing: 0.12em; color: hsl(204 30% 60%)">[HERO-ARTWORK AUS STEAMGRIDDB]</span>
+
+    <header style="position: relative; height: 104px; display: flex; align-items: center; justify-content: space-between; padding: 0 80px">
+      <div style="display: flex; align-items: center; gap: 14px; font-size: 18px; color: #C5CED7">
+        <span class="gl r">B</span>
+        <span>Epic Games</span>
+        <span style="color: #5A6878">/</span>
+        <span style="color: #F2F5F8; font-weight: 600">Hollow Frontier</span>
+      </div>
+      <span style="font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums">21:48</span>
+    </header>
+
+    <div style="position: relative; display: flex; align-items: flex-end; gap: 56px; padding: 24px 80px 0">
+      <div style="width: 320px; height: 480px; flex-shrink: 0; border-radius: 12px; background: hsl(204 28% 24%); box-shadow: 0 30px 60px rgba(0,0,0,.5); display: flex; flex-direction: column; justify-content: space-between; padding: 24px; box-sizing: border-box">
+        <span style="font-size: 120px; font-weight: 800; line-height: 1; color: hsl(204 55% 66%)">H</span>
+        <span style="font-size: 24px; font-weight: 700; color: #F2F5F8">Hollow Frontier</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 22px; padding-bottom: 8px">
+        <div style="display: flex; gap: 10px">
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; letter-spacing: 0.12em; padding: 6px 14px 6px 8px; border-radius: 14px; background: rgba(242,245,248,.12); color: #E8EDF2"><span style="width: 18px; height: 18px; border-radius: 5px; background: hsl(0 0% 30%); display: flex; align-items: center; justify-content: center; font-size: 10px; letter-spacing: 0">E</span>EPIC GAMES</span>
+          <sc-if value="{{upd}}" hint-placeholder-val="{{ true }}">
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; padding: 6px 14px 6px 10px; border-radius: 14px; background: #3B9EFF; color: #06101C"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M5 20h14"></path></svg>UPDATE VERFÜGBAR</span>
+          </sc-if>
+        </div>
+        <h1 style="margin: 0; font-size: 88px; font-weight: 800; line-height: 1; letter-spacing: -0.01em">Hollow Frontier</h1>
+        <p style="margin: 0; font-size: 20px; color: #C5CED7">Installiert · 64,3 GB auf Laufwerk D: · Controller unterstützt</p>
+        <div style="display: flex; align-items: center; gap: 14px; margin-top: 14px">
+          <button style="display: flex; align-items: center; gap: 14px; height: 72px; padding: 0 40px 0 24px; border-radius: 36px; border: 0; background: #3B9EFF; color: #06101C; font-size: 24px; font-weight: 800; cursor: pointer; box-shadow: 0 0 0 4px #0B0F14, 0 0 0 7px #F2F5F8">
+            <span class="gl r d">A</span>{{primary}}
+          </button>
+          <button class="act">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg>
+            Im Launcher öffnen
+          </button>
+          <button class="act">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="7" width="18" height="11" rx="5.5"></rect><path d="M8 11v3M6.5 12.5h3"></path><circle cx="15.5" cy="12" r="1"></circle><circle cx="17.5" cy="14" r="1"></circle></svg>
+            Controller-Layout
+          </button>
+          <a class="act" href="ArtworkModal.dc.html" style="text-decoration: none">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="M20.5 16l-5-5-8 8.5"></path></svg>
+            Artwork ändern
+          </a>
+          <button class="act"><span class="gl">≡</span>Optionen</button>
+        </div>
+        <sc-if value="{{upd}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <p style="margin: 0; font-size: 17px; color: #8CC6FF">Version 1.4.2 · 2,4 GB Download – das Update wird in Epic Games gestartet.</p>
+            <div style="display: flex; align-items: center; gap: 16px">
+              <button class="act" style="height: 48px; font-size: 16px; padding: 0 20px 0 14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>Ohne Update spielen</button>
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 15px; color: #F5B868">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.5"></path></svg>
+                Je nach Launcher bzw. dessen Einstellung nicht möglich – dann wird automatisch das Update gestartet.
+              </span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; padding: 40px 80px 0; align-content: start">
+    <div class="stat">
+      <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">ZULETZT GESPIELT</span>
+      <span style="font-size: 30px; font-weight: 700">vor 3 Tagen</span>
+      <span style="font-size: 16px; color: #9AA7B4">06.10.2026, 22:14</span>
+    </div>
+    <div class="stat">
+      <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">SPIELZEIT</span>
+      <span style="font-size: 30px; font-weight: 700">48 Std.</span>
+      <span style="font-size: 16px; color: #9AA7B4">Laut Epic Games</span>
+    </div>
+    <div class="stat">
+      <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">INSTALLIERT AM</span>
+      <span style="font-size: 30px; font-weight: 700">14.03.2026</span>
+      <span style="font-size: 16px; color: #9AA7B4">D:\Epic Games\HollowFrontier</span>
+    </div>
+    <div class="stat">
+      <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">EINGABE</span>
+      <span style="font-size: 30px; font-weight: 700">Steam Input</span>
+      <span style="font-size: 16px; color: #9AA7B4">Steam Controller · Layout „Gamepad“</span>
+    </div>
+  </div>
+
+  <footer style="height: 72px; flex-shrink: 0; border-top: 1px solid #1E2630; display: flex; align-items: center; justify-content: flex-end; padding: 0 80px; box-sizing: border-box">
+    <div style="display: flex; align-items: center; gap: 28px; font-size: 16px; color: #C5CED7">
+      <span class="hint"><span class="gl r">A</span>{{primary}}</span>
+      <span class="hint"><span class="gl">≡</span>Optionen</span>
+      <span class="hint"><span class="gl r">B</span>Zurück zur Bibliothek</span>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"hasUpdate":{"editor":"boolean","default":true},"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const upd = this.props.hasUpdate ?? true;
+    return { upd: upd, primary: upd ? 'Update starten' : 'Spielen' };
+  }
+}
+</script>
+</body>
+</html>

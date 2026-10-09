@@ -1,0 +1,529 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Arcadia.App.ViewModels"
+        x:Class="Arcadia.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Arcadia"
+        Width="1600" Height="900"
+        MinWidth="960" MinHeight="540"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Bg}"
+        Foreground="{StaticResource Text}">
+
+  <!-- The Big Picture layout is designed for 1920×1080 and scaled to the window. -->
+  <Viewbox Stretch="Uniform">
+    <Grid Width="1920" Height="1080" RowDefinitions="104,72,*,72" Background="{StaticResource Bg}">
+
+      <!-- Header: logo, launcher tabs, status -->
+      <Grid Grid.Row="0" Margin="80,0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="24">
+        <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+          <Path Data="M4 30V16a13 13 0 0 1 26 0v14 M11 30v-8h12v8" Stroke="{StaticResource Accent}" StrokeThickness="3"
+                StrokeLineCap="Round" StrokeJoin="Round" Width="34" Height="34" />
+          <TextBlock Text="ARCADIA" FontSize="24" FontWeight="ExtraBold" LetterSpacing="1.4" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+          <Button Classes="plain glyphButton" Content="LB" Command="{Binding PreviousTabCommand}" ToolTip.Tip="Vorheriger Launcher (Q)" />
+          <Panel Grid.Column="1">
+            <ScrollViewer Name="TabScroller" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+              <ItemsControl Name="TabList" ItemsSource="{Binding Tabs}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,0" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:LauncherTabViewModel">
+                    <Button Classes="plain tab" Classes.selected="{Binding IsSelected}" Command="{Binding SelectCommand}">
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Border Width="24" Height="24" CornerRadius="6" Background="{Binding TileBrush}" ClipToBounds="True">
+                          <TextBlock Text="{Binding Monogram}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                        <Border IsVisible="{Binding IsSelected}" Background="{StaticResource Bg}" CornerRadius="10" Padding="9,3" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Count}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
+                        </Border>
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Shown only when tabs continue beyond the visible area. -->
+            <Border Name="TabEdgeLeft" IsVisible="False" Width="96" HorizontalAlignment="Left" IsHitTestVisible="True">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                  <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
+                  <GradientStop Offset="1" Color="#000B0F14" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <Button Name="TabScrollLeft" Classes="plain" Width="40" Height="40" CornerRadius="20" HorizontalAlignment="Left"
+                      Background="{StaticResource SurfaceRaised}" ToolTip.Tip="Weitere Launcher links">
+                <Path Data="M15 5l-7 7 7 7" Stroke="{StaticResource TextStrong}" StrokeThickness="2.5" StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="20" Stretch="None" />
+              </Button>
+            </Border>
+            <Border Name="TabEdgeRight" IsVisible="False" Width="96" HorizontalAlignment="Right">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="100%,0%" EndPoint="0%,0%">
+                  <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
+                  <GradientStop Offset="1" Color="#000B0F14" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <Button Name="TabScrollRight" Classes="plain" Width="40" Height="40" CornerRadius="20" HorizontalAlignment="Right"
+                      Background="{StaticResource SurfaceRaised}" ToolTip.Tip="Weitere Launcher rechts">
+                <Path Data="M9 5l7 7-7 7" Stroke="{StaticResource TextStrong}" StrokeThickness="2.5" StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="20" Stretch="None" />
+              </Button>
+            </Border>
+          </Panel>
+          <Button Grid.Column="2" Classes="plain glyphButton" Content="RB" Command="{Binding NextTabCommand}" ToolTip.Tip="Nächster Launcher (E)" />
+        </Grid>
+
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsControllerStarting}" VerticalAlignment="Center"
+                      ToolTip.Tip="SISR startet und richtet den Steam Controller als Xbox-360-Controller ein">
+            <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+            <TextBlock Text="Controller wird eingerichtet …" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+          </StackPanel>
+          <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
+                  IsVisible="{Binding HasControllerWarning}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{Binding ControllerWarningText}">
+            <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" Stroke="{StaticResource Warning}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                  Width="24" Height="24" Stretch="None" />
+          </Button>
+          <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
+                  IsVisible="{Binding HasSisrUpdate}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Neue SISR-Version verfügbar">
+            <Path Data="M20 12a8 8 0 1 1 -2.3 -5.6 M20 4v4.5h-4.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                  Width="24" Height="24" Stretch="None" />
+          </Button>
+          <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
+                  Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Einstellungen (F2)">
+            <Path Data="M4 7h10 M18 7h2 M4 17h4 M12 17h8 M14 7a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M8 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"
+                  Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
+          </Button>
+          <TextBlock Text="{Binding Date}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Clock}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+
+      <!-- Toolbar: current tab and view options -->
+      <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+          <TextBlock Text="{Binding SelectedTab.Name, FallbackValue=''}" FontSize="34" FontWeight="ExtraBold" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding CountText}" FontSize="18" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,8,0,0" />
+        </StackPanel>
+        <Button Grid.Column="1" Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}" IsVisible="{Binding SelectedTab, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
+            <TextBlock Text="{Binding ViewSummary}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </Grid>
+
+      <!-- Body: preview panel and cover grid -->
+      <Grid Grid.Row="2" ColumnDefinitions="400,*" Margin="80,0,0,0" ColumnSpacing="40">
+
+        <Border Background="{StaticResource Surface}" CornerRadius="16" ClipToBounds="True" Margin="0,18,0,16"
+                IsVisible="{Binding FocusedGame, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid RowDefinitions="180,*" DataContext="{Binding FocusedGame}" x:DataType="vm:GameTileViewModel">
+            <Panel Background="{Binding CoverBrush}">
+              <TextBlock Text="{Binding Monogram}" FontSize="140" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Opacity="0.55"
+                         HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,20,0" />
+              <Border IsVisible="{Binding UpdateAvailable}" Background="{StaticResource Accent}" CornerRadius="16" Height="32" Padding="10,0,14,0"
+                      HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Path Data="M12 4v12M6 10l6 6 6-6M5 20h14" Stroke="{StaticResource OnAccent}" StrokeThickness="2.8" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
+                  <TextBlock Text="Update verfügbar" FontSize="14" FontWeight="ExtraBold" Foreground="{StaticResource OnAccent}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
+            </Panel>
+            <DockPanel Grid.Row="1" Margin="24,22,24,24">
+              <StackPanel DockPanel.Dock="Bottom" Spacing="10">
+                <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}">
+                  <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Border Classes="glyph round dark"><TextBlock Text="A" /></Border>
+                    <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+                <TextBlock IsVisible="{Binding UpdateAvailable}" HorizontalAlignment="Center" FontSize="14" Foreground="{StaticResource TextMuted}">
+                  <Run Text="Das Update wird in " /><Run Text="{Binding LauncherName}" /><Run Text=" gestartet" />
+                </TextBlock>
+              </StackPanel>
+              <StackPanel Spacing="20">
+                <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="ExtraBold" TextWrapping="Wrap" />
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="18" ColumnSpacing="16">
+                  <StackPanel Spacing="3">
+                    <TextBlock Classes="label" Text="ZULETZT GESPIELT" />
+                    <TextBlock Classes="value" Text="{Binding LastPlayedText}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="3">
+                    <TextBlock Classes="label" Text="SPIELZEIT" />
+                    <TextBlock Classes="value" Text="{Binding PlaytimeText}" />
+                  </StackPanel>
+                  <StackPanel Grid.Row="1" Spacing="3">
+                    <TextBlock Classes="label" Text="INSTALLATIONSGRÖSSE" />
+                    <TextBlock Classes="value" Text="{Binding SizeText}" />
+                  </StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3">
+                    <TextBlock Classes="label" Text="LAUNCHER" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Border Width="20" Height="20" CornerRadius="5" Background="{Binding LauncherBrush}">
+                        <TextBlock Text="{Binding LauncherMonogram}" FontSize="11" FontWeight="ExtraBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Classes="value" Text="{Binding LauncherName}" />
+                    </StackPanel>
+                  </StackPanel>
+                  <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Spacing="3">
+                    <TextBlock Classes="label" Text="SPEICHERORT" />
+                    <TextBlock Text="{Binding LocationText}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+                <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowControllerSupport}">
+                  <TextBlock Classes="label" Text="STEAM CONTROLLER SUPPORT" />
+                  <Button Classes="plain action" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CycleControllerSupportCommand}"
+                          ToolTip.Tip="Für dieses Spiel: Standard → immer an → immer aus">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <TextBlock Text="{Binding $parent[Window].((vm:MainViewModel)DataContext).FocusedControllerSupportText}" VerticalAlignment="Center" />
+                      <Path Data="M7 10l5 5 5-5" Stroke="{StaticResource TextMuted}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </StackPanel>
+              </StackPanel>
+            </DockPanel>
+          </Grid>
+        </Border>
+
+        <Grid Grid.Column="1" RowDefinitions="*,64">
+          <ScrollViewer Name="GridScroller" VerticalScrollBarVisibility="Auto" Padding="6,8,70,8">
+            <ItemsControl Name="GameGrid" ItemsSource="{Binding PageGames}" VerticalAlignment="Top">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <UniformGrid Columns="8" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:GameTileViewModel">
+                  <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Command="{Binding FocusCommand}"
+                          Background="{Binding CoverBrush}" Height="215" ToolTip.Tip="{Binding Title}">
+                    <Panel>
+                      <Grid RowDefinitions="*,Auto" Margin="12">
+                        <TextBlock Text="{Binding Monogram}" FontSize="56" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" />
+                        <TextBlock Grid.Row="1" Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                                   TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                      </Grid>
+                      <Border IsVisible="{Binding UpdateAvailable}" Width="30" Height="30" CornerRadius="15" Background="{StaticResource Accent}"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Update verfügbar">
+                        <Path Data="M12 4v12M6 10l6 6 6-6M5 20h14" Stroke="{StaticResource OnAccent}" StrokeThickness="2.8" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
+                      </Border>
+                    </Panel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <Panel Grid.Row="1" Margin="0,0,80,0">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <Button Classes="plain glyphButton" Content="LT" Command="{Binding PreviousPageCommand}" ToolTip.Tip="Vorherige Seite (Bild ↑)" />
+              <ItemsControl ItemsSource="{Binding PageButtons}" Margin="10,0">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="4" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PageButtonViewModel">
+                    <Panel>
+                      <TextBlock IsVisible="{Binding IsEllipsis}" Text="…" Width="28" TextAlignment="Center" FontWeight="Bold"
+                                 Foreground="{StaticResource TextFaint}" VerticalAlignment="Center" />
+                      <Button IsVisible="{Binding IsPage}" Classes="plain page" Classes.current="{Binding IsCurrent}"
+                              Content="{Binding Label}" Command="{Binding GoCommand}" />
+                    </Panel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Classes="plain glyphButton" Content="RT" Command="{Binding NextPageCommand}" ToolTip.Tip="Nächste Seite (Bild ↓)" />
+            </StackPanel>
+            <TextBlock Text="{Binding RangeText}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="16" Foreground="{StaticResource TextMuted}" />
+          </Panel>
+        </Grid>
+
+        <!-- Loading / empty states -->
+        <TextBlock Grid.ColumnSpan="2" IsVisible="{Binding IsLoading}" Text="Bibliothek wird geladen …" FontSize="22"
+                   Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <StackPanel Grid.ColumnSpan="2" IsVisible="{Binding IsEmpty}" Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="760">
+          <TextBlock Text="Keine Spiele gefunden" FontSize="30" FontWeight="ExtraBold" HorizontalAlignment="Center" />
+          <TextBlock Text="Arcadia hat keinen unterstützten Launcher mit installierten Spielen gefunden. Zum Ausprobieren: Arcadia mit --demo starten."
+                     FontSize="18" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" TextAlignment="Center" />
+        </StackPanel>
+      </Grid>
+
+      <!-- Footer: button hints -->
+      <Border Grid.Row="3" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="80,0">
+        <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+            <TextBlock Classes="hint" Text="{Binding FocusedGame.PrimaryActionText, FallbackValue='Spielen'}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
+            <TextBlock Classes="hint" Text="Ansicht" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph"><TextBlock Text="LB" /></Border>
+            <Border Classes="glyph"><TextBlock Text="RB" /></Border>
+            <TextBlock Classes="hint" Text="Launcher" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph"><TextBlock Text="LT" /></Border>
+            <Border Classes="glyph"><TextBlock Text="RT" /></Border>
+            <TextBlock Classes="hint" Text="Seite" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
+            <TextBlock Classes="hint" Text="Einstellungen" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Toast -->
+      <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding HasToast}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"
+              Padding="24,14" Margin="0,0,0,96" HorizontalAlignment="Center" VerticalAlignment="Bottom" BoxShadow="0 20 50 0 #8C000000">
+        <TextBlock Text="{Binding Toast}" FontSize="18" FontWeight="SemiBold" />
+      </Border>
+
+      <!-- "Ansicht" dialog -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsViewOptionsOpen}">
+        <Button Classes="plain" Background="#C705080C" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Command="{Binding CloseViewOptionsCommand}" />
+        <Border Width="820" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,48,56,36"
+                HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 40 100 0 #99000000">
+          <StackPanel Spacing="40" DataContext="{Binding ViewOptions}" x:DataType="vm:ViewOptionsViewModel">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Ansicht" FontSize="34" FontWeight="ExtraBold" />
+              <TextBlock FontSize="17" Foreground="{StaticResource TextMuted}">
+                <Run Text="Sortierung und Einträge pro Seite für " /><Run Text="{Binding TabName}" />
+              </TextBlock>
+            </StackPanel>
+
+            <StackPanel Spacing="14">
+              <TextBlock Classes="label" Text="SORTIEREN NACH" FontSize="14" />
+              <ItemsControl ItemsSource="{Binding SortRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SortRowViewModel">
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,6">
+                      <TextBlock Text="{Binding Label}" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center" />
+                      <Border Grid.Column="1" Background="{StaticResource Bg}" CornerRadius="26" Padding="4">
+                        <ItemsControl ItemsSource="{Binding Options}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <StackPanel Orientation="Horizontal" Spacing="4" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:OptionViewModel">
+                              <Button Classes="plain segment" Classes.selected="{Binding IsSelected}" Classes.focused="{Binding IsFocused}"
+                                      Content="{Binding Label}" Command="{Binding ApplyCommand}" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </Border>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+
+            <StackPanel Spacing="14">
+              <TextBlock Classes="label" Text="EINTRÄGE PRO SEITE" FontSize="14" />
+              <ItemsControl ItemsSource="{Binding PageSizeOptions}" Margin="-6">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <UniformGrid Columns="4" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:OptionViewModel">
+                    <Button Classes="plain size" Classes.selected="{Binding IsSelected}" Classes.focused="{Binding IsFocused}"
+                            Content="{Binding Label}" Command="{Binding ApplyCommand}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding PageSizeNote}" FontSize="16" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,24,0,0">
+              <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+                  <TextBlock Classes="hint" Text="Wechseln" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                  <TextBlock Classes="hint" Text="Auswählen" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                  <TextBlock Classes="hint" Text="Schließen" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+      </Panel>
+
+      <!-- Settings dialog -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsSettingsOpen}">
+        <Button Classes="plain" Background="#C705080C" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Command="{Binding CloseSettingsCommand}" />
+        <Border Width="1040" MaxHeight="1000" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,40,56,32"
+                HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 40 100 0 #99000000">
+          <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
+          <StackPanel Spacing="32" DataContext="{Binding Settings}" x:DataType="vm:SettingsViewModel">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Einstellungen" FontSize="34" FontWeight="ExtraBold" />
+              <TextBlock Text="Weitere Bereiche aus den Entwürfen folgen." FontSize="17" Foreground="{StaticResource TextMuted}" />
+            </StackPanel>
+
+            <StackPanel Spacing="14">
+              <TextBlock Classes="label" Text="CONTROLLER" FontSize="14" />
+              <Border Background="{StaticResource SurfaceSunken}" CornerRadius="16" Padding="8">
+                <StackPanel Spacing="4">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding ToggleItem.IsFocused}" Command="{Binding ToggleCommand}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="Steam Controller Support" FontSize="20" FontWeight="Bold" />
+                        <TextBlock Text="Der Steam Controller wird in Arcadia und in Spielen anderer Launcher als Gamepad erkannt – inklusive LB/RB, LT/RT, X und Y. Nur nötig für Controller, die über Steam Input laufen."
+                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding IsEnabled}" VerticalAlignment="Center">
+                        <Ellipse />
+                      </Border>
+                    </Grid>
+                  </Button>
+
+                  <!-- Everything below depends on the switch above, so it stays in the same box. -->
+                  <StackPanel Spacing="16" Margin="20,8,20,16">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <Path Classes="spinner" IsVisible="{Binding IsStarting}" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                      <!-- No local Fill: it would override the "active" style. -->
+                      <Ellipse Classes="statusDot" Classes.active="{Binding IsHealthy}" Width="10" Height="10" VerticalAlignment="Center"
+                               IsVisible="{Binding ShowStatusDot}" />
+                      <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <TextBlock IsVisible="{Binding IsBusy}" Text="{Binding BusyText}" FontSize="15" Foreground="{StaticResource AccentSoft}" TextWrapping="Wrap" />
+                    <TextBlock IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding ErrorText}"
+                               FontSize="15" Foreground="#FF9A8F" TextWrapping="Wrap" />
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                      <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding VersionText}" FontSize="15" Foreground="{StaticResource TextSoft}" />
+                        <TextBlock Text="{Binding UpdateText}" IsVisible="{Binding HasUpdate}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource AccentSoft}" />
+                      </StackPanel>
+                      <Button Grid.Column="1" Classes="plain action primaryAction" Classes.focused="{Binding UpdateItem.IsFocused}"
+                              IsVisible="{Binding HasUpdate}" IsEnabled="{Binding !IsBusy}" Command="{Binding UpdateCommand}" Content="Aktualisieren" />
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding Issues}" IsVisible="{Binding HasIssues}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="8" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:HealthIssueViewModel">
+                          <Border Background="#1A212B" CornerRadius="12" Padding="16,12">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                              <!-- No local Stroke: a local value would override the error style. -->
+                              <Path Classes="issueIcon" Classes.error="{Binding IsError}" Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" StrokeThickness="2"
+                                    StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="None" VerticalAlignment="Top" />
+                              <StackPanel Grid.Column="1" Spacing="3">
+                                <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Detail}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                              </StackPanel>
+                              <Button Grid.Column="2" Classes="plain action" Classes.focused="{Binding IsFocused}" IsVisible="{Binding HasFix}"
+                                      Command="{Binding FixCommand}" Content="{Binding FixLabel}" VerticalAlignment="Center" />
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Spacing="8">
+                      <TextBlock Classes="label" Text="SO FUNKTIONIERT ES" />
+                      <TextBlock Classes="bullet" Text="• Arcadia startet SISR unsichtbar im Hintergrund. SISR nimmt den Controller von Steam Input entgegen und gibt ihn als Xbox-Controller an Arcadia und an alle Spiele weiter." />
+                      <TextBlock Classes="bullet" Text="• Bei Spielen aus dem Steam-Launcher pausiert SISR, weil Steam den Controller dort selbst bedient. Pro Spiel lässt sich das in der Vorschau ändern." />
+                    </StackPanel>
+                    <StackPanel Spacing="8">
+                      <TextBlock Classes="label" Text="NACHTEILE" />
+                      <TextBlock Classes="bullet" Text="• Steam muss im Hintergrund laufen, und Steams lokale Debug-Schnittstelle (CEF) muss aktiv sein." />
+                      <TextBlock Classes="bullet" Text="• Benötigt den usbip-Treiber. Die Installation fragt einmalig nach Administratorrechten." />
+                      <TextBlock Classes="bullet" Text="• SISR ist laut seinem Entwickler noch experimentell; Abstürze sind möglich. Arcadia startet SISR dann automatisch neu." />
+                      <TextBlock Classes="bullet" Text="• Läuft SISR bei einem Spiel, das Steam Input selbst nutzt, kommen Eingaben doppelt an." />
+                    </StackPanel>
+                    <TextBlock FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap"
+                               Text="SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,24,0,0">
+              <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+                  <TextBlock Classes="hint" Text="Wechseln" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                  <TextBlock Classes="hint" Text="Auswählen" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                  <TextBlock Classes="hint" Text="Schließen" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+          </ScrollViewer>
+        </Border>
+      </Panel>
+    </Grid>
+  </Viewbox>
+
+  <Window.Styles>
+    <Style Selector="TextBlock.label">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="LetterSpacing" Value="1" />
+      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    </Style>
+    <Style Selector="TextBlock.value">
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    </Style>
+    <Style Selector="Ellipse.statusDot">
+      <Setter Property="Fill" Value="{StaticResource TextFaint}" />
+    </Style>
+    <Style Selector="Ellipse.statusDot.active">
+      <Setter Property="Fill" Value="#6FD99A" />
+    </Style>
+    <Style Selector="Path.issueIcon">
+      <Setter Property="Stroke" Value="{StaticResource Warning}" />
+    </Style>
+    <Style Selector="Path.issueIcon.error">
+      <Setter Property="Stroke" Value="#FF9A8F" />
+    </Style>
+    <Style Selector="TextBlock.bullet">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.hint">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </Window.Styles>
+</Window>

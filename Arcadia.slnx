@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Arcadia.App/Arcadia.App.csproj" />
+    <Project Path="src/Arcadia.ControllerSupport/Arcadia.ControllerSupport.csproj" />
+    <Project Path="src/Arcadia.Core/Arcadia.Core.csproj" />
+    <Project Path="src/Arcadia.Input/Arcadia.Input.csproj" />
+    <Project Path="src/Arcadia.Launchers/Arcadia.Launchers.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Arcadia.Core.Tests/Arcadia.Core.Tests.csproj" />
+  </Folder>
+</Solution>

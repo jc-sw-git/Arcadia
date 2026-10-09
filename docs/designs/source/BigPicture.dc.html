@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Big-Picture-Einstellungen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F14}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background-color:#2A3440;border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background-color:#3A4552}
+*::-webkit-scrollbar-corner{background:transparent}
+@supports (-moz-appearance:none){*{scrollbar-width:thin;scrollbar-color:#2A3440 transparent}}
+.hg button,.hg input{font-family:inherit}
+.gl{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;box-sizing:border-box;border-radius:14px;background:#2A3440;color:#F2F5F8;font-size:13px;font-weight:800}
+.gl.r{width:28px;padding:0;border-radius:50%}
+.hint{display:flex;align-items:center;gap:10px}
+.nav{display:flex;align-items:center;gap:14px;height:56px;padding:0 20px;border-radius:12px;border:0;background:transparent;color:#9AA7B4;font-size:19px;font-weight:600;cursor:pointer;text-align:left;width:100%;text-decoration:none;box-sizing:border-box}
+.nav:hover{background:#151B23;color:#E8EDF2}
+.nav.on{background:#1E2630;color:#F2F5F8}
+.sec{margin:0;font-size:14px;font-weight:700;letter-spacing:.12em;color:#9AA7B4}
+.lbl{font-size:18px;font-weight:700}
+.sub{font-size:14px;color:#9AA7B4;line-height:1.4}
+.row{display:flex;align-items:center;gap:18px;min-height:76px;padding:12px 20px;border-radius:14px;background:#151B23;box-sizing:border-box;cursor:pointer}
+.row:hover{background:#1A212B}
+.row.focus{box-shadow:0 0 0 3px #F2F5F8}
+.row.dim{opacity:.45;cursor:not-allowed}
+.sw{appearance:none;-webkit-appearance:none;width:56px;height:32px;border-radius:16px;background:#2A3440;position:relative;cursor:pointer;margin:0;flex-shrink:0}
+.sw:checked{background:#3B9EFF}
+.sw::after{content:'';position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#F2F5F8;transition:left .15s}
+.sw:checked::after{left:28px}
+.sw:disabled{cursor:not-allowed}
+.card{background:#151B23;border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.dev{display:flex;align-items:center;gap:14px;width:100%;min-height:60px;padding:8px 16px;border-radius:12px;border:0;background:#0F141A;color:#E8EDF2;cursor:pointer;text-align:left;box-sizing:border-box}
+.dev:hover{background:#1A212B}
+.dev.on{background:#1E2630;box-shadow:inset 0 0 0 2px #3B9EFF}
+.radio{width:22px;height:22px;border-radius:50%;border:2px solid #5A6878;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dev.on .radio{border-color:#3B9EFF}
+.dev.on .radio::after{content:'';width:10px;height:10px;border-radius:50%;background:#3B9EFF}
+.segw{display:flex;gap:4px;background:#0B0F14;padding:4px;border-radius:24px;align-self:flex-start;flex-wrap:wrap}
+.seg{height:42px;padding:0 16px;border-radius:21px;border:0;background:transparent;color:#9AA7B4;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap}
+.seg:hover{color:#F2F5F8}
+.seg.on{background:#3B9EFF;color:#06101C}
+.pill{height:40px;padding:0 16px;border-radius:20px;border:2px solid #2A3440;background:transparent;color:#C5CED7;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap}
+.pill:hover{border-color:#5A6878}
+.pill.on{border-color:#3B9EFF;background:#1E2630;color:#F2F5F8}
+.ico{width:40px;height:40px;flex-shrink:0;border-radius:10px;background:#1E2630;display:flex;align-items:center;justify-content:center;color:#C5CED7}
+</style>
+</helmet>
+<div class="hg" style="width: 1920px; height: 1080px; overflow: hidden; background: #0B0F14; color: #E8EDF2; font-family: 'Figtree', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 104px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 80px">
+    <div style="display: flex; align-items: center; gap: 14px">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#3B9EFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 30V16a13 13 0 0 1 26 0v14"></path><path d="M11 30v-8h12v8"></path></svg>
+      <span style="font-size: 24px; font-weight: 800; letter-spacing: 0.06em">ARCADIA</span>
+      <span style="font-size: 24px; color: #5A6878; margin-left: 8px">Einstellungen</span>
+    </div>
+    <span style="font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums">22:03</span>
+  </header>
+
+  <div style="flex: 1; min-height: 0; display: flex; gap: 56px; padding: 16px 80px 0">
+    <nav aria-label="Einstellungen" style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+      <a class="nav" href="Launchers.dc.html">Launcher</a>
+      <span class="nav">Bibliothek</span>
+      <span class="nav on">Big Picture</span>
+      <span class="nav">Controller</span>
+      <a class="nav" href="Appearance.dc.html">Darstellung</a>
+      <a class="nav" href="Language.dc.html">Lokalisierung</a>
+      <span class="nav">Steam-Integration</span>
+      <span class="nav">Über</span>
+    </nav>
+
+    <main style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 26px; overflow-y: auto; padding: 4px 4px 24px">
+      <h1 style="margin: 0; font-size: 40px; font-weight: 800">Big Picture</h1>
+
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <h2 class="sec">START</h2>
+        <div style="max-width: 900px; background: #151B23; border-radius: 16px; padding: 8px; display: flex; flex-direction: column; gap: 4px">
+          <label class="row focus" style="border-radius: 12px; background: transparent">
+            <span style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+              <span class="lbl">Arcadia im Big-Picture-Modus starten</span>
+              <span class="sub">Sonst startet Arcadia im Desktop-Modus</span>
+            </span>
+            <input type="checkbox" class="sw" checked="{{auto}}" onChange="{{toggleAuto}}">
+          </label>
+          <label class="{{ctrlRowCls}}" style="background: #0F141A; padding-left: 28px; border-radius: 12px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5A6878" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M5 4v8a3 3 0 0 0 3 3h11M15 11l4 4-4 4"></path></svg>
+            <span style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+              <span class="lbl">Nur wenn ein Controller verbunden ist</span>
+              <span class="sub">Ohne Controller startet Arcadia im Desktop-Modus</span>
+            </span>
+            <input type="checkbox" class="sw" checked="{{onlyCtrl}}" disabled="{{autoOff}}" onChange="{{toggleCtrl}}">
+          </label>
+        </div>
+      </section>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; align-items: start">
+        <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+          <section style="display: flex; flex-direction: column; gap: 12px">
+            <h2 class="sec">{{g.title}}</h2>
+            <div class="card">
+              <span class="lbl">Beim Wechsel in Big Picture</span>
+              <div role="radiogroup" aria-label="{{g.enterAria}}" style="display: flex; flex-direction: column; gap: 6px">
+                <sc-for list="{{g.enter}}" as="d" hint-placeholder-count="4">
+                  <button class="{{d.cls}}" onClick="{{d.pick}}" role="radio" aria-checked="{{d.on}}">
+                    <span class="radio"></span>
+                    <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                      <span style="font-size: 17px; font-weight: 600">{{d.name}}</span>
+                      <span class="sub">{{d.sub}}</span>
+                    </span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+            <div class="card">
+              <span class="lbl">Beim Verlassen von Big Picture</span>
+              <div class="segw" role="radiogroup" aria-label="{{g.exitAria}}">
+                <sc-for list="{{g.exitModes}}" as="m" hint-placeholder-count="3">
+                  <button class="{{m.cls}}" onClick="{{m.pick}}" role="radio" aria-checked="{{m.on}}">{{m.label}}</button>
+                </sc-for>
+              </div>
+              <sc-if value="{{g.isPrev}}" hint-placeholder-val="{{ true }}">
+                <span class="sub">{{g.prevNote}}</span>
+              </sc-if>
+              <sc-if value="{{g.isSpecific}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                  <sc-for list="{{g.exitDevs}}" as="x" hint-placeholder-count="3">
+                    <button class="{{x.cls}}" onClick="{{x.pick}}" aria-pressed="{{x.on}}">{{x.name}}</button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{g.isNone}}" hint-placeholder-val="{{ false }}">
+                <span class="sub">{{g.noneNote}}</span>
+              </sc-if>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+    </main>
+  </div>
+
+  <footer style="height: 72px; flex-shrink: 0; border-top: 1px solid #1E2630; display: flex; align-items: center; justify-content: flex-end; padding: 0 80px; box-sizing: border-box">
+    <div style="display: flex; align-items: center; gap: 28px; font-size: 16px; color: #C5CED7">
+      <span class="hint"><span class="gl r">A</span>Auswählen</span>
+      <span class="hint"><span class="gl r">B</span>Zurück</span>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  state = {
+    auto: true, onlyCtrl: true,
+    disp: { enter: 'tv', exit: 'prev', exitDev: 'monitor' },
+    aud: { enter: 'tv', exit: 'specific', exitDev: 'headset' }
+  };
+
+  renderVals() {
+    const s = this.state;
+    const DEV = {
+      disp: [
+        { id: 'keep', name: 'Nicht ändern', sub: 'Aktuelle Hauptanzeige beibehalten' },
+        { id: 'tv', name: '[TV] LG OLED', sub: 'HDMI · 3840 × 2160 · 120 Hz' },
+        { id: 'monitor', name: '[Monitor] Dell U2723QE', sub: 'DisplayPort · 2560 × 1440 · derzeit Hauptanzeige' },
+        { id: 'side', name: '[Monitor] BenQ GW2480', sub: 'HDMI · 1920 × 1080' }
+      ],
+      aud: [
+        { id: 'keep', name: 'Nicht ändern', sub: 'Aktuelles Standardgerät beibehalten' },
+        { id: 'tv', name: 'LG OLED (NVIDIA High Definition Audio)', sub: 'HDMI-Audio des TV' },
+        { id: 'speakers', name: 'Lautsprecher (Realtek Audio)', sub: 'derzeit Standardgerät' },
+        { id: 'headset', name: 'Headset (USB)', sub: 'Kopfhörer und Mikrofon' }
+      ]
+    };
+    const mkGroup = (key, title, prevName, noun) => {
+      const st = s[key];
+      const set = (patch) => { const n = {}; n[key] = Object.assign({}, st, patch); this.setState(n); };
+      const enter = DEV[key].map((d) => ({
+        name: d.name, sub: d.sub, on: d.id === st.enter,
+        cls: d.id === st.enter ? 'dev on' : 'dev',
+        pick: () => set({ enter: d.id })
+      }));
+      const modes = [['none', 'Nicht zurückschalten'], ['prev', 'Vorheriges ' + noun], ['specific', 'Bestimmtes ' + noun]];
+      return {
+        title: title,
+        enterAria: title + ' beim Wechsel',
+        exitAria: title + ' beim Verlassen',
+        enter: enter,
+        exitModes: modes.map((m) => ({ label: m[1], on: m[0] === st.exit, cls: m[0] === st.exit ? 'seg on' : 'seg', pick: () => set({ exit: m[0] }) })),
+        isPrev: st.exit === 'prev',
+        isSpecific: st.exit === 'specific',
+        isNone: st.exit === 'none',
+        prevNote: 'Arcadia merkt sich beim Wechsel, was vorher aktiv war – zuletzt: ' + prevName,
+        noneNote: 'Das in Big Picture gewählte ' + noun + ' bleibt nach dem Verlassen aktiv.',
+        exitDevs: DEV[key].filter((d) => d.id !== 'keep').map((d) => ({
+          name: d.name, on: d.id === st.exitDev,
+          cls: d.id === st.exitDev ? 'pill on' : 'pill',
+          pick: () => set({ exitDev: d.id })
+        }))
+      };
+    };
+    return {
+      auto: s.auto,
+      autoOff: !s.auto,
+      onlyCtrl: s.onlyCtrl && s.auto,
+      ctrlRowCls: s.auto ? 'row' : 'row dim',
+      toggleAuto: () => this.setState({ auto: !s.auto }),
+      toggleCtrl: () => this.setState({ onlyCtrl: !s.onlyCtrl }),
+      groups: [
+        mkGroup('disp', 'ANZEIGE (HAUPTANZEIGE)', '[Monitor] Dell U2723QE', 'Anzeigegerät'),
+        mkGroup('aud', 'AUDIO (STANDARDAUSGABE)', 'Lautsprecher (Realtek Audio)', 'Ausgabegerät')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

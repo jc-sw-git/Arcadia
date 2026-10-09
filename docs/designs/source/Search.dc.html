@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Suche – Big Picture</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F14}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background-color:#2A3440;border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background-color:#3A4552}
+*::-webkit-scrollbar-corner{background:transparent}
+@supports (-moz-appearance:none){*{scrollbar-width:thin;scrollbar-color:#2A3440 transparent}}
+.hg button,.hg input{font-family:inherit}
+.gl{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;box-sizing:border-box;border-radius:14px;background:#2A3440;color:#F2F5F8;font-size:13px;font-weight:800}
+.gl.r{width:28px;padding:0;border-radius:50%}
+.gl.s{min-width:22px;height:22px;font-size:11px;padding:0 6px;border-radius:11px}
+.hint{display:flex;align-items:center;gap:10px}
+.chips{scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;display:flex;align-items:center;gap:10px;height:44px;padding:0 18px 0 10px;border-radius:22px;border:2px solid #2A3440;background:transparent;color:#9AA7B4;font-size:16px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:#3A4552;color:#E8EDF2}
+.chip.on{background:#1E2630;border-color:#3B9EFF;color:#F2F5F8}
+.chip .lg{opacity:.45}
+.chip.on .lg{opacity:1}
+.chip.all{padding:0 18px}
+.key{height:56px;border-radius:10px;border:0;background:#1E2630;color:#E8EDF2;font-size:22px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+.key:hover{background:#2A3440}
+.key.wide{font-size:17px}
+.key.pri{background:#3B9EFF;color:#06101C;font-weight:800}
+.key.focus{box-shadow:0 0 0 3px #F2F5F8;background:#2A3440}
+.kbi{display:flex;align-items:center;gap:14px;width:100%;height:60px;padding:0 12px;border-radius:10px;border:0;background:transparent;color:#E8EDF2;cursor:pointer}
+.kbi:hover{background:#2A3440}
+.kbi.on{background:#2A3440}
+.rc{display:flex;flex-direction:column;gap:10px;width:190px;flex-shrink:0}
+</style>
+</helmet>
+<div class="hg" style="width: 1920px; height: 1080px; overflow: hidden; background: #0B0F14; color: #E8EDF2; font-family: 'Figtree', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 96px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 80px">
+    <div style="display: flex; align-items: center; gap: 14px">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#3B9EFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 30V16a13 13 0 0 1 26 0v14"></path><path d="M11 30v-8h12v8"></path></svg>
+      <span style="font-size: 24px; font-weight: 800; letter-spacing: 0.06em">ARCADIA</span>
+      <span style="font-size: 24px; color: #5A6878; margin-left: 8px">Suche</span>
+    </div>
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; font-size: 16px; color: #C5CED7; text-decoration: none"><span class="gl r">B</span>Schließen</a>
+  </header>
+
+  <div style="flex-shrink: 0; padding: 0 80px; display: flex; flex-direction: column; gap: 12px">
+    <label style="display: flex; align-items: center; gap: 18px; height: 76px; padding: 0 28px; border-radius: 38px; background: #151B23; box-shadow: 0 0 0 3px #3B9EFF">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9AA7B4" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+      <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Suchbegriff</span>
+      <input value="{{q}}" onChange="{{onInput}}" placeholder="Spiele in allen Launchern suchen …" style="flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background: transparent; color: #F2F5F8; font-size: 28px; font-weight: 600">
+      <span style="font-size: 15px; color: #9AA7B4; white-space: nowrap">Kürzel: <span style="color: #C5CED7; font-weight: 700">/steam-epic</span> Begriff</span>
+    </label>
+    <div style="display: flex; align-items: center; gap: 10px; padding-left: 28px; font-size: 16px; color: #9AA7B4; min-height: 24px">
+      <span>{{scopeLabel}}</span>
+      <sc-if value="{{hasUnknown}}" hint-placeholder-val="{{ false }}">
+        <span style="color: #F5B868; font-weight: 600">· {{unknownLabel}}</span>
+      </sc-if>
+    </div>
+  </div>
+
+  <div class="chips" style="flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 16px 80px 4px; overflow-x: auto">
+    <button class="{{allCls}}" onClick="{{pickAll}}">Alle Launcher</button>
+    <span style="width: 1px; height: 28px; background: #2A3440; margin: 0 6px"></span>
+    <sc-for list="{{chips}}" as="c" hint-placeholder-count="6">
+      <button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">
+        <span class="lg" style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 6px; background: {{c.tile}}; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #F2F5F8">{{c.mono}}</span>
+        {{c.name}}
+        <span style="font-size: 13px; color: #5A6878; font-weight: 700">/{{c.key}}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 16px; padding: 28px 80px 0">
+    <div style="display: flex; align-items: baseline; justify-content: space-between">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 700">{{resultLabel}}</h2>
+      <span style="font-size: 15px; color: #9AA7B4">Sortiert nach Relevanz</span>
+    </div>
+    <div style="display: flex; gap: 20px; overflow: hidden">
+      <sc-for list="{{results}}" as="g" hint-placeholder-count="8">
+        <div class="rc">
+          <div style="position: relative; height: 240px; border-radius: 8px; background: {{g.bg}}; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; box-sizing: border-box">
+            <span style="width: 28px; height: 28px; border-radius: 7px; background: {{g.tile}}; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #F2F5F8; box-shadow: 0 0 0 2px rgba(11,15,20,.6)">{{g.mono}}</span>
+            <span style="font-size: 15px; font-weight: 700; line-height: 1.25; color: #F2F5F8">{{g.title}}</span>
+          </div>
+          <span style="font-size: 14px; color: #9AA7B4">{{g.launcher}}</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{hasMore}}" hint-placeholder-val="{{ false }}">
+        <div style="width: 190px; height: 240px; flex-shrink: 0; border-radius: 8px; border: 2px dashed #2A3440; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #9AA7B4">{{moreLabel}}</div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="flex-shrink: 0; background: #11161D; border-top: 1px solid #1E2630; padding: 20px 0 22px; display: flex; flex-direction: column; align-items: center; gap: 8px">
+    <sc-for list="{{rows}}" as="row" hint-placeholder-count="4">
+      <div style="display: flex; gap: 8px">
+        <sc-for list="{{row.keys}}" as="k" hint-placeholder-count="11">
+          <button class="{{k.cls}}" onClick="{{k.pick}}" style="width: {{k.w}}">{{k.label}}</button>
+        </sc-for>
+      </div>
+    </sc-for>
+    <div style="display: flex; gap: 8px; position: relative">
+      <button class="{{globeCls}}" onClick="{{toggleKbMenu}}" style="width: 160px" aria-label="Tastaturlayout wechseln" aria-expanded="{{kbMenu}}"><span class="gl s">R3</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9M12 3C9.5 5.7 8.4 8.7 8.4 12s1.1 6.3 3.6 9"></path></svg>{{kbCode}}</button>
+      <button class="key wide" onClick="{{typeSlash}}" style="width: 160px"><span class="gl s">LT</span>/ Filter</button>
+      <button class="key wide" onClick="{{typeSpace}}" style="width: 312px"><span class="gl r s">Y</span>Leertaste</button>
+      <button class="key wide" onClick="{{backspace}}" style="width: 200px"><span class="gl r s">X</span>Löschen</button>
+      <button class="key wide pri" style="width: 248px"><span class="gl s" style="background: #06101C">≡</span>Suchen</button>
+      <sc-if value="{{kbMenu}}" hint-placeholder-val="{{ false }}">
+        <div role="menu" aria-label="Tastaturlayout" style="position: absolute; left: 0; bottom: 68px; width: 380px; background: #1E2630; border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 0 0 1px #2A3440; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px; z-index: 5">
+          <div style="padding: 8px 12px 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; color: #9AA7B4">TASTATURLAYOUT</div>
+          <sc-for list="{{kbItems}}" as="k" hint-placeholder-count="4">
+            <button class="{{k.cls}}" onClick="{{k.pick}}" role="menuitemradio" aria-checked="{{k.on}}">
+              <span style="width: 44px; height: 30px; border-radius: 6px; background: #2A3440; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; letter-spacing: 0.04em">{{k.code}}</span>
+              <span style="flex: 1; display: flex; flex-direction: column; gap: 2px; text-align: left">
+                <span style="font-size: 17px; font-weight: 600">{{k.name}}</span>
+                <span style="font-size: 13px; color: #9AA7B4">{{k.layout}}</span>
+              </span>
+              <sc-if value="{{k.on}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B9EFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+            </button>
+          </sc-for>
+          <a href="Language.dc.html" style="padding: 10px 12px 4px; font-size: 14px; color: #9AA7B4; text-decoration: none">Schnellauswahl anpassen: Einstellungen › Lokalisierung</a>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  state = { q: '/steam-epic-ea hollow', on: { steam: true, epic: true, gog: true, ubi: true, ea: true, xbox: true, bnet: true, amazon: true }, fk: 'h', kb: 'de', kbMenu: false };
+
+  launchers() {
+    return [
+      { name: 'Steam', key: 'steam', count: 128, hue: 210, sat: 35 },
+      { name: 'Epic Games', key: 'epic', count: 47, hue: 0, sat: 0 },
+      { name: 'GOG Galaxy', key: 'gog', count: 31, hue: 280, sat: 35 },
+      { name: 'Ubisoft Connect', key: 'ubi', count: 9, hue: 230, sat: 35 },
+      { name: 'EA app', key: 'ea', count: 14, hue: 350, sat: 35 },
+      { name: 'Xbox', key: 'xbox', count: 62, hue: 120, sat: 35 },
+      { name: 'Battle.net', key: 'bnet', count: 21, hue: 200, sat: 45 },
+      { name: 'Amazon Games', key: 'amazon', count: 6, hue: 30, sat: 45 }
+    ];
+  }
+
+  rand(seed) {
+    let a = seed;
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  library(li) {
+    this._libs = this._libs || {};
+    if (this._libs[li]) return this._libs[li];
+    const A = ['Hollow', 'Iron', 'Silent', 'Crimson', 'Distant', 'Broken', 'Neon', 'Frozen', 'Golden', 'Shattered', 'Last', 'Wild', 'Echo', 'Hidden', 'Burning', 'Sunken', 'Endless', 'Pale', 'Stellar', 'Rogue'];
+    const B = ['Frontier', 'Tides', 'Kingdom', 'Signal', 'Harbor', 'Protocol', 'Crown', 'Horizon', 'Vault', 'Odyssey', 'Requiem', 'Drift', 'Citadel', 'Orbit', 'Legacy', 'Wilds', 'Circuit', 'Ember', 'Expanse', 'Outpost'];
+    const r = this.rand(li * 7919 + 17);
+    const count = this.launchers()[li].count;
+    const seen = {};
+    const out = [];
+    while (out.length < count) {
+      let title = A[Math.floor(r() * A.length)] + ' ' + B[Math.floor(r() * B.length)];
+      const v = r();
+      if (v < 0.1) title += ' II'; else if (v < 0.16) title += ': Remastered';
+      if (seen[title]) continue;
+      seen[title] = true;
+      r(); const never = r() < 0.15; if (!never) r();
+      out.push({ title: title, hue: Math.floor(r() * 360) });
+      r();
+    }
+    this._libs[li] = out;
+    return out;
+  }
+
+  parse(q) {
+    const m = q.match(/^\s*\/(\S*)\s*([\s\S]*)$/);
+    if (!m) return { prefix: false, keys: [], term: q.trim() };
+    return { prefix: true, keys: m[1].toLowerCase().split('-').filter(Boolean), term: m[2].trim() };
+  }
+
+  tile(l) {
+    return 'hsl(' + l.hue + ' ' + l.sat + '% 30%)';
+  }
+
+  renderVals() {
+    const s = this.state;
+    const L = this.launchers();
+    const p = this.parse(s.q);
+    const known = p.keys.filter((k) => L.some((l) => l.key === k));
+    const unknown = p.keys.filter((k) => !L.some((l) => l.key === k));
+    const active = p.prefix ? known : L.filter((l) => s.on[l.key]).map((l) => l.key);
+
+    const setKeys = (keys) => {
+      const term = p.term;
+      if (keys.length === L.length) {
+        const on = {}; L.forEach((l) => { on[l.key] = true; });
+        this.setState({ q: term, on: on });
+      } else if (p.prefix) {
+        this.setState({ q: '/' + keys.join('-') + ' ' + term });
+      } else {
+        const on = {}; L.forEach((l) => { on[l.key] = keys.indexOf(l.key) >= 0; });
+        this.setState({ on: on });
+      }
+    };
+
+    const chips = L.map((l) => {
+      const on = active.indexOf(l.key) >= 0;
+      return {
+        name: l.name, key: l.key, mono: l.name.charAt(0), tile: this.tile(l), on: on,
+        cls: on ? 'chip on' : 'chip',
+        pick: () => {
+          const next = on ? active.filter((k) => k !== l.key) : L.map((x) => x.key).filter((k) => k === l.key || active.indexOf(k) >= 0);
+          if (next.length === 0) return;
+          setKeys(next);
+        }
+      };
+    });
+    const allOn = active.length === L.length;
+
+    const term = p.term.toLowerCase();
+    let hits = [];
+    if (term) {
+      L.forEach((l, li) => {
+        if (active.indexOf(l.key) < 0) return;
+        this.library(li).forEach((g) => {
+          const t = g.title.toLowerCase();
+          if (t.indexOf(term) >= 0) hits.push({ g: g, l: l, rank: t.indexOf(term) === 0 ? 0 : 1 });
+        });
+      });
+      hits.sort((a, b) => a.rank - b.rank || a.g.title.localeCompare(b.g.title, 'de'));
+    }
+    const launchersHit = {};
+    hits.forEach((h) => { launchersHit[h.l.key] = true; });
+    const shown = hits.slice(0, 7);
+    const results = shown.map((h) => ({
+      title: h.g.title,
+      launcher: h.l.name,
+      mono: h.l.name.charAt(0),
+      tile: this.tile(h.l),
+      bg: 'hsl(' + h.g.hue + ' 28% 20%)'
+    }));
+
+    const names = L.filter((l) => active.indexOf(l.key) >= 0).map((l) => l.name);
+    const scopeLabel = allOn
+      ? 'Suche in allen Launchern'
+      : (p.prefix ? 'Per Kürzel gefiltert: ' : 'Suche in: ') + (names.length ? names.join(', ') : '–');
+
+    const layouts = {
+      de: { code: 'DE', name: 'Deutsch', layout: 'QWERTZ', rows: ['1234567890ß', 'qwertzuiopü', 'asdfghjklöä', 'yxcvbnm-:.\''] },
+      us: { code: 'EN', name: 'English (US)', layout: 'QWERTY', rows: ['1234567890-', 'qwertyuiop\'', 'asdfghjkl;:', 'zxcvbnm,.?'] },
+      fr: { code: 'FR', name: 'Français', layout: 'AZERTY', rows: ['1234567890-', 'azertyuiopé', 'qsdfghjklmè', 'wxcvbnàç.\''] },
+      es: { code: 'ES', name: 'Español', layout: 'QWERTY con Ñ', rows: ['1234567890¿', 'qwertyuiop´', 'asdfghjklñç', 'zxcvbnm-.\''] }
+    };
+    const quick = ['de', 'us', 'fr', 'es'];
+    const rowsDef = layouts[s.kb].rows.map((r) => r.split(''));
+    const kbItems = quick.map((id) => ({
+      code: layouts[id].code,
+      name: layouts[id].name,
+      layout: layouts[id].layout,
+      on: id === s.kb,
+      cls: id === s.kb ? 'kbi on' : 'kbi',
+      pick: () => this.setState({ kb: id, kbMenu: false })
+    }));
+    const rows = rowsDef.map((r) => ({
+      keys: r.map((ch) => ({
+        label: ch,
+        w: '96px',
+        cls: s.fk === ch ? 'key focus' : 'key',
+        pick: () => this.setState({ q: s.q + ch, fk: ch })
+      }))
+    }));
+
+    return {
+      q: s.q,
+      onInput: (e) => this.setState({ q: e.target.value }),
+      chips: chips,
+      allCls: allOn ? 'chip all on' : 'chip all',
+      pickAll: () => setKeys(L.map((l) => l.key)),
+      scopeLabel: scopeLabel,
+      hasUnknown: unknown.length > 0,
+      unknownLabel: 'Unbekanntes Kürzel: ' + unknown.map((k) => '/' + k).join(', '),
+      resultLabel: !term ? 'Tippe einen Suchbegriff ein' : hits.length + ' Treffer in ' + Object.keys(launchersHit).length + (Object.keys(launchersHit).length === 1 ? ' Launcher' : ' Launchern'),
+      results: results,
+      hasMore: hits.length > shown.length,
+      moreLabel: '+' + (hits.length - shown.length) + ' weitere',
+      rows: rows,
+      kbItems: kbItems,
+      kbMenu: s.kbMenu,
+      kbCode: layouts[s.kb].code,
+      globeCls: s.kbMenu ? 'key wide focus' : 'key wide',
+      toggleKbMenu: () => this.setState({ kbMenu: !s.kbMenu }),
+      typeSlash: () => this.setState({ q: s.q.charAt(0) === '/' ? s.q : '/' + s.q }),
+      typeSpace: () => this.setState({ q: s.q + ' ' }),
+      backspace: () => this.setState({ q: s.q.slice(0, -1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

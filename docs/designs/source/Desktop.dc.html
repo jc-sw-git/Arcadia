@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Bibliothek – Desktop-Modus</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F14}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background-color:#2A3440;border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background-color:#3A4552}
+*::-webkit-scrollbar-corner{background:transparent}
+@supports (-moz-appearance:none){*{scrollbar-width:thin;scrollbar-color:#2A3440 transparent}}
+.hg button,.hg select,.hg input{font-family:inherit}
+.tabs{display:flex;align-items:stretch;gap:20px;overflow-x:auto;scrollbar-width:none;scroll-behavior:smooth;height:100%;padding:0 4px}
+.tabs::-webkit-scrollbar{display:none}
+.dt{flex-shrink:0;height:100%;padding:0 4px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9AA7B4;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;box-sizing:border-box}
+.dt:hover{color:#E8EDF2}
+.dt.on{color:#F2F5F8;border-bottom-color:#3B9EFF}
+.dt .ct{display:none;font-size:12px;font-weight:700;color:#9AA7B4;background:#1E2630;padding:2px 7px;border-radius:9px}
+.dt.on .ct{display:inline}
+.tsep{width:1px;height:20px;background:#2A3440;flex-shrink:0;align-self:center}
+.edge{position:absolute;top:0;bottom:0;width:64px;display:flex;align-items:center;pointer-events:none;z-index:2}
+.edge.l{left:0;justify-content:flex-start;background:linear-gradient(to right,#0B0F14 45%,rgba(11,15,20,0))}
+.edge.r{right:0;justify-content:flex-end;background:linear-gradient(to left,#0B0F14 45%,rgba(11,15,20,0))}
+.edge button{pointer-events:auto;width:28px;height:28px;border-radius:14px;border:0;background:#1E2630;color:#F2F5F8;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.edge button:hover{background:#2A3440}
+.ctl{height:36px;border-radius:8px;border:1px solid #2A3440;background:#151B23;color:#E8EDF2;font-size:14px;padding:0 12px;box-sizing:border-box}
+.ctl:hover{border-color:#3A4552}
+button.ctl{cursor:pointer}
+.segw{display:flex;border:1px solid #2A3440;border-radius:8px;overflow:hidden}
+.sg{height:34px;min-width:44px;border:0;border-right:1px solid #2A3440;background:#151B23;color:#C5CED7;font-size:14px;font-weight:600;cursor:pointer}
+.sg:last-child{border-right:0}
+.sg:hover{background:#1E2630}
+.sg.on{background:#3B9EFF;color:#06101C}
+.sg:disabled{background:#0F141A;color:#4A5563;cursor:not-allowed}
+.dc{display:flex;flex-direction:column;gap:8px;padding:0;border:0;background:none;color:inherit;cursor:pointer;text-align:left;position:relative}
+.dc .cv{transition:box-shadow .12s}
+.dc:hover .cv{box-shadow:0 0 0 2px #5A6878}
+.dc.on .cv{box-shadow:0 0 0 2px #F2F5F8}
+.dc .play{display:none}
+.dc:hover .play{display:flex}
+.badge{position:absolute;top:7px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(11,15,20,.55)}
+.badge.upd{right:7px;background:#3B9EFF;color:#06101C}
+.badge.fav{left:7px;background:#0B0F14;color:#F5C451}
+.badge.src{left:7px;border-radius:6px;font-size:11px;font-weight:800;color:#F2F5F8}
+.pgb{min-width:32px;height:32px;border-radius:6px;border:0;background:transparent;color:#9AA7B4;font-size:14px;font-weight:700;cursor:pointer}
+.pgb:hover{background:#1E2630;color:#E8EDF2}
+.pgb.on{background:#F2F5F8;color:#0B0F14}
+kbd{font-family:inherit;font-size:12px;font-weight:700;padding:2px 6px;border-radius:4px;background:#1E2630;color:#C5CED7;border:1px solid #2A3440}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:7px 0;border-bottom:1px solid #1E2630}
+.kv dt{color:#9AA7B4}
+.kv dd{margin:0;font-weight:600;text-align:right;min-width:0}
+.pa{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:40px;border-radius:8px;border:0;background:#3B9EFF;color:#06101C;font-size:15px;font-weight:800;cursor:pointer}
+.pa:hover{background:#5AAEFF}
+.ib{width:40px;height:40px;flex-shrink:0;border-radius:8px;border:1px solid #2A3440;background:#151B23;color:#C5CED7;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ib:hover{border-color:#3A4552;color:#F2F5F8}
+.ib.on{color:#F5C451}
+.ib.on svg{fill:currentColor}
+.mi{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;border-radius:6px;border:0;background:transparent;color:#E8EDF2;font-size:14px;font-weight:500;cursor:pointer;text-align:left;text-decoration:none;box-sizing:border-box}
+.mi:hover{background:#2A3440}
+.mi.danger{color:#FF9A8F}
+.mi svg{flex-shrink:0;color:#9AA7B4}
+.mi.danger svg{color:#FF9A8F}
+.mi kbd{margin-left:auto}
+</style>
+</helmet>
+<div class="hg" ref="{{rootRef}}" style="width: 1440px; height: 900px; position: relative; overflow: hidden; background: #0B0F14; color: #E8EDF2; font-family: 'Figtree', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 60px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 24px; border-bottom: 1px solid #1E2630">
+    <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0">
+      <svg width="24" height="24" viewBox="0 0 34 34" fill="none" stroke="#3B9EFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 30V16a13 13 0 0 1 26 0v14"></path><path d="M11 30v-8h12v8"></path></svg>
+      <span style="font-size: 17px; font-weight: 800; letter-spacing: 0.06em">ARCADIA</span>
+    </div>
+    <nav aria-label="Launcher" style="position: relative; flex: 1; min-width: 0; align-self: stretch">
+      <div class="tabs" ref="{{tabsRef}}" onScroll="{{onTabsScroll}}">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="9">
+          <button class="{{t.cls}}" onClick="{{t.pick}}" data-tab="{{t.i}}">
+            <sc-if value="{{t.isFav}}" hint-placeholder-val="{{ false }}">
+              <span style="width: 18px; height: 18px; flex-shrink: 0; border-radius: 5px; background: #3A3115; display: flex; align-items: center; justify-content: center; color: #F5C451"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"></path></svg></span>
+            </sc-if>
+            <sc-if value="{{t.isLauncher}}" hint-placeholder-val="{{ true }}">
+              <span style="width: 18px; height: 18px; flex-shrink: 0; border-radius: 5px; background: {{t.tile}}; display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 10px; font-weight: 800; color: #F2F5F8">{{t.mono}}</span>
+            </sc-if>
+            {{t.name}}<span class="ct">{{t.count}}</span>
+          </button>
+          <sc-if value="{{t.isFav}}" hint-placeholder-val="{{ false }}"><span class="tsep"></span></sc-if>
+        </sc-for>
+      </div>
+      <sc-if value="{{canL}}" hint-placeholder-val="{{ false }}">
+        <div class="edge l"><button onClick="{{scrollL}}" aria-label="Weitere Tabs links"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></button></div>
+      </sc-if>
+      <sc-if value="{{canR}}" hint-placeholder-val="{{ true }}">
+        <div class="edge r"><button onClick="{{scrollR}}" aria-label="Weitere Tabs rechts"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></button></div>
+      </sc-if>
+    </nav>
+    <label style="position: relative; display: flex; align-items: center; flex-shrink: 0">
+      <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Alle Launcher durchsuchen</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA7B4" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position: absolute; left: 12px"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+      <input type="search" placeholder="Suchen  (Strg+F)" class="ctl" style="width: 200px; padding-left: 36px">
+    </label>
+    <div style="display: flex; align-items: center; gap: 14px; flex-shrink: 0; font-size: 14px; color: #C5CED7">
+      <span title="Riot Client antwortet nicht" style="display: flex; color: #F5B868"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Problem mit Launcher"><path d="M12 3.5L2.5 20h19z"></path><path d="M12 10v4.5M12 17.2v.3"></path></svg></span>
+      <span title="Arcadia 0.9.0 verfügbar" style="display: flex; position: relative; color: #8CC6FF"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Arcadia-Update verfügbar"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v4.5h-4.5"></path></svg><span style="position: absolute; top: -2px; right: -2px; width: 7px; height: 7px; border-radius: 50%; background: #3B9EFF"></span></span>
+      <span style="font-weight: 600; font-variant-numeric: tabular-nums">21:47</span>
+    </div>
+    <a href="Main.dc.html" class="ctl" style="display: flex; align-items: center; gap: 8px; background: #F2F5F8; color: #0B0F14; border-color: #F2F5F8; font-weight: 700; text-decoration: none; flex-shrink: 0">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="14" rx="2"></rect><path d="M8 21h8"></path></svg>
+      Big Picture
+    </a>
+  </header>
+
+  <div style="height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; gap: 24px">
+    <div style="display: flex; align-items: baseline; gap: 12px">
+      <h1 style="margin: 0; font-size: 22px; font-weight: 800">{{tabName}}</h1>
+      <span style="font-size: 14px; color: #9AA7B4">{{countLabel}}</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px">
+      <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #9AA7B4">
+        Sortieren
+        <select class="ctl" value="{{sort}}" onChange="{{onSort}}">
+          <option value="name">Name</option>
+          <option value="inst">Installationsdatum</option>
+          <option value="played">Zuletzt gespielt</option>
+        </select>
+      </label>
+      <button class="ctl" onClick="{{flipDir}}" aria-label="Sortierrichtung umkehren" style="display: flex; align-items: center; gap: 6px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{dirPath}}"></path></svg>
+        {{dirLabel}}
+      </button>
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #9AA7B4">
+        <span>Pro Seite</span>
+        <div class="segw" role="group" aria-label="Einträge pro Seite">
+          <sc-for list="{{sizes}}" as="z" hint-placeholder-count="4">
+            <button class="{{z.cls}}" onClick="{{z.pick}}" disabled="{{z.disabled}}" title="{{z.tip}}">{{z.n}}</button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex: 1; min-height: 0; display: flex; gap: 24px; padding: 0 0 0 24px">
+    <aside aria-label="Vorschau" style="width: 300px; flex-shrink: 0; background: #151B23; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; margin: 4px 0 16px">
+      <sc-if value="{{hasGames}}" hint-placeholder-val="{{ true }}">
+        <div style="position: relative; height: 140px; flex-shrink: 0; background: {{p.bg}}">
+          <span style="position: absolute; right: 14px; top: 4px; font-size: 110px; font-weight: 800; line-height: 1; color: {{p.fg}}; opacity: .55">{{p.mono}}</span>
+          <sc-if value="{{p.update}}" hint-placeholder-val="{{ false }}">
+            <span style="position: absolute; left: 12px; top: 12px; display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px 0 8px; border-radius: 13px; background: #3B9EFF; color: #06101C; font-size: 12px; font-weight: 800">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M5 20h14"></path></svg>Update verfügbar
+            </span>
+          </sc-if>
+        </div>
+        <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 16px 18px 18px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 800; line-height: 1.2">{{p.title}}</h2>
+            <sc-if value="{{p.update}}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: 13px; color: #8CC6FF">Version {{p.version}} · {{p.updSize}}</span>
+            </sc-if>
+          </div>
+          <dl style="margin: 0; display: flex; flex-direction: column">
+            <div class="kv"><dt>Zuletzt gespielt</dt><dd>{{p.last}}</dd></div>
+            <div class="kv"><dt>Spielzeit</dt><dd>{{p.hours}}</dd></div>
+            <div class="kv"><dt>Installationsgröße</dt><dd>{{p.size}}</dd></div>
+            <div class="kv"><dt>Launcher</dt><dd style="display: flex; align-items: center; gap: 6px"><span style="width: 16px; height: 16px; border-radius: 4px; background: {{p.tile}}; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800">{{p.lmono}}</span>{{p.launcher}}</dd></div>
+            <div style="display: flex; flex-direction: column; gap: 3px; font-size: 14px; padding: 7px 0"><span style="color: #9AA7B4">Speicherort</span><span style="font-size: 13px; color: #C5CED7; word-break: break-all">{{p.path}}</span></div>
+          </dl>
+          <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; gap: 8px">
+              <button class="pa"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>{{p.primary}}</button>
+              <button class="{{p.starCls}}" onClick="{{p.toggleFav}}" aria-pressed="{{p.fav}}" aria-label="Favorit" title="Favorit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"></path></svg></button>
+              <button class="ib" onClick="{{openMenuBtn}}" aria-label="Optionen" title="Optionen"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
+            </div>
+            <sc-if value="{{p.update}}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: 12px; color: #9AA7B4; text-align: center">Startet das Update in {{p.launcher}}</span>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{noGames}}" hint-placeholder-val="{{ false }}">
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; font-size: 14px; line-height: 1.5; color: #9AA7B4">Noch keine Favoriten. Markiere Spiele mit dem Stern oder per Rechtsklick.</div>
+      </sc-if>
+    </aside>
+
+    <div style="flex: 1; min-width: 0; overflow-y: auto; padding: 4px 24px 16px 4px">
+      <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 22px 16px">
+        <sc-for list="{{games}}" as="g" hint-placeholder-count="25">
+          <button class="{{g.cls}}" onClick="{{g.pick}}" onDoubleClick="{{g.pick}}" onContextMenu="{{g.menu}}" aria-label="{{g.aria}}">
+            <div class="cv" style="position: relative; aspect-ratio: 2 / 3; border-radius: 6px; background: {{g.bg}}; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; box-sizing: border-box; overflow: hidden">
+              <span style="font-size: 44px; font-weight: 800; line-height: 1; color: {{g.fg}}; margin-top: {{g.monoTop}}">{{g.mono}}</span>
+              <span class="play" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 52px; height: 52px; border-radius: 50%; background: #3B9EFF; align-items: center; justify-content: center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#06101C" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>
+              </span>
+            </div>
+            <sc-if value="{{g.showSrc}}" hint-placeholder-val="{{ false }}"><span class="badge src" style="background: {{g.tile}}">{{g.lmono}}</span></sc-if>
+            <sc-if value="{{g.showFav}}" hint-placeholder-val="{{ false }}"><span class="badge fav"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"></path></svg></span></sc-if>
+            <sc-if value="{{g.update}}" hint-placeholder-val="{{ false }}"><span class="badge upd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M5 20h14"></path></svg></span></sc-if>
+            <span style="display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{g.title}}</span>
+              <span style="font-size: 12px; color: #9AA7B4">{{g.meta}}</span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <footer style="height: 48px; flex-shrink: 0; border-top: 1px solid #1E2630; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; gap: 24px">
+    <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; color: #9AA7B4">
+      <span><kbd>Strg</kbd>+<kbd>Tab</kbd> Tab</span>
+      <span><kbd>Bild ↑</kbd><kbd>Bild ↓</kbd> Seite</span>
+      <span><kbd>Enter</kbd> Starten</span>
+      <span>Rechtsklick Optionen</span>
+      <span><kbd>F11</kbd> Big Picture</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 4px">
+      <button class="pgb" onClick="{{prevPage}}" aria-label="Vorherige Seite">‹</button>
+      <sc-for list="{{pageItems}}" as="pi" hint-placeholder-count="3">
+        <sc-if value="{{pi.ell}}" hint-placeholder-val="{{ false }}"><span style="min-width: 20px; text-align: center; color: #5A6878">…</span></sc-if>
+        <sc-if value="{{pi.num}}" hint-placeholder-val="{{ true }}"><button class="{{pi.cls}}" onClick="{{pi.pick}}">{{pi.label}}</button></sc-if>
+      </sc-for>
+      <button class="pgb" onClick="{{nextPage}}" aria-label="Nächste Seite">›</button>
+      <span style="font-size: 13px; color: #9AA7B4; margin-left: 10px; font-variant-numeric: tabular-nums">{{rangeLabel}}</span>
+    </div>
+  </footer>
+
+  <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+    <button onClick="{{closeMenu}}" aria-label="Menü schließen" style="position: absolute; inset: 0; z-index: 8; border: 0; padding: 0; background: transparent; cursor: default"></button>
+    <div role="menu" aria-label="Optionen für {{p.title}}" style="position: absolute; z-index: 9; left: {{menuX}}; top: {{menuY}}; width: 280px; background: #1E2630; border-radius: 10px; box-shadow: 0 20px 50px rgba(0,0,0,.55), 0 0 0 1px #2A3440; padding: 6px; box-sizing: border-box; display: flex; flex-direction: column; gap: 1px">
+      <button class="mi" role="menuitem" style="font-weight: 700">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>{{p.primary}}<kbd>Enter</kbd>
+      </button>
+      <sc-if value="{{p.update}}" hint-placeholder-val="{{ false }}">
+        <button class="mi" role="menuitem" style="height: auto; padding: 7px 10px; align-items: flex-start">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="margin-top: 2px"><path d="M7 4.5v15l13-7.5z"></path></svg>
+          <span style="display: flex; flex-direction: column; gap: 3px">Ohne Update spielen<span style="font-size: 12px; line-height: 1.35; color: #F5B868">Je nach Launcher nicht möglich – dann startet das Update.</span></span>
+        </button>
+      </sc-if>
+      <a class="mi" role="menuitem" href="GameDetail.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v.5"></path></svg>Details anzeigen</a>
+      <button class="mi" role="menuitem" onClick="{{menuFav}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" style="color: #F5C451"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"></path></svg>{{p.favLabel}}</button>
+      <a class="mi" role="menuitem" href="ArtworkModal.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="M20.5 16l-5-5-8 8.5"></path></svg>Artwork ändern …</a>
+      <button class="mi" role="menuitem"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg>Über {{p.launcher}} starten</button>
+      <button class="mi" role="menuitem"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="7" width="18" height="11" rx="5.5"></rect><path d="M8 11v3M6.5 12.5h3"></path><circle cx="15.5" cy="12" r="1"></circle><circle cx="17.5" cy="14" r="1"></circle></svg>Controller-Layout anzeigen</button>
+      <div style="height: 1px; background: #2A3440; margin: 4px 6px"></div>
+      <button class="mi danger" role="menuitem"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg>Deinstallieren …</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  state = { ti: 1, sort: 'played', dir: 'desc', ps: 25, page: 0, focus: 0, menu: false, mx: 400, my: 300, canL: false, canR: true, favs: null };
+
+  launchers() {
+    return [
+      { name: 'Steam', count: 128, tile: 'hsl(210 35% 30%)', path: 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\' },
+      { name: 'Epic Games', count: 47, tile: 'hsl(0 0% 30%)', path: 'D:\\Epic Games\\' },
+      { name: 'GOG Galaxy', count: 31, tile: 'hsl(280 35% 30%)', path: 'D:\\GOG Games\\' },
+      { name: 'Ubisoft Connect', count: 9, tile: 'hsl(230 35% 30%)', path: 'C:\\Program Files (x86)\\Ubisoft\\Games\\' },
+      { name: 'EA app', count: 14, tile: 'hsl(350 35% 30%)', path: 'C:\\Program Files\\EA Games\\' },
+      { name: 'Xbox', count: 62, tile: 'hsl(120 35% 30%)', path: 'C:\\XboxGames\\' },
+      { name: 'Battle.net', count: 21, tile: 'hsl(200 45% 30%)', path: 'C:\\Program Files (x86)\\' },
+      { name: 'Amazon Games', count: 6, tile: 'hsl(30 45% 30%)', path: 'C:\\Amazon Games\\Library\\' }
+    ];
+  }
+
+  rand(seed) {
+    let a = seed;
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  library(li) {
+    this._libs = this._libs || {};
+    if (this._libs[li]) return this._libs[li];
+    const A = ['Hollow', 'Iron', 'Silent', 'Crimson', 'Distant', 'Broken', 'Neon', 'Frozen', 'Golden', 'Shattered', 'Last', 'Wild', 'Echo', 'Hidden', 'Burning', 'Sunken', 'Endless', 'Pale', 'Stellar', 'Rogue'];
+    const B = ['Frontier', 'Tides', 'Kingdom', 'Signal', 'Harbor', 'Protocol', 'Crown', 'Horizon', 'Vault', 'Odyssey', 'Requiem', 'Drift', 'Citadel', 'Orbit', 'Legacy', 'Wilds', 'Circuit', 'Ember', 'Expanse', 'Outpost'];
+    const r = this.rand(li * 7919 + 17);
+    const count = this.launchers()[li].count;
+    const seen = {};
+    const out = [];
+    while (out.length < count) {
+      let title = A[Math.floor(r() * A.length)] + ' ' + B[Math.floor(r() * B.length)];
+      const v = r();
+      if (v < 0.1) title += ' II'; else if (v < 0.16) title += ': Remastered';
+      if (seen[title]) continue;
+      seen[title] = true;
+      const inst = 1 + Math.floor(r() * 1100);
+      const never = r() < 0.15;
+      const played = never ? null : Math.floor(r() * Math.min(inst, 420));
+      const hue = Math.floor(r() * 360);
+      const size = 2 + r() * 118;
+      out.push({ li: li, key: li + '|' + title, title: title, inst: inst, played: played, hue: hue, size: size, update: hue % 6 === 0 || out.length === 2 });
+    }
+    this._libs[li] = out;
+    return out;
+  }
+
+  favs() {
+    if (this.state.favs) return this.state.favs;
+    const f = {};
+    [[0, 0], [0, 5], [0, 11], [1, 3], [2, 1], [5, 7], [6, 2], [1, 10], [3, 4], [7, 1]].forEach((x) => {
+      const g = this.library(x[0])[x[1]];
+      if (g) f[g.key] = true;
+    });
+    return f;
+  }
+
+  toggleFav(key) {
+    const f = Object.assign({}, this.favs());
+    if (f[key]) delete f[key]; else f[key] = true;
+    this.setState({ favs: f });
+  }
+
+  relStr(days) {
+    if (days === 0) return 'Heute';
+    if (days === 1) return 'Gestern';
+    if (days < 7) return 'Vor ' + days + ' Tagen';
+    if (days < 30) { const w = Math.floor(days / 7); return w === 1 ? 'Vor 1 Woche' : 'Vor ' + w + ' Wochen'; }
+    if (days < 365) { const m = Math.floor(days / 30); return m === 1 ? 'Vor 1 Monat' : 'Vor ' + m + ' Monaten'; }
+    return 'Vor über 1 Jahr';
+  }
+
+  gb(x) {
+    return x.toFixed(1).replace('.', ',') + ' GB';
+  }
+
+  componentDidMount() {
+    this.syncTabs();
+    setTimeout(() => this.syncTabs(), 400);
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.ti !== this.state.ti) this.syncTabs();
+  }
+
+  syncTabs() {
+    const el = this._tabs;
+    if (!el) return;
+    const c = el.querySelector('[data-tab="' + this.state.ti + '"]');
+    if (c) {
+      const pad = 64;
+      const l = c.offsetLeft;
+      const r = l + c.offsetWidth;
+      if (l < el.scrollLeft + pad) el.scrollLeft = Math.max(0, l - pad);
+      else if (r > el.scrollLeft + el.clientWidth - pad) el.scrollLeft = r - el.clientWidth + pad;
+    }
+    setTimeout(() => this.measure(), 350);
+  }
+
+  measure() {
+    const el = this._tabs;
+    if (!el) return;
+    const canL = el.scrollLeft > 2;
+    const canR = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+    if (canL !== this.state.canL || canR !== this.state.canR) this.setState({ canL: canL, canR: canR });
+  }
+
+  menuAt(e, extra) {
+    let x = 400;
+    let y = 300;
+    if (e && this._root) {
+      const rect = this._root.getBoundingClientRect();
+      const k = 1440 / rect.width;
+      x = (e.clientX - rect.left) * k;
+      y = (e.clientY - rect.top) * k;
+    }
+    x = Math.min(x, 1440 - 290);
+    y = Math.min(y, 900 - 340);
+    this.setState(Object.assign({ menu: true, mx: x, my: y }, extra || {}));
+  }
+
+  renderVals() {
+    const s = this.state;
+    const L = this.launchers();
+    const favs = this.favs();
+    const isFavTab = s.ti === 0;
+    const favCount = Object.keys(favs).length;
+
+    let base;
+    if (isFavTab) {
+      base = [];
+      L.forEach((l, li) => this.library(li).forEach((g) => { if (favs[g.key]) base.push(g); }));
+    } else {
+      base = this.library(s.ti - 1);
+    }
+    const count = base.length;
+    const tabName = isFavTab ? 'Favoriten' : L[s.ti - 1].name;
+
+    const steps = [10, 25, 50, 100];
+    const allowed = steps.filter((n, i) => i === 0 || count > steps[i - 1]);
+    const ps = allowed.indexOf(s.ps) >= 0 ? s.ps : allowed[allowed.length - 1];
+    const dir = s.dir === 'asc' ? 1 : -1;
+    const list = base.slice().sort((a, b) => {
+      if (s.sort === 'name') return dir * a.title.localeCompare(b.title, 'de');
+      if (s.sort === 'inst') return dir * (b.inst - a.inst);
+      if (a.played == null && b.played == null) return a.title.localeCompare(b.title, 'de');
+      if (a.played == null) return 1;
+      if (b.played == null) return -1;
+      return dir * (b.played - a.played);
+    });
+    const pages = Math.max(1, Math.ceil(list.length / ps));
+    const page = Math.min(s.page, pages - 1);
+    const start = page * ps;
+    const slice = list.slice(start, start + ps);
+    const focus = Math.max(0, Math.min(s.focus, slice.length - 1));
+
+    const games = slice.map((g, i) => {
+      const l = L[g.li];
+      const fav = !!favs[g.key];
+      return {
+        title: g.title,
+        aria: g.title + (isFavTab ? ' (' + l.name + ')' : '') + (fav ? ', Favorit' : '') + (g.update ? ', Update verfügbar' : ''),
+        meta: g.update ? 'Update verfügbar' : (g.played == null ? 'Nie gespielt' : this.relStr(g.played)),
+        mono: g.title.charAt(0),
+        monoTop: isFavTab || fav ? '28px' : '0',
+        bg: 'hsl(' + g.hue + ' 28% 20%)',
+        fg: 'hsl(' + g.hue + ' 55% 66%)',
+        update: g.update,
+        showSrc: isFavTab,
+        showFav: !isFavTab && fav,
+        tile: l.tile,
+        lmono: l.name.charAt(0),
+        cls: i === focus ? 'dc on' : 'dc',
+        pick: () => this.setState({ focus: i }),
+        menu: (e) => { if (e && e.preventDefault) e.preventDefault(); this.menuAt(e, { focus: i }); }
+      };
+    });
+
+    const g = slice[focus];
+    let p = { primary: 'Spielen', title: '', favLabel: '' };
+    if (g) {
+      const lc = L[g.li];
+      const fav = !!favs[g.key];
+      p = {
+        title: g.title,
+        mono: g.title.charAt(0),
+        bg: 'hsl(' + g.hue + ' 28% 20%)',
+        fg: 'hsl(' + g.hue + ' 55% 66%)',
+        update: g.update,
+        version: '1.' + (g.hue % 9) + '.' + (g.inst % 12),
+        updSize: this.gb(0.3 + g.size * 0.04),
+        last: g.played == null ? 'Nie gespielt' : this.relStr(g.played),
+        hours: g.played == null ? '–' : (1 + Math.floor((g.size * 13 + g.hue) % 160)) + ' Std.',
+        size: this.gb(g.size),
+        launcher: lc.name,
+        tile: lc.tile,
+        lmono: lc.name.charAt(0),
+        path: lc.path + g.title.replace(/[^A-Za-z0-9]/g, ''),
+        primary: g.update ? 'Update starten' : 'Spielen',
+        fav: fav,
+        starCls: fav ? 'ib on' : 'ib',
+        favLabel: fav ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen',
+        toggleFav: () => this.toggleFav(g.key)
+      };
+    }
+
+    const tabs = [{ i: 0, name: 'Favoriten', count: favCount, isFav: true, isLauncher: false, tile: '', mono: '' }]
+      .concat(L.map((l, li) => ({ i: li + 1, name: l.name, count: l.count, isFav: false, isLauncher: true, tile: l.tile, mono: l.name.charAt(0) })))
+      .map((t) => Object.assign(t, {
+        cls: t.i === s.ti ? 'dt on' : 'dt',
+        pick: () => this.setState({ ti: t.i, page: 0, focus: 0 })
+      }));
+
+    let nums = [];
+    if (pages <= 7) {
+      for (let i = 0; i < pages; i++) nums.push(i);
+    } else {
+      nums = [0];
+      if (page > 2) nums.push(-1);
+      for (let i = Math.max(1, page - 1); i <= Math.min(pages - 2, page + 1); i++) nums.push(i);
+      if (page < pages - 3) nums.push(-1);
+      nums.push(pages - 1);
+    }
+    const pageItems = nums.map((n) => ({
+      ell: n < 0,
+      num: n >= 0,
+      label: n + 1,
+      cls: n === page ? 'pgb on' : 'pgb',
+      pick: () => this.setState({ page: n, focus: 0 })
+    }));
+
+    const sizes = steps.map((n) => {
+      const off = allowed.indexOf(n) < 0;
+      return {
+        n: n,
+        disabled: off,
+        cls: n === ps ? 'sg on' : 'sg',
+        tip: off ? allowed[allowed.length - 1] + ' pro Seite zeigt bereits alle ' + count + ' Spiele' : n + ' Einträge pro Seite',
+        pick: () => this.setState({ ps: n, page: 0, focus: 0 })
+      };
+    });
+
+    const isName = s.sort === 'name';
+    const dirLabel = isName ? (s.dir === 'asc' ? 'A–Z' : 'Z–A') : (s.dir === 'desc' ? 'Neueste zuerst' : 'Älteste zuerst');
+
+    return {
+      rootRef: (el) => { this._root = el; },
+      tabs: tabs,
+      tabsRef: (el) => { this._tabs = el; },
+      onTabsScroll: () => this.measure(),
+      canL: s.canL,
+      canR: s.canR,
+      scrollL: () => { if (this._tabs) { this._tabs.scrollLeft -= 240; setTimeout(() => this.measure(), 350); } },
+      scrollR: () => { if (this._tabs) { this._tabs.scrollLeft += 240; setTimeout(() => this.measure(), 350); } },
+      tabName: tabName,
+      countLabel: count + ' Spiele' + (isFavTab ? ' aus allen Launchern' : ''),
+      sort: s.sort,
+      onSort: (e) => { const v = e.target.value; this.setState({ sort: v, dir: v === 'name' ? 'asc' : 'desc', page: 0, focus: 0 }); },
+      flipDir: () => this.setState({ dir: s.dir === 'asc' ? 'desc' : 'asc', page: 0, focus: 0 }),
+      dirLabel: dirLabel,
+      dirPath: s.dir === 'asc' ? 'M12 19V5M6 11l6-6 6 6' : 'M12 5v14M6 13l6 6 6-6',
+      sizes: sizes,
+      games: games,
+      hasGames: !!g,
+      noGames: !g,
+      p: p,
+      pageItems: pageItems,
+      rangeLabel: count ? (start + 1) + '–' + (start + slice.length) + ' von ' + list.length : '0 Spiele',
+      prevPage: () => this.setState({ page: Math.max(0, page - 1), focus: 0 }),
+      nextPage: () => this.setState({ page: Math.min(pages - 1, page + 1), focus: 0 }),
+      menuOpen: s.menu && !!g,
+      menuX: s.mx + 'px',
+      menuY: s.my + 'px',
+      openMenuBtn: (e) => this.menuAt(e),
+      closeMenu: () => this.setState({ menu: false }),
+      menuFav: () => { if (g) { this.toggleFav(g.key); this.setState({ menu: false }); } }
+    };
+  }
+}
+</script>
+</body>
+</html>

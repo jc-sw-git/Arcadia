@@ -22,3 +22,6 @@ Thumbs.db
 /scratch
 /local
 *.vdf.bak
+
+# Logs (e.g. VIIPER writes viiper.log into its working directory)
+*.log

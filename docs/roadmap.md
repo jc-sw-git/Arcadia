@@ -1,7 +1,7 @@
 # Roadmap
 
 Offene Aufgaben werden als **GitHub-Issues** geführt (Label `roadmap`, als Nächstes: `prio:next`).
-Roadmap: https://github.com/jc-sw-git/SteamButler/issues/26 – darunter je Bereich ein Epic (`type:epic`)
+Roadmap: https://github.com/jc-sw-git/Arcadia/issues/26 – darunter je Bereich ein Epic (`type:epic`)
 als Sub-Issue, die Aufgaben hängen als Sub-Issues am jeweiligen Epic. Features sind `type:story`
 und beginnen mit einer Story-Zeile, Fehler `bug`, Technik `type:tech-debt`.
 

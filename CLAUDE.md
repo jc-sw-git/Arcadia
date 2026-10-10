@@ -104,6 +104,25 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
 running, `EpicLauncherClient` starts it with `-silent`, waits for `EpicWebHelper` + 4 s, starts
 the game via `com.epicgames.launcher://…` and re-sends once if no process appears from the
 install directory within 30 s.
+Owned but uninstalled games come from `Data\Catalog\catcache.bin` (Base64 JSON, refreshed by the
+launcher, no login needed). Games = category `games` without `addons`/`digitaldownloads` and with
+an empty `mainGameItem.id` (DLC/season passes name their game there): 331 on the owner's PC vs.
+333 in the Epic library (difference not yet explained). The cache is **ASCII-only** — every other
+character is `?` ("Batman? Arkham", "K?ln"); `EpicCatalog.RepairTitle` drops trademark `?`s,
+umlauts stay broken until metadata providers (#43) supply titles. Install: `…?action=install`.
+`EpicInstallMonitor` (verified 2026-10-10 with real installs): queue order from
+`Data\DownloadManager\DownloadState_<account>.json` (incl. paused, `[]` when idle); per-app events
+from `EpicGamesLauncher.log` (`Queued install for the`, `StartTask: BinaryId [`, `Resume of active
+installation`, `Pause is requested`, `Cancel of active installation`, `HandleTaskComplete … AlertCode=[ok]`,
+`FCommunityPortalAppManagerImpl: Uninstall` — an uninstall then runs through the same queue with
+the same `Queued`/`StartTask`/`HandleTaskComplete` lines, so only that first line tells it apart); install size from
+`Manifests\Pending\*.item`, which **stays behind after a cancel** (never use it as state). The
+queue file can lag behind (owner saw a running install vanish after cancelling a paused one), so
+for apps the log reported on while Arcadia ran, the log decides; the file only orders them.
+Reordering logs `New active position is requested for the <app>` followed by a pause of the old one. Progress =
+size of the whole install dir / `InstallSize` (download goes to `.egstore` inside it, moved at the end).
+Epic writes no percentages to the log. The library is also rescanned when the window is activated
+and when a selected installed game's directory is missing.
 
 ## Git
 

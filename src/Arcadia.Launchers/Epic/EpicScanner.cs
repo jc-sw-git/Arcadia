@@ -5,12 +5,14 @@ using Arcadia.Core.Models;
 namespace Arcadia.Launchers.Epic;
 
 /// <summary>
-/// Reads the Epic Games Launcher's install manifests. Epic writes one JSON file per installed
-/// game to <c>%PROGRAMDATA%\Epic\EpicGamesLauncher\Data\Manifests\*.item</c>.
+/// Reads the Epic library: installed games from the install manifests (one JSON file per game in
+/// <c>%PROGRAMDATA%\Epic\EpicGamesLauncher\Data\Manifests\*.item</c>) plus the owned but
+/// uninstalled games from the launcher's catalog cache (<see cref="EpicCatalog"/>).
 /// </summary>
-public sealed class EpicScanner(string? manifestDirectory = null) : ILauncherScanner
+public sealed class EpicScanner(string? manifestDirectory = null, string? catalogPath = null) : ILauncherScanner
 {
     private readonly string _manifestDirectory = manifestDirectory ?? DefaultManifestDirectory();
+    private readonly string _catalogPath = catalogPath ?? EpicCatalog.DefaultPath();
 
     public LauncherInfo Launcher => KnownLaunchers.Epic;
 
@@ -18,6 +20,53 @@ public sealed class EpicScanner(string? manifestDirectory = null) : ILauncherSca
         Task.Run(() => Scan(cancellationToken), cancellationToken);
 
     private IReadOnlyList<Game> Scan(CancellationToken cancellationToken)
+    {
+        var installed = ScanManifests(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        return Merge(installed, EpicCatalog.Load(_catalogPath));
+    }
+
+    /// <summary>
+    /// Adds every catalog game that is not installed. Installed games are matched by catalog item
+    /// id and, for manifests without one, by app name.
+    /// </summary>
+    public static IReadOnlyList<Game> Merge(IReadOnlyList<Game> installed, IReadOnlyList<EpicCatalogItem> catalog)
+    {
+        var installedIds = new HashSet<string>(StringComparer.Ordinal);
+        var installedApps = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var game in installed)
+        {
+            installedApps.Add(game.Id);
+            if (game.Launch is LaunchTarget.ProtocolUri uri && CatalogItemIdOf(uri.Uri) is { } id)
+            {
+                installedIds.Add(id);
+            }
+        }
+
+        var games = new List<Game>(installed);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var item in catalog)
+        {
+            if (installedIds.Contains(item.CatalogItemId) || installedApps.Contains(item.AppName) || !seen.Add(item.AppName))
+            {
+                continue;
+            }
+
+            games.Add(new Game
+            {
+                Id = item.AppName,
+                LauncherId = KnownLaunchers.Epic.Id,
+                Title = item.Title,
+                Launch = new LaunchTarget.ProtocolUri(LaunchUri(item.Namespace, item.CatalogItemId, item.AppName)),
+                IsInstalled = false,
+                Install = new LaunchTarget.ProtocolUri(InstallUri(item.Namespace, item.CatalogItemId, item.AppName)),
+            });
+        }
+
+        return games;
+    }
+
+    private IReadOnlyList<Game> ScanManifests(CancellationToken cancellationToken)
     {
         if (!Directory.Exists(_manifestDirectory))
         {
@@ -119,6 +168,22 @@ public sealed class EpicScanner(string? manifestDirectory = null) : ILauncherSca
 
     public static string LaunchUri(string catalogNamespace, string catalogItemId, string appName) =>
         $"com.epicgames.launcher://apps/{catalogNamespace}%3A{catalogItemId}%3A{appName}?action=launch&silent=true";
+
+    /// <summary>Opens the launcher's install dialog for the game.</summary>
+    public static string InstallUri(string catalogNamespace, string catalogItemId, string appName) =>
+        $"com.epicgames.launcher://apps/{catalogNamespace}%3A{catalogItemId}%3A{appName}?action=install";
+
+    private static string? CatalogItemIdOf(string uri)
+    {
+        const string prefix = "com.epicgames.launcher://apps/";
+        if (!uri.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var parts = uri[prefix.Length..].Split('?')[0].Split("%3A");
+        return parts.Length == 3 && parts[1].Length > 0 ? parts[1] : null;
+    }
 
     private static string? GetString(JsonElement root, string name) =>
         root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;

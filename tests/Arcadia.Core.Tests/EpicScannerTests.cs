@@ -77,9 +77,10 @@ public class EpicScannerTests
     }
 
     [Fact]
-    public async Task Missing_manifest_directory_yields_no_games()
+    public async Task Missing_manifest_directory_and_catalog_yield_no_games()
     {
-        var scanner = new EpicScanner(Path.Combine(Path.GetTempPath(), "arcadia-does-not-exist-" + Guid.NewGuid()));
+        var missing = Path.Combine(Path.GetTempPath(), "arcadia-does-not-exist-" + Guid.NewGuid());
+        var scanner = new EpicScanner(missing, Path.Combine(missing, "catcache.bin"));
 
         Assert.Empty(await scanner.ScanAsync());
     }

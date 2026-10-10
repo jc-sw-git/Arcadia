@@ -37,6 +37,9 @@ public static class Formatting
     public static string Size(long? bytes) =>
         bytes is { } value ? (value / 1024d / 1024d / 1024d).ToString("0.0", Culture) + " GB" : "–";
 
+    /// <summary>0…1 → "42 %" (German spacing). Floors, so 99.9 % never shows as 100 %.</summary>
+    public static string Percent(double fraction) => $"{Math.Floor(Math.Clamp(fraction, 0, 1) * 100):0} %";
+
     public static string Clock(DateTimeOffset now) => now.ToString("HH:mm", Culture);
 
     public static string ShortDate(DateTimeOffset now) => now.ToString("ddd., d. MMM", Culture);

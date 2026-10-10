@@ -27,6 +27,15 @@ public partial class MainWindow : Window
         TabScroller.SizeChanged += (_, _) => UpdateTabEdges();
         TabScrollLeft.Click += (_, _) => ScrollTabs(-TabScrollStep);
         TabScrollRight.Click += (_, _) => ScrollTabs(TabScrollStep);
+
+        // Coming back from a launcher: games may have been installed or uninstalled there.
+        Activated += async (_, _) =>
+        {
+            if (_viewModel is not null)
+            {
+                await _viewModel.RefreshLibraryAsync();
+            }
+        };
     }
 
     /// <summary>

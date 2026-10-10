@@ -19,7 +19,7 @@ eigenen Tab. Arcadia läuft im **Big-Picture-Modus** komplett per Controller und
 | Projekt | Zweck |
 |---------|-------|
 | `src/Arcadia.Core` | Plattformunabhängig: Modell (`Game`, `LauncherInfo`, `LaunchTarget`), Sortierung, Paginierung samt Seitengrößen-Regel, Such-Präfix (`/steam-epic …`) |
-| `src/Arcadia.Launchers` | Scanner je Launcher (Epic real, Demo-Daten), Spielstart |
+| `src/Arcadia.Launchers` | Scanner je Launcher (Epic real inkl. nicht installierter Spiele, Demo-Daten), Spielstart und Installation |
 | `src/Arcadia.Input` | Controller-Eingabe (XInput unter Windows) |
 | `src/Arcadia.ControllerSupport` | „Steam Controller Support“: verwaltet SISR (Installation, Start/Stopp, Updates) und überwacht SISR, VIIPER, usbip-Treiber und Steam |
 | `src/Arcadia.App` | Avalonia-Oberfläche (MVVM mit CommunityToolkit.Mvvm) |

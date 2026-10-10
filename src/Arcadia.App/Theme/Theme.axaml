@@ -132,6 +132,39 @@
     <Setter Property="BoxShadow" Value="0 0 0 3 #F2F5F8, 0 18 40 0 #A6000000" />
   </Style>
 
+  <!-- Owned but not installed: the cover is shaded, the title stays readable. -->
+  <Style Selector="Border.shade">
+    <Setter Property="Background" Value="#B80B0F14" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="TextBlock.dim">
+    <Setter Property="Opacity" Value="0.35" />
+  </Style>
+  <Style Selector="Border.installBadge">
+    <Setter Property="Background" Value="#1E2630" />
+    <Setter Property="BorderBrush" Value="#3A4552" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <!-- Installation progress: a thin bar along the cover's bottom edge, a taller one in the preview. -->
+  <Style Selector="ProgressBar.install">
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="5" />
+    <Setter Property="Height" Value="5" />
+    <Setter Property="CornerRadius" Value="0,0,8,8" />
+    <Setter Property="Background" Value="#33FFFFFF" />
+    <Setter Property="Foreground" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="ProgressBar.install.large">
+    <Setter Property="MinHeight" Value="8" />
+    <Setter Property="Height" Value="8" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="ProgressBar.install.paused">
+    <Setter Property="Foreground" Value="{StaticResource Warning}" />
+  </Style>
+
   <!-- Pagination. -->
   <Style Selector="Button.page">
     <Setter Property="MinWidth" Value="40" />

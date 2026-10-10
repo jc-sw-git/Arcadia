@@ -16,4 +16,8 @@ public sealed class GameLaunchService(IEnumerable<ILauncherClient> clients)
         var client = _clients.FirstOrDefault(c => c.LauncherId == game.LauncherId) ?? _fallback;
         return client.StartAsync(game, progress, cancellationToken);
     }
+
+    /// <summary>Hands an uninstalled game to its launcher's install dialog.</summary>
+    /// <returns>False if Arcadia has no way to install the game (demo data, unsupported launcher).</returns>
+    public static bool Install(Game game) => game.Install is { } target && DirectLauncherClient.Start(target);
 }

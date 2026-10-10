@@ -60,6 +60,21 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
                 continue;
             }
 
+            // Roughly a third of a library is owned but not installed.
+            if (random.NextDouble() < 0.3)
+            {
+                games.Add(new Game
+                {
+                    Id = $"demo-{games.Count}",
+                    LauncherId = launcher.Id,
+                    Title = title,
+                    Launch = new LaunchTarget.None(),
+                    IsInstalled = false,
+                    Install = new LaunchTarget.None(),
+                });
+                continue;
+            }
+
             var installedDaysAgo = random.Next(1, 1100);
             var neverPlayed = random.NextDouble() < 0.15;
             var playedDaysAgo = neverPlayed ? (int?)null : random.Next(0, Math.Min(installedDaysAgo, 420));

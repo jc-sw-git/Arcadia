@@ -20,6 +20,8 @@ public partial class App : Application
 {
     /// <summary>How often SISR and its dependencies are checked.</summary>
     private static readonly TimeSpan ControllerSupportInterval = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan InstallCheckInterval = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan InstallProgressInterval = TimeSpan.FromSeconds(2);
 
     private IGamepadSource? _gamepad;
 
@@ -50,6 +52,7 @@ public partial class App : Application
                 new LibraryService(scanners),
                 GameLaunchService.CreateDefault(time),
                 controllerSupport,
+                [new EpicInstallMonitor()],
                 time);
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
@@ -89,6 +92,13 @@ public partial class App : Application
 
             var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await controllerSupport.TickAsync());
             monitoring.Start();
+
+            // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
+            // watch, rescan until the games it handed over are installed.
+            var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await viewModel.PollInstallsAsync());
+            installProgress.Start();
+            var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await viewModel.CheckPendingInstallsAsync());
+            installs.Start();
             _ = Task.Run(SisrHost.RemoveLegacyCopy).ContinueWith(
                 _ => controllerSupport.TickAsync(),
                 TaskScheduler.FromCurrentSynchronizationContext());
@@ -97,6 +107,8 @@ public partial class App : Application
             {
                 clock.Stop();
                 monitoring.Stop();
+                installs.Stop();
+                installProgress.Stop();
                 _gamepad.Dispose();
 
                 // SISR belongs to Arcadia: it goes when Arcadia goes. Run off the UI thread to avoid a deadlock.

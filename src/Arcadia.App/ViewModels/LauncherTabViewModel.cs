@@ -19,7 +19,10 @@ public partial class LauncherTabViewModel : ViewModelBase
 
     public LauncherInfo Launcher { get; }
 
-    public IReadOnlyList<Game> Games { get; }
+    /// <summary>Replaced when the library is rescanned, e.g. after an installation.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Count))]
+    public partial IReadOnlyList<Game> Games { get; set; }
 
     public string Name => Launcher.DisplayName;
 

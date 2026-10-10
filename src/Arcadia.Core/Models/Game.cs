@@ -13,6 +13,15 @@ public sealed record Game
 
     public required LaunchTarget Launch { get; init; }
 
+    /// <summary>
+    /// False for games the user owns but has not installed. Install directory, size and install
+    /// date are then unknown, and the primary action installs the game instead of starting it.
+    /// </summary>
+    public bool IsInstalled { get; init; } = true;
+
+    /// <summary>How to ask the launcher to install the game; null if Arcadia can't trigger it.</summary>
+    public LaunchTarget? Install { get; init; }
+
     public string? InstallDirectory { get; init; }
 
     /// <summary>

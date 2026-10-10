@@ -33,7 +33,10 @@ public static class ArcadiaShot {
 "@
 [ArcadiaShot]::SetProcessDPIAware() | Out-Null
 
-$process = Start-Process -FilePath $exe -ArgumentList $Arguments -PassThru
+# Start-Process rejects an empty -ArgumentList; '' means the real libraries without demo data.
+$startArgs = @{ FilePath = $exe; PassThru = $true }
+if ($Arguments) { $startArgs.ArgumentList = $Arguments }
+$process = Start-Process @startArgs
 Start-Sleep -Milliseconds $WaitMs
 $process.Refresh()
 $handle = $process.MainWindowHandle

@@ -1,4 +1,5 @@
 using Arcadia.App.Services;
+using Arcadia.Core.Launchers;
 using Arcadia.Core.Models;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -33,9 +34,70 @@ public partial class GameTileViewModel : ViewModelBase
 
     public IBrush AccentBrush { get; }
 
-    public bool UpdateAvailable => Game.UpdateAvailable;
+    public bool IsInstalled => Game.IsInstalled;
 
-    public string PrimaryActionText => Game.UpdateAvailable ? "Update starten" : "Spielen";
+    public bool UpdateAvailable => Game.IsInstalled && Game.UpdateAvailable && InstallState is null;
+
+    public string PrimaryActionText => InstallState?.Phase == InstallPhase.Uninstalling ? "Wird deinstalliert …"
+        : InstallState is not null ? "Wird installiert …"
+        : !Game.IsInstalled ? "Installieren"
+        : Game.UpdateAvailable ? "Update starten"
+        : "Spielen";
+
+    /// <summary>The running installation of this game, or null.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsInstallActive), nameof(UpdateAvailable), nameof(ShowInstallBadge), nameof(CanActivate), nameof(PrimaryActionText),
+        nameof(InstallPercent), nameof(IsInstallIndeterminate), nameof(IsInstallPaused), nameof(IsInstallSpinning),
+        nameof(InstallStatusText), nameof(InstallShortText), nameof(ShowLauncherControlsHint))]
+    public partial InstallProgress? InstallState { get; set; }
+
+    public bool IsInstallActive => InstallState is not null;
+
+    /// <summary>Pausing and cancelling happen in the launcher; an uninstall can't be paused.</summary>
+    public bool ShowLauncherControlsHint => InstallState is { Phase: not InstallPhase.Uninstalling };
+
+    /// <summary>The "can be installed" badge; replaced by the progress while an installation runs.</summary>
+    public bool ShowInstallBadge => !Game.IsInstalled && InstallState is null;
+
+    /// <summary>False while an installation runs, so it can't be requested twice.</summary>
+    public bool CanActivate => InstallState is null;
+
+    public double InstallPercent => (InstallState?.Fraction ?? 0) * 100;
+
+    public bool IsInstallIndeterminate => InstallState is { } state
+        && (state.Fraction is null || state.Phase is InstallPhase.AwaitingConfirmation or InstallPhase.Queued or InstallPhase.Finishing or InstallPhase.Uninstalling);
+
+    public bool IsInstallPaused => InstallState?.Phase == InstallPhase.Paused;
+
+    public bool IsInstallSpinning => InstallState is not null && !IsInstallPaused;
+
+    public string InstallStatusText => InstallState switch
+    {
+        null => string.Empty,
+        { Phase: InstallPhase.AwaitingConfirmation } => $"Bitte in {LauncherName} bestätigen",
+        { Phase: InstallPhase.Queued, QueuePosition: { } position } => $"In der Warteschlange · Platz {position}",
+        { Phase: InstallPhase.Queued } => "In der Warteschlange",
+        { Phase: InstallPhase.Paused, Fraction: { } f } => $"Pausiert · {Formatting.Percent(f)}",
+        { Phase: InstallPhase.Paused } => "Pausiert",
+        { Phase: InstallPhase.Finishing } => "Wird abgeschlossen …",
+        { Phase: InstallPhase.Uninstalling } => "Wird deinstalliert …",
+        { Fraction: { } f } => $"Wird installiert · {Formatting.Percent(f)}",
+        _ => "Wird installiert …",
+    };
+
+    /// <summary>Fits the badge on a cover.</summary>
+    public string InstallShortText => InstallState switch
+    {
+        null => string.Empty,
+        { Phase: InstallPhase.AwaitingConfirmation } => "Bestätigen",
+        { Phase: InstallPhase.Queued, QueuePosition: { } position } => $"Wartet · {position}",
+        { Phase: InstallPhase.Queued } => "Wartet",
+        { Phase: InstallPhase.Paused } => "Pausiert",
+        { Phase: InstallPhase.Finishing } => "Fast fertig",
+        { Phase: InstallPhase.Uninstalling } => "Entfernen",
+        { Fraction: { } f } => Formatting.Percent(f),
+        _ => "Lädt",
+    };
 
     public string LauncherName { get; }
 
@@ -49,7 +111,7 @@ public partial class GameTileViewModel : ViewModelBase
 
     public string SizeText { get; }
 
-    public string LocationText => Game.InstallDirectory ?? "–";
+    public string LocationText => Game.IsInstalled ? Game.InstallDirectory ?? "–" : "Nicht installiert";
 
     [ObservableProperty]
     public partial bool IsFocused { get; set; }

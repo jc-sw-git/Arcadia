@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Arcadia.App.ViewModels"
         x:Class="Arcadia.App.Views.MainWindow"
@@ -129,6 +129,14 @@
             <Panel Background="{Binding CoverBrush}">
               <TextBlock Text="{Binding Monogram}" FontSize="140" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Opacity="0.55"
                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,20,0" />
+              <Border Classes="shade" CornerRadius="0" IsVisible="{Binding !IsInstalled}" />
+              <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" CornerRadius="16" Height="32" Padding="10,0,14,0"
+                      HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Path Data="M7 17a4 4 0 0 1-.6-7.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17 16.9M12 11v9M9 17l3 3 3-3" Stroke="{StaticResource TextSoft}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
+                  <TextBlock Text="Nicht installiert" FontSize="14" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
               <Border IsVisible="{Binding UpdateAvailable}" Background="{StaticResource Accent}" CornerRadius="16" Height="32" Padding="10,0,14,0"
                       HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16">
                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -139,7 +147,7 @@
             </Panel>
             <DockPanel Grid.Row="1" Margin="24,22,24,24">
               <StackPanel DockPanel.Dock="Bottom" Spacing="10">
-                <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}">
+                <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
                   <StackPanel Orientation="Horizontal" Spacing="12">
                     <Border Classes="glyph round dark"><TextBlock Text="A" /></Border>
                     <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
@@ -148,9 +156,23 @@
                 <TextBlock IsVisible="{Binding UpdateAvailable}" HorizontalAlignment="Center" FontSize="14" Foreground="{StaticResource TextMuted}">
                   <Run Text="Das Update wird in " /><Run Text="{Binding LauncherName}" /><Run Text=" gestartet" />
                 </TextBlock>
+                <TextBlock IsVisible="{Binding ShowInstallBadge}" HorizontalAlignment="Center" FontSize="14" Foreground="{StaticResource TextMuted}">
+                  <Run Text="Die Installation wird in " /><Run Text="{Binding LauncherName}" /><Run Text=" geöffnet" />
+                </TextBlock>
+                <TextBlock IsVisible="{Binding ShowLauncherControlsHint}" HorizontalAlignment="Center" FontSize="14" Foreground="{StaticResource TextMuted}">
+                  <Run Text="Pausieren und Abbrechen in " /><Run Text="{Binding LauncherName}" />
+                </TextBlock>
               </StackPanel>
               <StackPanel Spacing="20">
                 <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="ExtraBold" TextWrapping="Wrap" />
+                <StackPanel Spacing="10" IsVisible="{Binding IsInstallActive}">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                    <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding InstallStatusText}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                  </StackPanel>
+                  <ProgressBar Classes="install large" Classes.paused="{Binding IsInstallPaused}" Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}" />
+                </StackPanel>
                 <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="18" ColumnSpacing="16">
                   <StackPanel Spacing="3">
                     <TextBlock Classes="label" Text="ZULETZT GESPIELT" />
@@ -206,15 +228,31 @@
                   <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Command="{Binding FocusCommand}"
                           Background="{Binding CoverBrush}" Height="215" ToolTip.Tip="{Binding Title}">
                     <Panel>
+                      <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
                       <Grid RowDefinitions="*,Auto" Margin="12">
-                        <TextBlock Text="{Binding Monogram}" FontSize="56" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" />
+                        <TextBlock Text="{Binding Monogram}" FontSize="56" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Classes.dim="{Binding !IsInstalled}" />
                         <TextBlock Grid.Row="1" Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
                                    TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
                       </Grid>
+                      <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Nicht installiert – A installiert">
+                        <Path Data="M7 17a4 4 0 0 1-.6-7.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17 16.9M12 11v9M9 17l3 3 3-3" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
+                      </Border>
                       <Border IsVisible="{Binding UpdateAvailable}" Width="30" Height="30" CornerRadius="15" Background="{StaticResource Accent}"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Update verfügbar">
                         <Path Data="M12 4v12M6 10l6 6 6-6M5 20h14" Stroke="{StaticResource OnAccent}" StrokeThickness="2.8" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
                       </Border>
+                      <Border Classes="installBadge" IsVisible="{Binding IsInstallActive}" Height="30" CornerRadius="15" Padding="8,0,11,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                          <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Border>
+                      <ProgressBar Classes="install" Classes.paused="{Binding IsInstallPaused}" IsVisible="{Binding IsInstallActive}"
+                                   Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}"
+                                   VerticalAlignment="Bottom" Margin="0" />
                     </Panel>
                   </Button>
                 </DataTemplate>

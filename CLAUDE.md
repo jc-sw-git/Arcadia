@@ -107,7 +107,7 @@ install directory within 30 s.
 Owned but uninstalled games come from `Data\Catalog\catcache.bin` (Base64 JSON, refreshed by the
 launcher, no login needed). Games = category `games` without `addons`/`digitaldownloads` and with
 an empty `mainGameItem.id` (DLC/season passes name their game there): 331 on the owner's PC vs.
-333 in the Epic library (difference not yet explained). The cache is **ASCII-only** — every other
+333 in the Epic library — the difference is Unreal Engine (one tile for all `engines` versions) and Unreal Editor for Fortnite (`addons/launchable`), which Epic shows but which are no games. Epic's own library list is cached in `webcache_*/IndexedDB/https_launcher.store.epicgames.com_0.indexeddb.blob` (V8-serialized, 431 apps incl. DLC). The cache is **ASCII-only** — every other
 character is `?` ("Batman? Arkham", "K?ln"); `EpicCatalog.RepairTitle` drops trademark `?`s,
 umlauts stay broken until metadata providers (#43) supply titles. Install: `…?action=install`.
 `EpicInstallMonitor` (verified 2026-10-10 with real installs): queue order from

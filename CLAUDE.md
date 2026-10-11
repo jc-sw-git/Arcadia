@@ -24,12 +24,24 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
 ```
 
 - .NET 10 SDK. `Directory.Build.props` sets `TreatWarningsAsErrors` — keep the build warning-free.
-- A running Arcadia locks `bin/` → close it before building: `Get-Process Arcadia.App | % { $_.CloseMainWindow() }`
+- A running Arcadia locks `bin/` → close it before building: `Get-Process Arcadia | % { $_.CloseMainWindow() }`
   (CloseMainWindow, not Stop-Process: Arcadia must shut SISR down cleanly).
 - Logs: `%LOCALAPPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, SISR start/stop),
   `sisr.log` (SISR's own log, overwritten per start). Settings: `%APPDATA%\Arcadia\settings.json`.
 - Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log:
   `Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} | ? ProviderName -match '.NET Runtime'`.
+
+## Releases
+
+- Windows x64 only for now. Installer and self-update with **Velopack**: `tools/release/Pack.ps1 -Version x.y.z`
+  publishes self-contained and runs `vpk pack` → `artifacts/releases/Arcadia-win-Setup.exe` + update feed.
+  Installs without admin rights to `%LOCALAPPDATA%\Arcadia\current\Arcadia.exe` (the logs folder next to it
+  survives updates). The `Velopack` package and the `vpk` tool (`.config/dotnet-tools.json`) share one version.
+- `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Uninstalling asks (20 s, default
+  no — Velopack kills the hook after 30 s) whether SISR, VIIPER and usbip-win2 go too (`ControllerSupportRemoval`).
+- Versioning (owner's rule): SemVer, 0.x until the first full release 1.0. Major may break; minor adds only
+  non-breaking features; patch only fixes bugs — no features, no intended behaviour change (security aside).
+  This matters because third-party plugins are planned.
 
 ## Verifying UI changes
 

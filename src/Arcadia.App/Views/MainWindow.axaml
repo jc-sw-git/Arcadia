@@ -4,6 +4,7 @@
         x:Class="Arcadia.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Arcadia"
+        Icon="/Assets/arcadia.ico"
         Width="1600" Height="900"
         MinWidth="960" MinHeight="540"
         WindowStartupLocation="CenterScreen"

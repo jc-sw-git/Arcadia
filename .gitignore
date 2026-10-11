@@ -25,3 +25,6 @@ Thumbs.db
 
 # Logs (e.g. VIIPER writes viiper.log into its working directory)
 *.log
+
+# Release builds (tools/release/Pack.ps1)
+/artifacts

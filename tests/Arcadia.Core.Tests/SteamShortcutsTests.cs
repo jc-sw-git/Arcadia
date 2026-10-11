@@ -48,6 +48,24 @@ public class SteamShortcutsTests : IDisposable
     }
 
     [Fact]
+    public void Remove_drops_matching_entries_and_renumbers_the_rest()
+    {
+        var path = Path.Combine(_dir, "config", "shortcuts.vdf");
+        var sisr = Path.Combine(_dir, "SISR", "SISR.exe");
+
+        SteamShortcuts.Add(path, "SISR Marker", sisr);
+        SteamShortcuts.Add(path, "Other", Path.Combine(_dir, "other.exe"));
+        SteamShortcuts.Add(path, "SISR Marker 2", sisr.ToUpperInvariant());
+
+        Assert.Equal(2, SteamShortcuts.RemoveByExecutable(path, sisr));
+
+        Assert.Equal(["Other"], SteamShortcuts.Read(path).Select(s => s.Name));
+        var keys = BinaryVdf.Parse(File.ReadAllBytes(path)).GetMap("shortcuts")!.Select(e => e.Key);
+        Assert.Equal(["0"], keys);
+        Assert.Equal(0, SteamShortcuts.RemoveByExecutable(path, sisr));
+    }
+
+    [Fact]
     public void Executable_lookup_ignores_quotes_slashes_and_case()
     {
         var shortcut = new SteamShortcut(1, "X", "C:/Games/Arcadia/ARCADIA.exe", string.Empty);

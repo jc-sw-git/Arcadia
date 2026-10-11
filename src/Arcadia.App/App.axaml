@@ -5,6 +5,6 @@
 
   <Application.Styles>
     <FluentTheme />
-    <StyleInclude Source="avares://Arcadia.App/Theme/Theme.axaml" />
+    <StyleInclude Source="avares://Arcadia/Theme/Theme.axaml" />
   </Application.Styles>
 </Application>

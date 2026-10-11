@@ -10,11 +10,11 @@
 
 .EXAMPLE
     ./tools/dev/Trace-Foreground.ps1
-    Expected after switching off: "Arcadia.App -> explorer -> Arcadia.App".
+    Expected after switching off: "Arcadia -> explorer -> Arcadia".
 #>
 param([int] $TraceMs = 4000)
 
-$exe = Join-Path $PSScriptRoot '..\..\src\Arcadia.App\bin\Debug\net10.0\Arcadia.App.exe' | Resolve-Path
+$exe = Join-Path $PSScriptRoot '..\..\src\Arcadia.App\bin\Debug\net10.0\Arcadia.exe' | Resolve-Path
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type @"
 using System;

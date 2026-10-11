@@ -10,7 +10,7 @@ Unit tests don't cover the UI, input or SISR. Check those in the running app.
 ## 1. Build cleanly
 
 ```powershell
-Get-Process Arcadia.App -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null }
+Get-Process Arcadia -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null }
 Start-Sleep -Seconds 8   # let Arcadia stop SISR
 dotnet build Arcadia.slnx -v q -nologo
 dotnet test Arcadia.slnx --no-build -nologo
@@ -38,7 +38,7 @@ Then read the PNG. Keys: arrows, Enter, Esc, Q/E (tabs), PageUp/PageDown (pages)
 ## 4. Specialised checks
 
 - **Foreground / Steam Controller Support toggle:** `./tools/dev/Trace-Foreground.ps1`
-  (toggles the first settings item; expected when switching off: `Arcadia.App -> explorer -> Arcadia.App`).
+  (toggles the first settings item; expected when switching off: `Arcadia -> explorer -> Arcadia`).
 - **Is the controller emulated?** `./tools/dev/Probe-XInput.ps1` (slot 0 connected while SISR runs) and
   `Invoke-RestMethod http://127.0.0.1:47640/api/v1/devices`.
 - **Steam shortcuts:** `./tools/dev/Read-SteamShortcuts.ps1` (read-only).

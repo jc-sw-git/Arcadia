@@ -22,6 +22,30 @@ public static class UsbipDriver
 
     public static Version? InstalledVersion()
     {
+        foreach (var (displayVersion, _) in UninstallEntries())
+        {
+            if (Version.TryParse(displayVersion, out var version))
+            {
+                return version;
+            }
+        }
+
+        // Fallback: the version of the loaded driver file, wherever the driver store put it.
+        if (DriverFile() is { } driver && FileVersionInfo.GetVersionInfo(driver).FileVersion is { } fileVersion
+            && Version.TryParse(fileVersion.Split(' ')[0], out var parsed))
+        {
+            return parsed;
+        }
+
+        return null;
+    }
+
+    /// <summary>The command of usbip-win2's own uninstaller, or null if it isn't installed.</summary>
+    public static string? UninstallCommand() =>
+        UninstallEntries().Select(e => e.UninstallString).FirstOrDefault(c => !string.IsNullOrWhiteSpace(c));
+
+    private static IEnumerable<(string? DisplayVersion, string? UninstallString)> UninstallEntries()
+    {
         foreach (var root in new[] { @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall" })
         {
             using var uninstall = Registry.LocalMachine.OpenSubKey(root);
@@ -35,22 +59,12 @@ public static class UsbipDriver
                 // The display name changed between releases ("USBip version 0.9.7.7", "USBip 0.9.8.1").
                 using var entry = uninstall.OpenSubKey(name);
                 if (entry?.GetValue("DisplayName") is string display
-                    && display.StartsWith("USBip", StringComparison.OrdinalIgnoreCase)
-                    && Version.TryParse(entry.GetValue("DisplayVersion") as string, out var version))
+                    && display.StartsWith("USBip", StringComparison.OrdinalIgnoreCase))
                 {
-                    return version;
+                    yield return (entry.GetValue("DisplayVersion") as string, entry.GetValue("UninstallString") as string);
                 }
             }
         }
-
-        // Fallback: the version of the loaded driver file, wherever the driver store put it.
-        if (DriverFile() is { } driver && FileVersionInfo.GetVersionInfo(driver).FileVersion is { } fileVersion
-            && Version.TryParse(fileVersion.Split(' ')[0], out var parsed))
-        {
-            return parsed;
-        }
-
-        return null;
     }
 
     private static string? DriverFile()

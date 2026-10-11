@@ -75,6 +75,8 @@ findings become `type:tech-debt` issues at the start of the next milestone.
 - **Readable:** names say what things are; methods do one thing; comments explain *why*, not *what*.
   A developer new to the code understands the change from the diff and `CLAUDE.md`.
 - **Modular:** launcher-specific code stays in its launcher folder; UI and Core don't special-case launchers.
+- **Themeable:** no colour, brush or shadow values in views or styles; they are resources in
+  `Theme/Theme.axaml`, so a theme (later possibly a plugin) can replace them all in one place.
 - **Verified for real:** UI, input, launcher and Steam Controller changes were run and looked at
   (`.claude/skills/arcadia-verify`); what was only checked mechanically is said so.
 - **Docs current:** `CLAUDE.md` / `docs/` updated when a fact, rule or workflow changed.

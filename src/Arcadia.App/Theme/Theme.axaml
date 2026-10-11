@@ -144,19 +144,19 @@
     </Setter>
   </Style>
   <Style Selector="Button.tile:pointerover /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="0 0 0 2 #5A6878" />
+    <Setter Property="BoxShadow" Value="{StaticResource HoverRing}" />
   </Style>
   <Style Selector="Button.tile.focused">
     <Setter Property="RenderTransform" Value="scale(1.07)" />
     <Setter Property="ZIndex" Value="2" />
   </Style>
   <Style Selector="Button.tile.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="0 0 0 3 #F2F5F8, 0 18 40 0 #A6000000" />
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRingLifted}" />
   </Style>
 
   <!-- Owned but not installed: the cover is shaded, the title stays readable. -->
   <Style Selector="Border.shade">
-    <Setter Property="Background" Value="#B80B0F14" />
+    <Setter Property="Background" Value="{StaticResource CoverShade}" />
     <Setter Property="CornerRadius" Value="8" />
     <Setter Property="IsHitTestVisible" Value="False" />
   </Style>
@@ -164,8 +164,8 @@
     <Setter Property="Opacity" Value="0.35" />
   </Style>
   <Style Selector="Border.installBadge">
-    <Setter Property="Background" Value="#1E2630" />
-    <Setter Property="BorderBrush" Value="#3A4552" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineStrong}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
 
@@ -175,7 +175,7 @@
     <Setter Property="MinHeight" Value="5" />
     <Setter Property="Height" Value="5" />
     <Setter Property="CornerRadius" Value="0,0,8,8" />
-    <Setter Property="Background" Value="#33FFFFFF" />
+    <Setter Property="Background" Value="{StaticResource ProgressTrack}" />
     <Setter Property="Foreground" Value="{StaticResource Accent}" />
   </Style>
   <Style Selector="ProgressBar.install.large">
@@ -251,8 +251,8 @@
     <Setter Property="FontWeight" Value="Bold" />
   </Style>
   <Style Selector="Button.size:disabled">
-    <Setter Property="Background" Value="#11161D" />
-    <Setter Property="Foreground" Value="#4A5563" />
+    <Setter Property="Background" Value="{StaticResource SurfaceDisabled}" />
+    <Setter Property="Foreground" Value="{StaticResource TextDisabled}" />
   </Style>
   <Style Selector="Button.segment:pointerover, Button.size:pointerover">
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
@@ -262,7 +262,7 @@
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
   </Style>
   <Style Selector="Button.segment.focused /template/ Border#Chrome, Button.size.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="0 0 0 3 #F2F5F8" />
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
   </Style>
 
   <!-- Settings rows and switches. -->
@@ -273,10 +273,10 @@
     <Setter Property="CornerRadius" Value="12" />
   </Style>
   <Style Selector="Button.settingRow:pointerover">
-    <Setter Property="Background" Value="#1A212B" />
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
   </Style>
   <Style Selector="Button.settingRow.focused /template/ Border#Chrome, Button.action.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="0 0 0 3 #F2F5F8" />
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
   </Style>
   <Style Selector="Button.action">
     <Setter Property="Height" Value="48" />

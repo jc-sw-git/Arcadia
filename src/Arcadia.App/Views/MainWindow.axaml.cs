@@ -137,14 +137,16 @@ public partial class MainWindow : Window
     /// </summary>
     private void BringFocusedSettingIntoView()
     {
-        var focused = SettingsScroller.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Classes.Contains("focused") && b.IsVisible);
-        if (focused is null)
+        // Settings items carry the "focused" class; the dialog's scroll viewer is their nearest one.
+        var focused = this.GetVisualDescendants().OfType<Button>()
+            .FirstOrDefault(b => b.Classes.Contains("focused") && b.IsEffectivelyVisible && b.DataContext is SettingsViewModel or SettingsItemViewModel);
+        if (focused?.FindAncestorOfType<ScrollViewer>() is not { } scroller)
         {
             return;
         }
 
         var section = focused.FindAncestorOfType<Border>() is { } border && border.Classes.Contains("settingsSection") ? border : null;
-        if (section is not null && section.Bounds.Height <= SettingsScroller.Viewport.Height)
+        if (section is not null && section.Bounds.Height <= scroller.Viewport.Height)
         {
             section.BringIntoView();
         }

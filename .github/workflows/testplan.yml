@@ -1,0 +1,18 @@
+name: Testplan
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  testplan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Closed issues have tests in the test plan
+        env:
+          # Passed via env, never interpolated into the script: the description is user input.
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: tools/ci/check-testplan.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"

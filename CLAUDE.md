@@ -59,9 +59,10 @@ The owner often tests manually at the same time — say before driving the app w
 
 ## Definition of Done
 
-A change (PR) is done when all of this holds. Every milestone ends with a review issue
-(e.g. #66) that checks the whole milestone again; this list keeps that review small. Larger
-findings become `type:tech-debt` issues at the start of the next milestone.
+A change (PR) is done when all of this holds. Every feature iteration ends with a code review
+issue (e.g. #66) that checks the whole milestone again, then a manual test on the release
+candidate; this list keeps both small. Larger review findings become `type:tech-debt` issues at
+the start of the next feature iteration. Process and test plan format: `docs/testplans/README.md`.
 
 - **Builds and tests:** `dotnet build` without warnings, `dotnet test` green, CI green on all platforms.
   New logic in Core/Launchers/Input/ControllerSupport comes with tests, error paths included.
@@ -80,6 +81,26 @@ findings become `type:tech-debt` issues at the start of the next milestone.
 - **Verified for real:** UI, input, launcher and Steam Controller changes were run and looked at
   (`.claude/skills/arcadia-verify`); what was only checked mechanically is said so.
 - **Docs current:** `CLAUDE.md` / `docs/` updated when a fact, rule or workflow changed.
+- **Test plan:** a PR that closes an issue adds that issue's manual tests to
+  `docs/testplans/iteration-<n>.md` (IDs `T<issue>-<n>`, each marked `E2E: ja/nein`) and records
+  the test runs done during implementation with their real environment. The `Testplan` CI check
+  blocks the merge otherwise.
+- **Performant:** no blocking work on the UI thread; code on a hot path (start, scan, library,
+  input, running in the background beside a game) stays within the budgets below, measured when touched.
+
+Budgets (Release build, owner's PC): start to usable library < 2 s with 1,000 games; gamepad
+input to visible focus move < 50 ms; idle CPU < 1 % with gamepad polling; < 400 MB RAM with
+5,000 games; a rescan never blocks the UI; no measurable cost to a running game.
+
+**When criteria conflict**, the higher one wins: 1. security and privacy, 2. robustness and data
+safety, 3. controller first, 4. performance, 5. readability and maintainability, 6. modularity and
+scalability. Performance beats readability only when a measurement breaks a budget. A conflict
+decided on purpose is named in the PR (and in the review issue).
+
+**Iterations:** feature iteration N (milestone "Iteration N": issues → code review → manual
+test → release), then acceptance iteration N (milestone "Abnahme Iteration N": every `E2E: ja`
+test case of N becomes an automated acceptance test in CI). Feature iteration N+1 starts only
+when acceptance iteration N is closed, so a change in N+1 that breaks a feature of N shows at once.
 
 ## Layout
 

@@ -56,7 +56,7 @@
               <Border.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
                   <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
-                  <GradientStop Offset="1" Color="#000B0F14" />
+                  <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
                 </LinearGradientBrush>
               </Border.Background>
               <Button Name="TabScrollLeft" Classes="plain" Width="40" Height="40" CornerRadius="20" HorizontalAlignment="Left"
@@ -68,7 +68,7 @@
               <Border.Background>
                 <LinearGradientBrush StartPoint="100%,0%" EndPoint="0%,0%">
                   <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
-                  <GradientStop Offset="1" Color="#000B0F14" />
+                  <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
                 </LinearGradientBrush>
               </Border.Background>
               <Button Name="TabScrollRight" Classes="plain" Width="40" Height="40" CornerRadius="20" HorizontalAlignment="Right"
@@ -326,16 +326,16 @@
 
       <!-- Toast -->
       <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding HasToast}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"
-              Padding="24,14" Margin="0,0,0,96" HorizontalAlignment="Center" VerticalAlignment="Bottom" BoxShadow="0 20 50 0 #8C000000">
+              Padding="24,14" Margin="0,0,0,96" HorizontalAlignment="Center" VerticalAlignment="Bottom" BoxShadow="{StaticResource ToastShadow}">
         <TextBlock Text="{Binding Toast}" FontSize="18" FontWeight="SemiBold" />
       </Border>
 
       <!-- "Ansicht" dialog -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsViewOptionsOpen}">
-        <Button Classes="plain" Background="#C705080C" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CloseViewOptionsCommand}" />
         <Border Width="820" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,48,56,36"
-                HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 40 100 0 #99000000">
+                HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
           <StackPanel Spacing="40" DataContext="{Binding ViewOptions}" x:DataType="vm:ViewOptionsViewModel">
             <StackPanel Spacing="8">
               <TextBlock Text="Ansicht" FontSize="34" FontWeight="ExtraBold" />
@@ -412,10 +412,10 @@
 
       <!-- Settings dialog -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsSettingsOpen}">
-        <Button Classes="plain" Background="#C705080C" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CloseSettingsCommand}" />
         <Border Width="1040" MaxHeight="1000" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,40,56,32"
-                HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 40 100 0 #99000000">
+                HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
           <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
           <StackPanel Spacing="32" DataContext="{Binding Settings}" x:DataType="vm:SettingsViewModel">
             <StackPanel Spacing="8">
@@ -451,7 +451,7 @@
                     </StackPanel>
                     <TextBlock IsVisible="{Binding IsBusy}" Text="{Binding BusyText}" FontSize="15" Foreground="{StaticResource AccentSoft}" TextWrapping="Wrap" />
                     <TextBlock IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding ErrorText}"
-                               FontSize="15" Foreground="#FF9A8F" TextWrapping="Wrap" />
+                               FontSize="15" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
 
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                       <StackPanel Spacing="2" VerticalAlignment="Center">
@@ -470,7 +470,7 @@
                       </ItemsControl.ItemsPanel>
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:HealthIssueViewModel">
-                          <Border Background="#1A212B" CornerRadius="12" Padding="16,12">
+                          <Border Background="{StaticResource SurfaceHover}" CornerRadius="12" Padding="16,12">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
                               <!-- No local Stroke: a local value would override the error style. -->
                               <Path Classes="issueIcon" Classes.error="{Binding IsError}" Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" StrokeThickness="2"
@@ -545,13 +545,13 @@
       <Setter Property="Fill" Value="{StaticResource TextFaint}" />
     </Style>
     <Style Selector="Ellipse.statusDot.active">
-      <Setter Property="Fill" Value="#6FD99A" />
+      <Setter Property="Fill" Value="{StaticResource Success}" />
     </Style>
     <Style Selector="Path.issueIcon">
       <Setter Property="Stroke" Value="{StaticResource Warning}" />
     </Style>
     <Style Selector="Path.issueIcon.error">
-      <Setter Property="Stroke" Value="#FF9A8F" />
+      <Setter Property="Stroke" Value="{StaticResource Danger}" />
     </Style>
     <Style Selector="TextBlock.bullet">
       <Setter Property="FontSize" Value="15" />

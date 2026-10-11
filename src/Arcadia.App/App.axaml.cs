@@ -51,7 +51,7 @@ public partial class App : Application
             {
                 Log = AppLog.Write,
             };
-            var updates = new ArcadiaUpdateService(time) { Log = AppLog.Write };
+            var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
             var viewModel = new MainViewModel(
                 new LibraryService(scanners),
                 GameLaunchService.CreateDefault(time),

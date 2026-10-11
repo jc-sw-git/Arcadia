@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace Arcadia.App.Views;
 
@@ -83,6 +84,10 @@ public partial class MainWindow : Window
             Services.AppLog.Write($"Taste: {e.Key} → {action}");
             _viewModel.Handle(action);
             e.Handled = true;
+            if (_viewModel.IsSettingsOpen)
+            {
+                Dispatcher.UIThread.Post(BringFocusedSettingIntoView, DispatcherPriority.Loaded);
+            }
         }
     }
 
@@ -123,6 +128,29 @@ public partial class MainWindow : Window
         else if (index > 0)
         {
             GameGrid.ContainerFromIndex(index)?.BringIntoView();
+        }
+    }
+
+    /// <summary>
+    /// Scrolls the settings to the item the controller focus is on. A whole section is shown when
+    /// it fits, so e.g. the changelog below "Jetzt aktualisieren" comes into view with it.
+    /// </summary>
+    private void BringFocusedSettingIntoView()
+    {
+        var focused = SettingsScroller.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Classes.Contains("focused") && b.IsVisible);
+        if (focused is null)
+        {
+            return;
+        }
+
+        var section = focused.FindAncestorOfType<Border>() is { } border && border.Classes.Contains("settingsSection") ? border : null;
+        if (section is not null && section.Bounds.Height <= SettingsScroller.Viewport.Height)
+        {
+            section.BringIntoView();
+        }
+        else
+        {
+            focused.BringIntoView();
         }
     }
 

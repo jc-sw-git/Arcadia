@@ -427,7 +427,7 @@
                 Command="{Binding CloseSettingsCommand}" />
         <Border Width="1040" MaxHeight="1000" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,40,56,32"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 40 100 0 #99000000">
-          <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
+          <ScrollViewer Name="SettingsScroller" VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
           <StackPanel Spacing="32" DataContext="{Binding Settings}" x:DataType="vm:SettingsViewModel">
             <StackPanel Spacing="8">
               <TextBlock Text="Einstellungen" FontSize="34" FontWeight="ExtraBold" />
@@ -519,18 +519,78 @@
 
             <StackPanel Spacing="14">
               <TextBlock Classes="label" Text="ÜBER ARCADIA" FontSize="14" />
-              <Border Background="{StaticResource SurfaceSunken}" CornerRadius="16" Padding="28,20">
-                <StackPanel Spacing="12">
+              <Border Classes="settingsSection" Background="{StaticResource SurfaceSunken}" CornerRadius="16" Padding="28,20">
+                <StackPanel Spacing="16">
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                     <StackPanel Spacing="4" VerticalAlignment="Center">
                       <TextBlock Text="{Binding ArcadiaVersionText}" FontSize="20" FontWeight="Bold" />
                       <TextBlock Text="{Binding ArcadiaUpdateText}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
                     </StackPanel>
-                    <Button Grid.Column="1" Classes="plain action primaryAction" Classes.focused="{Binding ArcadiaUpdateItem.IsFocused}"
-                            IsVisible="{Binding HasArcadiaUpdate}" Command="{Binding ArcadiaUpdateCommand}" Content="Jetzt aktualisieren" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                      <Button Classes="plain action" Classes.focused="{Binding CheckUpdatesItem.IsFocused}"
+                              IsVisible="{Binding CanSearchForUpdates}" IsEnabled="{Binding IsCheckIdle}"
+                              Command="{Binding CheckUpdatesCommand}" Content="{Binding CheckButtonText}" />
+                      <Button Classes="plain action primaryAction" Classes.focused="{Binding ArcadiaUpdateItem.IsFocused}"
+                              IsVisible="{Binding HasArcadiaUpdate}" IsEnabled="{Binding CanInstallArcadiaUpdate}"
+                              Command="{Binding ArcadiaUpdateCommand}" Content="Jetzt aktualisieren" />
+                    </StackPanel>
                   </Grid>
+
+                  <!-- Why "Jetzt aktualisieren" is greyed out. -->
+                  <Border IsVisible="{Binding IsUpdateBlocked}" Background="#1A212B" CornerRadius="12" Padding="16,12">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                      <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" Stroke="{StaticResource Warning}" StrokeThickness="2"
+                            StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="None" VerticalAlignment="Top" />
+                      <TextBlock Grid.Column="1" Text="{Binding BlockedText}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
+                    </Grid>
+                  </Border>
+
                   <TextBlock IsVisible="{Binding ArcadiaUpdateError, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding ArcadiaUpdateError}"
                              FontSize="15" Foreground="#FF9A8F" TextWrapping="Wrap" />
+
+                  <!-- Changelog: only the versions between the running and the newest one. -->
+                  <StackPanel Spacing="10" IsVisible="{Binding HasChangelog}">
+                    <TextBlock Classes="label" Text="WAS IST NEU" />
+                    <Border Background="#141B23" BorderBrush="#243040" BorderThickness="1" CornerRadius="14" MaxHeight="320">
+                      <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="22,18,22,18">
+                        <ItemsControl ItemsSource="{Binding Changelog}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <StackPanel Spacing="20" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ChangelogEntryViewModel">
+                              <StackPanel Spacing="10">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                  <Border Background="#1F3A5C" CornerRadius="10" Padding="10,3">
+                                    <TextBlock Text="{Binding VersionText}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentSoft}" />
+                                  </Border>
+                                  <TextBlock Text="{Binding DateText}" FontSize="14" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <ItemsControl ItemsSource="{Binding Changes}">
+                                  <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                      <StackPanel Spacing="6" />
+                                    </ItemsPanelTemplate>
+                                  </ItemsControl.ItemsPanel>
+                                  <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="4,0,0,0">
+                                        <Ellipse Width="6" Height="6" Fill="{StaticResource Accent}" VerticalAlignment="Top" Margin="0,8,0,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding}" FontSize="15" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
+                                      </Grid>
+                                    </DataTemplate>
+                                  </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                    </Border>
+                  </StackPanel>
+
                   <TextBlock FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap" Text="{Binding SourceText}" />
                 </StackPanel>
               </Border>

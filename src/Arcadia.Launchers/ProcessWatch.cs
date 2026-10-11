@@ -21,17 +21,18 @@ public static class ProcessWatch
     /// True if any process runs an executable inside <paramref name="directory"/>. Matching on the
     /// directory instead of the exe name also catches games that start through a bootstrapper.
     /// </summary>
-    public static bool AnyRunningFrom(string directory) => AnyRunningFrom([directory]);
+    public static bool AnyRunningFrom(string directory) => FirstRunningFrom([directory]) is not null;
 
-    /// <summary>True if any process runs an executable inside one of <paramref name="directories"/>.</summary>
-    public static bool AnyRunningFrom(IEnumerable<string> directories)
+
+    /// <summary>The first of <paramref name="directories"/> that a running process was started from, or null.</summary>
+    public static string? FirstRunningFrom(IEnumerable<string> directories)
     {
         var roots = directories
-            .Select(d => Path.TrimEndingDirectorySeparator(Path.GetFullPath(d)) + Path.DirectorySeparatorChar)
+            .Select(d => (Directory: d, Root: Path.TrimEndingDirectorySeparator(Path.GetFullPath(d)) + Path.DirectorySeparatorChar))
             .ToList();
         if (roots.Count == 0)
         {
-            return false;
+            return null;
         }
 
         foreach (var process in Process.GetProcesses())
@@ -49,14 +50,14 @@ public static class ProcessWatch
                     continue;
                 }
 
-                if (path is not null && roots.Exists(root => path.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
+                if (path is not null && roots.Find(r => path.StartsWith(r.Root, StringComparison.OrdinalIgnoreCase)) is { Directory: { } match })
                 {
-                    return true;
+                    return match;
                 }
             }
         }
 
-        return false;
+        return null;
     }
 
     /// <summary>Polls <paramref name="condition"/> until it holds or the timeout expires.</summary>

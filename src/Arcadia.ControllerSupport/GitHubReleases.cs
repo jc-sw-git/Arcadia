@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text.Json.Serialization;
+using Arcadia.Core.Updates;
 
 namespace Arcadia.ControllerSupport;
 
@@ -38,6 +39,22 @@ public sealed class GitHubReleaseClient(HttpClient http)
         return new Release(dto.TagName, ParseVersion(dto.TagName), assets);
     }
 
+    /// <summary>The most recent published releases with their notes, drafts excluded.</summary>
+    public async Task<IReadOnlyList<PublishedRelease>> GetReleasesAsync(string owner, string repository, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{owner}/{repository}/releases?per_page=50");
+        request.Headers.UserAgent.ParseAdd("Arcadia");
+        request.Headers.Accept.ParseAdd("application/vnd.github+json");
+        using var response = await http.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var releases = await response.Content.ReadFromJsonAsync<List<ReleaseDto>>(cancellationToken) ?? [];
+        return releases
+            .Where(r => r.TagName is not null && !r.Draft)
+            .Select(r => new PublishedRelease(r.TagName!, r.Body ?? string.Empty, r.PublishedAt, r.Prerelease))
+            .ToList();
+    }
+
     /// <summary>Parses tags like <c>v0.6.1</c> or <c>v.0.9.8.1</c>.</summary>
     public static Version? ParseVersion(string? tag)
     {
@@ -66,6 +83,18 @@ public sealed class GitHubReleaseClient(HttpClient http)
 
         [JsonPropertyName("assets")]
         public List<AssetDto>? Assets { get; set; }
+
+        [JsonPropertyName("body")]
+        public string? Body { get; set; }
+
+        [JsonPropertyName("published_at")]
+        public DateTimeOffset? PublishedAt { get; set; }
+
+        [JsonPropertyName("prerelease")]
+        public bool Prerelease { get; set; }
+
+        [JsonPropertyName("draft")]
+        public bool Draft { get; set; }
     }
 
     private sealed class AssetDto

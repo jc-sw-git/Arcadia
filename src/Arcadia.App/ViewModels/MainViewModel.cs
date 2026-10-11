@@ -440,7 +440,8 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenSettings() => Settings = new SettingsViewModel(_controllerSupport, _updates, () => _updates.InstallAsync(IsAnyGameRunning));
+    private void OpenSettings() => Settings = new SettingsViewModel(
+        _controllerSupport, _updates, () => _updates.InstallAsync(() => RunningGameTitle() is not null), RunningGameTitle);
 
     [RelayCommand]
     private void CloseSettings() => Settings = null;
@@ -471,12 +472,15 @@ public partial class MainViewModel : ViewModelBase
         ArcadiaUpdateText = _updates.AvailableVersion is { } version ? $"Arcadia {version} verfügbar" : string.Empty;
     }
 
-    /// <summary>True while a game from the library runs; an update then waits until Arcadia closes.</summary>
-    private bool IsAnyGameRunning() => ProcessWatch.AnyRunningFrom(
-        Tabs.SelectMany(t => t.Games)
-            .Select(g => g.InstallDirectory)
-            .OfType<string>()
-            .Where(Directory.Exists));
+    /// <summary>The title of a library game that runs right now, or null; it holds back Arcadia's update.</summary>
+    private string? RunningGameTitle()
+    {
+        var games = Tabs.SelectMany(t => t.Games)
+            .Where(g => g.InstallDirectory is { } directory && Directory.Exists(directory))
+            .GroupBy(g => g.InstallDirectory!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Title, StringComparer.OrdinalIgnoreCase);
+        return ProcessWatch.FirstRunningFrom(games.Keys) is { } directory ? games[directory] : null;
+    }
 
     private void UpdateControllerSupportState()
     {

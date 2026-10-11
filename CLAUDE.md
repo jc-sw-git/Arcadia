@@ -40,10 +40,12 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
 - `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Uninstalling asks (20 s, default
   no — Velopack kills the hook after 30 s) whether SISR, VIIPER and usbip-win2 go too (`ControllerSupportRemoval`).
 - `ArcadiaUpdateService` checks GitHub Releases (stable only) every 6 h and on "Nach Updates suchen" in
-  Einstellungen → "Über Arcadia". "Jetzt aktualisieren" shows only with an update, is greyed out with a hint
-  while a library game runs, downloads, then Arcadia closes normally (SISR stops) and Velopack installs and
-  restarts it. "Was ist neu" lists the bullets of every release body between the running and the newest
-  version (`Changelog`). Push a tag `vX.Y.Z` to release (`release.yml`).
+  Einstellungen → "Über Arcadia". "Jetzt aktualisieren" shows only with an update; it downloads, Arcadia closes
+  and Velopack installs silently (no input needed) and restarts it. Updating while a game runs is fine: SISR
+  keeps running across the restart (the new Arcadia adopts it), pauses for running games are handed over with
+  `--sisr-paused-for <dir>`, and `--background` brings the window back behind the game instead of in front.
+  "Was ist neu" lists the bullets of every release body between the running and the newest version
+  (`Changelog`). Push a tag `vX.Y.Z` to release (`release.yml`).
 - Versioning (owner's rule): SemVer, 0.x until the first full release 1.0. Major may break; minor adds only
   non-breaking features; patch only fixes bugs — no features, no intended behaviour change (security aside).
   This matters because third-party plugins are planned.

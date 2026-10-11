@@ -440,8 +440,7 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenSettings() => Settings = new SettingsViewModel(
-        _controllerSupport, _updates, () => _updates.InstallAsync(() => RunningGameTitle() is not null), RunningGameTitle);
+    private void OpenSettings() => Settings = new SettingsViewModel(_controllerSupport, _updates, _updates.InstallAsync);
 
     [RelayCommand]
     private void CloseSettings() => Settings = null;
@@ -468,18 +467,8 @@ public partial class MainViewModel : ViewModelBase
 
     private void UpdateArcadiaUpdateState()
     {
-        HasArcadiaUpdate = _updates.AvailableVersion is not null && !_updates.InstallsOnExit;
+        HasArcadiaUpdate = _updates.AvailableVersion is not null && !_updates.IsRestartingForUpdate;
         ArcadiaUpdateText = _updates.AvailableVersion is { } version ? $"Arcadia {version} verfügbar" : string.Empty;
-    }
-
-    /// <summary>The title of a library game that runs right now, or null; it holds back Arcadia's update.</summary>
-    private string? RunningGameTitle()
-    {
-        var games = Tabs.SelectMany(t => t.Games)
-            .Where(g => g.InstallDirectory is { } directory && Directory.Exists(directory))
-            .GroupBy(g => g.InstallDirectory!, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First().Title, StringComparer.OrdinalIgnoreCase);
-        return ProcessWatch.FirstRunningFrom(games.Keys) is { } directory ? games[directory] : null;
     }
 
     private void UpdateControllerSupportState()

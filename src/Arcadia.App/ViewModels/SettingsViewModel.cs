@@ -4,7 +4,6 @@ using Arcadia.App.Services;
 using System.Globalization;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Updates;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -59,38 +58,23 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly SettingsItemViewModel _update;
     private readonly SettingsItemViewModel _arcadiaUpdate;
     private readonly SettingsItemViewModel _checkUpdates;
-    private readonly Func<string?> _runningGame;
-    private readonly DispatcherTimer _gameWatch;
     private int _focus;
 
-    /// <param name="runningGame">The title of a library game that runs right now, or null.</param>
-    public SettingsViewModel(ControllerSupportService support, ArcadiaUpdateService updates, Func<Task> installArcadiaUpdate, Func<string?> runningGame)
+    public SettingsViewModel(ControllerSupportService support, ArcadiaUpdateService updates, Func<Task> installArcadiaUpdate)
     {
-        _runningGame = runningGame;
         _checkUpdates = new SettingsItemViewModel(() => _ = updates.CheckNowAsync());
         CheckUpdatesCommand = new RelayCommand(() => _ = updates.CheckNowAsync());
         _support = support;
         _updates = updates;
         _toggle = new SettingsItemViewModel(Toggle);
         _update = new SettingsItemViewModel(() => _ = _support.InstallUpdateAsync());
-        _arcadiaUpdate = new SettingsItemViewModel(() =>
-        {
-            if (CanInstallArcadiaUpdate)
-            {
-                _ = installArcadiaUpdate();
-            }
-        });
+        _arcadiaUpdate = new SettingsItemViewModel(() => _ = installArcadiaUpdate());
         ToggleCommand = new RelayCommand(Toggle);
         UpdateCommand = new RelayCommand(() => _ = _support.InstallUpdateAsync());
         ArcadiaUpdateCommand = new RelayCommand(() => _ = installArcadiaUpdate());
         _support.Changed += OnSupportChanged;
         _updates.Changed += OnSupportChanged;
-
-        // A running game blocks the update button; follow it while the dialog is open.
-        _gameWatch = new DispatcherTimer(TimeSpan.FromSeconds(3), DispatcherPriority.Background, (_, _) => RefreshRunningGame());
-        _gameWatch.Start();
         Refresh();
-        RefreshRunningGame();
         _toggle.IsFocused = true;
     }
 
@@ -120,18 +104,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial string CheckButtonText { get; private set; } = "Nach Updates suchen";
 
-    /// <summary>The game that keeps "Jetzt aktualisieren" greyed out, if any.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanInstallArcadiaUpdate), nameof(IsUpdateBlocked))]
-    public partial string? RunningGame { get; private set; }
-
-    public bool CanInstallArcadiaUpdate => HasArcadiaUpdate && RunningGame is null;
-
-    public bool IsUpdateBlocked => HasArcadiaUpdate && RunningGame is not null;
-
-    public string BlockedText => RunningGame is { } game
-        ? $"Gerade nicht möglich: „{game}“ läuft. Beim Aktualisieren startet Arcadia neu und mit ihm der Steam Controller Support – beende erst das Spiel."
-        : string.Empty;
 
     public string ArcadiaVersionText => $"Arcadia {_updates.CurrentVersion}";
 
@@ -139,7 +111,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     /// <summary>"Jetzt aktualisieren" is offered (an update is available and not yet downloaded).</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanInstallArcadiaUpdate), nameof(IsUpdateBlocked))]
     public partial bool HasArcadiaUpdate { get; private set; }
 
     /// <summary>Update state below the version: available, downloading, waiting for exit, dev build.</summary>
@@ -221,7 +192,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     {
         _support.Changed -= OnSupportChanged;
         _updates.Changed -= OnSupportChanged;
-        _gameWatch.Stop();
     }
 
     private void Toggle()
@@ -266,15 +236,15 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         HasUpdate = _support.AvailableUpdate is not null;
         UpdateText = _support.AvailableUpdate is { } update ? $"Neue Version verfügbar: {update.Tag}" : string.Empty;
 
-        HasArcadiaUpdate = _updates.AvailableVersion is not null && _updates.Progress is null && !_updates.InstallsOnExit;
+        HasArcadiaUpdate = _updates.AvailableVersion is not null && _updates.Progress is null && !_updates.IsRestartingForUpdate;
         ArcadiaUpdateError = _updates.LastError;
-        IsCheckIdle = !_updates.IsChecking && _updates.Progress is null && !_updates.InstallsOnExit;
+        IsCheckIdle = !_updates.IsChecking && _updates.Progress is null && !_updates.IsRestartingForUpdate;
         CheckButtonText = _updates.IsChecking ? "Suche läuft …" : "Nach Updates suchen";
         ArcadiaUpdateText = _updates switch
         {
             { IsInstalled: false } => "Entwicklungs-Build – Updates gibt es nur für das installierte Arcadia.",
             { IsChecking: true } => "Suche nach Updates …",
-            { AvailableVersion: { } next, InstallsOnExit: true } => $"Version {next} ist geladen und wird beim Beenden von Arcadia installiert, weil ein Spiel gestartet wurde.",
+            { AvailableVersion: { } next, IsRestartingForUpdate: true } => $"Version {next} ist geladen – Arcadia startet neu …",
             { AvailableVersion: { } next, Progress: { } percent } => $"Version {next} wird geladen … {percent} %",
             { AvailableVersion: { } next } => $"Version {next} ist verfügbar.",
             { LastChecked: { } checkedAt } => $"Arcadia ist auf dem neuesten Stand. Zuletzt gesucht: {checkedAt.ToLocalTime():HH:mm} Uhr.",
@@ -317,24 +287,12 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             items.Add(_checkUpdates);
         }
 
-        if (CanInstallArcadiaUpdate)
+        if (HasArcadiaUpdate)
         {
             items.Add(_arcadiaUpdate);
         }
 
         return items;
-    }
-
-    private void RefreshRunningGame()
-    {
-        // Only worth scanning processes while there is an update to block.
-        var game = HasArcadiaUpdate ? _runningGame() : null;
-        if (game != RunningGame)
-        {
-            RunningGame = game;
-            OnPropertyChanged(nameof(BlockedText));
-            Refresh();
-        }
     }
 
     private void MoveFocus(int delta)

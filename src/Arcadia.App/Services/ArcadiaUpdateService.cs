@@ -30,6 +30,12 @@ public sealed class ArcadiaUpdateService(HttpClient http, TimeProvider time)
     /// <summary>Optional diagnostics sink (Arcadia's log file).</summary>
     public Action<string>? Log { get; set; }
 
+    /// <summary>Arguments for the Arcadia that Velopack starts after installing, asked for right before the restart.</summary>
+    public Func<string[]>? RestartArguments { get; set; }
+
+    /// <summary>Arcadia is closing to install an update; it comes right back, so SISR keeps running.</summary>
+    public bool IsRestartingForUpdate { get; private set; }
+
     public bool IsInstalled => _manager.IsInstalled;
 
     public string CurrentVersion => _manager.CurrentVersion?.ToString()
@@ -49,9 +55,6 @@ public sealed class ArcadiaUpdateService(HttpClient http, TimeProvider time)
     /// <summary>Download progress in percent while an update downloads.</summary>
     public int? Progress { get; private set; }
 
-    /// <summary>The update is downloaded and installs when Arcadia closes (a game started meanwhile).</summary>
-    public bool InstallsOnExit { get; private set; }
-
     public string? LastError { get; private set; }
 
     /// <summary>The background check; asks GitHub at most every few hours. Call it regularly.</summary>
@@ -63,7 +66,7 @@ public sealed class ArcadiaUpdateService(HttpClient http, TimeProvider time)
 
     private async Task CheckAsync(bool manual)
     {
-        if (!IsInstalled || IsChecking || Progress is not null || InstallsOnExit)
+        if (!IsInstalled || IsChecking || Progress is not null || IsRestartingForUpdate)
         {
             return;
         }
@@ -117,12 +120,13 @@ public sealed class ArcadiaUpdateService(HttpClient http, TimeProvider time)
     }
 
     /// <summary>
-    /// Downloads the available update and restarts Arcadia into it. If a game started while the
-    /// update downloaded, it installs when Arcadia closes instead, so the game keeps its controller.
+    /// Downloads the available update, closes Arcadia and lets Velopack install it silently and
+    /// start the new version. A running game is not affected: SISR keeps running, and the new
+    /// Arcadia starts behind the game (see <see cref="RestartArguments"/>).
     /// </summary>
-    public async Task InstallAsync(Func<bool> gameRunning)
+    public async Task InstallAsync()
     {
-        if (_update is not { } update || Progress is not null || InstallsOnExit)
+        if (_update is not { } update || Progress is not null || IsRestartingForUpdate)
         {
             return;
         }
@@ -138,16 +142,13 @@ public sealed class ArcadiaUpdateService(HttpClient http, TimeProvider time)
                 OnChanged();
             });
 
-            // Velopack's updater waits until Arcadia has exited, so closing normally (which also
-            // stops SISR cleanly) is enough; it then installs and, if wanted, restarts Arcadia.
-            var restart = !gameRunning();
-            _manager.WaitExitThenApplyUpdates(update.TargetFullRelease, silent: false, restart: restart);
-            InstallsOnExit = true;
-            Log?.Invoke($"Arcadia-Update {AvailableVersion} geladen, {(restart ? "Neustart" : "wird beim Beenden installiert")}");
-            if (restart)
-            {
-                RestartRequested?.Invoke(this, EventArgs.Empty);
-            }
+            // Velopack's updater waits until Arcadia has exited, installs without a window (nothing
+            // to answer, so the controller is never needed) and starts the new version.
+            var arguments = RestartArguments?.Invoke() ?? [];
+            _manager.WaitExitThenApplyUpdates(update.TargetFullRelease, silent: true, restart: true, restartArgs: arguments);
+            IsRestartingForUpdate = true;
+            Log?.Invoke($"Arcadia-Update {AvailableVersion} geladen, Neustart mit: {string.Join(' ', arguments)}");
+            RestartRequested?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

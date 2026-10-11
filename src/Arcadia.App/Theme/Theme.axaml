@@ -273,7 +273,7 @@
     <Setter Property="Background" Value="{StaticResource Accent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
   </Style>
-  <!-- Greyed out, e.g. "Jetzt aktualisieren" while a game runs. -->
+  <!-- Greyed out, e.g. "Nach Updates suchen" while a check runs. -->
   <Style Selector="Button.action:disabled, Button.action.primaryAction:disabled">
     <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />

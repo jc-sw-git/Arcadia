@@ -531,19 +531,10 @@
                               IsVisible="{Binding CanSearchForUpdates}" IsEnabled="{Binding IsCheckIdle}"
                               Command="{Binding CheckUpdatesCommand}" Content="{Binding CheckButtonText}" />
                       <Button Classes="plain action primaryAction" Classes.focused="{Binding ArcadiaUpdateItem.IsFocused}"
-                              IsVisible="{Binding HasArcadiaUpdate}" IsEnabled="{Binding CanInstallArcadiaUpdate}"
+                              IsVisible="{Binding HasArcadiaUpdate}"
                               Command="{Binding ArcadiaUpdateCommand}" Content="Jetzt aktualisieren" />
                     </StackPanel>
                   </Grid>
-
-                  <!-- Why "Jetzt aktualisieren" is greyed out. -->
-                  <Border IsVisible="{Binding IsUpdateBlocked}" Background="#1A212B" CornerRadius="12" Padding="16,12">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                      <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" Stroke="{StaticResource Warning}" StrokeThickness="2"
-                            StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="None" VerticalAlignment="Top" />
-                      <TextBlock Grid.Column="1" Text="{Binding BlockedText}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
-                    </Grid>
-                  </Border>
 
                   <TextBlock IsVisible="{Binding ArcadiaUpdateError, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding ArcadiaUpdateError}"
                              FontSize="15" Foreground="#FF9A8F" TextWrapping="Wrap" />

@@ -100,6 +100,20 @@ public sealed partial class ForegroundGuard(MainWindow window)
         }
     }
 
+    /// <summary>Puts the window at the bottom of the z-order without activating it.</summary>
+    public static void SendToBack(Window window)
+    {
+        if (OperatingSystem.IsWindows() && window.TryGetPlatformHandle() is { } handle)
+        {
+            const uint NoSize = 0x1, NoMove = 0x2, NoActivate = 0x10;
+            SetWindowPos(handle.Handle, new IntPtr(1) /* HWND_BOTTOM */, 0, 0, 0, 0, NoSize | NoMove | NoActivate);
+        }
+    }
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetWindowPos(IntPtr window, IntPtr insertAfter, int x, int y, int width, int height, uint flags);
+
     [LibraryImport("user32.dll")]
     private static partial IntPtr GetForegroundWindow();
 

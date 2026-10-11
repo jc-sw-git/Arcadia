@@ -39,6 +39,9 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
   survives updates). The `Velopack` package and the `vpk` tool (`.config/dotnet-tools.json`) share one version.
 - `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Uninstalling asks (20 s, default
   no — Velopack kills the hook after 30 s) whether SISR, VIIPER and usbip-win2 go too (`ControllerSupportRemoval`).
+- `ArcadiaUpdateService` checks GitHub Releases (stable only) every 6 h; "Jetzt aktualisieren" in Einstellungen →
+  "Über Arcadia" downloads, then Arcadia closes normally (SISR stops) and Velopack installs and restarts it.
+  While a library game runs it installs on exit instead. Push a tag `vX.Y.Z` to release (`release.yml`).
 - Versioning (owner's rule): SemVer, 0.x until the first full release 1.0. Major may break; minor adds only
   non-breaking features; patch only fixes bugs — no features, no intended behaviour change (security aside).
   This matters because third-party plugins are planned.

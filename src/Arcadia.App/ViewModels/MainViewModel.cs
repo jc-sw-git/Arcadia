@@ -45,22 +45,27 @@ public partial class MainViewModel : ViewModelBase
     private CancellationTokenSource? _toastTimer;
 
     private readonly ControllerSupportService _controllerSupport;
+    private readonly ArcadiaUpdateService _updates;
 
     public MainViewModel(
         LibraryService library,
         GameLaunchService launcher,
         ControllerSupportService controllerSupport,
+        ArcadiaUpdateService updates,
         IReadOnlyList<IInstallMonitor> installMonitors,
         TimeProvider time)
     {
         _library = library;
         _launcher = launcher;
         _controllerSupport = controllerSupport;
+        _updates = updates;
         _installMonitors = installMonitors;
         _time = time;
         _controllerSupport.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateControllerSupportState);
+        _updates.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateArcadiaUpdateState);
         UpdateClock();
         UpdateControllerSupportState();
+        UpdateArcadiaUpdateState();
     }
 
     [ObservableProperty]
@@ -78,6 +83,13 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial bool HasSisrUpdate { get; private set; }
+
+    /// <summary>A newer Arcadia is on GitHub; shown as an update symbol in the header.</summary>
+    [ObservableProperty]
+    public partial bool HasArcadiaUpdate { get; private set; }
+
+    [ObservableProperty]
+    public partial string ArcadiaUpdateText { get; private set; } = string.Empty;
 
     /// <summary>SISR is starting and the controller isn't emulated yet; shown as a spinner in the header.</summary>
     [ObservableProperty]
@@ -428,7 +440,7 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenSettings() => Settings = new SettingsViewModel(_controllerSupport);
+    private void OpenSettings() => Settings = new SettingsViewModel(_controllerSupport, _updates, () => _updates.InstallAsync(IsAnyGameRunning));
 
     [RelayCommand]
     private void CloseSettings() => Settings = null;
@@ -452,6 +464,19 @@ public partial class MainViewModel : ViewModelBase
         };
         _controllerSupport.SetOverride(game, next);
     }
+
+    private void UpdateArcadiaUpdateState()
+    {
+        HasArcadiaUpdate = _updates.AvailableVersion is not null && !_updates.InstallsOnExit;
+        ArcadiaUpdateText = _updates.AvailableVersion is { } version ? $"Arcadia {version} verfügbar" : string.Empty;
+    }
+
+    /// <summary>True while a game from the library runs; an update then waits until Arcadia closes.</summary>
+    private bool IsAnyGameRunning() => ProcessWatch.AnyRunningFrom(
+        Tabs.SelectMany(t => t.Games)
+            .Select(g => g.InstallDirectory)
+            .OfType<string>()
+            .Where(Directory.Exists));
 
     private void UpdateControllerSupportState()
     {

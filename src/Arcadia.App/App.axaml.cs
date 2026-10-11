@@ -23,6 +23,9 @@ public partial class App : Application
     private static readonly TimeSpan InstallCheckInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan InstallProgressInterval = TimeSpan.FromSeconds(2);
 
+    /// <summary>How often Arcadia asks its update service; the service itself checks GitHub only every few hours.</summary>
+    private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromMinutes(30);
+
     private IGamepadSource? _gamepad;
 
     public override void Initialize()
@@ -48,10 +51,12 @@ public partial class App : Application
             {
                 Log = AppLog.Write,
             };
+            var updates = new ArcadiaUpdateService(time) { Log = AppLog.Write };
             var viewModel = new MainViewModel(
                 new LibraryService(scanners),
                 GameLaunchService.CreateDefault(time),
                 controllerSupport,
+                updates,
                 [new EpicInstallMonitor()],
                 time);
             var window = new MainWindow { DataContext = viewModel };
@@ -62,6 +67,9 @@ public partial class App : Application
             }
 
             desktop.MainWindow = window;
+
+            // The downloaded update installs once Arcadia has exited; closing normally also stops SISR.
+            updates.RestartRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
 
             var foreground = new ForegroundGuard(window);
             controllerSupport.SisrStarting += (_, _) => Dispatcher.UIThread.Invoke(foreground.Begin);
@@ -99,6 +107,8 @@ public partial class App : Application
             installProgress.Start();
             var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await viewModel.CheckPendingInstallsAsync());
             installs.Start();
+            var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await updates.CheckIfDueAsync());
+            updateCheck.Start();
             _ = Task.Run(SisrHost.RemoveLegacyCopy).ContinueWith(
                 _ => controllerSupport.TickAsync(),
                 TaskScheduler.FromCurrentSynchronizationContext());
@@ -109,6 +119,7 @@ public partial class App : Application
                 monitoring.Stop();
                 installs.Stop();
                 installProgress.Stop();
+                updateCheck.Stop();
                 _gamepad.Dispose();
 
                 // SISR belongs to Arcadia: it goes when Arcadia goes. Run off the UI thread to avoid a deadlock.
@@ -118,6 +129,7 @@ public partial class App : Application
 
             AppLog.Write($"Arcadia gestartet: {string.Join(' ', args)}");
             _ = viewModel.LoadAsync();
+            _ = updates.CheckIfDueAsync();
         }
 
         base.OnFrameworkInitializationCompleted();

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Arcadia.App.Input;
+using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -32,24 +33,30 @@ public sealed class HealthIssueViewModel(HealthIssue issue, Action<HealthFix> fi
 }
 
 /// <summary>
-/// The settings dialog. For now it holds "Steam Controller Support"; the other sections from
-/// the designs follow.
+/// The settings dialog. For now it holds "Steam Controller Support" and "Über Arcadia"; the
+/// other sections from the designs follow.
 /// </summary>
 public partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private readonly ControllerSupportService _support;
+    private readonly ArcadiaUpdateService _updates;
     private readonly SettingsItemViewModel _toggle;
     private readonly SettingsItemViewModel _update;
+    private readonly SettingsItemViewModel _arcadiaUpdate;
     private int _focus;
 
-    public SettingsViewModel(ControllerSupportService support)
+    public SettingsViewModel(ControllerSupportService support, ArcadiaUpdateService updates, Func<Task> installArcadiaUpdate)
     {
         _support = support;
+        _updates = updates;
         _toggle = new SettingsItemViewModel(Toggle);
         _update = new SettingsItemViewModel(() => _ = _support.InstallUpdateAsync());
+        _arcadiaUpdate = new SettingsItemViewModel(() => _ = installArcadiaUpdate());
         ToggleCommand = new RelayCommand(Toggle);
         UpdateCommand = new RelayCommand(() => _ = _support.InstallUpdateAsync());
+        ArcadiaUpdateCommand = new RelayCommand(() => _ = installArcadiaUpdate());
         _support.Changed += OnSupportChanged;
+        _updates.Changed += OnSupportChanged;
         Refresh();
         _toggle.IsFocused = true;
     }
@@ -57,6 +64,25 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     public SettingsItemViewModel ToggleItem => _toggle;
 
     public SettingsItemViewModel UpdateItem => _update;
+
+    public SettingsItemViewModel ArcadiaUpdateItem => _arcadiaUpdate;
+
+    public IRelayCommand ArcadiaUpdateCommand { get; }
+
+    public string ArcadiaVersionText => $"Arcadia {_updates.CurrentVersion}";
+
+    public string SourceText => $"Freie Software unter der GPL-3.0 · Quelltext: {ArcadiaUpdateService.RepositoryUrl.Replace("https://", string.Empty, StringComparison.Ordinal)}";
+
+    /// <summary>"Jetzt aktualisieren" is offered (an update is available and not yet downloaded).</summary>
+    [ObservableProperty]
+    public partial bool HasArcadiaUpdate { get; private set; }
+
+    /// <summary>Update state below the version: available, downloading, waiting for exit, dev build.</summary>
+    [ObservableProperty]
+    public partial string ArcadiaUpdateText { get; private set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string? ArcadiaUpdateError { get; private set; }
 
     public ObservableCollection<HealthIssueViewModel> Issues { get; } = [];
 
@@ -126,7 +152,11 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public void Dispose() => _support.Changed -= OnSupportChanged;
+    public void Dispose()
+    {
+        _support.Changed -= OnSupportChanged;
+        _updates.Changed -= OnSupportChanged;
+    }
 
     private void Toggle()
     {
@@ -170,6 +200,17 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         HasUpdate = _support.AvailableUpdate is not null;
         UpdateText = _support.AvailableUpdate is { } update ? $"Neue Version verfügbar: {update.Tag}" : string.Empty;
 
+        HasArcadiaUpdate = _updates.AvailableVersion is not null && _updates.Progress is null && !_updates.InstallsOnExit;
+        ArcadiaUpdateError = _updates.LastError;
+        ArcadiaUpdateText = (_updates.IsInstalled, _updates.AvailableVersion, _updates.Progress, _updates.InstallsOnExit) switch
+        {
+            (false, _, _, _) => "Entwicklungs-Build – Updates gibt es nur für das installierte Arcadia.",
+            (_, { } next, _, true) => $"Version {next} ist geladen und wird beim Beenden von Arcadia installiert, weil gerade ein Spiel läuft.",
+            (_, { } next, { } percent, _) => $"Version {next} wird geladen … {percent} %",
+            (_, { } next, _, _) => $"Neue Version verfügbar: {next}",
+            _ => "Arcadia ist auf dem neuesten Stand.",
+        };
+
         // Keep the controller focus on the same item where possible.
         foreach (var item in FocusableItems())
         {
@@ -190,6 +231,11 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
 
         items.AddRange(Issues.Where(i => i.HasFix));
+        if (HasArcadiaUpdate)
+        {
+            items.Add(_arcadiaUpdate);
+        }
+
         return items;
     }
 

@@ -4,6 +4,7 @@ Offene Aufgaben werden als **GitHub-Issues** geführt (Label `roadmap`, als Näc
 Roadmap: https://github.com/jc-sw-git/Arcadia/issues/26 – darunter je Bereich ein Epic (`type:epic`)
 als Sub-Issue, die Aufgaben hängen als Sub-Issues am jeweiligen Epic. Features sind `type:story`
 und beginnen mit einer Story-Zeile, Fehler `bug`, Technik `type:tech-debt`.
+Manuelle Tests je Iteration und der Ablauf Feature- → Abnahme-Iteration: `docs/testplans/`.
 
 Designs: `docs/designs/` (PNG + Quellen), Canvas: https://claude.ai/artifact/8A9qxc67RcsuFmavaqCAuN
 

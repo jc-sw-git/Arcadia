@@ -17,7 +17,10 @@
 #>
 param(
     # SemVer without a leading "v". Defaults to <Version> in Directory.Build.props.
-    [string] $Version
+    [string] $Version,
+
+    # Markdown file with release notes; they ship inside the update package.
+    [string] $ReleaseNotes
 )
 
 $ErrorActionPreference = 'Stop'
@@ -43,7 +46,8 @@ try {
     dotnet tool restore
     if ($LASTEXITCODE -ne 0) { throw 'dotnet tool restore failed' }
 
-    dotnet vpk pack `
+    $notes = if ($ReleaseNotes) { @('--releaseNotes', (Resolve-Path $ReleaseNotes)) } else { @() }
+    dotnet vpk pack @notes `
         --packId Arcadia `
         --packVersion $Version `
         --packTitle Arcadia `

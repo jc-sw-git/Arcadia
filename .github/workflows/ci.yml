@@ -21,3 +21,14 @@ jobs:
         run: dotnet build Arcadia.slnx --configuration Release
       - name: Test
         run: dotnet test Arcadia.slnx --configuration Release --no-build
+      - name: Pack installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./tools/release/Pack.ps1 -Version 0.0.0-ci.${{ github.run_number }}
+      - name: Upload installer
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Arcadia-win-Setup
+          path: artifacts/releases/Arcadia-win-Setup.exe
+          retention-days: 7

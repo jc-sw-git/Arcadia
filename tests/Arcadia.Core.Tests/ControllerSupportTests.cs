@@ -87,4 +87,24 @@ public class ControllerSupportTests
     {
         Assert.Null(GitHubReleaseClient.ParseVersion(tag));
     }
+
+    [Fact]
+    public void Unparsable_settings_yield_defaults_and_are_kept_aside()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "arcadia-settings-" + Guid.NewGuid() + ".json");
+        try
+        {
+            File.WriteAllText(path, "{ \"SteamControllerSupport\": tru");
+
+            var loaded = new SettingsStore(path).Load();
+
+            Assert.False(loaded.SteamControllerSupport);
+            Assert.Equal("{ \"SteamControllerSupport\": tru", File.ReadAllText(path + ".broken"));
+        }
+        finally
+        {
+            File.Delete(path);
+            File.Delete(path + ".broken");
+        }
+    }
 }

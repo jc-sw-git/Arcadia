@@ -167,11 +167,16 @@ public sealed class EpicScanner(string? manifestDirectory = null, string? catalo
     }
 
     public static string LaunchUri(string catalogNamespace, string catalogItemId, string appName) =>
-        $"com.epicgames.launcher://apps/{catalogNamespace}%3A{catalogItemId}%3A{appName}?action=launch&silent=true";
+        $"com.epicgames.launcher://apps/{AppPath(catalogNamespace, catalogItemId, appName)}?action=launch&silent=true";
 
     /// <summary>Opens the launcher's install dialog for the game.</summary>
     public static string InstallUri(string catalogNamespace, string catalogItemId, string appName) =>
-        $"com.epicgames.launcher://apps/{catalogNamespace}%3A{catalogItemId}%3A{appName}?action=install";
+        $"com.epicgames.launcher://apps/{AppPath(catalogNamespace, catalogItemId, appName)}?action=install";
+
+    // The ids come from files any local program can write; escaping keeps them from adding
+    // their own path segments or query parameters to a URI that the shell executes.
+    private static string AppPath(string catalogNamespace, string catalogItemId, string appName) =>
+        $"{Uri.EscapeDataString(catalogNamespace)}%3A{Uri.EscapeDataString(catalogItemId)}%3A{Uri.EscapeDataString(appName)}";
 
     private static string? CatalogItemIdOf(string uri)
     {
@@ -182,7 +187,7 @@ public sealed class EpicScanner(string? manifestDirectory = null, string? catalo
         }
 
         var parts = uri[prefix.Length..].Split('?')[0].Split("%3A");
-        return parts.Length == 3 && parts[1].Length > 0 ? parts[1] : null;
+        return parts.Length == 3 && parts[1].Length > 0 ? Uri.UnescapeDataString(parts[1]) : null;
     }
 
     private static string? GetString(JsonElement root, string name) =>

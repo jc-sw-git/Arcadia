@@ -223,14 +223,14 @@ public partial class MainViewModel : ViewModelBase
             {
                 foreach (var (id, progress) in snapshot.Active)
                 {
-                    var key = $"{launcherId}:{id}";
+                    var key = Game.KeyOf(launcherId, id);
                     installs[key] = progress;
                     _awaitingConfirmation.Remove(key);
                 }
 
                 foreach (var (id, outcome) in snapshot.Finished)
                 {
-                    var key = $"{launcherId}:{id}";
+                    var key = Game.KeyOf(launcherId, id);
                     _awaitingConfirmation.Remove(key);
                     outcomes.Add((key, outcome));
                 }

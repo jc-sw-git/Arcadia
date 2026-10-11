@@ -57,12 +57,34 @@ look at it — see the skill `.claude/skills/arcadia-verify/SKILL.md` and the sc
 `tools/dev/` (screenshot with key presses, foreground tracing, XInput probe, Steam shortcuts).
 The owner often tests manually at the same time — say before driving the app with keys.
 
+## Definition of Done
+
+A change (PR) is done when all of this holds. Every milestone ends with a review issue
+(e.g. #66) that checks the whole milestone again; this list keeps that review small. Larger
+findings become `type:tech-debt` issues at the start of the next milestone.
+
+- **Builds and tests:** `dotnet build` without warnings, `dotnet test` green, CI green on all platforms.
+  New logic in Core/Launchers/Input/ControllerSupport comes with tests, error paths included.
+- **Robust:** no exception can end Arcadia. No unguarded `async void` or fire-and-forget task;
+  unexpected errors are logged with stack trace to `arcadia.log` and shown as a toast.
+  Network and process waits have a timeout.
+- **Secure:** no user- or file-supplied string goes unchecked into a process start, path or URI;
+  downloads are verified; no secrets or personal data in logs; admin rights only where unavoidable.
+- **Controller first:** every new flow works with a gamepad alone (no mouse/keyboard), B goes back.
+  Anything that can't (e.g. UAC) is named in the PR.
+- **Readable:** names say what things are; methods do one thing; comments explain *why*, not *what*.
+  A developer new to the code understands the change from the diff and `CLAUDE.md`.
+- **Modular:** launcher-specific code stays in its launcher folder; UI and Core don't special-case launchers.
+- **Verified for real:** UI, input, launcher and Steam Controller changes were run and looked at
+  (`.claude/skills/arcadia-verify`); what was only checked mechanically is said so.
+- **Docs current:** `CLAUDE.md` / `docs/` updated when a fact, rule or workflow changed.
+
 ## Layout
 
 | Project | Content |
 |---|---|
 | `src/Arcadia.Core` | Models (`Game`, `LauncherInfo`, `LaunchTarget`), `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`, `ILauncherScanner`, `ILauncherClient` |
-| `src/Arcadia.Launchers` | Scanners (`Epic`, `Demo`), launcher clients (`EpicLauncherClient`, `DirectLauncherClient`), `GameLaunchService`, `ProcessWatch`, Steam (`BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
+| `src/Arcadia.Launchers` | Scanners (`Epic`, `Demo`), Epic catalog and install monitor (`EpicCatalog`, `EpicInstallMonitor`), launcher clients (`EpicLauncherClient`, `DirectLauncherClient`), `GameLaunchService`, `ProcessWatch`, Steam (`BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, auto-repeat for D-pad/stick) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost`, `SisrApiClient`, `UsbipDriver`, `GitHubReleases`, `ControllerSupportService` |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml` |

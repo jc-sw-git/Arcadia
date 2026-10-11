@@ -56,6 +56,17 @@ public class EpicScannerTests
         Assert.Null(EpicScanner.ParseManifest(incomplete));
     }
 
+    [Fact]
+    public void Escapes_ids_in_launch_and_install_uris()
+    {
+        Assert.Equal(
+            "com.epicgames.launcher://apps/ns%2F..%3Aitem%3Fx%3Dy%26z%3Aapp%23?action=launch&silent=true",
+            EpicScanner.LaunchUri("ns/..", "item?x=y&z", "app#"));
+        Assert.Equal(
+            "com.epicgames.launcher://apps/ns%3Aitem%20456%3Aapp?action=install",
+            EpicScanner.InstallUri("ns", "item 456", "app"));
+    }
+
     [Theory]
     [InlineData("not json")]
     [InlineData("[]")]

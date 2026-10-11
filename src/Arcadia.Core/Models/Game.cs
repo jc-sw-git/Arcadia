@@ -47,5 +47,8 @@ public sealed record Game
     public bool UpdateAvailable { get; init; }
 
     /// <summary>Stable key across scans: launcher id plus native id.</summary>
-    public string Key => $"{LauncherId}:{Id}";
+    public string Key => KeyOf(LauncherId, Id);
+
+    /// <summary>The <see cref="Key"/> of a game known only by launcher and native id.</summary>
+    public static string KeyOf(string launcherId, string id) => $"{launcherId}:{id}";
 }

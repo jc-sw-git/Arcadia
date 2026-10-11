@@ -13,7 +13,8 @@ hat, was dabei schiefging und was daraus wurde.
   und nennt die bestehenden Testfälle, die es berühren:
   `## #67 MainViewModel aufteilen` → „Keine neuen Testfälle: reines Refactoring; berührt T41-3 bis T41-6.“
   So bleibt die Historie vollständig, und der Abschluss-Test weiß, was das Refactoring berührt hat.
-- **Testfall-IDs** heißen `T<Issue>-<laufende Nummer>`, z. B. `T15-2`. Sie ändern sich nie; ein
+- **Testfall-IDs** heißen `T<Issue>-<laufende Nummer>`, z. B. `T15-2`. Was zu keinem Issue
+  gehört (das Grundgerüst in Iteration 1), steht im Abschnitt „Grundgerüst“ mit `G-<n>`. Sie ändern sich nie; ein
   überholter Testfall wird ~~durchgestrichen~~ mit Grund, nicht gelöscht.
 - **Jeder Testfall ist markiert:** `E2E: ja` (soll als automatisierter Abnahmetest in die
   Pipeline) oder `E2E: nein (Grund)` (z. B. echter Steam Controller, UAC, echte Launcher-Installation).

@@ -104,7 +104,8 @@ public sealed class ArcadiaUpdateService(HttpClient http, TimeProvider time)
         var current = Core.Updates.Changelog.ParseVersion(CurrentVersion) ?? new Version();
         try
         {
-            var releases = await new GitHubReleaseClient(http).GetReleasesAsync("jc-sw-git", "Arcadia");
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var releases = await new GitHubReleaseClient(http).GetReleasesAsync("jc-sw-git", "Arcadia", timeout.Token);
             var entries = Core.Updates.Changelog.Between(releases, current, latest);
             if (entries.Count > 0)
             {

@@ -98,8 +98,8 @@ safety, 3. controller first, 4. performance, 5. readability and maintainability,
 scalability. Performance beats readability only when a measurement breaks a budget. A conflict
 decided on purpose is named in the PR (and in the review issue).
 
-**Iterations:** feature iteration N (milestone "Iteration N": issues → code review → manual
-test → release), then acceptance iteration N (milestone "Abnahme Iteration N": every `E2E: ja`
+**Iterations:** feature iteration N (milestone "Iteration N": issues → code review incl. a
+retrospective of the processes (keep, change or drop each) → manual test → release), then acceptance iteration N (milestone "Abnahme Iteration N": every `E2E: ja`
 test case of N becomes an automated acceptance test in CI). Feature iteration N+1 starts only
 when acceptance iteration N is closed, so a change in N+1 that breaks a feature of N shows at once.
 

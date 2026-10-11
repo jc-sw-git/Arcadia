@@ -31,6 +31,8 @@ hat, was dabei schiefging und was daraus wurde.
 
 1. **Feature-Iteration N** (Meilenstein „Iteration N“): Issues umsetzen, jeder PR ergänzt den Testplan.
 2. **Abschluss-Review** (Code): Prüfliste im Review-Issue, Befunde beheben oder als Issue einplanen.
+   Dazu gehört eine Retrospektive der Prozesse: Für jeden Prozess entscheidet der Owner, ob er
+   bleibt, geändert wird oder wegfällt.
 3. **Abschluss-Test** (manuell): alle Testfälle am Release-Kandidaten, danach ein explorativer
    Test mit Auftrag und Zeitrahmen. Ergebnis: Häkchen, Verlauf, die Liste der Abnahmetests.
 4. **Release.**

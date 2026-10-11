@@ -83,8 +83,9 @@ the start of the next feature iteration. Process and test plan format: `docs/tes
 - **Docs current:** `CLAUDE.md` / `docs/` updated when a fact, rule or workflow changed.
 - **Test plan:** a PR that closes an issue adds that issue's manual tests to
   `docs/testplans/iteration-<n>.md` (IDs `T<issue>-<n>`, each marked `E2E: ja/nein`) and records
-  the test runs done during implementation with their real environment. The `Testplan` CI check
-  blocks the merge otherwise.
+  the test runs done during implementation with their real environment. If nothing new needs a
+  manual test (e.g. a refactoring of features already covered by tests), the issue's section
+  says so in one line with the reason. The `Testplan` CI check fails without the section.
 - **Performant:** no blocking work on the UI thread; code on a hot path (start, scan, library,
   input, running in the background beside a game) stays within the budgets below, measured when touched.
 

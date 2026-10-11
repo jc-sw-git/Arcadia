@@ -7,8 +7,12 @@ hat, was dabei schiefging und was daraus wurde.
 ## Regeln
 
 - **Jeder PR, der ein Issue schließt, ergänzt den Testplan** um die Testfälle dieses Issues
-  (Definition of Done in `CLAUDE.md`; der CI-Check `Testplan` prüft das). Ein Issue ohne sinnvolle
-  manuelle Tests (z. B. reine Doku) bekommt trotzdem einen Abschnitt mit einer Zeile, warum.
+  (Definition of Done in `CLAUDE.md`; der CI-Check `Testplan` prüft das). Braucht ein Issue keine
+  neuen manuellen Tests (z. B. ein Refactoring von Features, die schon automatisiert oder durch
+  bestehende Testfälle abgedeckt sind), bekommt es trotzdem einen Abschnitt mit einer Zeile, warum,
+  und nennt die bestehenden Testfälle, die es berühren:
+  `## #67 MainViewModel aufteilen` → „Keine neuen Testfälle: reines Refactoring; berührt T41-3 bis T41-6.“
+  So bleibt die Historie vollständig, und der Abschluss-Test weiß, was das Refactoring berührt hat.
 - **Testfall-IDs** heißen `T<Issue>-<laufende Nummer>`, z. B. `T15-2`. Sie ändern sich nie; ein
   überholter Testfall wird ~~durchgestrichen~~ mit Grund, nicht gelöscht.
 - **Jeder Testfall ist markiert:** `E2E: ja` (soll als automatisierter Abnahmetest in die

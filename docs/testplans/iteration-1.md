@@ -35,8 +35,6 @@ Verlauf:
 
 ## #41 Nicht installierte Spiele anzeigen und installieren
 
-Vor Iteration 1 abgeschlossen; im Abschluss-Test als Regression mitgeprüft.
-
 - [ ] **T41-1** Nicht installierte Spiele sind ausgegraut und tragen das Installieren-Symbol; die
       Vorschau zeigt „Nicht installiert“, die Hauptaktion heißt „Installieren“. · E2E: ja
 - [ ] **T41-2** A auf einem nicht installierten Epic-Spiel öffnet den Installationsdialog im Epic
@@ -60,8 +58,6 @@ Verlauf:
 | T41-8 | 2026-10-10 | nicht festgehalten | Commit `4bad13a`, PC des Owners | ❌ Fortschritt bleibt hängen | #58, Backlog |
 
 ## #42 Ganze Epic-Bibliothek einlesen
-
-Vor Iteration 1 abgeschlossen; im Abschluss-Test als Regression mitgeprüft.
 
 - [ ] **T42-1** Der Epic-Tab zeigt alle Spiele der Epic-Bibliothek. Erlaubte Abweichung: Unreal
       Engine und Unreal Editor for Fortnite fehlen. · E2E: ja (`catcache.bin` als Testdatei)

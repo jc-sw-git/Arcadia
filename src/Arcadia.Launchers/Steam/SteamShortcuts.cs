@@ -130,7 +130,9 @@ public static class SteamShortcuts
 
     private static string Normalize(string path)
     {
-        var unquoted = Unquote(path.Trim()).Replace('/', Path.DirectorySeparatorChar);
+        // Steam stores Windows paths; treat both slashes as separators on every OS so the
+        // lookup behaves the same in tests on Linux/macOS as on Windows.
+        var unquoted = Unquote(path.Trim()).Replace('\\', '/').Replace('/', Path.DirectorySeparatorChar);
         try
         {
             return Path.GetFullPath(unquoted);

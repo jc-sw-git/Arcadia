@@ -24,7 +24,7 @@ public sealed class DirectLauncherClient : ILauncherClient
         switch (target)
         {
             case LaunchTarget.ProtocolUri uri:
-                Process.Start(new ProcessStartInfo(uri.Uri) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(uri.Uri) { UseShellExecute = true })?.Dispose();
                 return true;
 
             case LaunchTarget.Executable exe:
@@ -38,11 +38,11 @@ public sealed class DirectLauncherClient : ILauncherClient
                     info.ArgumentList.Add(argument);
                 }
 
-                Process.Start(info);
+                Process.Start(info)?.Dispose();
                 return true;
 
             case LaunchTarget.ShellAppsFolder app:
-                Process.Start(new ProcessStartInfo("explorer.exe", $"shell:appsFolder\\{app.AppUserModelId}") { UseShellExecute = false });
+                Process.Start(new ProcessStartInfo("explorer.exe", $"shell:appsFolder\\{app.AppUserModelId}") { UseShellExecute = false })?.Dispose();
                 return true;
 
             case LaunchTarget.None:

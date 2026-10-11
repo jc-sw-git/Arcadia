@@ -59,7 +59,10 @@ public sealed class SettingsStore(string path)
     public static SettingsStore CreateDefault() => new(System.IO.Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Arcadia", "settings.json"));
 
-    /// <summary>Missing or unreadable files yield the defaults rather than an error.</summary>
+    /// <summary>
+    /// Missing or unreadable files yield the defaults rather than an error. A file that can't be
+    /// parsed is kept as <c>settings.json.broken</c>, because the next save would overwrite it.
+    /// </summary>
     public AppSettings Load()
     {
         try
@@ -68,9 +71,26 @@ public sealed class SettingsStore(string path)
                 ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(Path), Json) ?? new AppSettings()
                 : new AppSettings();
         }
-        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        catch (JsonException)
+        {
+            KeepBrokenFile();
+            return new AppSettings();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return new AppSettings();
+        }
+    }
+
+    private void KeepBrokenFile()
+    {
+        try
+        {
+            File.Copy(Path, Path + ".broken", overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Nothing more to save; the defaults still apply.
         }
     }
 

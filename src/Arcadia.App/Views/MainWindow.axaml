@@ -537,12 +537,12 @@
                   </Grid>
 
                   <TextBlock IsVisible="{Binding ArcadiaUpdateError, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding ArcadiaUpdateError}"
-                             FontSize="15" Foreground="#FF9A8F" TextWrapping="Wrap" />
+                             FontSize="15" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
 
                   <!-- Changelog: only the versions between the running and the newest one. -->
                   <StackPanel Spacing="10" IsVisible="{Binding HasChangelog}">
                     <TextBlock Classes="label" Text="WAS IST NEU" />
-                    <Border Background="#141B23" BorderBrush="#243040" BorderThickness="1" CornerRadius="14" MaxHeight="320">
+                    <Border Background="{StaticResource ChangelogSurface}" BorderBrush="{StaticResource ChangelogBorder}" BorderThickness="1" CornerRadius="14" MaxHeight="320">
                       <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="22,18,22,18">
                         <ItemsControl ItemsSource="{Binding Changelog}">
                           <ItemsControl.ItemsPanel>
@@ -554,7 +554,7 @@
                             <DataTemplate x:DataType="vm:ChangelogEntryViewModel">
                               <StackPanel Spacing="10">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
-                                  <Border Background="#1F3A5C" CornerRadius="10" Padding="10,3">
+                                  <Border Background="{StaticResource VersionPill}" CornerRadius="10" Padding="10,3">
                                     <TextBlock Text="{Binding VersionText}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentSoft}" />
                                   </Border>
                                   <TextBlock Text="{Binding DateText}" FontSize="14" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />

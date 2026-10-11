@@ -8,6 +8,10 @@
     <SolidColorBrush x:Key="Surface" Color="#151B23" />
     <SolidColorBrush x:Key="SurfaceRaised" Color="#1E2630" />
     <SolidColorBrush x:Key="SurfaceSunken" Color="#0F141A" />
+    <!-- "Was ist neu" in the settings: a card a shade lighter than its section, with a version pill. -->
+    <SolidColorBrush x:Key="ChangelogSurface" Color="#141B23" />
+    <SolidColorBrush x:Key="ChangelogBorder" Color="#243040" />
+    <SolidColorBrush x:Key="VersionPill" Color="#1F3A5C" />
     <SolidColorBrush x:Key="Line" Color="#2A3440" />
     <SolidColorBrush x:Key="LineStrong" Color="#3A4552" />
     <SolidColorBrush x:Key="Text" Color="#E8EDF2" />
@@ -20,6 +24,24 @@
     <SolidColorBrush x:Key="AccentSoft" Color="#8CC6FF" />
     <SolidColorBrush x:Key="OnAccent" Color="#06101C" />
     <SolidColorBrush x:Key="Warning" Color="#F5B868" />
+    <SolidColorBrush x:Key="Success" Color="#6FD99A" />
+    <SolidColorBrush x:Key="Danger" Color="#FF9A8F" />
+    <SolidColorBrush x:Key="SurfaceHover" Color="#1A212B" />
+    <SolidColorBrush x:Key="SurfaceDisabled" Color="#11161D" />
+    <SolidColorBrush x:Key="TextDisabled" Color="#4A5563" />
+    <!-- Backdrop behind dialogs, and the shade over covers of games that aren't installed. -->
+    <SolidColorBrush x:Key="Scrim" Color="#C705080C" />
+    <SolidColorBrush x:Key="CoverShade" Color="#B80B0F14" />
+    <SolidColorBrush x:Key="ProgressTrack" Color="#33FFFFFF" />
+    <!-- Bg at zero opacity, for gradients that fade into the background. -->
+    <Color x:Key="BgClearColor">#000B0F14</Color>
+
+    <!-- Focus rings and shadows. -->
+    <BoxShadows x:Key="FocusRing">0 0 0 3 #F2F5F8</BoxShadows>
+    <BoxShadows x:Key="FocusRingLifted">0 0 0 3 #F2F5F8, 0 18 40 0 #A6000000</BoxShadows>
+    <BoxShadows x:Key="HoverRing">0 0 0 2 #5A6878</BoxShadows>
+    <BoxShadows x:Key="ToastShadow">0 20 50 0 #8C000000</BoxShadows>
+    <BoxShadows x:Key="DialogShadow">0 40 100 0 #99000000</BoxShadows>
   </Styles.Resources>
 
   <!-- A button that draws only what we give it; the Fluent hover/press visuals don't fit the design. -->

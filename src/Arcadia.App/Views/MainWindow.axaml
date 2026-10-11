@@ -4,6 +4,7 @@
         x:Class="Arcadia.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Arcadia"
+        Icon="/Assets/arcadia.ico"
         Width="1600" Height="900"
         MinWidth="960" MinHeight="540"
         WindowStartupLocation="CenterScreen"
@@ -95,6 +96,16 @@
                   IsVisible="{Binding HasSisrUpdate}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Neue SISR-Version verfügbar">
             <Path Data="M20 12a8 8 0 1 1 -2.3 -5.6 M20 4v4.5h-4.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
                   Width="24" Height="24" Stretch="None" />
+          </Button>
+          <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
+                  IsVisible="{Binding HasArcadiaUpdate}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{Binding ArcadiaUpdateText}">
+            <Panel Width="24" Height="24">
+              <Path Data="M20 12a8 8 0 1 1 -2.3 -5.6 M20 4v4.5h-4.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                    Width="24" Height="24" Stretch="None" />
+              <!-- The dot tells Arcadia's own update apart from SISR's. -->
+              <Ellipse Width="8" Height="8" Fill="{StaticResource Accent}" Stroke="{StaticResource Bg}" StrokeThickness="2"
+                       HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-1,-1,0" />
+            </Panel>
           </Button>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
                   Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Einstellungen (F2)">
@@ -502,6 +513,76 @@
                     <TextBlock FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap"
                                Text="SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR" />
                   </StackPanel>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="14">
+              <TextBlock Classes="label" Text="ÜBER ARCADIA" FontSize="14" />
+              <Border Classes="settingsSection" Background="{StaticResource SurfaceSunken}" CornerRadius="16" Padding="28,20">
+                <StackPanel Spacing="16">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="4" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding ArcadiaVersionText}" FontSize="20" FontWeight="Bold" />
+                      <TextBlock Text="{Binding ArcadiaUpdateText}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                      <Button Classes="plain action" Classes.focused="{Binding CheckUpdatesItem.IsFocused}"
+                              IsVisible="{Binding CanSearchForUpdates}" IsEnabled="{Binding IsCheckIdle}"
+                              Command="{Binding CheckUpdatesCommand}" Content="{Binding CheckButtonText}" />
+                      <Button Classes="plain action primaryAction" Classes.focused="{Binding ArcadiaUpdateItem.IsFocused}"
+                              IsVisible="{Binding HasArcadiaUpdate}"
+                              Command="{Binding ArcadiaUpdateCommand}" Content="Jetzt aktualisieren" />
+                    </StackPanel>
+                  </Grid>
+
+                  <TextBlock IsVisible="{Binding ArcadiaUpdateError, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding ArcadiaUpdateError}"
+                             FontSize="15" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
+
+                  <!-- Changelog: only the versions between the running and the newest one. -->
+                  <StackPanel Spacing="10" IsVisible="{Binding HasChangelog}">
+                    <TextBlock Classes="label" Text="WAS IST NEU" />
+                    <Border Background="{StaticResource ChangelogSurface}" BorderBrush="{StaticResource ChangelogBorder}" BorderThickness="1" CornerRadius="14" MaxHeight="320">
+                      <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="22,18,22,18">
+                        <ItemsControl ItemsSource="{Binding Changelog}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <StackPanel Spacing="20" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ChangelogEntryViewModel">
+                              <StackPanel Spacing="10">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                  <Border Background="{StaticResource VersionPill}" CornerRadius="10" Padding="10,3">
+                                    <TextBlock Text="{Binding VersionText}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentSoft}" />
+                                  </Border>
+                                  <TextBlock Text="{Binding DateText}" FontSize="14" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <ItemsControl ItemsSource="{Binding Changes}">
+                                  <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                      <StackPanel Spacing="6" />
+                                    </ItemsPanelTemplate>
+                                  </ItemsControl.ItemsPanel>
+                                  <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="4,0,0,0">
+                                        <Ellipse Width="6" Height="6" Fill="{StaticResource Accent}" VerticalAlignment="Top" Margin="0,8,0,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding}" FontSize="15" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
+                                      </Grid>
+                                    </DataTemplate>
+                                  </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                    </Border>
+                  </StackPanel>
+
+                  <TextBlock FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap" Text="{Binding SourceText}" />
                 </StackPanel>
               </Border>
             </StackPanel>

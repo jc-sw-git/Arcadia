@@ -1,0 +1,72 @@
+name: Release
+
+# Push a tag like v0.2.0 (or v0.2.0-beta.1 for a pre-release) to publish a release.
+# Versioning: SemVer; major may break, minor adds non-breaking features, patch only fixes bugs.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Read version from tag
+        id: version
+        run: |
+          $tag = '${{ github.ref_name }}'
+          if ($tag -notmatch '^v(\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?)$') { throw "Tag $tag is not a SemVer version like v1.2.3" }
+          "version=$($Matches[1])" >> $env:GITHUB_OUTPUT
+          "prerelease=$([bool]$Matches[2])".ToLower() >> $env:GITHUB_OUTPUT
+
+      - name: Test
+        run: dotnet test Arcadia.slnx --configuration Release
+
+      - name: Write release notes
+        run: |
+          $tag = '${{ github.ref_name }}'
+          # gh prints the notes line by line; join them back, or interpolation would put them on one line.
+          $generated = (gh api "repos/${{ github.repository }}/releases/generate-notes" -f tag_name=$tag --jq .body) -join "`n"
+          @"
+          **Installation:** ``Arcadia-win-Setup.exe`` herunterladen und starten. Installierte Versionen aktualisieren sich selbst.
+          Windows SmartScreen warnt, weil Arcadia noch nicht signiert ist: „Weitere Informationen“ → „Trotzdem ausführen“.
+
+          Arcadia ist freie Software (GPL-3.0). Quelltext dieser Version: $env:REPO_URL/tree/$tag
+
+          $generated
+          "@ | Set-Content -Encoding utf8 release-notes.md
+
+      - name: Download previous release (for delta updates)
+        run: |
+          dotnet tool restore
+          $pre = if ('${{ steps.version.outputs.prerelease }}' -eq 'true') { '--pre' } else { $null }
+          dotnet vpk download github --repoUrl $env:REPO_URL --token $env:GH_TOKEN --outputDir artifacts/releases $pre
+          if ($LASTEXITCODE -ne 0) { Write-Host 'No previous release; building full packages only.'; $global:LASTEXITCODE = 0 }
+
+      - name: Pack
+        run: ./tools/release/Pack.ps1 -Version '${{ steps.version.outputs.version }}' -ReleaseNotes release-notes.md
+
+      - name: Publish
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $pre = if ('${{ steps.version.outputs.prerelease }}' -eq 'true') { '--pre' } else { $null }
+          dotnet vpk upload github --repoUrl $env:REPO_URL --token $env:GH_TOKEN --outputDir artifacts/releases `
+            --publish --tag $tag --releaseName "Arcadia ${{ steps.version.outputs.version }}" $pre
+          if ($LASTEXITCODE -ne 0) { throw 'vpk upload failed' }
+          gh release edit $tag --notes-file release-notes.md
+          gh release upload $tag LICENSE THIRD-PARTY-NOTICES.md --clobber

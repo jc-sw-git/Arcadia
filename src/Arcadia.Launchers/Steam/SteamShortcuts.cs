@@ -83,6 +83,51 @@ public static class SteamShortcuts
             : shortcuts.Select(s => int.TryParse(s.Key, NumberStyles.None, CultureInfo.InvariantCulture, out var i) ? i : -1).Max() + 1;
         shortcuts.Add(new(nextIndex.ToString(CultureInfo.InvariantCulture), entry));
 
+        Save(path, root);
+        return ToShortcut(entry);
+    }
+
+    /// <summary>
+    /// Removes every entry that starts <paramref name="executable"/> and returns how many were
+    /// removed. Same rules as <see cref="Add"/>: Steam must not be running, a backup is kept.
+    /// </summary>
+    public static int RemoveByExecutable(string path, string executable)
+    {
+        if (!File.Exists(path))
+        {
+            return 0;
+        }
+
+        var root = BinaryVdf.Parse(File.ReadAllBytes(path));
+        if (root.GetMap("shortcuts") is not { } shortcuts)
+        {
+            return 0;
+        }
+
+        var wanted = Normalize(executable);
+        var kept = shortcuts
+            .Where(s => s.Value is not VdfMap entry
+                        || !string.Equals(Normalize(ToShortcut(entry).Executable), wanted, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var removed = shortcuts.Count - kept.Count;
+        if (removed == 0)
+        {
+            return 0;
+        }
+
+        // Steam numbers its entries 0, 1, 2, … without gaps.
+        shortcuts.Clear();
+        for (var i = 0; i < kept.Count; i++)
+        {
+            shortcuts.Add(new(i.ToString(CultureInfo.InvariantCulture), kept[i].Value));
+        }
+
+        Save(path, root);
+        return removed;
+    }
+
+    private static void Save(string path, VdfMap root)
+    {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         if (File.Exists(path))
         {
@@ -92,7 +137,6 @@ public static class SteamShortcuts
         var temp = path + ".tmp";
         File.WriteAllBytes(temp, BinaryVdf.Write(root));
         File.Move(temp, path, overwrite: true);
-        return ToShortcut(entry);
     }
 
     /// <summary>

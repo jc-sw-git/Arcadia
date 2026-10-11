@@ -23,6 +23,15 @@ public partial class App : Application
     private static readonly TimeSpan InstallCheckInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan InstallProgressInterval = TimeSpan.FromSeconds(2);
 
+    /// <summary>How often Arcadia asks its update service; the service itself checks GitHub only every few hours.</summary>
+    private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromMinutes(30);
+
+    /// <summary>Set on the restart after an update while Arcadia wasn't in front (e.g. a game was).</summary>
+    private const string BackgroundArgument = "--background";
+
+    /// <summary>Hands a SISR pause for a running game over to the Arcadia started after an update.</summary>
+    private const string SisrPausedArgument = "--sisr-paused-for";
+
     private IGamepadSource? _gamepad;
 
     public override void Initialize()
@@ -48,10 +57,21 @@ public partial class App : Application
             {
                 Log = AppLog.Write,
             };
+            // After an update restart: SISR kept running, and pauses for running games carry over.
+            for (var i = 0; i < args.Length - 1; i++)
+            {
+                if (args[i] == SisrPausedArgument)
+                {
+                    controllerSupport.ResumePause(args[i + 1]);
+                }
+            }
+
+            var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
             var viewModel = new MainViewModel(
                 new LibraryService(scanners),
                 GameLaunchService.CreateDefault(time),
                 controllerSupport,
+                updates,
                 [new EpicInstallMonitor()],
                 time);
             var window = new MainWindow { DataContext = viewModel };
@@ -61,7 +81,18 @@ public partial class App : Application
                 window.WindowState = Avalonia.Controls.WindowState.FullScreen;
             }
 
+            if (args.Contains(BackgroundArgument))
+            {
+                // Come back behind whatever is in front (a game), as Arcadia was before the update.
+                window.ShowActivated = false;
+                window.Opened += (_, _) => ForegroundGuard.SendToBack(window);
+            }
+
             desktop.MainWindow = window;
+
+            // The downloaded update installs once Arcadia has exited; closing normally also stops SISR.
+            updates.RestartArguments = () => RestartArguments(args, window.IsActive, controllerSupport.PausedFor);
+            updates.RestartRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
 
             var foreground = new ForegroundGuard(window);
             controllerSupport.SisrStarting += (_, _) => Dispatcher.UIThread.Invoke(foreground.Begin);
@@ -99,6 +130,8 @@ public partial class App : Application
             installProgress.Start();
             var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await viewModel.CheckPendingInstallsAsync());
             installs.Start();
+            var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await updates.CheckIfDueAsync());
+            updateCheck.Start();
             _ = Task.Run(SisrHost.RemoveLegacyCopy).ContinueWith(
                 _ => controllerSupport.TickAsync(),
                 TaskScheduler.FromCurrentSynchronizationContext());
@@ -109,17 +142,57 @@ public partial class App : Application
                 monitoring.Stop();
                 installs.Stop();
                 installProgress.Stop();
+                updateCheck.Stop();
                 _gamepad.Dispose();
 
                 // SISR belongs to Arcadia: it goes when Arcadia goes. Run off the UI thread to avoid a deadlock.
-                Task.Run(() => controllerSupport.ShutdownAsync()).Wait(TimeSpan.FromSeconds(6));
+                // Except for an update: Arcadia is back in seconds, and a game keeps its controller meanwhile.
+                if (updates.IsRestartingForUpdate)
+                {
+                    AppLog.Write("Neustart für Update: SISR läuft weiter.");
+                }
+                else
+                {
+                    Task.Run(() => controllerSupport.ShutdownAsync()).Wait(TimeSpan.FromSeconds(6));
+                }
                 AppLog.Write("Arcadia beendet.");
             };
 
             AppLog.Write($"Arcadia gestartet: {string.Join(' ', args)}");
             _ = viewModel.LoadAsync();
+            _ = updates.CheckIfDueAsync();
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>Arcadia's own arguments for the start after an update, plus the state to carry over.</summary>
+    private static string[] RestartArguments(string[] args, bool inFront, IEnumerable<string> pausedFor)
+    {
+        var kept = new List<string>();
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i] == SisrPausedArgument)
+            {
+                i++;
+            }
+            else if (args[i] != BackgroundArgument)
+            {
+                kept.Add(args[i]);
+            }
+        }
+
+        if (!inFront)
+        {
+            kept.Add(BackgroundArgument);
+        }
+
+        foreach (var directory in pausedFor)
+        {
+            kept.Add(SisrPausedArgument);
+            kept.Add(directory);
+        }
+
+        return [.. kept];
     }
 }

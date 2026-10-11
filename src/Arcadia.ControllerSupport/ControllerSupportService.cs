@@ -43,6 +43,7 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
     private readonly SemaphoreSlim _gate = new(1, 1);
     private DateTimeOffset _lastStart = DateTimeOffset.MinValue;
     private int _pausedGames;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _pausedDirectories = new(StringComparer.OrdinalIgnoreCase);
     private bool _checkedThisSession;
 
     public event EventHandler? Changed;
@@ -62,6 +63,9 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
 
     /// <summary>SISR is stopped because a game runs that uses Steam Input itself.</summary>
     public bool IsPaused => _pausedGames > 0;
+
+    /// <summary>Install directories of the games SISR is paused for; an update restart hands them on.</summary>
+    public IReadOnlyCollection<string> PausedFor => _pausedDirectories.Keys.ToList();
 
     public string? BusyText { get; private set; }
 
@@ -296,7 +300,29 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
         Interlocked.Increment(ref _pausedGames);
         await StopSisrAndReleaseControllerAsync(cancellationToken);
         OnChanged();
+        WatchPausedGame(directory);
+    }
 
+    /// <summary>
+    /// Takes over a pause from before an update restart: SISR stays off while a process from
+    /// <paramref name="directory"/> runs. Call before the first <see cref="TickAsync"/>.
+    /// </summary>
+    public void ResumePause(string directory)
+    {
+        if (!Directory.Exists(directory) || !ProcessWatch.AnyRunningFrom(directory))
+        {
+            return;
+        }
+
+        Log?.Invoke($"SISR bleibt pausiert für {directory}");
+        Interlocked.Increment(ref _pausedGames);
+        OnChanged();
+        WatchPausedGame(directory);
+    }
+
+    private void WatchPausedGame(string directory)
+    {
+        _pausedDirectories.AddOrUpdate(directory, 1, (_, n) => n + 1);
         _ = Task.Run(async () =>
         {
             try
@@ -312,6 +338,11 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
             }
             finally
             {
+                if (_pausedDirectories.AddOrUpdate(directory, 0, (_, n) => n - 1) <= 0)
+                {
+                    _pausedDirectories.TryRemove(directory, out _);
+                }
+
                 if (Interlocked.Decrement(ref _pausedGames) == 0 && Enabled)
                 {
                     StartSisr();

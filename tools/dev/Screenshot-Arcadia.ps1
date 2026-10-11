@@ -19,7 +19,7 @@ param(
     [switch] $KeepRunning
 )
 
-$exe = Join-Path $PSScriptRoot '..\..\src\Arcadia.App\bin\Debug\net10.0\Arcadia.App.exe' | Resolve-Path
+$exe = Join-Path $PSScriptRoot '..\..\src\Arcadia.App\bin\Debug\net10.0\Arcadia.exe' | Resolve-Path
 Add-Type -AssemblyName System.Drawing, System.Windows.Forms
 Add-Type @"
 using System;

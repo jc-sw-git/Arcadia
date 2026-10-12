@@ -178,6 +178,12 @@ Steam stores no install date (the game folder's creation time is used). Owned bu
 `appcache/appinfo.vdf` (v29: keys are indices into a string table at the offset in the header; `common/name`,
 `common/type` — only `game` is listed). Install = `steam://install/<appid>`. Libraries are re-read on every scan,
 so added or missing drives need no handling of their own.
+`SteamInstallMonitor` (verified 2026-10-12 with real installs): a new install's manifest appears with `StateFlags` 2
+and `buildid` 0, then 1026 (+1024 started) while downloading *or* waiting, 1538 (+512) when paused, 4 when done;
+an update of an installed game is 1030. Steam downloads one app at a time but flags all waiting ones alike, so the
+app whose `BytesDownloaded`/`BytesStaged` moved last is the downloading one. Cancelling a new install and
+uninstalling (38 for a moment) both delete the manifest. Steam updates runtimes/redistributables on its own —
+they are filtered like in the scanner.
 
 **Epic:** all locally installed games have `bRequiresAuth` → they need the launcher. If it isn't
 running, `EpicLauncherClient` starts it with `-silent`, waits for `EpicWebHelper` + 4 s, starts

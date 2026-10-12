@@ -259,7 +259,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
         }
     }
 
-    private static IEnumerable<string> ManifestFiles(string library)
+    internal static IEnumerable<string> ManifestFiles(string library)
     {
         var steamApps = Path.Combine(library, "steamapps");
         try
@@ -328,7 +328,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
         }
     }
 
-    private static string? ReadText(string path)
+    internal static string? ReadText(string path)
     {
         try
         {

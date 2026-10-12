@@ -5,7 +5,8 @@ namespace Arcadia.Launchers.Steam;
 
 /// <summary>
 /// Steam: the installed games of all libraries. Games start through <c>steam://rungameid</c>,
-/// which starts Steam itself when needed, so there is no client of its own.
+/// which starts Steam itself when needed, so there is no client of its own. Installs, updates and
+/// uninstalls are followed through the app manifests.
 /// </summary>
 public sealed class SteamIntegration : ILauncherIntegration
 {
@@ -15,7 +16,7 @@ public sealed class SteamIntegration : ILauncherIntegration
 
     public ILauncherClient? Client => null;
 
-    public IInstallMonitor? InstallMonitor => null;
+    public IInstallMonitor? InstallMonitor { get; } = new SteamInstallMonitor();
 
     public string? Locate() => SteamInstallation.Find()?.RootPath;
 }

@@ -62,16 +62,16 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public SettingsViewModel(ControllerSupportService support, ArcadiaUpdateService updates, Func<Task> installArcadiaUpdate)
     {
-        _checkUpdates = new SettingsItemViewModel(() => _ = updates.CheckNowAsync());
-        CheckUpdatesCommand = new RelayCommand(() => _ = updates.CheckNowAsync());
+        _checkUpdates = new SettingsItemViewModel(() => updates.CheckNowAsync().Forget("Update-Prüfung"));
+        CheckUpdatesCommand = new RelayCommand(() => updates.CheckNowAsync().Forget("Update-Prüfung"));
         _support = support;
         _updates = updates;
         _toggle = new SettingsItemViewModel(Toggle);
-        _update = new SettingsItemViewModel(() => _ = _support.InstallUpdateAsync());
-        _arcadiaUpdate = new SettingsItemViewModel(() => _ = installArcadiaUpdate());
+        _update = new SettingsItemViewModel(() => _support.InstallUpdateAsync().Forget("SISR aktualisieren"));
+        _arcadiaUpdate = new SettingsItemViewModel(() => installArcadiaUpdate().Forget("Arcadia aktualisieren"));
         ToggleCommand = new RelayCommand(Toggle);
-        UpdateCommand = new RelayCommand(() => _ = _support.InstallUpdateAsync());
-        ArcadiaUpdateCommand = new RelayCommand(() => _ = installArcadiaUpdate());
+        UpdateCommand = new RelayCommand(() => _support.InstallUpdateAsync().Forget("SISR aktualisieren"));
+        ArcadiaUpdateCommand = new RelayCommand(() => installArcadiaUpdate().Forget("Arcadia aktualisieren"));
         _support.Changed += OnSupportChanged;
         _updates.Changed += OnSupportChanged;
         Refresh();
@@ -198,7 +198,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     {
         if (!IsBusy)
         {
-            _ = _support.SetEnabledAsync(!_support.Enabled);
+            _support.SetEnabledAsync(!_support.Enabled).Forget("Steam Controller Support schalten");
         }
     }
 
@@ -216,7 +216,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         Issues.Clear();
         foreach (var issue in _support.Issues)
         {
-            Issues.Add(new HealthIssueViewModel(issue, fix => _ = _support.ApplyFixAsync(fix)));
+            Issues.Add(new HealthIssueViewModel(issue, fix => _support.ApplyFixAsync(fix).Forget("Problem beheben")));
         }
 
         HasIssues = Issues.Count > 0;

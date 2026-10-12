@@ -40,6 +40,13 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // An error in a UI event handler would otherwise end Arcadia; log it, show it, keep running.
+        Dispatcher.UIThread.UnhandledException += (_, e) =>
+        {
+            AppErrors.Report(e.Exception, "Oberfläche");
+            e.Handled = true;
+        };
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var args = desktop.Args ?? [];
@@ -71,7 +78,7 @@ public partial class App : Application
             var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
             var viewModel = new MainViewModel(
                 new LibraryService(launchers),
-                new GameLaunchService(launchers),
+                new GameLaunchService(launchers) { Log = AppLog.Write },
                 controllerSupport,
                 updates,
                 new InstallTracker(launchers, time),
@@ -100,7 +107,7 @@ public partial class App : Application
             controllerSupport.SisrStarting += (_, _) => Dispatcher.UIThread.Invoke(foreground.Begin);
             controllerSupport.SisrStarted += (_, _) => Dispatcher.UIThread.Post(foreground.End);
             // Tested: Steam keeps SISR's layout after enforce=false + reset until the focus changes.
-            controllerSupport.ControllerReleased += (_, _) => Dispatcher.UIThread.Post(() => _ = foreground.BounceFocusAsync());
+            controllerSupport.ControllerReleased += (_, _) => Dispatcher.UIThread.Post(() => foreground.BounceFocusAsync().Forget("Controller freigeben"));
 
             _gamepad = GamepadSource.CreateDefault();
             _gamepad.ButtonPressed += button =>
@@ -123,20 +130,20 @@ public partial class App : Application
             var clock = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => viewModel.Status.UpdateClock());
             clock.Start();
 
-            var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await controllerSupport.TickAsync());
+            var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => controllerSupport.TickAsync(), "SISR-Überwachung"));
             monitoring.Start();
 
             // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
             // watch, rescan until the games it handed over are installed.
-            var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await viewModel.PollInstallsAsync());
+            var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.PollInstallsAsync, "Installationen verfolgen"));
             installProgress.Start();
-            var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await viewModel.CheckPendingInstallsAsync());
+            var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.CheckPendingInstallsAsync, "Installationen prüfen"));
             installs.Start();
-            var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await updates.CheckIfDueAsync());
+            var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, "Update-Prüfung"));
             updateCheck.Start();
-            _ = Task.Run(SisrHost.RemoveLegacyCopy).ContinueWith(
+            Task.Run(SisrHost.RemoveLegacyCopy).ContinueWith(
                 _ => controllerSupport.TickAsync(),
-                TaskScheduler.FromCurrentSynchronizationContext());
+                TaskScheduler.FromCurrentSynchronizationContext()).Unwrap().Forget("SISR-Überwachung");
 
             desktop.ShutdownRequested += (_, _) =>
             {
@@ -161,8 +168,8 @@ public partial class App : Application
             };
 
             AppLog.Write($"Arcadia gestartet: {string.Join(' ', args)}");
-            _ = viewModel.LoadAsync();
-            _ = updates.CheckIfDueAsync();
+            viewModel.LoadAsync().Forget("Bibliothek laden");
+            updates.CheckIfDueAsync().Forget("Update-Prüfung");
         }
 
         base.OnFrameworkInitializationCompleted();

@@ -30,7 +30,6 @@ public partial class MainViewModel : ViewModelBase
     private SortOrder _sort = SortOrder.Default;
     private int _preferredPageSize = PageSizes.Default;
     private int _requestedPage;
-    private bool _launching;
 
     public MainViewModel(
         LibraryService library,
@@ -49,6 +48,7 @@ public partial class MainViewModel : ViewModelBase
         _time = time;
         Status = new StatusBarViewModel(controllerSupport, updates, time);
         Toast = new ToastViewModel(time);
+        AppErrors.Occurred += message => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(message));
         _controllerSupport.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateControllerSupportState);
         UpdateControllerSupportState();
     }
@@ -174,9 +174,9 @@ public partial class MainViewModel : ViewModelBase
         {
             // Epic logs the uninstall when it starts; the manifest disappears a moment later.
             await RefreshLibraryAsync(force: true);
-            _ = Task.Delay(UninstallSettleTime, _time).ContinueWith(
+            Task.Delay(UninstallSettleTime, _time).ContinueWith(
                 _ => RefreshLibraryAsync(force: true),
-                TaskScheduler.FromCurrentSynchronizationContext());
+                TaskScheduler.FromCurrentSynchronizationContext()).Unwrap().Forget("Bibliothek aktualisieren");
         }
 
         var completed = results.Count(r => r.Outcome == InstallOutcome.Completed);
@@ -494,11 +494,11 @@ public partial class MainViewModel : ViewModelBase
         // Uninstalled in the launcher while Arcadia wasn't looking: the directory is gone.
         if (tile.Game is { IsInstalled: true, InstallDirectory: { } directory } && !Directory.Exists(directory))
         {
-            _ = RefreshLibraryAsync();
+            RefreshLibraryAsync().Forget("Bibliothek aktualisieren");
         }
     }
 
-    private async void Activate(GameTileViewModel tile)
+    private void Activate(GameTileViewModel tile)
     {
         Focus(tile);
         if (tile.InstallState is { } install)
@@ -517,26 +517,23 @@ public partial class MainViewModel : ViewModelBase
             return;
         }
 
-        if (_launching)
-        {
-            return;
-        }
+        LaunchAsync(tile).Forget("Spielstart");
+    }
 
-        _launching = true;
+    private async Task LaunchAsync(GameTileViewModel tile)
+    {
         var progress = new Progress<LaunchStage>(stage => OnLaunchStage(tile, stage));
-        try
+
+        // Games that use Steam Input themselves would get every input twice while SISR runs.
+        var result = await _launcher.TryStartAsync(tile.Game, token => _controllerSupport.BeginGameAsync(tile.Game, token), progress);
+        switch (result)
         {
-            // Games that use Steam Input themselves would get every input twice while SISR runs.
-            await _controllerSupport.BeginGameAsync(tile.Game);
-            await _launcher.StartAsync(tile.Game, progress);
-        }
-        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException)
-        {
-            Toast.Show($"„{tile.Title}“ konnte nicht gestartet werden: {ex.Message}");
-        }
-        finally
-        {
-            _launching = false;
+            case { Outcome: LaunchOutcome.Failed, Error: { } error }:
+                Toast.Show($"„{tile.Title}“ konnte nicht gestartet werden: {error.Message}");
+                break;
+            case { Outcome: LaunchOutcome.FailedUnexpectedly }:
+                Toast.Show($"„{tile.Title}“ konnte wegen eines unerwarteten Fehlers nicht gestartet werden – Details stehen in arcadia.log.");
+                break;
         }
     }
 
@@ -556,7 +553,7 @@ public partial class MainViewModel : ViewModelBase
                     : $"„{tile.Title}“ kann nur direkt in {tile.LauncherName} installiert werden.");
             }
         }
-        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
             Toast.Show($"Installation von „{tile.Title}“ konnte nicht geöffnet werden: {ex.Message}");
         }
@@ -568,9 +565,13 @@ public partial class MainViewModel : ViewModelBase
         {
             case LaunchStage.StartingLauncher:
                 Toast.Show($"{tile.LauncherName} wird im Hintergrund gestartet …", sticky: true);
-                _ = Task.Delay(TimeSpan.FromSeconds(2), _time).ContinueWith(
+                Task.Delay(TimeSpan.FromSeconds(2), _time).ContinueWith(
                     _ => ForegroundRequested?.Invoke(this, EventArgs.Empty),
-                    TaskScheduler.FromCurrentSynchronizationContext());
+                    TaskScheduler.FromCurrentSynchronizationContext()).Forget("Fenster nach vorn holen");
+                break;
+            case LaunchStage.LauncherNotReady:
+                Toast.Show($"{tile.LauncherName} reagiert nicht – „{tile.Title}“ wird trotzdem angefragt …");
+                ForegroundRequested?.Invoke(this, EventArgs.Empty);
                 break;
             case LaunchStage.LauncherReady:
                 // Starting a launcher can steal the foreground; take it back before the game opens.

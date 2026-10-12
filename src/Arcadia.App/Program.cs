@@ -25,6 +25,15 @@ sealed partial class Program
 
         velopack.Run();
 
+        // Crashes used to show only in the Windows event log; now every one lands in arcadia.log.
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            AppLog.Write($"Absturz durch unbehandelten Fehler: {e.ExceptionObject}");
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            AppLog.Write($"Unbeobachteter Fehler in einer Hintergrundaufgabe: {e.Exception}");
+            e.SetObserved();
+        };
+
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 

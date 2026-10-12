@@ -9,6 +9,12 @@ public enum LaunchStage
     /// <summary>The launcher is running; Arcadia should take the foreground back.</summary>
     LauncherReady,
 
+    /// <summary>
+    /// The launcher didn't come up in time. The game is requested anyway (that often still works),
+    /// but the user should know why it may not start.
+    /// </summary>
+    LauncherNotReady,
+
     /// <summary>The start request was handed to the launcher or the executable.</summary>
     Starting,
 

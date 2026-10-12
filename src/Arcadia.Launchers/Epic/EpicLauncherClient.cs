@@ -5,21 +5,40 @@ using Microsoft.Win32;
 
 namespace Arcadia.Launchers.Epic;
 
+/// <summary>What <see cref="EpicLauncherClient"/> needs from the system; replaced in tests.</summary>
+public interface IEpicLauncherProcesses
+{
+    bool IsLauncherRunning();
+
+    /// <summary>The launcher and its web helper run; only then does it accept launch requests.</summary>
+    bool IsLauncherReady();
+
+    string? FindLauncherExecutable();
+
+    void StartLauncherSilently(string executable);
+
+    void Request(LaunchTarget target);
+
+    bool AnyRunningFrom(string directory);
+}
+
 /// <summary>
 /// Starts Epic games through the Epic Games Launcher. Games flagged <c>bRequiresAuth</c> get their
 /// login token from the launcher, so it has to run. If it doesn't, it is started hidden in the tray
 /// (<c>-silent</c>, the same switch Epic's own autostart uses) before the game is requested.
 /// </summary>
-public sealed class EpicLauncherClient(TimeProvider time) : ILauncherClient
+public sealed class EpicLauncherClient(TimeProvider time, IEpicLauncherProcesses? processes = null) : ILauncherClient
 {
     private const string LauncherProcess = "EpicGamesLauncher";
     private const string WebHelperProcess = "EpicWebHelper";
 
-    private static readonly TimeSpan LauncherReadyTimeout = TimeSpan.FromSeconds(60);
+    public static readonly TimeSpan LauncherReadyTimeout = TimeSpan.FromSeconds(60);
 
     // The web helper appears before the launcher accepts launch requests; give it a moment more.
     private static readonly TimeSpan LauncherSettleTime = TimeSpan.FromSeconds(4);
-    private static readonly TimeSpan GameStartTimeout = TimeSpan.FromSeconds(30);
+    public static readonly TimeSpan GameStartTimeout = TimeSpan.FromSeconds(30);
+
+    private readonly IEpicLauncherProcesses _processes = processes ?? new SystemProcesses();
 
     public string? LauncherId => KnownLaunchers.Epic.Id;
 
@@ -32,40 +51,62 @@ public sealed class EpicLauncherClient(TimeProvider time) : ILauncherClient
         }
 
         var startedLauncher = false;
-        if (!ProcessWatch.IsRunning(LauncherProcess) && FindLauncherExecutable() is { } launcher)
+        var launcherReady = true;
+        if (!_processes.IsLauncherRunning() && _processes.FindLauncherExecutable() is { } launcher)
         {
             progress?.Report(LaunchStage.StartingLauncher);
-            Process.Start(new ProcessStartInfo(launcher, "-silent") { UseShellExecute = false })?.Dispose();
+            _processes.StartLauncherSilently(launcher);
             startedLauncher = true;
 
-            await ProcessWatch.WaitUntilAsync(
-                () => ProcessWatch.IsRunning(LauncherProcess) && ProcessWatch.IsRunning(WebHelperProcess),
-                LauncherReadyTimeout,
-                time,
-                cancellationToken);
-            await Task.Delay(LauncherSettleTime, time, cancellationToken);
-            progress?.Report(LaunchStage.LauncherReady);
+            launcherReady = await ProcessWatch.WaitUntilAsync(_processes.IsLauncherReady, LauncherReadyTimeout, time, cancellationToken);
+            if (launcherReady)
+            {
+                await Task.Delay(LauncherSettleTime, time, cancellationToken);
+            }
+
+            // Not ready is no success: say so, then still ask once, since that often works anyway.
+            progress?.Report(launcherReady ? LaunchStage.LauncherReady : LaunchStage.LauncherNotReady);
         }
 
-        progress?.Report(LaunchStage.Starting);
-        DirectLauncherClient.Start(uri);
+        if (launcherReady)
+        {
+            progress?.Report(LaunchStage.Starting);
+        }
+
+        _processes.Request(uri);
 
         if (game.InstallDirectory is not { } directory || !Directory.Exists(directory))
         {
             return;
         }
 
-        bool IsGameRunning() => ProcessWatch.AnyRunningFrom(directory);
+        bool IsGameRunning() => _processes.AnyRunningFrom(directory);
         var running = await ProcessWatch.WaitUntilAsync(IsGameRunning, GameStartTimeout, time, cancellationToken);
 
         // A launcher that was just started sometimes drops the first request; ask once more.
         if (!running && startedLauncher)
         {
-            DirectLauncherClient.Start(uri);
+            _processes.Request(uri);
             running = await ProcessWatch.WaitUntilAsync(IsGameRunning, GameStartTimeout, time, cancellationToken);
         }
 
         progress?.Report(running ? LaunchStage.Running : LaunchStage.NotConfirmed);
+    }
+
+    private sealed class SystemProcesses : IEpicLauncherProcesses
+    {
+        public bool IsLauncherRunning() => ProcessWatch.IsRunning(LauncherProcess);
+
+        public bool IsLauncherReady() => ProcessWatch.IsRunning(LauncherProcess) && ProcessWatch.IsRunning(WebHelperProcess);
+
+        public string? FindLauncherExecutable() => EpicLauncherClient.FindLauncherExecutable();
+
+        public void StartLauncherSilently(string executable) =>
+            Process.Start(new ProcessStartInfo(executable, "-silent") { UseShellExecute = false })?.Dispose();
+
+        public void Request(LaunchTarget target) => DirectLauncherClient.Start(target);
+
+        public bool AnyRunningFrom(string directory) => ProcessWatch.AnyRunningFrom(directory);
     }
 
     /// <summary>

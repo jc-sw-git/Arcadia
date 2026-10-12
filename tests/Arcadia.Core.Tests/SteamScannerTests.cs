@@ -222,7 +222,7 @@ public sealed class SteamScannerTests : IDisposable
             """);
 
         var scanner = new SteamScanner(() => new SteamInstallation(steam, 7266204));
-        var games = (await scanner.ScanAsync()).Where(g => g.IsInstalled).OrderBy(g => g.Title).ToList();
+        var games = (await scanner.ScanAsync()).OrderBy(g => g.Title).ToList();
 
         Assert.Equal(["Bloons TD 6", "Papers, Please"], games.Select(g => g.Title));
         var bloons = games[0];
@@ -232,49 +232,6 @@ public sealed class SteamScannerTests : IDisposable
         Assert.NotNull(bloons.InstalledAt);
         Assert.Null(games[1].Playtime);
         Assert.Null(games[1].InstalledAt);
-    }
-
-    [Fact]
-    public async Task Adds_owned_games_that_are_not_installed()
-    {
-        var steam = Path.Combine(_root, "Steam");
-        Write(Path.Combine(steam, "steamapps", "appmanifest_239030.acf"), Manifest("239030", "Papers, Please", "PapersPlease"));
-        Directory.CreateDirectory(Path.Combine(steam, "appcache"));
-        File.WriteAllBytes(Path.Combine(steam, "appcache", "packageinfo.vdf"), SteamCacheFiles.PackageInfo((1213, [239030, 367520, 1030300, 228980, 1030301])));
-        File.WriteAllBytes(Path.Combine(steam, "appcache", "appinfo.vdf"), SteamCacheFiles.AppInfo(
-            (239030, "Papers, Please", "game"),
-            (367520, "Hollow Knight", "game"),
-            (228980, "Steamworks Common Redistributables", "Tool"),
-            (1030300, "Hollow Knight: Silksong", "Game"),
-            (1030301, "Silksong DLC", "DLC")));
-        Write(Path.Combine(steam, "userdata", "7266204", "config", "localconfig.vdf"), """
-            "UserLocalConfigStore" { "Software" { "Valve" { "Steam" { "apps" {
-            	"367520" { "LastPlayed" "1775672229" "Playtime" "600" }
-            } } } } }
-            """);
-
-        var games = await new SteamScanner(() => new SteamInstallation(steam, 7266204)).ScanAsync();
-
-        Assert.Equal(["Papers, Please", "Hollow Knight", "Hollow Knight: Silksong"], games.Select(g => g.Title));
-        Assert.True(games[0].IsInstalled);
-        var hollowKnight = games[1];
-        Assert.False(hollowKnight.IsInstalled);
-        Assert.Equal(new LaunchTarget.ProtocolUri("steam://install/367520"), hollowKnight.Install);
-        Assert.Equal(TimeSpan.FromMinutes(600), hollowKnight.Playtime);
-        Assert.Null(hollowKnight.InstallDirectory);
-    }
-
-    [Fact]
-    public async Task A_broken_package_cache_still_shows_the_installed_games()
-    {
-        var steam = Path.Combine(_root, "Steam");
-        Write(Path.Combine(steam, "steamapps", "appmanifest_239030.acf"), Manifest("239030", "Papers, Please", "PapersPlease"));
-        Write(Path.Combine(steam, "appcache", "packageinfo.vdf"), "not a cache");
-        Write(Path.Combine(steam, "appcache", "appinfo.vdf"), "not a cache");
-
-        var game = Assert.Single(await new SteamScanner(() => new SteamInstallation(steam, null)).ScanAsync());
-
-        Assert.Equal("Papers, Please", game.Title);
     }
 
     [Fact]

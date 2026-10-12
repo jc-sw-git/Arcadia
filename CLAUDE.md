@@ -111,7 +111,7 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 |---|---|
 | `src/Arcadia.Launchers.Abstractions` | What a launcher is made of, with no dependency on the rest: `ILauncherIntegration` (scanner, optional client and install monitor, `Locate`), `ILauncherScanner`, `ILauncherClient`, `IInstallMonitor`, models (`Game`, `LauncherInfo`, `LaunchTarget`). The future plugin interface for launchers |
 | `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`, `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
-| `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`SteamScanner`, `SteamAppCache`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
+| `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`SteamScanner`, `SteamInstallMonitor`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, auto-repeat for D-pad/stick) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost`, `SisrApiClient`, `UsbipDriver`, `GitHubReleases`, `ControllerSupportService`, `ControllerSupportRemoval` (uninstall) |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header) and `ToastViewModel` are its children |
@@ -173,10 +173,9 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
 update pending (4 = installed, 6 = with update, +64 while running); a first install without `buildid` is not
 shown. Playtime (minutes) and `LastPlayed` come from `userdata/<user>/config/localconfig.vdf` →
 `UserLocalConfigStore/Software/Valve/Steam/apps/<appid>`; that file also holds app tickets — never log it.
-Steam stores no install date (the game folder's creation time is used). Owned but uninstalled games come from
-`appcache/packageinfo.vdf` (the account's packages → app ids; package 0 is Steam's base package, skipped) and
-`appcache/appinfo.vdf` (v29: keys are indices into a string table at the offset in the header; `common/name`,
-`common/type` — only `game` is listed). Install = `steam://install/<appid>`. Libraries are re-read on every scan,
+Steam stores no install date (the game folder's creation time is used). Owned but uninstalled games are **not**
+readable locally: `appcache/packageinfo.vdf` keeps packages after a refund (owner's 007 First Light), and the real
+license list (`userdata/<id>/config/licensecache`) is encrypted — they come with a Steam login (#83). Libraries are re-read on every scan,
 so added or missing drives need no handling of their own.
 `SteamInstallMonitor` (verified 2026-10-12 with real installs): a new install's manifest appears with `StateFlags` 2
 and `buildid` 0, then 1026 (+1024 started) while downloading *or* waiting, 1538 (+512) when paused, 4 when done;

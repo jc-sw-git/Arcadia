@@ -10,8 +10,8 @@ public sealed record SteamPlayStats(DateTimeOffset? LastPlayedAt, TimeSpan? Play
 /// <summary>
 /// Reads the installed Steam games: every library from <c>steamapps/libraryfolders.vdf</c>, one
 /// <c>appmanifest_&lt;appid&gt;.acf</c> per installed app, playtime and last start from the
-/// account's <c>localconfig.vdf</c>, and the games the account owns but hasn't installed from
-/// Steam's package cache (<see cref="SteamAppCache"/>). Tools and redistributables are left out.
+/// account's <c>localconfig.vdf</c>. Tools and redistributables are left out. Owned but uninstalled
+/// games need a Steam login (#83): Steam's local package cache keeps refunded games.
 /// </summary>
 /// <param name="locate">Finds Steam; defaults to <see cref="SteamInstallation.Find"/>.</param>
 public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILauncherScanner
@@ -77,37 +77,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             }
         }
 
-        cancellationToken.ThrowIfCancellationRequested();
-        games.AddRange(OwnedGames(ReadOwnedApps(steam.RootPath, installed), installed, stats));
         return games;
-    }
-
-    /// <summary>
-    /// The games of the account that are not installed: every app of type <c>game</c> from Steam's
-    /// package cache that isn't in <paramref name="installed"/> and isn't a tool.
-    /// </summary>
-    public static IEnumerable<Game> OwnedGames(IReadOnlyDictionary<uint, SteamAppInfo> owned, IReadOnlySet<uint> installed, IReadOnlyDictionary<uint, SteamPlayStats> stats)
-    {
-        foreach (var (appId, app) in owned.OrderBy(a => a.Key))
-        {
-            if (app.Type != "game" || installed.Contains(appId) || IsTool(appId, app.Name))
-            {
-                continue;
-            }
-
-            stats.TryGetValue(appId, out var played);
-            yield return new Game
-            {
-                Id = appId.ToString(CultureInfo.InvariantCulture),
-                LauncherId = KnownLaunchers.Steam.Id,
-                Title = app.Name,
-                Launch = new LaunchTarget.ProtocolUri(RunUri(appId)),
-                IsInstalled = false,
-                Install = new LaunchTarget.ProtocolUri(InstallUri(appId)),
-                LastPlayedAt = played?.LastPlayedAt,
-                Playtime = played?.Playtime,
-            };
-        }
     }
 
     /// <summary>
@@ -207,9 +177,6 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
 
     public static string RunUri(uint appId) => $"steam://rungameid/{appId.ToString(CultureInfo.InvariantCulture)}";
 
-    /// <summary>Opens Steam's install dialog for the game.</summary>
-    public static string InstallUri(uint appId) => $"steam://install/{appId.ToString(CultureInfo.InvariantCulture)}";
-
     // A first-time install has no build yet and isn't playable; an installed game being updated
     // keeps its build id and stays in the library, even while Steam clears FullyInstalled.
     private static bool IsInstalled(int flags, string? buildId) =>
@@ -234,29 +201,6 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
         }
 
         return Path.Combine(library, "steamapps", "common", installDir);
-    }
-
-    // Only the apps not installed need a name from appinfo.vdf, which is several MB; the rest is skipped unread.
-    private static IReadOnlyDictionary<uint, SteamAppInfo> ReadOwnedApps(string steamRoot, IReadOnlySet<uint> installed)
-    {
-        var appCache = Path.Combine(steamRoot, "appcache");
-        try
-        {
-            if (ReadBytes(Path.Combine(appCache, "packageinfo.vdf")) is not { } packageInfo
-                || ReadBytes(Path.Combine(appCache, "appinfo.vdf")) is not { } appInfo)
-            {
-                return new Dictionary<uint, SteamAppInfo>();
-            }
-
-            var owned = new HashSet<uint>(SteamAppCache.ReadOwnedAppIds(packageInfo));
-            owned.ExceptWith(installed);
-            return SteamAppCache.ReadAppInfo(appInfo, owned);
-        }
-        catch (FormatException)
-        {
-            // A Steam update changed the cache format: show the installed games rather than nothing.
-            return new Dictionary<uint, SteamAppInfo>();
-        }
     }
 
     internal static IEnumerable<string> ManifestFiles(string library)
@@ -302,27 +246,6 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             return TextVdf.Parse(text);
         }
         catch (FormatException)
-        {
-            return null;
-        }
-    }
-
-    // Steam keeps its caches open while it runs; share access so reading never blocks or fails on that.
-    private static byte[]? ReadBytes(string path)
-    {
-        try
-        {
-            if (!File.Exists(path))
-            {
-                return null;
-            }
-
-            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            using var buffer = new MemoryStream();
-            stream.CopyTo(buffer);
-            return buffer.ToArray();
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return null;
         }

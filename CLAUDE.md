@@ -132,8 +132,10 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   `/steam-epic term` prefix, keyword per launcher), R3 = keyboard layout switch, Menu/☰ or
   right click = context menu. No "all launchers" tab. No dedicated favourite button.
 - Dependent options sit in the same box as their main switch.
-- If an update is available, A starts the update in the launcher; "play without update" stays
-  available with a hint.
+- If an update is available, A still says "Spielen" and starts the game; the launcher installs the update
+  first. The update shows as an icon, and the detail page says below the button that the launcher may update
+  first (owner, 2026-10-12). Launchers have no update-only command: Steam ignores `steam://install` for
+  installed games and `steam://validate` verifies every file first; Playnite offers no update action either.
 
 **Avalonia 12:**
 - A locally set property (e.g. `Fill="…"`, `Stroke="…"`) beats any style — state colours must

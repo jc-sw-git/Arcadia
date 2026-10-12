@@ -40,7 +40,6 @@ public partial class GameTileViewModel : ViewModelBase
     public string PrimaryActionText => InstallState?.Phase == InstallPhase.Uninstalling ? "Wird deinstalliert …"
         : InstallState is not null ? $"{InstallVerb} …"
         : !Game.IsInstalled ? "Installieren"
-        : Game.UpdateAvailable ? "Update starten"
         : "Spielen";
 
     /// <summary>The running installation of this game, or null.</summary>

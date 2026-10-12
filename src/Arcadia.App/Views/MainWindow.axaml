@@ -165,7 +165,7 @@
                   </StackPanel>
                 </Button>
                 <TextBlock IsVisible="{Binding UpdateAvailable}" HorizontalAlignment="Center" FontSize="14" Foreground="{StaticResource TextMuted}">
-                  <Run Text="Das Update wird in " /><Run Text="{Binding LauncherName}" /><Run Text=" gestartet" />
+                  <Run Text="Update verfügbar – " /><Run Text="{Binding LauncherName}" /><Run Text=" installiert es ggf. vor dem Start" />
                 </TextBlock>
                 <TextBlock IsVisible="{Binding ShowInstallBadge}" HorizontalAlignment="Center" FontSize="14" Foreground="{StaticResource TextMuted}">
                   <Run Text="Die Installation wird in " /><Run Text="{Binding LauncherName}" /><Run Text=" geöffnet" />

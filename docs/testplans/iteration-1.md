@@ -12,8 +12,8 @@ Abschluss-Test am installierten Release-Kandidaten.
       Demos bleiben drin. · E2E: ja (Manifeste als Testdateien)
 - [ ] **T1-2** Stichprobe gegen Steam: Größe, zuletzt gespielt und Spielzeit stimmen; das
       Installationsdatum ist das Erstelldatum des Spielordners. · E2E: ja (Testdateien)
-- [ ] **T1-3** „Update starten“ erscheint nur bei Spielen, für die Steam ein Update anzeigt; A
-      startet es in Steam. · E2E: nein (echtes Steam)
+- [ ] **T1-3** Das Update-Symbol erscheint nur bei Spielen, für die Steam ein Update anzeigt; A
+      startet das Spiel, Steam installiert vorher das Update. · E2E: nein (echtes Steam)
 - [ ] **T1-4** A, Enter und Doppelklick starten ein Steam-Spiel; Steam darf dabei im Hintergrund
       bleiben oder geschlossen sein. · E2E: nein (echtes Steam)
 - [ ] **T1-5** Ohne Steam (nicht installiert) gibt es keinen Steam-Tab und keinen Fehler. · E2E: ja
@@ -137,7 +137,7 @@ Verlauf:
 
 ## #81 Gleiche Funktionen für Steam und Epic
 
-- [ ] **T81-1** Ein Epic-Spiel, für das Epic ein Update anzeigt, zeigt in Arcadia „Update starten“;
+- [ ] **T81-1** Ein Epic-Spiel, für das Epic ein Update anzeigt, zeigt in Arcadia das Update-Symbol;
       nach dem Update verschwindet der Hinweis. · E2E: ja (Epic-Log und Manifeste als Testdateien)
 - [ ] **T81-2** Ein Epic-Spiel, das über Epic gespielt wurde, zeigt „zuletzt gespielt“; das Datum
       bleibt erhalten, auch wenn Epic das alte Log gelöscht hat. · E2E: ja (Testdateien)
@@ -159,7 +159,7 @@ Verlauf:
 |---|---|---|---|---|---|
 | T81-1, T81-2 | 2026-10-12 | Claude | PR #80, Linux, Log-Leser gegen Kopien der 4 Epic-Logs des Owners, nicht in der App | ✅ 4 Sitzungen, Update nur bei Terraforming Mars (wie in Epic) | Ansicht in Arcadia am PC des Owners |
 | T81-3 bis T81-5 | 2026-10-12 | Juri + Claude | PR #80, PC des Owners: Age of Empires II und System Shock 2 installiert, pausiert, vorgezogen, abgebrochen, deinstalliert; Claude hat die Manifeste mitgelesen, Arcadia lief nicht | ✅ Abläufe als Unit-Tests nachgestellt | Ansicht in Arcadia am PC des Owners |
-| T81-6 | 2026-10-12 | Juri | PR #80, PC des Owners, Arcadia: Update von Bloons TD 6 (Steam) und Terraforming Mars (Epic) über „Update starten“ | ❌ Steam „Warteschlange“ statt „lädt“, Epic durchgehend „Fast fertig“; beide Spiele starteten danach | Steam liest jetzt `content_log.txt`, Epic-Updates ohne Prozent; Start ohne Spiel offen |
+| T81-6 | 2026-10-12 | Juri | PR #80, PC des Owners, Arcadia: Update von Bloons TD 6 (Steam) und Terraforming Mars (Epic) über „Update starten“ | ❌ Steam „Warteschlange“ statt „lädt“, Epic durchgehend „Fast fertig“; beide Spiele starteten danach | Steam liest jetzt `content_log.txt`, Epic-Updates ohne Prozent; A heißt wieder „Spielen“ (Entscheidung des Owners, kein Launcher kann nur aktualisieren) |
 | T81-6 | 2026-10-12 | Juri + Claude | PR #80, PC des Owners: `steam://validate` für Schedule I, Claude hat Manifest und `content_log.txt` mitgelesen | ✅ Log meldet `Update Running` sofort; das Manifest schreibt die Bytes nur zu Beginn und Ende | Unit-Test mit den echten Log-Zeilen |
 
 ## Grundgerüst (ohne Issue)
@@ -208,8 +208,8 @@ Steam Controller Support, Fehlerbehandlung). IDs `G-<n>`. Wo nichts anderes steh
       B schließt. · E2E: ja
 - [ ] **G-15** Das Vorschau-Panel zeigt zuletzt gespielt, Spielzeit, Größe, Launcher und
       Speicherort des fokussierten Spiels. · E2E: ja
-- [ ] **G-16** Ein Spiel mit Update zeigt „Update starten“ statt „Spielen“; A startet das Update
-      im Launcher. · E2E: nein (echter Launcher)
+- [ ] **G-16** Ein Spiel mit Update zeigt das Update-Symbol, „Spielen“ und darunter den Hinweis,
+      dass der Launcher das Update ggf. vorher installiert; A startet das Spiel. · E2E: nein (echter Launcher)
 
 ### Spiele starten
 

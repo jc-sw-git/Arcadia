@@ -1,5 +1,5 @@
 using System.Globalization;
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Library;
 

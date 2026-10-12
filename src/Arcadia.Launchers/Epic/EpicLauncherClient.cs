@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using Arcadia.Core.Launchers;
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 using Microsoft.Win32;
 
 namespace Arcadia.Launchers.Epic;

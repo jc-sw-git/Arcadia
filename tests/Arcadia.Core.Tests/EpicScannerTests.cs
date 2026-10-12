@@ -1,4 +1,4 @@
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Epic;
 
 namespace Arcadia.Core.Tests;

@@ -82,23 +82,23 @@
         </Grid>
 
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsControllerStarting}" VerticalAlignment="Center"
+          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Status.IsControllerStarting}" VerticalAlignment="Center"
                       ToolTip.Tip="SISR startet und richtet den Steam Controller als Xbox-360-Controller ein">
             <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
             <TextBlock Text="Controller wird eingerichtet …" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
           </StackPanel>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  IsVisible="{Binding HasControllerWarning}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{Binding ControllerWarningText}">
+                  IsVisible="{Binding Status.HasControllerWarning}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{Binding Status.ControllerWarningText}">
             <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" Stroke="{StaticResource Warning}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
                   Width="24" Height="24" Stretch="None" />
           </Button>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  IsVisible="{Binding HasSisrUpdate}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Neue SISR-Version verfügbar">
+                  IsVisible="{Binding Status.HasSisrUpdate}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Neue SISR-Version verfügbar">
             <Path Data="M20 12a8 8 0 1 1 -2.3 -5.6 M20 4v4.5h-4.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
                   Width="24" Height="24" Stretch="None" />
           </Button>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  IsVisible="{Binding HasArcadiaUpdate}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{Binding ArcadiaUpdateText}">
+                  IsVisible="{Binding Status.HasArcadiaUpdate}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{Binding Status.ArcadiaUpdateText}">
             <Panel Width="24" Height="24">
               <Path Data="M20 12a8 8 0 1 1 -2.3 -5.6 M20 4v4.5h-4.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
                     Width="24" Height="24" Stretch="None" />
@@ -112,8 +112,8 @@
             <Path Data="M4 7h10 M18 7h2 M4 17h4 M12 17h8 M14 7a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M8 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"
                   Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
           </Button>
-          <TextBlock Text="{Binding Date}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding Clock}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Status.Date}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Status.Clock}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
         </StackPanel>
       </Grid>
 
@@ -179,6 +179,7 @@
                 <StackPanel Spacing="10" IsVisible="{Binding IsInstallActive}">
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                    <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
                     <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding InstallStatusText}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
                   </StackPanel>
@@ -257,6 +258,7 @@
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                           <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                          <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
                           <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
                           <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
                         </StackPanel>
@@ -336,9 +338,9 @@
       </Border>
 
       <!-- Toast -->
-      <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding HasToast}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"
+      <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding Toast.IsVisible}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"
               Padding="24,14" Margin="0,0,0,96" HorizontalAlignment="Center" VerticalAlignment="Bottom" BoxShadow="{StaticResource ToastShadow}">
-        <TextBlock Text="{Binding Toast}" FontSize="18" FontWeight="SemiBold" />
+        <TextBlock Text="{Binding Toast.Text}" FontSize="18" FontWeight="SemiBold" />
       </Border>
 
       <!-- "Ansicht" dialog -->

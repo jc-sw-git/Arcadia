@@ -1,6 +1,4 @@
-using Arcadia.Core.Models;
-
-namespace Arcadia.Core.Launchers;
+namespace Arcadia.Launchers.Abstractions;
 
 /// <summary>Reads the games of one launcher: installed ones and, where the launcher reveals them, owned ones.</summary>
 public interface ILauncherScanner

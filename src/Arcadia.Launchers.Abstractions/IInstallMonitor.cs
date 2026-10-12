@@ -1,4 +1,4 @@
-namespace Arcadia.Core.Launchers;
+namespace Arcadia.Launchers.Abstractions;
 
 /// <summary>Where a running installation stands, as far as the launcher reveals it.</summary>
 public enum InstallPhase
@@ -34,7 +34,7 @@ public enum InstallOutcome
     Uninstalled,
 }
 
-/// <param name="Active">Running installations by <see cref="Models.Game.Id"/>.</param>
+/// <param name="Active">Running installations by <see cref="Game.Id"/>.</param>
 /// <param name="Finished">Installations that ended since the previous poll, by game id.</param>
 public sealed record InstallSnapshot(IReadOnlyDictionary<string, InstallProgress> Active, IReadOnlyDictionary<string, InstallOutcome> Finished)
 {

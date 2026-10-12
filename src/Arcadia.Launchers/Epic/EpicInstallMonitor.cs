@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Arcadia.Core.Launchers;
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers.Epic;
 
@@ -26,6 +26,10 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
     private readonly Dictionary<string, EpicInstallEvent> _lastEvent = new(StringComparer.Ordinal);
     private readonly HashSet<string> _uninstalling = new(StringComparer.Ordinal);
 
+    // Epic downloads one app at a time. Resuming a paused app while another downloads cancels the
+    // running one without logging a pause (owner's log, 2026-10-12), so only the latest start runs.
+    private string? _latestStart;
+
     // Apps the log reported on while Arcadia was watching. For them the log decides whether an
     // installation is open; the queue file only orders them. Epic doesn't always rewrite the queue
     // file right away (seen when a paused install was cancelled while another one ran).
@@ -44,6 +48,13 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
         foreach (var (app, installEvent) in newEvents)
         {
             _lastEvent[app] = installEvent;
+
+            // An uninstall runs as a task too, but whether it stops a download is unknown; assume not.
+            if (installEvent == EpicInstallEvent.Started && !_uninstalling.Contains(app))
+            {
+                _latestStart = app;
+            }
+
             if (_primed)
             {
                 _seenLive.Add(app);
@@ -89,8 +100,9 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
             else if (last is EpicInstallEvent.Started or EpicInstallEvent.Paused)
             {
                 var fraction = pending.TryGetValue(app, out var manifest) ? FractionOf(manifest) : null;
-                var phase = last == EpicInstallEvent.Paused ? InstallPhase.Paused
-                    : fraction >= 0.999 ? InstallPhase.Finishing
+                // A complete download moving its files may overlap the next app's start; it isn't paused.
+                var phase = fraction >= 0.999 && last == EpicInstallEvent.Started ? InstallPhase.Finishing
+                    : last == EpicInstallEvent.Paused || app != _latestStart ? InstallPhase.Paused
                     : InstallPhase.Downloading;
                 active[app] = new InstallProgress(phase, fraction);
             }
@@ -195,6 +207,7 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
                 _lastEvent.Clear();
                 _uninstalling.Clear();
                 _seenLive.Clear();
+                _latestStart = null;
             }
 
             stream.Seek(_logOffset, SeekOrigin.Begin);

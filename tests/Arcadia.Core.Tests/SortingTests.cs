@@ -1,6 +1,6 @@
 using System.Globalization;
 using Arcadia.Core.Library;
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Tests;
 

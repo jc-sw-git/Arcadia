@@ -1,5 +1,4 @@
-using Arcadia.Core.Launchers;
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers.Demo;
 
@@ -22,18 +21,6 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
     ];
 
     public LauncherInfo Launcher => launcher;
-
-    /// <summary>The default demo set: every known launcher with a different library size.</summary>
-    public static IReadOnlyList<ILauncherScanner> DefaultSet(DateTimeOffset now) =>
-    [
-        new DemoScanner(KnownLaunchers.Steam, 128, now),
-        new DemoScanner(KnownLaunchers.Gog, 31, now),
-        new DemoScanner(KnownLaunchers.Ubisoft, 9, now),
-        new DemoScanner(KnownLaunchers.Ea, 14, now),
-        new DemoScanner(KnownLaunchers.Xbox, 62, now),
-        new DemoScanner(KnownLaunchers.BattleNet, 21, now),
-        new DemoScanner(KnownLaunchers.Amazon, 6, now),
-    ];
 
     public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default)
     {

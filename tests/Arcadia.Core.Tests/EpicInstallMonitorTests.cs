@@ -1,4 +1,4 @@
-using Arcadia.Core.Launchers;
+using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Epic;
 
 namespace Arcadia.Core.Tests;
@@ -18,6 +18,9 @@ public sealed class EpicInstallMonitorTests : IDisposable
     private const string OtherQueued = $"[2026.10.10-07.20.10:570][807]LogDownloadManager: Queued install for the a940fa38f001486a9884640924119576:f3ac42b603f546ccbd0f0240ba120143:{Other}, Queue length is 2, Are we restarting followers 0";
     private const string Uninstalled = $"[2026.10.10-07.21.48:919][256]LogCommunityPortalAppManager: FCommunityPortalAppManagerImpl: Uninstall {Ns}:{App}";
     private const string OtherCancelled = $"[2026.10.10-07.20.57:737][405]LogDownloadManager: Cancel of active installation is requested for the a940fa38f001486a9884640924119576:f3ac42b603f546ccbd0f0240ba120143:{Other}";
+
+    private const string OtherId = $"a940fa38f001486a9884640924119576:f3ac42b603f546ccbd0f0240ba120143:{Other}";
+    private const string OtherStarted = $"[2026.10.12-17.27.27:692][853]LogEoshPatcher: StartTask: BinaryId [{OtherId}:1.3] — using default components: []";
 
     private readonly string _root = Path.Combine(Path.GetTempPath(), "arcadia-epic-" + Guid.NewGuid().ToString("N"));
     private readonly string _data;
@@ -154,6 +157,54 @@ public sealed class EpicInstallMonitorTests : IDisposable
 
         Assert.Equal(InstallPhase.Downloading, active[Other].Phase);
         Assert.False(active.ContainsKey(App));
+    }
+
+    [Fact]
+    public void Resuming_another_app_in_epic_pauses_the_running_one()
+    {
+        // Owner's log, 2026-10-12: resuming Other while App downloaded made Epic cancel App's
+        // operation and start Other, without a pause line for App.
+        SetQueue(App, Other);
+        WritePending(App, installSize: 1000);
+        WriteGameBytes(400);
+        var otherResumed = $"[2026.10.12-17.27.27:012][812]LogDownloadManager: Resume of active installation is requested for the {OtherId}";
+        AppendLog(Queued, Started, OtherQueued, otherResumed, OtherStarted);
+        var monitor = Monitor();
+
+        var active = monitor.Poll().Active;
+        Assert.Equal(InstallPhase.Downloading, active[Other].Phase);
+        Assert.Equal(InstallPhase.Paused, active[App].Phase);
+        Assert.Equal(0.4, active[App].Fraction!.Value, precision: 3);
+
+        // Pausing Other leaves nothing running; Epic doesn't fall back to App on its own.
+        AppendLog($"[2026.10.12-17.28.04:318][100]LogDownloadManager: Pause is requested for the {OtherId}");
+        active = monitor.Poll().Active;
+        Assert.Equal(InstallPhase.Paused, active[Other].Phase);
+        Assert.Equal(InstallPhase.Paused, active[App].Phase);
+    }
+
+    [Fact]
+    public void An_uninstall_does_not_pause_the_running_download()
+    {
+        SetQueue(App, Other);
+        var otherUninstalled = $"[2026.10.12-17.25.11:723][274]LogCommunityPortalAppManager: FCommunityPortalAppManagerImpl: Uninstall {OtherId}";
+        AppendLog(Queued, Started, otherUninstalled, OtherQueued, OtherStarted);
+
+        var active = Monitor().Poll().Active;
+
+        Assert.Equal(InstallPhase.Downloading, active[App].Phase);
+        Assert.Equal(InstallPhase.Uninstalling, active[Other].Phase);
+    }
+
+    [Fact]
+    public void A_finished_download_still_moving_files_is_not_paused_by_the_next_start()
+    {
+        SetQueue(App, Other);
+        WritePending(App, installSize: 100);
+        WriteGameBytes(100);
+        AppendLog(Queued, Started, OtherQueued, OtherStarted);
+
+        Assert.Equal(InstallPhase.Finishing, Monitor().Poll().Active[App].Phase);
     }
 
     [Fact]

@@ -1,6 +1,6 @@
-using Arcadia.Core.Models;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers;
+using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Steam;
 
 namespace Arcadia.ControllerSupport;

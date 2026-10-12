@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    What a launcher integration is made of: the interfaces and models every launcher implements,
+    built-in or (later) from a plugin. No dependency on Core, the UI or ControllerSupport, so it
+    can become the versioned interface plugins build against.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

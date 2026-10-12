@@ -1,5 +1,6 @@
 using System.Text.Json;
-using Arcadia.Core.Models;
+using Arcadia.Core.Launchers;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Settings;
 

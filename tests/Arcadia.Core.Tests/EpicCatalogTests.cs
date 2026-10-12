@@ -1,6 +1,6 @@
 using System.Text;
 using Arcadia.Core.Library;
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Epic;
 
 namespace Arcadia.Core.Tests;

@@ -1,6 +1,5 @@
 using Arcadia.App.Services;
-using Arcadia.Core.Launchers;
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -47,7 +46,7 @@ public partial class GameTileViewModel : ViewModelBase
     /// <summary>The running installation of this game, or null.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsInstallActive), nameof(UpdateAvailable), nameof(ShowInstallBadge), nameof(CanActivate), nameof(PrimaryActionText),
-        nameof(InstallPercent), nameof(IsInstallIndeterminate), nameof(IsInstallPaused), nameof(IsInstallSpinning),
+        nameof(InstallPercent), nameof(IsInstallIndeterminate), nameof(IsInstallPaused), nameof(IsInstallQueued), nameof(IsInstallSpinning),
         nameof(InstallStatusText), nameof(InstallShortText), nameof(ShowLauncherControlsHint))]
     public partial InstallProgress? InstallState { get; set; }
 
@@ -69,7 +68,10 @@ public partial class GameTileViewModel : ViewModelBase
 
     public bool IsInstallPaused => InstallState?.Phase == InstallPhase.Paused;
 
-    public bool IsInstallSpinning => InstallState is not null && !IsInstallPaused;
+    /// <summary>Waiting behind other installations; shown with an hourglass instead of the spinner.</summary>
+    public bool IsInstallQueued => InstallState?.Phase == InstallPhase.Queued;
+
+    public bool IsInstallSpinning => InstallState is not null && !IsInstallPaused && !IsInstallQueued;
 
     public string InstallStatusText => InstallState switch
     {

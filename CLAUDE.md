@@ -76,6 +76,8 @@ the start of the next feature iteration. Process and test plan format: `docs/tes
 - **Readable:** names say what things are; methods do one thing; comments explain *why*, not *what*.
   A developer new to the code understands the change from the diff and `CLAUDE.md`.
 - **Modular:** launcher-specific code stays in its launcher folder; UI and Core don't special-case launchers.
+  A launcher is one `ILauncherIntegration`, registered in `BuiltInLaunchers`; built-in launchers use only
+  `Arcadia.Launchers.Abstractions`, as a plugin would.
 - **Themeable:** no colour, brush or shadow values in views or styles; they are resources in
   `Theme/Theme.axaml`, so a theme (later possibly a plugin) can replace them all in one place.
 - **Verified for real:** UI, input, launcher and Steam Controller changes were run and looked at
@@ -107,11 +109,12 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 
 | Project | Content |
 |---|---|
-| `src/Arcadia.Core` | Models (`Game`, `LauncherInfo`, `LaunchTarget`), `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`, `ILauncherScanner`, `ILauncherClient`, `Changelog` (release notes between versions) |
-| `src/Arcadia.Launchers` | Scanners (`Epic`, `Demo`), Epic catalog and install monitor (`EpicCatalog`, `EpicInstallMonitor`), launcher clients (`EpicLauncherClient`, `DirectLauncherClient`), `GameLaunchService`, `ProcessWatch`, Steam (`BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
+| `src/Arcadia.Launchers.Abstractions` | What a launcher is made of, with no dependency on the rest: `ILauncherIntegration` (scanner, optional client and install monitor, `Locate`), `ILauncherScanner`, `ILauncherClient`, `IInstallMonitor`, models (`Game`, `LauncherInfo`, `LaunchTarget`). The future plugin interface for launchers |
+| `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`, `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
+| `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, auto-repeat for D-pad/stick) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost`, `SisrApiClient`, `UsbipDriver`, `GitHubReleases`, `ControllerSupportService`, `ControllerSupportRemoval` (uninstall) |
-| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack) |
+| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header) and `ToastViewModel` are its children |
 | `tests/Arcadia.Core.Tests` | xUnit |
 
 Big Picture UI is laid out at 1920×1080 inside a `Viewbox`. Focus/navigation is done in the
@@ -184,7 +187,9 @@ the same `Queued`/`StartTask`/`HandleTaskComplete` lines, so only that first lin
 `Manifests\Pending\*.item`, which **stays behind after a cancel** (never use it as state). The
 queue file can lag behind (owner saw a running install vanish after cancelling a paused one), so
 for apps the log reported on while Arcadia ran, the log decides; the file only orders them.
-Reordering logs `New active position is requested for the <app>` followed by a pause of the old one. Progress =
+Reordering logs `New active position is requested for the <app>` followed by a pause of the old one. Resuming a paused app while
+another downloads logs only `Resume of active installation` for the new one; the running one is cancelled
+without a pause line (verified 2026-10-12), so only the latest `StartTask` counts as downloading. Progress =
 size of the whole install dir / `InstallSize` (download goes to `.egstore` inside it, moved at the end).
 Epic writes no percentages to the log. The library is also rescanned when the window is activated
 and when a selected installed game's directory is missing.

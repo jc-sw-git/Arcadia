@@ -18,16 +18,24 @@ Abschluss-Test am installierten Release-Kandidaten.
       bleiben oder geschlossen sein. · E2E: nein (echtes Steam)
 - [ ] **T1-5** Ohne Steam (nicht installiert) gibt es keinen Steam-Tab und keinen Fehler. · E2E: ja
 - [ ] **T1-6** Mit `--demo` zeigt der Steam-Tab die echten Spiele statt Demo-Daten. · E2E: ja
+- [ ] **T1-7** Der Steam-Tab zeigt auch alle Spiele im Besitz, die nicht installiert sind (ohne
+      DLCs, Soundtracks, Werkzeuge); Anzahl installiert + nicht installiert stimmt mit „Spiele“ in
+      der Steam-Bibliothek überein. · E2E: ja (`packageinfo.vdf`/`appinfo.vdf` als Testdateien)
+- [ ] **T1-8** A auf einem nicht installierten Steam-Spiel öffnet Steams Installationsdialog; nach
+      der Installation erscheint es ohne Neustart als installiert, sobald Arcadia wieder aktiv
+      wird. · E2E: nein (echtes Steam)
+- [ ] **T1-9** Eine Steam-Bibliothek, deren Laufwerk fehlt, erzeugt keinen Fehler; ihre Spiele
+      stehen als nicht installiert da und sind wieder installiert, sobald das Laufwerk zurück ist.
+      · E2E: ja (Testordner)
 
-Die SISR-Pause bei Steam-Spielen prüft G-24. Nicht installierte Steam-Spiele zeigt der Tab noch
-nicht: Steam legt die Liste der Spiele im Besitz nicht lesbar ab (nur über die Web API mit
-API-Schlüssel oder den binären `appinfo.vdf`-Cache).
+Die SISR-Pause bei Steam-Spielen prüft G-24.
 
 Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | T1-1, T1-2 | 2026-10-12 | Claude | PR-Branch, Linux, Scanner-Code gegen Kopien der echten Dateien des Owners (3 Bibliotheken, 77 Manifeste, `localconfig.vdf`), nicht in der App | ✅ 74 Spiele, ausgefiltert genau Steamworks Redistributables, Source SDK Base 2013 und ein Soundtrack; Update bei den 4 Spielen mit `StateFlags` 6/70 | Ansicht in Arcadia, Start und Update am PC des Owners |
+| T1-7 | 2026-10-12 | Claude | PR-Branch, Linux, Leser gegen Kopien von `packageinfo.vdf`/`appinfo.vdf` des Owners, nicht in der App | ✅ 74 installierte + 394 nicht installierte Spiele; Abgleich mit der Zahl in Steam steht aus | Owner vergleicht mit seiner Steam-Bibliothek |
 
 ## #23 Installer, Self-Update, Release-Pipeline
 

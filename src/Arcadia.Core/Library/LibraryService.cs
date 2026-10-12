@@ -1,7 +1,7 @@
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Models;
 
-namespace Arcadia.App.Services;
+namespace Arcadia.Core.Library;
 
 /// <summary>The games of one launcher, as shown in its tab.</summary>
 public sealed record LauncherLibrary(LauncherInfo Launcher, IReadOnlyList<Game> Games);

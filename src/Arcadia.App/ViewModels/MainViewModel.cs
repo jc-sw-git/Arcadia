@@ -18,82 +18,50 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Must match the column count of the grid in MainWindow.axaml.</summary>
     public const int GridColumns = 8;
 
+    private static readonly TimeSpan UninstallSettleTime = TimeSpan.FromSeconds(5);
+
     private readonly LibraryService _library;
+    private readonly LibraryRefresher _refresher;
+    private readonly InstallTracker _installs;
     private readonly GameLaunchService _launcher;
+    private readonly ControllerSupportService _controllerSupport;
+    private readonly ArcadiaUpdateService _updates;
     private readonly TimeProvider _time;
     private SortOrder _sort = SortOrder.Default;
     private int _preferredPageSize = PageSizes.Default;
     private int _requestedPage;
     private bool _launching;
 
-    // Games handed to the install dialog of a launcher Arcadia can't watch; the library is
-    // rescanned until they show up installed.
-    private readonly HashSet<string> _pendingInstalls = new(StringComparer.Ordinal);
-
-    // Watched launchers: running installations by game key, and install dialogs Arcadia opened
-    // that the user hasn't confirmed yet (Epic gives up on its dialog after 10 minutes).
-    private static readonly TimeSpan ConfirmationTimeout = TimeSpan.FromMinutes(10);
-    private readonly IReadOnlyList<IInstallMonitor> _installMonitors;
-    private readonly Dictionary<string, DateTimeOffset> _awaitingConfirmation = new(StringComparer.Ordinal);
-    private Dictionary<string, InstallProgress> _installs = new(StringComparer.Ordinal);
-    private bool _pollingInstalls;
-
-    private static readonly TimeSpan RefreshThrottle = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan UninstallSettleTime = TimeSpan.FromSeconds(5);
-    private DateTimeOffset _lastLibraryRefresh;
-    private bool _refreshingLibrary;
-    private CancellationTokenSource? _toastTimer;
-
-    private readonly ControllerSupportService _controllerSupport;
-    private readonly ArcadiaUpdateService _updates;
-
     public MainViewModel(
         LibraryService library,
         GameLaunchService launcher,
         ControllerSupportService controllerSupport,
         ArcadiaUpdateService updates,
-        IReadOnlyList<IInstallMonitor> installMonitors,
+        InstallTracker installs,
         TimeProvider time)
     {
         _library = library;
+        _refresher = new LibraryRefresher(library, time);
         _launcher = launcher;
         _controllerSupport = controllerSupport;
         _updates = updates;
-        _installMonitors = installMonitors;
+        _installs = installs;
         _time = time;
+        Status = new StatusBarViewModel(controllerSupport, updates, time);
+        Toast = new ToastViewModel(time);
         _controllerSupport.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateControllerSupportState);
-        _updates.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateArcadiaUpdateState);
-        UpdateClock();
         UpdateControllerSupportState();
-        UpdateArcadiaUpdateState();
     }
+
+    public StatusBarViewModel Status { get; }
+
+    public ToastViewModel Toast { get; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSettingsOpen))]
     public partial SettingsViewModel? Settings { get; private set; }
 
     public bool IsSettingsOpen => Settings is not null;
-
-    /// <summary>Steam Controller Support is on but something is wrong; shown as a warning in the header.</summary>
-    [ObservableProperty]
-    public partial bool HasControllerWarning { get; private set; }
-
-    [ObservableProperty]
-    public partial string ControllerWarningText { get; private set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial bool HasSisrUpdate { get; private set; }
-
-    /// <summary>A newer Arcadia is on GitHub; shown as an update symbol in the header.</summary>
-    [ObservableProperty]
-    public partial bool HasArcadiaUpdate { get; private set; }
-
-    [ObservableProperty]
-    public partial string ArcadiaUpdateText { get; private set; } = string.Empty;
-
-    /// <summary>SISR is starting and the controller isn't emulated yet; shown as a spinner in the header.</summary>
-    [ObservableProperty]
-    public partial bool IsControllerStarting { get; private set; }
 
     [ObservableProperty]
     public partial bool ShowControllerSupport { get; private set; }
@@ -140,65 +108,34 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     public partial string RangeText { get; private set; } = string.Empty;
 
-    [ObservableProperty]
-    public partial string Clock { get; private set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial string Date { get; private set; } = string.Empty;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasToast))]
-    public partial string? Toast { get; private set; }
-
-    public bool HasToast => Toast is not null;
-
     public async Task LoadAsync()
     {
         IsLoading = true;
         var libraries = await _library.LoadAsync();
-
-        Tabs.Clear();
-        foreach (var library in libraries)
-        {
-            Tabs.Add(new LauncherTabViewModel(library, SelectTab));
-        }
-
         IsLoading = false;
-        IsEmpty = Tabs.Count == 0;
-        if (Tabs.Count > 0)
-        {
-            SelectTab(Tabs[0]);
-        }
+        ApplyLibraries(libraries);
     }
 
     /// <summary>
-    /// Rescans the library while installations are pending and reports the games that finished.
-    /// Called periodically; does nothing when no installation was started from Arcadia.
+    /// Rescans the library while games handed to a launcher Arcadia can't watch are still being
+    /// installed, and reports the ones that finished. Called periodically.
     /// </summary>
     public async Task CheckPendingInstallsAsync()
     {
-        if (_pendingInstalls.Count == 0 || IsLoading)
+        if (!_installs.HasPending || IsLoading)
         {
             return;
         }
 
         var libraries = await _library.LoadAsync();
-        var finished = libraries
-            .SelectMany(l => l.Games)
-            .Where(g => g.IsInstalled && _pendingInstalls.Contains(g.Key))
-            .ToList();
+        var finished = _installs.CompletePending(libraries.SelectMany(l => l.Games));
         if (finished.Count == 0)
         {
             return;
         }
 
-        foreach (var game in finished)
-        {
-            _pendingInstalls.Remove(game.Key);
-        }
-
         ApplyLibraries(libraries);
-        ShowToast(finished.Count == 1 ? $"„{finished[0].Title}“ ist jetzt installiert." : $"{finished.Count} Spiele sind jetzt installiert.");
+        Toast.Show(finished.Count == 1 ? $"„{finished[0].Title}“ ist jetzt installiert." : $"{finished.Count} Spiele sind jetzt installiert.");
     }
 
     /// <summary>
@@ -207,73 +144,33 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     public async Task PollInstallsAsync()
     {
-        if (_pollingInstalls || IsLoading || _installMonitors.Count == 0)
+        if (IsLoading || await _installs.PollAsync() is not { } results)
         {
             return;
         }
 
-        _pollingInstalls = true;
-        try
+        foreach (var tile in PageGames)
         {
-            var snapshots = await Task.Run(() => _installMonitors.Select(m => (m.LauncherId, Snapshot: m.Poll())).ToList());
-
-            var installs = new Dictionary<string, InstallProgress>(StringComparer.Ordinal);
-            var outcomes = new List<(string Key, InstallOutcome Outcome)>();
-            foreach (var (launcherId, snapshot) in snapshots)
-            {
-                foreach (var (id, progress) in snapshot.Active)
-                {
-                    var key = Game.KeyOf(launcherId, id);
-                    installs[key] = progress;
-                    _awaitingConfirmation.Remove(key);
-                }
-
-                foreach (var (id, outcome) in snapshot.Finished)
-                {
-                    var key = Game.KeyOf(launcherId, id);
-                    _awaitingConfirmation.Remove(key);
-                    outcomes.Add((key, outcome));
-                }
-            }
-
-            var now = _time.GetUtcNow();
-            foreach (var (key, since) in _awaitingConfirmation.ToList())
-            {
-                if (now - since > ConfirmationTimeout)
-                {
-                    _awaitingConfirmation.Remove(key);
-                }
-                else
-                {
-                    installs.TryAdd(key, new InstallProgress(InstallPhase.AwaitingConfirmation));
-                }
-            }
-
-            _installs = installs;
-            ApplyInstallStates();
-
-            if (outcomes.Count > 0)
-            {
-                await ReportInstallOutcomesAsync(outcomes);
-            }
+            tile.InstallState = _installs.StateOf(tile.Game.Key);
         }
-        finally
+
+        if (results.Count > 0)
         {
-            _pollingInstalls = false;
+            await ReportInstallResultsAsync(results);
         }
     }
 
-    private async Task ReportInstallOutcomesAsync(List<(string Key, InstallOutcome Outcome)> outcomes)
+    private async Task ReportInstallResultsAsync(IReadOnlyList<InstallResult> results)
     {
         string TitleOf(string key) =>
             Tabs.SelectMany(t => t.Games).FirstOrDefault(g => g.Key == key)?.Title ?? "Spiel";
 
-        if (outcomes.Any(o => o.Outcome == InstallOutcome.Completed))
+        if (results.Any(r => r.Outcome == InstallOutcome.Completed))
         {
             await RefreshLibraryAsync(force: true);
         }
 
-        if (outcomes.Any(o => o.Outcome == InstallOutcome.Uninstalled))
+        if (results.Any(r => r.Outcome == InstallOutcome.Uninstalled))
         {
             // Epic logs the uninstall when it starts; the manifest disappears a moment later.
             await RefreshLibraryAsync(force: true);
@@ -282,27 +179,17 @@ public partial class MainViewModel : ViewModelBase
                 TaskScheduler.FromCurrentSynchronizationContext());
         }
 
-        var (key, outcome) = outcomes[^1];
-        ShowToast(outcome switch
+        var completed = results.Count(r => r.Outcome == InstallOutcome.Completed);
+        var (key, outcome) = results[^1];
+        Toast.Show(outcome switch
         {
             InstallOutcome.Uninstalled => $"„{TitleOf(key)}“ wurde deinstalliert.",
-            InstallOutcome.Completed when outcomes.Count(o => o.Outcome == InstallOutcome.Completed) > 1
-                => $"{outcomes.Count(o => o.Outcome == InstallOutcome.Completed)} Spiele sind jetzt installiert.",
+            InstallOutcome.Completed when completed > 1 => $"{completed} Spiele sind jetzt installiert.",
             InstallOutcome.Completed => $"„{TitleOf(key)}“ ist jetzt installiert.",
             InstallOutcome.Cancelled => $"Installation von „{TitleOf(key)}“ abgebrochen.",
             _ => $"Installation von „{TitleOf(key)}“ ist fehlgeschlagen – bitte im Launcher nachsehen.",
         });
     }
-
-    private void ApplyInstallStates()
-    {
-        foreach (var tile in PageGames)
-        {
-            tile.InstallState = _installs.GetValueOrDefault(tile.Game.Key);
-        }
-    }
-
-    private bool IsWatched(Game game) => _installMonitors.Any(m => m.LauncherId == game.LauncherId);
 
     /// <summary>
     /// Rescans all launchers and takes over what changed — games installed or uninstalled outside
@@ -312,51 +199,63 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     public async Task RefreshLibraryAsync(bool force = false)
     {
-        var now = _time.GetUtcNow();
-        if (IsLoading || _refreshingLibrary || (!force && now - _lastLibraryRefresh < RefreshThrottle))
+        if (IsLoading)
         {
             return;
         }
 
-        _refreshingLibrary = true;
-        _lastLibraryRefresh = now;
-        try
+        if (await _refresher.RefreshAsync(CurrentLibraries, force) is { } libraries)
         {
-            var libraries = await _library.LoadAsync();
-            if (HasChanged(libraries))
-            {
-                ApplyLibraries(libraries);
-            }
-        }
-        finally
-        {
-            _refreshingLibrary = false;
+            ApplyLibraries(libraries);
         }
     }
 
-    private bool HasChanged(IReadOnlyList<LauncherLibrary> libraries)
-    {
-        static string Signature(IEnumerable<Game> games) => string.Join('|', games
-            .Select(g => $"{g.Key}:{g.IsInstalled}:{g.UpdateAvailable}:{g.InstallDirectory}")
-            .Order(StringComparer.Ordinal));
+    private IReadOnlyList<LauncherLibrary> CurrentLibraries() =>
+        Tabs.Select(t => new LauncherLibrary(t.Launcher, t.Games)).ToList();
 
-        return libraries.Count != Tabs.Count
-            || Signature(libraries.SelectMany(l => l.Games)) != Signature(Tabs.SelectMany(t => t.Games));
-    }
-
-    /// <summary>Swaps in rescanned games and keeps tab, page and focused game where they were.</summary>
+    /// <summary>
+    /// Shows the scanned libraries: one tab per launcher in the scanned order, launchers that are
+    /// gone lose their tab. Keeps tab, page and focused game where they were.
+    /// </summary>
     private void ApplyLibraries(IReadOnlyList<LauncherLibrary> libraries)
     {
-        foreach (var library in libraries)
+        foreach (var gone in Tabs.Where(t => libraries.All(l => l.Launcher.Id != t.Launcher.Id)).ToList())
         {
-            if (Tabs.FirstOrDefault(t => t.Launcher.Id == library.Launcher.Id) is { } tab)
+            Tabs.Remove(gone);
+        }
+
+        for (var i = 0; i < libraries.Count; i++)
+        {
+            var library = libraries[i];
+            var index = IndexOfTab(library.Launcher.Id);
+            if (index < 0)
             {
-                tab.Games = library.Games;
+                Tabs.Insert(i, new LauncherTabViewModel(library, SelectTab));
+                continue;
             }
-            else
+
+            Tabs[index].Games = library.Games;
+            if (index != i)
             {
-                Tabs.Add(new LauncherTabViewModel(library, SelectTab));
+                Tabs.Move(index, i);
             }
+        }
+
+        IsEmpty = Tabs.Count == 0;
+        if (SelectedTab is null || !Tabs.Contains(SelectedTab))
+        {
+            SelectedTab = null;
+            FocusedGame = null;
+            ViewOptions = null;
+            PageGames.Clear();
+            PageButtons.Clear();
+            CountText = RangeText = ViewSummary = string.Empty;
+            if (Tabs.Count > 0)
+            {
+                SelectTab(Tabs[0]);
+            }
+
+            return;
         }
 
         var focusedKey = FocusedGame?.Game.Key;
@@ -368,11 +267,17 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
-    public void UpdateClock()
+    private int IndexOfTab(string launcherId)
     {
-        var now = _time.GetLocalNow();
-        Clock = Formatting.Clock(now);
-        Date = Formatting.ShortDate(now);
+        for (var i = 0; i < Tabs.Count; i++)
+        {
+            if (Tabs[i].Launcher.Id == launcherId)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     public void Handle(UiAction action)
@@ -465,26 +370,10 @@ public partial class MainViewModel : ViewModelBase
         _controllerSupport.SetOverride(game, next);
     }
 
-    private void UpdateArcadiaUpdateState()
-    {
-        HasArcadiaUpdate = _updates.AvailableVersion is not null && !_updates.IsRestartingForUpdate;
-        ArcadiaUpdateText = _updates.AvailableVersion is { } version ? $"Arcadia {version} verfügbar" : string.Empty;
-    }
-
     private void UpdateControllerSupportState()
     {
         var support = _controllerSupport;
         ShowControllerSupport = support.Enabled;
-        HasSisrUpdate = support.Enabled && support.AvailableUpdate is not null;
-        IsControllerStarting = support.Enabled && support.IsStarting;
-        HasControllerWarning = support.Enabled && support.Issues.Count > 0;
-        ControllerWarningText = support.Issues.Count switch
-        {
-            0 => string.Empty,
-            1 => $"Steam Controller Support: {support.Issues[0].Title}",
-            var n => $"Steam Controller Support: {n} Probleme",
-        };
-
         if (FocusedGame?.Game is { } game)
         {
             var effective = support.Settings.ControllerSupportFor(game) ? "an" : "aus";
@@ -614,7 +503,7 @@ public partial class MainViewModel : ViewModelBase
         Focus(tile);
         if (tile.InstallState is { } install)
         {
-            ShowToast(install.Phase == InstallPhase.AwaitingConfirmation
+            Toast.Show(install.Phase == InstallPhase.AwaitingConfirmation
                 ? $"Die Installation von „{tile.Title}“ wartet auf deine Bestätigung in {tile.LauncherName}."
                 : install.Phase == InstallPhase.Uninstalling
                     ? $"„{tile.Title}“ wird gerade deinstalliert."
@@ -643,7 +532,7 @@ public partial class MainViewModel : ViewModelBase
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException)
         {
-            ShowToast($"„{tile.Title}“ konnte nicht gestartet werden: {ex.Message}");
+            Toast.Show($"„{tile.Title}“ konnte nicht gestartet werden: {ex.Message}");
         }
         finally
         {
@@ -657,28 +546,19 @@ public partial class MainViewModel : ViewModelBase
         {
             if (GameLaunchService.Install(tile.Game))
             {
-                if (IsWatched(tile.Game))
-                {
-                    _awaitingConfirmation[tile.Game.Key] = _time.GetUtcNow();
-                    tile.InstallState = new InstallProgress(InstallPhase.AwaitingConfirmation);
-                }
-                else
-                {
-                    _pendingInstalls.Add(tile.Game.Key);
-                }
-
-                ShowToast($"Installation von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …");
+                tile.InstallState = _installs.Started(tile.Game);
+                Toast.Show($"Installation von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …");
             }
             else
             {
-                ShowToast(tile.Game.Install is LaunchTarget.None
+                Toast.Show(tile.Game.Install is LaunchTarget.None
                     ? $"Demo-Spiel: Hier würde jetzt „{tile.Title}“ installiert."
                     : $"„{tile.Title}“ kann nur direkt in {tile.LauncherName} installiert werden.");
             }
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
         {
-            ShowToast($"Installation von „{tile.Title}“ konnte nicht geöffnet werden: {ex.Message}");
+            Toast.Show($"Installation von „{tile.Title}“ konnte nicht geöffnet werden: {ex.Message}");
         }
     }
 
@@ -687,7 +567,7 @@ public partial class MainViewModel : ViewModelBase
         switch (stage)
         {
             case LaunchStage.StartingLauncher:
-                ShowToast($"{tile.LauncherName} wird im Hintergrund gestartet …", sticky: true);
+                Toast.Show($"{tile.LauncherName} wird im Hintergrund gestartet …", sticky: true);
                 _ = Task.Delay(TimeSpan.FromSeconds(2), _time).ContinueWith(
                     _ => ForegroundRequested?.Invoke(this, EventArgs.Empty),
                     TaskScheduler.FromCurrentSynchronizationContext());
@@ -697,13 +577,13 @@ public partial class MainViewModel : ViewModelBase
                 ForegroundRequested?.Invoke(this, EventArgs.Empty);
                 break;
             case LaunchStage.Starting:
-                ShowToast(tile.UpdateAvailable ? $"Update für „{tile.Title}“ wird in {tile.LauncherName} gestartet …" : $"„{tile.Title}“ wird gestartet …");
+                Toast.Show(tile.UpdateAvailable ? $"Update für „{tile.Title}“ wird in {tile.LauncherName} gestartet …" : $"„{tile.Title}“ wird gestartet …");
                 break;
             case LaunchStage.NotStartable:
-                ShowToast($"Demo-Spiel: Hier würde jetzt „{tile.Title}“ {(tile.UpdateAvailable ? "aktualisiert" : "gestartet")}.");
+                Toast.Show($"Demo-Spiel: Hier würde jetzt „{tile.Title}“ {(tile.UpdateAvailable ? "aktualisiert" : "gestartet")}.");
                 break;
             case LaunchStage.NotConfirmed:
-                ShowToast($"„{tile.Title}“ ist nicht gestartet – bitte in {tile.LauncherName} nachsehen.");
+                Toast.Show($"„{tile.Title}“ ist nicht gestartet – bitte in {tile.LauncherName} nachsehen.");
                 break;
         }
     }
@@ -724,7 +604,7 @@ public partial class MainViewModel : ViewModelBase
         PageGames.Clear();
         foreach (var game in sorted.Skip(window.Start).Take(window.Length))
         {
-            PageGames.Add(new GameTileViewModel(game, tab.Launcher, now, Focus, Activate) { InstallState = _installs.GetValueOrDefault(game.Key) });
+            PageGames.Add(new GameTileViewModel(game, tab.Launcher, now, Focus, Activate) { InstallState = _installs.StateOf(game.Key) });
         }
 
         FocusedGame = null;
@@ -774,24 +654,6 @@ public partial class MainViewModel : ViewModelBase
             ViewOptions = CreateViewOptions();
             ViewOptions.FocusPosition = position;
         }
-    }
-
-    private void ShowToast(string message, bool sticky = false)
-    {
-        _toastTimer?.Cancel();
-        _toastTimer = new CancellationTokenSource();
-        var token = _toastTimer.Token;
-        Toast = message;
-        if (sticky)
-        {
-            return;
-        }
-
-        _ = Task.Delay(TimeSpan.FromSeconds(4), _time, token).ContinueWith(
-            _ => Toast = null,
-            token,
-            TaskContinuationOptions.OnlyOnRanToCompletion,
-            TaskScheduler.FromCurrentSynchronizationContext());
     }
 
     private static string SortLabel(SortOrder sort) => (sort.Field, sort.Direction) switch

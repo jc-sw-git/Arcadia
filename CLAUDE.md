@@ -107,11 +107,11 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 
 | Project | Content |
 |---|---|
-| `src/Arcadia.Core` | Models (`Game`, `LauncherInfo`, `LaunchTarget`), `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`, `ILauncherScanner`, `ILauncherClient`, `Changelog` (release notes between versions) |
+| `src/Arcadia.Core` | Models (`Game`, `LauncherInfo`, `LaunchTarget`), `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`, `ILauncherScanner`, `ILauncherClient`, `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
 | `src/Arcadia.Launchers` | Scanners (`Epic`, `Demo`), Epic catalog and install monitor (`EpicCatalog`, `EpicInstallMonitor`), launcher clients (`EpicLauncherClient`, `DirectLauncherClient`), `GameLaunchService`, `ProcessWatch`, Steam (`BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, auto-repeat for D-pad/stick) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost`, `SisrApiClient`, `UsbipDriver`, `GitHubReleases`, `ControllerSupportService`, `ControllerSupportRemoval` (uninstall) |
-| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack) |
+| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header) and `ToastViewModel` are its children |
 | `tests/Arcadia.Core.Tests` | xUnit |
 
 Big Picture UI is laid out at 1920×1080 inside a `Viewbox`. Focus/navigation is done in the

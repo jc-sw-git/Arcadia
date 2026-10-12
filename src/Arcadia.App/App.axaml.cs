@@ -4,6 +4,7 @@ using Arcadia.App.ViewModels;
 using Arcadia.App.Views;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
+using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Arcadia.Launchers;
@@ -72,7 +73,7 @@ public partial class App : Application
                 GameLaunchService.CreateDefault(time),
                 controllerSupport,
                 updates,
-                [new EpicInstallMonitor()],
+                new InstallTracker([new EpicInstallMonitor()], time),
                 time);
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
@@ -118,7 +119,7 @@ public partial class App : Application
             };
             _gamepad.Start();
 
-            var clock = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => viewModel.UpdateClock());
+            var clock = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => viewModel.Status.UpdateClock());
             clock.Start();
 
             var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await controllerSupport.TickAsync());

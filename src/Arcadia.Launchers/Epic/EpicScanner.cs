@@ -7,12 +7,22 @@ namespace Arcadia.Launchers.Epic;
 /// <summary>
 /// Reads the Epic library: installed games from the install manifests (one JSON file per game in
 /// <c>%PROGRAMDATA%\Epic\EpicGamesLauncher\Data\Manifests\*.item</c>) plus the owned but
-/// uninstalled games from the launcher's catalog cache (<see cref="EpicCatalog"/>).
+/// uninstalled games from the launcher's catalog cache (<see cref="EpicCatalog"/>). Last played and
+/// pending updates come from the launcher's logs (<see cref="EpicLauncherLog"/>).
 /// </summary>
-public sealed class EpicScanner(string? manifestDirectory = null, string? catalogPath = null) : ILauncherScanner
+public sealed class EpicScanner(
+    string? manifestDirectory = null,
+    string? catalogPath = null,
+    string? logDirectory = null,
+    EpicLastPlayedStore? lastPlayedStore = null) : ILauncherScanner
 {
     private readonly string _manifestDirectory = manifestDirectory ?? DefaultManifestDirectory();
     private readonly string _catalogPath = catalogPath ?? EpicCatalog.DefaultPath();
+    private readonly string _logDirectory = logDirectory ?? DefaultLogDirectory();
+    private readonly EpicLastPlayedStore _lastPlayedStore = lastPlayedStore ?? EpicLastPlayedStore.CreateDefault();
+
+    // Epic's rotated logs never change again; only the current one is parsed on every scan.
+    private readonly Dictionary<string, (long Length, DateTime Written, EpicLogFacts Facts)> _parsedLogs = new(StringComparer.OrdinalIgnoreCase);
 
     public LauncherInfo Launcher => KnownLaunchers.Epic;
 
@@ -21,9 +31,67 @@ public sealed class EpicScanner(string? manifestDirectory = null, string? catalo
 
     private IReadOnlyList<Game> Scan(CancellationToken cancellationToken)
     {
-        var installed = ScanManifests(cancellationToken);
+        var logs = ReadLogs(cancellationToken);
+        var installedApps = logs.LastOrDefault(facts => facts.InstalledApps is not null)?.InstalledApps;
+        var installed = ScanManifests(installedApps, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        return Merge(installed, EpicCatalog.Load(_catalogPath));
+        var lastPlayed = _lastPlayedStore.Merge(logs.SelectMany(facts => facts.Sessions));
+        return WithLastPlayed(Merge(installed, EpicCatalog.Load(_catalogPath)), lastPlayed);
+    }
+
+    public static IReadOnlyList<Game> WithLastPlayed(IReadOnlyList<Game> games, IReadOnlyDictionary<string, DateTimeOffset> lastPlayed) =>
+        games.Select(game => lastPlayed.TryGetValue(game.Id, out var played) ? game with { LastPlayedAt = played } : game).ToList();
+
+    /// <summary>
+    /// True if the launcher's last report says the installed version has an update. A report about
+    /// another version is out of date (the update was installed since), so it doesn't count.
+    /// </summary>
+    public static bool HasUpdate(IReadOnlyDictionary<string, EpicInstalledAppState>? installedApps, string appName, string? installedVersion) =>
+        installedApps is not null
+        && installedApps.TryGetValue(appName, out var state)
+        && state.HasUpdate
+        && string.Equals(state.InstalledVersion, installedVersion, StringComparison.Ordinal);
+
+    /// <summary>Facts from every Epic log, oldest first.</summary>
+    private List<EpicLogFacts> ReadLogs(CancellationToken cancellationToken)
+    {
+        var facts = new List<EpicLogFacts>();
+        var files = EpicLauncherLog.Files(_logDirectory);
+        foreach (var path in files)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            FileInfo file;
+            try
+            {
+                file = new FileInfo(path);
+                file.Refresh();
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
+
+            lock (_parsedLogs)
+            {
+                if (!_parsedLogs.TryGetValue(path, out var cached) || cached.Length != file.Length || cached.Written != file.LastWriteTimeUtc)
+                {
+                    cached = (file.Length, file.LastWriteTimeUtc, EpicLauncherLog.ParseFile(path));
+                    _parsedLogs[path] = cached;
+                }
+
+                facts.Add(cached.Facts);
+            }
+        }
+
+        lock (_parsedLogs)
+        {
+            foreach (var gone in _parsedLogs.Keys.Except(files, StringComparer.OrdinalIgnoreCase).ToList())
+            {
+                _parsedLogs.Remove(gone);
+            }
+        }
+
+        return facts;
     }
 
     /// <summary>
@@ -66,7 +134,7 @@ public sealed class EpicScanner(string? manifestDirectory = null, string? catalo
         return games;
     }
 
-    private IReadOnlyList<Game> ScanManifests(CancellationToken cancellationToken)
+    private IReadOnlyList<Game> ScanManifests(IReadOnlyDictionary<string, EpicInstalledAppState>? installedApps, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(_manifestDirectory))
         {
@@ -91,7 +159,7 @@ public sealed class EpicScanner(string? manifestDirectory = null, string? catalo
                 continue;
             }
 
-            if (ParseManifest(json, InstallDateOf) is { } game)
+            if (ParseManifest(json, InstallDateOf, installedApps) is { } game)
             {
                 games.Add(game);
             }
@@ -105,7 +173,8 @@ public sealed class EpicScanner(string? manifestDirectory = null, string? catalo
     /// and files that are not valid manifests.
     /// </summary>
     /// <param name="installDateOf">Looks up the install date for an install directory; Epic does not store one.</param>
-    public static Game? ParseManifest(string json, Func<string, DateTimeOffset?>? installDateOf = null)
+    /// <param name="installedApps">The launcher's last report on installed apps, for pending updates.</param>
+    public static Game? ParseManifest(string json, Func<string, DateTimeOffset?>? installDateOf = null, IReadOnlyDictionary<string, EpicInstalledAppState>? installedApps = null)
     {
         JsonDocument document;
         try
@@ -162,6 +231,7 @@ public sealed class EpicScanner(string? manifestDirectory = null, string? catalo
                     : null,
                 InstallSizeBytes = installSize,
                 InstalledAt = installLocation is null ? null : installDateOf?.Invoke(installLocation),
+                UpdateAvailable = HasUpdate(installedApps, appName, GetString(root, "AppVersionString")),
             };
         }
     }
@@ -208,6 +278,10 @@ public sealed class EpicScanner(string? manifestDirectory = null, string? catalo
             return null;
         }
     }
+
+    private static string DefaultLogDirectory() => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "EpicGamesLauncher", "Saved", "Logs");
 
     private static string DefaultManifestDirectory() => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),

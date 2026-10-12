@@ -148,13 +148,6 @@
                   <TextBlock Text="Nicht installiert" FontSize="14" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
                 </StackPanel>
               </Border>
-              <Border IsVisible="{Binding UpdateAvailable}" Background="{StaticResource Accent}" CornerRadius="16" Height="32" Padding="10,0,14,0"
-                      HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Path Data="M12 4v12M6 10l6 6 6-6M5 20h14" Stroke="{StaticResource OnAccent}" StrokeThickness="2.8" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
-                  <TextBlock Text="Update verfügbar" FontSize="14" FontWeight="ExtraBold" Foreground="{StaticResource OnAccent}" VerticalAlignment="Center" />
-                </StackPanel>
-              </Border>
             </Panel>
             <DockPanel Grid.Row="1" Margin="24,22,24,24">
               <StackPanel DockPanel.Dock="Bottom" Spacing="10">
@@ -164,18 +157,25 @@
                     <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
                   </StackPanel>
                 </Button>
-                <TextBlock IsVisible="{Binding UpdateAvailable}" HorizontalAlignment="Center" FontSize="14" Foreground="{StaticResource TextMuted}">
-                  <Run Text="Das Update wird in " /><Run Text="{Binding LauncherName}" /><Run Text=" gestartet" />
+                <TextBlock IsVisible="{Binding UpdateAvailable}" Classes="actionHint">
+                  <Run Text="{Binding LauncherName}" /><Run Text=" installiert das Update ggf. vor dem Start" />
                 </TextBlock>
-                <TextBlock IsVisible="{Binding ShowInstallBadge}" HorizontalAlignment="Center" FontSize="14" Foreground="{StaticResource TextMuted}">
+                <TextBlock IsVisible="{Binding ShowInstallBadge}" Classes="actionHint">
                   <Run Text="Die Installation wird in " /><Run Text="{Binding LauncherName}" /><Run Text=" geöffnet" />
                 </TextBlock>
-                <TextBlock IsVisible="{Binding ShowLauncherControlsHint}" HorizontalAlignment="Center" FontSize="14" Foreground="{StaticResource TextMuted}">
+                <TextBlock IsVisible="{Binding ShowLauncherControlsHint}" Classes="actionHint">
                   <Run Text="Pausieren und Abbrechen in " /><Run Text="{Binding LauncherName}" />
                 </TextBlock>
               </StackPanel>
               <StackPanel Spacing="20">
-                <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="ExtraBold" TextWrapping="Wrap" />
+                <StackPanel Spacing="8">
+                  <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="ExtraBold" TextWrapping="Wrap" />
+                  <!-- A status, not a control: plain text, no pill that could pass for a button. -->
+                  <StackPanel IsVisible="{Binding UpdateAvailable}" Orientation="Horizontal" Spacing="8">
+                    <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
+                    <TextBlock Text="Update verfügbar" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Accent}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </StackPanel>
                 <StackPanel Spacing="10" IsVisible="{Binding IsInstallActive}">
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
@@ -250,9 +250,9 @@
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Nicht installiert – A installiert">
                         <Path Data="M7 17a4 4 0 0 1-.6-7.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17 16.9M12 11v9M9 17l3 3 3-3" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
                       </Border>
-                      <Border IsVisible="{Binding UpdateAvailable}" Width="30" Height="30" CornerRadius="15" Background="{StaticResource Accent}"
+                      <Border Classes="installBadge" IsVisible="{Binding UpdateAvailable}" Width="30" Height="30" CornerRadius="15"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Update verfügbar">
-                        <Path Data="M12 4v12M6 10l6 6 6-6M5 20h14" Stroke="{StaticResource OnAccent}" StrokeThickness="2.8" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
+                        <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
                       </Border>
                       <Border Classes="installBadge" IsVisible="{Binding IsInstallActive}" Height="30" CornerRadius="15" Padding="8,0,11,0"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">

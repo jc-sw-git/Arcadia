@@ -111,7 +111,7 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 |---|---|
 | `src/Arcadia.Launchers.Abstractions` | What a launcher is made of, with no dependency on the rest: `ILauncherIntegration` (scanner, optional client and install monitor, `Locate`), `ILauncherScanner`, `ILauncherClient`, `IInstallMonitor`, models (`Game`, `LauncherInfo`, `LaunchTarget`). The future plugin interface for launchers |
 | `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`, `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
-| `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
+| `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`SteamScanner`, `SteamInstallMonitor`, `SteamContentLog`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, auto-repeat for D-pad/stick) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost`, `SisrApiClient`, `UsbipDriver`, `GitHubReleases`, `ControllerSupportService`, `ControllerSupportRemoval` (uninstall) |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header) and `ToastViewModel` are its children |
@@ -132,8 +132,10 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   `/steam-epic term` prefix, keyword per launcher), R3 = keyboard layout switch, Menu/☰ or
   right click = context menu. No "all launchers" tab. No dedicated favourite button.
 - Dependent options sit in the same box as their main switch.
-- If an update is available, A starts the update in the launcher; "play without update" stays
-  available with a hint.
+- If an update is available, A still says "Spielen" and starts the game; the launcher installs the update
+  first. The update shows as an icon, and the detail page says below the button that the launcher may update
+  first (owner, 2026-10-12). Launchers have no update-only command: Steam ignores `steam://install` for
+  installed games and `steam://validate` verifies every file first; Playnite offers no update action either.
 
 **Avalonia 12:**
 - A locally set property (e.g. `Fill="…"`, `Stroke="…"`) beats any style — state colours must
@@ -168,6 +170,27 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   `rungameid` = `(appid << 32) | 0x02000000`. Steam writes `shortcuts.vdf` only on exit;
   never write it while Steam runs. `BinaryVdf` round-trips the real file byte for byte.
 
+**Steam library** (`SteamScanner`, verified 2026-10-12 against the owner's 3 libraries): libraries from
+`steamapps/libraryfolders.vdf` (`path`), one `appmanifest_<appid>.acf` per installed app. `StateFlags` bit 2 =
+update pending (4 = installed, 6 = with update, +64 while running); a first install without `buildid` is not
+shown. Playtime (minutes) and `LastPlayed` come from `userdata/<user>/config/localconfig.vdf` →
+`UserLocalConfigStore/Software/Valve/Steam/apps/<appid>`; that file also holds app tickets — never log it.
+Steam stores no install date (the game folder's creation time is used). Owned but uninstalled games are **not**
+readable locally: `appcache/packageinfo.vdf` keeps packages after a refund (owner's 007 First Light), and the real
+license list (`userdata/<id>/config/licensecache`) is encrypted — they come with a Steam login (#83). Libraries are re-read on every scan,
+so added or missing drives need no handling of their own.
+`SteamInstallMonitor` (verified 2026-10-12 with real installs): a new install's manifest appears with `StateFlags` 2
+and `buildid` 0, then 1026 (+1024 started) while downloading *or* waiting, 1538 (+512) when paused, 4 when done;
+an update of an installed game is 1030. Steam downloads one app at a time but flags all waiting ones alike, so the
+app whose `BytesDownloaded`/`BytesStaged` moved last is the downloading one. Cancelling a new install and
+uninstalling (38 for a moment) both delete the manifest. Steam updates runtimes/redistributables on its own —
+they are filtered like in the scanner.
+The manifest's byte counters are written rarely (an update of Schedule I: 0 at the start, complete at the end), so the
+monitor also reads `logs/content_log.txt` (`SteamContentLog`): `AppID <id> state changed : …,Update Running,…` marks
+the app Steam works on (a waiting or paused one lacks it), `App update changed : …Verifying Staged|Committing` the end.
+Steam has no update-only URI: `steam://install/<id>` is ignored for installed games, `steam://validate/<id>` updates
+but first verifies every file (and resets modified ones).
+
 **Epic:** all locally installed games have `bRequiresAuth` → they need the launcher. If it isn't
 running, `EpicLauncherClient` starts it with `-silent`, waits for `EpicWebHelper` + 4 s, starts
 the game via `com.epicgames.launcher://…` and re-sends once if no process appears from the
@@ -191,7 +214,13 @@ Reordering logs `New active position is requested for the <app>` followed by a p
 another downloads logs only `Resume of active installation` for the new one; the running one is cancelled
 without a pause line (verified 2026-10-12), so only the latest `StartTask` counts as downloading. Progress =
 size of the whole install dir / `InstallSize` (download goes to `.egstore` inside it, moved at the end).
-Epic writes no percentages to the log. The library is also rescanned when the window is activated
+Epic writes no percentages to the log.
+Epic keeps total playtime only on its servers (login: #82). Locally the logs (`EpicGamesLauncher*.log`, current plus a few
+rotated backups, UTC times) have `LogPortalPublishTime: Started/Stopped tracking playtime for <ns>:<item>:<app>` per
+session — Arcadia keeps the latest start per app in `%APPDATA%\Arcadia\epic-last-played.json` because the backups
+rotate away — and, on each launcher start, `Sending response: {…"get-installed-apps-response"…}` with
+`installedVersion` and `hasUpdate` per app; a report whose version differs from the manifest's `AppVersionString` is stale. An update has no progress measure (the install dir
+is full from the start), so `EpicInstallMonitor` reports it without a fraction. The library is also rescanned when the window is activated
 and when a selected installed game's directory is missing.
 
 ## Git

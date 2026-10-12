@@ -507,7 +507,7 @@ public partial class MainViewModel : ViewModelBase
                 ? $"Die Installation von „{tile.Title}“ wartet auf deine Bestätigung in {tile.LauncherName}."
                 : install.Phase == InstallPhase.Uninstalling
                     ? $"„{tile.Title}“ wird gerade deinstalliert."
-                    : $"„{tile.Title}“ wird bereits installiert – Pausieren und Abbrechen in {tile.LauncherName}.");
+                    : $"„{tile.Title}“ wird bereits {(tile.IsInstalled ? "aktualisiert" : "installiert")} – Pausieren und Abbrechen in {tile.LauncherName}.");
             return;
         }
 
@@ -577,10 +577,10 @@ public partial class MainViewModel : ViewModelBase
                 ForegroundRequested?.Invoke(this, EventArgs.Empty);
                 break;
             case LaunchStage.Starting:
-                Toast.Show(tile.UpdateAvailable ? $"Update für „{tile.Title}“ wird in {tile.LauncherName} gestartet …" : $"„{tile.Title}“ wird gestartet …");
+                Toast.Show(tile.UpdateAvailable ? $"„{tile.Title}“ wird gestartet – {tile.LauncherName} installiert ggf. vorher das Update …" : $"„{tile.Title}“ wird gestartet …");
                 break;
             case LaunchStage.NotStartable:
-                Toast.Show($"Demo-Spiel: Hier würde jetzt „{tile.Title}“ {(tile.UpdateAvailable ? "aktualisiert" : "gestartet")}.");
+                Toast.Show($"Demo-Spiel: Hier würde jetzt „{tile.Title}“ gestartet.");
                 break;
             case LaunchStage.NotConfirmed:
                 Toast.Show($"„{tile.Title}“ ist nicht gestartet – bitte in {tile.LauncherName} nachsehen.");

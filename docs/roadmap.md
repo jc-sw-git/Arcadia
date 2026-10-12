@@ -17,7 +17,7 @@ Designs: `docs/designs/` (PNG + Quellen), Canvas: https://claude.ai/artifact/8A9
 - Sortierung nach Name, Installationsdatum, Zuletzt gespielt — jeweils auf-/absteigend
 - „Ansicht“-Modal (Y), per Controller bedienbar
 - Vorschau-Panel links (zuletzt gespielt, Spielzeit, Größe, Launcher, Speicherort)
-- Update-Kennzeichnung, „Update starten“ statt „Spielen“
+- Update-Kennzeichnung (Symbol und Hinweis; A startet das Spiel, der Launcher aktualisiert vorher)
 - Controller per XInput, Tastatur, Maus
 - Epic-Scanner (portiert aus SteamButler), Demo-Daten mit `--demo`
 - Epic-Spiele starten auch, wenn Epic nicht läuft (Epic wird mit `-silent` im Hintergrund gestartet)

@@ -101,6 +101,31 @@ public sealed class EpicInstallMonitorTests : IDisposable
     }
 
     [Fact]
+    public void An_update_downloads_without_a_fraction()
+    {
+        // Terraforming Mars on 2026-10-12: the directory was full from the start and showed "almost done".
+        File.WriteAllText(Path.Combine(_data, "Manifests", "installed.item"), $$"""{ "AppName": "{{App}}", "bIsIncompleteInstall": false }""");
+        SetQueue(App);
+        WritePending(App, installSize: 100);
+        WriteGameBytes(100);
+        AppendLog(Queued, Started);
+
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading), Monitor().Poll().Active[App]);
+    }
+
+    [Fact]
+    public void An_incomplete_install_manifest_is_no_update()
+    {
+        File.WriteAllText(Path.Combine(_data, "Manifests", "installed.item"), $$"""{ "AppName": "{{App}}", "bIsIncompleteInstall": true }""");
+        SetQueue(App);
+        WritePending(App, installSize: 1000);
+        WriteGameBytes(250);
+        AppendLog(Queued, Started);
+
+        Assert.Equal(0.25, Monitor().Poll().Active[App].Fraction!.Value, precision: 3);
+    }
+
+    [Fact]
     public void Reports_outcomes_only_for_events_after_the_first_poll()
     {
         SetQueue(App, Other);

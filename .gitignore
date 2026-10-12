@@ -14,7 +14,6 @@ Cargo.lock.orig
 
 # Editor / OS
 .idea/
-# VS Code: personal settings stay local, the shared F5 setup is checked in.
 .vscode/*
 !.vscode/launch.json
 !.vscode/tasks.json

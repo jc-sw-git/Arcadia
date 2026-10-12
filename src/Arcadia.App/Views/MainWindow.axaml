@@ -179,6 +179,7 @@
                 <StackPanel Spacing="10" IsVisible="{Binding IsInstallActive}">
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                    <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
                     <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding InstallStatusText}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
                   </StackPanel>
@@ -257,6 +258,7 @@
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                           <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                          <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
                           <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
                           <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
                         </StackPanel>

@@ -187,7 +187,9 @@ the same `Queued`/`StartTask`/`HandleTaskComplete` lines, so only that first lin
 `Manifests\Pending\*.item`, which **stays behind after a cancel** (never use it as state). The
 queue file can lag behind (owner saw a running install vanish after cancelling a paused one), so
 for apps the log reported on while Arcadia ran, the log decides; the file only orders them.
-Reordering logs `New active position is requested for the <app>` followed by a pause of the old one. Progress =
+Reordering logs `New active position is requested for the <app>` followed by a pause of the old one. Resuming a paused app while
+another downloads logs only `Resume of active installation` for the new one; the running one is cancelled
+without a pause line (verified 2026-10-12), so only the latest `StartTask` counts as downloading. Progress =
 size of the whole install dir / `InstallSize` (download goes to `.egstore` inside it, moved at the end).
 Epic writes no percentages to the log. The library is also rescanned when the window is activated
 and when a selected installed game's directory is missing.

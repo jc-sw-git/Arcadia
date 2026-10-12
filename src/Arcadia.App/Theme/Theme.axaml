@@ -163,6 +163,15 @@
   <Style Selector="TextBlock.dim">
     <Setter Property="Opacity" Value="0.35" />
   </Style>
+  <!-- Hints below the detail page's main button; they wrap and push the content above upwards. -->
+  <Style Selector="TextBlock.actionHint">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="TextAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+  </Style>
+
   <Style Selector="Border.installBadge">
     <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
     <Setter Property="BorderBrush" Value="{StaticResource LineStrong}" />

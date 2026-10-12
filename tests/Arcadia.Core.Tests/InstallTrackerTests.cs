@@ -1,5 +1,5 @@
 using Arcadia.Core.Launchers;
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Arcadia.Core.Tests;
@@ -18,7 +18,8 @@ public sealed class InstallTrackerTests
         IsInstalled = installed,
     };
 
-    private InstallTracker CreateTracker() => new([_epic], _time);
+    private InstallTracker CreateTracker() =>
+        new(FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Epic) { InstallMonitor = _epic }), _time);
 
     [Fact]
     public async Task Waits_for_confirmation_after_opening_the_install_dialog()
@@ -124,7 +125,7 @@ public sealed class InstallTrackerTests
     [Fact]
     public async Task Does_not_poll_without_monitors()
     {
-        var tracker = new InstallTracker([], _time);
+        var tracker = new InstallTracker(FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Epic)), _time);
         Assert.Null(await tracker.PollAsync());
     }
 
@@ -132,29 +133,12 @@ public sealed class InstallTrackerTests
     public async Task Skips_a_poll_while_the_previous_one_runs()
     {
         var blocking = new FakeMonitor("epic") { Gate = new ManualResetEventSlim() };
-        var tracker = new InstallTracker([blocking], _time);
+        var tracker = new InstallTracker(FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Epic) { InstallMonitor = blocking }), _time);
 
         var first = tracker.PollAsync();
         Assert.Null(await tracker.PollAsync());
 
         blocking.Gate.Set();
         Assert.NotNull(await first);
-    }
-
-    private sealed class FakeMonitor(string launcherId) : IInstallMonitor
-    {
-        public Dictionary<string, InstallProgress> Active { get; } = [];
-
-        public Dictionary<string, InstallOutcome> Finished { get; } = [];
-
-        public ManualResetEventSlim? Gate { get; init; }
-
-        public string LauncherId => launcherId;
-
-        public InstallSnapshot Poll()
-        {
-            Gate?.Wait(TimeSpan.FromSeconds(10));
-            return new InstallSnapshot(new Dictionary<string, InstallProgress>(Active), new Dictionary<string, InstallOutcome>(Finished));
-        }
     }
 }

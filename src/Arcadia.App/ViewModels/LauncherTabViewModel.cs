@@ -1,6 +1,6 @@
 using Arcadia.App.Services;
 using Arcadia.Core.Library;
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;

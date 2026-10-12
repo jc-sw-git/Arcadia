@@ -1,6 +1,4 @@
-using Arcadia.Core.Models;
-
-namespace Arcadia.Core.Launchers;
+namespace Arcadia.Launchers.Abstractions;
 
 /// <summary>What happens while a game is being started, for status messages in the UI.</summary>
 public enum LaunchStage

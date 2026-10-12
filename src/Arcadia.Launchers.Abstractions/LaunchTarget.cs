@@ -1,4 +1,4 @@
-namespace Arcadia.Core.Models;
+namespace Arcadia.Launchers.Abstractions;
 
 /// <summary>Where and how a game is started.</summary>
 public abstract record LaunchTarget

@@ -8,8 +8,6 @@ using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Arcadia.Launchers;
-using Arcadia.Launchers.Demo;
-using Arcadia.Launchers.Epic;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -48,10 +46,13 @@ public partial class App : Application
             var time = TimeProvider.System;
             var http = new HttpClient();
 
-            var scanners = new List<ILauncherScanner> { new EpicScanner() };
-            if (args.Contains("--demo", StringComparer.OrdinalIgnoreCase))
+            // Every launcher is active until #15 lets the user choose.
+            var launchers = new LauncherRegistry(
+                BuiltInLaunchers.Create(time, demo: args.Contains("--demo", StringComparer.OrdinalIgnoreCase)),
+                isEnabled: _ => true);
+            foreach (var problem in launchers.Rejected)
             {
-                scanners.AddRange(DemoScanner.DefaultSet(time.GetLocalNow()));
+                AppLog.Write(problem);
             }
 
             var controllerSupport = new ControllerSupportService(SettingsStore.CreateDefault(), SisrHost.CreateDefault(http), http, time)
@@ -69,11 +70,11 @@ public partial class App : Application
 
             var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
             var viewModel = new MainViewModel(
-                new LibraryService(scanners),
-                GameLaunchService.CreateDefault(time),
+                new LibraryService(launchers),
+                new GameLaunchService(launchers),
                 controllerSupport,
                 updates,
-                new InstallTracker([new EpicInstallMonitor()], time),
+                new InstallTracker(launchers, time),
                 time);
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();

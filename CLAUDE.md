@@ -76,6 +76,8 @@ the start of the next feature iteration. Process and test plan format: `docs/tes
 - **Readable:** names say what things are; methods do one thing; comments explain *why*, not *what*.
   A developer new to the code understands the change from the diff and `CLAUDE.md`.
 - **Modular:** launcher-specific code stays in its launcher folder; UI and Core don't special-case launchers.
+  A launcher is one `ILauncherIntegration`, registered in `BuiltInLaunchers`; built-in launchers use only
+  `Arcadia.Launchers.Abstractions`, as a plugin would.
 - **Themeable:** no colour, brush or shadow values in views or styles; they are resources in
   `Theme/Theme.axaml`, so a theme (later possibly a plugin) can replace them all in one place.
 - **Verified for real:** UI, input, launcher and Steam Controller changes were run and looked at
@@ -107,8 +109,9 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 
 | Project | Content |
 |---|---|
-| `src/Arcadia.Core` | Models (`Game`, `LauncherInfo`, `LaunchTarget`), `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`, `ILauncherScanner`, `ILauncherClient`, `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
-| `src/Arcadia.Launchers` | Scanners (`Epic`, `Demo`), Epic catalog and install monitor (`EpicCatalog`, `EpicInstallMonitor`), launcher clients (`EpicLauncherClient`, `DirectLauncherClient`), `GameLaunchService`, `ProcessWatch`, Steam (`BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
+| `src/Arcadia.Launchers.Abstractions` | What a launcher is made of, with no dependency on the rest: `ILauncherIntegration` (scanner, optional client and install monitor, `Locate`), `ILauncherScanner`, `ILauncherClient`, `IInstallMonitor`, models (`Game`, `LauncherInfo`, `LaunchTarget`). The future plugin interface for launchers |
+| `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`, `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
+| `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, auto-repeat for D-pad/stick) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost`, `SisrApiClient`, `UsbipDriver`, `GitHubReleases`, `ControllerSupportService`, `ControllerSupportRemoval` (uninstall) |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header) and `ToastViewModel` are its children |

@@ -1,6 +1,6 @@
 using Arcadia.ControllerSupport;
-using Arcadia.Core.Models;
 using Arcadia.Core.Settings;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Tests;
 

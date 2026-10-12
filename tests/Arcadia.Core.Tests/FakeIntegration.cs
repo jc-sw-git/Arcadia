@@ -1,0 +1,66 @@
+using Arcadia.Core.Launchers;
+using Arcadia.Launchers.Abstractions;
+
+namespace Arcadia.Core.Tests;
+
+/// <summary>A launcher made of whatever parts a test needs.</summary>
+internal sealed class FakeIntegration(LauncherInfo launcher) : ILauncherIntegration
+{
+    public LauncherInfo Launcher => launcher;
+
+    public ILauncherScanner Scanner { get; init; } = new FakeScanner(launcher);
+
+    public ILauncherClient? Client { get; init; }
+
+    public IInstallMonitor? InstallMonitor { get; init; }
+
+    public string? Locate() => null;
+
+    public static LauncherRegistry Registry(params ILauncherIntegration[] integrations) => new(integrations, _ => true);
+
+    public static LauncherInfo LauncherOf(string id) => new(id, id, id);
+}
+
+/// <summary>Returns <see cref="Games"/>; with a <see cref="Gate"/>, only once it is opened.</summary>
+internal sealed class FakeScanner(LauncherInfo launcher) : ILauncherScanner
+{
+    public IReadOnlyList<Game> Games { get; set; } = [];
+
+    public TaskCompletionSource? Gate { get; set; }
+
+    public int Scans { get; private set; }
+
+    public LauncherInfo Launcher => launcher;
+
+    public async Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default)
+    {
+        Scans++;
+        if (Gate is { } gate)
+        {
+            await gate.Task;
+        }
+
+        return Games;
+    }
+}
+
+/// <summary>Reports <see cref="Active"/> and <see cref="Finished"/>; with a <see cref="Gate"/>, only once it is set.</summary>
+internal sealed class FakeMonitor(string launcherId) : IInstallMonitor
+{
+    public Dictionary<string, InstallProgress> Active { get; } = [];
+
+    public Dictionary<string, InstallOutcome> Finished { get; } = [];
+
+    public ManualResetEventSlim? Gate { get; init; }
+
+    public int Polls { get; private set; }
+
+    public string LauncherId => launcherId;
+
+    public InstallSnapshot Poll()
+    {
+        Polls++;
+        Gate?.Wait(TimeSpan.FromSeconds(10));
+        return new InstallSnapshot(new Dictionary<string, InstallProgress>(Active), new Dictionary<string, InstallOutcome>(Finished));
+    }
+}

@@ -1,4 +1,4 @@
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Launchers;
 
@@ -7,10 +7,10 @@ public sealed record InstallResult(string GameKey, InstallOutcome Outcome);
 
 /// <summary>
 /// Follows the installations Arcadia handed to a launcher and the ones started in the launcher
-/// itself. Launchers with an <see cref="IInstallMonitor"/> report progress; for the others, the
-/// game stays pending until a rescan shows it installed.
+/// itself. Enabled launchers with an <see cref="IInstallMonitor"/> report progress; for the others,
+/// the game stays pending until a rescan shows it installed.
 /// </summary>
-public sealed class InstallTracker(IReadOnlyList<IInstallMonitor> monitors, TimeProvider time)
+public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time)
 {
     /// <summary>Epic gives up on its install dialog after 10 minutes.</summary>
     public static readonly TimeSpan ConfirmationTimeout = TimeSpan.FromMinutes(10);
@@ -36,7 +36,7 @@ public sealed class InstallTracker(IReadOnlyList<IInstallMonitor> monitors, Time
     /// <returns>The state to show until the next poll, or null if the launcher isn't watched.</returns>
     public InstallProgress? Started(Game game)
     {
-        if (!monitors.Any(m => m.LauncherId == game.LauncherId))
+        if (launchers.Find(game.LauncherId)?.InstallMonitor is null)
         {
             _pending.Add(game.Key);
             return null;
@@ -70,6 +70,7 @@ public sealed class InstallTracker(IReadOnlyList<IInstallMonitor> monitors, Time
     /// <returns>The installations that ended since the previous poll, in the order reported.</returns>
     public async Task<IReadOnlyList<InstallResult>?> PollAsync()
     {
+        var monitors = launchers.Enabled.Select(i => i.InstallMonitor).OfType<IInstallMonitor>().ToList();
         if (_polling || monitors.Count == 0)
         {
             return null;

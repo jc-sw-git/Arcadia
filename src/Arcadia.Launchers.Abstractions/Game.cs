@@ -1,4 +1,4 @@
-namespace Arcadia.Core.Models;
+namespace Arcadia.Launchers.Abstractions;
 
 /// <summary>A single game discovered by a launcher scanner.</summary>
 public sealed record Game

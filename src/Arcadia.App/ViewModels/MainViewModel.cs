@@ -5,8 +5,8 @@ using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
-using Arcadia.Core.Models;
 using Arcadia.Launchers;
+using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 

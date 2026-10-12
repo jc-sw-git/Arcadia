@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Arcadia.Core.Launchers;
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers.Epic;
 

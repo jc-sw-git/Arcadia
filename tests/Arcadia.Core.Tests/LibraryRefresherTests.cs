@@ -1,6 +1,6 @@
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
-using Arcadia.Core.Models;
+using Arcadia.Launchers.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Arcadia.Core.Tests;
@@ -20,13 +20,13 @@ public sealed class LibraryRefresherTests
         IsInstalled = installed,
     };
 
-    private LibraryRefresher CreateRefresher() => new(new LibraryService([_epic, _gog]), _time);
+    private LibraryRefresher CreateRefresher() => new(new LibraryService(FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Epic) { Scanner = _epic }, new FakeIntegration(KnownLaunchers.Gog) { Scanner = _gog })), _time);
 
     [Fact]
     public async Task Returns_nothing_when_the_library_is_unchanged()
     {
         _epic.Games = [GameOf("epic", "a")];
-        var current = await new LibraryService([_epic, _gog]).LoadAsync();
+        var current = await new LibraryService(FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Epic) { Scanner = _epic }, new FakeIntegration(KnownLaunchers.Gog) { Scanner = _gog })).LoadAsync();
 
         Assert.Null(await CreateRefresher().RefreshAsync(() => current));
     }
@@ -35,7 +35,7 @@ public sealed class LibraryRefresherTests
     public async Task Returns_the_rescan_when_a_game_was_uninstalled()
     {
         _epic.Games = [GameOf("epic", "a")];
-        var current = await new LibraryService([_epic, _gog]).LoadAsync();
+        var current = await new LibraryService(FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Epic) { Scanner = _epic }, new FakeIntegration(KnownLaunchers.Gog) { Scanner = _gog })).LoadAsync();
 
         _epic.Games = [GameOf("epic", "a", installed: false)];
         var scanned = await CreateRefresher().RefreshAsync(() => current);
@@ -48,7 +48,7 @@ public sealed class LibraryRefresherTests
     {
         _epic.Games = [GameOf("epic", "a")];
         _gog.Games = [GameOf("gog", "b")];
-        var current = await new LibraryService([_epic, _gog]).LoadAsync();
+        var current = await new LibraryService(FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Epic) { Scanner = _epic }, new FakeIntegration(KnownLaunchers.Gog) { Scanner = _gog })).LoadAsync();
 
         _gog.Games = [];
         var scanned = await CreateRefresher().RefreshAsync(() => current);
@@ -102,27 +102,5 @@ public sealed class LibraryRefresherTests
         _epic.Gate.SetResult();
         Assert.NotNull(await first);
         Assert.Equal(1, _epic.Scans);
-    }
-
-    private sealed class FakeScanner(LauncherInfo launcher) : ILauncherScanner
-    {
-        public IReadOnlyList<Game> Games { get; set; } = [];
-
-        public TaskCompletionSource? Gate { get; set; }
-
-        public int Scans { get; private set; }
-
-        public LauncherInfo Launcher => launcher;
-
-        public async Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default)
-        {
-            Scans++;
-            if (Gate is { } gate)
-            {
-                await gate.Task;
-            }
-
-            return Games;
-        }
     }
 }

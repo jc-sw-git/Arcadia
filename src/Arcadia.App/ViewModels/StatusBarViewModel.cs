@@ -68,7 +68,7 @@ public partial class StatusBarViewModel : ViewModelBase
     {
         var support = _controllerSupport;
         HasSisrUpdate = support.Enabled && support.AvailableUpdate is not null;
-        IsControllerStarting = support.Enabled && support.IsStarting;
+        IsControllerStarting = support.Enabled && support.State == SisrState.Starting;
         HasControllerWarning = support.Enabled && support.Issues.Count > 0;
         ControllerWarningText = support.Issues.Count switch
         {

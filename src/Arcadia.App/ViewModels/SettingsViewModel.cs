@@ -220,16 +220,22 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
 
         HasIssues = Issues.Count > 0;
-        IsStarting = IsEnabled && _support.IsStarting;
-        IsHealthy = IsEnabled && !HasIssues && BusyText is null && !IsStarting && !_support.NoControllerFound;
-        StatusText = (IsEnabled, _support.IsPaused, HasIssues) switch
+        var state = _support.State;
+        IsStarting = IsEnabled && state == SisrState.Starting;
+        IsHealthy = IsEnabled && !HasIssues && BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
+        StatusText = (IsEnabled, state == SisrState.Paused, HasIssues) switch
         {
             (false, _, _) => "Aus – Steam steuert Arcadia mit dem Steam Controller als Maus und Tastatur.",
             (true, true, _) => "Pausiert – ein Spiel läuft, das Steam Input selbst nutzt.",
             (true, false, true) => "Eingeschaltet, aber nicht voll funktionsfähig – siehe unten.",
-            _ when _support.IsStarting => "SISR startet – der Controller wird gleich als Xbox-360-Controller eingerichtet …",
-            _ when _support.NoControllerFound => "Bereit, aber kein Controller gefunden – schalte deinen Controller ein.",
-            _ => _support.Sisr.IsRunning ? "Aktiv – der Steam Controller wird überall als Gamepad erkannt." : "Wird gestartet …",
+            _ => state switch
+            {
+                SisrState.Starting => "SISR startet – der Controller wird gleich als Xbox-360-Controller eingerichtet …",
+                SisrState.NoController => "Bereit, aber kein Controller gefunden – schalte deinen Controller ein.",
+                SisrState.Running => "Aktiv – der Steam Controller wird überall als Gamepad erkannt.",
+                SisrState.Stopping => "SISR wird beendet …",
+                _ => "Wird gestartet …",
+            },
         };
 
         VersionText = _support.Sisr.InstalledVersion is { } version ? $"SISR {version}" : "SISR ist noch nicht installiert";

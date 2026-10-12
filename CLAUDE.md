@@ -202,7 +202,12 @@ Reordering logs `New active position is requested for the <app>` followed by a p
 another downloads logs only `Resume of active installation` for the new one; the running one is cancelled
 without a pause line (verified 2026-10-12), so only the latest `StartTask` counts as downloading. Progress =
 size of the whole install dir / `InstallSize` (download goes to `.egstore` inside it, moved at the end).
-Epic writes no percentages to the log. The library is also rescanned when the window is activated
+Epic writes no percentages to the log.
+Epic keeps total playtime only on its servers (login: #82). Locally the logs (`EpicGamesLauncher*.log`, current plus a few
+rotated backups, UTC times) have `LogPortalPublishTime: Started/Stopped tracking playtime for <ns>:<item>:<app>` per
+session — Arcadia keeps the latest start per app in `%APPDATA%\Arcadia\epic-last-played.json` because the backups
+rotate away — and, on each launcher start, `Sending response: {…"get-installed-apps-response"…}` with
+`installedVersion` and `hasUpdate` per app; a report whose version differs from the manifest's `AppVersionString` is stale. The library is also rescanned when the window is activated
 and when a selected installed game's directory is missing.
 
 ## Git

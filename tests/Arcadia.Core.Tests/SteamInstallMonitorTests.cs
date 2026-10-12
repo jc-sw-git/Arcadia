@@ -159,7 +159,7 @@ public sealed class SteamInstallMonitorTests : IDisposable
             "[2026-10-12 20:43:01] AppID 960090 state changed : Update Required,Fully Installed,Update Queued,Update Running,",
             "[2026-10-12 20:43:03] AppID 960090 state changed : Update Required,Fully Installed,Update Queued,Update Running,Update Started,",
             "[2026-10-12 20:43:03] AppID 960090 App update changed : Running Update,Downloading,Staging,");
-        Assert.Equal(InstallPhase.Downloading, Poll().Active["960090"].Phase);
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading), Poll().Active["960090"]);
 
         AppendContentLog("[2026-10-12 20:45:02] AppID 960090 App update changed : Running Update,Committing,");
         Assert.Equal(InstallPhase.Finishing, Poll().Active["960090"].Phase);

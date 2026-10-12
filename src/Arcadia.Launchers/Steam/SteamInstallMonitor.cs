@@ -239,8 +239,12 @@ public sealed record SteamManifestState(uint AppId, string Name, int Flags, long
 {
     public (long Downloaded, long Staged) Bytes => (BytesDownloaded, BytesStaged);
 
-    /// <summary>Download and staging (writing the files) together, 0…1; null before Steam knows the size.</summary>
-    public double? Fraction => BytesToDownload + BytesToStage is > 0 and var total
+    /// <summary>
+    /// Download and staging (writing the files) together, 0…1; null before Steam knows the size or reports
+    /// any bytes. During an update Steam writes the counters only at the start and the end (Schedule I,
+    /// 2026-10-12), so a 0 would stand still for the whole download.
+    /// </summary>
+    public double? Fraction => BytesToDownload + BytesToStage is > 0 and var total && BytesDownloaded + BytesStaged > 0
         ? Math.Clamp((double)(BytesDownloaded + BytesStaged) / total, 0, 1)
         : null;
 }

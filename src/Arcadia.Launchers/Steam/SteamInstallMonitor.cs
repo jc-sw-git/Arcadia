@@ -12,8 +12,9 @@ namespace Arcadia.Launchers.Steam;
 /// <c>BytesDownloaded/BytesToDownload</c> and <c>BytesStaged/BytesToStage</c> give the progress.
 /// Uninstalling an installed game (38 = files missing, for a moment) and cancelling a new install
 /// both delete the manifest.
-/// Steam downloads one app at a time but marks every waiting app the same way, so the one whose
-/// bytes moved last is the one downloading.
+/// Steam downloads one app at a time but marks every waiting app the same way. Its content log
+/// (<see cref="SteamContentLog"/>) names the one it works on; without the log, the app whose
+/// bytes moved last counts as downloading.
 /// </summary>
 public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null, TimeProvider? time = null) : IInstallMonitor
 {
@@ -33,13 +34,17 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
     private readonly TimeProvider _time = time ?? TimeProvider.System;
     private readonly Dictionary<string, Tracked> _active = new(StringComparer.Ordinal);
     private IReadOnlyDictionary<string, SteamManifestState> _previous = new Dictionary<string, SteamManifestState>();
+    private SteamContentLog? _contentLog;
+    private string? _contentLogRoot;
     private bool _primed;
 
     public string LauncherId => KnownLaunchers.Steam.Id;
 
     public InstallSnapshot Poll()
     {
-        var manifests = ReadManifests();
+        var steam = _locate();
+        var manifests = ReadManifests(steam);
+        var contentLog = ReadContentLog(steam);
         var now = _time.GetUtcNow();
         var finished = new Dictionary<string, InstallOutcome>(StringComparer.Ordinal);
 
@@ -85,16 +90,12 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
             _active[appId] = tracked;
         }
 
-        var downloading = _active
-            .Where(a => a.Value.MovedAt is not null && (manifests[a.Key].Flags & UpdatePaused) == 0)
-            .OrderByDescending(a => a.Value.MovedAt)
-            .Select(a => a.Key)
-            .FirstOrDefault();
-
+        var downloading = DownloadingApp(manifests, contentLog);
         var active = new Dictionary<string, InstallProgress>(StringComparer.Ordinal);
         foreach (var (appId, tracked) in _active.ToList())
         {
-            var progress = ProgressOf(manifests[appId], appId == downloading);
+            var manifest = manifests[appId];
+            var progress = ProgressOf(manifest, appId == downloading, contentLog?.StateOf(manifest.AppId)?.IsFinishing == true);
             _active[appId] = tracked with { LastPhase = progress.Phase };
             active[appId] = progress;
         }
@@ -104,9 +105,27 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
         return new InstallSnapshot(active, finished);
     }
 
+    // The content log knows which app Steam works on; the manifests only show whose bytes moved.
+    private string? DownloadingApp(Dictionary<string, SteamManifestState> manifests, SteamContentLog? contentLog)
+    {
+        var unpaused = _active.Where(a => (manifests[a.Key].Flags & UpdatePaused) == 0).ToList();
+        if (contentLog is not null
+            && unpaused.FirstOrDefault(a => contentLog.StateOf(manifests[a.Key].AppId)?.IsRunning == true) is { Key: { } running })
+        {
+            return running;
+        }
+
+        return unpaused
+            .Where(a => a.Value.MovedAt is not null)
+            .OrderByDescending(a => a.Value.MovedAt)
+            .Select(a => a.Key)
+            .FirstOrDefault();
+    }
+
     /// <summary>The state of one manifest, as Arcadia reads it.</summary>
-    /// <param name="IsDownloading">Whether this app's bytes moved most recently of all waiting apps.</param>
-    public static InstallProgress ProgressOf(SteamManifestState manifest, bool isDownloading)
+    /// <param name="isDownloading">Whether Steam works on this app rather than letting it wait.</param>
+    /// <param name="isFinishing">Whether Steam's content log says the files are being verified or moved.</param>
+    public static InstallProgress ProgressOf(SteamManifestState manifest, bool isDownloading, bool isFinishing = false)
     {
         var fraction = manifest.Fraction;
         if ((manifest.Flags & Uninstalling) != 0)
@@ -119,7 +138,7 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
             return new InstallProgress(InstallPhase.Paused, fraction);
         }
 
-        if (manifest.BytesToDownload > 0 && manifest.BytesDownloaded >= manifest.BytesToDownload)
+        if (isFinishing || (manifest.BytesToDownload > 0 && manifest.BytesDownloaded >= manifest.BytesToDownload))
         {
             return new InstallProgress(InstallPhase.Finishing, fraction);
         }
@@ -173,10 +192,26 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
         _ => InstallOutcome.Cancelled,
     };
 
-    private Dictionary<string, SteamManifestState> ReadManifests()
+    private SteamContentLog? ReadContentLog(SteamInstallation? steam)
+    {
+        if (steam is null)
+        {
+            return null;
+        }
+
+        if (_contentLog is null || !string.Equals(_contentLogRoot, steam.RootPath, StringComparison.OrdinalIgnoreCase))
+        {
+            _contentLog = new SteamContentLog(Path.Combine(steam.RootPath, "logs", "content_log.txt"));
+            _contentLogRoot = steam.RootPath;
+        }
+
+        return _contentLog.Update() ? _contentLog : null;
+    }
+
+    private static Dictionary<string, SteamManifestState> ReadManifests(SteamInstallation? steam)
     {
         var manifests = new Dictionary<string, SteamManifestState>(StringComparer.Ordinal);
-        if (_locate() is not { } steam)
+        if (steam is null)
         {
             return manifests;
         }

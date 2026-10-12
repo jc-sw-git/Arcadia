@@ -507,7 +507,7 @@ public partial class MainViewModel : ViewModelBase
                 ? $"Die Installation von „{tile.Title}“ wartet auf deine Bestätigung in {tile.LauncherName}."
                 : install.Phase == InstallPhase.Uninstalling
                     ? $"„{tile.Title}“ wird gerade deinstalliert."
-                    : $"„{tile.Title}“ wird bereits installiert – Pausieren und Abbrechen in {tile.LauncherName}.");
+                    : $"„{tile.Title}“ wird bereits {(tile.IsInstalled ? "aktualisiert" : "installiert")} – Pausieren und Abbrechen in {tile.LauncherName}.");
             return;
         }
 

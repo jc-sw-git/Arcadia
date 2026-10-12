@@ -39,6 +39,14 @@ public sealed class SteamInstallMonitorTests : IDisposable
             }
             """);
 
+    private string ContentLogPath => Path.Combine(_root, "logs", "content_log.txt");
+
+    private void AppendContentLog(params string[] lines)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(ContentLogPath)!);
+        File.AppendAllLines(ContentLogPath, lines);
+    }
+
     private void Delete(string appId) => File.Delete(Path.Combine(_steamApps, $"appmanifest_{appId}.acf"));
 
     private InstallSnapshot Poll()
@@ -137,6 +145,56 @@ public sealed class SteamInstallMonitorTests : IDisposable
         Assert.Contains(AgeOfEmpires, Poll().Active.Keys);
         Write(AgeOfEmpires, flags: 4, buildId: 3062236);
         Assert.Equal(InstallOutcome.Completed, Poll().Finished[AgeOfEmpires]);
+    }
+
+    [Fact]
+    public void The_content_log_names_the_downloading_app_before_its_bytes_move()
+    {
+        // Bloons TD 6 on 2026-10-12: started through Arcadia, Arcadia showed it waiting while it downloaded.
+        Write("960090", flags: 6, buildId: 24829026);
+        Poll();
+        Write("960090", flags: 1030, buildId: 24829026);
+        AppendContentLog(
+            "[2026-10-12 20:43:01] AppID 960090 state changed : Update Required,Fully Installed,Update Queued, (Update delayed for 639109 secs)",
+            "[2026-10-12 20:43:01] AppID 960090 state changed : Update Required,Fully Installed,Update Queued,Update Running,",
+            "[2026-10-12 20:43:03] AppID 960090 state changed : Update Required,Fully Installed,Update Queued,Update Running,Update Started,",
+            "[2026-10-12 20:43:03] AppID 960090 App update changed : Running Update,Downloading,Staging,");
+        Assert.Equal(InstallPhase.Downloading, Poll().Active["960090"].Phase);
+
+        AppendContentLog("[2026-10-12 20:45:02] AppID 960090 App update changed : Running Update,Committing,");
+        Assert.Equal(InstallPhase.Finishing, Poll().Active["960090"].Phase);
+
+        Write("960090", flags: 4, buildId: 25664134);
+        AppendContentLog("[2026-10-12 20:45:03] AppID 960090 state changed : Fully Installed,");
+        Assert.Equal(InstallOutcome.Completed, Poll().Finished["960090"]);
+    }
+
+    [Fact]
+    public void A_queued_app_without_update_running_waits_even_when_the_log_exists()
+    {
+        Poll();
+        Write(AgeOfEmpires, flags: 1026);
+        Write(SystemShock, flags: 1026);
+        AppendContentLog(
+            "[2026-10-12 17:50:00] AppID 221380 state changed : Update Required,Update Queued,Update Started,",
+            "[2026-10-12 17:50:00] AppID 238210 state changed : Update Required,Update Queued,Update Running,Update Started,");
+        var active = Poll().Active;
+        Assert.Equal(InstallPhase.Queued, active[AgeOfEmpires].Phase);
+        Assert.Equal(InstallPhase.Downloading, active[SystemShock].Phase);
+    }
+
+    [Fact]
+    public void The_content_log_survives_steam_starting_a_new_file()
+    {
+        var log = new SteamContentLog(ContentLogPath);
+        AppendContentLog("[2026-10-12 20:43:01] AppID 960090 state changed : Update Required,Fully Installed,Update Queued,Update Running,");
+        Assert.True(log.Update());
+        Assert.Equal(new SteamContentState(true, false), log.StateOf(960090));
+
+        File.WriteAllText(ContentLogPath, "[2026-10-12 20:50:00] AppID 1 state changed : Fully Installed,\n");
+        Assert.True(log.Update());
+        Assert.True(log.StateOf(960090)!.IsRunning);
+        Assert.Null(log.StateOf(2));
     }
 
     [Fact]

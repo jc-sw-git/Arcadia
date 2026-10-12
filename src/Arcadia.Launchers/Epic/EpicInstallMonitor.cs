@@ -18,6 +18,7 @@ namespace Arcadia.Launchers.Epic;
 /// </list>
 /// Progress is the size of the install directory against the manifest's install size: Epic
 /// downloads into <c>.egstore</c> inside that directory and moves the files out at the end.
+/// An update has no such measure — the directory is full from the start — so it shows no fraction.
 /// </summary>
 public sealed partial class EpicInstallMonitor(string? dataDirectory = null, string? logPath = null) : IInstallMonitor
 {
@@ -88,6 +89,7 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
             .ToList();
 
         var pending = ReadPendingManifests();
+        var installed = open.Count > 0 ? ReadInstalledApps() : [];
         var active = new Dictionary<string, InstallProgress>(StringComparer.Ordinal);
         var waiting = 0;
         foreach (var app in open)
@@ -99,7 +101,7 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
             }
             else if (last is EpicInstallEvent.Started or EpicInstallEvent.Paused)
             {
-                var fraction = pending.TryGetValue(app, out var manifest) ? FractionOf(manifest) : null;
+                var fraction = !installed.Contains(app) && pending.TryGetValue(app, out var manifest) ? FractionOf(manifest) : null;
                 // A complete download moving its files may overlap the next app's start; it isn't paused.
                 var phase = fraction >= 0.999 && last == EpicInstallEvent.Started ? InstallPhase.Finishing
                     : last == EpicInstallEvent.Paused || app != _latestStart ? InstallPhase.Paused
@@ -316,6 +318,45 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
         }
 
         return result;
+    }
+
+    /// <summary>Apps with an installed manifest (<c>Data\Manifests\*.item</c>): an installation of one of them is an update.</summary>
+    private HashSet<string> ReadInstalledApps()
+    {
+        var apps = new HashSet<string>(StringComparer.Ordinal);
+        var directory = Path.Combine(_dataDirectory, "Manifests");
+        try
+        {
+            if (!Directory.Exists(directory))
+            {
+                return apps;
+            }
+
+            foreach (var file in Directory.EnumerateFiles(directory, "*.item"))
+            {
+                try
+                {
+                    using var document = JsonDocument.Parse(ReadShared(file));
+                    var root = document.RootElement;
+                    if (root.ValueKind == JsonValueKind.Object
+                        && root.TryGetProperty("AppName", out var app) && app.GetString() is { Length: > 0 } appName
+                        && !(root.TryGetProperty("bIsIncompleteInstall", out var incomplete) && incomplete.ValueKind == JsonValueKind.True))
+                    {
+                        apps.Add(appName);
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+                {
+                    // Being written; skip this round.
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Directory vanished between the check and the enumeration.
+        }
+
+        return apps;
     }
 
     private static double? FractionOf(PendingManifest manifest)

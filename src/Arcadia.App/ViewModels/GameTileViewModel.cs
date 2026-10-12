@@ -38,7 +38,7 @@ public partial class GameTileViewModel : ViewModelBase
     public bool UpdateAvailable => Game.IsInstalled && Game.UpdateAvailable && InstallState is null;
 
     public string PrimaryActionText => InstallState?.Phase == InstallPhase.Uninstalling ? "Wird deinstalliert …"
-        : InstallState is not null ? "Wird installiert …"
+        : InstallState is not null ? $"{InstallVerb} …"
         : !Game.IsInstalled ? "Installieren"
         : Game.UpdateAvailable ? "Update starten"
         : "Spielen";
@@ -83,9 +83,12 @@ public partial class GameTileViewModel : ViewModelBase
         { Phase: InstallPhase.Paused } => "Pausiert",
         { Phase: InstallPhase.Finishing } => "Wird abgeschlossen …",
         { Phase: InstallPhase.Uninstalling } => "Wird deinstalliert …",
-        { Fraction: { } f } => $"Wird installiert · {Formatting.Percent(f)}",
-        _ => "Wird installiert …",
+        { Fraction: { } f } => $"{InstallVerb} · {Formatting.Percent(f)}",
+        _ => $"{InstallVerb} …",
     };
+
+    // An installation of a game that is already installed is an update.
+    private string InstallVerb => Game.IsInstalled ? "Wird aktualisiert" : "Wird installiert";
 
     /// <summary>Fits the badge on a cover.</summary>
     public string InstallShortText => InstallState switch

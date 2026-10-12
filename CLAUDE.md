@@ -111,7 +111,7 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 |---|---|
 | `src/Arcadia.Launchers.Abstractions` | What a launcher is made of, with no dependency on the rest: `ILauncherIntegration` (scanner, optional client and install monitor, `Locate`), `ILauncherScanner`, `ILauncherClient`, `IInstallMonitor`, models (`Game`, `LauncherInfo`, `LaunchTarget`). The future plugin interface for launchers |
 | `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`, `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
-| `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`SteamScanner`, `SteamInstallMonitor`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
+| `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`SteamScanner`, `SteamInstallMonitor`, `SteamContentLog`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, auto-repeat for D-pad/stick) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost`, `SisrApiClient`, `UsbipDriver`, `GitHubReleases`, `ControllerSupportService`, `ControllerSupportRemoval` (uninstall) |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header) and `ToastViewModel` are its children |
@@ -183,6 +183,11 @@ an update of an installed game is 1030. Steam downloads one app at a time but fl
 app whose `BytesDownloaded`/`BytesStaged` moved last is the downloading one. Cancelling a new install and
 uninstalling (38 for a moment) both delete the manifest. Steam updates runtimes/redistributables on its own —
 they are filtered like in the scanner.
+The manifest's byte counters are written rarely (an update of Schedule I: 0 at the start, complete at the end), so the
+monitor also reads `logs/content_log.txt` (`SteamContentLog`): `AppID <id> state changed : …,Update Running,…` marks
+the app Steam works on (a waiting or paused one lacks it), `App update changed : …Verifying Staged|Committing` the end.
+Steam has no update-only URI: `steam://install/<id>` is ignored for installed games, `steam://validate/<id>` updates
+but first verifies every file (and resets modified ones).
 
 **Epic:** all locally installed games have `bRequiresAuth` → they need the launcher. If it isn't
 running, `EpicLauncherClient` starts it with `-silent`, waits for `EpicWebHelper` + 4 s, starts
@@ -212,7 +217,8 @@ Epic keeps total playtime only on its servers (login: #82). Locally the logs (`E
 rotated backups, UTC times) have `LogPortalPublishTime: Started/Stopped tracking playtime for <ns>:<item>:<app>` per
 session — Arcadia keeps the latest start per app in `%APPDATA%\Arcadia\epic-last-played.json` because the backups
 rotate away — and, on each launcher start, `Sending response: {…"get-installed-apps-response"…}` with
-`installedVersion` and `hasUpdate` per app; a report whose version differs from the manifest's `AppVersionString` is stale. The library is also rescanned when the window is activated
+`installedVersion` and `hasUpdate` per app; a report whose version differs from the manifest's `AppVersionString` is stale. An update has no progress measure (the install dir
+is full from the start), so `EpicInstallMonitor` reports it without a fraction. The library is also rescanned when the window is activated
 and when a selected installed game's directory is missing.
 
 ## Git

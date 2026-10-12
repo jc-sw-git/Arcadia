@@ -14,7 +14,11 @@ Cargo.lock.orig
 
 # Editor / OS
 .idea/
-.vscode/
+# VS Code: personal settings stay local, the shared F5 setup is checked in.
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
 .DS_Store
 Thumbs.db
 

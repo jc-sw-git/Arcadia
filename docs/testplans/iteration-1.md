@@ -5,6 +5,30 @@ Abschluss-Test am installierten Release-Kandidaten.
 
 **Abschluss-Test:** Release-Kandidat –, getestet von –, am –.
 
+## #1 Steam-Bibliothek einlesen
+
+- [ ] **T1-1** Der Steam-Tab zeigt alle installierten Spiele aus allen Steam-Bibliotheken (auch
+      auf anderen Laufwerken), aber keine Werkzeuge, Redistributables, SDKs oder Soundtracks;
+      Demos bleiben drin. · E2E: ja (Manifeste als Testdateien)
+- [ ] **T1-2** Stichprobe gegen Steam: Größe, zuletzt gespielt und Spielzeit stimmen; das
+      Installationsdatum ist das Erstelldatum des Spielordners. · E2E: ja (Testdateien)
+- [ ] **T1-3** „Update starten“ erscheint nur bei Spielen, für die Steam ein Update anzeigt; A
+      startet es in Steam. · E2E: nein (echtes Steam)
+- [ ] **T1-4** A, Enter und Doppelklick starten ein Steam-Spiel; Steam darf dabei im Hintergrund
+      bleiben oder geschlossen sein. · E2E: nein (echtes Steam)
+- [ ] **T1-5** Ohne Steam (nicht installiert) gibt es keinen Steam-Tab und keinen Fehler. · E2E: ja
+- [ ] **T1-6** Mit `--demo` zeigt der Steam-Tab die echten Spiele statt Demo-Daten. · E2E: ja
+
+Die SISR-Pause bei Steam-Spielen prüft G-24. Nicht installierte Steam-Spiele zeigt der Tab noch
+nicht: Steam legt die Liste der Spiele im Besitz nicht lesbar ab (nur über die Web API mit
+API-Schlüssel oder den binären `appinfo.vdf`-Cache).
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T1-1, T1-2 | 2026-10-12 | Claude | PR-Branch, Linux, Scanner-Code gegen Kopien der echten Dateien des Owners (3 Bibliotheken, 77 Manifeste, `localconfig.vdf`), nicht in der App | ✅ 74 Spiele, ausgefiltert genau Steamworks Redistributables, Source SDK Base 2013 und ein Soundtrack; Update bei den 4 Spielen mit `StateFlags` 6/70 | Ansicht in Arcadia, Start und Update am PC des Owners |
+
 ## #23 Installer, Self-Update, Release-Pipeline
 
 - [ ] **T23-1** `Arcadia-win-Setup.exe` installiert ohne Adminrechte nach

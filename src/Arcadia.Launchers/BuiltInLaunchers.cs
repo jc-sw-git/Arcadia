@@ -2,6 +2,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Demo;
 using Arcadia.Launchers.Epic;
+using Arcadia.Launchers.Steam;
 
 namespace Arcadia.Launchers;
 
@@ -11,7 +12,6 @@ public static class BuiltInLaunchers
     // Deliberately different sizes, so paging and the page size rule can be tried out.
     private static readonly Dictionary<string, int> DemoGameCounts = new(StringComparer.Ordinal)
     {
-        [KnownLaunchers.Steam.Id] = 128,
         [KnownLaunchers.Gog.Id] = 31,
         [KnownLaunchers.Ubisoft.Id] = 9,
         [KnownLaunchers.Ea.Id] = 14,
@@ -26,6 +26,7 @@ public static class BuiltInLaunchers
     {
         ILauncherIntegration[] integrations =
         [
+            new SteamIntegration(),
             new EpicIntegration(time),
         ];
 

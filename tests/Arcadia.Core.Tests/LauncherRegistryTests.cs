@@ -2,6 +2,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Steam;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Arcadia.Core.Tests;
@@ -109,12 +110,13 @@ public sealed class LauncherRegistryTests
     public void Built_in_launchers_follow_the_known_order_and_add_demo_data_only_on_request()
     {
         var real = BuiltInLaunchers.Create(_time, demo: false);
-        Assert.Equal(["epic"], real.Select(i => i.Launcher.Id));
+        Assert.Equal(["steam", "epic"], real.Select(i => i.Launcher.Id));
 
         var demo = new LauncherRegistry(BuiltInLaunchers.Create(_time, demo: true), _ => true);
         Assert.Equal(KnownLaunchers.All.Select(l => l.Id), demo.All.Select(i => i.Launcher.Id));
         Assert.Empty(demo.Rejected);
         Assert.NotNull(demo.Find("epic")?.InstallMonitor);
+        Assert.IsType<SteamIntegration>(demo.Find("steam"));
     }
 
     private sealed class FakeClient(string launcherId) : ILauncherClient

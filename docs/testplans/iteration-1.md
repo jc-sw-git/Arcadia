@@ -201,6 +201,21 @@ Verlauf:
 |---|---|---|---|---|---|
 | T28-1 bis T28-3 | 2026-10-12 | Claude | Branch `claude/project-thread-y4c95v`, Linux, Unit-Tests mit Fake-SISR, Fake-API und `FakeTimeProvider` (`ControllerSupportServiceTests`), nicht in der App | ✅ überlappende Ticks starten SISR einmal; Ausschalten während Tick oder Pause lässt SISR aus; GitHub-Timeout und abgebrochener Download melden sich; nach 3 Abstürzen in 5 min kein Neustart | Echter Steam Controller am PC des Owners |
 
+## #86 Refinement-Skill
+
+Keine Testfälle: Arbeitsablauf für Claude ohne Änderung an Arcadia; er wird beim nächsten Issue
+im Refinement selbst erprobt.
+
+## #87 Diagnose-Skill
+
+Keine Testfälle: Arbeitsablauf für Claude ohne Änderung an Arcadia; er wird beim nächsten
+hartnäckigen Fehler erprobt.
+
+## #88 Launcher-Befunde aus CLAUDE.md auslagern
+
+Keine Testfälle: nur Dokumentation verschoben (`docs/launchers/`, `docs/controller-support.md`),
+der Inhalt ist unverändert.
+
 ## Grundgerüst (ohne Issue)
 
 Alles, was Arcadia schon kann, aber zu keinem Issue gehört (Grundgerüst aus `docs/roadmap.md`,
@@ -294,7 +309,7 @@ Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
-| G-21 bis G-24 | 2026-10-09 | nicht festgehalten | PC des Owners (laut `CLAUDE.md`, Abschnitt Steam / Steam Controller) | ✅ | – |
+| G-21 bis G-24 | 2026-10-09 | nicht festgehalten | PC des Owners (laut `docs/controller-support.md`) | ✅ | – |
 
 ## Explorativer Test
 

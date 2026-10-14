@@ -160,8 +160,10 @@ touching that code, and add new findings there, not here):
 
 ## Git
 
-- Work on feature branches; the owner decides when to commit and push — ask first.
+- Commit and push to feature branches freely; never push to `main`. Changes reach `main` only through a PR
+  that the owner reviews and merges.
 - **Never** end commit messages with a `Co-Authored-By` trailer.
 - Commit messages: English, imperative subject, body explains why.
-- GitHub writes (issues, comments, PRs, pushes) only when the owner explicitly asks for them.
+- Opening a PR needs no prior OK (tell the owner the link). Merging, tags/releases, closing issues and posting
+  comments only on the owner's explicit word.
 - License: GPL-3.0-only. Third-party notes in `THIRD-PARTY-NOTICES.md`.

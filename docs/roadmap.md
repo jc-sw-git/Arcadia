@@ -8,6 +8,19 @@ Manuelle Tests je Iteration und der Ablauf Feature- → Abnahme-Iteration: `docs
 
 Designs: `docs/designs/` (PNG + Quellen), Canvas: https://claude.ai/artifact/8A9qxc67RcsuFmavaqCAuN
 
+## Refinement
+
+Bevor Code entsteht, gehen Owner und Claude die wahrscheinlichsten Szenarien gemeinsam durch
+(Skill `.claude/skills/refinement`). Das Ergebnis steht danach im Issue (Owner, 2026-10-14):
+
+- **Iteration 1 (Rest):** jedes Issue, das noch bearbeitet wird, wird vorher einzeln refined.
+- **Ab Iteration 2:** ein Refinement pro Epic, das dessen Umfang konkret absteckt. Das Ergebnis wird
+  in schlanke Issues geschnitten, die als Sub-Issues am Epic hängen.
+- Jedes Issue ist ein in sich geschlossenes Inkrement, das in das Epic einzahlt.
+- Richtwert: Was ein Issue an Kontext braucht (Code, Doku, Logs, Diskussion), bleibt unter etwa
+  150k Tokens. Mehr ist ein Zeichen, das Issue weiter zu teilen; keine harte Grenze.
+- Ob Refinement pro Issue oder pro Epic besser klappt, ist Thema der Retrospektive in #66.
+
 ## Erledigt (Grundgerüst)
 
 - Solution-Struktur: Core, Launchers, Input, ControllerSupport, App, Tests

@@ -164,6 +164,21 @@ Verlauf:
 | G-16 | 2026-10-12 | Juri | PR #80, PC des Owners, The Witcher 3 mit Update | ❌ Hinweis unter „Spielen“ abgeschnitten; Update-Symbol auf der Kachel passt nicht zu den anderen, Badge auf der Detailseite wirkt wie ein Button | Hinweise umbrechen, Kachel-Symbol im Stil der anderen, Detailseite zeigt „Update verfügbar“ als Text unter dem Titel |
 | G-16 | 2026-10-12 | Claude | PR #80, Linux unter Xvfb, `--demo`, 1920×1080 | ✅ Symbol und Text wie geplant (Screenshot); Umbruch nur per Einstellung, mit langen Namen nicht gesehen | Ansicht am PC des Owners |
 
+## #86 Refinement-Skill
+
+Keine Testfälle: Arbeitsablauf für Claude ohne Änderung an Arcadia; er wird beim nächsten Issue
+im Refinement selbst erprobt.
+
+## #87 Diagnose-Skill
+
+Keine Testfälle: Arbeitsablauf für Claude ohne Änderung an Arcadia; er wird beim nächsten
+hartnäckigen Fehler erprobt.
+
+## #88 Launcher-Befunde aus CLAUDE.md auslagern
+
+Keine Testfälle: nur Dokumentation verschoben (`docs/launchers/`, `docs/controller-support.md`),
+der Inhalt ist unverändert.
+
 ## Grundgerüst (ohne Issue)
 
 Alles, was Arcadia schon kann, aber zu keinem Issue gehört (Grundgerüst aus `docs/roadmap.md`,
@@ -257,7 +272,7 @@ Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
-| G-21 bis G-24 | 2026-10-09 | nicht festgehalten | PC des Owners (laut `CLAUDE.md`, Abschnitt Steam / Steam Controller) | ✅ | – |
+| G-21 bis G-24 | 2026-10-09 | nicht festgehalten | PC des Owners (laut `docs/controller-support.md`) | ✅ | – |
 
 ## Explorativer Test
 

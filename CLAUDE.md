@@ -12,6 +12,8 @@ reference for porting (binary VDF codec, scanner ideas, architecture notes).
   → tasks, all linked as GitHub sub-issues. Add new issues as a sub-issue of the matching epic
   (`gh api -X POST repos/jc-sw-git/Arcadia/issues/<epic>/sub_issues -F sub_issue_id=<issue id, not number>`).
   Features are `type:story` and start with a `> **Story:**` line. See `docs/roadmap.md`.
+- **Refinement first:** before implementing an issue (Iteration 1) or an epic (from Iteration 2), refine
+  it with the owner using the skill `.claude/skills/refinement`; rules in `docs/roadmap.md` → Refinement.
 - **Language:** the owner writes German; UI texts are German for now (localization is an issue).
   Code, comments and commit messages are English.
 
@@ -56,6 +58,9 @@ Tests cover Core/Launchers/ControllerSupport logic, not the UI. For UI changes, 
 look at it — see the skill `.claude/skills/arcadia-verify/SKILL.md` and the scripts in
 `tools/dev/` (screenshot with key presses, foreground tracing, XInput probe, Steam shortcuts).
 The owner often tests manually at the same time — say before driving the app with keys.
+
+For bugs that aren't obvious from the code, or a fix that didn't hold, use the skill
+`.claude/skills/diagnose` (a check that goes red on the bug comes before any hypothesis).
 
 ## Definition of Done
 
@@ -147,81 +152,11 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
 - Compiled bindings: every `DataTemplate` needs `x:DataType`; reach the window's view model
   from inside a template with `$parent[Window].((vm:MainViewModel)DataContext).Prop`.
 
-**Steam / Steam Controller** (all verified on the owner's PC, 2026-10-09):
-- Steam gives the Steam Controller to processes it didn't start only as mouse/keyboard
-  (desktop layout). `steam://forceinputappid/<appid>` only switches the layout; it does not
-  deliver XInput to a foreign process. Restarting Arcadia through Steam was tried and dropped:
-  everything Arcadia then starts (e.g. the Epic launcher) keeps "Arcadia" running in Steam.
-- Therefore Arcadia runs **SISR** (github.com/Alia5/SISR, GPL-3.0, Go) as a separate process
-  from `%LOCALAPPDATA%\SISR` (the official install location — SISR uses the marker shortcut
-  that points to its own exe; a copy elsewhere creates a second marker). Started hidden with
-  `--api.listen-address localhost:47640 --update-notify none --log.file …`, stopped via
-  `POST /api/v1/quit`. Ready = API answers and `/api/v1/devices` shows a `viiper_device`.
-- Default: SISR runs except while a game from the Steam launcher runs (double input);
-  per-game override in `AppSettings.ControllerSupportOverrides`.
-- After SISR stops, Steam keeps SISR's layout until the foreground changes — `force-config
-  enforce:false` and `forceinputappid/0` are not enough. Arcadia bounces the focus to the
-  desktop for 150 ms (40 ms is too short; a second Arcadia window doesn't count) and takes it
-  back via `AttachThreadInput`. While SISR starts, `LockSetForegroundWindow` keeps Arcadia in front.
-- usbip-win2 ≥ 0.9.8.1 is required. Its uninstall entry was renamed between versions
-  ("USBip version 0.9.7.7" → "USBip 0.9.8.1"). Updating it replaces the emulated host
-  controller → SISR must restart; Windows wants a reboot.
-- Steam shortcut app ids in modern Steam are *not* CRC32(exe+name) — read the stored `appid`.
-  `rungameid` = `(appid << 32) | 0x02000000`. Steam writes `shortcuts.vdf` only on exit;
-  never write it while Steam runs. `BinaryVdf` round-trips the real file byte for byte.
-
-**Steam library** (`SteamScanner`, verified 2026-10-12 against the owner's 3 libraries): libraries from
-`steamapps/libraryfolders.vdf` (`path`), one `appmanifest_<appid>.acf` per installed app. `StateFlags` bit 2 =
-update pending (4 = installed, 6 = with update, +64 while running); a first install without `buildid` is not
-shown. Playtime (minutes) and `LastPlayed` come from `userdata/<user>/config/localconfig.vdf` →
-`UserLocalConfigStore/Software/Valve/Steam/apps/<appid>`; that file also holds app tickets — never log it.
-Steam stores no install date (the game folder's creation time is used). Owned but uninstalled games are **not**
-readable locally: `appcache/packageinfo.vdf` keeps packages after a refund (owner's 007 First Light), and the real
-license list (`userdata/<id>/config/licensecache`) is encrypted — they come with a Steam login (#83). Libraries are re-read on every scan,
-so added or missing drives need no handling of their own.
-`SteamInstallMonitor` (verified 2026-10-12 with real installs): a new install's manifest appears with `StateFlags` 2
-and `buildid` 0, then 1026 (+1024 started) while downloading *or* waiting, 1538 (+512) when paused, 4 when done;
-an update of an installed game is 1030. Steam downloads one app at a time but flags all waiting ones alike, so the
-app whose `BytesDownloaded`/`BytesStaged` moved last is the downloading one. Cancelling a new install and
-uninstalling (38 for a moment) both delete the manifest. Steam updates runtimes/redistributables on its own —
-they are filtered like in the scanner.
-The manifest's byte counters are written rarely (an update of Schedule I: 0 at the start, complete at the end), so the
-monitor also reads `logs/content_log.txt` (`SteamContentLog`): `AppID <id> state changed : …,Update Running,…` marks
-the app Steam works on (a waiting or paused one lacks it), `App update changed : …Verifying Staged|Committing` the end.
-Steam has no update-only URI: `steam://install/<id>` is ignored for installed games, `steam://validate/<id>` updates
-but first verifies every file (and resets modified ones).
-
-**Epic:** all locally installed games have `bRequiresAuth` → they need the launcher. If it isn't
-running, `EpicLauncherClient` starts it with `-silent`, waits for `EpicWebHelper` + 4 s, starts
-the game via `com.epicgames.launcher://…` and re-sends once if no process appears from the
-install directory within 30 s.
-Owned but uninstalled games come from `Data\Catalog\catcache.bin` (Base64 JSON, refreshed by the
-launcher, no login needed). Games = category `games` without `addons`/`digitaldownloads` and with
-an empty `mainGameItem.id` (DLC/season passes name their game there): 331 on the owner's PC vs.
-333 in the Epic library — the difference is Unreal Engine (one tile for all `engines` versions) and Unreal Editor for Fortnite (`addons/launchable`), which Epic shows but which are no games. Epic's own library list is cached in `webcache_*/IndexedDB/https_launcher.store.epicgames.com_0.indexeddb.blob` (V8-serialized, 431 apps incl. DLC). The cache is **ASCII-only** — every other
-character is `?` ("Batman? Arkham", "K?ln"); `EpicCatalog.RepairTitle` drops trademark `?`s,
-umlauts stay broken until metadata providers (#43) supply titles. Install: `…?action=install`.
-`EpicInstallMonitor` (verified 2026-10-10 with real installs): queue order from
-`Data\DownloadManager\DownloadState_<account>.json` (incl. paused, `[]` when idle); per-app events
-from `EpicGamesLauncher.log` (`Queued install for the`, `StartTask: BinaryId [`, `Resume of active
-installation`, `Pause is requested`, `Cancel of active installation`, `HandleTaskComplete … AlertCode=[ok]`,
-`FCommunityPortalAppManagerImpl: Uninstall` — an uninstall then runs through the same queue with
-the same `Queued`/`StartTask`/`HandleTaskComplete` lines, so only that first line tells it apart); install size from
-`Manifests\Pending\*.item`, which **stays behind after a cancel** (never use it as state). The
-queue file can lag behind (owner saw a running install vanish after cancelling a paused one), so
-for apps the log reported on while Arcadia ran, the log decides; the file only orders them.
-Reordering logs `New active position is requested for the <app>` followed by a pause of the old one. Resuming a paused app while
-another downloads logs only `Resume of active installation` for the new one; the running one is cancelled
-without a pause line (verified 2026-10-12), so only the latest `StartTask` counts as downloading. Progress =
-size of the whole install dir / `InstallSize` (download goes to `.egstore` inside it, moved at the end).
-Epic writes no percentages to the log.
-Epic keeps total playtime only on its servers (login: #82). Locally the logs (`EpicGamesLauncher*.log`, current plus a few
-rotated backups, UTC times) have `LogPortalPublishTime: Started/Stopped tracking playtime for <ns>:<item>:<app>` per
-session — Arcadia keeps the latest start per app in `%APPDATA%\Arcadia\epic-last-played.json` because the backups
-rotate away — and, on each launcher start, `Sending response: {…"get-installed-apps-response"…}` with
-`installedVersion` and `hasUpdate` per app; a report whose version differs from the manifest's `AppVersionString` is stale. An update has no progress measure (the install dir
-is full from the start), so `EpicInstallMonitor` reports it without a fraction. The library is also rescanned when the window is activated
-and when a selected installed game's directory is missing.
+**Launcher and controller findings** (verified on the owner's PC; read the matching file before
+touching that code, and add new findings there, not here):
+- Steam library, installs, updates, `shortcuts.vdf`: `docs/launchers/steam.md`
+- Epic launcher, catalog, install monitor, playtime: `docs/launchers/epic.md`
+- Steam Controller Support (SISR, usbip-win2, focus handling): `docs/controller-support.md`
 
 ## Git
 

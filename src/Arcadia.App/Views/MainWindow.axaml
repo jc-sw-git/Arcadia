@@ -427,8 +427,27 @@
                 Command="{Binding CloseSettingsCommand}" />
         <Border Width="1040" MaxHeight="1000" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,40,56,32"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
+          <!-- The button hints stay visible below the scrolling content. -->
+          <DockPanel>
+          <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,24,0,0" Margin="0,24,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+                <TextBlock Classes="hint" Text="Wechseln" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                <TextBlock Classes="hint" Text="Auswählen" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                <TextBlock Classes="hint" Text="Schließen" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
           <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
-          <StackPanel Spacing="32" DataContext="{Binding Settings}" x:DataType="vm:SettingsViewModel">
+          <!-- While Steam or SISR starts, the dialog takes no clicks (the controller is blocked in the view model). -->
+          <StackPanel Spacing="32" DataContext="{Binding Settings}" x:DataType="vm:SettingsViewModel" IsHitTestVisible="{Binding !IsWorking}">
             <StackPanel Spacing="8">
               <TextBlock Text="Einstellungen" FontSize="34" FontWeight="ExtraBold" />
               <TextBlock Text="Weitere Bereiche aus den Entwürfen folgen." FontSize="17" Foreground="{StaticResource TextMuted}" />
@@ -467,7 +486,10 @@
                                IsVisible="{Binding ShowStatusDot}" />
                       <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
                     </StackPanel>
-                    <TextBlock IsVisible="{Binding IsBusy}" Text="{Binding BusyText}" FontSize="15" Foreground="{StaticResource AccentSoft}" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsBusy}">
+                      <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                      <TextBlock Text="{Binding BusyText}" FontSize="15" Foreground="{StaticResource AccentSoft}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    </StackPanel>
                     <TextBlock IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding ErrorText}"
                                FontSize="15" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
 
@@ -610,24 +632,9 @@
               </Border>
             </StackPanel>
 
-            <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,24,0,0">
-              <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
-                  <TextBlock Classes="hint" Text="Wechseln" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-                  <TextBlock Classes="hint" Text="Auswählen" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="glyph round"><TextBlock Text="B" /></Border>
-                  <TextBlock Classes="hint" Text="Schließen" />
-                </StackPanel>
-              </StackPanel>
-            </Border>
           </StackPanel>
           </ScrollViewer>
+          </DockPanel>
         </Border>
 
         <!-- Prompt over the settings before "SISR installieren" goes on; the settings stay dimmed behind it. -->
@@ -637,14 +644,15 @@
           <Border Classes="prompt" Width="720" HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel Spacing="28">
               <StackPanel Orientation="Horizontal" Spacing="18">
-                <Border Classes="promptIcon" Classes.warning="{Binding IsGamePrompt}">
+                <Border Classes="promptIcon" Classes.warning="{Binding IsWarningPrompt}">
                   <Panel>
-                    <TextBlock Text="!" IsVisible="{Binding IsGamePrompt}" />
+                    <TextBlock Text="!" IsVisible="{Binding IsWarningPrompt}" />
                     <TextBlock Text="?" IsVisible="{Binding IsSteamStopPrompt}" />
                   </Panel>
                 </Border>
                 <TextBlock Text="Steam-Spiel läuft" IsVisible="{Binding IsGamePrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                 <TextBlock Text="Steam beenden?" IsVisible="{Binding IsSteamStopPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+                <TextBlock Text="Steam startet nicht" IsVisible="{Binding IsSteamStartFailedPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
               </StackPanel>
 
               <StackPanel Spacing="14" IsVisible="{Binding IsGamePrompt}">
@@ -661,6 +669,11 @@
                 <TextBlock Classes="promptBody" Text="Danach werden SISR und der usbip-Treiber installiert. Windows fragt dabei einmal nach Administratorrechten." />
               </StackPanel>
 
+              <StackPanel Spacing="14" IsVisible="{Binding IsSteamStartFailedPrompt}">
+                <TextBlock Classes="promptBody" Text="Steam konnte nicht innerhalb von einer Minute gestartet werden. Ohne Steam kann SISR den Steam Controller nicht als Xbox 360 Gamepad weiterreichen." />
+                <TextBlock Classes="promptBody" Text="Die Einstellung bleibt deshalb aus. Du kannst es erneut versuchen oder Steam selbst starten." />
+              </StackPanel>
+
               <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsGamePrompt}">
                 <Button Classes="plain action primaryAction" Classes.focused="{Binding RetryInstallItem.IsFocused}"
                         Command="{Binding RetryInstallCommand}" Content="Erneut versuchen" />
@@ -671,6 +684,12 @@
                 <Button Classes="plain action primaryAction" Classes.focused="{Binding ConfirmSteamStopItem.IsFocused}"
                         Command="{Binding ConfirmSteamStopCommand}" Content="Steam beenden und installieren" />
                 <Button Classes="plain action" Classes.focused="{Binding CancelSteamStopItem.IsFocused}"
+                        Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsSteamStartFailedPrompt}">
+                <Button Classes="plain action primaryAction" Classes.focused="{Binding RetrySteamStartItem.IsFocused}"
+                        Command="{Binding RetrySteamStartCommand}" Content="Erneut versuchen" />
+                <Button Classes="plain action" Classes.focused="{Binding CancelSteamStartItem.IsFocused}"
                         Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
               </StackPanel>
 

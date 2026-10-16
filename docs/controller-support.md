@@ -43,9 +43,17 @@ focus handling or anything SISR/usbip related.
   file is all SISR's own "enable CEF" does is inferred. The settings ask both questions in a modal over the
   dialog ("Steam-Spiel läuft", "Steam beenden?") that re-reads the running game every second, because
   nothing else reports a game ending; `LastError` is cleared when the settings open or close.
-- A Steam Controller counts as connected when Windows lists a HID device with Valve's vendor id `28DE`
-  other than `PID_11FF` (Steam's virtual gamepad for other pads). Works while SISR emulates its Xbox 360
-  pad. The wireless dongle counts even with the controller off. Inferred from the USB ids, not yet
-  checked on the owner's PC; if the device list can't be read, the per-game mode is shown anyway.
+- A Steam Controller counts as connected (per-game mode in the preview) only while SISR emulates it
+  (`SisrState.Running`); the tick moves Running ↔ NoController as the controller is switched on or off.
+  Windows' HID list is no use: the wireless dongle shows as a Valve device (`VID_28DE`) even with the
+  controller off (owner's PC, 2026-10-16).
+- SISR may only run while Steam is ready (`steam` and `steamwebhelper` run). Started without Steam, SISR
+  shows its own full-screen "Steam is not running" window and starts Steam itself; that is also why
+  switching off once started Steam: Arcadia restarted SISR after the user closed Steam (owner, 2026-10-16;
+  cause inferred from the logs). So `StartSisr` skips without Steam, the tick stops a running SISR when
+  Steam goes (not counted as a crash) and starts it again with Steam, and `steam://forceinputappid/0` is
+  only sent to a ready Steam. Switching on starts Steam and waits up to 60 s (`SteamStartTimeout`); if
+  Steam doesn't come up the setting is off again and the settings show "Steam startet nicht" with
+  "Erneut versuchen". Arcadia still doesn't start Steam on its own when it starts with the option on.
 - SISR's WebView2 data lands in `%APPDATA%\SISR.exe`, VIIPER's key file in `%APPDATA%\VIIPER`; neither goes
   with SISR's own uninstaller (seen 2026-10-16). `ControllerSupportRemoval.DataDirectories` removes both.

@@ -95,6 +95,97 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Switching_on_with_Steam_closed_starts_Steam_before_SISR()
+    {
+        var service = Create(enabled: false);
+        _platform.IsSteamRunning = false;
+
+        Assert.True(await service.SetEnabledAsync(true));
+
+        Assert.Equal(1, _platform.SteamStarts);
+        Assert.Equal(1, _sisr.Starts);
+        Assert.True(service.Enabled);
+    }
+
+    [Fact]
+    public async Task If_Steam_does_not_start_within_a_minute_the_setting_is_off_again()
+    {
+        var service = Create(enabled: false);
+        _platform.IsSteamRunning = false;
+        _platform.SteamWontStart = true;
+
+        var on = service.SetEnabledAsync(true);
+        await AdvanceUntil(() => on.IsCompleted);
+
+        Assert.False(await on);
+        Assert.False(service.Enabled);
+        Assert.Equal(0, _sisr.Starts);
+        Assert.Equal(SisrState.Off, service.State);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task Without_Steam_a_tick_neither_starts_SISR_nor_counts_a_crash()
+    {
+        var service = Create();
+        _platform.IsSteamRunning = false;
+
+        for (var i = 0; i < ControllerSupportService.MaxRestartsPerWindow + 1; i++)
+        {
+            await service.TickAsync();
+        }
+
+        Assert.Equal(0, _sisr.Starts);
+        Assert.Equal(0, _platform.SteamStarts);
+        Assert.Equal(SisrState.Stopped, service.State);
+
+        _platform.IsSteamRunning = true;
+        await service.TickAsync();
+        Assert.Equal(1, _sisr.Starts);
+    }
+
+    [Fact]
+    public async Task Closing_Steam_stops_SISR_and_switching_off_then_leaves_Steam_closed()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        Assert.Equal(SisrState.Running, service.State);
+
+        _platform.IsSteamRunning = false;
+        await service.TickAsync();
+        Assert.False(_sisr.Running);
+        Assert.Equal(SisrState.Stopped, service.State);
+
+        await service.SetEnabledAsync(false);
+
+        Assert.Equal(0, _platform.SteamStarts);
+        Assert.Equal(0, _platform.LayoutResets);
+        Assert.Equal(SisrState.Off, service.State);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task The_controller_counts_as_connected_only_while_SISR_emulates_it()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        Assert.True(service.SteamControllerConnected);
+
+        // Only the dongle is left: SISR emulates nothing.
+        _api.Controllers = 0;
+        await service.TickAsync();
+        Assert.Equal(SisrState.NoController, service.State);
+        Assert.False(service.SteamControllerConnected);
+
+        _api.Controllers = 1;
+        await service.TickAsync();
+        Assert.True(service.SteamControllerConnected);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
     public async Task Overlapping_ticks_start_SISR_at_most_once()
     {
         var service = Create();
@@ -581,6 +672,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         public bool Reachable { get; set; } = true;
 
+        /// <summary>Controllers SISR emulates; 0 is a dongle without a switched-on controller.</summary>
+        public int Controllers { get; set; } = 1;
+
         public TaskCompletionSource? Gate { get; set; }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -596,7 +690,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
             }
 
             var path = request.RequestUri!.AbsolutePath;
-            var json = path.EndsWith("/devices") ? """[{"viiper_device":{}}]"""
+            var json = path.EndsWith("/devices") ? (Controllers > 0 ? """[{"viiper_device":{}}]""" : "[]")
                 : path.EndsWith("/version/info") ? """{"version":"1.0"}"""
                 : path.EndsWith("/steam/status") ? """{"steam_running":true,"cef_debug_enabled":true,"cef_debug_reachable":true,"marker_shortcut_present":true}"""
                 : path.EndsWith("/viiper/ping") ? """{"status":{"version":"1.0"}}"""
@@ -614,6 +708,13 @@ public sealed class ControllerSupportServiceTests : IDisposable
         public bool IsSteamInstalled { get; set; } = true;
 
         public bool IsSteamRunning { get; set; } = true;
+
+        public bool IsSteamReady => IsSteamRunning;
+
+        /// <summary>"Steam starten" does nothing, as with a broken Steam.</summary>
+        public bool SteamWontStart { get; set; }
+
+        public int LayoutResets { get; private set; }
 
         public bool IsUsbipReady { get; set; } = true;
 
@@ -650,7 +751,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         public void StartSteam()
         {
             SteamStarts++;
-            IsSteamRunning = true;
+            IsSteamRunning = !SteamWontStart;
         }
 
         public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken)
@@ -660,11 +761,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
             return Task.FromResult(!UsbipInstallDeclined);
         }
 
-        public bool IsSteamControllerConnected() => true;
-
-        public void ResetSteamInputLayout()
-        {
-        }
+        public void ResetSteamInputLayout() => LayoutResets++;
 
         public bool AnyRunningFrom(string directory)
         {

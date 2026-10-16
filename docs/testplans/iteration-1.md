@@ -228,6 +228,15 @@ Mit echtem Steam Controller. Für die Fälle ohne SISR vorher in Arcadia deinsta
       Steam läuft wieder. · E2E: nein (UAC)
 - [ ] **T85-8** Bei eingeschalteter Option den usbip-Treiber deinstallieren: Die Option bleibt an und
       zeigt das Problem mit „Installieren“. · E2E: nein (Treiber)
+- [ ] **T85-10** Option aus, Steam beendet: Einschalten startet zuerst Steam, mit Spinner und
+      „Steam wird gestartet …“; erst wenn Steam läuft, startet SISR. Kein Vollbildfenster von SISR
+      („Steam läuft nicht“) erscheint. Bis dahin reagieren die Einstellungen nur auf B. · E2E: nein (echtes Steam)
+- [ ] **T85-11** Startet Steam beim Einschalten nicht innerhalb von 60 Sekunden (z. B. Steam-Ordner
+      umbenannt): Modal „Steam startet nicht“; „Abbrechen“ lässt die Option aus, „Erneut versuchen“
+      versucht es noch einmal. · E2E: ja (Fake-Plattform)
+- [ ] **T85-12** Option an, dann Steam beenden: SISR endet mit, startet nicht neu und startet Steam nicht;
+      die Einstellungen zeigen „Steam läuft nicht“. Danach ausschalten: Steam bleibt aus. Steam selbst
+      starten: SISR startet von allein wieder. · E2E: nein (echtes Steam)
 - [ ] **T85-9** Unter Linux (bzw. ohne Steam unter Windows) ist die Option ausgegraut und sagt
       „Momentan nur unter Windows verfügbar.“ bzw. „Benötigt Steam.“; A tut nichts. · E2E: ja
 
@@ -235,6 +244,8 @@ Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
+| T85-10 bis T85-12 | 2026-10-16 | Juri | Branch `feat/steam-controller-setup-and-naming-85-92` (Stand d2375c7), Windows, echtes Steam | ❌ Einschalten ohne Steam zeigte SISRs Vollbildfenster „Steam läuft nicht“; nach Steam beenden und Ausschalten startete Steam | SISR nur mit laufendem Steam, Steam beim Einschalten starten |
+| T85-10 bis T85-12 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Tests mit Fake-Plattform (`ControllerSupportServiceTests`); Modal „Steam startet nicht“ per Xvfb-Screenshot mit lokalem Eingriff | ✅ Steam vor SISR, Timeout schaltet aus, ohne Steam kein SISR-Start und kein Absturzzähler, Ausschalten ohne Steam sendet nichts an Steam | Echter Ablauf am PC des Owners |
 | T85-2, T85-5 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Xvfb 1920×1080, `--demo`, Modal per lokalem Eingriff erzwungen (unter Linux ist die Option ausgegraut) | ✅ Beide Modals erscheinen über den abgedunkelten Einstellungen, Fokus nur auf ihren Schaltflächen; per Unit-Test geprüft sind nur die frische Abfrage des Spiels und `ClearError`, der Wechsel des Modals beim Spielende nicht | Echter Ablauf mit Steam-Spiel am PC des Owners |
 | T85-1, T85-3 bis T85-7 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Tests mit Fake-Plattform und Fake-SISR (`ControllerSupportServiceTests`), nicht in der App | ✅ Reihenfolge Steam beenden → CEF → SISR → Treiber → Steam starten → an; Steam-Spiel, Timeout, abgelehnter Treiber und nicht beendbares Steam melden sich und lassen die Option aus | Ansicht und echter Ablauf am PC des Owners |
 
@@ -248,8 +259,11 @@ Verlauf:
 - [ ] **T92-3** Ein Klick auf den Wert wechselt zwischen den beiden Modi; zurück auf den Startwert
       wird nichts gespeichert (`ControllerSupportOverrides` in `settings.json` leer). · E2E: ja
 - [ ] **T92-4** Der Eintrag in der Vorschau fehlt bei ausgeschalteter Option und, bei eingeschalteter,
-      ohne angeschlossenen Steam Controller (mit Xbox-Controller allein); er erscheint innerhalb von
-      etwa 10 Sekunden nach dem Anstecken. · E2E: nein (echter Steam Controller)
+      ohne eingeschalteten Steam Controller, auch wenn nur der Funk-Dongle steckt; er erscheint
+      innerhalb von etwa 10 Sekunden nach dem Einschalten des Controllers und verschwindet ebenso nach
+      dem Ausschalten. · E2E: nein (echter Steam Controller)
+- [ ] **T92-5** Die Einstellungen sind so lang, dass sie scrollen: die Fußzeile mit D-Pad/A/B bleibt
+      unten sichtbar, auch ganz oben und ganz unten gescrollt. · E2E: ja
 
 Mit dem Controller erreichbar wird die Einstellung pro Spiel erst mit #10.
 
@@ -257,6 +271,8 @@ Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
+| T92-4 | 2026-10-16 | Juri | Branch `feat/steam-controller-setup-and-naming-85-92` (Stand d2375c7), Windows, Funk-Dongle mit ausgeschaltetem Steam Controller | ❌ Modi in der Vorschau sichtbar, obwohl der Controller aus ist (der Dongle reichte) | Erkennung über SISR statt über die HID-Liste |
+| T92-4, T92-5 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Test (`ControllerSupportServiceTests`) und Xvfb-Screenshot 1920×1080 `--demo` | ✅ Vorschau folgt dem Running/NoController-Zustand (nur Unit-Test); Fußzeile bleibt unter dem scrollenden Inhalt sichtbar | Echter Controller am PC des Owners |
 | T92-3 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Test (`ControllerSupportTests`), nicht in der App | ✅ Zurück auf den Startwert entfernt die Abweichung | Ansicht am PC des Owners |
 
 ## #86 Refinement-Skill

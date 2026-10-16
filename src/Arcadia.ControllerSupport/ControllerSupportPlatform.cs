@@ -15,6 +15,12 @@ public interface IControllerSupportPlatform
 
     bool IsSteamRunning { get; }
 
+    /// <summary>
+    /// Steam is up far enough for SISR: its process and its web helper (CEF, which SISR talks to) run.
+    /// SISR started before that shows its own full-screen "Steam is not running" window and starts Steam itself.
+    /// </summary>
+    bool IsSteamReady { get; }
+
     /// <summary>usbip-win2 is installed in at least <see cref="UsbipDriver.MinimumVersion"/> and loaded.</summary>
     bool IsUsbipReady { get; }
 
@@ -34,8 +40,6 @@ public interface IControllerSupportPlatform
 
     /// <summary>Installs or updates usbip-win2; false if the user declined the Windows prompt.</summary>
     Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken);
-
-    bool IsSteamControllerConnected();
 
     /// <summary>Tells Steam to drop SISR's forced controller layout (applied on the next focus change).</summary>
     void ResetSteamInputLayout();
@@ -58,6 +62,8 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     public bool IsSteamRunning => SteamInstallation.IsRunning;
 
+    public bool IsSteamReady => SteamInstallation.IsRunning && ProcessWatch.IsRunning("steamwebhelper");
+
     public bool IsUsbipReady =>
         OperatingSystem.IsWindows() && UsbipDriver.InstalledVersion() is { } version && version >= UsbipDriver.MinimumVersion && UsbipDriver.IsRunning();
 
@@ -78,24 +84,6 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken) =>
         OperatingSystem.IsWindows() ? UsbipDriver.InstallAsync(http, cancellationToken) : Task.FromResult(false);
-
-    public bool IsSteamControllerConnected()
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            return false;
-        }
-
-        try
-        {
-            return SteamControllerDetector.IsConnected();
-        }
-        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
-        {
-            // Without the device list, rather show the per-game setting than hide it.
-            return true;
-        }
-    }
 
     public void ResetSteamInputLayout() =>
         Process.Start(new ProcessStartInfo("steam://forceinputappid/0") { UseShellExecute = true })?.Dispose();

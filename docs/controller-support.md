@@ -45,3 +45,5 @@ focus handling or anything SISR/usbip related.
   other than `PID_11FF` (Steam's virtual gamepad for other pads). Works while SISR emulates its Xbox 360
   pad. The wireless dongle counts even with the controller off. Inferred from the USB ids, not yet
   checked on the owner's PC; if the device list can't be read, the per-game mode is shown anyway.
+- SISR's WebView2 data lands in `%APPDATA%\SISR.exe`, VIIPER's key file in `%APPDATA%\VIIPER`; neither goes
+  with SISR's own uninstaller (seen 2026-10-16). `ControllerSupportRemoval.DataDirectories` removes both.

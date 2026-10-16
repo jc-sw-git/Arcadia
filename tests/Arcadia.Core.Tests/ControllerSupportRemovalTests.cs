@@ -12,4 +12,12 @@ public class ControllerSupportRemovalTests
     {
         Assert.Equal((file, arguments), ControllerSupportRemoval.SplitCommand(command));
     }
+
+    [Fact]
+    public void Removal_covers_the_roaming_data_of_SISR_and_VIIPER()
+    {
+        var names = ControllerSupportRemoval.DataDirectories.Select(Path.GetFileName);
+
+        Assert.Equal(["SISR", "SISR.exe", "VIIPER"], names);
+    }
 }

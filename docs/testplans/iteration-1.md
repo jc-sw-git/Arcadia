@@ -241,6 +241,9 @@ Mit echtem Steam Controller. Für die Fälle ohne SISR vorher in Arcadia deinsta
 - [ ] **T85-13** Bei keinem Ein- oder Ausschalten (auch mit beendetem Steam) und bei der Einrichtung
       erscheint ein Fenster von SISR (Ersteinrichtung, „Steam läuft nicht“, Marker hinzufügen). Nach der
       Einrichtung gibt es genau einen „SISR Marker“ in der Steam-Bibliothek. · E2E: nein (echtes Steam)
+- [ ] **T85-14** Solange Steam, SISR oder VIIPER starten oder beenden (auch von selbst, z. B. nach dem
+      Beenden von Steam), zeigt die Einstellung einen Spinner und reagiert nur auf B; der Schalter lässt sich
+      erst danach umlegen. Hängt Steam beim Anmelden, bleibt der Schalter bedienbar. · E2E: ja (Fake-Plattform)
 - [ ] **T85-9** Unter Linux (bzw. ohne Steam unter Windows) ist die Option ausgegraut und sagt
       „Momentan nur unter Windows verfügbar.“ bzw. „Benötigt Steam.“; A tut nichts. · E2E: ja
 

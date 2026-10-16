@@ -480,7 +480,7 @@
                   <!-- Everything below depends on the switch above, so it stays in the same box. -->
                   <StackPanel Spacing="16" Margin="20,8,20,16">
                     <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding ShowStatus}">
-                      <Path Classes="spinner" IsVisible="{Binding IsStarting}" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                      <Path Classes="spinner" IsVisible="{Binding IsInTransition}" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
                       <!-- No local Fill: it would override the "active" style. -->
                       <Ellipse Classes="statusDot" Classes.active="{Binding IsHealthy}" Width="10" Height="10" VerticalAlignment="Center"
                                IsVisible="{Binding ShowStatusDot}" />

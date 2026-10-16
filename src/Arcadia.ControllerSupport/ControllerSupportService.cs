@@ -183,6 +183,14 @@ public sealed class ControllerSupportService(
 
     public string? BusyText { get; private set; }
 
+    /// <summary>
+    /// Steam, SISR or VIIPER are being started or stopped, by the user or in the background (the
+    /// watchdog, Steam closing). The settings take no input then, so a switch can't cut into it.
+    /// A Steam that runs but hangs before its login completes doesn't count: it can hang for good,
+    /// and switching off must stay possible.
+    /// </summary>
+    public bool IsSettling => BusyText is not null || State is SisrState.Starting or SisrState.Stopping;
+
     /// <summary>The message of the last failed action, shown in the settings dialog.</summary>
     public string? LastError { get; private set; }
 

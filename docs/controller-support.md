@@ -62,6 +62,9 @@ focus handling or anything SISR/usbip related.
   `usbip://localhost:3241/` (`CleanUpViiperAsync`). Why: on 2026-10-16 Steam hung at "loading user data"
   after SISR had been killed, and only a Windows restart helped (a stale device was suspected, not proven;
   `usbip port` was empty after a later kill).
+- While SISR or VIIPER start or stop, in the background too, the settings take only B
+  (`ControllerSupportService.IsSettling`, owner 2026-10-16). A Steam that runs but never finishes its login
+  doesn't lock them, so switching off stays possible.
 - SISR's own cleanup on quit opens `steam://forceinputappid/0` (SISR source, `cli/cmd/sisr/sisr.go`),
   which starts a closed Steam. That is why closing Steam (and switching off afterwards) started Steam again
   (owner, 2026-10-16). Unless Steam is ready Arcadia kills SISR instead of quitting it, also while Steam

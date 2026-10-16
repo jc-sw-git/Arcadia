@@ -242,12 +242,12 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial bool IsHealthy { get; private set; }
 
-    /// <summary>SISR runs but doesn't emulate the controller yet; shown with a spinner.</summary>
+    /// <summary>SISR is starting (doesn't emulate the controller yet) or stopping; shown with a spinner.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowStatusDot))]
-    public partial bool IsStarting { get; private set; }
+    public partial bool IsInTransition { get; private set; }
 
-    public bool ShowStatusDot => !IsStarting;
+    public bool ShowStatusDot => !IsInTransition;
 
     [ObservableProperty]
     public partial bool HasIssues { get; private set; }
@@ -272,7 +272,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     /// <summary>On, but Steam's "SISR Marker" is missing; its fix goes through the install prompts.</summary>
     private bool NeedsMarker { get; set; }
 
-    /// <summary>Steam or SISR is starting (or another action runs): the dialog takes no input but B until it is done.</summary>
+    /// <summary>Steam, SISR or VIIPER are starting or stopping (<see cref="ControllerSupportService.IsSettling"/>): the dialog takes no input but B until it is done.</summary>
     [ObservableProperty]
     public partial bool IsWorking { get; private set; }
 
@@ -453,7 +453,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         IsEnabled = _support.Enabled;
         BusyText = _support.BusyText;
         OnPropertyChanged(nameof(IsBusy));
-        IsWorking = IsBusy || (_support.Enabled && _support.State == SisrState.Starting);
+        IsWorking = _support.IsSettling;
         ErrorText = _support.LastError;
 
         Issues.Clear();
@@ -481,7 +481,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         ShowStatus = !IsUnavailable;
 
         var state = _support.State;
-        IsStarting = IsEnabled && state == SisrState.Starting;
+        IsInTransition = IsEnabled && state is SisrState.Starting or SisrState.Stopping;
         IsHealthy = IsEnabled && !HasIssues && BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
         StatusText = (IsEnabled, state == SisrState.Paused, HasIssues) switch
         {

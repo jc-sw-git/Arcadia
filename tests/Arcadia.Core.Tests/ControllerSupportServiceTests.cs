@@ -185,6 +185,35 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Stopping_SISR_in_the_background_counts_as_settling()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        Assert.False(service.IsSettling);
+
+        var settlingWhileStopping = false;
+        service.Changed += (_, _) => settlingWhileStopping |= service.State == SisrState.Stopping && service.IsSettling;
+        _platform.IsSteamRunning = false;
+        await service.WatchAsync();
+
+        Assert.True(settlingWhileStopping);
+        Assert.False(service.IsSettling);
+    }
+
+    [Fact]
+    public async Task A_Steam_that_hangs_before_its_login_completes_does_not_lock_the_settings()
+    {
+        var service = Create();
+        _platform.SteamShuttingDown = true; // runs, but not ready
+
+        await service.TickAsync();
+
+        Assert.Equal(0, _sisr.Starts);
+        Assert.False(service.IsSettling);
+    }
+
+    [Fact]
     public async Task Switching_off_also_cleans_up_VIIPER()
     {
         var service = Create();

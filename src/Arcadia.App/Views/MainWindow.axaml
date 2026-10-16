@@ -467,11 +467,11 @@
                         <TextBlock IsVisible="{Binding IsUnavailable}" Text="{Binding UnavailableText}" FontSize="15" FontWeight="SemiBold"
                                    Foreground="{StaticResource Warning}" />
                       </StackPanel>
-                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding IsEnabled}" IsVisible="{Binding !ShowInstall}" VerticalAlignment="Center">
+                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding IsEnabled}" Classes.locked="{Binding IsWorking}" IsVisible="{Binding !ShowInstall}" VerticalAlignment="Center">
                         <Ellipse />
                       </Border>
                       <!-- Not a button of its own: the whole row is the button, so A on the row installs. -->
-                      <Border Grid.Column="1" Classes="rowAction" IsVisible="{Binding ShowInstall}" VerticalAlignment="Center">
+                      <Border Grid.Column="1" Classes="rowAction" Classes.locked="{Binding IsWorking}" IsVisible="{Binding ShowInstall}" VerticalAlignment="Center">
                         <TextBlock Text="SISR installieren" />
                       </Border>
                     </Grid>

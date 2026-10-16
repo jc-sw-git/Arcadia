@@ -399,6 +399,10 @@
   <Style Selector="Border.switch.on > Ellipse">
     <Setter Property="HorizontalAlignment" Value="Right" />
   </Style>
+  <!-- Locked while Steam, SISR or VIIPER start or stop: the switch keeps its position but can't be flipped. -->
+  <Style Selector="Border.switch.locked, Border.rowAction.locked">
+    <Setter Property="Opacity" Value="0.35" />
+  </Style>
 
   <!-- Loading spinner: an open circle that keeps turning. -->
   <Style Selector="Path.spinner">

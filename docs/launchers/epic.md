@@ -5,7 +5,8 @@ Read before touching `src/Arcadia.Launchers/Epic`. Verified on the owner's PC.
 **Epic:** all locally installed games have `bRequiresAuth` → they need the launcher. If it isn't
 running, `EpicLauncherClient` starts it with `-silent`, waits for `EpicWebHelper` + 4 s, starts
 the game via `com.epicgames.launcher://…` and re-sends once if no process appears from the
-install directory within 30 s.
+install directory within 30 s. If the web helper doesn't appear within 60 s, it reports `LauncherNotReady`
+(toast) and still sends the request once.
 Owned but uninstalled games come from `Data\Catalog\catcache.bin` (Base64 JSON, refreshed by the
 launcher, no login needed). Games = category `games` without `addons`/`digitaldownloads` and with
 an empty `mainGameItem.id` (DLC/season passes name their game there): 331 on the owner's PC vs.

@@ -1,6 +1,7 @@
 using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
+using System.ComponentModel;
 using Arcadia.Launchers.Steam;
 
 namespace Arcadia.ControllerSupport;
@@ -28,23 +29,92 @@ public enum HealthFix
 public sealed record HealthIssue(string Id, HealthSeverity Severity, string Title, string Detail, HealthFix Fix = HealthFix.None, string? FixLabel = null);
 
 /// <summary>
+/// Where Arcadia's SISR is in its life. Every change goes through one method, which knows the
+/// allowed transitions; the UI reads only this state.
+/// </summary>
+public enum SisrState
+{
+    /// <summary>Steam Controller Support is switched off.</summary>
+    Off,
+
+    /// <summary>Switched on, but SISR doesn't run (not installed, crashed, about to start).</summary>
+    Stopped,
+
+    /// <summary>SISR runs but doesn't emulate a controller yet.</summary>
+    Starting,
+
+    /// <summary>SISR emulates a controller.</summary>
+    Running,
+
+    /// <summary>SISR is ready, but found no controller to emulate (e.g. the controller is off).</summary>
+    NoController,
+
+    Stopping,
+
+    /// <summary>Stopped because a game runs that uses Steam Input itself.</summary>
+    Paused,
+
+    /// <summary>SISR crashed too often in a short time; Arcadia stopped restarting it.</summary>
+    Failed,
+}
+
+/// <summary>
 /// "Steam Controller Support": keeps Arcadia's SISR running while it is enabled, pauses it for
 /// games that use Steam Input themselves, watches SISR and its dependencies, and checks for
 /// SISR updates.
 /// </summary>
-public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr, HttpClient http, TimeProvider time)
+/// <remarks>
+/// Everything that starts or stops SISR (the periodic check, game pauses, switching on and off,
+/// updates, fixes) runs under one gate, and <see cref="StartSisr"/> checks there whether SISR may
+/// run at all. So no path starts SISR while the support is off or a game has it paused.
+/// </remarks>
+public sealed class ControllerSupportService(
+    SettingsStore store,
+    ISisrHost sisr,
+    HttpClient http,
+    TimeProvider time,
+    IControllerSupportPlatform? platform = null)
 {
     private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(24);
     private static readonly TimeSpan StartupGrace = TimeSpan.FromSeconds(15);
-    private static readonly TimeSpan CrashWindow = TimeSpan.FromMinutes(5);
-    private const int MaxRestartsPerWindow = 3;
+    public static readonly TimeSpan CrashWindow = TimeSpan.FromMinutes(5);
+    public const int MaxRestartsPerWindow = 3;
 
-    private readonly List<DateTimeOffset> _restarts = [];
+    /// <summary>Asking GitHub for the latest release; a hanging request must not hold up the periodic check.</summary>
+    private static readonly TimeSpan ReleaseLookupTimeout = TimeSpan.FromSeconds(20);
+
+    /// <summary>Downloading and unpacking SISR or the usbip driver.</summary>
+    private static readonly TimeSpan InstallTimeout = TimeSpan.FromMinutes(5);
+
+    /// <summary>On exit, how long to wait for a running action before stopping SISR anyway.</summary>
+    private static readonly TimeSpan ShutdownWait = TimeSpan.FromSeconds(2);
+
+    private static readonly Dictionary<SisrState, SisrState[]> AllowedTransitions = new()
+    {
+        [SisrState.Off] = [SisrState.Stopped, SisrState.Starting, SisrState.Paused],
+        // Stopped → Running/Stopping: a SISR that kept running across an update restart is adopted or stopped.
+        [SisrState.Stopped] = [SisrState.Off, SisrState.Starting, SisrState.Running, SisrState.Stopping, SisrState.Paused, SisrState.Failed],
+        [SisrState.Starting] = [SisrState.Running, SisrState.NoController, SisrState.Stopping, SisrState.Stopped],
+        [SisrState.Running] = [SisrState.Stopping, SisrState.Stopped],
+        [SisrState.NoController] = [SisrState.Running, SisrState.Stopping, SisrState.Stopped],
+        [SisrState.Stopping] = [SisrState.Off, SisrState.Stopped, SisrState.Paused],
+        [SisrState.Paused] = [SisrState.Off, SisrState.Stopped, SisrState.Starting],
+        [SisrState.Failed] = [SisrState.Off, SisrState.Stopped, SisrState.Starting, SisrState.Stopping, SisrState.Paused],
+    };
+
+    private readonly IControllerSupportPlatform _platform = platform ?? new ControllerSupportPlatform();
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private DateTimeOffset _lastStart = DateTimeOffset.MinValue;
-    private int _pausedGames;
+    private readonly Lock _stateLock = new();
+    private readonly List<DateTimeOffset> _restarts = [];
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _pausedDirectories = new(StringComparer.OrdinalIgnoreCase);
+    private SisrState _state;
+    private int _startGeneration;
+    private int _ticking;
+    private int _pausedGames;
+    private volatile bool _shuttingDown;
+    private DateTimeOffset _lastStart = DateTimeOffset.MinValue;
     private bool _checkedThisSession;
+    private bool _initialized;
 
     public event EventHandler? Changed;
 
@@ -52,25 +122,51 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
 
     public bool Enabled => Settings.SteamControllerSupport;
 
-    public bool IsSupportedPlatform => OperatingSystem.IsWindows();
+    public bool IsSupportedPlatform => _platform.IsSupported;
 
-    public SisrHost Sisr => sisr;
+    public ISisrHost Sisr => sisr;
+
+    public SisrState State
+    {
+        get
+        {
+            lock (_stateLock)
+            {
+                EnsureInitialized();
+                return _state;
+            }
+        }
+    }
 
     public IReadOnlyList<HealthIssue> Issues { get; private set; } = [];
 
     /// <summary>A newer SISR release than the installed one, if any.</summary>
     public Release? AvailableUpdate { get; private set; }
 
-    /// <summary>SISR is stopped because a game runs that uses Steam Input itself.</summary>
-    public bool IsPaused => _pausedGames > 0;
-
     /// <summary>Install directories of the games SISR is paused for; an update restart hands them on.</summary>
     public IReadOnlyCollection<string> PausedFor => _pausedDirectories.Keys.ToList();
 
     public string? BusyText { get; private set; }
 
+    /// <summary>The message of the last failed action, shown in the settings dialog.</summary>
+    public string? LastError { get; private set; }
+
     /// <summary>Optional diagnostics sink (Arcadia's log file).</summary>
     public Action<string>? Log { get; set; }
+
+    /// <summary>Raised right before SISR starts, so the UI can keep the foreground.</summary>
+    public event EventHandler? SisrStarting;
+
+    /// <summary>Raised once a freshly started SISR answers (or after a timeout); always follows <see cref="SisrStarting"/>.</summary>
+    public event EventHandler? SisrStarted;
+
+    /// <summary>
+    /// Raised after SISR stopped and Steam was told to drop SISR's layout. Steam applies that only
+    /// when the foreground window changes, so the UI should trigger one.
+    /// </summary>
+    public event EventHandler? ControllerReleased;
+
+    private bool IsPaused => Volatile.Read(ref _pausedGames) > 0;
 
     public async Task SetEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
@@ -97,51 +193,48 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
         await RefreshAsync(cancellationToken);
     }
 
-    /// <summary>Raised right before SISR starts, so the UI can keep the foreground.</summary>
-    public event EventHandler? SisrStarting;
-
-    /// <summary>Raised once a freshly started SISR answers (or after a timeout).</summary>
-    public event EventHandler? SisrStarted;
-
-    /// <summary>Stops SISR when Arcadia exits.</summary>
-    public Task ShutdownAsync(CancellationToken cancellationToken = default) => StopSisrAndReleaseControllerAsync(cancellationToken);
-
-    /// <summary>
-    /// Stops SISR and hands the controller back to Steam's normal handling. SISR makes Steam force
-    /// its marker's layout; Steam keeps that until the next focus change unless it is reset.
-    /// </summary>
-    private async Task StopSisrAndReleaseControllerAsync(CancellationToken cancellationToken)
+    /// <summary>Stops SISR when Arcadia exits; nothing starts it again afterwards.</summary>
+    public async Task ShutdownAsync(CancellationToken cancellationToken = default)
     {
-        var wasRunning = sisr.IsRunning;
-        IsStarting = false;
-        NoControllerFound = false;
-        Log?.Invoke($"SISR wird beendet (lief: {wasRunning})");
-        if (wasRunning)
+        _shuttingDown = true;
+        var entered = await _gate.WaitAsync(ShutdownWait, cancellationToken);
+        try
         {
-            await sisr.Api.SetForceConfigAsync(false, cancellationToken);
+            await StopSisrAndReleaseControllerAsync(cancellationToken);
         }
-
-        await sisr.StopAsync(cancellationToken);
-        Log?.Invoke($"SISR beendet (läuft noch: {sisr.IsRunning})");
-        if (wasRunning && SteamInstallation.IsRunning)
+        finally
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("steam://forceinputappid/0") { UseShellExecute = true })?.Dispose();
-
-            // Steam only applies the change on the next focus change.
-            ControllerReleased?.Invoke(this, EventArgs.Empty);
+            if (entered)
+            {
+                _gate.Release();
+            }
         }
     }
 
-    /// <summary>
-    /// Raised after SISR stopped and Steam was told to drop SISR's layout. Steam applies that only
-    /// when the foreground window changes, so the UI should trigger one.
-    /// </summary>
-    public event EventHandler? ControllerReleased;
-
     public void SetOverride(Game game, bool? enabled) => UpdateSettings(Settings.WithControllerSupportOverride(game, enabled));
 
-    /// <summary>Called periodically: restarts a crashed SISR, rechecks health, checks for updates once a day.</summary>
+    /// <summary>
+    /// Called periodically: restarts a crashed SISR, rechecks health, checks for updates once a day.
+    /// A call while the previous one still runs returns at once, so slow checks never pile up.
+    /// </summary>
     public async Task TickAsync(CancellationToken cancellationToken = default)
+    {
+        if (Interlocked.Exchange(ref _ticking, 1) == 1)
+        {
+            return;
+        }
+
+        try
+        {
+            await TickOnceAsync(cancellationToken);
+        }
+        finally
+        {
+            Volatile.Write(ref _ticking, 0);
+        }
+    }
+
+    private async Task TickOnceAsync(CancellationToken cancellationToken)
     {
         if (!Enabled || !IsSupportedPlatform)
         {
@@ -154,33 +247,12 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
             return;
         }
 
-        if (!IsPaused && BusyText is null && sisr.IsInstalled)
-        {
-            _restarts.RemoveAll(t => time.GetUtcNow() - t > CrashWindow);
-            if (!sisr.IsRunning)
-            {
-                if (_restarts.Count < MaxRestartsPerWindow)
-                {
-                    _restarts.Add(time.GetUtcNow());
-                    StartSisr();
-                }
-            }
-            else if (time.GetUtcNow() - _lastStart > StartupGrace && !await sisr.Api.IsReachableAsync(cancellationToken)
-                     && _restarts.Count < MaxRestartsPerWindow)
-            {
-                // Same SISR, but not started by Arcadia (e.g. from its tray shortcut), so its API
-                // isn't on Arcadia's port. Take it over by restarting it with Arcadia's settings.
-                _restarts.Add(time.GetUtcNow());
-                await sisr.StopAsync(cancellationToken);
-                StartSisr();
-            }
-        }
+        await KeepSisrRunningAsync(cancellationToken);
 
         // A controller switched on after SISR started gets picked up by SISR on its own.
-        if (NoControllerFound && sisr.IsRunning && await sisr.Api.GetEmulatedControllerCountAsync(cancellationToken) > 0)
+        if (State == SisrState.NoController && sisr.IsRunning && await sisr.Api.GetEmulatedControllerCountAsync(cancellationToken) > 0)
         {
-            NoControllerFound = false;
-            OnChanged();
+            TryMove(SisrState.NoController, SisrState.Running);
         }
 
         // Once per start, then daily while Arcadia keeps running.
@@ -193,15 +265,72 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
         await RefreshAsync(cancellationToken);
     }
 
+    /// <summary>Restarts a crashed SISR and takes over one that isn't Arcadia's, unless an action owns SISR right now.</summary>
+    private async Task KeepSisrRunningAsync(CancellationToken cancellationToken)
+    {
+        if (!sisr.IsInstalled || !await _gate.WaitAsync(TimeSpan.Zero, cancellationToken))
+        {
+            return;
+        }
+
+        try
+        {
+            // Checked again under the gate: the user may have switched off since the tick began.
+            if (!Enabled || IsPaused || _shuttingDown)
+            {
+                return;
+            }
+
+            var now = time.GetUtcNow();
+            _restarts.RemoveAll(t => now - t > CrashWindow);
+            if (!sisr.IsRunning)
+            {
+                if (State is SisrState.Starting or SisrState.Running or SisrState.NoController)
+                {
+                    Log?.Invoke("SISR ist unerwartet beendet");
+                    MoveTo(SisrState.Stopped);
+                }
+
+                if (_restarts.Count >= MaxRestartsPerWindow)
+                {
+                    MoveTo(SisrState.Failed);
+                    return;
+                }
+
+                _restarts.Add(now);
+                StartSisr();
+            }
+            else if (State == SisrState.Stopped)
+            {
+                // Kept running across an update restart: adopt it.
+                MoveTo(SisrState.Running);
+            }
+            else if (now - _lastStart > StartupGrace && _restarts.Count < MaxRestartsPerWindow
+                     && !await sisr.Api.IsReachableAsync(cancellationToken))
+            {
+                // Same SISR, but not started by Arcadia (e.g. from its tray shortcut), so its API
+                // isn't on Arcadia's port. Take it over by restarting it with Arcadia's settings.
+                _restarts.Add(now);
+                await StopSisrAsync(cancellationToken);
+                StartSisr();
+            }
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
     public async Task CheckForUpdateAsync(CancellationToken cancellationToken = default)
     {
         Release? latest;
         try
         {
-            latest = await sisr.GetLatestReleaseAsync(cancellationToken);
+            latest = await WithTimeoutAsync(sisr.GetLatestReleaseAsync, ReleaseLookupTimeout, "GitHub", cancellationToken);
         }
-        catch (HttpRequestException)
+        catch (Exception ex) when (ex is HttpRequestException or TimeoutException or System.Text.Json.JsonException)
         {
+            Log?.Invoke($"SISR-Update-Prüfung fehlgeschlagen: {ex.Message}");
             return;
         }
 
@@ -213,14 +342,13 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
     public Task InstallUpdateAsync(CancellationToken cancellationToken = default) =>
         RunBusyAsync("SISR wird aktualisiert …", async () =>
         {
-            var release = AvailableUpdate ?? await sisr.GetLatestReleaseAsync(cancellationToken)
+            var release = AvailableUpdate
+                ?? await WithTimeoutAsync(sisr.GetLatestReleaseAsync, ReleaseLookupTimeout, "GitHub", cancellationToken)
                 ?? throw new InvalidOperationException("Die aktuelle SISR-Version konnte nicht ermittelt werden.");
-            await sisr.InstallAsync(release, cancellationToken);
+            await StopSisrAsync(cancellationToken);
+            await WithTimeoutAsync(token => sisr.InstallAsync(release, token), InstallTimeout, "Der SISR-Download", cancellationToken);
             AvailableUpdate = null;
-            if (Enabled && !IsPaused)
-            {
-                StartSisr();
-            }
+            StartSisr();
         });
 
     public Task ApplyFixAsync(HealthFix fix, CancellationToken cancellationToken = default) => fix switch
@@ -232,7 +360,7 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
         }),
         HealthFix.InstallUsbip => RunBusyAsync("usbip-Treiber wird installiert – bitte die Windows-Abfrage bestätigen …", async () =>
         {
-            if (OperatingSystem.IsWindows() && !await UsbipDriver.InstallAsync(http, cancellationToken))
+            if (OperatingSystem.IsWindows() && !await WithTimeoutAsync(InstallUsbipAsync, InstallTimeout, "Der Treiber-Download", cancellationToken))
             {
                 throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt.");
             }
@@ -240,14 +368,14 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
             // The update replaces the emulated USB host controller under VIIPER; SISR (and with it
             // VIIPER) must reconnect, otherwise the virtual controller stays attached to the old one.
             UpdateSettings(Settings with { UsbipInstalledAt = time.GetUtcNow() });
-            await sisr.StopAsync(cancellationToken);
+            await StopSisrAsync(cancellationToken);
             _restarts.Clear();
             StartSisr();
         }),
         HealthFix.StartSteam => RunBusyAsync("Steam wird gestartet …", async () =>
         {
             SteamInstallation.Find()?.StartSilently();
-            await ProcessWatch.WaitUntilAsync(() => SteamInstallation.IsRunning, TimeSpan.FromSeconds(30), time, cancellationToken);
+            await ProcessWatch.WaitUntilAsync(() => _platform.IsSteamRunning, TimeSpan.FromSeconds(30), time, cancellationToken);
         }),
         HealthFix.EnableCefDebugging => RunBusyAsync("Steam-Debug-Schnittstelle wird aktiviert …", async () =>
         {
@@ -276,7 +404,7 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
         }),
         HealthFix.RestartSisr => RunBusyAsync("SISR wird neu gestartet …", async () =>
         {
-            await sisr.StopAsync(cancellationToken);
+            await StopSisrAsync(cancellationToken);
             _restarts.Clear();
             StartSisr();
         }),
@@ -297,10 +425,18 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
             return;
         }
 
-        Interlocked.Increment(ref _pausedGames);
-        await StopSisrAndReleaseControllerAsync(cancellationToken);
-        OnChanged();
-        WatchPausedGame(directory);
+        // Counted before waiting for the gate, so whatever holds it can't start SISR meanwhile.
+        // Not cancellable: the watch below is what ends the pause again.
+        Pause(directory);
+        await _gate.WaitAsync(CancellationToken.None);
+        try
+        {
+            await StopSisrAndReleaseControllerAsync(cancellationToken);
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     /// <summary>
@@ -309,48 +445,74 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
     /// </summary>
     public void ResumePause(string directory)
     {
-        if (!Directory.Exists(directory) || !ProcessWatch.AnyRunningFrom(directory))
+        if (!Directory.Exists(directory) || !_platform.AnyRunningFrom(directory))
         {
             return;
         }
 
         Log?.Invoke($"SISR bleibt pausiert für {directory}");
-        Interlocked.Increment(ref _pausedGames);
-        OnChanged();
-        WatchPausedGame(directory);
+        Pause(directory);
+        SettleRestingState();
     }
 
-    private void WatchPausedGame(string directory)
+    private void Pause(string directory)
     {
+        Interlocked.Increment(ref _pausedGames);
         _pausedDirectories.AddOrUpdate(directory, 1, (_, n) => n + 1);
-        _ = Task.Run(async () =>
+        OnChanged();
+        _ = Task.Run(() => WatchPausedGameAsync(directory), CancellationToken.None);
+    }
+
+    private async Task WatchPausedGameAsync(string directory)
+    {
+        try
         {
-            try
+            bool Running() => _platform.AnyRunningFrom(directory);
+            if (await ProcessWatch.WaitUntilAsync(Running, TimeSpan.FromMinutes(2), time, CancellationToken.None))
             {
-                bool Running() => ProcessWatch.AnyRunningFrom(directory);
-                if (await ProcessWatch.WaitUntilAsync(Running, TimeSpan.FromMinutes(2), time, CancellationToken.None))
+                while (Running())
                 {
-                    while (Running())
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(3), time);
-                    }
+                    await Task.Delay(TimeSpan.FromSeconds(3), time);
                 }
             }
-            finally
+        }
+        catch (Exception ex)
+        {
+            // Ending the pause below matters more than why watching failed.
+            Log?.Invoke($"Spiel in {directory} konnte nicht beobachtet werden: {ex}");
+        }
+
+        try
+        {
+            await EndPauseAsync(directory);
+        }
+        catch (Exception ex)
+        {
+            Log?.Invoke($"SISR konnte nach dem Spiel nicht weiterlaufen: {ex}");
+        }
+    }
+
+    private async Task EndPauseAsync(string directory)
+    {
+        await _gate.WaitAsync();
+        try
+        {
+            if (_pausedDirectories.AddOrUpdate(directory, 0, (_, n) => n - 1) <= 0)
             {
-                if (_pausedDirectories.AddOrUpdate(directory, 0, (_, n) => n - 1) <= 0)
-                {
-                    _pausedDirectories.TryRemove(directory, out _);
-                }
-
-                if (Interlocked.Decrement(ref _pausedGames) == 0 && Enabled)
-                {
-                    StartSisr();
-                }
-
-                OnChanged();
+                _pausedDirectories.TryRemove(directory, out _);
             }
-        }, CancellationToken.None);
+
+            if (Interlocked.Decrement(ref _pausedGames) == 0)
+            {
+                SettleRestingState();
+                StartSisr();
+            }
+        }
+        finally
+        {
+            _gate.Release();
+            OnChanged();
+        }
     }
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
@@ -361,63 +523,32 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
 
     private async Task<IReadOnlyList<HealthIssue>> CheckHealthAsync(CancellationToken cancellationToken)
     {
-        var issues = new List<HealthIssue>();
-        if (!OperatingSystem.IsWindows())
+        if (!IsSupportedPlatform)
         {
-            issues.Add(new("platform", HealthSeverity.Error, "Nur unter Windows verfügbar", "Steam Controller Support über SISR ist bisher nur für Windows umgesetzt."));
-            return issues;
+            return [new("platform", HealthSeverity.Error, "Nur unter Windows verfügbar", "Steam Controller Support über SISR ist bisher nur für Windows umgesetzt.")];
         }
 
+        var issues = new List<HealthIssue>();
         if (!sisr.IsInstalled)
         {
             issues.Add(new("sisr-missing", HealthSeverity.Error, "SISR ist nicht installiert", "Ohne SISR kommt der Steam Controller nicht als Gamepad an.", HealthFix.InstallSisr, "Installieren"));
         }
 
-        var usbip = UsbipDriver.InstalledVersion();
-        if (usbip is null)
-        {
-            issues.Add(new("usbip-missing", HealthSeverity.Error, "usbip-Treiber fehlt", "SISR erzeugt den virtuellen Controller über diesen Treiber. Die Installation fragt einmalig nach Administratorrechten.", HealthFix.InstallUsbip, "Installieren"));
-        }
-        else if (usbip < UsbipDriver.MinimumVersion)
-        {
-            issues.Add(new("usbip-outdated", HealthSeverity.Warning, "usbip-Treiber ist veraltet", $"Installiert ist {usbip}, benötigt wird mindestens {UsbipDriver.MinimumVersion}.", HealthFix.InstallUsbip, "Aktualisieren"));
-        }
-        else if (!UsbipDriver.IsRunning())
-        {
-            issues.Add(new("usbip-stopped", HealthSeverity.Error, "usbip-Treiber ist nicht aktiv", "Der Treiber ist installiert, aber nicht geladen. Meist hilft ein Neustart des PCs, sonst eine Neuinstallation.", HealthFix.InstallUsbip, "Neu installieren"));
-        }
-        else if (Settings.UsbipInstalledAt is { } installedAt && installedAt > LastBootTime())
-        {
-            issues.Add(new("reboot-pending", HealthSeverity.Warning, "Windows-Neustart ausstehend", "Der usbip-Treiber wurde aktualisiert. Bis zum Neustart kann der Controller aussetzen; dann hilft es, SISR neu zu starten.", HealthFix.RestartSisr, "SISR neu starten"));
-        }
-
-        if (SteamInstallation.Find() is null)
-        {
-            issues.Add(new("steam-missing", HealthSeverity.Error, "Steam wurde nicht gefunden", "SISR liest den Controller über Steam Input; Steam muss installiert sein."));
-        }
-        else if (!SteamInstallation.IsRunning)
-        {
-            issues.Add(new("steam-stopped", HealthSeverity.Warning, "Steam läuft nicht", "Steam muss im Hintergrund laufen, damit SISR den Controller weiterreichen kann.", HealthFix.StartSteam, "Steam starten"));
-        }
+        issues.AddRange(_platform.CheckDependencies(Settings, time.GetUtcNow()));
 
         if (sisr.ExternalInstances().Count > 0)
         {
             issues.Add(new("sisr-external", HealthSeverity.Warning, "Ein SISR aus einem anderen Ordner läuft", "Zwei SISR-Instanzen erzeugen doppelte Controller. Die zweite sollte beendet werden.", HealthFix.StopExternalSisr, "Beenden"));
         }
 
-        if (sisr.IsInstalled && !IsPaused && BusyText is null)
+        var state = State;
+        if (state == SisrState.Failed)
         {
-            if (!sisr.IsRunning)
-            {
-                if (_restarts.Count >= MaxRestartsPerWindow)
-                {
-                    issues.Add(new("sisr-crashing", HealthSeverity.Error, "SISR stürzt wiederholt ab", "Arcadia hat SISR mehrfach neu gestartet. Details stehen in logs\\sisr.log.", HealthFix.RestartSisr, "Erneut starten"));
-                }
-            }
-            else if (time.GetUtcNow() - _lastStart > StartupGrace)
-            {
-                await CheckRunningSisrAsync(issues, cancellationToken);
-            }
+            issues.Add(new("sisr-crashing", HealthSeverity.Error, "SISR stürzt wiederholt ab", "Arcadia hat SISR mehrfach neu gestartet. Details stehen in logs\\sisr.log.", HealthFix.RestartSisr, "Erneut starten"));
+        }
+        else if (state is SisrState.Running or SisrState.NoController && BusyText is null && time.GetUtcNow() - _lastStart > StartupGrace)
+        {
+            await CheckRunningSisrAsync(issues, cancellationToken);
         }
 
         return issues;
@@ -453,19 +584,24 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
         }
     }
 
-    private DateTimeOffset LastBootTime() => time.GetUtcNow() - TimeSpan.FromMilliseconds(Environment.TickCount64);
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private Task<bool> InstallUsbipAsync(CancellationToken cancellationToken) => UsbipDriver.InstallAsync(http, cancellationToken);
 
     private async Task InstallLatestSisrAsync(CancellationToken cancellationToken)
     {
-        var release = await sisr.GetLatestReleaseAsync(cancellationToken)
+        var release = await WithTimeoutAsync(sisr.GetLatestReleaseAsync, ReleaseLookupTimeout, "GitHub", cancellationToken)
             ?? throw new InvalidOperationException("Die aktuelle SISR-Version konnte nicht ermittelt werden.");
-        await sisr.InstallAsync(release, cancellationToken);
+        await WithTimeoutAsync(token => sisr.InstallAsync(release, token), InstallTimeout, "Der SISR-Download", cancellationToken);
         AvailableUpdate = null;
     }
 
+    /// <summary>
+    /// Starts SISR if it may run: support on, no game paused, Arcadia not exiting. The only place
+    /// that starts SISR; call it under the gate.
+    /// </summary>
     private void StartSisr()
     {
-        if (!IsSupportedPlatform)
+        if (!Enabled || IsPaused || _shuttingDown || !IsSupportedPlatform)
         {
             return;
         }
@@ -478,17 +614,39 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
 
         Log?.Invoke("SISR wird gestartet");
         _lastStart = time.GetUtcNow();
-        IsStarting = true;
-        NoControllerFound = false;
-        SisrStarting?.Invoke(this, EventArgs.Empty);
-        OnChanged();
-        sisr.Start();
-
-        _ = Task.Run(async () =>
+        int generation;
+        lock (_stateLock)
         {
-            // Ready means: the API answers and SISR emulates at least one controller. SISR also
-            // loads Steam's overlay and has Steam force its layout right after its API comes up —
-            // that's when the foreground can jump, so "started" is only reported after that.
+            generation = ++_startGeneration;
+        }
+
+        MoveTo(SisrState.Starting);
+        SisrStarting?.Invoke(this, EventArgs.Empty);
+        try
+        {
+            sisr.Start();
+        }
+        catch (Exception ex) when (ex is Win32Exception or IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            Log?.Invoke($"SISR konnte nicht gestartet werden: {ex}");
+            LastError = $"SISR konnte nicht gestartet werden: {ex.Message}";
+            MoveTo(SisrState.Stopped);
+            SisrStarted?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
+        _ = Task.Run(() => WaitUntilReadyAsync(generation));
+    }
+
+    /// <summary>
+    /// Ready means: the API answers and SISR emulates at least one controller. SISR also loads
+    /// Steam's overlay and has Steam force its layout right after its API comes up — that's when
+    /// the foreground can jump, so "started" is only reported after that.
+    /// </summary>
+    private async Task WaitUntilReadyAsync(int generation)
+    {
+        try
+        {
             var deadline = time.GetUtcNow() + ReadyTimeout;
             var controllers = 0;
             while (time.GetUtcNow() < deadline && sisr.IsRunning)
@@ -507,12 +665,20 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
                 await Task.Delay(MinimumSettleTime - (time.GetUtcNow() - _lastStart), time);
             }
 
-            IsStarting = false;
-            NoControllerFound = sisr.IsRunning && controllers == 0;
             Log?.Invoke($"SISR bereit: {controllers} Controller emuliert");
+
+            // Only if nothing stopped or restarted SISR meanwhile.
+            var next = !sisr.IsRunning ? SisrState.Stopped : controllers > 0 ? SisrState.Running : SisrState.NoController;
+            TryMove(SisrState.Starting, next, generation);
+        }
+        catch (Exception ex)
+        {
+            Log?.Invoke($"Warten auf SISR fehlgeschlagen: {ex}");
+        }
+        finally
+        {
             SisrStarted?.Invoke(this, EventArgs.Empty);
-            OnChanged();
-        });
+        }
     }
 
     /// <summary>How long to wait for SISR to emulate a controller before giving up waiting.</summary>
@@ -521,11 +687,112 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
     /// <summary>SISR forces Steam's layout about two seconds after it starts.</summary>
     private static readonly TimeSpan MinimumSettleTime = TimeSpan.FromSeconds(3);
 
-    /// <summary>SISR runs but doesn't emulate a controller yet.</summary>
-    public bool IsStarting { get; private set; }
+    /// <summary>Stops SISR without handing the controller back, e.g. to restart or update it. Call under the gate.</summary>
+    private async Task StopSisrAsync(CancellationToken cancellationToken)
+    {
+        if (!sisr.IsRunning)
+        {
+            SettleAfterStop();
+            return;
+        }
 
-    /// <summary>SISR is ready, but found no controller to emulate (e.g. the controller is off).</summary>
-    public bool NoControllerFound { get; private set; }
+        MoveTo(SisrState.Stopping);
+        try
+        {
+            await sisr.StopAsync(cancellationToken);
+        }
+        finally
+        {
+            SettleAfterStop();
+        }
+    }
+
+    /// <summary>
+    /// Stops SISR and hands the controller back to Steam's normal handling. SISR makes Steam force
+    /// its marker's layout; Steam keeps that until the next focus change unless it is reset.
+    /// Call under the gate.
+    /// </summary>
+    private async Task StopSisrAndReleaseControllerAsync(CancellationToken cancellationToken)
+    {
+        var wasRunning = sisr.IsRunning;
+        Log?.Invoke($"SISR wird beendet (lief: {wasRunning})");
+        if (wasRunning)
+        {
+            await sisr.Api.SetForceConfigAsync(false, cancellationToken);
+        }
+
+        await StopSisrAsync(cancellationToken);
+        Log?.Invoke($"SISR beendet (läuft noch: {sisr.IsRunning})");
+        if (wasRunning && _platform.IsSteamRunning)
+        {
+            _platform.ResetSteamInputLayout();
+
+            // Steam only applies the change on the next focus change.
+            ControllerReleased?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private void SettleAfterStop()
+    {
+        if (State is SisrState.Stopping or SisrState.Starting or SisrState.Running or SisrState.NoController)
+        {
+            MoveTo(SisrState.Stopping);
+            MoveTo(RestingState);
+        }
+        else
+        {
+            SettleRestingState();
+        }
+    }
+
+    /// <summary>Where SISR rests when it doesn't run: off, paused for a game, or waiting to start.</summary>
+    private SisrState RestingState => !Enabled ? SisrState.Off : IsPaused ? SisrState.Paused : SisrState.Stopped;
+
+    /// <summary>After the setting or a pause changed while SISR wasn't running.</summary>
+    private void SettleRestingState()
+    {
+        if (State is SisrState.Off or SisrState.Stopped or SisrState.Paused || (State == SisrState.Failed && !Enabled))
+        {
+            MoveTo(RestingState);
+        }
+    }
+
+    private void EnsureInitialized()
+    {
+        if (!_initialized)
+        {
+            _state = Enabled ? SisrState.Stopped : SisrState.Off;
+            _initialized = true;
+        }
+    }
+
+    private void MoveTo(SisrState next) => TryMove(from: null, next);
+
+    /// <summary>
+    /// The one place the state changes. With <paramref name="from"/> (and <paramref name="generation"/>)
+    /// it changes only if nothing else changed it (or started SISR again) in the meantime.
+    /// </summary>
+    private bool TryMove(SisrState? from, SisrState next, int? generation = null)
+    {
+        SisrState previous;
+        lock (_stateLock)
+        {
+            EnsureInitialized();
+            previous = _state;
+            if ((from is { } expected && previous != expected) || (generation is { } g && g != _startGeneration) || previous == next)
+            {
+                return false;
+            }
+
+            _state = next;
+        }
+
+        Log?.Invoke(AllowedTransitions[previous].Contains(next)
+            ? $"SISR: {previous} → {next}"
+            : $"SISR: unerwarteter Zustandswechsel {previous} → {next}");
+        OnChanged();
+        return true;
+    }
 
     private async Task RunBusyAsync(string text, Func<Task> action)
     {
@@ -537,20 +804,42 @@ public sealed class ControllerSupportService(SettingsStore store, SisrHost sisr,
         {
             await action();
         }
-        catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or IOException
+                                       or UnauthorizedAccessException or Win32Exception or TimeoutException)
         {
+            Log?.Invoke($"{text} fehlgeschlagen: {ex.Message}");
             LastError = ex.Message;
         }
         finally
         {
+            SettleRestingState();
             BusyText = null;
             _gate.Release();
             await RefreshAsync();
         }
     }
 
-    /// <summary>The message of the last failed action, shown in the settings dialog.</summary>
-    public string? LastError { get; private set; }
+    /// <summary>Runs a network call with its own time limit; running out of time throws <see cref="TimeoutException"/>.</summary>
+    private Task WithTimeoutAsync(Func<CancellationToken, Task> call, TimeSpan timeout, string what, CancellationToken cancellationToken) =>
+        WithTimeoutAsync(async token =>
+        {
+            await call(token);
+            return true;
+        }, timeout, what, cancellationToken);
+
+    private async Task<T> WithTimeoutAsync<T>(Func<CancellationToken, Task<T>> call, TimeSpan timeout, string what, CancellationToken cancellationToken)
+    {
+        using var timer = new CancellationTokenSource(timeout, time);
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timer.Token);
+        try
+        {
+            return await call(limit.Token);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException($"{what} hat nicht innerhalb von {timeout.TotalSeconds:0} Sekunden geantwortet.");
+        }
+    }
 
     private void UpdateSettings(AppSettings settings)
     {

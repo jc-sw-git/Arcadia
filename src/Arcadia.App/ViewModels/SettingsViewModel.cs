@@ -62,16 +62,16 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public SettingsViewModel(ControllerSupportService support, ArcadiaUpdateService updates, Func<Task> installArcadiaUpdate)
     {
-        _checkUpdates = new SettingsItemViewModel(() => _ = updates.CheckNowAsync());
-        CheckUpdatesCommand = new RelayCommand(() => _ = updates.CheckNowAsync());
+        _checkUpdates = new SettingsItemViewModel(() => updates.CheckNowAsync().Forget("Update-Prüfung"));
+        CheckUpdatesCommand = new RelayCommand(() => updates.CheckNowAsync().Forget("Update-Prüfung"));
         _support = support;
         _updates = updates;
         _toggle = new SettingsItemViewModel(Toggle);
-        _update = new SettingsItemViewModel(() => _ = _support.InstallUpdateAsync());
-        _arcadiaUpdate = new SettingsItemViewModel(() => _ = installArcadiaUpdate());
+        _update = new SettingsItemViewModel(() => _support.InstallUpdateAsync().Forget("SISR aktualisieren"));
+        _arcadiaUpdate = new SettingsItemViewModel(() => installArcadiaUpdate().Forget("Arcadia aktualisieren"));
         ToggleCommand = new RelayCommand(Toggle);
-        UpdateCommand = new RelayCommand(() => _ = _support.InstallUpdateAsync());
-        ArcadiaUpdateCommand = new RelayCommand(() => _ = installArcadiaUpdate());
+        UpdateCommand = new RelayCommand(() => _support.InstallUpdateAsync().Forget("SISR aktualisieren"));
+        ArcadiaUpdateCommand = new RelayCommand(() => installArcadiaUpdate().Forget("Arcadia aktualisieren"));
         _support.Changed += OnSupportChanged;
         _updates.Changed += OnSupportChanged;
         Refresh();
@@ -198,7 +198,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     {
         if (!IsBusy)
         {
-            _ = _support.SetEnabledAsync(!_support.Enabled);
+            _support.SetEnabledAsync(!_support.Enabled).Forget("Steam Controller Support schalten");
         }
     }
 
@@ -216,20 +216,26 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         Issues.Clear();
         foreach (var issue in _support.Issues)
         {
-            Issues.Add(new HealthIssueViewModel(issue, fix => _ = _support.ApplyFixAsync(fix)));
+            Issues.Add(new HealthIssueViewModel(issue, fix => _support.ApplyFixAsync(fix).Forget("Problem beheben")));
         }
 
         HasIssues = Issues.Count > 0;
-        IsStarting = IsEnabled && _support.IsStarting;
-        IsHealthy = IsEnabled && !HasIssues && BusyText is null && !IsStarting && !_support.NoControllerFound;
-        StatusText = (IsEnabled, _support.IsPaused, HasIssues) switch
+        var state = _support.State;
+        IsStarting = IsEnabled && state == SisrState.Starting;
+        IsHealthy = IsEnabled && !HasIssues && BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
+        StatusText = (IsEnabled, state == SisrState.Paused, HasIssues) switch
         {
             (false, _, _) => "Aus – Steam steuert Arcadia mit dem Steam Controller als Maus und Tastatur.",
             (true, true, _) => "Pausiert – ein Spiel läuft, das Steam Input selbst nutzt.",
             (true, false, true) => "Eingeschaltet, aber nicht voll funktionsfähig – siehe unten.",
-            _ when _support.IsStarting => "SISR startet – der Controller wird gleich als Xbox-360-Controller eingerichtet …",
-            _ when _support.NoControllerFound => "Bereit, aber kein Controller gefunden – schalte deinen Controller ein.",
-            _ => _support.Sisr.IsRunning ? "Aktiv – der Steam Controller wird überall als Gamepad erkannt." : "Wird gestartet …",
+            _ => state switch
+            {
+                SisrState.Starting => "SISR startet – der Controller wird gleich als Xbox-360-Controller eingerichtet …",
+                SisrState.NoController => "Bereit, aber kein Controller gefunden – schalte deinen Controller ein.",
+                SisrState.Running => "Aktiv – der Steam Controller wird überall als Gamepad erkannt.",
+                SisrState.Stopping => "SISR wird beendet …",
+                _ => "Wird gestartet …",
+            },
         };
 
         VersionText = _support.Sisr.InstalledVersion is { } version ? $"SISR {version}" : "SISR ist noch nicht installiert";

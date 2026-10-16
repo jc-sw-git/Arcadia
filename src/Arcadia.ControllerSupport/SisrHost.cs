@@ -6,13 +6,39 @@ using Arcadia.Launchers;
 
 namespace Arcadia.ControllerSupport;
 
+/// <summary>The SISR process as <see cref="ControllerSupportService"/> uses it; replaced in tests.</summary>
+public interface ISisrHost
+{
+    SisrApiClient Api { get; }
+
+    bool IsInstalled { get; }
+
+    Version? InstalledVersion { get; }
+
+    /// <summary>True if Arcadia's SISR process runs.</summary>
+    bool IsRunning { get; }
+
+    /// <summary>SISR processes that are not Arcadia's copy, e.g. a separately installed SISR.</summary>
+    IReadOnlyList<int> ExternalInstances();
+
+    void StopExternalInstances();
+
+    Task<Release?> GetLatestReleaseAsync(CancellationToken cancellationToken = default);
+
+    Task InstallAsync(Release release, CancellationToken cancellationToken = default);
+
+    void Start();
+
+    Task StopAsync(CancellationToken cancellationToken = default);
+}
+
 /// <summary>
 /// SISR (GPL-3.0, https://github.com/Alia5/SISR), run by Arcadia: started hidden, controlled
 /// through its HTTP API and stopped again. It lives where SISR's official installer puts it, so
 /// an existing installation — and the Steam marker shortcut SISR created for it — is reused
 /// instead of adding a second one (SISR picks the marker that points to its own executable).
 /// </summary>
-public sealed class SisrHost(HttpClient http, string installDirectory, string logDirectory)
+public sealed class SisrHost(HttpClient http, string installDirectory, string logDirectory) : ISisrHost
 {
     /// <summary>Fixed so Arcadia can reach the API; SISR's own default is a random port.</summary>
     public const int ApiPort = 47640;

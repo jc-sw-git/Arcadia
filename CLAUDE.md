@@ -118,7 +118,7 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 | `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`, `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`SteamScanner`, `SteamInstallMonitor`, `SteamContentLog`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, auto-repeat for D-pad/stick) |
-| `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost`, `SisrApiClient`, `UsbipDriver`, `GitHubReleases`, `ControllerSupportService`, `ControllerSupportRemoval` (uninstall) |
+| `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost` (`ISisrHost`), `SisrApiClient`, `UsbipDriver`, `GitHubReleases`, `ControllerSupportService` (`SisrState`), `ControllerSupportPlatform` (Windows/Steam, replaced in tests), `ControllerSupportRemoval` (uninstall) |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header) and `ToastViewModel` are its children |
 | `tests/Arcadia.Core.Tests` | xUnit |
 
@@ -141,6 +141,10 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   first. The update shows as an icon, and the detail page says below the button that the launcher may update
   first (owner, 2026-10-12). Launchers have no update-only command: Steam ignores `steam://install` for
   installed games and `steam://validate` verifies every file first; Playnite offers no update action either.
+
+**Errors:** a game start goes through `GameLaunchService.TryStartAsync`, which never throws. Work nobody awaits
+(timer handlers, `Task`s started from sync code) runs through `AppErrors.Guard`/`.Forget(context)`: unexpected
+errors land with stack trace in `arcadia.log` and as a toast. No `_ = SomethingAsync()` in the App.
 
 **Avalonia 12:**
 - A locally set property (e.g. `Fill="…"`, `Stroke="…"`) beats any style — state colours must

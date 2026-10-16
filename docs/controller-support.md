@@ -14,6 +14,10 @@ focus handling or anything SISR/usbip related.
   `POST /api/v1/quit`. Ready = API answers and `/api/v1/devices` shows a `viiper_device`.
 - Default: SISR runs except while a game from the Steam launcher runs (double input);
   per-game override in `AppSettings.ControllerSupportOverrides`.
+- Everything that starts or stops SISR (periodic tick, game pause and its end, on/off, update, fixes, exit)
+  runs under `ControllerSupportService`'s gate, and only `StartSisr` starts it — after checking there that the
+  support is on and no game has it paused. The state is one `SisrState`; every change goes through `TryMove`,
+  which logs transitions outside the allowed table. Ticks never overlap; GitHub calls have their own timeout.
 - After SISR stops, Steam keeps SISR's layout until the foreground changes — `force-config
   enforce:false` and `forceinputappid/0` are not enough. Arcadia bounces the focus to the
   desktop for 150 ms (40 ms is too short; a second Arcadia window doesn't count) and takes it

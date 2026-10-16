@@ -149,14 +149,17 @@ public partial class App : Application
             installs.Start();
             var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, "Update-Prüfung"));
             updateCheck.Start();
-            Task.Run(SisrHost.RemoveLegacyCopy).ContinueWith(
-                _ => controllerSupport.TickAsync(),
-                TaskScheduler.FromCurrentSynchronizationContext()).Unwrap().Forget("SISR-Überwachung");
+            Task.Run(async () =>
+            {
+                SisrHost.RemoveLegacyCopy();
+                await controllerSupport.TickAsync();
+            }).Forget("SISR-Überwachung");
 
             desktop.ShutdownRequested += (_, _) =>
             {
                 clock.Stop();
                 monitoring.Stop();
+                sisrWatch.Stop();
                 installs.Stop();
                 installProgress.Stop();
                 updateCheck.Stop();

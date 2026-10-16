@@ -205,7 +205,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     public async Task A_Steam_that_hangs_before_its_login_completes_does_not_lock_the_settings()
     {
         var service = Create();
-        _platform.SteamNotReady = true; // runs, but not ready
+        _platform.SteamLoginHangs = true;
 
         await service.TickAsync();
 
@@ -290,7 +290,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Equal(0, _sisr.Starts);
         Assert.Contains(service.Issues, i => i.Fix == HealthFix.CreateMarker);
 
-        await service.ApplyFixAsync(HealthFix.CreateMarker);
+        // The settings ask before Steam closes, then call the install.
+        await Assert.ThrowsAsync<ArgumentException>(() => service.ApplyFixAsync(HealthFix.CreateMarker));
+        await service.InstallAsync();
 
         Assert.True(_platform.MarkerPresent);
         Assert.Equal(1, _platform.SteamStops);
@@ -716,6 +718,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     public async Task A_tick_while_off_notices_a_change_in_the_setup()
     {
         var service = Create(enabled: false);
+        service.WatchSetup = true;
         _sisr.Installed = false;
         Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
 
@@ -723,6 +726,146 @@ public sealed class ControllerSupportServiceTests : IDisposable
         await service.TickAsync();
 
         Assert.Equal(ControllerSupportSetup.Ready, service.Setup);
+    }
+
+    [Fact]
+    public async Task While_off_and_the_settings_closed_the_tick_leaves_the_setup_alone()
+    {
+        var service = Create(enabled: false);
+        _sisr.Installed = false;
+        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
+
+        _sisr.Installed = true;
+        await service.TickAsync();
+
+        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
+    }
+
+    [Fact]
+    public async Task A_missing_marker_is_not_counted_as_SISR_crashing()
+    {
+        var service = Create();
+        _platform.MarkerPresent = false;
+
+        for (var i = 0; i < 5; i++)
+        {
+            await service.TickAsync();
+            _time.Advance(TimeSpan.FromSeconds(10));
+        }
+
+        Assert.Equal(0, _sisr.Starts);
+        Assert.NotEqual(SisrState.Failed, service.State);
+        Assert.DoesNotContain(service.Issues, i => i.Id == "sisr-crashing");
+    }
+
+    [Fact]
+    public async Task Installing_stops_a_running_SISR_before_it_closes_Steam()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        _platform.MarkerPresent = false;
+
+        await service.InstallAsync();
+
+        Assert.Equal(1, _sisr.Stops);
+        Assert.Equal(0, _sisr.Kills);
+        Assert.Equal(1, _platform.SteamStops);
+        Assert.True(_platform.MarkerPresent);
+        Assert.Equal(1, _sisr.Starts);
+    }
+
+    [Fact]
+    public async Task Without_a_known_Steam_account_the_install_says_so_and_stays_off()
+    {
+        var service = Create(enabled: false);
+        _platform.MarkerPresent = false;
+        _platform.NoSteamAccount = true;
+
+        await service.InstallAsync();
+
+        Assert.False(service.Enabled);
+        Assert.Contains("Steam-Konto", service.LastError);
+        Assert.Equal(1, _platform.SteamStarts);
+    }
+
+    [Fact]
+    public async Task A_hanging_Steam_login_does_not_stop_a_running_SISR()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _platform.SteamLoginHangs = true;
+        await service.WatchAsync();
+        await service.TickAsync();
+
+        Assert.True(_sisr.Running);
+        Assert.Equal(0, _sisr.Kills);
+        Assert.Equal(0, _sisr.Stops);
+    }
+
+    [Fact]
+    public async Task A_Steam_login_that_hangs_for_long_is_shown_with_a_restart()
+    {
+        var service = Create();
+        _platform.SteamLoginHangs = true;
+
+        await service.TickAsync();
+        Assert.DoesNotContain(service.Issues, i => i.Id == "steam-login");
+
+        _time.Advance(TimeSpan.FromSeconds(31));
+        await service.TickAsync();
+
+        Assert.Contains(service.Issues, i => i.Id == "steam-login" && i.Fix == HealthFix.RestartSteam);
+        Assert.Equal(0, _sisr.Starts);
+        Assert.NotEqual(SisrState.Failed, service.State);
+    }
+
+    [Fact]
+    public async Task Restarting_Steam_goes_through_Arcadia_and_brings_SISR_back()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        _platform.IsCefDebuggingEnabled = false;
+
+        await service.ApplyFixAsync(HealthFix.EnableCefDebugging);
+
+        Assert.Equal(1, _sisr.Stops);
+        Assert.Equal(0, _sisr.Kills);
+        Assert.Equal(1, _platform.SteamStops);
+        Assert.Equal(1, _platform.SteamStarts);
+        Assert.True(_platform.IsCefDebuggingEnabled);
+        Assert.Equal(1, _sisr.Starts);
+        Assert.Null(service.LastError);
+    }
+
+    [Fact]
+    public async Task A_failed_switch_on_stays_unseen_until_the_settings_show_it()
+    {
+        var service = Create(enabled: false);
+        _platform.IsSteamRunning = false;
+        _platform.SteamWontStart = true;
+
+        var on = service.SetEnabledAsync(true);
+        await AdvanceUntil(() => on.IsCompleted);
+        Assert.True(service.UnseenSteamStartFailure);
+
+        service.AcknowledgeSteamStartFailure();
+        Assert.False(service.UnseenSteamStartFailure);
+    }
+
+    [Fact]
+    public async Task Settings_changed_from_several_threads_at_once_are_all_kept()
+    {
+        var service = Create();
+        var games = Enumerable.Range(0, 40).Select(i => SteamGame() with { Id = $"g{i}" }).ToList();
+
+        await Task.WhenAll(games.Select(game => Task.Run(() => service.SetModeFor(game, useSisr: true))));
+
+        var saved = new SettingsStore(Path.Combine(_directory, "settings.json")).Load();
+        Assert.All(games, game => Assert.True(saved.ControllerSupportFor(game)));
     }
 
     private sealed class FakeSisr(HttpClient http) : ISisrHost
@@ -878,10 +1021,15 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public bool IsSteamRunning { get; set; } = true;
 
-        /// <summary>steam.exe runs but Steam isn't ready: it shuts down (user logged out) or hangs in its login.</summary>
+        /// <summary>steam.exe still runs but Steam goes away: it shuts down, the user is logged out.</summary>
         public bool SteamNotReady { get; set; }
 
-        public bool IsSteamReady => IsSteamRunning && !SteamNotReady;
+        /// <summary>Steam is up with a user, but its login never completes ("loading user data").</summary>
+        public bool SteamLoginHangs { get; set; }
+
+        public bool IsSteamUp => IsSteamRunning && !SteamNotReady;
+
+        public bool IsSteamReady => IsSteamUp && !SteamLoginHangs;
 
         /// <summary>"Steam starten" does nothing, as with a broken Steam.</summary>
         public bool SteamWontStart { get; set; }
@@ -941,12 +1089,16 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public bool HasSisrMarker(string sisrExecutable) => MarkerPresent;
 
-        /// <summary>Only while Steam is closed, like the real one.</summary>
+        /// <summary>No Steam account is known (never logged in), so the marker can't be written.</summary>
+        public bool NoSteamAccount { get; set; }
+
+        /// <summary>Only while Steam is closed and an account is known, like the real one.</summary>
         public bool EnsureSisrMarker(string sisrExecutable)
         {
             MarkerChecks++;
-            MarkerPresent |= !IsSteamRunning;
-            return !IsSteamRunning;
+            var written = !IsSteamRunning && !NoSteamAccount;
+            MarkerPresent |= written;
+            return written;
         }
 
         public bool AnyRunningFrom(string directory)

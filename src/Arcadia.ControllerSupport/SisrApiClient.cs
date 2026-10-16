@@ -6,8 +6,7 @@ namespace Arcadia.ControllerSupport;
 public sealed record SisrSteamStatus(
     [property: JsonPropertyName("steam_running")] bool SteamRunning,
     [property: JsonPropertyName("cef_debug_enabled")] bool CefDebugEnabled,
-    [property: JsonPropertyName("cef_debug_reachable")] bool CefDebugReachable,
-    [property: JsonPropertyName("marker_shortcut_present")] bool MarkerShortcutPresent);
+    [property: JsonPropertyName("cef_debug_reachable")] bool CefDebugReachable);
 
 public sealed record SisrViiperStatus(
     [property: JsonPropertyName("address")] string? Address,
@@ -75,12 +74,6 @@ public sealed class SisrApiClient(HttpClient http, int port)
             return false;
         }
     }
-
-    public Task<bool> EnableCefRemoteDebuggingAsync(CancellationToken cancellationToken = default) =>
-        SendAsync("steam/enable-cef-remote-debugging", cancellationToken);
-
-    public Task<bool> RestartSteamAsync(CancellationToken cancellationToken = default) =>
-        SendAsync("steam/restart", cancellationToken);
 
     private async Task<T?> GetAsync<T>(string path, CancellationToken cancellationToken)
         where T : class

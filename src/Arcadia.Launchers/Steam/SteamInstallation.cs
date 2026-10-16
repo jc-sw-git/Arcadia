@@ -25,7 +25,7 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
 
     /// <summary>
     /// The userdata folder of the active account. If nobody is logged in right now (e.g. Steam is
-    /// closed) and there is exactly one account, that one.
+    /// closed): the only account, or with several the one that logged in last (<see cref="LastLoggedInUserId"/>).
     /// </summary>
     public string? UserDataDirectory
     {
@@ -44,8 +44,45 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
             }
 
             var accounts = Directory.GetDirectories(userData).Where(d => Path.GetFileName(d) != "0").ToList();
-            return accounts.Count == 1 ? accounts[0] : null;
+            if (accounts.Count == 1)
+            {
+                return accounts[0];
+            }
+
+            return LastLoggedInUserId() is { } last
+                && Path.Combine(userData, last.ToString(CultureInfo.InvariantCulture)) is var lastDir && Directory.Exists(lastDir)
+                ? lastDir
+                : null;
         }
+    }
+
+    /// <summary>Base of 64-bit Steam ids; the account id is the difference.</summary>
+    private const ulong SteamId64Base = 76561197960265728;
+
+    /// <summary>
+    /// The account that logged in last, from <c>config/loginusers.vdf</c>: the one marked
+    /// <c>MostRecent</c>, else the newest <c>timestamp</c> (with one account Steam writes no
+    /// <c>MostRecent</c>; owner's PC, 2026-10-16). Null if the file is missing or unreadable.
+    /// </summary>
+    public uint? LastLoggedInUserId()
+    {
+        VdfMap users;
+        try
+        {
+            users = TextVdf.Parse(File.ReadAllText(Path.Combine(RootPath, "config", "loginusers.vdf"))).GetMap("users") ?? [];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException)
+        {
+            return null;
+        }
+
+        var last = users
+            .Where(u => u.Value is VdfMap && ulong.TryParse(u.Key, NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > SteamId64Base)
+            .Select(u => (Id: ulong.Parse(u.Key, CultureInfo.InvariantCulture), User: (VdfMap)u.Value))
+            .OrderByDescending(u => u.User.GetString("MostRecent") == "1")
+            .ThenByDescending(u => long.TryParse(u.User.GetString("timestamp"), NumberStyles.None, CultureInfo.InvariantCulture, out var t) ? t : 0)
+            .FirstOrDefault();
+        return last.User is null ? null : (uint)(last.Id - SteamId64Base);
     }
 
     public static bool IsRunning => ProcessWatch.IsRunning("steam");

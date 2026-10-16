@@ -7,7 +7,7 @@ namespace Arcadia.Launchers.Steam;
 /// owner's PC, 2026-10-16): <c>[ None ] Starting login</c>, then the states up to
 /// <c>[ WaitingForLibraryReady ] SetLoginState: Success - OK</c>. Steam sets the active user in the
 /// registry as soon as the server accepts the login, but can still hang before <c>Success</c> (seen
-/// when Steam Cloud didn't answer); its window then stays at "loading user data".
+/// when the Steam Controller stopped answering, 2026-10-16); its window then stays at "loading user data".
 /// </summary>
 public static class SteamLoginLog
 {

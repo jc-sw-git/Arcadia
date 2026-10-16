@@ -106,7 +106,7 @@ public static class UsbipDriver
         }
 
         var detached = 0;
-        foreach (var port in UsbipPorts.ServedBy(listing, UsbipPorts.ViiperServer))
+        foreach (var port in UsbipPorts.FromLocalViiper(listing))
         {
             if (await RunAsync(usbip, ["detach", "-p", port.ToString(System.Globalization.CultureInfo.InvariantCulture)], cancellationToken) is not null)
             {
@@ -171,9 +171,20 @@ public static class UsbipDriver
     {
         try
         {
-            return ServiceController.GetDevices().Any(d =>
-                string.Equals(d.ServiceName, ControllerService, StringComparison.OrdinalIgnoreCase)
-                && d.Status == ServiceControllerStatus.Running);
+            var devices = ServiceController.GetDevices();
+            try
+            {
+                return devices.Any(d =>
+                    string.Equals(d.ServiceName, ControllerService, StringComparison.OrdinalIgnoreCase)
+                    && d.Status == ServiceControllerStatus.Running);
+            }
+            finally
+            {
+                foreach (var device in devices)
+                {
+                    device.Dispose();
+                }
+            }
         }
         catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
         {

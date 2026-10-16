@@ -78,6 +78,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly SettingsItemViewModel _retrySteamStart;
     private readonly SettingsItemViewModel _cancelSteamStart;
     private readonly DispatcherTimer _promptCheck;
+    private bool _disposed;
     private readonly SettingsItemViewModel _update;
     private readonly SettingsItemViewModel _arcadiaUpdate;
     private readonly SettingsItemViewModel _checkUpdates;
@@ -108,6 +109,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _promptCheck = new DispatcherTimer(PromptCheckInterval, DispatcherPriority.Background,
             async (_, _) => await AppErrors.Guard(CheckPromptAsync, "Laufendes Steam-Spiel prüfen"));
 
+        // This DispatcherTimer constructor starts the timer; it only runs while an install prompt is open.
+        _promptCheck.Stop();
+
         // An old failure describes a moment that is over; the dialog opens without it.
         _support.ClearError();
         UpdateCommand = new RelayCommand(() => _support.InstallUpdateAsync().Forget("SISR aktualisieren"));
@@ -116,6 +120,14 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _updates.Changed += OnSupportChanged;
         Refresh();
         _toggle.IsFocused = true;
+        if (_support.UnseenSteamStartFailure)
+        {
+            ShowSteamStartFailure();
+        }
+
+        // Only while the settings are open does the tick recheck what they offer (SISR installed elsewhere).
+        _support.WatchSetup = true;
+        Task.Run(() => _support.RefreshAsync()).Forget("Einstellungen aktualisieren");
     }
 
     public SettingsItemViewModel ToggleItem => _toggle;
@@ -313,6 +325,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
+        _support.WatchSetup = false;
         _promptCheck.Stop();
         _support.Changed -= OnSupportChanged;
         _updates.Changed -= OnSupportChanged;
@@ -371,10 +385,17 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     private async Task SwitchOnAsync()
     {
-        if (!await _support.SetEnabledAsync(true))
+        if (!await _support.SetEnabledAsync(true) && !_disposed)
         {
-            ShowPrompt(SettingsPrompt.SteamStartFailed);
+            ShowSteamStartFailure();
         }
+    }
+
+    /// <summary>Shown where it happened, or when the settings open next if they were closed meanwhile.</summary>
+    private void ShowSteamStartFailure()
+    {
+        _support.AcknowledgeSteamStartFailure();
+        ShowPrompt(SettingsPrompt.SteamStartFailed);
     }
 
     /// <summary>The marker can only be written while Steam is closed, so it goes through the install prompts.</summary>

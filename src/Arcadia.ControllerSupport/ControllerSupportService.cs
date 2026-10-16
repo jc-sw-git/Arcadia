@@ -93,6 +93,9 @@ public sealed class ControllerSupportService(
     private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(24);
     private static readonly TimeSpan StartupGrace = TimeSpan.FromSeconds(15);
 
+    /// <summary>How long Steam may take to log in before the settings say so; a normal start takes seconds.</summary>
+    private static readonly TimeSpan SteamLoginGrace = TimeSpan.FromSeconds(30);
+
     /// <summary>How long switching on (or "Steam starten") waits for Steam before it gives up (owner, 2026-10-16).</summary>
     public static readonly TimeSpan SteamStartTimeout = TimeSpan.FromSeconds(60);
     public static readonly TimeSpan CrashWindow = TimeSpan.FromMinutes(5);
@@ -124,10 +127,14 @@ public sealed class ControllerSupportService(
     private readonly IControllerSupportPlatform _platform = platform ?? new ControllerSupportPlatform();
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly Lock _stateLock = new();
+    private readonly Lock _settingsLock = new();
     private readonly List<DateTimeOffset> _restarts = [];
 
     /// <summary>SISR was stopped because Steam went away; starting it again with Steam is not a crash restart.</summary>
     private bool _heldForSteam;
+
+    /// <summary>Since when Steam runs but hasn't finished logging in, or null.</summary>
+    private DateTimeOffset? _steamLoginSince;
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _pausedDirectories = new(StringComparer.OrdinalIgnoreCase);
     private SisrState _state;
     private ControllerSupportSetup? _setup;
@@ -148,7 +155,10 @@ public sealed class ControllerSupportService(
 
     public bool IsSupportedPlatform => _platform.IsSupported;
 
-    /// <summary>What the settings offer; rechecked on every <see cref="RefreshAsync"/> and tick.</summary>
+    /// <summary>The settings are open; while off, the tick rechecks <see cref="Setup"/> only then.</summary>
+    public bool WatchSetup { get; set; }
+
+    /// <summary>What the settings offer; rechecked on every <see cref="RefreshAsync"/>, and by the tick while on or while the settings are open.</summary>
     public ControllerSupportSetup Setup => _setup ??= CheckSetup();
 
     /// <summary>
@@ -212,11 +222,19 @@ public sealed class ControllerSupportService(
 
     private bool IsPaused => Volatile.Read(ref _pausedGames) > 0;
 
+    /// <summary>
+    /// Switching on gave up because Steam didn't start, and the settings haven't shown that yet
+    /// (they were closed with B while Steam started). They show it the next time they open.
+    /// </summary>
+    public bool UnseenSteamStartFailure { get; private set; }
+
+    public void AcknowledgeSteamStartFailure() => UnseenSteamStartFailure = false;
+
     /// <returns>False if switching on failed because Steam didn't start; the setting is off again then.</returns>
     public async Task<bool> SetEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
         Log?.Invoke($"Steam Controller (SISR) {(enabled ? "ein" : "aus")}geschaltet");
-        UpdateSettings(Settings with { SteamControllerSupport = enabled });
+        UpdateSettings(settings => settings with { SteamControllerSupport = enabled });
         var steamStarted = true;
         if (enabled)
         {
@@ -227,11 +245,13 @@ public sealed class ControllerSupportService(
                 if (!await StartSteamAndWaitAsync(cancellationToken))
                 {
                     Log?.Invoke($"Steam ist nach {SteamStartTimeout.TotalSeconds:0} s nicht bereit; Steam Controller (SISR) wieder aus");
-                    UpdateSettings(Settings with { SteamControllerSupport = false });
+                    UpdateSettings(settings => settings with { SteamControllerSupport = false });
                     steamStarted = false;
+                    UnseenSteamStartFailure = true;
                     return;
                 }
 
+                UnseenSteamStartFailure = false;
                 SetBusyText("SISR wird gestartet …");
                 _restarts.Clear();
                 StartSisr();
@@ -309,6 +329,14 @@ public sealed class ControllerSupportService(
             {
                 if (_platform.IsSteamRunning)
                 {
+                    // A SISR left running would lose Steam under it: its "Steam is not running"
+                    // window, or Steam started again by its cleanup.
+                    if (sisr.IsRunning)
+                    {
+                        SetBusyText("SISR wird beendet …");
+                        await StopSisrAndReleaseControllerAsync(cancellationToken);
+                    }
+
                     SetBusyText("Steam wird beendet …");
                     if (!await _platform.StopSteamAsync(time, cancellationToken))
                     {
@@ -338,14 +366,17 @@ public sealed class ControllerSupportService(
                         throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt.");
                     }
 
-                    UpdateSettings(Settings with { UsbipInstalledAt = time.GetUtcNow() });
+                    UpdateSettings(settings => settings with { UsbipInstalledAt = time.GetUtcNow() });
                 }
 
                 // What SISR's own first-run setup would do, so SISR never shows a window. Steam is
                 // closed here, so its shortcuts can be written.
-                Log?.Invoke(_platform.EnsureSisrMarker(sisr.ExecutablePath)
-                    ? "Steam-Eintrag „SISR Marker“ vorhanden"
-                    : "Steam-Eintrag „SISR Marker“ nicht angelegt (Steam läuft oder kein Konto gefunden)");
+                if (!EnsureSisrMarker())
+                {
+                    throw new InvalidOperationException("Der Steam-Eintrag „SISR Marker“ konnte nicht angelegt werden: Es wurde kein Steam-Konto gefunden. Melde dich einmal in Steam an und versuche es dann erneut.");
+                }
+
+                Log?.Invoke("Steam-Eintrag „SISR Marker“ vorhanden");
             }
             finally
             {
@@ -357,7 +388,7 @@ public sealed class ControllerSupportService(
             }
 
             Log?.Invoke("Steam Controller (SISR) eingerichtet");
-            UpdateSettings(Settings with { SteamControllerSupport = true });
+            UpdateSettings(settings => settings with { SteamControllerSupport = true });
             _restarts.Clear();
             if (stoppedSteam)
             {
@@ -368,6 +399,66 @@ public sealed class ControllerSupportService(
 
             StartSisr();
         });
+
+    /// <summary>
+    /// Restarts Steam itself, as "SISR installieren" does: SISR first (it would lose Steam under it),
+    /// then Steam, optionally with the CEF flag that Steam reads only when it starts. SISR's own
+    /// <c>steam/restart</c> isn't used: Arcadia would kill SISR as soon as Steam went away. Under the gate.
+    /// </summary>
+    private async Task RestartSteamAsync(bool enableCefDebugging, CancellationToken cancellationToken)
+    {
+        if (SteamGameBlockingInstall() is { } game)
+        {
+            throw new InvalidOperationException($"Ein laufendes Steam-Spiel ({game}) wurde erkannt. Beende es zuerst, da Steam dafür neu gestartet werden muss.");
+        }
+
+        await StopSisrAndReleaseControllerAsync(cancellationToken);
+        if (_platform.IsSteamRunning && !await _platform.StopSteamAsync(time, cancellationToken))
+        {
+            throw new InvalidOperationException("Steam ließ sich nicht beenden. Beende Steam selbst und versuche es dann erneut.");
+        }
+
+        if (enableCefDebugging)
+        {
+            _platform.EnableCefDebugging();
+        }
+
+        SetBusyText("Steam wird gestartet …");
+        _platform.StartSteam();
+        if (!await ProcessWatch.WaitUntilAsync(() => _platform.IsSteamReady, SteamStartTimeout, time, cancellationToken))
+        {
+            throw new TimeoutException("Steam ist nach dem Neustart nicht innerhalb einer Minute bereit.");
+        }
+
+        _restarts.Clear();
+        StartSisr();
+    }
+
+    /// <summary>How long Steam has been running without finishing its login; zero if it is ready or closed.</summary>
+    private TimeSpan SteamLoginStuckFor()
+    {
+        if (!_platform.IsSteamRunning || _platform.IsSteamReady)
+        {
+            _steamLoginSince = null;
+            return TimeSpan.Zero;
+        }
+
+        var now = time.GetUtcNow();
+        _steamLoginSince ??= now;
+        return now - _steamLoginSince.Value;
+    }
+
+    private bool EnsureSisrMarker()
+    {
+        try
+        {
+            return _platform.EnsureSisrMarker(sisr.ExecutablePath);
+        }
+        catch (FormatException ex)
+        {
+            throw new InvalidOperationException("Steams Liste der Nicht-Steam-Spiele (shortcuts.vdf) ist beschädigt; der Steam-Eintrag „SISR Marker“ konnte nicht angelegt werden.", ex);
+        }
+    }
 
     /// <summary>Stops SISR when Arcadia exits; nothing starts it again afterwards.</summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)
@@ -388,7 +479,7 @@ public sealed class ControllerSupportService(
     }
 
     /// <summary>Per game: true = "Xbox 360 Controller (SISR)", false = "Steam Input".</summary>
-    public void SetModeFor(Game game, bool useSisr) => UpdateSettings(Settings.WithControllerSupportChoice(game, useSisr));
+    public void SetModeFor(Game game, bool useSisr) => UpdateSettings(settings => settings.WithControllerSupportChoice(game, useSisr));
 
     /// <summary>
     /// Called periodically: restarts a crashed SISR, rechecks health, checks for updates once a day.
@@ -416,8 +507,14 @@ public sealed class ControllerSupportService(
         if (!Enabled || !IsSupportedPlatform)
         {
             // While off, only what the settings offer can change (e.g. SISR installed elsewhere).
+            // That check reads the registry, driver list and Steam's shortcuts, so only while the
+            // settings show it; they also get a fresh one when they open.
             var setup = Setup;
-            UpdateSetup();
+            if (WatchSetup)
+            {
+                UpdateSetup();
+            }
+
             if (Issues.Count > 0 || Setup != setup)
             {
                 Issues = [];
@@ -457,7 +554,7 @@ public sealed class ControllerSupportService(
                 return;
             }
 
-            if (!_platform.IsSteamReady)
+            if (!_platform.IsSteamUp)
             {
                 await HoldSisrWhileSteamIsDownAsync(cancellationToken);
                 return;
@@ -471,6 +568,13 @@ public sealed class ControllerSupportService(
                 {
                     Log?.Invoke("SISR ist unerwartet beendet");
                     MoveTo(SisrState.Stopped);
+                }
+
+                if (!_platform.IsSteamReady || !_platform.HasSisrMarker(sisr.ExecutablePath))
+                {
+                    // StartSisr wouldn't start it yet: Steam is still logging in, or the marker is
+                    // missing (its own problem). Waiting for either is not a crash restart.
+                    return;
                 }
 
                 if (_heldForSteam)
@@ -561,7 +665,7 @@ public sealed class ControllerSupportService(
             return;
         }
 
-        if (!_platform.IsSteamReady)
+        if (!_platform.IsSteamUp)
         {
             if (await _gate.WaitAsync(TimeSpan.Zero, cancellationToken))
             {
@@ -613,7 +717,7 @@ public sealed class ControllerSupportService(
             return;
         }
 
-        UpdateSettings(Settings with { LastSisrUpdateCheck = time.GetUtcNow() });
+        UpdateSettings(settings => settings with { LastSisrUpdateCheck = time.GetUtcNow() });
         AvailableUpdate = latest?.Version is { } version && sisr.InstalledVersion is { } installed && version > installed ? latest : null;
         OnChanged();
     }
@@ -646,7 +750,7 @@ public sealed class ControllerSupportService(
 
             // The update replaces the emulated USB host controller under VIIPER; SISR (and with it
             // VIIPER) must reconnect, otherwise the virtual controller stays attached to the old one.
-            UpdateSettings(Settings with { UsbipInstalledAt = time.GetUtcNow() });
+            UpdateSettings(settings => settings with { UsbipInstalledAt = time.GetUtcNow() });
             await StopSisrAsync(cancellationToken);
             _restarts.Clear();
             StartSisr();
@@ -662,22 +766,10 @@ public sealed class ControllerSupportService(
             _restarts.Clear();
             StartSisr();
         }),
-        HealthFix.EnableCefDebugging => RunBusyAsync("Steam-Debug-Schnittstelle wird aktiviert …", async () =>
-        {
-            if (!await sisr.Api.EnableCefRemoteDebuggingAsync(cancellationToken))
-            {
-                throw new InvalidOperationException("SISR konnte die Steam-Debug-Schnittstelle nicht aktivieren.");
-            }
-
-            await sisr.Api.RestartSteamAsync(cancellationToken);
-        }),
-        HealthFix.RestartSteam => RunBusyAsync("Steam wird neu gestartet …", async () =>
-        {
-            await sisr.Api.RestartSteamAsync(cancellationToken);
-        }),
-        // Written into Steam's shortcuts while Steam is closed, as part of the install; the settings ask
-        // before Steam closes (or report a running Steam game) and call InstallAsync themselves.
-        HealthFix.CreateMarker => InstallAsync(cancellationToken),
+        HealthFix.EnableCefDebugging => RunBusyAsync("Steam-Debug-Schnittstelle wird aktiviert …", () => RestartSteamAsync(enableCefDebugging: true, cancellationToken)),
+        HealthFix.RestartSteam => RunBusyAsync("Steam wird neu gestartet …", () => RestartSteamAsync(enableCefDebugging: false, cancellationToken)),
+        // Closes Steam, so the settings ask first (or report a running Steam game) and call InstallAsync themselves.
+        HealthFix.CreateMarker => throw new ArgumentException("Der Steam-Eintrag wird über InstallAsync angelegt, nachdem die Einstellungen gefragt haben.", nameof(fix)),
         HealthFix.StopExternalSisr => RunBusyAsync("Andere SISR-Instanz wird beendet …", () =>
         {
             sisr.StopExternalInstances();
@@ -829,6 +921,12 @@ public sealed class ControllerSupportService(
 
         issues.AddRange(_platform.CheckDependencies(Settings, time.GetUtcNow()));
 
+        if (SteamLoginStuckFor() > SteamLoginGrace)
+        {
+            // Seen on the owner's PC: Steam hung at "loading user data" until Windows restarted.
+            issues.Add(new("steam-login", HealthSeverity.Warning, "Steam meldet sich noch an", "SISR startet, sobald Steam angemeldet ist. Hängt Steam bei „Nutzerdaten werden geladen“, hilft oft ein Neustart von Steam.", HealthFix.RestartSteam, "Steam neu starten"));
+        }
+
         if (sisr.IsInstalled && !_platform.HasSisrMarker(sisr.ExecutablePath))
         {
             // Read from Steam's shortcuts, not asked from SISR: SISR doesn't start without it.
@@ -927,6 +1025,14 @@ public sealed class ControllerSupportService(
 
         MoveTo(SisrState.Starting);
         SisrStarting?.Invoke(this, EventArgs.Empty);
+        if (_shuttingDown)
+        {
+            // Arcadia began exiting while the UI thread prepared for the start; a SISR started now
+            // would outlive Arcadia.
+            MoveTo(SisrState.Stopped);
+            return;
+        }
+
         try
         {
             sisr.MarkInitialSetupDone();
@@ -1005,7 +1111,7 @@ public sealed class ControllerSupportService(
         MoveTo(SisrState.Stopping);
         try
         {
-            if (_platform.IsSteamReady)
+            if (_platform.IsSteamUp)
             {
                 await sisr.StopAsync(cancellationToken);
             }
@@ -1013,9 +1119,10 @@ public sealed class ControllerSupportService(
             {
                 // SISR's own cleanup on quit opens a steam:// URL, which starts Steam again. That
                 // includes a Steam that is still shutting down: steam.exe outlives the logout and
-                // its web helper by a few seconds (owner's log, 2026-10-16).
+                // its web helper by a few seconds (owner's log, 2026-10-16). Kill waits for the
+                // process, so it runs off the UI thread.
                 Log?.Invoke("Steam läuft nicht (mehr) – SISR wird ohne Aufräumen beendet");
-                sisr.Kill();
+                await Task.Run(sisr.Kill, CancellationToken.None);
             }
         }
         finally
@@ -1047,8 +1154,8 @@ public sealed class ControllerSupportService(
 
         await StopSisrAsync(cancellationToken);
         Log?.Invoke($"SISR beendet (läuft noch: {sisr.IsRunning})");
-        // steam:// would start a closed Steam, so only a ready one is told.
-        if (wasRunning && _platform.IsSteamReady)
+        // steam:// would start a closed Steam, so only a running one is told.
+        if (wasRunning && _platform.IsSteamUp)
         {
             _platform.ResetSteamInputLayout();
 
@@ -1172,10 +1279,19 @@ public sealed class ControllerSupportService(
         OnChanged();
     }
 
-    private void UpdateSettings(AppSettings settings)
+    /// <summary>
+    /// Changes and saves the settings. The tick runs on the thread pool, the UI changes them too:
+    /// reading, changing and saving happen under one lock, so no change is lost and two saves never
+    /// write <c>settings.json.tmp</c> at once.
+    /// </summary>
+    private void UpdateSettings(Func<AppSettings, AppSettings> change)
     {
-        Settings = settings;
-        store.Save(settings);
+        lock (_settingsLock)
+        {
+            Settings = change(Settings);
+            store.Save(Settings);
+        }
+
         OnChanged();
     }
 

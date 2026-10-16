@@ -9,11 +9,18 @@ namespace Arcadia.ControllerSupport;
 /// </summary>
 public static partial class UsbipPorts
 {
-    /// <summary>VIIPER attaches its controllers from <c>localhost</c> on its default usbip port.</summary>
-    public const string ViiperServer = "localhost:3241";
+    /// <summary>VIIPER's default usbip port; it attaches its controllers from this machine.</summary>
+    public const int ViiperPort = 3241;
 
-    /// <summary>The port numbers of the devices imported from <paramref name="server"/> (host:port).</summary>
-    public static IReadOnlyList<int> ServedBy(string portOutput, string server)
+    /// <summary>How this machine can appear in an imported device's address.</summary>
+    private static readonly string[] LocalHosts = ["localhost", "127.0.0.1", "[::1]"];
+
+    /// <summary>The port numbers of the devices imported from VIIPER on this machine.</summary>
+    public static IReadOnlyList<int> FromLocalViiper(string portOutput) =>
+        ServedBy(portOutput, LocalHosts.Select(host => $"{host}:{ViiperPort}").ToArray());
+
+    /// <summary>The port numbers of the devices imported from any of <paramref name="servers"/> (host:port).</summary>
+    private static IReadOnlyList<int> ServedBy(string portOutput, string[] servers)
     {
         var ports = new List<int>();
         int? current = null;
@@ -24,7 +31,7 @@ public static partial class UsbipPorts
                 current = int.Parse(port.Groups[1].Value, CultureInfo.InvariantCulture);
             }
             else if (current is { } number
-                     && line.Contains($"usbip://{server}/", StringComparison.OrdinalIgnoreCase)
+                     && servers.Any(server => line.Contains($"usbip://{server}/", StringComparison.OrdinalIgnoreCase))
                      && !ports.Contains(number))
             {
                 ports.Add(number);

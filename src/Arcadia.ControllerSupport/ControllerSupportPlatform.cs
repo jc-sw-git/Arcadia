@@ -25,6 +25,14 @@ public interface IControllerSupportPlatform
     bool IsSteamReady { get; }
 
     /// <summary>
+    /// Steam runs with its web helper and a logged-in user, but may still be logging in. Losing this
+    /// means Steam goes away (closed, shutting down, logged out): SISR is stopped then, and killed,
+    /// because its cleanup would start Steam again. A login that hangs or repeats doesn't count, so
+    /// SISR isn't killed mid-game over it.
+    /// </summary>
+    bool IsSteamUp { get; }
+
+    /// <summary>
     /// Adds SISR's marker shortcut ("SISR Marker", <c>--marker</c>) to Steam unless it is there, as
     /// SISR's own setup would. Only while Steam is closed (Steam overwrites the file on exit);
     /// false if Steam runs or no Steam account could be found.
@@ -33,7 +41,8 @@ public interface IControllerSupportPlatform
 
     /// <summary>
     /// SISR's marker shortcut is in Steam. SISR reads it only when it starts and asks to add one if
-    /// it is missing, so SISR is not started without it. True if it can't be told (no account found).
+    /// it is missing, so SISR is not started without it. False if no Steam account is known; while
+    /// Steam's file can't be read (it writes it), the last answer.
     /// </summary>
     bool HasSisrMarker(string sisrExecutable);
 
@@ -79,9 +88,14 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
     public bool IsSteamRunning => SteamInstallation.IsRunning;
 
     public bool IsSteamReady =>
-        SteamInstallation.IsRunning && ProcessWatch.IsRunning("steamwebhelper")
-        && SteamInstallation.Find() is { ActiveUserId: not (null or 0) } steam
+        IsSteamUp && SteamInstallation.Find() is { } steam
         && SteamLoginLog.IsLatestLoginComplete(steam.LoginLogPath) is not false;
+
+    public bool IsSteamUp =>
+        SteamInstallation.IsRunning && ProcessWatch.IsRunning("steamwebhelper")
+        && SteamInstallation.Find() is { ActiveUserId: not (null or 0) };
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _lastMarkerAnswer = new(StringComparer.OrdinalIgnoreCase);
 
     public bool EnsureSisrMarker(string sisrExecutable)
     {
@@ -98,8 +112,23 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
         return true;
     }
 
-    public bool HasSisrMarker(string sisrExecutable) =>
-        SteamInstallation.Find()?.ShortcutsPath is not { } shortcuts || ContainsMarker(shortcuts, sisrExecutable);
+    public bool HasSisrMarker(string sisrExecutable)
+    {
+        if (SteamInstallation.Find()?.ShortcutsPath is not { } shortcuts)
+        {
+            return false;
+        }
+
+        try
+        {
+            return _lastMarkerAnswer[shortcuts] = ContainsMarker(shortcuts, sisrExecutable);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException or InvalidDataException)
+        {
+            // Steam is writing the file, or it is broken; Steam rewrites it on its next exit.
+            return _lastMarkerAnswer.GetValueOrDefault(shortcuts, true);
+        }
+    }
 
     /// <summary>SISR finds its marker by its own exe path plus "--marker" in the launch options.</summary>
     private static bool ContainsMarker(string shortcuts, string sisrExecutable) =>

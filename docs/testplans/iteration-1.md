@@ -208,8 +208,8 @@ Verlauf:
 Mit echtem Steam Controller. Für die Fälle ohne SISR vorher in Arcadia deinstallieren oder
 `%LOCALAPPDATA%\SISR` umbenennen.
 
-- [ ] **T85-1** Ohne SISR (oder ohne usbip-Treiber oder ohne `.cef-enable-remote-debugging` im
-      Steam-Ordner) zeigt die Einstellung „SISR installieren“ statt des Schalters. · E2E: ja (Fake-Plattform)
+- [ ] **T85-1** Ohne SISR (oder ohne usbip-Treiber, ohne `.cef-enable-remote-debugging` im
+      Steam-Ordner oder ohne „SISR Marker“ in der Steam-Bibliothek) zeigt die Einstellung „SISR installieren“ statt des Schalters. · E2E: ja (Fake-Plattform)
 - [ ] **T85-2** Steam läuft: A auf „SISR installieren“ öffnet über den Einstellungen das Modal „Steam beenden?“;
       nur dessen Schaltflächen haben den Fokus. „Abbrechen“ oder B: das Modal schließt, nichts wird
       installiert, Steam läuft weiter; erneutes A fragt wieder. · E2E: ja (Fake-Plattform)
@@ -228,6 +228,8 @@ Mit echtem Steam Controller. Für die Fälle ohne SISR vorher in Arcadia deinsta
       Steam läuft wieder. · E2E: nein (UAC)
 - [ ] **T85-8** Bei eingeschalteter Option den usbip-Treiber deinstallieren: Die Option bleibt an und
       zeigt das Problem mit „Installieren“. · E2E: nein (Treiber)
+- [ ] **T85-9** Unter Linux (bzw. ohne Steam unter Windows) ist die Option ausgegraut und sagt
+      „Momentan nur unter Windows verfügbar.“ bzw. „Benötigt Steam.“; A tut nichts. · E2E: ja
 - [ ] **T85-10** Option aus, Steam beendet: Einschalten startet zuerst Steam, mit Spinner und
       „Steam wird gestartet …“; erst wenn Steam läuft, startet SISR. Kein Vollbildfenster von SISR
       („Steam läuft nicht“) erscheint. Bis dahin reagieren die Einstellungen nur auf B. · E2E: nein (echtes Steam)
@@ -244,8 +246,15 @@ Mit echtem Steam Controller. Für die Fälle ohne SISR vorher in Arcadia deinsta
 - [ ] **T85-14** Solange Steam, SISR oder VIIPER starten oder beenden (auch von selbst, z. B. nach dem
       Beenden von Steam), zeigt die Einstellung einen Spinner und reagiert nur auf B; der Schalter lässt sich
       erst danach umlegen. Hängt Steam beim Anmelden, bleibt der Schalter bedienbar. · E2E: ja (Fake-Plattform)
-- [ ] **T85-9** Unter Linux (bzw. ohne Steam unter Windows) ist die Option ausgegraut und sagt
-      „Momentan nur unter Windows verfügbar.“ bzw. „Benötigt Steam.“; A tut nichts. · E2E: ja
+- [ ] **T85-15** Mit zwei Steam-Konten auf dem PC (eins davon zuletzt angemeldet): „SISR installieren“
+      legt den „SISR Marker“ im zuletzt angemeldeten Konto an, die Option geht an und SISR startet; kein
+      wiederholtes „Anlegen“. Ohne je angemeldetes Konto: verständliche Meldung, die Option bleibt aus. · E2E: ja (Fake-Plattform, Konto-Auswahl per Unit-Test)
+- [ ] **T85-16** Hängt Steam länger als 30 Sekunden bei „Nutzerdaten werden geladen“: die Einstellungen zeigen
+      „Steam meldet sich noch an“ mit „Steam neu starten“; ein laufendes SISR wird dabei nicht beendet. · E2E: ja (Fake-Plattform)
+- [ ] **T85-17** Option an, SISR läuft, Standby und wieder aufwachen bzw. kurz das Netzwerk trennen, während ein
+      Nicht-Steam-Spiel läuft: der Controller bleibt als Xbox 360 Controller erhalten. · E2E: nein (Standby, echtes Steam)
+- [ ] **T85-18** Steam im Offline-Modus starten, Option an: SISR startet, sobald Steam offline bereit ist (falls
+      nicht: Befund notieren, Steam schreibt dann vermutlich kein `Success` ins Login-Log). · E2E: nein (echtes Steam)
 
 Verlauf:
 
@@ -256,9 +265,10 @@ Verlauf:
 | T85-12 | 2026-10-16 | Juri | Branch `feat/steam-controller-setup-and-naming-85-92` (Stand 314f649), Windows, echtes Steam | ❌ Manchmal startete Steam nach dem Beenden trotzdem wieder; Log: SISR wurde regulär beendet, während steam.exe noch herunterfuhr | Ohne bereites Steam immer hart beenden |
 | T85-12, T85-13 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Tests mit Fake-Plattform und Fake-SISR | ✅ Ohne Steam wird SISR beendet statt beendet-mit-Aufräumen, Neustart mit Steam zählt nicht als Absturz, ohne Marker kein SISR-Start, die Einrichtung legt den Marker bei geschlossenem Steam an | Echter Ablauf am PC des Owners |
 | T85-10 bis T85-12 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Tests mit Fake-Plattform (`ControllerSupportServiceTests`); Modal „Steam startet nicht“ per Xvfb-Screenshot mit lokalem Eingriff | ✅ Steam vor SISR, Timeout schaltet aus, ohne Steam kein SISR-Start und kein Absturzzähler, Ausschalten ohne Steam sendet nichts an Steam | Echter Ablauf am PC des Owners |
-| T85-11 | 2026-10-16 | Juri | Branch `feat/steam-controller-setup-and-naming-85-92` (Stand e32a90b), Windows, echtes Steam | ❌ Steam hing bei „Nutzerdaten werden geladen“ (Steam-Logs: Steam Cloud antwortete nicht, auch ohne Arcadia), trotzdem startete SISR und fand keinen Controller | Bereit erst nach abgeschlossener Anmeldung (`steamui_login.txt`) |
+| T85-11 | 2026-10-16 | Juri | Branch `feat/steam-controller-setup-and-naming-85-92` (Stand e32a90b), Windows, echtes Steam | ❌ Steam hing bei „Nutzerdaten werden geladen“ (auch ohne Arcadia; laut Steam-Logs antwortete der Steam Controller nicht, erst ein Windows-Neustart half), trotzdem startete SISR und fand keinen Controller | Bereit erst nach abgeschlossener Anmeldung (`steamui_login.txt`) |
 | T85-2, T85-5 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Xvfb 1920×1080, `--demo`, Modal per lokalem Eingriff erzwungen (unter Linux ist die Option ausgegraut) | ✅ Beide Modals erscheinen über den abgedunkelten Einstellungen, Fokus nur auf ihren Schaltflächen; per Unit-Test geprüft sind nur die frische Abfrage des Spiels und `ClearError`, der Wechsel des Modals beim Spielende nicht | Echter Ablauf mit Steam-Spiel am PC des Owners |
 | T85-1, T85-3 bis T85-7 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Tests mit Fake-Plattform und Fake-SISR (`ControllerSupportServiceTests`), nicht in der App | ✅ Reihenfolge Steam beenden → CEF → SISR → Treiber → Steam starten → an; Steam-Spiel, Timeout, abgelehnter Treiber und nicht beendbares Steam melden sich und lassen die Option aus | Ansicht und echter Ablauf am PC des Owners |
+| T85-14 bis T85-18 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92` (zweites Review), Linux, Unit-Tests mit Fake-Plattform und Fake-SISR (`ControllerSupportServiceTests`, `SteamLoginLogTests`, `SteamInstallationTests`, `UsbipPortsTests`), nicht in der App | ✅ Hängende Anmeldung stoppt SISR nicht und warnt nach 30 s mit „Steam neu starten“; Neustart über Arcadia; Marker fürs zuletzt angemeldete Konto; VIIPER-Aufräumen nach jedem Stopp; gleichzeitige Einstellungsänderungen gehen nicht verloren | Echter Ablauf und `usbip port`-Format am PC des Owners |
 
 ## #92 „Steam Controller Support“ verständlich benennen und beschreiben
 

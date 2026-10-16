@@ -58,6 +58,15 @@ focus handling or anything SISR/usbip related.
   Untested: whether offline mode writes `Success`. Started earlier, SISR shows its own full-screen "Steam is not running"
   window, or reads no marker (it reads the logged-in user's `shortcuts.vdf` once at start) and asks to add
   another one. So `StartSisr` skips without a ready Steam or without the marker.
+- Two Steam signals: `IsSteamReady` (above) gates starting SISR; `IsSteamUp` (processes + `ActiveUser`, no
+  login check) decides whether SISR is held, quit gracefully or killed, so a login that hangs or repeats
+  doesn't stop a running SISR. If Steam stays up without finishing its login for 30 s
+  (`SteamLoginGrace`), the settings warn "Steam meldet sich noch an" with "Steam neu starten"; Arcadia
+  restarts Steam itself (`RestartSteamAsync`: stop SISR, close Steam, start it, wait 60 s, start SISR),
+  also for the CEF fix, because SISR's own restart left SISR on a Steam that was going away.
+- The marker is written for the logged-in account, else the only account, else the most recent one in
+  `config/loginusers.vdf` (`MostRecent`, then `Timestamp`). Without any account "SISR installieren" asks to
+  log in to Steam once.
 - SISR starts the `viiper.exe` next to it and kills it on quit; killing SISR's process tree takes it along.
   VIIPER attaches its virtual controllers through the usbip-win2 driver from `localhost:3241` and has no
   detach: the driver drops a device when VIIPER's connection closes. After every SISR stop Arcadia still

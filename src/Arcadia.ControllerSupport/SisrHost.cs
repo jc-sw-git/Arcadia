@@ -299,6 +299,12 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
             return 0;
         }
 
+        // Process scans and waits: off the caller's (possibly UI) thread.
+        return await Task.Run(() => CleanUpViiperCoreAsync(cancellationToken), cancellationToken);
+    }
+
+    private async Task<int> CleanUpViiperCoreAsync(CancellationToken cancellationToken)
+    {
         // SISR starts the viiper.exe next to it and ends it on quit; killing SISR's process tree
         // takes it along too. This only catches the cases where neither happened (SISR crashed).
         var leftovers = 0;
@@ -323,7 +329,10 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
             }
         }
 
-        return leftovers + await UsbipDriver.DetachViiperDevicesAsync(cancellationToken);
+        // Another SISR (with its own VIIPER on the same port) may still use its controllers.
+        return ExternalInstances().Count > 0 || !OperatingSystem.IsWindows()
+            ? leftovers
+            : leftovers + await UsbipDriver.DetachViiperDevicesAsync(cancellationToken);
     }
 
     /// <summary>Stops SISR instances that are not Arcadia's copy.</summary>

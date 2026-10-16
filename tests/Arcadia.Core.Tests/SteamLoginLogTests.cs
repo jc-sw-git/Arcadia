@@ -12,7 +12,7 @@ public class SteamLoginLogTests : IDisposable
 
         """;
 
-    // Seen on the owner's PC when Steam Cloud didn't answer: the server accepted the login, the client never finished it.
+    // Seen on the owner's PC (2026-10-16): the server accepted the login, the client never finished it.
     private const string HangingLogin = """
         [2026-10-16 21:46:46] [ None ] Starting login
         [2026-10-16 21:46:47] [ WaitingForServerResponse ] Received logon success response

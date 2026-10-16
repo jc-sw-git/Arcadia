@@ -269,6 +269,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public bool IsBusy => BusyText is not null;
 
+    /// <summary>On, but Steam's "SISR Marker" is missing; its fix goes through the install prompts.</summary>
+    private bool NeedsMarker { get; set; }
+
     /// <summary>Steam or SISR is starting (or another action runs): the dialog takes no input but B until it is done.</summary>
     [ObservableProperty]
     public partial bool IsWorking { get; private set; }
@@ -375,6 +378,18 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
     }
 
+    /// <summary>The marker can only be written while Steam is closed, so it goes through the install prompts.</summary>
+    private void ApplyFix(HealthFix fix)
+    {
+        if (fix == HealthFix.CreateMarker)
+        {
+            BeginInstall();
+            return;
+        }
+
+        _support.ApplyFixAsync(fix).Forget("Problem beheben");
+    }
+
     private void ConfirmSteamStop()
     {
         // A game may have started since the question came up.
@@ -444,18 +459,19 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         Issues.Clear();
         foreach (var issue in _support.Issues)
         {
-            Issues.Add(new HealthIssueViewModel(issue, fix => _support.ApplyFixAsync(fix).Forget("Problem beheben")));
+            Issues.Add(new HealthIssueViewModel(issue, ApplyFix));
         }
 
         HasIssues = Issues.Count > 0;
 
         // Once on, the switch stays even if something breaks later; the problem shows below it.
         var setup = _support.Setup;
+        NeedsMarker = _support.Issues.Any(i => i.Fix == HealthFix.CreateMarker);
         IsUnavailable = !IsEnabled && setup is ControllerSupportSetup.UnsupportedPlatform or ControllerSupportSetup.SteamMissing;
         UnavailableText = setup == ControllerSupportSetup.SteamMissing ? "Benötigt Steam." : "Momentan nur unter Windows verfügbar.";
         ShowSwitch = IsEnabled || setup == ControllerSupportSetup.Ready;
         ShowInstall = !IsEnabled && setup == ControllerSupportSetup.NeedsInstall;
-        if (IsInstallPrompt && (!ShowInstall || IsBusy))
+        if (IsInstallPrompt && ((!ShowInstall && !NeedsMarker) || IsBusy))
         {
             // Installed some other way, or something else started: the question is moot.
             Prompt = SettingsPrompt.None;

@@ -13,6 +13,8 @@ public interface ISisrHost
 
     bool IsInstalled { get; }
 
+    string ExecutablePath { get; }
+
     Version? InstalledVersion { get; }
 
     /// <summary>True if Arcadia's SISR process runs.</summary>
@@ -30,6 +32,15 @@ public interface ISisrHost
     void Start();
 
     Task StopAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Ends SISR without its own cleanup, for when Steam is gone (see <see cref="SisrHost.Kill"/>).</summary>
+    void Kill();
+
+    /// <summary>
+    /// Marks SISR's first-run setup as done, so SISR never shows its setup window; Arcadia does
+    /// that setup itself (CEF flag, marker shortcut).
+    /// </summary>
+    void MarkInitialSetupDone();
 }
 
 /// <summary>
@@ -241,6 +252,37 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
             {
                 // Already gone.
             }
+        }
+    }
+
+    /// <summary>
+    /// Ends SISR at once. Quitting it normally runs SISR's cleanup, which opens
+    /// <c>steam://forceinputappid/0</c>; with Steam closed that URL starts Steam again.
+    /// </summary>
+    public void Kill()
+    {
+        foreach (var id in FindProcesses(own: true))
+        {
+            try
+            {
+                using var process = Process.GetProcessById(id);
+                process.Kill(entireProcessTree: true);
+                process.WaitForExit(TimeSpan.FromSeconds(2));
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or Win32Exception)
+            {
+                // Already gone.
+            }
+        }
+    }
+
+    /// <summary>SISR shows its setup window while this file is missing next to its exe.</summary>
+    public void MarkInitialSetupDone()
+    {
+        var marker = Path.Combine(InstallDirectory, ".initial_setup_done");
+        if (IsInstalled && !File.Exists(marker))
+        {
+            File.WriteAllBytes(marker, []);
         }
     }
 

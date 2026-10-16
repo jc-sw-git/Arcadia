@@ -19,6 +19,7 @@ public partial class App : Application
 {
     /// <summary>How often SISR and its dependencies are checked.</summary>
     private static readonly TimeSpan ControllerSupportInterval = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan ControllerSupportWatchInterval = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan InstallCheckInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan InstallProgressInterval = TimeSpan.FromSeconds(2);
 
@@ -132,6 +133,11 @@ public partial class App : Application
 
             var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => controllerSupport.TickAsync(), "SISR-Überwachung"));
             monitoring.Start();
+
+            // Quick check between ticks: Steam closed (stop SISR before it can start Steam again)
+            // and the Steam Controller switched on or off (preview).
+            var sisrWatch = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => controllerSupport.WatchAsync(), "SISR-Überwachung"));
+            sisrWatch.Start();
 
             // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
             // watch, rescan until the games it handed over are installed.

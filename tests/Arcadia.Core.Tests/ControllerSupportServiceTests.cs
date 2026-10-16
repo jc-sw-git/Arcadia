@@ -153,8 +153,10 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Equal(SisrState.Running, service.State);
 
         _platform.IsSteamRunning = false;
-        await service.TickAsync();
+        await service.WatchAsync();
         Assert.False(_sisr.Running);
+        Assert.Equal(1, _sisr.Kills);
+        Assert.Equal(0, _sisr.Stops);
         Assert.Equal(SisrState.Stopped, service.State);
 
         await service.SetEnabledAsync(false);
@@ -163,6 +165,72 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Equal(0, _platform.LayoutResets);
         Assert.Equal(SisrState.Off, service.State);
         AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task SISR_held_for_Steam_starts_again_with_Steam_even_after_earlier_crashes()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        // Use up the crash budget.
+        for (var i = 0; i < ControllerSupportService.MaxRestartsPerWindow; i++)
+        {
+            _sisr.Running = false;
+            await service.TickAsync();
+            _sisr.Running = true;
+        }
+
+        _platform.IsSteamRunning = false;
+        await service.WatchAsync();
+        _platform.IsSteamRunning = true;
+        var starts = _sisr.Starts;
+        await service.TickAsync();
+
+        Assert.Equal(starts + 1, _sisr.Starts);
+        Assert.NotEqual(SisrState.Failed, service.State);
+    }
+
+    [Fact]
+    public async Task Install_adds_the_marker_while_Steam_is_closed_and_SISR_skips_its_setup()
+    {
+        var service = Create(enabled: false);
+        _sisr.Installed = false;
+
+        await service.InstallAsync();
+
+        Assert.Equal(1, _platform.MarkerChecks);
+        Assert.Contains(_log, line => line.Contains("„SISR Marker“ vorhanden"));
+        Assert.True(_sisr.SetupMarkedDone);
+    }
+
+    [Fact]
+    public async Task Without_its_marker_SISR_is_not_started_and_the_fix_installs_it()
+    {
+        var service = Create();
+        _platform.MarkerPresent = false;
+
+        await service.TickAsync();
+
+        Assert.Equal(0, _sisr.Starts);
+        Assert.Contains(service.Issues, i => i.Fix == HealthFix.CreateMarker);
+
+        await service.ApplyFixAsync(HealthFix.CreateMarker);
+
+        Assert.True(_platform.MarkerPresent);
+        Assert.Equal(1, _platform.SteamStops);
+        Assert.Equal(1, _platform.SteamStarts);
+        Assert.Equal(1, _sisr.Starts);
+    }
+
+    [Fact]
+    public void A_missing_marker_means_SISR_still_needs_installing()
+    {
+        var service = Create(enabled: false);
+        _platform.MarkerPresent = false;
+
+        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
     }
 
     [Fact]
@@ -175,7 +243,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         // Only the dongle is left: SISR emulates nothing.
         _api.Controllers = 0;
-        await service.TickAsync();
+        await service.WatchAsync();
         Assert.Equal(SisrState.NoController, service.State);
         Assert.False(service.SteamControllerConnected);
 
@@ -665,6 +733,20 @@ public sealed class ControllerSupportServiceTests : IDisposable
             Running = false;
             return Task.CompletedTask;
         }
+
+        public int Kills { get; private set; }
+
+        public bool SetupMarkedDone { get; private set; }
+
+        public string ExecutablePath => @"C:\SISR\SISR.exe";
+
+        public void Kill()
+        {
+            Kills++;
+            Running = false;
+        }
+
+        public void MarkInitialSetupDone() => SetupMarkedDone = true;
     }
 
     /// <summary>SISR's HTTP API: answers like a healthy SISR with one controller, or not at all.</summary>
@@ -762,6 +844,20 @@ public sealed class ControllerSupportServiceTests : IDisposable
         }
 
         public void ResetSteamInputLayout() => LayoutResets++;
+
+        public int MarkerChecks { get; private set; }
+
+        public bool MarkerPresent { get; set; } = true;
+
+        public bool HasSisrMarker(string sisrExecutable) => MarkerPresent;
+
+        /// <summary>Only while Steam is closed, like the real one.</summary>
+        public bool EnsureSisrMarker(string sisrExecutable)
+        {
+            MarkerChecks++;
+            MarkerPresent |= !IsSteamRunning;
+            return !IsSteamRunning;
+        }
 
         public bool AnyRunningFrom(string directory)
         {

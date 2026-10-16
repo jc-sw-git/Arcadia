@@ -16,10 +16,25 @@ public interface IControllerSupportPlatform
     bool IsSteamRunning { get; }
 
     /// <summary>
-    /// Steam is up far enough for SISR: its process and its web helper (CEF, which SISR talks to) run.
-    /// SISR started before that shows its own full-screen "Steam is not running" window and starts Steam itself.
+    /// Steam is up far enough for SISR: its process and its web helper (CEF, which SISR talks to) run
+    /// and a user is logged in. SISR started before that shows its own full-screen "Steam is not
+    /// running" window, or can't find its marker (it reads the logged-in user's shortcuts once at
+    /// start) and asks to add a second one.
     /// </summary>
     bool IsSteamReady { get; }
+
+    /// <summary>
+    /// Adds SISR's marker shortcut ("SISR Marker", <c>--marker</c>) to Steam unless it is there, as
+    /// SISR's own setup would. Only while Steam is closed (Steam overwrites the file on exit);
+    /// false if Steam runs or no Steam account could be found.
+    /// </summary>
+    bool EnsureSisrMarker(string sisrExecutable);
+
+    /// <summary>
+    /// SISR's marker shortcut is in Steam. SISR reads it only when it starts and asks to add one if
+    /// it is missing, so SISR is not started without it. True if it can't be told (no account found).
+    /// </summary>
+    bool HasSisrMarker(string sisrExecutable);
 
     /// <summary>usbip-win2 is installed in at least <see cref="UsbipDriver.MinimumVersion"/> and loaded.</summary>
     bool IsUsbipReady { get; }
@@ -62,7 +77,33 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     public bool IsSteamRunning => SteamInstallation.IsRunning;
 
-    public bool IsSteamReady => SteamInstallation.IsRunning && ProcessWatch.IsRunning("steamwebhelper");
+    public bool IsSteamReady =>
+        SteamInstallation.IsRunning && ProcessWatch.IsRunning("steamwebhelper")
+        && SteamInstallation.Find()?.ActiveUserId is { } user and not 0;
+
+    public bool EnsureSisrMarker(string sisrExecutable)
+    {
+        if (SteamInstallation.IsRunning || SteamInstallation.Find()?.ShortcutsPath is not { } shortcuts)
+        {
+            return false;
+        }
+
+        if (!ContainsMarker(shortcuts, sisrExecutable))
+        {
+            SteamShortcuts.Add(shortcuts, "SISR Marker", sisrExecutable, "--marker");
+        }
+
+        return true;
+    }
+
+    public bool HasSisrMarker(string sisrExecutable) =>
+        SteamInstallation.Find()?.ShortcutsPath is not { } shortcuts || ContainsMarker(shortcuts, sisrExecutable);
+
+    /// <summary>SISR finds its marker by its own exe path plus "--marker" in the launch options.</summary>
+    private static bool ContainsMarker(string shortcuts, string sisrExecutable) =>
+        File.Exists(shortcuts)
+        && SteamShortcuts.Read(shortcuts).Any(s => s.LaunchOptions.Contains("--marker", StringComparison.OrdinalIgnoreCase)
+                                                   && SteamShortcuts.FindByExecutable([s], sisrExecutable) is not null);
 
     public bool IsUsbipReady =>
         OperatingSystem.IsWindows() && UsbipDriver.InstalledVersion() is { } version && version >= UsbipDriver.MinimumVersion && UsbipDriver.IsRunning();

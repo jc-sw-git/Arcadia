@@ -76,9 +76,6 @@ public sealed class SisrApiClient(HttpClient http, int port)
         }
     }
 
-    public Task<bool> CreateMarkerShortcutAsync(CancellationToken cancellationToken = default) =>
-        SendAsync("steam/cef/create-marker-shortcut", cancellationToken);
-
     public Task<bool> EnableCefRemoteDebuggingAsync(CancellationToken cancellationToken = default) =>
         SendAsync("steam/enable-cef-remote-debugging", cancellationToken);
 

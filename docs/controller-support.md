@@ -44,15 +44,23 @@ focus handling or anything SISR/usbip related.
   dialog ("Steam-Spiel läuft", "Steam beenden?") that re-reads the running game every second, because
   nothing else reports a game ending; `LastError` is cleared when the settings open or close.
 - A Steam Controller counts as connected (per-game mode in the preview) only while SISR emulates it
-  (`SisrState.Running`); the tick moves Running ↔ NoController as the controller is switched on or off.
+  (`SisrState.Running`); `WatchAsync` (every 2 s) moves Running ↔ NoController as the controller is switched on or off.
   Windows' HID list is no use: the wireless dongle shows as a Valve device (`VID_28DE`) even with the
   controller off (owner's PC, 2026-10-16).
-- SISR may only run while Steam is ready (`steam` and `steamwebhelper` run). Started without Steam, SISR
-  shows its own full-screen "Steam is not running" window and starts Steam itself; that is also why
-  switching off once started Steam: Arcadia restarted SISR after the user closed Steam (owner, 2026-10-16;
-  cause inferred from the logs). So `StartSisr` skips without Steam, the tick stops a running SISR when
-  Steam goes (not counted as a crash) and starts it again with Steam, and `steam://forceinputappid/0` is
-  only sent to a ready Steam. Switching on starts Steam and waits up to 60 s (`SteamStartTimeout`); if
+- SISR may only run while Steam is ready: `steam` and `steamwebhelper` run and a user is logged in
+  (`ActiveProcess\ActiveUser`). Started earlier, SISR shows its own full-screen "Steam is not running"
+  window, or reads no marker (it reads the logged-in user's `shortcuts.vdf` once at start) and asks to add
+  another one. So `StartSisr` skips without a ready Steam or without the marker.
+- SISR's own cleanup on quit opens `steam://forceinputappid/0` (SISR source, `cli/cmd/sisr/sisr.go`),
+  which starts a closed Steam. That is why closing Steam (and switching off afterwards) started Steam again
+  (owner, 2026-10-16). With Steam closed Arcadia kills SISR instead of quitting it; `WatchAsync` does that
+  within 2 s of Steam closing, the tick starts SISR again once Steam is ready (not counted as a crash), and
+  the settings show "Steam läuft nicht" with "Steam starten".
+- Arcadia does SISR's first-run setup itself so SISR never shows a window: `.initial_setup_done` next to
+  `SISR.exe` (SISR's setup window shows while it is missing), the CEF flag, and the "SISR Marker" shortcut
+  (`SISR.exe`, launch options `--marker`), written into `shortcuts.vdf` while "SISR installieren" has Steam
+  closed. A missing marker counts as not set up ("SISR installieren", or "Anlegen" when on, both through
+  the same prompts). Switching on starts Steam and waits up to 60 s (`SteamStartTimeout`); if
   Steam doesn't come up the setting is off again and the settings show "Steam startet nicht" with
   "Erneut versuchen". Arcadia still doesn't start Steam on its own when it starts with the option on.
 - SISR's WebView2 data lands in `%APPDATA%\SISR.exe`, VIIPER's key file in `%APPDATA%\VIIPER`; neither goes

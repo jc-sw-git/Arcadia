@@ -41,6 +41,12 @@ public interface ISisrHost
     /// that setup itself (CEF flag, marker shortcut).
     /// </summary>
     void MarkInitialSetupDone();
+
+    /// <summary>
+    /// After SISR stopped: ends a VIIPER from SISR's folder that outlived it and detaches the
+    /// controllers VIIPER attached through usbip. Returns how many of both were left; never throws.
+    /// </summary>
+    Task<int> CleanUpViiperAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -284,6 +290,40 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
         {
             File.WriteAllBytes(marker, []);
         }
+    }
+
+    public async Task<int> CleanUpViiperAsync(CancellationToken cancellationToken = default)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return 0;
+        }
+
+        // SISR starts the viiper.exe next to it and ends it on quit; killing SISR's process tree
+        // takes it along too. This only catches the cases where neither happened (SISR crashed).
+        var leftovers = 0;
+        foreach (var process in Process.GetProcessesByName("viiper"))
+        {
+            using (process)
+            {
+                try
+                {
+                    if (process.MainModule?.FileName is { } path
+                        && path.StartsWith(Path.GetFullPath(InstallDirectory), StringComparison.OrdinalIgnoreCase))
+                    {
+                        process.Kill();
+                        process.WaitForExit(TimeSpan.FromSeconds(2));
+                        leftovers++;
+                    }
+                }
+                catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+                {
+                    // Already gone or not ours to touch.
+                }
+            }
+        }
+
+        return leftovers + await UsbipDriver.DetachViiperDevicesAsync(cancellationToken);
     }
 
     /// <summary>Stops SISR instances that are not Arcadia's copy.</summary>

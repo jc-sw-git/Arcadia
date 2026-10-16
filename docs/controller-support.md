@@ -55,6 +55,13 @@ focus handling or anything SISR/usbip related.
   Untested: whether offline mode writes `Success`. Started earlier, SISR shows its own full-screen "Steam is not running"
   window, or reads no marker (it reads the logged-in user's `shortcuts.vdf` once at start) and asks to add
   another one. So `StartSisr` skips without a ready Steam or without the marker.
+- SISR starts the `viiper.exe` next to it and kills it on quit; killing SISR's process tree takes it along.
+  VIIPER attaches its virtual controllers through the usbip-win2 driver from `localhost:3241` and has no
+  detach: the driver drops a device when VIIPER's connection closes. After every SISR stop Arcadia still
+  ends a leftover VIIPER from SISR's folder and runs `usbip detach -p N` for each `usbip port` entry from
+  `usbip://localhost:3241/` (`CleanUpViiperAsync`). Why: on 2026-10-16 Steam hung at "loading user data"
+  after SISR had been killed, and only a Windows restart helped (a stale device was suspected, not proven;
+  `usbip port` was empty after a later kill).
 - SISR's own cleanup on quit opens `steam://forceinputappid/0` (SISR source, `cli/cmd/sisr/sisr.go`),
   which starts a closed Steam. That is why closing Steam (and switching off afterwards) started Steam again
   (owner, 2026-10-16). Unless Steam is ready Arcadia kills SISR instead of quitting it, also while Steam

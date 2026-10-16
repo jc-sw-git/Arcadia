@@ -993,6 +993,13 @@ public sealed class ControllerSupportService(
         }
         finally
         {
+            // A virtual controller left attached without VIIPER behind it is suspected of making
+            // Steam hang at "loading user data" until Windows restarts (owner's PC, 2026-10-16).
+            if (await sisr.CleanUpViiperAsync(CancellationToken.None) is > 0 and var leftovers)
+            {
+                Log?.Invoke($"Nach dem Beenden von SISR {leftovers} übrig gebliebene VIIPER-Prozesse oder -Geräte aufgeräumt");
+            }
+
             SettleAfterStop();
         }
     }

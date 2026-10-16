@@ -168,6 +168,36 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task After_SISR_is_killed_leftover_VIIPER_processes_and_devices_are_cleaned_up_and_logged()
+    {
+        var log = new List<string>();
+        var service = Create();
+        service.Log = log.Add;
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _sisr.ViiperLeftovers = 1;
+        _platform.IsSteamRunning = false;
+        await service.WatchAsync();
+
+        Assert.Equal(1, _sisr.ViiperCleanUps);
+        Assert.Contains(log, line => line.Contains("1 übrig gebliebene VIIPER", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Switching_off_also_cleans_up_VIIPER()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        await service.SetEnabledAsync(false);
+
+        Assert.Equal(1, _sisr.Stops);
+        Assert.Equal(1, _sisr.ViiperCleanUps);
+    }
+
+    [Fact]
     public async Task While_Steam_shuts_down_SISR_is_killed_so_its_cleanup_cannot_restart_Steam()
     {
         var service = Create();
@@ -688,6 +718,19 @@ public sealed class ControllerSupportServiceTests : IDisposable
         public int Starts { get; private set; }
 
         public int Stops { get; private set; }
+
+        public int ViiperCleanUps { get; private set; }
+
+        /// <summary>What the next clean-up finds left over (a VIIPER process or an attached device).</summary>
+        public int ViiperLeftovers { get; set; }
+
+        public Task<int> CleanUpViiperAsync(CancellationToken cancellationToken = default)
+        {
+            ViiperCleanUps++;
+            var found = ViiperLeftovers;
+            ViiperLeftovers = 0;
+            return Task.FromResult(found);
+        }
 
         public bool IsInstalled => Installed;
 

@@ -61,4 +61,23 @@ public class SteamInstallationTests : IDisposable
 
         Assert.Null(new SteamInstallation(_root, activeUserId: 0).UserDataDirectory);
     }
+
+    [Fact]
+    public void Accounts_are_named_after_their_profile_and_the_last_one_comes_first()
+    {
+        CreateAccount(111);
+        CreateAccount(222);
+        CreateAccount(333);
+        Directory.CreateDirectory(Path.Combine(_root, "userdata", "0"));
+        WriteLoginUsers(User(111, "\t\t\"PersonaName\"\t\t\"Zora\"\n")
+                        + User(222, "\t\t\"PersonaName\"\t\t\"Anna\"\n\t\t\"MostRecent\"\t\t\"1\"\n"));
+
+        var accounts = new SteamInstallation(_root, activeUserId: null).Accounts();
+
+        Assert.Equal([new SteamAccount(222, "Anna"), new SteamAccount(333, "333"), new SteamAccount(111, "Zora")], accounts);
+    }
+
+    [Fact]
+    public void Without_userdata_there_are_no_accounts() =>
+        Assert.Empty(new SteamInstallation(_root, activeUserId: null).Accounts());
 }

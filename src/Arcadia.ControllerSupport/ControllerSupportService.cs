@@ -315,8 +315,10 @@ public sealed class ControllerSupportService(
     /// "SISR installieren": closes Steam if it runs (the caller has asked the user), sets Steam's
     /// CEF flag, installs what is missing of SISR and the usbip driver, starts Steam again if it
     /// was closed here, and switches the setting on. On failure the setting stays off.
+    /// <paramref name="markerAccounts"/>: the Steam accounts the user chose for SISR's marker
+    /// (<see cref="MarkerAccountsToChoose"/>); null writes it for the logged-in or last account.
     /// </summary>
-    public Task InstallAsync(CancellationToken cancellationToken = default) =>
+    public Task InstallAsync(IReadOnlyCollection<uint>? markerAccounts = null, CancellationToken cancellationToken = default) =>
         RunBusyAsync("SISR wird eingerichtet …", async () =>
         {
             if (InstallBlocker() is { } blocker)
@@ -371,7 +373,7 @@ public sealed class ControllerSupportService(
 
                 // What SISR's own first-run setup would do, so SISR never shows a window. Steam is
                 // closed here, so its shortcuts can be written.
-                if (!EnsureSisrMarker())
+                if (!EnsureSisrMarker(markerAccounts))
                 {
                     throw new InvalidOperationException("Der Steam-Eintrag „SISR Marker“ konnte nicht angelegt werden: Es wurde kein Steam-Konto gefunden. Melde dich einmal in Steam an und versuche es dann erneut.");
                 }
@@ -448,11 +450,22 @@ public sealed class ControllerSupportService(
         return now - _steamLoginSince.Value;
     }
 
-    private bool EnsureSisrMarker()
+    /// <summary>
+    /// With several Steam accounts on this PC the user chooses which get SISR's marker (owner,
+    /// 2026-10-16): it adds an entry to their Steam library. Empty with one account (it gets the marker
+    /// without asking) or when every account has it.
+    /// </summary>
+    public IReadOnlyList<MarkerAccount> MarkerAccountsToChoose()
+    {
+        var accounts = _platform.SisrMarkerAccounts(sisr.ExecutablePath);
+        return accounts.Count > 1 && accounts.Any(a => !a.HasMarker) ? accounts : [];
+    }
+
+    private bool EnsureSisrMarker(IReadOnlyCollection<uint>? accountIds)
     {
         try
         {
-            return _platform.EnsureSisrMarker(sisr.ExecutablePath);
+            return _platform.EnsureSisrMarker(sisr.ExecutablePath, accountIds);
         }
         catch (FormatException ex)
         {

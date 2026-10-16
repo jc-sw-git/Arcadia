@@ -56,6 +56,35 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
         }
     }
 
+    /// <summary>The userdata folder of one account, whether or not it is logged in.</summary>
+    public string UserDataDirectoryOf(uint accountId) =>
+        Path.Combine(RootPath, "userdata", accountId.ToString(CultureInfo.InvariantCulture));
+
+    /// <summary>
+    /// The accounts that used Steam on this PC: every userdata folder, named after its profile name in
+    /// <c>config/loginusers.vdf</c> (the account id if it isn't there), the one that logged in last first.
+    /// </summary>
+    public IReadOnlyList<SteamAccount> Accounts()
+    {
+        var userData = Path.Combine(RootPath, "userdata");
+        if (!Directory.Exists(userData))
+        {
+            return [];
+        }
+
+        var ids = Directory.GetDirectories(userData)
+            .Select(Path.GetFileName)
+            .Select(name => uint.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : 0)
+            .Where(id => id != 0);
+        var users = LoginUsers();
+        var last = LastLoggedInUserId();
+        return ids
+            .Select(id => new SteamAccount(id, users.TryGetValue(id, out var user) && user.GetString("PersonaName") is { Length: > 0 } name ? name : id.ToString(CultureInfo.InvariantCulture)))
+            .OrderByDescending(a => a.Id == last)
+            .ThenBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
+
     /// <summary>Base of 64-bit Steam ids; the account id is the difference.</summary>
     private const ulong SteamId64Base = 76561197960265728;
 
@@ -66,6 +95,16 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
     /// </summary>
     public uint? LastLoggedInUserId()
     {
+        var last = LoginUsers()
+            .OrderByDescending(u => u.Value.GetString("MostRecent") == "1")
+            .ThenByDescending(u => long.TryParse(u.Value.GetString("timestamp"), NumberStyles.None, CultureInfo.InvariantCulture, out var t) ? t : 0)
+            .FirstOrDefault();
+        return last.Value is null ? null : last.Key;
+    }
+
+    /// <summary>The entries of <c>config/loginusers.vdf</c> by account id; empty if the file is missing or unreadable.</summary>
+    private Dictionary<uint, VdfMap> LoginUsers()
+    {
         VdfMap users;
         try
         {
@@ -73,16 +112,20 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException)
         {
-            return null;
+            return [];
         }
 
-        var last = users
-            .Where(u => u.Value is VdfMap && ulong.TryParse(u.Key, NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > SteamId64Base)
-            .Select(u => (Id: ulong.Parse(u.Key, CultureInfo.InvariantCulture), User: (VdfMap)u.Value))
-            .OrderByDescending(u => u.User.GetString("MostRecent") == "1")
-            .ThenByDescending(u => long.TryParse(u.User.GetString("timestamp"), NumberStyles.None, CultureInfo.InvariantCulture, out var t) ? t : 0)
-            .FirstOrDefault();
-        return last.User is null ? null : (uint)(last.Id - SteamId64Base);
+        var byAccount = new Dictionary<uint, VdfMap>();
+        foreach (var user in users)
+        {
+            if (user.Value is VdfMap map && ulong.TryParse(user.Key, NumberStyles.None, CultureInfo.InvariantCulture, out var id64)
+                && id64 > SteamId64Base && id64 - SteamId64Base <= uint.MaxValue)
+            {
+                byAccount[(uint)(id64 - SteamId64Base)] = map;
+            }
+        }
+
+        return byAccount;
     }
 
     public static bool IsRunning => ProcessWatch.IsRunning("steam");
@@ -162,3 +205,6 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
         }
     }
 }
+
+/// <summary>A Steam account that used Steam on this PC: its Steam3 account id and profile name.</summary>
+public sealed record SteamAccount(uint Id, string Name);

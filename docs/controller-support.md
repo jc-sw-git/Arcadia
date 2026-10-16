@@ -64,9 +64,13 @@ focus handling or anything SISR/usbip related.
   (`SteamLoginGrace`), the settings warn "Steam meldet sich noch an" with "Steam neu starten"; Arcadia
   restarts Steam itself (`RestartSteamAsync`: stop SISR, close Steam, start it, wait 60 s, start SISR),
   also for the CEF fix, because SISR's own restart left SISR on a Steam that was going away.
-- The marker is written for the logged-in account, else the only account, else the most recent one in
-  `config/loginusers.vdf` (`MostRecent`, then `Timestamp`). Without any account "SISR installieren" asks to
-  log in to Steam once.
+- The marker adds an entry to the account's Steam library, so with several accounts (userdata folders) the
+  user chooses (owner, 2026-10-16): "SISR installieren" (and "Anlegen") first asks "Steam-Eintrag für SISR
+  anlegen?" with every account, the last logged-in one first and ticked; cancelling ends the install. With
+  one account it is written without asking. Without a choice it goes to the logged-in account, else the only
+  one, else the most recent one in `config/loginusers.vdf` (`MostRecent`, then `Timestamp`). Without any
+  account "SISR installieren" asks to log in to Steam once. An account without the marker shows "Steam-Eintrag
+  für SISR fehlt" once it is logged in.
 - SISR starts the `viiper.exe` next to it and kills it on quit; killing SISR's process tree takes it along.
   VIIPER attaches its virtual controllers through the usbip-win2 driver from `localhost:3241` and has no
   detach: the driver drops a device when VIIPER's connection closes. After every SISR stop Arcadia still

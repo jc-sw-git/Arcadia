@@ -647,12 +647,13 @@
                 <Border Classes="promptIcon" Classes.warning="{Binding IsWarningPrompt}">
                   <Panel>
                     <TextBlock Text="!" IsVisible="{Binding IsWarningPrompt}" />
-                    <TextBlock Text="?" IsVisible="{Binding IsSteamStopPrompt}" />
+                    <TextBlock Text="?" IsVisible="{Binding IsQuestionPrompt}" />
                   </Panel>
                 </Border>
                 <TextBlock Text="Steam-Spiel läuft" IsVisible="{Binding IsGamePrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                 <TextBlock Text="Steam beenden?" IsVisible="{Binding IsSteamStopPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                 <TextBlock Text="Steam startet nicht" IsVisible="{Binding IsSteamStartFailedPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+                <TextBlock Text="Steam-Eintrag für SISR anlegen?" IsVisible="{Binding IsMarkerPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
               </StackPanel>
 
               <StackPanel Spacing="14" IsVisible="{Binding IsGamePrompt}">
@@ -674,6 +675,33 @@
                 <TextBlock Classes="promptBody" Text="Die Einstellung bleibt deshalb aus. Du kannst es erneut versuchen oder Steam selbst starten." />
               </StackPanel>
 
+              <StackPanel Spacing="14" IsVisible="{Binding IsMarkerPrompt}">
+                <TextBlock Classes="promptBody" Text="SISR braucht in Steam einen Eintrag „SISR Marker“ als Nicht-Steam-Spiel. Er erscheint in der Steam-Bibliothek des Kontos. Ohne ihn lässt sich die Funktion nicht nutzen." />
+                <TextBlock Classes="promptBody" Text="Auf diesem PC gibt es mehrere Steam-Konten. Für welche soll der Eintrag angelegt werden? Mit anderen Konten bleibt die Funktion aus, bis der Eintrag dort angelegt ist." />
+                <ItemsControl ItemsSource="{Binding MarkerAccounts}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MarkerAccountViewModel">
+                      <Button Classes="plain settingRow" Classes.focused="{Binding IsFocused}" Classes.done="{Binding HasMarker}"
+                              Command="{Binding ToggleCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                          <Border Classes="checkbox" Classes.on="{Binding IsChecked}">
+                            <TextBlock Text="✓" IsVisible="{Binding IsChecked}" />
+                          </Border>
+                          <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+                          <TextBlock Classes="hint" Text="bereits eingerichtet" IsVisible="{Binding HasMarker}" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+
+              <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsMarkerPrompt}">
+                <Button Classes="plain action primaryAction" Classes.focused="{Binding ConfirmMarkerAccountsItem.IsFocused}"
+                        Command="{Binding ConfirmMarkerAccountsCommand}" IsEnabled="{Binding CanConfirmMarkerAccounts}" Content="Weiter" />
+                <Button Classes="plain action" Classes.focused="{Binding CancelMarkerAccountsItem.IsFocused}"
+                        Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
+              </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsGamePrompt}">
                 <Button Classes="plain action primaryAction" Classes.focused="{Binding RetryInstallItem.IsFocused}"
                         Command="{Binding RetryInstallCommand}" Content="Erneut versuchen" />

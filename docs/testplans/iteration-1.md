@@ -255,6 +255,11 @@ Mit echtem Steam Controller. Für die Fälle ohne SISR vorher in Arcadia deinsta
       Nicht-Steam-Spiel läuft: der Controller bleibt als Xbox 360 Controller erhalten. · E2E: nein (Standby, echtes Steam)
 - [ ] **T85-18** Steam im Offline-Modus starten, Option an: SISR startet, sobald Steam offline bereit ist (falls
       nicht: Befund notieren, Steam schreibt dann vermutlich kein `Success` ins Login-Log). · E2E: nein (echtes Steam)
+- [ ] **T85-19** PC mit mehreren Steam-Konten, „SISR installieren“: vor „Steam beenden?“ fragt „Steam-Eintrag für
+      SISR anlegen?“ mit allen Konten (zuletzt angemeldetes zuerst und vorausgewählt, Konten mit Eintrag ausgegraut
+      und „bereits eingerichtet“), per D-Pad und A wählbar; „Weiter“ nur mit mindestens einem Haken. Danach steht
+      „SISR Marker“ genau in den gewählten Konten in Steam. „Abbrechen“ oder B bricht die Installation ab, nichts
+      wird installiert. Mit nur einem Konto kommt die Frage nicht. · E2E: ja
 
 Verlauf:
 
@@ -269,6 +274,7 @@ Verlauf:
 | T85-2, T85-5 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Xvfb 1920×1080, `--demo`, Modal per lokalem Eingriff erzwungen (unter Linux ist die Option ausgegraut) | ✅ Beide Modals erscheinen über den abgedunkelten Einstellungen, Fokus nur auf ihren Schaltflächen; per Unit-Test geprüft sind nur die frische Abfrage des Spiels und `ClearError`, der Wechsel des Modals beim Spielende nicht | Echter Ablauf mit Steam-Spiel am PC des Owners |
 | T85-1, T85-3 bis T85-7 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Tests mit Fake-Plattform und Fake-SISR (`ControllerSupportServiceTests`), nicht in der App | ✅ Reihenfolge Steam beenden → CEF → SISR → Treiber → Steam starten → an; Steam-Spiel, Timeout, abgelehnter Treiber und nicht beendbares Steam melden sich und lassen die Option aus | Ansicht und echter Ablauf am PC des Owners |
 | T85-14 bis T85-18 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92` (zweites Review), Linux, Unit-Tests mit Fake-Plattform und Fake-SISR (`ControllerSupportServiceTests`, `SteamLoginLogTests`, `SteamInstallationTests`, `UsbipPortsTests`), nicht in der App | ✅ Hängende Anmeldung stoppt SISR nicht und warnt nach 30 s mit „Steam neu starten“; Neustart über Arcadia; Marker fürs zuletzt angemeldete Konto; VIIPER-Aufräumen nach jedem Stopp; gleichzeitige Einstellungsänderungen gehen nicht verloren | Echter Ablauf und `usbip port`-Format am PC des Owners |
+| T85-19 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Xvfb 1920×1080 `--demo`, Abfrage mit drei erfundenen Konten per lokalem Eingriff erzwungen; Unit-Tests (`ControllerSupportServiceTests`, `SteamInstallationTests`) | ✅ Abfrage, Vorauswahl, „bereits eingerichtet“, D-Pad und A wie beschrieben; Marker nur für gewählte Konten (nur Unit-Test, Schreiben in echte `shortcuts.vdf` mehrerer Konten ungetestet) | Echter Ablauf mit mehreren Konten am PC des Owners |
 
 ## #92 „Steam Controller Support“ verständlich benennen und beschreiben
 

@@ -16,7 +16,30 @@ public partial class SettingsItemViewModel(Action activate) : ViewModelBase
     [ObservableProperty]
     public partial bool IsFocused { get; set; }
 
-    public void Activate() => activate();
+    public virtual void Activate() => activate();
+}
+
+/// <summary>A Steam account in the marker prompt; accounts that already have the marker stay ticked.</summary>
+public sealed partial class MarkerAccountViewModel(MarkerAccount account) : SettingsItemViewModel(static () => { })
+{
+    public uint Id => account.Id;
+
+    public string Name => account.Name;
+
+    public bool HasMarker => account.HasMarker;
+
+    [ObservableProperty]
+    public partial bool IsChecked { get; set; } = account.HasMarker;
+
+    public IRelayCommand ToggleCommand => field ??= new RelayCommand(Activate);
+
+    public override void Activate()
+    {
+        if (!HasMarker)
+        {
+            IsChecked = !IsChecked;
+        }
+    }
 }
 
 /// <summary>A question over the settings that has to be answered before "SISR installieren" can go on.</summary>
@@ -32,6 +55,9 @@ public enum SettingsPrompt
 
     /// <summary>Switching on started Steam, but it wasn't up within a minute; the setting is off again.</summary>
     SteamStartFailed,
+
+    /// <summary>Several Steam accounts: which of them get SISR's marker in their Steam library.</summary>
+    ChooseMarkerAccounts,
 }
 
 /// <summary>A problem found by the controller-support monitoring, with an optional fix button.</summary>
@@ -77,6 +103,11 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly SettingsItemViewModel _cancelSteamStop;
     private readonly SettingsItemViewModel _retrySteamStart;
     private readonly SettingsItemViewModel _cancelSteamStart;
+    private readonly SettingsItemViewModel _confirmMarkerAccounts;
+    private readonly SettingsItemViewModel _cancelMarkerAccounts;
+
+    /// <summary>The accounts chosen in the marker prompt for the install under way; null until chosen (or not asked).</summary>
+    private IReadOnlyCollection<uint>? _markerChoice;
     private readonly DispatcherTimer _promptCheck;
     private bool _disposed;
     private readonly SettingsItemViewModel _update;
@@ -91,16 +122,19 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _support = support;
         _updates = updates;
         _toggle = new SettingsItemViewModel(ActivateMainRow);
-        _retryInstall = new SettingsItemViewModel(BeginInstall);
+        _retryInstall = new SettingsItemViewModel(ContinueInstall);
         _closeGamePrompt = new SettingsItemViewModel(ClosePrompt);
         _confirmSteamStop = new SettingsItemViewModel(ConfirmSteamStop);
         _cancelSteamStop = new SettingsItemViewModel(ClosePrompt);
         _retrySteamStart = new SettingsItemViewModel(SwitchOn);
         _cancelSteamStart = new SettingsItemViewModel(ClosePrompt);
+        _confirmMarkerAccounts = new SettingsItemViewModel(ConfirmMarkerAccounts);
+        _cancelMarkerAccounts = new SettingsItemViewModel(ClosePrompt);
         _update = new SettingsItemViewModel(() => _support.InstallUpdateAsync().Forget("SISR aktualisieren"));
         _arcadiaUpdate = new SettingsItemViewModel(() => installArcadiaUpdate().Forget("Arcadia aktualisieren"));
         ToggleCommand = new RelayCommand(ActivateMainRow);
-        RetryInstallCommand = new RelayCommand(BeginInstall);
+        RetryInstallCommand = new RelayCommand(ContinueInstall);
+        ConfirmMarkerAccountsCommand = new RelayCommand(ConfirmMarkerAccounts);
         RetrySteamStartCommand = new RelayCommand(SwitchOn);
         ConfirmSteamStopCommand = new RelayCommand(ConfirmSteamStop);
         ClosePromptCommand = new RelayCommand(ClosePrompt);
@@ -146,6 +180,19 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public SettingsItemViewModel CancelSteamStartItem => _cancelSteamStart;
 
+    public SettingsItemViewModel ConfirmMarkerAccountsItem => _confirmMarkerAccounts;
+
+    public SettingsItemViewModel CancelMarkerAccountsItem => _cancelMarkerAccounts;
+
+    public IRelayCommand ConfirmMarkerAccountsCommand { get; }
+
+    /// <summary>The Steam accounts in the marker prompt.</summary>
+    public ObservableCollection<MarkerAccountViewModel> MarkerAccounts { get; } = [];
+
+    /// <summary>"Weiter" in the marker prompt needs at least one account ticked.</summary>
+    [ObservableProperty]
+    public partial bool CanConfirmMarkerAccounts { get; private set; }
+
     public IRelayCommand RetryInstallCommand { get; }
 
     public IRelayCommand RetrySteamStartCommand { get; }
@@ -172,7 +219,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     /// <summary>The modal over the settings, if any.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsPromptOpen), nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsSteamStartFailedPrompt), nameof(IsWarningPrompt), nameof(PromptBackText))]
+    [NotifyPropertyChangedFor(nameof(IsPromptOpen), nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsSteamStartFailedPrompt), nameof(IsMarkerPrompt), nameof(IsQuestionPrompt), nameof(IsWarningPrompt), nameof(PromptBackText))]
     public partial SettingsPrompt Prompt { get; private set; }
 
     public bool IsPromptOpen => Prompt != SettingsPrompt.None;
@@ -183,11 +230,16 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public bool IsSteamStartFailedPrompt => Prompt == SettingsPrompt.SteamStartFailed;
 
+    public bool IsMarkerPrompt => Prompt == SettingsPrompt.ChooseMarkerAccounts;
+
+    /// <summary>The prompt asks a question ("?").</summary>
+    public bool IsQuestionPrompt => Prompt is SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ChooseMarkerAccounts;
+
     /// <summary>The prompt reports a problem ("!") rather than asking ("?").</summary>
     public bool IsWarningPrompt => Prompt is SettingsPrompt.SteamGameRunning or SettingsPrompt.SteamStartFailed;
 
     /// <summary>The prompts that "SISR installieren" opens; they end when the install becomes moot.</summary>
-    private bool IsInstallPrompt => Prompt is SettingsPrompt.SteamGameRunning or SettingsPrompt.ConfirmSteamStop;
+    private bool IsInstallPrompt => Prompt is SettingsPrompt.SteamGameRunning or SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ChooseMarkerAccounts;
 
     public string PromptBackText => IsGamePrompt ? "Schließen" : "Abbrechen";
 
@@ -354,16 +406,27 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>
-    /// Installing closes Steam, so it can't run beside a Steam game, and the user is asked before
-    /// Steam closes. Without Steam running it just installs. Also "Erneut versuchen".
-    /// </summary>
     private void BeginInstall()
+    {
+        _markerChoice = null;
+        ContinueInstall();
+    }
+
+    /// <summary>
+    /// Installing closes Steam, so it can't run beside a Steam game. With several Steam accounts the
+    /// user chooses who gets SISR's marker, and is asked before Steam closes. Without Steam running it
+    /// just installs. Also "Erneut versuchen".
+    /// </summary>
+    private void ContinueInstall()
     {
         if (_support.SteamGameBlockingInstall() is { } game)
         {
             RunningGame = game;
             ShowPrompt(SettingsPrompt.SteamGameRunning);
+        }
+        else if (_markerChoice is null && _support.MarkerAccountsToChoose() is { Count: > 0 } accounts)
+        {
+            ShowMarkerPrompt(accounts);
         }
         else if (_support.InstallStopsSteam)
         {
@@ -371,9 +434,49 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
         else
         {
-            ShowPrompt(SettingsPrompt.None);
-            _support.InstallAsync().Forget("SISR installieren");
+            Install();
         }
+    }
+
+    private void Install()
+    {
+        ShowPrompt(SettingsPrompt.None);
+        _support.InstallAsync(_markerChoice).Forget("SISR installieren");
+    }
+
+    private void ShowMarkerPrompt(IReadOnlyList<MarkerAccount> accounts)
+    {
+        foreach (var item in MarkerAccounts)
+        {
+            item.PropertyChanged -= OnMarkerAccountChanged;
+        }
+
+        MarkerAccounts.Clear();
+        foreach (var account in accounts)
+        {
+            var item = new MarkerAccountViewModel(account);
+            item.PropertyChanged += OnMarkerAccountChanged;
+            MarkerAccounts.Add(item);
+        }
+
+        // The account that logged in last (listed first) is the likely one to play with.
+        MarkerAccounts[0].IsChecked = true;
+        CanConfirmMarkerAccounts = true;
+        ShowPrompt(SettingsPrompt.ChooseMarkerAccounts);
+    }
+
+    private void OnMarkerAccountChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
+        CanConfirmMarkerAccounts = MarkerAccounts.Any(a => a.IsChecked);
+
+    private void ConfirmMarkerAccounts()
+    {
+        if (!CanConfirmMarkerAccounts)
+        {
+            return;
+        }
+
+        _markerChoice = MarkerAccounts.Where(a => a.IsChecked && !a.HasMarker).Select(a => a.Id).ToList();
+        ContinueInstall();
     }
 
     /// <summary>Switching on starts Steam first; if Steam doesn't come up, the setting is off again and a prompt says so.</summary>
@@ -415,12 +518,11 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         // A game may have started since the question came up.
         if (_support.SteamGameBlockingInstall() is not null)
         {
-            BeginInstall();
+            ContinueInstall();
             return;
         }
 
-        ShowPrompt(SettingsPrompt.None);
-        _support.InstallAsync().Forget("SISR installieren");
+        Install();
     }
 
     private void ClosePrompt() => ShowPrompt(SettingsPrompt.None);
@@ -452,10 +554,13 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             case SettingsPrompt.SteamGameRunning when game is not null:
                 RunningGame = game;
                 break;
+            case SettingsPrompt.SteamGameRunning when _markerChoice is null && _support.MarkerAccountsToChoose() is { Count: > 0 } accounts:
+                ShowMarkerPrompt(accounts);
+                break;
             case SettingsPrompt.SteamGameRunning:
                 ShowPrompt(_support.InstallStopsSteam ? SettingsPrompt.ConfirmSteamStop : SettingsPrompt.None);
                 break;
-            case SettingsPrompt.ConfirmSteamStop when game is not null:
+            case SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ChooseMarkerAccounts when game is not null:
                 RunningGame = game;
                 ShowPrompt(SettingsPrompt.SteamGameRunning);
                 break;
@@ -551,7 +656,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         // Keep the controller focus on the same item where possible. All items lose it first, so
         // the row behind an open prompt doesn't keep its ring.
-        foreach (var item in new[] { _toggle, _update, _checkUpdates, _arcadiaUpdate, _retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop, _retrySteamStart, _cancelSteamStart })
+        foreach (var item in new[] { _toggle, _update, _checkUpdates, _arcadiaUpdate, _retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop, _retrySteamStart, _cancelSteamStart, _confirmMarkerAccounts, _cancelMarkerAccounts }.Concat(MarkerAccounts))
         {
             item.IsFocused = false;
         }
@@ -575,6 +680,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
                 return [_confirmSteamStop, _cancelSteamStop];
             case SettingsPrompt.SteamStartFailed:
                 return [_retrySteamStart, _cancelSteamStart];
+            case SettingsPrompt.ChooseMarkerAccounts:
+                return [.. MarkerAccounts.Where(a => !a.HasMarker), _confirmMarkerAccounts, _cancelMarkerAccounts];
         }
 
         var items = new List<SettingsItemViewModel> { _toggle };
@@ -599,7 +706,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     private bool IsPromptItem(SettingsItemViewModel? item) =>
         item == _retryInstall || item == _closeGamePrompt || item == _confirmSteamStop || item == _cancelSteamStop
-        || item == _retrySteamStart || item == _cancelSteamStart;
+        || item == _retrySteamStart || item == _cancelSteamStart || item == _confirmMarkerAccounts || item == _cancelMarkerAccounts
+        || item is MarkerAccountViewModel;
 
     private void MoveFocus(int delta)
     {

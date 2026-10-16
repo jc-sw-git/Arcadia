@@ -34,10 +34,14 @@ public interface IControllerSupportPlatform
 
     /// <summary>
     /// Adds SISR's marker shortcut ("SISR Marker", <c>--marker</c>) to Steam unless it is there, as
-    /// SISR's own setup would. Only while Steam is closed (Steam overwrites the file on exit);
+    /// SISR's own setup would: for the given accounts, or without them for the logged-in one (else the
+    /// only or the last one). Only while Steam is closed (Steam overwrites the file on exit);
     /// false if Steam runs or no Steam account could be found.
     /// </summary>
-    bool EnsureSisrMarker(string sisrExecutable);
+    bool EnsureSisrMarker(string sisrExecutable, IReadOnlyCollection<uint>? accountIds = null);
+
+    /// <summary>The Steam accounts on this PC and whether each has SISR's marker, the last logged-in one first.</summary>
+    IReadOnlyList<MarkerAccount> SisrMarkerAccounts(string sisrExecutable);
 
     /// <summary>
     /// SISR's marker shortcut is in Steam. SISR reads it only when it starts and asks to add one if
@@ -97,28 +101,54 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _lastMarkerAnswer = new(StringComparer.OrdinalIgnoreCase);
 
-    public bool EnsureSisrMarker(string sisrExecutable)
+    public bool EnsureSisrMarker(string sisrExecutable, IReadOnlyCollection<uint>? accountIds = null)
     {
-        if (SteamInstallation.IsRunning || SteamInstallation.Find()?.ShortcutsPath is not { } shortcuts)
+        if (SteamInstallation.IsRunning || SteamInstallation.Find() is not { } steam)
         {
             return false;
         }
 
-        if (!ContainsMarker(shortcuts, sisrExecutable))
+        IEnumerable<string> userDataDirectories = accountIds is null
+            ? steam.UserDataDirectory is { } current ? [current] : []
+            : steam.Accounts().Where(a => accountIds.Contains(a.Id)).Select(a => steam.UserDataDirectoryOf(a.Id)).ToList();
+        if (accountIds is null && !userDataDirectories.Any())
         {
-            SteamShortcuts.Add(shortcuts, "SISR Marker", sisrExecutable, "--marker");
+            return false;
+        }
+
+        foreach (var userData in userDataDirectories)
+        {
+            var shortcuts = ShortcutsPathIn(userData);
+            if (!ContainsMarker(shortcuts, sisrExecutable))
+            {
+                // A new account may have no config folder yet.
+                Directory.CreateDirectory(Path.GetDirectoryName(shortcuts)!);
+                SteamShortcuts.Add(shortcuts, "SISR Marker", sisrExecutable, "--marker");
+            }
         }
 
         return true;
     }
 
-    public bool HasSisrMarker(string sisrExecutable)
+    public IReadOnlyList<MarkerAccount> SisrMarkerAccounts(string sisrExecutable)
     {
-        if (SteamInstallation.Find()?.ShortcutsPath is not { } shortcuts)
+        if (SteamInstallation.Find() is not { } steam)
         {
-            return false;
+            return [];
         }
 
+        return steam.Accounts()
+            .Select(a => new MarkerAccount(a.Id, a.Name, HasMarkerIn(ShortcutsPathIn(steam.UserDataDirectoryOf(a.Id)), sisrExecutable)))
+            .ToList();
+    }
+
+    private static string ShortcutsPathIn(string userDataDirectory) => Path.Combine(userDataDirectory, "config", "shortcuts.vdf");
+
+    public bool HasSisrMarker(string sisrExecutable) =>
+        SteamInstallation.Find()?.ShortcutsPath is { } shortcuts && HasMarkerIn(shortcuts, sisrExecutable);
+
+    private bool HasMarkerIn(string shortcuts, string sisrExecutable)
+    {
         try
         {
             return _lastMarkerAnswer[shortcuts] = ContainsMarker(shortcuts, sisrExecutable);
@@ -202,3 +232,6 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     private static DateTimeOffset LastBootTime(DateTimeOffset now) => now - TimeSpan.FromMilliseconds(Environment.TickCount64);
 }
+
+/// <summary>A Steam account on this PC and whether SISR's marker shortcut is in its Steam library.</summary>
+public sealed record MarkerAccount(uint Id, string Name, bool HasMarker);

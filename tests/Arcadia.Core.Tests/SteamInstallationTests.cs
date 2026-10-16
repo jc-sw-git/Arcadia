@@ -74,7 +74,20 @@ public class SteamInstallationTests : IDisposable
 
         var accounts = new SteamInstallation(_root, activeUserId: null).Accounts();
 
-        Assert.Equal([new SteamAccount(222, "Anna"), new SteamAccount(333, "333"), new SteamAccount(111, "Zora")], accounts);
+        // 333 was removed from Steam's login list; its folder stays but it can't log in any more.
+        Assert.Equal([new SteamAccount(222, "Anna"), new SteamAccount(111, "Zora")], accounts);
+    }
+
+    [Fact]
+    public void Without_a_login_list_the_userdata_folders_are_the_accounts()
+    {
+        CreateAccount(111);
+        CreateAccount(222);
+        Directory.CreateDirectory(Path.Combine(_root, "userdata", "0"));
+
+        var accounts = new SteamInstallation(_root, activeUserId: null).Accounts();
+
+        Assert.Equal([new SteamAccount(111, "111"), new SteamAccount(222, "222")], accounts);
     }
 
     [Fact]

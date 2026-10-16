@@ -786,7 +786,38 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         Assert.False(service.Enabled);
         Assert.Contains("Steam-Konto", service.LastError);
-        Assert.Equal(1, _platform.SteamStarts);
+        // Found out before Steam closes or the driver installs.
+        Assert.Equal(0, _platform.SteamStops);
+        Assert.Equal(0, _platform.UsbipInstalls);
+    }
+
+    [Fact]
+    public async Task A_marker_only_for_another_account_leaves_SISR_off_and_offers_to_add_it()
+    {
+        var service = Create(enabled: false);
+        _platform.MarkerPresent = false;
+        _platform.Accounts.Add(new MarkerAccount(111, "Anna", HasMarker: false));
+        _platform.Accounts.Add(new MarkerAccount(222, "Ben", HasMarker: false));
+
+        await service.InstallAsync(markerAccounts: [222]);
+        await service.RefreshAsync();
+
+        Assert.True(service.Enabled);
+        Assert.Equal(0, _sisr.Starts);
+        Assert.Contains(service.Issues, i => i.Fix == HealthFix.CreateMarker);
+    }
+
+    [Fact]
+    public async Task With_several_accounts_that_all_have_the_marker_the_install_writes_none()
+    {
+        var service = Create(enabled: false);
+        _platform.Accounts.Add(new MarkerAccount(111, "Anna", HasMarker: true));
+        _platform.Accounts.Add(new MarkerAccount(222, "Ben", HasMarker: true));
+
+        await service.InstallAsync();
+
+        Assert.True(service.Enabled);
+        Assert.Equal([], _platform.MarkerWrittenFor);
     }
 
     [Fact]
@@ -1129,7 +1160,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         /// <summary>No Steam account is known (never logged in), so the marker can't be written.</summary>
         public bool NoSteamAccount { get; set; }
 
-        /// <summary>The Steam accounts on this PC; empty stands for one account (the default path).</summary>
+        /// <summary>The Steam accounts on this PC, the logged-in one first; empty stands for one account whose marker is <see cref="MarkerPresent"/>.</summary>
         public List<MarkerAccount> Accounts { get; } = [];
 
         /// <summary>The accounts passed to the last <see cref="EnsureSisrMarker"/>; null when none were chosen.</summary>
@@ -1140,23 +1171,27 @@ public sealed class ControllerSupportServiceTests : IDisposable
         {
             MarkerChecks++;
             var written = !IsSteamRunning && !NoSteamAccount;
-            if (written)
+            if (!written)
             {
-                MarkerWrittenFor = accountIds;
-                for (var i = 0; i < Accounts.Count; i++)
+                return false;
+            }
+
+            MarkerWrittenFor = accountIds;
+            for (var i = 0; i < Accounts.Count; i++)
+            {
+                if (accountIds?.Contains(Accounts[i].Id) == true)
                 {
-                    if (accountIds?.Contains(Accounts[i].Id) == true)
-                    {
-                        Accounts[i] = Accounts[i] with { HasMarker = true };
-                    }
+                    Accounts[i] = Accounts[i] with { HasMarker = true };
                 }
             }
 
-            MarkerPresent |= written;
-            return written;
+            // SISR reads the marker of the logged-in account, the first one here.
+            MarkerPresent |= accountIds is null || (Accounts.Count > 0 && accountIds.Contains(Accounts[0].Id));
+            return true;
         }
 
-        public IReadOnlyList<MarkerAccount> SisrMarkerAccounts(string sisrExecutable) => Accounts.ToList();
+        public IReadOnlyList<MarkerAccount> SisrMarkerAccounts(string sisrExecutable) =>
+            NoSteamAccount ? [] : Accounts.Count > 0 ? Accounts.ToList() : [new MarkerAccount(1, "Anna", MarkerPresent)];
 
         public bool AnyRunningFrom(string directory)
         {

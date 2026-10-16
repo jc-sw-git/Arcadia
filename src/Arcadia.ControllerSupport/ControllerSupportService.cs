@@ -326,6 +326,16 @@ public sealed class ControllerSupportService(
                 throw new InvalidOperationException(blocker);
             }
 
+            // Checked before Steam closes and the driver installs, not only when the marker is written.
+            var accounts = _platform.SisrMarkerAccounts(sisr.ExecutablePath);
+            if (accounts.Count == 0)
+            {
+                throw new InvalidOperationException(NoSteamAccountMessage);
+            }
+
+            // One account gets the marker without asking; with several that all have it, nothing is written.
+            markerAccounts ??= accounts.Count > 1 && accounts.All(a => a.HasMarker) ? [] : null;
+
             var stoppedSteam = false;
             try
             {
@@ -375,7 +385,9 @@ public sealed class ControllerSupportService(
                 // closed here, so its shortcuts can be written.
                 if (!EnsureSisrMarker(markerAccounts))
                 {
-                    throw new InvalidOperationException("Der Steam-Eintrag „SISR Marker“ konnte nicht angelegt werden: Es wurde kein Steam-Konto gefunden. Melde dich einmal in Steam an und versuche es dann erneut.");
+                    throw new InvalidOperationException(_platform.IsSteamRunning
+                        ? "Der Steam-Eintrag „SISR Marker“ konnte nicht angelegt werden, weil Steam während der Einrichtung wieder gestartet wurde. Beende Steam und versuche es erneut."
+                        : NoSteamAccountMessage);
                 }
 
                 Log?.Invoke("Steam-Eintrag „SISR Marker“ vorhanden");
@@ -449,6 +461,9 @@ public sealed class ControllerSupportService(
         _steamLoginSince ??= now;
         return now - _steamLoginSince.Value;
     }
+
+    private const string NoSteamAccountMessage =
+        "Der Steam-Eintrag „SISR Marker“ kann nicht angelegt werden: Es wurde kein Steam-Konto gefunden. Melde dich einmal in Steam an und versuche es dann erneut.";
 
     /// <summary>
     /// With several Steam accounts on this PC the user chooses which get SISR's marker (owner,

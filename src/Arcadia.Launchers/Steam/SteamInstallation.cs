@@ -61,28 +61,31 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
         Path.Combine(RootPath, "userdata", accountId.ToString(CultureInfo.InvariantCulture));
 
     /// <summary>
-    /// The accounts that used Steam on this PC: every userdata folder, named after its profile name in
-    /// <c>config/loginusers.vdf</c> (the account id if it isn't there), the one that logged in last first.
+    /// The accounts that can log in to Steam on this PC, from <c>config/loginusers.vdf</c> and named after
+    /// their profile, the one that logged in last first. Accounts removed from Steam's login list keep their
+    /// userdata folder, so the folders count (named by id) only while that file is missing or unreadable.
     /// </summary>
     public IReadOnlyList<SteamAccount> Accounts()
     {
-        var userData = Path.Combine(RootPath, "userdata");
-        if (!Directory.Exists(userData))
-        {
-            return [];
-        }
-
-        var ids = Directory.GetDirectories(userData)
-            .Select(Path.GetFileName)
-            .Select(name => uint.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : 0)
-            .Where(id => id != 0);
         var users = LoginUsers();
+        IEnumerable<SteamAccount> accounts = users.Count > 0
+            ? users.Select(u => new SteamAccount(u.Key, u.Value.GetString("PersonaName") is { Length: > 0 } name ? name : u.Key.ToString(CultureInfo.InvariantCulture)))
+            : UserDataAccountIds().Select(id => new SteamAccount(id, id.ToString(CultureInfo.InvariantCulture)));
         var last = LastLoggedInUserId();
-        return ids
-            .Select(id => new SteamAccount(id, users.TryGetValue(id, out var user) && user.GetString("PersonaName") is { Length: > 0 } name ? name : id.ToString(CultureInfo.InvariantCulture)))
+        return accounts
             .OrderByDescending(a => a.Id == last)
             .ThenBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+    }
+
+    private IEnumerable<uint> UserDataAccountIds()
+    {
+        var userData = Path.Combine(RootPath, "userdata");
+        return Directory.Exists(userData)
+            ? Directory.GetDirectories(userData)
+                .Select(dir => uint.TryParse(Path.GetFileName(dir), NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : 0)
+                .Where(id => id != 0)
+            : [];
     }
 
     /// <summary>Base of 64-bit Steam ids; the account id is the difference.</summary>

@@ -66,10 +66,11 @@ focus handling or anything SISR/usbip related.
   also for the CEF fix, because SISR's own restart left SISR on a Steam that was going away.
 - The marker adds an entry to the account's Steam library, so with several accounts (userdata folders) the
   user chooses (owner, 2026-10-16): "SISR installieren" (and "Anlegen") first asks "Steam-Eintrag für SISR
-  anlegen?" with every account, the last logged-in one first and ticked; cancelling ends the install. With
+  anlegen?" with every account in `config/loginusers.vdf` (userdata folders only without that file: removed
+  accounts keep theirs), the last logged-in one first and ticked; cancelling ends the install. With
   one account it is written without asking. Without a choice it goes to the logged-in account, else the only
   one, else the most recent one in `config/loginusers.vdf` (`MostRecent`, then `Timestamp`). Without any
-  account "SISR installieren" asks to log in to Steam once. An account without the marker shows "Steam-Eintrag
+  account "SISR installieren" asks to log in to Steam once, before it closes Steam or installs anything. An account without the marker shows "Steam-Eintrag
   für SISR fehlt" once it is logged in.
 - SISR starts the `viiper.exe` next to it and kills it on quit; killing SISR's process tree takes it along.
   VIIPER attaches its virtual controllers through the usbip-win2 driver from `localhost:3241` and has no
@@ -93,6 +94,7 @@ focus handling or anything SISR/usbip related.
   closed. A missing marker counts as not set up ("SISR installieren", or "Anlegen" when on, both through
   the same prompts). Switching on starts Steam and waits up to 60 s (`SteamStartTimeout`); if
   Steam doesn't come up the setting is off again and the settings show "Steam startet nicht" with
-  "Erneut versuchen". Arcadia still doesn't start Steam on its own when it starts with the option on.
+  "Erneut versuchen"; if Steam runs but never finished its login, "Steam meldet sich nicht an" with "Steam
+  neu starten", which switches on after the restart. Arcadia still doesn't start Steam on its own when it starts with the option on.
 - SISR's WebView2 data lands in `%APPDATA%\SISR.exe`, VIIPER's key file in `%APPDATA%\VIIPER`; neither goes
   with SISR's own uninstaller (seen 2026-10-16). `ControllerSupportRemoval.DataDirectories` removes both.

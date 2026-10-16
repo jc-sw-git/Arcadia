@@ -126,7 +126,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _closeGamePrompt = new SettingsItemViewModel(ClosePrompt);
         _confirmSteamStop = new SettingsItemViewModel(ConfirmSteamStop);
         _cancelSteamStop = new SettingsItemViewModel(ClosePrompt);
-        _retrySteamStart = new SettingsItemViewModel(SwitchOn);
+        _retrySteamStart = new SettingsItemViewModel(RetrySteamStart);
         _cancelSteamStart = new SettingsItemViewModel(ClosePrompt);
         _confirmMarkerAccounts = new SettingsItemViewModel(ConfirmMarkerAccounts);
         _cancelMarkerAccounts = new SettingsItemViewModel(ClosePrompt);
@@ -135,7 +135,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         ToggleCommand = new RelayCommand(ActivateMainRow);
         RetryInstallCommand = new RelayCommand(ContinueInstall);
         ConfirmMarkerAccountsCommand = new RelayCommand(ConfirmMarkerAccounts);
-        RetrySteamStartCommand = new RelayCommand(SwitchOn);
+        RetrySteamStartCommand = new RelayCommand(RetrySteamStart);
         ConfirmSteamStopCommand = new RelayCommand(ConfirmSteamStop);
         ClosePromptCommand = new RelayCommand(ClosePrompt);
 
@@ -498,7 +498,46 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private void ShowSteamStartFailure()
     {
         _support.AcknowledgeSteamStartFailure();
+        SteamLoginHangs = _support.InstallStopsSteam;
         ShowPrompt(SettingsPrompt.SteamStartFailed);
+    }
+
+    /// <summary>Steam runs but never finished logging in: restarting it helps, waiting again doesn't.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SteamStartFailedTitle), nameof(SteamStartFailedText), nameof(SteamStartFailedHint), nameof(SteamStartFailedAction))]
+    public partial bool SteamLoginHangs { get; private set; }
+
+    public string SteamStartFailedTitle => SteamLoginHangs ? "Steam meldet sich nicht an" : "Steam startet nicht";
+
+    public string SteamStartFailedText => SteamLoginHangs
+        ? "Steam läuft, hat sich aber nicht innerhalb von einer Minute fertig angemeldet. Erst danach kann SISR den Steam Controller als Xbox 360 Gamepad weiterreichen."
+        : "Steam konnte nicht innerhalb von einer Minute gestartet werden. Ohne Steam kann SISR den Steam Controller nicht als Xbox 360 Gamepad weiterreichen.";
+
+    public string SteamStartFailedHint => SteamLoginHangs
+        ? "Die Einstellung bleibt deshalb aus. Ein Neustart von Steam hilft meist; danach wird sie eingeschaltet."
+        : "Die Einstellung bleibt deshalb aus. Du kannst es erneut versuchen oder Steam selbst starten.";
+
+    public string SteamStartFailedAction => SteamLoginHangs ? "Steam neu starten" : "Erneut versuchen";
+
+    private void RetrySteamStart()
+    {
+        if (!SteamLoginHangs)
+        {
+            SwitchOn();
+            return;
+        }
+
+        ShowPrompt(SettingsPrompt.None);
+        RestartSteamAndSwitchOnAsync().Forget("Steam neu starten");
+    }
+
+    private async Task RestartSteamAndSwitchOnAsync()
+    {
+        await _support.ApplyFixAsync(HealthFix.RestartSteam);
+        if (_support.LastError is null)
+        {
+            await SwitchOnAsync();
+        }
     }
 
     /// <summary>The marker can only be written while Steam is closed, so it goes through the install prompts.</summary>
@@ -569,7 +608,18 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         return Task.CompletedTask;
     }
 
-    private void OnSupportChanged(object? sender, EventArgs e) => Avalonia.Threading.Dispatcher.UIThread.Post(Refresh);
+    private void OnSupportChanged(object? sender, EventArgs e) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+    {
+        // A start that failed while the dialog was closed and opened again shows here, not one opening late.
+        if (_support.UnseenSteamStartFailure && !IsPromptOpen && !_disposed)
+        {
+            ShowSteamStartFailure();
+        }
+        else
+        {
+            Refresh();
+        }
+    });
 
     private void Refresh()
     {

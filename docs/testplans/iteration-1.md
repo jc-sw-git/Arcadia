@@ -246,9 +246,10 @@ Mit echtem Steam Controller. Für die Fälle ohne SISR vorher in Arcadia deinsta
 - [ ] **T85-14** Solange Steam, SISR oder VIIPER starten oder beenden (auch von selbst, z. B. nach dem
       Beenden von Steam), zeigt die Einstellung einen Spinner und reagiert nur auf B; der Schalter lässt sich
       erst danach umlegen. Hängt Steam beim Anmelden, bleibt der Schalter bedienbar. · E2E: ja (Fake-Plattform)
-- [ ] **T85-15** Mit zwei Steam-Konten auf dem PC (eins davon zuletzt angemeldet): „SISR installieren“
-      legt den „SISR Marker“ im zuletzt angemeldeten Konto an, die Option geht an und SISR startet; kein
-      wiederholtes „Anlegen“. Ohne je angemeldetes Konto: verständliche Meldung, die Option bleibt aus. · E2E: ja (Fake-Plattform, Konto-Auswahl per Unit-Test)
+- [ ] **T85-15** Mit einem Steam-Konto: „SISR installieren“ legt den „SISR Marker“ ohne Frage an, die Option
+      geht an und SISR startet; kein wiederholtes „Anlegen“. Ohne je angemeldetes Konto: die Meldung „kein
+      Steam-Konto gefunden“ kommt sofort, Steam wird nicht beendet, nichts wird installiert, die Option bleibt aus.
+      Mehrere Konten: T85-19. · E2E: ja (Fake-Plattform)
 - [ ] **T85-16** Hängt Steam länger als 30 Sekunden bei „Nutzerdaten werden geladen“: die Einstellungen zeigen
       „Steam meldet sich noch an“ mit „Steam neu starten“; ein laufendes SISR wird dabei nicht beendet. · E2E: ja (Fake-Plattform)
 - [ ] **T85-17** Option an, SISR läuft, Standby und wieder aufwachen bzw. kurz das Netzwerk trennen, während ein
@@ -257,9 +258,16 @@ Mit echtem Steam Controller. Für die Fälle ohne SISR vorher in Arcadia deinsta
       nicht: Befund notieren, Steam schreibt dann vermutlich kein `Success` ins Login-Log). · E2E: nein (echtes Steam)
 - [ ] **T85-19** PC mit mehreren Steam-Konten, „SISR installieren“: vor „Steam beenden?“ fragt „Steam-Eintrag für
       SISR anlegen?“ mit allen Konten (zuletzt angemeldetes zuerst und vorausgewählt, Konten mit Eintrag ausgegraut
-      und „bereits eingerichtet“), per D-Pad und A wählbar; „Weiter“ nur mit mindestens einem Haken. Danach steht
-      „SISR Marker“ genau in den gewählten Konten in Steam. „Abbrechen“ oder B bricht die Installation ab, nichts
-      wird installiert. Mit nur einem Konto kommt die Frage nicht. · E2E: ja
+      und „bereits eingerichtet“), per D-Pad und A wählbar; „Weiter“ nur mit mindestens einem Haken (eingerichtete
+      Konten zählen mit: wählt man dann nichts Neues, wird kein Eintrag geschrieben). Danach steht „SISR Marker“
+      genau in den gewählten Konten in Steam. Ist das angemeldete Konto nicht dabei, startet SISR nicht und die
+      Einstellungen zeigen „Steam-Eintrag für SISR fehlt“ mit „Anlegen“. „Abbrechen“ oder B bricht die
+      Installation ab, nichts wird installiert. Nur Konten aus Steams Anmeldeliste erscheinen. Mit nur einem Konto
+      kommt die Frage nicht. · E2E: ja
+- [ ] **T85-20** Option einschalten, während Steam beim Anmelden hängt: nach einer Minute „Steam meldet sich nicht
+      an“ mit „Steam neu starten“ (statt „Steam startet nicht“); der Neustart schaltet die Option danach ein. Die
+      Einstellungen während der Minute schließen und wieder öffnen: die Meldung erscheint, sobald der Start
+      scheitert, nicht erst beim nächsten Öffnen. · E2E: nein (echtes Steam, hängende Anmeldung)
 
 Verlauf:
 
@@ -275,6 +283,7 @@ Verlauf:
 | T85-1, T85-3 bis T85-7 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Tests mit Fake-Plattform und Fake-SISR (`ControllerSupportServiceTests`), nicht in der App | ✅ Reihenfolge Steam beenden → CEF → SISR → Treiber → Steam starten → an; Steam-Spiel, Timeout, abgelehnter Treiber und nicht beendbares Steam melden sich und lassen die Option aus | Ansicht und echter Ablauf am PC des Owners |
 | T85-14 bis T85-18 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92` (zweites Review), Linux, Unit-Tests mit Fake-Plattform und Fake-SISR (`ControllerSupportServiceTests`, `SteamLoginLogTests`, `SteamInstallationTests`, `UsbipPortsTests`), nicht in der App | ✅ Hängende Anmeldung stoppt SISR nicht und warnt nach 30 s mit „Steam neu starten“; Neustart über Arcadia; Marker fürs zuletzt angemeldete Konto; VIIPER-Aufräumen nach jedem Stopp; gleichzeitige Einstellungsänderungen gehen nicht verloren | Echter Ablauf und `usbip port`-Format am PC des Owners |
 | T85-19 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Xvfb 1920×1080 `--demo`, Abfrage mit drei erfundenen Konten per lokalem Eingriff erzwungen; Unit-Tests (`ControllerSupportServiceTests`, `SteamInstallationTests`) | ✅ Abfrage, Vorauswahl, „bereits eingerichtet“, D-Pad und A wie beschrieben; Marker nur für gewählte Konten (nur Unit-Test, Schreiben in echte `shortcuts.vdf` mehrerer Konten ungetestet) | Echter Ablauf mit mehreren Konten am PC des Owners |
+| T85-15, T85-19, T85-20 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92` (Nach-Review), Linux, Unit-Tests (`ControllerSupportServiceTests`, `SteamInstallationTests`), nicht in der App | ✅ Kein Konto: Abbruch vor Steam-Beenden und Treiber; Marker nur für ein anderes Konto: SISR startet nicht, „Anlegen“ erscheint; alle Konten eingerichtet: nichts geschrieben; Kontenliste nur aus `loginusers.vdf`. T85-20 nur gebaut, nicht ausgeführt | T85-20 und echte Konten am PC des Owners |
 
 ## #92 „Steam Controller Support“ verständlich benennen und beschreiben
 

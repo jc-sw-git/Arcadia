@@ -652,7 +652,7 @@
                 </Border>
                 <TextBlock Text="Steam-Spiel läuft" IsVisible="{Binding IsGamePrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                 <TextBlock Text="Steam beenden?" IsVisible="{Binding IsSteamStopPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
-                <TextBlock Text="Steam startet nicht" IsVisible="{Binding IsSteamStartFailedPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding SteamStartFailedTitle}" IsVisible="{Binding IsSteamStartFailedPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                 <TextBlock Text="Steam-Eintrag für SISR anlegen?" IsVisible="{Binding IsMarkerPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
               </StackPanel>
 
@@ -671,8 +671,8 @@
               </StackPanel>
 
               <StackPanel Spacing="14" IsVisible="{Binding IsSteamStartFailedPrompt}">
-                <TextBlock Classes="promptBody" Text="Steam konnte nicht innerhalb von einer Minute gestartet werden. Ohne Steam kann SISR den Steam Controller nicht als Xbox 360 Gamepad weiterreichen." />
-                <TextBlock Classes="promptBody" Text="Die Einstellung bleibt deshalb aus. Du kannst es erneut versuchen oder Steam selbst starten." />
+                <TextBlock Classes="promptBody" Text="{Binding SteamStartFailedText}" />
+                <TextBlock Classes="promptBody" Text="{Binding SteamStartFailedHint}" />
               </StackPanel>
 
               <StackPanel Spacing="14" IsVisible="{Binding IsMarkerPrompt}">
@@ -716,7 +716,7 @@
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsSteamStartFailedPrompt}">
                 <Button Classes="plain action primaryAction" Classes.focused="{Binding RetrySteamStartItem.IsFocused}"
-                        Command="{Binding RetrySteamStartCommand}" Content="Erneut versuchen" />
+                        Command="{Binding RetrySteamStartCommand}" Content="{Binding SteamStartFailedAction}" />
                 <Button Classes="plain action" Classes.focused="{Binding CancelSteamStartItem.IsFocused}"
                         Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
               </StackPanel>

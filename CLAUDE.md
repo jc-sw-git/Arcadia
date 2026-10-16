@@ -162,6 +162,10 @@ touching that code, and add new findings there, not here):
 
 - Commit and push to feature branches freely; never push to `main`. Changes reach `main` only through a PR
   that the owner reviews and merges.
+- Branch names: `{prefix}/{issue-title}-{issue-number}` in kebab case, e.g. `fix/steam-scanner-crash-42`; without
+  an issue, drop the number. Prefixes: `feat` (new or changed feature behaviour), `fix` (bug fix), `ci` (CI only),
+  `test` (tests only), `doc` (docs only, agent skills included), `td` (any other product code change, i.e. tech
+  debt). Rename generated names such as `claude/project-thread-…` before the first push.
 - **Never** end commit messages with a `Co-Authored-By` trailer.
 - Commit messages: English, imperative subject, body explains why.
 - Opening a PR needs no prior OK (tell the owner the link). Merging, tags/releases, closing issues and posting

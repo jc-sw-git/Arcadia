@@ -309,7 +309,7 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
                 try
                 {
                     if (process.MainModule?.FileName is { } path
-                        && path.StartsWith(Path.GetFullPath(InstallDirectory), StringComparison.OrdinalIgnoreCase))
+                        && path.StartsWith(Path.TrimEndingDirectorySeparator(Path.GetFullPath(InstallDirectory)) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                     {
                         process.Kill();
                         process.WaitForExit(TimeSpan.FromSeconds(2));

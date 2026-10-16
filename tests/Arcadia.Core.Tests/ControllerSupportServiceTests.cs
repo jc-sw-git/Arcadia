@@ -205,7 +205,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     public async Task A_Steam_that_hangs_before_its_login_completes_does_not_lock_the_settings()
     {
         var service = Create();
-        _platform.SteamShuttingDown = true; // runs, but not ready
+        _platform.SteamNotReady = true; // runs, but not ready
 
         await service.TickAsync();
 
@@ -233,7 +233,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         _sisr.Running = true;
         await service.TickAsync();
 
-        _platform.SteamShuttingDown = true;
+        _platform.SteamNotReady = true;
         await service.WatchAsync();
 
         Assert.Equal(1, _sisr.Kills);
@@ -878,10 +878,10 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public bool IsSteamRunning { get; set; } = true;
 
-        /// <summary>False while Steam shuts down: steam.exe still runs, the user is logged out.</summary>
-        public bool SteamShuttingDown { get; set; }
+        /// <summary>steam.exe runs but Steam isn't ready: it shuts down (user logged out) or hangs in its login.</summary>
+        public bool SteamNotReady { get; set; }
 
-        public bool IsSteamReady => IsSteamRunning && !SteamShuttingDown;
+        public bool IsSteamReady => IsSteamRunning && !SteamNotReady;
 
         /// <summary>"Steam starten" does nothing, as with a broken Steam.</summary>
         public bool SteamWontStart { get; set; }

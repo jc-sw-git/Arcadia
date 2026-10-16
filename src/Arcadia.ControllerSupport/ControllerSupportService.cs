@@ -133,6 +133,7 @@ public sealed class ControllerSupportService(
     private ControllerSupportSetup? _setup;
     private int _startGeneration;
     private int _ticking;
+    private int _watching;
     private int _pausedGames;
     private volatile bool _shuttingDown;
     private DateTimeOffset _lastStart = DateTimeOffset.MinValue;
@@ -536,6 +537,24 @@ public sealed class ControllerSupportService(
     /// Controller being switched on or off, so the preview reacts fast. The rest waits for the tick.
     /// </summary>
     public async Task WatchAsync(CancellationToken cancellationToken = default)
+    {
+        // SISR's API can take up to its timeout to answer; a watch never overlaps the previous one.
+        if (Interlocked.Exchange(ref _watching, 1) == 1)
+        {
+            return;
+        }
+
+        try
+        {
+            await WatchOnceAsync(cancellationToken);
+        }
+        finally
+        {
+            Volatile.Write(ref _watching, 0);
+        }
+    }
+
+    private async Task WatchOnceAsync(CancellationToken cancellationToken)
     {
         if (!Enabled || !IsSupportedPlatform || !sisr.IsRunning)
         {

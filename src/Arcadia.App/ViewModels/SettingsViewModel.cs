@@ -107,7 +107,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         // The game can end (or start) while a prompt is open; nothing else would tell us.
         _promptCheck = new DispatcherTimer(PromptCheckInterval, DispatcherPriority.Background,
             async (_, _) => await AppErrors.Guard(CheckPromptAsync, "Laufendes Steam-Spiel prüfen"));
-        _promptCheck.Stop();
 
         // An old failure describes a moment that is over; the dialog opens without it.
         _support.ClearError();

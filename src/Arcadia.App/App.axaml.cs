@@ -131,12 +131,14 @@ public partial class App : Application
             var clock = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => viewModel.Status.UpdateClock());
             clock.Start();
 
-            var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => controllerSupport.TickAsync(), "SISR-Überwachung"));
+            var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), "SISR-Überwachung"));
             monitoring.Start();
 
             // Quick check between ticks: Steam closed (stop SISR before it can start Steam again)
-            // and the Steam Controller switched on or off (preview).
-            var sisrWatch = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => controllerSupport.WatchAsync(), "SISR-Überwachung"));
+            // and the Steam Controller switched on or off (preview). Both checks run on the thread
+            // pool: they list processes and read Steam's registry, log and SISR's API; the service's
+            // events are posted to the UI thread by their handlers.
+            var sisrWatch = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.WatchAsync()), "SISR-Überwachung"));
             sisrWatch.Start();
 
             // Installs run in the launcher: follow their progress, and for launchers Arcadia can't

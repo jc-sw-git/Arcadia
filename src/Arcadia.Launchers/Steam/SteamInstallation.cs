@@ -12,12 +12,13 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
     /// <summary>The logged-in account (Steam3 account id), or null if nobody is logged in.</summary>
     public uint? ActiveUserId { get; } = activeUserId;
 
+    /// <summary>Steam's log of its client logins, read by <see cref="SteamLoginLog"/>.</summary>
+    public string LoginLogPath => Path.Combine(RootPath, "logs", "steamui_login.txt");
+
     /// <summary>
     /// While this empty file exists, Steam opens its local CEF debug interface on its next start.
     /// SISR needs it to set the controller layout.
     /// </summary>
-    public string LoginLogPath => Path.Combine(RootPath, "logs", "steamui_login.txt");
-
     public string CefDebuggingFlagPath => Path.Combine(RootPath, ".cef-enable-remote-debugging");
 
     public string? ShortcutsPath => UserDataDirectory is { } dir ? Path.Combine(dir, "config", "shortcuts.vdf") : null;

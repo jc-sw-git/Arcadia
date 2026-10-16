@@ -369,7 +369,7 @@ public partial class MainViewModel : ViewModelBase
         var support = _controllerSupport;
 
         // The mode only matters with a Steam Controller; other pads never go through SISR (#72).
-        ShowControllerSupport = support.Enabled && support.SteamControllerConnected;
+        ShowControllerSupport = support.SteamControllerConnected;
         if (FocusedGame?.Game is { } game)
         {
             FocusedControllerSupportText = support.Settings.ControllerSupportFor(game) ? "Xbox 360 Controller (SISR)" : "Steam Input";

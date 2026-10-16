@@ -33,7 +33,8 @@ focus handling or anything SISR/usbip related.
   Steam games start on Steam Input, all others on SISR; `ControllerSupportOverrides` stores only deviations.
   In code the feature keeps its old name (`ControllerSupportService`, `AppSettings.SteamControllerSupport`).
 - The switch is offered only when `ControllerSupportService.Setup` is `Ready`: SISR installed, usbip-win2 ≥
-  0.9.8.1 installed and loaded, and Steam's CEF flag `.cef-enable-remote-debugging` in the Steam folder.
+  0.9.8.1 installed and loaded, Steam's CEF flag `.cef-enable-remote-debugging` in the Steam folder and the
+  "SISR Marker" shortcut (see below).
   Otherwise "SISR installieren" (`InstallAsync`). Once on, the switch stays even if a part breaks later;
   the problem shows with its fix. Without Windows or Steam the row is greyed out.
 - Steam reads the CEF flag only when it starts, so `InstallAsync` closes a running Steam first (the
@@ -51,7 +52,9 @@ focus handling or anything SISR/usbip related.
   (`ActiveProcess\ActiveUser`) and the client finished that login: the latest `Starting login` in
   `logs/steamui_login.txt` is followed by `SetLoginState: Success` (`SteamLoginLog`). `ActiveUser` is set as
   soon as the server accepts the login; on 2026-10-16 Steam then hung at "loading user data" for many
-  starts in a row (Steam Cloud never answered `GetAppQuotaUsage`, `cloud_log.txt`) and SISR started anyway.
+  starts in a row and SISR started anyway. In those starts `controller.txt` stops after
+  `wireless_unknown because Data is flowing` (no `reserving XInput slot`); the controller came back only
+  after a Windows restart, cause unknown.
   Untested: whether offline mode writes `Success`. Started earlier, SISR shows its own full-screen "Steam is not running"
   window, or reads no marker (it reads the logged-in user's `shortcuts.vdf` once at start) and asks to add
   another one. So `StartSisr` skips without a ready Steam or without the marker.

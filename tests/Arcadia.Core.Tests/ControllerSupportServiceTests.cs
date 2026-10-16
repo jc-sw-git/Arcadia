@@ -168,6 +168,21 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task While_Steam_shuts_down_SISR_is_killed_so_its_cleanup_cannot_restart_Steam()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _platform.SteamShuttingDown = true;
+        await service.WatchAsync();
+
+        Assert.Equal(1, _sisr.Kills);
+        Assert.Equal(0, _sisr.Stops);
+        Assert.Equal(SisrState.Stopped, service.State);
+    }
+
+    [Fact]
     public async Task SISR_held_for_Steam_starts_again_with_Steam_even_after_earlier_crashes()
     {
         var service = Create();
@@ -791,7 +806,10 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public bool IsSteamRunning { get; set; } = true;
 
-        public bool IsSteamReady => IsSteamRunning;
+        /// <summary>False while Steam shuts down: steam.exe still runs, the user is logged out.</summary>
+        public bool SteamShuttingDown { get; set; }
+
+        public bool IsSteamReady => IsSteamRunning && !SteamShuttingDown;
 
         /// <summary>"Steam starten" does nothing, as with a broken Steam.</summary>
         public bool SteamWontStart { get; set; }

@@ -53,7 +53,8 @@ focus handling or anything SISR/usbip related.
   another one. So `StartSisr` skips without a ready Steam or without the marker.
 - SISR's own cleanup on quit opens `steam://forceinputappid/0` (SISR source, `cli/cmd/sisr/sisr.go`),
   which starts a closed Steam. That is why closing Steam (and switching off afterwards) started Steam again
-  (owner, 2026-10-16). With Steam closed Arcadia kills SISR instead of quitting it; `WatchAsync` does that
+  (owner, 2026-10-16). Unless Steam is ready Arcadia kills SISR instead of quitting it, also while Steam
+  shuts down (steam.exe outlives the logout by a few seconds; quitting SISR then restarted Steam); `WatchAsync` does that
   within 2 s of Steam closing, the tick starts SISR again once Steam is ready (not counted as a crash), and
   the settings show "Steam läuft nicht" with "Steam starten".
 - Arcadia does SISR's first-run setup itself so SISR never shows a window: `.initial_setup_done` next to

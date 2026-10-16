@@ -978,14 +978,16 @@ public sealed class ControllerSupportService(
         MoveTo(SisrState.Stopping);
         try
         {
-            if (_platform.IsSteamRunning)
+            if (_platform.IsSteamReady)
             {
                 await sisr.StopAsync(cancellationToken);
             }
             else
             {
-                // SISR's own cleanup on quit opens a steam:// URL, which would start Steam again.
-                Log?.Invoke("Steam läuft nicht – SISR wird ohne Aufräumen beendet");
+                // SISR's own cleanup on quit opens a steam:// URL, which starts Steam again. That
+                // includes a Steam that is still shutting down: steam.exe outlives the logout and
+                // its web helper by a few seconds (owner's log, 2026-10-16).
+                Log?.Invoke("Steam läuft nicht (mehr) – SISR wird ohne Aufräumen beendet");
                 sisr.Kill();
             }
         }

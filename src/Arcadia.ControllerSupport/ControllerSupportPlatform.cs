@@ -16,10 +16,11 @@ public interface IControllerSupportPlatform
     bool IsSteamRunning { get; }
 
     /// <summary>
-    /// Steam is up far enough for SISR: its process and its web helper (CEF, which SISR talks to) run
-    /// and a user is logged in. SISR started before that shows its own full-screen "Steam is not
-    /// running" window, or can't find its marker (it reads the logged-in user's shortcuts once at
-    /// start) and asks to add a second one.
+    /// Steam is up far enough for SISR: its process and its web helper (CEF, which SISR talks to) run,
+    /// a user is logged in and the client finished that login (it can hang at "loading user data"
+    /// after the server accepted it). SISR started before that shows its own full-screen "Steam is
+    /// not running" window, or can't find its marker (it reads the logged-in user's shortcuts once
+    /// at start) and asks to add a second one.
     /// </summary>
     bool IsSteamReady { get; }
 
@@ -79,7 +80,8 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     public bool IsSteamReady =>
         SteamInstallation.IsRunning && ProcessWatch.IsRunning("steamwebhelper")
-        && SteamInstallation.Find()?.ActiveUserId is { } user and not 0;
+        && SteamInstallation.Find() is { ActiveUserId: not (null or 0) } steam
+        && SteamLoginLog.IsLatestLoginComplete(steam.LoginLogPath) is not false;
 
     public bool EnsureSisrMarker(string sisrExecutable)
     {

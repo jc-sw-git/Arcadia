@@ -47,8 +47,12 @@ focus handling or anything SISR/usbip related.
   (`SisrState.Running`); `WatchAsync` (every 2 s) moves Running ↔ NoController as the controller is switched on or off.
   Windows' HID list is no use: the wireless dongle shows as a Valve device (`VID_28DE`) even with the
   controller off (owner's PC, 2026-10-16).
-- SISR may only run while Steam is ready: `steam` and `steamwebhelper` run and a user is logged in
-  (`ActiveProcess\ActiveUser`). Started earlier, SISR shows its own full-screen "Steam is not running"
+- SISR may only run while Steam is ready: `steam` and `steamwebhelper` run, a user is logged in
+  (`ActiveProcess\ActiveUser`) and the client finished that login: the latest `Starting login` in
+  `logs/steamui_login.txt` is followed by `SetLoginState: Success` (`SteamLoginLog`). `ActiveUser` is set as
+  soon as the server accepts the login; on 2026-10-16 Steam then hung at "loading user data" for many
+  starts in a row (Steam Cloud never answered `GetAppQuotaUsage`, `cloud_log.txt`) and SISR started anyway.
+  Untested: whether offline mode writes `Success`. Started earlier, SISR shows its own full-screen "Steam is not running"
   window, or reads no marker (it reads the logged-in user's `shortcuts.vdf` once at start) and asks to add
   another one. So `StartSisr` skips without a ready Steam or without the marker.
 - SISR's own cleanup on quit opens `steam://forceinputappid/0` (SISR source, `cli/cmd/sisr/sisr.go`),

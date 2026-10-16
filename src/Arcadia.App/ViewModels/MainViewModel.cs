@@ -66,7 +66,7 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool ShowControllerSupport { get; private set; }
 
-    /// <summary>The Steam Controller Support mode of the focused game, e.g. "Standard (an)".</summary>
+    /// <summary>The Steam Controller mode of the focused game: "Xbox 360 Controller (SISR)" or "Steam Input".</summary>
     [ObservableProperty]
     public partial string FocusedControllerSupportText { get; private set; } = string.Empty;
 
@@ -352,7 +352,7 @@ public partial class MainViewModel : ViewModelBase
 
     partial void OnSettingsChanged(SettingsViewModel? oldValue, SettingsViewModel? newValue) => oldValue?.Dispose();
 
-    /// <summary>Cycles the focused game through: default → always on → always off → default.</summary>
+    /// <summary>Switches the focused game between "Xbox 360 Controller (SISR)" and "Steam Input".</summary>
     [RelayCommand]
     private void CycleControllerSupport()
     {
@@ -361,25 +361,18 @@ public partial class MainViewModel : ViewModelBase
             return;
         }
 
-        var next = _controllerSupport.Settings.ControllerSupportOverrideFor(game) switch
-        {
-            null => true,
-            true => false,
-            false => (bool?)null,
-        };
-        _controllerSupport.SetOverride(game, next);
+        _controllerSupport.SetModeFor(game, !_controllerSupport.Settings.ControllerSupportFor(game));
     }
 
     private void UpdateControllerSupportState()
     {
         var support = _controllerSupport;
-        ShowControllerSupport = support.Enabled;
+
+        // The mode only matters with a Steam Controller; other pads never go through SISR (#72).
+        ShowControllerSupport = support.Enabled && support.SteamControllerConnected;
         if (FocusedGame?.Game is { } game)
         {
-            var effective = support.Settings.ControllerSupportFor(game) ? "an" : "aus";
-            FocusedControllerSupportText = support.Settings.ControllerSupportOverrideFor(game) is null
-                ? $"Standard ({effective})"
-                : (effective == "an" ? "Immer an" : "Immer aus");
+            FocusedControllerSupportText = support.Settings.ControllerSupportFor(game) ? "Xbox 360 Controller (SISR)" : "Steam Input";
         }
     }
 

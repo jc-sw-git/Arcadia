@@ -25,3 +25,23 @@ focus handling or anything SISR/usbip related.
 - usbip-win2 ≥ 0.9.8.1 is required. Its uninstall entry was renamed between versions
   ("USBip version 0.9.7.7" → "USBip 0.9.8.1"). Updating it replaces the emulated host
   controller → SISR must restart; Windows wants a reboot.
+
+## Setup and naming (#85, #92, 2026-10-16)
+
+- In the UI the setting is "Steam Controller als Xbox 360 Gamepad verwenden", short "Steam Controller (SISR)".
+  Per game there are two modes: "Xbox 360 Controller (SISR)" (SISR runs) and "Steam Input" (SISR paused).
+  Steam games start on Steam Input, all others on SISR; `ControllerSupportOverrides` stores only deviations.
+  In code the feature keeps its old name (`ControllerSupportService`, `AppSettings.SteamControllerSupport`).
+- The switch is offered only when `ControllerSupportService.Setup` is `Ready`: SISR installed, usbip-win2 ≥
+  0.9.8.1 installed and loaded, and Steam's CEF flag `.cef-enable-remote-debugging` in the Steam folder.
+  Otherwise "SISR installieren" (`InstallAsync`). Once on, the switch stays even if a part breaks later;
+  the problem shows with its fix. Without Windows or Steam the row is greyed out.
+- Steam reads the CEF flag only when it starts, so `InstallAsync` closes a running Steam first (the
+  settings ask), writes the flag itself, installs what is missing and starts Steam again if it closed it.
+  It refuses while a Steam game runs: `HKCU\Software\Valve\Steam\RunningAppID` is non-zero, the name comes
+  from `…\Steam\Apps\<id>\Name`. Inferred from Steam's registry, not yet checked on the owner's PC; that
+  writing the flag file is all SISR's own "enable CEF" does is inferred too.
+- A Steam Controller counts as connected when Windows lists a HID device with Valve's vendor id `28DE`
+  other than `PID_11FF` (Steam's virtual gamepad for other pads). Works while SISR emulates its Xbox 360
+  pad. The wireless dongle counts even with the controller off. Inferred from the USB ids, not yet
+  checked on the owner's PC; if the device list can't be read, the per-game mode is shown anyway.

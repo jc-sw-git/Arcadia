@@ -2,7 +2,6 @@ using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using System.ComponentModel;
-using Arcadia.Launchers.Steam;
 
 namespace Arcadia.ControllerSupport;
 
@@ -24,6 +23,22 @@ public enum HealthFix
     CreateMarker,
     StopExternalSisr,
     RestartSisr,
+}
+
+/// <summary>Whether the setting can be switched on, offered for installing, or not used at all.</summary>
+public enum ControllerSupportSetup
+{
+    /// <summary>SISR, the usbip driver and Steam's CEF flag are in place: the switch is shown.</summary>
+    Ready,
+
+    /// <summary>Something is missing: "SISR installieren" is shown instead of the switch.</summary>
+    NeedsInstall,
+
+    /// <summary>SISR exists only for Windows.</summary>
+    UnsupportedPlatform,
+
+    /// <summary>SISR reads the controller through Steam Input, so it needs Steam.</summary>
+    SteamMissing,
 }
 
 public sealed record HealthIssue(string Id, HealthSeverity Severity, string Title, string Detail, HealthFix Fix = HealthFix.None, string? FixLabel = null);
@@ -59,9 +74,9 @@ public enum SisrState
 }
 
 /// <summary>
-/// "Steam Controller Support": keeps Arcadia's SISR running while it is enabled, pauses it for
-/// games that use Steam Input themselves, watches SISR and its dependencies, and checks for
-/// SISR updates.
+/// Steam Controller Support ("Steam Controller als Xbox 360 Gamepad verwenden"): keeps Arcadia's
+/// SISR running while it is enabled, pauses it for games that use Steam Input themselves, watches
+/// SISR and its dependencies, installs them, and checks for SISR updates.
 /// </summary>
 /// <remarks>
 /// Everything that starts or stops SISR (the periodic check, game pauses, switching on and off,
@@ -108,6 +123,7 @@ public sealed class ControllerSupportService(
     private readonly List<DateTimeOffset> _restarts = [];
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _pausedDirectories = new(StringComparer.OrdinalIgnoreCase);
     private SisrState _state;
+    private ControllerSupportSetup? _setup;
     private int _startGeneration;
     private int _ticking;
     private int _pausedGames;
@@ -123,6 +139,15 @@ public sealed class ControllerSupportService(
     public bool Enabled => Settings.SteamControllerSupport;
 
     public bool IsSupportedPlatform => _platform.IsSupported;
+
+    /// <summary>What the settings offer; rechecked on every <see cref="RefreshAsync"/> and tick.</summary>
+    public ControllerSupportSetup Setup => _setup ??= CheckSetup();
+
+    /// <summary>A Steam Controller is plugged in (only checked while the setting is on).</summary>
+    public bool SteamControllerConnected { get; private set; }
+
+    /// <summary>"SISR installieren" closes Steam first (after asking) and starts it again afterwards.</summary>
+    public bool InstallStopsSteam => _platform.IsSteamRunning;
 
     public ISisrHost Sisr => sisr;
 
@@ -170,18 +195,15 @@ public sealed class ControllerSupportService(
 
     public async Task SetEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
-        Log?.Invoke($"Steam Controller Support {(enabled ? "ein" : "aus")}geschaltet");
+        Log?.Invoke($"Steam Controller (SISR) {(enabled ? "ein" : "aus")}geschaltet");
         UpdateSettings(Settings with { SteamControllerSupport = enabled });
         if (enabled)
         {
-            await RunBusyAsync("SISR wird eingerichtet …", async () =>
+            // Installing is "SISR installieren"'s job; the switch is only offered when SISR is there.
+            await RunBusyAsync("SISR wird gestartet …", () =>
             {
-                if (!sisr.IsInstalled)
-                {
-                    await InstallLatestSisrAsync(cancellationToken);
-                }
-
                 StartSisr();
+                return Task.CompletedTask;
             });
         }
         else
@@ -192,6 +214,80 @@ public sealed class ControllerSupportService(
 
         await RefreshAsync(cancellationToken);
     }
+
+    /// <summary>
+    /// Why "SISR installieren" can't run right now, or null. Installing closes Steam, which would
+    /// end a running Steam game.
+    /// </summary>
+    public string? InstallBlocker() =>
+        _platform.IsSteamRunning && _platform.RunningSteamGame() is { } game
+            ? $"Ein laufendes Steam-Spiel ({game}) wurde erkannt. Beende es zuerst, da für die Installation Steam beendet und neu gestartet werden muss."
+            : null;
+
+    /// <summary>
+    /// "SISR installieren": closes Steam if it runs (the caller has asked the user), sets Steam's
+    /// CEF flag, installs what is missing of SISR and the usbip driver, starts Steam again if it
+    /// was closed here, and switches the setting on. On failure the setting stays off.
+    /// </summary>
+    public Task InstallAsync(CancellationToken cancellationToken = default) =>
+        RunBusyAsync("SISR wird eingerichtet …", async () =>
+        {
+            if (InstallBlocker() is { } blocker)
+            {
+                throw new InvalidOperationException(blocker);
+            }
+
+            var stoppedSteam = false;
+            try
+            {
+                if (_platform.IsSteamRunning)
+                {
+                    SetBusyText("Steam wird beendet …");
+                    if (!await _platform.StopSteamAsync(time, cancellationToken))
+                    {
+                        throw new InvalidOperationException("Steam ließ sich nicht beenden. Beende Steam selbst und versuche es dann erneut.");
+                    }
+
+                    stoppedSteam = true;
+                }
+
+                // Steam reads the flag only when it starts, which is why it had to close.
+                if (!_platform.IsCefDebuggingEnabled)
+                {
+                    _platform.EnableCefDebugging();
+                }
+
+                if (!sisr.IsInstalled)
+                {
+                    SetBusyText("SISR wird installiert …");
+                    await InstallLatestSisrAsync(cancellationToken);
+                }
+
+                if (!_platform.IsUsbipReady)
+                {
+                    SetBusyText("usbip-Treiber wird installiert – bitte die Windows-Abfrage bestätigen …");
+                    if (!await WithTimeoutAsync(token => _platform.InstallUsbipAsync(http, token), InstallTimeout, "Der Treiber-Download", cancellationToken))
+                    {
+                        throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt.");
+                    }
+
+                    UpdateSettings(Settings with { UsbipInstalledAt = time.GetUtcNow() });
+                }
+            }
+            finally
+            {
+                // Arcadia closed Steam, so it brings it back, also after a failed install.
+                if (stoppedSteam)
+                {
+                    _platform.StartSteam();
+                }
+            }
+
+            Log?.Invoke("Steam Controller (SISR) eingerichtet");
+            UpdateSettings(Settings with { SteamControllerSupport = true });
+            _restarts.Clear();
+            StartSisr();
+        });
 
     /// <summary>Stops SISR when Arcadia exits; nothing starts it again afterwards.</summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)
@@ -211,7 +307,8 @@ public sealed class ControllerSupportService(
         }
     }
 
-    public void SetOverride(Game game, bool? enabled) => UpdateSettings(Settings.WithControllerSupportOverride(game, enabled));
+    /// <summary>Per game: true = "Xbox 360 Controller (SISR)", false = "Steam Input".</summary>
+    public void SetModeFor(Game game, bool useSisr) => UpdateSettings(Settings.WithControllerSupportChoice(game, useSisr));
 
     /// <summary>
     /// Called periodically: restarts a crashed SISR, rechecks health, checks for updates once a day.
@@ -238,7 +335,10 @@ public sealed class ControllerSupportService(
     {
         if (!Enabled || !IsSupportedPlatform)
         {
-            if (Issues.Count > 0)
+            // While off, only what the settings offer can change (e.g. SISR installed elsewhere).
+            var setup = Setup;
+            UpdateSetup();
+            if (Issues.Count > 0 || Setup != setup)
             {
                 Issues = [];
                 OnChanged();
@@ -360,7 +460,7 @@ public sealed class ControllerSupportService(
         }),
         HealthFix.InstallUsbip => RunBusyAsync("usbip-Treiber wird installiert – bitte die Windows-Abfrage bestätigen …", async () =>
         {
-            if (OperatingSystem.IsWindows() && !await WithTimeoutAsync(InstallUsbipAsync, InstallTimeout, "Der Treiber-Download", cancellationToken))
+            if (!await WithTimeoutAsync(token => _platform.InstallUsbipAsync(http, token), InstallTimeout, "Der Treiber-Download", cancellationToken))
             {
                 throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt.");
             }
@@ -374,7 +474,7 @@ public sealed class ControllerSupportService(
         }),
         HealthFix.StartSteam => RunBusyAsync("Steam wird gestartet …", async () =>
         {
-            SteamInstallation.Find()?.StartSilently();
+            _platform.StartSteam();
             await ProcessWatch.WaitUntilAsync(() => _platform.IsSteamRunning, TimeSpan.FromSeconds(30), time, cancellationToken);
         }),
         HealthFix.EnableCefDebugging => RunBusyAsync("Steam-Debug-Schnittstelle wird aktiviert …", async () =>
@@ -518,14 +618,27 @@ public sealed class ControllerSupportService(
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
         Issues = Enabled ? await CheckHealthAsync(cancellationToken) : [];
+        UpdateSetup();
         OnChanged();
     }
+
+    private void UpdateSetup()
+    {
+        _setup = CheckSetup();
+        SteamControllerConnected = Enabled && IsSupportedPlatform && _platform.IsSteamControllerConnected();
+    }
+
+    private ControllerSupportSetup CheckSetup() =>
+        !IsSupportedPlatform ? ControllerSupportSetup.UnsupportedPlatform
+        : !_platform.IsSteamInstalled ? ControllerSupportSetup.SteamMissing
+        : sisr.IsInstalled && _platform.IsUsbipReady && _platform.IsCefDebuggingEnabled ? ControllerSupportSetup.Ready
+        : ControllerSupportSetup.NeedsInstall;
 
     private async Task<IReadOnlyList<HealthIssue>> CheckHealthAsync(CancellationToken cancellationToken)
     {
         if (!IsSupportedPlatform)
         {
-            return [new("platform", HealthSeverity.Error, "Nur unter Windows verfügbar", "Steam Controller Support über SISR ist bisher nur für Windows umgesetzt.")];
+            return [new("platform", HealthSeverity.Error, "Nur unter Windows verfügbar", "SISR gibt es bisher nur für Windows.")];
         }
 
         var issues = new List<HealthIssue>();
@@ -583,9 +696,6 @@ public sealed class ControllerSupportService(
             issues.Add(new("viiper-down", HealthSeverity.Error, "VIIPER antwortet nicht", "VIIPER erzeugt die virtuellen Controller für SISR. Ein Neustart von SISR startet es mit.", HealthFix.RestartSisr, "SISR neu starten"));
         }
     }
-
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    private Task<bool> InstallUsbipAsync(CancellationToken cancellationToken) => UsbipDriver.InstallAsync(http, cancellationToken);
 
     private async Task InstallLatestSisrAsync(CancellationToken cancellationToken)
     {
@@ -839,6 +949,12 @@ public sealed class ControllerSupportService(
         {
             throw new TimeoutException($"{what} hat nicht innerhalb von {timeout.TotalSeconds:0} Sekunden geantwortet.");
         }
+    }
+
+    private void SetBusyText(string text)
+    {
+        BusyText = text;
+        OnChanged();
     }
 
     private void UpdateSettings(AppSettings settings)

@@ -267,13 +267,14 @@ public sealed class ControllerSupportServiceTests : IDisposable
         _sisr.Installed = false;
         _sisr.ReleaseLookupHangs = true;
 
-        var on = service.SetEnabledAsync(true);
-        await AdvanceUntil(() => on.IsCompleted);
-        await on;
+        var install = service.InstallAsync();
+        await AdvanceUntil(() => install.IsCompleted);
+        await install;
 
         Assert.Contains("GitHub", service.LastError);
         Assert.Null(service.BusyText);
-        Assert.Equal(SisrState.Stopped, service.State);
+        Assert.False(service.Enabled);
+        Assert.Equal(SisrState.Off, service.State);
         Assert.Equal(0, _sisr.Starts);
         AssertNoUnexpectedTransition();
     }
@@ -299,10 +300,11 @@ public sealed class ControllerSupportServiceTests : IDisposable
         _sisr.Installed = false;
         _sisr.InstallError = new HttpRequestException("Verbindung abgebrochen");
 
-        await service.SetEnabledAsync(true);
+        await service.InstallAsync();
 
         Assert.Equal("Verbindung abgebrochen", service.LastError);
-        Assert.Equal(SisrState.Stopped, service.State);
+        Assert.False(service.Enabled);
+        Assert.Equal(SisrState.Off, service.State);
         Assert.Equal(0, _sisr.Starts);
         AssertNoUnexpectedTransition();
     }
@@ -319,6 +321,136 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         Assert.False(_sisr.Running);
         Assert.Equal(0, _sisr.Starts);
+    }
+
+    [Fact]
+    public async Task Installing_closes_Steam_sets_everything_up_and_switches_on()
+    {
+        var service = Create(enabled: false);
+        _sisr.Installed = false;
+        _platform.IsUsbipReady = false;
+        _platform.IsCefDebuggingEnabled = false;
+        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
+        Assert.True(service.InstallStopsSteam);
+
+        await service.InstallAsync();
+
+        Assert.Null(service.LastError);
+        Assert.Equal(1, _platform.SteamStops);
+        Assert.True(_platform.IsCefDebuggingEnabled);
+        Assert.True(_sisr.Installed);
+        Assert.Equal(1, _platform.UsbipInstalls);
+        Assert.Equal(1, _platform.SteamStarts);
+        Assert.True(service.Enabled);
+        Assert.Equal(1, _sisr.Starts);
+        Assert.Equal(ControllerSupportSetup.Ready, service.Setup);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task Installing_while_Steam_is_closed_leaves_it_closed()
+    {
+        var service = Create(enabled: false);
+        _platform.IsSteamRunning = false;
+        _platform.IsCefDebuggingEnabled = false;
+
+        await service.InstallAsync();
+
+        Assert.Equal(0, _platform.SteamStops);
+        Assert.Equal(0, _platform.SteamStarts);
+        Assert.Equal(0, _platform.UsbipInstalls);
+        Assert.True(_platform.IsCefDebuggingEnabled);
+        Assert.True(service.Enabled);
+    }
+
+    [Fact]
+    public async Task A_running_Steam_game_blocks_the_install_and_is_named()
+    {
+        var service = Create(enabled: false);
+        _sisr.Installed = false;
+        _platform.SteamGame = "Hollow Knight";
+
+        Assert.Contains("Hollow Knight", service.InstallBlocker());
+        await service.InstallAsync();
+
+        Assert.Contains("Ein laufendes Steam-Spiel (Hollow Knight) wurde erkannt", service.LastError);
+        Assert.Equal(0, _platform.SteamStops);
+        Assert.False(_sisr.Installed);
+        Assert.False(service.Enabled);
+    }
+
+    [Fact]
+    public async Task A_declined_driver_install_starts_Steam_again_and_stays_off()
+    {
+        var service = Create(enabled: false);
+        _platform.IsUsbipReady = false;
+        _platform.UsbipInstallDeclined = true;
+
+        await service.InstallAsync();
+
+        Assert.Contains("abgelehnt", service.LastError);
+        Assert.Equal(1, _platform.SteamStarts);
+        Assert.True(_platform.IsSteamRunning);
+        Assert.False(service.Enabled);
+        Assert.Equal(0, _sisr.Starts);
+        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
+    }
+
+    [Fact]
+    public async Task If_Steam_does_not_exit_nothing_is_installed()
+    {
+        var service = Create(enabled: false);
+        _sisr.Installed = false;
+        _platform.SteamRefusesToExit = true;
+
+        await service.InstallAsync();
+
+        Assert.Contains("Steam ließ sich nicht beenden", service.LastError);
+        Assert.False(_sisr.Installed);
+        Assert.Equal(0, _platform.SteamStarts);
+        Assert.False(service.Enabled);
+    }
+
+    [Fact]
+    public async Task Switching_on_no_longer_installs_anything()
+    {
+        var service = Create(enabled: false);
+        _sisr.Installed = false;
+
+        await service.SetEnabledAsync(true);
+
+        Assert.False(_sisr.Installed);
+        Assert.Equal(0, _sisr.Starts);
+    }
+
+    [Theory]
+    [InlineData(false, true, true, ControllerSupportSetup.UnsupportedPlatform)]
+    [InlineData(true, false, true, ControllerSupportSetup.SteamMissing)]
+    [InlineData(true, true, false, ControllerSupportSetup.NeedsInstall)]
+    [InlineData(true, true, true, ControllerSupportSetup.Ready)]
+    public async Task Setup_says_what_the_settings_offer(bool windows, bool steam, bool sisrInstalled, ControllerSupportSetup expected)
+    {
+        var service = Create(enabled: false);
+        _platform.IsSupported = windows;
+        _platform.IsSteamInstalled = steam;
+        _sisr.Installed = sisrInstalled;
+
+        await service.RefreshAsync();
+
+        Assert.Equal(expected, service.Setup);
+    }
+
+    [Fact]
+    public async Task A_tick_while_off_notices_a_change_in_the_setup()
+    {
+        var service = Create(enabled: false);
+        _sisr.Installed = false;
+        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
+
+        _sisr.Installed = true;
+        await service.TickAsync();
+
+        Assert.Equal(ControllerSupportSetup.Ready, service.Setup);
     }
 
     private sealed class FakeSisr(HttpClient http) : ISisrHost
@@ -438,9 +570,58 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         public HashSet<string> RunningDirectories { get; } = [];
 
-        public bool IsSupported => true;
+        public bool IsSupported { get; set; } = true;
 
-        public bool IsSteamRunning => true;
+        public bool IsSteamInstalled { get; set; } = true;
+
+        public bool IsSteamRunning { get; set; } = true;
+
+        public bool IsUsbipReady { get; set; } = true;
+
+        public bool IsCefDebuggingEnabled { get; set; } = true;
+
+        public string? SteamGame { get; set; }
+
+        public bool SteamRefusesToExit { get; set; }
+
+        public bool UsbipInstallDeclined { get; set; }
+
+        public int SteamStops { get; private set; }
+
+        public int SteamStarts { get; private set; }
+
+        public int UsbipInstalls { get; private set; }
+
+        public void EnableCefDebugging() => IsCefDebuggingEnabled = true;
+
+        public string? RunningSteamGame() => SteamGame;
+
+        public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken)
+        {
+            if (SteamRefusesToExit)
+            {
+                return Task.FromResult(false);
+            }
+
+            SteamStops++;
+            IsSteamRunning = false;
+            return Task.FromResult(true);
+        }
+
+        public void StartSteam()
+        {
+            SteamStarts++;
+            IsSteamRunning = true;
+        }
+
+        public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken)
+        {
+            UsbipInstalls++;
+            IsUsbipReady = !UsbipInstallDeclined;
+            return Task.FromResult(!UsbipInstallDeclined);
+        }
+
+        public bool IsSteamControllerConnected() => true;
 
         public void ResetSteamInputLayout()
         {

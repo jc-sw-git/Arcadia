@@ -73,7 +73,7 @@ public static class ControllerSupportRemoval
         if (SteamInstallation.Find() is { } steam)
         {
             // SISR asks Steam for this flag to read the controller layout; nothing else needs it.
-            Step(log, "Steam-CEF-Flag", () => File.Delete(Path.Combine(steam.RootPath, ".cef-enable-remote-debugging")));
+            Step(log, "Steam-CEF-Flag", () => File.Delete(steam.CefDebuggingFlagPath));
 
             // Steam rewrites shortcuts.vdf on exit, so the marker can only go while Steam is closed.
             if (!SteamInstallation.IsRunning && steam.ShortcutsPath is { } shortcuts)

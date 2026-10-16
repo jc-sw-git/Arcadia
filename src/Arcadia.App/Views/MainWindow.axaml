@@ -213,13 +213,11 @@
                   </StackPanel>
                 </Grid>
                 <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowControllerSupport}">
-                  <TextBlock Classes="label" Text="STEAM CONTROLLER SUPPORT" />
-                  <Button Classes="plain action" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CycleControllerSupportCommand}"
-                          ToolTip.Tip="Für dieses Spiel: Standard → immer an → immer aus">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                      <TextBlock Text="{Binding $parent[Window].((vm:MainViewModel)DataContext).FocusedControllerSupportText}" VerticalAlignment="Center" />
-                      <Path Data="M7 10l5 5 5-5" Stroke="{StaticResource TextMuted}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
-                    </StackPanel>
+                  <TextBlock Classes="label" Text="STEAM CONTROLLER" />
+                  <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10. -->
+                  <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CycleControllerSupportCommand}"
+                          ToolTip.Tip="Klicken wechselt zwischen „Xbox 360 Controller (SISR)“ und „Steam Input“">
+                    <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext).FocusedControllerSupportText}" />
                   </Button>
                 </StackPanel>
               </StackPanel>
@@ -440,22 +438,41 @@
               <TextBlock Classes="label" Text="CONTROLLER" FontSize="14" />
               <Border Background="{StaticResource SurfaceSunken}" CornerRadius="16" Padding="8">
                 <StackPanel Spacing="4">
-                  <Button Classes="plain settingRow" Classes.focused="{Binding ToggleItem.IsFocused}" Command="{Binding ToggleCommand}">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding ToggleItem.IsFocused}" Classes.unavailable="{Binding IsUnavailable}"
+                          Command="{Binding ToggleCommand}">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
-                        <TextBlock Text="Steam Controller Support" FontSize="20" FontWeight="Bold" />
-                        <TextBlock Text="Der Steam Controller wird in Arcadia und in Spielen anderer Launcher als Gamepad erkannt – inklusive LB/RB, LT/RT, X und Y. Nur nötig für Controller, die über Steam Input laufen."
+                        <TextBlock Text="Steam Controller als Xbox 360 Gamepad verwenden" FontSize="20" FontWeight="Bold" />
+                        <TextBlock Text="Mit dieser Einstellung wird der Steam Controller als Xbox 360 Gamepad behandelt. Das ist nützlich, wenn du den Steam Controller auch in Spielen außerhalb von Steam (oder in Arcadia) benutzen möchtest, da er dort sonst im „Desktop-Modus“ läuft. Dies ist eine Besonderheit des Steam Controllers."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock IsVisible="{Binding IsUnavailable}" Text="{Binding UnavailableText}" FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Warning}" />
                       </StackPanel>
-                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding IsEnabled}" VerticalAlignment="Center">
+                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding IsEnabled}" IsVisible="{Binding !ShowInstall}" VerticalAlignment="Center">
                         <Ellipse />
+                      </Border>
+                      <!-- Not a button of its own: the whole row is the button, so A on the row installs. -->
+                      <Border Grid.Column="1" Classes="rowAction" IsVisible="{Binding ShowInstall}" VerticalAlignment="Center">
+                        <TextBlock Text="SISR installieren" />
                       </Border>
                     </Grid>
                   </Button>
 
                   <!-- Everything below depends on the switch above, so it stays in the same box. -->
                   <StackPanel Spacing="16" Margin="20,8,20,16">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border IsVisible="{Binding IsConfirmingSteamStop}" Background="{StaticResource SurfaceHover}" CornerRadius="12" Padding="16,14">
+                      <StackPanel Spacing="12">
+                        <TextBlock Text="Für die Installation muss Steam beendet werden. Arcadia startet Steam danach wieder. Darf Arcadia Steam jetzt beenden?"
+                                   FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                          <Button Classes="plain action primaryAction" Classes.focused="{Binding ConfirmSteamStopItem.IsFocused}"
+                                  Command="{Binding ConfirmSteamStopCommand}" Content="Steam beenden und installieren" />
+                          <Button Classes="plain action" Classes.focused="{Binding CancelSteamStopItem.IsFocused}"
+                                  Command="{Binding CancelSteamStopCommand}" Content="Abbrechen" />
+                        </StackPanel>
+                      </StackPanel>
+                    </Border>
+                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding ShowStatus}">
                       <Path Classes="spinner" IsVisible="{Binding IsStarting}" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
                       <!-- No local Fill: it would override the "active" style. -->
                       <Ellipse Classes="statusDot" Classes.active="{Binding IsHealthy}" Width="10" Height="10" VerticalAlignment="Center"
@@ -502,15 +519,31 @@
 
                     <StackPanel Spacing="8">
                       <TextBlock Classes="label" Text="SO FUNKTIONIERT ES" />
-                      <TextBlock Classes="bullet" Text="• Arcadia startet SISR unsichtbar im Hintergrund. SISR nimmt den Controller von Steam Input entgegen und gibt ihn als Xbox-Controller an Arcadia und an alle Spiele weiter." />
-                      <TextBlock Classes="bullet" Text="• Bei Spielen aus dem Steam-Launcher pausiert SISR, weil Steam den Controller dort selbst bedient. Pro Spiel lässt sich das in der Vorschau ändern." />
+                      <TextBlock Classes="bullet" Text="Ist diese Option aktiv (und ein Steam Controller verbunden), kann in Arcadia pro Spiel zwischen zwei Modi für den Steam Controller gewechselt werden:" />
+                      <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,4">
+                        <Border Classes="modeCard">
+                          <StackPanel Spacing="4">
+                            <TextBlock Text="Xbox 360 Controller (SISR)" FontSize="16" FontWeight="Bold" />
+                            <TextBlock Classes="bullet" Text="Arcadia behandelt den Steam Controller für dieses Spiel wie einen Xbox 360 Controller." />
+                            <TextBlock Classes="modeDefault" Text="Vorauswahl für Spiele außerhalb von Steam" />
+                          </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Classes="modeCard">
+                          <StackPanel Spacing="4">
+                            <TextBlock Text="Steam Input" FontSize="16" FontWeight="Bold" />
+                            <TextBlock Classes="bullet" Text="Das Standardverhalten des Steam Controllers. Empfohlen für Steam-Spiele oder wenn du außerhalb von Steam den Desktop-Modus nutzen möchtest; der Controller simuliert dann Maus und Tastatur." />
+                            <TextBlock Classes="modeDefault" Text="Vorauswahl für Spiele aus Steam" />
+                          </StackPanel>
+                        </Border>
+                      </Grid>
+                      <TextBlock Classes="bullet" Text="Dafür wird die Drittanbieter-Software SISR benötigt und bei Bedarf automatisch installiert. Arcadia startet SISR unsichtbar im Hintergrund." />
                     </StackPanel>
                     <StackPanel Spacing="8">
                       <TextBlock Classes="label" Text="NACHTEILE" />
                       <TextBlock Classes="bullet" Text="• Steam muss im Hintergrund laufen, und Steams lokale Debug-Schnittstelle (CEF) muss aktiv sein." />
                       <TextBlock Classes="bullet" Text="• Benötigt den usbip-Treiber. Die Installation fragt einmalig nach Administratorrechten." />
                       <TextBlock Classes="bullet" Text="• SISR ist laut seinem Entwickler noch experimentell; Abstürze sind möglich. Arcadia startet SISR dann automatisch neu." />
-                      <TextBlock Classes="bullet" Text="• Läuft SISR bei einem Spiel, das Steam Input selbst nutzt, kommen Eingaben doppelt an." />
+                      <TextBlock Classes="bullet" Text="• Steht ein Steam-Spiel auf „Xbox 360 Controller (SISR)“, kommen Eingaben doppelt an." />
                     </StackPanel>
                     <TextBlock FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap"
                                Text="SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR" />
@@ -639,6 +672,11 @@
     <Style Selector="TextBlock.bullet">
       <Setter Property="FontSize" Value="15" />
       <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.modeDefault">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
       <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <Style Selector="TextBlock.hint">

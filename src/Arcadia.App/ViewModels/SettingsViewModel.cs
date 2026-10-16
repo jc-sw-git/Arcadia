@@ -47,7 +47,7 @@ public sealed class ChangelogEntryViewModel(ChangelogEntry entry)
 }
 
 /// <summary>
-/// The settings dialog. For now it holds "Steam Controller Support" and "Über Arcadia"; the
+/// The settings dialog. For now it holds "Steam Controller als Xbox 360 Gamepad verwenden" and "Über Arcadia"; the
 /// other sections from the designs follow.
 /// </summary>
 public partial class SettingsViewModel : ViewModelBase, IDisposable
@@ -55,6 +55,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly ControllerSupportService _support;
     private readonly ArcadiaUpdateService _updates;
     private readonly SettingsItemViewModel _toggle;
+    private readonly SettingsItemViewModel _confirmSteamStop;
+    private readonly SettingsItemViewModel _cancelSteamStop;
     private readonly SettingsItemViewModel _update;
     private readonly SettingsItemViewModel _arcadiaUpdate;
     private readonly SettingsItemViewModel _checkUpdates;
@@ -66,10 +68,14 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         CheckUpdatesCommand = new RelayCommand(() => updates.CheckNowAsync().Forget("Update-Prüfung"));
         _support = support;
         _updates = updates;
-        _toggle = new SettingsItemViewModel(Toggle);
+        _toggle = new SettingsItemViewModel(ActivateMainRow);
+        _confirmSteamStop = new SettingsItemViewModel(ConfirmSteamStop);
+        _cancelSteamStop = new SettingsItemViewModel(CancelSteamStop);
         _update = new SettingsItemViewModel(() => _support.InstallUpdateAsync().Forget("SISR aktualisieren"));
         _arcadiaUpdate = new SettingsItemViewModel(() => installArcadiaUpdate().Forget("Arcadia aktualisieren"));
-        ToggleCommand = new RelayCommand(Toggle);
+        ToggleCommand = new RelayCommand(ActivateMainRow);
+        ConfirmSteamStopCommand = new RelayCommand(ConfirmSteamStop);
+        CancelSteamStopCommand = new RelayCommand(CancelSteamStop);
         UpdateCommand = new RelayCommand(() => _support.InstallUpdateAsync().Forget("SISR aktualisieren"));
         ArcadiaUpdateCommand = new RelayCommand(() => installArcadiaUpdate().Forget("Arcadia aktualisieren"));
         _support.Changed += OnSupportChanged;
@@ -79,6 +85,36 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     }
 
     public SettingsItemViewModel ToggleItem => _toggle;
+
+    public SettingsItemViewModel ConfirmSteamStopItem => _confirmSteamStop;
+
+    public SettingsItemViewModel CancelSteamStopItem => _cancelSteamStop;
+
+    public IRelayCommand ConfirmSteamStopCommand { get; }
+
+    public IRelayCommand CancelSteamStopCommand { get; }
+
+    /// <summary>Everything is in place (or the setting is already on): the row is a switch.</summary>
+    [ObservableProperty]
+    public partial bool ShowSwitch { get; private set; }
+
+    /// <summary>Something is missing: the row offers "SISR installieren" instead of the switch.</summary>
+    [ObservableProperty]
+    public partial bool ShowInstall { get; private set; }
+
+    /// <summary>Not on this PC (no Windows, no Steam): the row is greyed out and says why.</summary>
+    [ObservableProperty]
+    public partial bool IsUnavailable { get; private set; }
+
+    [ObservableProperty]
+    public partial string UnavailableText { get; private set; } = string.Empty;
+
+    /// <summary>"SISR installieren" was pressed while Steam runs; asking whether Arcadia may close it.</summary>
+    [ObservableProperty]
+    public partial bool IsConfirmingSteamStop { get; private set; }
+
+    [ObservableProperty]
+    public partial bool ShowStatus { get; private set; }
 
     public SettingsItemViewModel UpdateItem => _update;
 
@@ -180,6 +216,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
                 }
 
                 return true;
+            case UiAction.Back when IsConfirmingSteamStop:
+                CancelSteamStop();
+                return true;
             case UiAction.Back:
             case UiAction.Settings:
                 return false;
@@ -194,12 +233,50 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _updates.Changed -= OnSupportChanged;
     }
 
-    private void Toggle()
+    private void ActivateMainRow()
     {
-        if (!IsBusy)
+        if (IsBusy)
         {
-            _support.SetEnabledAsync(!_support.Enabled).Forget("Steam Controller Support schalten");
+            return;
         }
+
+        if (ShowSwitch)
+        {
+            _support.SetEnabledAsync(!_support.Enabled).Forget("Steam Controller (SISR) schalten");
+        }
+        else if (ShowInstall)
+        {
+            BeginInstall();
+        }
+    }
+
+    /// <summary>
+    /// Installing closes Steam, so the user is asked first. With a Steam game running nobody is
+    /// asked; <see cref="ControllerSupportService.InstallAsync"/> reports that instead.
+    /// </summary>
+    private void BeginInstall()
+    {
+        if (_support.InstallStopsSteam && _support.InstallBlocker() is null)
+        {
+            IsConfirmingSteamStop = true;
+            Refresh();
+            return;
+        }
+
+        _support.InstallAsync().Forget("SISR installieren");
+    }
+
+    private void ConfirmSteamStop()
+    {
+        IsConfirmingSteamStop = false;
+        _support.InstallAsync().Forget("SISR installieren");
+        Refresh();
+    }
+
+    private void CancelSteamStop()
+    {
+        IsConfirmingSteamStop = false;
+        Refresh();
     }
 
     private void OnSupportChanged(object? sender, EventArgs e) => Avalonia.Threading.Dispatcher.UIThread.Post(Refresh);
@@ -220,19 +297,30 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
 
         HasIssues = Issues.Count > 0;
+
+        // Once on, the switch stays even if something breaks later; the problem shows below it.
+        var setup = _support.Setup;
+        IsUnavailable = !IsEnabled && setup is ControllerSupportSetup.UnsupportedPlatform or ControllerSupportSetup.SteamMissing;
+        UnavailableText = setup == ControllerSupportSetup.SteamMissing ? "Benötigt Steam." : "Momentan nur unter Windows verfügbar.";
+        ShowSwitch = IsEnabled || setup == ControllerSupportSetup.Ready;
+        ShowInstall = !IsEnabled && setup == ControllerSupportSetup.NeedsInstall;
+        IsConfirmingSteamStop &= ShowInstall && !IsBusy;
+        ShowStatus = !IsUnavailable;
+
         var state = _support.State;
         IsStarting = IsEnabled && state == SisrState.Starting;
         IsHealthy = IsEnabled && !HasIssues && BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
         StatusText = (IsEnabled, state == SisrState.Paused, HasIssues) switch
         {
-            (false, _, _) => "Aus – Steam steuert Arcadia mit dem Steam Controller als Maus und Tastatur.",
-            (true, true, _) => "Pausiert – ein Spiel läuft, das Steam Input selbst nutzt.",
+            (false, _, _) when ShowInstall => "Nicht eingerichtet – „SISR installieren“ richtet alles Nötige ein und schaltet die Option ein.",
+            (false, _, _) => "Aus – außerhalb von Steam läuft der Steam Controller im Desktop-Modus (Maus und Tastatur).",
+            (true, true, _) => "Pausiert – ein Spiel mit „Steam Input“ läuft.",
             (true, false, true) => "Eingeschaltet, aber nicht voll funktionsfähig – siehe unten.",
             _ => state switch
             {
-                SisrState.Starting => "SISR startet – der Controller wird gleich als Xbox-360-Controller eingerichtet …",
-                SisrState.NoController => "Bereit, aber kein Controller gefunden – schalte deinen Controller ein.",
-                SisrState.Running => "Aktiv – der Steam Controller wird überall als Gamepad erkannt.",
+                SisrState.Starting => "SISR startet – der Steam Controller wird gleich als Xbox 360 Controller eingerichtet …",
+                SisrState.NoController => "Bereit, aber kein Steam Controller gefunden – schalte ihn ein.",
+                SisrState.Running => "Aktiv – der Steam Controller wird als Xbox 360 Controller erkannt.",
                 SisrState.Stopping => "SISR wird beendet …",
                 _ => "Wird gestartet …",
             },
@@ -275,12 +363,20 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
 
         var items = FocusableItems();
-        _focus = focused is not null && items.Contains(focused) ? items.IndexOf(focused) : Math.Min(_focus, items.Count - 1);
+        _focus = IsConfirmingSteamStop && focused is not null && !items.Contains(focused) ? 0
+            : focused is not null && items.Contains(focused) ? items.IndexOf(focused)
+            : Math.Min(_focus, items.Count - 1);
         items[_focus].IsFocused = true;
     }
 
     private List<SettingsItemViewModel> FocusableItems()
     {
+        // While asking whether Steam may close, only the two answers can be focused.
+        if (IsConfirmingSteamStop)
+        {
+            return [_confirmSteamStop, _cancelSteamStop];
+        }
+
         var items = new List<SettingsItemViewModel> { _toggle };
         if (HasUpdate)
         {

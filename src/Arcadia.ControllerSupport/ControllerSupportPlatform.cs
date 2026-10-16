@@ -11,7 +11,31 @@ public interface IControllerSupportPlatform
     /// <summary>SISR exists only for Windows.</summary>
     bool IsSupported { get; }
 
+    bool IsSteamInstalled { get; }
+
     bool IsSteamRunning { get; }
+
+    /// <summary>usbip-win2 is installed in at least <see cref="UsbipDriver.MinimumVersion"/> and loaded.</summary>
+    bool IsUsbipReady { get; }
+
+    /// <summary>Steam's CEF debug flag file exists (it takes effect on Steam's next start).</summary>
+    bool IsCefDebuggingEnabled { get; }
+
+    void EnableCefDebugging();
+
+    /// <summary>The name of the Steam game running right now, or null.</summary>
+    string? RunningSteamGame();
+
+    /// <summary>Asks Steam to exit and waits for it; false if it is still running after the timeout.</summary>
+    Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken);
+
+    /// <summary>Starts Steam minimized to the tray.</summary>
+    void StartSteam();
+
+    /// <summary>Installs or updates usbip-win2; false if the user declined the Windows prompt.</summary>
+    Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken);
+
+    bool IsSteamControllerConnected();
 
     /// <summary>Tells Steam to drop SISR's forced controller layout (applied on the next focus change).</summary>
     void ResetSteamInputLayout();
@@ -28,7 +52,50 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 {
     public bool IsSupported => OperatingSystem.IsWindows();
 
+    private static readonly TimeSpan SteamExitTimeout = TimeSpan.FromSeconds(30);
+
+    public bool IsSteamInstalled => SteamInstallation.Find() is not null;
+
     public bool IsSteamRunning => SteamInstallation.IsRunning;
+
+    public bool IsUsbipReady =>
+        OperatingSystem.IsWindows() && UsbipDriver.InstalledVersion() is { } version && version >= UsbipDriver.MinimumVersion && UsbipDriver.IsRunning();
+
+    public bool IsCefDebuggingEnabled => SteamInstallation.Find() is { } steam && File.Exists(steam.CefDebuggingFlagPath);
+
+    public void EnableCefDebugging()
+    {
+        var steam = SteamInstallation.Find() ?? throw new InvalidOperationException("Steam wurde nicht gefunden.");
+        File.WriteAllBytes(steam.CefDebuggingFlagPath, []);
+    }
+
+    public string? RunningSteamGame() => SteamInstallation.RunningGameName();
+
+    public async Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken) =>
+        await SteamInstallation.ShutdownAsync(SteamExitTimeout, time, cancellationToken);
+
+    public void StartSteam() => SteamInstallation.Find()?.StartSilently();
+
+    public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken) =>
+        OperatingSystem.IsWindows() ? UsbipDriver.InstallAsync(http, cancellationToken) : Task.FromResult(false);
+
+    public bool IsSteamControllerConnected()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return false;
+        }
+
+        try
+        {
+            return SteamControllerDetector.IsConnected();
+        }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+        {
+            // Without the device list, rather show the per-game setting than hide it.
+            return true;
+        }
+    }
 
     public void ResetSteamInputLayout() =>
         Process.Start(new ProcessStartInfo("steam://forceinputappid/0") { UseShellExecute = true })?.Dispose();

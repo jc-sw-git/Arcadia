@@ -12,6 +12,12 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
     /// <summary>The logged-in account (Steam3 account id), or null if nobody is logged in.</summary>
     public uint? ActiveUserId { get; } = activeUserId;
 
+    /// <summary>
+    /// While this empty file exists, Steam opens its local CEF debug interface on its next start.
+    /// SISR needs it to set the controller layout.
+    /// </summary>
+    public string CefDebuggingFlagPath => Path.Combine(RootPath, ".cef-enable-remote-debugging");
+
     public string? ShortcutsPath => UserDataDirectory is { } dir ? Path.Combine(dir, "config", "shortcuts.vdf") : null;
 
     /// <summary>
@@ -48,6 +54,28 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
     public static bool IsCurrentProcessLaunchedBySteam =>
         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SteamGameId"))
         || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SteamAppId"));
+
+    /// <summary>
+    /// The Steam game running right now, by its name in Steam's registry (or its app id), or null.
+    /// Steam sets <c>RunningAppID</c> while one of its games runs.
+    /// </summary>
+    public static string? RunningGameName()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        using var steam = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
+        if (steam?.GetValue("RunningAppID") is not int appId || appId == 0)
+        {
+            return null;
+        }
+
+        var id = appId.ToString(CultureInfo.InvariantCulture);
+        using var app = steam.OpenSubKey(@"Apps\" + id);
+        return app?.GetValue("Name") is string name && !string.IsNullOrWhiteSpace(name) ? name : $"App {id}";
+    }
 
     public static SteamInstallation? Find()
     {

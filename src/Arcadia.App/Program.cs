@@ -73,7 +73,7 @@ sealed partial class Program
         const uint YesNo = 0x4, IconQuestion = 0x20, DefaultNo = 0x100, SetForeground = 0x10000, TopMost = 0x40000;
         const int Yes = 6;
         var text = "Arcadia wird deinstalliert.\n\n"
-            + "Soll auch der Steam Controller Support mit allem, was dazugehört, entfernt werden?\n\n"
+            + "Soll auch SISR für den Steam Controller mit allem, was dazugehört, entfernt werden?\n\n"
             + string.Concat(parts.Select(p => $"•  {p}\n"))
             + "\nAndere Programme, die SISR nutzen, funktionieren danach nicht mehr. "
             + $"Ohne Antwort innerhalb von {QuestionTimeoutMs / 1000} Sekunden bleibt alles installiert.";

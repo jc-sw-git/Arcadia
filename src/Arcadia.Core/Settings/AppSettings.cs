@@ -8,8 +8,8 @@ namespace Arcadia.Core.Settings;
 public sealed record AppSettings
 {
     /// <summary>
-    /// Run SISR so the Steam Controller (and anything else using Steam Input) works as a
-    /// system-wide gamepad — in Arcadia and in games that were not started through Steam.
+    /// "Steam Controller als Xbox 360 Gamepad verwenden": run SISR so the Steam Controller works as
+    /// a system-wide Xbox 360 pad, in Arcadia and in games that were not started through Steam.
     /// </summary>
     public bool SteamControllerSupport { get; init; }
 
@@ -29,7 +29,17 @@ public sealed record AppSettings
     /// </summary>
     public bool ControllerSupportFor(Game game) =>
         SteamControllerSupport
-        && (ControllerSupportOverrides.TryGetValue(game.Key, out var enabled) ? enabled : game.LauncherId != KnownLaunchers.Steam.Id);
+        && (ControllerSupportOverrides.TryGetValue(game.Key, out var enabled) ? enabled : DefaultControllerSupportFor(game));
+
+    /// <summary>The mode a game starts with: "Steam Input" for Steam games, "Xbox 360 Controller (SISR)" for all others.</summary>
+    public static bool DefaultControllerSupportFor(Game game) => game.LauncherId != KnownLaunchers.Steam.Id;
+
+    /// <summary>
+    /// Sets the mode for <paramref name="game"/>. Only a choice that differs from the game's default
+    /// is stored, so untouched games follow the default if it ever changes.
+    /// </summary>
+    public AppSettings WithControllerSupportChoice(Game game, bool useSisr) =>
+        WithControllerSupportOverride(game, useSisr == DefaultControllerSupportFor(game) ? null : useSisr);
 
     /// <summary>Null means "use the default" for this game.</summary>
     public bool? ControllerSupportOverrideFor(Game game) =>

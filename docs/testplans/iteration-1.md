@@ -192,14 +192,67 @@ Mit echtem Steam Controller und laufendem Steam.
 - [ ] **T28-2** Ein Steam-Spiel aus Arcadia starten (SISR pausiert), während es läuft den Support
       ausschalten, dann das Spiel beenden: SISR startet nicht wieder. Wieder einschalten, während ein
       solches Spiel läuft: Status „Pausiert“, SISR startet erst nach dem Spiel. · E2E: nein (echter Steam Controller, SISR)
-- [ ] **T28-3** Ohne Netzwerk Arcadia starten und den Support einschalten (SISR nicht installiert): nach
-      spätestens etwa 20 Sekunden eine Meldung in den Einstellungen, Arcadia bleibt bedienbar. · E2E: nein (SISR-Installation)
+- [ ] ~~**T28-3** Ohne Netzwerk Arcadia starten und den Support einschalten (SISR nicht installiert): nach
+      spätestens etwa 20 Sekunden eine Meldung in den Einstellungen, Arcadia bleibt bedienbar.~~
+      Ersetzt durch T85-6: Einschalten installiert seit #85 nichts mehr, das macht „SISR installieren“. · E2E: nein (SISR-Installation)
 
 Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | T28-1 bis T28-3 | 2026-10-12 | Claude | Branch `claude/project-thread-y4c95v`, Linux, Unit-Tests mit Fake-SISR, Fake-API und `FakeTimeProvider` (`ControllerSupportServiceTests`), nicht in der App | ✅ überlappende Ticks starten SISR einmal; Ausschalten während Tick oder Pause lässt SISR aus; GitHub-Timeout und abgebrochener Download melden sich; nach 3 Abstürzen in 5 min kein Neustart | Echter Steam Controller am PC des Owners |
+
+## #85 Steam Controller Support erst einschaltbar, wenn alles bereit ist
+
+Mit echtem Steam Controller. Für die Fälle ohne SISR vorher in Arcadia deinstallieren oder
+`%LOCALAPPDATA%\SISR` umbenennen.
+
+- [ ] **T85-1** Ohne SISR (oder ohne usbip-Treiber oder ohne `.cef-enable-remote-debugging` im
+      Steam-Ordner) zeigt die Einstellung „SISR installieren“ statt des Schalters. · E2E: ja (Fake-Plattform)
+- [ ] **T85-2** Steam läuft: A auf „SISR installieren“ fragt, ob Arcadia Steam beenden darf. „Abbrechen“
+      oder B: nichts wird installiert, Steam läuft weiter. · E2E: ja (Fake-Plattform)
+- [ ] **T85-3** Steam läuft, „Steam beenden und installieren“: Steam schließt, SISR und Treiber werden
+      installiert (Windows-Abfrage), Steam startet wieder im Hintergrund, die Option ist danach an und
+      der Steam Controller steuert Arcadia als Xbox 360 Controller. Nur mit dem Controller. · E2E: nein (echtes Steam, UAC)
+- [ ] **T85-4** Steam läuft nicht: „SISR installieren“ installiert ohne Rückfrage; Steam bleibt aus,
+      die Meldung „Steam läuft nicht“ mit „Steam starten“ erscheint. · E2E: nein (UAC)
+- [ ] **T85-5** Ein Steam-Spiel läuft: „SISR installieren“ installiert nichts und zeigt „Ein laufendes
+      Steam-Spiel (<Name>) wurde erkannt. Beende es zuerst, …“. · E2E: nein (echtes Steam-Spiel)
+- [ ] **T85-6** Ohne Netzwerk „SISR installieren“: nach spätestens etwa 20 Sekunden eine Meldung, die
+      Option bleibt aus, Steam läuft wieder, Arcadia bleibt bedienbar. · E2E: nein (SISR-Installation)
+- [ ] **T85-7** Windows-Abfrage des Treibers ablehnen: Meldung „… abgelehnt“, die Option bleibt aus,
+      Steam läuft wieder. · E2E: nein (UAC)
+- [ ] **T85-8** Bei eingeschalteter Option den usbip-Treiber deinstallieren: Die Option bleibt an und
+      zeigt das Problem mit „Installieren“. · E2E: nein (Treiber)
+- [ ] **T85-9** Unter Linux (bzw. ohne Steam unter Windows) ist die Option ausgegraut und sagt
+      „Momentan nur unter Windows verfügbar.“ bzw. „Benötigt Steam.“; A tut nichts. · E2E: ja
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T85-1, T85-3 bis T85-7 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Tests mit Fake-Plattform und Fake-SISR (`ControllerSupportServiceTests`), nicht in der App | ✅ Reihenfolge Steam beenden → CEF → SISR → Treiber → Steam starten → an; Steam-Spiel, Timeout, abgelehnter Treiber und nicht beendbares Steam melden sich und lassen die Option aus | Ansicht und echter Ablauf am PC des Owners |
+
+## #92 „Steam Controller Support“ verständlich benennen und beschreiben
+
+- [ ] **T92-1** Die Einstellung heißt „Steam Controller als Xbox 360 Gamepad verwenden“; Beschreibung,
+      die beiden Modi und der SISR-Hinweis stehen wie in #92. Kein Text sagt mehr „Steam Controller
+      Support“ (Einstellungen, Statusleiste, Vorschau, Deinstallationsfrage). · E2E: ja
+- [ ] **T92-2** Die Vorschau zeigt „STEAM CONTROLLER“ mit „Steam Input“ für Steam-Spiele und
+      „Xbox 360 Controller (SISR)“ für alle anderen, als Wert ohne Dropdown-Pfeil. · E2E: ja
+- [ ] **T92-3** Ein Klick auf den Wert wechselt zwischen den beiden Modi; zurück auf den Startwert
+      wird nichts gespeichert (`ControllerSupportOverrides` in `settings.json` leer). · E2E: ja
+- [ ] **T92-4** Der Eintrag in der Vorschau fehlt bei ausgeschalteter Option und, bei eingeschalteter,
+      ohne angeschlossenen Steam Controller (mit Xbox-Controller allein); er erscheint innerhalb von
+      etwa 10 Sekunden nach dem Anstecken. · E2E: nein (echter Steam Controller)
+
+Mit dem Controller erreichbar wird die Einstellung pro Spiel erst mit #10.
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T92-3 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Test (`ControllerSupportTests`), nicht in der App | ✅ Zurück auf den Startwert entfernt die Abweichung | Ansicht am PC des Owners |
 
 ## #86 Refinement-Skill
 
@@ -275,19 +328,21 @@ Steam Controller Support, Fehlerbehandlung). IDs `G-<n>`. Wo nichts anderes steh
       etwa einer Minute „… ist nicht gestartet – bitte in Epic nachsehen“ und bleibt bedienbar. · E2E: nein
 - [ ] **G-20** Ein Demo-Spiel zeigt beim Starten den Demo-Hinweis statt eines Fehlers. · E2E: ja
 
-### Steam Controller Support
+### Steam Controller (SISR)
 
 Mit echtem Steam Controller und laufendem Steam. Alle E2E: nein (Steam, SISR, Treiber, UAC).
 
-- [ ] **G-21** Einschalten in den Einstellungen installiert SISR (und usbip-win2 über die
-      Windows-Abfrage) mit Ladeanzeige; danach steuert der Steam Controller Arcadia als Gamepad. · E2E: nein
+- [ ] ~~**G-21** Einschalten in den Einstellungen installiert SISR (und usbip-win2 über die
+      Windows-Abfrage) mit Ladeanzeige; danach steuert der Steam Controller Arcadia als Gamepad.~~
+      Ersetzt durch T85-1 bis T85-4: Installiert wird seit #85 über „SISR installieren“. · E2E: nein
 - [ ] **G-22** Ein Nicht-Steam-Spiel aus Arcadia erkennt den Steam Controller als Xbox-Controller. · E2E: nein
 - [ ] **G-23** Ausschalten beendet SISR; der Steam Controller ist wieder Maus und Tastatur, Arcadia
       bleibt im Vordergrund. · E2E: nein
 - [ ] **G-24** Ein Spiel aus dem Steam-Tab pausiert SISR (keine doppelten Eingaben) und nach
       dem Beenden des Spiels läuft SISR wieder. · E2E: nein
-- [ ] **G-25** Pro Spiel lässt sich der Support nur mit dem Controller auf Standard → immer an →
-      immer aus schalten, und Arcadia hält sich beim nächsten Start daran. · E2E: nein
+- [ ] ~~**G-25** Pro Spiel lässt sich der Support nur mit dem Controller auf Standard → immer an →
+      immer aus schalten, und Arcadia hält sich beim nächsten Start daran.~~
+      Ersetzt durch T92-2 bis T92-4 (zwei Modi statt drei); mit dem Controller kommt es mit #10. · E2E: nein
 - [ ] **G-26** Probleme (Steam läuft nicht, Debug-Schnittstelle aus, Steam-Eintrag fehlt, Treiber
       veraltet) erscheinen in den Einstellungen und als Symbol in der Statusleiste; „Beheben“ löst
       sie. · E2E: nein

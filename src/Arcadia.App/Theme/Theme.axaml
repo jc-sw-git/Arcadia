@@ -12,6 +12,11 @@
     <SolidColorBrush x:Key="ChangelogSurface" Color="#141B23" />
     <SolidColorBrush x:Key="ChangelogBorder" Color="#243040" />
     <SolidColorBrush x:Key="VersionPill" Color="#1F3A5C" />
+    <!-- Prompt over the settings ("Steam-Spiel läuft", "Steam beenden?"): icon disc and the highlighted game. -->
+    <SolidColorBrush x:Key="PromptBorder" Color="#2E3A48" />
+    <SolidColorBrush x:Key="PromptIcon" Color="#1F3A5C" />
+    <SolidColorBrush x:Key="PromptIconWarning" Color="#4A3418" />
+    <SolidColorBrush x:Key="PromptGame" Color="#1F2833" />
     <SolidColorBrush x:Key="Line" Color="#2A3440" />
     <SolidColorBrush x:Key="LineStrong" Color="#3A4552" />
     <SolidColorBrush x:Key="Text" Color="#E8EDF2" />
@@ -330,6 +335,45 @@
     <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
     <Setter Property="CornerRadius" Value="12" />
     <Setter Property="Padding" Value="16,12" />
+  </Style>
+  <Style Selector="Border.prompt">
+    <Setter Property="Background" Value="{StaticResource Surface}" />
+    <Setter Property="BorderBrush" Value="{StaticResource PromptBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Padding" Value="44,36,44,28" />
+    <Setter Property="BoxShadow" Value="{StaticResource DialogShadow}" />
+  </Style>
+  <Style Selector="Border.promptIcon">
+    <Setter Property="Width" Value="52" />
+    <Setter Property="Height" Value="52" />
+    <Setter Property="CornerRadius" Value="26" />
+    <Setter Property="Background" Value="{StaticResource PromptIcon}" />
+  </Style>
+  <Style Selector="Border.promptIcon TextBlock">
+    <Setter Property="FontSize" Value="28" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.promptIcon.warning">
+    <Setter Property="Background" Value="{StaticResource PromptIconWarning}" />
+  </Style>
+  <Style Selector="Border.promptIcon.warning TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Warning}" />
+  </Style>
+  <Style Selector="Border.promptGame">
+    <Setter Property="Background" Value="{StaticResource PromptGame}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Warning}" />
+    <Setter Property="BorderThickness" Value="4,0,0,0" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="20,16" />
+  </Style>
+  <Style Selector="TextBlock.promptBody">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <!-- A value that a click changes, shown as plain text rather than as a dropdown. -->
   <Style Selector="Button.modeValue">

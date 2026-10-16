@@ -460,18 +460,6 @@
 
                   <!-- Everything below depends on the switch above, so it stays in the same box. -->
                   <StackPanel Spacing="16" Margin="20,8,20,16">
-                    <Border IsVisible="{Binding IsConfirmingSteamStop}" Background="{StaticResource SurfaceHover}" CornerRadius="12" Padding="16,14">
-                      <StackPanel Spacing="12">
-                        <TextBlock Text="Für die Installation muss Steam beendet werden. Arcadia startet Steam danach wieder. Darf Arcadia Steam jetzt beenden?"
-                                   FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                          <Button Classes="plain action primaryAction" Classes.focused="{Binding ConfirmSteamStopItem.IsFocused}"
-                                  Command="{Binding ConfirmSteamStopCommand}" Content="Steam beenden und installieren" />
-                          <Button Classes="plain action" Classes.focused="{Binding CancelSteamStopItem.IsFocused}"
-                                  Command="{Binding CancelSteamStopCommand}" Content="Abbrechen" />
-                        </StackPanel>
-                      </StackPanel>
-                    </Border>
                     <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding ShowStatus}">
                       <Path Classes="spinner" IsVisible="{Binding IsStarting}" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
                       <!-- No local Fill: it would override the "active" style. -->
@@ -641,6 +629,66 @@
           </StackPanel>
           </ScrollViewer>
         </Border>
+
+        <!-- Prompt over the settings before "SISR installieren" goes on; the settings stay dimmed behind it. -->
+        <Panel DataContext="{Binding Settings}" x:DataType="vm:SettingsViewModel" IsVisible="{Binding IsPromptOpen, FallbackValue=False}">
+          <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                  Command="{Binding ClosePromptCommand}" />
+          <Border Classes="prompt" Width="720" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel Spacing="28">
+              <StackPanel Orientation="Horizontal" Spacing="18">
+                <Border Classes="promptIcon" Classes.warning="{Binding IsGamePrompt}">
+                  <Panel>
+                    <TextBlock Text="!" IsVisible="{Binding IsGamePrompt}" />
+                    <TextBlock Text="?" IsVisible="{Binding IsSteamStopPrompt}" />
+                  </Panel>
+                </Border>
+                <TextBlock Text="Steam-Spiel läuft" IsVisible="{Binding IsGamePrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+                <TextBlock Text="Steam beenden?" IsVisible="{Binding IsSteamStopPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+              </StackPanel>
+
+              <StackPanel Spacing="14" IsVisible="{Binding IsGamePrompt}">
+                <Border Classes="promptGame">
+                  <TextBlock FontSize="20" TextWrapping="Wrap">
+                    <Run Text="{Binding RunningGame}" FontWeight="ExtraBold" />
+                    <Run Text=" läuft gerade über Steam." />
+                  </TextBlock>
+                </Border>
+                <TextBlock Classes="promptBody" Text="Für die Installation muss Steam beendet und neu gestartet werden. Beende zuerst das Spiel und versuche es dann erneut." />
+              </StackPanel>
+              <StackPanel Spacing="14" IsVisible="{Binding IsSteamStopPrompt}">
+                <TextBlock Classes="promptBody" Text="Für die Installation muss Steam beendet werden. Arcadia startet Steam danach wieder im Hintergrund." />
+                <TextBlock Classes="promptBody" Text="Danach werden SISR und der usbip-Treiber installiert. Windows fragt dabei einmal nach Administratorrechten." />
+              </StackPanel>
+
+              <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsGamePrompt}">
+                <Button Classes="plain action primaryAction" Classes.focused="{Binding RetryInstallItem.IsFocused}"
+                        Command="{Binding RetryInstallCommand}" Content="Erneut versuchen" />
+                <Button Classes="plain action" Classes.focused="{Binding CloseGamePromptItem.IsFocused}"
+                        Command="{Binding ClosePromptCommand}" Content="Schließen" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsSteamStopPrompt}">
+                <Button Classes="plain action primaryAction" Classes.focused="{Binding ConfirmSteamStopItem.IsFocused}"
+                        Command="{Binding ConfirmSteamStopCommand}" Content="Steam beenden und installieren" />
+                <Button Classes="plain action" Classes.focused="{Binding CancelSteamStopItem.IsFocused}"
+                        Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
+              </StackPanel>
+
+              <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                    <TextBlock Classes="hint" Text="Auswählen" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                    <TextBlock Classes="hint" Text="{Binding PromptBackText}" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </Border>
+        </Panel>
       </Panel>
     </Grid>
   </Viewbox>

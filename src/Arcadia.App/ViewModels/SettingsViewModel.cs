@@ -6,6 +6,7 @@ using Arcadia.ControllerSupport;
 using Arcadia.Core.Updates;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Avalonia.Threading;
 
 namespace Arcadia.App.ViewModels;
 
@@ -16,6 +17,18 @@ public partial class SettingsItemViewModel(Action activate) : ViewModelBase
     public partial bool IsFocused { get; set; }
 
     public void Activate() => activate();
+}
+
+/// <summary>A question over the settings that has to be answered before "SISR installieren" can go on.</summary>
+public enum SettingsPrompt
+{
+    None,
+
+    /// <summary>A Steam game runs; installing would end it, because Steam has to close.</summary>
+    SteamGameRunning,
+
+    /// <summary>Steam runs; asking whether Arcadia may close it for the install.</summary>
+    ConfirmSteamStop,
 }
 
 /// <summary>A problem found by the controller-support monitoring, with an optional fix button.</summary>
@@ -55,8 +68,11 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly ControllerSupportService _support;
     private readonly ArcadiaUpdateService _updates;
     private readonly SettingsItemViewModel _toggle;
+    private readonly SettingsItemViewModel _retryInstall;
+    private readonly SettingsItemViewModel _closeGamePrompt;
     private readonly SettingsItemViewModel _confirmSteamStop;
     private readonly SettingsItemViewModel _cancelSteamStop;
+    private readonly DispatcherTimer _promptCheck;
     private readonly SettingsItemViewModel _update;
     private readonly SettingsItemViewModel _arcadiaUpdate;
     private readonly SettingsItemViewModel _checkUpdates;
@@ -69,13 +85,24 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _support = support;
         _updates = updates;
         _toggle = new SettingsItemViewModel(ActivateMainRow);
+        _retryInstall = new SettingsItemViewModel(BeginInstall);
+        _closeGamePrompt = new SettingsItemViewModel(ClosePrompt);
         _confirmSteamStop = new SettingsItemViewModel(ConfirmSteamStop);
-        _cancelSteamStop = new SettingsItemViewModel(CancelSteamStop);
+        _cancelSteamStop = new SettingsItemViewModel(ClosePrompt);
         _update = new SettingsItemViewModel(() => _support.InstallUpdateAsync().Forget("SISR aktualisieren"));
         _arcadiaUpdate = new SettingsItemViewModel(() => installArcadiaUpdate().Forget("Arcadia aktualisieren"));
         ToggleCommand = new RelayCommand(ActivateMainRow);
+        RetryInstallCommand = new RelayCommand(BeginInstall);
         ConfirmSteamStopCommand = new RelayCommand(ConfirmSteamStop);
-        CancelSteamStopCommand = new RelayCommand(CancelSteamStop);
+        ClosePromptCommand = new RelayCommand(ClosePrompt);
+
+        // The game can end (or start) while a prompt is open; nothing else would tell us.
+        _promptCheck = new DispatcherTimer(PromptCheckInterval, DispatcherPriority.Background,
+            async (_, _) => await AppErrors.Guard(CheckPromptAsync, "Laufendes Steam-Spiel prüfen"));
+        _promptCheck.Stop();
+
+        // An old failure describes a moment that is over; the dialog opens without it.
+        _support.ClearError();
         UpdateCommand = new RelayCommand(() => _support.InstallUpdateAsync().Forget("SISR aktualisieren"));
         ArcadiaUpdateCommand = new RelayCommand(() => installArcadiaUpdate().Forget("Arcadia aktualisieren"));
         _support.Changed += OnSupportChanged;
@@ -86,13 +113,22 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public SettingsItemViewModel ToggleItem => _toggle;
 
+    private static readonly TimeSpan PromptCheckInterval = TimeSpan.FromSeconds(1);
+
+    public SettingsItemViewModel RetryInstallItem => _retryInstall;
+
+    public SettingsItemViewModel CloseGamePromptItem => _closeGamePrompt;
+
     public SettingsItemViewModel ConfirmSteamStopItem => _confirmSteamStop;
 
     public SettingsItemViewModel CancelSteamStopItem => _cancelSteamStop;
 
+    public IRelayCommand RetryInstallCommand { get; }
+
     public IRelayCommand ConfirmSteamStopCommand { get; }
 
-    public IRelayCommand CancelSteamStopCommand { get; }
+    /// <summary>"Schließen" / "Abbrechen", B, or a click beside the prompt.</summary>
+    public IRelayCommand ClosePromptCommand { get; }
 
     /// <summary>Everything is in place (or the setting is already on): the row is a switch.</summary>
     [ObservableProperty]
@@ -109,9 +145,22 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial string UnavailableText { get; private set; } = string.Empty;
 
-    /// <summary>"SISR installieren" was pressed while Steam runs; asking whether Arcadia may close it.</summary>
+    /// <summary>The modal over the settings, if any.</summary>
     [ObservableProperty]
-    public partial bool IsConfirmingSteamStop { get; private set; }
+    [NotifyPropertyChangedFor(nameof(IsPromptOpen), nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(PromptBackText))]
+    public partial SettingsPrompt Prompt { get; private set; }
+
+    public bool IsPromptOpen => Prompt != SettingsPrompt.None;
+
+    public bool IsGamePrompt => Prompt == SettingsPrompt.SteamGameRunning;
+
+    public bool IsSteamStopPrompt => Prompt == SettingsPrompt.ConfirmSteamStop;
+
+    public string PromptBackText => IsGamePrompt ? "Schließen" : "Abbrechen";
+
+    /// <summary>The Steam game named in the game prompt.</summary>
+    [ObservableProperty]
+    public partial string RunningGame { get; private set; } = string.Empty;
 
     [ObservableProperty]
     public partial bool ShowStatus { get; private set; }
@@ -203,9 +252,11 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     {
         switch (action)
         {
+            case UiAction.Left when IsPromptOpen:
             case UiAction.Up:
                 MoveFocus(-1);
                 return true;
+            case UiAction.Right when IsPromptOpen:
             case UiAction.Down:
                 MoveFocus(1);
                 return true;
@@ -216,8 +267,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
                 }
 
                 return true;
-            case UiAction.Back when IsConfirmingSteamStop:
-                CancelSteamStop();
+            case UiAction.Back when IsPromptOpen:
+                ClosePrompt();
                 return true;
             case UiAction.Back:
             case UiAction.Settings:
@@ -229,8 +280,10 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        _promptCheck.Stop();
         _support.Changed -= OnSupportChanged;
         _updates.Changed -= OnSupportChanged;
+        _support.ClearError();
     }
 
     private void ActivateMainRow()
@@ -251,32 +304,79 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Installing closes Steam, so the user is asked first. With a Steam game running nobody is
-    /// asked; <see cref="ControllerSupportService.InstallAsync"/> reports that instead.
+    /// Installing closes Steam, so it can't run beside a Steam game, and the user is asked before
+    /// Steam closes. Without Steam running it just installs. Also "Erneut versuchen".
     /// </summary>
     private void BeginInstall()
     {
-        if (_support.InstallStopsSteam && _support.InstallBlocker() is null)
+        if (_support.SteamGameBlockingInstall() is { } game)
         {
-            IsConfirmingSteamStop = true;
-            Refresh();
-            return;
+            RunningGame = game;
+            ShowPrompt(SettingsPrompt.SteamGameRunning);
         }
-
-        _support.InstallAsync().Forget("SISR installieren");
+        else if (_support.InstallStopsSteam)
+        {
+            ShowPrompt(SettingsPrompt.ConfirmSteamStop);
+        }
+        else
+        {
+            ShowPrompt(SettingsPrompt.None);
+            _support.InstallAsync().Forget("SISR installieren");
+        }
     }
 
     private void ConfirmSteamStop()
     {
-        IsConfirmingSteamStop = false;
+        // A game may have started since the question came up.
+        if (_support.SteamGameBlockingInstall() is not null)
+        {
+            BeginInstall();
+            return;
+        }
+
+        ShowPrompt(SettingsPrompt.None);
         _support.InstallAsync().Forget("SISR installieren");
+    }
+
+    private void ClosePrompt() => ShowPrompt(SettingsPrompt.None);
+
+    private void ShowPrompt(SettingsPrompt prompt)
+    {
+        Prompt = prompt;
+        if (prompt == SettingsPrompt.None)
+        {
+            _promptCheck.Stop();
+        }
+        else
+        {
+            _promptCheck.Start();
+        }
+
         Refresh();
     }
 
-    private void CancelSteamStop()
+    /// <summary>
+    /// Keeps an open prompt true: when the game ends it goes on with "Steam beenden?" (or closes
+    /// if Steam is gone too); when a game starts during "Steam beenden?" it says so.
+    /// </summary>
+    private Task CheckPromptAsync()
     {
-        IsConfirmingSteamStop = false;
-        Refresh();
+        var game = _support.SteamGameBlockingInstall();
+        switch (Prompt)
+        {
+            case SettingsPrompt.SteamGameRunning when game is not null:
+                RunningGame = game;
+                break;
+            case SettingsPrompt.SteamGameRunning:
+                ShowPrompt(_support.InstallStopsSteam ? SettingsPrompt.ConfirmSteamStop : SettingsPrompt.None);
+                break;
+            case SettingsPrompt.ConfirmSteamStop when game is not null:
+                RunningGame = game;
+                ShowPrompt(SettingsPrompt.SteamGameRunning);
+                break;
+        }
+
+        return Task.CompletedTask;
     }
 
     private void OnSupportChanged(object? sender, EventArgs e) => Avalonia.Threading.Dispatcher.UIThread.Post(Refresh);
@@ -304,7 +404,13 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         UnavailableText = setup == ControllerSupportSetup.SteamMissing ? "Benötigt Steam." : "Momentan nur unter Windows verfügbar.";
         ShowSwitch = IsEnabled || setup == ControllerSupportSetup.Ready;
         ShowInstall = !IsEnabled && setup == ControllerSupportSetup.NeedsInstall;
-        IsConfirmingSteamStop &= ShowInstall && !IsBusy;
+        if (IsPromptOpen && (!ShowInstall || IsBusy))
+        {
+            // Installed some other way, or something else started: the question is moot.
+            Prompt = SettingsPrompt.None;
+            _promptCheck.Stop();
+        }
+
         ShowStatus = !IsUnavailable;
 
         var state = _support.State;
@@ -356,25 +462,30 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         HasChangelog = _updates.AvailableVersion is not null && Changelog.Count > 0;
 
-        // Keep the controller focus on the same item where possible.
-        foreach (var item in FocusableItems())
+        // Keep the controller focus on the same item where possible. All items lose it first, so
+        // the row behind an open prompt doesn't keep its ring.
+        foreach (var item in new[] { _toggle, _update, _checkUpdates, _arcadiaUpdate, _retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop })
         {
             item.IsFocused = false;
         }
 
         var items = FocusableItems();
-        _focus = IsConfirmingSteamStop && focused is not null && !items.Contains(focused) ? 0
-            : focused is not null && items.Contains(focused) ? items.IndexOf(focused)
+        // A prompt opening focuses its first button; one closing hands focus back to the main row (first).
+        _focus = focused is not null && items.Contains(focused) ? items.IndexOf(focused)
+            : IsPromptOpen || IsPromptItem(focused) ? 0
             : Math.Min(_focus, items.Count - 1);
         items[_focus].IsFocused = true;
     }
 
     private List<SettingsItemViewModel> FocusableItems()
     {
-        // While asking whether Steam may close, only the two answers can be focused.
-        if (IsConfirmingSteamStop)
+        // While a prompt is open, only its buttons can be focused.
+        switch (Prompt)
         {
-            return [_confirmSteamStop, _cancelSteamStop];
+            case SettingsPrompt.SteamGameRunning:
+                return [_retryInstall, _closeGamePrompt];
+            case SettingsPrompt.ConfirmSteamStop:
+                return [_confirmSteamStop, _cancelSteamStop];
         }
 
         var items = new List<SettingsItemViewModel> { _toggle };
@@ -396,6 +507,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         return items;
     }
+
+    private bool IsPromptItem(SettingsItemViewModel? item) =>
+        item == _retryInstall || item == _closeGamePrompt || item == _confirmSteamStop || item == _cancelSteamStop;
 
     private void MoveFocus(int delta)
     {

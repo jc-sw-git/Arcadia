@@ -210,15 +210,18 @@ Mit echtem Steam Controller. Für die Fälle ohne SISR vorher in Arcadia deinsta
 
 - [ ] **T85-1** Ohne SISR (oder ohne usbip-Treiber oder ohne `.cef-enable-remote-debugging` im
       Steam-Ordner) zeigt die Einstellung „SISR installieren“ statt des Schalters. · E2E: ja (Fake-Plattform)
-- [ ] **T85-2** Steam läuft: A auf „SISR installieren“ fragt, ob Arcadia Steam beenden darf. „Abbrechen“
-      oder B: nichts wird installiert, Steam läuft weiter. · E2E: ja (Fake-Plattform)
+- [ ] **T85-2** Steam läuft: A auf „SISR installieren“ öffnet über den Einstellungen das Modal „Steam beenden?“;
+      nur dessen Schaltflächen haben den Fokus. „Abbrechen“ oder B: das Modal schließt, nichts wird
+      installiert, Steam läuft weiter; erneutes A fragt wieder. · E2E: ja (Fake-Plattform)
 - [ ] **T85-3** Steam läuft, „Steam beenden und installieren“: Steam schließt, SISR und Treiber werden
       installiert (Windows-Abfrage), Steam startet wieder im Hintergrund, die Option ist danach an und
       der Steam Controller steuert Arcadia als Xbox 360 Controller. Nur mit dem Controller. · E2E: nein (echtes Steam, UAC)
 - [ ] **T85-4** Steam läuft nicht: „SISR installieren“ installiert ohne Rückfrage; Steam bleibt aus,
       die Meldung „Steam läuft nicht“ mit „Steam starten“ erscheint. · E2E: nein (UAC)
-- [ ] **T85-5** Ein Steam-Spiel läuft: „SISR installieren“ installiert nichts und zeigt „Ein laufendes
-      Steam-Spiel (<Name>) wurde erkannt. Beende es zuerst, …“. · E2E: nein (echtes Steam-Spiel)
+- [ ] **T85-5** Ein Steam-Spiel läuft: „SISR installieren“ installiert nichts und öffnet das Modal
+      „Steam-Spiel läuft“ mit dem Namen des Spiels. Spiel beenden, während das Modal offen ist: es wechselt
+      von selbst zu „Steam beenden?“. Schließen (B) und die Einstellungen neu öffnen: kein alter Hinweis
+      bleibt stehen. · E2E: nein (echtes Steam-Spiel)
 - [ ] **T85-6** Ohne Netzwerk „SISR installieren“: nach spätestens etwa 20 Sekunden eine Meldung, die
       Option bleibt aus, Steam läuft wieder, Arcadia bleibt bedienbar. · E2E: nein (SISR-Installation)
 - [ ] **T85-7** Windows-Abfrage des Treibers ablehnen: Meldung „… abgelehnt“, die Option bleibt aus,
@@ -232,6 +235,7 @@ Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
+| T85-2, T85-5 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Xvfb 1920×1080, `--demo`, Modal per lokalem Eingriff erzwungen (unter Linux ist die Option ausgegraut) | ✅ Beide Modals erscheinen über den abgedunkelten Einstellungen, Fokus nur auf ihren Schaltflächen; per Unit-Test geprüft sind nur die frische Abfrage des Spiels und `ClearError`, der Wechsel des Modals beim Spielende nicht | Echter Ablauf mit Steam-Spiel am PC des Owners |
 | T85-1, T85-3 bis T85-7 | 2026-10-16 | Claude | Branch `feat/steam-controller-setup-and-naming-85-92`, Linux, Unit-Tests mit Fake-Plattform und Fake-SISR (`ControllerSupportServiceTests`), nicht in der App | ✅ Reihenfolge Steam beenden → CEF → SISR → Treiber → Steam starten → an; Steam-Spiel, Timeout, abgelehnter Treiber und nicht beendbares Steam melden sich und lassen die Option aus | Ansicht und echter Ablauf am PC des Owners |
 
 ## #92 „Steam Controller Support“ verständlich benennen und beschreiben

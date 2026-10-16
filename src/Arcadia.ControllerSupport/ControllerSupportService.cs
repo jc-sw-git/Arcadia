@@ -220,9 +220,28 @@ public sealed class ControllerSupportService(
     /// end a running Steam game.
     /// </summary>
     public string? InstallBlocker() =>
-        _platform.IsSteamRunning && _platform.RunningSteamGame() is { } game
+        SteamGameBlockingInstall() is { } game
             ? $"Ein laufendes Steam-Spiel ({game}) wurde erkannt. Beende es zuerst, da für die Installation Steam beendet und neu gestartet werden muss."
             : null;
+
+    /// <summary>The name of the Steam game that keeps "SISR installieren" from closing Steam, or null.</summary>
+    /// <remarks>Read fresh on every call, so the settings notice the game ending.</remarks>
+    public string? SteamGameBlockingInstall() => _platform.IsSteamRunning ? _platform.RunningSteamGame() : null;
+
+    /// <summary>
+    /// Forgets the message of the last failed action, e.g. when the settings close; it describes
+    /// a moment that is over. Kept while an action runs, which sets its own.
+    /// </summary>
+    public void ClearError()
+    {
+        if (LastError is null || BusyText is not null)
+        {
+            return;
+        }
+
+        LastError = null;
+        OnChanged();
+    }
 
     /// <summary>
     /// "SISR installieren": closes Steam if it runs (the caller has asked the user), sets Steam's

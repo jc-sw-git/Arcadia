@@ -380,6 +380,45 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public void The_blocking_game_is_read_fresh_so_its_end_is_noticed()
+    {
+        var service = Create(enabled: false);
+        _platform.SteamGame = "Hollow Knight";
+        Assert.Equal("Hollow Knight", service.SteamGameBlockingInstall());
+
+        _platform.SteamGame = null;
+
+        Assert.Null(service.SteamGameBlockingInstall());
+        Assert.Null(service.InstallBlocker());
+    }
+
+    [Fact]
+    public void A_game_counts_only_while_Steam_runs()
+    {
+        var service = Create(enabled: false);
+        _platform.SteamGame = "Hollow Knight";
+        _platform.IsSteamRunning = false;
+
+        Assert.Null(service.SteamGameBlockingInstall());
+    }
+
+    [Fact]
+    public async Task ClearError_forgets_the_last_failure()
+    {
+        var service = Create(enabled: false);
+        _platform.SteamRefusesToExit = true;
+        await service.InstallAsync();
+        Assert.NotNull(service.LastError);
+        var changes = 0;
+        service.Changed += (_, _) => changes++;
+
+        service.ClearError();
+
+        Assert.Null(service.LastError);
+        Assert.Equal(1, changes);
+    }
+
+    [Fact]
     public async Task A_declined_driver_install_starts_Steam_again_and_stays_off()
     {
         var service = Create(enabled: false);

@@ -39,8 +39,10 @@ focus handling or anything SISR/usbip related.
 - Steam reads the CEF flag only when it starts, so `InstallAsync` closes a running Steam first (the
   settings ask), writes the flag itself, installs what is missing and starts Steam again if it closed it.
   It refuses while a Steam game runs: `HKCU\Software\Valve\Steam\RunningAppID` is non-zero, the name comes
-  from `…\Steam\Apps\<id>\Name`. Inferred from Steam's registry, not yet checked on the owner's PC; that
-  writing the flag file is all SISR's own "enable CEF" does is inferred too.
+  from `…\Steam\Apps\<id>\Name` (the name checked on the owner's PC, 2026-10-16); that writing the flag
+  file is all SISR's own "enable CEF" does is inferred. The settings ask both questions in a modal over the
+  dialog ("Steam-Spiel läuft", "Steam beenden?") that re-reads the running game every second, because
+  nothing else reports a game ending; `LastError` is cleared when the settings open or close.
 - A Steam Controller counts as connected when Windows lists a HID device with Valve's vendor id `28DE`
   other than `PID_11FF` (Steam's virtual gamepad for other pads). Works while SISR emulates its Xbox 360
   pad. The wireless dongle counts even with the controller off. Inferred from the USB ids, not yet

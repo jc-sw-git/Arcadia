@@ -427,6 +427,8 @@ Verlauf:
 | G-21 bis G-24 | 2026-10-09 | nicht festgehalten | PC des Owners (laut `docs/controller-support.md`) | ✅ | – |
 | G-32 | 2026-10-17 | Juri | PC des Owners, „Ansicht“ | ❌ Fokusrahmen oben und unten abgeschnitten, auch an anderen Stellen | Fix ohne Issue (Fluent-Button schneidet auf seine Größe zu) |
 | G-32 | 2026-10-17 | Claude | Branch `fix/focus-ring-clipped`, Linux, Xvfb 1920×1080 `--demo` | ✅ Kachel (auch oberste Reihe), Seitengröße in „Ansicht“ und erste Einstellungszeile mit vollem Rahmen | Kontrolle am PC des Owners |
+| G-32 | 2026-10-17 | Juri | PC des Owners, Branch `fix/focus-ring-clipped` | ❌ Sortier-Schalter in „Ansicht“ noch oben und unten abgeschnitten; Kachelrahmen unten dunkler | `ItemsControl` schneidet ebenfalls zu; Schlagschatten lag über dem Rahmen |
+| G-32 | 2026-10-17 | Claude | Branch `fix/focus-ring-clipped`, Linux, Xvfb 1920×1080 `--demo` | ✅ Sortier-Schalter mit vollem Rahmen, Kachelrahmen unten so hell wie oben | Kontrolle am PC des Owners |
 
 ## Explorativer Test
 

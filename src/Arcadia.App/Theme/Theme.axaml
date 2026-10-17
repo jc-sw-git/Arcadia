@@ -43,7 +43,8 @@
 
     <!-- Focus rings and shadows. -->
     <BoxShadows x:Key="FocusRing">0 0 0 3 #F2F5F8</BoxShadows>
-    <BoxShadows x:Key="FocusRingLifted">0 0 0 3 #F2F5F8, 0 18 40 0 #A6000000</BoxShadows>
+    <!-- Shadows paint in order: the drop shadow first, so it doesn't darken the ring's lower edge. -->
+    <BoxShadows x:Key="FocusRingLifted">0 18 40 0 #A6000000, 0 0 0 3 #F2F5F8</BoxShadows>
     <BoxShadows x:Key="HoverRing">0 0 0 2 #5A6878</BoxShadows>
     <BoxShadows x:Key="ToastShadow">0 20 50 0 #8C000000</BoxShadows>
     <BoxShadows x:Key="DialogShadow">0 40 100 0 #99000000</BoxShadows>
@@ -135,6 +136,11 @@
   <Style Selector="Button.tab.selected">
     <Setter Property="Background" Value="{StaticResource TextStrong}" />
     <Setter Property="Foreground" Value="{StaticResource Bg}" />
+  </Style>
+
+  <!-- Item lists clip to their bounds as well, and a focused item's ring reaches beyond them. -->
+  <Style Selector="ItemsControl">
+    <Setter Property="ClipToBounds" Value="False" />
   </Style>
 
   <!-- Cover tiles. -->

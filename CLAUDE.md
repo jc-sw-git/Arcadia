@@ -117,7 +117,7 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 | `src/Arcadia.Launchers.Abstractions` | What a launcher is made of, with no dependency on the rest: `ILauncherIntegration` (scanner, optional client and install monitor, `Locate`), `ILauncherScanner`, `ILauncherClient`, `IInstallMonitor`, models (`Game`, `LauncherInfo`, `LaunchTarget`). The future plugin interface for launchers |
 | `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `SearchQuery`, `AppSettings`/`SettingsStore`/`SettingsService` (the one shared copy of the settings), `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`SteamScanner`, `SteamInstallMonitor`, `SteamContentLog`, `SteamLoginLog`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
-| `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, auto-repeat for D-pad/stick) |
+| `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, presses and releases, auto-repeat for D-pad/stick), `HoldGesture` (tap vs. hold) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost` (`ISisrHost`), `SisrApiClient`, `UsbipDriver`, `UsbipPorts`, `GitHubReleases`, `ControllerSupportService` (`SisrState`), `ControllerSupportPlatform` (Windows/Steam, replaced in tests), `ControllerSupportRemoval` (uninstall) |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header) and `ToastViewModel` are its children |
 | `tests/Arcadia.Core.Tests` | xUnit |
@@ -139,6 +139,11 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   `/steam-epic term` prefix, keyword per launcher), R3 = keyboard layout switch, Menu/☰ or
   right click = context menu. No "all launchers" tab. No dedicated favourite button.
 - Dependent options sit in the same box as their main switch.
+- A starts a game on release; holding A for 1 s opens the detail page (a ring around the tile fills from
+  0.2 s on, letting go before 1 s cancels). The context menu and the detail page offer the same actions
+  (`GameActionViewModel.For`); the detail page has no menu, its actions are buttons (owner, 2026-10-17).
+- Launcher actions (open in the launcher, uninstall, controller layout) are `LaunchTarget`s on `Game`;
+  a null one is shown disabled with the reason, or for uninstall opens the launcher instead.
 - If an update is available, A still says "Spielen" and starts the game; the launcher installs the update
   first. The update shows as an icon, and the detail page says below the button that the launcher may update
   first (owner, 2026-10-12). Launchers have no update-only command: Steam ignores `steam://install` for

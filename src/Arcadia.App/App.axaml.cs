@@ -128,6 +128,14 @@ public partial class App : Application
                     });
                 }
             };
+            // Releases go through even while another window is in front, so a held A can't get stuck.
+            _gamepad.ButtonReleased += button =>
+            {
+                if (UiActionMap.FromGamepad(button) is { } action)
+                {
+                    Dispatcher.UIThread.Post(() => viewModel.Release(action));
+                }
+            };
             _gamepad.Start();
 
             var clock = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => viewModel.Status.UpdateClock());

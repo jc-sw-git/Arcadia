@@ -1,6 +1,7 @@
 ﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Arcadia.App.ViewModels"
+        xmlns:ctl="using:Arcadia.App.Controls"
         x:Class="Arcadia.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Arcadia"
@@ -151,12 +152,21 @@
             </Panel>
             <DockPanel Grid.Row="1" Margin="24,22,24,24">
               <StackPanel DockPanel.Dock="Bottom" Spacing="10">
-                <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
-                  <StackPanel Orientation="Horizontal" Spacing="12">
-                    <Border Classes="glyph round dark"><TextBlock Text="A" /></Border>
-                    <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
-                  </StackPanel>
-                </Button>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                  <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Border Classes="glyph round dark"><TextBlock Text="A" /></Border>
+                      <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                  <Button Grid.Column="1" Classes="plain secondary" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenMenuCommand}"
+                          ToolTip.Tip="Weitere Aktionen (≡ oder Rechtsklick auf ein Cover)">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <Border Classes="glyph"><TextBlock Text="≡" /></Border>
+                      <TextBlock Text="Optionen" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </Grid>
                 <TextBlock IsVisible="{Binding UpdateAvailable}" Classes="actionHint">
                   <Run Text="{Binding LauncherName}" /><Run Text=" installiert das Update ggf. vor dem Start" />
                 </TextBlock>
@@ -235,7 +245,7 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:GameTileViewModel">
-                  <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Command="{Binding FocusCommand}"
+                  <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}" Command="{Binding FocusCommand}"
                           Background="{Binding CoverBrush}" Height="215" ToolTip.Tip="{Binding Title}">
                     <Panel>
                       <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
@@ -264,6 +274,7 @@
                       <ProgressBar Classes="install" Classes.paused="{Binding IsInstallPaused}" IsVisible="{Binding IsInstallActive}"
                                    Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}"
                                    VerticalAlignment="Bottom" Margin="0" />
+                      <ctl:HoldRing />
                     </Panel>
                   </Button>
                 </DataTemplate>
@@ -313,6 +324,14 @@
           <StackPanel Orientation="Horizontal" Spacing="10">
             <Border Classes="glyph round"><TextBlock Text="A" /></Border>
             <TextBlock Classes="hint" Text="{Binding FocusedGame.PrimaryActionText, FallbackValue='Spielen'}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+            <TextBlock Classes="hint" Text="halten: Details" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph"><TextBlock Text="≡" /></Border>
+            <TextBlock Classes="hint" Text="Optionen" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="10">
             <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
@@ -413,6 +432,85 @@
                 <StackPanel Orientation="Horizontal" Spacing="10">
                   <Border Classes="glyph round"><TextBlock Text="B" /></Border>
                   <TextBlock Classes="hint" Text="Schließen" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+      </Panel>
+
+      <!-- Context menu of the focused game, next to the preview panel. -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsGameMenuOpen}">
+        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Command="{Binding CloseMenuCommand}" />
+        <Border Width="420" Background="{StaticResource Surface}" CornerRadius="16" Padding="12" Margin="496,0,0,104"
+                HorizontalAlignment="Left" VerticalAlignment="Bottom" BoxShadow="{StaticResource DialogShadow}">
+          <StackPanel Spacing="2" DataContext="{Binding GameMenu}" x:DataType="vm:GameMenuViewModel">
+            <TextBlock Classes="label" Text="{Binding Title}" FontSize="14" Margin="16,10,16,12" TextTrimming="CharacterEllipsis" />
+            <ItemsControl ItemsSource="{Binding Actions}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:GameActionViewModel">
+                  <StackPanel>
+                    <Border IsVisible="{Binding StartsGroup}" Height="1" Background="{StaticResource Line}" Margin="8,6" />
+                    <Button Classes="plain menuItem" Classes.focused="{Binding IsFocused}" Classes.danger="{Binding IsDanger}" IsEnabled="{Binding IsEnabled}"
+                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).InvokeMenuActionCommand}" CommandParameter="{Binding}">
+                      <Grid ColumnDefinitions="24,*" ColumnSpacing="14">
+                        <Path Classes="icon" Data="{Binding Icon}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                              Width="24" Height="24" Stretch="None" VerticalAlignment="Top" />
+                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Label}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <TextBlock Classes="note" Text="{Binding Note}" IsVisible="{Binding HasNote}" />
+                        </StackPanel>
+                      </Grid>
+                    </Button>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Right" Margin="8,10,8,2">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                <TextBlock Classes="hint" Text="Auswählen" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                <TextBlock Classes="hint" Text="Schließen" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Panel>
+
+      <!-- Asks before an action that can't be undone from Arcadia (uninstalling). -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsConfirmationOpen}">
+        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Command="{Binding CancelConfirmationCommand}" />
+        <Border Width="680" Background="{StaticResource Surface}" CornerRadius="20" Padding="48,40,48,32"
+                HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
+          <StackPanel Spacing="28" DataContext="{Binding Confirmation}" x:DataType="vm:ConfirmationViewModel">
+            <StackPanel Spacing="12">
+              <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding Message}" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Button Classes="plain action danger" Classes.focused="{Binding IsConfirmFocused}" Content="{Binding ConfirmLabel}"
+                      Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ConfirmCommand}" />
+              <Button Classes="plain action" Classes.focused="{Binding IsCancelFocused}" Content="Abbrechen"
+                      Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CancelConfirmationCommand}" />
+            </StackPanel>
+            <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+              <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+                  <TextBlock Classes="hint" Text="Wechseln" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                  <TextBlock Classes="hint" Text="Auswählen" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                  <TextBlock Classes="hint" Text="Abbrechen" />
                 </StackPanel>
               </StackPanel>
             </Border>

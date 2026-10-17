@@ -18,6 +18,9 @@ public enum UiAction
     NextPage,
     ViewOptions,
     Settings,
+
+    /// <summary>The context menu of the focused game.</summary>
+    Options,
 }
 
 public static class UiActionMap
@@ -36,6 +39,7 @@ public static class UiActionMap
         GamepadButton.RightTrigger => UiAction.NextPage,
         GamepadButton.Y => UiAction.ViewOptions,
         GamepadButton.View => UiAction.Settings,
+        GamepadButton.Menu => UiAction.Options,
         _ => null,
     };
 
@@ -55,6 +59,7 @@ public static class UiActionMap
         (Key.PageDown, _) => UiAction.NextPage,
         (Key.V, KeyModifiers.None) => UiAction.ViewOptions,
         (Key.F2, _) => UiAction.Settings,
+        (Key.Apps, _) or (Key.F10, KeyModifiers.Shift) => UiAction.Options,
         _ => null,
     };
 }

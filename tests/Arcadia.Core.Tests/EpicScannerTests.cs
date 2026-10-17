@@ -38,6 +38,11 @@ public class EpicScannerTests
         Assert.Equal(
             new LaunchTarget.ProtocolUri("com.epicgames.launcher://apps/ns123%3Aitem456%3Af7a0ebb44f93430fb1c4388a395eba96?action=launch&silent=true"),
             game.Launch);
+
+        // Epic has no link to one game's page or to uninstalling it: both go through its library.
+        Assert.Equal(new LaunchTarget.ProtocolUri("com.epicgames.launcher://store/library"), game.OpenInLauncher);
+        Assert.Null(game.Uninstall);
+        Assert.Null(game.ControllerLayout);
     }
 
     [Fact]

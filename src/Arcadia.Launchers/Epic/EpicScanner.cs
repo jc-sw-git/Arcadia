@@ -128,6 +128,7 @@ public sealed class EpicScanner(
                 Launch = new LaunchTarget.ProtocolUri(LaunchUri(item.Namespace, item.CatalogItemId, item.AppName)),
                 IsInstalled = false,
                 Install = new LaunchTarget.ProtocolUri(InstallUri(item.Namespace, item.CatalogItemId, item.AppName)),
+                OpenInLauncher = new LaunchTarget.ProtocolUri(LibraryUri),
             });
         }
 
@@ -225,6 +226,7 @@ public sealed class EpicScanner(
                 LauncherId = KnownLaunchers.Epic.Id,
                 Title = title,
                 Launch = new LaunchTarget.ProtocolUri(LaunchUri(catalogNamespace, catalogItemId, appName)),
+                OpenInLauncher = new LaunchTarget.ProtocolUri(LibraryUri),
                 InstallDirectory = installLocation,
                 ExecutablePath = installLocation is not null && !string.IsNullOrEmpty(launchExecutable)
                     ? Path.Combine(installLocation, launchExecutable)
@@ -238,6 +240,12 @@ public sealed class EpicScanner(
 
     public static string LaunchUri(string catalogNamespace, string catalogItemId, string appName) =>
         $"com.epicgames.launcher://apps/{AppPath(catalogNamespace, catalogItemId, appName)}?action=launch&silent=true";
+
+    /// <summary>
+    /// Epic has no link to a single game's page in the library, so this opens the library. It has
+    /// no uninstall link either; games are uninstalled there.
+    /// </summary>
+    public const string LibraryUri = "com.epicgames.launcher://store/library";
 
     /// <summary>Opens the launcher's install dialog for the game.</summary>
     public static string InstallUri(string catalogNamespace, string catalogItemId, string appName) =>

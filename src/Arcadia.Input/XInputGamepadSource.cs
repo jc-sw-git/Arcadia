@@ -5,7 +5,7 @@ using System.Runtime.Versioning;
 namespace Arcadia.Input;
 
 /// <summary>
-/// Polls up to four XInput controllers and merges them into one stream of button presses.
+/// Polls up to four XInput controllers and merges them into one stream of button presses and releases.
 /// While Steam is running, Steam Input exposes the Steam Controller (and PlayStation pads)
 /// as a virtual XInput device, so they arrive here too.
 /// </summary>
@@ -27,6 +27,8 @@ public sealed partial class XInputGamepadSource : IGamepadSource
     private Thread? _thread;
 
     public event Action<GamepadButton>? ButtonPressed;
+
+    public event Action<GamepadButton>? ButtonReleased;
 
     public void Start()
     {
@@ -70,6 +72,14 @@ public sealed partial class XInputGamepadSource : IGamepadSource
                 {
                     _lastRepeat[button] = now;
                     ButtonPressed?.Invoke(button);
+                }
+            }
+
+            foreach (var button in previous)
+            {
+                if (!current.Contains(button))
+                {
+                    ButtonReleased?.Invoke(button);
                 }
             }
 

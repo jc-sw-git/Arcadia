@@ -331,6 +331,45 @@ Verlauf:
 | T8-3 | 2026-10-17 | Claude | Branch `feat/save-view-and-tab-8`, Linux, Xvfb `--demo`, `LastTabLauncherId` von Hand auf einen unbekannten Launcher gesetzt | ✅ Start im ersten Tab (GOG Galaxy), der gespeicherte Wert bleibt erhalten | Echter fehlender Launcher am PC des Owners |
 | T8-1, T8-3 | 2026-10-17 | Claude | Branch `feat/save-view-and-tab-8`, Unit-Tests (`SettingsServiceTests`) | ✅ Neustart, alte `settings.json` ohne die Felder, unbekannte Werte, gleichzeitiges Speichern aus zwei Threads (geht ohne Lock rot) | – |
 
+## #10 Kontextmenü für Spiele
+
+- [ ] **T10-1** ≡ (Menü-Taste), Rechtsklick auf ein Cover, „≡ Optionen“ in der Vorschau und die
+      Kontextmenü-Taste der Tastatur öffnen das Menü des Spiels; Hoch/Runter überspringen deaktivierte
+      Einträge, B und ≡ schließen es, ein Klick daneben auch. · E2E: ja
+- [ ] **T10-2** Installiertes Spiel: Spielen, Details anzeigen, Zu Favoriten hinzufügen und Artwork
+      ändern (beide deaktiviert, „Folgt in einer späteren Version“), In <Launcher> öffnen,
+      Controller-Layout anzeigen, Trennstrich, Deinstallieren … in Rot. Mit Update steht unter
+      „Spielen“ der Hinweis, dass der Launcher ggf. vorher aktualisiert; es gibt keinen Update-Eintrag. · E2E: ja
+- [ ] **T10-3** Nicht installiertes Spiel: Installieren, Details anzeigen, Zu Favoriten hinzufügen,
+      In <Launcher> öffnen. Während einer Installation steht statt „Installieren“ der Status
+      (z. B. „Wird installiert · 42 %“), deaktiviert. · E2E: ja
+- [ ] **T10-4** A kurz drücken startet das Spiel beim Loslassen. A halten: nach etwa 0,2 s füllt sich
+      ein blauer Rahmen um die Kachel, nach 1 s öffnet sich die Detailseite, ohne loszulassen.
+      Loslassen dazwischen bricht ab, nichts passiert. Enter verhält sich gleich. · E2E: ja
+- [ ] **T10-5** Steam-Spiel: „In Steam öffnen“ zeigt die Seite des Spiels in der Steam-Bibliothek,
+      „Controller-Layout anzeigen“ Steams Controller-Konfiguration des Spiels. Bei Nicht-Steam-Spielen
+      ist das Layout deaktiviert („In <Launcher> nicht verfügbar“). · E2E: nein (echter Steam-Client)
+- [ ] **T10-6** Steam-Spiel deinstallieren: Arcadia fragt nach (Fokus auf „Abbrechen“, A dort
+      bricht ab); „Deinstallieren“ öffnet Steams eigene Deinstallationsfrage, danach verschwindet das
+      Spiel aus der Bibliothek. · E2E: nein (echter Steam-Client)
+- [ ] **T10-7** Epic-Spiel: „In Epic Games öffnen“ öffnet die Epic-Bibliothek; „Deinstallieren …“
+      sagt „Nur in Epic Games möglich – öffnet Epic Games“ und öffnet die Bibliothek ohne Rückfrage. · E2E: nein (echter Epic-Client)
+- [ ] **T10-8** Mit eingeschalteter Option und verbundenem Steam Controller zeigt das Menü
+      „Steam Controller: <Modus>“; A wechselt den Modus, das Menü bleibt offen und zeigt den neuen
+      Modus, die Vorschau ebenso. Ohne Steam Controller fehlt der Eintrag. · E2E: nein (echter Steam Controller)
+
+Die Steam-Links `steam://nav/games/details`, `steam://uninstall` und `steam://controllerconfig` sowie
+der Epic-Link `com.epicgames.launcher://store/library` sind noch nicht am echten Client geprüft (T10-5
+bis T10-7).
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T10-1, T10-2, T10-4 | 2026-10-17 | Claude | Branch `feat/context-menu-and-detail-page-10-11`, Linux, Xvfb 1920×1080 `--demo`, Tastatur (Pfeile, Kontextmenü-Taste, Enter gehalten) | ✅ Menü eines GOG-Spiels mit deaktivierten Einträgen und Begründung; Enter 1,2 s gehalten öffnet (noch) den Platzhalter der Detailseite, der Rahmen füllt sich sichtbar | Controller am PC des Owners |
+| T10-6 | 2026-10-17 | Claude | wie oben | ✅ Rückfrage mit Fokus auf „Abbrechen“ (Demo-Spiel, ohne echten Launcher) | Steam am PC des Owners |
+| T10-4 | 2026-10-17 | Claude | Unit-Tests (`HoldGestureTests`) | ✅ Tippen, Abbrechen, Halten, wiederholte KeyDown-Ereignisse, verspätete Timer (geht ohne Zählung der Drücke rot) | – |
+
 ## #86 Refinement-Skill
 
 Keine Testfälle: Arbeitsablauf für Claude ohne Änderung an Arcadia; er wird beim nächsten Issue

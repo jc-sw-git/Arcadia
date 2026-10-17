@@ -47,6 +47,9 @@ public sealed class SteamScannerTests : IDisposable
         Assert.Equal("steam", game.LauncherId);
         Assert.Equal("Hollow Knight: Silksong", game.Title);
         Assert.Equal(new LaunchTarget.ProtocolUri("steam://rungameid/1030300"), game.Launch);
+        Assert.Equal(new LaunchTarget.ProtocolUri("steam://nav/games/details/1030300"), game.OpenInLauncher);
+        Assert.Equal(new LaunchTarget.ProtocolUri("steam://uninstall/1030300"), game.Uninstall);
+        Assert.Equal(new LaunchTarget.ProtocolUri("steam://controllerconfig/1030300"), game.ControllerLayout);
         Assert.Equal(Path.Combine(library, "steamapps", "common", "Hollow Knight Silksong"), game.InstallDirectory);
         Assert.Equal(8207380004, game.InstallSizeBytes);
         Assert.Equal(installedAt, game.InstalledAt);

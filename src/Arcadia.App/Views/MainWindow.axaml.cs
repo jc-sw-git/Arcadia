@@ -15,6 +15,7 @@ public partial class MainWindow : Window
     private const double TabScrollStep = 320;
     private const double TabEdgePadding = 96;
 
+    private readonly HashSet<Key> _keysDown = [];
     private MainViewModel? _viewModel;
 
     public MainWindow()
@@ -23,7 +24,16 @@ public partial class MainWindow : Window
 
         // Tunnel so arrow keys and Enter reach us before Avalonia's own focus navigation.
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(KeyUpEvent, OnPreviewKeyUp, RoutingStrategies.Tunnel);
         GameGrid.AddHandler(DoubleTappedEvent, OnGridDoubleTapped);
+        GameGrid.AddHandler(PointerPressedEvent, OnGridPointerPressed, RoutingStrategies.Tunnel);
+
+        // A key released in another window never reports its release here.
+        Deactivated += (_, _) =>
+        {
+            _keysDown.Clear();
+            _viewModel?.CancelHold();
+        };
         TabScroller.ScrollChanged += (_, _) => UpdateTabEdges();
         TabScroller.SizeChanged += (_, _) => UpdateTabEdges();
         TabScrollLeft.Click += (_, _) => ScrollTabs(-TabScrollStep);
@@ -81,6 +91,13 @@ public partial class MainWindow : Window
 
         if (_viewModel is not null && UiActionMap.FromKey(e.Key, e.KeyModifiers) is { } action)
         {
+            // A held key repeats its KeyDown; A acts on the release or after a hold, like the gamepad button.
+            if (!_keysDown.Add(e.Key) && action == UiAction.Accept)
+            {
+                e.Handled = true;
+                return;
+            }
+
             Services.AppLog.Write($"Taste: {e.Key} → {action}");
             _viewModel.Handle(action);
             e.Handled = true;
@@ -88,6 +105,26 @@ public partial class MainWindow : Window
             {
                 Dispatcher.UIThread.Post(BringFocusedSettingIntoView, DispatcherPriority.Loaded);
             }
+        }
+    }
+
+    private void OnPreviewKeyUp(object? sender, KeyEventArgs e)
+    {
+        _keysDown.Remove(e.Key);
+        if (_viewModel is not null && UiActionMap.FromKey(e.Key, e.KeyModifiers) is { } action)
+        {
+            _viewModel.Release(action);
+        }
+    }
+
+    private void OnGridPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed
+            && (e.Source as Control)?.DataContext is GameTileViewModel tile
+            && _viewModel is not null)
+        {
+            _viewModel.OpenMenuFor(tile);
+            e.Handled = true;
         }
     }
 

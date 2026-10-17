@@ -6,6 +6,7 @@ using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
+using Arcadia.Input;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,12 +15,18 @@ using CommunityToolkit.Mvvm.Input;
 namespace Arcadia.App.ViewModels;
 
 /// <summary>The Big Picture library: launcher tabs, a paginated cover grid and the preview panel.</summary>
-public partial class MainViewModel : ViewModelBase
+public partial class MainViewModel : ViewModelBase, IGameActionHost
 {
     /// <summary>Must match the column count of the grid in MainWindow.axaml.</summary>
     public const int GridColumns = 8;
 
     private static readonly TimeSpan UninstallSettleTime = TimeSpan.FromSeconds(5);
+
+    /// <summary>A shorter press of A starts the game; the ring around the tile fills from here on.</summary>
+    private static readonly TimeSpan HoldFeedbackDelay = TimeSpan.FromMilliseconds(200);
+
+    /// <summary>Holding A this long opens the detail page. The ring's animation in Theme.axaml lasts the difference.</summary>
+    private static readonly TimeSpan HoldTime = TimeSpan.FromSeconds(1);
 
     private readonly LibraryService _library;
     private readonly LibraryRefresher _refresher;
@@ -29,6 +36,8 @@ public partial class MainViewModel : ViewModelBase
     private readonly ArcadiaUpdateService _updates;
     private readonly SettingsService _settings;
     private readonly TimeProvider _time;
+    private readonly HoldGesture _acceptHold;
+    private GameTileViewModel? _holdTile;
     private int _requestedPage;
 
     public MainViewModel(
@@ -53,6 +62,11 @@ public partial class MainViewModel : ViewModelBase
         AppErrors.Occurred += message => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(message));
         _controllerSupport.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateControllerSupportState);
         UpdateControllerSupportState();
+
+        _acceptHold = new HoldGesture(HoldFeedbackDelay, HoldTime, time, action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
+        _acceptHold.Tapped += () => WithHoldTile(Activate);
+        _acceptHold.Held += () => WithHoldTile(ShowDetails);
+        _acceptHold.FeedbackChanged += holding => WithHoldTile(tile => tile.IsHolding = holding);
     }
 
     public StatusBarViewModel Status { get; }
@@ -94,6 +108,18 @@ public partial class MainViewModel : ViewModelBase
     public partial ViewOptionsViewModel? ViewOptions { get; private set; }
 
     public bool IsViewOptionsOpen => ViewOptions is not null;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsGameMenuOpen))]
+    public partial GameMenuViewModel? GameMenu { get; private set; }
+
+    public bool IsGameMenuOpen => GameMenu is not null;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsConfirmationOpen))]
+    public partial ConfirmationViewModel? Confirmation { get; private set; }
+
+    public bool IsConfirmationOpen => Confirmation is not null;
 
     [ObservableProperty]
     public partial bool IsLoading { get; private set; } = true;
@@ -283,13 +309,40 @@ public partial class MainViewModel : ViewModelBase
         return -1;
     }
 
+    /// <summary>A button or key was pressed. Only A in the library waits for the release (<see cref="Release"/>).</summary>
     public void Handle(UiAction action)
     {
+        if (action != UiAction.Accept)
+        {
+            _acceptHold.Cancel();
+        }
+
         if (Settings is { } settings)
         {
             if (!settings.Handle(action))
             {
                 Settings = null;
+            }
+
+            return;
+        }
+
+        if (Confirmation is { } confirmation)
+        {
+            if (!confirmation.Handle(action))
+            {
+                // Closed first: the confirmed action may open the next dialog.
+                Confirmation = null;
+            }
+
+            return;
+        }
+
+        if (GameMenu is { } menu)
+        {
+            if (!menu.Handle(action) && GameMenu == menu)
+            {
+                GameMenu = null;
             }
 
             return;
@@ -320,11 +373,16 @@ public partial class MainViewModel : ViewModelBase
                 MoveFocus(1);
                 break;
             case UiAction.Accept:
+                // Tapped starts the game, held opens the details; both are decided by the release or the timer.
                 if (FocusedGame is { } game)
                 {
-                    Activate(game);
+                    _holdTile = game;
+                    _acceptHold.Press();
                 }
 
+                break;
+            case UiAction.Options:
+                OpenMenu();
                 break;
             case UiAction.PreviousTab:
                 CycleTab(-1);
@@ -344,6 +402,123 @@ public partial class MainViewModel : ViewModelBase
             case UiAction.Settings:
                 OpenSettings();
                 break;
+        }
+    }
+
+    /// <summary>A button or key was let go.</summary>
+    public void Release(UiAction action)
+    {
+        if (action == UiAction.Accept)
+        {
+            _acceptHold.Release();
+        }
+    }
+
+    /// <summary>Drops a held A, e.g. when the window loses focus and the release may never arrive.</summary>
+    public void CancelHold() => _acceptHold.Cancel();
+
+    private void WithHoldTile(Action<GameTileViewModel> action)
+    {
+        if (_holdTile is { } tile)
+        {
+            action(tile);
+        }
+    }
+
+    /// <summary>Opens the context menu of the focused game.</summary>
+    [RelayCommand]
+    private void OpenMenu()
+    {
+        if (FocusedGame is { } tile)
+        {
+            GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, this));
+        }
+    }
+
+    /// <summary>Right click on a cover: focus it and open its menu.</summary>
+    public void OpenMenuFor(GameTileViewModel tile)
+    {
+        if (!PageGames.Contains(tile) || IsSettingsOpen || IsViewOptionsOpen || IsConfirmationOpen)
+        {
+            return;
+        }
+
+        Focus(tile);
+        OpenMenu();
+    }
+
+    [RelayCommand]
+    private void CloseMenu() => GameMenu = null;
+
+    /// <summary>A click on an entry of the menu.</summary>
+    [RelayCommand]
+    private void InvokeMenuAction(GameActionViewModel action)
+    {
+        var menu = GameMenu;
+        action.Invoke();
+        if (!action.KeepsMenuOpen && GameMenu == menu)
+        {
+            GameMenu = null;
+        }
+    }
+
+    [RelayCommand]
+    private void Confirm()
+    {
+        var confirmation = Confirmation;
+        Confirmation = null;
+        confirmation?.Confirm();
+    }
+
+    [RelayCommand]
+    private void CancelConfirmation() => Confirmation = null;
+
+    bool IGameActionHost.ShowControllerMode => ShowControllerSupport;
+
+    public string ControllerModeOf(Game game) =>
+        _controllerSupport.Settings.ControllerSupportFor(game) ? ControllerModes.Sisr : ControllerModes.Steam;
+
+    void IGameActionHost.Play(GameTileViewModel tile) => Activate(tile);
+
+    public void ShowDetails(GameTileViewModel tile) => Toast.Show($"Details zu „{tile.Title}“ folgen mit #11.");
+
+    void IGameActionHost.OpenInLauncher(GameTileViewModel tile) =>
+        HandOver(tile, tile.Game.OpenInLauncher, $"{tile.LauncherName} wird geöffnet …", $"Demo-Spiel: Hier würde jetzt {tile.LauncherName} geöffnet.");
+
+    void IGameActionHost.ShowControllerLayout(GameTileViewModel tile) =>
+        HandOver(tile, tile.Game.ControllerLayout, $"Controller-Layout von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …", $"Demo-Spiel: Hier würde jetzt das Controller-Layout von „{tile.Title}“ geöffnet.");
+
+    void IGameActionHost.ToggleControllerMode(GameTileViewModel tile) =>
+        _controllerSupport.SetModeFor(tile.Game, !_controllerSupport.Settings.ControllerSupportFor(tile.Game));
+
+    void IGameActionHost.Uninstall(GameTileViewModel tile)
+    {
+        if (tile.Game.Uninstall is not { } uninstall)
+        {
+            // Only the launcher's own window can do it.
+            HandOver(tile, tile.Game.OpenInLauncher, $"„{tile.Title}“ lässt sich nur in {tile.LauncherName} deinstallieren – {tile.LauncherName} wird geöffnet …", $"Demo-Spiel: Hier würde jetzt {tile.LauncherName} geöffnet.");
+            return;
+        }
+
+        Confirmation = new ConfirmationViewModel(
+            $"„{tile.Title}“ deinstallieren?",
+            $"{tile.LauncherName} entfernt das Spiel von diesem PC und fragt eventuell selbst noch einmal nach. Installieren lässt es sich danach jederzeit wieder.",
+            "Deinstallieren",
+            () => HandOver(tile, uninstall, $"Deinstallation von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …", $"Demo-Spiel: Hier würde jetzt „{tile.Title}“ deinstalliert."));
+    }
+
+    /// <summary>Hands one of the game's launcher actions to its launcher and says so.</summary>
+    private void HandOver(GameTileViewModel tile, LaunchTarget? target, string handedOver, string demo)
+    {
+        try
+        {
+            Toast.Show(GameLaunchService.Open(target) ? handedOver
+                : target is LaunchTarget.None ? demo
+                : $"{tile.LauncherName} bietet das für „{tile.Title}“ nicht an.");
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            Toast.Show($"{tile.LauncherName} konnte nicht geöffnet werden: {ex.Message}");
         }
     }
 
@@ -375,7 +550,7 @@ public partial class MainViewModel : ViewModelBase
         ShowControllerSupport = support.SteamControllerConnected;
         if (FocusedGame?.Game is { } game)
         {
-            FocusedControllerSupportText = support.Settings.ControllerSupportFor(game) ? "Xbox 360 Controller (SISR)" : "Steam Input";
+            FocusedControllerSupportText = ControllerModeOf(game);
         }
     }
 
@@ -605,6 +780,8 @@ public partial class MainViewModel : ViewModelBase
         var window = PageWindow.For(sorted.Count, pageSize, _requestedPage);
         _requestedPage = window.PageIndex;
 
+        // The held tile is about to be replaced; a hold must not open a game that's no longer shown.
+        _acceptHold.Cancel();
         var now = _time.GetLocalNow();
         PageGames.Clear();
         foreach (var game in sorted.Skip(window.Start).Take(window.Length))

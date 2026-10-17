@@ -160,6 +160,9 @@ errors land with stack trace in `arcadia.log` and as a toast. No `_ = SomethingA
   `<RotateTransform/>` and animate `RotateTransform.Angle` (see `Path.spinner`).
 - `SystemDecorations` is now `WindowDecorations`. Box shadows of `Button.plain` go on the
   template part: `Button.x /template/ Border#Chrome`.
+- Fluent's `Button` and `ItemsControl` clip to their bounds, so an outer focus ring (BoxShadow) is cut off;
+  `Theme.axaml` sets `ClipToBounds=False` on both. A focus ring also needs room in clipping parents
+  (`ScrollViewer` padding). With several BoxShadows, the later one paints on top.
 - Compiled bindings: every `DataTemplate` needs `x:DataType`; reach the window's view model
   from inside a template with `$parent[Window].((vm:MainViewModel)DataContext).Prop`.
 

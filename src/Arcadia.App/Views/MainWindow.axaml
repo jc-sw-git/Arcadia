@@ -442,12 +442,12 @@
         </Border>
       </Panel>
 
-      <!-- Context menu of the focused game, next to the preview panel. -->
-      <Panel Grid.RowSpan="4" IsVisible="{Binding IsGameMenuOpen}">
+      <!-- Context menu of the focused game, anchored next to its cover (placed in MainWindow.axaml.cs). -->
+      <Panel Name="GameMenuLayer" Grid.RowSpan="4" IsVisible="{Binding IsGameMenuOpen}">
         <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CloseMenuCommand}" />
-        <Border Width="420" Background="{StaticResource Surface}" CornerRadius="16" Padding="12" Margin="496,0,0,104"
-                HorizontalAlignment="Left" VerticalAlignment="Bottom" BoxShadow="{StaticResource DialogShadow}">
+        <Border Name="GameMenuPanel" Width="420" Background="{StaticResource Surface}" CornerRadius="16" Padding="12"
+                HorizontalAlignment="Left" VerticalAlignment="Top" BoxShadow="{StaticResource DialogShadow}">
           <StackPanel Spacing="2" DataContext="{Binding GameMenu}" x:DataType="vm:GameMenuViewModel">
             <TextBlock Classes="label" Text="{Binding Title}" FontSize="14" Margin="16,10,16,12" TextTrimming="CharacterEllipsis" />
             <ItemsControl ItemsSource="{Binding Actions}">

@@ -15,6 +15,9 @@ public partial class MainWindow : Window
     private const double TabScrollStep = 320;
     private const double TabEdgePadding = 96;
 
+    /// <summary>Space between a cover and its context menu, and between the menu and the window's edge.</summary>
+    private const double MenuGap = 24;
+
     private readonly HashSet<Key> _keysDown = [];
     private MainViewModel? _viewModel;
 
@@ -144,6 +147,11 @@ public partial class MainWindow : Window
                 // Wait for the grid to realize the new page before scrolling to the tile.
                 Dispatcher.UIThread.Post(BringFocusedTileIntoView, DispatcherPriority.Loaded);
                 break;
+            case nameof(MainViewModel.GameMenu) when _viewModel?.GameMenu is not null:
+                // Hidden until placed, so it doesn't flash at its default position.
+                GameMenuPanel.Opacity = 0;
+                Dispatcher.UIThread.Post(PlaceGameMenu, DispatcherPriority.Loaded);
+                break;
             case nameof(MainViewModel.SelectedTab):
                 Dispatcher.UIThread.Post(BringSelectedTabIntoView, DispatcherPriority.Loaded);
                 break;
@@ -191,6 +199,29 @@ public partial class MainWindow : Window
         {
             focused.BringIntoView();
         }
+    }
+
+    /// <summary>
+    /// Puts the context menu beside the focused cover: to its right, or to its left where the
+    /// right side has no room, top-aligned with the cover and kept inside the window.
+    /// </summary>
+    private void PlaceGameMenu()
+    {
+        GameMenuPanel.Opacity = 1;
+        if (_viewModel?.FocusedGame is not { } tile
+            || GameGrid.ContainerFromIndex(_viewModel.PageGames.IndexOf(tile)) is not { } cover
+            || cover.TranslatePoint(default, GameMenuLayer) is not { } topLeft)
+        {
+            GameMenuPanel.Margin = new Thickness((GameMenuLayer.Bounds.Width - GameMenuPanel.Bounds.Width) / 2, (GameMenuLayer.Bounds.Height - GameMenuPanel.Bounds.Height) / 2, 0, 0);
+            return;
+        }
+
+        var width = GameMenuPanel.Bounds.Width;
+        var height = GameMenuPanel.Bounds.Height;
+        var right = topLeft.X + cover.Bounds.Width + MenuGap;
+        var x = right + width <= GameMenuLayer.Bounds.Width - MenuGap ? right : topLeft.X - MenuGap - width;
+        var y = Math.Clamp(topLeft.Y, MenuGap, Math.Max(MenuGap, GameMenuLayer.Bounds.Height - height - MenuGap));
+        GameMenuPanel.Margin = new Thickness(Math.Max(MenuGap, x), y, 0, 0);
     }
 
     private void BringSelectedTabIntoView()

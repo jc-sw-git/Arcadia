@@ -355,6 +355,8 @@ Steam Controller Support, Fehlerbehandlung). IDs `G-<n>`. Wo nichts anderes steh
 - [ ] **G-8** LT/RT blättern die Seiten; die Seitenleiste zeigt die aktuelle Seite. · E2E: ja
 - [ ] **G-9** Der Controller funktioniert in jedem der vier XInput-Plätze und nach Aus- und
       Wiedereinstecken während Arcadia läuft. · E2E: nein (echte Hardware)
+- [ ] **G-32** Der Fokusrahmen ist überall vollständig sichtbar und nicht abgeschnitten: Spielkachel,
+      „Ansicht“ (Sortierung und Seitengröße), Einstellungen und ihre Knöpfe. · E2E: ja
 
 ### Tastatur und Maus
 
@@ -423,6 +425,8 @@ Verlauf:
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | G-21 bis G-24 | 2026-10-09 | nicht festgehalten | PC des Owners (laut `docs/controller-support.md`) | ✅ | – |
+| G-32 | 2026-10-17 | Juri | PC des Owners, „Ansicht“ | ❌ Fokusrahmen oben und unten abgeschnitten, auch an anderen Stellen | Fix ohne Issue (Fluent-Button schneidet auf seine Größe zu) |
+| G-32 | 2026-10-17 | Claude | Branch `fix/focus-ring-clipped`, Linux, Xvfb 1920×1080 `--demo` | ✅ Kachel (auch oberste Reihe), Seitengröße in „Ansicht“ und erste Einstellungszeile mit vollem Rahmen | Kontrolle am PC des Owners |
 
 ## Explorativer Test
 

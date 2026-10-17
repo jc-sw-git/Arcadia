@@ -51,6 +51,8 @@
 
   <!-- A button that draws only what we give it; the Fluent hover/press visuals don't fit the design. -->
   <Style Selector="Button.plain">
+    <!-- Fluent's Button clips to its bounds, which cuts off focus rings drawn as an outer BoxShadow. -->
+    <Setter Property="ClipToBounds" Value="False" />
     <Setter Property="Focusable" Value="False" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />

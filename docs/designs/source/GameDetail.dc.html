@@ -12,124 +12,446 @@
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
 <style>
 body{margin:0;background:#0B0F14}
-*::-webkit-scrollbar{width:10px;height:10px}
-*::-webkit-scrollbar-track{background:transparent}
-*::-webkit-scrollbar-thumb{background-color:#2A3440;border-radius:5px;border:2px solid transparent;background-clip:padding-box}
-*::-webkit-scrollbar-thumb:hover{background-color:#3A4552}
-*::-webkit-scrollbar-corner{background:transparent}
-@supports (-moz-appearance:none){*{scrollbar-width:thin;scrollbar-color:#2A3440 transparent}}
 .hg button{font-family:inherit}
-.gl{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;box-sizing:border-box;border-radius:14px;background:#2A3440;color:#F2F5F8;font-size:13px;font-weight:800}
+.gl{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;box-sizing:border-box;border-radius:14px;background:#2A3440;color:#F2F5F8;font-size:13px;font-weight:800;flex-shrink:0}
 .gl.r{width:28px;padding:0;border-radius:50%}
 .gl.d{background:#06101C;color:#F2F5F8}
+.gb{border:0;cursor:pointer;height:36px;min-width:52px;padding:0 12px;border-radius:18px;background:#1E2630;color:#E8EDF2;font-size:14px;font-weight:800;flex-shrink:0}
+.gb:hover{background:#2A3440}
+.gb:disabled{opacity:.35;cursor:default}
+.tabs{display:flex;align-items:center;gap:4px;overflow:hidden;padding:0 4px}
+.tab{display:flex;align-items:center;gap:10px;height:48px;padding:0 20px 0 12px;border-radius:24px;border:0;background:transparent;color:#9AA7B4;font-size:17px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.tab:hover{background:#1E2630;color:#E8EDF2}
+.tab .ct{display:none;font-size:13px;font-weight:700;padding:3px 9px;border-radius:10px;background:#0B0F14;color:#F2F5F8}
+.tab.on{background:#F2F5F8;color:#0B0F14}
+.tab.on .ct{display:inline}
+.tsep{width:1px;height:28px;background:#2A3440;flex-shrink:0;margin:0 6px}
+.tb{display:flex;align-items:center;gap:12px;height:48px;padding:0 20px 0 10px;border-radius:24px;border:0;background:#151B23;color:#E8EDF2;font-size:16px;font-weight:600;cursor:pointer}
+.tb:hover{background:#1E2630}
 .hint{display:flex;align-items:center;gap:10px}
-.act{display:flex;align-items:center;gap:12px;height:60px;padding:0 24px;border-radius:30px;border:0;background:rgba(242,245,248,.1);color:#F2F5F8;font-size:18px;font-weight:600;cursor:pointer}
+.dp{position:absolute;top:0;width:1152px;height:100%;box-sizing:border-box;padding:24px 0 20px}
+.dp-in{width:100%;height:100%;border-radius:20px;overflow:hidden;background:#121820;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.dp.side .dp-in{cursor:pointer}
+.chip{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;letter-spacing:.12em;padding:6px 14px 6px 8px;border-radius:14px;background:rgba(242,245,248,.12);color:#E8EDF2}
+.pa{display:flex;align-items:center;gap:12px;height:60px;padding:0 32px 0 18px;border-radius:30px;border:0;background:#3B9EFF;color:#06101C;font-size:21px;font-weight:800;cursor:pointer;flex-shrink:0}
+.dp.center .pa{box-shadow:0 0 0 4px #121820,0 0 0 7px #F2F5F8}
+.act{display:flex;align-items:center;gap:10px;height:56px;padding:0 20px;border-radius:28px;border:0;background:rgba(242,245,248,.1);color:#F2F5F8;font-size:17px;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;flex-shrink:0}
 .act:hover{background:rgba(242,245,248,.18)}
-.stat{background:#151B23;border-radius:14px;padding:24px 28px;display:flex;flex-direction:column;gap:8px}
+.act.sm{height:48px;padding:0 18px;font-size:16px;border-radius:24px}
+.act.danger{color:#FF9A8F}
+.act.fav svg{fill:none}
+.act.fav.on{color:#F5C451}
+.act.fav.on svg{fill:currentColor}
+.stat{background:#1A212B;border-radius:14px;padding:20px 24px;display:flex;flex-direction:column;gap:6px;min-width:0;border:0;text-align:left;color:inherit;font-family:inherit}
+.stat dt,.stat .k{font-size:13px;font-weight:700;letter-spacing:.12em;color:#9AA7B4}
+.stat dd,.stat .v{margin:0;font-size:26px;font-weight:700;color:#F2F5F8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat .s{font-size:15px;color:#9AA7B4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button.stat{cursor:pointer}
+button.stat:hover{background:#222B36}
+.fade{position:absolute;top:0;bottom:0;width:384px;pointer-events:none;z-index:3}
+.fade.l{left:0;background:linear-gradient(to right,#0B0F14 0%,rgba(11,15,20,.9) 30%,rgba(11,15,20,.5) 100%)}
+.fade.r{right:0;background:linear-gradient(to left,#0B0F14 0%,rgba(11,15,20,.9) 30%,rgba(11,15,20,.5) 100%)}
+.nav{position:absolute;top:50%;margin-top:-24px;z-index:4;height:48px;min-width:64px;border-radius:24px;border:0;background:#1E2630;color:#F2F5F8;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 14px}
+.nav:hover{background:#2A3440}
+.seg{height:44px;padding:0 18px;border-radius:22px;border:0;background:transparent;color:#9AA7B4;font-size:16px;font-weight:600;cursor:pointer;white-space:nowrap}
+.seg:hover{color:#F2F5F8}
+.seg.on{background:#3B9EFF;color:#06101C}
+.sz{height:64px;border-radius:12px;border:0;background:#1E2630;color:#E8EDF2;font-size:22px;font-weight:700;cursor:pointer}
+.sz:hover{background:#2A3440}
+.sz.on{background:#3B9EFF;color:#06101C}
 </style>
 </helmet>
 <div class="hg" style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #0B0F14; color: #E8EDF2; font-family: 'Figtree', system-ui, sans-serif; display: flex; flex-direction: column">
 
-  <div style="position: relative; height: 640px; flex-shrink: 0; background: hsl(204 30% 17%); overflow: hidden">
-    <div aria-hidden="true" style="position: absolute; right: -80px; top: -120px; width: 900px; height: 900px; border-radius: 50%; border: 2px solid hsl(204 40% 30%)"></div>
-    <div aria-hidden="true" style="position: absolute; right: 120px; top: 80px; width: 520px; height: 520px; border-radius: 50%; border: 2px solid hsl(204 40% 26%)"></div>
-    <span style="position: absolute; right: 80px; bottom: 32px; font-size: 14px; letter-spacing: 0.12em; color: hsl(204 30% 60%)">[HERO-ARTWORK AUS STEAMGRIDDB]</span>
-
-    <header style="position: relative; height: 104px; display: flex; align-items: center; justify-content: space-between; padding: 0 80px">
-      <div style="display: flex; align-items: center; gap: 14px; font-size: 18px; color: #C5CED7">
-        <span class="gl r">B</span>
-        <span>Epic Games</span>
-        <span style="color: #5A6878">/</span>
-        <span style="color: #F2F5F8; font-weight: 600">Hollow Frontier</span>
+  <header style="height: 104px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 80px; box-sizing: border-box">
+    <div style="display: flex; align-items: center; gap: 14px; flex-shrink: 0">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#3B9EFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 30V16a13 13 0 0 1 26 0v14"></path><path d="M11 30v-8h12v8"></path></svg>
+      <span style="font-size: 24px; font-weight: 800; letter-spacing: 0.06em">ARCADIA</span>
+    </div>
+    <nav aria-label="Launcher" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px">
+      <button class="gb" onClick="{{prevTab}}" aria-label="Vorheriger Tab">LB</button>
+      <div class="tabs" style="flex: 1; min-width: 0">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="9">
+          <button class="{{t.cls}}" onClick="{{t.pick}}">
+            <sc-if value="{{t.isFav}}" hint-placeholder-val="{{ false }}">
+              <span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 6px; background: #3A3115; display: flex; align-items: center; justify-content: center; color: #F5C451"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"></path></svg></span>
+            </sc-if>
+            <sc-if value="{{t.isLauncher}}" hint-placeholder-val="{{ true }}">
+              <span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 6px; background: {{t.tile}}; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #F2F5F8">{{t.mono}}</span>
+            </sc-if>
+            {{t.name}}<span class="ct">{{t.count}}</span>
+          </button>
+          <sc-if value="{{t.isFav}}" hint-placeholder-val="{{ false }}"><span class="tsep"></span></sc-if>
+        </sc-for>
       </div>
-      <span style="font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums">21:48</span>
-    </header>
+      <button class="gb" onClick="{{nextTab}}" aria-label="Nächster Tab">RB</button>
+    </nav>
+    <div style="display: flex; align-items: center; gap: 18px; flex-shrink: 0">
+      <span style="font-size: 16px; font-weight: 600; color: #9AA7B4">Fr., 9. Okt.</span>
+      <span style="font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums">21:47</span>
+    </div>
+  </header>
 
-    <div style="position: relative; display: flex; align-items: flex-end; gap: 56px; padding: 24px 80px 0">
-      <div style="width: 320px; height: 480px; flex-shrink: 0; border-radius: 12px; background: hsl(204 28% 24%); box-shadow: 0 30px 60px rgba(0,0,0,.5); display: flex; flex-direction: column; justify-content: space-between; padding: 24px; box-sizing: border-box">
-        <span style="font-size: 120px; font-weight: 800; line-height: 1; color: hsl(204 55% 66%)">H</span>
-        <span style="font-size: 24px; font-weight: 700; color: #F2F5F8">Hollow Frontier</span>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 22px; padding-bottom: 8px">
-        <div style="display: flex; gap: 10px">
-          <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; letter-spacing: 0.12em; padding: 6px 14px 6px 8px; border-radius: 14px; background: rgba(242,245,248,.12); color: #E8EDF2"><span style="width: 18px; height: 18px; border-radius: 5px; background: hsl(0 0% 30%); display: flex; align-items: center; justify-content: center; font-size: 10px; letter-spacing: 0">E</span>EPIC GAMES</span>
-          <sc-if value="{{upd}}" hint-placeholder-val="{{ true }}">
-            <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; padding: 6px 14px 6px 10px; border-radius: 14px; background: #3B9EFF; color: #06101C"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M5 20h14"></path></svg>UPDATE VERFÜGBAR</span>
-          </sc-if>
-        </div>
-        <h1 style="margin: 0; font-size: 88px; font-weight: 800; line-height: 1; letter-spacing: -0.01em">Hollow Frontier</h1>
-        <p style="margin: 0; font-size: 20px; color: #C5CED7">Installiert · 64,3 GB auf Laufwerk D: · Controller unterstützt</p>
-        <div style="display: flex; align-items: center; gap: 14px; margin-top: 14px">
-          <button style="display: flex; align-items: center; gap: 14px; height: 72px; padding: 0 40px 0 24px; border-radius: 36px; border: 0; background: #3B9EFF; color: #06101C; font-size: 24px; font-weight: 800; cursor: pointer; box-shadow: 0 0 0 4px #0B0F14, 0 0 0 7px #F2F5F8">
-            <span class="gl r d">A</span>{{primary}}
-          </button>
-          <button class="act">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg>
-            Im Launcher öffnen
-          </button>
-          <button class="act">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="7" width="18" height="11" rx="5.5"></rect><path d="M8 11v3M6.5 12.5h3"></path><circle cx="15.5" cy="12" r="1"></circle><circle cx="17.5" cy="14" r="1"></circle></svg>
-            Controller-Layout
-          </button>
-          <a class="act" href="ArtworkModal.dc.html" style="text-decoration: none">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="M20.5 16l-5-5-8 8.5"></path></svg>
-            Artwork ändern
-          </a>
-          <button class="act"><span class="gl">≡</span>Optionen</button>
-        </div>
-        <sc-if value="{{upd}}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; flex-direction: column; gap: 10px">
-            <p style="margin: 0; font-size: 17px; color: #8CC6FF">Version 1.4.2 · 2,4 GB Download – das Update wird in Epic Games gestartet.</p>
-            <div style="display: flex; align-items: center; gap: 16px">
-              <button class="act" style="height: 48px; font-size: 16px; padding: 0 20px 0 14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>Ohne Update spielen</button>
-              <span style="display: flex; align-items: center; gap: 8px; font-size: 15px; color: #F5B868">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.5"></path></svg>
-                Je nach Launcher bzw. dessen Einstellung nicht möglich – dann wird automatisch das Update gestartet.
-              </span>
+  <div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 80px; box-sizing: border-box">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 14px; font-size: 18px; color: #C5CED7; text-decoration: none">
+      <span class="gl r">B</span>
+      <span>Bibliothek</span>
+      <span style="color: #5A6878">/</span>
+      <span>{{tabName}}</span>
+      <span style="color: #5A6878">/</span>
+      <span style="color: #F2F5F8; font-weight: 600">{{centerTitle}}</span>
+    </a>
+    <div style="display: flex; align-items: center; gap: 20px">
+      <span style="font-size: 17px; color: #9AA7B4; font-variant-numeric: tabular-nums">{{position}}</span>
+      <button class="tb" onClick="{{openSheet}}"><span class="gl r">Y</span>{{sortLabel}}</button>
+    </div>
+  </div>
+
+  <main aria-label="Spiele" style="flex: 1; min-height: 0; position: relative; overflow: hidden">
+    <div style="position: absolute; top: 0; bottom: 0; left: 0; width: 100%; {{trackStyle}}">
+      <sc-for list="{{slots}}" as="d" hint-placeholder-count="5">
+        <sc-if value="{{d.visible}}" hint-placeholder-val="{{ true }}">
+          <section class="{{d.cls}}" style="left: {{d.left}}" aria-label="{{d.title}}" aria-hidden="{{d.hidden}}">
+            <div class="dp-in" onClick="{{d.go}}">
+              <div style="position: relative; height: 372px; flex-shrink: 0; background: {{d.hero}}; overflow: hidden; display: flex; align-items: flex-end; gap: 40px; padding: 0 48px 36px; box-sizing: border-box">
+                <div aria-hidden="true" style="position: absolute; right: -60px; top: -140px; width: 700px; height: 700px; border-radius: 50%; border: 2px solid {{d.ring}}"></div>
+                <div aria-hidden="true" style="position: absolute; right: 120px; top: 40px; width: 380px; height: 380px; border-radius: 50%; border: 2px solid {{d.ring}}"></div>
+                <span style="position: absolute; right: 40px; top: 24px; font-size: 13px; letter-spacing: 0.12em; color: {{d.label}}">[HINTERGRUND AUS STEAMGRIDDB, #13]</span>
+                <div style="position: relative; width: 210px; height: 315px; flex-shrink: 0; border-radius: 12px; background: {{d.cover}}; box-shadow: 0 24px 50px rgba(0,0,0,.5); display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box">
+                  <span style="font-size: 96px; font-weight: 800; line-height: 1; color: {{d.fg}}">{{d.mono}}</span>
+                  <span style="font-size: 19px; font-weight: 700; color: #F2F5F8">{{d.title}}</span>
+                </div>
+                <div style="position: relative; min-width: 0; display: flex; flex-direction: column; gap: 18px; padding-bottom: 4px">
+                  <div style="display: flex; gap: 10px">
+                    <span class="chip"><span style="width: 18px; height: 18px; border-radius: 5px; background: {{d.tile}}; display: flex; align-items: center; justify-content: center; font-size: 10px; letter-spacing: 0">{{d.lmono}}</span>{{d.launcherUpper}}</span>
+                    <sc-if value="{{d.update}}" hint-placeholder-val="{{ true }}">
+                      <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; padding: 6px 14px 6px 10px; border-radius: 14px; background: #3B9EFF; color: #06101C"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M5 20h14"></path></svg>UPDATE VERFÜGBAR</span>
+                    </sc-if>
+                  </div>
+                  <h2 style="margin: 0; font-size: 64px; font-weight: 800; line-height: 1.02; letter-spacing: -0.01em">{{d.title}}</h2>
+                  <p style="margin: 0; font-size: 19px; color: #C5CED7">Installiert · {{d.size}} · {{d.drive}}</p>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 12px; padding: 24px 48px 0">
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <button class="pa"><span class="gl r d">A</span>Spielen</button>
+                  <button class="act">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg>
+                    In {{d.launcher}} öffnen
+                  </button>
+                  <button class="{{d.favCls}}" onClick="{{d.toggleFav}}" aria-pressed="{{d.fav}}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"></path></svg>
+                    {{d.favLabel}}
+                  </button>
+                  <sc-if value="{{steamController}}" hint-placeholder-val="{{ true }}">
+                    <button class="act" onClick="{{d.toggleMode}}" aria-label="Steam Controller für dieses Spiel: {{d.mode}}, wechseln">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13M14 5l3 3-3 3"></path><path d="M20 16H7M10 13l-3 3 3 3"></path></svg>
+                      <span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: #9AA7B4">STEAM CONTROLLER</span>{{d.mode}}</span>
+                    </button>
+                  </sc-if>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <button class="act sm">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="7" width="18" height="11" rx="5.5"></rect><path d="M8 11v3M6.5 12.5h3"></path><circle cx="15.5" cy="12" r="1"></circle><circle cx="17.5" cy="14" r="1"></circle></svg>
+                    Controller-Layout
+                  </button>
+                  <a class="act sm" href="ArtworkModal.dc.html">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="M20.5 16l-5-5-8 8.5"></path></svg>
+                    Artwork ändern
+                  </a>
+                  <button class="act sm danger" style="margin-left: auto">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg>
+                    Deinstallieren …
+                  </button>
+                </div>
+                <sc-if value="{{d.update}}" hint-placeholder-val="{{ true }}">
+                  <p style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 16px; color: #8CC6FF">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.5"></path></svg>
+                    Version {{d.version}} · {{d.updSize}} Download. {{d.launcher}} installiert das Update eventuell, bevor das Spiel startet.
+                  </p>
+                </sc-if>
+              </div>
+
+              <dl style="margin: auto 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 24px 48px 36px">
+                <div class="stat"><dt>ZULETZT GESPIELT</dt><dd>{{d.last}}</dd><span class="s">{{d.lastAbs}}</span></div>
+                <div class="stat"><dt>SPIELZEIT</dt><dd>{{d.hours}}</dd><span class="s">Laut {{d.launcher}}</span></div>
+                <div class="stat"><dt>INSTALLIERT AM</dt><dd>{{d.installed}}</dd><span class="s">{{d.path}}</span></div>
+                <div class="stat"><dt>GRÖSSE</dt><dd>{{d.size}}</dd><span class="s">{{d.drive}}</span></div>
+              </dl>
             </div>
-          </div>
+          </section>
         </sc-if>
-      </div>
+      </sc-for>
     </div>
-  </div>
 
-  <div style="flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; padding: 40px 80px 0; align-content: start">
-    <div class="stat">
-      <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">ZULETZT GESPIELT</span>
-      <span style="font-size: 30px; font-weight: 700">vor 3 Tagen</span>
-      <span style="font-size: 16px; color: #9AA7B4">06.10.2026, 22:14</span>
-    </div>
-    <div class="stat">
-      <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">SPIELZEIT</span>
-      <span style="font-size: 30px; font-weight: 700">48 Std.</span>
-      <span style="font-size: 16px; color: #9AA7B4">Laut Epic Games</span>
-    </div>
-    <div class="stat">
-      <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">INSTALLIERT AM</span>
-      <span style="font-size: 30px; font-weight: 700">14.03.2026</span>
-      <span style="font-size: 16px; color: #9AA7B4">D:\Epic Games\HollowFrontier</span>
-    </div>
-    <div class="stat">
-      <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">EINGABE</span>
-      <span style="font-size: 30px; font-weight: 700">Steam Input</span>
-      <span style="font-size: 16px; color: #9AA7B4">Steam Controller · Layout „Gamepad“</span>
-    </div>
-  </div>
+    <sc-if value="{{hasNeighbours}}" hint-placeholder-val="{{ true }}">
+      <div class="fade l"></div>
+      <div class="fade r"></div>
+      <button class="nav" style="left: 80px" onClick="{{prev}}" aria-label="Vorheriges Spiel"><span>LT</span></button>
+      <button class="nav" style="right: 80px" onClick="{{next}}" aria-label="Nächstes Spiel"><span>RT</span></button>
+    </sc-if>
+  </main>
 
   <footer style="height: 72px; flex-shrink: 0; border-top: 1px solid #1E2630; display: flex; align-items: center; justify-content: flex-end; padding: 0 80px; box-sizing: border-box">
     <div style="display: flex; align-items: center; gap: 28px; font-size: 16px; color: #C5CED7">
-      <span class="hint"><span class="gl r">A</span>{{primary}}</span>
-      <span class="hint"><span class="gl">≡</span>Optionen</span>
-      <span class="hint"><span class="gl r">B</span>Zurück zur Bibliothek</span>
+      <span class="hint"><span class="gl">D-Pad</span>Aktion wählen</span>
+      <span class="hint"><span class="gl r">A</span>Auswählen</span>
+      <span class="hint"><span class="gl r">Y</span>Ansicht</span>
+      <span class="hint"><span class="gl">LB</span><span class="gl">RB</span>Launcher</span>
+      <span class="hint"><span class="gl">LT</span><span class="gl">RT</span>Spiel</span>
+      <a class="hint" href="Main.dc.html" style="color: inherit; text-decoration: none"><span class="gl r">B</span>Zurück</a>
     </div>
   </footer>
+
+  <sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center">
+      <button onClick="{{closeSheet}}" aria-label="Ansicht schließen" style="position: absolute; inset: 0; border: 0; padding: 0; background: rgba(5, 8, 12, 0.78); cursor: default"></button>
+      <div role="dialog" aria-modal="true" aria-label="Ansicht" style="position: relative; width: 820px; background: #151B23; border-radius: 20px; box-shadow: 0 40px 100px rgba(0,0,0,.6); padding: 48px 56px 36px; box-sizing: border-box; display: flex; flex-direction: column; gap: 40px">
+        <div>
+          <h2 style="margin: 0; font-size: 34px; font-weight: 800">Ansicht</h2>
+          <p style="margin: 8px 0 0; font-size: 17px; color: #9AA7B4">Sortierung und Einträge pro Seite, gültig für alle Launcher</p>
+        </div>
+        <section style="display: flex; flex-direction: column; gap: 14px">
+          <h3 style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">SORTIEREN NACH</h3>
+          <sc-for list="{{sortRows}}" as="row" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 6px 0">
+              <span style="font-size: 19px; font-weight: 600">{{row.label}}</span>
+              <div style="display: flex; gap: 4px; background: #0B0F14; padding: 4px; border-radius: 26px">
+                <sc-for list="{{row.opts}}" as="o" hint-placeholder-count="2">
+                  <button class="{{o.cls}}" onClick="{{o.pick}}">{{o.label}}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </section>
+        <section style="display: flex; flex-direction: column; gap: 14px">
+          <h3 style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.12em; color: #9AA7B4">EINTRÄGE PRO SEITE</h3>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+            <sc-for list="{{sizeItems}}" as="z" hint-placeholder-count="4">
+              <button class="{{z.cls}}" onClick="{{z.pick}}">{{z.n}}</button>
+            </sc-for>
+          </div>
+          <p style="margin: 0; font-size: 16px; line-height: 1.45; color: #9AA7B4">Gilt für die Bibliothek; die Detailseite zeigt immer ein Spiel. Das aktuelle Spiel bleibt in der Mitte, die Nachbarn ordnen sich nach der neuen Sortierung.</p>
+        </section>
+        <div style="display: flex; justify-content: flex-end; gap: 28px; padding-top: 24px; border-top: 1px solid #1E2630; font-size: 16px; color: #C5CED7">
+          <span class="hint"><span class="gl">D-Pad</span>Wechseln</span>
+          <span class="hint"><span class="gl r">A</span>Auswählen</span>
+          <span class="hint"><span class="gl r">B</span>Schließen</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"hasUpdate":{"editor":"boolean","default":true},"$preview":{"width":1920,"height":1080}}'>
+<script type="text/x-dc" data-dc-script data-props='{"listSize":{"editor":"enum","options":["Alle Spiele","2 Spiele","1 Spiel"],"default":"Alle Spiele"},"steamController":{"editor":"boolean","default":false},"$preview":{"width":1920,"height":1080}}'>
 class Component extends DCLogic {
+  state = { ti: 2, gi: 0, sort: 'played', dir: 'desc', ps: 25, sheet: false, shift: 0, anim: false, modes: {}, favs: {} };
+
+  launchers() {
+    return [
+      { name: 'Steam', count: 128, tile: 'hsl(210 35% 30%)', path: 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\' },
+      { name: 'Epic Games', count: 47, tile: 'hsl(0 0% 30%)', path: 'D:\\Epic Games\\' },
+      { name: 'GOG Galaxy', count: 31, tile: 'hsl(280 35% 30%)', path: 'D:\\GOG Games\\' },
+      { name: 'Ubisoft Connect', count: 9, tile: 'hsl(230 35% 30%)', path: 'C:\\Program Files (x86)\\Ubisoft\\Games\\' },
+      { name: 'EA app', count: 14, tile: 'hsl(350 35% 30%)', path: 'C:\\Program Files\\EA Games\\' },
+      { name: 'Xbox', count: 62, tile: 'hsl(120 35% 30%)', path: 'C:\\XboxGames\\' },
+      { name: 'Battle.net', count: 21, tile: 'hsl(200 45% 30%)', path: 'C:\\Program Files (x86)\\' },
+      { name: 'Amazon Games', count: 6, tile: 'hsl(30 45% 30%)', path: 'C:\\Amazon Games\\Library\\' }
+    ];
+  }
+
+  rand(seed) {
+    let a = seed;
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  library(li) {
+    this._libs = this._libs || {};
+    if (this._libs[li]) return this._libs[li];
+    const A = ['Hollow', 'Iron', 'Silent', 'Crimson', 'Distant', 'Broken', 'Neon', 'Frozen', 'Golden', 'Shattered', 'Last', 'Wild', 'Echo', 'Hidden', 'Burning', 'Sunken', 'Endless', 'Pale', 'Stellar', 'Rogue'];
+    const B = ['Frontier', 'Tides', 'Kingdom', 'Signal', 'Harbor', 'Protocol', 'Crown', 'Horizon', 'Vault', 'Odyssey', 'Requiem', 'Drift', 'Citadel', 'Orbit', 'Legacy', 'Wilds', 'Circuit', 'Ember', 'Expanse', 'Outpost'];
+    const r = this.rand(li * 7919 + 17);
+    const count = this.launchers()[li].count;
+    const seen = {};
+    const out = [];
+    while (out.length < count) {
+      let title = A[Math.floor(r() * A.length)] + ' ' + B[Math.floor(r() * B.length)];
+      const v = r();
+      if (v < 0.1) title += ' II'; else if (v < 0.16) title += ': Remastered';
+      if (seen[title]) continue;
+      seen[title] = true;
+      const inst = 1 + Math.floor(r() * 1100);
+      const never = r() < 0.15;
+      const played = never ? null : Math.floor(r() * Math.min(inst, 420));
+      const hue = Math.floor(r() * 360);
+      const size = 2 + r() * 118;
+      out.push({ li: li, key: li + '|' + title, title: title, inst: inst, played: played, hue: hue, size: size, update: hue % 6 === 0 || out.length === 2 });
+    }
+    this._libs[li] = out;
+    return out;
+  }
+
+  favourites() {
+    const out = [];
+    [[0, 0], [0, 5], [0, 11], [1, 3], [2, 1], [5, 7], [6, 2], [1, 10], [3, 4], [7, 1]].forEach((x) => {
+      const g = this.library(x[0])[x[1]];
+      if (g) out.push(g);
+    });
+    return out;
+  }
+
+  // The games of the current tab in the library's sort order, so LT/RT follow the list.
+  sorted(ti, sort, dir) {
+    const base = ti === 0 ? this.favourites() : this.library(ti - 1);
+    const d = dir === 'asc' ? 1 : -1;
+    const list = base.slice().sort((a, b) => {
+      if (sort === 'name') return d * a.title.localeCompare(b.title, 'de');
+      if (sort === 'inst') return d * (b.inst - a.inst);
+      if (a.played == null && b.played == null) return a.title.localeCompare(b.title, 'de');
+      if (a.played == null) return 1;
+      if (b.played == null) return -1;
+      return d * (b.played - a.played);
+    });
+    const size = this.props.listSize ?? 'Alle Spiele';
+    return size === '1 Spiel' ? list.slice(0, 1) : size === '2 Spiele' ? list.slice(0, 2) : list;
+  }
+
+  relStr(days) {
+    if (days === 0) return 'Heute';
+    if (days === 1) return 'Gestern';
+    if (days < 7) return 'Vor ' + days + ' Tagen';
+    if (days < 30) { const w = Math.floor(days / 7); return w === 1 ? 'Vor 1 Woche' : 'Vor ' + w + ' Wochen'; }
+    if (days < 365) { const m = Math.floor(days / 30); return m === 1 ? 'Vor 1 Monat' : 'Vor ' + m + ' Monaten'; }
+    return 'Vor über 1 Jahr';
+  }
+
+  dateStr(daysAgo) {
+    const t = new Date(2026, 9, 9);
+    t.setDate(t.getDate() - daysAgo);
+    const p = (n) => (n < 10 ? '0' : '') + n;
+    return p(t.getDate()) + '.' + p(t.getMonth() + 1) + '.' + t.getFullYear();
+  }
+
+  gb(x) {
+    return x.toFixed(1).replace('.', ',') + ' GB';
+  }
+
+  // Slides the track one detail page to the side, then shows the new game centred.
+  step(delta, n) {
+    if (n < 2 || this.state.anim) return;
+    this.setState({ shift: delta, anim: true });
+    setTimeout(() => {
+      this.setState({ gi: ((this.state.gi + delta) % n + n) % n, shift: 0, anim: false });
+    }, 360);
+  }
+
   renderVals() {
-    const upd = this.props.hasUpdate ?? true;
-    return { upd: upd, primary: upd ? 'Update starten' : 'Spielen' };
+    const s = this.state;
+    const L = this.launchers();
+    const list = this.sorted(s.ti, s.sort, s.dir);
+    const n = list.length;
+    const gi = Math.min(s.gi, n - 1);
+    const STEP = 1200;
+    const tabName = s.ti === 0 ? 'Favoriten' : L[s.ti - 1].name;
+    const steamController = this.props.steamController ?? false;
+
+    const slots = [-2, -1, 0, 1, 2].map((k) => {
+      const g = list[((gi + k) % n + n) % n];
+      const l = L[g.li];
+      const sisr = s.modes[g.key] ?? (g.li !== 0);
+      const fav = s.favs[g.key] ?? this.favourites().some((x) => x.key === g.key);
+      return {
+        visible: n > 1 || k === 0,
+        hidden: k !== 0,
+        cls: k === 0 ? 'dp center' : 'dp side',
+        left: (384 + k * STEP) + 'px',
+        go: () => { if (k !== 0) this.step(k > 0 ? 1 : -1, n); },
+        title: g.title,
+        mono: g.title.charAt(0),
+        hero: 'hsl(' + g.hue + ' 30% 17%)',
+        ring: 'hsl(' + g.hue + ' 40% 28%)',
+        label: 'hsl(' + g.hue + ' 30% 60%)',
+        cover: 'hsl(' + g.hue + ' 28% 24%)',
+        fg: 'hsl(' + g.hue + ' 55% 66%)',
+        tile: l.tile,
+        lmono: l.name.charAt(0),
+        launcher: l.name,
+        launcherUpper: l.name.toUpperCase(),
+        update: g.update,
+        version: '1.' + (g.hue % 9) + '.' + (g.inst % 12),
+        updSize: this.gb(0.3 + g.size * 0.04),
+        size: this.gb(g.size),
+        drive: 'Laufwerk ' + l.path.charAt(0) + ':',
+        last: g.played == null ? 'Nie gespielt' : this.relStr(g.played),
+        lastAbs: g.played == null ? '–' : this.dateStr(g.played) + ', 22:14',
+        hours: g.played == null ? '–' : (1 + Math.floor((g.size * 13 + g.hue) % 160)) + ' Std.',
+        installed: this.dateStr(g.inst),
+        path: l.path + g.title.replace(/[^A-Za-z0-9]/g, ''),
+        fav: fav,
+        favCls: fav ? 'act fav on' : 'act fav',
+        favLabel: fav ? 'Favorit' : 'Zu Favoriten',
+        toggleFav: () => this.setState({ favs: Object.assign({}, s.favs, { [g.key]: !fav }) }),
+        mode: sisr ? 'Xbox 360 Controller (SISR)' : 'Steam Input',
+        toggleMode: () => this.setState({ modes: Object.assign({}, s.modes, { [g.key]: !sisr }) })
+      };
+    });
+
+    const tabs = [{ i: 0, name: 'Favoriten', count: this.favourites().length, isFav: true, isLauncher: false, tile: '', mono: '' }]
+      .concat(L.map((l, li) => ({ i: li + 1, name: l.name, count: l.count, isFav: false, isLauncher: true, tile: l.tile, mono: l.name.charAt(0) })))
+      .map((t) => Object.assign(t, {
+        cls: t.i === s.ti ? 'tab on' : 'tab',
+        pick: () => this.setState({ ti: t.i, gi: 0 })
+      }));
+    const T = tabs.length;
+
+    // A new sort keeps the current game in the middle; only its neighbours change.
+    const resort = (sort, dir) => {
+      const key = list[gi].key;
+      const idx = this.sorted(s.ti, sort, dir).findIndex((x) => x.key === key);
+      this.setState({ sort: sort, dir: dir, gi: Math.max(0, idx) });
+    };
+    const mk = (k, d, label) => ({
+      label: label,
+      cls: s.sort === k && s.dir === d ? 'seg on' : 'seg',
+      pick: () => resort(k, d)
+    });
+    const sortRows = [
+      { label: 'Name', opts: [mk('name', 'asc', 'A → Z'), mk('name', 'desc', 'Z → A')] },
+      { label: 'Installationsdatum', opts: [mk('inst', 'desc', 'Neueste zuerst'), mk('inst', 'asc', 'Älteste zuerst')] },
+      { label: 'Zuletzt gespielt', opts: [mk('played', 'desc', 'Neueste zuerst'), mk('played', 'asc', 'Älteste zuerst')] }
+    ];
+    const sortNames = { name: 'Name', inst: 'Installiert', played: 'Zuletzt gespielt' };
+    const sortLabel = s.sort === 'name'
+      ? (s.dir === 'asc' ? 'Name A–Z' : 'Name Z–A')
+      : sortNames[s.sort] + (s.dir === 'desc' ? ' · neueste zuerst' : ' · älteste zuerst');
+
+    return {
+      tabs: tabs,
+      tabName: tabName,
+      centerTitle: list[gi].title,
+      position: (gi + 1) + ' von ' + n,
+      sortLabel: sortLabel,
+      slots: slots,
+      steamController: steamController,
+      noSteamController: !steamController,
+      hasNeighbours: n > 1,
+      trackStyle: 'transform: translateX(' + (-s.shift * STEP) + 'px); transition: ' + (s.anim ? 'transform 340ms cubic-bezier(.25,.8,.25,1)' : 'none'),
+      prev: () => this.step(-1, n),
+      next: () => this.step(1, n),
+      prevTab: () => this.setState({ ti: (s.ti + T - 1) % T, gi: 0 }),
+      nextTab: () => this.setState({ ti: (s.ti + 1) % T, gi: 0 }),
+      sheetOpen: s.sheet,
+      openSheet: () => this.setState({ sheet: true }),
+      closeSheet: () => this.setState({ sheet: false }),
+      sortRows: sortRows,
+      sizeItems: [10, 25, 50, 100].map((z) => ({ n: z, cls: z === s.ps ? 'sz on' : 'sz', pick: () => this.setState({ ps: z }) }))
+    };
   }
 }
 </script>

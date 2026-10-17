@@ -106,11 +106,13 @@ public sealed partial class GameDetailViewModel : ViewModelBase
             return false;
         }
 
+        var focusedKind = Current.FocusedKind;
         Games = games;
         Index = index;
         SortLabel = sortLabel;
         OnPropertyChanged(nameof(HasNeighbours));
         BuildPages();
+        Current.FocusKind(focusedKind);
         return true;
     }
 

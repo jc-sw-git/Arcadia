@@ -103,6 +103,9 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     public IRelayCommand SelectCommand { get; }
 
+    /// <summary>The kind of the focused button, so a rebuilt page can keep the focus where it was.</summary>
+    public GameActionKind? FocusedKind => Focused?.Kind;
+
     private GameActionViewModel? Focused => _focusColumn >= 0 && Row(_focusRow) is { } row && _focusColumn < row.Count ? row[_focusColumn] : null;
 
     /// <summary>D-pad and A on the page in the middle.</summary>
@@ -135,7 +138,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     /// </summary>
     public void RebuildActions()
     {
-        var focusedKind = Focused?.Kind;
+        var focusedKind = FocusedKind;
         var actions = GameActionViewModel.For(Tile, _host);
 
         // No context menu here: everything it offers is a button of its own, except "Details", which is this page.
@@ -186,7 +189,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     };
 
     /// <summary>Focuses the button of <paramref name="kind"/>, else "Spielen", else the first one available.</summary>
-    private void FocusKind(GameActionKind? kind)
+    public void FocusKind(GameActionKind? kind)
     {
         for (var row = 0; row < 2; row++)
         {

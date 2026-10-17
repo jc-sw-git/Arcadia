@@ -12,7 +12,7 @@ artboards with their titles and sizes.
 | Image | Artboard | Content |
 |---|---|---|
 | [01-library.png](01-library.png) | `Main.dc.html` | Big Picture library: favourites tab + launcher tabs (scrollable, edge arrows), preview panel, 8-column grid with update/favourite badges, pagination, status bar, footer hints. Interactive: tabs, view modal (Y), context menu (⧉ / right click), favourites. |
-| [02-game-detail.png](02-game-detail.png) | `GameDetail.dc.html` | Detail page: hero, cover, launcher + update chips, primary action, "play without update" hint, stats (last played, playtime, installed, input). |
+| [02-game-detail.png](02-game-detail.png) | `GameDetail.dc.html` | Detail page as a carousel (#11): neighbours cut off at the sides, hero with cover and launcher + update chips, the context menu's actions as two rows of buttons, update note, stats (last played, playtime, installed, size). |
 | [03-search.png](03-search.png) | `Search.dc.html` | Search across launchers, `/steam-epic` prefix, launcher chips, results, on-screen keyboard with layout switcher (R3). |
 | [04-artwork-modal.png](04-artwork-modal.png) | `ArtworkModal.dc.html` | Change cover/background: SteamGridDB suggestions, own file, preview. |
 | [05-spotify-connect.png](05-spotify-connect.png) | `SpotifyConnect.dc.html` | Connect Spotify (browser login, three steps). |

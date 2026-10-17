@@ -3,17 +3,18 @@ using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Library;
 
+// settings.json stores these as numbers: keep the values when adding or reordering members.
 public enum SortField
 {
-    Name,
-    InstalledAt,
-    LastPlayed,
+    Name = 0,
+    InstalledAt = 1,
+    LastPlayed = 2,
 }
 
 public enum SortDirection
 {
-    Ascending,
-    Descending,
+    Ascending = 0,
+    Descending = 1,
 }
 
 /// <param name="Field">What to sort by.</param>

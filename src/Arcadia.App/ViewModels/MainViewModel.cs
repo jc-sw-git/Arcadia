@@ -5,6 +5,7 @@ using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
+using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -26,9 +27,8 @@ public partial class MainViewModel : ViewModelBase
     private readonly GameLaunchService _launcher;
     private readonly ControllerSupportService _controllerSupport;
     private readonly ArcadiaUpdateService _updates;
+    private readonly SettingsService _settings;
     private readonly TimeProvider _time;
-    private SortOrder _sort = SortOrder.Default;
-    private int _preferredPageSize = PageSizes.Default;
     private int _requestedPage;
 
     public MainViewModel(
@@ -37,6 +37,7 @@ public partial class MainViewModel : ViewModelBase
         ControllerSupportService controllerSupport,
         ArcadiaUpdateService updates,
         InstallTracker installs,
+        SettingsService settings,
         TimeProvider time)
     {
         _library = library;
@@ -45,6 +46,7 @@ public partial class MainViewModel : ViewModelBase
         _controllerSupport = controllerSupport;
         _updates = updates;
         _installs = installs;
+        _settings = settings;
         _time = time;
         Status = new StatusBarViewModel(controllerSupport, updates, time);
         Toast = new ToastViewModel(time);
@@ -230,7 +232,7 @@ public partial class MainViewModel : ViewModelBase
             var index = IndexOfTab(library.Launcher.Id);
             if (index < 0)
             {
-                Tabs.Insert(i, new LauncherTabViewModel(library, SelectTab));
+                Tabs.Insert(i, new LauncherTabViewModel(library, ChooseTab));
                 continue;
             }
 
@@ -252,7 +254,8 @@ public partial class MainViewModel : ViewModelBase
             CountText = RangeText = ViewSummary = string.Empty;
             if (Tabs.Count > 0)
             {
-                SelectTab(Tabs[0]);
+                // SelectTab, not ChooseTab: a launcher missing from this scan must not overwrite the user's choice.
+                SelectTab(Tabs.FirstOrDefault(t => t.Launcher.Id == _settings.Current.LastTabLauncherId) ?? Tabs[0]);
             }
 
             return;
@@ -409,6 +412,13 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    /// <summary>The user picked <paramref name="tab"/>; Arcadia opens with it next time.</summary>
+    private void ChooseTab(LauncherTabViewModel tab)
+    {
+        SelectTab(tab);
+        SaveView(settings => settings with { LastTabLauncherId = tab.Launcher.Id });
+    }
+
     private void SelectTab(LauncherTabViewModel tab)
     {
         if (SelectedTab is { } previous)
@@ -430,7 +440,7 @@ public partial class MainViewModel : ViewModelBase
         }
 
         var index = (Tabs.IndexOf(SelectedTab) + delta + Tabs.Count) % Tabs.Count;
-        SelectTab(Tabs[index]);
+        ChooseTab(Tabs[index]);
     }
 
     private void GoToPage(int page)
@@ -440,7 +450,7 @@ public partial class MainViewModel : ViewModelBase
             return;
         }
 
-        var window = PageWindow.For(SelectedTab.Count, PageSizes.Effective(_preferredPageSize, SelectedTab.Count), page);
+        var window = PageWindow.For(SelectedTab.Count, PageSizes.Effective(_settings.Current.PreferredPageSize, SelectedTab.Count), page);
         if (window.PageIndex == _requestedPage)
         {
             return;
@@ -589,8 +599,9 @@ public partial class MainViewModel : ViewModelBase
             return;
         }
 
-        var pageSize = PageSizes.Effective(_preferredPageSize, tab.Count);
-        var sorted = GameSorter.Sort(tab.Games, _sort, Formatting.Culture);
+        var view = _settings.Current;
+        var pageSize = PageSizes.Effective(view.PreferredPageSize, tab.Count);
+        var sorted = GameSorter.Sort(tab.Games, view.LibrarySort, Formatting.Culture);
         var window = PageWindow.For(sorted.Count, pageSize, _requestedPage);
         _requestedPage = window.PageIndex;
 
@@ -617,28 +628,41 @@ public partial class MainViewModel : ViewModelBase
         var installedText = installed == tab.Count ? string.Empty : $" · {installed} installiert";
         CountText = $"{tab.Count} Spiele{installedText} · Seite {window.PageIndex + 1} von {window.PageCount}";
         RangeText = window.Length == 0 ? string.Empty : $"{window.Start + 1}–{window.Start + window.Length} von {sorted.Count}";
-        ViewSummary = $"{SortLabel(_sort)}  ·  {pageSize} pro Seite";
+        ViewSummary = $"{SortLabel(view.LibrarySort)}  ·  {pageSize} pro Seite";
     }
 
     private ViewOptionsViewModel CreateViewOptions() => new(
         SelectedTab!.Name,
         SelectedTab.Count,
-        _sort,
-        _preferredPageSize,
-        sort =>
+        _settings.Current.LibrarySort,
+        _settings.Current.PreferredPageSize,
+        sort => ChangeView(settings => settings with { LibrarySort = sort }),
+        size => ChangeView(settings => settings with { PreferredPageSize = size }));
+
+    private void ChangeView(Func<AppSettings, AppSettings> change)
+    {
+        SaveView(change);
+        _requestedPage = 0;
+        Refresh(focusIndex: 0);
+        RebuildViewOptions();
+    }
+
+    /// <summary>
+    /// The change applies at once; if settings.json can't be written (locked, read-only), it only
+    /// lasts until Arcadia closes, or until the next save that succeeds.
+    /// </summary>
+    private void SaveView(Func<AppSettings, AppSettings> change)
+    {
+        try
         {
-            _sort = sort;
-            _requestedPage = 0;
-            Refresh(focusIndex: 0);
-            RebuildViewOptions();
-        },
-        size =>
+            _settings.Update(change);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _preferredPageSize = size;
-            _requestedPage = 0;
-            Refresh(focusIndex: 0);
-            RebuildViewOptions();
-        });
+            AppLog.Write($"Ansicht nicht gespeichert: {ex.Message}");
+            Toast.Show("Die Ansicht konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
+        }
+    }
 
     private void RebuildViewOptions()
     {

@@ -37,7 +37,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings { SteamControllerSupport = enabled });
-        return new ControllerSupportService(store, _sisr, _http, _time, _platform) { Log = Log };
+        return new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log };
     }
 
     private void Log(string line)

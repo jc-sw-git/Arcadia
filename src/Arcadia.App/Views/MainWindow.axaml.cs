@@ -18,6 +18,9 @@ public partial class MainWindow : Window
     /// <summary>Space between a cover and its context menu, and between the menu and the window's edge.</summary>
     private const double MenuGap = 24;
 
+    /// <summary>Height of the fades at the grid's edges (Border.listFade in Theme.axaml).</summary>
+    private const double ListFadeHeight = 96;
+
     private readonly HashSet<Key> _keysDown = [];
     private MainViewModel? _viewModel;
 
@@ -37,6 +40,7 @@ public partial class MainWindow : Window
             _keysDown.Clear();
             _viewModel?.CancelHold();
         };
+        GridScroller.ScrollChanged += (_, _) => UpdateGridFades();
         TabScroller.ScrollChanged += (_, _) => UpdateTabEdges();
         TabScroller.SizeChanged += (_, _) => UpdateTabEdges();
         TabScrollLeft.Click += (_, _) => ScrollTabs(-TabScrollStep);
@@ -170,10 +174,20 @@ public partial class MainWindow : Window
         {
             GridScroller.Offset = default;
         }
-        else if (index > 0)
+        else if (index > 0 && GameGrid.ContainerFromIndex(index) is { } cover)
         {
-            GameGrid.ContainerFromIndex(index)?.BringIntoView();
+            // Keeps the focused cover clear of the edge fades; at the ends the scroll range stops it.
+            cover.BringIntoView(new Rect(cover.Bounds.Size).Inflate(new Thickness(0, ListFadeHeight)));
         }
+    }
+
+    /// <summary>A fade shows only at an edge the grid can still scroll towards (#102).</summary>
+    private void UpdateGridFades()
+    {
+        var offset = GridScroller.Offset.Y;
+        var max = GridScroller.Extent.Height - GridScroller.Viewport.Height;
+        GridFadeTop.Classes.Set("shown", offset > 1);
+        GridFadeBottom.Classes.Set("shown", offset < max - 1);
     }
 
     /// <summary>

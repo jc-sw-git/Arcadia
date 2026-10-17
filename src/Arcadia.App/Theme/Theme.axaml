@@ -442,6 +442,22 @@
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Padding" Value="24,20" />
   </Style>
+  <!-- Fades at the top and bottom of the cover grid; MainWindow.axaml.cs shows them where it can scroll on.
+       Height must match MainWindow.ListFadeHeight. -->
+  <Style Selector="Border.listFade">
+    <Setter Property="Height" Value="96" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.listFade.shown">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
   <!-- LT/RT beside the detail carousel. -->
   <Style Selector="Button.carouselNav">
     <Setter Property="Height" Value="48" />

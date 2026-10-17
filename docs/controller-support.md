@@ -78,7 +78,11 @@ focus handling or anything SISR/usbip related.
   ends a leftover VIIPER from SISR's folder and runs `usbip detach -p N` for each `usbip port` entry from
   `usbip://localhost:3241/` (`CleanUpViiperAsync`). Why: on 2026-10-16 Steam hung at "loading user data"
   after SISR had been killed, and only a Windows restart helped (a stale device was suspected, not proven;
-  `usbip port` was empty after a later kill).
+  `usbip port` was empty after a later kill). `usbip port` on the owner's PC while SISR runs (2026-10-17):
+  `Port 01: device in use at Full Speed(12Mbps)`, then `Microsoft Corp. : Xbox360 Controller (045e:028e)` and
+  `-> usbip://localhost:3241/1-1`. Only VIIPER serves `localhost:3241`, so the address picks its devices; a
+  port remembered at SISR's start would miss devices attached later (controller reconnects) or after an
+  Arcadia restart, and usbip reuses freed port numbers.
 - While SISR or VIIPER start or stop, in the background too, the settings take only B
   (`ControllerSupportService.IsSettling`, owner 2026-10-16). A Steam that runs but never finishes its login
   doesn't lock them, so switching off stays possible.

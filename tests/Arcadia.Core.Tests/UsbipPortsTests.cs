@@ -4,8 +4,8 @@ namespace Arcadia.Core.Tests;
 
 public class UsbipPortsTests
 {
-    // Layout of usbip-win2's "usbip port" as assumed from its source (not yet seen on the owner's PC);
-    // the second device comes from another usbip server, the third from VIIPER by IP.
+    // Layout of usbip-win2's "usbip port" as on the owner's PC (see OwnersPc); the second device comes
+    // from another usbip server, the third from VIIPER by IP.
     private const string Output = """
         Imported USB devices
         ====================
@@ -26,6 +26,22 @@ public class UsbipPortsTests
     [Fact]
     public void Only_devices_from_VIIPER_are_picked() =>
         Assert.Equal([1, 3], UsbipPorts.FromLocalViiper(Output));
+
+    // Copied from the owner's PC while SISR ran (usbip-win2, 2026-10-17).
+    private const string OwnersPc = """
+        Imported USB devices
+        ====================
+        Port 01: device in use at Full Speed(12Mbps)
+                 Microsoft Corp. : Xbox360 Controller (045e:028e)
+                   -> usbip://localhost:3241/1-1
+                   -> remote bus/dev: 001/001
+                   -> serial:
+                   -> mode: zero-copy
+        """;
+
+    [Fact]
+    public void The_real_output_while_SISR_runs_finds_its_controller() =>
+        Assert.Equal([1], UsbipPorts.FromLocalViiper(OwnersPc.Replace("\n", "\r\n")));
 
     [Fact]
     public void Nothing_imported_means_nothing_to_detach() =>

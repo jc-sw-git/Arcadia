@@ -48,7 +48,7 @@ body{margin:0;background:#0B0F14}
 .card.is-focus{transform:scale(1.07);z-index:2}
 .card.is-focus .cv{box-shadow:0 0 0 3px #F2F5F8,0 18px 40px rgba(0,0,0,.65)}
 .card:focus-visible .cv{box-shadow:0 0 0 3px #F2F5F8}
-.hold{position:absolute;left:-3px;top:-3px;width:calc(100% + 6px);height:calc(100% + 6px);pointer-events:none;overflow:visible}
+.hold{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
 .hold rect{fill:none;stroke:#3B9EFF;stroke-width:3;stroke-dasharray:0 100;animation:holdfill 1.4s linear infinite}
 @keyframes holdfill{0%,14%{stroke-dasharray:0 100}71%,100%{stroke-dasharray:100 0}}
 .badge{position:absolute;top:8px;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(11,15,20,.55)}
@@ -146,7 +146,10 @@ body{margin:0;background:#0B0F14}
   </div>
 
   <div style="flex: 1; min-height: 0; display: flex; gap: 40px; padding: 0 0 0 80px">
-    <aside aria-label="Vorschau" style="width: 400px; flex-shrink: 0; background: #151B23; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; margin-bottom: 16px; margin-top: 18px">
+    <aside aria-label="Vorschau" style="position: relative; width: 400px; flex-shrink: 0; background: #151B23; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; margin-bottom: 16px; margin-top: 18px">
+      <sc-if value="{{holding}}" hint-placeholder-val="{{ false }}">
+        <svg class="hold" aria-hidden="true"><rect x="1.5" y="1.5" rx="14.5" pathLength="100" style="width: calc(100% - 3px); height: calc(100% - 3px)"></rect></svg>
+      </sc-if>
       <sc-if value="{{hasGames}}" hint-placeholder-val="{{ true }}">
         <div style="position: relative; height: 180px; flex-shrink: 0; background: {{p.bg}}; display: flex; align-items: flex-end; padding: 20px; box-sizing: border-box">
           <span style="position: absolute; right: 20px; top: 8px; font-size: 140px; font-weight: 800; line-height: 1; color: {{p.fg}}; opacity: .55">{{p.mono}}</span>
@@ -177,7 +180,7 @@ body{margin:0;background:#0B0F14}
           <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px">
             <div style="display: flex; gap: 10px">
               <button class="pa"><span class="gl r d">A</span>{{p.primary}}</button>
-              <button class="pb" onClick="{{openMenu}}" aria-label="Optionen"><span class="gl">≡</span>Optionen</button>
+              <button class="pb" onClick="{{openMenu}}" aria-label="Optionen"><span class="gl">⧉</span>Optionen</button>
             </div>
             <sc-if value="{{p.update}}" hint-placeholder-val="{{ false }}">
               <span style="font-size: 14px; color: #9AA7B4; text-align: center">Das Update wird in {{p.launcher}} gestartet</span>
@@ -208,9 +211,6 @@ body{margin:0;background:#0B0F14}
               <sc-if value="{{g.showFav}}" hint-placeholder-val="{{ false }}">
                 <span class="badge fav"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"></path></svg></span>
               </sc-if>
-              <sc-if value="{{g.holding}}" hint-placeholder-val="{{ false }}">
-                <svg class="hold" aria-hidden="true"><rect x="1.5" y="1.5" rx="9.5" pathLength="100" style="width: calc(100% - 3px); height: calc(100% - 3px)"></rect></svg>
-              </sc-if>
               <sc-if value="{{g.update}}" hint-placeholder-val="{{ false }}">
                 <span class="badge upd"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M5 20h14"></path></svg></span>
               </sc-if>
@@ -236,7 +236,7 @@ body{margin:0;background:#0B0F14}
     <div style="display: flex; align-items: center; gap: 28px; font-size: 16px; color: #C5CED7">
       <span class="hint"><span class="gl r">A</span>{{p.primary}}</span>
       <span class="hint"><span class="gl r">A</span>halten: Details</span>
-      <span class="hint"><span class="gl">≡</span>Optionen</span>
+      <span class="hint"><span class="gl">⧉</span>Optionen</span>
       <a class="hint" href="Search.dc.html" style="color: inherit; text-decoration: none"><span class="gl r">X</span>Suchen</a>
       <span class="hint"><span class="gl r">Y</span>Ansicht</span>
       <span class="hint"><span class="gl">LB</span><span class="gl">RB</span>Tab</span>
@@ -492,7 +492,6 @@ class Component extends DCLogic {
         lmono: l.name.charAt(0),
         launcher: l.name,
         cls: i === focus ? 'card is-focus' : 'card',
-        holding: i === focus && (this.props.holdA ?? false),
         pick: () => this.setState({ focus: i }),
         menu: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ focus: i, menu: true }); }
       };
@@ -609,6 +608,7 @@ class Component extends DCLogic {
       closeMenu: () => this.setState({ menu: false }),
       menuFav: () => { if (g) { this.toggleFav(g.key); this.setState({ menu: false }); } },
       steamController: this.props.steamController ?? false,
+      holding: !!g && (this.props.holdA ?? false),
       toggleMode: () => { if (g) { const m = Object.assign({}, s.sisr || {}); m[g.key] = !m[g.key]; this.setState({ sisr: m }); } },
       sheetOpen: s.sheet,
       openSheet: () => this.setState({ sheet: true }),

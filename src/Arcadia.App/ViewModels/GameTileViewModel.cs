@@ -120,7 +120,7 @@ public partial class GameTileViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool IsFocused { get; set; }
 
-    /// <summary>A is held on this tile; the ring around it fills until the detail page opens.</summary>
+    /// <summary>A is held on this game; the ring around the preview fills until the detail page opens.</summary>
     [ObservableProperty]
     public partial bool IsHolding { get; set; }
 

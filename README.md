@@ -45,12 +45,14 @@ dotnet run --project src/Arcadia.App -- --demo
 | Aktion | Controller | Tastatur |
 |--------|-----------|----------|
 | Navigieren | D-Pad / linker Stick | Pfeiltasten |
-| Spielen bzw. Update starten | A | Enter / Leertaste |
+| Spielen (beim Loslassen) | A | Enter / Leertaste |
 | Zurück / Dialog schließen | B | Esc |
 | Launcher wechseln | LB / RB | Q / E, Strg+Tab |
 | Seite wechseln | LT / RT | Bild ↑ / Bild ↓ |
 | Ansicht (Sortierung, pro Seite) | Y | V |
-| Einstellungen | View (⧉) | F2 |
+| Optionen eines Spiels (Kontextmenü) | View (⧉) | Kontextmenü-Taste, Umschalt+F10, Rechtsklick |
+| Details eines Spiels | A halten (1 s) | Enter halten |
+| Einstellungen | Menü (≡) | F2 |
 
 Maus: Klick wählt ein Spiel aus, Doppelklick startet es.
 

@@ -38,8 +38,9 @@ public static class UiActionMap
         GamepadButton.LeftTrigger => UiAction.PreviousPage,
         GamepadButton.RightTrigger => UiAction.NextPage,
         GamepadButton.Y => UiAction.ViewOptions,
-        GamepadButton.View => UiAction.Settings,
-        GamepadButton.Menu => UiAction.Options,
+        // The owner's choice (2026-10-17): the context menu is used far more often than the settings.
+        GamepadButton.View => UiAction.Options,
+        GamepadButton.Menu => UiAction.Settings,
         _ => null,
     };
 

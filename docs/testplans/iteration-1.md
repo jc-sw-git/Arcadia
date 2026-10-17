@@ -333,9 +333,9 @@ Verlauf:
 
 ## #10 Kontextmenü für Spiele
 
-- [ ] **T10-1** ≡ (Menü-Taste), Rechtsklick auf ein Cover, „≡ Optionen“ in der Vorschau und die
+- [ ] **T10-1** ⧉ (View-Taste), Rechtsklick auf ein Cover, „⧉ Optionen“ in der Vorschau und die
       Kontextmenü-Taste der Tastatur öffnen das Menü des Spiels; Hoch/Runter überspringen deaktivierte
-      Einträge, B und ≡ schließen es, ein Klick daneben auch. · E2E: ja
+      Einträge, B und ⧉ schließen es, ein Klick daneben auch. ≡ (Menü-Taste) öffnet die Einstellungen. · E2E: ja
 - [ ] **T10-2** Installiertes Spiel: Spielen, Details anzeigen, Zu Favoriten hinzufügen und Artwork
       ändern (beide deaktiviert, „Folgt in einer späteren Version“), In <Launcher> öffnen,
       Controller-Layout anzeigen, Trennstrich, Deinstallieren … in Rot. Mit Update steht unter
@@ -344,7 +344,7 @@ Verlauf:
       In <Launcher> öffnen. Während einer Installation steht statt „Installieren“ der Status
       (z. B. „Wird installiert · 42 %“), deaktiviert. · E2E: ja
 - [ ] **T10-4** A kurz drücken startet das Spiel beim Loslassen. A halten: nach etwa 0,2 s füllt sich
-      ein blauer Rahmen um die Kachel, nach 1 s öffnet sich die Detailseite, ohne loszulassen.
+      ein blauer Rahmen um die Vorschau links, nach 1 s öffnet sich die Detailseite, ohne loszulassen.
       Loslassen dazwischen bricht ab, nichts passiert. Enter verhält sich gleich. · E2E: ja
 - [ ] **T10-5** Steam-Spiel: „In Steam öffnen“ zeigt die Seite des Spiels in der Steam-Bibliothek,
       „Controller-Layout anzeigen“ Steams Controller-Konfiguration des Spiels. Bei Nicht-Steam-Spielen
@@ -475,7 +475,7 @@ Mit echtem Steam Controller und laufendem Steam. Alle E2E: nein (Steam, SISR, Tr
 
 - [ ] **G-30** Die Uhr läuft; die Symbole für Controller-Warnung, SISR-Update und Arcadia-Update
       erscheinen nur bei Bedarf und öffnen die Einstellungen. · E2E: ja
-- [ ] **G-31** Die Einstellungen (View-Taste / F2) sind komplett per Controller bedienbar, der
+- [ ] **G-31** Die Einstellungen (Menü-Taste ≡ / F2) sind komplett per Controller bedienbar, der
       fokussierte Eintrag scrollt ins Bild, B schließt. · E2E: ja
 
 Verlauf:

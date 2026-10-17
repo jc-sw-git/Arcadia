@@ -136,10 +136,10 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
 - Sort order and preferred page size are global, not per tab, and are saved; Arcadia opens in the
   tab the user last chose, always on page 1 with the first game focused (owner, 2026-10-17).
 - One "Ansicht" modal (Y) for sort + page size. X = search (all launchers, on-screen keyboard,
-  `/steam-epic term` prefix, keyword per launcher), R3 = keyboard layout switch, Menu/☰ or
-  right click = context menu. No "all launchers" tab. No dedicated favourite button.
+  `/steam-epic term` prefix, keyword per launcher), R3 = keyboard layout switch, View/⧉ or
+  right click = context menu, Menu/☰ = settings (swapped by the owner, 2026-10-17). No "all launchers" tab. No dedicated favourite button.
 - Dependent options sit in the same box as their main switch.
-- A starts a game on release; holding A for 1 s opens the detail page (a ring around the tile fills from
+- A starts a game on release; holding A for 1 s opens the detail page (a ring around the preview fills from
   0.2 s on, letting go before 1 s cancels). The context menu and the detail page offer the same actions
   (`GameActionViewModel.For`); the detail page has no menu, its actions are buttons (owner, 2026-10-17).
 - Launcher actions (open in the launcher, uninstall, controller layout) are `LaunchTarget`s on `Game`;

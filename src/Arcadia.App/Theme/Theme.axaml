@@ -49,7 +49,7 @@
     <BoxShadows x:Key="HoverRing">0 0 0 2 #5A6878</BoxShadows>
     <!-- Menu entries sit edge to edge, so their focus ring is drawn inside. -->
     <BoxShadows x:Key="FocusRingInset">inset 0 0 0 2 #F2F5F8</BoxShadows>
-    <!-- Fills around a cover while A is held; full means the detail page opens. -->
+    <!-- Fills around the preview while A is held; full means the detail page opens. -->
     <SolidColorBrush x:Key="HoldRing" Color="#3B9EFF" />
     <BoxShadows x:Key="ToastShadow">0 20 50 0 #8C000000</BoxShadows>
     <BoxShadows x:Key="DialogShadow">0 40 100 0 #99000000</BoxShadows>
@@ -172,17 +172,16 @@
     <Setter Property="BoxShadow" Value="{StaticResource FocusRingLifted}" />
   </Style>
 
-  <!-- Holding A on a cover: the ring lies on the focus ring and fills in the time between
+  <!-- Holding A: a ring along the inner edge of the preview panel fills in the time between
        MainViewModel.HoldFeedbackDelay and HoldTime (0.8 s). -->
   <Style Selector="ctl|HoldRing">
     <Setter Property="IsVisible" Value="False" />
     <Setter Property="IsHitTestVisible" Value="False" />
     <Setter Property="Stroke" Value="{StaticResource HoldRing}" />
     <Setter Property="StrokeThickness" Value="3" />
-    <Setter Property="CornerRadius" Value="11" />
-    <Setter Property="Margin" Value="-3" />
+    <Setter Property="CornerRadius" Value="16" />
   </Style>
-  <Style Selector="Button.tile.holding ctl|HoldRing">
+  <Style Selector="Border.preview.holding ctl|HoldRing">
     <Setter Property="IsVisible" Value="True" />
     <Style.Animations>
       <Animation Duration="0:0:0.8" FillMode="Forward">
@@ -281,7 +280,7 @@
   <Style Selector="Button.primary:pointerover">
     <Setter Property="Background" Value="{StaticResource AccentHover}" />
   </Style>
-  <!-- Next to the primary button in the preview, e.g. "≡ Optionen". -->
+  <!-- Next to the primary button in the preview, e.g. "⧉ Optionen". -->
   <Style Selector="Button.secondary">
     <Setter Property="Height" Value="60" />
     <Setter Property="CornerRadius" Value="30" />

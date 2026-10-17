@@ -22,7 +22,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     private static readonly TimeSpan UninstallSettleTime = TimeSpan.FromSeconds(5);
 
-    /// <summary>A shorter press of A starts the game; the ring around the tile fills from here on.</summary>
+    /// <summary>A shorter press of A starts the game; the ring around the preview fills from here on.</summary>
     private static readonly TimeSpan HoldFeedbackDelay = TimeSpan.FromMilliseconds(200);
 
     /// <summary>Holding A this long opens the detail page. The ring's animation in Theme.axaml lasts the difference.</summary>

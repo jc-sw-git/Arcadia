@@ -135,104 +135,108 @@
       <!-- Body: preview panel and cover grid -->
       <Grid Grid.Row="2" ColumnDefinitions="400,*" Margin="80,0,0,0" ColumnSpacing="40">
 
-        <Border Background="{StaticResource Surface}" CornerRadius="16" ClipToBounds="True" Margin="0,18,0,16"
+        <Border Classes="preview" Classes.holding="{Binding FocusedGame.IsHolding, FallbackValue=False}" Background="{StaticResource Surface}" CornerRadius="16" ClipToBounds="True" Margin="0,18,0,16"
                 IsVisible="{Binding FocusedGame, Converter={x:Static ObjectConverters.IsNotNull}}">
-          <Grid RowDefinitions="180,*" DataContext="{Binding FocusedGame}" x:DataType="vm:GameTileViewModel">
-            <Panel Background="{Binding CoverBrush}">
-              <TextBlock Text="{Binding Monogram}" FontSize="140" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Opacity="0.55"
-                         HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,20,0" />
-              <Border Classes="shade" CornerRadius="0" IsVisible="{Binding !IsInstalled}" />
-              <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" CornerRadius="16" Height="32" Padding="10,0,14,0"
-                      HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Path Data="M7 17a4 4 0 0 1-.6-7.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17 16.9M12 11v9M9 17l3 3 3-3" Stroke="{StaticResource TextSoft}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
-                  <TextBlock Text="Nicht installiert" FontSize="14" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+          <Panel>
+            <Grid RowDefinitions="180,*" DataContext="{Binding FocusedGame}" x:DataType="vm:GameTileViewModel">
+              <Panel Background="{Binding CoverBrush}">
+                <TextBlock Text="{Binding Monogram}" FontSize="140" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Opacity="0.55"
+                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,20,0" />
+                <Border Classes="shade" CornerRadius="0" IsVisible="{Binding !IsInstalled}" />
+                <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" CornerRadius="16" Height="32" Padding="10,0,14,0"
+                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Path Data="M7 17a4 4 0 0 1-.6-7.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17 16.9M12 11v9M9 17l3 3 3-3" Stroke="{StaticResource TextSoft}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
+                    <TextBlock Text="Nicht installiert" FontSize="14" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+              </Panel>
+              <DockPanel Grid.Row="1" Margin="24,22,24,24">
+                <StackPanel DockPanel.Dock="Bottom" Spacing="10">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Border Classes="glyph round dark"><TextBlock Text="A" /></Border>
+                        <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </Button>
+                    <Button Grid.Column="1" Classes="plain secondary" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenMenuCommand}"
+                            ToolTip.Tip="Weitere Aktionen (⧉ oder Rechtsklick auf ein Cover)">
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
+                        <TextBlock Text="Optionen" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </Button>
+                  </Grid>
+                  <TextBlock IsVisible="{Binding UpdateAvailable}" Classes="actionHint">
+                    <Run Text="{Binding LauncherName}" /><Run Text=" installiert das Update ggf. vor dem Start" />
+                  </TextBlock>
+                  <TextBlock IsVisible="{Binding ShowInstallBadge}" Classes="actionHint">
+                    <Run Text="Die Installation wird in " /><Run Text="{Binding LauncherName}" /><Run Text=" geöffnet" />
+                  </TextBlock>
+                  <TextBlock IsVisible="{Binding ShowLauncherControlsHint}" Classes="actionHint">
+                    <Run Text="Pausieren und Abbrechen in " /><Run Text="{Binding LauncherName}" />
+                  </TextBlock>
                 </StackPanel>
-              </Border>
-            </Panel>
-            <DockPanel Grid.Row="1" Margin="24,22,24,24">
-              <StackPanel DockPanel.Dock="Bottom" Spacing="10">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                  <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                      <Border Classes="glyph round dark"><TextBlock Text="A" /></Border>
-                      <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
+                <StackPanel Spacing="20">
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="ExtraBold" TextWrapping="Wrap" />
+                    <!-- A status, not a control: plain text, no pill that could pass for a button. -->
+                    <StackPanel IsVisible="{Binding UpdateAvailable}" Orientation="Horizontal" Spacing="8">
+                      <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
+                      <TextBlock Text="Update verfügbar" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Accent}" VerticalAlignment="Center" />
                     </StackPanel>
-                  </Button>
-                  <Button Grid.Column="1" Classes="plain secondary" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenMenuCommand}"
-                          ToolTip.Tip="Weitere Aktionen (≡ oder Rechtsklick auf ein Cover)">
+                  </StackPanel>
+                  <StackPanel Spacing="10" IsVisible="{Binding IsInstallActive}">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                      <Border Classes="glyph"><TextBlock Text="≡" /></Border>
-                      <TextBlock Text="Optionen" VerticalAlignment="Center" />
+                      <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                      <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
+                      <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding InstallStatusText}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
                     </StackPanel>
-                  </Button>
-                </Grid>
-                <TextBlock IsVisible="{Binding UpdateAvailable}" Classes="actionHint">
-                  <Run Text="{Binding LauncherName}" /><Run Text=" installiert das Update ggf. vor dem Start" />
-                </TextBlock>
-                <TextBlock IsVisible="{Binding ShowInstallBadge}" Classes="actionHint">
-                  <Run Text="Die Installation wird in " /><Run Text="{Binding LauncherName}" /><Run Text=" geöffnet" />
-                </TextBlock>
-                <TextBlock IsVisible="{Binding ShowLauncherControlsHint}" Classes="actionHint">
-                  <Run Text="Pausieren und Abbrechen in " /><Run Text="{Binding LauncherName}" />
-                </TextBlock>
-              </StackPanel>
-              <StackPanel Spacing="20">
-                <StackPanel Spacing="8">
-                  <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="ExtraBold" TextWrapping="Wrap" />
-                  <!-- A status, not a control: plain text, no pill that could pass for a button. -->
-                  <StackPanel IsVisible="{Binding UpdateAvailable}" Orientation="Horizontal" Spacing="8">
-                    <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
-                    <TextBlock Text="Update verfügbar" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Accent}" VerticalAlignment="Center" />
+                    <ProgressBar Classes="install large" Classes.paused="{Binding IsInstallPaused}" Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}" />
                   </StackPanel>
-                </StackPanel>
-                <StackPanel Spacing="10" IsVisible="{Binding IsInstallActive}">
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
-                    <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
-                    <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding InstallStatusText}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
-                  </StackPanel>
-                  <ProgressBar Classes="install large" Classes.paused="{Binding IsInstallPaused}" Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}" />
-                </StackPanel>
-                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="18" ColumnSpacing="16">
-                  <StackPanel Spacing="3">
-                    <TextBlock Classes="label" Text="ZULETZT GESPIELT" />
-                    <TextBlock Classes="value" Text="{Binding LastPlayedText}" />
-                  </StackPanel>
-                  <StackPanel Grid.Column="1" Spacing="3">
-                    <TextBlock Classes="label" Text="SPIELZEIT" />
-                    <TextBlock Classes="value" Text="{Binding PlaytimeText}" />
-                  </StackPanel>
-                  <StackPanel Grid.Row="1" Spacing="3">
-                    <TextBlock Classes="label" Text="INSTALLATIONSGRÖSSE" />
-                    <TextBlock Classes="value" Text="{Binding SizeText}" />
-                  </StackPanel>
-                  <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3">
-                    <TextBlock Classes="label" Text="LAUNCHER" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <Border Width="20" Height="20" CornerRadius="5" Background="{Binding LauncherBrush}">
-                        <TextBlock Text="{Binding LauncherMonogram}" FontSize="11" FontWeight="ExtraBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                      </Border>
-                      <TextBlock Classes="value" Text="{Binding LauncherName}" />
+                  <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="18" ColumnSpacing="16">
+                    <StackPanel Spacing="3">
+                      <TextBlock Classes="label" Text="ZULETZT GESPIELT" />
+                      <TextBlock Classes="value" Text="{Binding LastPlayedText}" />
                     </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="3">
+                      <TextBlock Classes="label" Text="SPIELZEIT" />
+                      <TextBlock Classes="value" Text="{Binding PlaytimeText}" />
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Spacing="3">
+                      <TextBlock Classes="label" Text="INSTALLATIONSGRÖSSE" />
+                      <TextBlock Classes="value" Text="{Binding SizeText}" />
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3">
+                      <TextBlock Classes="label" Text="LAUNCHER" />
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Border Width="20" Height="20" CornerRadius="5" Background="{Binding LauncherBrush}">
+                          <TextBlock Text="{Binding LauncherMonogram}" FontSize="11" FontWeight="ExtraBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Classes="value" Text="{Binding LauncherName}" />
+                      </StackPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Spacing="3">
+                      <TextBlock Classes="label" Text="SPEICHERORT" />
+                      <TextBlock Text="{Binding LocationText}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Grid>
+                  <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowControllerSupport}">
+                    <TextBlock Classes="label" Text="STEAM CONTROLLER" />
+                    <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10. -->
+                    <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CycleControllerSupportCommand}"
+                            ToolTip.Tip="Klicken wechselt zwischen „Xbox 360 Controller (SISR)“ und „Steam Input“">
+                      <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext).FocusedControllerSupportText}" />
+                    </Button>
                   </StackPanel>
-                  <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Spacing="3">
-                    <TextBlock Classes="label" Text="SPEICHERORT" />
-                    <TextBlock Text="{Binding LocationText}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
-                  </StackPanel>
-                </Grid>
-                <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowControllerSupport}">
-                  <TextBlock Classes="label" Text="STEAM CONTROLLER" />
-                  <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10. -->
-                  <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CycleControllerSupportCommand}"
-                          ToolTip.Tip="Klicken wechselt zwischen „Xbox 360 Controller (SISR)“ und „Steam Input“">
-                    <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext).FocusedControllerSupportText}" />
-                  </Button>
                 </StackPanel>
-              </StackPanel>
-            </DockPanel>
-          </Grid>
+              </DockPanel>
+            </Grid>
+            <!-- Fills while A is held; full opens the detail page. -->
+            <ctl:HoldRing />
+          </Panel>
         </Border>
 
         <Grid Grid.Column="1" RowDefinitions="*,64">
@@ -245,7 +249,7 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:GameTileViewModel">
-                  <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}" Command="{Binding FocusCommand}"
+                  <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Command="{Binding FocusCommand}"
                           Background="{Binding CoverBrush}" Height="215" ToolTip.Tip="{Binding Title}">
                     <Panel>
                       <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
@@ -274,7 +278,6 @@
                       <ProgressBar Classes="install" Classes.paused="{Binding IsInstallPaused}" IsVisible="{Binding IsInstallActive}"
                                    Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}"
                                    VerticalAlignment="Bottom" Margin="0" />
-                      <ctl:HoldRing />
                     </Panel>
                   </Button>
                 </DataTemplate>
@@ -330,7 +333,7 @@
             <TextBlock Classes="hint" Text="halten: Details" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph"><TextBlock Text="≡" /></Border>
+            <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
             <TextBlock Classes="hint" Text="Optionen" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="10">
@@ -348,7 +351,7 @@
             <TextBlock Classes="hint" Text="Seite" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
+            <Border Classes="glyph"><TextBlock Text="≡" /></Border>
             <TextBlock Classes="hint" Text="Einstellungen" />
           </StackPanel>
         </StackPanel>

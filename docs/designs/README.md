@@ -11,7 +11,7 @@ artboards with their titles and sizes.
 
 | Image | Artboard | Content |
 |---|---|---|
-| [01-library.png](01-library.png) | `Main.dc.html` | Big Picture library: favourites tab + launcher tabs (scrollable, edge arrows), preview panel, 8-column grid with update/favourite badges, pagination, status bar, footer hints. Interactive: tabs, view modal (Y), context menu (≡ / right click), favourites. |
+| [01-library.png](01-library.png) | `Main.dc.html` | Big Picture library: favourites tab + launcher tabs (scrollable, edge arrows), preview panel, 8-column grid with update/favourite badges, pagination, status bar, footer hints. Interactive: tabs, view modal (Y), context menu (⧉ / right click), favourites. |
 | [02-game-detail.png](02-game-detail.png) | `GameDetail.dc.html` | Detail page: hero, cover, launcher + update chips, primary action, "play without update" hint, stats (last played, playtime, installed, input). |
 | [03-search.png](03-search.png) | `Search.dc.html` | Search across launchers, `/steam-epic` prefix, launcher chips, results, on-screen keyboard with layout switcher (R3). |
 | [04-artwork-modal.png](04-artwork-modal.png) | `ArtworkModal.dc.html` | Change cover/background: SteamGridDB suggestions, own file, preview. |

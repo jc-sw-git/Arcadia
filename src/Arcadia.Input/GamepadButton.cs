@@ -18,10 +18,10 @@ public enum GamepadButton
     LeftStickClick,
     RightStickClick,
 
-    /// <summary>Menu / Options / ☰ — opens the context menu.</summary>
+    /// <summary>Menu / Options / ☰ — opens the settings.</summary>
     Menu,
 
-    /// <summary>View / Share / ⧉.</summary>
+    /// <summary>View / Share / ⧉ — opens the context menu.</summary>
     View,
 }
 

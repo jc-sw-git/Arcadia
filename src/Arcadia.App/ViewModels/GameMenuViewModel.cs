@@ -2,7 +2,7 @@ using Arcadia.App.Input;
 
 namespace Arcadia.App.ViewModels;
 
-/// <summary>The context menu of one game (≡, right click). Up/down skip actions that aren't available.</summary>
+/// <summary>The context menu of one game (⧉, right click). Up/down skip actions that aren't available.</summary>
 public sealed class GameMenuViewModel : ViewModelBase
 {
     private int _focus = -1;

@@ -13,6 +13,8 @@ public interface ISisrHost
 
     bool IsInstalled { get; }
 
+    string ExecutablePath { get; }
+
     Version? InstalledVersion { get; }
 
     /// <summary>True if Arcadia's SISR process runs.</summary>
@@ -30,6 +32,21 @@ public interface ISisrHost
     void Start();
 
     Task StopAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Ends SISR without its own cleanup, for when Steam is gone (see <see cref="SisrHost.Kill"/>).</summary>
+    void Kill();
+
+    /// <summary>
+    /// Marks SISR's first-run setup as done, so SISR never shows its setup window; Arcadia does
+    /// that setup itself (CEF flag, marker shortcut).
+    /// </summary>
+    void MarkInitialSetupDone();
+
+    /// <summary>
+    /// After SISR stopped: ends a VIIPER from SISR's folder that outlived it and detaches the
+    /// controllers VIIPER attached through usbip. Returns how many of both were left; never throws.
+    /// </summary>
+    Task<int> CleanUpViiperAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -242,6 +259,88 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
                 // Already gone.
             }
         }
+    }
+
+    /// <summary>
+    /// Ends SISR at once. Quitting it normally runs SISR's cleanup, which opens
+    /// <c>steam://forceinputappid/0</c>; with Steam closed that URL starts Steam again.
+    /// </summary>
+    public void Kill()
+    {
+        foreach (var id in FindProcesses(own: true))
+        {
+            try
+            {
+                using var process = Process.GetProcessById(id);
+                process.Kill(entireProcessTree: true);
+                process.WaitForExit(TimeSpan.FromSeconds(2));
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or Win32Exception)
+            {
+                // Already gone.
+            }
+        }
+    }
+
+    /// <summary>SISR shows its setup window while this file is missing next to its exe.</summary>
+    public void MarkInitialSetupDone()
+    {
+        var marker = Path.Combine(InstallDirectory, ".initial_setup_done");
+        if (IsInstalled && !File.Exists(marker))
+        {
+            File.WriteAllBytes(marker, []);
+        }
+    }
+
+    public async Task<int> CleanUpViiperAsync(CancellationToken cancellationToken = default)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return 0;
+        }
+
+        // Process scans and waits: off the caller's (possibly UI) thread.
+        return await Task.Run(() => CleanUpViiperCoreAsync(cancellationToken), cancellationToken);
+    }
+
+    private async Task<int> CleanUpViiperCoreAsync(CancellationToken cancellationToken)
+    {
+        // SISR starts the viiper.exe next to it and ends it on quit; killing SISR's process tree
+        // takes it along too. This only catches the cases where neither happened (SISR crashed).
+        var leftovers = 0;
+        var otherViiper = false;
+        foreach (var process in Process.GetProcessesByName("viiper"))
+        {
+            using (process)
+            {
+                try
+                {
+                    if (process.MainModule?.FileName is { } path
+                        && path.StartsWith(Path.TrimEndingDirectorySeparator(Path.GetFullPath(InstallDirectory)) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    {
+                        process.Kill();
+                        process.WaitForExit(TimeSpan.FromSeconds(2));
+                        leftovers++;
+                    }
+                    else
+                    {
+                        otherViiper = true;
+                    }
+                }
+                catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+                {
+                    // Not ours to read (another user's or elevated VIIPER), or just gone; when unsure, leave its devices.
+                    otherViiper = true;
+                }
+            }
+        }
+
+        // Devices on VIIPER's address belong to whichever VIIPER holds the port. A VIIPER started by
+        // something else may hold it (SISR then uses that one, its own can't start), and another SISR may
+        // still use its controllers, so nothing is detached then.
+        return ExternalInstances().Count > 0 || otherViiper || !OperatingSystem.IsWindows()
+            ? leftovers
+            : leftovers + await UsbipDriver.DetachViiperDevicesAsync(cancellationToken);
     }
 
     /// <summary>Stops SISR instances that are not Arcadia's copy.</summary>

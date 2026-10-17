@@ -12,11 +12,20 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
     /// <summary>The logged-in account (Steam3 account id), or null if nobody is logged in.</summary>
     public uint? ActiveUserId { get; } = activeUserId;
 
+    /// <summary>Steam's log of its client logins, read by <see cref="SteamLoginLog"/>.</summary>
+    public string LoginLogPath => Path.Combine(RootPath, "logs", "steamui_login.txt");
+
+    /// <summary>
+    /// While this empty file exists, Steam opens its local CEF debug interface on its next start.
+    /// SISR needs it to set the controller layout.
+    /// </summary>
+    public string CefDebuggingFlagPath => Path.Combine(RootPath, ".cef-enable-remote-debugging");
+
     public string? ShortcutsPath => UserDataDirectory is { } dir ? Path.Combine(dir, "config", "shortcuts.vdf") : null;
 
     /// <summary>
     /// The userdata folder of the active account. If nobody is logged in right now (e.g. Steam is
-    /// closed) and there is exactly one account, that one.
+    /// closed): the only account, or with several the one that logged in last (<see cref="LastLoggedInUserId"/>).
     /// </summary>
     public string? UserDataDirectory
     {
@@ -35,8 +44,91 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
             }
 
             var accounts = Directory.GetDirectories(userData).Where(d => Path.GetFileName(d) != "0").ToList();
-            return accounts.Count == 1 ? accounts[0] : null;
+            if (accounts.Count == 1)
+            {
+                return accounts[0];
+            }
+
+            return LastLoggedInUserId() is { } last
+                && Path.Combine(userData, last.ToString(CultureInfo.InvariantCulture)) is var lastDir && Directory.Exists(lastDir)
+                ? lastDir
+                : null;
         }
+    }
+
+    /// <summary>The userdata folder of one account, whether or not it is logged in.</summary>
+    public string UserDataDirectoryOf(uint accountId) =>
+        Path.Combine(RootPath, "userdata", accountId.ToString(CultureInfo.InvariantCulture));
+
+    /// <summary>
+    /// The accounts that can log in to Steam on this PC, from <c>config/loginusers.vdf</c> and named after
+    /// their profile, the one that logged in last first. Accounts removed from Steam's login list keep their
+    /// userdata folder, so the folders count (named by id) only while that file is missing or unreadable.
+    /// </summary>
+    public IReadOnlyList<SteamAccount> Accounts()
+    {
+        var users = LoginUsers();
+        IEnumerable<SteamAccount> accounts = users.Count > 0
+            ? users.Select(u => new SteamAccount(u.Key, u.Value.GetString("PersonaName") is { Length: > 0 } name ? name : u.Key.ToString(CultureInfo.InvariantCulture)))
+            : UserDataAccountIds().Select(id => new SteamAccount(id, id.ToString(CultureInfo.InvariantCulture)));
+        var last = LastLoggedInUserId();
+        return accounts
+            .OrderByDescending(a => a.Id == last)
+            .ThenBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
+
+    private IEnumerable<uint> UserDataAccountIds()
+    {
+        var userData = Path.Combine(RootPath, "userdata");
+        return Directory.Exists(userData)
+            ? Directory.GetDirectories(userData)
+                .Select(dir => uint.TryParse(Path.GetFileName(dir), NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : 0)
+                .Where(id => id != 0)
+            : [];
+    }
+
+    /// <summary>Base of 64-bit Steam ids; the account id is the difference.</summary>
+    private const ulong SteamId64Base = 76561197960265728;
+
+    /// <summary>
+    /// The account that logged in last, from <c>config/loginusers.vdf</c>: the one marked
+    /// <c>MostRecent</c>, else the newest <c>timestamp</c> (with one account Steam writes no
+    /// <c>MostRecent</c>; owner's PC, 2026-10-16). Null if the file is missing or unreadable.
+    /// </summary>
+    public uint? LastLoggedInUserId()
+    {
+        var last = LoginUsers()
+            .OrderByDescending(u => u.Value.GetString("MostRecent") == "1")
+            .ThenByDescending(u => long.TryParse(u.Value.GetString("timestamp"), NumberStyles.None, CultureInfo.InvariantCulture, out var t) ? t : 0)
+            .FirstOrDefault();
+        return last.Value is null ? null : last.Key;
+    }
+
+    /// <summary>The entries of <c>config/loginusers.vdf</c> by account id; empty if the file is missing or unreadable.</summary>
+    private Dictionary<uint, VdfMap> LoginUsers()
+    {
+        VdfMap users;
+        try
+        {
+            users = TextVdf.Parse(File.ReadAllText(Path.Combine(RootPath, "config", "loginusers.vdf"))).GetMap("users") ?? [];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException)
+        {
+            return [];
+        }
+
+        var byAccount = new Dictionary<uint, VdfMap>();
+        foreach (var user in users)
+        {
+            if (user.Value is VdfMap map && ulong.TryParse(user.Key, NumberStyles.None, CultureInfo.InvariantCulture, out var id64)
+                && id64 > SteamId64Base && id64 - SteamId64Base <= uint.MaxValue)
+            {
+                byAccount[(uint)(id64 - SteamId64Base)] = map;
+            }
+        }
+
+        return byAccount;
     }
 
     public static bool IsRunning => ProcessWatch.IsRunning("steam");
@@ -48,6 +140,28 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
     public static bool IsCurrentProcessLaunchedBySteam =>
         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SteamGameId"))
         || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SteamAppId"));
+
+    /// <summary>
+    /// The Steam game running right now, by its name in Steam's registry (or its app id), or null.
+    /// Steam sets <c>RunningAppID</c> while one of its games runs.
+    /// </summary>
+    public static string? RunningGameName()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        using var steam = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
+        if (steam?.GetValue("RunningAppID") is not int appId || appId == 0)
+        {
+            return null;
+        }
+
+        var id = appId.ToString(CultureInfo.InvariantCulture);
+        using var app = steam.OpenSubKey(@"Apps\" + id);
+        return app?.GetValue("Name") is string name && !string.IsNullOrWhiteSpace(name) ? name : $"App {id}";
+    }
 
     public static SteamInstallation? Find()
     {
@@ -94,3 +208,6 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
         }
     }
 }
+
+/// <summary>A Steam account that used Steam on this PC: its Steam3 account id and profile name.</summary>
+public sealed record SteamAccount(uint Id, string Name);

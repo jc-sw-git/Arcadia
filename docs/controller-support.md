@@ -25,3 +25,85 @@ focus handling or anything SISR/usbip related.
 - usbip-win2 ≥ 0.9.8.1 is required. Its uninstall entry was renamed between versions
   ("USBip version 0.9.7.7" → "USBip 0.9.8.1"). Updating it replaces the emulated host
   controller → SISR must restart; Windows wants a reboot.
+
+## Setup and naming (#85, #92, 2026-10-16)
+
+- In the UI the setting is "Steam Controller als Xbox 360 Gamepad verwenden", short "Steam Controller (SISR)".
+  Per game there are two modes: "Xbox 360 Controller (SISR)" (SISR runs) and "Steam Input" (SISR paused).
+  Steam games start on Steam Input, all others on SISR; `ControllerSupportOverrides` stores only deviations.
+  In code the feature keeps its old name (`ControllerSupportService`, `AppSettings.SteamControllerSupport`).
+- The switch is offered only when `ControllerSupportService.Setup` is `Ready`: SISR installed, usbip-win2 ≥
+  0.9.8.1 installed and loaded, Steam's CEF flag `.cef-enable-remote-debugging` in the Steam folder and the
+  "SISR Marker" shortcut (see below).
+  Otherwise "SISR installieren" (`InstallAsync`). Once on, the switch stays even if a part breaks later;
+  the problem shows with its fix. Without Windows or Steam the row is greyed out.
+- Steam reads the CEF flag only when it starts, so `InstallAsync` closes a running Steam first (the
+  settings ask), writes the flag itself, installs what is missing and starts Steam again if it closed it.
+  It refuses while a Steam game runs: `HKCU\Software\Valve\Steam\RunningAppID` is non-zero, the name comes
+  from `…\Steam\Apps\<id>\Name` (the name checked on the owner's PC, 2026-10-16); that writing the flag
+  file is all SISR's own "enable CEF" does is inferred. The settings ask both questions in a modal over the
+  dialog ("Steam-Spiel läuft", "Steam beenden?") that re-reads the running game every second, because
+  nothing else reports a game ending; `LastError` is cleared when the settings open or close.
+- A Steam Controller counts as connected (per-game mode in the preview) only while SISR emulates it
+  (`SisrState.Running`); `WatchAsync` (every 2 s) moves Running ↔ NoController as the controller is switched on or off.
+  Windows' HID list is no use: the wireless dongle shows as a Valve device (`VID_28DE`) even with the
+  controller off (owner's PC, 2026-10-16).
+- SISR may only run while Steam is ready: `steam` and `steamwebhelper` run, a user is logged in
+  (`ActiveProcess\ActiveUser`) and the client finished that login: the latest `Starting login` in
+  `logs/steamui_login.txt` is followed by `SetLoginState: Success` (`SteamLoginLog`). `ActiveUser` is set as
+  soon as the server accepts the login; on 2026-10-16 Steam then hung at "loading user data" for many
+  starts in a row and SISR started anyway. In those starts `controller.txt` stops after
+  `wireless_unknown because Data is flowing` (no `reserving XInput slot`); the controller came back only
+  after a Windows restart, cause unknown.
+  Untested: whether offline mode writes `Success`. Started earlier, SISR shows its own full-screen "Steam is not running"
+  window, or reads no marker (it reads the logged-in user's `shortcuts.vdf` once at start) and asks to add
+  another one. So `StartSisr` skips without a ready Steam or without the marker.
+- Two Steam signals: `IsSteamReady` (above) gates starting SISR; `IsSteamUp` (processes + `ActiveUser`, no
+  login check) decides whether SISR is held, quit gracefully or killed, so a login that hangs or repeats
+  doesn't stop a running SISR. If Steam stays up without finishing its login for 30 s
+  (`SteamLoginGrace`), the settings warn "Steam meldet sich noch an" with "Steam neu starten"; Arcadia
+  restarts Steam itself (`RestartSteamAsync`: stop SISR, close Steam, start it, wait 60 s, start SISR),
+  also for the CEF fix, because SISR's own restart left SISR on a Steam that was going away.
+- The marker adds an entry to the account's Steam library, so with several accounts (userdata folders) the
+  user chooses (owner, 2026-10-16): "SISR installieren" (and "Anlegen") first asks "Steam-Eintrag für SISR
+  anlegen?" with every account in `config/loginusers.vdf` (userdata folders only without that file: removed
+  accounts keep theirs), the last logged-in one first and ticked; cancelling ends the install. With
+  one account it is written without asking. Without a choice it goes to the logged-in account, else the only
+  one, else the most recent one in `config/loginusers.vdf` (`MostRecent`, then `Timestamp`). Without any
+  account "SISR installieren" asks to log in to Steam once, before it closes Steam or installs anything. An account without the marker shows "Steam-Eintrag
+  für SISR fehlt" once it is logged in.
+- SISR starts the `viiper.exe` next to it and kills it on quit; killing SISR's process tree takes it along.
+  VIIPER attaches its virtual controllers through the usbip-win2 driver from `localhost:3241` and has no
+  detach: the driver drops a device when VIIPER's connection closes. After every SISR stop Arcadia still
+  ends a leftover VIIPER from SISR's folder and runs `usbip detach -p N` for each `usbip port` entry from
+  `usbip://localhost:3241/` (`CleanUpViiperAsync`). Why: on 2026-10-16 Steam hung at "loading user data"
+  after SISR had been killed, and only a Windows restart helped (a stale device was suspected, not proven;
+  `usbip port` was empty after a later kill). `usbip port` on the owner's PC while SISR runs (2026-10-17):
+  `Port 01: device in use at Full Speed(12Mbps)`, then `Microsoft Corp. : Xbox360 Controller (045e:028e)` and
+  `-> usbip://localhost:3241/1-1`. VIIPER always attaches from `localhost` (hard-coded in its auto-attach,
+  `autoattach_windows.go`), and SISR starts its bundled VIIPER without arguments, so on port 3241 unless
+  `VIIPER_USB_ADDR` is set (VIIPER `internal/server/usb/config.go`, SISR `input/viiperbridge.go`, read
+  2026-10-17; a different port only means nothing is detached). Nothing is detached while another SISR or a
+  viiper.exe from elsewhere runs: if that VIIPER holds 3241, SISR's own can't start and SISR uses the foreign
+  one, so its devices share the address; on another port the skip is merely cautious (its port isn't known). So the address picks VIIPER's devices; a
+  port remembered at SISR's start would miss devices attached later (controller reconnects) or after an
+  Arcadia restart, and usbip reuses freed port numbers.
+- While SISR or VIIPER start or stop, in the background too, the settings take only B
+  (`ControllerSupportService.IsSettling`, owner 2026-10-16). A Steam that runs but never finishes its login
+  doesn't lock them, so switching off stays possible.
+- SISR's own cleanup on quit opens `steam://forceinputappid/0` (SISR source, `cli/cmd/sisr/sisr.go`),
+  which starts a closed Steam. That is why closing Steam (and switching off afterwards) started Steam again
+  (owner, 2026-10-16). Unless Steam is ready Arcadia kills SISR instead of quitting it, also while Steam
+  shuts down (steam.exe outlives the logout by a few seconds; quitting SISR then restarted Steam); `WatchAsync` does that
+  within 2 s of Steam closing, the tick starts SISR again once Steam is ready (not counted as a crash), and
+  the settings show "Steam läuft nicht" with "Steam starten".
+- Arcadia does SISR's first-run setup itself so SISR never shows a window: `.initial_setup_done` next to
+  `SISR.exe` (SISR's setup window shows while it is missing), the CEF flag, and the "SISR Marker" shortcut
+  (`SISR.exe`, launch options `--marker`), written into `shortcuts.vdf` while "SISR installieren" has Steam
+  closed. A missing marker counts as not set up ("SISR installieren", or "Anlegen" when on, both through
+  the same prompts). Switching on starts Steam and waits up to 60 s (`SteamStartTimeout`); if
+  Steam doesn't come up the setting is off again and the settings show "Steam startet nicht" with
+  "Erneut versuchen"; if Steam runs but never finished its login, "Steam meldet sich nicht an" with "Steam
+  neu starten", which switches on after the restart. Arcadia still doesn't start Steam on its own when it starts with the option on.
+- SISR's WebView2 data lands in `%APPDATA%\SISR.exe`, VIIPER's key file in `%APPDATA%\VIIPER`; neither goes
+  with SISR's own uninstaller (seen 2026-10-16). `ControllerSupportRemoval.DataDirectories` removes both.

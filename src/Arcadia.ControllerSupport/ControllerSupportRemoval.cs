@@ -20,6 +20,18 @@ public static class ControllerSupportRemoval
 
     private static string ViiperExecutable => Path.Combine(LocalAppData, "VIIPER", "viiper.exe");
 
+    /// <summary>
+    /// What SISR and VIIPER leave in the roaming profile: SISR's WebView2 data lands in a folder
+    /// named after its exe ("SISR.exe"), VIIPER keeps its key file in "VIIPER" (seen on the
+    /// owner's PC, 2026-10-16). "SISR" is what SISR's own uninstaller removes.
+    /// </summary>
+    public static IReadOnlyList<string> DataDirectories { get; } =
+    [
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SISR"),
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SISR.exe"),
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VIIPER"),
+    ];
+
     /// <summary>The installed parts, worded for the question to the user; empty if there is nothing to remove.</summary>
     [SupportedOSPlatform("windows")]
     public static IReadOnlyList<string> FindInstalledParts()
@@ -73,7 +85,7 @@ public static class ControllerSupportRemoval
         if (SteamInstallation.Find() is { } steam)
         {
             // SISR asks Steam for this flag to read the controller layout; nothing else needs it.
-            Step(log, "Steam-CEF-Flag", () => File.Delete(Path.Combine(steam.RootPath, ".cef-enable-remote-debugging")));
+            Step(log, "Steam-CEF-Flag", () => File.Delete(steam.CefDebuggingFlagPath));
 
             // Steam rewrites shortcuts.vdf on exit, so the marker can only go while Steam is closed.
             if (!SteamInstallation.IsRunning && steam.ShortcutsPath is { } shortcuts)
@@ -83,7 +95,10 @@ public static class ControllerSupportRemoval
         }
 
         Step(log, "SISR-Ordner", () => DeleteDirectory(SisrDirectory));
-        Step(log, "SISR-Daten", () => DeleteDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SISR")));
+        foreach (var data in DataDirectories)
+        {
+            Step(log, $"Daten in {Path.GetFileName(data)}", () => DeleteDirectory(data));
+        }
         Step(log, "SISR-Verknüpfungen", () =>
         {
             var programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);

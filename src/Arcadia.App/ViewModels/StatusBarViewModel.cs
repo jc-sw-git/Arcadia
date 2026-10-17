@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Arcadia.App.ViewModels;
 
-/// <summary>The right end of the header: clock, Steam Controller Support status and the Arcadia update symbol.</summary>
+/// <summary>The right end of the header: clock, Steam Controller (SISR) status and the Arcadia update symbol.</summary>
 public partial class StatusBarViewModel : ViewModelBase
 {
     private readonly ControllerSupportService _controllerSupport;
@@ -24,7 +24,7 @@ public partial class StatusBarViewModel : ViewModelBase
         UpdateArcadiaUpdateState();
     }
 
-    /// <summary>Steam Controller Support is on but something is wrong; shown as a warning in the header.</summary>
+    /// <summary>Steam Controller (SISR) is on but something is wrong; shown as a warning in the header.</summary>
     [ObservableProperty]
     public partial bool HasControllerWarning { get; private set; }
 
@@ -73,8 +73,8 @@ public partial class StatusBarViewModel : ViewModelBase
         ControllerWarningText = support.Issues.Count switch
         {
             0 => string.Empty,
-            1 => $"Steam Controller Support: {support.Issues[0].Title}",
-            var n => $"Steam Controller Support: {n} Probleme",
+            1 => $"Steam Controller (SISR): {support.Issues[0].Title}",
+            var n => $"Steam Controller (SISR): {n} Probleme",
         };
     }
 }

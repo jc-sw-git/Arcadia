@@ -50,6 +50,21 @@ public class ControllerSupportTests
     }
 
     [Fact]
+    public void Choosing_a_games_default_mode_stores_nothing()
+    {
+        var steamGame = G("steam");
+        var settings = new AppSettings { SteamControllerSupport = true }.WithControllerSupportChoice(steamGame, useSisr: true);
+        Assert.True(settings.ControllerSupportFor(steamGame));
+        Assert.True(settings.ControllerSupportOverrideFor(steamGame));
+
+        // Back to "Steam Input", the default for Steam games: the override is gone again.
+        settings = settings.WithControllerSupportChoice(steamGame, useSisr: false);
+        Assert.False(settings.ControllerSupportFor(steamGame));
+        Assert.Null(settings.ControllerSupportOverrideFor(steamGame));
+        Assert.Empty(settings.ControllerSupportOverrides);
+    }
+
+    [Fact]
     public void Settings_round_trip_through_json()
     {
         var path = Path.Combine(Path.GetTempPath(), "arcadia-settings-" + Guid.NewGuid() + ".json");

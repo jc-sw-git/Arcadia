@@ -11,7 +11,64 @@ public interface IControllerSupportPlatform
     /// <summary>SISR exists only for Windows.</summary>
     bool IsSupported { get; }
 
+    bool IsSteamInstalled { get; }
+
     bool IsSteamRunning { get; }
+
+    /// <summary>
+    /// Steam is up far enough for SISR: its process and its web helper (CEF, which SISR talks to) run,
+    /// a user is logged in and the client finished that login (it can hang at "loading user data"
+    /// after the server accepted it). SISR started before that shows its own full-screen "Steam is
+    /// not running" window, or can't find its marker (it reads the logged-in user's shortcuts once
+    /// at start) and asks to add a second one.
+    /// </summary>
+    bool IsSteamReady { get; }
+
+    /// <summary>
+    /// Steam runs with its web helper and a logged-in user, but may still be logging in. Losing this
+    /// means Steam goes away (closed, shutting down, logged out): SISR is stopped then, and killed,
+    /// because its cleanup would start Steam again. A login that hangs or repeats doesn't count, so
+    /// SISR isn't killed mid-game over it.
+    /// </summary>
+    bool IsSteamUp { get; }
+
+    /// <summary>
+    /// Adds SISR's marker shortcut ("SISR Marker", <c>--marker</c>) to Steam unless it is there, as
+    /// SISR's own setup would: for the given accounts, or without them for the logged-in one (else the
+    /// only or the last one). Only while Steam is closed (Steam overwrites the file on exit);
+    /// false if Steam runs or no Steam account could be found.
+    /// </summary>
+    bool EnsureSisrMarker(string sisrExecutable, IReadOnlyCollection<uint>? accountIds = null);
+
+    /// <summary>The Steam accounts on this PC and whether each has SISR's marker, the last logged-in one first.</summary>
+    IReadOnlyList<MarkerAccount> SisrMarkerAccounts(string sisrExecutable);
+
+    /// <summary>
+    /// SISR's marker shortcut is in Steam. SISR reads it only when it starts and asks to add one if
+    /// it is missing, so SISR is not started without it. False if no Steam account is known; while
+    /// Steam's file can't be read (it writes it), the last answer.
+    /// </summary>
+    bool HasSisrMarker(string sisrExecutable);
+
+    /// <summary>usbip-win2 is installed in at least <see cref="UsbipDriver.MinimumVersion"/> and loaded.</summary>
+    bool IsUsbipReady { get; }
+
+    /// <summary>Steam's CEF debug flag file exists (it takes effect on Steam's next start).</summary>
+    bool IsCefDebuggingEnabled { get; }
+
+    void EnableCefDebugging();
+
+    /// <summary>The name of the Steam game running right now, or null.</summary>
+    string? RunningSteamGame();
+
+    /// <summary>Asks Steam to exit and waits for it; false if it is still running after the timeout.</summary>
+    Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken);
+
+    /// <summary>Starts Steam minimized to the tray.</summary>
+    void StartSteam();
+
+    /// <summary>Installs or updates usbip-win2; false if the user declined the Windows prompt.</summary>
+    Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken);
 
     /// <summary>Tells Steam to drop SISR's forced controller layout (applied on the next focus change).</summary>
     void ResetSteamInputLayout();
@@ -28,7 +85,107 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 {
     public bool IsSupported => OperatingSystem.IsWindows();
 
+    private static readonly TimeSpan SteamExitTimeout = TimeSpan.FromSeconds(30);
+
+    public bool IsSteamInstalled => SteamInstallation.Find() is not null;
+
     public bool IsSteamRunning => SteamInstallation.IsRunning;
+
+    public bool IsSteamReady =>
+        IsSteamUp && SteamInstallation.Find() is { } steam
+        && SteamLoginLog.IsLatestLoginComplete(steam.LoginLogPath) is not false;
+
+    public bool IsSteamUp =>
+        SteamInstallation.IsRunning && ProcessWatch.IsRunning("steamwebhelper")
+        && SteamInstallation.Find() is { ActiveUserId: not (null or 0) };
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _lastMarkerAnswer = new(StringComparer.OrdinalIgnoreCase);
+
+    public bool EnsureSisrMarker(string sisrExecutable, IReadOnlyCollection<uint>? accountIds = null)
+    {
+        if (SteamInstallation.IsRunning || SteamInstallation.Find() is not { } steam)
+        {
+            return false;
+        }
+
+        IEnumerable<string> userDataDirectories = accountIds is null
+            ? steam.UserDataDirectory is { } current ? [current] : []
+            : steam.Accounts().Where(a => accountIds.Contains(a.Id)).Select(a => steam.UserDataDirectoryOf(a.Id)).ToList();
+        if (accountIds is null && !userDataDirectories.Any())
+        {
+            return false;
+        }
+
+        foreach (var userData in userDataDirectories)
+        {
+            var shortcuts = ShortcutsPathIn(userData);
+            if (!ContainsMarker(shortcuts, sisrExecutable))
+            {
+                // A new account may have no config folder yet.
+                Directory.CreateDirectory(Path.GetDirectoryName(shortcuts)!);
+                SteamShortcuts.Add(shortcuts, "SISR Marker", sisrExecutable, "--marker");
+            }
+        }
+
+        return true;
+    }
+
+    public IReadOnlyList<MarkerAccount> SisrMarkerAccounts(string sisrExecutable)
+    {
+        if (SteamInstallation.Find() is not { } steam)
+        {
+            return [];
+        }
+
+        return steam.Accounts()
+            .Select(a => new MarkerAccount(a.Id, a.Name, HasMarkerIn(ShortcutsPathIn(steam.UserDataDirectoryOf(a.Id)), sisrExecutable)))
+            .ToList();
+    }
+
+    private static string ShortcutsPathIn(string userDataDirectory) => Path.Combine(userDataDirectory, "config", "shortcuts.vdf");
+
+    public bool HasSisrMarker(string sisrExecutable) =>
+        SteamInstallation.Find()?.ShortcutsPath is { } shortcuts && HasMarkerIn(shortcuts, sisrExecutable);
+
+    private bool HasMarkerIn(string shortcuts, string sisrExecutable)
+    {
+        try
+        {
+            return _lastMarkerAnswer[shortcuts] = ContainsMarker(shortcuts, sisrExecutable);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException or InvalidDataException)
+        {
+            // Steam is writing the file, or it is broken; Steam rewrites it on its next exit.
+            return _lastMarkerAnswer.GetValueOrDefault(shortcuts, true);
+        }
+    }
+
+    /// <summary>SISR finds its marker by its own exe path plus "--marker" in the launch options.</summary>
+    private static bool ContainsMarker(string shortcuts, string sisrExecutable) =>
+        File.Exists(shortcuts)
+        && SteamShortcuts.Read(shortcuts).Any(s => s.LaunchOptions.Contains("--marker", StringComparison.OrdinalIgnoreCase)
+                                                   && SteamShortcuts.FindByExecutable([s], sisrExecutable) is not null);
+
+    public bool IsUsbipReady =>
+        OperatingSystem.IsWindows() && UsbipDriver.InstalledVersion() is { } version && version >= UsbipDriver.MinimumVersion && UsbipDriver.IsRunning();
+
+    public bool IsCefDebuggingEnabled => SteamInstallation.Find() is { } steam && File.Exists(steam.CefDebuggingFlagPath);
+
+    public void EnableCefDebugging()
+    {
+        var steam = SteamInstallation.Find() ?? throw new InvalidOperationException("Steam wurde nicht gefunden.");
+        File.WriteAllBytes(steam.CefDebuggingFlagPath, []);
+    }
+
+    public string? RunningSteamGame() => SteamInstallation.RunningGameName();
+
+    public async Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken) =>
+        await SteamInstallation.ShutdownAsync(SteamExitTimeout, time, cancellationToken);
+
+    public void StartSteam() => SteamInstallation.Find()?.StartSilently();
+
+    public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken) =>
+        OperatingSystem.IsWindows() ? UsbipDriver.InstallAsync(http, cancellationToken) : Task.FromResult(false);
 
     public void ResetSteamInputLayout() =>
         Process.Start(new ProcessStartInfo("steam://forceinputappid/0") { UseShellExecute = true })?.Dispose();
@@ -75,3 +232,6 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     private static DateTimeOffset LastBootTime(DateTimeOffset now) => now - TimeSpan.FromMilliseconds(Environment.TickCount64);
 }
+
+/// <summary>A Steam account on this PC and whether SISR's marker shortcut is in its Steam library.</summary>
+public sealed record MarkerAccount(uint Id, string Name, bool HasMarker);

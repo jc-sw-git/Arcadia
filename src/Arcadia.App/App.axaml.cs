@@ -19,6 +19,7 @@ public partial class App : Application
 {
     /// <summary>How often SISR and its dependencies are checked.</summary>
     private static readonly TimeSpan ControllerSupportInterval = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan ControllerSupportWatchInterval = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan InstallCheckInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan InstallProgressInterval = TimeSpan.FromSeconds(2);
 
@@ -130,8 +131,15 @@ public partial class App : Application
             var clock = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => viewModel.Status.UpdateClock());
             clock.Start();
 
-            var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => controllerSupport.TickAsync(), "SISR-Überwachung"));
+            var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), "SISR-Überwachung"));
             monitoring.Start();
+
+            // Quick check between ticks: Steam closed (stop SISR before it can start Steam again)
+            // and the Steam Controller switched on or off (preview). Both checks run on the thread
+            // pool: they list processes and read Steam's registry, log and SISR's API; the service's
+            // events are posted to the UI thread by their handlers.
+            var sisrWatch = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.WatchAsync()), "SISR-Überwachung"));
+            sisrWatch.Start();
 
             // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
             // watch, rescan until the games it handed over are installed.
@@ -141,14 +149,17 @@ public partial class App : Application
             installs.Start();
             var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, "Update-Prüfung"));
             updateCheck.Start();
-            Task.Run(SisrHost.RemoveLegacyCopy).ContinueWith(
-                _ => controllerSupport.TickAsync(),
-                TaskScheduler.FromCurrentSynchronizationContext()).Unwrap().Forget("SISR-Überwachung");
+            Task.Run(async () =>
+            {
+                SisrHost.RemoveLegacyCopy();
+                await controllerSupport.TickAsync();
+            }).Forget("SISR-Überwachung");
 
             desktop.ShutdownRequested += (_, _) =>
             {
                 clock.Stop();
                 monitoring.Stop();
+                sisrWatch.Stop();
                 installs.Stop();
                 installProgress.Stop();
                 updateCheck.Stop();

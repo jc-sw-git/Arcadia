@@ -45,6 +45,37 @@
     <Color x:Key="BgFadeColor">#E60B0F14</Color>
     <Color x:Key="BgHalfColor">#800B0F14</Color>
 
+    <!-- Edges that fade into the background: the tab strip where more tabs follow, the cover grid where
+         it can still scroll (#102), and the detail page's neighbours. -->
+    <LinearGradientBrush x:Key="TabEdgeLeft" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="TabEdgeRight" StartPoint="100%,0%" EndPoint="0%,0%">
+      <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ListFadeTop" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ListFadeBottom" StartPoint="0%,100%" EndPoint="0%,0%">
+      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="CarouselFadeLeft" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgHalfColor}" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="CarouselFadeRight" StartPoint="100%,0%" EndPoint="0%,0%">
+      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgHalfColor}" />
+    </LinearGradientBrush>
+
     <!-- Detail page. -->
     <SolidColorBrush x:Key="DetailSurface" Color="#121820" />
     <SolidColorBrush x:Key="DetailChip" Color="#1FF2F5F8" />

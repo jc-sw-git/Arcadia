@@ -33,9 +33,6 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         (Backdrop, Ring) = Formatting.HeroBrushes(tile.Title);
         var game = tile.Game;
         Drive = Formatting.Drive(game.InstallDirectory);
-        HeroLine = game.IsInstalled
-            ? string.Join(" · ", new[] { "Installiert", game.InstallSizeBytes is null ? null : tile.SizeText, Drive }.Where(part => part is not null))
-            : $"Nicht installiert · in {tile.LauncherName} installierbar";
         LastPlayedAt = Formatting.DateAndTime(game.LastPlayedAt);
         PlaytimeSource = game.Playtime is null ? $"{tile.LauncherName} meldet keine" : $"Laut {tile.LauncherName}";
         InstalledAt = Formatting.Date(game.IsInstalled ? game.InstalledAt : null);
@@ -53,9 +50,6 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     public IBrush Ring { get; }
 
     public string LauncherUpper => Tile.LauncherName.ToUpperInvariant();
-
-    /// <summary>"Installiert · 42,1 GB · Laufwerk D:".</summary>
-    public string HeroLine { get; }
 
     public string LastPlayedAt { get; }
 

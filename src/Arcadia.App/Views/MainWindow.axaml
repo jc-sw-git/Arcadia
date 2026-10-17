@@ -55,25 +55,13 @@
             </ScrollViewer>
 
             <!-- Shown only when tabs continue beyond the visible area. -->
-            <Border Name="TabEdgeLeft" IsVisible="False" Width="96" HorizontalAlignment="Left" IsHitTestVisible="True">
-              <Border.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                  <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
-                  <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
-                </LinearGradientBrush>
-              </Border.Background>
+            <Border Name="TabEdgeLeft" IsVisible="False" Width="96" HorizontalAlignment="Left" IsHitTestVisible="True" Background="{StaticResource TabEdgeLeft}">
               <Button Name="TabScrollLeft" Classes="plain" Width="40" Height="40" CornerRadius="20" HorizontalAlignment="Left"
                       Background="{StaticResource SurfaceRaised}" ToolTip.Tip="Weitere Launcher links">
                 <Path Data="M15 5l-7 7 7 7" Stroke="{StaticResource TextStrong}" StrokeThickness="2.5" StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="20" Stretch="None" />
               </Button>
             </Border>
-            <Border Name="TabEdgeRight" IsVisible="False" Width="96" HorizontalAlignment="Right">
-              <Border.Background>
-                <LinearGradientBrush StartPoint="100%,0%" EndPoint="0%,0%">
-                  <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
-                  <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
-                </LinearGradientBrush>
-              </Border.Background>
+            <Border Name="TabEdgeRight" IsVisible="False" Width="96" HorizontalAlignment="Right" Background="{StaticResource TabEdgeRight}">
               <Button Name="TabScrollRight" Classes="plain" Width="40" Height="40" CornerRadius="20" HorizontalAlignment="Right"
                       Background="{StaticResource SurfaceRaised}" ToolTip.Tip="Weitere Launcher rechts">
                 <Path Data="M9 5l7 7-7 7" Stroke="{StaticResource TextStrong}" StrokeThickness="2.5" StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="20" Stretch="None" />
@@ -315,24 +303,8 @@
 
           <!-- Covers cut off at an edge fade out there, but only where the grid can still scroll
                that way (#102). Shown from MainWindow.axaml.cs; the scroll bar stays uncovered. -->
-          <Border Name="GridFadeTop" Classes="listFade" VerticalAlignment="Top" Margin="0,0,64,0">
-            <Border.Background>
-              <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-                <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
-                <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
-              </LinearGradientBrush>
-            </Border.Background>
-          </Border>
-          <Border Name="GridFadeBottom" Classes="listFade" VerticalAlignment="Bottom" Margin="0,0,64,0">
-            <Border.Background>
-              <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
-                <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-                <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
-                <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
-              </LinearGradientBrush>
-            </Border.Background>
-          </Border>
+          <Border Name="GridFadeTop" Classes="listFade" VerticalAlignment="Top" Margin="0,0,64,0" Background="{StaticResource ListFadeTop}" />
+          <Border Name="GridFadeBottom" Classes="listFade" VerticalAlignment="Bottom" Margin="0,0,64,0" Background="{StaticResource ListFadeBottom}" />
 
           <Panel Grid.Row="1" Margin="0,0,80,0">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">

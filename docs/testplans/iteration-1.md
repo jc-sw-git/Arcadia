@@ -358,6 +358,9 @@ Verlauf:
 - [ ] **T10-8** Mit eingeschalteter Option und verbundenem Steam Controller zeigt das Menü
       „Steam Controller: <Modus>“; A wechselt den Modus, das Menü bleibt offen und zeigt den neuen
       Modus, die Vorschau ebenso. Ohne Steam Controller fehlt der Eintrag. · E2E: nein (echter Steam Controller)
+- [ ] **T10-9** Liest Arcadia die Bibliothek neu ein, während A gedrückt ist (z. B. wenn es nach dem
+      Ende eines Spiels nach vorn kommt), zählt der Druck weiter: Tippen startet das Spiel, Halten
+      öffnet die Detailseite, der Rahmen läuft durch. · E2E: nein (der Zeitpunkt des Einlesens lässt sich nicht steuern)
 
 Die Steam-Links `steam://nav/games/details`, `steam://uninstall` und `steam://controllerconfig` sowie
 der Epic-Link `com.epicgames.launcher://store/library` sind noch nicht am echten Client geprüft (T10-5
@@ -373,6 +376,7 @@ Verlauf:
 | T10-4 | 2026-10-17 | Claude | PR #101, Unit-Test (geht vorher rot) und Xvfb `--demo`, Enter 0,93 s gehalten | ✅ Rahmen geschlossen, bevor die Detailseite öffnet | Kontrolle am PC des Owners |
 | T10-6 | 2026-10-17 | Claude | wie oben | ✅ Rückfrage mit Fokus auf „Abbrechen“ (Demo-Spiel, ohne echten Launcher) | Steam am PC des Owners |
 | T10-4 | 2026-10-17 | Claude | Unit-Tests (`HoldGestureTests`) | ✅ Tippen, Abbrechen, Halten, wiederholte KeyDown-Ereignisse, verspätete Timer (geht ohne Zählung der Drücke rot) | – |
+| T10-9 | 2026-10-17 | Claude | Xvfb `--demo`, Debug-Build mit vorübergehendem Einlesen 0,1 s nach jedem Druck auf Enter (wieder entfernt) | ✅ Enter 0,12 s: Spiel startet (Toast); Enter 1,5 s gehalten: Rahmen läuft durch, Detailseite öffnet | – |
 
 ## #11 Spieldetails als Karussell
 
@@ -401,11 +405,12 @@ Verlauf:
       überspringt deaktivierte Schaltflächen; unter den Reihen steht der Hinweis der fokussierten
       Schaltfläche (z. B. „Nur in Epic Games möglich – öffnet Epic Games“). ⧉ öffnet hier kein Menü. · E2E: ja
 - [ ] **T11-8** Mit Update: Chip „UPDATE VERFÜGBAR“, „Spielen“ bleibt, darunter „<Launcher> installiert
-      das Update eventuell, bevor das Spiel startet.“ Nicht installiert: „Installieren“, „Nicht
-      installiert · in <Launcher> installierbar“, nur die erste Reihe. Während einer Installation zeigt
-      die erste Schaltfläche den Fortschritt und ist deaktiviert. · E2E: ja
+      das Update eventuell, bevor das Spiel startet.“ Nicht installiert: „Installieren“, abgedunkeltes
+      Cover, „Nicht installiert“ unter „Installiert am“, nur die erste Reihe. Während einer Installation
+      zeigt die erste Schaltfläche den Fortschritt und ist deaktiviert. · E2E: ja
 - [ ] **T11-9** Kennzahlen: Zuletzt gespielt (relativ und mit Datum und Uhrzeit), Spielzeit („Laut
-      <Launcher>“), Installiert am (mit Pfad), Größe (mit Laufwerk). · E2E: ja
+      <Launcher>“), Installiert am (mit Pfad), Größe (mit Laufwerk). Größe und Speicherort stehen nur
+      dort, nicht unter dem Titel (Owner, 2026-10-17). · E2E: ja
 - [ ] **T11-10** LT/RT bis zur sichtbaren Bewegung bleibt unter 50 ms (Release-Build, PC des Owners). · E2E: nein (Messung auf echter Hardware)
 
 Die Version und Downloadgröße des Updates aus dem Entwurf zeigt Arcadia nicht: kein Launcher meldet
@@ -418,6 +423,7 @@ Verlauf:
 | T11-1, T11-2, T11-4 bis T11-9 | 2026-10-17 | Claude | Branch `feat/context-menu-and-detail-page-10-11`, Linux, Xvfb 1920×1080 `--demo`, Tastatur | ✅ Seite wie im Entwurf; LT/RT mit Animation (Zwischenbild geprüft), 25× RT und B landen auf Seite 3 mit Fokus auf dem Spiel; Q/E bleiben in der Detailansicht; Sortierung hält das Spiel in der Mitte; Enter gehalten öffnet die Seite; nicht installiertes Spiel und Spiel mit Update | Controller am PC des Owners |
 | T11-3 | 2026-10-17 | Claude | Unit-Tests (`CarouselTests`) | ✅ Nachbarn rotieren, zwei Spiele stehen beidseitig, ein Spiel hat keine Nachbarn | Sichtprüfung am PC des Owners (die Demo hat keinen Tab mit 1–2 Spielen) |
 | T11-10 | 2026-10-17 | Claude | Release-Build, Linux-Container ohne GPU, Xvfb | ✅ Taste bis fertiges Layout 14–39 ms; Öffnen der Seite 199 ms (erstes Mal) | Messung am PC des Owners |
+| T11-8, T11-9 | 2026-10-17 | Claude | wie oben, nach dem Code Review | ✅ Unter dem Titel keine Zeile mehr; installiertes Spiel mit Update und nicht installiertes Spiel geprüft | – |
 
 ## #102 Ausfaden am Rand des Listings
 

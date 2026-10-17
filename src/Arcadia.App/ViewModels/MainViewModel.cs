@@ -297,14 +297,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             return;
         }
 
-        var focusedKey = FocusedGame?.Game.Key;
         var focusIndex = FocusedGame is { } focused ? PageGames.IndexOf(focused) : 0;
-        Refresh(focusIndex);
-        if (focusedKey is not null && PageGames.FirstOrDefault(t => t.Game.Key == focusedKey) is { } tile)
-        {
-            Focus(tile);
-        }
-
+        Refresh(focusIndex, FocusedGame?.Game.Key);
         UpdateDetail();
     }
 
@@ -512,6 +506,27 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     /// <summary>Drops a held A, e.g. when the window loses focus and the release may never arrive.</summary>
     public void CancelHold() => _acceptHold.Cancel();
+
+    /// <summary>
+    /// A rescan can rebuild the page while A is down, e.g. right after a game ended. The press moves
+    /// to the same game's new tile; only a game that's no longer shown drops it.
+    /// </summary>
+    private void KeepHoldOnRebuiltPage()
+    {
+        if (_holdTile is not { } held)
+        {
+            return;
+        }
+
+        _holdTile = PageGames.FirstOrDefault(t => t.Game.Key == held.Game.Key);
+        if (_holdTile is null)
+        {
+            _acceptHold.Cancel();
+            return;
+        }
+
+        _holdTile.IsHolding = held.IsHolding;
+    }
 
     private void WithHoldTile(Action<GameTileViewModel> action)
     {
@@ -887,7 +902,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
     }
 
-    private void Refresh(int focusIndex)
+    /// <summary>
+    /// Builds the current page again. The focus goes to the game of <paramref name="focusKey"/> if it
+    /// is still on the page, else to the place <paramref name="focusIndex"/>.
+    /// </summary>
+    private void Refresh(int focusIndex, string? focusKey = null)
     {
         if (SelectedTab is not { } tab)
         {
@@ -900,8 +919,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         var window = PageWindow.For(sorted.Count, pageSize, _requestedPage);
         _requestedPage = window.PageIndex;
 
-        // The held tile is about to be replaced; a hold must not open a game that's no longer shown.
-        _acceptHold.Cancel();
         var now = _time.GetLocalNow();
         PageGames.Clear();
         foreach (var game in sorted.Skip(window.Start).Take(window.Length))
@@ -909,10 +926,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             PageGames.Add(new GameTileViewModel(game, tab.Launcher, now, Focus, Activate) { InstallState = _installs.StateOf(game.Key) });
         }
 
-        FocusedGame = null;
-        if (PageGames.Count > 0)
+        KeepHoldOnRebuiltPage();
+        if (PageGames.Count == 0)
         {
-            Focus(PageGames[Math.Clamp(focusIndex, 0, PageGames.Count - 1)]);
+            FocusedGame = null;
+        }
+        else
+        {
+            // Straight from the old tile to the new one: a detour over null would restart the hold ring.
+            Focus(PageGames.FirstOrDefault(t => t.Game.Key == focusKey) ?? PageGames[Math.Clamp(focusIndex, 0, PageGames.Count - 1)]);
         }
 
         PageButtons.Clear();

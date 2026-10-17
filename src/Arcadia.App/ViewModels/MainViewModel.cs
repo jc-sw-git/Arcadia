@@ -121,6 +121,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     public bool IsConfirmationOpen => Confirmation is not null;
 
+    /// <summary>The detail page; it takes the place of the cover grid while open.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDetailOpen), nameof(IsLibraryShown))]
+    public partial GameDetailViewModel? Detail { get; private set; }
+
+    public bool IsDetailOpen => Detail is not null;
+
+    public bool IsLibraryShown => Detail is null;
+
     [ObservableProperty]
     public partial bool IsLoading { get; private set; } = true;
 
@@ -177,7 +186,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             return;
         }
 
-        foreach (var tile in PageGames)
+        foreach (var tile in PageGames.Concat(Detail?.Pages.Select(p => p.Tile) ?? []))
         {
             tile.InstallState = _installs.StateOf(tile.Game.Key);
         }
@@ -275,6 +284,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             SelectedTab = null;
             FocusedGame = null;
             ViewOptions = null;
+            Detail = null;
             PageGames.Clear();
             PageButtons.Clear();
             CountText = RangeText = ViewSummary = string.Empty;
@@ -294,6 +304,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         {
             Focus(tile);
         }
+
+        UpdateDetail();
     }
 
     private int IndexOfTab(string launcherId)
@@ -358,6 +370,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             return;
         }
 
+        if (Detail is { } detail)
+        {
+            HandleDetail(detail, action);
+            return;
+        }
+
         switch (action)
         {
             case UiAction.Up:
@@ -405,6 +423,84 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
     }
 
+    private void HandleDetail(GameDetailViewModel detail, UiAction action)
+    {
+        switch (action)
+        {
+            case UiAction.Back:
+                CloseDetail();
+                break;
+            case UiAction.PreviousPage:
+                detail.Rotate(-1);
+                break;
+            case UiAction.NextPage:
+                detail.Rotate(1);
+                break;
+            case UiAction.PreviousTab:
+                CycleTab(-1);
+                break;
+            case UiAction.NextTab:
+                CycleTab(1);
+                break;
+            case UiAction.ViewOptions:
+                OpenViewOptions();
+                break;
+            case UiAction.Settings:
+                OpenSettings();
+                break;
+            case UiAction.Options:
+                // No context menu here: its actions are buttons on the page (owner, 2026-10-17).
+                break;
+            default:
+                detail.Handle(action);
+                break;
+        }
+    }
+
+    /// <summary>Opens the detail page on <paramref name="key"/> in the selected tab.</summary>
+    private void OpenDetail(string key)
+    {
+        if (SelectedTab is not { } tab)
+        {
+            return;
+        }
+
+        var games = SortedGames(tab);
+        var index = Carousel.Find(games, key, 0);
+        Detail = index < 0 ? null : new GameDetailViewModel(tab.Name, games, index, SortLabel(_settings.Current.LibrarySort), CreateDetailTile, this);
+    }
+
+    /// <summary>Back to the library, on the page of the game shown last and with the focus on it.</summary>
+    [RelayCommand]
+    private void CloseDetail()
+    {
+        if (Detail is not { } detail || SelectedTab is not { } tab)
+        {
+            Detail = null;
+            return;
+        }
+
+        Detail = null;
+        var pageSize = PageSizes.Effective(_settings.Current.PreferredPageSize, tab.Count);
+        _requestedPage = detail.Index / pageSize;
+        Refresh(focusIndex: detail.Index % pageSize);
+    }
+
+    /// <summary>The list changed (rescan, new sort): the detail page keeps its game in the middle.</summary>
+    private void UpdateDetail()
+    {
+        if (Detail is { } detail && SelectedTab is { } tab && !detail.Update(SortedGames(tab), SortLabel(_settings.Current.LibrarySort)))
+        {
+            Detail = null;
+        }
+    }
+
+    private GameTileViewModel CreateDetailTile(Game game) =>
+        new(game, SelectedTab!.Launcher, _time.GetLocalNow(), _ => { }, _ => { }) { InstallState = _installs.StateOf(game.Key) };
+
+    private IReadOnlyList<Game> SortedGames(LauncherTabViewModel tab) =>
+        GameSorter.Sort(tab.Games, _settings.Current.LibrarySort, Formatting.Culture);
+
     /// <summary>A button or key was let go.</summary>
     public void Release(UiAction action)
     {
@@ -438,7 +534,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     /// <summary>Right click on a cover: focus it and open its menu.</summary>
     public void OpenMenuFor(GameTileViewModel tile)
     {
-        if (!PageGames.Contains(tile) || IsSettingsOpen || IsViewOptionsOpen || IsConfirmationOpen)
+        if (!PageGames.Contains(tile) || IsSettingsOpen || IsViewOptionsOpen || IsConfirmationOpen || IsDetailOpen)
         {
             return;
         }
@@ -478,9 +574,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     public string ControllerModeOf(Game game) =>
         _controllerSupport.Settings.ControllerSupportFor(game) ? ControllerModes.Sisr : ControllerModes.Steam;
 
-    void IGameActionHost.Play(GameTileViewModel tile) => Activate(tile);
+    void IGameActionHost.Play(GameTileViewModel tile) => Start(tile);
 
-    public void ShowDetails(GameTileViewModel tile) => Toast.Show($"Details zu „{tile.Title}“ folgen mit #11.");
+    public void ShowDetails(GameTileViewModel tile) => OpenDetail(tile.Game.Key);
 
     void IGameActionHost.OpenInLauncher(GameTileViewModel tile) =>
         HandOver(tile, tile.Game.OpenInLauncher, $"{tile.LauncherName} wird geöffnet …", $"Demo-Spiel: Hier würde jetzt {tile.LauncherName} geöffnet.");
@@ -547,7 +643,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         var support = _controllerSupport;
 
         // The mode only matters with a Steam Controller; other pads never go through SISR (#72).
-        ShowControllerSupport = support.SteamControllerConnected;
+        if (ShowControllerSupport != support.SteamControllerConnected)
+        {
+            ShowControllerSupport = support.SteamControllerConnected;
+            Detail?.RebuildActions();
+        }
+
         if (FocusedGame?.Game is { } game)
         {
             FocusedControllerSupportText = ControllerModeOf(game);
@@ -592,6 +693,19 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     {
         SelectTab(tab);
         SaveView(settings => settings with { LastTabLauncherId = tab.Launcher.Id });
+
+        // The detail page stays open and shows the tab's first game.
+        if (Detail is not null)
+        {
+            if (PageGames.FirstOrDefault() is { } first)
+            {
+                OpenDetail(first.Game.Key);
+            }
+            else
+            {
+                Detail = null;
+            }
+        }
     }
 
     private void SelectTab(LauncherTabViewModel tab)
@@ -679,6 +793,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     private void Activate(GameTileViewModel tile)
     {
         Focus(tile);
+        Start(tile);
+    }
+
+    /// <summary>Starts the game, or installs it, or says why neither is possible right now.</summary>
+    private void Start(GameTileViewModel tile)
+    {
         if (tile.InstallState is { } install)
         {
             Toast.Show(install.Phase == InstallPhase.AwaitingConfirmation
@@ -776,7 +896,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
         var view = _settings.Current;
         var pageSize = PageSizes.Effective(view.PreferredPageSize, tab.Count);
-        var sorted = GameSorter.Sort(tab.Games, view.LibrarySort, Formatting.Culture);
+        var sorted = SortedGames(tab);
         var window = PageWindow.For(sorted.Count, pageSize, _requestedPage);
         _requestedPage = window.PageIndex;
 
@@ -814,13 +934,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         _settings.Current.LibrarySort,
         _settings.Current.PreferredPageSize,
         sort => ChangeView(settings => settings with { LibrarySort = sort }),
-        size => ChangeView(settings => settings with { PreferredPageSize = size }));
+        size => ChangeView(settings => settings with { PreferredPageSize = size }),
+        Detail is null ? null : "Gilt für die Bibliothek; die Detailseite zeigt immer ein Spiel. Das aktuelle Spiel bleibt in der Mitte, die Nachbarn ordnen sich nach der neuen Sortierung.");
 
     private void ChangeView(Func<AppSettings, AppSettings> change)
     {
         SaveView(change);
         _requestedPage = 0;
         Refresh(focusIndex: 0);
+        UpdateDetail();
         RebuildViewOptions();
     }
 

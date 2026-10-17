@@ -32,7 +32,8 @@ public sealed class ViewOptionsViewModel : ViewModelBase
     private int _row;
     private int _column;
 
-    public ViewOptionsViewModel(string tabName, int gameCount, SortOrder sort, int preferredPageSize, Action<SortOrder> applySort, Action<int> applyPageSize)
+    /// <param name="note">Replaces the note on page sizes, e.g. on the detail page, which always shows one game.</param>
+    public ViewOptionsViewModel(string tabName, int gameCount, SortOrder sort, int preferredPageSize, Action<SortOrder> applySort, Action<int> applyPageSize, string? note = null)
     {
         OptionViewModel SortOption(SortField field, SortDirection direction, string label) =>
             new(label, sort == new SortOrder(field, direction), true, () => applySort(new SortOrder(field, direction)));
@@ -55,9 +56,9 @@ public sealed class ViewOptionsViewModel : ViewModelBase
 
         var blocked = PageSizes.Options.Where(size => !PageSizes.IsAllowed(size, gameCount)).ToList();
         var largest = PageSizes.Allowed(gameCount)[^1];
-        PageSizeNote = blocked.Count == 0
+        PageSizeNote = note ?? (blocked.Count == 0
             ? $"{tabName} hat {gameCount} Spiele – alle Seitengrößen wählbar."
-            : $"{tabName} hat {gameCount} Spiele – {largest} pro Seite zeigt bereits alle, {JoinGerman(blocked)} {(blocked.Count == 1 ? "ist" : "sind")} daher nicht wählbar.";
+            : $"{tabName} hat {gameCount} Spiele – {largest} pro Seite zeigt bereits alle, {JoinGerman(blocked)} {(blocked.Count == 1 ? "ist" : "sind")} daher nicht wählbar.");
 
         TabName = tabName;
         _grid = [.. SortRows.Select(r => r.Options), PageSizeOptions];

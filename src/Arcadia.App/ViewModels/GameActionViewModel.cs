@@ -49,10 +49,11 @@ public sealed partial class GameActionViewModel : ViewModelBase
 
     private readonly Action _invoke;
 
-    private GameActionViewModel(GameActionKind kind, string label, string? note, bool isEnabled, Action invoke)
+    private GameActionViewModel(GameActionKind kind, string label, string? note, bool isEnabled, Action invoke, string? buttonLabel = null)
     {
         Kind = kind;
         Label = label;
+        ButtonLabel = buttonLabel ?? label;
         Note = note;
         IsEnabled = isEnabled;
         _invoke = invoke;
@@ -63,6 +64,17 @@ public sealed partial class GameActionViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string Label { get; private set; }
+
+    /// <summary>The shorter text of the detail page's button.</summary>
+    [ObservableProperty]
+    public partial string ButtonLabel { get; private set; }
+
+    /// <summary>A small heading above the button text, e.g. "STEAM CONTROLLER" above the mode.</summary>
+    public string? Caption => Kind == GameActionKind.ControllerMode ? "STEAM CONTROLLER" : null;
+
+    public bool HasCaption => Caption is not null;
+
+    public bool IsPrimary => Kind == GameActionKind.Play;
 
     /// <summary>A hint below the label, or why the action isn't available.</summary>
     [ObservableProperty]
@@ -123,10 +135,10 @@ public sealed partial class GameActionViewModel : ViewModelBase
                 : new(GameActionKind.Play, "Installieren", $"Die Installation wird in {launcher} geöffnet", true, () => host.Play(tile)));
 
         actions.Add(new(GameActionKind.Details, "Details anzeigen", null, true, () => host.ShowDetails(tile)));
-        actions.Add(new(GameActionKind.Favorite, "Zu Favoriten hinzufügen", NotYetAvailable, false, () => { }));
+        actions.Add(new(GameActionKind.Favorite, "Zu Favoriten hinzufügen", NotYetAvailable, false, () => { }, "Zu Favoriten"));
         if (game.IsInstalled)
         {
-            actions.Add(new(GameActionKind.Artwork, "Artwork ändern …", NotYetAvailable, false, () => { }));
+            actions.Add(new(GameActionKind.Artwork, "Artwork ändern …", NotYetAvailable, false, () => { }, "Artwork ändern"));
         }
 
         actions.Add(game.OpenInLauncher is null
@@ -139,8 +151,8 @@ public sealed partial class GameActionViewModel : ViewModelBase
         }
 
         actions.Add(game.ControllerLayout is null
-            ? new(GameActionKind.ControllerLayout, "Controller-Layout anzeigen", $"In {launcher} nicht verfügbar", false, () => { })
-            : new(GameActionKind.ControllerLayout, "Controller-Layout anzeigen", null, true, () => host.ShowControllerLayout(tile)));
+            ? new(GameActionKind.ControllerLayout, "Controller-Layout anzeigen", $"In {launcher} nicht verfügbar", false, () => { }, "Controller-Layout")
+            : new(GameActionKind.ControllerLayout, "Controller-Layout anzeigen", null, true, () => host.ShowControllerLayout(tile), "Controller-Layout"));
 
         if (host.ShowControllerMode)
         {
@@ -168,6 +180,7 @@ public sealed partial class GameActionViewModel : ViewModelBase
     private void ShowControllerMode(string mode)
     {
         Label = $"Steam Controller: {mode}";
+        ButtonLabel = mode;
         Note = $"A wechselt zu „{(mode == ControllerModes.Steam ? ControllerModes.Sisr : ControllerModes.Steam)}“";
     }
 }

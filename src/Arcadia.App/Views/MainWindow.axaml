@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Arcadia.App.ViewModels"
         xmlns:ctl="using:Arcadia.App.Controls"
+        xmlns:views="using:Arcadia.App.Views"
         x:Class="Arcadia.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Arcadia"
@@ -119,7 +120,7 @@
       </Grid>
 
       <!-- Toolbar: current tab and view options -->
-      <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto">
+      <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto" IsVisible="{Binding IsLibraryShown}">
         <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
           <TextBlock Text="{Binding SelectedTab.Name, FallbackValue=''}" FontSize="34" FontWeight="ExtraBold" VerticalAlignment="Center" />
           <TextBlock Text="{Binding CountText}" FontSize="18" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,8,0,0" />
@@ -132,8 +133,35 @@
         </Button>
       </Grid>
 
+      <!-- Detail page: path back, position in the list and the sort order -->
+      <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto" IsVisible="{Binding IsDetailOpen}">
+        <Button Classes="plain" HorizontalAlignment="Left" Command="{Binding CloseDetailCommand}" ToolTip.Tip="Zurück zur Bibliothek (Esc)">
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+            <TextBlock Classes="crumb" Text="Bibliothek" />
+            <TextBlock Classes="crumb separator" Text="/" />
+            <TextBlock Classes="crumb" Text="{Binding Detail.TabName, FallbackValue=''}" />
+            <TextBlock Classes="crumb separator" Text="/" />
+            <TextBlock Classes="crumb current" Text="{Binding Detail.Current.Tile.Title, FallbackValue=''}" />
+          </StackPanel>
+        </Button>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="20">
+          <TextBlock Text="{Binding Detail.PositionText, FallbackValue=''}" FontSize="17" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+          <Button Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
+              <TextBlock Text="{Binding Detail.SortLabel, FallbackValue=''}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+
+      <Panel Grid.Row="2" IsVisible="{Binding IsDetailOpen}">
+        <views:GameDetailView DataContext="{Binding Detail}" />
+      </Panel>
+
       <!-- Body: preview panel and cover grid -->
-      <Grid Grid.Row="2" ColumnDefinitions="400,*" Margin="80,0,0,0" ColumnSpacing="40">
+      <Grid Grid.Row="2" ColumnDefinitions="400,*" Margin="80,0,0,0" ColumnSpacing="40" IsVisible="{Binding IsLibraryShown}">
 
         <Border Classes="preview" Classes.holding="{Binding FocusedGame.IsHolding, FallbackValue=False}" Background="{StaticResource Surface}" CornerRadius="16" ClipToBounds="True" Margin="0,18,0,16"
                 IsVisible="{Binding FocusedGame, Converter={x:Static ObjectConverters.IsNotNull}}">
@@ -323,7 +351,36 @@
 
       <!-- Footer: button hints -->
       <Border Grid.Row="3" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="80,0">
-        <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center">
+        <Panel>
+        <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsDetailOpen}">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+            <TextBlock Classes="hint" Text="Aktion wählen" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+            <TextBlock Classes="hint" Text="Auswählen" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
+            <TextBlock Classes="hint" Text="Ansicht" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph"><TextBlock Text="LB" /></Border>
+            <Border Classes="glyph"><TextBlock Text="RB" /></Border>
+            <TextBlock Classes="hint" Text="Launcher" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph"><TextBlock Text="LT" /></Border>
+            <Border Classes="glyph"><TextBlock Text="RT" /></Border>
+            <TextBlock Classes="hint" Text="Spiel" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+            <TextBlock Classes="hint" Text="Zurück" />
+          </StackPanel>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsLibraryShown}">
           <StackPanel Orientation="Horizontal" Spacing="10">
             <Border Classes="glyph round"><TextBlock Text="A" /></Border>
             <TextBlock Classes="hint" Text="{Binding FocusedGame.PrimaryActionText, FallbackValue='Spielen'}" />
@@ -355,6 +412,7 @@
             <TextBlock Classes="hint" Text="Einstellungen" />
           </StackPanel>
         </StackPanel>
+        </Panel>
       </Border>
 
       <!-- Toast -->
@@ -873,6 +931,18 @@
       <Setter Property="FontSize" Value="13" />
       <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
       <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.crumb">
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.crumb.separator">
+      <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    </Style>
+    <Style Selector="TextBlock.crumb.current">
+      <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="TextBlock.hint">
       <Setter Property="FontSize" Value="16" />

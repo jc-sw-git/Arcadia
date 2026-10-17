@@ -40,6 +40,18 @@ public static class Formatting
     /// <summary>0…1 → "42 %" (German spacing). Floors, so 99.9 % never shows as 100 %.</summary>
     public static string Percent(double fraction) => $"{Math.Floor(Math.Clamp(fraction, 0, 1) * 100):0} %";
 
+    /// <summary>"09.10.2026, 22:14" in local time, or "–".</summary>
+    public static string DateAndTime(DateTimeOffset? value) =>
+        value is { } v ? v.ToLocalTime().ToString("dd.MM.yyyy, HH:mm", Culture) : "–";
+
+    /// <summary>"09.10.2026" in local time, or "–".</summary>
+    public static string Date(DateTimeOffset? value) =>
+        value is { } v ? v.ToLocalTime().ToString("dd.MM.yyyy", Culture) : "–";
+
+    /// <summary>"Laufwerk D:" for a Windows path, otherwise null.</summary>
+    public static string? Drive(string? path) =>
+        path is { Length: >= 2 } && char.IsAsciiLetter(path[0]) && path[1] == ':' ? $"Laufwerk {char.ToUpperInvariant(path[0])}:" : null;
+
     public static string Clock(DateTimeOffset now) => now.ToString("HH:mm", Culture);
 
     public static string ShortDate(DateTimeOffset now) => now.ToString("ddd., d. MMM", Culture);
@@ -51,6 +63,15 @@ public static class Formatting
         return (
             new SolidColorBrush(new HslColor(1, hue, 0.28, 0.20).ToRgb()),
             new SolidColorBrush(new HslColor(1, hue, 0.55, 0.66).ToRgb()));
+    }
+
+    /// <summary>The detail page's placeholder backdrop and its decorative rings, in the cover's hue.</summary>
+    public static (IBrush Backdrop, IBrush Ring) HeroBrushes(string seed)
+    {
+        var hue = StableHash(seed) % 360;
+        return (
+            new SolidColorBrush(new HslColor(1, hue, 0.30, 0.17).ToRgb()),
+            new SolidColorBrush(new HslColor(1, hue, 0.40, 0.28).ToRgb()));
     }
 
     public static IBrush LauncherTileBrush(string launcherId) =>

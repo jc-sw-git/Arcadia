@@ -41,6 +41,15 @@
     <SolidColorBrush x:Key="ProgressTrack" Color="#33FFFFFF" />
     <!-- Bg at zero opacity, for gradients that fade into the background. -->
     <Color x:Key="BgClearColor">#000B0F14</Color>
+    <!-- Bg at 90 % and 50 %: the detail page's neighbours fade into the background towards the edge. -->
+    <Color x:Key="BgFadeColor">#E60B0F14</Color>
+    <Color x:Key="BgHalfColor">#800B0F14</Color>
+
+    <!-- Detail page. -->
+    <SolidColorBrush x:Key="DetailSurface" Color="#121820" />
+    <SolidColorBrush x:Key="DetailChip" Color="#1FF2F5F8" />
+    <SolidColorBrush x:Key="DetailAction" Color="#1AF2F5F8" />
+    <SolidColorBrush x:Key="DetailActionHover" Color="#2EF2F5F8" />
 
     <!-- Focus rings and shadows. -->
     <BoxShadows x:Key="FocusRing">0 0 0 3 #F2F5F8</BoxShadows>
@@ -52,6 +61,10 @@
     <!-- Fills around the preview while A is held; full means the detail page opens. -->
     <SolidColorBrush x:Key="HoldRing" Color="#3B9EFF" />
     <BoxShadows x:Key="ToastShadow">0 20 50 0 #8C000000</BoxShadows>
+    <!-- Detail page: buttons on the page's surface get a gap between button and ring. -->
+    <BoxShadows x:Key="FocusRingGap">0 0 0 7 #F2F5F8, 0 0 0 4 #121820</BoxShadows>
+    <BoxShadows x:Key="DetailShadow">0 30 80 0 #73000000</BoxShadows>
+    <BoxShadows x:Key="CoverShadow">0 24 50 0 #80000000</BoxShadows>
     <BoxShadows x:Key="DialogShadow">0 40 100 0 #99000000</BoxShadows>
   </Styles.Resources>
 
@@ -366,6 +379,76 @@
   </Style>
   <Style Selector="Button.action.danger">
     <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
+
+  <!-- Buttons on the detail page; the second row is smaller. -->
+  <Style Selector="Button.detailAction">
+    <Setter Property="Height" Value="56" />
+    <Setter Property="CornerRadius" Value="28" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="Background" Value="{StaticResource DetailAction}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.detailAction:pointerover">
+    <Setter Property="Background" Value="{StaticResource DetailActionHover}" />
+  </Style>
+  <Style Selector=".smallActions Button.detailAction">
+    <Setter Property="Height" Value="48" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="FontSize" Value="16" />
+  </Style>
+  <Style Selector="Button.detailAction.primary">
+    <Setter Property="Height" Value="60" />
+    <Setter Property="CornerRadius" Value="30" />
+    <Setter Property="Padding" Value="18,0,32,0" />
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+    <Setter Property="FontSize" Value="21" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+  </Style>
+  <Style Selector="Button.detailAction.primary:pointerover">
+    <Setter Property="Background" Value="{StaticResource AccentHover}" />
+  </Style>
+  <Style Selector="Button.detailAction.danger">
+    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="Button.detailAction:disabled">
+    <Setter Property="Background" Value="{StaticResource DetailAction}" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.detailAction.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRingGap}" />
+  </Style>
+  <Style Selector="Button.detailAction TextBlock.caption">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.2" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Border.detailChip">
+    <Setter Property="Background" Value="{StaticResource DetailChip}" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="8,6,14,6" />
+  </Style>
+  <Style Selector="Border.detailChip.update">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Padding" Value="10,6,14,6" />
+  </Style>
+  <Style Selector="Border.detailStat">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="24,20" />
+  </Style>
+  <!-- LT/RT beside the detail carousel. -->
+  <Style Selector="Button.carouselNav">
+    <Setter Property="Height" Value="48" />
+    <Setter Property="MinWidth" Value="64" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
 
   <!-- Entries of a game's context menu. -->

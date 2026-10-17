@@ -1,0 +1,284 @@
+using System.ComponentModel;
+using Arcadia.App.Input;
+using Arcadia.App.Services;
+using Avalonia.Media;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
+namespace Arcadia.App.ViewModels;
+
+/// <summary>
+/// One game's page in the detail carousel. The page in the middle has the controller focus; its
+/// neighbours show the same content and a click on them turns the carousel.
+/// </summary>
+public sealed partial class GameDetailPageViewModel : ViewModelBase
+{
+    /// <summary>Must match the page width in MainWindow.axaml.</summary>
+    public const double Width = 1152;
+
+    /// <summary>Distance between the left edges of two neighbouring pages.</summary>
+    public const double Pitch = 1200;
+
+    /// <summary>Left edge of the page in the middle of the 1920 px wide layout.</summary>
+    private const double CentreLeft = (1920 - Width) / 2;
+
+    private readonly IGameActionHost _host;
+    private int _focusRow;
+    private int _focusColumn = -1;
+
+    public GameDetailPageViewModel(GameTileViewModel tile, int offset, IGameActionHost host, Action<int> rotate)
+    {
+        Tile = tile;
+        _host = host;
+        (Backdrop, Ring) = Formatting.HeroBrushes(tile.Title);
+        var game = tile.Game;
+        Drive = Formatting.Drive(game.InstallDirectory);
+        HeroLine = game.IsInstalled
+            ? string.Join(" · ", new[] { "Installiert", game.InstallSizeBytes is null ? null : tile.SizeText, Drive }.Where(part => part is not null))
+            : $"Nicht installiert · in {tile.LauncherName} installierbar";
+        LastPlayedAt = Formatting.DateAndTime(game.LastPlayedAt);
+        PlaytimeSource = game.Playtime is null ? $"{tile.LauncherName} meldet keine" : $"Laut {tile.LauncherName}";
+        InstalledAt = Formatting.Date(game.IsInstalled ? game.InstalledAt : null);
+        Offset = offset;
+        SelectCommand = new RelayCommand(() => rotate(Math.Sign(Offset)));
+
+        tile.PropertyChanged += OnTilePropertyChanged;
+        RebuildActions();
+    }
+
+    public GameTileViewModel Tile { get; }
+
+    public IBrush Backdrop { get; }
+
+    public IBrush Ring { get; }
+
+    public string LauncherUpper => Tile.LauncherName.ToUpperInvariant();
+
+    /// <summary>"Installiert · 42,1 GB · Laufwerk D:".</summary>
+    public string HeroLine { get; }
+
+    public string LastPlayedAt { get; }
+
+    public string PlaytimeSource { get; }
+
+    public string InstalledAt { get; }
+
+    public string? Drive { get; }
+
+    public string DriveText => Drive ?? "–";
+
+    /// <summary>Places away from the middle: -1 is the previous game, 1 the next.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Left), nameof(IsCentre), nameof(IsSide))]
+    public partial int Offset { get; set; }
+
+    public double Left => CentreLeft + (Offset * Pitch);
+
+    public bool IsCentre => Offset == 0;
+
+    public bool IsSide => Offset != 0;
+
+    /// <summary>Spielen, In … öffnen, Favorit, Steam Controller mode.</summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<GameActionViewModel> TopRow { get; private set; } = [];
+
+    /// <summary>Controller-Layout and Artwork; <see cref="Uninstall"/> stands apart at the right end of the row.</summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<GameActionViewModel> BottomRow { get; private set; } = [];
+
+    [ObservableProperty]
+    public partial GameActionViewModel? Uninstall { get; private set; }
+
+    /// <summary>The launcher may install a pending update before the game starts (owner, 2026-10-12).</summary>
+    public string? UpdateNote => Tile.UpdateAvailable ? $"{Tile.LauncherName} installiert das Update eventuell, bevor das Spiel startet." : null;
+
+    public bool HasUpdateNote => UpdateNote is not null;
+
+    /// <summary>What the focused button does beyond its label, e.g. that uninstalling opens the launcher.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasActionNote))]
+    public partial string? ActionNote { get; private set; }
+
+    public bool HasActionNote => ActionNote is not null;
+
+    public IRelayCommand SelectCommand { get; }
+
+    private GameActionViewModel? Focused => _focusColumn >= 0 && Row(_focusRow) is { } row && _focusColumn < row.Count ? row[_focusColumn] : null;
+
+    /// <summary>D-pad and A on the page in the middle.</summary>
+    public void Handle(UiAction action)
+    {
+        switch (action)
+        {
+            case UiAction.Left:
+                MoveInRow(-1);
+                break;
+            case UiAction.Right:
+                MoveInRow(1);
+                break;
+            case UiAction.Up:
+                MoveToRow(0);
+                break;
+            case UiAction.Down:
+                MoveToRow(1);
+                break;
+            case UiAction.Accept when Focused is { } focused:
+                focused.Invoke();
+                UpdateActionNote();
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Builds the buttons again, e.g. when an installation starts or the Steam Controller mode
+    /// became relevant. The focus stays on the same kind of button where it still can.
+    /// </summary>
+    public void RebuildActions()
+    {
+        var focusedKind = Focused?.Kind;
+        var actions = GameActionViewModel.For(Tile, _host);
+
+        // No context menu here: everything it offers is a button of its own, except "Details", which is this page.
+        List<GameActionViewModel> InOrder(params GameActionKind[] kinds) =>
+            kinds.SelectMany(kind => actions.Where(a => a.Kind == kind)).ToList();
+        TopRow = InOrder(GameActionKind.Play, GameActionKind.OpenInLauncher, GameActionKind.Favorite, GameActionKind.ControllerMode);
+        BottomRow = InOrder(GameActionKind.ControllerLayout, GameActionKind.Artwork);
+        Uninstall = actions.FirstOrDefault(a => a.Kind == GameActionKind.Uninstall);
+
+        _focusColumn = -1;
+        if (IsCentre)
+        {
+            FocusKind(focusedKind);
+        }
+        else
+        {
+            UpdateActionNote();
+        }
+    }
+
+    partial void OnOffsetChanged(int value)
+    {
+        if (value == 0)
+        {
+            FocusKind(null);
+        }
+        else
+        {
+            SetFocus(-1, -1);
+        }
+    }
+
+    private void OnTilePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(GameTileViewModel.InstallState))
+        {
+            OnPropertyChanged(nameof(UpdateNote));
+            OnPropertyChanged(nameof(HasUpdateNote));
+            RebuildActions();
+        }
+    }
+
+    private IReadOnlyList<GameActionViewModel>? Row(int row) => row switch
+    {
+        0 => TopRow,
+        1 => Uninstall is null ? BottomRow : [.. BottomRow, Uninstall],
+        _ => null,
+    };
+
+    /// <summary>Focuses the button of <paramref name="kind"/>, else "Spielen", else the first one available.</summary>
+    private void FocusKind(GameActionKind? kind)
+    {
+        for (var row = 0; row < 2; row++)
+        {
+            var actions = Row(row)!;
+            for (var column = 0; column < actions.Count; column++)
+            {
+                if (actions[column].IsEnabled && actions[column].Kind == (kind ?? GameActionKind.Play))
+                {
+                    SetFocus(row, column);
+                    return;
+                }
+            }
+        }
+
+        for (var row = 0; row < 2; row++)
+        {
+            var actions = Row(row)!;
+            for (var column = 0; column < actions.Count; column++)
+            {
+                if (actions[column].IsEnabled)
+                {
+                    SetFocus(row, column);
+                    return;
+                }
+            }
+        }
+
+        SetFocus(-1, -1);
+    }
+
+    /// <summary>Left/right skip buttons that aren't available and stop at the ends of the row.</summary>
+    private void MoveInRow(int delta)
+    {
+        if (Row(_focusRow) is not { } actions || _focusColumn < 0)
+        {
+            return;
+        }
+
+        for (var column = _focusColumn + delta; column >= 0 && column < actions.Count; column += delta)
+        {
+            if (actions[column].IsEnabled)
+            {
+                SetFocus(_focusRow, column);
+                return;
+            }
+        }
+    }
+
+    /// <summary>Up/down land on the available button of the other row that is nearest in order, preferring the left one.</summary>
+    private void MoveToRow(int row)
+    {
+        if (row == _focusRow || _focusColumn < 0 || Row(row) is not { } actions)
+        {
+            return;
+        }
+
+        for (var distance = 0; distance < actions.Count + _focusColumn + 1; distance++)
+        {
+            foreach (var column in new[] { _focusColumn - distance, _focusColumn + distance })
+            {
+                if (column >= 0 && column < actions.Count && actions[column].IsEnabled)
+                {
+                    SetFocus(row, column);
+                    return;
+                }
+            }
+        }
+    }
+
+    private void SetFocus(int row, int column)
+    {
+        if (Focused is { } previous)
+        {
+            previous.IsFocused = false;
+        }
+
+        _focusRow = Math.Max(row, 0);
+        _focusColumn = column;
+        if (Focused is { } focused)
+        {
+            focused.IsFocused = true;
+        }
+
+        UpdateActionNote();
+    }
+
+    private void UpdateActionNote()
+    {
+        // "Spielen" explains itself through the update note; a disabled "Spielen" is the running installation.
+        var play = TopRow.FirstOrDefault(a => a.Kind == GameActionKind.Play);
+        ActionNote = Focused is { Kind: not GameActionKind.Play, Note: { } note } ? note
+            : Tile.UpdateAvailable ? null
+            : play?.Note;
+    }
+}

@@ -46,7 +46,7 @@ public sealed class HoldGestureTests
     public void HoldingFiresOnceWithoutWaitingForTheRelease()
     {
         _gesture.Press();
-        _time.Advance(HoldTime);
+        HoldUntilDone();
 
         Assert.Equal(["feedback on", "feedback off", "held"], _events);
 
@@ -87,11 +87,12 @@ public sealed class HoldGestureTests
         // Timer callbacks are posted to the UI thread and may run after a release and a new press.
         var posted = new List<Action>();
         var gesture = new HoldGesture(FeedbackDelay, HoldTime, _time, posted.Add);
-        var held = 0;
-        gesture.Held += () => held++;
+        var events = new List<string>();
+        gesture.Held += () => events.Add("held");
+        gesture.FeedbackChanged += on => events.Add(on ? "feedback on" : "feedback off");
 
         gesture.Press();
-        _time.Advance(HoldTime);
+        _time.Advance(FeedbackDelay);
         gesture.Release();
         gesture.Press();
         foreach (var action in posted.ToList())
@@ -99,7 +100,40 @@ public sealed class HoldGestureTests
             action();
         }
 
-        Assert.Equal(0, held);
+        // The new press is only just down: no feedback yet.
+        Assert.Empty(events);
+    }
+
+    [Fact]
+    public void TheHoldLastsTheWholeFillTimeEvenWhenTheFeedbackStartsLate()
+    {
+        // The ring's animation runs for HoldTime - FeedbackDelay from the moment the feedback shows;
+        // a busy UI thread shows it late, and the hold must not cut the animation short.
+        var posted = new List<Action>();
+        var gesture = new HoldGesture(FeedbackDelay, HoldTime, _time, posted.Add);
+        var events = new List<string>();
+        gesture.Held += () => events.Add("held");
+        gesture.FeedbackChanged += on => events.Add(on ? "feedback on" : "feedback off");
+        void RunPosted()
+        {
+            var actions = posted.ToList();
+            posted.Clear();
+            actions.ForEach(action => action());
+        }
+
+        gesture.Press();
+        _time.Advance(FeedbackDelay);
+        _time.Advance(TimeSpan.FromMilliseconds(50));
+        RunPosted();
+        _time.Advance(HoldTime - FeedbackDelay - TimeSpan.FromMilliseconds(50));
+        RunPosted();
+
+        Assert.Equal(["feedback on"], events);
+
+        _time.Advance(TimeSpan.FromMilliseconds(50));
+        RunPosted();
+
+        Assert.Equal(["feedback on", "feedback off", "held"], events);
     }
 
     [Fact]
@@ -107,11 +141,18 @@ public sealed class HoldGestureTests
     {
         // The release can get lost, e.g. when the key goes up in another window.
         _gesture.Press();
-        _time.Advance(HoldTime);
+        HoldUntilDone();
         _gesture.Press();
         _gesture.Release();
 
         Assert.Equal(["feedback on", "feedback off", "held", "tap"], _events);
+    }
+
+    // In steps, as the real clock passes: the hold timer starts only when the feedback shows.
+    private void HoldUntilDone()
+    {
+        _time.Advance(FeedbackDelay);
+        _time.Advance(HoldTime - FeedbackDelay);
     }
 
     [Fact]

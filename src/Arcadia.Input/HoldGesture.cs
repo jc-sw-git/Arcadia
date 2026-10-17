@@ -54,7 +54,6 @@ public sealed class HoldGesture(TimeSpan feedbackDelay, TimeSpan holdTime, TimeP
         _phase = Phase.Pressed;
         var press = _press;
         _feedbackTimer = time.CreateTimer(_ => post(() => StartFeedback(press)), null, feedbackDelay, Timeout.InfiniteTimeSpan);
-        _holdTimer = time.CreateTimer(_ => post(() => CompleteHold(press)), null, holdTime, Timeout.InfiniteTimeSpan);
     }
 
     public void Release()
@@ -81,22 +80,22 @@ public sealed class HoldGesture(TimeSpan feedbackDelay, TimeSpan holdTime, TimeP
 
         _phase = Phase.Building;
         FeedbackChanged?.Invoke(true);
+
+        // Counted from here, not from the press: the feedback fills over exactly this time, and a busy
+        // UI thread may have shown it late. Timed from the press, the hold cut the fill short.
+        _holdTimer = time.CreateTimer(_ => post(() => CompleteHold(press)), null, holdTime - feedbackDelay, Timeout.InfiniteTimeSpan);
     }
 
     private void CompleteHold(int press)
     {
-        if (press != _press || _phase is not (Phase.Pressed or Phase.Building))
+        if (press != _press || _phase != Phase.Building)
         {
             return;
         }
 
-        var showedFeedback = _phase == Phase.Building;
         StopTimers();
         _phase = Phase.Held;
-        if (showedFeedback)
-        {
-            FeedbackChanged?.Invoke(false);
-        }
+        FeedbackChanged?.Invoke(false);
 
         Held?.Invoke();
     }

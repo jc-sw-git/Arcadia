@@ -172,8 +172,9 @@
     <Setter Property="BoxShadow" Value="{StaticResource FocusRingLifted}" />
   </Style>
 
-  <!-- Holding A: a ring along the inner edge of the preview panel fills in the time between
-       MainViewModel.HoldFeedbackDelay and HoldTime (0.8 s). -->
+  <!-- Holding A: a ring along the inner edge of the preview panel fills while the hold runs
+       (MainViewModel.HoldTime - HoldFeedbackDelay = 0.8 s). It fills a little faster, so it is seen
+       full before the detail page opens. -->
   <Style Selector="ctl|HoldRing">
     <Setter Property="IsVisible" Value="False" />
     <Setter Property="IsHitTestVisible" Value="False" />
@@ -184,7 +185,7 @@
   <Style Selector="Border.preview.holding ctl|HoldRing">
     <Setter Property="IsVisible" Value="True" />
     <Style.Animations>
-      <Animation Duration="0:0:0.8" FillMode="Forward">
+      <Animation Duration="0:0:0.75" FillMode="Forward">
         <KeyFrame Cue="0%">
           <Setter Property="Progress" Value="0" />
         </KeyFrame>

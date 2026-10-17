@@ -84,7 +84,8 @@ focus handling or anything SISR/usbip related.
   `autoattach_windows.go`), and SISR starts its bundled VIIPER without arguments, so on port 3241 unless
   `VIIPER_USB_ADDR` is set (VIIPER `internal/server/usb/config.go`, SISR `input/viiperbridge.go`, read
   2026-10-17; a different port only means nothing is detached). Nothing is detached while another SISR or a
-  viiper.exe from elsewhere runs: it serves the same address. So the address picks VIIPER's devices; a
+  viiper.exe from elsewhere runs: if that VIIPER holds 3241, SISR's own can't start and SISR uses the foreign
+  one, so its devices share the address; on another port the skip is merely cautious (its port isn't known). So the address picks VIIPER's devices; a
   port remembered at SISR's start would miss devices attached later (controller reconnects) or after an
   Arcadia restart, and usbip reuses freed port numbers.
 - While SISR or VIIPER start or stop, in the background too, the settings take only B

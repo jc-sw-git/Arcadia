@@ -335,8 +335,9 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
             }
         }
 
-        // Devices on VIIPER's address belong to whichever VIIPER serves it: another SISR or a VIIPER
-        // started by something else may still use its controllers, so only ours are detached.
+        // Devices on VIIPER's address belong to whichever VIIPER holds the port. A VIIPER started by
+        // something else may hold it (SISR then uses that one, its own can't start), and another SISR may
+        // still use its controllers, so nothing is detached then.
         return ExternalInstances().Count > 0 || otherViiper || !OperatingSystem.IsWindows()
             ? leftovers
             : leftovers + await UsbipDriver.DetachViiperDevicesAsync(cancellationToken);

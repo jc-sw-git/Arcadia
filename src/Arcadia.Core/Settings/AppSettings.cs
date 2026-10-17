@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Arcadia.Core.Launchers;
+using Arcadia.Core.Library;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Settings;
@@ -21,6 +22,28 @@ public sealed record AppSettings
 
     /// <summary>When Arcadia last installed the usbip driver; a Windows restart is due after that.</summary>
     public DateTimeOffset? UsbipInstalledAt { get; init; }
+
+    /// <summary>The library's sort order, the same for every tab (owner, 2026-10-17).</summary>
+    public SortOrder LibrarySort { get; init; } = SortOrder.Default;
+
+    /// <summary>
+    /// The page size the user chose, the same for every tab. A tab with too few games shows a
+    /// smaller one (<see cref="PageSizes.Effective"/>) without changing this.
+    /// </summary>
+    public int PreferredPageSize { get; init; } = PageSizes.Default;
+
+    /// <summary>The <see cref="LauncherInfo.Id"/> of the tab Arcadia opens with; null for the first tab.</summary>
+    public string? LastTabLauncherId { get; init; }
+
+    /// <summary>
+    /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
+    /// hand — with the defaults, instead of failing on them later.
+    /// </summary>
+    public AppSettings WithValidLibraryView() => this with
+    {
+        LibrarySort = Enum.IsDefined(LibrarySort.Field) && Enum.IsDefined(LibrarySort.Direction) ? LibrarySort : SortOrder.Default,
+        PreferredPageSize = PageSizes.Options.Contains(PreferredPageSize) ? PreferredPageSize : PageSizes.Default,
+    };
 
     /// <summary>
     /// Whether SISR should run while <paramref name="game"/> runs. Without an override it runs for

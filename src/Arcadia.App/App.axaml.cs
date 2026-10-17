@@ -63,7 +63,8 @@ public partial class App : Application
                 AppLog.Write(problem);
             }
 
-            var controllerSupport = new ControllerSupportService(SettingsStore.CreateDefault(), SisrHost.CreateDefault(http), http, time)
+            var settings = new SettingsService(SettingsStore.CreateDefault());
+            var controllerSupport = new ControllerSupportService(settings, SisrHost.CreateDefault(http), http, time)
             {
                 Log = AppLog.Write,
             };
@@ -83,6 +84,7 @@ public partial class App : Application
                 controllerSupport,
                 updates,
                 new InstallTracker(launchers, time),
+                settings,
                 time);
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();

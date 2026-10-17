@@ -84,7 +84,7 @@ public enum SisrState
 /// run at all. So no path starts SISR while the support is off or a game has it paused.
 /// </remarks>
 public sealed class ControllerSupportService(
-    SettingsStore store,
+    SettingsService sharedSettings,
     ISisrHost sisr,
     HttpClient http,
     TimeProvider time,
@@ -127,7 +127,6 @@ public sealed class ControllerSupportService(
     private readonly IControllerSupportPlatform _platform = platform ?? new ControllerSupportPlatform();
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly Lock _stateLock = new();
-    private readonly Lock _settingsLock = new();
     private readonly List<DateTimeOffset> _restarts = [];
 
     /// <summary>SISR was stopped because Steam went away; starting it again with Steam is not a crash restart.</summary>
@@ -149,7 +148,7 @@ public sealed class ControllerSupportService(
 
     public event EventHandler? Changed;
 
-    public AppSettings Settings { get; private set; } = store.Load();
+    public AppSettings Settings => sharedSettings.Current;
 
     public bool Enabled => Settings.SteamControllerSupport;
 
@@ -1307,19 +1306,9 @@ public sealed class ControllerSupportService(
         OnChanged();
     }
 
-    /// <summary>
-    /// Changes and saves the settings. The tick runs on the thread pool, the UI changes them too:
-    /// reading, changing and saving happen under one lock, so no change is lost and two saves never
-    /// write <c>settings.json.tmp</c> at once.
-    /// </summary>
     private void UpdateSettings(Func<AppSettings, AppSettings> change)
     {
-        lock (_settingsLock)
-        {
-            Settings = change(Settings);
-            store.Save(Settings);
-        }
-
+        sharedSettings.Update(change);
         OnChanged();
     }
 

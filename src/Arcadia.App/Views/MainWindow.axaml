@@ -350,9 +350,8 @@
           <StackPanel Spacing="40" DataContext="{Binding ViewOptions}" x:DataType="vm:ViewOptionsViewModel">
             <StackPanel Spacing="8">
               <TextBlock Text="Ansicht" FontSize="34" FontWeight="ExtraBold" />
-              <TextBlock FontSize="17" Foreground="{StaticResource TextMuted}">
-                <Run Text="Sortierung und Einträge pro Seite für " /><Run Text="{Binding TabName}" />
-              </TextBlock>
+              <TextBlock FontSize="17" Foreground="{StaticResource TextMuted}"
+                         Text="Sortierung und Einträge pro Seite, gültig für alle Launcher" />
             </StackPanel>
 
             <StackPanel Spacing="14">

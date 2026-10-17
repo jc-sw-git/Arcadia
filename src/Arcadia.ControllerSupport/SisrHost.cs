@@ -308,6 +308,7 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
         // SISR starts the viiper.exe next to it and ends it on quit; killing SISR's process tree
         // takes it along too. This only catches the cases where neither happened (SISR crashed).
         var leftovers = 0;
+        var otherViiper = false;
         foreach (var process in Process.GetProcessesByName("viiper"))
         {
             using (process)
@@ -321,16 +322,22 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
                         process.WaitForExit(TimeSpan.FromSeconds(2));
                         leftovers++;
                     }
+                    else
+                    {
+                        otherViiper = true;
+                    }
                 }
                 catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
                 {
-                    // Already gone or not ours to touch.
+                    // Not ours to read (another user's or elevated VIIPER), or just gone; when unsure, leave its devices.
+                    otherViiper = true;
                 }
             }
         }
 
-        // Another SISR (with its own VIIPER on the same port) may still use its controllers.
-        return ExternalInstances().Count > 0 || !OperatingSystem.IsWindows()
+        // Devices on VIIPER's address belong to whichever VIIPER serves it: another SISR or a VIIPER
+        // started by something else may still use its controllers, so only ours are detached.
+        return ExternalInstances().Count > 0 || otherViiper || !OperatingSystem.IsWindows()
             ? leftovers
             : leftovers + await UsbipDriver.DetachViiperDevicesAsync(cancellationToken);
     }

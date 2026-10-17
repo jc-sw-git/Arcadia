@@ -80,7 +80,11 @@ focus handling or anything SISR/usbip related.
   after SISR had been killed, and only a Windows restart helped (a stale device was suspected, not proven;
   `usbip port` was empty after a later kill). `usbip port` on the owner's PC while SISR runs (2026-10-17):
   `Port 01: device in use at Full Speed(12Mbps)`, then `Microsoft Corp. : Xbox360 Controller (045e:028e)` and
-  `-> usbip://localhost:3241/1-1`. Only VIIPER serves `localhost:3241`, so the address picks its devices; a
+  `-> usbip://localhost:3241/1-1`. VIIPER always attaches from `localhost` (hard-coded in its auto-attach,
+  `autoattach_windows.go`), and SISR starts its bundled VIIPER without arguments, so on port 3241 unless
+  `VIIPER_USB_ADDR` is set (VIIPER `internal/server/usb/config.go`, SISR `input/viiperbridge.go`, read
+  2026-10-17; a different port only means nothing is detached). Nothing is detached while another SISR or a
+  viiper.exe from elsewhere runs: it serves the same address. So the address picks VIIPER's devices; a
   port remembered at SISR's start would miss devices attached later (controller reconnects) or after an
   Arcadia restart, and usbip reuses freed port numbers.
 - While SISR or VIIPER start or stop, in the background too, the settings take only B

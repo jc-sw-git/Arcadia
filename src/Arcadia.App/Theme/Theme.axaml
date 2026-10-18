@@ -104,6 +104,15 @@
     <!-- Sets the launcher badge off from any cover colour. -->
     <BoxShadows x:Key="LauncherBadgeRing">0 0 0 2 #990B0F14</BoxShadows>
     <BoxShadows x:Key="LayoutMenuShadow">0 24 60 0 #99000000, 0 0 0 1 #2A3440</BoxShadows>
+    <!-- Opacity masks: only the alpha counts. -->
+    <LinearGradientBrush x:Key="PeekFadeBefore" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Offset="0" Color="#00FFFFFF" />
+      <GradientStop Offset="1" Color="#73FFFFFF" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="PeekFadeAfter" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Offset="0" Color="#73FFFFFF" />
+      <GradientStop Offset="1" Color="#00FFFFFF" />
+    </LinearGradientBrush>
   </Styles.Resources>
 
   <!-- A button that draws only what we give it; the Fluent hover/press visuals don't fit the design. -->
@@ -364,6 +373,11 @@
     <Setter Property="Foreground" Value="{StaticResource Text}" />
     <Setter Property="FontSize" Value="22" />
     <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <!-- The search's launchers in the same dialog: names, not numbers. -->
+  <Style Selector="Button.size.launcher">
+    <Setter Property="Height" Value="56" />
+    <Setter Property="FontSize" Value="17" />
   </Style>
   <Style Selector="Button.size:disabled">
     <Setter Property="Background" Value="{StaticResource SurfaceDisabled}" />
@@ -766,18 +780,15 @@
       </Animation>
     </Style.Animations>
   </Style>
-  <Style Selector="Button.moreCard">
-    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-    <Setter Property="VerticalContentAlignment" Value="Stretch" />
-    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
-    <Setter Property="FontSize" Value="18" />
-    <Setter Property="FontWeight" Value="Bold" />
+  <!-- The hits beyond the window: a strip of the neighbour on each side, fading out towards the edge. -->
+  <Style Selector="Border.peek">
+    <Setter Property="ClipToBounds" Value="True" />
   </Style>
-  <Style Selector="Button.moreCard Rectangle">
-    <Setter Property="Stroke" Value="{StaticResource Line}" />
+  <Style Selector="Border.peek.before">
+    <Setter Property="OpacityMask" Value="{StaticResource PeekFadeBefore}" />
   </Style>
-  <Style Selector="Button.moreCard:pointerover Rectangle">
-    <Setter Property="Stroke" Value="{StaticResource LineStrong}" />
+  <Style Selector="Border.peek.after">
+    <Setter Property="OpacityMask" Value="{StaticResource PeekFadeAfter}" />
   </Style>
 
   <!-- On-screen keyboard. -->
@@ -795,12 +806,12 @@
   <Style Selector="Button.key:pointerover, Button.key.focused">
     <Setter Property="Background" Value="{StaticResource Line}" />
   </Style>
-  <Style Selector="Button.key.submit">
+  <!-- Shift on, or the symbols page shown. -->
+  <Style Selector="Button.key.on">
     <Setter Property="Background" Value="{StaticResource Accent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
-    <Setter Property="FontWeight" Value="ExtraBold" />
   </Style>
-  <Style Selector="Button.key.submit:pointerover, Button.key.submit.focused">
+  <Style Selector="Button.key.on:pointerover, Button.key.on.focused">
     <Setter Property="Background" Value="{StaticResource AccentHover}" />
   </Style>
   <Style Selector="Button.key.focused /template/ Border#Chrome">

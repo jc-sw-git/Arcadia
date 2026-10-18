@@ -1,4 +1,5 @@
 using System.Globalization;
+using Arcadia.Core.Library;
 using Arcadia.Core.Search;
 using Arcadia.Launchers.Abstractions;
 
@@ -67,6 +68,35 @@ public class GameSearchTests
     public void The_term_is_trimmed()
     {
         Assert.Single(GameSearch.Find([Game("Hollow Knight")], " knight ", German));
+    }
+
+    [Fact]
+    public void Without_a_sort_order_the_hits_stay_by_relevance()
+    {
+        var games = new[] { Game("The Hollow Tides"), Game("Hollow Knight") };
+
+        Assert.Equal(["Hollow Knight", "The Hollow Tides"], GameSearch.Find(games, "hollow", German, null).Select(g => g.Title));
+    }
+
+    [Fact]
+    public void A_sort_order_sorts_the_hits_like_the_library()
+    {
+        var games = new[] { Game("Hollow Knight"), Game("The Hollow Tides"), Game("Silent Hill"), Game("Abyss Hollow") };
+
+        var hits = GameSearch.Find(games, "hollow", German, new SortOrder(SortField.Name, SortDirection.Descending));
+
+        Assert.Equal(["The Hollow Tides", "Hollow Knight", "Abyss Hollow"], hits.Select(g => g.Title));
+    }
+
+    [Fact]
+    public void Games_without_a_date_go_last_in_the_hits_too()
+    {
+        var played = Game("Hollow Knight") with { LastPlayedAt = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero) };
+        var games = new[] { Game("Abyss Hollow"), played };
+
+        var hits = GameSearch.Find(games, "hollow", German, new SortOrder(SortField.LastPlayed, SortDirection.Ascending));
+
+        Assert.Equal(["Hollow Knight", "Abyss Hollow"], hits.Select(g => g.Title));
     }
 
     private static Game Game(string title, string launcherId = "steam") =>

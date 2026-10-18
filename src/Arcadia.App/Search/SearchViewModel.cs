@@ -4,6 +4,7 @@ using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Library;
 using Arcadia.Core.Search;
+using Arcadia.Input;
 using Arcadia.Launchers.Abstractions;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -11,25 +12,17 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Arcadia.App.Search;
 
-/// <summary>Where the controller focus is on the search page, top to bottom.</summary>
-public enum SearchZone
-{
-    Chips,
-    Results,
-    Keyboard,
-}
-
-/// <summary>A launcher chip; the first one stands for all launchers.</summary>
+/// <summary>A launcher chip; the first one stands for all launchers. The mouse switches them, the controller uses the filter (L3).</summary>
 public sealed partial class SearchChipViewModel : ViewModelBase
 {
-    public SearchChipViewModel(LauncherInfo? launcher, Action<SearchChipViewModel> toggle)
+    public SearchChipViewModel(LauncherInfo? launcher, Action<LauncherInfo?> toggle)
     {
         Launcher = launcher;
         Name = launcher?.DisplayName ?? "Alle Launcher";
         Keyword = launcher is null ? string.Empty : $"{SearchQuery.PrefixMarker}{launcher.SearchKeyword}";
         Monogram = launcher?.DisplayName[..1] ?? string.Empty;
         TileBrush = launcher is null ? null : Formatting.LauncherTileBrush(launcher.Id);
-        ToggleCommand = new RelayCommand(() => toggle(this));
+        ToggleCommand = new RelayCommand(() => toggle(launcher));
     }
 
     /// <summary>Null for "Alle Launcher".</summary>
@@ -48,50 +41,72 @@ public sealed partial class SearchChipViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool IsOn { get; set; }
 
-    [ObservableProperty]
-    public partial bool IsFocused { get; set; }
-
     public IRelayCommand ToggleCommand { get; }
 }
 
 /// <summary>
-/// The search over all launchers (#12): a text that may start with a <c>/launcher</c> prefix,
-/// launcher chips kept in step with it, the hits by relevance and an on-screen keyboard. Starting
-/// a hit, its details and its menu are the window's business (<see cref="MainViewModel"/>).
+/// The search over all launchers (#12): a text that may start with a <c>/launcher</c> prefix, the
+/// launchers it covers (chips, filter, prefix, kept in step), the hits and an on-screen keyboard.
+/// With the controller the keyboard shows and the hits sit in one row beside it: the D-pad (left
+/// stick) types, the right stick picks a hit, LB/RB turn the hits. With a real keyboard the
+/// on-screen one hides and the hits fill two rows. Starting a hit, its details, its menu and the
+/// filter dialog are the window's business (<see cref="MainViewModel"/>).
 /// </summary>
-public sealed partial class SearchViewModel : ViewModelBase
+public sealed partial class SearchViewModel : ViewModelBase, IDisposable
 {
-    /// <summary>Hits shown at once; the row scrolls on with the focus (design: 7 and "+N weitere").</summary>
-    public const int VisibleResults = 7;
+    /// <summary>Hits per row, in both layouts.</summary>
+    public const int ResultColumns = 7;
+
+    /// <summary>Rows of hits without the on-screen keyboard; beside it there is room for one.</summary>
+    public const int ResultRowsWithoutKeyboard = 2;
+
+    // As a held Backspace on a typical keyboard.
+    private static readonly TimeSpan EraseRepeatDelay = TimeSpan.FromMilliseconds(400);
+    private static readonly TimeSpan EraseRepeatInterval = TimeSpan.FromMilliseconds(60);
 
     private readonly Func<Game, Action<GameTileViewModel>, GameTileViewModel> _createTile;
+    private readonly RepeatGesture _erase;
     private IReadOnlyList<LauncherLibrary> _libraries;
     private IReadOnlyList<LauncherInfo> _launchers = [];
     private HashSet<string> _chosen = [];
     private LauncherScope _scope = new([], [], true);
-    private int _chip;
-    private int _result;
-    private int _windowStart;
+    private HitWindow _window;
+    private int _focus;
 
     public SearchViewModel(
         IReadOnlyList<LauncherLibrary> libraries,
         KeyboardLayout layout,
         Action<KeyboardLayout> layoutChosen,
-        Func<Game, Action<GameTileViewModel>, GameTileViewModel> createTile)
+        Func<Game, Action<GameTileViewModel>, GameTileViewModel> createTile,
+        bool usesController,
+        TimeProvider time,
+        Action<Action> post)
     {
         _libraries = libraries;
         _createTile = createTile;
-        Keyboard = new OnScreenKeyboardViewModel(layout, Press, layoutChosen);
+        UsesController = usesController;
+        _window = HitWindow.Of(0, ResultRows, ResultColumns);
+        Keyboard = new OnScreenKeyboardViewModel(layout, Press, layoutChosen, time);
+        _erase = new RepeatGesture(EraseRepeatDelay, EraseRepeatInterval, time, post);
+        _erase.Repeated += Erase;
         BuildChips();
         Recompute(keepFocusOn: null);
-        FocusZone(SearchZone.Keyboard);
     }
+
+    /// <summary>The filter key on the on-screen keyboard was clicked.</summary>
+    public event Action? FilterRequested;
 
     /// <summary>What was typed, prefix included.</summary>
     [ObservableProperty]
     public partial string Text { get; private set; } = string.Empty;
 
     public ObservableCollection<SearchChipViewModel> Chips { get; } = [];
+
+    /// <summary>The launchers the search can cover, in tab order.</summary>
+    public IReadOnlyList<LauncherInfo> Launchers => _launchers;
+
+    /// <summary>The launchers the search covers now.</summary>
+    public LauncherScope Scope => _scope;
 
     /// <summary>"Suche in allen Launchern", "Per Kürzel gefiltert: Steam, EA app".</summary>
     [ObservableProperty]
@@ -107,33 +122,47 @@ public sealed partial class SearchViewModel : ViewModelBase
     [ObservableProperty]
     public partial string ResultsTitle { get; private set; } = string.Empty;
 
-    /// <summary>All hits by relevance; the detail page turns through these.</summary>
+    /// <summary>"8–14 von 23" when the hits don't all fit, else empty.</summary>
+    [ObservableProperty]
+    public partial string RangeText { get; private set; } = string.Empty;
+
+    /// <summary>The library's sort orders, or null for relevance, the default of every new search.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SortText))]
+    public partial SortOrder? Sort { get; private set; }
+
+    public string SortText => $"Sortiert nach {Formatting.SortLabel(Sort)}";
+
+    /// <summary>All hits in the chosen order; the detail page turns through these.</summary>
     public IReadOnlyList<Game> Hits { get; private set; } = [];
 
     /// <summary>The hits currently in view.</summary>
     public ObservableCollection<GameTileViewModel> Results { get; } = [];
 
+    /// <summary>The hit before the window, shown faded at its left edge; a click turns back.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasMore))]
-    public partial string? MoreText { get; private set; }
+    public partial GameTileViewModel? PeekBefore { get; private set; }
 
-    public bool HasMore => MoreText is not null;
+    /// <summary>The hit after the window, shown faded at its right edge; a click turns on.</summary>
+    [ObservableProperty]
+    public partial GameTileViewModel? PeekAfter { get; private set; }
 
     public OnScreenKeyboardViewModel Keyboard { get; }
 
+    /// <summary>The controller is in use: the on-screen keyboard and the button legend show, the hits get one row.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsResultsFocused))]
-    public partial SearchZone Zone { get; private set; }
+    public partial bool UsesController { get; set; }
 
-    public bool IsResultsFocused => Zone == SearchZone.Results;
+    private int ResultRows => UsesController ? 1 : ResultRowsWithoutKeyboard;
 
-    /// <summary>The hit with the controller focus; null while the focus is elsewhere.</summary>
+    /// <summary>The hit that ≡, ⧉, Enter and the right stick act on; null without hits.</summary>
     [ObservableProperty]
     public partial GameTileViewModel? FocusedResult { get; private set; }
 
     /// <summary>
-    /// D-pad, A on chips and keys, and the buttons that stand for keyboard keys: X deletes, Y types a
-    /// space, LT starts a filter, ≡ goes to the results, R3 opens the layout menu.
+    /// Everything the search does itself: the D-pad and A on the keys, and the buttons that stand
+    /// for keys (X deletes, held: one after another; Y types a space; LT shift; RT symbols; R3 the
+    /// layout menu); the right stick or a real keyboard's arrows move through the hits, LB/RB turn them.
     /// </summary>
     public void Handle(UiAction action)
     {
@@ -153,6 +182,10 @@ public sealed partial class SearchViewModel : ViewModelBase
 
         switch (action)
         {
+            // Backspace repeats by itself; X repeats while held.
+            case UiAction.Search when UsesController:
+                _erase.Press();
+                break;
             case UiAction.Search:
                 Erase();
                 break;
@@ -160,27 +193,63 @@ public sealed partial class SearchViewModel : ViewModelBase
                 Type(" ");
                 break;
             case UiAction.PreviousPage:
-                StartFilter();
+                Keyboard.PressShift();
                 break;
-            case UiAction.Settings:
-                Submit();
+            case UiAction.NextPage:
+                Keyboard.ToggleSymbols();
                 break;
             case UiAction.KeyboardLayout:
                 Keyboard.ToggleLayoutMenu();
                 break;
-            case UiAction.Accept when Zone == SearchZone.Chips:
-                Toggle(Chips[_chip]);
+            case UiAction.PreviousTab:
+                Turn(-1);
                 break;
-            case UiAction.Accept when Zone == SearchZone.Keyboard:
-                Keyboard.PressFocused();
+            case UiAction.NextTab:
+                Turn(1);
                 break;
-            case UiAction.Up or UiAction.Down or UiAction.Left or UiAction.Right:
-                Move(action);
+            case UiAction.Accept when UsesController:
+                PressFocusedKey();
+                break;
+            case UiAction.Up or UiAction.Down or UiAction.Left or UiAction.Right when UsesController:
+                Keyboard.Move(action);
+                break;
+            case UiAction.Up or UiAction.SecondaryUp:
+                MoveHit(0, -1);
+                break;
+            case UiAction.Down or UiAction.SecondaryDown:
+                MoveHit(0, 1);
+                break;
+            case UiAction.Left or UiAction.SecondaryLeft:
+                MoveHit(-1, 0);
+                break;
+            case UiAction.Right or UiAction.SecondaryRight:
+                MoveHit(1, 0);
                 break;
         }
     }
 
-    /// <summary>Text from the on-screen keyboard or a real one; control characters are dropped.</summary>
+    /// <summary>A button was let go: ends a held erase or shift.</summary>
+    public void Release(UiAction action)
+    {
+        switch (action)
+        {
+            case UiAction.Search or UiAction.Accept:
+                _erase.Release();
+                break;
+            case UiAction.PreviousPage:
+                Keyboard.ReleaseShift();
+                break;
+        }
+    }
+
+    /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
+    public void CancelHeldButtons()
+    {
+        _erase.Release();
+        Keyboard.CancelShift();
+    }
+
+    /// <summary>Text from a real keyboard; control characters are dropped.</summary>
     public void Type(string text)
     {
         var typed = new string(text.Where(c => !char.IsControl(c)).ToArray());
@@ -200,117 +269,14 @@ public sealed partial class SearchViewModel : ViewModelBase
         }
     }
 
-    /// <summary>"/ Filter": the input starts with a launcher prefix, as in the design.</summary>
-    public void StartFilter()
-    {
-        if (!Text.StartsWith(SearchQuery.PrefixMarker))
-        {
-            SetText(SearchQuery.PrefixMarker + Text);
-        }
-    }
-
-    /// <summary>"Suchen": on to the hits, if there are any.</summary>
-    public void Submit()
-    {
-        if (Hits.Count > 0)
-        {
-            FocusZone(SearchZone.Results);
-        }
-    }
-
-    /// <summary>The library was rescanned: same input, fresh hits, the focus stays on its game where it can.</summary>
-    public void Update(IReadOnlyList<LauncherLibrary> libraries)
-    {
-        _libraries = libraries;
-        var focusedKey = FocusedResult?.Game.Key;
-        var zone = Zone;
-        BuildChips();
-        Recompute(focusedKey);
-        FocusZone(zone == SearchZone.Results && Hits.Count == 0 ? SearchZone.Keyboard : zone);
-    }
-
-    /// <summary>Back from the detail page: the focus goes to the hit shown last.</summary>
-    public void FocusHit(string key)
-    {
-        var index = Hits.Select(g => g.Key).ToList().IndexOf(key);
-        if (index < 0)
-        {
-            return;
-        }
-
-        _result = index;
-        _windowStart = Math.Clamp(index - (VisibleResults - 1), 0, index);
-        ShowWindow();
-        FocusZone(SearchZone.Results);
-    }
-
-    /// <summary>The mouse wheel over the hits, or a click on "+N weitere".</summary>
-    public void Scroll(int delta)
-    {
-        var start = Math.Clamp(_windowStart + delta, 0, Math.Max(0, Hits.Count - VisibleResults));
-        if (start == _windowStart)
-        {
-            return;
-        }
-
-        _windowStart = start;
-        _result = Math.Clamp(_result, start, start + VisibleResults - 1);
-        ShowWindow();
-        if (Zone == SearchZone.Results)
-        {
-            FocusZone(SearchZone.Results);
-        }
-    }
-
-    [RelayCommand]
-    private void ShowMore() => Scroll(VisibleResults);
-
-    private void Press(KeyViewModel key)
-    {
-        if (key.Character is { } character)
-        {
-            Type(character.ToString());
-            return;
-        }
-
-        switch (key.Special)
-        {
-            case SpecialKey.Layout:
-                Keyboard.ToggleLayoutMenu();
-                break;
-            case SpecialKey.Slash:
-                StartFilter();
-                break;
-            case SpecialKey.Space:
-                Type(" ");
-                break;
-            case SpecialKey.Erase:
-                Erase();
-                break;
-            case SpecialKey.Submit:
-                Submit();
-                break;
-        }
-    }
-
-    private void SetText(string text)
-    {
-        Text = text;
-        Recompute(keepFocusOn: null);
-        if (Zone == SearchZone.Results && Hits.Count == 0)
-        {
-            FocusZone(SearchZone.Keyboard);
-        }
-        else if (Zone == SearchZone.Results)
-        {
-            FocusZone(SearchZone.Results);
-        }
-    }
-
-    private void Toggle(SearchChipViewModel chip)
+    /// <summary>
+    /// A chip or a filter entry switched <paramref name="launcher"/> (null: all launchers). A typed
+    /// prefix is rewritten to match, so it never contradicts the chips; without one the text stays.
+    /// </summary>
+    public void ToggleLauncher(LauncherInfo? launcher)
     {
         var all = _launchers.Select(l => l.Id).ToList();
-        IReadOnlyList<string>? next = chip.Launcher is { } launcher ? _scope.Toggle(launcher.Id, _launchers) : all;
+        IReadOnlyList<string>? next = launcher is null ? all : _scope.Toggle(launcher.Id, _launchers);
         if (next is null)
         {
             return;
@@ -326,6 +292,135 @@ public sealed partial class SearchViewModel : ViewModelBase
         Recompute(keepFocusOn: null);
     }
 
+    /// <summary>A new order for the hits; as in the library, the focus goes to the first one.</summary>
+    public void SetSort(SortOrder? sort)
+    {
+        Sort = sort;
+        Recompute(keepFocusOn: null);
+    }
+
+    /// <summary>The library was rescanned: same input, fresh hits, the focus stays on its game where it can.</summary>
+    public void Update(IReadOnlyList<LauncherLibrary> libraries)
+    {
+        _libraries = libraries;
+        BuildChips();
+        Recompute(FocusedResult?.Game.Key);
+    }
+
+    /// <summary>Back from the detail page: the focus goes to the hit shown last.</summary>
+    public void FocusHit(string key)
+    {
+        var index = IndexOf(key);
+        if (index >= 0)
+        {
+            _focus = index;
+            _window = _window.Showing(index);
+            ShowWindow();
+        }
+    }
+
+    /// <summary>The mouse wheel over the hits.</summary>
+    public void Scroll(int delta)
+    {
+        var scrolled = _window.Scroll(delta);
+        if (scrolled != _window)
+        {
+            _window = scrolled;
+            _focus = Math.Clamp(_focus, _window.Start, Math.Min(Hits.Count, _window.Start + _window.Size) - 1);
+            ShowWindow();
+        }
+    }
+
+    public void Dispose() => _erase.Dispose();
+
+    partial void OnUsesControllerChanged(bool value)
+    {
+        _window = _window.WithLayout(ResultRows, ResultColumns, _focus);
+        ShowWindow();
+    }
+
+    /// <summary>LB/RB, or a click on a faded neighbour: the next or previous window of hits, round and round.</summary>
+    private void Turn(int direction)
+    {
+        if (_window.CanTurn)
+        {
+            (_window, _focus) = _window.Turn(direction, _focus);
+            ShowWindow();
+        }
+    }
+
+    private void MoveHit(int columns, int rows)
+    {
+        // A single row has nowhere to go up or down.
+        if (Hits.Count == 0 || (rows != 0 && ResultRows == 1))
+        {
+            return;
+        }
+
+        var (window, focus) = _window.Move(_focus, columns, rows);
+        var scrolled = window != _window;
+        (_window, _focus) = (window, focus);
+        if (scrolled)
+        {
+            ShowWindow();
+        }
+        else
+        {
+            ShowFocus();
+        }
+    }
+
+    /// <summary>A on the focused key. Erase repeats while A is held, like X.</summary>
+    private void PressFocusedKey()
+    {
+        if (Keyboard.FocusedKey.Special == SpecialKey.Erase)
+        {
+            _erase.Press();
+        }
+        else
+        {
+            Press(Keyboard.FocusedKey);
+        }
+    }
+
+    /// <summary>A key pressed with A or clicked.</summary>
+    private void Press(KeyViewModel key)
+    {
+        if (key.Character is not null)
+        {
+            Type(Keyboard.Typed(key));
+            return;
+        }
+
+        switch (key.Special)
+        {
+            case SpecialKey.Layout:
+                Keyboard.ToggleLayoutMenu();
+                break;
+            case SpecialKey.Filter:
+                FilterRequested?.Invoke();
+                break;
+            case SpecialKey.Shift:
+                Keyboard.ToggleShift();
+                break;
+            case SpecialKey.Space:
+                Type(" ");
+                break;
+            case SpecialKey.Erase:
+                Erase();
+                break;
+            case SpecialKey.Symbols:
+                Keyboard.ToggleSymbols();
+                break;
+        }
+    }
+
+    private void SetText(string text)
+    {
+        Text = text;
+        Recompute(keepFocusOn: null);
+    }
+
     private void BuildChips()
     {
         _launchers = _libraries.Select(l => l.Launcher).ToList();
@@ -338,15 +433,12 @@ public sealed partial class SearchViewModel : ViewModelBase
             _chosen = _launchers.Select(l => l.Id).ToHashSet();
         }
 
-        var focused = _chip;
         Chips.Clear();
-        Chips.Add(new SearchChipViewModel(null, Toggle));
+        Chips.Add(new SearchChipViewModel(null, ToggleLauncher));
         foreach (var launcher in _launchers)
         {
-            Chips.Add(new SearchChipViewModel(launcher, Toggle));
+            Chips.Add(new SearchChipViewModel(launcher, ToggleLauncher));
         }
-
-        _chip = Math.Min(focused, Chips.Count - 1);
     }
 
     private void Recompute(string? keepFocusOn)
@@ -369,18 +461,23 @@ public sealed partial class SearchViewModel : ViewModelBase
         };
 
         var games = _libraries.Where(l => _scope.LauncherIds.Contains(l.Launcher.Id)).SelectMany(l => l.Games);
-        Hits = GameSearch.Find(games, query.Term, Formatting.Culture);
+        Hits = GameSearch.Find(games, query.Term, Formatting.Culture, Sort);
         var launchersHit = Hits.Select(g => g.LauncherId).Distinct().Count();
         ResultsTitle = query.Term.Length == 0 ? "Tippe einen Suchbegriff ein"
             : Hits.Count == 0 ? "Keine Treffer"
             : $"{Hits.Count} Treffer in {launchersHit} {(launchersHit == 1 ? "Launcher" : "Launchern")}";
 
-        var index = keepFocusOn is null ? -1 : Hits.Select(g => g.Key).ToList().IndexOf(keepFocusOn);
-        _result = index >= 0 ? index : Math.Clamp(keepFocusOn is null ? 0 : _result, 0, Math.Max(0, Hits.Count - 1));
-        _windowStart = index >= 0 ? Math.Clamp(_windowStart, Math.Max(0, index - (VisibleResults - 1)), index) : 0;
-        if (keepFocusOn is null)
+        // A rescan keeps the focus on its game; new input starts again at the first hit.
+        var kept = keepFocusOn is null ? -1 : IndexOf(keepFocusOn);
+        if (kept >= 0)
         {
-            _windowStart = 0;
+            _focus = kept;
+            _window = _window.WithCount(Hits.Count).Showing(kept);
+        }
+        else
+        {
+            _focus = keepFocusOn is null ? 0 : Math.Clamp(_focus, 0, Math.Max(0, Hits.Count - 1));
+            _window = (keepFocusOn is null ? HitWindow.Of(Hits.Count, ResultRows, ResultColumns) : _window.WithCount(Hits.Count)).Showing(_focus);
         }
 
         ShowWindow();
@@ -390,13 +487,30 @@ public sealed partial class SearchViewModel : ViewModelBase
     {
         FocusedResult = null;
         Results.Clear();
-        foreach (var game in Hits.Skip(_windowStart).Take(VisibleResults))
+        foreach (var game in Hits.Skip(_window.Start).Take(_window.Size))
         {
             Results.Add(_createTile(game, FocusByPointer));
         }
 
-        var more = Hits.Count - _windowStart - Results.Count;
-        MoreText = more > 0 ? $"+{more} weitere" : null;
+        PeekBefore = _window.Before is { } before ? _createTile(Hits[before], _ => Turn(-1)) : null;
+        PeekAfter = _window.After is { } after ? _createTile(Hits[after], _ => Turn(1)) : null;
+        RangeText = _window.CanTurn ? $"{_window.Start + 1}–{_window.Start + Results.Count} von {Hits.Count}" : string.Empty;
+        ShowFocus();
+    }
+
+    private void ShowFocus()
+    {
+        if (FocusedResult is { } previous)
+        {
+            previous.IsFocused = false;
+        }
+
+        var slot = _focus - _window.Start;
+        FocusedResult = slot >= 0 && slot < Results.Count ? Results[slot] : null;
+        if (FocusedResult is { } focused)
+        {
+            focused.IsFocused = true;
+        }
     }
 
     /// <summary>A click on a hit focuses it.</summary>
@@ -405,93 +519,21 @@ public sealed partial class SearchViewModel : ViewModelBase
         var index = Results.IndexOf(tile);
         if (index >= 0)
         {
-            _result = _windowStart + index;
-            FocusZone(SearchZone.Results);
+            _focus = _window.Start + index;
+            ShowFocus();
         }
     }
 
-    private void Move(UiAction direction)
+    private int IndexOf(string key)
     {
-        switch (Zone, direction)
+        for (var i = 0; i < Hits.Count; i++)
         {
-            case (SearchZone.Keyboard, _):
-                if (!Keyboard.Move(direction))
-                {
-                    FocusZone(Hits.Count > 0 ? SearchZone.Results : SearchZone.Chips);
-                }
-
-                break;
-            case (SearchZone.Results, UiAction.Left):
-                MoveResult(-1);
-                break;
-            case (SearchZone.Results, UiAction.Right):
-                MoveResult(1);
-                break;
-            case (SearchZone.Results, UiAction.Up):
-                FocusZone(SearchZone.Chips);
-                break;
-            case (SearchZone.Results, UiAction.Down):
-                FocusZone(SearchZone.Keyboard);
-                break;
-            case (SearchZone.Chips, UiAction.Left):
-                _chip = Math.Max(0, _chip - 1);
-                FocusZone(SearchZone.Chips);
-                break;
-            case (SearchZone.Chips, UiAction.Right):
-                _chip = Math.Min(Chips.Count - 1, _chip + 1);
-                FocusZone(SearchZone.Chips);
-                break;
-            case (SearchZone.Chips, UiAction.Down):
-                FocusZone(Hits.Count > 0 ? SearchZone.Results : SearchZone.Keyboard);
-                break;
-        }
-    }
-
-    /// <summary>Left/right through the hits; the row scrolls on at its edges and stops at the ends.</summary>
-    private void MoveResult(int delta)
-    {
-        var next = Math.Clamp(_result + delta, 0, Hits.Count - 1);
-        if (next == _result)
-        {
-            return;
+            if (Hits[i].Key == key)
+            {
+                return i;
+            }
         }
 
-        _result = next;
-        if (next < _windowStart || next >= _windowStart + VisibleResults)
-        {
-            _windowStart = Math.Clamp(_windowStart + delta, 0, Math.Max(0, Hits.Count - VisibleResults));
-            ShowWindow();
-        }
-
-        FocusZone(SearchZone.Results);
-    }
-
-    private void FocusZone(SearchZone zone)
-    {
-        Zone = zone;
-        for (var i = 0; i < Chips.Count; i++)
-        {
-            Chips[i].IsFocused = zone == SearchZone.Chips && i == _chip;
-        }
-
-        if (FocusedResult is { } previous)
-        {
-            previous.IsFocused = false;
-        }
-
-        FocusedResult = zone == SearchZone.Results && _result - _windowStart is var slot && slot >= 0 && slot < Results.Count ? Results[slot] : null;
-        if (FocusedResult is { } focused)
-        {
-            focused.IsFocused = true;
-        }
-
-        if (zone == SearchZone.Keyboard)
-        {
-            Keyboard.Enter();
-        }
-        else
-        {
-            Keyboard.Leave();
-        }
+        return -1;
     }
 }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Arcadia.Core.Library;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Search;
@@ -30,6 +31,16 @@ public static class GameSearch
             .ThenBy(hit => hit.Game.Title, titles)
             .Select(hit => hit.Game)
             .ToList();
+    }
+
+    /// <summary>
+    /// The hits for <paramref name="term"/> in <paramref name="order"/>, the library's sort orders;
+    /// null keeps them by relevance (<see cref="Find(IEnumerable{Game}, string, CultureInfo)"/>).
+    /// </summary>
+    public static IReadOnlyList<Game> Find(IEnumerable<Game> games, string term, CultureInfo culture, SortOrder? order)
+    {
+        var hits = Find(games, term, culture);
+        return order is { } sort ? GameSorter.Sort(hits, sort, culture) : hits;
     }
 
     /// <summary>0: the title starts with the term, 1: a word does, 2: it's inside a word, null: no match.</summary>

@@ -27,6 +27,15 @@ public enum UiAction
 
     /// <summary>The on-screen keyboard's layout menu.</summary>
     KeyboardLayout,
+
+    /// <summary>L3: the search's launcher filter and sort order.</summary>
+    Filter,
+
+    // The right stick: a second focus beside the D-pad's, e.g. the hits beside the on-screen keyboard.
+    SecondaryUp,
+    SecondaryDown,
+    SecondaryLeft,
+    SecondaryRight,
 }
 
 public static class UiActionMap
@@ -49,6 +58,11 @@ public static class UiActionMap
         GamepadButton.Menu => UiAction.Settings,
         GamepadButton.X => UiAction.Search,
         GamepadButton.RightStickClick => UiAction.KeyboardLayout,
+        GamepadButton.LeftStickClick => UiAction.Filter,
+        GamepadButton.RightStickUp => UiAction.SecondaryUp,
+        GamepadButton.RightStickDown => UiAction.SecondaryDown,
+        GamepadButton.RightStickLeft => UiAction.SecondaryLeft,
+        GamepadButton.RightStickRight => UiAction.SecondaryRight,
         _ => null,
     };
 

@@ -71,4 +71,10 @@ public class LauncherScopeTests
     {
         Assert.Equal("hollow ", LauncherScope.Rewrite("hollow ", ["epic"], Launchers));
     }
+
+    [Fact]
+    public void An_input_without_prefix_stays_when_all_chips_go_back_on()
+    {
+        Assert.Equal("hollow ", LauncherScope.Rewrite("hollow ", All, Launchers));
+    }
 }

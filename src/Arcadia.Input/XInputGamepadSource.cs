@@ -19,7 +19,10 @@ public sealed partial class XInputGamepadSource : IGamepadSource
     private const byte TriggerThreshold = 128;
 
     private static readonly GamepadButton[] Repeating =
-        [GamepadButton.DPadUp, GamepadButton.DPadDown, GamepadButton.DPadLeft, GamepadButton.DPadRight];
+    [
+        GamepadButton.DPadUp, GamepadButton.DPadDown, GamepadButton.DPadLeft, GamepadButton.DPadRight,
+        GamepadButton.RightStickUp, GamepadButton.RightStickDown, GamepadButton.RightStickLeft, GamepadButton.RightStickRight,
+    ];
 
     private readonly CancellationTokenSource _stop = new();
     private readonly Dictionary<GamepadButton, long> _heldSince = [];
@@ -157,6 +160,25 @@ public sealed partial class XInputGamepadSource : IGamepadSource
         else if (pad.ThumbLX < -StickThreshold)
         {
             pressed.Add(GamepadButton.DPadLeft);
+        }
+
+        // The right stick moves a second focus, e.g. through the hits beside the on-screen keyboard.
+        if (pad.ThumbRY > StickThreshold)
+        {
+            pressed.Add(GamepadButton.RightStickUp);
+        }
+        else if (pad.ThumbRY < -StickThreshold)
+        {
+            pressed.Add(GamepadButton.RightStickDown);
+        }
+
+        if (pad.ThumbRX > StickThreshold)
+        {
+            pressed.Add(GamepadButton.RightStickRight);
+        }
+        else if (pad.ThumbRX < -StickThreshold)
+        {
+            pressed.Add(GamepadButton.RightStickLeft);
         }
     }
 

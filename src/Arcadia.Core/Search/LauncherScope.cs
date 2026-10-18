@@ -43,14 +43,14 @@ public sealed record LauncherScope(IReadOnlyList<string> LauncherIds, IReadOnlyL
     public static string Rewrite(string input, IReadOnlyCollection<string> launcherIds, IReadOnlyList<LauncherInfo> launchers)
     {
         var query = SearchQuery.Parse(input);
-        if (launcherIds.Count == launchers.Count)
-        {
-            return query.Term;
-        }
-
         if (!query.HasLauncherFilter)
         {
             return input;
+        }
+
+        if (launcherIds.Count == launchers.Count)
+        {
+            return query.Term;
         }
 
         var keywords = launchers.Where(l => launcherIds.Contains(l.Id)).Select(l => l.SearchKeyword);

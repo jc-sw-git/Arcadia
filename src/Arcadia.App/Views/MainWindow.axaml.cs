@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using Arcadia.App.Input;
-using Arcadia.App.Search;
 using Arcadia.App.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
@@ -40,6 +39,9 @@ public partial class MainWindow : Window
 
         // Typing on a real keyboard while the search is open. Nothing has Avalonia focus, so the text arrives at the window.
         AddHandler(TextInputEvent, OnTextInput, RoutingStrategies.Tunnel);
+
+        // Which input is in use decides whether the search shows its on-screen keyboard.
+        AddHandler(PointerPressedEvent, (_, _) => _viewModel?.NotePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
 
         // A key released in another window never reports its release here.
         Deactivated += (_, _) =>
@@ -96,6 +98,7 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
+        _viewModel?.NoteKeyboard();
         if (e.Key == Key.F11)
         {
             WindowState = WindowState == WindowState.FullScreen ? WindowState.Normal : WindowState.FullScreen;
@@ -119,11 +122,6 @@ public partial class MainWindow : Window
             {
                 Dispatcher.UIThread.Post(BringFocusedSettingIntoView, DispatcherPriority.Loaded);
             }
-
-            if (_viewModel.IsSearchShown)
-            {
-                Dispatcher.UIThread.Post(BringFocusedChipIntoView, DispatcherPriority.Loaded);
-            }
         }
     }
 
@@ -142,20 +140,18 @@ public partial class MainWindow : Window
     /// </summary>
     private UiAction? ActionFor(KeyEventArgs e)
     {
-        if (_viewModel is not { IsSearchShown: true, Search: { } search } || _viewModel.IsGameMenuOpen || _viewModel.IsSettingsOpen || _viewModel.IsConfirmationOpen)
+        if (_viewModel is not { IsSearchShown: true, IsDialogOpen: false })
         {
             return UiActionMap.FromKey(e.Key, e.KeyModifiers);
         }
 
+        // The arrows move through the hits, Enter starts the focused one (held: its details).
         return e.Key switch
         {
             Key.Up => UiAction.Up,
             Key.Down => UiAction.Down,
             Key.Left => UiAction.Left,
             Key.Right => UiAction.Right,
-
-            // On the keyboard Enter searches, as in any search field; on chips and hits it acts like A.
-            Key.Enter when search.Zone == SearchZone.Keyboard && !search.Keyboard.IsLayoutMenuOpen => UiAction.Settings,
             Key.Enter => UiAction.Accept,
             Key.Escape => UiAction.Back,
             Key.Back => UiAction.Search,
@@ -193,15 +189,6 @@ public partial class MainWindow : Window
         {
             _viewModel.ScrollSearch(delta < 0 ? 1 : -1);
             e.Handled = true;
-        }
-    }
-
-    private void BringFocusedChipIntoView()
-    {
-        if (_viewModel?.Search is { } search && search.Chips.FirstOrDefault(c => c.IsFocused) is { } chip
-            && SearchChips.ContainerFromItem(chip) is { } container)
-        {
-            container.BringIntoView(new Rect(container.Bounds.Size).Inflate(new Thickness(80, 0)));
         }
     }
 

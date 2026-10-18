@@ -39,6 +39,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     private readonly TimeProvider _time;
     private readonly HoldGesture _acceptHold;
     private GameTileViewModel? _holdTile;
+
+    // A in the library, ≡ or Enter on a hit in the search: the button whose release ends the hold.
+    private UiAction _holdAction = UiAction.Accept;
+    private Func<ViewOptionsViewModel?>? _createViewOptions;
+    private InputKind _input = InputKind.Gamepad;
     private int _requestedPage;
 
     public MainViewModel(
@@ -122,6 +127,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     public partial ConfirmationViewModel? Confirmation { get; private set; }
 
     public bool IsConfirmationOpen => Confirmation is not null;
+
+    /// <summary>A dialog or menu over the page takes the input.</summary>
+    public bool IsDialogOpen => IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen;
 
     /// <summary>The detail page; it takes the place of the cover grid while open, and of the search when opened from there.</summary>
     [ObservableProperty]
@@ -333,10 +341,43 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         return -1;
     }
 
-    /// <summary>A button or key was pressed. Only A in the library waits for the release (<see cref="Release"/>).</summary>
+    /// <summary>
+    /// A gamepad button was pressed. In a search used by keyboard it first brings the on-screen
+    /// keyboard back; that press does nothing else, so it can't type or erase by surprise, except B,
+    /// which still goes back.
+    /// </summary>
+    public void HandleGamepad(UiAction action)
+    {
+        _input = InputKind.Gamepad;
+        if (IsSearchShown && Search is { UsesController: false } search && !IsDialogOpen)
+        {
+            search.UsesController = true;
+            if (action != UiAction.Back)
+            {
+                return;
+            }
+        }
+
+        Handle(action);
+    }
+
+    /// <summary>A key went down on a real keyboard: the search hides its on-screen keyboard.</summary>
+    public void NoteKeyboard()
+    {
+        _input = InputKind.Keyboard;
+        if (Search is { } search)
+        {
+            search.UsesController = false;
+        }
+    }
+
+    /// <summary>The mouse was used: a search opened next shows no on-screen keyboard; an open one keeps its state.</summary>
+    public void NotePointer() => _input = InputKind.Pointer;
+
+    /// <summary>A button or key was pressed. A in the library and ≡ or Enter on a hit wait for the release (<see cref="Release"/>).</summary>
     public void Handle(UiAction action)
     {
-        if (action != UiAction.Accept)
+        if (action != _holdAction)
         {
             _acceptHold.Cancel();
         }
@@ -412,8 +453,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
                 // Tapped starts the game, held opens the details; both are decided by the release or the timer.
                 if (FocusedGame is { } game)
                 {
-                    _holdTile = game;
-                    _acceptHold.Press();
+                    StartHold(game, UiAction.Accept);
                 }
 
                 break;
@@ -452,7 +492,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
                 CloseDetail();
                 break;
             case UiAction.PreviousTab or UiAction.NextTab or UiAction.ViewOptions when detail.IsFromSearch:
-                // The hits belong to no tab and are sorted by relevance.
+                // The hits belong to no tab and keep the search's order.
                 break;
             case UiAction.PreviousPage:
                 detail.Rotate(-1);
@@ -498,7 +538,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
         var games = SortedGames(tab);
         var index = Carousel.Find(games, key, 0);
-        Detail = index < 0 ? null : new GameDetailViewModel(tab.Name, games, index, SortLabel(_settings.Current.LibrarySort), CreateDetailTile, this);
+        Detail = index < 0 ? null : new GameDetailViewModel(tab.Name, games, index, Formatting.SortLabel(_settings.Current.LibrarySort), CreateDetailTile, this);
     }
 
     /// <summary>
@@ -530,7 +570,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     /// <summary>The list changed (rescan, new sort): the detail page keeps its game in the middle.</summary>
     private void UpdateDetail()
     {
-        if (Detail is { IsFromLibrary: true } detail && SelectedTab is { } tab && !detail.Update(SortedGames(tab), SortLabel(_settings.Current.LibrarySort)))
+        if (Detail is { IsFromLibrary: true } detail && SelectedTab is { } tab && !detail.Update(SortedGames(tab), Formatting.SortLabel(_settings.Current.LibrarySort)))
         {
             Detail = null;
         }
@@ -551,11 +591,17 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             return;
         }
 
-        Search = new SearchViewModel(
+        // Opened with the gamepad, the search starts with the on-screen keyboard; by key or click without.
+        var search = new SearchViewModel(
             CurrentLibraries(),
             KeyboardLayout.Find(_settings.Current.KeyboardLayout),
             layout => SaveView(settings => settings with { KeyboardLayout = layout.Id }),
-            CreateSearchTile);
+            CreateSearchTile,
+            _input == InputKind.Gamepad,
+            _time,
+            action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
+        search.FilterRequested += OpenSearchFilter;
+        Search = search;
     }
 
     /// <summary>Back to the library, where it was before the search.</summary>
@@ -563,12 +609,22 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     private void CloseSearch()
     {
         _acceptHold.Cancel();
+        if (IsSearchFilterOpen)
+        {
+            ViewOptions = null;
+        }
+
+        Search?.Dispose();
         Search = null;
     }
 
+    private bool IsSearchFilterOpen => ViewOptions is not null && _createViewOptions == CreateSearchFilter;
+
     /// <summary>
-    /// A hit behaves like a cover in the library: A starts on release, held opens the details, ⧉ opens
-    /// its menu. B closes the layout menu first, then the search.
+    /// A in the search types on the on-screen keyboard, so a hit is started with ≡ instead: tapped
+    /// it starts the game on release, held it opens the details, as A on a cover. Enter on a real
+    /// keyboard does the same, ⧉ opens the hit's menu, L3 the filter. B closes the layout menu
+    /// first, then the search.
     /// </summary>
     private void HandleSearch(SearchViewModel search, UiAction action)
     {
@@ -583,9 +639,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             case UiAction.Back:
                 CloseSearch();
                 break;
-            case UiAction.Accept when search.FocusedResult is { } hit:
-                _holdTile = hit;
-                _acceptHold.Press();
+            case UiAction.Filter:
+                OpenSearchFilter();
+                break;
+            case UiAction.Settings when search.FocusedResult is { } hit:
+                StartHold(hit, UiAction.Settings);
+                break;
+            case UiAction.Accept when !search.UsesController && search.FocusedResult is { } hit:
+                StartHold(hit, UiAction.Accept);
                 break;
             case UiAction.Options when search.FocusedResult is { } hit:
                 GameMenu = new GameMenuViewModel(hit, GameActionViewModel.For(hit, this));
@@ -596,10 +657,41 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
     }
 
+    /// <summary>L3 or the filter button: which launchers the search covers and in which order its hits come.</summary>
+    [RelayCommand]
+    private void OpenSearchFilter()
+    {
+        if (Search is not null)
+        {
+            ShowViewOptions(CreateSearchFilter);
+        }
+    }
+
+    private ViewOptionsViewModel? CreateSearchFilter()
+    {
+        if (Search is not { } search)
+        {
+            return null;
+        }
+
+        List<(string Label, bool IsOn, Action Toggle)> launchers = [("Alle Launcher", search.Scope.IsAll, () => ChangeSearch(s => s.ToggleLauncher(null)))];
+        launchers.AddRange(search.Launchers.Select(l => (l.DisplayName, search.Scope.LauncherIds.Contains(l.Id), (Action)(() => ChangeSearch(s => s.ToggleLauncher(l))))));
+        return ViewOptionsViewModel.ForSearch(launchers, search.Sort, sort => ChangeSearch(s => s.SetSort(sort)));
+    }
+
+    private void ChangeSearch(Action<SearchViewModel> change)
+    {
+        if (Search is { } search)
+        {
+            change(search);
+            RebuildViewOptions();
+        }
+    }
+
     /// <summary>Text from a real keyboard while the search is shown.</summary>
     public void TypeInSearch(string text)
     {
-        if (IsSearchShown && !IsSettingsOpen && !IsConfirmationOpen && !IsGameMenuOpen && Search is { Keyboard.IsLayoutMenuOpen: false } search)
+        if (IsSearchShown && !IsDialogOpen && Search is { Keyboard.IsLayoutMenuOpen: false } search)
         {
             _acceptHold.Cancel();
             search.Type(text);
@@ -616,7 +708,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     /// <summary>Right click on a hit: focus it and open its menu.</summary>
     public void OpenMenuForHit(GameTileViewModel tile)
     {
-        if (!IsSearchShown || Search is not { } search || !search.Results.Contains(tile) || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen)
+        if (!IsSearchShown || Search is not { } search || !search.Results.Contains(tile) || IsDialogOpen)
         {
             return;
         }
@@ -649,6 +741,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
 
         search.Update(CurrentLibraries());
+        RebuildViewOptions();
         KeepHoldOnRebuiltPage();
         if (Detail is { IsFromSearch: true } detail && !detail.Update(search.Hits, null))
         {
@@ -662,14 +755,28 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     /// <summary>A button or key was let go.</summary>
     public void Release(UiAction action)
     {
-        if (action == UiAction.Accept)
+        if (action == _holdAction)
         {
             _acceptHold.Release();
         }
+
+        Search?.Release(action);
     }
 
-    /// <summary>Drops a held A, e.g. when the window loses focus and the release may never arrive.</summary>
-    public void CancelHold() => _acceptHold.Cancel();
+    /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
+    public void CancelHold()
+    {
+        _acceptHold.Cancel();
+        Search?.CancelHeldButtons();
+    }
+
+    /// <summary>Tapped starts the game, held opens the details; both are decided by the release of <paramref name="button"/> or the timer.</summary>
+    private void StartHold(GameTileViewModel tile, UiAction button)
+    {
+        _holdTile = tile;
+        _holdAction = button;
+        _acceptHold.Press();
+    }
 
     /// <summary>
     /// A rescan can rebuild the page or the hits while A is down, e.g. right after a game ended. The
@@ -850,8 +957,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     {
         if (SelectedTab is not null)
         {
-            ViewOptions = CreateViewOptions();
+            ShowViewOptions(CreateViewOptions);
         }
+    }
+
+    /// <summary>The "Ansicht" dialog for the library or the search; <paramref name="create"/> rebuilds it after each choice.</summary>
+    private void ShowViewOptions(Func<ViewOptionsViewModel?> create)
+    {
+        _createViewOptions = create;
+        ViewOptions = create();
     }
 
     [RelayCommand]
@@ -1110,10 +1224,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         var installedText = installed == tab.Count ? string.Empty : $" · {installed} installiert";
         CountText = $"{tab.Count} Spiele{installedText} · Seite {window.PageIndex + 1} von {window.PageCount}";
         RangeText = window.Length == 0 ? string.Empty : $"{window.Start + 1}–{window.Start + window.Length} von {sorted.Count}";
-        ViewSummary = $"{SortLabel(view.LibrarySort)}  ·  {pageSize} pro Seite";
+        ViewSummary = $"{Formatting.SortLabel(view.LibrarySort)}  ·  {pageSize} pro Seite";
     }
 
-    private ViewOptionsViewModel CreateViewOptions() => new(
+    private ViewOptionsViewModel? CreateViewOptions() => SelectedTab is null ? null : ViewOptionsViewModel.ForLibrary(
         SelectedTab!.Name,
         SelectedTab.Count,
         _settings.Current.LibrarySort,
@@ -1150,21 +1264,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     private void RebuildViewOptions()
     {
-        if (ViewOptions is { } current)
+        if (ViewOptions is { } current && _createViewOptions?.Invoke() is { } rebuilt)
         {
-            var position = current.FocusPosition;
-            ViewOptions = CreateViewOptions();
-            ViewOptions.FocusPosition = position;
+            rebuilt.FocusPosition = current.FocusPosition;
+            ViewOptions = rebuilt;
         }
     }
-
-    private static string SortLabel(SortOrder sort) => (sort.Field, sort.Direction) switch
-    {
-        (SortField.Name, SortDirection.Ascending) => "Name A–Z",
-        (SortField.Name, SortDirection.Descending) => "Name Z–A",
-        (SortField.InstalledAt, SortDirection.Descending) => "Installiert · neueste zuerst",
-        (SortField.InstalledAt, SortDirection.Ascending) => "Installiert · älteste zuerst",
-        (SortField.LastPlayed, SortDirection.Descending) => "Zuletzt gespielt · neueste zuerst",
-        _ => "Zuletzt gespielt · älteste zuerst",
-    };
 }

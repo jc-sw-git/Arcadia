@@ -1,4 +1,5 @@
 using System.Globalization;
+using Arcadia.Core.Library;
 using Avalonia.Media;
 
 namespace Arcadia.App.Services;
@@ -51,6 +52,18 @@ public static class Formatting
     /// <summary>"Laufwerk D:" for a Windows path, otherwise null.</summary>
     public static string? Drive(string? path) =>
         path is { Length: >= 2 } && char.IsAsciiLetter(path[0]) && path[1] == ':' ? $"Laufwerk {char.ToUpperInvariant(path[0])}:" : null;
+
+    /// <summary>"Name A–Z"; null is the search's own order, "Relevanz".</summary>
+    public static string SortLabel(SortOrder? sort) => (sort?.Field, sort?.Direction) switch
+    {
+        (null, _) => "Relevanz",
+        (SortField.Name, SortDirection.Ascending) => "Name A–Z",
+        (SortField.Name, SortDirection.Descending) => "Name Z–A",
+        (SortField.InstalledAt, SortDirection.Descending) => "Installiert · neueste zuerst",
+        (SortField.InstalledAt, SortDirection.Ascending) => "Installiert · älteste zuerst",
+        (SortField.LastPlayed, SortDirection.Descending) => "Zuletzt gespielt · neueste zuerst",
+        _ => "Zuletzt gespielt · älteste zuerst",
+    };
 
     public static string Clock(DateTimeOffset now) => now.ToString("HH:mm", Culture);
 

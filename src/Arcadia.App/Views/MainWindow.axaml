@@ -422,6 +422,49 @@
 
       <!-- Search (#12): covers the library; a detail page opened from it takes its place. -->
       <Panel Grid.RowSpan="4" Background="{StaticResource Bg}" IsVisible="{Binding IsSearchShown}">
+        <Panel.Resources>
+          <!-- A hit; also the faded neighbours beside the window of hits. -->
+          <DataTemplate x:Key="SearchHitTile" x:DataType="vm:GameTileViewModel">
+            <StackPanel Width="190" Spacing="10">
+              <Button Classes="plain resultTile" Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}" Command="{Binding FocusCommand}"
+                      Background="{Binding CoverBrush}" Height="240" ToolTip.Tip="{Binding Title}">
+                <Panel>
+                  <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
+                  <DockPanel Margin="12">
+                    <Border DockPanel.Dock="Top" Classes="launcherBadge" Width="28" Height="28" CornerRadius="7" Background="{Binding LauncherBrush}" HorizontalAlignment="Left">
+                      <TextBlock Text="{Binding LauncherMonogram}" FontSize="14" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Bottom"
+                               TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                  </DockPanel>
+                  <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"
+                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Nicht installiert – ≡ installiert">
+                    <Path Data="M7 17a4 4 0 0 1-.6-7.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17 16.9M12 11v9M9 17l3 3 3-3" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
+                  </Border>
+                  <Border Classes="installBadge" IsVisible="{Binding UpdateAvailable}" Width="30" Height="30" CornerRadius="15"
+                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Update verfügbar">
+                    <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
+                  </Border>
+                  <Border Classes="installBadge" IsVisible="{Binding IsInstallActive}" Height="30" CornerRadius="15" Padding="8,0,11,0"
+                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                      <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                      <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Border>
+                  <ProgressBar Classes="install" Classes.paused="{Binding IsInstallPaused}" IsVisible="{Binding IsInstallActive}"
+                               Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}" VerticalAlignment="Bottom" />
+                  <!-- Fills while ≡ (or Enter) is held; full opens the detail page. -->
+                  <ctl:HoldRing />
+                </Panel>
+              </Button>
+              <!-- Above the focused cover's drop shadow. -->
+              <TextBlock Text="{Binding LauncherName}" FontSize="14" Foreground="{StaticResource TextMuted}" ZIndex="3" />
+            </StackPanel>
+          </DataTemplate>
+        </Panel.Resources>
         <DockPanel DataContext="{Binding Search}" x:DataType="search:SearchViewModel">
 
           <Grid DockPanel.Dock="Top" Height="96" Margin="80,0" ColumnDefinitions="*,Auto">
@@ -439,17 +482,14 @@
             </Button>
           </Grid>
 
-          <!-- Field and scope -->
+          <!-- Field and scope. The /launcher prefix still works when typed, but the field doesn't advertise it (owner, 2026-10-18). -->
           <StackPanel DockPanel.Dock="Top" Margin="80,0" Spacing="12">
             <Border Height="76" CornerRadius="38" Background="{StaticResource Surface}" BoxShadow="{StaticResource SearchFieldRing}" Padding="28,0">
               <DockPanel>
                 <Path DockPanel.Dock="Left" Data="M4 11a7 7 0 1 0 14 0a7 7 0 1 0 -14 0 M20 20l-4-4" Stroke="{StaticResource TextMuted}" StrokeThickness="2"
                       StrokeLineCap="Round" Width="28" Height="28" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,18,0" />
-                <TextBlock DockPanel.Dock="Right" FontSize="15" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="18,0,0,0">
-                  <Run Text="Kürzel: " /><Run Text="/steam-epic" FontWeight="Bold" Foreground="{StaticResource TextSoft}" /><Run Text=" Begriff" />
-                </TextBlock>
                 <Panel VerticalAlignment="Center">
-                  <TextBlock Text="Spiele in allen Launchern suchen …" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource TextFaint}"
+                  <TextBlock Text="Spiele suchen …" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource TextFaint}"
                              IsVisible="{Binding Text, Converter={x:Static StringConverters.IsNullOrEmpty}}" Margin="6,0,0,0" />
                   <StackPanel Orientation="Horizontal" Spacing="3">
                     <TextBlock Text="{Binding Text}" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center" />
@@ -464,9 +504,9 @@
             </StackPanel>
           </StackPanel>
 
-          <!-- Launcher chips -->
-          <ScrollViewer Name="SearchChipScroller" DockPanel.Dock="Top" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" Padding="80,16,80,4">
-            <ItemsControl Name="SearchChips" ItemsSource="{Binding Chips}">
+          <!-- Launcher chips: for the mouse; the controller filters with L3. -->
+          <ScrollViewer DockPanel.Dock="Top" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" Padding="80,16,80,4">
+            <ItemsControl ItemsSource="{Binding Chips}">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                   <StackPanel Orientation="Horizontal" Spacing="10" Margin="4" />
@@ -475,7 +515,7 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="search:SearchChipViewModel">
                   <StackPanel Orientation="Horizontal" Spacing="16">
-                    <Button Classes="plain chip" Classes.all="{Binding !IsLauncher}" Classes.on="{Binding IsOn}" Classes.focused="{Binding IsFocused}" Command="{Binding ToggleCommand}">
+                    <Button Classes="plain chip" Classes.all="{Binding !IsLauncher}" Classes.on="{Binding IsOn}" Command="{Binding ToggleCommand}">
                       <StackPanel Orientation="Horizontal" Spacing="10">
                         <Border Classes="chipLogo" IsVisible="{Binding IsLauncher}" Width="24" Height="24" CornerRadius="6" Background="{Binding TileBrush}">
                           <TextBlock Text="{Binding Monogram}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -491,8 +531,43 @@
             </ItemsControl>
           </ScrollViewer>
 
-          <!-- On-screen keyboard -->
-          <Border DockPanel.Dock="Bottom" Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,22">
+          <!-- Button legend, only while the controller is in use; the keys show their own buttons. -->
+          <Border DockPanel.Dock="Bottom" Height="64" IsVisible="{Binding UsesController}" Background="{StaticResource KeyboardSurface}" Padding="80,0">
+            <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+                <TextBlock Classes="hint" Text="Tastatur" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                <TextBlock Classes="hint" Text="Eingeben" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph"><TextBlock Text="RS" /></Border>
+                <TextBlock Classes="hint" Text="Treffer wählen" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph"><TextBlock Text="LB" /></Border>
+                <Border Classes="glyph"><TextBlock Text="RB" /></Border>
+                <TextBlock Classes="hint" Text="Weitere Treffer" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph"><TextBlock Text="≡" /></Border>
+                <TextBlock Classes="hint" Text="{Binding FocusedResult.PrimaryActionText, FallbackValue='Spielen'}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph"><TextBlock Text="≡" /></Border>
+                <TextBlock Classes="hint" Text="halten: Details" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
+                <TextBlock Classes="hint" Text="Optionen" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- On-screen keyboard, only while the controller is in use. -->
+          <Border DockPanel.Dock="Bottom" IsVisible="{Binding UsesController}" Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
             <Panel HorizontalAlignment="Center">
               <ItemsControl ItemsSource="{Binding Keyboard.Rows}">
                 <ItemsControl.ItemsPanel>
@@ -510,10 +585,10 @@
                       </ItemsControl.ItemsPanel>
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="search:KeyViewModel">
-                          <Button Classes="plain key" Classes.wide="{Binding IsWide}" Classes.submit="{Binding IsPrimary}" Classes.focused="{Binding IsFocused}"
+                          <Button Classes="plain key" Classes.wide="{Binding IsWide}" Classes.on="{Binding IsOn}" Classes.focused="{Binding IsFocused}"
                                   Width="{Binding Width}" Command="{Binding PressCommand}">
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                              <Border Classes="glyph small" Classes.round="{Binding IsRoundGlyph}" Classes.dark="{Binding IsPrimary}" IsVisible="{Binding HasGlyph}" VerticalAlignment="Center">
+                              <Border Classes="glyph small" Classes.round="{Binding IsRoundGlyph}" IsVisible="{Binding HasGlyph}" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding Glyph}" />
                               </Border>
                               <Path Classes="globe" IsVisible="{Binding IsLayoutKey}" Data="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M3 12h18 M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9 M12 3C9.5 5.7 8.4 8.7 8.4 12s1.1 6.3 3.6 9"
@@ -564,85 +639,35 @@
             </Panel>
           </Border>
 
-          <!-- Hits -->
+          <!-- Hits: one row beside the on-screen keyboard, two without; the neighbours beyond the window show faded. -->
           <StackPanel Margin="80,28,80,0" Spacing="16">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="{Binding ResultsTitle}" FontSize="22" FontWeight="Bold" />
-              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="28" VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal" Spacing="22" IsVisible="{Binding IsResultsFocused}">
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-                    <TextBlock Classes="hint" Text="{Binding FocusedResult.PrimaryActionText, FallbackValue='Spielen'}" />
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-                    <TextBlock Classes="hint" Text="halten: Details" />
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
-                    <TextBlock Classes="hint" Text="Optionen" />
-                  </StackPanel>
-                </StackPanel>
-                <TextBlock Text="Sortiert nach Relevanz" FontSize="15" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+            <Grid ColumnDefinitions="*,Auto" Margin="116,0,116,0">
+              <StackPanel Orientation="Horizontal" Spacing="16">
+                <TextBlock Text="{Binding ResultsTitle}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding RangeText}" FontSize="17" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
               </StackPanel>
+              <Button Grid.Column="1" Classes="plain toolbar" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenSearchFilterCommand}" ToolTip.Tip="Filter und Sortierung (L3)">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <Border Classes="glyph" IsVisible="{Binding UsesController}"><TextBlock Text="L3" /></Border>
+                  <TextBlock Text="{Binding SortText}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
             </Grid>
-            <StackPanel Name="SearchResultRow" Orientation="Horizontal" Spacing="20" Background="Transparent">
-              <ItemsControl Name="SearchResults" ItemsSource="{Binding Results}">
+            <Grid Name="SearchResultRow" ColumnDefinitions="116,Auto,116" Background="Transparent">
+              <Border Classes="peek before" Width="96" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding PeekBefore, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <ContentControl Content="{Binding PeekBefore}" ContentTemplate="{StaticResource SearchHitTile}" HorizontalAlignment="Right" />
+              </Border>
+              <ItemsControl Grid.Column="1" Name="SearchResults" ItemsSource="{Binding Results}" ItemTemplate="{StaticResource SearchHitTile}" Width="1450">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal" Spacing="20" />
+                    <WrapPanel ItemSpacing="20" LineSpacing="20" />
                   </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:GameTileViewModel">
-                    <StackPanel Width="190" Spacing="10">
-                      <Button Classes="plain resultTile" Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}" Command="{Binding FocusCommand}"
-                              Background="{Binding CoverBrush}" Height="240" ToolTip.Tip="{Binding Title}">
-                        <Panel>
-                          <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
-                          <DockPanel Margin="12">
-                            <Border DockPanel.Dock="Top" Classes="launcherBadge" Width="28" Height="28" CornerRadius="7" Background="{Binding LauncherBrush}" HorizontalAlignment="Left">
-                              <TextBlock Text="{Binding LauncherMonogram}" FontSize="14" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Border>
-                            <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Bottom"
-                                       TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
-                          </DockPanel>
-                          <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"
-                                  HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Nicht installiert – A installiert">
-                            <Path Data="M7 17a4 4 0 0 1-.6-7.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17 16.9M12 11v9M9 17l3 3 3-3" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
-                          </Border>
-                          <Border Classes="installBadge" IsVisible="{Binding UpdateAvailable}" Width="30" Height="30" CornerRadius="15"
-                                  HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Update verfügbar">
-                            <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
-                          </Border>
-                          <Border Classes="installBadge" IsVisible="{Binding IsInstallActive}" Height="30" CornerRadius="15" Padding="8,0,11,0"
-                                  HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                              <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
-                              <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
-                              <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
-                              <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
-                            </StackPanel>
-                          </Border>
-                          <ProgressBar Classes="install" Classes.paused="{Binding IsInstallPaused}" IsVisible="{Binding IsInstallActive}"
-                                       Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}" VerticalAlignment="Bottom" />
-                          <!-- Fills while A is held; full opens the detail page. -->
-                          <ctl:HoldRing />
-                        </Panel>
-                      </Button>
-                      <!-- Above the focused cover's drop shadow. -->
-                      <TextBlock Text="{Binding LauncherName}" FontSize="14" Foreground="{StaticResource TextMuted}" ZIndex="3" />
-                    </StackPanel>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Button Classes="plain moreCard" IsVisible="{Binding HasMore}" Command="{Binding ShowMoreCommand}" Width="190" Height="240" VerticalAlignment="Top" ToolTip.Tip="Weitere Treffer zeigen">
-                <Panel>
-                  <Rectangle RadiusX="8" RadiusY="8" StrokeThickness="2" StrokeDashArray="3,2" />
-                  <TextBlock Text="{Binding MoreText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Panel>
-              </Button>
-            </StackPanel>
+              <Border Grid.Column="2" Classes="peek after" Width="96" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsVisible="{Binding PeekAfter, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <ContentControl Content="{Binding PeekAfter}" ContentTemplate="{StaticResource SearchHitTile}" HorizontalAlignment="Left" />
+              </Border>
+            </Grid>
           </StackPanel>
         </DockPanel>
       </Panel>
@@ -661,9 +686,32 @@
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
           <StackPanel Spacing="40" DataContext="{Binding ViewOptions}" x:DataType="vm:ViewOptionsViewModel">
             <StackPanel Spacing="8">
-              <TextBlock Text="Ansicht" FontSize="34" FontWeight="ExtraBold" />
-              <TextBlock FontSize="17" Foreground="{StaticResource TextMuted}"
-                         Text="Sortierung und Einträge pro Seite, gültig für alle Launcher" />
+              <TextBlock Text="{Binding Title}" FontSize="34" FontWeight="ExtraBold" />
+              <TextBlock FontSize="17" Foreground="{StaticResource TextMuted}" Text="{Binding Subtitle}" />
+            </StackPanel>
+
+            <!-- The search's launchers: any number at once, "Alle Launcher" switches them all on. -->
+            <StackPanel Spacing="14" IsVisible="{Binding HasLaunchers}">
+              <TextBlock Classes="label" Text="LAUNCHER" FontSize="14" />
+              <ItemsControl ItemsSource="{Binding LauncherRows}" Margin="-6">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:Object">
+                    <ItemsControl ItemsSource="{Binding}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <UniformGrid Columns="4" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:OptionViewModel">
+                          <Button Classes="plain size launcher" Classes.selected="{Binding IsSelected}" Classes.focused="{Binding IsFocused}"
+                                  Content="{Binding Label}" Command="{Binding ApplyCommand}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
             </StackPanel>
 
             <StackPanel Spacing="14">
@@ -694,7 +742,7 @@
               </ItemsControl>
             </StackPanel>
 
-            <StackPanel Spacing="14">
+            <StackPanel Spacing="14" IsVisible="{Binding HasPageSizes}">
               <TextBlock Classes="label" Text="EINTRÄGE PRO SEITE" FontSize="14" />
               <ItemsControl ItemsSource="{Binding PageSizeOptions}" Margin="-6">
                 <ItemsControl.ItemsPanel>

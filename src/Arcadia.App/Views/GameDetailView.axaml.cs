@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 
 namespace Arcadia.App.Views;
@@ -12,6 +13,9 @@ public partial class GameDetailView : UserControl
     private static readonly TimeSpan SlideTime = TimeSpan.FromMilliseconds(340);
 
     private GameDetailViewModel? _viewModel;
+
+    // Wheel movement not yet turned into a turn; touchpads report fractions of a notch.
+    private double _wheel;
 
     public GameDetailView()
     {
@@ -32,10 +36,33 @@ public partial class GameDetailView : UserControl
             _viewModel.Rotated += OnRotated;
         }
 
+        _wheel = 0;
         if (Track.RenderTransform is TranslateTransform slide)
         {
             slide.Transitions = null;
             slide.X = 0;
+        }
+    }
+
+    /// <summary>One notch of the wheel turns the carousel by one game: down is the next, up the previous.</summary>
+    protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
+    {
+        base.OnPointerWheelChanged(e);
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        _wheel -= e.Delta.Y;
+        for (; _wheel >= 1; _wheel--)
+        {
+            _viewModel.Rotate(1);
+        }
+
+        for (; _wheel <= -1; _wheel++)
+        {
+            _viewModel.Rotate(-1);
         }
     }
 

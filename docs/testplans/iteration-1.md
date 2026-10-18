@@ -339,7 +339,8 @@ Verlauf:
       in der rechten Spalte links davon, immer ganz im Fenster. ≡ (Menü-Taste) öffnet die Einstellungen. · E2E: ja
 - [ ] **T10-2** Installiertes Spiel: Spielen, Details anzeigen, Zu Favoriten hinzufügen und Artwork
       ändern (beide deaktiviert, „Folgt in einer späteren Version“), In <Launcher> öffnen,
-      Controller-Layout anzeigen, Trennstrich, Deinstallieren … in Rot. Mit Update steht unter
+      Trennstrich, Deinstallieren … in Rot. Kein „Controller-Layout anzeigen“ (Owner, 2026-10-18: Steam öffnet es
+      nicht zuverlässig, siehe `docs/launchers/steam.md`). Mit Update steht unter
       „Spielen“ der Hinweis, dass der Launcher ggf. vorher aktualisiert; es gibt keinen Update-Eintrag. · E2E: ja
 - [ ] **T10-3** Nicht installiertes Spiel: Installieren, Details anzeigen, Zu Favoriten hinzufügen,
       In <Launcher> öffnen. Während einer Installation steht statt „Installieren“ der Status
@@ -347,9 +348,7 @@ Verlauf:
 - [ ] **T10-4** A kurz drücken startet das Spiel beim Loslassen. A halten: nach etwa 0,2 s füllt sich
       ein blauer Rahmen um die Vorschau links, nach 1 s öffnet sich die Detailseite, ohne loszulassen.
       Loslassen dazwischen bricht ab, nichts passiert. Enter verhält sich gleich. · E2E: ja
-- [ ] **T10-5** Steam-Spiel: „In Steam öffnen“ zeigt die Seite des Spiels in der Steam-Bibliothek,
-      „Controller-Layout anzeigen“ Steams Controller-Konfiguration des Spiels. Bei Nicht-Steam-Spielen
-      ist das Layout deaktiviert („In <Launcher> nicht verfügbar“). · E2E: nein (echter Steam-Client)
+- [ ] **T10-5** Steam-Spiel: „In Steam öffnen“ zeigt die Seite des Spiels in der Steam-Bibliothek. · E2E: nein (echter Steam-Client)
 - [ ] **T10-6** Steam-Spiel deinstallieren: Arcadia fragt nach (Fokus auf „Abbrechen“, A dort
       bricht ab); „Deinstallieren“ öffnet Steams eigene Deinstallationsfrage, danach verschwindet das
       Spiel aus der Bibliothek. · E2E: nein (echter Steam-Client)
@@ -362,7 +361,7 @@ Verlauf:
       Ende eines Spiels nach vorn kommt), zählt der Druck weiter: Tippen startet das Spiel, Halten
       öffnet die Detailseite, der Rahmen läuft durch. · E2E: nein (der Zeitpunkt des Einlesens lässt sich nicht steuern)
 
-Die Steam-Links `steam://nav/games/details`, `steam://uninstall` und `steam://controllerconfig` sowie
+Die Steam-Links `steam://nav/games/details` und `steam://uninstall` sowie
 der Epic-Link `com.epicgames.launcher://store/library` sind noch nicht am echten Client geprüft (T10-5
 bis T10-7).
 
@@ -377,6 +376,7 @@ Verlauf:
 | T10-6 | 2026-10-17 | Claude | wie oben | ✅ Rückfrage mit Fokus auf „Abbrechen“ (Demo-Spiel, ohne echten Launcher) | Steam am PC des Owners |
 | T10-4 | 2026-10-17 | Claude | Unit-Tests (`HoldGestureTests`) | ✅ Tippen, Abbrechen, Halten, wiederholte KeyDown-Ereignisse, verspätete Timer (geht ohne Zählung der Drücke rot) | – |
 | T10-9 | 2026-10-17 | Claude | Xvfb `--demo`, Debug-Build mit vorübergehendem Einlesen 0,1 s nach jedem Druck auf Enter (wieder entfernt) | ✅ Enter 0,12 s: Spiel startet (Toast); Enter 1,5 s gehalten: Rahmen läuft durch, Detailseite öffnet | – |
+| T10-2 | 2026-10-18 | Claude | Xvfb 1745×1000 `--demo`, Kontextmenü-Taste | ✅ Menü ohne „Controller-Layout anzeigen“ | – |
 
 ## #11 Spieldetails als Karussell
 
@@ -388,7 +388,8 @@ Verlauf:
 - [ ] **T11-2** LT/RT schieben die Seiten animiert nach rechts bzw. links und zeigen das vorherige bzw.
       nächste Spiel in der Sortierung der Bibliothek, über Seitengrenzen hinweg; vor dem ersten steht
       das letzte, nach dem letzten das erste. Schnelles mehrfaches Drücken springt ohne Lücken weiter.
-      Ein Klick auf einen Nachbarn oder auf LT/RT am Rand tut dasselbe. · E2E: ja
+      Ein Klick auf einen Nachbarn oder auf LT/RT am Rand tut dasselbe, ebenso Bild ↑/↓, Umschalt+←/→
+      und das Mausrad (eine Raste, ein Spiel; nach unten das nächste). · E2E: ja
 - [ ] **T11-3** Ein Tab mit zwei Spielen zeigt das andere links und rechts; mit einem Spiel gibt es
       keine Nachbarn, keine Abdunklung und kein LT/RT. · E2E: ja
 - [ ] **T11-4** LB/RB (und ein Klick auf einen Tab) wechseln den Launcher, die Detailseite bleibt offen
@@ -400,7 +401,7 @@ Verlauf:
       zuletzt gezeigten Spiels mit Fokus darauf. · E2E: ja
 - [ ] **T11-7** Schaltflächen wie im Kontextmenü, ohne „Details anzeigen“: oben „A Spielen“ (fokussiert),
       „In <Launcher> öffnen“, „Zu Favoriten“ (deaktiviert) und mit verbundenem Steam Controller
-      „STEAM CONTROLLER <Modus>“ (A wechselt); unten „Controller-Layout“, „Artwork ändern“ (deaktiviert)
+      „STEAM CONTROLLER <Modus>“ (A wechselt); unten „Artwork ändern“ (deaktiviert)
       und rechts abgesetzt „Deinstallieren …“ in Rot mit derselben Rückfrage wie im Menü. Das D-Pad
       überspringt deaktivierte Schaltflächen; unter den Reihen steht der Hinweis der fokussierten
       Schaltfläche (z. B. „Nur in Epic Games möglich – öffnet Epic Games“). ⧉ öffnet hier kein Menü. · E2E: ja
@@ -424,6 +425,8 @@ Verlauf:
 | T11-3 | 2026-10-17 | Claude | Unit-Tests (`CarouselTests`) | ✅ Nachbarn rotieren, zwei Spiele stehen beidseitig, ein Spiel hat keine Nachbarn | Sichtprüfung am PC des Owners (die Demo hat keinen Tab mit 1–2 Spielen) |
 | T11-10 | 2026-10-17 | Claude | Release-Build, Linux-Container ohne GPU, Xvfb | ✅ Taste bis fertiges Layout 14–39 ms; Öffnen der Seite 199 ms (erstes Mal) | Messung am PC des Owners |
 | T11-8, T11-9 | 2026-10-17 | Claude | wie oben, nach dem Code Review | ✅ Unter dem Titel keine Zeile mehr; installiertes Spiel mit Update und nicht installiertes Spiel geprüft | – |
+| T11-2 | 2026-10-18 | Juri | PC des Owners, PR #101, Tastatur | ❌ Spiel lässt sich per Tastatur nicht wechseln (Bild ↑/↓ gab es, aber ohne Hinweis); Wunsch: Umschalt+Pfeile und Mausrad | Umschalt+←/→ und Mausrad ergänzt |
+| T11-2, T11-7 | 2026-10-18 | Claude | Xvfb 1745×1000 `--demo`, Umschalt+→, Mausrad runter und hoch, Umschalt+← | ✅ 1 → 2 → 3 → 2 → 1 von 31; untere Reihe nur noch „Artwork ändern“ und „Deinstallieren …“ | Mausrad am PC des Owners |
 
 ## #102 Ausfaden am Rand des Listings
 
@@ -433,12 +436,16 @@ Verlauf:
 - [ ] **T102-2** Passt die Seite ganz ins Raster (z. B. 10 pro Seite), gibt es kein Ausfaden. · E2E: ja
 - [ ] **T102-3** Die fokussierte Kachel liegt mit D-Pad nie im ausgeblendeten Bereich, ihr Rahmen bleibt
       voll sichtbar. Mausrad-Scrollen schaltet das Ausfaden genauso. · E2E: ja
+- [ ] **T102-4** Kein Streifen unverblasster Cover am äußersten Rand des Ausfadens, auch nicht bei einer
+      Fenstergröße, bei der die Oberfläche skaliert wird (z. B. 1745×1000 oder 125 % Windows-Skalierung). · E2E: ja
 
 Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | T102-1, T102-3 | 2026-10-17 | Claude | Branch `feat/context-menu-and-detail-page-10-11`, Linux, Xvfb 1920×1080 `--demo`, GOG 31 Spiele, 50 pro Seite, Pfeiltasten | ✅ Oben nur unten, Mitte beidseitig, unten nur oben; Fokus jeweils frei vom Ausfaden | Mausrad und Controller am PC des Owners |
+| T102-4 | 2026-10-18 | Juri | PC des Owners, PR #101 | ❌ Am unteren Rand 1–2 px Cover ohne Ausfaden | Bei skaliertem Fenster nachgestellt (Xvfb 1745×1000): 1 px Spalt zwischen Ausschnitt des Rasters und Verlauf |
+| T102-4 | 2026-10-18 | Claude | Xvfb 1745×1000 `--demo`, oben und unten vergrößert | ✅ Kein Streifen mehr, der Verlauf reicht 2 px über das Raster hinaus | Kontrolle am PC des Owners |
 
 ## #86 Refinement-Skill
 

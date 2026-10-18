@@ -596,8 +596,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     void IGameActionHost.OpenInLauncher(GameTileViewModel tile) =>
         HandOver(tile, tile.Game.OpenInLauncher, $"{tile.LauncherName} wird geöffnet …", $"Demo-Spiel: Hier würde jetzt {tile.LauncherName} geöffnet.");
 
-    void IGameActionHost.ShowControllerLayout(GameTileViewModel tile) =>
-        HandOver(tile, tile.Game.ControllerLayout, $"Controller-Layout von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …", $"Demo-Spiel: Hier würde jetzt das Controller-Layout von „{tile.Title}“ geöffnet.");
 
     void IGameActionHost.ToggleControllerMode(GameTileViewModel tile) =>
         _controllerSupport.SetModeFor(tile.Game, !_controllerSupport.Settings.ControllerSupportFor(tile.Game));

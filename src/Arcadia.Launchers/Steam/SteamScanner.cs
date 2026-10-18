@@ -141,7 +141,6 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             Launch = new LaunchTarget.ProtocolUri(RunUri(appId)),
             OpenInLauncher = new LaunchTarget.ProtocolUri(DetailsUri(appId)),
             Uninstall = new LaunchTarget.ProtocolUri(UninstallUri(appId)),
-            ControllerLayout = new LaunchTarget.ProtocolUri(ControllerLayoutUri(appId)),
             InstallDirectory = installDirectory,
             InstallSizeBytes = ParseLong(app.GetString("SizeOnDisk")) is > 0 and var size ? size : null,
             InstalledAt = installDateOf?.Invoke(installDirectory),
@@ -185,9 +184,6 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
 
     /// <summary>Steam asks for confirmation itself before it deletes anything.</summary>
     public static string UninstallUri(uint appId) => $"steam://uninstall/{appId.ToString(CultureInfo.InvariantCulture)}";
-
-    /// <summary>Steam's controller configurator for the game.</summary>
-    public static string ControllerLayoutUri(uint appId) => $"steam://controllerconfig/{appId.ToString(CultureInfo.InvariantCulture)}";
 
     // A first-time install has no build yet and isn't playable; an installed game being updated
     // keeps its build id and stays in the library, even while Steam clears FullyInstalled.

@@ -76,7 +76,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     [ObservableProperty]
     public partial IReadOnlyList<GameActionViewModel> TopRow { get; private set; } = [];
 
-    /// <summary>Controller-Layout and Artwork; <see cref="Uninstall"/> stands apart at the right end of the row.</summary>
+    /// <summary>Artwork; <see cref="Uninstall"/> stands apart at the right end of the row.</summary>
     [ObservableProperty]
     public partial IReadOnlyList<GameActionViewModel> BottomRow { get; private set; } = [];
 
@@ -139,7 +139,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         List<GameActionViewModel> InOrder(params GameActionKind[] kinds) =>
             kinds.SelectMany(kind => actions.Where(a => a.Kind == kind)).ToList();
         TopRow = InOrder(GameActionKind.Play, GameActionKind.OpenInLauncher, GameActionKind.Favorite, GameActionKind.ControllerMode);
-        BottomRow = InOrder(GameActionKind.ControllerLayout, GameActionKind.Artwork);
+        BottomRow = InOrder(GameActionKind.Artwork);
         Uninstall = actions.FirstOrDefault(a => a.Kind == GameActionKind.Uninstall);
 
         _focusColumn = -1;

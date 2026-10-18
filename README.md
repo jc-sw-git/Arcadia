@@ -48,13 +48,13 @@ dotnet run --project src/Arcadia.App -- --demo
 | Spielen (beim Loslassen) | A | Enter / Leertaste |
 | Zurück / Dialog schließen | B | Esc |
 | Launcher wechseln | LB / RB | Q / E, Strg+Tab |
-| Seite wechseln (Detailseite: Spiel wechseln) | LT / RT | Bild ↑ / Bild ↓ |
+| Seite wechseln (Detailseite: Spiel wechseln) | LT / RT | Bild ↑ / Bild ↓, Umschalt+← / Umschalt+→ |
 | Ansicht (Sortierung, pro Seite) | Y | V |
 | Optionen eines Spiels (Kontextmenü) | View (⧉) | Kontextmenü-Taste, Umschalt+F10, Rechtsklick |
 | Details eines Spiels | A halten (1 s) oder ⧉ → „Details anzeigen“ | Enter halten |
 | Einstellungen | Menü (≡) | F2 |
 
-Maus: Klick wählt ein Spiel aus, Doppelklick startet es.
+Maus: Klick wählt ein Spiel aus, Doppelklick startet es. Auf der Detailseite blättert das Mausrad durch die Spiele.
 
 ## Steam Controller Support
 

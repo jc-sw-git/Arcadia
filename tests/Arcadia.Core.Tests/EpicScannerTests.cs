@@ -42,7 +42,6 @@ public class EpicScannerTests
         // Epic has no link to one game's page or to uninstalling it: both go through its library.
         Assert.Equal(new LaunchTarget.ProtocolUri("com.epicgames.launcher://store/library"), game.OpenInLauncher);
         Assert.Null(game.Uninstall);
-        Assert.Null(game.ControllerLayout);
     }
 
     [Fact]

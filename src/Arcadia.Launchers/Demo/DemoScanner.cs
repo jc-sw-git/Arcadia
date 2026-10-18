@@ -77,9 +77,8 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
                 Launch = new LaunchTarget.None(),
                 OpenInLauncher = new LaunchTarget.None(),
 
-                // As the real launchers: Epic can only uninstall in its own window, only Steam has a layout editor.
+                // As the real launchers: Epic can only uninstall in its own window.
                 Uninstall = launcher.Id == KnownLaunchers.Epic.Id ? null : new LaunchTarget.None(),
-                ControllerLayout = launcher.Id == KnownLaunchers.Steam.Id ? new LaunchTarget.None() : null,
                 InstallDirectory = Path.Combine("D:", "Games", launcher.DisplayName, title.Replace(":", string.Empty, StringComparison.Ordinal)),
                 InstalledAt = now.AddDays(-installedDaysAgo),
                 LastPlayedAt = playedDaysAgo is { } days ? now.AddDays(-days).AddHours(-random.Next(0, 20)) : null,

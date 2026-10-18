@@ -12,7 +12,6 @@ public enum GameActionKind
     Favorite,
     Artwork,
     OpenInLauncher,
-    ControllerLayout,
     ControllerMode,
     Uninstall,
 }
@@ -31,8 +30,6 @@ public interface IGameActionHost
     void ShowDetails(GameTileViewModel tile);
 
     void OpenInLauncher(GameTileViewModel tile);
-
-    void ShowControllerLayout(GameTileViewModel tile);
 
     void ToggleControllerMode(GameTileViewModel tile);
 
@@ -106,7 +103,6 @@ public sealed partial class GameActionViewModel : ViewModelBase
         GameActionKind.Favorite => "M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z",
         GameActionKind.Artwork => "M5.5 4.5h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2M20.5 16l-5-5-8 8.5M9 8.2a1.8 1.8 0 1 0 0 3.6a1.8 1.8 0 1 0 0-3.6",
         GameActionKind.OpenInLauncher => "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
-        GameActionKind.ControllerLayout => "M8.5 7h7a5.5 5.5 0 0 1 0 11h-7a5.5 5.5 0 0 1 0-11M8 11v3M6.5 12.5h3M15.5 11.5v.5M17.5 13.5v.5",
         GameActionKind.ControllerMode => "M4 8h12M13 5l3 3-3 3M20 16H8M11 13l-3 3 3 3",
         _ => "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
     });
@@ -149,10 +145,6 @@ public sealed partial class GameActionViewModel : ViewModelBase
         {
             return actions;
         }
-
-        actions.Add(game.ControllerLayout is null
-            ? new(GameActionKind.ControllerLayout, "Controller-Layout anzeigen", $"In {launcher} nicht verfügbar", false, () => { }, "Controller-Layout")
-            : new(GameActionKind.ControllerLayout, "Controller-Layout anzeigen", null, true, () => host.ShowControllerLayout(tile), "Controller-Layout"));
 
         if (host.ShowControllerMode)
         {

@@ -31,9 +31,6 @@ public sealed record Game
     /// </summary>
     public LaunchTarget? Uninstall { get; init; }
 
-    /// <summary>Opens the launcher's controller layout editor for the game; null if the launcher has none.</summary>
-    public LaunchTarget? ControllerLayout { get; init; }
-
     public string? InstallDirectory { get; init; }
 
     /// <summary>

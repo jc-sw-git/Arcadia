@@ -146,7 +146,7 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   wrapping at the ends (two games: the other on both sides; one: no neighbours). LT/RT turn it, LB/RB switch
   the tab and stay on the detail page (first game), Y re-sorts with the shown game kept in the middle, B returns
   to the library page of the game shown last (owner, 2026-10-17).
-- Launcher actions (open in the launcher, uninstall, controller layout) are `LaunchTarget`s on `Game`;
+- Launcher actions (open in the launcher, uninstall) are `LaunchTarget`s on `Game`;
   a null one is shown disabled with the reason, or for uninstall opens the launcher instead.
 - If an update is available, A still says "Spielen" and starts the game; the launcher installs the update
   first. The update shows as an icon, and the detail page says below the button that the launcher may update

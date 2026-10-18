@@ -48,6 +48,9 @@ public static class UiActionMap
     {
         (Key.Up, _) => UiAction.Up,
         (Key.Down, _) => UiAction.Down,
+        // Shift+arrows are LT/RT for keyboards without page keys (owner, 2026-10-18).
+        (Key.Left, KeyModifiers.Shift) => UiAction.PreviousPage,
+        (Key.Right, KeyModifiers.Shift) => UiAction.NextPage,
         (Key.Left, _) => UiAction.Left,
         (Key.Right, _) => UiAction.Right,
         (Key.Enter or Key.Space, _) => UiAction.Accept,

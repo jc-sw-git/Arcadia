@@ -14,6 +14,9 @@ focus handling or anything SISR/usbip related.
   `POST /api/v1/quit`. Ready = API answers and `/api/v1/devices` shows a `viiper_device`.
 - Default: SISR runs except while a game from the Steam launcher runs (double input);
   per-game override in `AppSettings.ControllerSupportOverrides`.
+  On 2026-10-18 the owner saw no double input in one Steam game set to "Xbox 360 Controller (SISR)". His guess:
+  SISR takes the controller's input before Steam Input hands it to the game. Unverified and one game only, so the
+  default stays.
 - Everything that starts or stops SISR (periodic tick, game pause and its end, on/off, update, fixes, exit)
   runs under `ControllerSupportService`'s gate, and only `StartSisr` starts it — after checking there that the
   support is on and no game has it paused. The state is one `SisrState`; every change goes through `TryMove`,

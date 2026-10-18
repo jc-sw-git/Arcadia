@@ -163,9 +163,9 @@
     <Border Width="384" HorizontalAlignment="Left" IsHitTestVisible="False" IsVisible="{Binding HasNeighbours}" Background="{StaticResource CarouselFadeLeft}" />
     <Border Width="384" HorizontalAlignment="Right" IsHitTestVisible="False" IsVisible="{Binding HasNeighbours}" Background="{StaticResource CarouselFadeRight}" />
     <Button Classes="plain glyphButton carouselNav" Content="LT" HorizontalAlignment="Left" Margin="80,0,0,0" IsVisible="{Binding HasNeighbours}"
-            Command="{Binding PreviousCommand}" ToolTip.Tip="Vorheriges Spiel (Bild ↑)" />
+            Command="{Binding PreviousCommand}" ToolTip.Tip="Vorheriges Spiel (Bild ↑, Umschalt+← oder Mausrad)" />
     <Button Classes="plain glyphButton carouselNav" Content="RT" HorizontalAlignment="Right" Margin="0,0,80,0" IsVisible="{Binding HasNeighbours}"
-            Command="{Binding NextCommand}" ToolTip.Tip="Nächstes Spiel (Bild ↓)" />
+            Command="{Binding NextCommand}" ToolTip.Tip="Nächstes Spiel (Bild ↓, Umschalt+→ oder Mausrad)" />
   </Panel>
 
   <UserControl.Styles>

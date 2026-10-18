@@ -44,20 +44,25 @@ public sealed partial class SearchChipViewModel : ViewModelBase
     public IRelayCommand ToggleCommand { get; }
 }
 
+/// <summary>What the hit area shows while there are no hits: waiting for a term, or none found.</summary>
+/// <param name="IsNoHits">False while nothing is typed yet.</param>
+public sealed record SearchEmptyState(bool IsNoHits, string Title, string Text);
+
 /// <summary>
 /// The search over all launchers (#12): a text that may start with a <c>/launcher</c> prefix, the
 /// launchers it covers (chips, filter, prefix, kept in step), the hits and an on-screen keyboard.
-/// With the controller the keyboard shows and the hits sit in one row beside it: the D-pad (left
-/// stick) types, the right stick picks a hit, LB/RB turn the hits. With a real keyboard the
-/// on-screen one hides and the hits fill two rows. Starting a hit, its details, its menu and the
-/// filter dialog are the window's business (<see cref="MainViewModel"/>).
+/// With the keyboard out the hits sit in one row above it: the D-pad (left stick) types, the right
+/// stick picks a hit, LB/RB turn the hits. With the keyboard in (B, a real keyboard, the button
+/// below the hits) they fill a grid that scrolls up and down, and the D-pad moves through them too;
+/// X brings the keyboard back. Starting a hit, its details, its menu and the filter dialog are the
+/// window's business (<see cref="MainViewModel"/>).
 /// </summary>
 public sealed partial class SearchViewModel : ViewModelBase, IDisposable
 {
     /// <summary>Hits per row, in both layouts.</summary>
     public const int ResultColumns = 7;
 
-    /// <summary>Rows of hits without the on-screen keyboard; beside it there is room for one.</summary>
+    /// <summary>Rows of hits in a window with the on-screen keyboard in; beside it there is room for one.</summary>
     public const int ResultRowsWithoutKeyboard = 2;
 
     // As a held Backspace on a typical keyboard.
@@ -72,6 +77,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     private LauncherScope _scope = new([], [], true);
     private HitWindow _window;
     private int _focus;
+    private bool _hitsChanged;
 
     public SearchViewModel(
         IReadOnlyList<LauncherLibrary> libraries,
@@ -85,6 +91,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         _libraries = libraries;
         _createTile = createTile;
         UsesController = usesController;
+        IsKeyboardOut = usesController;
         _window = HitWindow.Of(0, ResultRows, ResultColumns);
         Keyboard = new OnScreenKeyboardViewModel(layout, Press, layoutChosen, time);
         _erase = new RepeatGesture(EraseRepeatDelay, EraseRepeatInterval, time, post);
@@ -95,6 +102,12 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
 
     /// <summary>The filter key on the on-screen keyboard was clicked.</summary>
     public event Action? FilterRequested;
+
+    /// <summary>
+    /// The hits on screen moved. The argument is where the window started before, so the view can
+    /// slide from there; null when it should just jump (a new search, the other layout).
+    /// </summary>
+    public event Action<int?>? WindowMoved;
 
     /// <summary>What was typed, prefix included.</summary>
     [ObservableProperty]
@@ -119,12 +132,20 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
 
     public bool HasUnknownKeywords => UnknownKeywordsText is not null;
 
+    /// <summary>"23 Treffer in 2 Launchern".</summary>
     [ObservableProperty]
     public partial string ResultsTitle { get; private set; } = string.Empty;
 
     /// <summary>"8–14 von 23" when the hits don't all fit, else empty.</summary>
     [ObservableProperty]
     public partial string RangeText { get; private set; } = string.Empty;
+
+    /// <summary>Shown instead of the hits while there are none; null while there are.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasHits))]
+    public partial SearchEmptyState? Empty { get; private set; }
+
+    public bool HasHits => Empty is null;
 
     /// <summary>The library's sort orders, or null for relevance, the default of every new search.</summary>
     [ObservableProperty]
@@ -136,33 +157,49 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     /// <summary>All hits in the chosen order; the detail page turns through these.</summary>
     public IReadOnlyList<Game> Hits { get; private set; } = [];
 
-    /// <summary>The hits currently in view.</summary>
+    /// <summary>
+    /// The hits around the window: the window itself and one window's worth before and after it,
+    /// so a step or a turn can slide them in. The first one is hit <see cref="SliceStart"/>.
+    /// </summary>
     public ObservableCollection<GameTileViewModel> Results { get; } = [];
 
-    /// <summary>The hit before the window, shown faded at its left edge; a click turns back.</summary>
-    [ObservableProperty]
-    public partial GameTileViewModel? PeekBefore { get; private set; }
+    /// <summary>The index in <see cref="Hits"/> of the first of <see cref="Results"/>.</summary>
+    public int SliceStart { get; private set; }
 
-    /// <summary>The hit after the window, shown faded at its right edge; a click turns on.</summary>
+    /// <summary>The first hit of the window, the one at the leading edge of the hit area.</summary>
+    public int WindowStart => _window.Start;
+
+    /// <summary>More hits than fit: LB/RB turn them.</summary>
     [ObservableProperty]
-    public partial GameTileViewModel? PeekAfter { get; private set; }
+    public partial bool CanTurn { get; private set; }
 
     public OnScreenKeyboardViewModel Keyboard { get; }
 
-    /// <summary>The controller is in use: the on-screen keyboard and the button legend show, the hits get one row.</summary>
+    /// <summary>The controller is in use: the button legend and the buttons' glyphs show.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsStickHint))]
     public partial bool UsesController { get; set; }
 
-    private int ResultRows => UsesController ? 1 : ResultRowsWithoutKeyboard;
+    /// <summary>The on-screen keyboard is out, and the hits get one row above it; in, they fill a grid.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsStickHint))]
+    public partial bool IsKeyboardOut { get; set; }
+
+    /// <summary>Beside the keyboard only the right stick picks a hit, so it's said above the hits too, not only in the legend.</summary>
+    public bool ShowsStickHint => UsesController && IsKeyboardOut;
+
+    private int ResultRows => IsKeyboardOut ? 1 : ResultRowsWithoutKeyboard;
 
     /// <summary>The hit that ≡, ⧉, Enter and the right stick act on; null without hits.</summary>
     [ObservableProperty]
     public partial GameTileViewModel? FocusedResult { get; private set; }
 
     /// <summary>
-    /// Everything the search does itself: the D-pad and A on the keys, and the buttons that stand
-    /// for keys (X deletes, held: one after another; Y types a space; LT shift; RT symbols; R3 the
-    /// layout menu); the right stick or a real keyboard's arrows move through the hits, LB/RB turn them.
+    /// Everything the search does itself. With the keyboard out: the D-pad and A on the keys, and
+    /// the buttons that stand for keys (X deletes, held: one after another; Y types a space; LT
+    /// shift; RT symbols, both tapped or held; R3 the layout menu). With it in, the D-pad moves
+    /// through the hits and X brings the keyboard back. The right stick or a real keyboard's arrows
+    /// move through the hits, LB/RB turn them.
     /// </summary>
     public void Handle(UiAction action)
     {
@@ -183,23 +220,14 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         switch (action)
         {
             // Backspace repeats by itself; X repeats while held.
+            case UiAction.Search when UsesController && !IsKeyboardOut:
+                IsKeyboardOut = true;
+                break;
             case UiAction.Search when UsesController:
                 _erase.Press();
                 break;
             case UiAction.Search:
                 Erase();
-                break;
-            case UiAction.ViewOptions:
-                Type(" ");
-                break;
-            case UiAction.PreviousPage:
-                Keyboard.PressShift();
-                break;
-            case UiAction.NextPage:
-                Keyboard.ToggleSymbols();
-                break;
-            case UiAction.KeyboardLayout:
-                Keyboard.ToggleLayoutMenu();
                 break;
             case UiAction.PreviousTab:
                 Turn(-1);
@@ -207,28 +235,51 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
             case UiAction.NextTab:
                 Turn(1);
                 break;
-            case UiAction.Accept when UsesController:
-                PressFocusedKey();
-                break;
-            case UiAction.Up or UiAction.Down or UiAction.Left or UiAction.Right when UsesController:
-                Keyboard.Move(action);
-                break;
-            case UiAction.Up or UiAction.SecondaryUp:
+            case UiAction.SecondaryUp:
                 MoveHit(0, -1);
                 break;
-            case UiAction.Down or UiAction.SecondaryDown:
+            case UiAction.SecondaryDown:
                 MoveHit(0, 1);
                 break;
-            case UiAction.Left or UiAction.SecondaryLeft:
+            case UiAction.SecondaryLeft:
                 MoveHit(-1, 0);
                 break;
-            case UiAction.Right or UiAction.SecondaryRight:
+            case UiAction.SecondaryRight:
                 MoveHit(1, 0);
+                break;
+            default:
+                if (IsKeyboardOut)
+                {
+                    HandleKeyboard(action);
+                }
+                else
+                {
+                    HandleHits(action);
+                }
+
                 break;
         }
     }
 
-    /// <summary>A button was let go: ends a held erase or shift.</summary>
+    /// <summary>B: closes the layout menu, else puts the keyboard away. False if there was neither, so B leaves the search.</summary>
+    public bool Back()
+    {
+        if (Keyboard.IsLayoutMenuOpen)
+        {
+            Keyboard.CloseLayoutMenu();
+            return true;
+        }
+
+        if (IsKeyboardOut)
+        {
+            IsKeyboardOut = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>A button was let go: ends a held erase, shift or symbols page.</summary>
     public void Release(UiAction action)
     {
         switch (action)
@@ -239,6 +290,9 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
             case UiAction.PreviousPage:
                 Keyboard.ReleaseShift();
                 break;
+            case UiAction.NextPage:
+                Keyboard.ReleaseSymbols();
+                break;
         }
     }
 
@@ -247,7 +301,20 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     {
         _erase.Release();
         Keyboard.CancelShift();
+        Keyboard.CancelSymbols();
     }
+
+    /// <summary>The button below the hits: the keyboard out or back in.</summary>
+    [RelayCommand]
+    private void ToggleKeyboard() => IsKeyboardOut = !IsKeyboardOut;
+
+    /// <summary>The LB button beside the hits.</summary>
+    [RelayCommand]
+    private void TurnBack() => Turn(-1);
+
+    /// <summary>The RB button beside the hits.</summary>
+    [RelayCommand]
+    private void TurnOn() => Turn(1);
 
     /// <summary>Text from a real keyboard; control characters are dropped.</summary>
     public void Type(string text)
@@ -315,7 +382,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         {
             _focus = index;
             _window = _window.Showing(index);
-            ShowWindow();
+            ShowWindow(previousStart: null);
         }
     }
 
@@ -325,27 +392,81 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         var scrolled = _window.Scroll(delta);
         if (scrolled != _window)
         {
+            var previous = _window.Start;
             _window = scrolled;
             _focus = Math.Clamp(_focus, _window.Start, Math.Min(Hits.Count, _window.Start + _window.Size) - 1);
-            ShowWindow();
+            ShowWindow(previous);
         }
     }
 
     public void Dispose() => _erase.Dispose();
 
-    partial void OnUsesControllerChanged(bool value)
+    partial void OnIsKeyboardOutChanged(bool value)
     {
+        if (!value)
+        {
+            Keyboard.CloseLayoutMenu();
+            CancelHeldButtons();
+        }
+
         _window = _window.WithLayout(ResultRows, ResultColumns, _focus);
-        ShowWindow();
+        ShowWindow(previousStart: null);
     }
 
-    /// <summary>LB/RB, or a click on a faded neighbour: the next or previous window of hits, round and round.</summary>
+    /// <summary>The D-pad and the buttons that stand for keys, while the keyboard is out.</summary>
+    private void HandleKeyboard(UiAction action)
+    {
+        switch (action)
+        {
+            case UiAction.ViewOptions:
+                Type(" ");
+                break;
+            case UiAction.PreviousPage:
+                Keyboard.PressShift();
+                break;
+            case UiAction.NextPage:
+                Keyboard.PressSymbols();
+                break;
+            case UiAction.KeyboardLayout:
+                Keyboard.ToggleLayoutMenu();
+                break;
+            case UiAction.Accept:
+                PressFocusedKey();
+                break;
+            case UiAction.Up or UiAction.Down or UiAction.Left or UiAction.Right:
+                Keyboard.Move(action);
+                break;
+        }
+    }
+
+    /// <summary>The D-pad, or a real keyboard's arrows, while the keyboard is in.</summary>
+    private void HandleHits(UiAction action)
+    {
+        switch (action)
+        {
+            case UiAction.Up:
+                MoveHit(0, -1);
+                break;
+            case UiAction.Down:
+                MoveHit(0, 1);
+                break;
+            case UiAction.Left:
+                MoveHit(-1, 0);
+                break;
+            case UiAction.Right:
+                MoveHit(1, 0);
+                break;
+        }
+    }
+
+    /// <summary>LB/RB: the next or previous window of hits, round and round.</summary>
     private void Turn(int direction)
     {
         if (_window.CanTurn)
         {
+            var previous = _window.Start;
             (_window, _focus) = _window.Turn(direction, _focus);
-            ShowWindow();
+            ShowWindow(previous);
         }
     }
 
@@ -357,12 +478,11 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        var (window, focus) = _window.Move(_focus, columns, rows);
-        var scrolled = window != _window;
-        (_window, _focus) = (window, focus);
-        if (scrolled)
+        var previous = _window.Start;
+        (_window, _focus) = _window.Move(_focus, columns, rows);
+        if (_window.Start != previous)
         {
-            ShowWindow();
+            ShowWindow(previous);
         }
         else
         {
@@ -462,10 +582,14 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
 
         var games = _libraries.Where(l => _scope.LauncherIds.Contains(l.Launcher.Id)).SelectMany(l => l.Games);
         Hits = GameSearch.Find(games, query.Term, Formatting.Culture, Sort);
+        _hitsChanged = true;
         var launchersHit = Hits.Select(g => g.LauncherId).Distinct().Count();
-        ResultsTitle = query.Term.Length == 0 ? "Tippe einen Suchbegriff ein"
-            : Hits.Count == 0 ? "Keine Treffer"
-            : $"{Hits.Count} Treffer in {launchersHit} {(launchersHit == 1 ? "Launcher" : "Launchern")}";
+        ResultsTitle = $"{Hits.Count} Treffer in {launchersHit} {(launchersHit == 1 ? "Launcher" : "Launchern")}";
+        Empty = query.Term.Trim().Length == 0
+            ? new SearchEmptyState(false, "Tippe einen Suchbegriff ein", "Arcadia sucht in den Titeln der Spiele aller gewählten Launcher.")
+            : Hits.Count == 0
+                ? new SearchEmptyState(true, "Keine Treffer", $"Kein Spiel passt zu „{query.Term.Trim()}“. Prüfe die Schreibweise oder nimm weitere Launcher dazu.")
+                : null;
 
         // A rescan keeps the focus on its game; new input starts again at the first hit.
         var kept = keepFocusOn is null ? -1 : IndexOf(keepFocusOn);
@@ -480,22 +604,39 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
             _window = (keepFocusOn is null ? HitWindow.Of(Hits.Count, ResultRows, ResultColumns) : _window.WithCount(Hits.Count)).Showing(_focus);
         }
 
-        ShowWindow();
+        ShowWindow(previousStart: null);
     }
 
-    private void ShowWindow()
+    /// <summary>
+    /// Shows the window and a window's worth of hits on either side, so a step or turn can slide
+    /// them in. Tiles of games already shown are kept, so their covers don't load again.
+    /// </summary>
+    private void ShowWindow(int? previousStart)
     {
-        FocusedResult = null;
-        Results.Clear();
-        foreach (var game in Hits.Skip(_window.Start).Take(_window.Size))
+        var sliceStart = Math.Max(0, _window.Start - _window.Size);
+        var sliceEnd = Math.Min(Hits.Count, _window.Start + (2 * _window.Size));
+        if (_hitsChanged || sliceStart != SliceStart || sliceEnd - sliceStart != Results.Count)
         {
-            Results.Add(_createTile(game, FocusByPointer));
+            var shown = new Dictionary<string, GameTileViewModel>();
+            foreach (var tile in Results)
+            {
+                shown.TryAdd(tile.Game.Key, tile);
+            }
+
+            Results.Clear();
+            foreach (var game in Hits.Take(sliceEnd).Skip(sliceStart))
+            {
+                Results.Add(shown.TryGetValue(game.Key, out var tile) && tile.Game == game ? tile : _createTile(game, FocusByPointer));
+            }
+
+            SliceStart = sliceStart;
+            _hitsChanged = false;
         }
 
-        PeekBefore = _window.Before is { } before ? _createTile(Hits[before], _ => Turn(-1)) : null;
-        PeekAfter = _window.After is { } after ? _createTile(Hits[after], _ => Turn(1)) : null;
-        RangeText = _window.CanTurn ? $"{_window.Start + 1}–{_window.Start + Results.Count} von {Hits.Count}" : string.Empty;
+        CanTurn = _window.CanTurn;
+        RangeText = _window.CanTurn ? $"{_window.Start + 1}–{Math.Min(Hits.Count, _window.Start + _window.Size)} von {Hits.Count}" : string.Empty;
         ShowFocus();
+        WindowMoved?.Invoke(previousStart);
     }
 
     private void ShowFocus()
@@ -505,23 +646,33 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
             previous.IsFocused = false;
         }
 
-        var slot = _focus - _window.Start;
-        FocusedResult = slot >= 0 && slot < Results.Count ? Results[slot] : null;
+        var slot = _focus - SliceStart;
+        FocusedResult = Hits.Count > 0 && slot >= 0 && slot < Results.Count ? Results[slot] : null;
         if (FocusedResult is { } focused)
         {
             focused.IsFocused = true;
         }
     }
 
-    /// <summary>A click on a hit focuses it.</summary>
+    /// <summary>A click on a hit focuses it; one only partly on screen comes into view.</summary>
     private void FocusByPointer(GameTileViewModel tile)
     {
         var index = Results.IndexOf(tile);
-        if (index >= 0)
+        if (index < 0)
         {
-            _focus = _window.Start + index;
-            ShowFocus();
+            return;
         }
+
+        _focus = SliceStart + index;
+        if (_window.Contains(_focus))
+        {
+            ShowFocus();
+            return;
+        }
+
+        var previous = _window.Start;
+        _window = _window.Showing(_focus);
+        ShowWindow(previous);
     }
 
     private int IndexOf(string key)

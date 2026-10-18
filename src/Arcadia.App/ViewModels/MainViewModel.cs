@@ -341,38 +341,38 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         return -1;
     }
 
-    /// <summary>
-    /// A gamepad button was pressed. In a search used by keyboard it first brings the on-screen
-    /// keyboard back; that press does nothing else, so it can't type or erase by surprise, except B,
-    /// which still goes back.
-    /// </summary>
+    /// <summary>A gamepad button was pressed: the search shows its button legend.</summary>
     public void HandleGamepad(UiAction action)
     {
         _input = InputKind.Gamepad;
-        if (IsSearchShown && Search is { UsesController: false } search && !IsDialogOpen)
+        if (Search is { } search)
         {
             search.UsesController = true;
-            if (action != UiAction.Back)
-            {
-                return;
-            }
         }
 
         Handle(action);
     }
 
-    /// <summary>A key went down on a real keyboard: the search hides its on-screen keyboard.</summary>
+    /// <summary>A key went down on a real keyboard: the search puts its on-screen keyboard and legend away.</summary>
     public void NoteKeyboard()
     {
         _input = InputKind.Keyboard;
         if (Search is { } search)
         {
             search.UsesController = false;
+            search.IsKeyboardOut = false;
         }
     }
 
-    /// <summary>The mouse was used: a search opened next shows no on-screen keyboard; an open one keeps its state.</summary>
-    public void NotePointer() => _input = InputKind.Pointer;
+    /// <summary>The mouse was used: a search opened next shows no on-screen keyboard; an open one keeps it, without the legend.</summary>
+    public void NotePointer()
+    {
+        _input = InputKind.Pointer;
+        if (Search is { } search)
+        {
+            search.UsesController = false;
+        }
+    }
 
     /// <summary>A button or key was pressed. A in the library and ≡ or Enter on a hit wait for the release (<see cref="Release"/>).</summary>
     public void Handle(UiAction action)
@@ -621,10 +621,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     private bool IsSearchFilterOpen => ViewOptions is not null && _createViewOptions == CreateSearchFilter;
 
     /// <summary>
-    /// A in the search types on the on-screen keyboard, so a hit is started with ≡ instead: tapped
-    /// it starts the game on release, held it opens the details, as A on a cover. Enter on a real
-    /// keyboard does the same, ⧉ opens the hit's menu, L3 the filter. B closes the layout menu
-    /// first, then the search.
+    /// While the on-screen keyboard is out, A types on it, so a hit is started with ≡: tapped it
+    /// starts the game on release, held it opens the details, as A on a cover. With the keyboard in,
+    /// A and Enter on a real keyboard do the same. ⧉ opens the hit's menu, L3 the filter. B closes
+    /// the layout menu first, then puts the keyboard away, then closes the search.
     /// </summary>
     private void HandleSearch(SearchViewModel search, UiAction action)
     {
@@ -636,8 +636,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
         switch (action)
         {
-            case UiAction.Back:
+            case UiAction.Back when !search.Back():
                 CloseSearch();
+                break;
+            case UiAction.Back:
                 break;
             case UiAction.Filter:
                 OpenSearchFilter();
@@ -645,7 +647,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             case UiAction.Settings when search.FocusedResult is { } hit:
                 StartHold(hit, UiAction.Settings);
                 break;
-            case UiAction.Accept when !search.UsesController && search.FocusedResult is { } hit:
+            case UiAction.Accept when !search.IsKeyboardOut && search.FocusedResult is { } hit:
                 StartHold(hit, UiAction.Accept);
                 break;
             case UiAction.Options when search.FocusedResult is { } hit:

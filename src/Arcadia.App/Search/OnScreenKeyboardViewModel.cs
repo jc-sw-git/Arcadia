@@ -26,7 +26,7 @@ public enum SpecialKey
     /// <summary>X: deletes the last character, held: one after another.</summary>
     Erase,
 
-    /// <summary>RT: between the letters and the symbols.</summary>
+    /// <summary>RT: between the letters and the symbols, tapped or held.</summary>
     Symbols,
 }
 
@@ -104,15 +104,16 @@ public sealed partial class LayoutItemViewModel(KeyboardLayout layout, Action<Ke
 /// <summary>
 /// The on-screen keyboard of the search: four rows of characters from the chosen layout (or the
 /// symbols page) and a row of special keys. The D-pad moves the focus; up and down go to the key
-/// nearest in position. Shift (LT) is on while held, or switched on and off by a tap.
+/// nearest in position. Shift (LT) and the symbols page (RT) are on while held, or switched on and
+/// off by a tap.
 /// </summary>
 public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
 {
     private const double KeyWidth = 96;
     private const double KeyGap = 8;
 
-    /// <summary>Held at least this long without typing, shift goes off on release instead of staying on.</summary>
-    private static readonly TimeSpan ShiftHoldTime = TimeSpan.FromMilliseconds(500);
+    /// <summary>Held at least this long without typing, shift or the symbols go off on release instead of staying on.</summary>
+    private static readonly TimeSpan HoldTime = TimeSpan.FromMilliseconds(500);
 
     // About as wide as the character rows: R3, L3, LT, Y, X, RT.
     private static readonly (SpecialKey Key, double Width, string Glyph, string Label)[] SpecialKeys =
@@ -128,6 +129,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
     private readonly Action<KeyViewModel> _press;
     private readonly Action<KeyboardLayout> _layoutChosen;
     private readonly LatchGesture _shift;
+    private readonly LatchGesture _symbols;
     private int _row = 1;
     private int _column;
     private int _menuIndex;
@@ -136,8 +138,10 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
     {
         _press = press;
         _layoutChosen = layoutChosen;
-        _shift = new LatchGesture(ShiftHoldTime, time);
+        _shift = new LatchGesture(HoldTime, time);
         _shift.Changed += _ => ShowCase();
+        _symbols = new LatchGesture(HoldTime, time);
+        _symbols.Changed += _ => ShowPage();
         LayoutItems = KeyboardLayout.All.Select(l => new LayoutItemViewModel(l, Choose)).ToList();
         Layout = layout;
         BuildRows();
@@ -148,8 +152,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
     public partial KeyboardLayout Layout { get; private set; }
 
     /// <summary>RT switched to the symbols page.</summary>
-    [ObservableProperty]
-    public partial bool IsSymbols { get; private set; }
+    public bool IsSymbols => _symbols.IsOn;
 
     public bool IsShifted => _shift.IsOn;
 
@@ -191,6 +194,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
         }
 
         _shift.Use();
+        _symbols.Use();
         return (IsShifted ? char.ToUpper(character, Formatting.Culture) : character).ToString();
     }
 
@@ -206,13 +210,17 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
     /// <summary>The shift key pressed with A or clicked.</summary>
     public void ToggleShift() => _shift.Toggle();
 
-    /// <summary>RT, or the symbols key.</summary>
-    public void ToggleSymbols()
-    {
-        IsSymbols = !IsSymbols;
-        BuildRows();
-        SetFocus(_row, _column);
-    }
+    /// <summary>RT down: the symbols show at once, so one typed while holding it is a symbol.</summary>
+    public void PressSymbols() => _symbols.Press();
+
+    /// <summary>RT up: back to the letters after a hold, switched after a tap.</summary>
+    public void ReleaseSymbols() => _symbols.Release();
+
+    /// <summary>RT's release may never arrive, e.g. when the window loses focus.</summary>
+    public void CancelSymbols() => _symbols.Cancel();
+
+    /// <summary>The symbols key pressed with A or clicked.</summary>
+    public void ToggleSymbols() => _symbols.Toggle();
 
     public void ToggleLayoutMenu()
     {
@@ -261,11 +269,17 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
         }
 
         // Picking a layout on the symbols page goes back to the letters, so the choice shows.
-        IsSymbols = false;
         var changed = layout != Layout;
         Layout = layout;
-        BuildRows();
-        SetFocus(_row, _column);
+        if (IsSymbols)
+        {
+            _symbols.Reset();
+        }
+        else
+        {
+            ShowPage();
+        }
+
         if (changed)
         {
             _layoutChosen(layout);
@@ -287,6 +301,13 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
         {
             item.IsSelected = item.Layout == value;
         }
+    }
+
+    private void ShowPage()
+    {
+        OnPropertyChanged(nameof(IsSymbols));
+        BuildRows();
+        SetFocus(_row, _column);
     }
 
     private void BuildRows()

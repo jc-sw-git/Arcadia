@@ -10,14 +10,19 @@ public static class GameSearch
     // "pokemon" finds "Pokémon", "HOLLOW" finds "Hollow".
     private const CompareOptions Matching = CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace;
 
+    // Left out on both sides: some launchers keep them in titles, Epic's catalog loses them, and
+    // the culture-aware comparison would take "™" for "TM" and find "Batman" or "Hitman".
+    private static readonly char[] LegalSigns = ['™', '®', '©', '℠'];
+
     /// <summary>
     /// The games whose title contains <paramref name="term"/>: titles that start with it first,
     /// then titles with a word that starts with it, then the rest; within each group by title.
     /// Games that tie keep the order they came in, so launchers stay in tab order. An empty term finds nothing.
+    /// Trademark and copyright signs count for nothing.
     /// </summary>
     public static IReadOnlyList<Game> Find(IEnumerable<Game> games, string term, CultureInfo culture)
     {
-        term = term.Trim();
+        term = WithoutLegalSigns(term).Trim();
         if (term.Length == 0)
         {
             return [];
@@ -25,7 +30,7 @@ public static class GameSearch
 
         var titles = StringComparer.Create(culture, ignoreCase: true);
         return games
-            .Select(game => (Game: game, Rank: Rank(game.Title, term, culture.CompareInfo)))
+            .Select(game => (Game: game, Rank: Rank(WithoutLegalSigns(game.Title), term, culture.CompareInfo)))
             .Where(hit => hit.Rank is not null)
             .OrderBy(hit => hit.Rank)
             .ThenBy(hit => hit.Game.Title, titles)
@@ -42,6 +47,9 @@ public static class GameSearch
         var hits = Find(games, term, culture);
         return order is { } sort ? GameSorter.Sort(hits, sort, culture) : hits;
     }
+
+    private static string WithoutLegalSigns(string text) =>
+        text.IndexOfAny(LegalSigns) < 0 ? text : string.Concat(text.Split(LegalSigns));
 
     /// <summary>0: the title starts with the term, 1: a word does, 2: it's inside a word, null: no match.</summary>
     private static int? Rank(string title, string term, CompareInfo compare)

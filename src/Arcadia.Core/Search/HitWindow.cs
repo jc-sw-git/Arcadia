@@ -4,7 +4,7 @@ namespace Arcadia.Core.Search;
 /// The hits on screen: <see cref="Size"/> of them from <see cref="Start"/>, laid out in rows of
 /// <see cref="RowLength"/>. Single steps move through the hits and stop at the ends; LB/RB turn
 /// a whole window and wrap around, so after the last window comes the first. In a grid the
-/// window starts on a row, so the columns stay where they are while it moves.
+/// window starts on a row, so the columns stay where they are while it scrolls.
 /// </summary>
 /// <param name="Start">The first hit shown.</param>
 /// <param name="Size">Hits shown at once; a multiple of <paramref name="RowLength"/>.</param>
@@ -15,7 +15,7 @@ public readonly record struct HitWindow(int Start, int Size, int RowLength, int 
     /// <summary>The first window over <paramref name="count"/> hits.</summary>
     public static HitWindow Of(int count, int rows, int rowLength) => new(0, rows * rowLength, rowLength, count);
 
-    /// <summary>More hits than fit: LB/RB turn, and the neighbours beyond the edges show faded.</summary>
+    /// <summary>More hits than fit: LB/RB turn.</summary>
     public bool CanTurn => Count > Size;
 
     /// <summary>
@@ -23,12 +23,6 @@ public readonly record struct HitWindow(int Start, int Size, int RowLength, int 
     /// is the row that brings the last hit into view, so its last row may be partly empty.
     /// </summary>
     public int LastStart => Count <= Size ? 0 : ((Count - Size + Step - 1) / Step) * Step;
-
-    /// <summary>The hit just before the window, wrapping round from the first to the last; null when everything fits.</summary>
-    public int? Before => CanTurn ? (Start > 0 ? Start - 1 : Count - 1) : null;
-
-    /// <summary>The hit just after the window, wrapping round from the last to the first; null when everything fits.</summary>
-    public int? After => CanTurn ? (Start + Size < Count ? Start + Size : 0) : null;
 
     /// <summary>
     /// How far a step past the window's edge moves it: one hit in a single row, a row in a grid,

@@ -5,13 +5,11 @@ namespace Arcadia.Core.Tests;
 public class HitWindowTests
 {
     [Fact]
-    public void Everything_that_fits_has_no_turning_and_no_neighbours()
+    public void Everything_that_fits_has_no_turning()
     {
         var window = HitWindow.Of(5, rows: 1, rowLength: 7);
 
         Assert.False(window.CanTurn);
-        Assert.Null(window.Before);
-        Assert.Null(window.After);
         Assert.Equal((window, 3), window.Turn(1, 3));
     }
 
@@ -52,16 +50,6 @@ public class HitWindowTests
         // The slot of the focus is empty in the last, partial window: the focus goes to the last hit.
         var (last, lastFocus) = second.Turn(1, 27);
         Assert.Equal((21, 29), (last.Start, lastFocus));
-    }
-
-    [Fact]
-    public void The_neighbours_beyond_the_edges_wrap_around()
-    {
-        var first = HitWindow.Of(16, rows: 1, rowLength: 7);
-        Assert.Equal((15, 7), (first.Before, first.After));
-
-        var last = first with { Start = 9 };
-        Assert.Equal((8, 0), (last.Before, last.After));
     }
 
     [Fact]

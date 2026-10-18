@@ -24,7 +24,7 @@ public sealed record KeyboardLayout(string Id, string Code, string Name, string 
     /// The page RT switches to: the punctuation and symbols game titles use, the same for every
     /// layout. Not in <see cref="All"/>: it is no layout of its own.
     /// </summary>
-    public static KeyboardLayout Symbols { get; } = new("symbols", "#&?", "Sonderzeichen", string.Empty, ["!?&+-_=/\\*#", "()[]{}<>@%~", ".,:;'\"`^°§|", "€$£¥®™²³½·…"]);
+    public static KeyboardLayout Symbols { get; } = new("symbols", "#&?", "Sonderzeichen", string.Empty, ["!?&+-_=/\\*#", "()[]{}<>@%~", ".,:;'\"`^°§|", "€$£¥²³½·"]);
 
     /// <summary>The layout stored as <paramref name="id"/>; German for none or one this version doesn't know.</summary>
     public static KeyboardLayout Find(string? id) => All.FirstOrDefault(l => l.Id == id) ?? German;

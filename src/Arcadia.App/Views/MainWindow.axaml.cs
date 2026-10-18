@@ -1,10 +1,12 @@
 using System.ComponentModel;
 using Arcadia.App.Input;
+using Arcadia.App.Search;
 using Arcadia.App.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media.Transformation;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
@@ -21,8 +23,25 @@ public partial class MainWindow : Window
     /// <summary>Height of the fades at the grid's edges (Border.listFade in Theme.axaml).</summary>
     private const double ListFadeHeight = 96;
 
+    /// <summary>Closer than this, the launcher chips and the sort button get a divider between them.</summary>
+    private const double SortDividerGap = 48;
+
+    /// <summary>From one search hit to the next: tile width or height (SearchHitTile) plus the spacing between them.</summary>
+    private const double HitPitchX = 190 + 20;
+
+    private const double HitPitchY = 270 + 20;
+
+    /// <summary>Seven hits side by side, the width of the window of hits in both layouts.</summary>
+    private const double HitWindowWidth = (7 * HitPitchX) - 20;
+
+    /// <summary>Room above the row of hits for the focused one's lift, and above the grid for the row before it, faded.</summary>
+    private const double HitRowTop = 8;
+
+    private const double HitGridTop = 40;
+
     private readonly HashSet<Key> _keysDown = [];
     private MainViewModel? _viewModel;
+    private SearchViewModel? _search;
 
     public MainWindow()
     {
@@ -35,7 +54,11 @@ public partial class MainWindow : Window
         GameGrid.AddHandler(PointerPressedEvent, OnGridPointerPressed, RoutingStrategies.Tunnel);
         SearchResults.AddHandler(DoubleTappedEvent, OnGridDoubleTapped);
         SearchResults.AddHandler(PointerPressedEvent, OnSearchResultPointerPressed, RoutingStrategies.Tunnel);
-        SearchResultRow.PointerWheelChanged += OnSearchResultsWheel;
+        SearchViewport.PointerWheelChanged += OnSearchResultsWheel;
+        SearchViewport.SizeChanged += (_, _) => PlaceHits(previousStart: null);
+        SearchChips.SizeChanged += (_, _) => UpdateSortDivider();
+        SearchChipRow.SizeChanged += (_, _) => UpdateSortDivider();
+        SearchSortButton.SizeChanged += (_, _) => UpdateSortDivider();
 
         // Typing on a real keyboard while the search is open. Nothing has Avalonia focus, so the text arrives at the window.
         AddHandler(TextInputEvent, OnTextInput, RoutingStrategies.Tunnel);
@@ -63,6 +86,12 @@ public partial class MainWindow : Window
                 await _viewModel.RefreshLibraryAsync();
             }
         };
+    }
+
+    private void UpdateSortDivider()
+    {
+        var gap = (SortDivider.Bounds.X - SortDivider.Margin.Left) - (SearchChips.Bounds.Right + SearchChips.Margin.Right);
+        SortDivider.Classes.Set("unneeded", gap >= SortDividerGap);
     }
 
     /// <summary>
@@ -183,7 +212,7 @@ public partial class MainWindow : Window
 
     private void OnSearchResultsWheel(object? sender, PointerWheelEventArgs e)
     {
-        // Either wheel direction moves along the row; most mice only have the vertical one.
+        // Either wheel direction scrolls; most mice only have the vertical one.
         var delta = Math.Abs(e.Delta.X) > Math.Abs(e.Delta.Y) ? e.Delta.X : e.Delta.Y;
         if (_viewModel is not null && delta != 0)
         {
@@ -227,7 +256,72 @@ public partial class MainWindow : Window
             case nameof(MainViewModel.SelectedTab):
                 Dispatcher.UIThread.Post(BringSelectedTabIntoView, DispatcherPriority.Loaded);
                 break;
+            case nameof(MainViewModel.Search):
+                if (_search is not null)
+                {
+                    _search.WindowMoved -= PlaceHits;
+                }
+
+                _search = _viewModel?.Search;
+                if (_search is not null)
+                {
+                    _search.WindowMoved += PlaceHits;
+                    PlaceHits(previousStart: null);
+                }
+
+                break;
         }
+    }
+
+    /// <summary>
+    /// Moves the hits so the window starts at the leading edge: in the row its first hit on the
+    /// left, in the grid its first row at the top. After a step or a turn they slide there from
+    /// where the window was, at most a window away (wrapping round from the end jumps further).
+    /// </summary>
+    private void PlaceHits(int? previousStart)
+    {
+        if (_search is not { } search)
+        {
+            return;
+        }
+
+        var target = HitsOffset(search, search.WindowStart);
+        if (previousStart is not { } previous)
+        {
+            SetHitsOffsetAtOnce(target);
+            return;
+        }
+
+        var size = search.IsKeyboardOut ? SearchViewModel.ResultColumns : SearchViewModel.ResultColumns * SearchViewModel.ResultRowsWithoutKeyboard;
+        SetHitsOffsetAtOnce(HitsOffset(search, Math.Clamp(previous, search.WindowStart - size, search.WindowStart + size)));
+        SearchResults.RenderTransform = target;
+    }
+
+    private TransformOperations HitsOffset(SearchViewModel search, int windowStart)
+    {
+        // The results hold the hits from SliceStart on; the window is centred in the hit area.
+        var shift = windowStart - search.SliceStart;
+        var left = (SearchViewport.Bounds.Width - HitWindowWidth) / 2;
+        var builder = TransformOperations.CreateBuilder(1);
+        if (search.IsKeyboardOut)
+        {
+            builder.AppendTranslate(left - (shift * HitPitchX), HitRowTop);
+        }
+        else
+        {
+            builder.AppendTranslate(left, HitGridTop - (shift / SearchViewModel.ResultColumns * HitPitchY));
+        }
+
+        return builder.Build();
+    }
+
+    /// <summary>Without the slide: a new search, the other layout, or the start of a slide.</summary>
+    private void SetHitsOffsetAtOnce(TransformOperations offset)
+    {
+        var transitions = SearchResults.Transitions;
+        SearchResults.Transitions = null;
+        SearchResults.RenderTransform = offset;
+        SearchResults.Transitions = transitions;
     }
 
     private void BringFocusedTileIntoView()

@@ -119,7 +119,7 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`SteamScanner`, `SteamInstallMonitor`, `SteamContentLog`, `SteamLoginLog`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, presses and releases, auto-repeat for D-pad and sticks), `HoldGesture` (tap vs. hold), `RepeatGesture` (held erase), `LatchGesture` (shift: tap or hold) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost` (`ISisrHost`), `SisrApiClient`, `UsbipDriver`, `UsbipPorts`, `GitHubReleases`, `ControllerSupportService` (`SisrState`), `ControllerSupportPlatform` (Windows/Steam, replaced in tests), `ControllerSupportRemoval` (uninstall) |
-| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu) and `GameDetailViewModel` (detail carousel, `Views/GameDetailView.axaml`) are its children; `Search/` holds `SearchViewModel` (search page), `OnScreenKeyboardViewModel` and `KeyboardLayout` |
+| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu) and `GameDetailViewModel` (detail carousel, `Views/GameDetailView.axaml`) are its children; `Search/` holds `SearchViewModel` (search page), `OnScreenKeyboardViewModel` and `KeyboardLayout`; `Controls/` holds `HoldRing`, `RevealPanel` (the sliding keyboard), `SharedWidthRow` and `CollapsingStack` (the shrinking chips) |
 | `tests/Arcadia.Core.Tests` | xUnit |
 
 Big Picture UI is laid out at 1920×1080 inside a `Viewbox`. Focus/navigation is done in the
@@ -146,17 +146,22 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   wrapping at the ends (two games: the other on both sides; one: no neighbours). LT/RT turn it, LB/RB switch
   the tab and stay on the detail page (first game), Y re-sorts with the shown game kept in the middle, B returns
   to the library page of the game shown last (owner, 2026-10-17).
-- Search (#12): with the controller the on-screen keyboard and a button legend show and the hits sit in one row;
-  a real keyboard hides both and shows two rows of hits, any gamepad press brings them back (that press does
-  nothing else, except B). D-pad/left stick type, the right stick picks a hit, LB/RB turn the hits a window at
-  a time and wrap round, faded neighbours show at the edges. X erases (held: repeats), Y space, LT shift (tap:
-  on/off, held: only while held), RT symbols page, L3 "Filter und Sortierung" (launchers, any number, and the
-  library's sort orders plus relevance, the default; not saved), R3 layout menu (all five, the last chosen
+- Search (#12): opened with X the on-screen keyboard is out, the hits sit in one row above it (sliding sideways,
+  faded neighbours at the edges, LB/RB buttons beside them, "RS Treffer wählen" above); opened with F or a click,
+  or after B, a real key or the tab on the keyboard's top edge, it slides in and the hits fill a grid that scrolls
+  up and down (faded rows at the top and bottom) and the D-pad and A act on the hits as on covers; X brings the
+  keyboard back. The button legend shows only while the controller is in use. B closes the layout menu first, then
+  puts the keyboard away, then closes the search; B never erases. D-pad/left stick type, the right stick picks a
+  hit, LB/RB turn the hits a window at a time and wrap round. X erases (held: repeats), Y space, LT shift and RT
+  symbols page (each: tap on/off, held only while held), L3 "Filter und Sortierung" (launchers, any number, and
+  the library's sort orders plus relevance, the default; not saved), R3 layout menu (all five, the last chosen
   saved globally). ≡ starts the focused hit, ≡ held 1 s opens its details, ⧉ its menu; with a real keyboard
-  Enter and Enter held do the same. The `/launcher` prefix still works when typed but isn't advertised; chips
-  and filter rewrite a typed prefix and never add one. A detail page opened from the search turns through the
-  hits in their order; LB/RB and Y do nothing there, B returns to the search with its text unchanged. B closes
-  the layout menu first, then the search; B never erases (owner, 2026-10-17 and 2026-10-18).
+  Enter and Enter held do the same. The sort button sits in the chip row; with many launchers the chips shrink
+  (keyword first, then the name, last only the icon) and a divider appears before the sort button. No hits and
+  nothing typed show an empty state the theme draws (`ContentControl.searchEmpty`). ™ ® © count for nothing in
+  the search. The `/launcher` prefix still works when typed but isn't advertised; chips and filter rewrite a typed
+  prefix and never add one. A detail page opened from the search turns through the hits in their order; LB/RB
+  and Y do nothing there, B returns to the search with its text unchanged (owner, 2026-10-17 and 2026-10-18).
 - Launcher actions (open in the launcher, uninstall) are `LaunchTarget`s on `Game`;
   a null one is shown disabled with the reason, or for uninstall opens the launcher instead.
 - If an update is available, A still says "Spielen" and starts the game; the launcher installs the update

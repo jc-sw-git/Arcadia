@@ -65,6 +65,17 @@ public class GameSearchTests
     }
 
     [Fact]
+    public void Trademark_signs_count_for_nothing_in_the_term_or_the_title()
+    {
+        var games = new[] { Game("Batman™: Arkham Knight"), Game("HITMAN 3"), Game("F1® 24") };
+
+        Assert.Empty(GameSearch.Find(games, "™", German));
+        Assert.Equal(["Batman™: Arkham Knight"], GameSearch.Find(games, "batman: arkham", German).Select(g => g.Title));
+        Assert.Equal(["F1® 24"], GameSearch.Find(games, "F1 24", German).Select(g => g.Title));
+        Assert.Equal(["F1® 24"], GameSearch.Find(games, "f1®", German).Select(g => g.Title));
+    }
+
+    [Fact]
     public void The_term_is_trimmed()
     {
         Assert.Single(GameSearch.Find([Game("Hollow Knight")], " knight ", German));

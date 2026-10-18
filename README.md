@@ -53,6 +53,8 @@ dotnet run --project src/Arcadia.App -- --demo
 | Optionen eines Spiels (Kontextmenü) | View (⧉) | Kontextmenü-Taste, Umschalt+F10, Rechtsklick |
 | Details eines Spiels | A halten (1 s) oder ⧉ → „Details anzeigen“ | Enter halten |
 | Einstellungen | Menü (≡) | F2 |
+| Suche über alle Launcher | X | F, Strg+F |
+| In der Suche: löschen / Leerzeichen / Filter / zu den Treffern / Tastaturlayout | X / Y / LT / ≡ / R3 | Rücktaste / Leertaste / „/“ tippen / Enter / Klick auf den Globus |
 
 Maus: Klick wählt ein Spiel aus, Doppelklick startet es. Auf der Detailseite blättert das Mausrad durch die Spiele.
 

@@ -21,6 +21,12 @@ public enum UiAction
 
     /// <summary>The context menu of the focused game.</summary>
     Options,
+
+    /// <summary>Opens the search (#12); inside it, deletes the last character.</summary>
+    Search,
+
+    /// <summary>The on-screen keyboard's layout menu.</summary>
+    KeyboardLayout,
 }
 
 public static class UiActionMap
@@ -41,6 +47,8 @@ public static class UiActionMap
         // The owner's choice (2026-10-17): the context menu is used far more often than the settings.
         GamepadButton.View => UiAction.Options,
         GamepadButton.Menu => UiAction.Settings,
+        GamepadButton.X => UiAction.Search,
+        GamepadButton.RightStickClick => UiAction.KeyboardLayout,
         _ => null,
     };
 
@@ -64,6 +72,7 @@ public static class UiActionMap
         (Key.V, KeyModifiers.None) => UiAction.ViewOptions,
         (Key.F2, _) => UiAction.Settings,
         (Key.Apps, _) or (Key.F10, KeyModifiers.Shift) => UiAction.Options,
+        (Key.F, KeyModifiers.None or KeyModifiers.Control) => UiAction.Search,
         _ => null,
     };
 }

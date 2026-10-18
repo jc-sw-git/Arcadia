@@ -97,6 +97,13 @@
     <BoxShadows x:Key="DetailShadow">0 30 80 0 #73000000</BoxShadows>
     <BoxShadows x:Key="CoverShadow">0 24 50 0 #80000000</BoxShadows>
     <BoxShadows x:Key="DialogShadow">0 40 100 0 #99000000</BoxShadows>
+
+    <!-- Search (#12). -->
+    <SolidColorBrush x:Key="KeyboardSurface" Color="#11161D" />
+    <BoxShadows x:Key="SearchFieldRing">0 0 0 3 #3B9EFF</BoxShadows>
+    <!-- Sets the launcher badge off from any cover colour. -->
+    <BoxShadows x:Key="LauncherBadgeRing">0 0 0 2 #990B0F14</BoxShadows>
+    <BoxShadows x:Key="LayoutMenuShadow">0 24 60 0 #99000000, 0 0 0 1 #2A3440</BoxShadows>
   </Styles.Resources>
 
   <!-- A button that draws only what we give it; the Fluent hover/press visuals don't fit the design. -->
@@ -682,5 +689,153 @@
   </Style>
   <Style Selector="ScrollBar /template/ Thumb:pointerover">
     <Setter Property="Background" Value="{StaticResource LineStrong}" />
+  </Style>
+
+  <!-- Search (#12): launcher chips. -->
+  <Style Selector="Button.chip">
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Padding" Value="10,0,18,0" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="{StaticResource Line}" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.chip.all">
+    <Setter Property="Padding" Value="18,0" />
+  </Style>
+  <Style Selector="Button.chip:pointerover">
+    <Setter Property="BorderBrush" Value="{StaticResource LineStrong}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Button.chip.on">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.chip.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Button.chip Border.chipLogo">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+  <Style Selector="Button.chip.on Border.chipLogo">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- Search hits: a cover with the launcher's badge, the launcher's name below. -->
+  <Style Selector="Button.resultTile">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.14" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.resultTile:pointerover /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource HoverRing}" />
+  </Style>
+  <Style Selector="Button.resultTile.focused">
+    <Setter Property="RenderTransform" Value="scale(1.05)" />
+    <Setter Property="ZIndex" Value="2" />
+  </Style>
+  <Style Selector="Button.resultTile.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRingLifted}" />
+  </Style>
+  <Style Selector="Border.launcherBadge">
+    <Setter Property="BoxShadow" Value="{StaticResource LauncherBadgeRing}" />
+  </Style>
+  <!-- Holding A on a hit fills a ring along the cover's edge, as around the library's preview. -->
+  <Style Selector="Button.resultTile ctl|HoldRing">
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Button.resultTile.holding ctl|HoldRing">
+    <Setter Property="IsVisible" Value="True" />
+    <Style.Animations>
+      <Animation Duration="0:0:0.75" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="Progress" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Progress" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Button.moreCard">
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.moreCard Rectangle">
+    <Setter Property="Stroke" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Button.moreCard:pointerover Rectangle">
+    <Setter Property="Stroke" Value="{StaticResource LineStrong}" />
+  </Style>
+
+  <!-- On-screen keyboard. -->
+  <Style Selector="Button.key">
+    <Setter Property="Height" Value="56" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.key.wide">
+    <Setter Property="FontSize" Value="17" />
+  </Style>
+  <Style Selector="Button.key:pointerover, Button.key.focused">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Button.key.submit">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+  </Style>
+  <Style Selector="Button.key.submit:pointerover, Button.key.submit.focused">
+    <Setter Property="Background" Value="{StaticResource AccentHover}" />
+  </Style>
+  <Style Selector="Button.key.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Button.key Path.globe">
+    <Setter Property="Stroke" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Border.glyph.small">
+    <Setter Property="MinWidth" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="CornerRadius" Value="11" />
+    <Setter Property="Padding" Value="6,0" />
+  </Style>
+  <Style Selector="Border.glyph.small.round">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="Border.glyph.small > TextBlock">
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+
+  <!-- The keyboard's layout menu (R3). -->
+  <Style Selector="Button.layoutItem">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Height" Value="60" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Button.layoutItem:pointerover, Button.layoutItem.selected, Button.layoutItem.focused">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Button.layoutItem.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRingInset}" />
   </Style>
 </Styles>

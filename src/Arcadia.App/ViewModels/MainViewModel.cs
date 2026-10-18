@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Arcadia.App.Input;
+using Arcadia.App.Search;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
@@ -64,7 +65,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         UpdateControllerSupportState();
 
         _acceptHold = new HoldGesture(HoldFeedbackDelay, HoldTime, time, action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
-        _acceptHold.Tapped += () => WithHoldTile(Activate);
+        // The tile has the focus already: the press started on it.
+        _acceptHold.Tapped += () => WithHoldTile(Start);
         _acceptHold.Held += () => WithHoldTile(ShowDetails);
         _acceptHold.FeedbackChanged += holding => WithHoldTile(tile => tile.IsHolding = holding);
     }
@@ -121,14 +123,25 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     public bool IsConfirmationOpen => Confirmation is not null;
 
-    /// <summary>The detail page; it takes the place of the cover grid while open.</summary>
+    /// <summary>The detail page; it takes the place of the cover grid while open, and of the search when opened from there.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsDetailOpen), nameof(IsLibraryShown))]
+    [NotifyPropertyChangedFor(nameof(IsDetailOpen), nameof(IsLibraryShown), nameof(IsSearchShown), nameof(IsTabStripShown))]
     public partial GameDetailViewModel? Detail { get; private set; }
 
     public bool IsDetailOpen => Detail is not null;
 
     public bool IsLibraryShown => Detail is null;
+
+    /// <summary>The search over all launchers (#12); it covers the library while open.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSearchShown))]
+    public partial SearchViewModel? Search { get; private set; }
+
+    /// <summary>The search is open and not hidden behind a detail page opened from it.</summary>
+    public bool IsSearchShown => Search is not null && Detail is null;
+
+    /// <summary>A detail page opened from the search belongs to no tab, so the tabs are hidden there.</summary>
+    public bool IsTabStripShown => Detail?.IsFromSearch != true;
 
     [ObservableProperty]
     public partial bool IsLoading { get; private set; } = true;
@@ -186,7 +199,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             return;
         }
 
-        foreach (var tile in PageGames.Concat(Detail?.Pages.Select(p => p.Tile) ?? []))
+        foreach (var tile in PageGames.Concat(Detail?.Pages.Select(p => p.Tile) ?? []).Concat(Search?.Results ?? []))
         {
             tile.InstallState = _installs.StateOf(tile.Game.Key);
         }
@@ -279,12 +292,17 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
 
         IsEmpty = Tabs.Count == 0;
+        UpdateSearch();
         if (SelectedTab is null || !Tabs.Contains(SelectedTab))
         {
             SelectedTab = null;
             FocusedGame = null;
             ViewOptions = null;
-            Detail = null;
+            if (Detail?.IsFromLibrary == true)
+            {
+                Detail = null;
+            }
+
             PageGames.Clear();
             PageButtons.Clear();
             CountText = RangeText = ViewSummary = string.Empty;
@@ -370,6 +388,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             return;
         }
 
+        if (Search is { } search)
+        {
+            HandleSearch(search, action);
+            return;
+        }
+
         switch (action)
         {
             case UiAction.Up:
@@ -414,6 +438,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             case UiAction.Settings:
                 OpenSettings();
                 break;
+            case UiAction.Search:
+                OpenSearch();
+                break;
         }
     }
 
@@ -423,6 +450,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         {
             case UiAction.Back:
                 CloseDetail();
+                break;
+            case UiAction.PreviousTab or UiAction.NextTab or UiAction.ViewOptions when detail.IsFromSearch:
+                // The hits belong to no tab and are sorted by relevance.
                 break;
             case UiAction.PreviousPage:
                 detail.Rotate(-1);
@@ -451,9 +481,16 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
     }
 
-    /// <summary>Opens the detail page on <paramref name="key"/> in the selected tab.</summary>
+    /// <summary>Opens the detail page on <paramref name="key"/> in the selected tab, or among the hits while the search is open.</summary>
     private void OpenDetail(string key)
     {
+        if (Search is { } search)
+        {
+            var hit = Carousel.Find(search.Hits, key, 0);
+            Detail = hit < 0 ? null : new GameDetailViewModel(null, search.Hits, hit, null, CreateDetailTile, this);
+            return;
+        }
+
         if (SelectedTab is not { } tab)
         {
             return;
@@ -464,10 +501,20 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         Detail = index < 0 ? null : new GameDetailViewModel(tab.Name, games, index, SortLabel(_settings.Current.LibrarySort), CreateDetailTile, this);
     }
 
-    /// <summary>Back to the library, on the page of the game shown last and with the focus on it.</summary>
+    /// <summary>
+    /// Back to the library, on the page of the game shown last and with the focus on it; or back
+    /// to the search, with the focus on that game among the hits.
+    /// </summary>
     [RelayCommand]
     private void CloseDetail()
     {
+        if (Detail is { IsFromSearch: true } fromSearch && Search is { } search)
+        {
+            Detail = null;
+            search.FocusHit(fromSearch.Current.Tile.Game.Key);
+            return;
+        }
+
         if (Detail is not { } detail || SelectedTab is not { } tab)
         {
             Detail = null;
@@ -483,14 +530,131 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     /// <summary>The list changed (rescan, new sort): the detail page keeps its game in the middle.</summary>
     private void UpdateDetail()
     {
-        if (Detail is { } detail && SelectedTab is { } tab && !detail.Update(SortedGames(tab), SortLabel(_settings.Current.LibrarySort)))
+        if (Detail is { IsFromLibrary: true } detail && SelectedTab is { } tab && !detail.Update(SortedGames(tab), SortLabel(_settings.Current.LibrarySort)))
         {
             Detail = null;
         }
     }
 
     private GameTileViewModel CreateDetailTile(Game game) =>
-        new(game, SelectedTab!.Launcher, _time.GetLocalNow(), _ => { }, _ => { }) { InstallState = _installs.StateOf(game.Key) };
+        new(game, LauncherOf(game), _time.GetLocalNow(), _ => { }, _ => { }) { InstallState = _installs.StateOf(game.Key) };
+
+    /// <summary>Every shown game comes from a tab, so its launcher has one.</summary>
+    private LauncherInfo LauncherOf(Game game) => Tabs.First(t => t.Launcher.Id == game.LauncherId).Launcher;
+
+    /// <summary>X in the library: the search over all launchers, with the on-screen keyboard.</summary>
+    [RelayCommand]
+    private void OpenSearch()
+    {
+        if (Tabs.Count == 0)
+        {
+            return;
+        }
+
+        Search = new SearchViewModel(
+            CurrentLibraries(),
+            KeyboardLayout.Find(_settings.Current.KeyboardLayout),
+            layout => SaveView(settings => settings with { KeyboardLayout = layout.Id }),
+            CreateSearchTile);
+    }
+
+    /// <summary>Back to the library, where it was before the search.</summary>
+    [RelayCommand]
+    private void CloseSearch()
+    {
+        _acceptHold.Cancel();
+        Search = null;
+    }
+
+    /// <summary>
+    /// A hit behaves like a cover in the library: A starts on release, held opens the details, ⧉ opens
+    /// its menu. B closes the layout menu first, then the search.
+    /// </summary>
+    private void HandleSearch(SearchViewModel search, UiAction action)
+    {
+        if (search.Keyboard.IsLayoutMenuOpen)
+        {
+            search.Handle(action);
+            return;
+        }
+
+        switch (action)
+        {
+            case UiAction.Back:
+                CloseSearch();
+                break;
+            case UiAction.Accept when search.FocusedResult is { } hit:
+                _holdTile = hit;
+                _acceptHold.Press();
+                break;
+            case UiAction.Options when search.FocusedResult is { } hit:
+                GameMenu = new GameMenuViewModel(hit, GameActionViewModel.For(hit, this));
+                break;
+            default:
+                search.Handle(action);
+                break;
+        }
+    }
+
+    /// <summary>Text from a real keyboard while the search is shown.</summary>
+    public void TypeInSearch(string text)
+    {
+        if (IsSearchShown && !IsSettingsOpen && !IsConfirmationOpen && !IsGameMenuOpen && Search is { Keyboard.IsLayoutMenuOpen: false } search)
+        {
+            _acceptHold.Cancel();
+            search.Type(text);
+        }
+    }
+
+    /// <summary>The mouse wheel over the hits.</summary>
+    public void ScrollSearch(int delta)
+    {
+        _acceptHold.Cancel();
+        Search?.Scroll(delta);
+    }
+
+    /// <summary>Right click on a hit: focus it and open its menu.</summary>
+    public void OpenMenuForHit(GameTileViewModel tile)
+    {
+        if (!IsSearchShown || Search is not { } search || !search.Results.Contains(tile) || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen)
+        {
+            return;
+        }
+
+        tile.FocusCommand.Execute(null);
+        GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, this));
+    }
+
+    private GameTileViewModel CreateSearchTile(Game game, Action<GameTileViewModel> focus) =>
+        new(game, LauncherOf(game), _time.GetLocalNow(), focus, tile =>
+        {
+            focus(tile);
+            Start(tile);
+        })
+        { InstallState = _installs.StateOf(game.Key) };
+
+    /// <summary>A rescan: same input, fresh hits; a detail page opened from the search keeps its game.</summary>
+    private void UpdateSearch()
+    {
+        if (Search is not { } search)
+        {
+            return;
+        }
+
+        if (Tabs.Count == 0)
+        {
+            Detail = Detail?.IsFromSearch == true ? null : Detail;
+            CloseSearch();
+            return;
+        }
+
+        search.Update(CurrentLibraries());
+        KeepHoldOnRebuiltPage();
+        if (Detail is { IsFromSearch: true } detail && !detail.Update(search.Hits, null))
+        {
+            Detail = null;
+        }
+    }
 
     private IReadOnlyList<Game> SortedGames(LauncherTabViewModel tab) =>
         GameSorter.Sort(tab.Games, _settings.Current.LibrarySort, Formatting.Culture);
@@ -508,8 +672,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     public void CancelHold() => _acceptHold.Cancel();
 
     /// <summary>
-    /// A rescan can rebuild the page while A is down, e.g. right after a game ended. The press moves
-    /// to the same game's new tile; only a game that's no longer shown drops it.
+    /// A rescan can rebuild the page or the hits while A is down, e.g. right after a game ended. The
+    /// press moves to the same game's new tile; only a game that's no longer shown drops it.
     /// </summary>
     private void KeepHoldOnRebuiltPage()
     {
@@ -518,7 +682,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             return;
         }
 
-        _holdTile = PageGames.FirstOrDefault(t => t.Game.Key == held.Game.Key);
+        IEnumerable<GameTileViewModel> shown = IsSearchShown ? Search!.Results : PageGames;
+        _holdTile = shown.FirstOrDefault(t => t.Game.Key == held.Game.Key);
         if (_holdTile is null)
         {
             _acceptHold.Cancel();
@@ -549,7 +714,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     /// <summary>Right click on a cover: focus it and open its menu.</summary>
     public void OpenMenuFor(GameTileViewModel tile)
     {
-        if (!PageGames.Contains(tile) || IsSettingsOpen || IsViewOptionsOpen || IsConfirmationOpen || IsDetailOpen)
+        if (!PageGames.Contains(tile) || IsSettingsOpen || IsViewOptionsOpen || IsConfirmationOpen || IsDetailOpen || Search is not null)
         {
             return;
         }

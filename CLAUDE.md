@@ -115,11 +115,11 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 | Project | Content |
 |---|---|
 | `src/Arcadia.Launchers.Abstractions` | What a launcher is made of, with no dependency on the rest: `ILauncherIntegration` (scanner, optional client and install monitor, `Locate`), `ILauncherScanner`, `ILauncherClient`, `IInstallMonitor`, models (`Game`, `LauncherInfo`, `LaunchTarget`). The future plugin interface for launchers |
-| `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `Carousel` (detail page neighbours), `SearchQuery`, `AppSettings`/`SettingsStore`/`SettingsService` (the one shared copy of the settings), `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
+| `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `Carousel` (detail page neighbours), `SearchQuery` (prefix parser), `GameSearch` (hits by relevance), `LauncherScope` (chips and prefix in step), `AppSettings`/`SettingsStore`/`SettingsService` (the one shared copy of the settings), `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`SteamScanner`, `SteamInstallMonitor`, `SteamContentLog`, `SteamLoginLog`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, presses and releases, auto-repeat for D-pad/stick), `HoldGesture` (tap vs. hold) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost` (`ISisrHost`), `SisrApiClient`, `UsbipDriver`, `UsbipPorts`, `GitHubReleases`, `ControllerSupportService` (`SisrState`), `ControllerSupportPlatform` (Windows/Steam, replaced in tests), `ControllerSupportRemoval` (uninstall) |
-| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu) and `GameDetailViewModel` (detail carousel, `Views/GameDetailView.axaml`) are its children |
+| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu) and `GameDetailViewModel` (detail carousel, `Views/GameDetailView.axaml`) are its children; `Search/` holds `SearchViewModel` (search page), `OnScreenKeyboardViewModel` and `KeyboardLayout` |
 | `tests/Arcadia.Core.Tests` | xUnit |
 
 Big Picture UI is laid out at 1920×1080 inside a `Viewbox`. Focus/navigation is done in the
@@ -146,6 +146,10 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   wrapping at the ends (two games: the other on both sides; one: no neighbours). LT/RT turn it, LB/RB switch
   the tab and stay on the detail page (first game), Y re-sorts with the shown game kept in the middle, B returns
   to the library page of the game shown last (owner, 2026-10-17).
+- Search (#12): in the search X erases, Y types a space, LT puts "/" in front, ≡ goes to the hits, R3 opens the
+  layout menu (all five layouts, the last chosen saved globally). Hits act like covers (A, A held, ⧉). A detail
+  page opened from the search turns through the hits by relevance; LB/RB and Y do nothing there, B returns to the
+  search with its text unchanged. B closes the layout menu first, then the search; B never erases (owner, 2026-10-17).
 - Launcher actions (open in the launcher, uninstall) are `LaunchTarget`s on `Game`;
   a null one is shown disabled with the reason, or for uninstall opens the launcher instead.
 - If an update is available, A still says "Spielen" and starts the game; the launcher installs the update

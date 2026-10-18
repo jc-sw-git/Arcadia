@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Arcadia.App.Input;
+using Arcadia.App.Search;
 using Arcadia.App.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
@@ -33,6 +34,12 @@ public partial class MainWindow : Window
         AddHandler(KeyUpEvent, OnPreviewKeyUp, RoutingStrategies.Tunnel);
         GameGrid.AddHandler(DoubleTappedEvent, OnGridDoubleTapped);
         GameGrid.AddHandler(PointerPressedEvent, OnGridPointerPressed, RoutingStrategies.Tunnel);
+        SearchResults.AddHandler(DoubleTappedEvent, OnGridDoubleTapped);
+        SearchResults.AddHandler(PointerPressedEvent, OnSearchResultPointerPressed, RoutingStrategies.Tunnel);
+        SearchResultRow.PointerWheelChanged += OnSearchResultsWheel;
+
+        // Typing on a real keyboard while the search is open. Nothing has Avalonia focus, so the text arrives at the window.
+        AddHandler(TextInputEvent, OnTextInput, RoutingStrategies.Tunnel);
 
         // A key released in another window never reports its release here.
         Deactivated += (_, _) =>
@@ -96,7 +103,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_viewModel is not null && UiActionMap.FromKey(e.Key, e.KeyModifiers) is { } action)
+        if (_viewModel is not null && ActionFor(e) is { } action)
         {
             // A held key repeats its KeyDown; A acts on the release or after a hold, like the gamepad button.
             if (!_keysDown.Add(e.Key) && action == UiAction.Accept)
@@ -112,15 +119,89 @@ public partial class MainWindow : Window
             {
                 Dispatcher.UIThread.Post(BringFocusedSettingIntoView, DispatcherPriority.Loaded);
             }
+
+            if (_viewModel.IsSearchShown)
+            {
+                Dispatcher.UIThread.Post(BringFocusedChipIntoView, DispatcherPriority.Loaded);
+            }
         }
     }
 
     private void OnPreviewKeyUp(object? sender, KeyEventArgs e)
     {
         _keysDown.Remove(e.Key);
-        if (_viewModel is not null && UiActionMap.FromKey(e.Key, e.KeyModifiers) is { } action)
+        if (_viewModel is not null && (ActionFor(e) ?? UiActionMap.FromKey(e.Key, e.KeyModifiers)) is { } action)
         {
             _viewModel.Release(action);
+        }
+    }
+
+    /// <summary>
+    /// While the search takes typed text, only keys that type nothing are actions there; the rest
+    /// arrive as text (<see cref="OnTextInput"/>). Elsewhere the usual key map applies.
+    /// </summary>
+    private UiAction? ActionFor(KeyEventArgs e)
+    {
+        if (_viewModel is not { IsSearchShown: true, Search: { } search } || _viewModel.IsGameMenuOpen || _viewModel.IsSettingsOpen || _viewModel.IsConfirmationOpen)
+        {
+            return UiActionMap.FromKey(e.Key, e.KeyModifiers);
+        }
+
+        return e.Key switch
+        {
+            Key.Up => UiAction.Up,
+            Key.Down => UiAction.Down,
+            Key.Left => UiAction.Left,
+            Key.Right => UiAction.Right,
+
+            // On the keyboard Enter searches, as in any search field; on chips and hits it acts like A.
+            Key.Enter when search.Zone == SearchZone.Keyboard && !search.Keyboard.IsLayoutMenuOpen => UiAction.Settings,
+            Key.Enter => UiAction.Accept,
+            Key.Escape => UiAction.Back,
+            Key.Back => UiAction.Search,
+            Key.Apps => UiAction.Options,
+            Key.F10 when e.KeyModifiers == KeyModifiers.Shift => UiAction.Options,
+            _ => null,
+        };
+    }
+
+    private void OnTextInput(object? sender, TextInputEventArgs e)
+    {
+        if (_viewModel is { IsSearchShown: true } && !string.IsNullOrEmpty(e.Text))
+        {
+            _viewModel.TypeInSearch(e.Text);
+            e.Handled = true;
+        }
+    }
+
+    private void OnSearchResultPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed
+            && (e.Source as Control)?.DataContext is GameTileViewModel tile
+            && _viewModel is not null)
+        {
+            _viewModel.OpenMenuForHit(tile);
+            e.Handled = true;
+        }
+    }
+
+    private void OnSearchResultsWheel(object? sender, PointerWheelEventArgs e)
+    {
+        // Either wheel direction moves along the row; most mice only have the vertical one.
+        var delta = Math.Abs(e.Delta.X) > Math.Abs(e.Delta.Y) ? e.Delta.X : e.Delta.Y;
+        if (_viewModel is not null && delta != 0)
+        {
+            _viewModel.ScrollSearch(delta < 0 ? 1 : -1);
+            e.Handled = true;
+        }
+    }
+
+    private void BringFocusedChipIntoView()
+    {
+        if (_viewModel?.Search is { } search && search.Chips.FirstOrDefault(c => c.IsFocused) is { } chip
+            && SearchChips.ContainerFromItem(chip) is { } container)
+        {
+            container.BringIntoView(new Rect(container.Bounds.Size).Inflate(new Thickness(80, 0)));
         }
     }
 
@@ -222,8 +303,7 @@ public partial class MainWindow : Window
     private void PlaceGameMenu()
     {
         GameMenuPanel.Opacity = 1;
-        if (_viewModel?.FocusedGame is not { } tile
-            || GameGrid.ContainerFromIndex(_viewModel.PageGames.IndexOf(tile)) is not { } cover
+        if (MenuAnchor() is not { } cover
             || cover.TranslatePoint(default, GameMenuLayer) is not { } topLeft)
         {
             GameMenuPanel.Margin = new Thickness((GameMenuLayer.Bounds.Width - GameMenuPanel.Bounds.Width) / 2, (GameMenuLayer.Bounds.Height - GameMenuPanel.Bounds.Height) / 2, 0, 0);
@@ -236,6 +316,17 @@ public partial class MainWindow : Window
         var x = right + width <= GameMenuLayer.Bounds.Width - MenuGap ? right : topLeft.X - MenuGap - width;
         var y = Math.Clamp(topLeft.Y, MenuGap, Math.Max(MenuGap, GameMenuLayer.Bounds.Height - height - MenuGap));
         GameMenuPanel.Margin = new Thickness(Math.Max(MenuGap, x), y, 0, 0);
+    }
+
+    /// <summary>The cover whose menu is open: the focused hit while the search is shown, else the focused cover.</summary>
+    private Control? MenuAnchor()
+    {
+        if (_viewModel is { IsSearchShown: true, Search.FocusedResult: { } hit } searching)
+        {
+            return SearchResults.ContainerFromIndex(searching.Search!.Results.IndexOf(hit));
+        }
+
+        return _viewModel?.FocusedGame is { } tile ? GameGrid.ContainerFromIndex(_viewModel.PageGames.IndexOf(tile)) : null;
     }
 
     private void BringSelectedTabIntoView()

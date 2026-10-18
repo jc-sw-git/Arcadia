@@ -428,6 +428,49 @@ Verlauf:
 | T11-2 | 2026-10-18 | Juri | PC des Owners, PR #101, Tastatur | ❌ Spiel lässt sich per Tastatur nicht wechseln (Bild ↑/↓ gab es, aber ohne Hinweis); Wunsch: Umschalt+Pfeile und Mausrad | Umschalt+←/→ und Mausrad ergänzt |
 | T11-2, T11-7 | 2026-10-18 | Claude | Xvfb 1745×1000 `--demo`, Umschalt+→, Mausrad runter und hoch, Umschalt+← | ✅ 1 → 2 → 3 → 2 → 1 von 31; untere Reihe nur noch „Artwork ändern“ und „Deinstallieren …“ | Mausrad am PC des Owners |
 
+## #12 Suche über alle Launcher
+
+- [ ] **T12-1** X (oder F, die Lupe oben rechts) öffnet die Suche: Kopf „ARCADIA Suche“ mit „B Schließen“,
+      Suchfeld mit Platzhalter „Spiele in allen Launchern suchen …“, Zeile „Suche in allen Launchern“, Chips
+      „Alle Launcher“ und je Launcher mit Kürzel, darunter „Tippe einen Suchbegriff ein“ und die
+      Bildschirmtastatur (Layout DE, Fokus auf „q“). · E2E: ja
+- [ ] **T12-2** Nur mit dem Controller: D-Pad bewegt den Fokus über die Tasten (hoch/runter zur nächstgelegenen
+      Taste), A tippt das Zeichen; X löscht, Y tippt ein Leerzeichen, LT setzt „/“ an den Anfang, ≡ springt
+      zu den Treffern. Hoch aus der obersten Tastenreihe führt zu den Treffern, von dort zu den Chips. · E2E: ja
+- [ ] **T12-3** Treffer kommen aus allen eingeschalteten Launchern, sortiert nach Relevanz: Titelanfang vor
+      Wortanfang vor Wortmitte, Akzente und Groß-/Kleinschreibung egal. Kopf „N Treffer in M Launchern“
+      bzw. „Keine Treffer“; Cover mit Launcher-Logo oben links und Launchername darunter. Mehr als 7 Treffer
+      zeigen „+N weitere“; links/rechts am Rand, das Mausrad und ein Klick auf die Karte schieben weiter. · E2E: ja
+- [ ] **T12-4** Präfix: `/gog holl` sucht nur in GOG, `/gog-xbox holl` in beiden, die Chips folgen; Zeile
+      „Per Kürzel gefiltert: …“. `/xyz holl` zeigt in Orange „· Unbekanntes Kürzel: /xyz“. · E2E: ja
+- [ ] **T12-5** Chips: A auf einem Chip blendet den Launcher aus oder ein (der letzte bleibt an); mit Präfix
+      wird das Präfix neu geschrieben, „Alle Launcher“ entfernt es ganz. Ohne Präfix zeigt die Zeile
+      „Suche in: …“. · E2E: ja
+- [ ] **T12-6** R3 (oder Klick auf die Globus-Taste) öffnet das Menü „TASTATURLAYOUT“ mit DE, US, UK, FR und
+      ES, das aktive mit Haken; D-Pad und A wählen, die Tasten wechseln sofort. B oder R3 schließt erst das
+      Menü, ein zweites B die Suche. Das Layout gilt nach einem Neustart weiter. · E2E: ja
+- [ ] **T12-7** Auf einem Treffer: A startet das Spiel (beim Loslassen, nicht installiert: Installation),
+      A 1 s halten füllt einen Ring ums Cover und öffnet die Detailseite, ⧉ (Rechtsklick, Umschalt+F10)
+      öffnet das Kontextmenü neben dem Cover. Die Hinweise dazu stehen rechts über den Treffern. · E2E: ja
+- [ ] **T12-8** Detailseite aus der Suche: Pfadleiste „B Suche / <Titel>“, Position „2 von 3“, keine Tabs, kein
+      Y und keine LB/RB im Footer. LT/RT rotieren durch die Treffer in Relevanz-Reihenfolge; LB/RB und Y tun
+      nichts. B führt zurück zur Suche mit unverändertem Text, der Fokus steht auf dem zuletzt gezeigten
+      Spiel. · E2E: ja
+- [ ] **T12-9** B in der Suche führt in die Bibliothek zurück, Tab, Seite und Fokus wie vorher; B löscht
+      keine Zeichen. · E2E: ja
+- [ ] **T12-10** Echte Tastatur: Tippen schreibt ins Suchfeld (auch Umlaute und Leerzeichen), Rücktaste löscht,
+      Pfeiltasten navigieren, Enter springt von der Tastatur zu den Treffern und startet dort, Esc schließt.
+      · E2E: ja
+- [ ] **T12-11** Wird die Bibliothek bei offener Suche neu eingelesen (z. B. Spiel im Launcher installiert),
+      bleiben Text und Fokus, die Treffer folgen. · E2E: nein
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T12-1, T12-3, T12-4, T12-6, T12-10 | 2026-10-18 | Claude | Branch `feat/search-across-launchers-12`, Linux, Xvfb 1920×1080 `--demo`, Fenster 1600×900, Tastatur per xdotool, Klick auf Globus | ✅ „holl“ 3 Treffer in 3 Launchern, „e“ 112 mit „+105 weitere“, `/gog-xyz e` nur GOG plus Warnung, UK gewählt und nach Neustart noch aktiv, „ezzzz“ „Keine Treffer“ | Controller (R3, LT, ≡) am PC des Owners |
+| T12-7, T12-8 | 2026-10-18 | Claude | wie oben, Enter halten, Bild ↓, Esc, Umschalt+F10 | ✅ Ring füllt sich, Detailseite „Suche / Hollow Kingdom II“ „2 von 3“ ohne Tabs und Y, Bild ↓ zum nächsten Treffer, Esc zurück mit Fokus darauf, Kontextmenü neben dem Cover | Controller am PC des Owners |
+
 ## #102 Ausfaden am Rand des Listings
 
 - [ ] **T102-1** Ein Tab, dessen Seite nicht ins Raster passt (z. B. 31 Spiele mit 50 pro Seite): ganz oben

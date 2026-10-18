@@ -331,6 +331,122 @@ Verlauf:
 | T8-3 | 2026-10-17 | Claude | Branch `feat/save-view-and-tab-8`, Linux, Xvfb `--demo`, `LastTabLauncherId` von Hand auf einen unbekannten Launcher gesetzt | ✅ Start im ersten Tab (GOG Galaxy), der gespeicherte Wert bleibt erhalten | Echter fehlender Launcher am PC des Owners |
 | T8-1, T8-3 | 2026-10-17 | Claude | Branch `feat/save-view-and-tab-8`, Unit-Tests (`SettingsServiceTests`) | ✅ Neustart, alte `settings.json` ohne die Felder, unbekannte Werte, gleichzeitiges Speichern aus zwei Threads (geht ohne Lock rot) | – |
 
+## #10 Kontextmenü für Spiele
+
+- [ ] **T10-1** ⧉ (View-Taste), Rechtsklick auf ein Cover, „⧉ Optionen“ in der Vorschau und die
+      Kontextmenü-Taste der Tastatur öffnen das Menü des Spiels; Hoch/Runter überspringen deaktivierte
+      Einträge, B und ⧉ schließen es, ein Klick daneben auch. Das Menü steht rechts neben dem Cover,
+      in der rechten Spalte links davon, immer ganz im Fenster. ≡ (Menü-Taste) öffnet die Einstellungen. · E2E: ja
+- [ ] **T10-2** Installiertes Spiel: Spielen, Details anzeigen, Zu Favoriten hinzufügen und Artwork
+      ändern (beide deaktiviert, „Folgt in einer späteren Version“), In <Launcher> öffnen,
+      Trennstrich, Deinstallieren … in Rot. Kein „Controller-Layout anzeigen“ (Owner, 2026-10-18: Steam öffnet es
+      nicht zuverlässig, siehe `docs/launchers/steam.md`). Mit Update steht unter
+      „Spielen“ der Hinweis, dass der Launcher ggf. vorher aktualisiert; es gibt keinen Update-Eintrag. · E2E: ja
+- [ ] **T10-3** Nicht installiertes Spiel: Installieren, Details anzeigen, Zu Favoriten hinzufügen,
+      In <Launcher> öffnen. Während einer Installation steht statt „Installieren“ der Status
+      (z. B. „Wird installiert · 42 %“), deaktiviert. · E2E: ja
+- [ ] **T10-4** A kurz drücken startet das Spiel beim Loslassen. A halten: nach etwa 0,2 s füllt sich
+      ein blauer Rahmen um die Vorschau links, nach 1 s öffnet sich die Detailseite, ohne loszulassen.
+      Loslassen dazwischen bricht ab, nichts passiert. Enter verhält sich gleich. · E2E: ja
+- [ ] **T10-5** Steam-Spiel: „In Steam öffnen“ zeigt die Seite des Spiels in der Steam-Bibliothek. · E2E: nein (echter Steam-Client)
+- [ ] **T10-6** Steam-Spiel deinstallieren: Arcadia fragt nach (Fokus auf „Abbrechen“, A dort
+      bricht ab); „Deinstallieren“ öffnet Steams eigene Deinstallationsfrage, danach verschwindet das
+      Spiel aus der Bibliothek. · E2E: nein (echter Steam-Client)
+- [ ] **T10-7** Epic-Spiel: „In Epic Games öffnen“ öffnet die Epic-Bibliothek; „Deinstallieren …“
+      sagt „Nur in Epic Games möglich – öffnet Epic Games“ und öffnet die Bibliothek ohne Rückfrage. · E2E: nein (echter Epic-Client)
+- [ ] **T10-8** Mit eingeschalteter Option und verbundenem Steam Controller zeigt das Menü
+      „Steam Controller: <Modus>“; A wechselt den Modus, das Menü bleibt offen und zeigt den neuen
+      Modus, die Vorschau ebenso. Ohne Steam Controller fehlt der Eintrag. · E2E: nein (echter Steam Controller)
+- [ ] **T10-9** Liest Arcadia die Bibliothek neu ein, während A gedrückt ist (z. B. wenn es nach dem
+      Ende eines Spiels nach vorn kommt), zählt der Druck weiter: Tippen startet das Spiel, Halten
+      öffnet die Detailseite, der Rahmen läuft durch. · E2E: nein (der Zeitpunkt des Einlesens lässt sich nicht steuern)
+
+Die Steam-Links `steam://nav/games/details` und `steam://uninstall` sowie
+der Epic-Link `com.epicgames.launcher://store/library` sind noch nicht am echten Client geprüft (T10-5
+bis T10-7).
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T10-1, T10-2, T10-4 | 2026-10-17 | Claude | Branch `feat/context-menu-and-detail-page-10-11`, Linux, Xvfb 1920×1080 `--demo`, Tastatur (Pfeile, Kontextmenü-Taste, Enter gehalten) | ✅ Menü eines GOG-Spiels mit deaktivierten Einträgen und Begründung; Enter 1,2 s gehalten öffnet (noch) den Platzhalter der Detailseite, der Rahmen füllt sich sichtbar | Controller am PC des Owners |
+| T10-1 | 2026-10-17 | Claude | wie oben, Menü an der Kachel | ✅ Menü rechts neben dem Cover in der Mitte, links neben dem Cover in der rechten Spalte | – |
+| T10-4 | 2026-10-17 | Juri | PC des Owners, PR #101 | ❌ Der Rahmen bricht manchmal auf den letzten 5–10 % ab | Haltezeit lief ab dem Drücken, die Animation erst ab ihrem (verspäteten) Start |
+| T10-4 | 2026-10-17 | Claude | PR #101, Unit-Test (geht vorher rot) und Xvfb `--demo`, Enter 0,93 s gehalten | ✅ Rahmen geschlossen, bevor die Detailseite öffnet | Kontrolle am PC des Owners |
+| T10-6 | 2026-10-17 | Claude | wie oben | ✅ Rückfrage mit Fokus auf „Abbrechen“ (Demo-Spiel, ohne echten Launcher) | Steam am PC des Owners |
+| T10-4 | 2026-10-17 | Claude | Unit-Tests (`HoldGestureTests`) | ✅ Tippen, Abbrechen, Halten, wiederholte KeyDown-Ereignisse, verspätete Timer (geht ohne Zählung der Drücke rot) | – |
+| T10-9 | 2026-10-17 | Claude | Xvfb `--demo`, Debug-Build mit vorübergehendem Einlesen 0,1 s nach jedem Druck auf Enter (wieder entfernt) | ✅ Enter 0,12 s: Spiel startet (Toast); Enter 1,5 s gehalten: Rahmen läuft durch, Detailseite öffnet | – |
+| T10-2 | 2026-10-18 | Claude | Xvfb 1745×1000 `--demo`, Kontextmenü-Taste | ✅ Menü ohne „Controller-Layout anzeigen“ | – |
+
+## #11 Spieldetails als Karussell
+
+- [ ] **T11-1** A 1 s halten auf einer Kachel und ⧉ → „Details anzeigen“ öffnen die Detailseite des
+      Spiels: Pfadleiste „B Bibliothek / <Launcher> / <Titel>“, Position („3 von 31“) und Sortierung
+      oben, das Spiel in der Mitte, links und rechts angeschnitten das vorherige und das nächste,
+      zum Rand hin abgedunkelt. Footer: D-Pad Aktion wählen, A Auswählen, Y Ansicht, LB/RB Launcher,
+      LT/RT Spiel, B Zurück. · E2E: ja
+- [ ] **T11-2** LT/RT schieben die Seiten animiert nach rechts bzw. links und zeigen das vorherige bzw.
+      nächste Spiel in der Sortierung der Bibliothek, über Seitengrenzen hinweg; vor dem ersten steht
+      das letzte, nach dem letzten das erste. Schnelles mehrfaches Drücken springt ohne Lücken weiter.
+      Ein Klick auf einen Nachbarn oder auf LT/RT am Rand tut dasselbe, ebenso Bild ↑/↓, Umschalt+←/→
+      und das Mausrad (eine Raste, ein Spiel; nach unten das nächste). · E2E: ja
+- [ ] **T11-3** Ein Tab mit zwei Spielen zeigt das andere links und rechts; mit einem Spiel gibt es
+      keine Nachbarn, keine Abdunklung und kein LT/RT. · E2E: ja
+- [ ] **T11-4** LB/RB (und ein Klick auf einen Tab) wechseln den Launcher, die Detailseite bleibt offen
+      und zeigt das erste Spiel des Tabs. · E2E: ja
+- [ ] **T11-5** Y öffnet „Ansicht“ mit dem Hinweis, dass die Detailseite immer ein Spiel zeigt; eine
+      andere Sortierung lässt das aktuelle Spiel in der Mitte, Nachbarn und Position folgen der neuen
+      Sortierung. · E2E: ja
+- [ ] **T11-6** B (und ein Klick auf die Pfadleiste) führt zurück in die Bibliothek, auf die Seite des
+      zuletzt gezeigten Spiels mit Fokus darauf. · E2E: ja
+- [ ] **T11-7** Schaltflächen wie im Kontextmenü, ohne „Details anzeigen“: oben „A Spielen“ (fokussiert),
+      „In <Launcher> öffnen“, „Zu Favoriten“ (deaktiviert) und mit verbundenem Steam Controller
+      „STEAM CONTROLLER <Modus>“ (A wechselt); unten „Artwork ändern“ (deaktiviert)
+      und rechts abgesetzt „Deinstallieren …“ in Rot mit derselben Rückfrage wie im Menü. Das D-Pad
+      überspringt deaktivierte Schaltflächen; unter den Reihen steht der Hinweis der fokussierten
+      Schaltfläche (z. B. „Nur in Epic Games möglich – öffnet Epic Games“). ⧉ öffnet hier kein Menü. · E2E: ja
+- [ ] **T11-8** Mit Update: Chip „UPDATE VERFÜGBAR“, „Spielen“ bleibt, darunter „<Launcher> installiert
+      das Update eventuell, bevor das Spiel startet.“ Nicht installiert: „Installieren“, abgedunkeltes
+      Cover, „Nicht installiert“ unter „Installiert am“, nur die erste Reihe. Während einer Installation
+      zeigt die erste Schaltfläche den Fortschritt und ist deaktiviert. · E2E: ja
+- [ ] **T11-9** Kennzahlen: Zuletzt gespielt (relativ und mit Datum und Uhrzeit), Spielzeit („Laut
+      <Launcher>“), Installiert am (mit Pfad), Größe (mit Laufwerk). Größe und Speicherort stehen nur
+      dort, nicht unter dem Titel (Owner, 2026-10-17). · E2E: ja
+- [ ] **T11-10** LT/RT bis zur sichtbaren Bewegung bleibt unter 50 ms (Release-Build, PC des Owners). · E2E: nein (Messung auf echter Hardware)
+
+Die Version und Downloadgröße des Updates aus dem Entwurf zeigt Arcadia nicht: kein Launcher meldet
+sie bisher.
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T11-1, T11-2, T11-4 bis T11-9 | 2026-10-17 | Claude | Branch `feat/context-menu-and-detail-page-10-11`, Linux, Xvfb 1920×1080 `--demo`, Tastatur | ✅ Seite wie im Entwurf; LT/RT mit Animation (Zwischenbild geprüft), 25× RT und B landen auf Seite 3 mit Fokus auf dem Spiel; Q/E bleiben in der Detailansicht; Sortierung hält das Spiel in der Mitte; Enter gehalten öffnet die Seite; nicht installiertes Spiel und Spiel mit Update | Controller am PC des Owners |
+| T11-3 | 2026-10-17 | Claude | Unit-Tests (`CarouselTests`) | ✅ Nachbarn rotieren, zwei Spiele stehen beidseitig, ein Spiel hat keine Nachbarn | Sichtprüfung am PC des Owners (die Demo hat keinen Tab mit 1–2 Spielen) |
+| T11-10 | 2026-10-17 | Claude | Release-Build, Linux-Container ohne GPU, Xvfb | ✅ Taste bis fertiges Layout 14–39 ms; Öffnen der Seite 199 ms (erstes Mal) | Messung am PC des Owners |
+| T11-8, T11-9 | 2026-10-17 | Claude | wie oben, nach dem Code Review | ✅ Unter dem Titel keine Zeile mehr; installiertes Spiel mit Update und nicht installiertes Spiel geprüft | – |
+| T11-2 | 2026-10-18 | Juri | PC des Owners, PR #101, Tastatur | ❌ Spiel lässt sich per Tastatur nicht wechseln (Bild ↑/↓ gab es, aber ohne Hinweis); Wunsch: Umschalt+Pfeile und Mausrad | Umschalt+←/→ und Mausrad ergänzt |
+| T11-2, T11-7 | 2026-10-18 | Claude | Xvfb 1745×1000 `--demo`, Umschalt+→, Mausrad runter und hoch, Umschalt+← | ✅ 1 → 2 → 3 → 2 → 1 von 31; untere Reihe nur noch „Artwork ändern“ und „Deinstallieren …“ | Mausrad am PC des Owners |
+
+## #102 Ausfaden am Rand des Listings
+
+- [ ] **T102-1** Ein Tab, dessen Seite nicht ins Raster passt (z. B. 31 Spiele mit 50 pro Seite): ganz oben
+      faden nur unten die angeschnittenen Kacheln aus, in der Mitte oben und unten, ganz unten nur oben;
+      die erste bzw. letzte Reihe ist dann vollständig sichtbar. Der Effekt blendet weich ein und aus. · E2E: ja
+- [ ] **T102-2** Passt die Seite ganz ins Raster (z. B. 10 pro Seite), gibt es kein Ausfaden. · E2E: ja
+- [ ] **T102-3** Die fokussierte Kachel liegt mit D-Pad nie im ausgeblendeten Bereich, ihr Rahmen bleibt
+      voll sichtbar. Mausrad-Scrollen schaltet das Ausfaden genauso. · E2E: ja
+- [ ] **T102-4** Kein Streifen unverblasster Cover am äußersten Rand des Ausfadens, auch nicht bei einer
+      Fenstergröße, bei der die Oberfläche skaliert wird (z. B. 1745×1000 oder 125 % Windows-Skalierung). · E2E: ja
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T102-1, T102-3 | 2026-10-17 | Claude | Branch `feat/context-menu-and-detail-page-10-11`, Linux, Xvfb 1920×1080 `--demo`, GOG 31 Spiele, 50 pro Seite, Pfeiltasten | ✅ Oben nur unten, Mitte beidseitig, unten nur oben; Fokus jeweils frei vom Ausfaden | Mausrad und Controller am PC des Owners |
+| T102-4 | 2026-10-18 | Juri | PC des Owners, PR #101 | ❌ Am unteren Rand 1–2 px Cover ohne Ausfaden | Bei skaliertem Fenster nachgestellt (Xvfb 1745×1000): 1 px Spalt zwischen Ausschnitt des Rasters und Verlauf |
+| T102-4 | 2026-10-18 | Claude | Xvfb 1745×1000 `--demo`, oben und unten vergrößert | ✅ Kein Streifen mehr, der Verlauf reicht 2 px über das Raster hinaus | Kontrolle am PC des Owners |
+
 ## #86 Refinement-Skill
 
 Keine Testfälle: Arbeitsablauf für Claude ohne Änderung an Arcadia; er wird beim nächsten Issue
@@ -436,7 +552,7 @@ Mit echtem Steam Controller und laufendem Steam. Alle E2E: nein (Steam, SISR, Tr
 
 - [ ] **G-30** Die Uhr läuft; die Symbole für Controller-Warnung, SISR-Update und Arcadia-Update
       erscheinen nur bei Bedarf und öffnen die Einstellungen. · E2E: ja
-- [ ] **G-31** Die Einstellungen (View-Taste / F2) sind komplett per Controller bedienbar, der
+- [ ] **G-31** Die Einstellungen (Menü-Taste ≡ / F2) sind komplett per Controller bedienbar, der
       fokussierte Eintrag scrollt ins Bild, B schließt. · E2E: ja
 
 Verlauf:

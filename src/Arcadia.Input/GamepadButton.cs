@@ -18,18 +18,21 @@ public enum GamepadButton
     LeftStickClick,
     RightStickClick,
 
-    /// <summary>Menu / Options / ☰ — opens the context menu.</summary>
+    /// <summary>Menu / Options / ☰ — opens the settings.</summary>
     Menu,
 
-    /// <summary>View / Share / ⧉.</summary>
+    /// <summary>View / Share / ⧉ — opens the context menu.</summary>
     View,
 }
 
-/// <summary>A source of gamepad button presses, including auto-repeat for held directions.</summary>
+/// <summary>A source of gamepad button presses and releases, including auto-repeat for held directions.</summary>
 public interface IGamepadSource : IDisposable
 {
     /// <summary>Raised on a background thread; marshal to the UI thread before touching UI state.</summary>
     event Action<GamepadButton>? ButtonPressed;
+
+    /// <summary>Raised once when a pressed button is let go; same thread rules as <see cref="ButtonPressed"/>.</summary>
+    event Action<GamepadButton>? ButtonReleased;
 
     void Start();
 }
@@ -45,6 +48,12 @@ public static class GamepadSource
 public sealed class NullGamepadSource : IGamepadSource
 {
     public event Action<GamepadButton>? ButtonPressed
+    {
+        add { }
+        remove { }
+    }
+
+    public event Action<GamepadButton>? ButtonReleased
     {
         add { }
         remove { }

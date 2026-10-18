@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\Arcadia.Core\Arcadia.Core.csproj" />
     <ProjectReference Include="..\..\src\Arcadia.Launchers\Arcadia.Launchers.csproj" />
     <ProjectReference Include="..\..\src\Arcadia.ControllerSupport\Arcadia.ControllerSupport.csproj" />
+    <ProjectReference Include="..\..\src\Arcadia.Input\Arcadia.Input.csproj" />
   </ItemGroup>
 
 </Project>

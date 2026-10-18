@@ -18,6 +18,9 @@ public enum UiAction
     NextPage,
     ViewOptions,
     Settings,
+
+    /// <summary>The context menu of the focused game.</summary>
+    Options,
 }
 
 public static class UiActionMap
@@ -35,7 +38,9 @@ public static class UiActionMap
         GamepadButton.LeftTrigger => UiAction.PreviousPage,
         GamepadButton.RightTrigger => UiAction.NextPage,
         GamepadButton.Y => UiAction.ViewOptions,
-        GamepadButton.View => UiAction.Settings,
+        // The owner's choice (2026-10-17): the context menu is used far more often than the settings.
+        GamepadButton.View => UiAction.Options,
+        GamepadButton.Menu => UiAction.Settings,
         _ => null,
     };
 
@@ -43,6 +48,9 @@ public static class UiActionMap
     {
         (Key.Up, _) => UiAction.Up,
         (Key.Down, _) => UiAction.Down,
+        // Shift+arrows are LT/RT for keyboards without page keys (owner, 2026-10-18).
+        (Key.Left, KeyModifiers.Shift) => UiAction.PreviousPage,
+        (Key.Right, KeyModifiers.Shift) => UiAction.NextPage,
         (Key.Left, _) => UiAction.Left,
         (Key.Right, _) => UiAction.Right,
         (Key.Enter or Key.Space, _) => UiAction.Accept,
@@ -55,6 +63,7 @@ public static class UiActionMap
         (Key.PageDown, _) => UiAction.NextPage,
         (Key.V, KeyModifiers.None) => UiAction.ViewOptions,
         (Key.F2, _) => UiAction.Settings,
+        (Key.Apps, _) or (Key.F10, KeyModifiers.Shift) => UiAction.Options,
         _ => null,
     };
 }

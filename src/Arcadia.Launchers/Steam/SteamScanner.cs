@@ -139,6 +139,8 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             LauncherId = KnownLaunchers.Steam.Id,
             Title = name,
             Launch = new LaunchTarget.ProtocolUri(RunUri(appId)),
+            OpenInLauncher = new LaunchTarget.ProtocolUri(DetailsUri(appId)),
+            Uninstall = new LaunchTarget.ProtocolUri(UninstallUri(appId)),
             InstallDirectory = installDirectory,
             InstallSizeBytes = ParseLong(app.GetString("SizeOnDisk")) is > 0 and var size ? size : null,
             InstalledAt = installDateOf?.Invoke(installDirectory),
@@ -176,6 +178,12 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
         || name.EndsWith("Soundtrack", StringComparison.OrdinalIgnoreCase);
 
     public static string RunUri(uint appId) => $"steam://rungameid/{appId.ToString(CultureInfo.InvariantCulture)}";
+
+    /// <summary>The game's page in the Steam library.</summary>
+    public static string DetailsUri(uint appId) => $"steam://nav/games/details/{appId.ToString(CultureInfo.InvariantCulture)}";
+
+    /// <summary>Steam asks for confirmation itself before it deletes anything.</summary>
+    public static string UninstallUri(uint appId) => $"steam://uninstall/{appId.ToString(CultureInfo.InvariantCulture)}";
 
     // A first-time install has no build yet and isn't playable; an installed game being updated
     // keeps its build id and stays in the library, even while Steam clears FullyInstalled.

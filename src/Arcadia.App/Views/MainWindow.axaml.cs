@@ -15,6 +15,13 @@ public partial class MainWindow : Window
     private const double TabScrollStep = 320;
     private const double TabEdgePadding = 96;
 
+    /// <summary>Space between a cover and its context menu, and between the menu and the window's edge.</summary>
+    private const double MenuGap = 24;
+
+    /// <summary>Height of the fades at the grid's edges (Border.listFade in Theme.axaml).</summary>
+    private const double ListFadeHeight = 96;
+
+    private readonly HashSet<Key> _keysDown = [];
     private MainViewModel? _viewModel;
 
     public MainWindow()
@@ -23,7 +30,17 @@ public partial class MainWindow : Window
 
         // Tunnel so arrow keys and Enter reach us before Avalonia's own focus navigation.
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(KeyUpEvent, OnPreviewKeyUp, RoutingStrategies.Tunnel);
         GameGrid.AddHandler(DoubleTappedEvent, OnGridDoubleTapped);
+        GameGrid.AddHandler(PointerPressedEvent, OnGridPointerPressed, RoutingStrategies.Tunnel);
+
+        // A key released in another window never reports its release here.
+        Deactivated += (_, _) =>
+        {
+            _keysDown.Clear();
+            _viewModel?.CancelHold();
+        };
+        GridScroller.ScrollChanged += (_, _) => UpdateGridFades();
         TabScroller.ScrollChanged += (_, _) => UpdateTabEdges();
         TabScroller.SizeChanged += (_, _) => UpdateTabEdges();
         TabScrollLeft.Click += (_, _) => ScrollTabs(-TabScrollStep);
@@ -81,6 +98,13 @@ public partial class MainWindow : Window
 
         if (_viewModel is not null && UiActionMap.FromKey(e.Key, e.KeyModifiers) is { } action)
         {
+            // A held key repeats its KeyDown; A acts on the release or after a hold, like the gamepad button.
+            if (!_keysDown.Add(e.Key) && action == UiAction.Accept)
+            {
+                e.Handled = true;
+                return;
+            }
+
             Services.AppLog.Write($"Taste: {e.Key} → {action}");
             _viewModel.Handle(action);
             e.Handled = true;
@@ -88,6 +112,26 @@ public partial class MainWindow : Window
             {
                 Dispatcher.UIThread.Post(BringFocusedSettingIntoView, DispatcherPriority.Loaded);
             }
+        }
+    }
+
+    private void OnPreviewKeyUp(object? sender, KeyEventArgs e)
+    {
+        _keysDown.Remove(e.Key);
+        if (_viewModel is not null && UiActionMap.FromKey(e.Key, e.KeyModifiers) is { } action)
+        {
+            _viewModel.Release(action);
+        }
+    }
+
+    private void OnGridPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed
+            && (e.Source as Control)?.DataContext is GameTileViewModel tile
+            && _viewModel is not null)
+        {
+            _viewModel.OpenMenuFor(tile);
+            e.Handled = true;
         }
     }
 
@@ -107,6 +151,11 @@ public partial class MainWindow : Window
                 // Wait for the grid to realize the new page before scrolling to the tile.
                 Dispatcher.UIThread.Post(BringFocusedTileIntoView, DispatcherPriority.Loaded);
                 break;
+            case nameof(MainViewModel.GameMenu) when _viewModel?.GameMenu is not null:
+                // Hidden until placed, so it doesn't flash at its default position.
+                GameMenuPanel.Opacity = 0;
+                Dispatcher.UIThread.Post(PlaceGameMenu, DispatcherPriority.Loaded);
+                break;
             case nameof(MainViewModel.SelectedTab):
                 Dispatcher.UIThread.Post(BringSelectedTabIntoView, DispatcherPriority.Loaded);
                 break;
@@ -125,10 +174,20 @@ public partial class MainWindow : Window
         {
             GridScroller.Offset = default;
         }
-        else if (index > 0)
+        else if (index > 0 && GameGrid.ContainerFromIndex(index) is { } cover)
         {
-            GameGrid.ContainerFromIndex(index)?.BringIntoView();
+            // Keeps the focused cover clear of the edge fades; at the ends the scroll range stops it.
+            cover.BringIntoView(new Rect(cover.Bounds.Size).Inflate(new Thickness(0, ListFadeHeight)));
         }
+    }
+
+    /// <summary>A fade shows only at an edge the grid can still scroll towards (#102).</summary>
+    private void UpdateGridFades()
+    {
+        var offset = GridScroller.Offset.Y;
+        var max = GridScroller.Extent.Height - GridScroller.Viewport.Height;
+        GridFadeTop.Classes.Set("shown", offset > 1);
+        GridFadeBottom.Classes.Set("shown", offset < max - 1);
     }
 
     /// <summary>
@@ -154,6 +213,29 @@ public partial class MainWindow : Window
         {
             focused.BringIntoView();
         }
+    }
+
+    /// <summary>
+    /// Puts the context menu beside the focused cover: to its right, or to its left where the
+    /// right side has no room, top-aligned with the cover and kept inside the window.
+    /// </summary>
+    private void PlaceGameMenu()
+    {
+        GameMenuPanel.Opacity = 1;
+        if (_viewModel?.FocusedGame is not { } tile
+            || GameGrid.ContainerFromIndex(_viewModel.PageGames.IndexOf(tile)) is not { } cover
+            || cover.TranslatePoint(default, GameMenuLayer) is not { } topLeft)
+        {
+            GameMenuPanel.Margin = new Thickness((GameMenuLayer.Bounds.Width - GameMenuPanel.Bounds.Width) / 2, (GameMenuLayer.Bounds.Height - GameMenuPanel.Bounds.Height) / 2, 0, 0);
+            return;
+        }
+
+        var width = GameMenuPanel.Bounds.Width;
+        var height = GameMenuPanel.Bounds.Height;
+        var right = topLeft.X + cover.Bounds.Width + MenuGap;
+        var x = right + width <= GameMenuLayer.Bounds.Width - MenuGap ? right : topLeft.X - MenuGap - width;
+        var y = Math.Clamp(topLeft.Y, MenuGap, Math.Max(MenuGap, GameMenuLayer.Bounds.Height - height - MenuGap));
+        GameMenuPanel.Margin = new Thickness(Math.Max(MenuGap, x), y, 0, 0);
     }
 
     private void BringSelectedTabIntoView()

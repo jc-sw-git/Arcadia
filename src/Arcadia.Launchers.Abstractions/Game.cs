@@ -22,6 +22,15 @@ public sealed record Game
     /// <summary>How to ask the launcher to install the game; null if Arcadia can't trigger it.</summary>
     public LaunchTarget? Install { get; init; }
 
+    /// <summary>Shows the game in its launcher; null if Arcadia can't open the launcher at all.</summary>
+    public LaunchTarget? OpenInLauncher { get; init; }
+
+    /// <summary>
+    /// Asks the launcher to uninstall the game; the launcher may ask for its own confirmation.
+    /// Null if only the launcher's own window can uninstall it; Arcadia then opens the launcher.
+    /// </summary>
+    public LaunchTarget? Uninstall { get; init; }
+
     public string? InstallDirectory { get; init; }
 
     /// <summary>
@@ -41,8 +50,8 @@ public sealed record Game
     public long? InstallSizeBytes { get; init; }
 
     /// <summary>
-    /// True when the launcher has an update pending. The primary action then starts the update
-    /// in the launcher instead of the game.
+    /// True when the launcher has an update pending. The game still starts from Arcadia; the
+    /// launcher may install the update first.
     /// </summary>
     public bool UpdateAvailable { get; init; }
 

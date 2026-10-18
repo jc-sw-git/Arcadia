@@ -1,5 +1,6 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="using:Arcadia.App.Controls">
 
   <!-- Colors from the Big Picture designs. -->
   <Styles.Resources>
@@ -40,13 +41,61 @@
     <SolidColorBrush x:Key="ProgressTrack" Color="#33FFFFFF" />
     <!-- Bg at zero opacity, for gradients that fade into the background. -->
     <Color x:Key="BgClearColor">#000B0F14</Color>
+    <!-- Bg at 90 % and 50 %: the detail page's neighbours fade into the background towards the edge. -->
+    <Color x:Key="BgFadeColor">#E60B0F14</Color>
+    <Color x:Key="BgHalfColor">#800B0F14</Color>
+
+    <!-- Edges that fade into the background: the tab strip where more tabs follow, the cover grid where
+         it can still scroll (#102), and the detail page's neighbours. -->
+    <LinearGradientBrush x:Key="TabEdgeLeft" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="TabEdgeRight" StartPoint="100%,0%" EndPoint="0%,0%">
+      <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ListFadeTop" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ListFadeBottom" StartPoint="0%,100%" EndPoint="0%,0%">
+      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="CarouselFadeLeft" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgHalfColor}" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="CarouselFadeRight" StartPoint="100%,0%" EndPoint="0%,0%">
+      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
+      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="1" Color="{StaticResource BgHalfColor}" />
+    </LinearGradientBrush>
+
+    <!-- Detail page. -->
+    <SolidColorBrush x:Key="DetailSurface" Color="#121820" />
+    <SolidColorBrush x:Key="DetailChip" Color="#1FF2F5F8" />
+    <SolidColorBrush x:Key="DetailAction" Color="#1AF2F5F8" />
+    <SolidColorBrush x:Key="DetailActionHover" Color="#2EF2F5F8" />
 
     <!-- Focus rings and shadows. -->
     <BoxShadows x:Key="FocusRing">0 0 0 3 #F2F5F8</BoxShadows>
     <!-- Shadows paint in order: the drop shadow first, so it doesn't darken the ring's lower edge. -->
     <BoxShadows x:Key="FocusRingLifted">0 18 40 0 #A6000000, 0 0 0 3 #F2F5F8</BoxShadows>
     <BoxShadows x:Key="HoverRing">0 0 0 2 #5A6878</BoxShadows>
+    <!-- Menu entries sit edge to edge, so their focus ring is drawn inside. -->
+    <BoxShadows x:Key="FocusRingInset">inset 0 0 0 2 #F2F5F8</BoxShadows>
+    <!-- Fills around the preview while A is held; full means the detail page opens. -->
+    <SolidColorBrush x:Key="HoldRing" Color="#3B9EFF" />
     <BoxShadows x:Key="ToastShadow">0 20 50 0 #8C000000</BoxShadows>
+    <!-- Detail page: buttons on the page's surface get a gap between button and ring. -->
+    <BoxShadows x:Key="FocusRingGap">0 0 0 7 #F2F5F8, 0 0 0 4 #121820</BoxShadows>
+    <BoxShadows x:Key="DetailShadow">0 30 80 0 #73000000</BoxShadows>
+    <BoxShadows x:Key="CoverShadow">0 24 50 0 #80000000</BoxShadows>
     <BoxShadows x:Key="DialogShadow">0 40 100 0 #99000000</BoxShadows>
   </Styles.Resources>
 
@@ -167,6 +216,30 @@
     <Setter Property="BoxShadow" Value="{StaticResource FocusRingLifted}" />
   </Style>
 
+  <!-- Holding A: a ring along the inner edge of the preview panel fills while the hold runs
+       (MainViewModel.HoldTime - HoldFeedbackDelay = 0.8 s). It fills a little faster, so it is seen
+       full before the detail page opens. -->
+  <Style Selector="ctl|HoldRing">
+    <Setter Property="IsVisible" Value="False" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Stroke" Value="{StaticResource HoldRing}" />
+    <Setter Property="StrokeThickness" Value="3" />
+    <Setter Property="CornerRadius" Value="16" />
+  </Style>
+  <Style Selector="Border.preview.holding ctl|HoldRing">
+    <Setter Property="IsVisible" Value="True" />
+    <Style.Animations>
+      <Animation Duration="0:0:0.75" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="Progress" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Progress" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
   <!-- Owned but not installed: the cover is shaded, the title stays readable. -->
   <Style Selector="Border.shade">
     <Setter Property="Background" Value="{StaticResource CoverShade}" />
@@ -252,6 +325,19 @@
   <Style Selector="Button.primary:pointerover">
     <Setter Property="Background" Value="{StaticResource AccentHover}" />
   </Style>
+  <!-- Next to the primary button in the preview, e.g. "⧉ Optionen". -->
+  <Style Selector="Button.secondary">
+    <Setter Property="Height" Value="60" />
+    <Setter Property="CornerRadius" Value="30" />
+    <Setter Property="Padding" Value="14,0,20,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.secondary:pointerover">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
 
   <!-- Options in the "Ansicht" dialog. -->
   <Style Selector="Button.segment">
@@ -322,6 +408,137 @@
     <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
   </Style>
+  <Style Selector="Button.action.danger">
+    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
+
+  <!-- Buttons on the detail page; the second row is smaller. -->
+  <Style Selector="Button.detailAction">
+    <Setter Property="Height" Value="56" />
+    <Setter Property="CornerRadius" Value="28" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="Background" Value="{StaticResource DetailAction}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.detailAction:pointerover">
+    <Setter Property="Background" Value="{StaticResource DetailActionHover}" />
+  </Style>
+  <Style Selector=".smallActions Button.detailAction">
+    <Setter Property="Height" Value="48" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="FontSize" Value="16" />
+  </Style>
+  <Style Selector="Button.detailAction.primary">
+    <Setter Property="Height" Value="60" />
+    <Setter Property="CornerRadius" Value="30" />
+    <Setter Property="Padding" Value="18,0,32,0" />
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+    <Setter Property="FontSize" Value="21" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+  </Style>
+  <Style Selector="Button.detailAction.primary:pointerover">
+    <Setter Property="Background" Value="{StaticResource AccentHover}" />
+  </Style>
+  <Style Selector="Button.detailAction.danger">
+    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="Button.detailAction:disabled">
+    <Setter Property="Background" Value="{StaticResource DetailAction}" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.detailAction.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRingGap}" />
+  </Style>
+  <Style Selector="Button.detailAction TextBlock.caption">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.2" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Border.detailChip">
+    <Setter Property="Background" Value="{StaticResource DetailChip}" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="8,6,14,6" />
+  </Style>
+  <Style Selector="Border.detailChip.update">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Padding" Value="10,6,14,6" />
+  </Style>
+  <Style Selector="Border.detailStat">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="24,20" />
+  </Style>
+  <!-- Fades at the top and bottom of the cover grid; MainWindow.axaml.cs shows them where it can scroll on.
+       Height must match MainWindow.ListFadeHeight. -->
+  <Style Selector="Border.listFade">
+    <Setter Property="Height" Value="96" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.listFade.shown">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- LT/RT beside the detail carousel. -->
+  <Style Selector="Button.carouselNav">
+    <Setter Property="Height" Value="48" />
+    <Setter Property="MinWidth" Value="64" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- Entries of a game's context menu. -->
+  <Style Selector="Button.menuItem">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="MinHeight" Value="52" />
+    <Setter Property="Padding" Value="16,12" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Button.menuItem:pointerover, Button.menuItem.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.menuItem.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRingInset}" />
+  </Style>
+  <Style Selector="Button.menuItem Path.icon">
+    <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Button.menuItem.danger">
+    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="Button.menuItem.danger Path.icon">
+    <Setter Property="Stroke" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="Button.menuItem:disabled">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.menuItem:disabled Path.icon">
+    <Setter Property="Stroke" Value="{StaticResource TextDisabled}" />
+  </Style>
+  <Style Selector="Button.menuItem TextBlock.note">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="Button.menuItem:disabled TextBlock.note">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+
   <!-- Not available on this PC (no Windows, no Steam): the setting row stays readable but greyed out. -->
   <Style Selector="Button.settingRow.unavailable">
     <Setter Property="Opacity" Value="0.55" />

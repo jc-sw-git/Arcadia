@@ -92,5 +92,9 @@ public sealed class GameLaunchService(LauncherRegistry launchers)
 
     /// <summary>Hands an uninstalled game to its launcher's install dialog.</summary>
     /// <returns>False if Arcadia has no way to install the game (demo data, unsupported launcher).</returns>
-    public static bool Install(Game game) => game.Install is { } target && DirectLauncherClient.Start(target);
+    public static bool Install(Game game) => Open(game.Install);
+
+    /// <summary>Hands a launcher action (install, uninstall, show the game, …) to the launcher.</summary>
+    /// <returns>False if there is nothing to open (no such action, or demo data).</returns>
+    public static bool Open(LaunchTarget? target) => target is not null && DirectLauncherClient.Start(target);
 }

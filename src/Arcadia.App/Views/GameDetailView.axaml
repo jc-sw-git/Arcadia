@@ -1,0 +1,184 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             x:Class="Arcadia.App.Views.GameDetailView"
+             x:DataType="vm:GameDetailViewModel"
+             ClipToBounds="True">
+
+  <!-- The detail carousel (#11), 1920 px wide: the shown game's page in the middle, its
+       neighbours cut off at the sides. GameDetailView.axaml.cs slides the track when it turns. -->
+  <UserControl.Resources>
+    <DataTemplate x:Key="DetailAction" x:DataType="vm:GameActionViewModel">
+      <Button Classes="plain detailAction" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding IsDanger}" Classes.focused="{Binding IsFocused}"
+              IsEnabled="{Binding IsEnabled}" Command="{Binding InvokeCommand}" ToolTip.Tip="{Binding Note}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Border Classes="glyph round dark" IsVisible="{Binding IsPrimary}"><TextBlock Text="A" /></Border>
+          <!-- The icons are drawn in a 24 px box; scaled to 20 px like the design. -->
+          <Viewbox Width="20" Height="20" IsVisible="{Binding !IsPrimary}" VerticalAlignment="Center">
+            <Path Data="{Binding Icon}" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round"
+                  Width="24" Height="24" Stretch="None" />
+          </Viewbox>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Classes="caption" Text="{Binding Caption}" IsVisible="{Binding HasCaption}" />
+            <TextBlock Text="{Binding ButtonLabel}" />
+          </StackPanel>
+        </StackPanel>
+      </Button>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <Panel>
+    <Panel Name="Track">
+      <Panel.RenderTransform>
+        <TranslateTransform />
+      </Panel.RenderTransform>
+      <ItemsControl Name="PageList" ItemsSource="{Binding Pages}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <Canvas />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.Styles>
+          <Style Selector="ItemsControl#PageList > ContentPresenter" x:DataType="vm:GameDetailPageViewModel">
+            <Setter Property="Canvas.Left" Value="{Binding Left}" />
+          </Style>
+        </ItemsControl.Styles>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:GameDetailPageViewModel">
+            <!-- 832 = the body row of MainWindow's 1080 px layout. -->
+            <Panel Width="1152" Height="832">
+              <Border Margin="0,24,0,20" Background="{StaticResource DetailSurface}" CornerRadius="20" BoxShadow="{StaticResource DetailShadow}">
+                <Border CornerRadius="20" ClipToBounds="True">
+                  <DockPanel>
+                    <!-- Hero: placeholder backdrop in the cover's hue until artwork arrives (#13). -->
+                    <Panel DockPanel.Dock="Top" Height="372" Background="{Binding Backdrop}" ClipToBounds="True">
+                      <Ellipse Width="700" Height="700" Stroke="{Binding Ring}" StrokeThickness="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-140,-60,0" />
+                      <Ellipse Width="380" Height="380" Stroke="{Binding Ring}" StrokeThickness="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,40,120,0" />
+                      <Grid ColumnDefinitions="210,*" ColumnSpacing="40" Margin="48,0,48,36" VerticalAlignment="Bottom">
+                        <Border Width="210" Height="315" CornerRadius="12" Background="{Binding Tile.CoverBrush}" BoxShadow="{StaticResource CoverShadow}">
+                          <Panel>
+                            <Border Classes="shade" CornerRadius="12" IsVisible="{Binding !Tile.IsInstalled}" />
+                            <Grid RowDefinitions="*,Auto" Margin="20">
+                              <TextBlock Text="{Binding Tile.Monogram}" FontSize="96" FontWeight="ExtraBold" Foreground="{Binding Tile.AccentBrush}" />
+                              <TextBlock Grid.Row="1" Text="{Binding Tile.Title}" FontSize="19" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                                         TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                          </Panel>
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="18" VerticalAlignment="Bottom" Margin="0,0,0,4">
+                          <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Border Classes="detailChip">
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Width="18" Height="18" CornerRadius="5" Background="{Binding Tile.LauncherBrush}">
+                                  <TextBlock Text="{Binding Tile.LauncherMonogram}" FontSize="10" FontWeight="ExtraBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <TextBlock Text="{Binding LauncherUpper}" FontSize="14" FontWeight="Bold" LetterSpacing="1.7" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </Border>
+                            <Border Classes="detailChip update" IsVisible="{Binding Tile.UpdateAvailable}">
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Path Data="M12 4v12M6 10l6 6 6-6M5 20h14" Stroke="{StaticResource OnAccent}" StrokeThickness="2.8" StrokeLineCap="Round" StrokeJoin="Round"
+                                      Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center" />
+                                <TextBlock Text="UPDATE VERFÜGBAR" FontSize="14" FontWeight="ExtraBold" LetterSpacing="0.8" Foreground="{StaticResource OnAccent}" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </Border>
+                          </StackPanel>
+                          <TextBlock Text="{Binding Tile.Title}" FontSize="64" FontWeight="ExtraBold" LineHeight="70" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                                     Foreground="{StaticResource TextStrong}" />
+                        </StackPanel>
+                      </Grid>
+                    </Panel>
+
+                    <!-- Key figures, information only. -->
+                    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,*,*,*" ColumnSpacing="16" Margin="48,24,48,36">
+                      <Border Classes="detailStat">
+                        <StackPanel Spacing="6">
+                          <TextBlock Classes="label" Text="ZULETZT GESPIELT" FontSize="13" />
+                          <TextBlock Classes="statValue" Text="{Binding Tile.LastPlayedText}" />
+                          <TextBlock Classes="statSource" Text="{Binding LastPlayedAt}" />
+                        </StackPanel>
+                      </Border>
+                      <Border Grid.Column="1" Classes="detailStat">
+                        <StackPanel Spacing="6">
+                          <TextBlock Classes="label" Text="SPIELZEIT" FontSize="13" />
+                          <TextBlock Classes="statValue" Text="{Binding Tile.PlaytimeText}" />
+                          <TextBlock Classes="statSource" Text="{Binding PlaytimeSource}" />
+                        </StackPanel>
+                      </Border>
+                      <Border Grid.Column="2" Classes="detailStat">
+                        <StackPanel Spacing="6">
+                          <TextBlock Classes="label" Text="INSTALLIERT AM" FontSize="13" />
+                          <TextBlock Classes="statValue" Text="{Binding InstalledAt}" />
+                          <TextBlock Classes="statSource" Text="{Binding Tile.LocationText}" ToolTip.Tip="{Binding Tile.LocationText}" />
+                        </StackPanel>
+                      </Border>
+                      <Border Grid.Column="3" Classes="detailStat">
+                        <StackPanel Spacing="6">
+                          <TextBlock Classes="label" Text="GRÖSSE" FontSize="13" />
+                          <TextBlock Classes="statValue" Text="{Binding Tile.SizeText}" />
+                          <TextBlock Classes="statSource" Text="{Binding DriveText}" />
+                        </StackPanel>
+                      </Border>
+                    </Grid>
+
+                    <!-- The context menu's actions as buttons, in two rows (owner, 2026-10-17). -->
+                    <StackPanel Spacing="12" Margin="48,24,48,0">
+                      <ItemsControl ItemsSource="{Binding TopRow}" ItemTemplate="{StaticResource DetailAction}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="12" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                      </ItemsControl>
+                      <Grid ColumnDefinitions="*,Auto" Classes="smallActions">
+                        <ItemsControl ItemsSource="{Binding BottomRow}" ItemTemplate="{StaticResource DetailAction}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <StackPanel Orientation="Horizontal" Spacing="12" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <ContentControl Grid.Column="1" Content="{Binding Uninstall}" ContentTemplate="{StaticResource DetailAction}" ClipToBounds="False" />
+                      </Grid>
+                      <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasUpdateNote}">
+                        <Path Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7.5v5.5M12 16.5v.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.2" StrokeLineCap="Round"
+                              Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding UpdateNote}" FontSize="16" Foreground="{StaticResource AccentSoft}" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding ActionNote}" IsVisible="{Binding HasActionNote}" FontSize="16" Foreground="{StaticResource TextMuted}" />
+                    </StackPanel>
+                  </DockPanel>
+                </Border>
+              </Border>
+              <!-- A click on a neighbour turns the carousel to it. -->
+              <Button Classes="plain" IsVisible="{Binding IsSide}" Command="{Binding SelectCommand}" Margin="0,24,0,20" CornerRadius="20"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Panel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Panel>
+
+    <!-- The neighbours fade towards the window's edges. -->
+    <Border Width="384" HorizontalAlignment="Left" IsHitTestVisible="False" IsVisible="{Binding HasNeighbours}" Background="{StaticResource CarouselFadeLeft}" />
+    <Border Width="384" HorizontalAlignment="Right" IsHitTestVisible="False" IsVisible="{Binding HasNeighbours}" Background="{StaticResource CarouselFadeRight}" />
+    <Button Classes="plain glyphButton carouselNav" Content="LT" HorizontalAlignment="Left" Margin="80,0,0,0" IsVisible="{Binding HasNeighbours}"
+            Command="{Binding PreviousCommand}" ToolTip.Tip="Vorheriges Spiel (Bild ↑, Umschalt+← oder Mausrad)" />
+    <Button Classes="plain glyphButton carouselNav" Content="RT" HorizontalAlignment="Right" Margin="0,0,80,0" IsVisible="{Binding HasNeighbours}"
+            Command="{Binding NextCommand}" ToolTip.Tip="Nächstes Spiel (Bild ↓, Umschalt+→ oder Mausrad)" />
+  </Panel>
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock.statValue">
+      <Setter Property="FontSize" Value="26" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style Selector="TextBlock.statSource">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+  </UserControl.Styles>
+</UserControl>

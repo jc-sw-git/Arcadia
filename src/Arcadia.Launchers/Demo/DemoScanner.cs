@@ -1,3 +1,4 @@
+using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers.Demo;
@@ -58,6 +59,7 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
                     Launch = new LaunchTarget.None(),
                     IsInstalled = false,
                     Install = new LaunchTarget.None(),
+                    OpenInLauncher = new LaunchTarget.None(),
                 });
                 continue;
             }
@@ -73,6 +75,10 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
                 LauncherId = launcher.Id,
                 Title = title,
                 Launch = new LaunchTarget.None(),
+                OpenInLauncher = new LaunchTarget.None(),
+
+                // As the real launchers: Epic can only uninstall in its own window.
+                Uninstall = launcher.Id == KnownLaunchers.Epic.Id ? null : new LaunchTarget.None(),
                 InstallDirectory = Path.Combine("D:", "Games", launcher.DisplayName, title.Replace(":", string.Empty, StringComparison.Ordinal)),
                 InstalledAt = now.AddDays(-installedDaysAgo),
                 LastPlayedAt = playedDaysAgo is { } days ? now.AddDays(-days).AddHours(-random.Next(0, 20)) : null,

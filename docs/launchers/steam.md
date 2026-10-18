@@ -30,3 +30,7 @@ monitor also reads `logs/content_log.txt` (`SteamContentLog`): `AppID <id> state
 the app Steam works on (a waiting or paused one lacks it), `App update changed : …Verifying Staged|Committing` the end.
 Steam has no update-only URI: `steam://install/<id>` is ignored for installed games, `steam://validate/<id>` updates
 but first verifies every file (and resets modified ones).
+
+`steam://controllerconfig/<id>` is unreliable (owner's PC, 2026-10-18): Steam goes to the game in its library, but
+often, mostly on the first call, the controller configurator doesn't open; a second call mostly works. Cause unknown,
+so Arcadia offers no "Controller-Layout" action for now (owner's decision).

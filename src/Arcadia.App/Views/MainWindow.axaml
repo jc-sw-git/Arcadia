@@ -722,7 +722,18 @@
             </Grid>
             <Panel Grid.Row="1" Name="SearchViewport" Background="Transparent" ClipToBounds="True" IsVisible="{Binding HasHits}">
               <Canvas>
-                <ItemsControl Name="SearchResults" Classes="hits" Classes.grid="{Binding !IsKeyboardOut}" ItemsSource="{Binding Results}" ItemTemplate="{StaticResource SearchHitTile}">
+                <ItemsControl Name="SearchResults" Classes="hits" Classes.grid="{Binding !IsKeyboardOut}" ItemsSource="{Binding Slots}">
+                  <!-- A slot keeps its tile's controls when it shows another hit (SearchViewModel.Slots). -->
+                  <ItemsControl.Styles>
+                    <Style Selector="ItemsControl#SearchResults > ContentPresenter" x:DataType="search:HitSlotViewModel">
+                      <Setter Property="IsVisible" Value="{Binding IsShown}" />
+                    </Style>
+                  </ItemsControl.Styles>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="search:HitSlotViewModel">
+                      <ContentControl Content="{Binding Tile}" ContentTemplate="{StaticResource SearchHitTile}" ClipToBounds="False" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                       <WrapPanel ItemSpacing="20" LineSpacing="20" />

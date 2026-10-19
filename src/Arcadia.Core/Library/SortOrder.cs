@@ -30,9 +30,8 @@ public static class GameSorter
 {
     public static IReadOnlyList<Game> Sort(IEnumerable<Game> games, SortOrder order, CultureInfo? culture = null)
     {
-        var compareInfo = (culture ?? CultureInfo.CurrentCulture).CompareInfo;
-        int CompareTitles(Game a, Game b) =>
-            compareInfo.Compare(a.Title, b.Title, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace);
+        var titles = TitleComparer(culture);
+        int CompareTitles(Game a, Game b) => titles.Compare(a.Title, b.Title);
 
         var list = games.ToList();
         var sign = order.Direction == SortDirection.Ascending ? 1 : -1;
@@ -49,6 +48,10 @@ public static class GameSorter
         list.Sort(comparison);
         return list;
     }
+
+    /// <summary>How titles sort: by the culture's rules, case and accents aside.</summary>
+    public static IComparer<string> TitleComparer(CultureInfo? culture = null) =>
+        (culture ?? CultureInfo.CurrentCulture).CompareInfo.GetStringComparer(CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace);
 
     private static int CompareDates(DateTimeOffset? a, DateTimeOffset? b, int sign) => (a, b) switch
     {

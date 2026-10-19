@@ -404,7 +404,7 @@ public partial class MainWindow : Window
     {
         if (_viewModel is { IsSearchShown: true, Search.FocusedResult: { } hit } searching)
         {
-            return SearchResults.ContainerFromIndex(searching.Search!.Results.IndexOf(hit));
+            return SearchResults.ContainerFromIndex(searching.Search!.SlotOf(hit));
         }
 
         return _viewModel?.FocusedGame is { } tile ? GameGrid.ContainerFromIndex(_viewModel.PageGames.IndexOf(tile)) : null;

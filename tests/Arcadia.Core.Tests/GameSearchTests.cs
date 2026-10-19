@@ -48,6 +48,23 @@ public class GameSearchTests
         Assert.Single(GameSearch.Find([Game("HOLLOW")], "hollow", German));
     }
 
+    [Theory]
+    [InlineData("Straße der Helden", "strasse")]
+    [InlineData("Strasse", "straße")]
+    [InlineData("Søren's Quest", "soren")]
+    [InlineData("Łódź Racer", "lodz")]
+    [InlineData("Æon Flux", "aeon")]
+    [InlineData("Œuvre", "oeuvre")]
+    [InlineData("ﬁnal", "final")]
+    [InlineData("x²", "x2")]
+    [InlineData("Dragon’s Dogma", "dragon's")]
+    [InlineData("İstanbul", "istanbul")]
+    [InlineData("Ñandú", "nandu")]
+    public void Letter_variants_match_their_plain_letters(string title, string term)
+    {
+        Assert.Single(GameSearch.Find([Game(title)], term, German));
+    }
+
     [Fact]
     public void A_term_after_a_colon_or_dash_is_a_word_start()
     {
@@ -97,6 +114,30 @@ public class GameSearchTests
         var hits = GameSearch.Find(games, "hollow", German, new SortOrder(SortField.Name, SortDirection.Descending));
 
         Assert.Equal(["The Hollow Tides", "Hollow Knight", "Abyss Hollow"], hits.Select(g => g.Title));
+    }
+
+    [Theory]
+    [InlineData(SortDirection.Ascending)]
+    [InlineData(SortDirection.Descending)]
+    public void Sorting_by_name_gives_the_library_order(SortDirection direction)
+    {
+        var games = new[] { Game("Hollow Knight"), Game("The Hollow Tides"), Game("Ábyss Hollow"), Game("abyss hollow II"), Game("Unhollowed") };
+        var order = new SortOrder(SortField.Name, direction);
+
+        var hits = GameSearch.Find(games, "hollow", German, order);
+
+        Assert.Equal(GameSorter.Sort(games, order, German).Select(g => g.Title), hits.Select(g => g.Title));
+    }
+
+    [Fact]
+    public void A_prepared_search_finds_only_in_the_chosen_launchers()
+    {
+        var search = new GameSearch([Game("Hollow Knight", "steam"), Game("Hollow Drift", "epic"), Game("Hollow Wilds", "gog")], German);
+
+        var hits = search.Find("hollow", new HashSet<string> { "epic", "gog" });
+
+        Assert.Equal(["Hollow Drift/epic", "Hollow Wilds/gog"], hits.Select(g => $"{g.Title}/{g.LauncherId}"));
+        Assert.Equal(3, search.Find("hollow").Count);
     }
 
     [Fact]

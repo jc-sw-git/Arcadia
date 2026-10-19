@@ -72,12 +72,14 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     private readonly Func<Game, Action<GameTileViewModel>, GameTileViewModel> _createTile;
     private readonly RepeatGesture _erase;
     private IReadOnlyList<LauncherLibrary> _libraries;
+    private GameSearch _search;
     private IReadOnlyList<LauncherInfo> _launchers = [];
     private HashSet<string> _chosen = [];
     private LauncherScope _scope = new([], [], true);
     private HitWindow _window;
     private int _focus;
     private bool _hitsChanged;
+    private List<GameTileViewModel> _results = [];
 
     public SearchViewModel(
         IReadOnlyList<LauncherLibrary> libraries,
@@ -89,6 +91,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         Action<Action> post)
     {
         _libraries = libraries;
+        _search = new GameSearch(libraries.SelectMany(l => l.Games), Formatting.Culture);
         _createTile = createTile;
         UsesController = usesController;
         IsKeyboardOut = usesController;
@@ -161,7 +164,14 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     /// The hits around the window: the window itself and one window's worth before and after it,
     /// so a step or a turn can slide them in. The first one is hit <see cref="SliceStart"/>.
     /// </summary>
-    public ObservableCollection<GameTileViewModel> Results { get; } = [];
+    public IReadOnlyList<GameTileViewModel> Results => _results;
+
+    /// <summary>
+    /// The places the view shows <see cref="Results"/> in, in the same order; places beyond them are hidden.
+    /// A place keeps its controls when it gets another tile: building a tile's controls takes milliseconds,
+    /// and building them for every key press or step at the window's edge broke the budget for a focus move.
+    /// </summary>
+    public ObservableCollection<HitSlotViewModel> Slots { get; } = [];
 
     /// <summary>The index in <see cref="Hits"/> of the first of <see cref="Results"/>.</summary>
     public int SliceStart { get; private set; }
@@ -370,6 +380,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     public void Update(IReadOnlyList<LauncherLibrary> libraries)
     {
         _libraries = libraries;
+        _search = new GameSearch(libraries.SelectMany(l => l.Games), Formatting.Culture);
         BuildChips();
         Recompute(FocusedResult?.Game.Key);
     }
@@ -580,8 +591,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
             _ => "Unbekannte Kürzel: " + string.Join(", ", _scope.UnknownKeywords.Select(k => $"{SearchQuery.PrefixMarker}{k}")),
         };
 
-        var games = _libraries.Where(l => _scope.LauncherIds.Contains(l.Launcher.Id)).SelectMany(l => l.Games);
-        Hits = GameSearch.Find(games, query.Term, Formatting.Culture, Sort);
+        Hits = _search.Find(query.Term, _scope.LauncherIds.ToHashSet(), Sort);
         _hitsChanged = true;
         var launchersHit = Hits.Select(g => g.LauncherId).Distinct().Count();
         ResultsTitle = $"{Hits.Count} Treffer in {launchersHit} {(launchersHit == 1 ? "Launcher" : "Launchern")}";
@@ -609,7 +619,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
 
     /// <summary>
     /// Shows the window and a window's worth of hits on either side, so a step or turn can slide
-    /// them in. Tiles of games already shown are kept, so their covers don't load again.
+    /// them in. Tiles of games already shown are kept, with their state (focus, a hold in progress).
     /// </summary>
     private void ShowWindow(int? previousStart)
     {
@@ -623,11 +633,10 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
                 shown.TryAdd(tile.Game.Key, tile);
             }
 
-            Results.Clear();
-            foreach (var game in Hits.Take(sliceEnd).Skip(sliceStart))
-            {
-                Results.Add(shown.TryGetValue(game.Key, out var tile) && tile.Game == game ? tile : _createTile(game, FocusByPointer));
-            }
+            _results = Hits.Take(sliceEnd).Skip(sliceStart)
+                .Select(game => shown.TryGetValue(game.Key, out var tile) && tile.Game == game ? tile : _createTile(game, FocusByPointer))
+                .ToList();
+            FillSlots();
 
             SliceStart = sliceStart;
             _hitsChanged = false;
@@ -637,6 +646,29 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         RangeText = _window.CanTurn ? $"{_window.Start + 1}–{Math.Min(Hits.Count, _window.Start + _window.Size)} von {Hits.Count}" : string.Empty;
         ShowFocus();
         WindowMoved?.Invoke(previousStart);
+    }
+
+    /// <summary>The place of <paramref name="tile"/> in <see cref="Results"/> and <see cref="Slots"/>; -1 if it isn't shown.</summary>
+    public int SlotOf(GameTileViewModel tile) => _results.IndexOf(tile);
+
+    private void FillSlots()
+    {
+        for (var i = 0; i < Math.Max(Slots.Count, Results.Count); i++)
+        {
+            if (i >= Slots.Count)
+            {
+                Slots.Add(new HitSlotViewModel(Results[i]));
+            }
+            else if (i < Results.Count)
+            {
+                Slots[i].Tile = Results[i];
+                Slots[i].IsShown = true;
+            }
+            else
+            {
+                Slots[i].IsShown = false;
+            }
+        }
     }
 
     private void ShowFocus()
@@ -657,7 +689,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     /// <summary>A click on a hit focuses it; one only partly on screen comes into view.</summary>
     private void FocusByPointer(GameTileViewModel tile)
     {
-        var index = Results.IndexOf(tile);
+        var index = SlotOf(tile);
         if (index < 0)
         {
             return;

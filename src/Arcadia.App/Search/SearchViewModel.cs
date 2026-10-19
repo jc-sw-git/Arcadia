@@ -181,7 +181,23 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
 
     /// <summary>More hits than fit: LT/RT turn them.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar))]
     public partial bool CanTurn { get; private set; }
+
+    /// <summary>The scroll bar runs across below the row of hits beside the keyboard, and down beside the grid without it.</summary>
+    public bool ShowsRowScrollBar => CanTurn && IsKeyboardOut;
+
+    public bool ShowsGridScrollBar => CanTurn && !IsKeyboardOut;
+
+    // The scroll bar beside the hits: where the window starts, the last place it can start, and how many hits it shows.
+    [ObservableProperty]
+    public partial int ScrollStart { get; private set; }
+
+    [ObservableProperty]
+    public partial int ScrollEnd { get; private set; }
+
+    [ObservableProperty]
+    public partial int ScrollViewport { get; private set; }
 
     public OnScreenKeyboardViewModel Keyboard { get; }
 
@@ -192,7 +208,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
 
     /// <summary>The on-screen keyboard is out, and the hits get one row above it; in, they fill a grid.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsCloseGlyph))]
+    [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsCloseGlyph), nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar))]
     public partial bool IsKeyboardOut { get; set; }
 
     /// <summary>Beside the keyboard only the right stick picks a hit, so it's said above the hits too, not only in the legend.</summary>
@@ -402,9 +418,13 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>The mouse wheel over the hits.</summary>
-    public void Scroll(int delta)
+    public void Scroll(int delta) => MoveWindow(_window.Scroll(delta));
+
+    /// <summary>The scroll bar beside the hits was dragged or clicked.</summary>
+    public void ScrollTo(double start) => MoveWindow(_window.ScrolledTo((int)Math.Round(start)));
+
+    private void MoveWindow(HitWindow scrolled)
     {
-        var scrolled = _window.Scroll(delta);
         if (scrolled != _window)
         {
             var previous = _window.Start;
@@ -474,7 +494,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>LT/RT: the next or previous window of hits, round and round.</summary>
+    /// <summary>LT/RT: the next or previous window of hits; the row wraps round, the grid stops at its ends.</summary>
     private void Turn(int direction)
     {
         if (_window.CanTurn)
@@ -647,6 +667,9 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         }
 
         CanTurn = _window.CanTurn;
+        ScrollStart = _window.Start;
+        ScrollEnd = _window.LastStart;
+        ScrollViewport = _window.Size;
         RangeText = _window.CanTurn ? $"{_window.Start + 1}–{Math.Min(Hits.Count, _window.Start + _window.Size)} von {Hits.Count}" : string.Empty;
         ShowFocus();
         WindowMoved?.Invoke(previousStart);

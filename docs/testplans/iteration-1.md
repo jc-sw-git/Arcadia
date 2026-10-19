@@ -488,8 +488,10 @@ Verlauf:
       und laufen weich aus (ohne harte Kante und ohne Streifen am Rand, auch bei krummen Fenstergrößen), daneben Schaltflächen „LT“/„RT“ (mit der Maus nur Pfeile), über den Treffern „RS Treffer
       wählen“, der Kopf zeigt „8–14 von 105“. Der rechte Stick bewegt den Fokus einzeln (die Reihe gleitet mit),
       LT/RT gleiten eine ganze Reihe weiter und vom Ende wieder zum Anfang (und umgekehrt). Eingefahren scrollt
-      das Raster senkrecht mit verblassten Reihen oben und unten, LT/RT und Bild ↑/↓ blättern um zwei Reihen;
-      Mausrad und Klick auf einen angeschnittenen Treffer scrollen ebenso. · E2E: ja
+      das Raster senkrecht mit verblassten Reihen oben und unten, LT/RT und Bild ↑/↓ blättern um zwei Reihen und
+      bleiben am Anfang und Ende stehen (kein Sprung ans andere Ende, wie Mausrad und Bibliothek); Mausrad und
+      Klick auf einen angeschnittenen Treffer scrollen ebenso. Eine Scrollleiste zeigt, wo man steht: unter der
+      Reihe waagrecht, neben dem Raster senkrecht; Ziehen oder ein Klick auf die Leiste scrollt. · E2E: ja
 - [ ] **T12-17** Viele Launcher (mit der Maus sichtbar): Passen die Chips nicht neben „Sortiert nach …“, fallen
       bei allen zugleich zuerst die Kürzel weg, dann werden die Namen gekürzt („Ubis…“), zuletzt bleibt nur das
       Logo; wird es eng vor der Sortierung, erscheint dort ein Trennstrich. · E2E: nein
@@ -497,6 +499,10 @@ Verlauf:
       schon der erste Klick auf eine Taste oder die Lasche; die Legende wechselt dabei auf Maus und Tastatur,
       die Controller-Zeichen auf den Tasten und neben „Schließen“ verschwinden, die Tastatur bleibt stehen.
       Ein Druck auf dem Controller holt die Controller-Legende zurück. · E2E: ja
+- [ ] **T12-19** Fenster mit anderem Seitenverhältnis als 16:9 (breit im Fenster- oder Vollbild-Fenstermodus, und
+      hoch): Legende und Bildschirmtastatur der Suche reichen bis an die Fensterränder, ebenso die Linie über dem
+      Footer der Bibliothek und die Abdunklung hinter Dialogen; neben der Suche schimmert nichts von der Bibliothek
+      durch. · E2E: nein
 
 Verlauf:
 
@@ -513,6 +519,8 @@ Verlauf:
 | T12-3, T12-16 (Leistung) | 2026-10-19 | Claude | Branch nach dem Code-Review (P1/P2), Linux-Container, Xvfb mit Software-Rendering, Release-Build, Demo lokal auf 5.004 bzw. 1.001 Spiele hochgesetzt, Gamepad nachgestellt (nicht eingecheckt); Zeit von der Eingabe bis zum fertigen Layout bzw. bis zum übernächsten Frame. `GameSearch` allein mit 5.000 Titeln (Ø 32 Zeichen) per Benchmark | ✅ Suche je Taste vorher 25–32 ms (Spitzen 66 ms), jetzt 0,3–0,8 ms, Vorbereitung beim Öffnen und Rescan einmal 10–25 ms. In der App bei 5.000 Spielen (Median / 90 %): RS in der Reihe vorher 50–125 ms, jetzt 6 / 13 ms; D-Pad im Raster vorher 120–200 ms, jetzt 22 / 43 ms (ein Ausreißer 84 ms); Tippen vorher 60–140 ms, jetzt 26 / 30 ms; X gehalten löscht alle 60 ms ohne verworfene Schritte; Detailseite aus der Suche drehen 14 / 21 ms (wie #101). Offen: der erste Buchstabe nach dem Öffnen braucht einmalig 0,35 s (vorher 0,43 s), vor allem fürs erste Bauen der Kacheln | Gegenmessung am PC des Owners mit echter Bibliothek |
 | T12-7, T12-12, T12-13, T12-16 | 2026-10-19 | Juri | PC des Owners, PR #104 (vierter Rough-Test) | ❌ Bei Controller-Legende wirkt der erste Klick auf eine Taste oder die Lasche nicht; die Legende verschwindet bei Maus und die Tastatur rutscht; Treffer blättern mit LB/RB, Detailseite und Bibliothek mit LT/RT; je nach Fenstergröße 1 px Streifen am Rand der seitlichen Ausblendung | Legende immer da, Treffer mit LT/RT, Groß/Sonderzeichen mit LB/RB, Maustaste halten für Details, Verläufe über den Rand (T12-18 neu) |
 | T12-1, T12-7, T12-12, T12-13, T12-14, T12-16, T12-18, G-11 | 2026-10-19 | Claude | Branch nach dem vierten Umbau, Linux, Xvfb 1920×1080 `--demo`, Fenster 1600×900 und 7 krumme Größen (1111×625 bis 1711×963) mit Skalierung 1, 1,25 und 1,5; Gamepad nachgestellt wie oben (nicht eingecheckt), Maus und Tastatur per xdotool | ✅ Mit Controller-Legende wirkt der erste Klick („ABC“, dann „e“), Legende wechselt auf Maus/Tastatur, Tastatur bleibt stehen, Zeichen auf den Tasten weg; RB schaltet die Sonderzeichen; Klick auf die Lasche fährt ein, Legende für das Raster; Bild ↓ blättert 15–28; Maustaste 1,4 s gehalten auf einem Treffer und einem Cover der Bibliothek öffnet die Details (Ring sichtbar), ein Klick wählt nur aus. Den Streifen am Rand konnte ich hier nicht nachstellen (Randspalte bei allen Größen gleich der Spalte daneben, vorher wie nachher) | Sichtprüfung am PC des Owners, Streifen bei seiner Fenstergröße |
+| T12-16, T12-19 | 2026-10-19 | Juri | PC des Owners, PR #104 (fünfter Rough-Test), Vollbild-Fenstermodus | ❌ Bild ↑/↓ springt im Raster ans andere Ende, das Mausrad nicht; keine Scrollleiste; Footer der Suche links und rechts abgeschnitten (nicht mit F11) | Raster ohne Umlauf, Scrollleiste, Bänder bis an den Fensterrand (T12-19 neu) |
+| T12-16, T12-19 | 2026-10-19 | Claude | Branch nach dem fünften Umbau, Linux, Xvfb 1920×1080 `--demo`, Fenster 1900×800 (breit) und 960×1000 (hoch); Gamepad nachgestellt wie oben (nicht eingecheckt); `HitWindowTests` für Raster-Enden und Scrollleiste | ✅ Legende, Tastatur, Footer-Linie und Abdunklung der Einstellungen reichen im breiten Fenster bis an den Rand, im hohen bis nach unten; neben der Suche keine Linie der Bibliothek; Scrollleiste unter der Reihe und neben dem Raster sichtbar (dünn, wie in der Bibliothek). Ziehen der Leiste nur mechanisch geprüft | Sichtprüfung am PC des Owners im Vollbild-Fenstermodus |
 
 ## #102 Ausfaden am Rand des Listings
 

@@ -744,6 +744,20 @@
     </Style.Animations>
   </Style>
 
+  <!-- The layout is 1920×1080, scaled to the window; a window of another shape leaves bars beside or above and below it
+       in the window's background. Bands that run from edge to edge reach into those bars, so they don't end in the middle
+       of the window: the search's keyboard (bleed), its legend (bleedDown), and the search's background and the dimming
+       behind dialogs, which cover what's beneath them in the bars too (bleedAll). -->
+  <Style Selector=":is(Control).bleed">
+    <Setter Property="Margin" Value="-1920,0" />
+  </Style>
+  <Style Selector="Border.bleedDown">
+    <Setter Property="Margin" Value="-1920,0,-1920,-1080" />
+  </Style>
+  <Style Selector=":is(Control).bleedAll">
+    <Setter Property="Margin" Value="-1920,-1080" />
+  </Style>
+
   <!-- Scrollbars that match the theme: thin, rounded, dark. -->
   <Style Selector="ScrollBar">
     <Setter Property="Background" Value="Transparent" />

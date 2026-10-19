@@ -122,7 +122,10 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu) and `GameDetailViewModel` (detail carousel, `Views/GameDetailView.axaml`) are its children; `Search/` holds `SearchViewModel` (search page; hits shown in `HitSlotViewModel` places that keep their controls when the hit changes), `OnScreenKeyboardViewModel` and `KeyboardLayout`; `Controls/` holds `HoldRing`, `RevealPanel` (the sliding keyboard), `SharedWidthRow` and `CollapsingStack` (the shrinking chips) |
 | `tests/Arcadia.Core.Tests` | xUnit |
 
-Big Picture UI is laid out at 1920×1080 inside a `Viewbox`. Focus/navigation is done in the
+Big Picture UI is laid out at 1920×1080 inside a `Viewbox`; a window of another shape gets bars in the window's
+background beside or above and below it. Bands that run from edge to edge (footer line, the search's legend and
+keyboard, dialog dimming, the search's background) reach into those bars with the `bleed` classes in `Theme.axaml`,
+so the `Viewbox` doesn't clip. Focus/navigation is done in the
 view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons are
 `Focusable=False`, keys are handled in a tunnelling `KeyDown` handler.
 
@@ -154,8 +157,9 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   keyboard back. The legend at the bottom is always there and names the input in use: the controller's buttons,
   or mouse and keyboard (it never hides, so the keyboard above it doesn't move under a click). B closes the layout menu first, then
   puts the keyboard away, then closes the search; B never erases. D-pad/left stick type, the right stick picks a
-  hit, LT/RT (or Page Up/Down, the wheel) turn the hits a window at a time and wrap round, as LT/RT turn pages and
-  the detail page (owner, 2026-10-19). X erases (held: repeats), Y space, LB shift and RB symbols page (each: tap on/off, held only while held), L3 "Filter und Sortierung" (launchers, any number, and
+  hit, LT/RT (or Page Up/Down, the wheel) turn the hits a window at a time, as LT/RT turn pages and the detail page;
+  the row wraps round like the detail page, the grid stops at its ends like the library and the wheel. A scroll bar
+  shows where the shown hits are: across below the row, down beside the grid (owner, 2026-10-19). X erases (held: repeats), Y space, LB shift and RB symbols page (each: tap on/off, held only while held), L3 "Filter und Sortierung" (launchers, any number, and
   the library's sort orders plus relevance, the default; not saved), R3 layout menu (all five, the last chosen
   saved globally). ≡ starts the focused hit, ≡ held 1 s opens its details, ⧉ its menu; with a real keyboard
   Enter and Enter held do the same. The sort button sits in the chip row; with many launchers the chips shrink

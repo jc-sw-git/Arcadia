@@ -15,7 +15,8 @@
         Foreground="{StaticResource Text}">
 
   <!-- The Big Picture layout is designed for 1920×1080 and scaled to the window. -->
-  <Viewbox Stretch="Uniform">
+  <!-- No clipping: bands reach past the layout into the bars beside it (Theme.axaml, bleed). -->
+  <Viewbox Stretch="Uniform" ClipToBounds="False">
     <Grid Width="1920" Height="1080" RowDefinitions="104,72,*,72" Background="{StaticResource Bg}">
 
       <!-- Header: logo, launcher tabs, status -->
@@ -351,7 +352,8 @@
       </Grid>
 
       <!-- Footer: button hints -->
-      <Border Grid.Row="3" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="80,0">
+      <!-- The line bleeds into the bars beside the layout (Theme.axaml, bleed): 1920 + 80 padding. -->
+      <Border Grid.Row="3" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Margin="-1920,0" Padding="2000,0">
         <Panel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsDetailOpen}">
           <StackPanel Orientation="Horizontal" Spacing="10">
@@ -421,7 +423,9 @@
       </Border>
 
       <!-- Search (#12): covers the library; a detail page opened from it takes its place. -->
-      <Panel Grid.RowSpan="4" Background="{StaticResource Bg}" IsVisible="{Binding IsSearchShown}">
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsSearchShown}">
+        <!-- Covers the library in the bars beside the layout too. -->
+        <Border Classes="bleedAll" Background="{StaticResource Bg}" />
         <Panel.Resources>
           <!-- A hit; also the faded neighbours beside the window of hits. -->
           <DataTemplate x:Key="SearchHitTile" x:DataType="vm:GameTileViewModel">
@@ -543,8 +547,11 @@
 
           <!-- Button legend for the input in use: the controller's buttons, or the mouse's and keyboard's. Always there, so
                the keyboard above it never moves; it moved under a click once, and the click missed its key (owner, 2026-10-19). -->
-          <Border DockPanel.Dock="Bottom" Height="64" Background="{StaticResource KeyboardSurface}" Padding="80,0">
-            <Panel HorizontalAlignment="Right" VerticalAlignment="Center">
+          <Border DockPanel.Dock="Bottom" Height="64">
+            <Panel>
+            <!-- The band bleeds into the bars beside and below the layout (Theme.axaml, bleed). -->
+            <Border Classes="bleedDown" Background="{StaticResource KeyboardSurface}" />
+            <Panel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="80,0">
               <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding UsesController}">
                 <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding IsKeyboardOut}">
                   <StackPanel Orientation="Horizontal" Spacing="10">
@@ -675,6 +682,7 @@
                 </StackPanel>
               </StackPanel>
             </Panel>
+            </Panel>
           </Border>
 
           <!-- On-screen keyboard: slides in from below (X, the tab, a search opened with the gamepad) and out again (B, the
@@ -694,7 +702,7 @@
                 <Path IsVisible="{Binding IsKeyboardOut}" Data="M6 9l6 6 6-6" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Stretch="Uniform" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
-            <ctl:RevealPanel Classes="keyboardDrawer" Classes.out="{Binding IsKeyboardOut}">
+            <ctl:RevealPanel Classes="keyboardDrawer bleed" Classes.out="{Binding IsKeyboardOut}">
               <Border Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
                 <Panel HorizontalAlignment="Center">
                   <ItemsControl ItemsSource="{Binding Keyboard.Rows}">
@@ -818,6 +826,14 @@
               <Border Width="200" HorizontalAlignment="Right" Margin="0,0,-2,0" IsHitTestVisible="False" IsVisible="{Binding IsKeyboardOut}" Background="{StaticResource CarouselFadeRight}" />
               <Border Height="40" VerticalAlignment="Top" Margin="0,-2,0,0" IsHitTestVisible="False" IsVisible="{Binding !IsKeyboardOut}" Background="{StaticResource ListFadeTop}" />
               <Border Height="96" VerticalAlignment="Bottom" Margin="0,0,0,-2" IsHitTestVisible="False" IsVisible="{Binding !IsKeyboardOut}" Background="{StaticResource ListFadeBottom}" />
+              <!-- Where the shown hits are among all of them: across below the row, down beside the grid (owner, 2026-10-19).
+                   1450 = the width of seven hits (MainWindow.axaml.cs, HitWindowWidth); dragging scrolls (OnHitsScrollBarScroll). -->
+              <ScrollBar Name="HitsRowScrollBar" Orientation="Horizontal" IsVisible="{Binding ShowsRowScrollBar}" Width="1450"
+                         HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,300,0,0"
+                         Minimum="0" Maximum="{Binding ScrollEnd}" ViewportSize="{Binding ScrollViewport}" Value="{Binding ScrollStart, Mode=OneWay}" />
+              <ScrollBar Name="HitsGridScrollBar" Orientation="Vertical" IsVisible="{Binding ShowsGridScrollBar}" Height="560"
+                         HorizontalAlignment="Center" VerticalAlignment="Top" Margin="1498,40,0,0"
+                         Minimum="0" Maximum="{Binding ScrollEnd}" ViewportSize="{Binding ScrollViewport}" Value="{Binding ScrollStart, Mode=OneWay}" />
               <Panel IsVisible="{Binding IsKeyboardOut}">
                 <Button Classes="plain glyphButton carouselNav turnHits" HorizontalAlignment="Left" Margin="80,104,0,0" IsVisible="{Binding CanTurn}"
                         Command="{Binding TurnBackCommand}" ToolTip.Tip="Vorherige Treffer (LT, Bild ↑, Mausrad)">
@@ -849,7 +865,7 @@
 
       <!-- "Ansicht" dialog -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsViewOptionsOpen}">
-        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CloseViewOptionsCommand}" />
         <Border Width="820" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,48,56,36"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
@@ -951,7 +967,7 @@
 
       <!-- Context menu of the focused game, anchored next to its cover (placed in MainWindow.axaml.cs). -->
       <Panel Name="GameMenuLayer" Grid.RowSpan="4" IsVisible="{Binding IsGameMenuOpen}">
-        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CloseMenuCommand}" />
         <Border Name="GameMenuPanel" Width="420" Background="{StaticResource Surface}" CornerRadius="16" Padding="12"
                 HorizontalAlignment="Left" VerticalAlignment="Top" BoxShadow="{StaticResource DialogShadow}">
@@ -993,7 +1009,7 @@
 
       <!-- Asks before an action that can't be undone from Arcadia (uninstalling). -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsConfirmationOpen}">
-        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CancelConfirmationCommand}" />
         <Border Width="680" Background="{StaticResource Surface}" CornerRadius="20" Padding="48,40,48,32"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
@@ -1030,7 +1046,7 @@
 
       <!-- Settings dialog -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsSettingsOpen}">
-        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CloseSettingsCommand}" />
         <Border Width="1040" MaxHeight="1000" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,40,56,32"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
@@ -1246,7 +1262,7 @@
 
         <!-- Prompt over the settings before "SISR installieren" goes on; the settings stay dimmed behind it. -->
         <Panel DataContext="{Binding Settings}" x:DataType="vm:SettingsViewModel" IsVisible="{Binding IsPromptOpen, FallbackValue=False}">
-          <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+          <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                   Command="{Binding ClosePromptCommand}" />
           <Border Classes="prompt" Width="720" HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel Spacing="28">

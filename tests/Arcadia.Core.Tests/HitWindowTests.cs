@@ -53,6 +53,28 @@ public class HitWindowTests
     }
 
     [Fact]
+    public void A_grid_stops_at_its_ends_instead_of_wrapping()
+    {
+        var first = HitWindow.Of(30, rows: 2, rowLength: 7);
+        var last = first with { Start = first.LastStart };
+
+        Assert.Equal((first, 3), first.Turn(-1, 3));
+        Assert.Equal((last, 25), last.Turn(1, 25));
+        Assert.Equal(7, last.Turn(-1, 25).Window.Start);
+    }
+
+    [Fact]
+    public void The_scroll_bar_puts_a_grid_on_a_whole_row_within_range()
+    {
+        var window = HitWindow.Of(30, rows: 2, rowLength: 7);
+
+        Assert.Equal(7, window.ScrolledTo(12).Start);
+        Assert.Equal(21, window.ScrolledTo(40).Start);
+        Assert.Equal(0, window.ScrolledTo(-3).Start);
+        Assert.Equal(5, HitWindow.Of(16, rows: 1, rowLength: 7).ScrolledTo(5).Start);
+    }
+
+    [Fact]
     public void Steps_stop_at_the_first_and_last_hit_and_drag_a_single_row_along_by_one()
     {
         var window = HitWindow.Of(10, rows: 1, rowLength: 7);

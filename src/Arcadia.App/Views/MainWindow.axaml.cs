@@ -4,6 +4,7 @@ using Arcadia.App.Search;
 using Arcadia.App.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Transformation;
@@ -55,6 +56,8 @@ public partial class MainWindow : Window
         SearchResults.AddHandler(DoubleTappedEvent, OnGridDoubleTapped);
         SearchResults.AddHandler(PointerPressedEvent, OnSearchResultPointerPressed, RoutingStrategies.Tunnel);
         SearchViewport.PointerWheelChanged += OnSearchResultsWheel;
+        HitsRowScrollBar.Scroll += OnHitsScrollBarScroll;
+        HitsGridScrollBar.Scroll += OnHitsScrollBarScroll;
         SearchViewport.SizeChanged += (_, _) => PlaceHits(previousStart: null);
         SearchChips.SizeChanged += (_, _) => UpdateSortDivider();
         SearchChipRow.SizeChanged += (_, _) => UpdateSortDivider();
@@ -233,6 +236,8 @@ public partial class MainWindow : Window
             e.Handled = true;
         }
     }
+
+    private void OnHitsScrollBarScroll(object? sender, ScrollEventArgs e) => _search?.ScrollTo(e.NewValue);
 
     private void OnGridPointerPressed(object? sender, PointerPressedEventArgs e)
     {

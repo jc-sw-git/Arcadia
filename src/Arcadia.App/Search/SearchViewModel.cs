@@ -52,7 +52,7 @@ public sealed record SearchEmptyState(bool IsNoHits, string Title, string Text);
 /// The search over all launchers (#12): a text that may start with a <c>/launcher</c> prefix, the
 /// launchers it covers (chips, filter, prefix, kept in step), the hits and an on-screen keyboard.
 /// With the keyboard out the hits sit in one row above it: the D-pad (left stick) types, the right
-/// stick picks a hit, LB/RB turn the hits. With the keyboard in (B, a real keyboard, the button
+/// stick picks a hit, LT/RT turn the hits. With the keyboard in (B, a real keyboard, the button
 /// below the hits) they fill a grid that scrolls up and down, and the D-pad moves through them too;
 /// X brings the keyboard back. Starting a hit, its details, its menu and the filter dialog are the
 /// window's business (<see cref="MainViewModel"/>).
@@ -179,7 +179,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     /// <summary>The first hit of the window, the one at the leading edge of the hit area.</summary>
     public int WindowStart => _window.Start;
 
-    /// <summary>More hits than fit: LB/RB turn them.</summary>
+    /// <summary>More hits than fit: LT/RT turn them.</summary>
     [ObservableProperty]
     public partial bool CanTurn { get; private set; }
 
@@ -187,16 +187,19 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
 
     /// <summary>The controller is in use: the button legend and the buttons' glyphs show.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsStickHint))]
+    [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsCloseGlyph))]
     public partial bool UsesController { get; set; }
 
     /// <summary>The on-screen keyboard is out, and the hits get one row above it; in, they fill a grid.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsStickHint))]
+    [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsCloseGlyph))]
     public partial bool IsKeyboardOut { get; set; }
 
     /// <summary>Beside the keyboard only the right stick picks a hit, so it's said above the hits too, not only in the legend.</summary>
     public bool ShowsStickHint => UsesController && IsKeyboardOut;
+
+    /// <summary>B closes the search only with the keyboard in; with it out, B puts the keyboard away first.</summary>
+    public bool ShowsCloseGlyph => UsesController && !IsKeyboardOut;
 
     private int ResultRows => IsKeyboardOut ? 1 : ResultRowsWithoutKeyboard;
 
@@ -206,10 +209,10 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
 
     /// <summary>
     /// Everything the search does itself. With the keyboard out: the D-pad and A on the keys, and
-    /// the buttons that stand for keys (X deletes, held: one after another; Y types a space; LT
-    /// shift; RT symbols, both tapped or held; R3 the layout menu). With it in, the D-pad moves
+    /// the buttons that stand for keys (X deletes, held: one after another; Y types a space; LB
+    /// shift; RB symbols, both tapped or held; R3 the layout menu). With it in, the D-pad moves
     /// through the hits and X brings the keyboard back. The right stick or a real keyboard's arrows
-    /// move through the hits, LB/RB turn them.
+    /// move through the hits, LT/RT or Page Up/Down turn them.
     /// </summary>
     public void Handle(UiAction action)
     {
@@ -239,10 +242,11 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
             case UiAction.Search:
                 Erase();
                 break;
-            case UiAction.PreviousTab:
+            // LT/RT turn the hits, as they turn pages in the library and games on the detail page.
+            case UiAction.PreviousPage:
                 Turn(-1);
                 break;
-            case UiAction.NextTab:
+            case UiAction.NextPage:
                 Turn(1);
                 break;
             case UiAction.SecondaryUp:
@@ -297,10 +301,10 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
             case UiAction.Search or UiAction.Accept:
                 _erase.Release();
                 break;
-            case UiAction.PreviousPage:
+            case UiAction.PreviousTab:
                 Keyboard.ReleaseShift();
                 break;
-            case UiAction.NextPage:
+            case UiAction.NextTab:
                 Keyboard.ReleaseSymbols();
                 break;
         }
@@ -318,11 +322,11 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void ToggleKeyboard() => IsKeyboardOut = !IsKeyboardOut;
 
-    /// <summary>The LB button beside the hits.</summary>
+    /// <summary>The LT button beside the hits.</summary>
     [RelayCommand]
     private void TurnBack() => Turn(-1);
 
-    /// <summary>The RB button beside the hits.</summary>
+    /// <summary>The RT button beside the hits.</summary>
     [RelayCommand]
     private void TurnOn() => Turn(1);
 
@@ -432,10 +436,10 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
             case UiAction.ViewOptions:
                 Type(" ");
                 break;
-            case UiAction.PreviousPage:
+            case UiAction.PreviousTab:
                 Keyboard.PressShift();
                 break;
-            case UiAction.NextPage:
+            case UiAction.NextTab:
                 Keyboard.PressSymbols();
                 break;
             case UiAction.KeyboardLayout:
@@ -470,7 +474,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>LB/RB: the next or previous window of hits, round and round.</summary>
+    /// <summary>LT/RT: the next or previous window of hits, round and round.</summary>
     private void Turn(int direction)
     {
         if (_window.CanTurn)

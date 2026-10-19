@@ -40,8 +40,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     private readonly HoldGesture _acceptHold;
     private GameTileViewModel? _holdTile;
 
-    // A in the library, ≡ or Enter on a hit in the search: the button whose release ends the hold.
-    private UiAction _holdAction = UiAction.Accept;
+    // A in the library, ≡ or Enter on a hit in the search: the button whose release ends the hold; null for the left mouse button.
+    private UiAction? _holdAction = UiAction.Accept;
     private Func<ViewOptionsViewModel?>? _createViewOptions;
     private InputKind _input = InputKind.Gamepad;
     private int _requestedPage;
@@ -70,8 +70,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         UpdateControllerSupportState();
 
         _acceptHold = new HoldGesture(HoldFeedbackDelay, HoldTime, time, action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
-        // The tile has the focus already: the press started on it.
-        _acceptHold.Tapped += () => WithHoldTile(Start);
+        // The tile has the focus already: the press started on it. A click only picks the cover; a double click starts it.
+        _acceptHold.Tapped += () => WithHoldTile(tile =>
+        {
+            if (_holdAction is not null)
+            {
+                Start(tile);
+            }
+        });
         _acceptHold.Held += () => WithHoldTile(ShowDetails);
         _acceptHold.FeedbackChanged += holding => WithHoldTile(tile => tile.IsHolding = holding);
     }
@@ -772,8 +778,33 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         Search?.CancelHeldButtons();
     }
 
+    /// <summary>
+    /// The left mouse button went down on a cover or hit: held 1 s it opens the details, with the
+    /// same ring as A (owner, 2026-10-19). Let go sooner, it was a click, which only picks the game.
+    /// </summary>
+    public void PressTile(GameTileViewModel tile)
+    {
+        var shown = IsSearchShown
+            ? !IsDialogOpen && Search!.Results.Contains(tile)
+            : !IsSettingsOpen && !IsViewOptionsOpen && !IsConfirmationOpen && !IsDetailOpen && Search is null && PageGames.Contains(tile);
+        if (shown)
+        {
+            tile.FocusCommand.Execute(null);
+            StartHold(tile, button: null);
+        }
+    }
+
+    /// <summary>A mouse button was let go anywhere.</summary>
+    public void ReleasePointer()
+    {
+        if (_holdAction is null)
+        {
+            _acceptHold.Release();
+        }
+    }
+
     /// <summary>Tapped starts the game, held opens the details; both are decided by the release of <paramref name="button"/> or the timer.</summary>
-    private void StartHold(GameTileViewModel tile, UiAction button)
+    private void StartHold(GameTileViewModel tile, UiAction? button)
     {
         _holdTile = tile;
         _holdAction = button;

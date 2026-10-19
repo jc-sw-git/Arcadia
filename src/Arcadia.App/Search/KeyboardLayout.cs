@@ -2,7 +2,7 @@ namespace Arcadia.App.Search;
 
 /// <summary>
 /// The character keys of the on-screen keyboard, independent of the UI language, in lower case;
-/// shift (LT) types them in upper case.
+/// shift (LB) types them in upper case.
 /// </summary>
 /// <param name="Id">Stored in the settings.</param>
 /// <param name="Code">Shown on the layout key, e.g. "DE".</param>
@@ -21,7 +21,7 @@ public sealed record KeyboardLayout(string Id, string Code, string Name, string 
     ];
 
     /// <summary>
-    /// The page RT switches to: the punctuation and symbols game titles use, the same for every
+    /// The page RB switches to: the punctuation and symbols game titles use, the same for every
     /// layout. Not in <see cref="All"/>: it is no layout of its own.
     /// </summary>
     public static KeyboardLayout Symbols { get; } = new("symbols", "#&?", "Sonderzeichen", string.Empty, ["!?&+-_=/\\*#", "()[]{}<>@%~", ".,:;'\"`^°§|", "€$£¥²³½·"]);

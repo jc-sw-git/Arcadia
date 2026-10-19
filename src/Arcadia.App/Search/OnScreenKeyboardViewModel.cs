@@ -17,7 +17,7 @@ public enum SpecialKey
     /// <summary>L3: the launcher filter and sort order.</summary>
     Filter,
 
-    /// <summary>LT: upper case, tapped or held.</summary>
+    /// <summary>LB: upper case, tapped or held.</summary>
     Shift,
 
     /// <summary>Y.</summary>
@@ -26,7 +26,7 @@ public enum SpecialKey
     /// <summary>X: deletes the last character, held: one after another.</summary>
     Erase,
 
-    /// <summary>RT: between the letters and the symbols, tapped or held.</summary>
+    /// <summary>RB: between the letters and the symbols, tapped or held.</summary>
     Symbols,
 }
 
@@ -104,7 +104,7 @@ public sealed partial class LayoutItemViewModel(KeyboardLayout layout, Action<Ke
 /// <summary>
 /// The on-screen keyboard of the search: four rows of characters from the chosen layout (or the
 /// symbols page) and a row of special keys. The D-pad moves the focus; up and down go to the key
-/// nearest in position. Shift (LT) and the symbols page (RT) are on while held, or switched on and
+/// nearest in position. Shift (LB) and the symbols page (RB) are on while held, or switched on and
 /// off by a tap.
 /// </summary>
 public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
@@ -115,15 +115,15 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
     /// <summary>Held at least this long without typing, shift or the symbols go off on release instead of staying on.</summary>
     private static readonly TimeSpan HoldTime = TimeSpan.FromMilliseconds(500);
 
-    // About as wide as the character rows: R3, L3, LT, Y, X, RT.
+    // About as wide as the character rows: R3, L3, LB, Y, X, RB.
     private static readonly (SpecialKey Key, double Width, string Glyph, string Label)[] SpecialKeys =
     [
         (SpecialKey.Layout, 160, "R3", string.Empty),
         (SpecialKey.Filter, 180, "L3", "Filter"),
-        (SpecialKey.Shift, 160, "LT", "⇧ Groß"),
+        (SpecialKey.Shift, 160, "LB", "⇧ Groß"),
         (SpecialKey.Space, 240, "Y", "Leertaste"),
         (SpecialKey.Erase, 180, "X", "Löschen"),
-        (SpecialKey.Symbols, 160, "RT", string.Empty),
+        (SpecialKey.Symbols, 160, "RB", string.Empty),
     ];
 
     private readonly Action<KeyViewModel> _press;
@@ -151,7 +151,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
     [ObservableProperty]
     public partial KeyboardLayout Layout { get; private set; }
 
-    /// <summary>RT switched to the symbols page.</summary>
+    /// <summary>RB switched to the symbols page.</summary>
     public bool IsSymbols => _symbols.IsOn;
 
     public bool IsShifted => _shift.IsOn;
@@ -198,25 +198,25 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
         return (IsShifted ? char.ToUpper(character, Formatting.Culture) : character).ToString();
     }
 
-    /// <summary>LT down: shift is on at once, so a letter typed while holding it is upper case.</summary>
+    /// <summary>LB down: shift is on at once, so a letter typed while holding it is upper case.</summary>
     public void PressShift() => _shift.Press();
 
-    /// <summary>LT up: off after a hold, switched after a tap.</summary>
+    /// <summary>LB up: off after a hold, switched after a tap.</summary>
     public void ReleaseShift() => _shift.Release();
 
-    /// <summary>LT's release may never arrive, e.g. when the window loses focus.</summary>
+    /// <summary>LB's release may never arrive, e.g. when the window loses focus.</summary>
     public void CancelShift() => _shift.Cancel();
 
     /// <summary>The shift key pressed with A or clicked.</summary>
     public void ToggleShift() => _shift.Toggle();
 
-    /// <summary>RT down: the symbols show at once, so one typed while holding it is a symbol.</summary>
+    /// <summary>RB down: the symbols show at once, so one typed while holding it is a symbol.</summary>
     public void PressSymbols() => _symbols.Press();
 
-    /// <summary>RT up: back to the letters after a hold, switched after a tap.</summary>
+    /// <summary>RB up: back to the letters after a hold, switched after a tap.</summary>
     public void ReleaseSymbols() => _symbols.Release();
 
-    /// <summary>RT's release may never arrive, e.g. when the window loses focus.</summary>
+    /// <summary>RB's release may never arrive, e.g. when the window loses focus.</summary>
     public void CancelSymbols() => _symbols.Cancel();
 
     /// <summary>The symbols key pressed with A or clicked.</summary>

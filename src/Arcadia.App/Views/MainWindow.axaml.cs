@@ -66,6 +66,9 @@ public partial class MainWindow : Window
         // Which input is in use decides whether the search shows its on-screen keyboard.
         AddHandler(PointerPressedEvent, (_, _) => _viewModel?.NotePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
 
+        // Ends a held click on a cover, wherever the mouse is let go.
+        AddHandler(PointerReleasedEvent, (_, _) => _viewModel?.ReleasePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
+
         // A key released in another window never reports its release here.
         Deactivated += (_, _) =>
         {
@@ -174,7 +177,7 @@ public partial class MainWindow : Window
             return UiActionMap.FromKey(e.Key, e.KeyModifiers);
         }
 
-        // The arrows move through the hits, Enter starts the focused one (held: its details).
+        // The arrows move through the hits, Page Up/Down turn them, Enter starts the focused one (held: its details).
         return e.Key switch
         {
             Key.Up => UiAction.Up,
@@ -184,6 +187,8 @@ public partial class MainWindow : Window
             Key.Enter => UiAction.Accept,
             Key.Escape => UiAction.Back,
             Key.Back => UiAction.Search,
+            Key.PageUp => UiAction.PreviousPage,
+            Key.PageDown => UiAction.NextPage,
             Key.Apps => UiAction.Options,
             Key.F10 when e.KeyModifiers == KeyModifiers.Shift => UiAction.Options,
             _ => null,
@@ -201,12 +206,20 @@ public partial class MainWindow : Window
 
     private void OnSearchResultPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed
-            && (e.Source as Control)?.DataContext is GameTileViewModel tile
-            && _viewModel is not null)
+        if ((e.Source as Control)?.DataContext is not GameTileViewModel tile || _viewModel is null)
+        {
+            return;
+        }
+
+        var button = e.GetCurrentPoint(this).Properties;
+        if (button.IsRightButtonPressed)
         {
             _viewModel.OpenMenuForHit(tile);
             e.Handled = true;
+        }
+        else if (button.IsLeftButtonPressed)
+        {
+            _viewModel.PressTile(tile);
         }
     }
 
@@ -223,12 +236,20 @@ public partial class MainWindow : Window
 
     private void OnGridPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed
-            && (e.Source as Control)?.DataContext is GameTileViewModel tile
-            && _viewModel is not null)
+        if ((e.Source as Control)?.DataContext is not GameTileViewModel tile || _viewModel is null)
+        {
+            return;
+        }
+
+        var button = e.GetCurrentPoint(this).Properties;
+        if (button.IsRightButtonPressed)
         {
             _viewModel.OpenMenuFor(tile);
             e.Handled = true;
+        }
+        else if (button.IsLeftButtonPressed)
+        {
+            _viewModel.PressTile(tile);
         }
     }
 
@@ -236,6 +257,8 @@ public partial class MainWindow : Window
     {
         if ((e.Source as Control)?.DataContext is GameTileViewModel tile)
         {
+            // The second press started a hold for the details; the game starts instead.
+            _viewModel?.CancelHold();
             tile.ActivateCommand.Execute(null);
         }
     }

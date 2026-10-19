@@ -115,7 +115,7 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 | Project | Content |
 |---|---|
 | `src/Arcadia.Launchers.Abstractions` | What a launcher is made of, with no dependency on the rest: `ILauncherIntegration` (scanner, optional client and install monitor, `Locate`), `ILauncherScanner`, `ILauncherClient`, `IInstallMonitor`, models (`Game`, `LauncherInfo`, `LaunchTarget`). The future plugin interface for launchers |
-| `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `Carousel` (detail page neighbours), `SearchQuery` (prefix parser), `GameSearch` (hits by relevance or a sort order; titles folded and sorted once, so a key press is one ordinal pass), `LauncherScope` (chips and prefix in step), `HitWindow` (the hits on screen, turned with LB/RB), `AppSettings`/`SettingsStore`/`SettingsService` (the one shared copy of the settings), `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
+| `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `Carousel` (detail page neighbours), `SearchQuery` (prefix parser), `GameSearch` (hits by relevance or a sort order; titles folded and sorted once, so a key press is one ordinal pass), `LauncherScope` (chips and prefix in step), `HitWindow` (the hits on screen, turned with LT/RT), `AppSettings`/`SettingsStore`/`SettingsService` (the one shared copy of the settings), `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`SteamScanner`, `SteamInstallMonitor`, `SteamContentLog`, `SteamLoginLog`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, presses and releases, auto-repeat for D-pad and sticks), `HoldGesture` (tap vs. hold), `RepeatGesture` (held erase), `LatchGesture` (shift: tap or hold) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost` (`ISisrHost`), `SisrApiClient`, `UsbipDriver`, `UsbipPorts`, `GitHubReleases`, `ControllerSupportService` (`SisrState`), `ControllerSupportPlatform` (Windows/Steam, replaced in tests), `ControllerSupportRemoval` (uninstall) |
@@ -140,20 +140,22 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   right click = context menu, Menu/☰ = settings (swapped by the owner, 2026-10-17). No "all launchers" tab. No dedicated favourite button.
 - Dependent options sit in the same box as their main switch.
 - A starts a game on release; holding A for 1 s opens the detail page (a ring around the preview fills from
-  0.2 s on, letting go before 1 s cancels). The context menu and the detail page offer the same actions
+  0.2 s on, letting go before 1 s cancels). With the mouse a click picks a cover, a double click starts it and
+  holding the left button 1 s opens the details with the same ring (owner, 2026-10-19). The context menu and the detail page offer the same actions
   (`GameActionViewModel.For`); the detail page has no menu, its actions are buttons (owner, 2026-10-17).
 - The detail page is a carousel through the tab's games in the library's sort order, across pages and
   wrapping at the ends (two games: the other on both sides; one: no neighbours). LT/RT turn it, LB/RB switch
   the tab and stay on the detail page (first game), Y re-sorts with the shown game kept in the middle, B returns
   to the library page of the game shown last (owner, 2026-10-17).
 - Search (#12): opened with X the on-screen keyboard is out, the hits sit in one row above it (sliding sideways,
-  faded neighbours at the edges, LB/RB buttons beside them, "RS Treffer wählen" above); opened with F or a click,
+  faded neighbours at the edges, LT/RT buttons beside them, "RS Treffer wählen" above); opened with F or a click,
   or after B, a real key or the tab on the keyboard's top edge, it slides in and the hits fill a grid that scrolls
   up and down (faded rows at the top and bottom) and the D-pad and A act on the hits as on covers; X brings the
-  keyboard back. The button legend shows only while the controller is in use. B closes the layout menu first, then
+  keyboard back. The legend at the bottom is always there and names the input in use: the controller's buttons,
+  or mouse and keyboard (it never hides, so the keyboard above it doesn't move under a click). B closes the layout menu first, then
   puts the keyboard away, then closes the search; B never erases. D-pad/left stick type, the right stick picks a
-  hit, LB/RB turn the hits a window at a time and wrap round. X erases (held: repeats), Y space, LT shift and RT
-  symbols page (each: tap on/off, held only while held), L3 "Filter und Sortierung" (launchers, any number, and
+  hit, LT/RT (or Page Up/Down, the wheel) turn the hits a window at a time and wrap round, as LT/RT turn pages and
+  the detail page (owner, 2026-10-19). X erases (held: repeats), Y space, LB shift and RB symbols page (each: tap on/off, held only while held), L3 "Filter und Sortierung" (launchers, any number, and
   the library's sort orders plus relevance, the default; not saved), R3 layout menu (all five, the last chosen
   saved globally). ≡ starts the focused hit, ≡ held 1 s opens its details, ⧉ its menu; with a real keyboard
   Enter and Enter held do the same. The sort button sits in the chip row; with many launchers the chips shrink

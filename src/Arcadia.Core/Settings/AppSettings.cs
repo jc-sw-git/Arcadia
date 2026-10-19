@@ -35,6 +35,9 @@ public sealed record AppSettings
     /// <summary>The <see cref="LauncherInfo.Id"/> of the tab Arcadia opens with; null for the first tab.</summary>
     public string? LastTabLauncherId { get; init; }
 
+    /// <summary>The on-screen keyboard's layout the user picked last; null for the default (German).</summary>
+    public string? KeyboardLayout { get; init; }
+
     /// <summary>
     /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
     /// hand — with the defaults, instead of failing on them later.

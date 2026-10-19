@@ -123,7 +123,7 @@ public partial class App : Application
                     {
                         if (window.IsActive)
                         {
-                            viewModel.Handle(action);
+                            viewModel.HandleGamepad(action);
                         }
                     });
                 }

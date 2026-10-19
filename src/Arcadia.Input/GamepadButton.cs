@@ -23,6 +23,12 @@ public enum GamepadButton
 
     /// <summary>View / Share / ⧉ — opens the context menu.</summary>
     View,
+
+    // The right stick as four directions; the left one counts as the D-pad.
+    RightStickUp,
+    RightStickDown,
+    RightStickLeft,
+    RightStickRight,
 }
 
 /// <summary>A source of gamepad button presses and releases, including auto-repeat for held directions.</summary>

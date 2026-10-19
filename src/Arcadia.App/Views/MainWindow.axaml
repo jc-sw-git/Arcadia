@@ -3,6 +3,7 @@
         xmlns:vm="using:Arcadia.App.ViewModels"
         xmlns:ctl="using:Arcadia.App.Controls"
         xmlns:views="using:Arcadia.App.Views"
+        xmlns:search="using:Arcadia.App.Search"
         x:Class="Arcadia.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Arcadia"
@@ -14,7 +15,8 @@
         Foreground="{StaticResource Text}">
 
   <!-- The Big Picture layout is designed for 1920×1080 and scaled to the window. -->
-  <Viewbox Stretch="Uniform">
+  <!-- No clipping: bands reach past the layout into the bars beside it (Theme.axaml, bleed). -->
+  <Viewbox Stretch="Uniform" ClipToBounds="False">
     <Grid Width="1920" Height="1080" RowDefinitions="104,72,*,72" Background="{StaticResource Bg}">
 
       <!-- Header: logo, launcher tabs, status -->
@@ -25,7 +27,7 @@
           <TextBlock Text="ARCADIA" FontSize="24" FontWeight="ExtraBold" LetterSpacing="1.4" VerticalAlignment="Center" />
         </StackPanel>
 
-        <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+        <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" VerticalAlignment="Center" IsVisible="{Binding IsTabStripShown}">
           <Button Classes="plain glyphButton" Content="LB" Command="{Binding PreviousTabCommand}" ToolTip.Tip="Vorheriger Launcher (Q)" />
           <Panel Grid.Column="1">
             <ScrollViewer Name="TabScroller" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
@@ -98,6 +100,10 @@
             </Panel>
           </Button>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
+                  Command="{Binding OpenSearchCommand}" ToolTip.Tip="Suchen (F)" IsVisible="{Binding IsLibraryShown}">
+            <Path Data="M4 11a7 7 0 1 0 14 0a7 7 0 1 0 -14 0 M20 20l-4-4" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
+          </Button>
+          <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
                   Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Einstellungen (F2)">
             <Path Data="M4 7h10 M18 7h2 M4 17h4 M12 17h8 M14 7a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M8 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"
                   Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
@@ -123,19 +129,20 @@
 
       <!-- Detail page: path back, position in the list and the sort order -->
       <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto" IsVisible="{Binding IsDetailOpen}">
-        <Button Classes="plain" HorizontalAlignment="Left" Command="{Binding CloseDetailCommand}" ToolTip.Tip="Zurück zur Bibliothek (Esc)">
+        <Button Classes="plain" HorizontalAlignment="Left" Command="{Binding CloseDetailCommand}" ToolTip.Tip="Zurück (Esc)">
           <StackPanel Orientation="Horizontal" Spacing="14">
             <Border Classes="glyph round"><TextBlock Text="B" /></Border>
-            <TextBlock Classes="crumb" Text="Bibliothek" />
-            <TextBlock Classes="crumb separator" Text="/" />
-            <TextBlock Classes="crumb" Text="{Binding Detail.TabName, FallbackValue=''}" />
+            <TextBlock Classes="crumb" Text="Bibliothek" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}" />
+            <TextBlock Classes="crumb separator" Text="/" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}" />
+            <TextBlock Classes="crumb" Text="{Binding Detail.TabName, FallbackValue=''}" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}" />
+            <TextBlock Classes="crumb" Text="Suche" IsVisible="{Binding Detail.IsFromSearch, FallbackValue=False}" />
             <TextBlock Classes="crumb separator" Text="/" />
             <TextBlock Classes="crumb current" Text="{Binding Detail.Current.Tile.Title, FallbackValue=''}" />
           </StackPanel>
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="20">
           <TextBlock Text="{Binding Detail.PositionText, FallbackValue=''}" FontSize="17" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
-          <Button Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}">
+          <Button Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
               <TextBlock Text="{Binding Detail.SortLabel, FallbackValue=''}" VerticalAlignment="Center" />
@@ -345,7 +352,8 @@
       </Grid>
 
       <!-- Footer: button hints -->
-      <Border Grid.Row="3" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="80,0">
+      <!-- The line bleeds into the bars beside the layout (Theme.axaml, bleed): 1920 + 80 padding. -->
+      <Border Grid.Row="3" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Margin="-1920,0" Padding="2000,0">
         <Panel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsDetailOpen}">
           <StackPanel Orientation="Horizontal" Spacing="10">
@@ -356,11 +364,11 @@
             <Border Classes="glyph round"><TextBlock Text="A" /></Border>
             <TextBlock Classes="hint" Text="Auswählen" />
           </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}">
             <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
             <TextBlock Classes="hint" Text="Ansicht" />
           </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}">
             <Border Classes="glyph"><TextBlock Text="LB" /></Border>
             <Border Classes="glyph"><TextBlock Text="RB" /></Border>
             <TextBlock Classes="hint" Text="Launcher" />
@@ -389,6 +397,10 @@
             <TextBlock Classes="hint" Text="Optionen" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="10">
+            <Border Classes="glyph round"><TextBlock Text="X" /></Border>
+            <TextBlock Classes="hint" Text="Suchen" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
             <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
             <TextBlock Classes="hint" Text="Ansicht" />
           </StackPanel>
@@ -410,6 +422,441 @@
         </Panel>
       </Border>
 
+      <!-- Search (#12): covers the library; a detail page opened from it takes its place. -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsSearchShown}">
+        <!-- Covers the library in the bars beside the layout too. -->
+        <Border Classes="bleedAll" Background="{StaticResource Bg}" />
+        <Panel.Resources>
+          <!-- A hit; also the faded neighbours beside the window of hits. -->
+          <DataTemplate x:Key="SearchHitTile" x:DataType="vm:GameTileViewModel">
+            <!-- Fixed size: the window slides by whole tiles (MainWindow.axaml.cs, HitPitch). -->
+            <StackPanel Width="190" Height="270" Spacing="10">
+              <Button Classes="plain resultTile" Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}" Command="{Binding FocusCommand}"
+                      Background="{Binding CoverBrush}" Height="240" ToolTip.Tip="{Binding Title}">
+                <Panel>
+                  <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
+                  <DockPanel Margin="12">
+                    <Border DockPanel.Dock="Top" Classes="launcherBadge" Width="28" Height="28" CornerRadius="7" Background="{Binding LauncherBrush}" HorizontalAlignment="Left">
+                      <TextBlock Text="{Binding LauncherMonogram}" FontSize="14" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Bottom"
+                               TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                  </DockPanel>
+                  <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"
+                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Nicht installiert – ≡ installiert">
+                    <Path Data="M7 17a4 4 0 0 1-.6-7.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17 16.9M12 11v9M9 17l3 3 3-3" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
+                  </Border>
+                  <Border Classes="installBadge" IsVisible="{Binding UpdateAvailable}" Width="30" Height="30" CornerRadius="15"
+                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Update verfügbar">
+                    <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
+                  </Border>
+                  <Border Classes="installBadge" IsVisible="{Binding IsInstallActive}" Height="30" CornerRadius="15" Padding="8,0,11,0"
+                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                      <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                      <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Border>
+                  <ProgressBar Classes="install" Classes.paused="{Binding IsInstallPaused}" IsVisible="{Binding IsInstallActive}"
+                               Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}" VerticalAlignment="Bottom" />
+                  <!-- Fills while ≡ (or Enter) is held; full opens the detail page. -->
+                  <ctl:HoldRing />
+                </Panel>
+              </Button>
+              <!-- Above the focused cover's drop shadow. -->
+              <TextBlock Text="{Binding LauncherName}" FontSize="14" Foreground="{StaticResource TextMuted}" ZIndex="3" />
+            </StackPanel>
+          </DataTemplate>
+        </Panel.Resources>
+        <DockPanel DataContext="{Binding Search}" x:DataType="search:SearchViewModel">
+
+          <Grid DockPanel.Dock="Top" Height="96" Margin="80,0" ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+              <Path Data="M4 30V16a13 13 0 0 1 26 0v14 M11 30v-8h12v8" Stroke="{StaticResource Accent}" StrokeThickness="3"
+                    StrokeLineCap="Round" StrokeJoin="Round" Width="34" Height="34" />
+              <TextBlock Text="ARCADIA" FontSize="24" FontWeight="ExtraBold" LetterSpacing="1.4" VerticalAlignment="Center" />
+              <TextBlock Text="Suche" FontSize="24" Foreground="{StaticResource TextFaint}" Margin="8,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="plain" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CloseSearchCommand}" ToolTip.Tip="Suche schließen (Esc)">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="glyph round" IsVisible="{Binding ShowsCloseGlyph}"><TextBlock Text="B" /></Border>
+                <TextBlock Text="Schließen" FontSize="16" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+          <!-- Field and scope. The /launcher prefix still works when typed, but the field doesn't advertise it (owner, 2026-10-18). -->
+          <StackPanel DockPanel.Dock="Top" Margin="80,0" Spacing="12">
+            <Border Height="76" CornerRadius="38" Background="{StaticResource Surface}" BoxShadow="{StaticResource SearchFieldRing}" Padding="28,0">
+              <DockPanel>
+                <Path DockPanel.Dock="Left" Data="M4 11a7 7 0 1 0 14 0a7 7 0 1 0 -14 0 M20 20l-4-4" Stroke="{StaticResource TextMuted}" StrokeThickness="2"
+                      StrokeLineCap="Round" Width="28" Height="28" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,18,0" />
+                <Panel VerticalAlignment="Center">
+                  <TextBlock Text="Spiele suchen …" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource TextFaint}"
+                             IsVisible="{Binding Text, Converter={x:Static StringConverters.IsNullOrEmpty}}" Margin="6,0,0,0" />
+                  <StackPanel Orientation="Horizontal" Spacing="3">
+                    <TextBlock Text="{Binding Text}" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center" />
+                    <Border Classes="caret" Width="3" Height="34" CornerRadius="1.5" Background="{StaticResource Accent}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Panel>
+              </DockPanel>
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="28,0,0,0" MinHeight="24">
+              <TextBlock Text="{Binding ScopeText}" FontSize="16" Foreground="{StaticResource TextMuted}" />
+              <TextBlock IsVisible="{Binding HasUnknownKeywords}" Text="{Binding UnknownKeywordsText, StringFormat='· {0}'}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Warning}" />
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Launcher chips (for the mouse; the controller filters with L3) and the sort order in one row. With many
+               launchers the chips get narrower: first the keyword goes, then the name shrinks, last only the icon is left. -->
+          <Grid DockPanel.Dock="Top" Name="SearchChipRow" Margin="80,16,80,4" ColumnDefinitions="*,Auto,Auto">
+            <ItemsControl Name="SearchChips" ItemsSource="{Binding Chips}" HorizontalAlignment="Left" Margin="4">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <ctl:SharedWidthRow Spacing="10" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="search:SearchChipViewModel">
+                  <DockPanel>
+                    <Border DockPanel.Dock="Right" IsVisible="{Binding !IsLauncher}" Classes="divider" Margin="16,0,6,0" />
+                    <Button Classes="plain chip" Classes.all="{Binding !IsLauncher}" Classes.on="{Binding IsOn}" Command="{Binding ToggleCommand}" ToolTip.Tip="{Binding Name}">
+                      <ctl:CollapsingStack Spacing="10" EndPadding="8">
+                        <Border Classes="chipLogo" IsVisible="{Binding IsLauncher}" Width="24" Height="24" CornerRadius="6" Background="{Binding TileBrush}" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Monogram}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="{Binding Name}" ctl:CollapsingStack.MinShrinkWidth="44" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        <TextBlock IsVisible="{Binding IsLauncher}" Text="{Binding Keyword}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextFaint}" VerticalAlignment="Center" />
+                      </ctl:CollapsingStack>
+                    </Button>
+                  </DockPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!-- Shows when the chips come close to the sort button (MainWindow.axaml.cs). -->
+            <Border Grid.Column="1" Name="SortDivider" Classes="divider unneeded" Margin="16,0,20,0" />
+            <Button Grid.Column="2" Name="SearchSortButton" Classes="plain toolbar" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenSearchFilterCommand}" ToolTip.Tip="Filter und Sortierung (L3)">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Border Classes="glyph" IsVisible="{Binding UsesController}"><TextBlock Text="L3" /></Border>
+                <TextBlock Text="{Binding SortText}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+          <!-- Button legend for the input in use: the controller's buttons, or the mouse's and keyboard's. Always there, so
+               the keyboard above it never moves; it moved under a click once, and the click missed its key (owner, 2026-10-19). -->
+          <Border DockPanel.Dock="Bottom" Height="64">
+            <Panel>
+            <!-- The band bleeds into the bars beside and below the layout (Theme.axaml, bleed). -->
+            <Border Classes="bleedDown" Background="{StaticResource KeyboardSurface}" />
+            <Panel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="80,0">
+              <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding UsesController}">
+                <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding IsKeyboardOut}">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+                    <TextBlock Classes="hint" Text="Tastatur" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                    <TextBlock Classes="hint" Text="Eingeben" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                    <TextBlock Classes="hint" Text="Tastatur einfahren" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="RS" /></Border>
+                    <TextBlock Classes="hint" Text="Treffer wählen" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="LT" /></Border><Border Classes="glyph"><TextBlock Text="RT" /></Border>
+                    <TextBlock Classes="hint" Text="Weitere Treffer" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="≡" /></Border>
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult.PrimaryActionText, FallbackValue='Spielen'}" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="≡" /></Border>
+                    <TextBlock Classes="hint" Text="halten: Details" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
+                    <TextBlock Classes="hint" Text="Optionen" />
+                  </StackPanel>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding !IsKeyboardOut}">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+                    <TextBlock Classes="hint" Text="Treffer wählen" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult.PrimaryActionText, FallbackValue='Spielen'}" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                    <TextBlock Classes="hint" Text="halten: Details" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="LT" /></Border><Border Classes="glyph"><TextBlock Text="RT" /></Border>
+                    <TextBlock Classes="hint" Text="Weitere Treffer" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
+                    <TextBlock Classes="hint" Text="Optionen" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph round"><TextBlock Text="X" /></Border>
+                    <TextBlock Classes="hint" Text="Tastatur" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                    <TextBlock Classes="hint" Text="Schließen" />
+                  </StackPanel>
+                </StackPanel>
+              </StackPanel>
+              <!-- Mouse and keyboard. A real key puts the on-screen keyboard away, so beside it only the mouse is said. -->
+              <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding !UsesController}">
+                <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding IsKeyboardOut}">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="Klick" /></Border>
+                    <TextBlock Classes="hint" Text="Eingeben" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="Mausrad" /></Border>
+                    <TextBlock Classes="hint" Text="Weitere Treffer" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="Doppelklick" /></Border>
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult.PrimaryActionText, FallbackValue='Spielen'}" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="Klick" /></Border>
+                    <TextBlock Classes="hint" Text="halten: Details" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="Rechtsklick" /></Border>
+                    <TextBlock Classes="hint" Text="Optionen" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="Esc" /></Border>
+                    <TextBlock Classes="hint" Text="Tastatur einfahren" />
+                  </StackPanel>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding !IsKeyboardOut}">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="↑ ↓ ← →" /></Border>
+                    <TextBlock Classes="hint" Text="Treffer wählen" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="Bild ↑ ↓" /></Border>
+                    <TextBlock Classes="hint" Text="/" />
+                    <Border Classes="glyph"><TextBlock Text="Mausrad" /></Border>
+                    <TextBlock Classes="hint" Text="Weitere Treffer" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="Enter" /></Border>
+                    <TextBlock Classes="hint" Text="/" />
+                    <Border Classes="glyph"><TextBlock Text="Doppelklick" /></Border>
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult.PrimaryActionText, FallbackValue='Spielen'}" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="Enter" /></Border>
+                    <TextBlock Classes="hint" Text="/" />
+                    <Border Classes="glyph"><TextBlock Text="Klick" /></Border>
+                    <TextBlock Classes="hint" Text="halten: Details" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="Menütaste" /></Border>
+                    <TextBlock Classes="hint" Text="/" />
+                    <Border Classes="glyph"><TextBlock Text="Rechtsklick" /></Border>
+                    <TextBlock Classes="hint" Text="Optionen" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="glyph"><TextBlock Text="Esc" /></Border>
+                    <TextBlock Classes="hint" Text="Schließen" />
+                  </StackPanel>
+                </StackPanel>
+              </StackPanel>
+            </Panel>
+            </Panel>
+          </Border>
+
+          <!-- On-screen keyboard: slides in from below (X, the tab, a search opened with the gamepad) and out again (B, the
+               tab, a real keyboard). Above the hits, so the tab and the layout menu cover them. -->
+          <StackPanel DockPanel.Dock="Bottom" ZIndex="1">
+            <!-- Docked to the keyboard's top edge, without taking room from the hits. -->
+            <Button Classes="plain keyboardTab" Command="{Binding ToggleKeyboardCommand}" Margin="0,-40,0,0"
+                    ToolTip.Tip="Bildschirmtastatur ein- oder ausblenden">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Panel IsVisible="{Binding UsesController}" VerticalAlignment="Center">
+                  <Border Classes="glyph small round" IsVisible="{Binding !IsKeyboardOut}"><TextBlock Text="X" /></Border>
+                  <Border Classes="glyph small round" IsVisible="{Binding IsKeyboardOut}"><TextBlock Text="B" /></Border>
+                </Panel>
+                <Path Classes="keyboardIcon" Data="M3 6h18v12H3z M7 10h1 M11 10h1 M15 10h1 M8 14h8" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" Width="22" Stretch="Uniform" VerticalAlignment="Center" />
+                <!-- Up while the keyboard is in, down while it's out. -->
+                <Path IsVisible="{Binding !IsKeyboardOut}" Data="M6 15l6-6 6 6" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Stretch="Uniform" VerticalAlignment="Center" />
+                <Path IsVisible="{Binding IsKeyboardOut}" Data="M6 9l6 6 6-6" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Stretch="Uniform" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <ctl:RevealPanel Classes="keyboardDrawer bleed" Classes.out="{Binding IsKeyboardOut}">
+              <Border Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
+                <Panel HorizontalAlignment="Center">
+                  <ItemsControl ItemsSource="{Binding Keyboard.Rows}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Spacing="8" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="search:KeyRowViewModel">
+                        <ItemsControl ItemsSource="{Binding Keys}" HorizontalAlignment="Center">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <StackPanel Orientation="Horizontal" Spacing="8" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="search:KeyViewModel">
+                              <Button Classes="plain key" Classes.wide="{Binding IsWide}" Classes.on="{Binding IsOn}" Classes.focused="{Binding IsFocused}"
+                                      Width="{Binding Width}" Command="{Binding PressCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                  <!-- The pad's button for the key, only while the controller is in use. -->
+                                  <Border Classes="glyph small" Classes.round="{Binding IsRoundGlyph}" VerticalAlignment="Center">
+                                    <Border.IsVisible>
+                                      <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                        <Binding Path="HasGlyph" />
+                                        <Binding Path="$parent[ctl:RevealPanel].((search:SearchViewModel)DataContext).UsesController" />
+                                      </MultiBinding>
+                                    </Border.IsVisible>
+                                    <TextBlock Text="{Binding Glyph}" />
+                                  </Border>
+                                  <Path Classes="globe" IsVisible="{Binding IsLayoutKey}" Data="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M3 12h18 M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9 M12 3C9.5 5.7 8.4 8.7 8.4 12s1.1 6.3 3.6 9"
+                                        StrokeThickness="1.8" Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" />
+                                  <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                                </StackPanel>
+                              </Button>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <!-- Layout menu above the R3 key; a canvas, so it doesn't make the keyboard taller. -->
+                  <Canvas Height="0" VerticalAlignment="Bottom">
+                    <Border Canvas.Left="0" Canvas.Bottom="68" Width="380" IsVisible="{Binding Keyboard.IsLayoutMenuOpen}" Background="{StaticResource SurfaceRaised}"
+                            CornerRadius="14" BoxShadow="{StaticResource LayoutMenuShadow}" Padding="10">
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="TASTATURLAYOUT" FontSize="13" FontWeight="Bold" LetterSpacing="1.3" Foreground="{StaticResource TextMuted}" Margin="12,8,12,10" />
+                        <ItemsControl ItemsSource="{Binding Keyboard.LayoutItems}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <StackPanel Spacing="2" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="search:LayoutItemViewModel">
+                              <Button Classes="plain layoutItem" Classes.selected="{Binding IsSelected}" Classes.focused="{Binding IsFocused}" Command="{Binding PickCommand}">
+                                <DockPanel>
+                                  <Border DockPanel.Dock="Left" Width="44" Height="30" CornerRadius="6" Background="{StaticResource Line}" VerticalAlignment="Center" Margin="0,0,14,0">
+                                    <TextBlock Text="{Binding Layout.Code}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="0.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  </Border>
+                                  <Path DockPanel.Dock="Right" IsVisible="{Binding IsSelected}" Data="M5 12l5 5 9-10" Stroke="{StaticResource Accent}" StrokeThickness="2.6"
+                                        StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center" />
+                                  <StackPanel Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Layout.Name}" FontSize="17" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Layout.Kind}" FontSize="13" Foreground="{StaticResource TextMuted}" />
+                                  </StackPanel>
+                                </DockPanel>
+                              </Button>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                  </Canvas>
+                </Panel>
+              </Border>
+            </ctl:RevealPanel>
+          </StackPanel>
+
+          <!-- Hits: one row above the keyboard, a grid without it. The window of hits slides (MainWindow.axaml.cs); hits
+               beyond it peek in faded at the edges. -->
+          <Grid RowDefinitions="Auto,*" Margin="0,16,0,0">
+            <Grid Margin="235,0" Height="48" ColumnDefinitions="*,Auto,*" IsVisible="{Binding HasHits}">
+              <StackPanel Orientation="Horizontal" Spacing="16">
+                <TextBlock Text="{Binding ResultsTitle}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding RangeText}" FontSize="17" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+              </StackPanel>
+              <!-- The right stick picks a hit; said here as well as in the legend, where it's easily missed. -->
+              <Border Grid.Column="1" Classes="stickHint" IsVisible="{Binding ShowsStickHint}">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Border Classes="glyph"><TextBlock Text="RS" /></Border>
+                  <TextBlock Classes="hint" Text="Treffer wählen" />
+                </StackPanel>
+              </Border>
+            </Grid>
+            <Panel Grid.Row="1" Name="SearchViewport" Background="Transparent" ClipToBounds="True" IsVisible="{Binding HasHits}">
+              <Canvas>
+                <ItemsControl Name="SearchResults" Classes="hits" Classes.grid="{Binding !IsKeyboardOut}" ItemsSource="{Binding Slots}">
+                  <!-- A slot keeps its tile's controls when it shows another hit (SearchViewModel.Slots). -->
+                  <ItemsControl.Styles>
+                    <Style Selector="ItemsControl#SearchResults > ContentPresenter" x:DataType="search:HitSlotViewModel">
+                      <Setter Property="IsVisible" Value="{Binding IsShown}" />
+                    </Style>
+                  </ItemsControl.Styles>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="search:HitSlotViewModel">
+                      <ContentControl Content="{Binding Tile}" ContentTemplate="{StaticResource SearchHitTile}" ClipToBounds="False" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel ItemSpacing="20" LineSpacing="20" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                </ItemsControl>
+              </Canvas>
+              <!-- 2 px past the edges, as the grid's fades (GridFadeTop), so no line of hits shows at a scaled window size. -->
+              <Border Width="200" HorizontalAlignment="Left" Margin="-2,0,0,0" IsHitTestVisible="False" IsVisible="{Binding IsKeyboardOut}" Background="{StaticResource CarouselFadeLeft}" />
+              <Border Width="200" HorizontalAlignment="Right" Margin="0,0,-2,0" IsHitTestVisible="False" IsVisible="{Binding IsKeyboardOut}" Background="{StaticResource CarouselFadeRight}" />
+              <Border Height="40" VerticalAlignment="Top" Margin="0,-2,0,0" IsHitTestVisible="False" IsVisible="{Binding !IsKeyboardOut}" Background="{StaticResource ListFadeTop}" />
+              <Border Height="96" VerticalAlignment="Bottom" Margin="0,0,0,-2" IsHitTestVisible="False" IsVisible="{Binding !IsKeyboardOut}" Background="{StaticResource ListFadeBottom}" />
+              <!-- Where the shown hits are among all of them: across below the row, down beside the grid (owner, 2026-10-19).
+                   1450 = the width of seven hits (MainWindow.axaml.cs, HitWindowWidth); dragging scrolls (OnHitsScrollBarScroll). -->
+              <ScrollBar Name="HitsRowScrollBar" Orientation="Horizontal" IsVisible="{Binding ShowsRowScrollBar}" Width="1450"
+                         HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,300,0,0"
+                         Minimum="0" Maximum="{Binding ScrollEnd}" ViewportSize="{Binding ScrollViewport}" Value="{Binding ScrollStart, Mode=OneWay}" />
+              <ScrollBar Name="HitsGridScrollBar" Orientation="Vertical" IsVisible="{Binding ShowsGridScrollBar}" Height="560"
+                         HorizontalAlignment="Center" VerticalAlignment="Top" Margin="1498,40,0,0"
+                         Minimum="0" Maximum="{Binding ScrollEnd}" ViewportSize="{Binding ScrollViewport}" Value="{Binding ScrollStart, Mode=OneWay}" />
+              <Panel IsVisible="{Binding IsKeyboardOut}">
+                <Button Classes="plain glyphButton carouselNav turnHits" HorizontalAlignment="Left" Margin="80,104,0,0" IsVisible="{Binding CanTurn}"
+                        Command="{Binding TurnBackCommand}" ToolTip.Tip="Vorherige Treffer (LT, Bild ↑, Mausrad)">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Path Classes="chevron" Data="M15 6l-6 6 6 6" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center" />
+                    <TextBlock Text="LT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="plain glyphButton carouselNav turnHits" HorizontalAlignment="Right" Margin="0,104,80,0" IsVisible="{Binding CanTurn}"
+                        Command="{Binding TurnOnCommand}" ToolTip.Tip="Weitere Treffer (RT, Bild ↓, Mausrad)">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="RT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
+                    <Path Classes="chevron" Data="M9 6l6 6-6 6" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </Panel>
+            </Panel>
+            <!-- Nothing typed yet, or nothing found: a picture with the text below it; the theme draws both (ContentControl.searchEmpty). -->
+            <ContentControl Grid.RowSpan="2" Classes="searchEmpty" Content="{Binding Empty}" IsVisible="{Binding !HasHits}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Grid>
+        </DockPanel>
+      </Panel>
+
       <!-- Toast -->
       <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding Toast.IsVisible}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"
               Padding="24,14" Margin="0,0,0,96" HorizontalAlignment="Center" VerticalAlignment="Bottom" BoxShadow="{StaticResource ToastShadow}">
@@ -418,15 +865,38 @@
 
       <!-- "Ansicht" dialog -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsViewOptionsOpen}">
-        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CloseViewOptionsCommand}" />
         <Border Width="820" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,48,56,36"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
           <StackPanel Spacing="40" DataContext="{Binding ViewOptions}" x:DataType="vm:ViewOptionsViewModel">
             <StackPanel Spacing="8">
-              <TextBlock Text="Ansicht" FontSize="34" FontWeight="ExtraBold" />
-              <TextBlock FontSize="17" Foreground="{StaticResource TextMuted}"
-                         Text="Sortierung und Einträge pro Seite, gültig für alle Launcher" />
+              <TextBlock Text="{Binding Title}" FontSize="34" FontWeight="ExtraBold" />
+              <TextBlock FontSize="17" Foreground="{StaticResource TextMuted}" Text="{Binding Subtitle}" />
+            </StackPanel>
+
+            <!-- The search's launchers: any number at once, "Alle Launcher" switches them all on. -->
+            <StackPanel Spacing="14" IsVisible="{Binding HasLaunchers}">
+              <TextBlock Classes="label" Text="LAUNCHER" FontSize="14" />
+              <ItemsControl ItemsSource="{Binding LauncherRows}" Margin="-6">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:Object">
+                    <ItemsControl ItemsSource="{Binding}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <UniformGrid Columns="4" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:OptionViewModel">
+                          <Button Classes="plain size launcher" Classes.selected="{Binding IsSelected}" Classes.focused="{Binding IsFocused}"
+                                  Content="{Binding Label}" Command="{Binding ApplyCommand}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
             </StackPanel>
 
             <StackPanel Spacing="14">
@@ -457,7 +927,7 @@
               </ItemsControl>
             </StackPanel>
 
-            <StackPanel Spacing="14">
+            <StackPanel Spacing="14" IsVisible="{Binding HasPageSizes}">
               <TextBlock Classes="label" Text="EINTRÄGE PRO SEITE" FontSize="14" />
               <ItemsControl ItemsSource="{Binding PageSizeOptions}" Margin="-6">
                 <ItemsControl.ItemsPanel>
@@ -497,7 +967,7 @@
 
       <!-- Context menu of the focused game, anchored next to its cover (placed in MainWindow.axaml.cs). -->
       <Panel Name="GameMenuLayer" Grid.RowSpan="4" IsVisible="{Binding IsGameMenuOpen}">
-        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CloseMenuCommand}" />
         <Border Name="GameMenuPanel" Width="420" Background="{StaticResource Surface}" CornerRadius="16" Padding="12"
                 HorizontalAlignment="Left" VerticalAlignment="Top" BoxShadow="{StaticResource DialogShadow}">
@@ -539,7 +1009,7 @@
 
       <!-- Asks before an action that can't be undone from Arcadia (uninstalling). -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsConfirmationOpen}">
-        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CancelConfirmationCommand}" />
         <Border Width="680" Background="{StaticResource Surface}" CornerRadius="20" Padding="48,40,48,32"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
@@ -576,7 +1046,7 @@
 
       <!-- Settings dialog -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsSettingsOpen}">
-        <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CloseSettingsCommand}" />
         <Border Width="1040" MaxHeight="1000" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,40,56,32"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
@@ -792,7 +1262,7 @@
 
         <!-- Prompt over the settings before "SISR installieren" goes on; the settings stay dimmed behind it. -->
         <Panel DataContext="{Binding Settings}" x:DataType="vm:SettingsViewModel" IsVisible="{Binding IsPromptOpen, FallbackValue=False}">
-          <Button Classes="plain" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+          <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                   Command="{Binding ClosePromptCommand}" />
           <Border Classes="prompt" Width="720" HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel Spacing="28">

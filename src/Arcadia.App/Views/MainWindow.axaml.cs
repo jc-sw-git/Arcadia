@@ -1,10 +1,13 @@
 using System.ComponentModel;
 using Arcadia.App.Input;
+using Arcadia.App.Search;
 using Arcadia.App.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media.Transformation;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
@@ -21,8 +24,25 @@ public partial class MainWindow : Window
     /// <summary>Height of the fades at the grid's edges (Border.listFade in Theme.axaml).</summary>
     private const double ListFadeHeight = 96;
 
+    /// <summary>Closer than this, the launcher chips and the sort button get a divider between them.</summary>
+    private const double SortDividerGap = 48;
+
+    /// <summary>From one search hit to the next: tile width or height (SearchHitTile) plus the spacing between them.</summary>
+    private const double HitPitchX = 190 + 20;
+
+    private const double HitPitchY = 270 + 20;
+
+    /// <summary>Seven hits side by side, the width of the window of hits in both layouts.</summary>
+    private const double HitWindowWidth = (7 * HitPitchX) - 20;
+
+    /// <summary>Room above the row of hits for the focused one's lift, and above the grid for the row before it, faded.</summary>
+    private const double HitRowTop = 8;
+
+    private const double HitGridTop = 40;
+
     private readonly HashSet<Key> _keysDown = [];
     private MainViewModel? _viewModel;
+    private SearchViewModel? _search;
 
     public MainWindow()
     {
@@ -33,6 +53,24 @@ public partial class MainWindow : Window
         AddHandler(KeyUpEvent, OnPreviewKeyUp, RoutingStrategies.Tunnel);
         GameGrid.AddHandler(DoubleTappedEvent, OnGridDoubleTapped);
         GameGrid.AddHandler(PointerPressedEvent, OnGridPointerPressed, RoutingStrategies.Tunnel);
+        SearchResults.AddHandler(DoubleTappedEvent, OnGridDoubleTapped);
+        SearchResults.AddHandler(PointerPressedEvent, OnSearchResultPointerPressed, RoutingStrategies.Tunnel);
+        SearchViewport.PointerWheelChanged += OnSearchResultsWheel;
+        HitsRowScrollBar.Scroll += OnHitsScrollBarScroll;
+        HitsGridScrollBar.Scroll += OnHitsScrollBarScroll;
+        SearchViewport.SizeChanged += (_, _) => PlaceHits(previousStart: null);
+        SearchChips.SizeChanged += (_, _) => UpdateSortDivider();
+        SearchChipRow.SizeChanged += (_, _) => UpdateSortDivider();
+        SearchSortButton.SizeChanged += (_, _) => UpdateSortDivider();
+
+        // Typing on a real keyboard while the search is open. Nothing has Avalonia focus, so the text arrives at the window.
+        AddHandler(TextInputEvent, OnTextInput, RoutingStrategies.Tunnel);
+
+        // Which input is in use decides whether the search shows its on-screen keyboard.
+        AddHandler(PointerPressedEvent, (_, _) => _viewModel?.NotePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
+
+        // Ends a held click on a cover, wherever the mouse is let go.
+        AddHandler(PointerReleasedEvent, (_, _) => _viewModel?.ReleasePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
 
         // A key released in another window never reports its release here.
         Deactivated += (_, _) =>
@@ -54,6 +92,12 @@ public partial class MainWindow : Window
                 await _viewModel.RefreshLibraryAsync();
             }
         };
+    }
+
+    private void UpdateSortDivider()
+    {
+        var gap = (SortDivider.Bounds.X - SortDivider.Margin.Left) - (SearchChips.Bounds.Right + SearchChips.Margin.Right);
+        SortDivider.Classes.Set("unneeded", gap >= SortDividerGap);
     }
 
     /// <summary>
@@ -89,6 +133,7 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
+        _viewModel?.NoteKeyboard();
         if (e.Key == Key.F11)
         {
             WindowState = WindowState == WindowState.FullScreen ? WindowState.Normal : WindowState.FullScreen;
@@ -96,7 +141,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_viewModel is not null && UiActionMap.FromKey(e.Key, e.KeyModifiers) is { } action)
+        if (_viewModel is not null && ActionFor(e) is { } action)
         {
             // A held key repeats its KeyDown; A acts on the release or after a hold, like the gamepad button.
             if (!_keysDown.Add(e.Key) && action == UiAction.Accept)
@@ -118,20 +163,98 @@ public partial class MainWindow : Window
     private void OnPreviewKeyUp(object? sender, KeyEventArgs e)
     {
         _keysDown.Remove(e.Key);
-        if (_viewModel is not null && UiActionMap.FromKey(e.Key, e.KeyModifiers) is { } action)
+        if (_viewModel is not null && (ActionFor(e) ?? UiActionMap.FromKey(e.Key, e.KeyModifiers)) is { } action)
         {
             _viewModel.Release(action);
         }
     }
 
+    /// <summary>
+    /// While the search takes typed text, only keys that type nothing are actions there; the rest
+    /// arrive as text (<see cref="OnTextInput"/>). Elsewhere the usual key map applies.
+    /// </summary>
+    private UiAction? ActionFor(KeyEventArgs e)
+    {
+        if (_viewModel is not { IsSearchShown: true, IsDialogOpen: false })
+        {
+            return UiActionMap.FromKey(e.Key, e.KeyModifiers);
+        }
+
+        // The arrows move through the hits, Page Up/Down turn them, Enter starts the focused one (held: its details).
+        return e.Key switch
+        {
+            Key.Up => UiAction.Up,
+            Key.Down => UiAction.Down,
+            Key.Left => UiAction.Left,
+            Key.Right => UiAction.Right,
+            Key.Enter => UiAction.Accept,
+            Key.Escape => UiAction.Back,
+            Key.Back => UiAction.Search,
+            Key.PageUp => UiAction.PreviousPage,
+            Key.PageDown => UiAction.NextPage,
+            Key.Apps => UiAction.Options,
+            Key.F10 when e.KeyModifiers == KeyModifiers.Shift => UiAction.Options,
+            _ => null,
+        };
+    }
+
+    private void OnTextInput(object? sender, TextInputEventArgs e)
+    {
+        if (_viewModel is { IsSearchShown: true } && !string.IsNullOrEmpty(e.Text))
+        {
+            _viewModel.TypeInSearch(e.Text);
+            e.Handled = true;
+        }
+    }
+
+    private void OnSearchResultPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if ((e.Source as Control)?.DataContext is not GameTileViewModel tile || _viewModel is null)
+        {
+            return;
+        }
+
+        var button = e.GetCurrentPoint(this).Properties;
+        if (button.IsRightButtonPressed)
+        {
+            _viewModel.OpenMenuForHit(tile);
+            e.Handled = true;
+        }
+        else if (button.IsLeftButtonPressed)
+        {
+            _viewModel.PressTile(tile);
+        }
+    }
+
+    private void OnSearchResultsWheel(object? sender, PointerWheelEventArgs e)
+    {
+        // Either wheel direction scrolls; most mice only have the vertical one.
+        var delta = Math.Abs(e.Delta.X) > Math.Abs(e.Delta.Y) ? e.Delta.X : e.Delta.Y;
+        if (_viewModel is not null && delta != 0)
+        {
+            _viewModel.ScrollSearch(delta < 0 ? 1 : -1);
+            e.Handled = true;
+        }
+    }
+
+    private void OnHitsScrollBarScroll(object? sender, ScrollEventArgs e) => _search?.ScrollTo(e.NewValue);
+
     private void OnGridPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed
-            && (e.Source as Control)?.DataContext is GameTileViewModel tile
-            && _viewModel is not null)
+        if ((e.Source as Control)?.DataContext is not GameTileViewModel tile || _viewModel is null)
+        {
+            return;
+        }
+
+        var button = e.GetCurrentPoint(this).Properties;
+        if (button.IsRightButtonPressed)
         {
             _viewModel.OpenMenuFor(tile);
             e.Handled = true;
+        }
+        else if (button.IsLeftButtonPressed)
+        {
+            _viewModel.PressTile(tile);
         }
     }
 
@@ -139,6 +262,8 @@ public partial class MainWindow : Window
     {
         if ((e.Source as Control)?.DataContext is GameTileViewModel tile)
         {
+            // The second press started a hold for the details; the game starts instead.
+            _viewModel?.CancelHold();
             tile.ActivateCommand.Execute(null);
         }
     }
@@ -159,7 +284,72 @@ public partial class MainWindow : Window
             case nameof(MainViewModel.SelectedTab):
                 Dispatcher.UIThread.Post(BringSelectedTabIntoView, DispatcherPriority.Loaded);
                 break;
+            case nameof(MainViewModel.Search):
+                if (_search is not null)
+                {
+                    _search.WindowMoved -= PlaceHits;
+                }
+
+                _search = _viewModel?.Search;
+                if (_search is not null)
+                {
+                    _search.WindowMoved += PlaceHits;
+                    PlaceHits(previousStart: null);
+                }
+
+                break;
         }
+    }
+
+    /// <summary>
+    /// Moves the hits so the window starts at the leading edge: in the row its first hit on the
+    /// left, in the grid its first row at the top. After a step or a turn they slide there from
+    /// where the window was, at most a window away (wrapping round from the end jumps further).
+    /// </summary>
+    private void PlaceHits(int? previousStart)
+    {
+        if (_search is not { } search)
+        {
+            return;
+        }
+
+        var target = HitsOffset(search, search.WindowStart);
+        if (previousStart is not { } previous)
+        {
+            SetHitsOffsetAtOnce(target);
+            return;
+        }
+
+        var size = search.IsKeyboardOut ? SearchViewModel.ResultColumns : SearchViewModel.ResultColumns * SearchViewModel.ResultRowsWithoutKeyboard;
+        SetHitsOffsetAtOnce(HitsOffset(search, Math.Clamp(previous, search.WindowStart - size, search.WindowStart + size)));
+        SearchResults.RenderTransform = target;
+    }
+
+    private TransformOperations HitsOffset(SearchViewModel search, int windowStart)
+    {
+        // The results hold the hits from SliceStart on; the window is centred in the hit area.
+        var shift = windowStart - search.SliceStart;
+        var left = (SearchViewport.Bounds.Width - HitWindowWidth) / 2;
+        var builder = TransformOperations.CreateBuilder(1);
+        if (search.IsKeyboardOut)
+        {
+            builder.AppendTranslate(left - (shift * HitPitchX), HitRowTop);
+        }
+        else
+        {
+            builder.AppendTranslate(left, HitGridTop - (shift / SearchViewModel.ResultColumns * HitPitchY));
+        }
+
+        return builder.Build();
+    }
+
+    /// <summary>Without the slide: a new search, the other layout, or the start of a slide.</summary>
+    private void SetHitsOffsetAtOnce(TransformOperations offset)
+    {
+        var transitions = SearchResults.Transitions;
+        SearchResults.Transitions = null;
+        SearchResults.RenderTransform = offset;
+        SearchResults.Transitions = transitions;
     }
 
     private void BringFocusedTileIntoView()
@@ -222,8 +412,7 @@ public partial class MainWindow : Window
     private void PlaceGameMenu()
     {
         GameMenuPanel.Opacity = 1;
-        if (_viewModel?.FocusedGame is not { } tile
-            || GameGrid.ContainerFromIndex(_viewModel.PageGames.IndexOf(tile)) is not { } cover
+        if (MenuAnchor() is not { } cover
             || cover.TranslatePoint(default, GameMenuLayer) is not { } topLeft)
         {
             GameMenuPanel.Margin = new Thickness((GameMenuLayer.Bounds.Width - GameMenuPanel.Bounds.Width) / 2, (GameMenuLayer.Bounds.Height - GameMenuPanel.Bounds.Height) / 2, 0, 0);
@@ -236,6 +425,17 @@ public partial class MainWindow : Window
         var x = right + width <= GameMenuLayer.Bounds.Width - MenuGap ? right : topLeft.X - MenuGap - width;
         var y = Math.Clamp(topLeft.Y, MenuGap, Math.Max(MenuGap, GameMenuLayer.Bounds.Height - height - MenuGap));
         GameMenuPanel.Margin = new Thickness(Math.Max(MenuGap, x), y, 0, 0);
+    }
+
+    /// <summary>The cover whose menu is open: the focused hit while the search is shown, else the focused cover.</summary>
+    private Control? MenuAnchor()
+    {
+        if (_viewModel is { IsSearchShown: true, Search.FocusedResult: { } hit } searching)
+        {
+            return SearchResults.ContainerFromIndex(searching.Search!.SlotOf(hit));
+        }
+
+        return _viewModel?.FocusedGame is { } tile ? GameGrid.ContainerFromIndex(_viewModel.PageGames.IndexOf(tile)) : null;
     }
 
     private void BringSelectedTabIntoView()

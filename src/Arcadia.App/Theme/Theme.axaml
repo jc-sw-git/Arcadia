@@ -1,6 +1,7 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:ctl="using:Arcadia.App.Controls">
+        xmlns:ctl="using:Arcadia.App.Controls"
+        xmlns:search="using:Arcadia.App.Search">
 
   <!-- Colors from the Big Picture designs. -->
   <Styles.Resources>
@@ -41,12 +42,18 @@
     <SolidColorBrush x:Key="ProgressTrack" Color="#33FFFFFF" />
     <!-- Bg at zero opacity, for gradients that fade into the background. -->
     <Color x:Key="BgClearColor">#000B0F14</Color>
-    <!-- Bg at 90 % and 50 %: the detail page's neighbours fade into the background towards the edge. -->
-    <Color x:Key="BgFadeColor">#E60B0F14</Color>
-    <Color x:Key="BgHalfColor">#800B0F14</Color>
+    <!-- Bg on a cosine curve from opaque to clear, the steps of the fades below. -->
+    <Color x:Key="BgFade1Color">#F50B0F14</Color>
+    <Color x:Key="BgFade2Color">#DA0B0F14</Color>
+    <Color x:Key="BgFade3Color">#B00B0F14</Color>
+    <Color x:Key="BgFade4Color">#800B0F14</Color>
+    <Color x:Key="BgFade5Color">#4F0B0F14</Color>
+    <Color x:Key="BgFade6Color">#250B0F14</Color>
+    <Color x:Key="BgFade7Color">#0A0B0F14</Color>
 
     <!-- Edges that fade into the background: the tab strip where more tabs follow, the cover grid where
-         it can still scroll (#102), and the detail page's neighbours. -->
+         it can still scroll (#102), the detail page's neighbours and the search's row of hits. All but
+         the tab strip's run along a cosine curve, so neither end of the fade shows an edge. -->
     <LinearGradientBrush x:Key="TabEdgeLeft" StartPoint="0%,0%" EndPoint="100%,0%">
       <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
       <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
@@ -57,23 +64,47 @@
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="ListFadeTop" StartPoint="0%,0%" EndPoint="0%,100%">
       <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
+      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
+      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
+      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
+      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
+      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
+      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
       <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="ListFadeBottom" StartPoint="0%,100%" EndPoint="0%,0%">
       <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
+      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
+      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
+      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
+      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
+      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
+      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
       <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="CarouselFadeLeft" StartPoint="0%,0%" EndPoint="100%,0%">
       <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
-      <GradientStop Offset="1" Color="{StaticResource BgHalfColor}" />
+      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
+      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
+      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
+      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
+      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
+      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
+      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="CarouselFadeRight" StartPoint="100%,0%" EndPoint="0%,0%">
       <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
-      <GradientStop Offset="1" Color="{StaticResource BgHalfColor}" />
+      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
+      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
+      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
+      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
+      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
+      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
+      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
     </LinearGradientBrush>
 
     <!-- Detail page. -->
@@ -97,6 +128,29 @@
     <BoxShadows x:Key="DetailShadow">0 30 80 0 #73000000</BoxShadows>
     <BoxShadows x:Key="CoverShadow">0 24 50 0 #80000000</BoxShadows>
     <BoxShadows x:Key="DialogShadow">0 40 100 0 #99000000</BoxShadows>
+
+    <!-- Search (#12). -->
+    <SolidColorBrush x:Key="KeyboardSurface" Color="#11161D" />
+    <!-- The pictures of the search's empty states (ContentControl.searchEmpty). -->
+    <!-- Fades out along a cosine curve, so the glow has no visible rim. -->
+    <RadialGradientBrush x:Key="EmptyStateGlow">
+      <GradientStop Offset="0" Color="#263B9EFF" />
+      <GradientStop Offset="0.25" Color="#203B9EFF" />
+      <GradientStop Offset="0.5" Color="#133B9EFF" />
+      <GradientStop Offset="0.75" Color="#063B9EFF" />
+      <GradientStop Offset="1" Color="#003B9EFF" />
+    </RadialGradientBrush>
+    <SolidColorBrush x:Key="EmptyStateCard" Color="#1E2630" />
+    <SolidColorBrush x:Key="EmptyStateCardLine" Color="#3A4552" />
+    <SolidColorBrush x:Key="EmptyStateCardBadge" Color="#3B9EFF" />
+    <SolidColorBrush x:Key="EmptyStateLens" Color="#151B23" />
+    <SolidColorBrush x:Key="EmptyStateLensRim" Color="#3B9EFF" />
+    <SolidColorBrush x:Key="EmptyStateMiss" Color="#9AA7B4" />
+    <SolidColorBrush x:Key="EmptyStateSparkle" Color="#8CC6FF" />
+    <BoxShadows x:Key="SearchFieldRing">0 0 0 3 #3B9EFF</BoxShadows>
+    <!-- Sets the launcher badge off from any cover colour. -->
+    <BoxShadows x:Key="LauncherBadgeRing">0 0 0 2 #990B0F14</BoxShadows>
+    <BoxShadows x:Key="LayoutMenuShadow">0 24 60 0 #99000000, 0 0 0 1 #2A3440</BoxShadows>
   </Styles.Resources>
 
   <!-- A button that draws only what we give it; the Fluent hover/press visuals don't fit the design. -->
@@ -358,6 +412,11 @@
     <Setter Property="FontSize" Value="22" />
     <Setter Property="FontWeight" Value="Bold" />
   </Style>
+  <!-- The search's launchers in the same dialog: names, not numbers. -->
+  <Style Selector="Button.size.launcher">
+    <Setter Property="Height" Value="56" />
+    <Setter Property="FontSize" Value="17" />
+  </Style>
   <Style Selector="Button.size:disabled">
     <Setter Property="Background" Value="{StaticResource SurfaceDisabled}" />
     <Setter Property="Foreground" Value="{StaticResource TextDisabled}" />
@@ -487,6 +546,19 @@
   </Style>
   <Style Selector="Border.listFade.shown">
     <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- The detail carousel's neighbours are dimmed as a whole, so the fade at the window's edge needs no step. The dimming
+       changes while the carousel slides (as long as GameDetailView.SlideTime). -->
+  <Style Selector="Panel.detailPage">
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.34" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Panel.detailPage.side">
+    <Setter Property="Opacity" Value="0.5" />
   </Style>
 
   <!-- LT/RT beside the detail carousel. -->
@@ -672,6 +744,20 @@
     </Style.Animations>
   </Style>
 
+  <!-- The layout is 1920×1080, scaled to the window; a window of another shape leaves bars beside or above and below it
+       in the window's background. Bands that run from edge to edge reach into those bars, so they don't end in the middle
+       of the window: the search's keyboard (bleed), its legend (bleedDown), and the search's background and the dimming
+       behind dialogs, which cover what's beneath them in the bars too (bleedAll). -->
+  <Style Selector=":is(Control).bleed">
+    <Setter Property="Margin" Value="-1920,0" />
+  </Style>
+  <Style Selector="Border.bleedDown">
+    <Setter Property="Margin" Value="-1920,0,-1920,-1080" />
+  </Style>
+  <Style Selector=":is(Control).bleedAll">
+    <Setter Property="Margin" Value="-1920,-1080" />
+  </Style>
+
   <!-- Scrollbars that match the theme: thin, rounded, dark. -->
   <Style Selector="ScrollBar">
     <Setter Property="Background" Value="Transparent" />
@@ -682,5 +768,250 @@
   </Style>
   <Style Selector="ScrollBar /template/ Thumb:pointerover">
     <Setter Property="Background" Value="{StaticResource LineStrong}" />
+  </Style>
+
+  <!-- Search (#12): launcher chips. -->
+  <Style Selector="Button.chip">
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="{StaticResource Line}" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <!-- A thin line between groups: after "Alle Launcher", before the sort button when the chips come close. -->
+  <Style Selector="Border.divider">
+    <Setter Property="Width" Value="1" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Border.divider.unneeded">
+    <Setter Property="Opacity" Value="0" />
+  </Style>
+  <Style Selector="Button.chip.all">
+    <Setter Property="Padding" Value="18,0" />
+  </Style>
+  <Style Selector="Button.chip:pointerover">
+    <Setter Property="BorderBrush" Value="{StaticResource LineStrong}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Button.chip.on">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.chip.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Button.chip Border.chipLogo">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+  <Style Selector="Button.chip.on Border.chipLogo">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- Search hits: a cover with the launcher's badge, the launcher's name below. -->
+  <Style Selector="Button.resultTile">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.14" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.resultTile:pointerover /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource HoverRing}" />
+  </Style>
+  <Style Selector="Button.resultTile.focused">
+    <Setter Property="RenderTransform" Value="scale(1.05)" />
+    <Setter Property="ZIndex" Value="2" />
+  </Style>
+  <Style Selector="Button.resultTile.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRingLifted}" />
+  </Style>
+  <Style Selector="Border.launcherBadge">
+    <Setter Property="BoxShadow" Value="{StaticResource LauncherBadgeRing}" />
+  </Style>
+  <!-- Holding A on a hit fills a ring along the cover's edge, as around the library's preview. -->
+  <Style Selector="Button.resultTile ctl|HoldRing">
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Button.resultTile.holding ctl|HoldRing">
+    <Setter Property="IsVisible" Value="True" />
+    <Style.Animations>
+      <Animation Duration="0:0:0.75" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="Progress" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Progress" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <!-- The hits slide when the window moves (MainWindow.axaml.cs); in the grid they wrap after seven. -->
+  <Style Selector="ItemsControl.hits">
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ItemsControl.hits.grid">
+    <Setter Property="Width" Value="1450" />
+  </Style>
+  <Style Selector="Button.turnHits">
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+  <Style Selector="Button.turnHits Path.chevron">
+    <Setter Property="Stroke" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Border.stickHint">
+    <Setter Property="Background" Value="{StaticResource Surface}" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Padding" Value="8,6,16,6" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- The on-screen keyboard slides in from below and back; the tab on its top edge moves with it. -->
+  <Style Selector="ctl|RevealPanel.keyboardDrawer">
+    <Setter Property="Reveal" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Reveal" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ctl|RevealPanel.keyboardDrawer.out">
+    <Setter Property="Reveal" Value="1" />
+  </Style>
+  <Style Selector="Button.keyboardTab">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="CornerRadius" Value="14,14,0,0" />
+    <Setter Property="Background" Value="{StaticResource KeyboardSurface}" />
+  </Style>
+  <Style Selector="Button.keyboardTab Path">
+    <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Button.keyboardTab:pointerover Path">
+    <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
+  </Style>
+
+  <!-- The search's empty states: a picture and the text below it. A theme may replace this template as a whole. -->
+  <Style Selector="ContentControl.searchEmpty">
+    <Setter Property="ContentTemplate">
+      <DataTemplate x:DataType="search:SearchEmptyState">
+        <!-- The glow stays inside the panel: anything sticking out would be cut off with a hard edge. -->
+        <Panel Width="640">
+          <Ellipse Width="640" Height="360" VerticalAlignment="Top" Fill="{StaticResource EmptyStateGlow}" IsHitTestVisible="False" />
+          <StackPanel Spacing="20" Margin="0,40,0,0">
+            <!-- Nothing typed yet: three covers under a lens. -->
+            <Canvas Width="320" Height="150" IsVisible="{Binding !IsNoHits}">
+              <Border Canvas.Left="86" Canvas.Top="30" Width="76" Height="100" CornerRadius="10" Background="{StaticResource EmptyStateCard}"
+                      BorderBrush="{StaticResource EmptyStateCardLine}" BorderThickness="1.5" RenderTransform="rotate(-14deg)" />
+              <Border Canvas.Left="158" Canvas.Top="30" Width="76" Height="100" CornerRadius="10" Background="{StaticResource EmptyStateCard}"
+                      BorderBrush="{StaticResource EmptyStateCardLine}" BorderThickness="1.5" RenderTransform="rotate(14deg)" />
+              <Border Canvas.Left="122" Canvas.Top="16" Width="76" Height="100" CornerRadius="10" Background="{StaticResource EmptyStateCard}"
+                      BorderBrush="{StaticResource EmptyStateCardLine}" BorderThickness="1.5">
+                <Panel Margin="10">
+                  <Border Width="16" Height="16" CornerRadius="4" Background="{StaticResource EmptyStateCardBadge}" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                  <StackPanel Spacing="6" VerticalAlignment="Bottom">
+                    <Border Width="44" Height="6" CornerRadius="3" Background="{StaticResource EmptyStateCardLine}" HorizontalAlignment="Left" />
+                    <Border Width="30" Height="6" CornerRadius="3" Background="{StaticResource EmptyStateCardLine}" HorizontalAlignment="Left" />
+                  </StackPanel>
+                </Panel>
+              </Border>
+              <Line StartPoint="230,112" EndPoint="252,134" Stroke="{StaticResource EmptyStateLensRim}" StrokeThickness="10" StrokeLineCap="Round" />
+              <Ellipse Canvas.Left="176" Canvas.Top="60" Width="64" Height="64" Fill="{StaticResource EmptyStateLens}" Stroke="{StaticResource EmptyStateLensRim}" StrokeThickness="7" />
+              <Path Data="M64 34l3 7 7 3-7 3-3 7-3-7-7-3 7-3z M266 22l2 5 5 2-5 2-2 5-2-5-5-2 5-2z M250 70l1.5 3.5 3.5 1.5-3.5 1.5-1.5 3.5-1.5-3.5-3.5-1.5 3.5-1.5z"
+                    Fill="{StaticResource EmptyStateSparkle}" />
+            </Canvas>
+            <!-- Nothing found: empty frames, and a cross in the lens. -->
+            <Canvas Width="320" Height="150" IsVisible="{Binding IsNoHits}">
+              <Border Canvas.Left="86" Canvas.Top="30" Width="76" Height="100" CornerRadius="10" BorderBrush="{StaticResource EmptyStateCardLine}" BorderThickness="1.5"
+                      RenderTransform="rotate(-14deg)" Opacity="0.6" />
+              <Border Canvas.Left="158" Canvas.Top="30" Width="76" Height="100" CornerRadius="10" BorderBrush="{StaticResource EmptyStateCardLine}" BorderThickness="1.5"
+                      RenderTransform="rotate(14deg)" Opacity="0.6" />
+              <Rectangle Canvas.Left="122" Canvas.Top="16" Width="76" Height="100" RadiusX="10" RadiusY="10" Fill="{StaticResource EmptyStateCard}"
+                         Stroke="{StaticResource EmptyStateCardLine}" StrokeThickness="1.5" StrokeDashArray="4,3" />
+              <Line StartPoint="230,112" EndPoint="252,134" Stroke="{StaticResource EmptyStateMiss}" StrokeThickness="10" StrokeLineCap="Round" />
+              <Ellipse Canvas.Left="176" Canvas.Top="60" Width="64" Height="64" Fill="{StaticResource EmptyStateLens}" Stroke="{StaticResource EmptyStateMiss}" StrokeThickness="7" />
+              <Path Data="M199 83l18 18 M217 83l-18 18" Stroke="{StaticResource EmptyStateMiss}" StrokeThickness="4" StrokeLineCap="Round" />
+            </Canvas>
+            <StackPanel Spacing="8">
+              <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="Bold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding Text}" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="560" HorizontalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </Panel>
+      </DataTemplate>
+    </Setter>
+  </Style>
+
+  <!-- On-screen keyboard. -->
+  <Style Selector="Button.key">
+    <Setter Property="Height" Value="56" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.key.wide">
+    <Setter Property="FontSize" Value="17" />
+  </Style>
+  <Style Selector="Button.key:pointerover, Button.key.focused">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <!-- Shift on, or the symbols page shown. -->
+  <Style Selector="Button.key.on">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.key.on:pointerover, Button.key.on.focused">
+    <Setter Property="Background" Value="{StaticResource AccentHover}" />
+  </Style>
+  <Style Selector="Button.key.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Button.key Path.globe">
+    <Setter Property="Stroke" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Border.glyph.small">
+    <Setter Property="MinWidth" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="CornerRadius" Value="11" />
+    <Setter Property="Padding" Value="6,0" />
+  </Style>
+  <Style Selector="Border.glyph.small.round">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="Border.glyph.small > TextBlock">
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+
+  <!-- The keyboard's layout menu (R3). -->
+  <Style Selector="Button.layoutItem">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Height" Value="60" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Button.layoutItem:pointerover, Button.layoutItem.selected, Button.layoutItem.focused">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Button.layoutItem.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRingInset}" />
   </Style>
 </Styles>

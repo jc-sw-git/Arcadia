@@ -21,6 +21,21 @@ public enum UiAction
 
     /// <summary>The context menu of the focused game.</summary>
     Options,
+
+    /// <summary>Opens the search (#12); inside it, deletes the last character.</summary>
+    Search,
+
+    /// <summary>The on-screen keyboard's layout menu.</summary>
+    KeyboardLayout,
+
+    /// <summary>L3: the search's launcher filter and sort order.</summary>
+    Filter,
+
+    // The right stick: a second focus beside the D-pad's, e.g. the hits beside the on-screen keyboard.
+    SecondaryUp,
+    SecondaryDown,
+    SecondaryLeft,
+    SecondaryRight,
 }
 
 public static class UiActionMap
@@ -41,6 +56,13 @@ public static class UiActionMap
         // The owner's choice (2026-10-17): the context menu is used far more often than the settings.
         GamepadButton.View => UiAction.Options,
         GamepadButton.Menu => UiAction.Settings,
+        GamepadButton.X => UiAction.Search,
+        GamepadButton.RightStickClick => UiAction.KeyboardLayout,
+        GamepadButton.LeftStickClick => UiAction.Filter,
+        GamepadButton.RightStickUp => UiAction.SecondaryUp,
+        GamepadButton.RightStickDown => UiAction.SecondaryDown,
+        GamepadButton.RightStickLeft => UiAction.SecondaryLeft,
+        GamepadButton.RightStickRight => UiAction.SecondaryRight,
         _ => null,
     };
 
@@ -64,6 +86,7 @@ public static class UiActionMap
         (Key.V, KeyModifiers.None) => UiAction.ViewOptions,
         (Key.F2, _) => UiAction.Settings,
         (Key.Apps, _) or (Key.F10, KeyModifiers.Shift) => UiAction.Options,
+        (Key.F, KeyModifiers.None or KeyModifiers.Control) => UiAction.Search,
         _ => null,
     };
 }

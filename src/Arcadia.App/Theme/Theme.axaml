@@ -42,12 +42,18 @@
     <SolidColorBrush x:Key="ProgressTrack" Color="#33FFFFFF" />
     <!-- Bg at zero opacity, for gradients that fade into the background. -->
     <Color x:Key="BgClearColor">#000B0F14</Color>
-    <!-- Bg at 90 % and 50 %: the detail page's neighbours fade into the background towards the edge. -->
-    <Color x:Key="BgFadeColor">#E60B0F14</Color>
-    <Color x:Key="BgHalfColor">#800B0F14</Color>
+    <!-- Bg on a cosine curve from opaque to clear, the steps of the fades below. -->
+    <Color x:Key="BgFade1Color">#F50B0F14</Color>
+    <Color x:Key="BgFade2Color">#DA0B0F14</Color>
+    <Color x:Key="BgFade3Color">#B00B0F14</Color>
+    <Color x:Key="BgFade4Color">#800B0F14</Color>
+    <Color x:Key="BgFade5Color">#4F0B0F14</Color>
+    <Color x:Key="BgFade6Color">#250B0F14</Color>
+    <Color x:Key="BgFade7Color">#0A0B0F14</Color>
 
     <!-- Edges that fade into the background: the tab strip where more tabs follow, the cover grid where
-         it can still scroll (#102), and the detail page's neighbours. -->
+         it can still scroll (#102), the detail page's neighbours and the search's row of hits. All but
+         the tab strip's run along a cosine curve, so neither end of the fade shows an edge. -->
     <LinearGradientBrush x:Key="TabEdgeLeft" StartPoint="0%,0%" EndPoint="100%,0%">
       <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
       <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
@@ -58,23 +64,47 @@
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="ListFadeTop" StartPoint="0%,0%" EndPoint="0%,100%">
       <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
+      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
+      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
+      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
+      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
+      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
+      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
       <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="ListFadeBottom" StartPoint="0%,100%" EndPoint="0%,0%">
       <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
+      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
+      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
+      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
+      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
+      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
+      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
+      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
       <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="CarouselFadeLeft" StartPoint="0%,0%" EndPoint="100%,0%">
       <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
-      <GradientStop Offset="1" Color="{StaticResource BgHalfColor}" />
+      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
+      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
+      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
+      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
+      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
+      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
+      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="CarouselFadeRight" StartPoint="100%,0%" EndPoint="0%,0%">
       <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.3" Color="{StaticResource BgFadeColor}" />
-      <GradientStop Offset="1" Color="{StaticResource BgHalfColor}" />
+      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
+      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
+      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
+      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
+      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
+      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
+      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
+      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
     </LinearGradientBrush>
 
     <!-- Detail page. -->
@@ -102,8 +132,12 @@
     <!-- Search (#12). -->
     <SolidColorBrush x:Key="KeyboardSurface" Color="#11161D" />
     <!-- The pictures of the search's empty states (ContentControl.searchEmpty). -->
+    <!-- Fades out along a cosine curve, so the glow has no visible rim. -->
     <RadialGradientBrush x:Key="EmptyStateGlow">
       <GradientStop Offset="0" Color="#263B9EFF" />
+      <GradientStop Offset="0.25" Color="#203B9EFF" />
+      <GradientStop Offset="0.5" Color="#133B9EFF" />
+      <GradientStop Offset="0.75" Color="#063B9EFF" />
       <GradientStop Offset="1" Color="#003B9EFF" />
     </RadialGradientBrush>
     <SolidColorBrush x:Key="EmptyStateCard" Color="#1E2630" />
@@ -514,6 +548,19 @@
     <Setter Property="Opacity" Value="1" />
   </Style>
 
+  <!-- The detail carousel's neighbours are dimmed as a whole, so the fade at the window's edge needs no step. The dimming
+       changes while the carousel slides (as long as GameDetailView.SlideTime). -->
+  <Style Selector="Panel.detailPage">
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.34" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Panel.detailPage.side">
+    <Setter Property="Opacity" Value="0.5" />
+  </Style>
+
   <!-- LT/RT beside the detail carousel. -->
   <Style Selector="Button.carouselNav">
     <Setter Property="Height" Value="48" />
@@ -848,9 +895,10 @@
   <Style Selector="ContentControl.searchEmpty">
     <Setter Property="ContentTemplate">
       <DataTemplate x:DataType="search:SearchEmptyState">
+        <!-- The glow stays inside the panel: anything sticking out would be cut off with a hard edge. -->
         <Panel Width="640">
-          <Ellipse Width="560" Height="360" Margin="0,-60,0,0" Fill="{StaticResource EmptyStateGlow}" IsHitTestVisible="False" />
-          <StackPanel Spacing="20">
+          <Ellipse Width="640" Height="360" VerticalAlignment="Top" Fill="{StaticResource EmptyStateGlow}" IsHitTestVisible="False" />
+          <StackPanel Spacing="20" Margin="0,40,0,0">
             <!-- Nothing typed yet: three covers under a lens. -->
             <Canvas Width="320" Height="150" IsVisible="{Binding !IsNoHits}">
               <Border Canvas.Left="86" Canvas.Top="30" Width="76" Height="100" CornerRadius="10" Background="{StaticResource EmptyStateCard}"

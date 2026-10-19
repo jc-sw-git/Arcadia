@@ -383,7 +383,7 @@ Verlauf:
 - [ ] **T11-1** A 1 s halten auf einer Kachel und ⧉ → „Details anzeigen“ öffnen die Detailseite des
       Spiels: Pfadleiste „B Bibliothek / <Launcher> / <Titel>“, Position („3 von 31“) und Sortierung
       oben, das Spiel in der Mitte, links und rechts angeschnitten das vorherige und das nächste,
-      zum Rand hin abgedunkelt. Footer: D-Pad Aktion wählen, A Auswählen, Y Ansicht, LB/RB Launcher,
+      abgedunkelt und zum Rand hin weich ausgeblendet, ohne sichtbare Kante. Footer: D-Pad Aktion wählen, A Auswählen, Y Ansicht, LB/RB Launcher,
       LT/RT Spiel, B Zurück. · E2E: ja
 - [ ] **T11-2** LT/RT schieben die Seiten animiert nach rechts bzw. links und zeigen das vorherige bzw.
       nächste Spiel in der Sortierung der Bibliothek, über Seitengrenzen hinweg; vor dem ersten steht
@@ -433,7 +433,7 @@ Verlauf:
 - [ ] **T12-1** X öffnet die Suche mit Bildschirmtastatur: Kopf „ARCADIA Suche“ mit „Schließen“, Suchfeld
       mit Platzhalter „Spiele suchen …“ (ohne Kürzel-Hinweis), Zeile „Suche in allen Launchern“, in einer Zeile
       die Chips „Alle Launcher“ und je Launcher mit Kürzel sowie rechts „L3 Sortiert nach Relevanz“, mittig der
-      leere Zustand „Tippe einen Suchbegriff ein“ mit Grafik, die Tastatur (Layout DE, Fokus auf „q“) und unten
+      leere Zustand „Tippe einen Suchbegriff ein“ mit Grafik in einem runden Schein ohne Kante, die Tastatur (Layout DE, Fokus auf „q“) und unten
       die Legende. F oder die Lupe öffnen sie ohne Tastatur und Legende. · E2E: ja
 - [ ] **T12-2** Nur mit dem Controller: D-Pad und linker Stick bewegen den Fokus über die Tasten (hoch/runter
       zur nächstgelegenen Taste, an den Rändern bleibt er stehen), A tippt das Zeichen; Y tippt ein
@@ -468,7 +468,7 @@ Verlauf:
 - [ ] **T12-11** Wird die Bibliothek bei offener Suche neu eingelesen (z. B. Spiel im Launcher installiert),
       bleiben Text und Fokus, die Treffer folgen. · E2E: nein
 - [ ] **T12-12** Bildschirmtastatur ein- und ausfahren: Sie rollt sichtbar (kurz) von unten herein und wieder
-      hinaus, die Lasche mittig an ihrer Oberkante fährt mit. Ein Klick auf die Lasche fährt sie aus bzw. ein;
+      hinaus, die Lasche mittig an ihrer Oberkante fährt mit (X bzw. B, Tastatursymbol und Pfeil auf einer Linie). Ein Klick auf die Lasche fährt sie aus bzw. ein;
       jede Taste der echten Tastatur fährt sie ein und blendet die Legende aus; B fährt sie ein, X wieder aus.
       Eingefahren stehen die Treffer im Raster, D-Pad bewegt den Fokus durch sie, A startet, A gehalten öffnet
       die Details; die Legende passt sich an. · E2E: ja
@@ -482,8 +482,8 @@ Verlauf:
       Launcher als Mehrfachauswahl, Sortierung nach Relevanz (Standard), Name, Installationsdatum und
       Zuletzt gespielt, je auf- und absteigend. Jede Wahl wirkt sofort, der Kopf zeigt „Sortiert nach …“;
       B oder L3 schließt. Eine neue Suche beginnt wieder mit Relevanz. · E2E: ja
-- [ ] **T12-16** Mehr Treffer als sichtbar, Tastatur ausgefahren: links und rechts stehen die Nachbarn verblasst
-      angeschnitten, daneben Schaltflächen „LB“/„RB“ (mit der Maus nur Pfeile), über den Treffern „RS Treffer
+- [ ] **T12-16** Mehr Treffer als sichtbar, Tastatur ausgefahren: links und rechts stehen die Nachbarn angeschnitten
+      und laufen weich aus (ohne harte Kante), daneben Schaltflächen „LB“/„RB“ (mit der Maus nur Pfeile), über den Treffern „RS Treffer
       wählen“, der Kopf zeigt „8–14 von 105“. Der rechte Stick bewegt den Fokus einzeln (die Reihe gleitet mit),
       LB/RB gleiten eine ganze Reihe weiter und vom Ende wieder zum Anfang (und umgekehrt). Eingefahren scrollt
       das Raster senkrecht mit verblassten Reihen oben und unten, LB/RB blättern um zwei Reihen; Mausrad und
@@ -502,6 +502,8 @@ Verlauf:
 | T12-1, T12-2, T12-5 bis T12-10, T12-12 bis T12-16 | 2026-10-18 | Claude | Branch `feat/search-across-launchers-12` nach dem ersten Umbau, Linux, Xvfb 1920×1080 `--demo`; Gamepad nur nachgestellt (lokale Strg+Alt-Tasten, die `HandleGamepad` aufrufen, nicht eingecheckt), echte Tastatur und Maus per xdotool | ✅ X mit Tastatur und Legende, Lupe ohne; X 1,3 s gehalten löscht „6epp“ ganz; LT tippen: Großbuchstaben bleiben; RT Sonderzeichen; L3: GOG aus, „Name Z–A“, 82 Treffer; RB 8–14, LB zweimal 99–105; ≡ 1,4 s: Detailseite „1 von 82“, B zurück; Pfeil ↓: zwei Reihen ohne Tastatur, RB danach blendet sie nur ein; Enter startet (Demo-Hinweis), Enter 1,4 s: Detailseite, Umschalt+F10 Menü; Klick auf den Xbox-Chip: „holl“ 2 Treffer, Text unverändert; LT gehalten + A: „Q“, danach „q“; R3-Menü, B, B | Echter Controller (Stick, LT gehalten, L3, ≡) am PC des Owners |
 | T12-6, T12-9, T12-12, T12-14, T12-16 | 2026-10-18 | Juri | PC des Owners, PR #104 (zweiter Rough-Test) | ❌ Layout-Menü von Treffern überdeckt, Blättern in zwei Reihen seltsam, Sortierung nicht in der Launcher-Zeile, leere Zustände „schweben“, unnötige Sonderzeichen, RT nur Umschalter, ohne Tastatur nur per Maus bedienbar, „™“ findet Batman/Hitman | Zweiter Umbau (T12-17 neu) |
 | T12-1, T12-3, T12-6, T12-9, T12-12, T12-14, T12-16, T12-17 | 2026-10-18 | Claude | Branch nach dem zweiten Umbau, Linux, Xvfb 1920×1080 `--demo`; Gamepad nachgestellt wie oben (nicht eingecheckt), bis zu 12 zusätzliche Demo-Launcher lokal nachgestellt, Tastatur und Maus per xdotool, Animation per ffmpeg mit 30 Bildern/s aufgenommen | ✅ Layout-Menü über den Treffern; Tastatur rollt in etwa 5 Bildern herein; RB gleitet zu 9–15; B fährt ein, Raster mit verblassten Reihen, RB 15–28; B, B zurück in die Bibliothek; Klick auf die Lasche fährt aus, ohne Legende; „xyzq“ zeigt „Keine Treffer“; Chips mit 6 bis 18 Launchern wie beschrieben; `dotnet test` deckt ™/®/© ab | Echter Controller am PC des Owners |
+| T11-1, T12-1, T12-3, T12-12, T12-16 | 2026-10-19 | Juri | PC des Owners, PR #104 (dritter Rough-Test) | ❌ Ausblendung der Trefferzeile und der Nachbarn auf der Detailseite beginnt mit harter Kante, X/B und Tastatursymbol in der Lasche nicht auf einer Linie, Schein der leeren Zustände oben hart abgeschnitten | Verläufe, Lasche und Schein überarbeitet |
+| T11-1, T12-1, T12-12, T12-16 | 2026-10-19 | Claude | Branch nach dem dritten Umbau, Linux, Xvfb 1920×1080 `--demo`, Fenster 1600×900; Gamepad nachgestellt wie oben (nicht eingecheckt) | ✅ Trefferzeile und Detailseite blenden ohne Kante aus, Nachbarn der Detailseite gleichmäßig abgedunkelt (auch nach RT); Schein hinter der Grafik ohne Kante (mit angehobenem Kontrast geprüft); X/B, Tastatursymbol und Pfeil auf einer Linie | Sichtprüfung am PC des Owners |
 
 ## #102 Ausfaden am Rand des Listings
 

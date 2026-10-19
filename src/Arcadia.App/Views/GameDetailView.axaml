@@ -46,7 +46,7 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:GameDetailPageViewModel">
             <!-- 832 = the body row of MainWindow's 1080 px layout. -->
-            <Panel Width="1152" Height="832">
+            <Panel Classes="detailPage" Classes.side="{Binding IsSide}" Width="1152" Height="832">
               <Border Margin="0,24,0,20" Background="{StaticResource DetailSurface}" CornerRadius="20" BoxShadow="{StaticResource DetailShadow}">
                 <Border CornerRadius="20" ClipToBounds="True">
                   <DockPanel>
@@ -159,7 +159,7 @@
       </ItemsControl>
     </Panel>
 
-    <!-- The neighbours fade towards the window's edges. -->
+    <!-- The neighbours, dimmed (Panel.detailPage.side), fade out towards the window's edges. -->
     <Border Width="384" HorizontalAlignment="Left" IsHitTestVisible="False" IsVisible="{Binding HasNeighbours}" Background="{StaticResource CarouselFadeLeft}" />
     <Border Width="384" HorizontalAlignment="Right" IsHitTestVisible="False" IsVisible="{Binding HasNeighbours}" Background="{StaticResource CarouselFadeRight}" />
     <Button Classes="plain glyphButton carouselNav" Content="LT" HorizontalAlignment="Left" Margin="80,0,0,0" IsVisible="{Binding HasNeighbours}"

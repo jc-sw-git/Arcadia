@@ -623,10 +623,10 @@
                   <Border Classes="glyph small round" IsVisible="{Binding !IsKeyboardOut}"><TextBlock Text="X" /></Border>
                   <Border Classes="glyph small round" IsVisible="{Binding IsKeyboardOut}"><TextBlock Text="B" /></Border>
                 </Panel>
-                <Path Classes="keyboardIcon" Data="M3 6h18v12H3z M7 10h1 M11 10h1 M15 10h1 M8 14h8" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" />
+                <Path Classes="keyboardIcon" Data="M3 6h18v12H3z M7 10h1 M11 10h1 M15 10h1 M8 14h8" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" Width="22" Stretch="Uniform" VerticalAlignment="Center" />
                 <!-- Up while the keyboard is in, down while it's out. -->
-                <Path IsVisible="{Binding !IsKeyboardOut}" Data="M6 15l6-6 6 6" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
-                <Path IsVisible="{Binding IsKeyboardOut}" Data="M6 9l6 6 6-6" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                <Path IsVisible="{Binding !IsKeyboardOut}" Data="M6 15l6-6 6 6" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Stretch="Uniform" VerticalAlignment="Center" />
+                <Path IsVisible="{Binding IsKeyboardOut}" Data="M6 9l6 6 6-6" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Stretch="Uniform" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
             <ctl:RevealPanel Classes="keyboardDrawer" Classes.out="{Binding IsKeyboardOut}">

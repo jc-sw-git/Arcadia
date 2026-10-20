@@ -586,8 +586,9 @@ Verlauf:
       RT oder A klickt links, gehalten zieht es (Datei im Explorer verschieben), LT oder X klickt rechts, der
       rechte Stick scrollt senkrecht und waagrecht, Steuerkreuz sind Pfeiltasten (gehalten wiederholt), B ist
       Esc, RB Tab, LB Umschalt+Tab, Menu Enter. Arcadia reagiert dabei auf nichts davon. · E2E: nein
-- [ ] **T64-4** L3 antippen: Zeiger ein Drittel so schnell, nochmal antippen: wieder normal. L3 halten und den
-      Stick bewegen: langsam, solange gehalten, danach normal. · E2E: nein
+- [ ] **T64-4** L3 antippen: Zeiger ein Drittel so schnell, nochmal antippen: wieder normal. Kurz antippen, während
+      der Stick bewegt wird, schaltet genauso um. L3 halten (ab 0,5 s) und den Stick bewegen: langsam, solange
+      gehalten, danach normal. · E2E: nein
 - [ ] **T64-5** View gehalten holt Arcadia aus dem Mausmodus nach vorne (auch aus dem minimierten Zustand, siehe T64-13). Mit „Beenden, wenn
       Arcadia nach vorne kommt“ (Standard) endet der Mausmodus dabei mit „Mausmodus aus“; in Arcadia von Hand
       eingeschaltet bleibt er an und bedient Arcadia wie eine Maus. Option aus: er bleibt auch beim Wechsel an. · E2E: nein
@@ -615,7 +616,7 @@ Verlauf:
 - [ ] **T64-12** Hauptschalter „Mausmodus“ aus: Back + Start und „Automatisch einschalten“ tun nichts, alle Zeilen der
       Box sind abgeblendet und behalten ihre Werte; war der Mausmodus an, endet er sofort mit „Mausmodus aus“.
       Wieder an: alles wirkt wie vorher eingestellt. · E2E: ja
-- [ ] **T64-13** „Mit View zurück zu Arcadia“ (Standard: an, 1 Sekunde), Arcadia im Hintergrund (Explorer, Launcher,
+- [ ] **T64-13** „Mit ⧉ zurück zu Arcadia“ (Standard: an, 1 Sekunde), Arcadia im Hintergrund (Explorer, Launcher,
       ein Spiel; mit und ohne Mausmodus): View gehalten zeigt ab 0,2 s oben „Zurück zu Arcadia“, dessen Rahmen sich
       über die Haltedauer füllt, dann kommt Arcadia nach vorne, ohne dass sich das Menü öffnet. Früher loslassen:
       der Rahmen läuft zurück. „Sofort“: kurzes Drücken genügt, ohne Fenster. Back + Start löst es nie aus. Aus:
@@ -626,6 +627,8 @@ Verlauf:
       In einem Spiel aus der Bibliothek ohne Mausmodus wirkt Steams Belegung für das Spiel wie gewohnt. Option aus:
       Steams Desktop-Belegung wirkt wieder. `arcadia.log` nennt beim Ausschalten, wie viele Eingaben verworfen
       wurden. · E2E: nein
+- [ ] **T64-15** Die Boxen „Mausmodus“ und „Zurück zu Arcadia“ und „So funktioniert's“ nennen Tasten über ihr
+      Symbol (⧉, ≡), nirgends „Back“, „Start“, „View“ oder „Menu“. · E2E: ja
 
 Verlauf:
 
@@ -638,6 +641,8 @@ Verlauf:
 | T64-1 | 2026-10-20 | Juri | PC des Owners, PR #120, Steam läuft | ❌ Back + Start gehalten öffnet Steams Alt+Tab-Fenster (Steams Desktop-Belegung) | Hauptschalter, „Zurück zu Arcadia“ mit Haltedauer, Steams Desktop-Belegung ignorieren (T64-12 bis T64-14 neu) |
 | T64-12, T64-13 (nur Einstellungen und Fenster) | 2026-10-20 | Claude | Branch nach den neuen Einstellungen, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool; Fenster lokal per Testcode ausgelöst und mit 5 Bildern/s aufgenommen (nicht eingecheckt) | ✅ Hauptschalter aus blendet alle Zeilen der Box ab; Haltedauer von „Zurück zu Arcadia“ mit links bis „Sofort“; „Zurück zu Arcadia“ oben in der Mitte, der Rahmen füllt sich in 3 s von oben Mitte über die runden Ecken. View, Hooks und Steam unter Windows nicht geprüft, Logik per `ReturnWithViewTests`, `InjectedInputGateTests`, `MouseModeTests` | T64-13, T64-14 am PC des Owners |
 | T64-1 bis T64-10 (Logik) | 2026-10-20 | Claude | `dotnet test` (`MouseModeTests`, `SoloButtonsTests`, `MouseModeAutomationTests`, `StickCurveTests`, `GameFoldersTests`, `SettingsServiceTests`) | ✅ Umschalten, Abbruch, Belegung, Wiederholung, L3, mehrere Controller, Automatik, Spielordner, Einstellungen | Echte Eingaben unter Windows nicht geprüft |
+| T64-4 | 2026-10-20 | Juri | PC des Owners, PR #120 | ❌ L3 kurz geklickt, während der Stick bewegt wird, wirkt wie gehalten: der Zeiger wird beim Loslassen wieder schnell | Bewegen macht einen Druck nicht mehr zum Halten, nur noch die Dauer (0,5 s); Test `L3_clicked_briefly_while_pointing_toggles_the_slow_pointer` (vorher rot) |
+| T64-15 | 2026-10-20 | Claude | Branch nach der Symbol-Umbenennung, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool | ✅ Beide Boxen und „So funktioniert's“ zeigen ⧉ und ≡, kein Tastenname mehr; die Symbole sind im Fließtext klein, aber lesbar | Schrift unter Windows nicht geprüft |
 
 ## Grundgerüst (ohne Issue)
 

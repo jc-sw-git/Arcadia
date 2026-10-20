@@ -108,9 +108,9 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
         new("Steuerkreuz", "Pfeiltasten"),
         new("B", "Esc"),
         new("LB / RB", "Umschalt+Tab / Tab"),
-        new("Menu ☰", "Enter"),
-        new("View ⧉ halten", "Holt Arcadia nach vorne (Einstellung „Zurück zu Arcadia“)"),
-        new("Back + Start halten", "Zurück zum normalen Controller"),
+        new("≡", "Enter"),
+        new("⧉ halten", "Holt Arcadia nach vorne (Einstellung „Zurück zu Arcadia“)"),
+        new("⧉ + ≡ halten", "Zurück zum normalen Controller"),
     ];
 
     /// <summary>Where the mouse mode can't help, so nobody wonders why.</summary>

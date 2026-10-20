@@ -146,6 +146,8 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   `/steam-epic term` prefix, keyword per launcher), R3 = keyboard layout switch, View/⧉ or
   right click = context menu, Menu/☰ = settings (swapped by the owner, 2026-10-17). No "all launchers" tab. No dedicated favourite button.
 - Dependent options sit in the same box as their main switch.
+- UI texts name a controller button by the symbol on it, not by its name: ⧉ and ≡, not View/Back and Menu/Start
+  (Xbox symbols for now; later those of the controller in use, #72) (owner, 2026-10-20).
 - Dialogs (Ansicht, settings, prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs (e.g. the
   mouse mode's help) has no "Schließen" button besides (owner, 2026-10-20).

@@ -274,6 +274,21 @@ public sealed class MouseModeTests
     }
 
     [Fact]
+    public void L3_clicked_briefly_while_pointing_toggles_the_slow_pointer()
+    {
+        SwitchOn();
+        MoveRightFor(TimeSpan.FromMilliseconds(200));
+        for (var i = 0; i < 20; i++)
+        {
+            Update(Pad(0, PadButtons.LeftStickClick, left: new StickPosition(1, 0)));
+        }
+
+        _output.PointerX = 0;
+        MoveRightFor(TimeSpan.FromSeconds(1));
+        Assert.InRange(_output.PointerX, 495, 500);
+    }
+
+    [Fact]
     public void L3_held_while_pointing_is_slow_only_while_held()
     {
         SwitchOn();

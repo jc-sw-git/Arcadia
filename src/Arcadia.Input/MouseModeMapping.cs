@@ -174,10 +174,8 @@ internal sealed class MouseModeMapping
         _pointerRestY -= dy;
         if (dx != 0 || dy != 0)
         {
+            // Moving doesn't make an L3 press a hold: a short click toggles while pointing too (owner, 2026-10-20).
             _output.MovePointer(dx, dy);
-
-            // Moving while L3 is held: it was held for slow pointing, so the release ends it.
-            _slow.Use();
         }
     }
 

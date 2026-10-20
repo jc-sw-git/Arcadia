@@ -1209,8 +1209,8 @@
                   <Button Classes="plain settingRow" Classes.focused="{Binding ComboItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleComboCommand}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
-                        <TextBlock Text="Mit Back + Start umschalten" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Back + Start gedrückt halten macht den Controller zur Maus und wieder zurück – auch wenn Arcadia im Hintergrund ist. Ausschalten, wenn ein Spiel die Kombination selbst braucht."
+                        <TextBlock Text="Mit ⧉ + ≡ umschalten" FontSize="18" FontWeight="Bold" />
+                        <TextBlock Text="⧉ + ≡ gedrückt halten macht den Controller zur Maus und wieder zurück – auch wenn Arcadia im Hintergrund ist. Ausschalten, wenn ein Spiel die Kombination selbst braucht."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding ComboEnabled}" VerticalAlignment="Center">
@@ -1222,7 +1222,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Haltedauer" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="So lange müssen Back und Start gehalten werden." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock Text="So lange müssen ⧉ und ≡ gehalten werden." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button Classes="plain stepperArrow" Command="{Binding HoldItem.DecreaseCommand}" IsEnabled="{Binding HoldItem.CanDecrease}" Content="‹" />
@@ -1248,7 +1248,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
                         <TextBlock Text="Beenden, wenn Arcadia nach vorne kommt" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Holt View oder ein Klick Arcadia nach vorne, wird der Controller wieder zum Controller. In Arcadia von Hand eingeschaltet, bleibt der Mausmodus an."
+                        <TextBlock Text="Holt ⧉ oder ein Klick Arcadia nach vorne, wird der Controller wieder zum Controller. In Arcadia von Hand eingeschaltet, bleibt der Mausmodus an."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding EndWhenArcadiaInFront}" VerticalAlignment="Center">
@@ -1260,7 +1260,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
                         <TextBlock Text="Automatisch einschalten, wenn Arcadia den Fokus verliert" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Sofort und ohne Back + Start – außer ein Spiel aus der Bibliothek kommt nach vorne. Kommt danach ein Spiel nach vorne, endet der Mausmodus wieder."
+                        <TextBlock Text="Sofort und ohne ⧉ + ≡ – außer ein Spiel aus der Bibliothek kommt nach vorne. Kommt danach ein Spiel nach vorne, endet der Mausmodus wieder."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding StartWhenArcadiaLosesFocus}" VerticalAlignment="Center">
@@ -1272,7 +1272,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
                         <TextBlock Text="Steams Desktop-Belegung ignorieren" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Außerhalb von Spielen macht Steam aus dem Controller selbst Maus und Tasten, z. B. aus Back + Start ein Alt+Tab. Arcadia verwirft diese Eingaben, solange kein Spiel aus der Bibliothek vorne ist, und im Mausmodus immer."
+                        <TextBlock Text="Außerhalb von Spielen macht Steam aus dem Controller selbst Maus und Tasten, z. B. aus ⧉ + ≡ ein Alt+Tab. Arcadia verwirft diese Eingaben, solange kein Spiel aus der Bibliothek vorne ist, und im Mausmodus immer."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding IgnoreSteamDesktopLayout}" VerticalAlignment="Center">
@@ -1295,8 +1295,8 @@
                   <Button Classes="plain settingRow" Classes.focused="{Binding EnabledItem.IsFocused}" Command="{Binding ToggleEnabledCommand}">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
-                        <TextBlock Text="Mit View zurück zu Arcadia" FontSize="20" FontWeight="Bold" />
-                        <TextBlock Text="View gedrückt halten holt Arcadia nach vorne, wenn es im Hintergrund ist – aus einem Spiel, einem Launcher oder dem Mausmodus. In Arcadia öffnet View weiter das Menü."
+                        <TextBlock Text="Mit ⧉ zurück zu Arcadia" FontSize="20" FontWeight="Bold" />
+                        <TextBlock Text="⧉ gedrückt halten holt Arcadia nach vorne, wenn es im Hintergrund ist – aus einem Spiel, einem Launcher oder dem Mausmodus. In Arcadia öffnet ⧉ weiter das Menü."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding Enabled}" VerticalAlignment="Center">
@@ -1308,7 +1308,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Haltedauer" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="So lange muss View gehalten werden. „Sofort“ wechselt schon beim kurzen Drücken." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock Text="So lange muss ⧉ gehalten werden. „Sofort“ wechselt schon beim kurzen Drücken." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button Classes="plain stepperArrow" Command="{Binding HoldItem.DecreaseCommand}" IsEnabled="{Binding HoldItem.CanDecrease}" Content="‹" />
@@ -1516,7 +1516,7 @@
             <Panel>
             <StackPanel Spacing="24">
               <TextBlock Text="Mausmodus – so funktioniert's" FontSize="30" FontWeight="ExtraBold" />
-              <TextBlock Classes="promptBody" Text="Back + Start gedrückt halten, bis der Bildschirmrand voll ist: Der Controller steuert jetzt die Maus, auch in Fenstern außerhalb von Arcadia. Genauso geht es zurück. Jeder verbundene Controller kann umschalten und den Zeiger bewegen." />
+              <TextBlock Classes="promptBody" Text="⧉ + ≡ gedrückt halten, bis der Bildschirmrand voll ist: Der Controller steuert jetzt die Maus, auch in Fenstern außerhalb von Arcadia. Genauso geht es zurück. Jeder verbundene Controller kann umschalten und den Zeiger bewegen." />
               <ItemsControl ItemsSource="{x:Static vm:MouseModeSettingsViewModel.HelpRows}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>

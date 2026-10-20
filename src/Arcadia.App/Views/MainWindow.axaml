@@ -1502,7 +1502,7 @@
               </Border>
             </StackPanel>
             <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
-                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowsCloseButtons}" Command="{Binding ClosePromptCommand}">
+                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding ClosePromptCommand}">
               <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
             </Button>
             </Panel>
@@ -1555,7 +1555,7 @@
               </Border>
             </StackPanel>
             <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
-                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowsCloseButtons}" Command="{Binding ClosePromptCommand}">
+                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding ClosePromptCommand}">
               <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
             </Button>
             </Panel>

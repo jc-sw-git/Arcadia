@@ -17,7 +17,8 @@ public sealed record SteamPlayStats(DateTimeOffset? LastPlayedAt, TimeSpan? Play
 public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILauncherScanner
 {
     // EAppState bits in the manifest's StateFlags (verified on the owner's PC, 2026-10-12:
-    // 4 = installed, 6 = installed with a pending update, 68/70 = the same while the app runs).
+    // 4 = installed, 6 = installed with a pending update). Bit 64 (68/70) was only seen on
+    // manifests nobody owns any more (see IsOwnedByNobody); only bit 2 counts as an update.
     private const int UpdateRequired = 2;
     private const int FullyInstalled = 4;
     private const int UpdateRunning = 256;
@@ -111,7 +112,8 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
 
     /// <summary>
     /// Turns one <c>appmanifest_*.acf</c> into a <see cref="Game"/>. Returns null for tools, apps
-    /// that are still being installed for the first time and files that are no valid manifests.
+    /// no account owns any more, apps that are still being installed for the first time and files
+    /// that are no valid manifests.
     /// </summary>
     /// <param name="library">The library folder the manifest belongs to (the folder holding <c>steamapps</c>).</param>
     /// <param name="installDateOf">Looks up the install date for an install directory; Steam does not store one.</param>
@@ -121,6 +123,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             || !uint.TryParse(app.GetString("appid"), NumberStyles.None, CultureInfo.InvariantCulture, out var appId)
             || app.GetString("name") is not { Length: > 0 } name
             || IsTool(appId, name)
+            || IsOwnedByNobody(app.GetString("LastOwner"))
             || InstallDirectoryOf(library, app.GetString("installdir")) is not { } installDirectory)
         {
             return null;
@@ -176,6 +179,12 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
         ToolAppIds.Contains(appId)
         || ToolNamePrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
         || name.EndsWith("Soundtrack", StringComparison.OrdinalIgnoreCase);
+
+    // Steam keeps the manifest and files of an app whose license is gone, writes LastOwner 0 and
+    // hides it from the library (owner's PC, 2026-10-20: the Half-Life 2 episodes, merged into
+    // Half-Life 2, and Plan B: Terraform, which the owner never bought). A missing LastOwner
+    // (older Steam) proves nothing, so only an explicit 0 drops the app.
+    private static bool IsOwnedByNobody(string? lastOwner) => lastOwner == "0";
 
     public static string RunUri(uint appId) => $"steam://rungameid/{appId.ToString(CultureInfo.InvariantCulture)}";
 

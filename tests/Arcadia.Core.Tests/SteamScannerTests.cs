@@ -15,7 +15,7 @@ public sealed class SteamScannerTests : IDisposable
         }
     }
 
-    private static string Manifest(string appId, string name, string installDir = "Game", int stateFlags = 4, string buildId = "22479045", string lastPlayed = "1775679163") => $$"""
+    private static string Manifest(string appId, string name, string installDir = "Game", int stateFlags = 4, string buildId = "22479045", string lastPlayed = "1775679163", string lastOwner = "76561197967531932") => $$"""
         "AppState"
         {
         	"appid"		"{{appId}}"
@@ -27,6 +27,7 @@ public sealed class SteamScannerTests : IDisposable
         	"LastPlayed"		"{{lastPlayed}}"
         	"SizeOnDisk"		"8207380004"
         	"buildid"		"{{buildId}}"
+        	"LastOwner"		"{{lastOwner}}"
         	"UserConfig"
         	{
         		"language"		"english"
@@ -74,6 +75,23 @@ public sealed class SteamScannerTests : IDisposable
     {
         Assert.NotNull(SteamScanner.ParseManifest(Manifest("960090", "Bloons TD 6", stateFlags: 1026), _root));
         Assert.Null(SteamScanner.ParseManifest(Manifest("960090", "Bloons TD 6", stateFlags: 1026, buildId: "0"), _root));
+    }
+
+    [Theory]
+    [InlineData("380", "Half-Life 2: Episode One", 68)]
+    [InlineData("1894430", "Plan B: Terraform", 70)]
+    public void Leaves_out_apps_nobody_owns(string appId, string name, int stateFlags)
+    {
+        Assert.Null(SteamScanner.ParseManifest(Manifest(appId, name, stateFlags: stateFlags, lastOwner: "0"), _root));
+    }
+
+    [Fact]
+    public void Keeps_an_app_whose_manifest_names_no_owner()
+    {
+        var manifest = Manifest("220", "Half-Life 2").Replace("\"LastOwner\"\t\t\"76561197967531932\"", "", StringComparison.Ordinal);
+
+        Assert.DoesNotContain("LastOwner", manifest, StringComparison.Ordinal);
+        Assert.NotNull(SteamScanner.ParseManifest(manifest, _root));
     }
 
     [Fact]

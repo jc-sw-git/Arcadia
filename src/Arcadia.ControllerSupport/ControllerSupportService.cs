@@ -146,6 +146,9 @@ public sealed class ControllerSupportService(
     private bool _checkedThisSession;
     private bool _initialized;
 
+    // Set by the state: Running saw a controller, NoController or Off saw none; the other states keep it.
+    private volatile bool _controllerSeen;
+
     public event EventHandler? Changed;
 
     public AppSettings Settings => sharedSettings.Current;
@@ -163,8 +166,10 @@ public sealed class ControllerSupportService(
     /// <summary>
     /// A switched-on Steam Controller is there: SISR emulates it. Windows lists the wireless dongle
     /// as a Valve device even while the controller is off, so only SISR can tell (owner's PC, 2026-10-16).
+    /// While SISR doesn't run (paused for a Steam Input game, starting again), the last thing SISR saw
+    /// counts, so the mode choice doesn't vanish from the detail page during the game (owner, 2026-10-20).
     /// </summary>
-    public bool SteamControllerConnected => Enabled && State == SisrState.Running;
+    public bool SteamControllerConnected => Enabled && _controllerSeen;
 
     /// <summary>"SISR installieren" closes Steam first (after asking) and starts it again afterwards.</summary>
     public bool InstallStopsSteam => _platform.IsSteamRunning;
@@ -1244,6 +1249,12 @@ public sealed class ControllerSupportService(
             }
 
             _state = next;
+            _controllerSeen = next switch
+            {
+                SisrState.Running => true,
+                SisrState.NoController or SisrState.Off => false,
+                _ => _controllerSeen,
+            };
         }
 
         Log?.Invoke(AllowedTransitions[previous].Contains(next)

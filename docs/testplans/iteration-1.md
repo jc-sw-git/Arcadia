@@ -626,9 +626,16 @@ Verlauf:
 - [ ] **T64-14** Steam läuft (Steam Controller oder Xbox-Pad mit Steam Input), „Steams Desktop-Belegung ignorieren“
       an: Back + Start im Explorer öffnet kein Alt+Tab-Fenster mehr, im Mausmodus kommen nur Arcadias Zeiger und
       Tasten an, in Arcadia bewegt das Steuerkreuz den Fokus nur einmal. Echte Maus und Tastatur gehen dabei normal.
-      In einem Spiel aus der Bibliothek ohne Mausmodus wirkt Steams Belegung für das Spiel wie gewohnt. Option aus:
+      In einem Spiel aus der Bibliothek ohne Mausmodus wirkt Steams Belegung für das Spiel wie gewohnt, nur ⧉ + ≡
+      gehalten macht dort kein Alt+Tab mehr (Steam-Spiel mit Xbox-Controller, z. B. Castlevania). Option aus:
       Steams Desktop-Belegung wirkt wieder. `arcadia.log` nennt beim Ausschalten, wie viele Eingaben verworfen
       wurden. · E2E: nein
+- [ ] **T64-16** Ein Spiel läuft, mehrmals zwischen Spiel und Arcadia wechseln (Alt+Tab, ⧉ halten, Klick) und im
+      Spiel von Hand zwischen Mausmodus und normalem Modus umschalten: Arcadia reagiert nie auf Eingaben, die
+      dem Spiel gelten, und ⧉ gehalten holt Arcadia jedes Mal nach vorne. · E2E: nein
+- [ ] **T64-17** Steam Controller Support an, Steam Controller verbunden, ein Steam-Spiel auf „Steam Input“ starten:
+      SISR pausiert, die Zeile „Steam Controller“ in der Vorschau und auf der Detailseite bleibt sichtbar und
+      umschaltbar. „So funktioniert's“ nennt, dass ⧉ + ≡ und ⧉ halten mit dem Steam Controller dort nicht wirken. · E2E: nein
 - [ ] **T64-15** Die Boxen „Mausmodus“ und „Zurück zu Arcadia“ und „So funktioniert's“ nennen Tasten über ihr
       Symbol (⧉, ≡), nirgends „Back“, „Start“, „View“ oder „Menu“. Die Symbole stehen im Text in einer runden
       Umrandung wie in der Legende; in der Tabelle von „So funktioniert's“ auch A, B, X, LB, RB, LT, RT und L3. · E2E: ja
@@ -650,6 +657,8 @@ Verlauf:
 | T64-7, T64-12 (nur Einstellungen) | 2026-10-20 | Claude | Branch nach der Dreier-Wahl, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool | ✅ „Mausmodus“ wechselt mit links/rechts zwischen „Aus“, „Von Hand“ und „Automatisch“, der Text darunter wechselt mit; „Aus“ blendet die Zeilen darunter ab, „Automatisch“ nur „Beenden, wenn Arcadia nach vorne kommt“. Fokuswechsel und ⧉ + ≡ unter Windows nicht geprüft, Logik per `MouseModeAutomationTests` | T64-6 am PC des Owners |
 | T64-1, T64-15 | 2026-10-20 | Juri | PC des Owners, PR #120 | ❌ Rand und „Mausmodus an/aus“ nur beim ersten Umschalten richtig, danach kein Rand beim Halten, der alte Text flackert kurz auf; Symbole im Text ohne Umrandung schlecht als Taste erkennbar | Das Blinken hielt die Deckkraft 0 fest (`FillMode="Forward"`), das Overlay versteckt sich jetzt erst nach einem leeren Bild; Symbole als Badges im Text |
 | T64-1 (nur Overlay), T64-15 | 2026-10-20 | Claude | Branch nach dem Fix, Linux, Xvfb 1920×1080 `--demo`; Overlay lokal per Testcode dreimal nacheinander ausgelöst und mit 5 Bildern/s aufgenommen (nicht eingecheckt) | ✅ Vor dem Fix blieb der Rand ab dem zweiten Halten unsichtbar (Deckkraft 0 im Log), danach füllt er sich jedes Mal; Badges in beiden Boxen und in „So funktioniert's“ lesbar. Das Aufflackern des alten Texts ist unter Xvfb nicht sichtbar, nur unter Windows prüfbar | T64-1 am PC des Owners |
+| T64-14, T64-16, T64-17 | 2026-10-20 | Juri | PC des Owners, PR #120, Steam-Spiel (Castlevania), Xbox-Controller und Steam Controller | ❌ Im Steam-Spiel macht Steam aus ⧉ + ≡ Alt+Tab; Arcadia reagiert manchmal auf Eingaben im Spiel und ⧉ holt es nicht zurück; Steam Controller auf „Steam Input“: ⧉ + ≡ und ⧉ halten wirken nicht; die Steam-Controller-Zeile verschwindet, solange SISR pausiert | Filter wirkt neben Spielen bei ⧉ + ≡; „vorne“ über das Vordergrundfenster; Steam Input als Grenze in „So funktioniert's“ (Lösung erst mit #112/#72); Zeile bleibt (Test `The_controller_still_counts_as_connected_while_SISR_is_paused_for_a_game`, vorher rot) |
+| T64-14, T64-16 (nur Logik) | 2026-10-20 | Claude | `dotnet test` (`InjectedInputGateTests`, `ControllerSupportServiceTests`) | ✅ ⧉ + ≡ zählt mit Nachlauf; Steam-Controller-Zeile bleibt bei Pause. Hooks, Steam und Vordergrund unter Windows nicht geprüft | T64-14, T64-16, T64-17 am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

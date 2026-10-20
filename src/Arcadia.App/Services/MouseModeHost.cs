@@ -44,9 +44,9 @@ public sealed class MouseModeHost : IDisposable
     private readonly DispatcherTimer _focusLossSettle;
     private readonly DispatcherTimer _desktopFilterCheck;
 
-    // Arcadia's window is active; read on the poll thread.
+    // Arcadia's window is active by its own events; decides "in front" only where Windows can't tell.
     private volatile bool _arcadiaActive;
-    private bool _desktopFilterOn;
+    private DesktopFilterScope _desktopFilterScope;
     private int? _lastForegroundId;
     private GameFolders? _lastForegroundFolders;
     private bool _lastForegroundIsGame;
@@ -72,7 +72,7 @@ public sealed class MouseModeHost : IDisposable
             _mode,
             () => _settings.Current.MouseMode is { Activation: MouseModeActivation.Automatic } or { Activation: MouseModeActivation.Manual, EndWhenArcadiaInFront: true },
             () => _settings.Current.MouseMode.Activation == MouseModeActivation.Automatic);
-        _returnWithView = new ReturnWithView(CurrentReturnOptions, () => _arcadiaActive, time);
+        _returnWithView = new ReturnWithView(CurrentReturnOptions, () => IsArcadiaActive, time);
         _activity = new ControllerActivity(time);
         _desktopFilter = DesktopInputFilter.CreateDefault(_activity);
         _arcadiaActive = window.IsActive;
@@ -96,8 +96,13 @@ public sealed class MouseModeHost : IDisposable
     /// <summary>Gamepad input is the mouse's now, not Arcadia's navigation. Readable from any thread.</summary>
     public bool IsOn => _mode.IsOn;
 
-    /// <summary>Arcadia's window is active. Readable from any thread, unlike <c>Window.IsActive</c>.</summary>
-    public bool IsArcadiaActive => _arcadiaActive;
+    /// <summary>
+    /// Arcadia is in front. Readable from any thread, unlike <c>Window.IsActive</c>. On Windows the
+    /// foreground window decides, not the window's activation events: those got out of step while
+    /// switching between a game and Arcadia (owner's PC, 2026-10-20), and Arcadia then took the game's
+    /// controller input as its own and ignored View held for the way back.
+    /// </summary>
+    public bool IsArcadiaActive => OperatingSystem.IsWindows() ? ProcessWatch.ForegroundProcessId() == Environment.ProcessId : _arcadiaActive;
 
     /// <summary>Call after the gamepad source stopped polling: lets go of a held mouse button or key.</summary>
     public void Dispose()
@@ -233,21 +238,29 @@ public sealed class MouseModeHost : IDisposable
     }
 
     /// <summary>
-    /// Steam's desktop layout is dropped while the setting is on and no game of the library is in
-    /// front (a game's own Steam layout must reach it), and always in the mouse mode.
+    /// Steam's desktop layout is dropped while the setting is on: whenever the controller is in use
+    /// outside games and in the mouse mode; beside a game of the library only while ⧉ + ≡ are held,
+    /// so the game's own Steam layout still reaches it.
     /// </summary>
     private void UpdateDesktopFilter()
     {
         var settings = _settings.Current.MouseMode;
-        var on = settings.Activation != MouseModeActivation.Off && settings.IgnoreSteamDesktopLayout && !_failed && (_mode.IsOn || !GameInFront());
-        if (on == _desktopFilterOn)
+        var scope = settings.Activation == MouseModeActivation.Off || !settings.IgnoreSteamDesktopLayout || _failed
+            ? DesktopFilterScope.Off
+            : _mode.IsOn || !GameInFront() ? DesktopFilterScope.ControllerInUse : DesktopFilterScope.ComboHeld;
+        if (scope == _desktopFilterScope)
         {
             return;
         }
 
-        _desktopFilterOn = on;
-        var dropped = _desktopFilter.SetOn(on);
-        AppLog.Write(on ? "Steams Desktop-Belegung wird ignoriert" : $"Steams Desktop-Belegung wirkt wieder ({dropped ?? 0} Eingaben verworfen)");
+        _desktopFilterScope = scope;
+        var dropped = _desktopFilter.SetScope(scope);
+        AppLog.Write(scope switch
+        {
+            DesktopFilterScope.Off => $"Steams Desktop-Belegung wirkt wieder ({dropped ?? 0} Eingaben verworfen)",
+            DesktopFilterScope.ComboHeld => "Steams Desktop-Belegung wird nur bei ⧉ + ≡ ignoriert (Spiel vorne)",
+            _ => "Steams Desktop-Belegung wird ignoriert",
+        });
     }
 
     /// <summary>Asks for the foreground process's path only when the foreground changed.</summary>

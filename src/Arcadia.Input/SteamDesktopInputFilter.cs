@@ -3,12 +3,26 @@ using System.Runtime.Versioning;
 
 namespace Arcadia.Input;
 
-/// <summary>Drops what Steam's desktop layout makes of the controller, while switched on (#64).</summary>
+/// <summary>When simulated mouse and keyboard input from other programs is dropped.</summary>
+public enum DesktopFilterScope
+{
+    Off,
+
+    /// <summary>While a controller is in use: outside games and in the mouse mode, where Steam's desktop layout only gets in the way.</summary>
+    ControllerInUse,
+
+    /// <summary>
+    /// Only while ⧉ + ≡ are held: in a game, whose own Steam layout may map buttons to keys, Steam's
+    /// desktop layout still made Alt+Tab of Arcadia's gesture (Steam Input off for the game; owner's PC, 2026-10-20).
+    /// </summary>
+    ComboHeld,
+}
+
+/// <summary>Drops what Steam's desktop layout makes of the controller (#64).</summary>
 public interface IDesktopInputFilter : IDisposable
 {
-    /// <summary>On: simulated mouse and keyboard input from other programs is dropped while a controller is in use.</summary>
-    /// <returns>When switched off: how many inputs it dropped while it was on.</returns>
-    int? SetOn(bool on);
+    /// <returns>When switched off: how many inputs it dropped since it was switched on.</returns>
+    int? SetScope(DesktopFilterScope scope);
 }
 
 public static class DesktopInputFilter
@@ -21,7 +35,7 @@ public static class DesktopInputFilter
 /// <summary>Used where Steam's desktop layout can't be filtered (macOS / Linux for now).</summary>
 public sealed class NullDesktopInputFilter : IDesktopInputFilter
 {
-    public int? SetOn(bool on) => null;
+    public int? SetScope(DesktopFilterScope scope) => null;
 
     public void Dispose()
     {
@@ -35,7 +49,7 @@ public sealed class NullDesktopInputFilter : IDesktopInputFilter
 /// </summary>
 /// <remarks>
 /// Every mouse event and key on the PC passes the hooks while they're in, so they are only in
-/// while needed (never beside a game without the mouse mode) and answer in microseconds. Windows
+/// while needed and answer in microseconds: input from real devices only reads a flag. Windows
 /// skips a hook that takes too long, so a stall here can't freeze the mouse.
 /// </remarks>
 [SupportedOSPlatform("windows")]
@@ -56,17 +70,22 @@ public sealed unsafe partial class SteamDesktopInputFilter : IDesktopInputFilter
     private readonly Func<bool> _controllerInUse;
     private Thread? _thread;
     private uint _threadId;
+    private volatile DesktopFilterScope _scope;
 
     public SteamDesktopInputFilter(ControllerActivity activity)
     {
         _activity = activity;
-        _controllerInUse = () => _activity.IsInUse() || XInputGamepadSource.AnyInUseNow(_activity.ConnectedSlots);
+        _controllerInUse = () => _scope == DesktopFilterScope.ComboHeld
+            ? _activity.IsComboHeld() || XInputGamepadSource.AnyNow(_activity.ConnectedSlots, ControllerActivity.IsComboHeld)
+            : _activity.IsInUse() || XInputGamepadSource.AnyNow(_activity.ConnectedSlots, ControllerActivity.IsInUse);
     }
 
-    public int? SetOn(bool on)
+    public int? SetScope(DesktopFilterScope scope)
     {
         lock (_lock)
         {
+            _scope = scope;
+            var on = scope != DesktopFilterScope.Off;
             if (on && _thread is null)
             {
                 Start();
@@ -85,7 +104,7 @@ public sealed unsafe partial class SteamDesktopInputFilter : IDesktopInputFilter
         }
     }
 
-    public void Dispose() => SetOn(false);
+    public void Dispose() => SetScope(DesktopFilterScope.Off);
 
     private void Start()
     {
@@ -93,7 +112,8 @@ public sealed unsafe partial class SteamDesktopInputFilter : IDesktopInputFilter
 
         // Not disposed: after a timed-out wait the thread may still set it.
         var ready = new ManualResetEventSlim();
-        _thread = new Thread(() => Run(ready)) { IsBackground = true, Name = "Steam desktop filter" };
+        // Every mouse event and key waits for this thread while the hooks are in, also beside a busy game.
+        _thread = new Thread(() => Run(ready)) { IsBackground = true, Name = "Steam desktop filter", Priority = ThreadPriority.Highest };
         _thread.Start();
 
         // The thread id is needed to stop it; installing the hooks takes microseconds.

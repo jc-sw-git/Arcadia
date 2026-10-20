@@ -118,6 +118,14 @@ focus handling or anything SISR/usbip related.
 - `SteamDesktopInputFilter` drops simulated (`SendInput`) mouse and key input while a controller is in use (or was
   less than 150 ms ago); Arcadia's own input carries a marker in `dwExtraInfo` and passes. Assumed, not yet seen on the
   owner's PC: Steam sends its desktop layout with `SendInput`. `arcadia.log` names how many inputs were dropped.
-- It runs only while needed: never while a library game is in front without the mouse mode, so a game's own Steam
-  layout (e.g. keys for a game without controller support) still reaches it.
+- Beside a library game without the mouse mode it drops input only while ⧉ + ≡ are held (`DesktopFilterScope.ComboHeld`),
+  so a game's own Steam layout (e.g. keys for a game without controller support) still reaches it. Seen on the
+  owner's PC (2026-10-20): in a Steam game with an Xbox pad (Steam Input presumably off for it) Steam's desktop layout
+  still made Alt+Tab of Back + Start; with the Steam Controller (Steam Input on) it didn't. So the hooks stay in beside
+  games too; the hook thread runs at the highest priority, because every mouse event waits for it.
+- The Steam Controller reaches Arcadia only through SISR. While SISR is paused for a game on "Steam Input", Arcadia
+  doesn't see it at all: no Back + Start, no View held (said in "So funktioniert's"; a fix needs #112 or #72).
+- "Arcadia in front" is decided by the foreground window (`ProcessWatch.ForegroundProcessId`), not by the window's
+  Activated/Deactivated: on the owner's PC Arcadia sometimes took a game's controller input as its own after
+  switching between the game and Arcadia, and View held didn't bring it back (2026-10-20, cause not found).
 

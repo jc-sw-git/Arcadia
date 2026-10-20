@@ -286,17 +286,22 @@
     <Setter Property="Stroke" Value="{StaticResource Accent}" />
     <Setter Property="StrokeThickness" Value="8" />
   </Style>
+  <!-- No FillMode="Forward": Avalonia kept the forwarded Opacity 0 after the class went, so the edge stayed
+       invisible after the first switch. The overlay hides the edge itself once the flash is over. -->
   <Style Selector="ctl|ScreenEdgeFill.flash">
     <Style.Animations>
-      <Animation Duration="0:0:0.45" FillMode="Forward">
+      <Animation Duration="0:0:0.5">
         <KeyFrame Cue="0%">
           <Setter Property="Opacity" Value="1" />
         </KeyFrame>
-        <KeyFrame Cue="25%">
+        <KeyFrame Cue="22%">
           <Setter Property="Opacity" Value="0.3" />
         </KeyFrame>
-        <KeyFrame Cue="50%">
+        <KeyFrame Cue="45%">
           <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+        <KeyFrame Cue="90%">
+          <Setter Property="Opacity" Value="0" />
         </KeyFrame>
         <KeyFrame Cue="100%">
           <Setter Property="Opacity" Value="0" />
@@ -1084,6 +1089,17 @@
   </Style>
   <Style Selector="Button.key Path.globe">
     <Setter Property="Stroke" Value="{StaticResource Text}" />
+  </Style>
+  <!-- A button inside a line of text (ButtonTextBlock), e.g. "⧉ + ≡ gedrückt halten". -->
+  <Style Selector="Border.glyph.inline">
+    <Setter Property="MinWidth" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="CornerRadius" Value="11" />
+    <Setter Property="Padding" Value="6,0" />
+    <Setter Property="Margin" Value="1,0" />
+  </Style>
+  <Style Selector="Border.glyph.inline > TextBlock">
+    <Setter Property="FontSize" Value="13" />
   </Style>
   <Style Selector="Border.glyph.small">
     <Setter Property="MinWidth" Value="22" />

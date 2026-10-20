@@ -1198,7 +1198,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Mausmodus" FontSize="20" FontWeight="Bold" />
-                        <TextBlock Text="{Binding ActivationText}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="{Binding ActivationText}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button Classes="plain stepperArrow" Command="{Binding ActivationItem.DecreaseCommand}" IsEnabled="{Binding ActivationItem.CanDecrease}" Content="‹" />
@@ -1211,7 +1211,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Haltedauer" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="So lange müssen ⧉ und ≡ gehalten werden." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="So lange müssen ⧉ und ≡ gehalten werden." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button Classes="plain stepperArrow" Command="{Binding HoldItem.DecreaseCommand}" IsEnabled="{Binding HoldItem.CanDecrease}" Content="‹" />
@@ -1237,7 +1237,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
                         <TextBlock Text="Beenden, wenn Arcadia nach vorne kommt" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Nur „Von Hand“: Holt ⧉ oder ein Klick Arcadia nach vorne, wird der Controller wieder zum Controller. In Arcadia eingeschaltet, bleibt der Mausmodus an."
+                        <TextBlock ctl:ButtonTextBlock.Text="Nur „Von Hand“: Holt ⧉ oder ein Klick Arcadia nach vorne, wird der Controller wieder zum Controller. In Arcadia eingeschaltet, bleibt der Mausmodus an."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding EndWhenArcadiaInFront}" VerticalAlignment="Center">
@@ -1249,7 +1249,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
                         <TextBlock Text="Steams Desktop-Belegung ignorieren" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Außerhalb von Spielen macht Steam aus dem Controller selbst Maus und Tasten, z. B. aus ⧉ + ≡ ein Alt+Tab. Arcadia verwirft diese Eingaben, solange kein Spiel aus der Bibliothek vorne ist, und im Mausmodus immer."
+                        <TextBlock ctl:ButtonTextBlock.Text="Außerhalb von Spielen macht Steam aus dem Controller selbst Maus und Tasten, z. B. aus ⧉ + ≡ ein Alt+Tab. Arcadia verwirft diese Eingaben, solange kein Spiel aus der Bibliothek vorne ist, und im Mausmodus immer."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding IgnoreSteamDesktopLayout}" VerticalAlignment="Center">
@@ -1272,8 +1272,8 @@
                   <Button Classes="plain settingRow" Classes.focused="{Binding EnabledItem.IsFocused}" Command="{Binding ToggleEnabledCommand}">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
-                        <TextBlock Text="Mit ⧉ zurück zu Arcadia" FontSize="20" FontWeight="Bold" />
-                        <TextBlock Text="⧉ gedrückt halten holt Arcadia nach vorne, wenn es im Hintergrund ist – aus einem Spiel, einem Launcher oder dem Mausmodus. In Arcadia öffnet ⧉ weiter das Menü."
+                        <TextBlock ctl:ButtonTextBlock.Text="Mit ⧉ zurück zu Arcadia" FontSize="20" FontWeight="Bold" />
+                        <TextBlock ctl:ButtonTextBlock.Text="⧉ gedrückt halten holt Arcadia nach vorne, wenn es im Hintergrund ist – aus einem Spiel, einem Launcher oder dem Mausmodus. In Arcadia öffnet ⧉ weiter das Menü."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding Enabled}" VerticalAlignment="Center">
@@ -1285,7 +1285,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Haltedauer" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="So lange muss ⧉ gehalten werden. „Sofort“ wechselt schon beim kurzen Drücken." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="So lange muss ⧉ gehalten werden. „Sofort“ wechselt schon beim kurzen Drücken." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button Classes="plain stepperArrow" Command="{Binding HoldItem.DecreaseCommand}" IsEnabled="{Binding HoldItem.CanDecrease}" Content="‹" />
@@ -1493,7 +1493,7 @@
             <Panel>
             <StackPanel Spacing="24">
               <TextBlock Text="Mausmodus – so funktioniert's" FontSize="30" FontWeight="ExtraBold" />
-              <TextBlock Classes="promptBody" Text="⧉ + ≡ gedrückt halten, bis der Bildschirmrand voll ist: Der Controller steuert jetzt die Maus, auch in Fenstern außerhalb von Arcadia. Genauso geht es zurück. Jeder verbundene Controller kann umschalten und den Zeiger bewegen." />
+              <TextBlock Classes="promptBody" ctl:ButtonTextBlock.Text="⧉ + ≡ gedrückt halten, bis der Bildschirmrand voll ist: Der Controller steuert jetzt die Maus, auch in Fenstern außerhalb von Arcadia. Genauso geht es zurück. Jeder verbundene Controller kann umschalten und den Zeiger bewegen." />
               <ItemsControl ItemsSource="{x:Static vm:MouseModeSettingsViewModel.HelpRows}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -1503,7 +1503,7 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:MouseModeHelpRow">
                     <Grid ColumnDefinitions="240,*" ColumnSpacing="20">
-                      <TextBlock Text="{Binding Input}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
+                      <TextBlock ctl:ButtonTextBlock.Buttons="{Binding Input}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
                       <TextBlock Grid.Column="1" Text="{Binding Effect}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
                     </Grid>
                   </DataTemplate>

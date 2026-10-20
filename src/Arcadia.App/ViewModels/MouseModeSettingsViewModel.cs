@@ -156,7 +156,7 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
     /// <summary>What the chosen way of switching does, under "Mausmodus".</summary>
     public string ActivationText => Current.Activation switch
     {
-        MouseModeActivation.Off => "Der Controller bleibt immer ein Controller. Die Einstellungen darunter behalten ihre Werte.",
+        MouseModeActivation.Off => "Der Controller bleibt immer ein Controller.",
         MouseModeActivation.Automatic => "Verliert Arcadia den Fokus an ein Fenster, das kein Spiel aus der Bibliothek ist, wird der Controller sofort zur Maus; kommt Arcadia oder ein Spiel nach vorne, wieder zum Controller. Bis dahin schaltet ⧉ + ≡ gehalten von Hand um, z. B. in einem Spiel, das Arcadia nicht kennt.",
         _ => "⧉ + ≡ gedrückt halten macht den Controller zur Maus und wieder zurück, auch wenn Arcadia im Hintergrund ist. So lassen sich Launcher-Fenster und Windows-Dialoge vom Sofa aus bedienen.",
     };

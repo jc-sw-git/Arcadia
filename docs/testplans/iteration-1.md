@@ -578,7 +578,8 @@ Verlauf:
 - [ ] **T64-1** Back + Start gehalten, Arcadia vorne: ab 0,2 s füllt sich der Rand des Primärmonitors in der
       Akzentfarbe von oben Mitte über beide Seiten bis unten Mitte, nach 3 s leuchtet er kurz auf, oben in der
       Mitte steht 2 s „Mausmodus an“, der Controller vibriert kurz; danach bleibt nichts stehen. Nochmal 3 s
-      halten: „Mausmodus aus“. Früher loslassen: der Rand läuft schnell zurück, nichts schaltet. · E2E: nein
+      halten: „Mausmodus aus“, mit demselben Rand, ebenso bei jedem weiteren Umschalten. Früher loslassen: der Rand
+      läuft schnell zurück, nichts schaltet. · E2E: nein
 - [ ] **T64-2** Wie T64-1, aber mit dem Explorer oder dem Epic Games Launcher vorne (Arcadia im Hintergrund):
       Umschalten in beide Richtungen geht, das Overlay nimmt weder Fokus noch Klicks (das Fenster vorne bleibt
       aktiv, ein Klick neben Rand und Text trifft das Fenster darunter); kein Eintrag in Taskleiste und Alt+Tab. · E2E: nein
@@ -629,7 +630,8 @@ Verlauf:
       Steams Desktop-Belegung wirkt wieder. `arcadia.log` nennt beim Ausschalten, wie viele Eingaben verworfen
       wurden. · E2E: nein
 - [ ] **T64-15** Die Boxen „Mausmodus“ und „Zurück zu Arcadia“ und „So funktioniert's“ nennen Tasten über ihr
-      Symbol (⧉, ≡), nirgends „Back“, „Start“, „View“ oder „Menu“. · E2E: ja
+      Symbol (⧉, ≡), nirgends „Back“, „Start“, „View“ oder „Menu“. Die Symbole stehen im Text in einer runden
+      Umrandung wie in der Legende; in der Tabelle von „So funktioniert's“ auch A, B, X, LB, RB, LT, RT und L3. · E2E: ja
 
 Verlauf:
 
@@ -646,6 +648,8 @@ Verlauf:
 | T64-15 | 2026-10-20 | Claude | Branch nach der Symbol-Umbenennung, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool | ✅ Beide Boxen und „So funktioniert's“ zeigen ⧉ und ≡, kein Tastenname mehr; die Symbole sind im Fließtext klein, aber lesbar | Schrift unter Windows nicht geprüft |
 | T64-5, T64-6, T64-12 | 2026-10-20 | Juri | PC des Owners, PR #120 | ⚠️ ⧉ + ≡ von Hand und „Automatisch einschalten“ nebeneinander wirken schlecht zusammen | „Mausmodus“ ist jetzt eine Wahl aus „Aus“, „Von Hand“ und „Automatisch“; ⧉ + ≡ übersteuert die Automatik, bis Arcadia wieder vorne war (Test `Switched_off_by_hand_it_stays_off_until_arcadia_has_been_in_front_again`) |
 | T64-7, T64-12 (nur Einstellungen) | 2026-10-20 | Claude | Branch nach der Dreier-Wahl, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool | ✅ „Mausmodus“ wechselt mit links/rechts zwischen „Aus“, „Von Hand“ und „Automatisch“, der Text darunter wechselt mit; „Aus“ blendet die Zeilen darunter ab, „Automatisch“ nur „Beenden, wenn Arcadia nach vorne kommt“. Fokuswechsel und ⧉ + ≡ unter Windows nicht geprüft, Logik per `MouseModeAutomationTests` | T64-6 am PC des Owners |
+| T64-1, T64-15 | 2026-10-20 | Juri | PC des Owners, PR #120 | ❌ Rand und „Mausmodus an/aus“ nur beim ersten Umschalten richtig, danach kein Rand beim Halten, der alte Text flackert kurz auf; Symbole im Text ohne Umrandung schlecht als Taste erkennbar | Das Blinken hielt die Deckkraft 0 fest (`FillMode="Forward"`), das Overlay versteckt sich jetzt erst nach einem leeren Bild; Symbole als Badges im Text |
+| T64-1 (nur Overlay), T64-15 | 2026-10-20 | Claude | Branch nach dem Fix, Linux, Xvfb 1920×1080 `--demo`; Overlay lokal per Testcode dreimal nacheinander ausgelöst und mit 5 Bildern/s aufgenommen (nicht eingecheckt) | ✅ Vor dem Fix blieb der Rand ab dem zweiten Halten unsichtbar (Deckkraft 0 im Log), danach füllt er sich jedes Mal; Badges in beiden Boxen und in „So funktioniert's“ lesbar. Das Aufflackern des alten Texts ist unter Xvfb nicht sichtbar, nur unter Windows prüfbar | T64-1 am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

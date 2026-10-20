@@ -35,9 +35,6 @@ public sealed record MouseModeSettings
     /// <summary>"Beenden, wenn Arcadia nach vorne kommt"; only for <see cref="MouseModeActivation.Manual"/>, the automatic mode always ends then.</summary>
     public bool EndWhenArcadiaInFront { get; init; } = true;
 
-    /// <summary>"Steams Desktop-Belegung ignorieren": the mouse and keys Steam makes of the controller outside games are dropped.</summary>
-    public bool IgnoreSteamDesktopLayout { get; init; } = true;
-
     /// <summary>Values out of range (edited by hand, or from a newer Arcadia) fall back to the defaults.</summary>
     public MouseModeSettings WithValidValues()
     {

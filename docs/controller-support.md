@@ -126,7 +126,8 @@ focus handling or anything SISR/usbip related.
   Arcadia), and none while no XInput controller is connected. The hook thread runs at the highest priority, because
   every input waits for it. Windows removes a low-level hook that once took too long without telling (Microsoft's docs
   for `LowLevelKeyboardProc`), e.g. during a GC pause, so the thread sets its hooks anew every 30 s and on every change
-  of scope, the new one before the old one goes. Not yet seen: whether the filter also drops the Windows on-screen
+  of scope, the new one before the old one goes. The option is its own box and works with the mouse mode "Aus" too
+  (owner, 2026-10-20): Steam's layout doubles Arcadia's own navigation as well. Not yet seen: whether the filter also drops the Windows on-screen
   keyboard (osk.exe), which sends its keys with `SendInput` too (T64-18).
 - The Steam Controller reaches Arcadia only through SISR. While SISR is paused for a game on "Steam Input", Arcadia
   doesn't see it at all: no Back + Start, no View held (said in "So funktioniert's"; a fix needs #112 or #72).

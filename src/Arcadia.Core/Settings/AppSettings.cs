@@ -45,6 +45,12 @@ public sealed record AppSettings
     public ReturnWithViewSettings ReturnWithView { get; init; } = new();
 
     /// <summary>
+    /// "Steams Desktop-Belegung ignorieren" (#64): the mouse and keys Steam makes of the controller are
+    /// dropped. Independent of the mouse mode, because Steam's layout also doubles Arcadia's own navigation (owner, 2026-10-20).
+    /// </summary>
+    public bool IgnoreSteamDesktopLayout { get; init; } = true;
+
+    /// <summary>
     /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
     /// hand — with the defaults, instead of failing on them later.
     /// </summary>

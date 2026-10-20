@@ -104,7 +104,7 @@ public sealed class SettingsServiceTests : IDisposable
         Assert.True(service.Current.ReturnWithView.Enabled);
         Assert.Equal(1, service.Current.ReturnWithView.HoldSeconds);
         Assert.Equal(MouseModeActivation.Manual, service.Current.MouseMode.Activation);
-        Assert.True(service.Current.MouseMode.IgnoreSteamDesktopLayout);
+        Assert.True(service.Current.IgnoreSteamDesktopLayout);
 
         service.Update(s => s with { ReturnWithView = new ReturnWithViewSettings { Enabled = false, HoldSeconds = 0 } });
         var restarted = new SettingsService(new SettingsStore(SettingsPath)).Current.ReturnWithView;

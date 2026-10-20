@@ -108,6 +108,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     /// <summary>The install folders of the library's games: a process from one of them is a game in front.</summary>
     public GameFolders GameFolders { get; private set; } = GameFolders.Empty;
 
+    /// <summary>Games Arcadia started, for a game in front whose path can't be read.</summary>
+    public LaunchedGames LaunchedGames { get; } = new();
+
     /// <summary>Raised when Arcadia should bring its window back to the front.</summary>
     public event EventHandler? ForegroundRequested;
 
@@ -1162,7 +1165,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         var progress = new Progress<LaunchStage>(stage => OnLaunchStage(tile, stage));
 
         // Games that use Steam Input themselves would get every input twice while SISR runs.
-        var result = await _launcher.TryStartAsync(tile.Game, token => _controllerSupport.BeginGameAsync(tile.Game, token), progress);
+        var result = await _launcher.TryStartAsync(tile.Game, async token =>
+        {
+            LaunchedGames.Starting(await Task.Run(ForegroundGame.RunningProcessIds, token));
+            await _controllerSupport.BeginGameAsync(tile.Game, token);
+        }, progress);
         switch (result)
         {
             case { Outcome: LaunchOutcome.Failed, Error: { } error }:

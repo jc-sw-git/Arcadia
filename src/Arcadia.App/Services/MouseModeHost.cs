@@ -226,7 +226,7 @@ public sealed class MouseModeHost : IDisposable
         }
 
         var name = ProcessWatch.PathOf(id) is { } path ? Path.GetFileName(path) : $"Prozess {id}";
-        return $"{name} ({(ForegroundGame.IsInFront(_viewModel.GameFolders) ? "Spiel" : "kein Spiel")})";
+        return $"{name} ({(ForegroundGame.IsInFront(_viewModel.GameFolders, _viewModel.LaunchedGames) ? "Spiel" : "kein Spiel")})";
     }
 
     private void OnSwitched(MouseModeSwitch change)
@@ -238,7 +238,7 @@ public sealed class MouseModeHost : IDisposable
 
         Dispatcher.UIThread.Post(() =>
         {
-            var gameInFront = ForegroundGame.IsInFront(_viewModel.GameFolders);
+            var gameInFront = ForegroundGame.IsInFront(_viewModel.GameFolders, _viewModel.LaunchedGames);
             AppLog.Write($"Mausmodus {(change.IsOn ? "an" : "aus")} ({(change.Slot is { } s ? $"Back + Start an Controller {s + 1}" : "automatisch")}{(gameInFront ? ", Spiel vorne" : string.Empty)})");
             if (change.IsOn)
             {
@@ -312,26 +312,25 @@ public sealed class MouseModeHost : IDisposable
         _focusLossSettle.Stop();
         if (!OwnsForeground())
         {
-            _automation.ArcadiaDeactivated(ForegroundGame.IsInFront(_viewModel.GameFolders));
+            _automation.ArcadiaDeactivated(ForegroundGame.IsInFront(_viewModel.GameFolders, _viewModel.LaunchedGames));
         }
     }
 
     private void CheckForeground()
     {
-        _automation.ForegroundChecked(ForegroundGame.IsInFront(_viewModel.GameFolders));
+        _automation.ForegroundChecked(ForegroundGame.IsInFront(_viewModel.GameFolders, _viewModel.LaunchedGames));
         UpdateForegroundCheck();
     }
 
     /// <summary>
-    /// Steam's desktop layout is dropped while the setting is on: whenever the controller is in use
-    /// outside games and in the mouse mode; beside a game of the library only keys and only while ⧉ + ≡
+    /// Steam's desktop layout is dropped while the setting is on, whatever the mouse mode's setting:
+    /// whenever the controller is in use outside games and in the mouse mode; beside a game of the library only keys and only while ⧉ + ≡
     /// are held, so the game's own Steam layout still reaches it. Without a controller the hooks are out.
     /// </summary>
     private void UpdateDesktopFilter()
     {
-        var settings = _settings.Current.MouseMode;
-        var scope = settings.Activation == MouseModeActivation.Off || !settings.IgnoreSteamDesktopLayout || _failed
-            || _activity.ConnectedSlots.Count == 0
+        // After an error in OnPolled the controller activity isn't noted any more, so the filter goes too.
+        var scope = !_settings.Current.IgnoreSteamDesktopLayout || _failed || _activity.ConnectedSlots.Count == 0
             ? DesktopFilterScope.Off
             : _mode.IsOn || !GameInFront() ? DesktopFilterScope.ControllerInUse : DesktopFilterScope.ComboHeld;
         if (scope == _desktopFilterScope)
@@ -358,7 +357,7 @@ public sealed class MouseModeHost : IDisposable
         {
             _lastForegroundId = id;
             _lastForegroundFolders = folders;
-            _lastForegroundIsGame = ForegroundGame.IsInFront(folders);
+            _lastForegroundIsGame = ForegroundGame.IsInFront(folders, _viewModel.LaunchedGames);
         }
 
         return _lastForegroundIsGame;

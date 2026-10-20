@@ -624,7 +624,7 @@ Verlauf:
       der Rahmen läuft zurück. „Sofort“: kurzes Drücken genügt, ohne Fenster. Back + Start löst es nie aus. Aus:
       View tut im Hintergrund nichts. In Arcadia öffnet View weiter das Menü. · E2E: nein
 - [ ] **T64-14** Steam läuft (Steam Controller oder Xbox-Pad mit Steam Input), „Steams Desktop-Belegung ignorieren“
-      an: Back + Start im Explorer öffnet kein Alt+Tab-Fenster mehr, im Mausmodus kommen nur Arcadias Zeiger und
+      (eigene Box unter „Zurück zu Arcadia“, wirkt auch bei Mausmodus „Aus“) an: Back + Start im Explorer öffnet kein Alt+Tab-Fenster mehr, im Mausmodus kommen nur Arcadias Zeiger und
       Tasten an, in Arcadia bewegt das Steuerkreuz den Fokus nur einmal. Echte Maus und Tastatur gehen dabei normal.
       In einem Spiel aus der Bibliothek ohne Mausmodus wirkt Steams Belegung für das Spiel wie gewohnt, nur ⧉ + ≡
       gehalten macht dort kein Alt+Tab mehr (Steam-Spiel mit Xbox-Controller, z. B. Castlevania). Option aus:
@@ -637,7 +637,8 @@ Verlauf:
       Vollbild: Arcadia ist danach wirklich zu sehen, nicht nur im Vordergrund, und wird nie unsichtbar gesteuert.
       ⧉ und ≡ mit mehr als 0,2 s Abstand gedrückt öffnen in Arcadia erst Menü bzw. Einstellungen (bewusst, damit ≡
       gehalten auf einem Suchtreffer die Details öffnet). Mit mehreren Monitoren, Arcadia und Spiel auf verschiedenen:
-      Mausmodus im Spiel einschalten setzt den Zeiger in die Mitte des Spielfensters. `arcadia.log` nennt jeden
+      Mausmodus im Spiel einschalten setzt den Zeiger in die Mitte des Spielfensters. Ein aus Arcadia gestartetes
+      Spiel mit Anti-Cheat (z. B. Easy Anti-Cheat) zählt als Spiel: das Log nennt es beim Vordergrundwechsel „Spiel“. `arcadia.log` nennt jeden
       Wechsel des Vordergrunds („Vordergrund: …“) und wohin ⧉ gehalten geführt hat; bei einem Fehler das Log
       mitschicken. · E2E: nein
 - [ ] **T64-17** Steam Controller Support an, Steam Controller verbunden, ein Steam-Spiel auf „Steam Input“ starten:
@@ -672,6 +673,7 @@ Verlauf:
 | T64-14, T64-16 (nur Logik) | 2026-10-20 | Claude | `dotnet test` (`InjectedInputGateTests`, `ControllerSupportServiceTests`) | ✅ ⧉ + ≡ zählt mit Nachlauf; Steam-Controller-Zeile bleibt bei Pause. Hooks, Steam und Vordergrund unter Windows nicht geprüft | T64-14, T64-16, T64-17 am PC des Owners |
 | T64-14, T64-16 (Review) | 2026-10-20 | Claude | Review zu PR #120 (`reviews/pr-120-code-review.md`), `dotnet build`/`dotnet test` unter Linux | ✅ Build und Tests grün. Neu: „vorne“ verlangt zusätzlich, dass kein fremdes Fenster Arcadia ganz verdeckt (randloses Vollbild), ⧉ gehalten hält Arcadia dann bis zum Fokuswechsel oben; neben Spielen nur der Tastatur-Hook, ohne Controller keiner, die Hooks werden alle 30 s und bei jedem Wechsel neu gesetzt. Hooks, Vordergrund und CPU-Last unter Windows nicht geprüft | T64-14, T64-16 bis T64-18 am PC des Owners |
 | T64-16 (Review, Nachtrag) | 2026-10-20 | Claude | Nach Juris Antwort (drei Monitore, Vollbildart egal), `dotnet build`/`dotnet test` unter Linux | ✅ Build und Tests grün. Neu: Zeiger beim Einschalten im Spiel in die Mitte des Spielfensters; Log jedes Vordergrundwechsels und des Ziels von ⧉ gehalten. Unter Windows nicht geprüft | T64-16 am PC des Owners, mit Log |
+| T64-14, T64-16 (M3, M5) | 2026-10-20 | Claude | Nach Juris Freigabe von M3 und M5; Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool; `dotnet test` | ✅ Eigene Box „Steams Desktop-Belegung ignorieren“ unter „Zurück zu Arcadia“, mit dem Steuerkreuz erreichbar (die Liste scrollt mit), Enter schaltet um. Pfade mit `/`, doppelten Trennern, `.`/`..` und `\\?\` passen (`GameFoldersTests`, vorher rot); `LaunchedGamesTests`. Hooks, Anti-Cheat-Spiel und Vordergrund unter Windows nicht geprüft | T64-14, T64-16 am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

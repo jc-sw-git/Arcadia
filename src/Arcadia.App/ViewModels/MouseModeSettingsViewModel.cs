@@ -90,10 +90,8 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
             MouseModeSettings.Min,
             MouseModeSettings.Max);
         EndInFrontItem = new SettingsItemViewModel(() => Change(s => s with { EndWhenArcadiaInFront = !s.EndWhenArcadiaInFront }));
-        SteamLayoutItem = new SettingsItemViewModel(() => Change(s => s with { IgnoreSteamDesktopLayout = !s.IgnoreSteamDesktopLayout }));
         HelpItem = new SettingsItemViewModel(openHelp);
         ToggleEndInFrontCommand = new RelayCommand(EndInFrontItem.Activate);
-        ToggleSteamLayoutCommand = new RelayCommand(SteamLayoutItem.Activate);
         HelpCommand = new RelayCommand(openHelp);
     }
 
@@ -135,17 +133,13 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
 
     public SettingsItemViewModel EndInFrontItem { get; }
 
-    public SettingsItemViewModel SteamLayoutItem { get; }
-
     /// <summary>"So funktioniert's": the buttons and the limits of the mouse mode.</summary>
     public SettingsItemViewModel HelpItem { get; }
 
     /// <summary>In the order the controller moves through them.</summary>
-    public IReadOnlyList<SettingsItemViewModel> Items => [ActivationItem, HoldItem, SpeedItem, EndInFrontItem, SteamLayoutItem, HelpItem];
+    public IReadOnlyList<SettingsItemViewModel> Items => [ActivationItem, HoldItem, SpeedItem, EndInFrontItem, HelpItem];
 
     public IRelayCommand ToggleEndInFrontCommand { get; }
-
-    public IRelayCommand ToggleSteamLayoutCommand { get; }
 
     public IRelayCommand HelpCommand { get; }
 
@@ -161,8 +155,6 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
         MouseModeActivation.Automatic => "Verliert Arcadia den Fokus an ein Fenster, das kein Spiel aus der Bibliothek ist, wird der Controller sofort zur Maus; kommt Arcadia oder ein Spiel nach vorne, wieder zum Controller. Bis dahin schaltet ⧉ + ≡ gehalten von Hand um, z. B. in einem Spiel, das Arcadia nicht kennt.",
         _ => "⧉ + ≡ gedrückt halten macht den Controller zur Maus und wieder zurück, auch wenn Arcadia im Hintergrund ist. So lassen sich Launcher-Fenster und Windows-Dialoge vom Sofa aus bedienen.",
     };
-
-    public bool IgnoreSteamDesktopLayout => Current.IgnoreSteamDesktopLayout;
 
     public bool EndWhenArcadiaInFront => Current.EndWhenArcadiaInFront;
 
@@ -189,7 +181,6 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(EndInFrontApplies));
         OnPropertyChanged(nameof(ActivationText));
         OnPropertyChanged(nameof(EndWhenArcadiaInFront));
-        OnPropertyChanged(nameof(IgnoreSteamDesktopLayout));
     }
 }
 
@@ -238,6 +229,48 @@ public sealed partial class ReturnWithViewSettingsViewModel : ViewModelBase
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             AppLog.Write($"Einstellung „Zurück zu Arcadia“ nicht gespeichert: {ex.Message}");
+            SaveError = "Die Änderung konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.";
+        }
+
+        OnPropertyChanged(nameof(Enabled));
+    }
+}
+
+/// <summary>The "Steams Desktop-Belegung ignorieren" box (#64): its own box, independent of the mouse mode (owner, 2026-10-20).</summary>
+public sealed partial class SteamDesktopLayoutSettingsViewModel : ViewModelBase
+{
+    private readonly SettingsService _settings;
+
+    public SteamDesktopLayoutSettingsViewModel(SettingsService settings)
+    {
+        _settings = settings;
+        EnabledItem = new SettingsItemViewModel(Toggle);
+        ToggleCommand = new RelayCommand(EnabledItem.Activate);
+    }
+
+    public SettingsItemViewModel EnabledItem { get; }
+
+    /// <summary>In the order the controller moves through them.</summary>
+    public IReadOnlyList<SettingsItemViewModel> Items => [EnabledItem];
+
+    public IRelayCommand ToggleCommand { get; }
+
+    public bool Enabled => _settings.Current.IgnoreSteamDesktopLayout;
+
+    /// <summary>Set when a change couldn't be saved; it still applies until Arcadia closes.</summary>
+    [ObservableProperty]
+    public partial string? SaveError { get; private set; }
+
+    private void Toggle()
+    {
+        try
+        {
+            _settings.Update(s => s with { IgnoreSteamDesktopLayout = !s.IgnoreSteamDesktopLayout });
+            SaveError = null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AppLog.Write($"Einstellung „Steams Desktop-Belegung ignorieren“ nicht gespeichert: {ex.Message}");
             SaveError = "Die Änderung konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.";
         }
 

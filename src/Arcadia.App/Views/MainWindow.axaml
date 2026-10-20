@@ -1245,18 +1245,6 @@
                       </Border>
                     </Grid>
                   </Button>
-                  <Button Classes="plain settingRow" Classes.focused="{Binding SteamLayoutItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleSteamLayoutCommand}" Margin="20,0,0,0">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                      <StackPanel Spacing="4">
-                        <TextBlock Text="Steams Desktop-Belegung ignorieren" FontSize="18" FontWeight="Bold" />
-                        <TextBlock ctl:ButtonTextBlock.Text="Außerhalb von Spielen macht Steam aus dem Controller selbst Maus und Tasten, z. B. aus ⧉ + ≡ ein Alt+Tab. Arcadia verwirft diese Eingaben, solange kein Spiel aus der Bibliothek vorne ist, und im Mausmodus immer."
-                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
-                      </StackPanel>
-                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding IgnoreSteamDesktopLayout}" VerticalAlignment="Center">
-                        <Ellipse />
-                      </Border>
-                    </Grid>
-                  </Button>
 
                   <StackPanel Spacing="12" Margin="20,8,20,12">
                     <TextBlock IsVisible="{Binding SaveError, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding SaveError}"
@@ -1292,6 +1280,26 @@
                         <TextBlock Classes="stepperValue" Text="{Binding HoldItem.ValueText}" />
                         <Button Classes="plain stepperArrow" Command="{Binding HoldItem.IncreaseCommand}" IsEnabled="{Binding HoldItem.CanIncrease}" Content="›" />
                       </StackPanel>
+                    </Grid>
+                  </Button>
+                  <TextBlock IsVisible="{Binding SaveError, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding SaveError}" Margin="20,8,20,12"
+                             FontSize="15" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+
+              <!-- Steam's desktop layout (#64): its own box, independent of the mouse mode (owner, 2026-10-20). -->
+              <Border Background="{StaticResource SurfaceSunken}" CornerRadius="16" Padding="8" DataContext="{Binding SteamDesktopLayout}" x:DataType="vm:SteamDesktopLayoutSettingsViewModel">
+                <StackPanel Spacing="4">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding EnabledItem.IsFocused}" Command="{Binding ToggleCommand}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="Steams Desktop-Belegung ignorieren" FontSize="20" FontWeight="Bold" />
+                        <TextBlock ctl:ButtonTextBlock.Text="Läuft Steam, macht es aus dem Controller selbst Maus und Tasten, z. B. aus ⧉ + ≡ ein Alt+Tab, und Eingaben kommen in Arcadia doppelt an. Arcadia verwirft sie, solange ein Controller benutzt wird. Ist ein Spiel aus der Bibliothek vorne, nur bei ⧉ + ≡, damit Steams Belegung für das Spiel weiter wirkt."
+                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding Enabled}" VerticalAlignment="Center">
+                        <Ellipse />
+                      </Border>
                     </Grid>
                   </Button>
                   <TextBlock IsVisible="{Binding SaveError, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding SaveError}" Margin="20,8,20,12"

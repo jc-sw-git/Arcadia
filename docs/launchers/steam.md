@@ -12,8 +12,12 @@ Read before touching `src/Arcadia.Launchers/Steam`. Verified on the owner's PC.
 
 **Steam library** (`SteamScanner`, verified 2026-10-12 against the owner's 3 libraries): libraries from
 `steamapps/libraryfolders.vdf` (`path`), one `appmanifest_<appid>.acf` per installed app. `StateFlags` bit 2 =
-update pending (4 = installed, 6 = with update, +64 while running); a first install without `buildid` is not
-shown. Playtime (minutes) and `LastPlayed` come from `userdata/<user>/config/localconfig.vdf` →
+update pending (4 = installed, 6 = with update); a first install without `buildid` is not shown.
+An app nobody owns any more keeps its manifest and files, but Steam writes `LastOwner` `0` and hides it from the
+library (2026-10-20: the Half-Life 2 episodes and Lost Coast after Valve merged them into Half-Life 2, and Plan B:
+Terraform, which the owner never bought); Arcadia hides it too. Owned apps carry the account's SteamID64 (family
+sharing not checked yet, presumably the lender's). These four were the only manifests with `StateFlags` bit 64 (68/70); what the bit means is unknown,
+so only `LastOwner` decides. Playtime (minutes) and `LastPlayed` come from `userdata/<user>/config/localconfig.vdf` →
 `UserLocalConfigStore/Software/Valve/Steam/apps/<appid>`; that file also holds app tickets — never log it.
 Steam stores no install date (the game folder's creation time is used). Owned but uninstalled games are **not**
 readable locally: `appcache/packageinfo.vdf` keeps packages after a refund (owner's 007 First Light), and the real

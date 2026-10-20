@@ -42,18 +42,8 @@ public static partial class ProcessWatch
         {
             using (process)
             {
-                string? path;
-                try
-                {
-                    path = process.MainModule?.FileName;
-                }
-                catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or NotSupportedException)
-                {
-                    // System processes, other users' processes, or one that just exited.
-                    continue;
-                }
-
-                if (path is not null && roots.Find(r => path.StartsWith(r.Root, StringComparison.OrdinalIgnoreCase)) is { Directory: { } match })
+                if (ExecutablePathOf(process) is { } path
+                    && roots.Find(r => path.StartsWith(r.Root, StringComparison.OrdinalIgnoreCase)) is { Directory: { } match })
                 {
                     return match;
                 }
@@ -61,6 +51,29 @@ public static partial class ProcessWatch
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// On Windows through <see cref="PathOf"/>: <c>MainModule</c> needs the full query and memory read rights,
+    /// so it threw for every system, service and elevated process (about 150 exceptions per round beside a
+    /// running game) and missed games running as administrator.
+    /// </summary>
+    private static string? ExecutablePathOf(Process process)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return PathOf(process.Id);
+        }
+
+        try
+        {
+            return process.MainModule?.FileName;
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or NotSupportedException)
+        {
+            // Other users' processes, or one that just exited.
+            return null;
+        }
     }
 
     /// <summary>

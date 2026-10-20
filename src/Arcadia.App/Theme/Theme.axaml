@@ -315,6 +315,19 @@
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Top" />
   </Style>
+  <!-- The box for View held (#64): the label's place, with a frame that fills along its rounded edge. -->
+  <Style Selector="Panel.returnBox">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Margin" Value="0,56,0,0" />
+  </Style>
+  <Style Selector="Panel.returnBox > Border.mouseModeLabel">
+    <Setter Property="Margin" Value="0" />
+  </Style>
+  <Style Selector="ctl|ScreenEdgeFill.returnEdge">
+    <Setter Property="StrokeThickness" Value="4" />
+    <Setter Property="CornerRadius" Value="18" />
+  </Style>
   <Style Selector="Border.mouseModeLabel > TextBlock">
     <Setter Property="FontSize" Value="30" />
     <Setter Property="FontWeight" Value="ExtraBold" />
@@ -682,6 +695,26 @@
     <Setter Property="CornerRadius" Value="20" />
     <Setter Property="Padding" Value="44,36,44,28" />
     <Setter Property="BoxShadow" Value="{StaticResource DialogShadow}" />
+  </Style>
+  <!-- ✕ in a dialog's top right corner, shown while mouse or keyboard is in use (the controller closes with B). -->
+  <Style Selector="Button.dialogClose">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.dialogClose:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.dialogClose Path">
+    <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Button.dialogClose:pointerover Path">
+    <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
   </Style>
   <Style Selector="Border.promptIcon">
     <Setter Property="Width" Value="52" />

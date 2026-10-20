@@ -166,6 +166,20 @@ public sealed partial class XInputGamepadSource : IGamepadSource
         return pressed;
     }
 
+    /// <summary>A fresh look at the given controllers, between two polls: is one of them in use right now?</summary>
+    internal static bool AnyInUseNow(IReadOnlyList<int> slots)
+    {
+        foreach (var slot in slots)
+        {
+            if (XInputGetState((uint)slot, out var state) == 0 && ControllerActivity.IsInUse(ToReading(slot, state.Gamepad)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static GamepadReading ToReading(int slot, XInputGamepad pad)
     {
         var buttons = (PadButtons)pad.Buttons & ~(PadButtons.LeftTrigger | PadButtons.RightTrigger);

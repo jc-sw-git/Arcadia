@@ -11,7 +11,8 @@ namespace Arcadia.App.Views;
 /// <summary>
 /// The mouse mode's feedback (#64) over everything on the primary monitor: the edge fills while
 /// Back + Start are held, flashes when the mode switches, and "Mausmodus an/aus" shows for two
-/// seconds. Shown only for that, so it costs a running game nothing the rest of the time.
+/// seconds; while View is held, "Zurück zu Arcadia" shows with a frame that fills. Shown only for
+/// that, so it costs a running game nothing the rest of the time.
 /// </summary>
 /// <remarks>
 /// It never takes the focus (no activation, no taskbar entry) and lets clicks through everywhere
@@ -34,6 +35,7 @@ public partial class MouseModeOverlay : Window
     // Counts what was shown, so a hide timed for something earlier leaves a newer show alone.
     private int _generation;
     private bool _holding;
+    private bool _returnHolding;
 
     public MouseModeOverlay()
     {
@@ -45,6 +47,7 @@ public partial class MouseModeOverlay : Window
     {
         _generation++;
         _holding = true;
+        HideReturnBox();
         Edge.Classes.Remove("flash");
         Label.IsVisible = false;
         Edge.Transitions = null;
@@ -77,6 +80,7 @@ public partial class MouseModeOverlay : Window
     {
         _holding = false;
         var generation = ++_generation;
+        HideReturnBox();
         Edge.Transitions = null;
         Edge.Classes.Remove("flash");
         if (flash)
@@ -94,6 +98,57 @@ public partial class MouseModeOverlay : Window
         Label.IsVisible = true;
         Appear();
         DispatcherTimer.RunOnce(() => DisappearIfStill(generation), LabelTime);
+    }
+
+    /// <summary>View is held in the background: "Zurück zu Arcadia", its frame filling over <paramref name="fillTime"/>.</summary>
+    public void ShowReturnHold(TimeSpan fillTime)
+    {
+        _generation++;
+        _holding = false;
+        _returnHolding = true;
+        Edge.IsVisible = false;
+        Label.IsVisible = false;
+        ReturnEdge.Transitions = null;
+        ReturnEdge.Progress = 0;
+        ReturnBox.IsVisible = true;
+        Appear();
+        ReturnEdge.Transitions = [new DoubleTransition { Property = ScreenEdgeFill.ProgressProperty, Duration = fillTime }];
+        ReturnEdge.Progress = 1;
+    }
+
+    /// <summary>View was let go early: the frame runs back, then the box goes.</summary>
+    public void CancelReturnHold()
+    {
+        if (!_returnHolding)
+        {
+            return;
+        }
+
+        _returnHolding = false;
+        var generation = ++_generation;
+        ReturnEdge.Transitions = [new DoubleTransition { Property = ScreenEdgeFill.ProgressProperty, Duration = RunBackTime, Easing = new CubicEaseOut() }];
+        ReturnEdge.Progress = 0;
+        DispatcherTimer.RunOnce(() => DisappearIfStill(generation), RunBackTime);
+    }
+
+    /// <summary>Arcadia is coming to the front: nothing to announce any more.</summary>
+    public void EndReturnHold()
+    {
+        if (!_returnHolding)
+        {
+            return;
+        }
+
+        _returnHolding = false;
+        DisappearIfStill(++_generation);
+    }
+
+    private void HideReturnBox()
+    {
+        _returnHolding = false;
+        ReturnBox.IsVisible = false;
+        ReturnEdge.Transitions = null;
+        ReturnEdge.Progress = 0;
     }
 
     private void Appear()
@@ -131,6 +186,7 @@ public partial class MouseModeOverlay : Window
         Edge.Progress = 0;
         Edge.Classes.Remove("flash");
         Label.IsVisible = false;
+        HideReturnBox();
     }
 
     /// <summary>No activation, no taskbar or Alt+Tab entry, and a region of only the edge and the label area, so clicks pass everywhere else.</summary>

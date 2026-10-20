@@ -869,6 +869,11 @@
                 Command="{Binding CloseViewOptionsCommand}" />
         <Border Width="820" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,48,56,36"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
+          <Panel>
+          <Button Classes="plain dialogClose" Margin="0,-32,-40,0" ToolTip.Tip="Schließen"
+                  IsVisible="{Binding ShowsCloseButtons}" Command="{Binding CloseViewOptionsCommand}">
+            <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+          </Button>
           <StackPanel Spacing="40" DataContext="{Binding ViewOptions}" x:DataType="vm:ViewOptionsViewModel">
             <StackPanel Spacing="8">
               <TextBlock Text="{Binding Title}" FontSize="34" FontWeight="ExtraBold" />
@@ -962,6 +967,7 @@
               </StackPanel>
             </Border>
           </StackPanel>
+          </Panel>
         </Border>
       </Panel>
 
@@ -1050,6 +1056,7 @@
                 Command="{Binding CloseSettingsCommand}" />
         <Border Width="1040" MaxHeight="1000" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,40,56,32"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
+          <Panel>
           <!-- The button hints stay visible below the scrolling content. -->
           <DockPanel>
           <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,24,0,0" Margin="0,24,0,0">
@@ -1187,11 +1194,23 @@
               <!-- Mouse mode (#64): the main switch and everything that depends on it in one box. -->
               <Border Background="{StaticResource SurfaceSunken}" CornerRadius="16" Padding="8" DataContext="{Binding MouseMode}" x:DataType="vm:MouseModeSettingsViewModel">
                 <StackPanel Spacing="4">
-                  <Button Classes="plain settingRow" Classes.focused="{Binding ComboItem.IsFocused}" Command="{Binding ToggleComboCommand}">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding EnabledItem.IsFocused}" Command="{Binding ToggleEnabledCommand}">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
-                        <TextBlock Text="Mausmodus mit Back + Start" FontSize="20" FontWeight="Bold" />
-                        <TextBlock Text="Back + Start gedrückt halten macht den Controller zur Maus und wieder zurück – auch wenn Arcadia im Hintergrund ist. So lassen sich Launcher-Fenster und Windows-Dialoge vom Sofa aus bedienen. Ausschalten, wenn ein Spiel die Kombination selbst braucht."
+                        <TextBlock Text="Mausmodus" FontSize="20" FontWeight="Bold" />
+                        <TextBlock Text="Macht den Controller zur Maus, damit sich Launcher-Fenster und Windows-Dialoge vom Sofa aus bedienen lassen. Aus: Der Mausmodus geht nie an, die Einstellungen darunter bleiben erhalten."
+                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding Enabled}" VerticalAlignment="Center">
+                        <Ellipse />
+                      </Border>
+                    </Grid>
+                  </Button>
+                  <Button Classes="plain settingRow" Classes.focused="{Binding ComboItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleComboCommand}" Margin="20,0,0,0">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="Mit Back + Start umschalten" FontSize="18" FontWeight="Bold" />
+                        <TextBlock Text="Back + Start gedrückt halten macht den Controller zur Maus und wieder zurück – auch wenn Arcadia im Hintergrund ist. Ausschalten, wenn ein Spiel die Kombination selbst braucht."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding ComboEnabled}" VerticalAlignment="Center">
@@ -1199,8 +1218,7 @@
                       </Border>
                     </Grid>
                   </Button>
-
-                  <Button Classes="plain settingRow" Classes.focused="{Binding HoldItem.IsFocused}" Classes.unavailable="{Binding !ComboEnabled}" Margin="20,0,0,0">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding HoldItem.IsFocused}" Classes.unavailable="{Binding !HoldTimeApplies}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Haltedauer" FontSize="18" FontWeight="Bold" />
@@ -1213,8 +1231,7 @@
                       </StackPanel>
                     </Grid>
                   </Button>
-
-                  <Button Classes="plain settingRow" Classes.focused="{Binding SpeedItem.IsFocused}" Margin="20,0,0,0">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding SpeedItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Zeigergeschwindigkeit" FontSize="18" FontWeight="Bold" />
@@ -1227,8 +1244,7 @@
                       </StackPanel>
                     </Grid>
                   </Button>
-
-                  <Button Classes="plain settingRow" Classes.focused="{Binding EndInFrontItem.IsFocused}" Command="{Binding ToggleEndInFrontCommand}" Margin="20,0,0,0">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding EndInFrontItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleEndInFrontCommand}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
                         <TextBlock Text="Beenden, wenn Arcadia nach vorne kommt" FontSize="18" FontWeight="Bold" />
@@ -1240,8 +1256,7 @@
                       </Border>
                     </Grid>
                   </Button>
-
-                  <Button Classes="plain settingRow" Classes.focused="{Binding AutoStartItem.IsFocused}" Command="{Binding ToggleAutoStartCommand}" Margin="20,0,0,0">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding AutoStartItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleAutoStartCommand}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
                         <TextBlock Text="Automatisch einschalten, wenn Arcadia den Fokus verliert" FontSize="18" FontWeight="Bold" />
@@ -1253,12 +1268,57 @@
                       </Border>
                     </Grid>
                   </Button>
+                  <Button Classes="plain settingRow" Classes.focused="{Binding SteamLayoutItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleSteamLayoutCommand}" Margin="20,0,0,0">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="Steams Desktop-Belegung ignorieren" FontSize="18" FontWeight="Bold" />
+                        <TextBlock Text="Außerhalb von Spielen macht Steam aus dem Controller selbst Maus und Tasten, z. B. aus Back + Start ein Alt+Tab. Arcadia verwirft diese Eingaben, solange kein Spiel aus der Bibliothek vorne ist, und im Mausmodus immer."
+                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding IgnoreSteamDesktopLayout}" VerticalAlignment="Center">
+                        <Ellipse />
+                      </Border>
+                    </Grid>
+                  </Button>
 
                   <StackPanel Spacing="12" Margin="20,8,20,12">
                     <TextBlock IsVisible="{Binding SaveError, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding SaveError}"
                                FontSize="15" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
                     <Button Classes="plain action" Classes.focused="{Binding HelpItem.IsFocused}" Command="{Binding HelpCommand}" Content="So funktioniert's" />
                   </StackPanel>
+                </StackPanel>
+              </Border>
+
+              <!-- View held brings Arcadia back (#64): its own box, independent of the mouse mode. -->
+              <Border Background="{StaticResource SurfaceSunken}" CornerRadius="16" Padding="8" DataContext="{Binding ReturnWithView}" x:DataType="vm:ReturnWithViewSettingsViewModel">
+                <StackPanel Spacing="4">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding EnabledItem.IsFocused}" Command="{Binding ToggleEnabledCommand}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="Mit View zurück zu Arcadia" FontSize="20" FontWeight="Bold" />
+                        <TextBlock Text="View gedrückt halten holt Arcadia nach vorne, wenn es im Hintergrund ist – aus einem Spiel, einem Launcher oder dem Mausmodus. In Arcadia öffnet View weiter das Menü."
+                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding Enabled}" VerticalAlignment="Center">
+                        <Ellipse />
+                      </Border>
+                    </Grid>
+                  </Button>
+                  <Button Classes="plain settingRow" Classes.focused="{Binding HoldItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Margin="20,0,0,0">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+                      <StackPanel Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="Haltedauer" FontSize="18" FontWeight="Bold" />
+                        <TextBlock Text="So lange muss View gehalten werden. „Sofort“ wechselt schon beim kurzen Drücken." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="plain stepperArrow" Command="{Binding HoldItem.DecreaseCommand}" IsEnabled="{Binding HoldItem.CanDecrease}" Content="‹" />
+                        <TextBlock Classes="stepperValue" Text="{Binding HoldItem.ValueText}" />
+                        <Button Classes="plain stepperArrow" Command="{Binding HoldItem.IncreaseCommand}" IsEnabled="{Binding HoldItem.CanIncrease}" Content="›" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                  <TextBlock IsVisible="{Binding SaveError, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding SaveError}" Margin="20,8,20,12"
+                             FontSize="15" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
                 </StackPanel>
               </Border>
             </StackPanel>
@@ -1336,6 +1396,11 @@
           </StackPanel>
           </ScrollViewer>
           </DockPanel>
+          <Button Classes="plain dialogClose" Margin="0,-24,-40,0" ToolTip.Tip="Schließen"
+                  IsVisible="{Binding ShowsCloseButtons}" Command="{Binding CloseSettingsCommand}">
+            <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+          </Button>
+          </Panel>
         </Border>
 
         <!-- Prompt over the settings before "SISR installieren" goes on; the settings stay dimmed behind it. -->
@@ -1343,6 +1408,7 @@
           <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                   Command="{Binding ClosePromptCommand}" />
           <Border Classes="prompt" Width="720" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Panel>
             <StackPanel Spacing="28">
               <StackPanel Orientation="Horizontal" Spacing="18">
                 <Border Classes="promptIcon" Classes.warning="{Binding IsWarningPrompt}">
@@ -1435,6 +1501,11 @@
                 </StackPanel>
               </Border>
             </StackPanel>
+            <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
+                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowsCloseButtons}" Command="{Binding ClosePromptCommand}">
+              <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+            </Button>
+            </Panel>
           </Border>
         </Panel>
         <!-- "So funktioniert's" of the mouse mode, over the settings. -->
@@ -1442,6 +1513,7 @@
           <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                   Command="{Binding ClosePromptCommand}" />
           <Border Classes="prompt" Width="900" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Panel>
             <StackPanel Spacing="24">
               <TextBlock Text="Mausmodus – so funktioniert's" FontSize="30" FontWeight="ExtraBold" />
               <TextBlock Classes="promptBody" Text="Back + Start gedrückt halten, bis der Bildschirmrand voll ist: Der Controller steuert jetzt die Maus, auch in Fenstern außerhalb von Arcadia. Genauso geht es zurück. Jeder verbundene Controller kann umschalten und den Zeiger bewegen." />
@@ -1476,16 +1548,17 @@
                 </ItemsControl>
               </StackPanel>
               <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
-                <Grid ColumnDefinitions="*,Auto">
-                  <Button Classes="plain action primaryAction" Classes.focused="{Binding CloseMouseModeHelpItem.IsFocused}"
-                          Command="{Binding ClosePromptCommand}" Content="Schließen" />
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <Border Classes="glyph round"><TextBlock Text="B" /></Border>
-                    <TextBlock Classes="hint" Text="Schließen" />
-                  </StackPanel>
-                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                  <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                  <TextBlock Classes="hint" Text="Schließen" />
+                </StackPanel>
               </Border>
             </StackPanel>
+            <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
+                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowsCloseButtons}" Command="{Binding ClosePromptCommand}">
+              <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+            </Button>
+            </Panel>
           </Border>
         </Panel>
       </Panel>

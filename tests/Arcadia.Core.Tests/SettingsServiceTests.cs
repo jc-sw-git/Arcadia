@@ -96,6 +96,37 @@ public sealed class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void Return_with_view_survives_a_restart_and_starts_on_with_one_second()
+    {
+        File.WriteAllText(SettingsPath, "{}");
+        var service = new SettingsService(new SettingsStore(SettingsPath));
+        Assert.True(service.Current.ReturnWithView.Enabled);
+        Assert.Equal(1, service.Current.ReturnWithView.HoldSeconds);
+        Assert.True(service.Current.MouseMode.Enabled);
+        Assert.True(service.Current.MouseMode.IgnoreSteamDesktopLayout);
+
+        service.Update(s => s with { ReturnWithView = new ReturnWithViewSettings { Enabled = false, HoldSeconds = 0 } });
+        var restarted = new SettingsService(new SettingsStore(SettingsPath)).Current.ReturnWithView;
+
+        Assert.False(restarted.Enabled);
+        Assert.Equal(0, restarted.HoldSeconds);
+    }
+
+    [Theory]
+    [InlineData("""{ "ReturnWithView": { "HoldSeconds": -1, "Enabled": false } }""", false)]
+    [InlineData("""{ "ReturnWithView": { "HoldSeconds": 10 } }""", true)]
+    [InlineData("""{ "ReturnWithView": null }""", true)]
+    public void Broken_return_with_view_values_fall_back_to_the_defaults_and_keep_the_rest(string json, bool enabled)
+    {
+        File.WriteAllText(SettingsPath, json);
+
+        var loaded = new SettingsService(new SettingsStore(SettingsPath)).Current.ReturnWithView;
+
+        Assert.Equal(1, loaded.HoldSeconds);
+        Assert.Equal(enabled, loaded.Enabled);
+    }
+
+    [Fact]
     public void Changes_from_two_threads_at_once_are_all_saved()
     {
         var service = new SettingsService(new SettingsStore(SettingsPath));

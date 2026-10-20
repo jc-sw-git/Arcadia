@@ -41,6 +41,9 @@ public sealed record AppSettings
     /// <summary>The controller as a mouse (#64).</summary>
     public MouseModeSettings MouseMode { get; init; } = new();
 
+    /// <summary>View held brings Arcadia back from the background (#64); independent of the mouse mode.</summary>
+    public ReturnWithViewSettings ReturnWithView { get; init; } = new();
+
     /// <summary>
     /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
     /// hand — with the defaults, instead of failing on them later.
@@ -51,8 +54,12 @@ public sealed record AppSettings
         PreferredPageSize = PageSizes.Options.Contains(PreferredPageSize) ? PreferredPageSize : PageSizes.Default,
     };
 
-    /// <summary>Like <see cref="WithValidLibraryView"/> for the mouse mode; also replaces a <c>null</c> written by hand.</summary>
-    public AppSettings WithValidMouseMode() => this with { MouseMode = (MouseMode ?? new MouseModeSettings()).WithValidValues() };
+    /// <summary>Like <see cref="WithValidLibraryView"/> for the mouse mode and View's way back; also replaces a <c>null</c> written by hand.</summary>
+    public AppSettings WithValidMouseMode() => this with
+    {
+        MouseMode = (MouseMode ?? new MouseModeSettings()).WithValidValues(),
+        ReturnWithView = (ReturnWithView ?? new ReturnWithViewSettings()).WithValidValues(),
+    };
 
     /// <summary>
     /// Whether SISR should run while <paramref name="game"/> runs. Without an override it runs for

@@ -1,7 +1,9 @@
 using Arcadia.App.ViewModels;
 using Arcadia.App.Views;
+using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
 using Arcadia.Input;
+using Arcadia.Launchers;
 using Avalonia.Threading;
 
 namespace Arcadia.App.Services;
@@ -9,7 +11,9 @@ namespace Arcadia.App.Services;
 /// <summary>
 /// Wires the mouse mode (#64) into Arcadia: it follows every poll of the controllers (also with
 /// Arcadia in the background), shows its feedback over the screen, rumbles the controller that
-/// switched, and runs the automation from the settings on Arcadia's focus changes.
+/// switched, and runs the automation from the settings on Arcadia's focus changes. Beside it, View
+/// held brings Arcadia back (<see cref="ReturnWithView"/>), and Steam's desktop layout is dropped
+/// where the settings ask for it (<see cref="IDesktopInputFilter"/>).
 /// </summary>
 public sealed class MouseModeHost : IDisposable
 {
@@ -23,19 +27,35 @@ public sealed class MouseModeHost : IDisposable
     /// </summary>
     private static readonly TimeSpan FocusLossSettleTime = TimeSpan.FromMilliseconds(300);
 
+    /// <summary>This often Arcadia checks whether Steam's desktop layout must be dropped: not while a game is in front.</summary>
+    private static readonly TimeSpan DesktopFilterCheckInterval = TimeSpan.FromMilliseconds(250);
+
     private readonly IGamepadSource _gamepad;
     private readonly SettingsService _settings;
     private readonly MainWindow _window;
     private readonly MainViewModel _viewModel;
     private readonly MouseMode _mode;
     private readonly MouseModeAutomation _automation;
+    private readonly ReturnWithView _returnWithView;
+    private readonly ControllerActivity _activity;
+    private readonly IDesktopInputFilter _desktopFilter;
     private readonly MouseModeOverlay _overlay = new();
     private readonly DispatcherTimer _foregroundCheck;
     private readonly DispatcherTimer _focusLossSettle;
+    private readonly DispatcherTimer _desktopFilterCheck;
+
+    // Arcadia's window is active; read on the poll thread.
+    private volatile bool _arcadiaActive;
+    private bool _desktopFilterOn;
+    private int? _lastForegroundId;
+    private GameFolders? _lastForegroundFolders;
+    private bool _lastForegroundIsGame;
 
     // Only the poll thread reads these two.
     private MouseModeSettings? _optionsFrom;
     private MouseModeOptions? _options;
+    private ReturnWithViewSettings? _returnOptionsFrom;
+    private ReturnWithViewOptions? _returnOptions;
 
     // Set on the poll thread after an unexpected error; the mode stays off until Arcadia restarts.
     private volatile bool _failed;
@@ -51,15 +71,22 @@ public sealed class MouseModeHost : IDisposable
             _mode,
             () => _settings.Current.MouseMode.EndWhenArcadiaInFront,
             () => _settings.Current.MouseMode.StartWhenArcadiaLosesFocus);
+        _returnWithView = new ReturnWithView(CurrentReturnOptions, () => _arcadiaActive, time);
+        _activity = new ControllerActivity(time);
+        _desktopFilter = DesktopInputFilter.CreateDefault(_activity);
+        _arcadiaActive = window.IsActive;
         _foregroundCheck = new DispatcherTimer(ForegroundCheckInterval, DispatcherPriority.Background, (_, _) => CheckForeground());
         _foregroundCheck.Stop();
         _focusLossSettle = new DispatcherTimer(FocusLossSettleTime, DispatcherPriority.Background, (_, _) => OnFocusLossSettled());
         _focusLossSettle.Stop();
+        _desktopFilterCheck = new DispatcherTimer(DesktopFilterCheckInterval, DispatcherPriority.Background, (_, _) => UpdateDesktopFilter());
 
         _mode.HoldStarted += fillTime => Dispatcher.UIThread.Post(() => _overlay.ShowHold(fillTime));
         _mode.HoldCancelled += () => Dispatcher.UIThread.Post(_overlay.CancelHold);
         _mode.Switched += OnSwitched;
-        _mode.ArcadiaRequested += () => Dispatcher.UIThread.Post(() => ForegroundGuard.BringBack(_window));
+        _returnWithView.HoldStarted += fillTime => Dispatcher.UIThread.Post(() => _overlay.ShowReturnHold(fillTime));
+        _returnWithView.HoldCancelled += () => Dispatcher.UIThread.Post(_overlay.CancelReturnHold);
+        _returnWithView.Requested += () => Dispatcher.UIThread.Post(ReturnToArcadia);
         _gamepad.Polled += OnPolled;
         _window.Activated += OnArcadiaActivated;
         _window.Deactivated += OnArcadiaDeactivated;
@@ -68,13 +95,18 @@ public sealed class MouseModeHost : IDisposable
     /// <summary>Gamepad input is the mouse's now, not Arcadia's navigation. Readable from any thread.</summary>
     public bool IsOn => _mode.IsOn;
 
+    /// <summary>Arcadia's window is active. Readable from any thread, unlike <c>Window.IsActive</c>.</summary>
+    public bool IsArcadiaActive => _arcadiaActive;
+
     /// <summary>Call after the gamepad source stopped polling: lets go of a held mouse button or key.</summary>
     public void Dispose()
     {
         _gamepad.Polled -= OnPolled;
         _foregroundCheck.Stop();
         _focusLossSettle.Stop();
+        _desktopFilterCheck.Stop();
         _mode.Stop();
+        _desktopFilter.Dispose();
         _overlay.Close();
     }
 
@@ -87,7 +119,9 @@ public sealed class MouseModeHost : IDisposable
 
         try
         {
+            _activity.Note(pads);
             _mode.Update(pads);
+            _returnWithView.Update(pads);
         }
         catch (Exception ex)
         {
@@ -112,10 +146,30 @@ public sealed class MouseModeHost : IDisposable
         if (_options is null || !ReferenceEquals(settings, _optionsFrom))
         {
             _optionsFrom = settings;
-            _options = new MouseModeOptions(settings.ComboEnabled, TimeSpan.FromSeconds(settings.HoldSeconds), settings.PointerSpeed);
+            _options = new MouseModeOptions(settings.Enabled, settings.ComboEnabled, TimeSpan.FromSeconds(settings.HoldSeconds), settings.PointerSpeed);
         }
 
         return _options;
+    }
+
+    /// <summary>Like <see cref="CurrentOptions"/> for "Zurück zu Arcadia".</summary>
+    private ReturnWithViewOptions CurrentReturnOptions()
+    {
+        var settings = _settings.Current.ReturnWithView;
+        if (_returnOptions is null || !ReferenceEquals(settings, _returnOptionsFrom))
+        {
+            _returnOptionsFrom = settings;
+            _returnOptions = new ReturnWithViewOptions(settings.Enabled, TimeSpan.FromSeconds(settings.HoldSeconds));
+        }
+
+        return _returnOptions;
+    }
+
+    private void ReturnToArcadia()
+    {
+        _overlay.EndReturnHold();
+        AppLog.Write("View gehalten: Arcadia kommt nach vorne");
+        ForegroundGuard.BringBack(_window);
     }
 
     private void OnSwitched(MouseModeSwitch change)
@@ -143,11 +197,13 @@ public sealed class MouseModeHost : IDisposable
             };
             _overlay.ShowSwitched(text, flash: !change.IsAutomatic);
             UpdateForegroundCheck();
+            UpdateDesktopFilter();
         });
     }
 
     private void OnArcadiaActivated(object? sender, EventArgs e)
     {
+        _arcadiaActive = true;
         _focusLossSettle.Stop();
         _automation.ArcadiaActivated();
         UpdateForegroundCheck();
@@ -155,6 +211,7 @@ public sealed class MouseModeHost : IDisposable
 
     private void OnArcadiaDeactivated(object? sender, EventArgs e)
     {
+        _arcadiaActive = false;
         _focusLossSettle.Stop();
         _focusLossSettle.Start();
     }
@@ -172,6 +229,39 @@ public sealed class MouseModeHost : IDisposable
     {
         _automation.ForegroundChecked(ForegroundGame.IsInFront(_viewModel.GameFolders));
         UpdateForegroundCheck();
+    }
+
+    /// <summary>
+    /// Steam's desktop layout is dropped while the setting is on and no game of the library is in
+    /// front (a game's own Steam layout must reach it), and always in the mouse mode.
+    /// </summary>
+    private void UpdateDesktopFilter()
+    {
+        var settings = _settings.Current.MouseMode;
+        var on = settings.Enabled && settings.IgnoreSteamDesktopLayout && !_failed && (_mode.IsOn || !GameInFront());
+        if (on == _desktopFilterOn)
+        {
+            return;
+        }
+
+        _desktopFilterOn = on;
+        var dropped = _desktopFilter.SetOn(on);
+        AppLog.Write(on ? "Steams Desktop-Belegung wird ignoriert" : $"Steams Desktop-Belegung wirkt wieder ({dropped ?? 0} Eingaben verworfen)");
+    }
+
+    /// <summary>Asks for the foreground process's path only when the foreground changed.</summary>
+    private bool GameInFront()
+    {
+        var id = ProcessWatch.ForegroundProcessId();
+        var folders = _viewModel.GameFolders;
+        if (id != _lastForegroundId || !ReferenceEquals(folders, _lastForegroundFolders))
+        {
+            _lastForegroundId = id;
+            _lastForegroundFolders = folders;
+            _lastForegroundIsGame = ForegroundGame.IsInFront(folders);
+        }
+
+        return _lastForegroundIsGame;
     }
 
     /// <summary>The timer runs only while it has something to watch, so it costs nothing beside a game otherwise.</summary>

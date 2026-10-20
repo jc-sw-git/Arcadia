@@ -643,7 +643,10 @@ Verlauf:
       mitschicken. · E2E: nein
 - [ ] **T64-17** Steam Controller Support an, Steam Controller verbunden, ein Steam-Spiel auf „Steam Input“ starten:
       SISR pausiert, die Zeile „Steam Controller“ in der Vorschau und auf der Detailseite bleibt sichtbar und
-      umschaltbar. „So funktioniert's“ nennt, dass ⧉ + ≡ und ⧉ halten mit dem Steam Controller dort nicht wirken.
+      umschaltbar. Die Nachteile des Steam Controller Supports nennen, dass Mausmodus und „Zurück zu Arcadia“ mit dem
+      Steam Controller in Spielen auf „Steam Input“ nicht wirken. Gegenprobe mit dem Xbox-Controller, für das Spiel in
+      Steam auf „Steam Input“ gestellt: Mausmodus und ⧉ gehalten wirken weiter (abgeleitet: Steam kann den echten
+      Pad vor XInput nicht verstecken).
       Ebenso nach einem Update-Neustart von Arcadia, während das Spiel läuft (Ergebnis im Verlauf notieren). · E2E: nein
 - [ ] **T64-18** Mausmodus an, Windows-Bildschirmtastatur (osk.exe) offen: mit A auf Tasten klicken. Noch nicht
       gesehen, Ergebnis im Verlauf notieren: der Filter verwirft vermutlich auch ihre Tasten, weil sie sie wie Steam
@@ -674,6 +677,7 @@ Verlauf:
 | T64-14, T64-16 (Review) | 2026-10-20 | Claude | Review zu PR #120 (`reviews/pr-120-code-review.md`), `dotnet build`/`dotnet test` unter Linux | ✅ Build und Tests grün. Neu: „vorne“ verlangt zusätzlich, dass kein fremdes Fenster Arcadia ganz verdeckt (randloses Vollbild), ⧉ gehalten hält Arcadia dann bis zum Fokuswechsel oben; neben Spielen nur der Tastatur-Hook, ohne Controller keiner, die Hooks werden alle 30 s und bei jedem Wechsel neu gesetzt. Hooks, Vordergrund und CPU-Last unter Windows nicht geprüft | T64-14, T64-16 bis T64-18 am PC des Owners |
 | T64-16 (Review, Nachtrag) | 2026-10-20 | Claude | Nach Juris Antwort (drei Monitore, Vollbildart egal), `dotnet build`/`dotnet test` unter Linux | ✅ Build und Tests grün. Neu: Zeiger beim Einschalten im Spiel in die Mitte des Spielfensters; Log jedes Vordergrundwechsels und des Ziels von ⧉ gehalten. Unter Windows nicht geprüft | T64-16 am PC des Owners, mit Log |
 | T64-14, T64-16 (M3, M5) | 2026-10-20 | Claude | Nach Juris Freigabe von M3 und M5; Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool; `dotnet test` | ✅ Eigene Box „Steams Desktop-Belegung ignorieren“ unter „Zurück zu Arcadia“, mit dem Steuerkreuz erreichbar (die Liste scrollt mit), Enter schaltet um. Pfade mit `/`, doppelten Trennern, `.`/`..` und `\\?\` passen (`GameFoldersTests`, vorher rot); `LaunchedGamesTests`. Hooks, Anti-Cheat-Spiel und Vordergrund unter Windows nicht geprüft | T64-14, T64-16 am PC des Owners |
+| T64-17 (nur Text) | 2026-10-20 | Claude | Linux, Xvfb 1920×1080 `--demo`, Maus per xdotool | ✅ Der Hinweis zum Steam Controller auf „Steam Input“ steht unter den Nachteilen des Steam Controller Supports, nicht mehr in „So funktioniert's“ (Juri) | T64-17 am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

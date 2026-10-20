@@ -121,7 +121,6 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
         "Fenster von Programmen, die als Administrator laufen, lassen Eingaben eines Arcadia ohne Administratorrechte nicht durch.",
         "Über Spielen im exklusiven Vollbild zeigt Windows den Rand und den Hinweis nicht an; das Umschalten spürst du dann nur am Vibrieren.",
         "Im Mausmodus sieht ein Spiel im Vordergrund die Controller-Eingaben weiterhin.",
-        "Den Steam Controller sieht Arcadia nur im Modus „Xbox 360 Controller (SISR)“. In Spielen auf „Steam Input“ wirken ⧉ + ≡ und ⧉ halten mit ihm deshalb nicht.",
     ];
 
     /// <summary>"Mausmodus": Aus, Von Hand or Automatisch. Aus: every other row counts for nothing but keeps its value.</summary>

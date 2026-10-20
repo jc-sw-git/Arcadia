@@ -1184,6 +1184,7 @@
                       <TextBlock Classes="bullet" Text="• Benötigt den usbip-Treiber. Die Installation fragt einmalig nach Administratorrechten." />
                       <TextBlock Classes="bullet" Text="• SISR ist laut seinem Entwickler noch experimentell; Abstürze sind möglich. Arcadia startet SISR dann automatisch neu." />
                       <TextBlock Classes="bullet" Text="• Steht ein Steam-Spiel auf „Xbox 360 Controller (SISR)“, kommen Eingaben doppelt an." />
+                      <TextBlock Classes="bullet" Text="• Arcadia erkennt den Steam Controller nur, solange er als Xbox 360 Controller läuft. In Spielen auf „Steam Input“ wirken mit ihm deshalb weder der Mausmodus noch „Zurück zu Arcadia“." />
                     </StackPanel>
                     <TextBlock FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap"
                                Text="SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR" />

@@ -130,7 +130,7 @@ focus handling or anything SISR/usbip related.
   (owner, 2026-10-20): Steam's layout doubles Arcadia's own navigation as well. Not yet seen: whether the filter also drops the Windows on-screen
   keyboard (osk.exe), which sends its keys with `SendInput` too (T64-18).
 - The Steam Controller reaches Arcadia only through SISR. While SISR is paused for a game on "Steam Input", Arcadia
-  doesn't see it at all: no Back + Start, no View held (said in "So funktioniert's"; a fix needs #112 or #72).
+  doesn't see it at all: no Back + Start, no View held (named under the Steam Controller Support's "Nachteile", owner 2026-10-20; a fix needs #112 or #72).
 - "Arcadia in front" is decided by the foreground window (`ProcessWatch.ForegroundProcessId`), not by the window's
   Activated/Deactivated: on the owner's PC Arcadia sometimes took a game's controller input as its own after
   switching between the game and Arcadia, and View held didn't bring it back (2026-10-20, cause not found).

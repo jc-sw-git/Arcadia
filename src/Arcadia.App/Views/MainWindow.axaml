@@ -1295,7 +1295,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
                         <TextBlock Text="Steams Desktop-Belegung ignorieren" FontSize="20" FontWeight="Bold" />
-                        <TextBlock ctl:ButtonTextBlock.Text="Läuft Steam, macht es aus dem Controller selbst Maus und Tasten, z. B. aus ⧉ + ≡ ein Alt+Tab, und Eingaben kommen in Arcadia doppelt an. Arcadia verwirft sie, solange ein Controller benutzt wird. Ist ein Spiel aus der Bibliothek vorne, nur bei ⧉ + ≡, damit Steams Belegung für das Spiel weiter wirkt."
+                        <TextBlock ctl:ButtonTextBlock.Text="Läuft Steam, macht es aus dem Controller selbst Maus und Tasten, z. B. aus ⧉ + ≡ ein Alt+Tab, und Eingaben kommen in Arcadia doppelt an. Arcadia verwirft diese Eingaben."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding Enabled}" VerticalAlignment="Center">

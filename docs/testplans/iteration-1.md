@@ -541,6 +541,10 @@ Verlauf:
 | T102-4 | 2026-10-18 | Juri | PC des Owners, PR #101 | ❌ Am unteren Rand 1–2 px Cover ohne Ausfaden | Bei skaliertem Fenster nachgestellt (Xvfb 1745×1000): 1 px Spalt zwischen Ausschnitt des Rasters und Verlauf |
 | T102-4 | 2026-10-18 | Claude | Xvfb 1745×1000 `--demo`, oben und unten vergrößert | ✅ Kein Streifen mehr, der Verlauf reicht 2 px über das Raster hinaus | Kontrolle am PC des Owners |
 
+## #115 CI: Installer seltener hochladen
+
+Keine Testfälle: nur die CI geändert; geprüft wird sie durch ihre eigenen Läufe (PR ohne Upload, `main` mit Upload).
+
 ## #86 Refinement-Skill
 
 Keine Testfälle: Arbeitsablauf für Claude ohne Änderung an Arcadia; er wird beim nächsten Issue

@@ -26,10 +26,14 @@ jobs:
         shell: pwsh
         # Velopack needs a version >= 0.0.1.
         run: ./tools/release/Pack.ps1 -Version 0.0.1-ci.${{ github.run_number }}
+      # Packing runs on every build to check Pack.ps1; only main's installer is kept. The account's
+      # artifact storage is counted per hour over the billing month and runs out despite pruning,
+      # so a failed upload only warns instead of failing a green build.
       - name: Upload installer
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && github.event_name == 'push'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: Arcadia-win-Setup
           path: artifacts/releases/Arcadia-win-Setup.exe
-          retention-days: 7
+          retention-days: 1

@@ -13,6 +13,7 @@ public enum GameActionKind
     Artwork,
     OpenInLauncher,
     ControllerMode,
+    MouseMode,
     Uninstall,
 }
 
@@ -32,6 +33,17 @@ public interface IGameActionHost
     void OpenInLauncher(GameTileViewModel tile);
 
     void ToggleControllerMode(GameTileViewModel tile);
+
+    /// <summary>True when the mouse mode is "Von Hand" with "Deaktivierten Mausmodus im Spiel erzwingen" on "Individuell".</summary>
+    bool ShowGameMouseMode { get; }
+
+    /// <summary>The game's "Individueller Mausmodus": "Standard", "Erlaubt" or "Deaktiviert".</summary>
+    string GameMouseModeOf(Game game);
+
+    /// <summary>What "Standard" means now: "Erlaubt" or "Deaktiviert".</summary>
+    string DefaultGameMouseMode { get; }
+
+    void CycleGameMouseMode(GameTileViewModel tile);
 
     void Uninstall(GameTileViewModel tile);
 }
@@ -67,7 +79,12 @@ public sealed partial class GameActionViewModel : ViewModelBase
     public partial string ButtonLabel { get; private set; }
 
     /// <summary>A small heading above the button text, e.g. "STEAM CONTROLLER" above the mode.</summary>
-    public string? Caption => Kind == GameActionKind.ControllerMode ? "STEAM CONTROLLER" : null;
+    public string? Caption => Kind switch
+    {
+        GameActionKind.ControllerMode => "STEAM CONTROLLER",
+        GameActionKind.MouseMode => "INDIVIDUELLER MAUSMODUS",
+        _ => null,
+    };
 
     public bool HasCaption => Caption is not null;
 
@@ -87,8 +104,8 @@ public sealed partial class GameActionViewModel : ViewModelBase
     /// <summary>The menu draws a line above it.</summary>
     public bool StartsGroup => Kind == GameActionKind.Uninstall;
 
-    /// <summary>Switching the mode keeps the menu open, so the new mode can be seen.</summary>
-    public bool KeepsMenuOpen => Kind == GameActionKind.ControllerMode;
+    /// <summary>Switching a mode keeps the menu open, so the new mode can be seen.</summary>
+    public bool KeepsMenuOpen => Kind is GameActionKind.ControllerMode or GameActionKind.MouseMode;
 
     [ObservableProperty]
     public partial bool IsFocused { get; set; }
@@ -104,6 +121,7 @@ public sealed partial class GameActionViewModel : ViewModelBase
         GameActionKind.Artwork => "M5.5 4.5h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2M20.5 16l-5-5-8 8.5M9 8.2a1.8 1.8 0 1 0 0 3.6a1.8 1.8 0 1 0 0-3.6",
         GameActionKind.OpenInLauncher => "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
         GameActionKind.ControllerMode => "M4 8h12M13 5l3 3-3 3M20 16H8M11 13l-3 3 3 3",
+        GameActionKind.MouseMode => "M12 3.5a5.5 5.5 0 0 0-5.5 5.5v6a5.5 5.5 0 0 0 11 0V9A5.5 5.5 0 0 0 12 3.5M6.5 10h11M12 3.5V10",
         _ => "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
     });
 
@@ -158,6 +176,18 @@ public sealed partial class GameActionViewModel : ViewModelBase
             actions.Add(mode);
         }
 
+        if (host.ShowGameMouseMode)
+        {
+            GameActionViewModel? mouse = null;
+            mouse = new(GameActionKind.MouseMode, string.Empty, null, true, () =>
+            {
+                host.CycleGameMouseMode(tile);
+                mouse!.ShowGameMouseMode(host.GameMouseModeOf(game), host.DefaultGameMouseMode);
+            });
+            mouse.ShowGameMouseMode(host.GameMouseModeOf(game), host.DefaultGameMouseMode);
+            actions.Add(mouse);
+        }
+
         actions.Add(busy
             ? new(GameActionKind.Uninstall, "Deinstallieren …", "Erst wenn die laufende Installation fertig ist", false, () => { })
             : game.Uninstall is not null
@@ -167,6 +197,21 @@ public sealed partial class GameActionViewModel : ViewModelBase
                     : new(GameActionKind.Uninstall, "Deinstallieren …", $"Nur in {launcher} möglich", false, () => { }));
 
         return actions;
+    }
+
+    private void ShowGameMouseMode(string mode, string defaultMode)
+    {
+        Label = $"Mausmodus: {mode}";
+        ButtonLabel = mode;
+        var next = mode switch
+        {
+            GameMouseModes.Default => GameMouseModes.Allowed,
+            GameMouseModes.Allowed => GameMouseModes.Blocked,
+            _ => GameMouseModes.Default,
+        };
+        Note = mode == GameMouseModes.Default
+            ? $"„Standard“ heißt gerade „{defaultMode}“ · A wechselt zu „{next}“"
+            : $"A wechselt zu „{next}“";
     }
 
     private void ShowControllerMode(string mode)

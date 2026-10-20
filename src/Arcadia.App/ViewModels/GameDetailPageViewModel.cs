@@ -138,7 +138,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         // No context menu here: everything it offers is a button of its own, except "Details", which is this page.
         List<GameActionViewModel> InOrder(params GameActionKind[] kinds) =>
             kinds.SelectMany(kind => actions.Where(a => a.Kind == kind)).ToList();
-        TopRow = InOrder(GameActionKind.Play, GameActionKind.OpenInLauncher, GameActionKind.Favorite, GameActionKind.ControllerMode);
+        TopRow = InOrder(GameActionKind.Play, GameActionKind.OpenInLauncher, GameActionKind.Favorite, GameActionKind.ControllerMode, GameActionKind.MouseMode);
         BottomRow = InOrder(GameActionKind.Artwork);
         Uninstall = actions.FirstOrDefault(a => a.Kind == GameActionKind.Uninstall);
 

@@ -604,7 +604,7 @@ Verlauf:
       mit dem Controller links/rechts ändern, A zählt hoch und fängt nach 9 wieder bei 1 an. Alles bleibt
       nach einem Neustart erhalten, der Mausmodus selbst nicht (Arcadia startet immer im normalen Modus). · E2E: ja
 - [ ] **T64-8** „So funktioniert's“ öffnet sich mit A, zeigt die Belegung und die Grenzen (UAC, Administrator-
-      Fenster, exklusives Vollbild, Spiel sieht die Eingaben), B schließt es, der Fokus steht wieder auf
+      Fenster, exklusives Vollbild), B schließt es, der Fokus steht wieder auf
       „So funktioniert's“. · E2E: ja
 - [ ] **T64-9** Zwei Controller: jeder schaltet mit Back + Start um (vibriert nur der, der umschaltet), beide
       bewegen den Zeiger. · E2E: nein
@@ -651,6 +651,14 @@ Verlauf:
 - [ ] **T64-18** Mausmodus an, Windows-Bildschirmtastatur (osk.exe) offen: mit A auf Tasten klicken. Noch nicht
       gesehen, Ergebnis im Verlauf notieren: der Filter verwirft vermutlich auch ihre Tasten, weil sie sie wie Steam
       per `SendInput` schickt. · E2E: nein
+- [ ] **T64-19** „Von Hand“, „Deaktivierten Mausmodus im Spiel erzwingen (nur „Von Hand“)“: „Nein“: ⧉ + ≡ schaltet
+      den Mausmodus auch in einem Spiel aus der Bibliothek ein. „Ja“: in so einem Spiel zeigt ⧉ + ≡ gehalten „Mausmodus
+      ist in diesem Spiel deaktiviert“ (ohne Vibrieren), und ein eingeschalteter Mausmodus endet, sobald das Spiel nach
+      vorne kommt („Mausmodus aus – in diesem Spiel deaktiviert“); im Explorer geht er weiter. „Individuell“: die Zeile
+      „Standardeinstellung bei „Individuell““ wird bedienbar, Vorschau und Detailseite zeigen „Individueller
+      Mausmodus“ (Standard → Erlaubt → Deaktiviert, mit A oder Klick), und jedes Spiel folgt seiner Wahl oder bei
+      „Standard“ der Standardeinstellung. Bei „Automatisch“ oder „Aus“ sind beide Zeilen abgeblendet und die
+      Schaltfläche fehlt. Alles bleibt nach einem Neustart erhalten. · E2E: nein
 - [ ] **T64-15** Die Boxen „Mausmodus“ und „Zurück zu Arcadia“ und „So funktioniert's“ nennen Tasten über ihr
       Symbol (⧉, ≡), nirgends „Back“, „Start“, „View“ oder „Menu“. Die Symbole stehen im Text in einer runden
       Umrandung wie in der Legende; in der Tabelle von „So funktioniert's“ auch A, B, X, LB, RB, LT, RT und L3. · E2E: ja
@@ -678,6 +686,7 @@ Verlauf:
 | T64-16 (Review, Nachtrag) | 2026-10-20 | Claude | Nach Juris Antwort (drei Monitore, Vollbildart egal), `dotnet build`/`dotnet test` unter Linux | ✅ Build und Tests grün. Neu: Zeiger beim Einschalten im Spiel in die Mitte des Spielfensters; Log jedes Vordergrundwechsels und des Ziels von ⧉ gehalten. Unter Windows nicht geprüft | T64-16 am PC des Owners, mit Log |
 | T64-14, T64-16 (M3, M5) | 2026-10-20 | Claude | Nach Juris Freigabe von M3 und M5; Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool; `dotnet test` | ✅ Eigene Box „Steams Desktop-Belegung ignorieren“ unter „Zurück zu Arcadia“, mit dem Steuerkreuz erreichbar (die Liste scrollt mit), Enter schaltet um. Pfade mit `/`, doppelten Trennern, `.`/`..` und `\\?\` passen (`GameFoldersTests`, vorher rot); `LaunchedGamesTests`. Hooks, Anti-Cheat-Spiel und Vordergrund unter Windows nicht geprüft | T64-14, T64-16 am PC des Owners |
 | T64-17 (nur Text) | 2026-10-20 | Claude | Linux, Xvfb 1920×1080 `--demo`, Maus per xdotool | ✅ Der Hinweis zum Steam Controller auf „Steam Input“ steht unter den Nachteilen des Steam Controller Supports, nicht mehr in „So funktioniert's“ (Juri) | T64-17 am PC des Owners |
+| T64-7, T64-8, T64-19, T64-17 (Texte) | 2026-10-20 | Claude | Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool; `dotnet test` (`MouseModeInGamesTests`, `MouseModeTests`, `SettingsServiceTests`, `GameFoldersTests`, `LaunchedGamesTests`) | ✅ Neue Texte für „Von Hand“ und „Automatisch“; „Deaktivierten Mausmodus im Spiel erzwingen“ wechselt Nein/Ja/Individuell, „Standardeinstellung bei „Individuell““ wird erst bei „Individuell“ bedienbar; Vorschau und Detailseite zeigen „Individueller Mausmodus“, A wechselt Standard → Erlaubt → Deaktiviert und die Vorschau folgt. Nachteile des Steam Controller Supports gekürzt, Grenze „Spiel sieht die Eingaben“ entfernt. Sperre im Spiel unter Windows nicht geprüft (Logik per Test) | T64-19 am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

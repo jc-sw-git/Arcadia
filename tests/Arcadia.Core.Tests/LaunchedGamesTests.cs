@@ -7,27 +7,27 @@ public sealed class LaunchedGamesTests
     [Fact]
     public void Before_arcadia_started_a_game_no_process_counts()
     {
-        Assert.False(new LaunchedGames().StartedSinceLastStart(42));
+        Assert.Null(new LaunchedGames().GameStartedBefore(42));
     }
 
     [Fact]
-    public void A_process_that_started_after_the_game_start_counts_one_that_ran_before_does_not()
+    public void A_process_that_started_after_the_game_start_is_that_game_one_that_ran_before_is_not()
     {
         var launched = new LaunchedGames();
-        launched.Starting([4, 8, 15]);
+        launched.Starting("steam:620", [4, 8, 15]);
 
-        Assert.True(launched.StartedSinceLastStart(16));
-        Assert.False(launched.StartedSinceLastStart(8));
+        Assert.Equal("steam:620", launched.GameStartedBefore(16));
+        Assert.Null(launched.GameStartedBefore(8));
     }
 
     [Fact]
-    public void The_next_start_replaces_the_processes_running_before()
+    public void The_next_start_replaces_the_game_and_the_processes_running_before()
     {
         var launched = new LaunchedGames();
-        launched.Starting([4]);
-        launched.Starting([4, 16]);
+        launched.Starting("steam:620", [4]);
+        launched.Starting("epic:hades", [4, 16]);
 
-        Assert.False(launched.StartedSinceLastStart(16));
-        Assert.True(launched.StartedSinceLastStart(23));
+        Assert.Null(launched.GameStartedBefore(16));
+        Assert.Equal("epic:hades", launched.GameStartedBefore(23));
     }
 }

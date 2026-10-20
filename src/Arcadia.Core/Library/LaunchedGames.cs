@@ -11,23 +11,25 @@ public sealed class LaunchedGames
 {
     private readonly Lock _lock = new();
     private HashSet<int>? _runningBeforeStart;
+    private string? _gameKey;
 
-    /// <summary>Call just before Arcadia starts a game, with the ids of the processes running then.</summary>
-    public void Starting(IEnumerable<int> runningProcessIds)
+    /// <summary>Call just before Arcadia starts the game <paramref name="gameKey"/>, with the ids of the processes running then.</summary>
+    public void Starting(string gameKey, IEnumerable<int> runningProcessIds)
     {
         var running = runningProcessIds.ToHashSet();
         lock (_lock)
         {
             _runningBeforeStart = running;
+            _gameKey = gameKey;
         }
     }
 
-    /// <summary>Whether a process whose path couldn't be read started after Arcadia last started a game.</summary>
-    public bool StartedSinceLastStart(int processId)
+    /// <summary>The game Arcadia last started, if a process whose path couldn't be read started after that; else null.</summary>
+    public string? GameStartedBefore(int processId)
     {
         lock (_lock)
         {
-            return _runningBeforeStart is { } before && !before.Contains(processId);
+            return _runningBeforeStart is { } before && !before.Contains(processId) ? _gameKey : null;
         }
     }
 }

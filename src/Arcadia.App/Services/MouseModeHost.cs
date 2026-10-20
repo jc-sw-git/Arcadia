@@ -55,7 +55,7 @@ public sealed class MouseModeHost : IDisposable
     private bool? _loggedActive;
     private int? _lastForegroundId;
     private GameFolders? _lastForegroundFolders;
-    private bool _lastForegroundIsGame;
+    private string? _lastForegroundGame;
 
     // Only the poll thread reads these two.
     private MouseModeSettings? _optionsFrom;
@@ -65,6 +65,10 @@ public sealed class MouseModeHost : IDisposable
 
     // Set on the poll thread after an unexpected error; the mode stays off until Arcadia restarts.
     private volatile bool _failed;
+
+    // A game in front forbids the mouse mode (UpdateGameBlock, UI thread); read on the poll thread.
+    private volatile bool _blockedByGame;
+    private bool _optionsBlocked;
 
     public MouseModeHost(IGamepadSource gamepad, SettingsService settings, MainWindow window, MainViewModel viewModel, TimeProvider time)
     {
@@ -91,12 +95,22 @@ public sealed class MouseModeHost : IDisposable
         {
             LogForegroundChange();
             CheckArcadiaInFront();
+            UpdateGameBlock();
             UpdateDesktopFilter();
         });
 
         _mode.HoldStarted += fillTime => Dispatcher.UIThread.Post(() => _overlay.ShowHold(fillTime));
         _mode.HoldCancelled += () => Dispatcher.UIThread.Post(_overlay.CancelHold);
         _mode.Switched += OnSwitched;
+        // No rumble: over a game in exclusive full screen it would read as "switched".
+        _mode.Refused += slot =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                AppLog.Write($"Back + Start an Controller {slot + 1}: Mausmodus in diesem Spiel deaktiviert");
+                _overlay.ShowSwitched("Mausmodus ist in diesem Spiel deaktiviert", flash: false);
+            });
+        };
         _returnWithView.HoldStarted += fillTime => Dispatcher.UIThread.Post(() => _overlay.ShowReturnHold(fillTime));
         _returnWithView.HoldCancelled += () => Dispatcher.UIThread.Post(_overlay.CancelReturnHold);
         _returnWithView.Requested += () => Dispatcher.UIThread.Post(ReturnToArcadia);
@@ -163,10 +177,12 @@ public sealed class MouseModeHost : IDisposable
     private MouseModeOptions CurrentOptions()
     {
         var settings = _settings.Current.MouseMode;
-        if (_options is null || !ReferenceEquals(settings, _optionsFrom))
+        var blocked = _blockedByGame;
+        if (_options is null || !ReferenceEquals(settings, _optionsFrom) || blocked != _optionsBlocked)
         {
             _optionsFrom = settings;
-            _options = new MouseModeOptions(settings.Activation != MouseModeActivation.Off, TimeSpan.FromSeconds(settings.HoldSeconds), settings.PointerSpeed);
+            _optionsBlocked = blocked;
+            _options = new MouseModeOptions(settings.Activation != MouseModeActivation.Off, TimeSpan.FromSeconds(settings.HoldSeconds), settings.PointerSpeed, blocked);
         }
 
         return _options;
@@ -252,6 +268,7 @@ public sealed class MouseModeHost : IDisposable
 
             var text = (change.IsOn, change.IsAutomatic, gameInFront) switch
             {
+                (false, _, _) when change.ByGame => "Mausmodus aus – in diesem Spiel deaktiviert",
                 (true, false, true) => "Mausmodus an – das Spiel sieht die Eingaben weiterhin",
                 (true, _, _) => "Mausmodus an",
                 _ => "Mausmodus aus",
@@ -348,8 +365,10 @@ public sealed class MouseModeHost : IDisposable
         });
     }
 
-    /// <summary>Asks for the foreground process's path only when the foreground changed.</summary>
-    private bool GameInFront()
+    private bool GameInFront() => ForegroundGameKey() is not null;
+
+    /// <summary>The game in front; asks for the foreground process's path only when the foreground changed.</summary>
+    private string? ForegroundGameKey()
     {
         var id = ProcessWatch.ForegroundProcessId();
         var folders = _viewModel.GameFolders;
@@ -357,10 +376,26 @@ public sealed class MouseModeHost : IDisposable
         {
             _lastForegroundId = id;
             _lastForegroundFolders = folders;
-            _lastForegroundIsGame = ForegroundGame.IsInFront(folders, _viewModel.LaunchedGames);
+            _lastForegroundGame = ForegroundGame.InFront(folders, _viewModel.LaunchedGames);
         }
 
-        return _lastForegroundIsGame;
+        return _lastForegroundGame;
+    }
+
+    /// <summary>
+    /// "Deaktivierten Mausmodus im Spiel erzwingen": while a game that forbids it is in front, the mode
+    /// ends and Back + Start doesn't switch it on. Checked with the foreground, every <see cref="DesktopFilterCheckInterval"/>.
+    /// </summary>
+    private void UpdateGameBlock()
+    {
+        var settings = _settings.Current.MouseMode;
+        var blocked = settings.Activation == MouseModeActivation.Manual && settings.InGames != MouseModeInGames.Allowed
+            && !settings.AllowedIn(ForegroundGameKey());
+        if (blocked != _blockedByGame)
+        {
+            _blockedByGame = blocked;
+            AppLog.Write(blocked ? "Mausmodus im Spiel vorne deaktiviert (Einstellung)" : "Mausmodus wieder erlaubt");
+        }
     }
 
     /// <summary>The timer runs only while it has something to watch, so it costs nothing beside a game otherwise.</summary>

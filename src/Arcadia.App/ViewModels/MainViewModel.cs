@@ -103,7 +103,19 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     [ObservableProperty]
     public partial string FocusedControllerSupportText { get; private set; } = string.Empty;
 
-    partial void OnFocusedGameChanged(GameTileViewModel? value) => UpdateControllerSupportState();
+    /// <summary>"Individueller Mausmodus" shows on games ("Von Hand" with "Individuell").</summary>
+    [ObservableProperty]
+    public partial bool ShowGameMouseMode { get; private set; }
+
+    /// <summary>The focused game's "Individueller Mausmodus": "Standard", "Erlaubt" or "Deaktiviert".</summary>
+    [ObservableProperty]
+    public partial string FocusedGameMouseModeText { get; private set; } = string.Empty;
+
+    partial void OnFocusedGameChanged(GameTileViewModel? value)
+    {
+        UpdateControllerSupportState();
+        UpdateGameMouseModeState();
+    }
 
     /// <summary>The install folders of the library's games: a process from one of them is a game in front.</summary>
     public GameFolders GameFolders { get; private set; } = GameFolders.Empty;
@@ -959,7 +971,60 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     [RelayCommand]
     private void CloseSettings() => Settings = null;
 
-    partial void OnSettingsChanged(SettingsViewModel? oldValue, SettingsViewModel? newValue) => oldValue?.Dispose();
+    partial void OnSettingsChanged(SettingsViewModel? oldValue, SettingsViewModel? newValue)
+    {
+        oldValue?.Dispose();
+        UpdateGameMouseModeState();
+    }
+
+    bool IGameActionHost.ShowGameMouseMode => ShowGameMouseMode;
+
+    string IGameActionHost.GameMouseModeOf(Game game) => GameMouseModes.Of(_settings.Current.MouseMode.GameChoiceFor(game.Key));
+
+    string IGameActionHost.DefaultGameMouseMode => GameMouseModes.Of(_settings.Current.MouseMode.PerGameDefaultAllowed);
+
+    void IGameActionHost.CycleGameMouseMode(GameTileViewModel tile) => CycleGameMouseModeOf(tile.Game);
+
+    /// <summary>Switches the focused game's "Individueller Mausmodus": Standard → Erlaubt → Deaktiviert.</summary>
+    [RelayCommand]
+    private void CycleGameMouseMode()
+    {
+        if (FocusedGame?.Game is { } game)
+        {
+            CycleGameMouseModeOf(game);
+        }
+    }
+
+    private void CycleGameMouseModeOf(Game game)
+    {
+        try
+        {
+            _settings.Update(s => s with { MouseMode = s.MouseMode.WithGameChoice(game.Key, GameMouseModes.Next(s.MouseMode.GameChoiceFor(game.Key))) });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AppLog.Write($"Individueller Mausmodus nicht gespeichert: {ex.Message}");
+            Toast.Show("Die Änderung konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
+        }
+
+        UpdateGameMouseModeState();
+    }
+
+    private void UpdateGameMouseModeState()
+    {
+        var mouseMode = _settings.Current.MouseMode;
+        var show = mouseMode.Activation == MouseModeActivation.Manual && mouseMode.InGames == MouseModeInGames.PerGame;
+        if (ShowGameMouseMode != show)
+        {
+            ShowGameMouseMode = show;
+            Detail?.RebuildActions();
+        }
+
+        if (FocusedGame?.Game is { } game)
+        {
+            FocusedGameMouseModeText = GameMouseModes.Of(mouseMode.GameChoiceFor(game.Key));
+        }
+    }
 
     /// <summary>Switches the focused game between "Xbox 360 Controller (SISR)" and "Steam Input".</summary>
     [RelayCommand]
@@ -1167,7 +1232,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         // Games that use Steam Input themselves would get every input twice while SISR runs.
         var result = await _launcher.TryStartAsync(tile.Game, async token =>
         {
-            LaunchedGames.Starting(await Task.Run(ForegroundGame.RunningProcessIds, token));
+            LaunchedGames.Starting(tile.Game.Key, await Task.Run(ForegroundGame.RunningProcessIds, token));
             await _controllerSupport.BeginGameAsync(tile.Game, token);
         }, progress);
         switch (result)

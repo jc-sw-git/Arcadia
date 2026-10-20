@@ -4,11 +4,16 @@ namespace Arcadia.Input;
 /// <param name="Enabled">"Mausmodus" not "Aus": off, the mode ends and nothing switches it on.</param>
 /// <param name="HoldTime">"Haltedauer": how long Back + Start must be held.</param>
 /// <param name="PointerSpeed">"Zeigergeschwindigkeit", 1–9.</param>
-public sealed record MouseModeOptions(bool Enabled, TimeSpan HoldTime, int PointerSpeed);
+/// <param name="BlockedHere">
+/// A game is in front in which "Deaktivierten Mausmodus im Spiel erzwingen" forbids it: the mode ends,
+/// and Back + Start doesn't switch it on (owner, 2026-10-20).
+/// </param>
+public sealed record MouseModeOptions(bool Enabled, TimeSpan HoldTime, int PointerSpeed, bool BlockedHere = false);
 
 /// <summary>The mouse mode went on or off.</summary>
 /// <param name="Slot">The controller whose Back + Start switched it; null when Arcadia switched it by itself.</param>
-public sealed record MouseModeSwitch(bool IsOn, int? Slot)
+/// <param name="ByGame">Ended because a game in which it is forbidden came to the front.</param>
+public sealed record MouseModeSwitch(bool IsOn, int? Slot, bool ByGame = false)
 {
     public bool IsAutomatic => Slot is null;
 }
@@ -61,6 +66,9 @@ public sealed class MouseMode
 
     public event Action<MouseModeSwitch>? Switched;
 
+    /// <summary>Back + Start were held long enough, but the game in front forbids the mode; the argument is the controller's slot.</summary>
+    public event Action<int>? Refused;
+
     public bool IsOn => _isOn;
 
     /// <summary>On because Arcadia switched it on by itself (and may switch it off again by itself).</summary>
@@ -83,7 +91,7 @@ public sealed class MouseMode
 
         switch (Interlocked.Exchange(ref _request, 0))
         {
-            case 1 when options.Enabled:
+            case 1 when options.Enabled && !options.BlockedHere:
                 Switch(true, slot: null);
                 break;
             case 2:
@@ -95,6 +103,10 @@ public sealed class MouseMode
         if (!options.Enabled)
         {
             Switch(false, slot: null);
+        }
+        else if (options.BlockedHere)
+        {
+            Switch(false, slot: null, byGame: true);
         }
 
         UpdateCombo(pads, options);
@@ -135,7 +147,14 @@ public sealed class MouseMode
                     _comboSlot = null;
                     _comboFeedback = false;
                     _spentCombos.Add(comboSlot);
-                    Switch(!_isOn, comboSlot);
+                    if (!_isOn && options.BlockedHere)
+                    {
+                        Refused?.Invoke(comboSlot);
+                    }
+                    else
+                    {
+                        Switch(!_isOn, comboSlot);
+                    }
                 }
                 else if (!_comboFeedback && held >= FeedbackDelay)
                 {
@@ -169,7 +188,7 @@ public sealed class MouseMode
         }
     }
 
-    private void Switch(bool on, int? slot, bool announce = true)
+    private void Switch(bool on, int? slot, bool announce = true, bool byGame = false)
     {
         if (_isOn == on)
         {
@@ -189,7 +208,7 @@ public sealed class MouseMode
         _isOn = on;
         if (announce)
         {
-            Switched?.Invoke(new MouseModeSwitch(on, slot));
+            Switched?.Invoke(new MouseModeSwitch(on, slot, byGame));
         }
     }
 }

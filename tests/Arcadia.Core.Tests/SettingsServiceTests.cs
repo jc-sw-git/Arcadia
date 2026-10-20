@@ -69,22 +69,32 @@ public sealed class SettingsServiceTests : IDisposable
     {
         File.WriteAllText(SettingsPath, """{ "SteamControllerSupport": true }""");
         var service = new SettingsService(new SettingsStore(SettingsPath));
-        Assert.Equal(new MouseModeSettings(), service.Current.MouseMode);
         Assert.Equal(MouseModeActivation.Manual, service.Current.MouseMode.Activation);
         Assert.Equal(3, service.Current.MouseMode.HoldSeconds);
         Assert.Equal(5, service.Current.MouseMode.PointerSpeed);
+        Assert.Equal(MouseModeInGames.Allowed, service.Current.MouseMode.InGames);
+        Assert.True(service.Current.MouseMode.PerGameDefaultAllowed);
+        Assert.Empty(service.Current.MouseMode.GameChoices);
 
-        service.Update(s => s with { MouseMode = s.MouseMode with { HoldSeconds = 7, Activation = MouseModeActivation.Automatic } });
+        service.Update(s => s with
+        {
+            MouseMode = (s.MouseMode with { HoldSeconds = 7, Activation = MouseModeActivation.Automatic, InGames = MouseModeInGames.PerGame, PerGameDefaultAllowed = false })
+                .WithGameChoice("steam:1", true),
+        });
         var restarted = new SettingsService(new SettingsStore(SettingsPath)).Current.MouseMode;
 
         Assert.Equal(7, restarted.HoldSeconds);
         Assert.Equal(MouseModeActivation.Automatic, restarted.Activation);
+        Assert.Equal(MouseModeInGames.PerGame, restarted.InGames);
+        Assert.False(restarted.PerGameDefaultAllowed);
+        Assert.True(restarted.GameChoiceFor("steam:1"));
     }
 
     [Theory]
     [InlineData("""{ "MouseMode": { "HoldSeconds": 0, "PointerSpeed": 42, "Activation": 0 } }""", MouseModeActivation.Off)]
     [InlineData("""{ "MouseMode": { "Activation": 7 } }""", MouseModeActivation.Manual)]
     [InlineData("""{ "MouseMode": null }""", MouseModeActivation.Manual)]
+    [InlineData("""{ "MouseMode": { "InGames": 9, "GameChoices": null } }""", MouseModeActivation.Manual)]
     public void Broken_mouse_mode_values_fall_back_to_the_defaults_and_keep_the_rest(string json, MouseModeActivation activation)
     {
         File.WriteAllText(SettingsPath, json);
@@ -94,6 +104,8 @@ public sealed class SettingsServiceTests : IDisposable
         Assert.Equal(3, loaded.HoldSeconds);
         Assert.Equal(5, loaded.PointerSpeed);
         Assert.Equal(activation, loaded.Activation);
+        Assert.Equal(MouseModeInGames.Allowed, loaded.InGames);
+        Assert.NotNull(loaded.GameChoices);
     }
 
     [Fact]

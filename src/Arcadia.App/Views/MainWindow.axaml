@@ -254,6 +254,13 @@
                       <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext).FocusedControllerSupportText}" />
                     </Button>
                   </StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowGameMouseMode}">
+                    <TextBlock Classes="label" Text="INDIVIDUELLER MAUSMODUS" />
+                    <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CycleGameMouseModeCommand}"
+                            ToolTip.Tip="Klicken wechselt zwischen „Standard“, „Erlaubt“ und „Deaktiviert“">
+                      <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext).FocusedGameMouseModeText}" />
+                    </Button>
+                  </StackPanel>
                 </StackPanel>
               </DockPanel>
             </Grid>
@@ -1180,11 +1187,8 @@
                     </StackPanel>
                     <StackPanel Spacing="8">
                       <TextBlock Classes="label" Text="NACHTEILE" />
-                      <TextBlock Classes="bullet" Text="• Steam muss im Hintergrund laufen, und Steams lokale Debug-Schnittstelle (CEF) muss aktiv sein." />
-                      <TextBlock Classes="bullet" Text="• Benötigt den usbip-Treiber. Die Installation fragt einmalig nach Administratorrechten." />
-                      <TextBlock Classes="bullet" Text="• SISR ist laut seinem Entwickler noch experimentell; Abstürze sind möglich. Arcadia startet SISR dann automatisch neu." />
-                      <TextBlock Classes="bullet" Text="• Steht ein Steam-Spiel auf „Xbox 360 Controller (SISR)“, kommen Eingaben doppelt an." />
-                      <TextBlock Classes="bullet" Text="• Arcadia erkennt den Steam Controller nur, solange er als Xbox 360 Controller läuft. In Spielen auf „Steam Input“ wirken mit ihm deshalb weder der Mausmodus noch „Zurück zu Arcadia“." />
+                      <TextBlock Classes="bullet" Text="• Steam muss im Hintergrund laufen." />
+                      <TextBlock Classes="bullet" ctl:ButtonTextBlock.Text="• Arcadia erkennt den Steam Controller nur, solange er als Xbox 360 Controller läuft. In Spielen auf „Steam Input“ wirken mit ihm deshalb weder ⧉ + ≡ für den Mausmodus noch ⧉ halten für „Zurück zu Arcadia“." />
                     </StackPanel>
                     <TextBlock FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap"
                                Text="SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR" />
@@ -1244,6 +1248,33 @@
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding EndWhenArcadiaInFront}" VerticalAlignment="Center">
                         <Ellipse />
                       </Border>
+                    </Grid>
+                  </Button>
+                  <Button Classes="plain settingRow" Classes.focused="{Binding InGamesItem.IsFocused}" Classes.unavailable="{Binding !InGamesApplies}" Margin="20,0,0,0">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+                      <StackPanel Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="Deaktivierten Mausmodus im Spiel erzwingen (nur „Von Hand“)" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="{Binding InGamesText}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="plain stepperArrow" Command="{Binding InGamesItem.DecreaseCommand}" IsEnabled="{Binding InGamesItem.CanDecrease}" Content="‹" />
+                        <TextBlock Classes="stepperValue" Text="{Binding InGamesItem.ValueText}" />
+                        <Button Classes="plain stepperArrow" Command="{Binding InGamesItem.IncreaseCommand}" IsEnabled="{Binding InGamesItem.CanIncrease}" Content="›" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                  <Button Classes="plain settingRow" Classes.focused="{Binding PerGameDefaultItem.IsFocused}" Classes.unavailable="{Binding !PerGameDefaultApplies}" Margin="40,0,0,0">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+                      <StackPanel Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="Standardeinstellung bei „Individuell“" FontSize="18" FontWeight="Bold" />
+                        <TextBlock Text="„Standard“ ist für jedes Spiel auf der Detailseite vorausgewählt. „Erlaubt“ wird den Mausmodus erlauben. „Deaktiviert“ wird ihn deaktivieren."
+                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="plain stepperArrow" Command="{Binding PerGameDefaultItem.DecreaseCommand}" IsEnabled="{Binding PerGameDefaultItem.CanDecrease}" Content="‹" />
+                        <TextBlock Classes="stepperValue" Text="{Binding PerGameDefaultItem.ValueText}" />
+                        <Button Classes="plain stepperArrow" Command="{Binding PerGameDefaultItem.IncreaseCommand}" IsEnabled="{Binding PerGameDefaultItem.CanIncrease}" Content="›" />
+                      </StackPanel>
                     </Grid>
                   </Button>
 

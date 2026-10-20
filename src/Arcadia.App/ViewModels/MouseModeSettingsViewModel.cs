@@ -90,6 +90,18 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
             MouseModeSettings.Min,
             MouseModeSettings.Max);
         EndInFrontItem = new SettingsItemViewModel(() => Change(s => s with { EndWhenArcadiaInFront = !s.EndWhenArcadiaInFront }));
+        InGamesItem = new SettingsStepperViewModel(
+            () => (int)Current.InGames,
+            value => Change(s => s with { InGames = (MouseModeInGames)value }),
+            value => InGamesNames[value],
+            (int)MouseModeInGames.Allowed,
+            (int)MouseModeInGames.PerGame);
+        PerGameDefaultItem = new SettingsStepperViewModel(
+            () => Current.PerGameDefaultAllowed ? 0 : 1,
+            value => Change(s => s with { PerGameDefaultAllowed = value == 0 }),
+            value => value == 0 ? GameMouseModes.Allowed : GameMouseModes.Blocked,
+            0,
+            1);
         HelpItem = new SettingsItemViewModel(openHelp);
         ToggleEndInFrontCommand = new RelayCommand(EndInFrontItem.Activate);
         HelpCommand = new RelayCommand(openHelp);
@@ -97,6 +109,9 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
 
     /// <summary>The values of "Mausmodus", in the order of <see cref="MouseModeActivation"/>.</summary>
     private static readonly string[] ActivationNames = ["Aus", "Von Hand", "Automatisch"];
+
+    /// <summary>The values of "Deaktivierten Mausmodus im Spiel erzwingen", in the order of <see cref="MouseModeInGames"/>.</summary>
+    private static readonly string[] InGamesNames = ["Nein", "Ja", "Individuell"];
 
     /// <summary>The mouse mode's buttons, as <see cref="Arcadia.Input.MouseMode"/> maps them.</summary>
     public static IReadOnlyList<MouseModeHelpRow> HelpRows { get; } =
@@ -111,7 +126,7 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
         new("LB / RB", "Umschalt+Tab / Tab"),
         new("≡", "Enter"),
         new("⧉ halten", "Holt Arcadia nach vorne (Einstellung „Zurück zu Arcadia“)"),
-        new("⧉ + ≡ halten", "Zurück zum normalen Controller"),
+        new("⧉ + ≡ halten", "Zurück zum normalen Controller (bei „Automatisch“, bis Arcadia wieder vorne war)"),
     ];
 
     /// <summary>Where the mouse mode can't help, so nobody wonders why.</summary>
@@ -120,7 +135,6 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
         "Windows-Abfragen nach Administratorrechten (UAC) laufen auf einem geschützten Bildschirm, den keine Eingabe von Arcadia erreicht.",
         "Fenster von Programmen, die als Administrator laufen, lassen Eingaben eines Arcadia ohne Administratorrechte nicht durch.",
         "Über Spielen im exklusiven Vollbild zeigt Windows den Rand und den Hinweis nicht an; das Umschalten spürst du dann nur am Vibrieren.",
-        "Im Mausmodus sieht ein Spiel im Vordergrund die Controller-Eingaben weiterhin.",
     ];
 
     /// <summary>"Mausmodus": Aus, Von Hand or Automatisch. Aus: every other row counts for nothing but keeps its value.</summary>
@@ -132,11 +146,17 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
 
     public SettingsItemViewModel EndInFrontItem { get; }
 
+    /// <summary>"Deaktivierten Mausmodus im Spiel erzwingen (nur „Von Hand“)": Nein, Ja or Individuell.</summary>
+    public SettingsStepperViewModel InGamesItem { get; }
+
+    /// <summary>"Standardeinstellung bei „Individuell“": Erlaubt or Deaktiviert.</summary>
+    public SettingsStepperViewModel PerGameDefaultItem { get; }
+
     /// <summary>"So funktioniert's": the buttons and the limits of the mouse mode.</summary>
     public SettingsItemViewModel HelpItem { get; }
 
     /// <summary>In the order the controller moves through them.</summary>
-    public IReadOnlyList<SettingsItemViewModel> Items => [ActivationItem, HoldItem, SpeedItem, EndInFrontItem, HelpItem];
+    public IReadOnlyList<SettingsItemViewModel> Items => [ActivationItem, HoldItem, SpeedItem, EndInFrontItem, InGamesItem, PerGameDefaultItem, HelpItem];
 
     public IRelayCommand ToggleEndInFrontCommand { get; }
 
@@ -147,12 +167,25 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
     /// <summary>The automatic mode always ends when Arcadia comes to the front.</summary>
     public bool EndInFrontApplies => Current.Activation == MouseModeActivation.Manual;
 
+    /// <summary>"Deaktivierten Mausmodus im Spiel erzwingen" counts only for "Von Hand".</summary>
+    public bool InGamesApplies => Current.Activation == MouseModeActivation.Manual;
+
+    public bool PerGameDefaultApplies => InGamesApplies && Current.InGames == MouseModeInGames.PerGame;
+
+    /// <summary>What the chosen value of "Deaktivierten Mausmodus im Spiel erzwingen" does (owner's wording, 2026-10-20).</summary>
+    public string InGamesText => Current.InGames switch
+    {
+        MouseModeInGames.Blocked => "Der Mausmodus kann nicht länger in Arcadia bekannten Spielen von Hand (⧉ + ≡) aktiviert werden.",
+        MouseModeInGames.PerGame => "Es kann pro Spiel (auf der Detailseite) entschieden werden, ob der Mausmodus deaktiviert oder erlaubt ist.",
+        _ => "Der Mausmodus kann auch in Arcadia bekannten Spielen von Hand (⧉ + ≡) aktiviert werden.",
+    };
+
     /// <summary>What the chosen way of switching does, under "Mausmodus".</summary>
     public string ActivationText => Current.Activation switch
     {
         MouseModeActivation.Off => "Der Controller bleibt immer ein Controller.",
-        MouseModeActivation.Automatic => "Verliert Arcadia den Fokus an ein Fenster, das kein Spiel aus der Bibliothek ist, wird der Controller sofort zur Maus; kommt Arcadia oder ein Spiel nach vorne, wieder zum Controller. Bis dahin schaltet ⧉ + ≡ gehalten von Hand um, z. B. in einem Spiel, das Arcadia nicht kennt.",
-        _ => "⧉ + ≡ gedrückt halten macht den Controller zur Maus und wieder zurück, auch wenn Arcadia im Hintergrund ist. So lassen sich Launcher-Fenster und Windows-Dialoge vom Sofa aus bedienen.",
+        MouseModeActivation.Automatic => "Bei „Automatisch“ schaltet Arcadia automatisch in den Mausmodus, sobald Arcadia (oder ein Arcadia bekanntes Spiel) nicht mehr den Fokus hat, das heißt nicht mehr im Vordergrund läuft. Der Controller kann dann den Mauszeiger bedienen. Unter „So funktioniert's“ erhältst du weitere Informationen dazu. Kommt Arcadia (oder ein Spiel) zurück in den Fokus, wird der Mausmodus automatisch beendet. Dies passiert auch dann, wenn „Beenden, wenn Arcadia nach vorne kommt“ ausgeschaltet ist.",
+        _ => "Durch Halten von ⧉ + ≡ wechselst du in den Mausmodus. Dies erlaubt dem Controller, den Mauszeiger zu steuern. Erneutes Halten schaltet den Modus aus. Unter „So funktioniert's“ erhältst du weitere Informationen dazu.",
     };
 
     public bool EndWhenArcadiaInFront => Current.EndWhenArcadiaInFront;
@@ -178,6 +211,9 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(Enabled));
         OnPropertyChanged(nameof(EndInFrontApplies));
+        OnPropertyChanged(nameof(InGamesApplies));
+        OnPropertyChanged(nameof(PerGameDefaultApplies));
+        OnPropertyChanged(nameof(InGamesText));
         OnPropertyChanged(nameof(ActivationText));
         OnPropertyChanged(nameof(EndWhenArcadiaInFront));
     }
@@ -275,4 +311,27 @@ public sealed partial class SteamDesktopLayoutSettingsViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(Enabled));
     }
+}
+
+/// <summary>The values of "Individueller Mausmodus" on a game (owner, 2026-10-20).</summary>
+public static class GameMouseModes
+{
+    public const string Default = "Standard";
+    public const string Allowed = "Erlaubt";
+    public const string Blocked = "Deaktiviert";
+
+    public static string Of(bool? choice) => choice switch
+    {
+        true => Allowed,
+        false => Blocked,
+        null => Default,
+    };
+
+    /// <summary>Standard → Erlaubt → Deaktiviert → Standard.</summary>
+    public static bool? Next(bool? choice) => choice switch
+    {
+        null => true,
+        true => false,
+        false => null,
+    };
 }

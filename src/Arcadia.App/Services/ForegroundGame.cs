@@ -11,15 +11,18 @@ public static class ForegroundGame
     /// A process from a game's install folder owns the foreground window, or one whose path can't be
     /// read that started after Arcadia started a game (<see cref="LaunchedGames"/>); Arcadia itself never counts.
     /// </summary>
-    public static bool IsInFront(GameFolders games, LaunchedGames launched)
+    public static bool IsInFront(GameFolders games, LaunchedGames launched) => InFront(games, launched) is not null;
+
+    /// <summary>The <c>Game.Key</c> of the game in front as <see cref="IsInFront"/> tells it, or null.</summary>
+    public static string? InFront(GameFolders games, LaunchedGames launched)
     {
         if (ProcessWatch.ForegroundProcessId() is not { } id || id == Environment.ProcessId)
         {
-            return false;
+            return null;
         }
 
         var path = ProcessWatch.PathOf(id);
-        return path is null ? launched.StartedSinceLastStart(id) : games.Contain(path);
+        return path is null ? launched.GameStartedBefore(id) : games.GameOf(path);
     }
 
     /// <summary>The ids of the running processes, for <see cref="LaunchedGames.Starting"/>.</summary>

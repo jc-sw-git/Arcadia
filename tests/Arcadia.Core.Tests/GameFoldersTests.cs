@@ -73,6 +73,16 @@ public sealed class GameFoldersTests
     }
 
     [Fact]
+    public void It_names_the_game_whose_folder_holds_the_program()
+    {
+        var folders = GameFolders.Of([Game(@"C:\Games\Hades"), Game(@"C:\Games\Celeste")]);
+
+        Assert.Equal(@"test:C:\Games\Celeste", folders.GameOf(@"C:\Games\Celeste\Celeste.exe"));
+        Assert.Null(folders.GameOf(@"C:\Windows\explorer.exe"));
+        Assert.Null(folders.GameOf(null));
+    }
+
+    [Fact]
     public void Empty_contains_nothing()
     {
         Assert.False(GameFolders.Empty.Contain(@"C:\Windows\explorer.exe"));

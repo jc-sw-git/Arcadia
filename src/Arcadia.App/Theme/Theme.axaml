@@ -683,6 +683,26 @@
     <Setter Property="Padding" Value="44,36,44,28" />
     <Setter Property="BoxShadow" Value="{StaticResource DialogShadow}" />
   </Style>
+  <!-- ✕ in a dialog's top right corner, shown while mouse or keyboard is in use (the controller closes with B). -->
+  <Style Selector="Button.dialogClose">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.dialogClose:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.dialogClose Path">
+    <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Button.dialogClose:pointerover Path">
+    <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
+  </Style>
   <Style Selector="Border.promptIcon">
     <Setter Property="Width" Value="52" />
     <Setter Property="Height" Value="52" />

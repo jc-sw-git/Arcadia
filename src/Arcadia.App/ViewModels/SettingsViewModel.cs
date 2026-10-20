@@ -123,6 +123,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     public SettingsViewModel(ControllerSupportService support, ArcadiaUpdateService updates, SettingsService settings, Func<Task> installArcadiaUpdate)
     {
         MouseMode = new MouseModeSettingsViewModel(settings, () => ShowPrompt(SettingsPrompt.MouseModeHelp));
+
+        // The help shows no button of its own (owner, 2026-10-20); this unseen item lets A close it as B does.
         _closeMouseModeHelp = new SettingsItemViewModel(ClosePrompt);
         _checkUpdates = new SettingsItemViewModel(() => updates.CheckNowAsync().Forget("Update-Prüfung"));
         CheckUpdatesCommand = new RelayCommand(() => updates.CheckNowAsync().Forget("Update-Prüfung"));
@@ -174,8 +176,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     public SettingsItemViewModel ToggleItem => _toggle;
 
     public MouseModeSettingsViewModel MouseMode { get; }
-
-    public SettingsItemViewModel CloseMouseModeHelpItem => _closeMouseModeHelp;
 
     private static readonly TimeSpan PromptCheckInterval = TimeSpan.FromSeconds(1);
 

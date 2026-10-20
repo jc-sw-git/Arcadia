@@ -869,6 +869,11 @@
                 Command="{Binding CloseViewOptionsCommand}" />
         <Border Width="820" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,48,56,36"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
+          <Panel>
+          <Button Classes="plain dialogClose" Margin="0,-32,-40,0" ToolTip.Tip="Schließen"
+                  IsVisible="{Binding ShowsCloseButtons}" Command="{Binding CloseViewOptionsCommand}">
+            <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+          </Button>
           <StackPanel Spacing="40" DataContext="{Binding ViewOptions}" x:DataType="vm:ViewOptionsViewModel">
             <StackPanel Spacing="8">
               <TextBlock Text="{Binding Title}" FontSize="34" FontWeight="ExtraBold" />
@@ -962,6 +967,7 @@
               </StackPanel>
             </Border>
           </StackPanel>
+          </Panel>
         </Border>
       </Panel>
 
@@ -1050,6 +1056,7 @@
                 Command="{Binding CloseSettingsCommand}" />
         <Border Width="1040" MaxHeight="1000" Background="{StaticResource Surface}" CornerRadius="20" Padding="56,40,56,32"
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
+          <Panel>
           <!-- The button hints stay visible below the scrolling content. -->
           <DockPanel>
           <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,24,0,0" Margin="0,24,0,0">
@@ -1336,6 +1343,11 @@
           </StackPanel>
           </ScrollViewer>
           </DockPanel>
+          <Button Classes="plain dialogClose" Margin="0,-24,-40,0" ToolTip.Tip="Schließen"
+                  IsVisible="{Binding ShowsCloseButtons}" Command="{Binding CloseSettingsCommand}">
+            <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+          </Button>
+          </Panel>
         </Border>
 
         <!-- Prompt over the settings before "SISR installieren" goes on; the settings stay dimmed behind it. -->
@@ -1343,6 +1355,7 @@
           <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                   Command="{Binding ClosePromptCommand}" />
           <Border Classes="prompt" Width="720" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Panel>
             <StackPanel Spacing="28">
               <StackPanel Orientation="Horizontal" Spacing="18">
                 <Border Classes="promptIcon" Classes.warning="{Binding IsWarningPrompt}">
@@ -1435,6 +1448,11 @@
                 </StackPanel>
               </Border>
             </StackPanel>
+            <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
+                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowsCloseButtons}" Command="{Binding ClosePromptCommand}">
+              <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+            </Button>
+            </Panel>
           </Border>
         </Panel>
         <!-- "So funktioniert's" of the mouse mode, over the settings. -->
@@ -1442,6 +1460,7 @@
           <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                   Command="{Binding ClosePromptCommand}" />
           <Border Classes="prompt" Width="900" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Panel>
             <StackPanel Spacing="24">
               <TextBlock Text="Mausmodus – so funktioniert's" FontSize="30" FontWeight="ExtraBold" />
               <TextBlock Classes="promptBody" Text="Back + Start gedrückt halten, bis der Bildschirmrand voll ist: Der Controller steuert jetzt die Maus, auch in Fenstern außerhalb von Arcadia. Genauso geht es zurück. Jeder verbundene Controller kann umschalten und den Zeiger bewegen." />
@@ -1476,16 +1495,17 @@
                 </ItemsControl>
               </StackPanel>
               <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
-                <Grid ColumnDefinitions="*,Auto">
-                  <Button Classes="plain action primaryAction" Classes.focused="{Binding CloseMouseModeHelpItem.IsFocused}"
-                          Command="{Binding ClosePromptCommand}" Content="Schließen" />
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <Border Classes="glyph round"><TextBlock Text="B" /></Border>
-                    <TextBlock Classes="hint" Text="Schließen" />
-                  </StackPanel>
-                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                  <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                  <TextBlock Classes="hint" Text="Schließen" />
+                </StackPanel>
               </Border>
             </StackPanel>
+            <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
+                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowsCloseButtons}" Command="{Binding ClosePromptCommand}">
+              <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+            </Button>
+            </Panel>
           </Border>
         </Panel>
       </Panel>

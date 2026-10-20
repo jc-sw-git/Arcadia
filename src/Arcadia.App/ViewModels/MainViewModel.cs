@@ -95,6 +95,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     [ObservableProperty]
     public partial bool ShowControllerSupport { get; private set; }
 
+    /// <summary>Dialogs show an ✕ in their corner while mouse or keyboard is in use; with the controller B closes them.</summary>
+    [ObservableProperty]
+    public partial bool ShowsCloseButtons { get; private set; }
+
     /// <summary>The Steam Controller mode of the focused game: "Xbox 360 Controller (SISR)" or "Steam Input".</summary>
     [ObservableProperty]
     public partial string FocusedControllerSupportText { get; private set; } = string.Empty;
@@ -355,6 +359,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     public void HandleGamepad(UiAction action)
     {
         _input = InputKind.Gamepad;
+        ShowsCloseButtons = false;
         if (Search is { } search)
         {
             search.UsesController = true;
@@ -367,6 +372,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     public void NoteKeyboard()
     {
         _input = InputKind.Keyboard;
+        ShowsCloseButtons = true;
         if (Search is { } search)
         {
             search.UsesController = false;
@@ -378,11 +384,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     public void NotePointer()
     {
         _input = InputKind.Pointer;
+        ShowsCloseButtons = true;
         if (Search is { } search)
         {
             search.UsesController = false;
         }
     }
+
+    /// <summary>The mouse moved: dialogs show their ✕. Unlike a click, it leaves the search's legend alone.</summary>
+    public void NotePointerMoved() => ShowsCloseButtons = true;
 
     /// <summary>A button or key was pressed. A in the library and ≡ or Enter on a hit wait for the release (<see cref="Release"/>).</summary>
     public void Handle(UiAction action)

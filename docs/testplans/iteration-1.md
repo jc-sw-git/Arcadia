@@ -608,6 +608,10 @@ Verlauf:
 - [ ] **T64-10** Normaler Modus in Arcadia: View (Kontextmenü) und Menu (Einstellungen) wirken beim Loslassen
       oder nach 0,2 s allein gehalten; ≡ 1 s gehalten auf einem Suchtreffer öffnet weiter die Details. Beide
       zusammen gedrückt öffnen nichts. Alle anderen Tasten verhalten sich wie bisher. · E2E: ja
+- [ ] **T64-11** Maus bewegen oder eine Taste drücken: „Ansicht“, „Filter und Sortierung“, Einstellungen, die
+      SISR-Dialoge und „So funktioniert's“ zeigen oben rechts ein ✕, ein Klick darauf schließt nur diesen Dialog.
+      Nach einer Controller-Taste ist das ✕ wieder weg. „So funktioniert's“ hat keine Schaltfläche „Schließen“
+      mehr; A oder B schließt es. · E2E: ja
 
 Verlauf:
 
@@ -615,6 +619,8 @@ Verlauf:
 |---|---|---|---|---|---|
 | T64-7, T64-8 | 2026-10-20 | Claude | Branch `feat/controller-als-maus-nutzen-64`, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool (Pfeiltasten, Enter, Esc) | ✅ Box unter dem Steam Controller, Haltedauer abgeblendet bei Hauptschalter aus, Stepper mit links/rechts und Enter (9 → 1), „So funktioniert's“ öffnet und schließt, Fokus zurück auf der Zeile; Speichern nur per `SettingsServiceTests` geprüft | Controller am PC des Owners |
 | T64-1 (nur Overlay) | 2026-10-20 | Claude | wie oben, Overlay lokal per Testcode ausgelöst (nicht eingecheckt) | ⚠️ Rand füllt sich über die Haltedauer von oben Mitte bis unten Mitte, läuft beim Abbruch zurück, Text „Mausmodus an“ 2 s; Hintergrund unter Xvfb schwarz (keine Transparenz) | Windows: Transparenz, Klicks durchs Overlay, Vibrieren, `SendInput`, Vordergrund-Erkennung am PC des Owners |
+| T64-1 bis T64-10 | 2026-10-20 | Juri | PC des Owners, PR #120 (Rough-Test) | ❌ „Schließen“ in „So funktioniert's“ unpassend, besser ✕ oben rechts in allen Dialogen; Windows reagiert vereinzelt selbst auf Controller-Eingaben | ✕ in allen Dialogen (T64-11 neu); Ursache der Windows-Reaktion offen |
+| T64-11 | 2026-10-20 | Claude | Branch nach dem ✕, Linux, Xvfb 1920×1080 `--demo`, Maus und Tastatur per xdotool | ✅ ✕ in Einstellungen, „Ansicht“ und „So funktioniert's“ nach Taste oder Mausbewegung; Klick schließt Einstellungen bzw. nur die Hilfe; Enter schließt die Hilfe. Ausblenden nach Controller-Taste nur im Code geprüft, SISR-Dialoge nicht geöffnet | Controller am PC des Owners |
 | T64-1 bis T64-10 (Logik) | 2026-10-20 | Claude | `dotnet test` (`MouseModeTests`, `SoloButtonsTests`, `MouseModeAutomationTests`, `StickCurveTests`, `GameFoldersTests`, `SettingsServiceTests`) | ✅ Umschalten, Abbruch, Belegung, Wiederholung, L3, mehrere Controller, Automatik, Spielordner, Einstellungen | Echte Eingaben unter Windows nicht geprüft |
 
 ## Grundgerüst (ohne Issue)

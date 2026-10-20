@@ -146,6 +146,9 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   `/steam-epic term` prefix, keyword per launcher), R3 = keyboard layout switch, View/⧉ or
   right click = context menu, Menu/☰ = settings (swapped by the owner, 2026-10-17). No "all launchers" tab. No dedicated favourite button.
 - Dependent options sit in the same box as their main switch.
+- Dialogs (Ansicht, settings, prompts) show an ✕ in the top right corner while mouse or keyboard is in use
+  (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs (e.g. the
+  mouse mode's help) has no "Schließen" button besides (owner, 2026-10-20).
 - A starts a game on release; holding A for 1 s opens the detail page (a ring around the preview fills from
   0.2 s on, letting go before 1 s cancels). With the mouse a click picks a cover, a double click starts it and
   holding the left button 1 s opens the details with the same ring (owner, 2026-10-19). The context menu and the detail page offer the same actions

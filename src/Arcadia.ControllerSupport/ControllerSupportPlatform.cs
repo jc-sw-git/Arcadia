@@ -61,6 +61,9 @@ public interface IControllerSupportPlatform
     /// <summary>The name of the Steam game running right now, or null.</summary>
     string? RunningSteamGame();
 
+    /// <summary>The app id of the Steam game running right now, or null.</summary>
+    int? RunningSteamAppId();
+
     /// <summary>Asks Steam to exit and waits for it; false if it is still running after the timeout.</summary>
     Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken);
 
@@ -178,6 +181,8 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
     }
 
     public string? RunningSteamGame() => SteamInstallation.RunningGameName();
+
+    public int? RunningSteamAppId() => SteamInstallation.RunningAppId();
 
     public async Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken) =>
         await SteamInstallation.ShutdownAsync(SteamExitTimeout, time, cancellationToken);

@@ -51,6 +51,22 @@ focus handling or anything SISR/usbip related.
   (`SisrState.Running`); `WatchAsync` (every 2 s) moves Running ↔ NoController as the controller is switched on or off.
   Windows' HID list is no use: the wireless dongle shows as a Valve device (`VID_28DE`) even with the
   controller off (owner's PC, 2026-10-16).
+- SISR emulates every controller Steam Input hands it, not only the Steam Controller (SISR `input/device_store.go`,
+  read 2026-10-20). With Steam Input on for Xbox pads in a game's controller settings, SISR took the owner's
+  physical Xbox pad as soon as the game started, Steam took SISR's virtual Xbox 360 controller over again, and
+  the game got no input from it in either mode until the support was switched off (owner, 2026-10-20, #124).
+  So only an emulated device whose `real_device` in `/api/v1/devices` is a Valve device counts as a Steam
+  Controller: `VID_28DE` in its SDL path, except Steam's virtual gamepad `28DE:11FF`; without a vendor id in the
+  path, a name with "Steam Controller" or "Steam Deck" (`SisrGamepad.IsValveController`). An Xbox pad behind
+  Steam Input has SDL's XInput path (`XInput#0`) without a vendor id. Read from SISR's and SDL's source, not
+  yet seen on the owner's PC; `arcadia.log` names every other controller SISR emulates with its USB id.
+- If SISR emulates any other controller while a Steam game runs (`RunningAppID`), Arcadia pauses SISR until
+  that app id is gone, logs why and shows "SISR pausiert für „…“" in the settings with the way out: Steam Input
+  off for the other controllers in that game. Arcadia can't make SISR leave one device alone (only a filter in
+  SISR or #112 could). Assumed, not yet seen: the Steam Controller still reaches the game through Steam
+  Input then (in Steam games it always uses Steam Input), and the loop ends once SISR and VIIPER are gone. The
+  pause isn't handed over an update restart; the new Arcadia starts SISR and pauses it again within 2 s.
+  Without a Steam game the settings only warn "SISR übernimmt einen anderen Controller".
 - SISR may only run while Steam is ready: `steam` and `steamwebhelper` run, a user is logged in
   (`ActiveProcess\ActiveUser`) and the client finished that login: the latest `Starting login` in
   `logs/steamui_login.txt` is followed by `SetLoginState: Success` (`SteamLoginLog`). `ActiveUser` is set as

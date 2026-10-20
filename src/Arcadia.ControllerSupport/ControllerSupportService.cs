@@ -143,6 +143,12 @@ public sealed class ControllerSupportService(
     private int _pausedGames;
     private volatile bool _shuttingDown;
     private DateTimeOffset _lastStart = DateTimeOffset.MinValue;
+
+    /// <summary>The Steam game SISR is paused for because it emulated other controllers there, and which (#124).</summary>
+    private volatile PauseForOtherControllers? _pausedForOtherControllers;
+
+    /// <summary>Other controllers SISR emulates while no Steam game runs, for the log and the settings.</summary>
+    private volatile string? _otherControllers;
     private bool _checkedThisSession;
     private bool _initialized;
 
@@ -717,19 +723,79 @@ public sealed class ControllerSupportService(
     private async Task UpdateControllerStateAsync(CancellationToken cancellationToken)
     {
         // SISR picks up a controller switched on (or off) after it started; the preview follows.
-        if (State is SisrState.NoController or SisrState.Running && sisr.IsRunning
-            && await sisr.Api.GetEmulatedControllerCountAsync(cancellationToken) is { } count)
+        if (State is not (SisrState.NoController or SisrState.Running) || !sisr.IsRunning
+            || await sisr.Api.GetEmulatedControllersAsync(cancellationToken) is not { } controllers)
         {
-            if (count > 0)
-            {
-                TryMove(SisrState.NoController, SisrState.Running);
-            }
-            else
-            {
-                TryMove(SisrState.Running, SisrState.NoController);
-            }
+            return;
+        }
+
+        var others = controllers.Others.Count > 0 ? string.Join(", ", controllers.Others.Select(c => c.Description)) : null;
+        if (others is not null && await PauseForOtherControllersAsync(others, cancellationToken))
+        {
+            return;
+        }
+
+        if (_otherControllers != others)
+        {
+            _otherControllers = others;
+            Log?.Invoke(others is null
+                ? "SISR bildet nur noch Steam Controller nach"
+                : $"SISR bildet einen anderen Controller als den Steam Controller nach, ohne dass ein Steam-Spiel läuft: {others}");
+        }
+
+        if (controllers.SteamControllers > 0)
+        {
+            TryMove(SisrState.NoController, SisrState.Running);
+        }
+        else
+        {
+            TryMove(SisrState.Running, SisrState.NoController);
         }
     }
+
+    /// <summary>
+    /// SISR emulates a controller that isn't a Steam Controller, e.g. an Xbox pad: Steam hands it to SISR
+    /// because the running Steam game has Steam Input on for it. Steam takes SISR's virtual Xbox 360
+    /// controller over again and the game gets no input at all (#124). SISR can't be told to leave one
+    /// device alone, so it pauses until that game ends. The Steam Controller goes through Steam Input in
+    /// Steam games anyway, so the game still gets it (assumed, see docs/controller-support.md).
+    /// False if no Steam game runs, or an action holds the gate (the next check tries again).
+    /// </summary>
+    private async Task<bool> PauseForOtherControllersAsync(string others, CancellationToken cancellationToken)
+    {
+        if (_platform.RunningSteamAppId() is not { } appId || !await _gate.WaitAsync(TimeSpan.Zero, cancellationToken))
+        {
+            return false;
+        }
+
+        try
+        {
+            // Checked again under the gate: something may have stopped SISR since the check began.
+            if (!Enabled || IsPaused || _shuttingDown || !sisr.IsRunning)
+            {
+                return true;
+            }
+
+            var game = _platform.RunningSteamGame() ?? $"App {appId}";
+            Log?.Invoke($"SISR bildet einen anderen Controller als den Steam Controller nach ({others}): In „{game}“ gilt Steam Input auch für ihn. SISR pausiert, bis das Spiel endet");
+            var pause = new PauseForOtherControllers(game, others);
+            _pausedForOtherControllers = pause;
+            _otherControllers = null;
+            PauseWhile(
+                () => _platform.RunningSteamAppId() == appId,
+                startTimeout: TimeSpan.Zero,
+                $"Steam-Spiel {appId}",
+                ended: () => Interlocked.CompareExchange(ref _pausedForOtherControllers, null, pause));
+            await StopSisrAndReleaseControllerAsync(cancellationToken);
+            return true;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private sealed record PauseForOtherControllers(string Game, string Controllers);
 
     public async Task CheckForUpdateAsync(CancellationToken cancellationToken = default)
     {
@@ -857,20 +923,34 @@ public sealed class ControllerSupportService(
 
     private void Pause(string directory)
     {
-        Interlocked.Increment(ref _pausedGames);
         _pausedDirectories.AddOrUpdate(directory, 1, (_, n) => n + 1);
-        OnChanged();
-        _ = Task.Run(() => WatchPausedGameAsync(directory), CancellationToken.None);
+        PauseWhile(() => _platform.AnyRunningFrom(directory), startTimeout: TimeSpan.FromMinutes(2), $"Spiel in {directory}", ended: () =>
+        {
+            if (_pausedDirectories.AddOrUpdate(directory, 0, (_, n) => n - 1) <= 0)
+            {
+                _pausedDirectories.TryRemove(directory, out _);
+            }
+        });
     }
 
-    private async Task WatchPausedGameAsync(string directory)
+    /// <summary>
+    /// Keeps SISR paused while <paramref name="running"/> holds, after waiting up to
+    /// <paramref name="startTimeout"/> for it to begin; <paramref name="ended"/> runs under the gate when it is over.
+    /// </summary>
+    private void PauseWhile(Func<bool> running, TimeSpan startTimeout, string what, Action ended)
+    {
+        Interlocked.Increment(ref _pausedGames);
+        OnChanged();
+        _ = Task.Run(() => WatchPausedGameAsync(running, startTimeout, what, ended), CancellationToken.None);
+    }
+
+    private async Task WatchPausedGameAsync(Func<bool> running, TimeSpan startTimeout, string what, Action ended)
     {
         try
         {
-            bool Running() => _platform.AnyRunningFrom(directory);
-            if (await ProcessWatch.WaitUntilAsync(Running, TimeSpan.FromMinutes(2), time, CancellationToken.None))
+            if (await ProcessWatch.WaitUntilAsync(running, startTimeout, time, CancellationToken.None))
             {
-                while (Running())
+                while (running())
                 {
                     await Task.Delay(TimeSpan.FromSeconds(3), time);
                 }
@@ -879,12 +959,12 @@ public sealed class ControllerSupportService(
         catch (Exception ex)
         {
             // Ending the pause below matters more than why watching failed.
-            Log?.Invoke($"Spiel in {directory} konnte nicht beobachtet werden: {ex}");
+            Log?.Invoke($"{what} konnte nicht beobachtet werden: {ex}");
         }
 
         try
         {
-            await EndPauseAsync(directory);
+            await EndPauseAsync(ended);
         }
         catch (Exception ex)
         {
@@ -892,16 +972,12 @@ public sealed class ControllerSupportService(
         }
     }
 
-    private async Task EndPauseAsync(string directory)
+    private async Task EndPauseAsync(Action ended)
     {
         await _gate.WaitAsync();
         try
         {
-            if (_pausedDirectories.AddOrUpdate(directory, 0, (_, n) => n - 1) <= 0)
-            {
-                _pausedDirectories.TryRemove(directory, out _);
-            }
-
+            ended();
             if (Interlocked.Decrement(ref _pausedGames) == 0)
             {
                 SettleRestingState();
@@ -965,7 +1041,19 @@ public sealed class ControllerSupportService(
             issues.Add(new("sisr-external", HealthSeverity.Warning, "Ein SISR aus einem anderen Ordner läuft", "Zwei SISR-Instanzen erzeugen doppelte Controller. Die zweite sollte beendet werden.", HealthFix.StopExternalSisr, "Beenden"));
         }
 
+        if (_pausedForOtherControllers is { } pause)
+        {
+            issues.Add(new("sisr-paused-other-controller", HealthSeverity.Warning, $"SISR pausiert für „{pause.Game}“",
+                $"In diesem Spiel gilt Steam Input auch für andere Controller ({pause.Controllers}). SISR würde sie mit übernehmen, und das Spiel bekäme keine Eingaben mehr. Bis es endet, bekommt es alle Controller über Steam Input. Soll der Steam Controller als Xbox 360 Controller ankommen, schalte in Steam in den Controller-Einstellungen des Spiels Steam Input für die anderen Controller aus."));
+        }
+
         var state = State;
+        if (state is SisrState.Running or SisrState.NoController && _otherControllers is { } others)
+        {
+            issues.Add(new("sisr-other-controller", HealthSeverity.Warning, "SISR übernimmt einen anderen Controller",
+                $"SISR bildet auch {others} nach, weil Steam Input für diesen Controller eingeschaltet ist. Arcadia zählt ihn nicht als Steam Controller. Schalte Steam Input für diese Controller in Steams Controller-Einstellungen aus."));
+        }
+
         if (state == SisrState.Failed)
         {
             issues.Add(new("sisr-crashing", HealthSeverity.Error, "SISR stürzt wiederholt ab", "Arcadia hat SISR mehrfach neu gestartet. Details stehen in logs\\sisr.log.", HealthFix.RestartSisr, "Erneut starten"));
@@ -1087,11 +1175,11 @@ public sealed class ControllerSupportService(
         try
         {
             var deadline = time.GetUtcNow() + ReadyTimeout;
-            var controllers = 0;
+            SisrControllers? controllers = null;
             while (time.GetUtcNow() < deadline && sisr.IsRunning)
             {
-                controllers = await sisr.Api.GetEmulatedControllerCountAsync() ?? 0;
-                if (controllers > 0)
+                controllers = await sisr.Api.GetEmulatedControllersAsync();
+                if (controllers?.Total > 0)
                 {
                     break;
                 }
@@ -1099,15 +1187,16 @@ public sealed class ControllerSupportService(
                 await Task.Delay(TimeSpan.FromMilliseconds(500), time);
             }
 
-            if (controllers > 0 && time.GetUtcNow() - _lastStart < MinimumSettleTime)
+            if (controllers?.Total > 0 && time.GetUtcNow() - _lastStart < MinimumSettleTime)
             {
                 await Task.Delay(MinimumSettleTime - (time.GetUtcNow() - _lastStart), time);
             }
 
-            Log?.Invoke($"SISR bereit: {controllers} Controller emuliert");
+            var steamControllers = controllers?.SteamControllers ?? 0;
+            Log?.Invoke($"SISR bereit: {steamControllers} Steam Controller und {controllers?.Others.Count ?? 0} andere Controller emuliert");
 
-            // Only if nothing stopped or restarted SISR meanwhile.
-            var next = !sisr.IsRunning ? SisrState.Stopped : controllers > 0 ? SisrState.Running : SisrState.NoController;
+            // Only if nothing stopped or restarted SISR meanwhile. Other controllers are the quick check's to pause for.
+            var next = !sisr.IsRunning ? SisrState.Stopped : steamControllers > 0 ? SisrState.Running : SisrState.NoController;
             TryMove(SisrState.Starting, next, generation);
         }
         catch (Exception ex)

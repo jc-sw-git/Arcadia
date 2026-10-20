@@ -147,20 +147,26 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
     /// </summary>
     public static string? RunningGameName()
     {
+        if (!OperatingSystem.IsWindows() || RunningAppId() is not { } appId)
+        {
+            return null;
+        }
+
+        var id = appId.ToString(CultureInfo.InvariantCulture);
+        using var app = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam\Apps\" + id);
+        return app?.GetValue("Name") is string name && !string.IsNullOrWhiteSpace(name) ? name : $"App {id}";
+    }
+
+    /// <summary>The app id of the Steam game running right now (<c>RunningAppID</c>), or null.</summary>
+    public static int? RunningAppId()
+    {
         if (!OperatingSystem.IsWindows())
         {
             return null;
         }
 
         using var steam = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
-        if (steam?.GetValue("RunningAppID") is not int appId || appId == 0)
-        {
-            return null;
-        }
-
-        var id = appId.ToString(CultureInfo.InvariantCulture);
-        using var app = steam.OpenSubKey(@"Apps\" + id);
-        return app?.GetValue("Name") is string name && !string.IsNullOrWhiteSpace(name) ? name : $"App {id}";
+        return steam?.GetValue("RunningAppID") is int appId && appId != 0 ? appId : null;
     }
 
     public static SteamInstallation? Find()

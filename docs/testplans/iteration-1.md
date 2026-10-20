@@ -573,6 +573,31 @@ Verlauf:
 | T113-1 | 2026-10-20 | Juri | PC des Owners, `main` | ❌ 80 statt 78 Spiele, die vier oben zu viel | #113 |
 | T113-1 | 2026-10-20 | Claude | Juris Manifeste nur gelesen (83 in 3 Bibliotheken), Regel mechanisch nachgezählt, App nicht gestartet | ⚠️ Die vier haben als einzige `LastOwner 0` und fallen weg; 83 − 3 Werkzeuge − 4 = 76, Steam nennt 78 | Zählweise in Steam mit Juri klären, Lauf am PC des Owners |
 
+## #124 SISR übernimmt bei Steam Input für Xbox-Controller auch den Xbox Controller
+
+- [ ] **T124-1** Steam Controller Support an, Steam Controller und Xbox Controller verbunden. In einem
+      Steam-Spiel Steam Input für Xbox-Controller einschalten und das Spiel aus Arcadia auf „Xbox 360
+      Controller (SISR)“ starten: Das Spiel nimmt Eingaben vom Xbox Controller an. `arcadia.log` nennt den
+      Xbox Controller und dass SISR pausiert, die Einstellungen zeigen „SISR pausiert für „…““. · E2E: nein
+      (echtes Steam mit zwei Controllern)
+- [ ] **T124-2** Wie T124-1, aber auf „Steam Input“ gestartet: Das Spiel nimmt Eingaben von beiden
+      Controllern an. · E2E: nein (echtes Steam mit zwei Controllern)
+- [ ] **T124-3** Wie T124-1, mit dem Steam Controller gespielt: Das Spiel bekommt ihn über Steam Input. Nach
+      dem Beenden läuft SISR wieder, der Hinweis ist weg und der Steam Controller wird in Arcadia wieder als
+      verbunden angezeigt. · E2E: nein (echtes Steam mit Steam Controller)
+- [ ] **T124-4** Nur der Xbox Controller ist verbunden, und SISR übernimmt ihn (Steam Input für ihn an):
+      Arcadia zeigt keinen Steam Controller als verbunden an (keine Modus-Auswahl in der Vorschau). · E2E: nein
+- [ ] **T124-5** Ein Steam-Spiel ohne Steam Input für Xbox-Controller verhält sich wie bisher (G-24, T92-2). · E2E: nein
+- [ ] **T124-6** Am PC des Owners: Was SISRs `/api/v1/devices` für den Steam Controller (Puck 28DE:1304) und
+      ein Xbox-Pad als `real_device` meldet, passt zur Erkennung in `docs/controller-support.md`
+      (`arcadia.log` beim Start von SISR und bei T124-1). · E2E: nein
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T124-1 bis T124-4 | 2026-10-20 | Claude | Branch `fix/steam-input-fuer-xbox-laesst-sisr-den-xbox-controller-uebernehmen-124`, Linux, nur Unit-Tests mit nachgebildetem SISR (`ControllerSupportServiceTests`, `SisrDevicesTests`) | ⚠️ Logik grün, App und echtes SISR nicht gestartet | Lauf am PC des Owners |
+
 ## Grundgerüst (ohne Issue)
 
 Alles, was Arcadia schon kann, aber zu keinem Issue gehört (Grundgerüst aus `docs/roadmap.md`,

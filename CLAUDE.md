@@ -188,8 +188,10 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   Arcadia back from the background, with or without the mouse mode, with a box whose frame fills (owner, 2026-10-20).
   Exceptions per process are planned for later. "Steams Desktop-Belegung ignorieren" (on) drops simulated mouse and keys
   from other programs while a controller is in use; beside a library game without the mouse mode only while ⧉ + ≡ are
-  held (`SteamDesktopInputFilter`, low-level hooks only while needed). "Arcadia in front" is the foreground window's
-  process (`MouseModeHost.IsArcadiaActive`), not Avalonia's activation, which got out of step beside games.
+  held, and then only keys (`SteamDesktopInputFilter`: low-level hooks only while a controller is connected and the
+  option needs them, set anew every 30 s because Windows drops a slow hook silently). "Arcadia in front" is the
+  foreground window's process and no other program's window covering Arcadia whole (`MouseModeHost.IsArcadiaActive`),
+  not Avalonia's activation, which got out of step beside games.
 - Launcher actions (open in the launcher, uninstall) are `LaunchTarget`s on `Game`;
   a null one is shown disabled with the reason, or for uninstall opens the launcher instead.
 - If an update is available, A still says "Spielen" and starts the game; the launcher installs the update

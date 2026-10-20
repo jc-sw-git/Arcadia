@@ -27,7 +27,7 @@ public sealed class MouseModeHost : IDisposable
     /// </summary>
     private static readonly TimeSpan FocusLossSettleTime = TimeSpan.FromMilliseconds(300);
 
-    /// <summary>This often Arcadia checks whether Steam's desktop layout must be dropped: not while a game is in front.</summary>
+    /// <summary>This often Arcadia checks whether it is in front and how much of Steam's desktop layout to drop.</summary>
     private static readonly TimeSpan DesktopFilterCheckInterval = TimeSpan.FromMilliseconds(250);
 
     private readonly IGamepadSource _gamepad;
@@ -46,6 +46,10 @@ public sealed class MouseModeHost : IDisposable
 
     // Arcadia's window is active by its own events; decides "in front" only where Windows can't tell.
     private volatile bool _arcadiaActive;
+
+    // The automation's view of the foreground (UI thread), and Arcadia's window once it has one (read on the poll thread).
+    private bool _ownsForeground;
+    private nint _windowHandle;
     private DesktopFilterScope _desktopFilterScope;
     private int? _lastForegroundId;
     private GameFolders? _lastForegroundFolders;
@@ -74,13 +78,18 @@ public sealed class MouseModeHost : IDisposable
             () => _settings.Current.MouseMode.Activation == MouseModeActivation.Automatic);
         _returnWithView = new ReturnWithView(CurrentReturnOptions, () => IsArcadiaActive, time);
         _activity = new ControllerActivity(time);
-        _desktopFilter = DesktopInputFilter.CreateDefault(_activity);
+        _desktopFilter = DesktopInputFilter.CreateDefault(_activity, AppLog.Write);
         _arcadiaActive = window.IsActive;
+        _ownsForeground = window.IsActive;
         _foregroundCheck = new DispatcherTimer(ForegroundCheckInterval, DispatcherPriority.Background, (_, _) => CheckForeground());
         _foregroundCheck.Stop();
         _focusLossSettle = new DispatcherTimer(FocusLossSettleTime, DispatcherPriority.Background, (_, _) => OnFocusLossSettled());
         _focusLossSettle.Stop();
-        _desktopFilterCheck = new DispatcherTimer(DesktopFilterCheckInterval, DispatcherPriority.Background, (_, _) => UpdateDesktopFilter());
+        _desktopFilterCheck = new DispatcherTimer(DesktopFilterCheckInterval, DispatcherPriority.Background, (_, _) =>
+        {
+            CheckArcadiaInFront();
+            UpdateDesktopFilter();
+        });
 
         _mode.HoldStarted += fillTime => Dispatcher.UIThread.Post(() => _overlay.ShowHold(fillTime));
         _mode.HoldCancelled += () => Dispatcher.UIThread.Post(_overlay.CancelHold);
@@ -97,12 +106,14 @@ public sealed class MouseModeHost : IDisposable
     public bool IsOn => _mode.IsOn;
 
     /// <summary>
-    /// Arcadia is in front. Readable from any thread, unlike <c>Window.IsActive</c>. On Windows the
-    /// foreground window decides, not the window's activation events: those got out of step while
-    /// switching between a game and Arcadia (owner's PC, 2026-10-20), and Arcadia then took the game's
-    /// controller input as its own and ignored View held for the way back.
+    /// Arcadia is in front and can be seen: its controller input and View's way back depend on it.
+    /// Readable from any thread, unlike <c>Window.IsActive</c>. On Windows the foreground window
+    /// decides, not the window's activation events: those got out of step while switching between a
+    /// game and Arcadia (owner's PC, 2026-10-20), and Arcadia then took the game's controller input as
+    /// its own and ignored View held. A game in borderless full screen can also stay above Arcadia
+    /// while Arcadia has the foreground, so the window at Arcadia's centre must be Arcadia's too.
     /// </summary>
-    public bool IsArcadiaActive => OperatingSystem.IsWindows() ? ProcessWatch.ForegroundProcessId() == Environment.ProcessId : _arcadiaActive;
+    public bool IsArcadiaActive => OwnsForeground() && (_windowHandle == 0 || ForegroundGuard.IsUncovered(_windowHandle));
 
     /// <summary>Call after the gamepad source stopped polling: lets go of a held mouse button or key.</summary>
     public void Dispose()
@@ -207,25 +218,55 @@ public sealed class MouseModeHost : IDisposable
         });
     }
 
+    /// <summary>Arcadia's process has the foreground; on Windows by asking Windows, elsewhere by the window's activation.</summary>
+    private bool OwnsForeground() => OperatingSystem.IsWindows() ? ProcessWatch.ForegroundProcessId() == Environment.ProcessId : _arcadiaActive;
+
     private void OnArcadiaActivated(object? sender, EventArgs e)
     {
         _arcadiaActive = true;
-        _focusLossSettle.Stop();
-        _automation.ArcadiaActivated();
-        UpdateForegroundCheck();
+        CheckArcadiaInFront();
     }
 
     private void OnArcadiaDeactivated(object? sender, EventArgs e)
     {
         _arcadiaActive = false;
+        CheckArcadiaInFront();
+    }
+
+    /// <summary>
+    /// The automation follows the foreground as Windows reports it, checked on Avalonia's activation
+    /// events and every <see cref="DesktopFilterCheckInterval"/>, because those events alone got out of step.
+    /// </summary>
+    private void CheckArcadiaInFront()
+    {
+        if (_windowHandle == 0 && _window.TryGetPlatformHandle() is { } handle)
+        {
+            _windowHandle = handle.Handle;
+        }
+
+        var inFront = OwnsForeground();
+        if (inFront == _ownsForeground)
+        {
+            return;
+        }
+
+        _ownsForeground = inFront;
         _focusLossSettle.Stop();
-        _focusLossSettle.Start();
+        if (inFront)
+        {
+            _automation.ArcadiaActivated();
+            UpdateForegroundCheck();
+        }
+        else
+        {
+            _focusLossSettle.Start();
+        }
     }
 
     private void OnFocusLossSettled()
     {
         _focusLossSettle.Stop();
-        if (!_window.IsActive)
+        if (!OwnsForeground())
         {
             _automation.ArcadiaDeactivated(ForegroundGame.IsInFront(_viewModel.GameFolders));
         }
@@ -239,13 +280,14 @@ public sealed class MouseModeHost : IDisposable
 
     /// <summary>
     /// Steam's desktop layout is dropped while the setting is on: whenever the controller is in use
-    /// outside games and in the mouse mode; beside a game of the library only while ⧉ + ≡ are held,
-    /// so the game's own Steam layout still reaches it.
+    /// outside games and in the mouse mode; beside a game of the library only keys and only while ⧉ + ≡
+    /// are held, so the game's own Steam layout still reaches it. Without a controller the hooks are out.
     /// </summary>
     private void UpdateDesktopFilter()
     {
         var settings = _settings.Current.MouseMode;
         var scope = settings.Activation == MouseModeActivation.Off || !settings.IgnoreSteamDesktopLayout || _failed
+            || _activity.ConnectedSlots.Count == 0
             ? DesktopFilterScope.Off
             : _mode.IsOn || !GameInFront() ? DesktopFilterScope.ControllerInUse : DesktopFilterScope.ComboHeld;
         if (scope == _desktopFilterScope)

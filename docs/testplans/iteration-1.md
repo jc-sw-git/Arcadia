@@ -629,13 +629,21 @@ Verlauf:
       In einem Spiel aus der Bibliothek ohne Mausmodus wirkt Steams Belegung für das Spiel wie gewohnt, nur ⧉ + ≡
       gehalten macht dort kein Alt+Tab mehr (Steam-Spiel mit Xbox-Controller, z. B. Castlevania). Option aus:
       Steams Desktop-Belegung wirkt wieder. `arcadia.log` nennt beim Ausschalten, wie viele Eingaben verworfen
-      wurden. · E2E: nein
+      wurden, und dass der Filter neben einem Spiel nur bei ⧉ + ≡ wirkt; ohne angeschlossenen Controller ist er aus.
+      Mit einer Maus mit 1.000 Hz im Spiel bleibt Arcadias CPU-Last gleich, ob die Option an oder aus ist. · E2E: nein
 - [ ] **T64-16** Ein Spiel läuft, mehrmals zwischen Spiel und Arcadia wechseln (Alt+Tab, ⧉ halten, Klick) und im
       Spiel von Hand zwischen Mausmodus und normalem Modus umschalten: Arcadia reagiert nie auf Eingaben, die
-      dem Spiel gelten, und ⧉ gehalten holt Arcadia jedes Mal nach vorne. · E2E: nein
+      dem Spiel gelten, und ⧉ gehalten holt Arcadia jedes Mal nach vorne. Ebenso mit einem Spiel im randlosen
+      Vollbild: Arcadia ist danach wirklich zu sehen, nicht nur im Vordergrund, und wird nie unsichtbar gesteuert.
+      ⧉ und ≡ mit mehr als 0,2 s Abstand gedrückt öffnen in Arcadia erst Menü bzw. Einstellungen (bewusst, damit ≡
+      gehalten auf einem Suchtreffer die Details öffnet). · E2E: nein
 - [ ] **T64-17** Steam Controller Support an, Steam Controller verbunden, ein Steam-Spiel auf „Steam Input“ starten:
       SISR pausiert, die Zeile „Steam Controller“ in der Vorschau und auf der Detailseite bleibt sichtbar und
-      umschaltbar. „So funktioniert's“ nennt, dass ⧉ + ≡ und ⧉ halten mit dem Steam Controller dort nicht wirken. · E2E: nein
+      umschaltbar. „So funktioniert's“ nennt, dass ⧉ + ≡ und ⧉ halten mit dem Steam Controller dort nicht wirken.
+      Ebenso nach einem Update-Neustart von Arcadia, während das Spiel läuft (Ergebnis im Verlauf notieren). · E2E: nein
+- [ ] **T64-18** Mausmodus an, Windows-Bildschirmtastatur (osk.exe) offen: mit A auf Tasten klicken. Noch nicht
+      gesehen, Ergebnis im Verlauf notieren: der Filter verwirft vermutlich auch ihre Tasten, weil sie sie wie Steam
+      per `SendInput` schickt. · E2E: nein
 - [ ] **T64-15** Die Boxen „Mausmodus“ und „Zurück zu Arcadia“ und „So funktioniert's“ nennen Tasten über ihr
       Symbol (⧉, ≡), nirgends „Back“, „Start“, „View“ oder „Menu“. Die Symbole stehen im Text in einer runden
       Umrandung wie in der Legende; in der Tabelle von „So funktioniert's“ auch A, B, X, LB, RB, LT, RT und L3. · E2E: ja
@@ -659,6 +667,7 @@ Verlauf:
 | T64-1 (nur Overlay), T64-15 | 2026-10-20 | Claude | Branch nach dem Fix, Linux, Xvfb 1920×1080 `--demo`; Overlay lokal per Testcode dreimal nacheinander ausgelöst und mit 5 Bildern/s aufgenommen (nicht eingecheckt) | ✅ Vor dem Fix blieb der Rand ab dem zweiten Halten unsichtbar (Deckkraft 0 im Log), danach füllt er sich jedes Mal; Badges in beiden Boxen und in „So funktioniert's“ lesbar. Das Aufflackern des alten Texts ist unter Xvfb nicht sichtbar, nur unter Windows prüfbar | T64-1 am PC des Owners |
 | T64-14, T64-16, T64-17 | 2026-10-20 | Juri | PC des Owners, PR #120, Steam-Spiel (Castlevania), Xbox-Controller und Steam Controller | ❌ Im Steam-Spiel macht Steam aus ⧉ + ≡ Alt+Tab; Arcadia reagiert manchmal auf Eingaben im Spiel und ⧉ holt es nicht zurück; Steam Controller auf „Steam Input“: ⧉ + ≡ und ⧉ halten wirken nicht; die Steam-Controller-Zeile verschwindet, solange SISR pausiert | Filter wirkt neben Spielen bei ⧉ + ≡; „vorne“ über das Vordergrundfenster; Steam Input als Grenze in „So funktioniert's“ (Lösung erst mit #112/#72); Zeile bleibt (Test `The_controller_still_counts_as_connected_while_SISR_is_paused_for_a_game`, vorher rot) |
 | T64-14, T64-16 (nur Logik) | 2026-10-20 | Claude | `dotnet test` (`InjectedInputGateTests`, `ControllerSupportServiceTests`) | ✅ ⧉ + ≡ zählt mit Nachlauf; Steam-Controller-Zeile bleibt bei Pause. Hooks, Steam und Vordergrund unter Windows nicht geprüft | T64-14, T64-16, T64-17 am PC des Owners |
+| T64-14, T64-16 (Review) | 2026-10-20 | Claude | Review zu PR #120 (`reviews/pr-120-code-review.md`), `dotnet build`/`dotnet test` unter Linux | ✅ Build und Tests grün. Neu: „vorne“ verlangt zusätzlich, dass kein fremdes Fenster Arcadia ganz verdeckt (randloses Vollbild), ⧉ gehalten hält Arcadia dann bis zum Fokuswechsel oben; neben Spielen nur der Tastatur-Hook, ohne Controller keiner, die Hooks werden alle 30 s und bei jedem Wechsel neu gesetzt. Hooks, Vordergrund und CPU-Last unter Windows nicht geprüft | T64-14, T64-16 bis T64-18 am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

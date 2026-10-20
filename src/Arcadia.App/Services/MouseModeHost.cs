@@ -67,10 +67,11 @@ public sealed class MouseModeHost : IDisposable
         _window = window;
         _viewModel = viewModel;
         _mode = new MouseMode(MouseKeyboardOutput.CreateDefault(), CurrentOptions, time);
+        // "Automatisch" always ends when Arcadia comes to the front; "Von Hand" only with its option.
         _automation = new MouseModeAutomation(
             _mode,
-            () => _settings.Current.MouseMode.EndWhenArcadiaInFront,
-            () => _settings.Current.MouseMode.StartWhenArcadiaLosesFocus);
+            () => _settings.Current.MouseMode is { Activation: MouseModeActivation.Automatic } or { Activation: MouseModeActivation.Manual, EndWhenArcadiaInFront: true },
+            () => _settings.Current.MouseMode.Activation == MouseModeActivation.Automatic);
         _returnWithView = new ReturnWithView(CurrentReturnOptions, () => _arcadiaActive, time);
         _activity = new ControllerActivity(time);
         _desktopFilter = DesktopInputFilter.CreateDefault(_activity);
@@ -146,7 +147,7 @@ public sealed class MouseModeHost : IDisposable
         if (_options is null || !ReferenceEquals(settings, _optionsFrom))
         {
             _optionsFrom = settings;
-            _options = new MouseModeOptions(settings.Enabled, settings.ComboEnabled, TimeSpan.FromSeconds(settings.HoldSeconds), settings.PointerSpeed);
+            _options = new MouseModeOptions(settings.Activation != MouseModeActivation.Off, TimeSpan.FromSeconds(settings.HoldSeconds), settings.PointerSpeed);
         }
 
         return _options;
@@ -238,7 +239,7 @@ public sealed class MouseModeHost : IDisposable
     private void UpdateDesktopFilter()
     {
         var settings = _settings.Current.MouseMode;
-        var on = settings.Enabled && settings.IgnoreSteamDesktopLayout && !_failed && (_mode.IsOn || !GameInFront());
+        var on = settings.Activation != MouseModeActivation.Off && settings.IgnoreSteamDesktopLayout && !_failed && (_mode.IsOn || !GameInFront());
         if (on == _desktopFilterOn)
         {
             return;

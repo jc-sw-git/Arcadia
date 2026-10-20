@@ -12,7 +12,7 @@ public sealed class MouseModeTests
     private readonly FakeTimeProvider _time = new();
     private readonly RecordingOutput _output = new();
     private readonly List<string> _events = [];
-    private MouseModeOptions _options = new(Enabled: true, ComboEnabled: true, HoldTime, PointerSpeed: 5);
+    private MouseModeOptions _options = new(Enabled: true, HoldTime, PointerSpeed: 5);
     private readonly MouseMode _mode;
 
     public MouseModeTests()
@@ -92,7 +92,7 @@ public sealed class MouseModeTests
     [Fact]
     public void Switched_off_in_the_settings_the_combination_does_nothing()
     {
-        _options = _options with { ComboEnabled = false };
+        _options = _options with { Enabled = false };
 
         HoldFor(PadButtons.View | PadButtons.Menu, HoldTime * 2);
 

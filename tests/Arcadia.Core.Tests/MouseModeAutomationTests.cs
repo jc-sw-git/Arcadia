@@ -13,7 +13,7 @@ public sealed class MouseModeAutomationTests
 
     public MouseModeAutomationTests()
     {
-        _mode = new MouseMode(new NullMouseKeyboardOutput(), () => new MouseModeOptions(true, true, TimeSpan.FromSeconds(1), 5), _time);
+        _mode = new MouseMode(new NullMouseKeyboardOutput(), () => new MouseModeOptions(true, TimeSpan.FromSeconds(1), 5), _time);
         _automation = new MouseModeAutomation(_mode, () => _endWhenArcadiaInFront, () => _startWhenArcadiaLosesFocus);
     }
 
@@ -98,15 +98,40 @@ public sealed class MouseModeAutomationTests
         Assert.True(_mode.IsOn);
     }
 
+    [Fact]
+    public void Switched_off_by_hand_it_stays_off_until_arcadia_has_been_in_front_again()
+    {
+        _automation.ArcadiaDeactivated(gameInFront: false);
+        Poll();
+        HoldCombo();
+        Poll();
+        Assert.False(_mode.IsOn);
+
+        // A game Arcadia doesn't know: nothing switches it back on behind the player's back.
+        _automation.ForegroundChecked(gameInFront: false);
+        Poll();
+        Assert.False(_mode.IsOn);
+
+        _automation.ArcadiaActivated();
+        _automation.ArcadiaDeactivated(gameInFront: false);
+        Poll();
+        Assert.True(_mode.IsOn);
+    }
+
     private void SwitchOnByHand()
+    {
+        HoldCombo();
+
+        Assert.True(_mode.IsOn);
+        Assert.False(_mode.IsAutomatic);
+    }
+
+    private void HoldCombo()
     {
         for (var held = TimeSpan.Zero; held <= TimeSpan.FromSeconds(1); held += TimeSpan.FromMilliseconds(8))
         {
             Poll(new GamepadReading(0, PadButtons.View | PadButtons.Menu, default, default));
         }
-
-        Assert.True(_mode.IsOn);
-        Assert.False(_mode.IsAutomatic);
     }
 
     private void Poll(params GamepadReading[] pads)

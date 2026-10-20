@@ -1,11 +1,10 @@
 namespace Arcadia.Input;
 
 /// <summary>The settings the mouse mode reads on every poll (from "Mausmodus" in the settings).</summary>
-/// <param name="Enabled">"Mausmodus": off, the mode ends and nothing switches it on.</param>
-/// <param name="ComboEnabled">"Mit Back + Start umschalten": off, the combination does nothing.</param>
+/// <param name="Enabled">"Mausmodus" not "Aus": off, the mode ends and nothing switches it on.</param>
 /// <param name="HoldTime">"Haltedauer": how long Back + Start must be held.</param>
 /// <param name="PointerSpeed">"Zeigergeschwindigkeit", 1–9.</param>
-public sealed record MouseModeOptions(bool Enabled, bool ComboEnabled, TimeSpan HoldTime, int PointerSpeed);
+public sealed record MouseModeOptions(bool Enabled, TimeSpan HoldTime, int PointerSpeed);
 
 /// <summary>The mouse mode went on or off.</summary>
 /// <param name="Slot">The controller whose Back + Start switched it; null when Arcadia switched it by itself.</param>
@@ -115,7 +114,7 @@ public sealed class MouseMode
             _spentCombos.RemoveWhere(slot => !pads.Any(p => p.Slot == slot && p.IsDown(Combo)));
         }
 
-        if (!options.Enabled || !options.ComboEnabled)
+        if (!options.Enabled)
         {
             CancelCombo();
             return;

@@ -180,8 +180,10 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
 - Mouse mode (#64): Back + Start held (1–9 s, default 3) switches it, also with Arcadia in the background; one mode for all
   pads; never saved (Arcadia starts normal). Its buttons are listed in `MouseModeSettingsViewModel.HelpRows`; in it
   Arcadia ignores gamepad navigation. View and Menu therefore act on release, or once held alone 0.2 s (so ≡ held still
-  opens details), and not at all when pressed together (owner, 2026-10-19). A main switch "Mausmodus" turns it all off
-  and keeps the other values. "Zurück zu Arcadia" is its own setting: View held alone (0–9 s, default 1; 0 at once) brings
+  opens details), and not at all when pressed together (owner, 2026-10-19). "Mausmodus" is one choice of three, so only one way
+  decides (owner, 2026-10-20): "Aus" (all off, the other values kept), "Von Hand" (Back + Start; optionally ends when Arcadia
+  comes to the front) or "Automatisch" (on when Arcadia loses the focus to a non-game, off when Arcadia or a game comes to
+  the front; Back + Start overrides it until Arcadia was in front again, e.g. for a game Arcadia doesn't know). "Zurück zu Arcadia" is its own setting: View held alone (0–9 s, default 1; 0 at once) brings
   Arcadia back from the background, with or without the mouse mode, with a box whose frame fills (owner, 2026-10-20).
   Exceptions per process are planned for later. "Steams Desktop-Belegung ignorieren" (on) drops simulated mouse and keys
   from other programs while a controller is in use, unless a library game is in front without the mouse mode

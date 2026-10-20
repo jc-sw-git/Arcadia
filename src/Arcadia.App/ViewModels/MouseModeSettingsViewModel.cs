@@ -71,8 +71,12 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
     public MouseModeSettingsViewModel(SettingsService settings, Action openHelp)
     {
         _settings = settings;
-        EnabledItem = new SettingsItemViewModel(() => Change(s => s with { Enabled = !s.Enabled }));
-        ComboItem = new SettingsItemViewModel(() => Change(s => s with { ComboEnabled = !s.ComboEnabled }));
+        ActivationItem = new SettingsStepperViewModel(
+            () => (int)Current.Activation,
+            value => Change(s => s with { Activation = (MouseModeActivation)value }),
+            value => ActivationNames[value],
+            (int)MouseModeActivation.Off,
+            (int)MouseModeActivation.Automatic);
         HoldItem = new SettingsStepperViewModel(
             () => Current.HoldSeconds,
             value => Change(s => s with { HoldSeconds = value }),
@@ -86,16 +90,15 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
             MouseModeSettings.Min,
             MouseModeSettings.Max);
         EndInFrontItem = new SettingsItemViewModel(() => Change(s => s with { EndWhenArcadiaInFront = !s.EndWhenArcadiaInFront }));
-        AutoStartItem = new SettingsItemViewModel(() => Change(s => s with { StartWhenArcadiaLosesFocus = !s.StartWhenArcadiaLosesFocus }));
         SteamLayoutItem = new SettingsItemViewModel(() => Change(s => s with { IgnoreSteamDesktopLayout = !s.IgnoreSteamDesktopLayout }));
         HelpItem = new SettingsItemViewModel(openHelp);
-        ToggleEnabledCommand = new RelayCommand(EnabledItem.Activate);
-        ToggleComboCommand = new RelayCommand(ComboItem.Activate);
         ToggleEndInFrontCommand = new RelayCommand(EndInFrontItem.Activate);
-        ToggleAutoStartCommand = new RelayCommand(AutoStartItem.Activate);
         ToggleSteamLayoutCommand = new RelayCommand(SteamLayoutItem.Activate);
         HelpCommand = new RelayCommand(openHelp);
     }
+
+    /// <summary>The values of "Mausmodus", in the order of <see cref="MouseModeActivation"/>.</summary>
+    private static readonly string[] ActivationNames = ["Aus", "Von Hand", "Automatisch"];
 
     /// <summary>The mouse mode's buttons, as <see cref="Arcadia.Input.MouseMode"/> maps them.</summary>
     public static IReadOnlyList<MouseModeHelpRow> HelpRows { get; } =
@@ -122,10 +125,8 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
         "Im Mausmodus sieht ein Spiel im Vordergrund die Controller-Eingaben weiterhin.",
     ];
 
-    /// <summary>"Mausmodus": off, every other row counts for nothing but keeps its value.</summary>
-    public SettingsItemViewModel EnabledItem { get; }
-
-    public SettingsItemViewModel ComboItem { get; }
+    /// <summary>"Mausmodus": Aus, Von Hand or Automatisch. Aus: every other row counts for nothing but keeps its value.</summary>
+    public SettingsStepperViewModel ActivationItem { get; }
 
     public SettingsStepperViewModel HoldItem { get; }
 
@@ -133,40 +134,36 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
 
     public SettingsItemViewModel EndInFrontItem { get; }
 
-    public SettingsItemViewModel AutoStartItem { get; }
-
     public SettingsItemViewModel SteamLayoutItem { get; }
 
     /// <summary>"So funktioniert's": the buttons and the limits of the mouse mode.</summary>
     public SettingsItemViewModel HelpItem { get; }
 
     /// <summary>In the order the controller moves through them.</summary>
-    public IReadOnlyList<SettingsItemViewModel> Items => [EnabledItem, ComboItem, HoldItem, SpeedItem, EndInFrontItem, AutoStartItem, SteamLayoutItem, HelpItem];
-
-    public IRelayCommand ToggleEnabledCommand { get; }
-
-    public IRelayCommand ToggleComboCommand { get; }
+    public IReadOnlyList<SettingsItemViewModel> Items => [ActivationItem, HoldItem, SpeedItem, EndInFrontItem, SteamLayoutItem, HelpItem];
 
     public IRelayCommand ToggleEndInFrontCommand { get; }
-
-    public IRelayCommand ToggleAutoStartCommand { get; }
 
     public IRelayCommand ToggleSteamLayoutCommand { get; }
 
     public IRelayCommand HelpCommand { get; }
 
-    public bool Enabled => Current.Enabled;
+    public bool Enabled => Current.Activation != MouseModeActivation.Off;
 
-    public bool ComboEnabled => Current.ComboEnabled;
+    /// <summary>The automatic mode always ends when Arcadia comes to the front.</summary>
+    public bool EndInFrontApplies => Current.Activation == MouseModeActivation.Manual;
 
-    /// <summary>The hold time counts only with the mouse mode and its combination both on.</summary>
-    public bool HoldTimeApplies => Current.Enabled && Current.ComboEnabled;
+    /// <summary>What the chosen way of switching does, under "Mausmodus".</summary>
+    public string ActivationText => Current.Activation switch
+    {
+        MouseModeActivation.Off => "Der Controller bleibt immer ein Controller. Die Einstellungen darunter behalten ihre Werte.",
+        MouseModeActivation.Automatic => "Verliert Arcadia den Fokus an ein Fenster, das kein Spiel aus der Bibliothek ist, wird der Controller sofort zur Maus; kommt Arcadia oder ein Spiel nach vorne, wieder zum Controller. Bis dahin schaltet ⧉ + ≡ gehalten von Hand um, z. B. in einem Spiel, das Arcadia nicht kennt.",
+        _ => "⧉ + ≡ gedrückt halten macht den Controller zur Maus und wieder zurück, auch wenn Arcadia im Hintergrund ist. So lassen sich Launcher-Fenster und Windows-Dialoge vom Sofa aus bedienen.",
+    };
 
     public bool IgnoreSteamDesktopLayout => Current.IgnoreSteamDesktopLayout;
 
     public bool EndWhenArcadiaInFront => Current.EndWhenArcadiaInFront;
-
-    public bool StartWhenArcadiaLosesFocus => Current.StartWhenArcadiaLosesFocus;
 
     /// <summary>Set when a change couldn't be saved; it still applies until Arcadia closes.</summary>
     [ObservableProperty]
@@ -188,10 +185,9 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
         }
 
         OnPropertyChanged(nameof(Enabled));
-        OnPropertyChanged(nameof(ComboEnabled));
-        OnPropertyChanged(nameof(HoldTimeApplies));
+        OnPropertyChanged(nameof(EndInFrontApplies));
+        OnPropertyChanged(nameof(ActivationText));
         OnPropertyChanged(nameof(EndWhenArcadiaInFront));
-        OnPropertyChanged(nameof(StartWhenArcadiaLosesFocus));
         OnPropertyChanged(nameof(IgnoreSteamDesktopLayout));
     }
 }

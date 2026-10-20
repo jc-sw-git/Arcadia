@@ -2,9 +2,10 @@ namespace Arcadia.Input;
 
 /// <summary>
 /// Switches the mouse mode by itself, as chosen in the settings: off when Arcadia comes to the front
-/// ("Beenden, wenn Arcadia nach vorne kommt"), on when Arcadia loses the focus to something that
-/// isn't a game ("Automatisch einschalten, wenn Arcadia den Fokus verliert"). A mouse mode switched
-/// on that way ends again as soon as a game comes to the front.
+/// ("Automatisch", or "Von Hand" with "Beenden, wenn Arcadia nach vorne kommt"), on when Arcadia
+/// loses the focus to something that isn't a game ("Automatisch"). A mouse mode switched on that way
+/// ends again as soon as a game comes to the front; one switched by hand stays until Arcadia comes
+/// to the front, so Back + Start can override the automatic mode, e.g. in a game Arcadia doesn't know.
 /// </summary>
 /// <remarks>Call it from the UI thread. A game is a process from a library game's install folder.</remarks>
 public sealed class MouseModeAutomation(MouseMode mode, Func<bool> endWhenArcadiaInFront, Func<bool> startWhenArcadiaLosesFocus)

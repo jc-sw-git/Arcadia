@@ -1191,34 +1191,23 @@
                 </StackPanel>
               </Border>
 
-              <!-- Mouse mode (#64): the main switch and everything that depends on it in one box. -->
+              <!-- Mouse mode (#64): how it is switched on and everything that depends on it in one box. -->
               <Border Background="{StaticResource SurfaceSunken}" CornerRadius="16" Padding="8" DataContext="{Binding MouseMode}" x:DataType="vm:MouseModeSettingsViewModel">
                 <StackPanel Spacing="4">
-                  <Button Classes="plain settingRow" Classes.focused="{Binding EnabledItem.IsFocused}" Command="{Binding ToggleEnabledCommand}">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding ActivationItem.IsFocused}">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                      <StackPanel Spacing="4">
+                      <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Mausmodus" FontSize="20" FontWeight="Bold" />
-                        <TextBlock Text="Macht den Controller zur Maus, damit sich Launcher-Fenster und Windows-Dialoge vom Sofa aus bedienen lassen. Aus: Der Mausmodus geht nie an, die Einstellungen darunter bleiben erhalten."
-                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ActivationText}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
-                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding Enabled}" VerticalAlignment="Center">
-                        <Ellipse />
-                      </Border>
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="plain stepperArrow" Command="{Binding ActivationItem.DecreaseCommand}" IsEnabled="{Binding ActivationItem.CanDecrease}" Content="‹" />
+                        <TextBlock Classes="stepperValue" Text="{Binding ActivationItem.ValueText}" />
+                        <Button Classes="plain stepperArrow" Command="{Binding ActivationItem.IncreaseCommand}" IsEnabled="{Binding ActivationItem.CanIncrease}" Content="›" />
+                      </StackPanel>
                     </Grid>
                   </Button>
-                  <Button Classes="plain settingRow" Classes.focused="{Binding ComboItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleComboCommand}" Margin="20,0,0,0">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                      <StackPanel Spacing="4">
-                        <TextBlock Text="Mit ⧉ + ≡ umschalten" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="⧉ + ≡ gedrückt halten macht den Controller zur Maus und wieder zurück – auch wenn Arcadia im Hintergrund ist. Ausschalten, wenn ein Spiel die Kombination selbst braucht."
-                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
-                      </StackPanel>
-                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding ComboEnabled}" VerticalAlignment="Center">
-                        <Ellipse />
-                      </Border>
-                    </Grid>
-                  </Button>
-                  <Button Classes="plain settingRow" Classes.focused="{Binding HoldItem.IsFocused}" Classes.unavailable="{Binding !HoldTimeApplies}" Margin="20,0,0,0">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding HoldItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Haltedauer" FontSize="18" FontWeight="Bold" />
@@ -1244,26 +1233,14 @@
                       </StackPanel>
                     </Grid>
                   </Button>
-                  <Button Classes="plain settingRow" Classes.focused="{Binding EndInFrontItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleEndInFrontCommand}" Margin="20,0,0,0">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding EndInFrontItem.IsFocused}" Classes.unavailable="{Binding !EndInFrontApplies}" Command="{Binding ToggleEndInFrontCommand}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
                         <TextBlock Text="Beenden, wenn Arcadia nach vorne kommt" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Holt ⧉ oder ein Klick Arcadia nach vorne, wird der Controller wieder zum Controller. In Arcadia von Hand eingeschaltet, bleibt der Mausmodus an."
+                        <TextBlock Text="Nur „Von Hand“: Holt ⧉ oder ein Klick Arcadia nach vorne, wird der Controller wieder zum Controller. In Arcadia eingeschaltet, bleibt der Mausmodus an."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding EndWhenArcadiaInFront}" VerticalAlignment="Center">
-                        <Ellipse />
-                      </Border>
-                    </Grid>
-                  </Button>
-                  <Button Classes="plain settingRow" Classes.focused="{Binding AutoStartItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleAutoStartCommand}" Margin="20,0,0,0">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                      <StackPanel Spacing="4">
-                        <TextBlock Text="Automatisch einschalten, wenn Arcadia den Fokus verliert" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Sofort und ohne ⧉ + ≡ – außer ein Spiel aus der Bibliothek kommt nach vorne. Kommt danach ein Spiel nach vorne, endet der Mausmodus wieder."
-                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
-                      </StackPanel>
-                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding StartWhenArcadiaLosesFocus}" VerticalAlignment="Center">
                         <Ellipse />
                       </Border>
                     </Grid>

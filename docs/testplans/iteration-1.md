@@ -591,14 +591,15 @@ Verlauf:
       gehalten, danach normal. · E2E: nein
 - [ ] **T64-5** View gehalten holt Arcadia aus dem Mausmodus nach vorne (auch aus dem minimierten Zustand, siehe T64-13). Mit „Beenden, wenn
       Arcadia nach vorne kommt“ (Standard) endet der Mausmodus dabei mit „Mausmodus aus“; in Arcadia von Hand
-      eingeschaltet bleibt er an und bedient Arcadia wie eine Maus. Option aus: er bleibt auch beim Wechsel an. · E2E: nein
-- [ ] **T64-6** „Automatisch einschalten, wenn Arcadia den Fokus verliert“ an: Wechsel per Alt+Tab zum Explorer →
-      „Mausmodus an“ ohne Rand und ohne Vibrieren. Ein Spiel aus der Bibliothek starten (auch direkt im Launcher
-      gestartet) → bleibt aus; erscheint erst der Epic-Launcher und dann das Spiel, geht er mit dem Spiel wieder
-      aus. Ein von Hand eingeschalteter Mausmodus bleibt an, wenn ein Spiel nach vorne kommt; der Text sagt
-      dann „das Spiel sieht die Eingaben weiterhin“. · E2E: nein
-- [ ] **T64-7** Einstellungen → Controller → Box „Mausmodus“: Hauptschalter aus → Back + Start tut nichts,
-      „Haltedauer“ ist abgeblendet. Haltedauer 1 und 9 s und Zeigergeschwindigkeit 1 und 9 wirken sofort;
+      eingeschaltet bleibt er an und bedient Arcadia wie eine Maus. Option aus: er bleibt auch beim Wechsel an.
+      Die Option gilt nur bei „Von Hand“ und ist sonst abgeblendet. · E2E: nein
+- [ ] **T64-6** „Mausmodus“ auf „Automatisch“: Wechsel per Alt+Tab zum Explorer → „Mausmodus an“ ohne Rand und
+      ohne Vibrieren; Arcadia wieder vorne → „Mausmodus aus“. Ein Spiel aus der Bibliothek starten (auch direkt im
+      Launcher gestartet) → bleibt aus; erscheint erst der Epic-Launcher und dann das Spiel, geht er mit dem Spiel
+      wieder aus. Im Explorer ⧉ + ≡ gehalten → „Mausmodus aus“, er bleibt aus, bis Arcadia wieder vorne war. In einem
+      Spiel mit ⧉ + ≡ eingeschaltet bleibt er an; der Text sagt dann „das Spiel sieht die Eingaben weiterhin“. · E2E: nein
+- [ ] **T64-7** Einstellungen → Controller → Box „Mausmodus“: „Mausmodus“ wechselt mit links/rechts oder A zwischen
+      „Aus“, „Von Hand“ (Standard) und „Automatisch“, der Text darunter erklärt die Wahl. Haltedauer 1 und 9 s und Zeigergeschwindigkeit 1 und 9 wirken sofort;
       mit dem Controller links/rechts ändern, A zählt hoch und fängt nach 9 wieder bei 1 an. Alles bleibt
       nach einem Neustart erhalten, der Mausmodus selbst nicht (Arcadia startet immer im normalen Modus). · E2E: ja
 - [ ] **T64-8** „So funktioniert's“ öffnet sich mit A, zeigt die Belegung und die Grenzen (UAC, Administrator-
@@ -613,9 +614,9 @@ Verlauf:
       SISR-Dialoge und „So funktioniert's“ zeigen oben rechts ein ✕, ein Klick darauf schließt nur diesen Dialog.
       Nach einer Controller-Taste ist das ✕ wieder weg. „So funktioniert's“ hat keine Schaltfläche „Schließen“
       mehr; A oder B schließt es. · E2E: ja
-- [ ] **T64-12** Hauptschalter „Mausmodus“ aus: Back + Start und „Automatisch einschalten“ tun nichts, alle Zeilen der
-      Box sind abgeblendet und behalten ihre Werte; war der Mausmodus an, endet er sofort mit „Mausmodus aus“.
-      Wieder an: alles wirkt wie vorher eingestellt. · E2E: ja
+- [ ] **T64-12** „Mausmodus“ auf „Aus“: ⧉ + ≡ und der Fokuswechsel tun nichts, alle Zeilen der Box sind abgeblendet
+      und behalten ihre Werte; war der Mausmodus an, endet er sofort mit „Mausmodus aus“. Wieder „Von Hand“ oder
+      „Automatisch“: alles wirkt wie vorher eingestellt. · E2E: ja
 - [ ] **T64-13** „Mit ⧉ zurück zu Arcadia“ (Standard: an, 1 Sekunde), Arcadia im Hintergrund (Explorer, Launcher,
       ein Spiel; mit und ohne Mausmodus): View gehalten zeigt ab 0,2 s oben „Zurück zu Arcadia“, dessen Rahmen sich
       über die Haltedauer füllt, dann kommt Arcadia nach vorne, ohne dass sich das Menü öffnet. Früher loslassen:
@@ -643,6 +644,8 @@ Verlauf:
 | T64-1 bis T64-10 (Logik) | 2026-10-20 | Claude | `dotnet test` (`MouseModeTests`, `SoloButtonsTests`, `MouseModeAutomationTests`, `StickCurveTests`, `GameFoldersTests`, `SettingsServiceTests`) | ✅ Umschalten, Abbruch, Belegung, Wiederholung, L3, mehrere Controller, Automatik, Spielordner, Einstellungen | Echte Eingaben unter Windows nicht geprüft |
 | T64-4 | 2026-10-20 | Juri | PC des Owners, PR #120 | ❌ L3 kurz geklickt, während der Stick bewegt wird, wirkt wie gehalten: der Zeiger wird beim Loslassen wieder schnell | Bewegen macht einen Druck nicht mehr zum Halten, nur noch die Dauer (0,5 s); Test `L3_clicked_briefly_while_pointing_toggles_the_slow_pointer` (vorher rot) |
 | T64-15 | 2026-10-20 | Claude | Branch nach der Symbol-Umbenennung, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool | ✅ Beide Boxen und „So funktioniert's“ zeigen ⧉ und ≡, kein Tastenname mehr; die Symbole sind im Fließtext klein, aber lesbar | Schrift unter Windows nicht geprüft |
+| T64-5, T64-6, T64-12 | 2026-10-20 | Juri | PC des Owners, PR #120 | ⚠️ ⧉ + ≡ von Hand und „Automatisch einschalten“ nebeneinander wirken schlecht zusammen | „Mausmodus“ ist jetzt eine Wahl aus „Aus“, „Von Hand“ und „Automatisch“; ⧉ + ≡ übersteuert die Automatik, bis Arcadia wieder vorne war (Test `Switched_off_by_hand_it_stays_off_until_arcadia_has_been_in_front_again`) |
+| T64-7, T64-12 (nur Einstellungen) | 2026-10-20 | Claude | Branch nach der Dreier-Wahl, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool | ✅ „Mausmodus“ wechselt mit links/rechts zwischen „Aus“, „Von Hand“ und „Automatisch“, der Text darunter wechselt mit; „Aus“ blendet die Zeilen darunter ab, „Automatisch“ nur „Beenden, wenn Arcadia nach vorne kommt“. Fokuswechsel und ⧉ + ≡ unter Windows nicht geprüft, Logik per `MouseModeAutomationTests` | T64-6 am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

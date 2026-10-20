@@ -70,21 +70,22 @@ public sealed class SettingsServiceTests : IDisposable
         File.WriteAllText(SettingsPath, """{ "SteamControllerSupport": true }""");
         var service = new SettingsService(new SettingsStore(SettingsPath));
         Assert.Equal(new MouseModeSettings(), service.Current.MouseMode);
-        Assert.True(service.Current.MouseMode.ComboEnabled);
+        Assert.Equal(MouseModeActivation.Manual, service.Current.MouseMode.Activation);
         Assert.Equal(3, service.Current.MouseMode.HoldSeconds);
         Assert.Equal(5, service.Current.MouseMode.PointerSpeed);
 
-        service.Update(s => s with { MouseMode = s.MouseMode with { HoldSeconds = 7, StartWhenArcadiaLosesFocus = true } });
+        service.Update(s => s with { MouseMode = s.MouseMode with { HoldSeconds = 7, Activation = MouseModeActivation.Automatic } });
         var restarted = new SettingsService(new SettingsStore(SettingsPath)).Current.MouseMode;
 
         Assert.Equal(7, restarted.HoldSeconds);
-        Assert.True(restarted.StartWhenArcadiaLosesFocus);
+        Assert.Equal(MouseModeActivation.Automatic, restarted.Activation);
     }
 
     [Theory]
-    [InlineData("""{ "MouseMode": { "HoldSeconds": 0, "PointerSpeed": 42, "ComboEnabled": false } }""")]
-    [InlineData("""{ "MouseMode": null }""")]
-    public void Broken_mouse_mode_values_fall_back_to_the_defaults_and_keep_the_rest(string json)
+    [InlineData("""{ "MouseMode": { "HoldSeconds": 0, "PointerSpeed": 42, "Activation": 0 } }""", MouseModeActivation.Off)]
+    [InlineData("""{ "MouseMode": { "Activation": 7 } }""", MouseModeActivation.Manual)]
+    [InlineData("""{ "MouseMode": null }""", MouseModeActivation.Manual)]
+    public void Broken_mouse_mode_values_fall_back_to_the_defaults_and_keep_the_rest(string json, MouseModeActivation activation)
     {
         File.WriteAllText(SettingsPath, json);
 
@@ -92,7 +93,7 @@ public sealed class SettingsServiceTests : IDisposable
 
         Assert.Equal(3, loaded.HoldSeconds);
         Assert.Equal(5, loaded.PointerSpeed);
-        Assert.Equal(!json.Contains("false", StringComparison.Ordinal), loaded.ComboEnabled);
+        Assert.Equal(activation, loaded.Activation);
     }
 
     [Fact]
@@ -102,7 +103,7 @@ public sealed class SettingsServiceTests : IDisposable
         var service = new SettingsService(new SettingsStore(SettingsPath));
         Assert.True(service.Current.ReturnWithView.Enabled);
         Assert.Equal(1, service.Current.ReturnWithView.HoldSeconds);
-        Assert.True(service.Current.MouseMode.Enabled);
+        Assert.Equal(MouseModeActivation.Manual, service.Current.MouseMode.Activation);
         Assert.True(service.Current.MouseMode.IgnoreSteamDesktopLayout);
 
         service.Update(s => s with { ReturnWithView = new ReturnWithViewSettings { Enabled = false, HoldSeconds = 0 } });

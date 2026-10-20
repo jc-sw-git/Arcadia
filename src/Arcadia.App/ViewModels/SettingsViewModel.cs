@@ -123,6 +123,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     public SettingsViewModel(ControllerSupportService support, ArcadiaUpdateService updates, SettingsService settings, Func<Task> installArcadiaUpdate)
     {
         MouseMode = new MouseModeSettingsViewModel(settings, () => ShowPrompt(SettingsPrompt.MouseModeHelp));
+        ReturnWithView = new ReturnWithViewSettingsViewModel(settings);
 
         // The help shows no button of its own (owner, 2026-10-20); this unseen item lets A close it as B does.
         _closeMouseModeHelp = new SettingsItemViewModel(ClosePrompt);
@@ -176,6 +177,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     public SettingsItemViewModel ToggleItem => _toggle;
 
     public MouseModeSettingsViewModel MouseMode { get; }
+
+    public ReturnWithViewSettingsViewModel ReturnWithView { get; }
 
     private static readonly TimeSpan PromptCheckInterval = TimeSpan.FromSeconds(1);
 
@@ -741,7 +744,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         // Keep the controller focus on the same item where possible. All items lose it first, so
         // the row behind an open prompt doesn't keep its ring.
-        foreach (var item in new[] { _toggle, _update, _checkUpdates, _arcadiaUpdate, _retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop, _retrySteamStart, _cancelSteamStart, _confirmMarkerAccounts, _cancelMarkerAccounts, _closeMouseModeHelp }.Concat(MarkerAccounts).Concat(MouseMode.Items))
+        foreach (var item in new[] { _toggle, _update, _checkUpdates, _arcadiaUpdate, _retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop, _retrySteamStart, _cancelSteamStart, _confirmMarkerAccounts, _cancelMarkerAccounts, _closeMouseModeHelp }.Concat(MarkerAccounts).Concat(MouseMode.Items).Concat(ReturnWithView.Items))
         {
             item.IsFocused = false;
         }
@@ -779,6 +782,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         items.AddRange(Issues.Where(i => i.HasFix));
         items.AddRange(MouseMode.Items);
+        items.AddRange(ReturnWithView.Items);
         if (CanSearchForUpdates)
         {
             items.Add(_checkUpdates);

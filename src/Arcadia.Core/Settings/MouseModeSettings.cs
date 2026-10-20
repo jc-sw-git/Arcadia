@@ -8,7 +8,10 @@ public sealed record MouseModeSettings
 
     public const int Max = 9;
 
-    /// <summary>"Mausmodus mit Back + Start". Off for games that use the combination themselves.</summary>
+    /// <summary>"Mausmodus": off, the mouse mode is gone entirely; the other settings keep their values but count for nothing.</summary>
+    public bool Enabled { get; init; } = true;
+
+    /// <summary>"Mit Back + Start umschalten". Off for games that use the combination themselves.</summary>
     public bool ComboEnabled { get; init; } = true;
 
     /// <summary>"Haltedauer": how long Back + Start must be held.</summary>
@@ -22,6 +25,9 @@ public sealed record MouseModeSettings
 
     /// <summary>"Automatisch einschalten, wenn Arcadia den Fokus verliert" (except to a game).</summary>
     public bool StartWhenArcadiaLosesFocus { get; init; }
+
+    /// <summary>"Steams Desktop-Belegung ignorieren": the mouse and keys Steam makes of the controller outside games are dropped.</summary>
+    public bool IgnoreSteamDesktopLayout { get; init; } = true;
 
     /// <summary>Values out of range (edited by hand, or from a newer Arcadia) fall back to the defaults.</summary>
     public MouseModeSettings WithValidValues()

@@ -2,8 +2,8 @@ namespace Arcadia.Input;
 
 /// <summary>
 /// The controller as a mouse: left stick pointer, A/RT left button, X/LT right button, right stick
-/// wheel, D-pad arrows, B Esc, LB/RB Shift+Tab/Tab, Menu Enter, View alone brings Arcadia to the
-/// front, L3 the slow pointer. All controllers act together.
+/// wheel, D-pad arrows, B Esc, LB/RB Shift+Tab/Tab, Menu Enter, L3 the slow pointer. View is left
+/// to <see cref="ReturnWithView"/>. All controllers act together.
 /// </summary>
 /// <remarks>Runs on the gamepad's poll thread, like <see cref="MouseMode"/>.</remarks>
 internal sealed class MouseModeMapping
@@ -58,9 +58,6 @@ internal sealed class MouseModeMapping
         _solo = new SoloButtons(GamepadButton.View, GamepadButton.Menu, soloDelay: null, time);
         _solo.Pressed += OnSoloPressed;
     }
-
-    /// <summary>View alone was pressed and let go.</summary>
-    public event Action? ArcadiaRequested;
 
     public bool IsSlow => _slow.IsOn;
 
@@ -231,10 +228,6 @@ internal sealed class MouseModeMapping
             // Acts on release, so Enter is a tap: down and up at once.
             _output.SetKey(OutputKey.Enter, true);
             _output.SetKey(OutputKey.Enter, false);
-        }
-        else
-        {
-            ArcadiaRequested?.Invoke();
         }
     }
 

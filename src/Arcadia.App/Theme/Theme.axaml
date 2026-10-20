@@ -315,6 +315,19 @@
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Top" />
   </Style>
+  <!-- The box for View held (#64): the label's place, with a frame that fills along its rounded edge. -->
+  <Style Selector="Panel.returnBox">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Margin" Value="0,56,0,0" />
+  </Style>
+  <Style Selector="Panel.returnBox > Border.mouseModeLabel">
+    <Setter Property="Margin" Value="0" />
+  </Style>
+  <Style Selector="ctl|ScreenEdgeFill.returnEdge">
+    <Setter Property="StrokeThickness" Value="4" />
+    <Setter Property="CornerRadius" Value="18" />
+  </Style>
   <Style Selector="Border.mouseModeLabel > TextBlock">
     <Setter Property="FontSize" Value="30" />
     <Setter Property="FontWeight" Value="ExtraBold" />

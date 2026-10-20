@@ -588,7 +588,7 @@ Verlauf:
       Esc, RB Tab, LB Umschalt+Tab, Menu Enter. Arcadia reagiert dabei auf nichts davon. · E2E: nein
 - [ ] **T64-4** L3 antippen: Zeiger ein Drittel so schnell, nochmal antippen: wieder normal. L3 halten und den
       Stick bewegen: langsam, solange gehalten, danach normal. · E2E: nein
-- [ ] **T64-5** View im Mausmodus holt Arcadia nach vorne (auch aus dem minimierten Zustand). Mit „Beenden, wenn
+- [ ] **T64-5** View gehalten holt Arcadia aus dem Mausmodus nach vorne (auch aus dem minimierten Zustand, siehe T64-13). Mit „Beenden, wenn
       Arcadia nach vorne kommt“ (Standard) endet der Mausmodus dabei mit „Mausmodus aus“; in Arcadia von Hand
       eingeschaltet bleibt er an und bedient Arcadia wie eine Maus. Option aus: er bleibt auch beim Wechsel an. · E2E: nein
 - [ ] **T64-6** „Automatisch einschalten, wenn Arcadia den Fokus verliert“ an: Wechsel per Alt+Tab zum Explorer →
@@ -612,6 +612,20 @@ Verlauf:
       SISR-Dialoge und „So funktioniert's“ zeigen oben rechts ein ✕, ein Klick darauf schließt nur diesen Dialog.
       Nach einer Controller-Taste ist das ✕ wieder weg. „So funktioniert's“ hat keine Schaltfläche „Schließen“
       mehr; A oder B schließt es. · E2E: ja
+- [ ] **T64-12** Hauptschalter „Mausmodus“ aus: Back + Start und „Automatisch einschalten“ tun nichts, alle Zeilen der
+      Box sind abgeblendet und behalten ihre Werte; war der Mausmodus an, endet er sofort mit „Mausmodus aus“.
+      Wieder an: alles wirkt wie vorher eingestellt. · E2E: ja
+- [ ] **T64-13** „Mit View zurück zu Arcadia“ (Standard: an, 1 Sekunde), Arcadia im Hintergrund (Explorer, Launcher,
+      ein Spiel; mit und ohne Mausmodus): View gehalten zeigt ab 0,2 s oben „Zurück zu Arcadia“, dessen Rahmen sich
+      über die Haltedauer füllt, dann kommt Arcadia nach vorne, ohne dass sich das Menü öffnet. Früher loslassen:
+      der Rahmen läuft zurück. „Sofort“: kurzes Drücken genügt, ohne Fenster. Back + Start löst es nie aus. Aus:
+      View tut im Hintergrund nichts. In Arcadia öffnet View weiter das Menü. · E2E: nein
+- [ ] **T64-14** Steam läuft (Steam Controller oder Xbox-Pad mit Steam Input), „Steams Desktop-Belegung ignorieren“
+      an: Back + Start im Explorer öffnet kein Alt+Tab-Fenster mehr, im Mausmodus kommen nur Arcadias Zeiger und
+      Tasten an, in Arcadia bewegt das Steuerkreuz den Fokus nur einmal. Echte Maus und Tastatur gehen dabei normal.
+      In einem Spiel aus der Bibliothek ohne Mausmodus wirkt Steams Belegung für das Spiel wie gewohnt. Option aus:
+      Steams Desktop-Belegung wirkt wieder. `arcadia.log` nennt beim Ausschalten, wie viele Eingaben verworfen
+      wurden. · E2E: nein
 
 Verlauf:
 
@@ -619,8 +633,10 @@ Verlauf:
 |---|---|---|---|---|---|
 | T64-7, T64-8 | 2026-10-20 | Claude | Branch `feat/controller-als-maus-nutzen-64`, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool (Pfeiltasten, Enter, Esc) | ✅ Box unter dem Steam Controller, Haltedauer abgeblendet bei Hauptschalter aus, Stepper mit links/rechts und Enter (9 → 1), „So funktioniert's“ öffnet und schließt, Fokus zurück auf der Zeile; Speichern nur per `SettingsServiceTests` geprüft | Controller am PC des Owners |
 | T64-1 (nur Overlay) | 2026-10-20 | Claude | wie oben, Overlay lokal per Testcode ausgelöst (nicht eingecheckt) | ⚠️ Rand füllt sich über die Haltedauer von oben Mitte bis unten Mitte, läuft beim Abbruch zurück, Text „Mausmodus an“ 2 s; Hintergrund unter Xvfb schwarz (keine Transparenz) | Windows: Transparenz, Klicks durchs Overlay, Vibrieren, `SendInput`, Vordergrund-Erkennung am PC des Owners |
-| T64-1 bis T64-10 | 2026-10-20 | Juri | PC des Owners, PR #120 (Rough-Test) | ❌ „Schließen“ in „So funktioniert's“ unpassend, besser ✕ oben rechts in allen Dialogen; Windows reagiert vereinzelt selbst auf Controller-Eingaben | ✕ in allen Dialogen (T64-11 neu); Ursache der Windows-Reaktion offen |
+| T64-1 bis T64-10 | 2026-10-20 | Juri | PC des Owners, PR #120 (Rough-Test) | ❌ „Schließen“ in „So funktioniert's“ unpassend, besser ✕ oben rechts in allen Dialogen; Windows reagiert vereinzelt selbst auf Controller-Eingaben | ✕ in allen Dialogen (T64-11 neu) |
 | T64-11 | 2026-10-20 | Claude | Branch nach dem ✕, Linux, Xvfb 1920×1080 `--demo`, Maus und Tastatur per xdotool | ✅ ✕ in Einstellungen, „Ansicht“ und „So funktioniert's“ nach Taste oder Mausbewegung; Klick schließt Einstellungen bzw. nur die Hilfe; Enter schließt die Hilfe. Ausblenden nach Controller-Taste nur im Code geprüft, SISR-Dialoge nicht geöffnet | Controller am PC des Owners |
+| T64-1 | 2026-10-20 | Juri | PC des Owners, PR #120, Steam läuft | ❌ Back + Start gehalten öffnet Steams Alt+Tab-Fenster (Steams Desktop-Belegung) | Hauptschalter, „Zurück zu Arcadia“ mit Haltedauer, Steams Desktop-Belegung ignorieren (T64-12 bis T64-14 neu) |
+| T64-12, T64-13 (nur Einstellungen und Fenster) | 2026-10-20 | Claude | Branch nach den neuen Einstellungen, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool; Fenster lokal per Testcode ausgelöst und mit 5 Bildern/s aufgenommen (nicht eingecheckt) | ✅ Hauptschalter aus blendet alle Zeilen der Box ab; Haltedauer von „Zurück zu Arcadia“ mit links bis „Sofort“; „Zurück zu Arcadia“ oben in der Mitte, der Rahmen füllt sich in 3 s von oben Mitte über die runden Ecken. View, Hooks und Steam unter Windows nicht geprüft, Logik per `ReturnWithViewTests`, `InjectedInputGateTests`, `MouseModeTests` | T64-13, T64-14 am PC des Owners |
 | T64-1 bis T64-10 (Logik) | 2026-10-20 | Claude | `dotnet test` (`MouseModeTests`, `SoloButtonsTests`, `MouseModeAutomationTests`, `StickCurveTests`, `GameFoldersTests`, `SettingsServiceTests`) | ✅ Umschalten, Abbruch, Belegung, Wiederholung, L3, mehrere Controller, Automatik, Spielordner, Einstellungen | Echte Eingaben unter Windows nicht geprüft |
 
 ## Grundgerüst (ohne Issue)

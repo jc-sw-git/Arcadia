@@ -12,7 +12,7 @@ public sealed class MouseModeTests
     private readonly FakeTimeProvider _time = new();
     private readonly RecordingOutput _output = new();
     private readonly List<string> _events = [];
-    private MouseModeOptions _options = new(ComboEnabled: true, HoldTime, PointerSpeed: 5);
+    private MouseModeOptions _options = new(Enabled: true, ComboEnabled: true, HoldTime, PointerSpeed: 5);
     private readonly MouseMode _mode;
 
     public MouseModeTests()
@@ -21,7 +21,6 @@ public sealed class MouseModeTests
         _mode.HoldStarted += rest => _events.Add($"hold {rest.TotalSeconds:0.0}");
         _mode.HoldCancelled += () => _events.Add("cancelled");
         _mode.Switched += s => _events.Add($"{(s.IsOn ? "on" : "off")} {(s.IsAutomatic ? "auto" : $"slot {s.Slot}")}");
-        _mode.ArcadiaRequested += () => _events.Add("arcadia");
     }
 
     [Fact]
@@ -98,6 +97,25 @@ public sealed class MouseModeTests
         HoldFor(PadButtons.View | PadButtons.Menu, HoldTime * 2);
 
         Assert.Empty(_events);
+    }
+
+    [Fact]
+    public void The_mouse_mode_switched_off_in_the_settings_ends_and_stays_off()
+    {
+        SwitchOn();
+        HoldFor(PadButtons.A, Poll);
+        _events.Clear();
+
+        _options = _options with { Enabled = false };
+        HoldFor(PadButtons.None, Poll);
+        HoldFor(PadButtons.View | PadButtons.Menu, HoldTime * 2);
+        HoldFor(PadButtons.None, Poll);
+        _mode.Request(on: true);
+        HoldFor(PadButtons.None, Poll);
+
+        Assert.Equal(["off auto"], _events);
+        Assert.False(_mode.IsOn);
+        Assert.Equal(["LeftButton down", "LeftButton up"], _output.Events);
     }
 
     [Fact]
@@ -197,7 +215,7 @@ public sealed class MouseModeTests
     }
 
     [Fact]
-    public void Menu_alone_presses_enter_on_release_and_view_alone_asks_for_arcadia()
+    public void Menu_alone_presses_enter_on_release_and_view_presses_nothing()
     {
         SwitchOn();
 
@@ -207,7 +225,6 @@ public sealed class MouseModeTests
         Tap(PadButtons.View);
 
         Assert.Equal(["Enter down", "Enter up"], _output.Events);
-        Assert.Equal("arcadia", _events[^1]);
     }
 
     [Fact]
@@ -220,7 +237,6 @@ public sealed class MouseModeTests
 
         Assert.Empty(_output.Events);
         Assert.False(_mode.IsOn);
-        Assert.DoesNotContain("arcadia", _events);
     }
 
     [Fact]

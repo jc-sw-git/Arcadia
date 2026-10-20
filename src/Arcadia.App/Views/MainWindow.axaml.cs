@@ -428,7 +428,7 @@ public partial class MainWindow : Window
     {
         // Settings items carry the "focused" class; the dialog's scroll viewer is their nearest one.
         var focused = this.GetVisualDescendants().OfType<Button>()
-            .FirstOrDefault(b => b.Classes.Contains("focused") && b.IsEffectivelyVisible && b.DataContext is SettingsViewModel or SettingsItemViewModel or MouseModeSettingsViewModel);
+            .FirstOrDefault(b => b.Classes.Contains("focused") && b.IsEffectivelyVisible && b.DataContext is SettingsViewModel or SettingsItemViewModel or MouseModeSettingsViewModel or ReturnWithViewSettingsViewModel);
         if (focused?.FindAncestorOfType<ScrollViewer>() is not { } scroller)
         {
             return;

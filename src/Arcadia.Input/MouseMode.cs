@@ -1,10 +1,11 @@
 namespace Arcadia.Input;
 
 /// <summary>The settings the mouse mode reads on every poll (from "Mausmodus" in the settings).</summary>
-/// <param name="ComboEnabled">"Mausmodus mit Back + Start": off, the combination does nothing.</param>
+/// <param name="Enabled">"Mausmodus": off, the mode ends and nothing switches it on.</param>
+/// <param name="ComboEnabled">"Mit Back + Start umschalten": off, the combination does nothing.</param>
 /// <param name="HoldTime">"Haltedauer": how long Back + Start must be held.</param>
 /// <param name="PointerSpeed">"Zeigergeschwindigkeit", 1–9.</param>
-public sealed record MouseModeOptions(bool ComboEnabled, TimeSpan HoldTime, int PointerSpeed);
+public sealed record MouseModeOptions(bool Enabled, bool ComboEnabled, TimeSpan HoldTime, int PointerSpeed);
 
 /// <summary>The mouse mode went on or off.</summary>
 /// <param name="Slot">The controller whose Back + Start switched it; null when Arcadia switched it by itself.</param>
@@ -51,7 +52,6 @@ public sealed class MouseMode
         _options = options;
         _time = time;
         _mapping = new MouseModeMapping(output, time);
-        _mapping.ArcadiaRequested += () => ArcadiaRequested?.Invoke();
     }
 
     /// <summary>Back + Start have been held past <see cref="FeedbackDelay"/>; the argument is the rest of the hold time.</summary>
@@ -62,13 +62,13 @@ public sealed class MouseMode
 
     public event Action<MouseModeSwitch>? Switched;
 
-    /// <summary>View alone in the mouse mode: Arcadia should come to the front.</summary>
-    public event Action? ArcadiaRequested;
-
     public bool IsOn => _isOn;
 
     /// <summary>On because Arcadia switched it on by itself (and may switch it off again by itself).</summary>
     public bool IsAutomatic => _isAutomatic;
+
+    /// <summary>Back + Start are held on a controller and may switch the mode yet.</summary>
+    public bool IsComboHeld => _comboSlot is not null;
 
     /// <summary>Arcadia switches by itself (the automation in the settings); applied on the next poll.</summary>
     public void Request(bool on) => Interlocked.Exchange(ref _request, on ? 1 : 2);
@@ -84,12 +84,18 @@ public sealed class MouseMode
 
         switch (Interlocked.Exchange(ref _request, 0))
         {
-            case 1:
+            case 1 when options.Enabled:
                 Switch(true, slot: null);
                 break;
             case 2:
                 Switch(false, slot: null);
                 break;
+        }
+
+        // Switched off in the settings while on: the controller is a controller again at once.
+        if (!options.Enabled)
+        {
+            Switch(false, slot: null);
         }
 
         UpdateCombo(pads, options);
@@ -109,7 +115,7 @@ public sealed class MouseMode
             _spentCombos.RemoveWhere(slot => !pads.Any(p => p.Slot == slot && p.IsDown(Combo)));
         }
 
-        if (!options.ComboEnabled)
+        if (!options.Enabled || !options.ComboEnabled)
         {
             CancelCombo();
             return;

@@ -110,3 +110,14 @@ focus handling or anything SISR/usbip related.
   neu starten", which switches on after the restart. Arcadia still doesn't start Steam on its own when it starts with the option on.
 - SISR's WebView2 data lands in `%APPDATA%\SISR.exe`, VIIPER's key file in `%APPDATA%\VIIPER`; neither goes
   with SISR's own uninstaller (seen 2026-10-16). `ControllerSupportRemoval.DataDirectories` removes both.
+
+## Steam's desktop layout and the mouse mode (#64, 2026-10-20)
+
+- With Steam running, holding Back + Start on the owner's PC opened Windows' Alt+Tab window: Steam's desktop
+  layout turns the controller into keys and mouse itself, beside Arcadia's mouse mode.
+- `SteamDesktopInputFilter` drops simulated (`SendInput`) mouse and key input while a controller is in use (or was
+  less than 150 ms ago); Arcadia's own input carries a marker in `dwExtraInfo` and passes. Assumed, not yet seen on the
+  owner's PC: Steam sends its desktop layout with `SendInput`. `arcadia.log` names how many inputs were dropped.
+- It runs only while needed: never while a library game is in front without the mouse mode, so a game's own Steam
+  layout (e.g. keys for a game without controller support) still reaches it.
+

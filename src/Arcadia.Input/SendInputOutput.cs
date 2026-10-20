@@ -10,6 +10,9 @@ namespace Arcadia.Input;
 [SupportedOSPlatform("windows")]
 public sealed partial class SendInputOutput : IMouseKeyboardOutput
 {
+    /// <summary>Marks Arcadia's own input, so <see cref="SteamDesktopInputFilter"/> lets it through.</summary>
+    internal const nint ArcadiaMarker = 0x41524344;
+
     private const uint InputMouse = 0;
     private const uint InputKeyboard = 1;
 
@@ -109,7 +112,7 @@ public sealed partial class SendInputOutput : IMouseKeyboardOutput
         var input = new Input
         {
             Type = InputKeyboard,
-            Data = new InputData { Keyboard = new KeyboardInput { VirtualKey = virtualKey, ScanCode = scanCode, Flags = flags } },
+            Data = new InputData { Keyboard = new KeyboardInput { VirtualKey = virtualKey, ScanCode = scanCode, Flags = flags, ExtraInfo = ArcadiaMarker } },
         };
         Send(input);
     }
@@ -117,7 +120,7 @@ public sealed partial class SendInputOutput : IMouseKeyboardOutput
     private static Input MouseInput(int dx, int dy, uint data, uint flags) => new()
     {
         Type = InputMouse,
-        Data = new InputData { Mouse = new MouseInputData { X = dx, Y = dy, Data = data, Flags = flags } },
+        Data = new InputData { Mouse = new MouseInputData { X = dx, Y = dy, Data = data, Flags = flags, ExtraInfo = ArcadiaMarker } },
     };
 
     private static void Send(Input input)

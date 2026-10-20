@@ -124,6 +124,13 @@ public partial class App : Application
 
             void Press(GamepadButton button)
             {
+                // Checked here, not only on the UI thread: View held in the background brings Arcadia to the
+                // front, and the same press must not open the context menu once it got there.
+                if (!mouseMode.IsArcadiaActive)
+                {
+                    return;
+                }
+
                 if (UiActionMap.FromGamepad(button) is { } action)
                 {
                     AppLog.Write($"Gamepad: {button} → {action}");

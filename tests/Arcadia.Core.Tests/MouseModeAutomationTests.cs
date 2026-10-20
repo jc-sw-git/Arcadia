@@ -13,7 +13,7 @@ public sealed class MouseModeAutomationTests
 
     public MouseModeAutomationTests()
     {
-        _mode = new MouseMode(new NullMouseKeyboardOutput(), () => new MouseModeOptions(true, TimeSpan.FromSeconds(1), 5), _time);
+        _mode = new MouseMode(new NullMouseKeyboardOutput(), () => new MouseModeOptions(true, true, TimeSpan.FromSeconds(1), 5), _time);
         _automation = new MouseModeAutomation(_mode, () => _endWhenArcadiaInFront, () => _startWhenArcadiaLosesFocus);
     }
 

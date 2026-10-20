@@ -136,4 +136,9 @@ focus handling or anything SISR/usbip related.
   A game in borderless full screen is a topmost window and can stay above Arcadia while Arcadia has the foreground
   (found in review, not seen): "in front" also needs that no other program's window covers Arcadia whole, and View
   held keeps Arcadia topmost until it loses the focus when `BringToFront` alone left it covered (`ForegroundGuard`).
+  The owner has three monitors and saw no difference between borderless and exclusive full screen, so the likelier
+  way is that Arcadia really got the foreground on another monitor: Steam's Alt+Tab, or a click in the mouse mode
+  (RT or A) with the pointer the game hides lying over Arcadia. So the mouse mode, switched on with a game in front,
+  puts the pointer in the middle of the game's window, and `arcadia.log` names every foreground change (process
+  file name, game or not, and whether Avalonia's activation disagrees) and where the foreground is after View held.
 

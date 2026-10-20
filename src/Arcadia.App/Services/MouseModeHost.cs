@@ -51,6 +51,8 @@ public sealed class MouseModeHost : IDisposable
     private bool _ownsForeground;
     private nint _windowHandle;
     private DesktopFilterScope _desktopFilterScope;
+    private int? _loggedForegroundId;
+    private bool? _loggedActive;
     private int? _lastForegroundId;
     private GameFolders? _lastForegroundFolders;
     private bool _lastForegroundIsGame;
@@ -87,6 +89,7 @@ public sealed class MouseModeHost : IDisposable
         _focusLossSettle.Stop();
         _desktopFilterCheck = new DispatcherTimer(DesktopFilterCheckInterval, DispatcherPriority.Background, (_, _) =>
         {
+            LogForegroundChange();
             CheckArcadiaInFront();
             UpdateDesktopFilter();
         });
@@ -187,6 +190,43 @@ public sealed class MouseModeHost : IDisposable
         _overlay.EndReturnHold();
         AppLog.Write("View gehalten: Arcadia kommt nach vorne");
         ForegroundGuard.BringBack(_window);
+        AppLog.Write($"Nach View gehalten: {DescribeForeground()}, Arcadia {(IsArcadiaActive ? "sichtbar vorne" : "nicht sichtbar vorne")}");
+    }
+
+    /// <summary>
+    /// Logs every change of the foreground and of Avalonia's activation, so a log shows how Arcadia
+    /// came to the front beside a game (Steam's Alt+Tab, a click in the mouse mode, another monitor).
+    /// </summary>
+    private void LogForegroundChange()
+    {
+        var foreground = ProcessWatch.ForegroundProcessId();
+        var active = _window.IsActive;
+        if (foreground == _loggedForegroundId && active == _loggedActive)
+        {
+            return;
+        }
+
+        _loggedForegroundId = foreground;
+        _loggedActive = active;
+        var mismatch = active != (foreground == Environment.ProcessId) ? " (widerspricht dem Vordergrund)" : string.Empty;
+        AppLog.Write($"Vordergrund: {DescribeForeground()}; Arcadia laut Fenster {(active ? "aktiv" : "inaktiv")}{mismatch}");
+    }
+
+    /// <summary>The foreground process's file name and kind, for the log; no paths (they may contain the user's name).</summary>
+    private string DescribeForeground()
+    {
+        if (ProcessWatch.ForegroundProcessId() is not { } id)
+        {
+            return "kein Fenster";
+        }
+
+        if (id == Environment.ProcessId)
+        {
+            return "Arcadia";
+        }
+
+        var name = ProcessWatch.PathOf(id) is { } path ? Path.GetFileName(path) : $"Prozess {id}";
+        return $"{name} ({(ForegroundGame.IsInFront(_viewModel.GameFolders) ? "Spiel" : "kein Spiel")})";
     }
 
     private void OnSwitched(MouseModeSwitch change)
@@ -204,6 +244,10 @@ public sealed class MouseModeHost : IDisposable
             {
                 // A held A must not open the details while the controller is a mouse.
                 _viewModel.CancelHold();
+                if (gameInFront)
+                {
+                    ForegroundGuard.CentrePointerOnForeground();
+                }
             }
 
             var text = (change.IsOn, change.IsAutomatic, gameInFront) switch

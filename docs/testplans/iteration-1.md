@@ -636,7 +636,10 @@ Verlauf:
       dem Spiel gelten, und ⧉ gehalten holt Arcadia jedes Mal nach vorne. Ebenso mit einem Spiel im randlosen
       Vollbild: Arcadia ist danach wirklich zu sehen, nicht nur im Vordergrund, und wird nie unsichtbar gesteuert.
       ⧉ und ≡ mit mehr als 0,2 s Abstand gedrückt öffnen in Arcadia erst Menü bzw. Einstellungen (bewusst, damit ≡
-      gehalten auf einem Suchtreffer die Details öffnet). · E2E: nein
+      gehalten auf einem Suchtreffer die Details öffnet). Mit mehreren Monitoren, Arcadia und Spiel auf verschiedenen:
+      Mausmodus im Spiel einschalten setzt den Zeiger in die Mitte des Spielfensters. `arcadia.log` nennt jeden
+      Wechsel des Vordergrunds („Vordergrund: …“) und wohin ⧉ gehalten geführt hat; bei einem Fehler das Log
+      mitschicken. · E2E: nein
 - [ ] **T64-17** Steam Controller Support an, Steam Controller verbunden, ein Steam-Spiel auf „Steam Input“ starten:
       SISR pausiert, die Zeile „Steam Controller“ in der Vorschau und auf der Detailseite bleibt sichtbar und
       umschaltbar. „So funktioniert's“ nennt, dass ⧉ + ≡ und ⧉ halten mit dem Steam Controller dort nicht wirken.
@@ -668,6 +671,7 @@ Verlauf:
 | T64-14, T64-16, T64-17 | 2026-10-20 | Juri | PC des Owners, PR #120, Steam-Spiel (Castlevania), Xbox-Controller und Steam Controller | ❌ Im Steam-Spiel macht Steam aus ⧉ + ≡ Alt+Tab; Arcadia reagiert manchmal auf Eingaben im Spiel und ⧉ holt es nicht zurück; Steam Controller auf „Steam Input“: ⧉ + ≡ und ⧉ halten wirken nicht; die Steam-Controller-Zeile verschwindet, solange SISR pausiert | Filter wirkt neben Spielen bei ⧉ + ≡; „vorne“ über das Vordergrundfenster; Steam Input als Grenze in „So funktioniert's“ (Lösung erst mit #112/#72); Zeile bleibt (Test `The_controller_still_counts_as_connected_while_SISR_is_paused_for_a_game`, vorher rot) |
 | T64-14, T64-16 (nur Logik) | 2026-10-20 | Claude | `dotnet test` (`InjectedInputGateTests`, `ControllerSupportServiceTests`) | ✅ ⧉ + ≡ zählt mit Nachlauf; Steam-Controller-Zeile bleibt bei Pause. Hooks, Steam und Vordergrund unter Windows nicht geprüft | T64-14, T64-16, T64-17 am PC des Owners |
 | T64-14, T64-16 (Review) | 2026-10-20 | Claude | Review zu PR #120 (`reviews/pr-120-code-review.md`), `dotnet build`/`dotnet test` unter Linux | ✅ Build und Tests grün. Neu: „vorne“ verlangt zusätzlich, dass kein fremdes Fenster Arcadia ganz verdeckt (randloses Vollbild), ⧉ gehalten hält Arcadia dann bis zum Fokuswechsel oben; neben Spielen nur der Tastatur-Hook, ohne Controller keiner, die Hooks werden alle 30 s und bei jedem Wechsel neu gesetzt. Hooks, Vordergrund und CPU-Last unter Windows nicht geprüft | T64-14, T64-16 bis T64-18 am PC des Owners |
+| T64-16 (Review, Nachtrag) | 2026-10-20 | Claude | Nach Juris Antwort (drei Monitore, Vollbildart egal), `dotnet build`/`dotnet test` unter Linux | ✅ Build und Tests grün. Neu: Zeiger beim Einschalten im Spiel in die Mitte des Spielfensters; Log jedes Vordergrundwechsels und des Ziels von ⧉ gehalten. Unter Windows nicht geprüft | T64-16 am PC des Owners, mit Log |
 
 ## Grundgerüst (ohne Issue)
 

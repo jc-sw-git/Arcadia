@@ -38,6 +38,9 @@ public sealed record AppSettings
     /// <summary>The on-screen keyboard's layout the user picked last; null for the default (German).</summary>
     public string? KeyboardLayout { get; init; }
 
+    /// <summary>The controller as a mouse (#64).</summary>
+    public MouseModeSettings MouseMode { get; init; } = new();
+
     /// <summary>
     /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
     /// hand — with the defaults, instead of failing on them later.
@@ -47,6 +50,9 @@ public sealed record AppSettings
         LibrarySort = Enum.IsDefined(LibrarySort.Field) && Enum.IsDefined(LibrarySort.Direction) ? LibrarySort : SortOrder.Default,
         PreferredPageSize = PageSizes.Options.Contains(PreferredPageSize) ? PreferredPageSize : PageSizes.Default,
     };
+
+    /// <summary>Like <see cref="WithValidLibraryView"/> for the mouse mode; also replaces a <c>null</c> written by hand.</summary>
+    public AppSettings WithValidMouseMode() => this with { MouseMode = (MouseMode ?? new MouseModeSettings()).WithValidValues() };
 
     /// <summary>
     /// Whether SISR should run while <paramref name="game"/> runs. Without an override it runs for

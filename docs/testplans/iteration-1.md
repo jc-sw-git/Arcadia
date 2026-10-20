@@ -573,6 +573,50 @@ Verlauf:
 | T113-1 | 2026-10-20 | Juri | PC des Owners, `main` | ❌ 80 statt 78 Spiele, die vier oben zu viel | #113 |
 | T113-1 | 2026-10-20 | Claude | Juris Manifeste nur gelesen (83 in 3 Bibliotheken), Regel mechanisch nachgezählt, App nicht gestartet | ⚠️ Die vier haben als einzige `LastOwner 0` und fallen weg; 83 − 3 Werkzeuge − 4 = 76, Steam nennt 78 | Zählweise in Steam mit Juri klären, Lauf am PC des Owners |
 
+## #64 Controller als Maus nutzen (Mausmodus per Back + Start)
+
+- [ ] **T64-1** Back + Start gehalten, Arcadia vorne: ab 0,2 s füllt sich der Rand des Primärmonitors in der
+      Akzentfarbe von oben Mitte über beide Seiten bis unten Mitte, nach 3 s leuchtet er kurz auf, oben in der
+      Mitte steht 2 s „Mausmodus an“, der Controller vibriert kurz; danach bleibt nichts stehen. Nochmal 3 s
+      halten: „Mausmodus aus“. Früher loslassen: der Rand läuft schnell zurück, nichts schaltet. · E2E: nein
+- [ ] **T64-2** Wie T64-1, aber mit dem Explorer oder dem Epic Games Launcher vorne (Arcadia im Hintergrund):
+      Umschalten in beide Richtungen geht, das Overlay nimmt weder Fokus noch Klicks (das Fenster vorne bleibt
+      aktiv, ein Klick neben Rand und Text trifft das Fenster darunter); kein Eintrag in Taskleiste und Alt+Tab. · E2E: nein
+- [ ] **T64-3** Im Mausmodus in fremden Fenstern: linker Stick bewegt den Zeiger (Totzone, langsam anfahrend),
+      RT oder A klickt links, gehalten zieht es (Datei im Explorer verschieben), LT oder X klickt rechts, der
+      rechte Stick scrollt senkrecht und waagrecht, Steuerkreuz sind Pfeiltasten (gehalten wiederholt), B ist
+      Esc, RB Tab, LB Umschalt+Tab, Menu Enter. Arcadia reagiert dabei auf nichts davon. · E2E: nein
+- [ ] **T64-4** L3 antippen: Zeiger ein Drittel so schnell, nochmal antippen: wieder normal. L3 halten und den
+      Stick bewegen: langsam, solange gehalten, danach normal. · E2E: nein
+- [ ] **T64-5** View im Mausmodus holt Arcadia nach vorne (auch aus dem minimierten Zustand). Mit „Beenden, wenn
+      Arcadia nach vorne kommt“ (Standard) endet der Mausmodus dabei mit „Mausmodus aus“; in Arcadia von Hand
+      eingeschaltet bleibt er an und bedient Arcadia wie eine Maus. Option aus: er bleibt auch beim Wechsel an. · E2E: nein
+- [ ] **T64-6** „Automatisch einschalten, wenn Arcadia den Fokus verliert“ an: Wechsel per Alt+Tab zum Explorer →
+      „Mausmodus an“ ohne Rand und ohne Vibrieren. Ein Spiel aus der Bibliothek starten (auch direkt im Launcher
+      gestartet) → bleibt aus; erscheint erst der Epic-Launcher und dann das Spiel, geht er mit dem Spiel wieder
+      aus. Ein von Hand eingeschalteter Mausmodus bleibt an, wenn ein Spiel nach vorne kommt; der Text sagt
+      dann „das Spiel sieht die Eingaben weiterhin“. · E2E: nein
+- [ ] **T64-7** Einstellungen → Controller → Box „Mausmodus“: Hauptschalter aus → Back + Start tut nichts,
+      „Haltedauer“ ist abgeblendet. Haltedauer 1 und 9 s und Zeigergeschwindigkeit 1 und 9 wirken sofort;
+      mit dem Controller links/rechts ändern, A zählt hoch und fängt nach 9 wieder bei 1 an. Alles bleibt
+      nach einem Neustart erhalten, der Mausmodus selbst nicht (Arcadia startet immer im normalen Modus). · E2E: ja
+- [ ] **T64-8** „So funktioniert's“ öffnet sich mit A, zeigt die Belegung und die Grenzen (UAC, Administrator-
+      Fenster, exklusives Vollbild, Spiel sieht die Eingaben), B schließt es, der Fokus steht wieder auf
+      „So funktioniert's“. · E2E: ja
+- [ ] **T64-9** Zwei Controller: jeder schaltet mit Back + Start um (vibriert nur der, der umschaltet), beide
+      bewegen den Zeiger. · E2E: nein
+- [ ] **T64-10** Normaler Modus in Arcadia: View (Kontextmenü) und Menu (Einstellungen) wirken beim Loslassen
+      oder nach 0,2 s allein gehalten; ≡ 1 s gehalten auf einem Suchtreffer öffnet weiter die Details. Beide
+      zusammen gedrückt öffnen nichts. Alle anderen Tasten verhalten sich wie bisher. · E2E: ja
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T64-7, T64-8 | 2026-10-20 | Claude | Branch `feat/controller-als-maus-nutzen-64`, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool (Pfeiltasten, Enter, Esc) | ✅ Box unter dem Steam Controller, Haltedauer abgeblendet bei Hauptschalter aus, Stepper mit links/rechts und Enter (9 → 1), „So funktioniert's“ öffnet und schließt, Fokus zurück auf der Zeile; Speichern nur per `SettingsServiceTests` geprüft | Controller am PC des Owners |
+| T64-1 (nur Overlay) | 2026-10-20 | Claude | wie oben, Overlay lokal per Testcode ausgelöst (nicht eingecheckt) | ⚠️ Rand füllt sich über die Haltedauer von oben Mitte bis unten Mitte, läuft beim Abbruch zurück, Text „Mausmodus an“ 2 s; Hintergrund unter Xvfb schwarz (keine Transparenz) | Windows: Transparenz, Klicks durchs Overlay, Vibrieren, `SendInput`, Vordergrund-Erkennung am PC des Owners |
+| T64-1 bis T64-10 (Logik) | 2026-10-20 | Claude | `dotnet test` (`MouseModeTests`, `SoloButtonsTests`, `MouseModeAutomationTests`, `StickCurveTests`, `GameFoldersTests`, `SettingsServiceTests`) | ✅ Umschalten, Abbruch, Belegung, Wiederholung, L3, mehrere Controller, Automatik, Spielordner, Einstellungen | Echte Eingaben unter Windows nicht geprüft |
+
 ## Grundgerüst (ohne Issue)
 
 Alles, was Arcadia schon kann, aber zu keinem Issue gehört (Grundgerüst aus `docs/roadmap.md`,

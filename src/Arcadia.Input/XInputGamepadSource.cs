@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -17,6 +18,11 @@ public sealed partial class XInputGamepadSource : IGamepadSource
     private const int RepeatIntervalMs = 90;
     private const short StickThreshold = 16000;
     private const byte TriggerThreshold = 128;
+    private const int Slots = 4;
+
+    /// <summary>Long enough to feel, short enough not to get in the way.</summary>
+    private const int RumbleMs = 150;
+    private const ushort RumbleStrength = 30000;
 
     private static readonly GamepadButton[] Repeating =
     [
@@ -27,11 +33,18 @@ public sealed partial class XInputGamepadSource : IGamepadSource
     private readonly CancellationTokenSource _stop = new();
     private readonly Dictionary<GamepadButton, long> _heldSince = [];
     private readonly Dictionary<GamepadButton, long> _lastRepeat = [];
+    private readonly List<GamepadReading> _readings = new(Slots);
+    private readonly ConcurrentQueue<int> _rumbleRequests = new();
+
+    // When each slot's rumble ends (poll clock, ms); 0 while it doesn't rumble. Only the poll thread touches it.
+    private readonly long[] _rumbleEnds = new long[Slots];
     private Thread? _thread;
 
     public event Action<GamepadButton>? ButtonPressed;
 
     public event Action<GamepadButton>? ButtonReleased;
+
+    public event Action<IReadOnlyList<GamepadReading>>? Polled;
 
     public void Start()
     {
@@ -42,6 +55,14 @@ public sealed partial class XInputGamepadSource : IGamepadSource
 
         _thread = new Thread(Run) { IsBackground = true, Name = "Arcadia XInput" };
         _thread.Start();
+    }
+
+    public void Rumble(int slot)
+    {
+        if (slot is >= 0 and < Slots)
+        {
+            _rumbleRequests.Enqueue(slot);
+        }
     }
 
     public void Dispose()
@@ -58,8 +79,9 @@ public sealed partial class XInputGamepadSource : IGamepadSource
 
         while (!_stop.IsCancellationRequested)
         {
-            var current = ReadAllControllers();
+            var current = ReadAllControllers(_readings);
             var now = clock.ElapsedMilliseconds;
+            Polled?.Invoke(_readings);
 
             foreach (var button in current)
             {
@@ -87,25 +109,82 @@ public sealed partial class XInputGamepadSource : IGamepadSource
             }
 
             previous = current;
+            UpdateRumble(now);
             Thread.Sleep(PollIntervalMs);
+        }
+
+        // Don't leave a controller rumbling when Arcadia closes mid-rumble.
+        for (uint slot = 0; slot < Slots; slot++)
+        {
+            if (_rumbleEnds[slot] != 0)
+            {
+                SetRumble(slot, 0);
+            }
         }
     }
 
-    private static HashSet<GamepadButton> ReadAllControllers()
+    private void UpdateRumble(long now)
     {
+        while (_rumbleRequests.TryDequeue(out var slot))
+        {
+            SetRumble((uint)slot, RumbleStrength);
+            _rumbleEnds[slot] = now + RumbleMs;
+        }
+
+        for (uint slot = 0; slot < Slots; slot++)
+        {
+            if (_rumbleEnds[slot] != 0 && now >= _rumbleEnds[slot])
+            {
+                SetRumble(slot, 0);
+                _rumbleEnds[slot] = 0;
+            }
+        }
+    }
+
+    private static void SetRumble(uint slot, ushort strength)
+    {
+        // A slot without a controller (or a pad without motors) just reports an error; nothing to do about it.
+        var vibration = new XInputVibration { LeftMotorSpeed = strength, RightMotorSpeed = strength };
+        _ = XInputSetState(slot, ref vibration);
+    }
+
+    private static HashSet<GamepadButton> ReadAllControllers(List<GamepadReading> readings)
+    {
+        readings.Clear();
         var pressed = new HashSet<GamepadButton>();
-        for (uint index = 0; index < 4; index++)
+        for (uint index = 0; index < Slots; index++)
         {
             if (XInputGetState(index, out var state) != 0)
             {
                 continue;
             }
 
+            readings.Add(ToReading((int)index, state.Gamepad));
             Collect(state.Gamepad, pressed);
         }
 
         return pressed;
     }
+
+    private static GamepadReading ToReading(int slot, XInputGamepad pad)
+    {
+        var buttons = (PadButtons)pad.Buttons & ~(PadButtons.LeftTrigger | PadButtons.RightTrigger);
+        if (pad.LeftTrigger >= TriggerThreshold)
+        {
+            buttons |= PadButtons.LeftTrigger;
+        }
+
+        if (pad.RightTrigger >= TriggerThreshold)
+        {
+            buttons |= PadButtons.RightTrigger;
+        }
+
+        return new GamepadReading(slot, buttons, Stick(pad.ThumbLX, pad.ThumbLY), Stick(pad.ThumbRX, pad.ThumbRY));
+    }
+
+    // short.MinValue reaches a little further than short.MaxValue; clamped so both ends are 1.
+    private static StickPosition Stick(short x, short y) =>
+        new(Math.Max(x / 32767.0, -1), Math.Max(y / 32767.0, -1));
 
     private static void Collect(XInputGamepad pad, HashSet<GamepadButton> pressed)
     {
@@ -184,6 +263,16 @@ public sealed partial class XInputGamepadSource : IGamepadSource
 
     [LibraryImport("xinput1_4.dll")]
     private static partial uint XInputGetState(uint userIndex, out XInputState state);
+
+    [LibraryImport("xinput1_4.dll")]
+    private static partial uint XInputSetState(uint userIndex, ref XInputVibration vibration);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct XInputVibration
+    {
+        public ushort LeftMotorSpeed;
+        public ushort RightMotorSpeed;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct XInputState

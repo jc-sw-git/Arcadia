@@ -1,0 +1,23 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="using:Arcadia.App.Controls"
+        x:Class="Arcadia.App.Views.MouseModeOverlay"
+        Title="Arcadia Mausmodus"
+        WindowDecorations="None"
+        WindowStartupLocation="Manual"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        CanResize="False"
+        Focusable="False">
+
+  <!-- Feedback for Back + Start (#64), over everything on the primary monitor. It never takes the focus or a click. -->
+  <Panel IsHitTestVisible="False">
+    <ctl:ScreenEdgeFill x:Name="Edge" />
+    <Border x:Name="Label" Classes="mouseModeLabel" IsVisible="False">
+      <TextBlock x:Name="LabelText" />
+    </Border>
+  </Panel>
+</Window>

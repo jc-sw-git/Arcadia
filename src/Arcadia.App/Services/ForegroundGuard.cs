@@ -74,6 +74,25 @@ public sealed partial class ForegroundGuard(MainWindow window)
         AppLog.Write($"Fokus kurz zum Desktop gewechselt, damit Steam die Desktop-Belegung übernimmt (zurück: {back}).");
     }
 
+    /// <summary>
+    /// Brings Arcadia to the front while another program has it, e.g. View in the mouse mode (#64):
+    /// Windows lets a background program take the foreground only with its input queue attached.
+    /// </summary>
+    public static void BringBack(MainWindow window)
+    {
+        if (window.WindowState == WindowState.Minimized)
+        {
+            window.WindowState = WindowState.Normal;
+        }
+
+        if (OperatingSystem.IsWindows() && window.TryGetPlatformHandle() is { } handle)
+        {
+            TakeForeground(handle.Handle);
+        }
+
+        window.BringToFront();
+    }
+
     /// <summary>Tested: 150 ms is reliably noticed by Steam, 40 ms is not.</summary>
     private static readonly TimeSpan BounceDuration = TimeSpan.FromMilliseconds(150);
 

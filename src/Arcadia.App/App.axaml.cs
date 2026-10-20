@@ -9,6 +9,7 @@ using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Arcadia.Launchers;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
@@ -31,6 +32,9 @@ public partial class App : Application
 
     /// <summary>Hands a SISR pause for a running game over to the Arcadia started after an update.</summary>
     private const string SisrPausedArgument = "--sisr-paused-for";
+
+    /// <summary>View and Menu held alone this long act without waiting for the release, so ≡ held on a search hit still opens its details.</summary>
+    private static readonly TimeSpan SoloButtonDelay = TimeSpan.FromMilliseconds(200);
 
     private IGamepadSource? _gamepad;
 
@@ -102,6 +106,9 @@ public partial class App : Application
 
             desktop.MainWindow = window;
 
+            // The mouse mode's overlay is a window too; Arcadia ends with the main window, not the last one.
+            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+
             // The downloaded update installs once Arcadia has exited; closing normally also stops SISR.
             updates.RestartArguments = () => RestartArguments(args, window.IsActive, controllerSupport.PausedFor);
             updates.RestartRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
@@ -113,7 +120,9 @@ public partial class App : Application
             controllerSupport.ControllerReleased += (_, _) => Dispatcher.UIThread.Post(() => foreground.BounceFocusAsync().Forget("Controller freigeben"));
 
             _gamepad = GamepadSource.CreateDefault();
-            _gamepad.ButtonPressed += button =>
+            var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
+
+            void Press(GamepadButton button)
             {
                 if (UiActionMap.FromGamepad(button) is { } action)
                 {
@@ -124,16 +133,53 @@ public partial class App : Application
                         if (window.IsActive)
                         {
                             viewModel.HandleGamepad(action);
+                            window.FollowSettingsFocus();
                         }
                     });
                 }
-            };
+            }
+
             // Releases go through even while another window is in front, so a held A can't get stuck.
-            _gamepad.ButtonReleased += button =>
+            void Release(GamepadButton button)
             {
                 if (UiActionMap.FromGamepad(button) is { } action)
                 {
                     Dispatcher.UIThread.Post(() => viewModel.Release(action));
+                }
+            }
+
+            // Back + Start switch the mouse mode, so View and Menu act alone only: on release, or held alone a moment.
+            var viewAndMenu = new SoloButtons(GamepadButton.View, GamepadButton.Menu, SoloButtonDelay, time);
+            viewAndMenu.Pressed += Press;
+            viewAndMenu.Released += Release;
+            viewAndMenu.Cancelled += _ => Dispatcher.UIThread.Post(viewModel.CancelHold);
+            _gamepad.Polled += _ => viewAndMenu.Tick();
+            _gamepad.ButtonPressed += button =>
+            {
+                // In the mouse mode the controller is a mouse, not Arcadia's navigation.
+                if (mouseMode.IsOn)
+                {
+                    return;
+                }
+
+                if (viewAndMenu.Handles(button))
+                {
+                    viewAndMenu.Press(button);
+                }
+                else
+                {
+                    Press(button);
+                }
+            };
+            _gamepad.ButtonReleased += button =>
+            {
+                if (viewAndMenu.Handles(button))
+                {
+                    viewAndMenu.Release(button);
+                }
+                else
+                {
+                    Release(button);
                 }
             };
             _gamepad.Start();
@@ -174,6 +220,9 @@ public partial class App : Application
                 installProgress.Stop();
                 updateCheck.Stop();
                 _gamepad.Dispose();
+
+                // After the polling stopped: lets go of a mouse button or key the mouse mode still holds.
+                mouseMode.Dispose();
 
                 // SISR belongs to Arcadia: it goes when Arcadia goes. Run off the UI thread to avoid a deadlock.
                 // Except for an update: Arcadia is back in seconds, and a game keeps its controller meanwhile.

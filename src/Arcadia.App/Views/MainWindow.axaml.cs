@@ -40,6 +40,9 @@ public partial class MainWindow : Window
 
     private const double HitGridTop = 40;
 
+    /// <summary>The focus ring around a setting reaches this far beyond it (FocusRing in Theme.axaml).</summary>
+    private const double FocusRingRoom = 8;
+
     private readonly HashSet<Key> _keysDown = [];
     private MainViewModel? _viewModel;
     private SearchViewModel? _search;
@@ -153,10 +156,16 @@ public partial class MainWindow : Window
             Services.AppLog.Write($"Taste: {e.Key} → {action}");
             _viewModel.Handle(action);
             e.Handled = true;
-            if (_viewModel.IsSettingsOpen)
-            {
-                Dispatcher.UIThread.Post(BringFocusedSettingIntoView, DispatcherPriority.Loaded);
-            }
+            FollowSettingsFocus();
+        }
+    }
+
+    /// <summary>After a key or button press: keeps the focused setting in view while the settings are open.</summary>
+    public void FollowSettingsFocus()
+    {
+        if (_viewModel?.IsSettingsOpen == true)
+        {
+            Dispatcher.UIThread.Post(BringFocusedSettingIntoView, DispatcherPriority.Loaded);
         }
     }
 
@@ -388,7 +397,7 @@ public partial class MainWindow : Window
     {
         // Settings items carry the "focused" class; the dialog's scroll viewer is their nearest one.
         var focused = this.GetVisualDescendants().OfType<Button>()
-            .FirstOrDefault(b => b.Classes.Contains("focused") && b.IsEffectivelyVisible && b.DataContext is SettingsViewModel or SettingsItemViewModel);
+            .FirstOrDefault(b => b.Classes.Contains("focused") && b.IsEffectivelyVisible && b.DataContext is SettingsViewModel or SettingsItemViewModel or MouseModeSettingsViewModel);
         if (focused?.FindAncestorOfType<ScrollViewer>() is not { } scroller)
         {
             return;
@@ -401,7 +410,8 @@ public partial class MainWindow : Window
         }
         else
         {
-            focused.BringIntoView();
+            // With room for the focus ring, which the scroll viewer would otherwise cut off at its edge.
+            focused.BringIntoView(new Rect(focused.Bounds.Size).Inflate(FocusRingRoom));
         }
     }
 

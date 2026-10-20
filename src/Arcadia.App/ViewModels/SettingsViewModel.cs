@@ -3,6 +3,7 @@ using Arcadia.App.Input;
 using Arcadia.App.Services;
 using System.Globalization;
 using Arcadia.ControllerSupport;
+using Arcadia.Core.Settings;
 using Arcadia.Core.Updates;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -58,6 +59,9 @@ public enum SettingsPrompt
 
     /// <summary>Several Steam accounts: which of them get SISR's marker in their Steam library.</summary>
     ChooseMarkerAccounts,
+
+    /// <summary>"So funktioniert's" of the mouse mode: its buttons and limits.</summary>
+    MouseModeHelp,
 }
 
 /// <summary>A problem found by the controller-support monitoring, with an optional fix button.</summary>
@@ -89,7 +93,7 @@ public sealed class ChangelogEntryViewModel(ChangelogEntry entry)
 }
 
 /// <summary>
-/// The settings dialog. For now it holds "Steam Controller als Xbox 360 Gamepad verwenden" and "Über Arcadia"; the
+/// The settings dialog. For now it holds "Steam Controller als Xbox 360 Gamepad verwenden", "Mausmodus" and "Über Arcadia"; the
 /// other sections from the designs follow.
 /// </summary>
 public partial class SettingsViewModel : ViewModelBase, IDisposable
@@ -105,6 +109,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly SettingsItemViewModel _cancelSteamStart;
     private readonly SettingsItemViewModel _confirmMarkerAccounts;
     private readonly SettingsItemViewModel _cancelMarkerAccounts;
+    private readonly SettingsItemViewModel _closeMouseModeHelp;
 
     /// <summary>The accounts chosen in the marker prompt for the install under way; null until chosen (or not asked).</summary>
     private IReadOnlyCollection<uint>? _markerChoice;
@@ -115,8 +120,10 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly SettingsItemViewModel _checkUpdates;
     private int _focus;
 
-    public SettingsViewModel(ControllerSupportService support, ArcadiaUpdateService updates, Func<Task> installArcadiaUpdate)
+    public SettingsViewModel(ControllerSupportService support, ArcadiaUpdateService updates, SettingsService settings, Func<Task> installArcadiaUpdate)
     {
+        MouseMode = new MouseModeSettingsViewModel(settings, () => ShowPrompt(SettingsPrompt.MouseModeHelp));
+        _closeMouseModeHelp = new SettingsItemViewModel(ClosePrompt);
         _checkUpdates = new SettingsItemViewModel(() => updates.CheckNowAsync().Forget("Update-Prüfung"));
         CheckUpdatesCommand = new RelayCommand(() => updates.CheckNowAsync().Forget("Update-Prüfung"));
         _support = support;
@@ -165,6 +172,10 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     }
 
     public SettingsItemViewModel ToggleItem => _toggle;
+
+    public MouseModeSettingsViewModel MouseMode { get; }
+
+    public SettingsItemViewModel CloseMouseModeHelpItem => _closeMouseModeHelp;
 
     private static readonly TimeSpan PromptCheckInterval = TimeSpan.FromSeconds(1);
 
@@ -219,10 +230,15 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     /// <summary>The modal over the settings, if any.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsPromptOpen), nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsSteamStartFailedPrompt), nameof(IsMarkerPrompt), nameof(IsQuestionPrompt), nameof(IsWarningPrompt), nameof(PromptBackText))]
+    [NotifyPropertyChangedFor(nameof(IsPromptOpen), nameof(IsSetupPromptOpen), nameof(IsMouseModeHelpOpen), nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsSteamStartFailedPrompt), nameof(IsMarkerPrompt), nameof(IsQuestionPrompt), nameof(IsWarningPrompt), nameof(PromptBackText))]
     public partial SettingsPrompt Prompt { get; private set; }
 
     public bool IsPromptOpen => Prompt != SettingsPrompt.None;
+
+    /// <summary>A prompt around SISR's setup (installing, Steam starting), shown in the small prompt box.</summary>
+    public bool IsSetupPromptOpen => IsPromptOpen && !IsMouseModeHelpOpen;
+
+    public bool IsMouseModeHelpOpen => Prompt == SettingsPrompt.MouseModeHelp;
 
     public bool IsGamePrompt => Prompt == SettingsPrompt.SteamGameRunning;
 
@@ -241,7 +257,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     /// <summary>The prompts that "SISR installieren" opens; they end when the install becomes moot.</summary>
     private bool IsInstallPrompt => Prompt is SettingsPrompt.SteamGameRunning or SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ChooseMarkerAccounts;
 
-    public string PromptBackText => IsGamePrompt ? "Schließen" : "Abbrechen";
+    public string PromptBackText => IsGamePrompt || IsMouseModeHelpOpen ? "Schließen" : "Abbrechen";
 
     /// <summary>The Steam game named in the game prompt.</summary>
     [ObservableProperty]
@@ -349,6 +365,12 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         switch (action)
         {
+            case UiAction.Left when !IsPromptOpen && FocusableItems()[_focus] is SettingsStepperViewModel stepper:
+                stepper.Step(-1);
+                return true;
+            case UiAction.Right when !IsPromptOpen && FocusableItems()[_focus] is SettingsStepperViewModel stepper:
+                stepper.Step(1);
+                return true;
             case UiAction.Left when IsPromptOpen:
             case UiAction.Up:
                 MoveFocus(-1);
@@ -564,7 +586,20 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         Install();
     }
 
-    private void ClosePrompt() => ShowPrompt(SettingsPrompt.None);
+    private void ClosePrompt()
+    {
+        var fromHelp = IsMouseModeHelpOpen;
+        ShowPrompt(SettingsPrompt.None);
+
+        // Back where the help was opened, not at the top of the settings.
+        if (fromHelp)
+        {
+            var items = FocusableItems();
+            items[_focus].IsFocused = false;
+            _focus = items.IndexOf(MouseMode.HelpItem);
+            MouseMode.HelpItem.IsFocused = true;
+        }
+    }
 
     private void ShowPrompt(SettingsPrompt prompt)
     {
@@ -706,7 +741,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         // Keep the controller focus on the same item where possible. All items lose it first, so
         // the row behind an open prompt doesn't keep its ring.
-        foreach (var item in new[] { _toggle, _update, _checkUpdates, _arcadiaUpdate, _retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop, _retrySteamStart, _cancelSteamStart, _confirmMarkerAccounts, _cancelMarkerAccounts }.Concat(MarkerAccounts))
+        foreach (var item in new[] { _toggle, _update, _checkUpdates, _arcadiaUpdate, _retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop, _retrySteamStart, _cancelSteamStart, _confirmMarkerAccounts, _cancelMarkerAccounts, _closeMouseModeHelp }.Concat(MarkerAccounts).Concat(MouseMode.Items))
         {
             item.IsFocused = false;
         }
@@ -732,6 +767,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
                 return [_retrySteamStart, _cancelSteamStart];
             case SettingsPrompt.ChooseMarkerAccounts:
                 return [.. MarkerAccounts.Where(a => !a.HasMarker), _confirmMarkerAccounts, _cancelMarkerAccounts];
+            case SettingsPrompt.MouseModeHelp:
+                return [_closeMouseModeHelp];
         }
 
         var items = new List<SettingsItemViewModel> { _toggle };
@@ -741,6 +778,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
 
         items.AddRange(Issues.Where(i => i.HasFix));
+        items.AddRange(MouseMode.Items);
         if (CanSearchForUpdates)
         {
             items.Add(_checkUpdates);
@@ -757,7 +795,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private bool IsPromptItem(SettingsItemViewModel? item) =>
         item == _retryInstall || item == _closeGamePrompt || item == _confirmSteamStop || item == _cancelSteamStop
         || item == _retrySteamStart || item == _cancelSteamStart || item == _confirmMarkerAccounts || item == _cancelMarkerAccounts
-        || item is MarkerAccountViewModel;
+        || item == _closeMouseModeHelp || item is MarkerAccountViewModel;
 
     private void MoveFocus(int delta)
     {

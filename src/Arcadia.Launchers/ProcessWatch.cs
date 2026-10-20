@@ -1,11 +1,14 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Arcadia.Launchers;
 
 /// <summary>Finds running processes by name or by install directory.</summary>
-public static class ProcessWatch
+public static partial class ProcessWatch
 {
+    private const uint QueryLimitedInformation = 0x1000;
+
     public static bool IsRunning(string processName)
     {
         var processes = Process.GetProcessesByName(processName);
@@ -60,6 +63,67 @@ public static class ProcessWatch
         return null;
     }
 
+    /// <summary>
+    /// The full path of the executable <paramref name="processId"/> runs, or null if it can't be read
+    /// (the process ended, or another user's). Unlike <c>Process.MainModule</c> this needs only the
+    /// limited query right, so it also works for processes running as administrator, and doesn't throw.
+    /// </summary>
+    public static string? PathOf(int processId)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        var process = OpenProcess(QueryLimitedInformation, false, (uint)processId);
+        if (process == IntPtr.Zero)
+        {
+            return null;
+        }
+
+        try
+        {
+            // Long paths (\\?\…) can exceed MAX_PATH; 32,767 characters is the most Windows allows.
+            foreach (var size in (int[])[1024, 32767])
+            {
+                if (TryQueryPath(process, size) is { } path)
+                {
+                    return path;
+                }
+            }
+
+            return null;
+        }
+        finally
+        {
+            CloseHandle(process);
+        }
+    }
+
+    private static unsafe string? TryQueryPath(IntPtr process, int size)
+    {
+        var buffer = new char[size];
+        var length = (uint)size;
+        fixed (char* path = buffer)
+        {
+            return QueryFullProcessImageName(process, 0, path, ref length) ? new string(buffer, 0, (int)length) : null;
+        }
+    }
+
+    /// <summary>The process that owns the foreground window, or null if there is none (e.g. the secure desktop shows).</summary>
+    public static int? ForegroundProcessId()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        var window = GetForegroundWindow();
+        return window != IntPtr.Zero && GetWindowThreadProcessId(window, out var processId) != 0 && processId != 0
+            ? (int)processId
+            : null;
+    }
+
     /// <summary>Polls <paramref name="condition"/> until it holds or the timeout expires.</summary>
     public static async Task<bool> WaitUntilAsync(Func<bool> condition, TimeSpan timeout, TimeProvider time, CancellationToken cancellationToken)
     {
@@ -76,4 +140,21 @@ public static class ProcessWatch
 
         return condition();
     }
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    private static partial IntPtr OpenProcess(uint access, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, uint processId);
+
+    [LibraryImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static unsafe partial bool QueryFullProcessImageName(IntPtr process, uint flags, char* path, ref uint size);
+
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool CloseHandle(IntPtr handle);
+
+    [LibraryImport("user32.dll")]
+    private static partial IntPtr GetForegroundWindow();
+
+    [LibraryImport("user32.dll")]
+    private static partial uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 }

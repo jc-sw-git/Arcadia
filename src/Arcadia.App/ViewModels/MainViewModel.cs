@@ -101,6 +101,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     partial void OnFocusedGameChanged(GameTileViewModel? value) => UpdateControllerSupportState();
 
+    /// <summary>The install folders of the library's games: a process from one of them is a game in front.</summary>
+    public GameFolders GameFolders { get; private set; } = GameFolders.Empty;
+
     /// <summary>Raised when Arcadia should bring its window back to the front.</summary>
     public event EventHandler? ForegroundRequested;
 
@@ -283,6 +286,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     /// </summary>
     private void ApplyLibraries(IReadOnlyList<LauncherLibrary> libraries)
     {
+        GameFolders = GameFolders.Of(libraries.SelectMany(l => l.Games));
         foreach (var gone in Tabs.Where(t => libraries.All(l => l.Launcher.Id != t.Launcher.Id)).ToList())
         {
             Tabs.Remove(gone);
@@ -937,7 +941,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     }
 
     [RelayCommand]
-    private void OpenSettings() => Settings = new SettingsViewModel(_controllerSupport, _updates, _updates.InstallAsync);
+    private void OpenSettings() => Settings = new SettingsViewModel(_controllerSupport, _updates, _settings, _updates.InstallAsync);
 
     [RelayCommand]
     private void CloseSettings() => Settings = null;

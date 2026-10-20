@@ -65,6 +65,37 @@ public sealed class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void Mouse_mode_settings_survive_a_restart_and_start_with_the_defaults()
+    {
+        File.WriteAllText(SettingsPath, """{ "SteamControllerSupport": true }""");
+        var service = new SettingsService(new SettingsStore(SettingsPath));
+        Assert.Equal(new MouseModeSettings(), service.Current.MouseMode);
+        Assert.True(service.Current.MouseMode.ComboEnabled);
+        Assert.Equal(3, service.Current.MouseMode.HoldSeconds);
+        Assert.Equal(5, service.Current.MouseMode.PointerSpeed);
+
+        service.Update(s => s with { MouseMode = s.MouseMode with { HoldSeconds = 7, StartWhenArcadiaLosesFocus = true } });
+        var restarted = new SettingsService(new SettingsStore(SettingsPath)).Current.MouseMode;
+
+        Assert.Equal(7, restarted.HoldSeconds);
+        Assert.True(restarted.StartWhenArcadiaLosesFocus);
+    }
+
+    [Theory]
+    [InlineData("""{ "MouseMode": { "HoldSeconds": 0, "PointerSpeed": 42, "ComboEnabled": false } }""")]
+    [InlineData("""{ "MouseMode": null }""")]
+    public void Broken_mouse_mode_values_fall_back_to_the_defaults_and_keep_the_rest(string json)
+    {
+        File.WriteAllText(SettingsPath, json);
+
+        var loaded = new SettingsService(new SettingsStore(SettingsPath)).Current.MouseMode;
+
+        Assert.Equal(3, loaded.HoldSeconds);
+        Assert.Equal(5, loaded.PointerSpeed);
+        Assert.Equal(!json.Contains("false", StringComparison.Ordinal), loaded.ComboEnabled);
+    }
+
+    [Fact]
     public void Changes_from_two_threads_at_once_are_all_saved()
     {
         var service = new SettingsService(new SettingsStore(SettingsPath));

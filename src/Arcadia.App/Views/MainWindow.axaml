@@ -254,11 +254,11 @@
                       <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
                     </Button>
                   </StackPanel>
-                  <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowGameMouseMode}">
+                  <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowGameMouseMode, TargetNullValue=False}">
                     <TextBlock Classes="label" Text="INDIVIDUELLER MAUSMODUS" />
-                    <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CycleGameMouseModeCommand}"
+                    <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleGameMouseModeCommand}"
                             ToolTip.Tip="Klicken wechselt zwischen „Standard“, „Erlaubt“ und „Deaktiviert“">
-                      <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext).FocusedGameMouseModeText}" />
+                      <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedGameMouseModeText}" />
                     </Button>
                   </StackPanel>
                 </StackPanel>

@@ -16,7 +16,6 @@ namespace Arcadia.App.Views;
 public partial class MainWindow : Window
 {
     private const double TabScrollStep = 320;
-    private const double TabEdgePadding = 96;
 
     /// <summary>Space between a cover and its context menu, and between the menu and the window's edge.</summary>
     private const double MenuGap = 24;
@@ -89,8 +88,7 @@ public partial class MainWindow : Window
         GridScroller.ScrollChanged += (_, _) => UpdateGridFades();
         TabScroller.ScrollChanged += (_, _) => UpdateTabEdges();
         TabScroller.SizeChanged += (_, _) => UpdateTabEdges();
-        TabScrollLeft.Click += (_, _) => ScrollTabs(-TabScrollStep);
-        TabScrollRight.Click += (_, _) => ScrollTabs(TabScrollStep);
+        TabScroller.PointerWheelChanged += OnTabsWheel;
 
         // Coming back from a launcher: games may have been installed or uninstalled there.
         Activated += async (_, _) =>
@@ -149,10 +147,19 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_viewModel is { IsSearchShown: false } && UiActionMap.TabNumber(e.Key, e.KeyModifiers) is { } tab)
+        {
+            Services.AppLog.Write($"Taste: {e.Key} → Launcher {tab + 1}");
+            _viewModel.ChooseTabNumber(tab);
+            e.Handled = true;
+            return;
+        }
+
         if (_viewModel is not null && ActionFor(e) is { } action)
         {
-            // A held key repeats its KeyDown; A acts on the release or after a hold, like the gamepad button.
-            if (!_keysDown.Add(e.Key) && action == UiAction.Accept)
+            // A held key repeats its KeyDown. Moving and turning may repeat; A acts on the release or after a hold, like the
+            // gamepad button, and a dialog must not open and close again with every repeat.
+            if (!_keysDown.Add(e.Key) && action is UiAction.Accept or UiAction.Settings or UiAction.Options or UiAction.ViewOptions)
             {
                 e.Handled = true;
                 return;
@@ -324,6 +331,9 @@ public partial class MainWindow : Window
             case nameof(MainViewModel.SelectedTab):
                 Dispatcher.UIThread.Post(BringSelectedTabIntoView, DispatcherPriority.Loaded);
                 break;
+            case nameof(MainViewModel.IsTabStripShown):
+                Dispatcher.UIThread.Post(UpdateTabEdges, DispatcherPriority.Loaded);
+                break;
             case nameof(MainViewModel.Search):
                 if (_search is not null)
                 {
@@ -479,6 +489,10 @@ public partial class MainWindow : Window
         return _viewModel?.FocusedGame is { } tile ? GameGrid.ContainerFromIndex(_viewModel.PageGames.IndexOf(tile)) : null;
     }
 
+    /// <summary>
+    /// When not all tabs fit, the strip turns so the selected tab stands in its middle, as far as the ends allow, with
+    /// the faded neighbours on both sides (owner, 2026-10-21).
+    /// </summary>
     private void BringSelectedTabIntoView()
     {
         if (_viewModel?.SelectedTab is not { } tab || TabList.ContainerFromItem(tab) is not { } container)
@@ -487,23 +501,15 @@ public partial class MainWindow : Window
         }
 
         var left = container.TranslatePoint(default, TabList)?.X ?? 0;
-        var right = left + container.Bounds.Width;
-        var offset = TabScroller.Offset.X;
-        var viewport = TabScroller.Viewport.Width;
-
-        if (left < offset + TabEdgePadding)
-        {
-            offset = left - TabEdgePadding;
-        }
-        else if (right > offset + viewport - TabEdgePadding)
-        {
-            offset = right - viewport + TabEdgePadding;
-        }
-
-        SetTabOffset(offset);
+        SetTabOffset(left + (container.Bounds.Width / 2) - (TabScroller.Viewport.Width / 2));
     }
 
-    private void ScrollTabs(double delta) => SetTabOffset(TabScroller.Offset.X + delta);
+    /// <summary>The wheel turns the tab strip sideways when not all tabs fit.</summary>
+    private void OnTabsWheel(object? sender, PointerWheelEventArgs e)
+    {
+        SetTabOffset(TabScroller.Offset.X - (e.Delta.Y + e.Delta.X) * TabScrollStep);
+        e.Handled = true;
+    }
 
     private void SetTabOffset(double offset)
     {
@@ -518,5 +524,10 @@ public partial class MainWindow : Window
         var max = Math.Max(0, TabScroller.Extent.Width - TabScroller.Viewport.Width);
         TabEdgeLeft.IsVisible = offset > 1;
         TabEdgeRight.IsVisible = offset < max - 1;
+
+        // At its widest the strip is as close to logo and status as it gets; the dividers mark that (owner, 2026-10-21).
+        var widest = max > 0 && _viewModel?.IsTabStripShown != false;
+        TabDividerLeft.Classes.Set("shown", widest);
+        TabDividerRight.Classes.Set("shown", widest);
     }
 }

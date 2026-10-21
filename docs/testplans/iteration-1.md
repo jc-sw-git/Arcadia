@@ -752,6 +752,46 @@ Verlauf:
 | T103-1 (nur Binding-Fehler) | 2026-10-20 | Claude | Branch `fix/processwatch-103-xq8e1u`, Linux, Xvfb 1920×1080 `--demo`, Avalonia-Log lokal auf die Konsole umgeleitet (nicht eingecheckt), Tastatur und Maus per xdotool | ✅ vorher 22 Binding-Fehler beim Start, 4 beim Öffnen der Suche, 50 beim Ausklappen der Tastatur; nachher keiner. Bibliothek, Detailseite, Kontextmenü, Suche und Einstellungen sehen aus wie vorher | Exceptions, Adminrechte und CPU nur unter Windows prüfbar |
 | T103-1 bis T103-3 (Logik) | 2026-10-20 | Claude | `dotnet test` (`ProcessWatchTests`), Linux | ⚠️ Ordner des eigenen Prozesses wird gefunden, leerer Ordner nicht; den Windows-Weg (`PathOf`) prüft nur die CI unter Windows | Windows, Adminrechte und CPU am PC des Owners |
 
+## #127 UI Polishing
+
+- [ ] **T127-1** Detailseite mit dem Controller: Zwischen den Button-Reihen und zwischen den Buttons berührt
+      der Fokusrahmen keine Nachbarn; die Kennzahlen unten sind vollständig sichtbar, auch bei einem Spiel mit
+      Update (Hinweiszeile unter den Buttons). · E2E: ja
+- [ ] **T127-2** Detailseite: Fokus auf „Steam Controller“ bzw. „Individueller Mausmodus“ zeigt keinen
+      Hinweis mehr unter den Buttons; das Kontextmenü zeigt „Wechselt zu „…““. Maus über einem deaktivierten
+      Button (z. B. „Zu Favoriten“) zeigt den Grund als Tooltip. · E2E: ja
+- [ ] **T127-3** Detailseite aus der Bibliothek: X (Tastatur F, Klick auf den Such-Chip) öffnet die Suche;
+      B/Esc dort führt zurück auf dieselbe Detailseite. · E2E: ja
+- [ ] **T127-4** Detailseite aus der Suche: X führt zurück in die Suche mit unverändertem Text; B/Esc führt
+      ins Listing des Launchers des Spiels, auf dessen Seite und mit dem Spiel fokussiert; die Suche ist zu. · E2E: ja
+- [ ] **T127-5** Wenige Launcher: Der Tab-Streifen steht mittig zwischen Logo und Status, nur so breit wie
+      nötig, LB/RB direkt daneben, keine Trennstriche an seinen Enden. · E2E: ja
+- [ ] **T127-6** Viele Launcher (mehr als in den Header passen): Der Streifen reicht mit je 40 px und einem
+      Trennstrich bis an Logo und Status; der gewählte Tab steht in der Mitte, soweit die Enden es erlauben;
+      wo weitere Tabs folgen, blendet der Streifen aus. Mausrad über den Tabs dreht ihn, ein angeschnittener
+      Tab ist anklickbar. Mit einer Statusmeldung (z. B. „Controller wird eingerichtet …“) wird er schmaler,
+      die Abstände bleiben gleich, ein Trennstrich steht zwischen Meldung und Such-Chip. · E2E: ja (bis auf
+      die SISR-Meldung)
+- [ ] **T127-7** Eingabeart: Nach einer Controller-Taste zeigen Footer, Header-Chips ([X 🔍], [≡ ⚙]),
+      LB/RB, LT/RT, „Ansicht“ (Y), „Spielen“ (A), B in der Detailseite und die Hinweise der Dialoge
+      Controllertasten (rund); nach einer Taste oder einem Klick die Tastatur (eckig) und, wo es passt, die
+      Maus. Bloßes Bewegen der Maus schaltet nicht um. Alle Glyphen haben die dunklere Unterkante. · E2E: ja
+- [ ] **T127-8** Tastatur: WASD und Pfeile bewegen, Leertaste wie A (gehalten: Details), Q/E Seite bzw.
+      Spiel, Umschalt+Q/E Launcher, 1 … 0 Launcher 1–10 (auch auf der Detailseite), R Optionen, V Ansicht,
+      F Suche, Enter Einstellungen (nochmals Enter schließt sie), Esc zurück. In der Suche tippen diese
+      Buchstaben, Enter startet den Treffer. Gehaltenes Enter öffnet die Einstellungen nur einmal. · E2E: ja
+- [ ] **T127-9** In den Einstellungen (Mausmodus) erscheinen LS und L3 als Symbol im Text, in „So
+      funktioniert's“ LS, RS und D-Pad als Symbol. · E2E: ja
+- [ ] **T127-10** Detailseite eines Spiels mit Unterlänge im Titel (g, j, p, q, y, z. B. „Burning Kingdom“):
+      der Titel ist ganz zu sehen, auch zweizeilig. · E2E: ja
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T127-1, T127-3 bis T127-8 | 2026-10-21 | Claude | Branch `feat/ui-polishing-127`, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool (W, 4, Leertaste gehalten, F, Esc); wenige und viele Launcher mit einem vorübergehenden, nicht eingecheckten Eingriff in die Demo-Launcher; Controller-Ansicht nur im Startzustand | ✅ Screenshots im Projektordner `screenshots/ui-polishing-127/`: Streifen mittig bzw. bis an die Trennstriche mit Ausblendung, gewählter Tab zentriert; Tastenhinweise rund/eckig; Detailseite mit neuen Abständen; F öffnet die Suche über der Detailseite, Esc führt zurück. Statusmeldung, Tooltip, T127-2, T127-9 und echter Controller nicht angesehen | Rest am PC des Owners |
+| T127-10 | 2026-10-21 | Claude | Branch `feat/ui-polishing-127`, Linux, Xvfb 1920×1080 `--demo`, „Burning Kingdom“ | ❌ vorher: das g abgeschnitten (Zeilenhöhe 70 bei 64 px Schrift), ✅ nachher ganz zu sehen | — |
+
 ## Grundgerüst (ohne Issue)
 
 Alles, was Arcadia schon kann, aber zu keinem Issue gehört (Grundgerüst aus `docs/roadmap.md`,
@@ -775,8 +815,8 @@ Steam Controller Support, Fehlerbehandlung). IDs `G-<n>`. Wo nichts anderes steh
 
 - [ ] **G-6** Steuerkreuz und linker Stick bewegen den Fokus im Raster; gedrückt halten wiederholt
       die Bewegung; der fokussierte Spieleintrag bleibt sichtbar. · E2E: ja
-- [ ] **G-7** LB/RB wechseln den Launcher-Tab; bei vielen Tabs scrollt die Leiste mit, die
-      Randpfeile erscheinen nur, wenn es dort weitergeht. · E2E: ja
+- [ ] **G-7** LB/RB wechseln den Launcher-Tab; bei vielen Tabs dreht sich die Leiste mit und blendet nur
+      dort aus, wo es weitergeht (#127). · E2E: ja
 - [ ] **G-8** LT/RT blättern die Seiten; die Seitenleiste zeigt die aktuelle Seite. · E2E: ja
 - [ ] **G-9** Der Controller funktioniert in jedem der vier XInput-Plätze und nach Aus- und
       Wiedereinstecken während Arcadia läuft. · E2E: nein (echte Hardware)
@@ -785,11 +825,12 @@ Steam Controller Support, Fehlerbehandlung). IDs `G-<n>`. Wo nichts anderes steh
 
 ### Tastatur und Maus
 
-- [ ] **G-10** Tasten: Pfeile, Enter/Leertaste, Esc/Rücktaste, Q/E und Strg+(Umschalt+)Tab für
-      Tabs, Bild ↑/↓ für Seiten, V für „Ansicht“, F2 für Einstellungen, F11 Vollbild. · E2E: ja
+- [ ] **G-10** Tasten (#127): WASD/Pfeile, Leertaste, Esc/Rücktaste, Umschalt+Q/E und Strg+(Umschalt+)Tab
+      für Tabs, Q/E und Bild ↑/↓ für Seiten, V für „Ansicht“, Enter/F2 für Einstellungen, R für Optionen,
+      F11 Vollbild. · E2E: ja
 - [ ] **G-11** Maus: Klick auf ein Spiel fokussiert, Doppelklick startet, die linke Taste 1 s gehalten öffnet
       die Details (mit Ring); LB/RB/LT/RT, Seitenzahlen,
-      Tab-Pfeile, „Ansicht“ und Einstellungen sind klickbar. · E2E: ja
+      Tabs, „Ansicht“, Suche und Einstellungen sind klickbar. · E2E: ja
 
 ### Bibliothek
 

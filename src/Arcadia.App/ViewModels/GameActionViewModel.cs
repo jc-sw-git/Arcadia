@@ -97,6 +97,12 @@ public sealed partial class GameActionViewModel : ViewModelBase
 
     public bool HasNote => !string.IsNullOrEmpty(Note);
 
+    /// <summary>
+    /// Why the action isn't available, for the detail page's tooltip. The focus skips such a button, so only the
+    /// mouse can ask (#127); an available button explains itself.
+    /// </summary>
+    public string? DisabledReason => IsEnabled ? null : Note;
+
     public bool IsEnabled { get; }
 
     public bool IsDanger => Kind == GameActionKind.Uninstall;
@@ -204,14 +210,14 @@ public sealed partial class GameActionViewModel : ViewModelBase
         var mode = GameMouseModes.Of(choice, defaultAllowed);
         Label = $"Mausmodus: {mode}";
         ButtonLabel = mode;
-        Note = $"A wechselt zu „{GameMouseModes.Of(GameMouseModes.Next(choice), defaultAllowed)}“";
+        Note = $"Wechselt zu „{GameMouseModes.Of(GameMouseModes.Next(choice), defaultAllowed)}“";
     }
 
     private void ShowControllerMode(string mode)
     {
         Label = $"Steam Controller: {mode}";
         ButtonLabel = mode;
-        Note = $"A wechselt zu „{(mode == ControllerModes.Steam ? ControllerModes.Sisr : ControllerModes.Steam)}“";
+        Note = $"Wechselt zu „{(mode == ControllerModes.Steam ? ControllerModes.Sisr : ControllerModes.Steam)}“";
     }
 }
 

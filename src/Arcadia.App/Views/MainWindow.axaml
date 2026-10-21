@@ -19,17 +19,28 @@
   <Viewbox Stretch="Uniform" ClipToBounds="False">
     <Grid Width="1920" Height="1080" RowDefinitions="104,72,*,72" Background="{StaticResource Bg}">
 
-      <!-- Header: logo, launcher tabs, status -->
-      <Grid Grid.Row="0" Margin="80,0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="24">
+      <!-- Header: logo, launcher tabs, status. The tab strip sits in the middle between logo and status, as wide as its
+           tabs need; at its widest it keeps 40 px to both sides, with a divider in the middle of each gap (owner, 2026-10-21). -->
+      <Grid Grid.Row="0" Margin="80,0" ColumnDefinitions="Auto,Auto,*,Auto,Auto">
         <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <Path Data="M4 30V16a13 13 0 0 1 26 0v14 M11 30v-8h12v8" Stroke="{StaticResource Accent}" StrokeThickness="3"
                 StrokeLineCap="Round" StrokeJoin="Round" Width="34" Height="34" />
           <TextBlock Text="ARCADIA" FontSize="24" FontWeight="ExtraBold" LetterSpacing="1.4" VerticalAlignment="Center" />
         </StackPanel>
 
-        <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" VerticalAlignment="Center" IsVisible="{Binding IsTabStripShown}">
-          <Button Classes="plain glyphButton" Content="LB" Command="{Binding PreviousTabCommand}" ToolTip.Tip="Vorheriger Launcher (Q)" />
-          <Panel Grid.Column="1">
+        <!-- Shown only while the strip is at its widest (MainWindow.axaml.cs, UpdateTabEdges); the gap stays either way. -->
+        <Border Name="TabDividerLeft" Grid.Column="1" Classes="divider tabDivider" Margin="20,0" />
+
+        <DockPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsTabStripShown}">
+          <Button DockPanel.Dock="Left" Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Margin="0,0,12,0"
+                  Command="{Binding PreviousTabCommand}" ToolTip.Tip="Vorheriger Launcher (Umschalt+Q)">
+            <ctl:KeyText Pad="LB" Keys="⇧ Q" />
+          </Button>
+          <Button DockPanel.Dock="Right" Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Margin="12,0,0,0"
+                  Command="{Binding NextTabCommand}" ToolTip.Tip="Nächster Launcher (Umschalt+E)">
+            <ctl:KeyText Pad="RB" Keys="⇧ E" />
+          </Button>
+          <Panel>
             <ScrollViewer Name="TabScroller" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
               <ItemsControl Name="TabList" ItemsSource="{Binding Tabs}">
                 <ItemsControl.ItemsPanel>
@@ -56,24 +67,15 @@
               </ItemsControl>
             </ScrollViewer>
 
-            <!-- Shown only when tabs continue beyond the visible area. -->
-            <Border Name="TabEdgeLeft" IsVisible="False" Width="96" HorizontalAlignment="Left" IsHitTestVisible="True" Background="{StaticResource TabEdgeLeft}">
-              <Button Name="TabScrollLeft" Classes="plain" Width="40" Height="40" CornerRadius="20" HorizontalAlignment="Left"
-                      Background="{StaticResource SurfaceRaised}" ToolTip.Tip="Weitere Launcher links">
-                <Path Data="M15 5l-7 7 7 7" Stroke="{StaticResource TextStrong}" StrokeThickness="2.5" StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="20" Stretch="None" />
-              </Button>
-            </Border>
-            <Border Name="TabEdgeRight" IsVisible="False" Width="96" HorizontalAlignment="Right" Background="{StaticResource TabEdgeRight}">
-              <Button Name="TabScrollRight" Classes="plain" Width="40" Height="40" CornerRadius="20" HorizontalAlignment="Right"
-                      Background="{StaticResource SurfaceRaised}" ToolTip.Tip="Weitere Launcher rechts">
-                <Path Data="M9 5l7 7-7 7" Stroke="{StaticResource TextStrong}" StrokeThickness="2.5" StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="20" Stretch="None" />
-              </Button>
-            </Border>
+            <!-- Fade out where more tabs follow; clicks pass through to a cut-off tab, the wheel turns the strip. -->
+            <Border Name="TabEdgeLeft" IsVisible="False" Width="96" HorizontalAlignment="Left" IsHitTestVisible="False" Background="{StaticResource TabEdgeLeft}" />
+            <Border Name="TabEdgeRight" IsVisible="False" Width="96" HorizontalAlignment="Right" IsHitTestVisible="False" Background="{StaticResource TabEdgeRight}" />
           </Panel>
-          <Button Grid.Column="2" Classes="plain glyphButton" Content="RB" Command="{Binding NextTabCommand}" ToolTip.Tip="Nächster Launcher (E)" />
-        </Grid>
+        </DockPanel>
 
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+        <Border Name="TabDividerRight" Grid.Column="3" Classes="divider tabDivider" Margin="20,0" />
+
+        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Status.IsControllerStarting}" VerticalAlignment="Center"
                       ToolTip.Tip="SISR startet und richtet den Steam Controller als Xbox-360-Controller ein">
             <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
@@ -99,15 +101,22 @@
                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-1,-1,0" />
             </Panel>
           </Button>
-          <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  Command="{Binding OpenSearchCommand}" ToolTip.Tip="Suchen (F)" IsVisible="{Binding IsLibraryShown}">
-            <Path Data="M4 11a7 7 0 1 0 14 0a7 7 0 1 0 -14 0 M20 20l-4-4" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
+          <Border Classes="divider" Margin="6,0" IsVisible="{Binding Status.HasAnyStatus}" />
+          <!-- Search and settings as chips: the key that opens them beside their symbol (owner, 2026-10-21). -->
+          <Button Classes="plain headerChip" Command="{Binding OpenSearchCommand}" ToolTip.Tip="Suchen (F)" IsVisible="{Binding !IsSearchShown}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <ctl:KeyHint Pad="X" Keys="F" />
+              <Path Data="M4 11a7 7 0 1 0 14 0a7 7 0 1 0 -14 0 M20 20l-4-4" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
+            </StackPanel>
           </Button>
-          <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Einstellungen (F2)">
-            <Path Data="M4 7h10 M18 7h2 M4 17h4 M12 17h8 M14 7a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M8 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"
-                  Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
+          <Button Classes="plain headerChip" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Einstellungen (Enter)">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <ctl:KeyHint Pad="≡" Keys="Enter" />
+              <Path Data="M4 7h10 M18 7h2 M4 17h4 M12 17h8 M14 7a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M8 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"
+                    Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
+            </StackPanel>
           </Button>
+          <Border Classes="divider" Margin="6,0" />
           <TextBlock Text="{Binding Status.Date}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
           <TextBlock Text="{Binding Status.Clock}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
         </StackPanel>
@@ -121,7 +130,7 @@
         </StackPanel>
         <Button Grid.Column="1" Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}" IsVisible="{Binding SelectedTab, Converter={x:Static ObjectConverters.IsNotNull}}">
           <StackPanel Orientation="Horizontal" Spacing="12">
-            <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
+            <ctl:KeyHint Pad="Y" Keys="V" />
             <TextBlock Text="{Binding ViewSummary}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -131,7 +140,7 @@
       <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto" IsVisible="{Binding IsDetailOpen}">
         <Button Classes="plain" HorizontalAlignment="Left" Command="{Binding CloseDetailCommand}" ToolTip.Tip="Zurück (Esc)">
           <StackPanel Orientation="Horizontal" Spacing="14">
-            <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+            <ctl:KeyHint Pad="B" Keys="Esc" />
             <TextBlock Classes="crumb" Text="Bibliothek" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
             <TextBlock Classes="crumb separator" Text="/" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
             <TextBlock Classes="crumb" Text="{Binding Detail?.TabName, TargetNullValue=''}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
@@ -144,7 +153,7 @@
           <TextBlock Text="{Binding Detail?.PositionText, TargetNullValue=''}" FontSize="17" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
           <Button Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}">
             <StackPanel Orientation="Horizontal" Spacing="12">
-              <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
+              <ctl:KeyHint Pad="Y" Keys="V" />
               <TextBlock Text="{Binding Detail?.SortLabel, TargetNullValue=''}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
@@ -179,14 +188,14 @@
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                     <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
                       <StackPanel Orientation="Horizontal" Spacing="12">
-                        <Border Classes="glyph round dark"><TextBlock Text="A" /></Border>
+                        <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" />
                         <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
                       </StackPanel>
                     </Button>
                     <Button Grid.Column="1" Classes="plain secondary" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenMenuCommand}"
-                            ToolTip.Tip="Weitere Aktionen (⧉ oder Rechtsklick auf ein Cover)">
+                            ToolTip.Tip="Weitere Aktionen (R oder Rechtsklick auf ein Cover)">
                       <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
+                        <ctl:KeyHint Pad="⧉" Keys="R" />
                         <TextBlock Text="Optionen" VerticalAlignment="Center" />
                       </StackPanel>
                     </Button>
@@ -324,7 +333,9 @@
 
           <Panel Grid.Row="1" Margin="0,0,80,0">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <Button Classes="plain glyphButton" Content="LT" Command="{Binding PreviousPageCommand}" ToolTip.Tip="Vorherige Seite (Bild ↑ oder Umschalt+←)" />
+              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Command="{Binding PreviousPageCommand}" ToolTip.Tip="Vorherige Seite (Q, Bild ↑ oder Umschalt+←)">
+                <ctl:KeyText Pad="LT" Keys="Q" />
+              </Button>
               <ItemsControl ItemsSource="{Binding PageButtons}" Margin="10,0">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -342,7 +353,9 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Button Classes="plain glyphButton" Content="RT" Command="{Binding NextPageCommand}" ToolTip.Tip="Nächste Seite (Bild ↓ oder Umschalt+→)" />
+              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Command="{Binding NextPageCommand}" ToolTip.Tip="Nächste Seite (E, Bild ↓ oder Umschalt+→)">
+                <ctl:KeyText Pad="RT" Keys="E" />
+              </Button>
             </StackPanel>
             <TextBlock Text="{Binding RangeText}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="16" Foreground="{StaticResource TextMuted}" />
           </Panel>
@@ -362,69 +375,23 @@
       <!-- The line bleeds into the bars beside the layout (Theme.axaml, bleed): 1920 + 80 padding. -->
       <Border Grid.Row="3" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Margin="-1920,0" Padding="2000,0">
         <Panel>
+        <!-- The hints name the input in use: the controller's buttons, or the keyboard's keys and the mouse (#127). Search
+             and settings aren't listed: their chips in the header name their keys (owner, 2026-10-21). -->
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsDetailOpen}">
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
-            <TextBlock Classes="hint" Text="Aktion wählen" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-            <TextBlock Classes="hint" Text="Auswählen" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}">
-            <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
-            <TextBlock Classes="hint" Text="Ansicht" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}">
-            <Border Classes="glyph"><TextBlock Text="LB" /></Border>
-            <Border Classes="glyph"><TextBlock Text="RB" /></Border>
-            <TextBlock Classes="hint" Text="Launcher" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph"><TextBlock Text="LT" /></Border>
-            <Border Classes="glyph"><TextBlock Text="RT" /></Border>
-            <TextBlock Classes="hint" Text="Spiel" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph round"><TextBlock Text="B" /></Border>
-            <TextBlock Classes="hint" Text="Zurück" />
-          </StackPanel>
+          <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="Aktion wählen" />
+          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="Auswählen" />
+          <ctl:KeyHint Pad="Y" Keys="V" Text="Ansicht" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Mausrad" Text="Spiel" />
+          <ctl:KeyHint Pad="B" Keys="Esc" Text="Zurück" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsLibraryShown}">
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-            <TextBlock Classes="hint" Text="{Binding FocusedGame?.PrimaryActionText, TargetNullValue='Spielen'}" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-            <TextBlock Classes="hint" Text="halten: Details" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
-            <TextBlock Classes="hint" Text="Optionen" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph round"><TextBlock Text="X" /></Border>
-            <TextBlock Classes="hint" Text="Suchen" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph round"><TextBlock Text="Y" /></Border>
-            <TextBlock Classes="hint" Text="Ansicht" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph"><TextBlock Text="LB" /></Border>
-            <Border Classes="glyph"><TextBlock Text="RB" /></Border>
-            <TextBlock Classes="hint" Text="Launcher" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph"><TextBlock Text="LT" /></Border>
-            <Border Classes="glyph"><TextBlock Text="RT" /></Border>
-            <TextBlock Classes="hint" Text="Seite" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Classes="glyph"><TextBlock Text="≡" /></Border>
-            <TextBlock Classes="hint" Text="Einstellungen" />
-          </StackPanel>
+          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Doppelklick" Text="{Binding FocusedGame?.PrimaryActionText, TargetNullValue='Spielen'}" />
+          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="halten: Details" />
+          <ctl:KeyHint Pad="⧉" Keys="R" Alt="Rechtsklick" Text="Optionen" />
+          <ctl:KeyHint Pad="Y" Keys="V" Text="Ansicht" />
+          <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" />
+          <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Text="Seite" />
         </StackPanel>
         </Panel>
       </Border>
@@ -488,7 +455,8 @@
             </StackPanel>
             <Button Grid.Column="1" Classes="plain" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CloseSearchCommand}" ToolTip.Tip="Suche schließen (Esc)">
               <StackPanel Orientation="Horizontal" Spacing="10">
-                <Border Classes="glyph round" IsVisible="{Binding ShowsCloseGlyph}"><TextBlock Text="B" /></Border>
+                <!-- B closes the search only with the keyboard in; with it out, B puts the keyboard away first. -->
+                <ctl:KeyHint Pad="B" Keys="Esc" IsVisible="{Binding !IsKeyboardOut}" />
                 <TextBlock Text="Schließen" FontSize="16" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
@@ -626,7 +594,7 @@
                 </StackPanel>
               </StackPanel>
               <!-- Mouse and keyboard. A real key puts the on-screen keyboard away, so beside it only the mouse is said. -->
-              <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding !UsesController}">
+              <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding !UsesController}" Classes="keys">
                 <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding IsKeyboardOut}">
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Border Classes="glyph"><TextBlock Text="Klick" /></Border>
@@ -959,18 +927,9 @@
 
             <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,24,0,0">
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
-                  <TextBlock Classes="hint" Text="Wechseln" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-                  <TextBlock Classes="hint" Text="Auswählen" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="glyph round"><TextBlock Text="B" /></Border>
-                  <TextBlock Classes="hint" Text="Schließen" />
-                </StackPanel>
+                <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="Wechseln" />
+                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Auswählen" />
+                <ctl:KeyHint Pad="B" Keys="Esc" Text="Schließen" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -1007,14 +966,8 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
             <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Right" Margin="8,10,8,2">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-                <TextBlock Classes="hint" Text="Auswählen" />
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <Border Classes="glyph round"><TextBlock Text="B" /></Border>
-                <TextBlock Classes="hint" Text="Schließen" />
-              </StackPanel>
+              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Auswählen" />
+              <ctl:KeyHint Pad="B" Keys="Esc" Text="Schließen" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -1039,18 +992,9 @@
             </StackPanel>
             <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
-                  <TextBlock Classes="hint" Text="Wechseln" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-                  <TextBlock Classes="hint" Text="Auswählen" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="glyph round"><TextBlock Text="B" /></Border>
-                  <TextBlock Classes="hint" Text="Abbrechen" />
-                </StackPanel>
+                <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="Wechseln" />
+                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Auswählen" />
+                <ctl:KeyHint Pad="B" Keys="Esc" Text="Abbrechen" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -1068,18 +1012,9 @@
           <DockPanel>
           <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,24,0,0" Margin="0,24,0,0">
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
-                <TextBlock Classes="hint" Text="Wechseln" />
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-                <TextBlock Classes="hint" Text="Auswählen" />
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <Border Classes="glyph round"><TextBlock Text="B" /></Border>
-                <TextBlock Classes="hint" Text="Schließen" />
-              </StackPanel>
+              <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="Wechseln" />
+              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Auswählen" />
+              <ctl:KeyHint Pad="B" Keys="Esc" Text="Schließen" />
             </StackPanel>
           </Border>
           <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
@@ -1228,7 +1163,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Zeigergeschwindigkeit" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Wie schnell der linke Stick den Mauszeiger bewegt. L3 macht ihn langsamer." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="Wie schnell [LS] den Mauszeiger bewegt. [L3] macht ihn langsamer." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button Classes="plain stepperArrow" Command="{Binding SpeedItem.DecreaseCommand}" IsEnabled="{Binding SpeedItem.CanDecrease}" Content="‹" />
@@ -1506,14 +1441,8 @@
 
               <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-                    <TextBlock Classes="hint" Text="Auswählen" />
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="B" /></Border>
-                    <TextBlock Classes="hint" Text="{Binding PromptBackText}" />
-                  </StackPanel>
+                  <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Auswählen" />
+                  <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding PromptBackText}" />
                 </StackPanel>
               </Border>
             </StackPanel>
@@ -1564,10 +1493,7 @@
                 </ItemsControl>
               </StackPanel>
               <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
-                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                  <Border Classes="glyph round"><TextBlock Text="B" /></Border>
-                  <TextBlock Classes="hint" Text="Schließen" />
-                </StackPanel>
+                <ctl:KeyHint Pad="B" Keys="Esc" Text="Schließen" HorizontalAlignment="Right" />
               </Border>
             </StackPanel>
             <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"

@@ -30,4 +30,30 @@ public sealed class ButtonTextTests
         Assert.Equal([new("Mauszeiger", false)], ButtonText.Split("Mauszeiger", namesToo: false));
         Assert.Empty(ButtonText.Split(string.Empty, namesToo: true));
     }
+
+    [Fact]
+    public void In_prose_a_name_in_brackets_is_a_button_without_its_brackets()
+    {
+        var parts = ButtonText.Split("[LS] bewegt den Zeiger, [L3] macht ihn langsamer, A bleibt ein Wort", namesToo: false);
+
+        Assert.Equal(
+            [new("LS", true), new(" bewegt den Zeiger, ", false), new("L3", true), new(" macht ihn langsamer, A bleibt ein Wort", false)],
+            parts);
+        Assert.Equal([new("[Q] ist keine Taste", false)], ButtonText.Split("[Q] ist keine Taste", namesToo: false));
+    }
+
+    [Fact]
+    public void In_a_list_of_buttons_the_sticks_and_the_d_pad_are_buttons()
+    {
+        Assert.Equal([new("LS", true)], ButtonText.Split("LS", namesToo: true));
+        Assert.Equal([new("D-Pad", true)], ButtonText.Split("D-Pad", namesToo: true));
+        Assert.Equal([new("RS", true), new(" halten", false)], ButtonText.Split("RS halten", namesToo: true));
+    }
+
+    [Theory]
+    [InlineData("A", true)]
+    [InlineData("Y", true)]
+    [InlineData("LB", false)]
+    [InlineData("≡", false)]
+    public void Only_the_face_buttons_are_round(string button, bool round) => Assert.Equal(round, ButtonText.IsRound(button));
 }

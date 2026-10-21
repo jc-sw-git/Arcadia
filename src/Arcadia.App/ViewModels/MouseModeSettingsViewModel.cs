@@ -116,12 +116,12 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
     /// <summary>The mouse mode's buttons, as <see cref="Arcadia.Input.MouseMode"/> maps them.</summary>
     public static IReadOnlyList<MouseModeHelpRow> HelpRows { get; } =
     [
-        new("Linker Stick", "Mauszeiger"),
+        new("LS", "Mauszeiger"),
         new("L3", "Antippen: langsamer Zeiger an/aus · Halten: langsam, solange gehalten"),
         new("RT oder A", "Linke Maustaste (gedrückt halten = ziehen)"),
         new("LT oder X", "Rechte Maustaste"),
-        new("Rechter Stick", "Mausrad, auch seitwärts"),
-        new("Steuerkreuz", "Pfeiltasten"),
+        new("RS", "Mausrad, auch seitwärts"),
+        new("D-Pad", "Pfeiltasten"),
         new("B", "Esc"),
         new("LB / RB", "Umschalt+Tab / Tab"),
         new("≡", "Enter"),

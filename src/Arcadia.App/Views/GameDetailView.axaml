@@ -85,7 +85,7 @@
                               </StackPanel>
                             </Border>
                           </StackPanel>
-                          <TextBlock Text="{Binding Tile.Title}" FontSize="64" FontWeight="ExtraBold" LineHeight="70" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                          <TextBlock Text="{Binding Tile.Title}" FontSize="64" FontWeight="ExtraBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                      Foreground="{StaticResource TextStrong}" />
                         </StackPanel>
                       </Grid>

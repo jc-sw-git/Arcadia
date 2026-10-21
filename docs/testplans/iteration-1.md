@@ -761,12 +761,15 @@ Verlauf:
       Buchstaben, Enter startet den Treffer. Gehaltenes Enter öffnet die Einstellungen nur einmal. · E2E: ja
 - [ ] **T127-9** In den Einstellungen (Mausmodus) erscheinen LS und L3 als Symbol im Text, in „So
       funktioniert's“ LS, RS und D-Pad als Symbol. · E2E: ja
+- [ ] **T127-10** Detailseite eines Spiels mit Unterlänge im Titel (g, j, p, q, y, z. B. „Burning Kingdom“):
+      der Titel ist ganz zu sehen, auch zweizeilig. · E2E: ja
 
 Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | T127-1, T127-3 bis T127-8 | 2026-10-21 | Claude | Branch `feat/ui-polishing-127`, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool (W, 4, Leertaste gehalten, F, Esc); wenige und viele Launcher mit einem vorübergehenden, nicht eingecheckten Eingriff in die Demo-Launcher; Controller-Ansicht nur im Startzustand | ✅ Screenshots im Projektordner `screenshots/ui-polishing-127/`: Streifen mittig bzw. bis an die Trennstriche mit Ausblendung, gewählter Tab zentriert; Tastenhinweise rund/eckig; Detailseite mit neuen Abständen; F öffnet die Suche über der Detailseite, Esc führt zurück. Statusmeldung, Tooltip, T127-2, T127-9 und echter Controller nicht angesehen | Rest am PC des Owners |
+| T127-10 | 2026-10-21 | Claude | Branch `feat/ui-polishing-127`, Linux, Xvfb 1920×1080 `--demo`, „Burning Kingdom“ | ❌ vorher: das g abgeschnitten (Zeilenhöhe 70 bei 64 px Schrift), ✅ nachher ganz zu sehen | — |
 
 ## Grundgerüst (ohne Issue)
 

@@ -71,6 +71,9 @@ public sealed class HealthIssueViewModel(HealthIssue issue, Action<HealthFix> fi
 
     public string Detail => issue.Detail;
 
+    /// <summary>Intended behaviour, shown with a blue i; neither this nor <see cref="IsError"/> is a warning.</summary>
+    public bool IsInfo => issue.Severity == HealthSeverity.Info;
+
     public bool IsError => issue.Severity == HealthSeverity.Error;
 
     public bool HasFix => issue.Fix != HealthFix.None;
@@ -680,6 +683,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         HasIssues = Issues.Count > 0;
 
+        // Information (e.g. SISR paused for a game) is intended behaviour, not a problem.
+        var hasProblems = _support.Issues.Any(i => i.Severity > HealthSeverity.Info);
+
         // Once on, the switch stays even if something breaks later; the problem shows below it.
         var setup = _support.Setup;
         NeedsMarker = _support.Issues.Any(i => i.Fix == HealthFix.CreateMarker);
@@ -698,8 +704,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         var state = _support.State;
         IsInTransition = IsEnabled && state is SisrState.Starting or SisrState.Stopping;
-        IsHealthy = IsEnabled && !HasIssues && BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
-        StatusText = (IsEnabled, state == SisrState.Paused, HasIssues) switch
+        IsHealthy = IsEnabled && !hasProblems && BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
+        StatusText = (IsEnabled, state == SisrState.Paused, hasProblems) switch
         {
             (false, _, _) when ShowInstall => "Nicht eingerichtet – „SISR installieren“ richtet alles Nötige ein und schaltet die Option ein.",
             (false, _, _) => "Aus – außerhalb von Steam läuft der Steam Controller im Desktop-Modus (Maus und Tastatur).",

@@ -15,7 +15,7 @@ public sealed class SteamScannerTests : IDisposable
         }
     }
 
-    private static string Manifest(string appId, string name, string installDir = "Game", int stateFlags = 4, string buildId = "22479045", string lastPlayed = "1775679163", string lastOwner = "76561197967531932") => $$"""
+    private static string Manifest(string appId, string name, string installDir = "Game", int stateFlags = 4, string buildId = "22479045", string lastPlayed = "1775679163", string lastOwner = "76561197960278073") => $$"""
         "AppState"
         {
         	"appid"		"{{appId}}"
@@ -88,7 +88,7 @@ public sealed class SteamScannerTests : IDisposable
     [Fact]
     public void Keeps_an_app_whose_manifest_names_no_owner()
     {
-        var manifest = Manifest("220", "Half-Life 2").Replace("\"LastOwner\"\t\t\"76561197967531932\"", "", StringComparison.Ordinal);
+        var manifest = Manifest("220", "Half-Life 2").Replace("\"LastOwner\"\t\t\"76561197960278073\"", "", StringComparison.Ordinal);
 
         Assert.DoesNotContain("LastOwner", manifest, StringComparison.Ordinal);
         Assert.NotNull(SteamScanner.ParseManifest(manifest, _root));
@@ -235,13 +235,13 @@ public sealed class SteamScannerTests : IDisposable
         Write(Path.Combine(second, "steamapps", "appmanifest_960090.acf"), Manifest("960090", "Bloons TD 6", "BloonsTD6", stateFlags: 6));
         Write(Path.Combine(second, "steamapps", "appmanifest_broken.acf"), "\"AppState\" {");
         Directory.CreateDirectory(Path.Combine(second, "steamapps", "common", "BloonsTD6"));
-        Write(Path.Combine(steam, "userdata", "7266204", "config", "localconfig.vdf"), """
+        Write(Path.Combine(steam, "userdata", "12345", "config", "localconfig.vdf"), """
             "UserLocalConfigStore" { "Software" { "Valve" { "Steam" { "apps" {
             	"960090" { "LastPlayed" "1775672229" "Playtime" "3466" }
             } } } } }
             """);
 
-        var scanner = new SteamScanner(() => new SteamInstallation(steam, 7266204));
+        var scanner = new SteamScanner(() => new SteamInstallation(steam, 12345));
         var games = (await scanner.ScanAsync()).OrderBy(g => g.Title).ToList();
 
         Assert.Equal(["Bloons TD 6", "Papers, Please"], games.Select(g => g.Title));

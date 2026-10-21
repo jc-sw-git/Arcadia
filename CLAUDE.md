@@ -196,6 +196,12 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   foreground window's process and no other program's window covering Arcadia whole (`MouseModeHost.IsArcadiaActive`),
   not Avalonia's activation, which got out of step beside games. A game in front is a process from a library game's
   folder, or one whose path can't be read (anti-cheat) that started after Arcadia last started a game (owner, 2026-10-20).
+- Status messages (`HealthIssue`, header and the settings box they belong to) have three levels, each with its own
+  symbol: **Info** (round blue i) for intended behaviour in a situation, e.g. SISR paused because other controllers
+  use Steam Input; **Warning** (yellow triangle with !) when a function is impaired and the user must act, e.g.
+  Steam not running, usbip driver missing, SISR switched on but no longer installed; **Error** (red X) for lasting
+  failures, e.g. SISR keeps crashing. The header shows the worst level; info alone doesn't make a status unhealthy
+  (owner, 2026-10-21).
 - Launcher actions (open in the launcher, uninstall) are `LaunchTarget`s on `Game`;
   a null one is shown disabled with the reason, or for uninstall opens the launcher instead.
 - If an update is available, A still says "Spielen" and starts the game; the launcher installs the update

@@ -6,6 +6,7 @@ using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
+using Arcadia.Core.Search;
 using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Arcadia.Launchers;

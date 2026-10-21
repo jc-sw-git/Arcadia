@@ -1124,14 +1124,25 @@
     <Setter Property="Foreground" Value="{StaticResource Text}" />
     <Setter Property="FontSize" Value="22" />
     <Setter Property="FontWeight" Value="SemiBold" />
+    <!-- Filled, so the shift and AltGr characters of a character key sit at its edges. -->
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
   </Style>
   <Style Selector="Button.key.wide">
     <Setter Property="FontSize" Value="17" />
   </Style>
+  <Style Selector="Button.key TextBlock.keyHint">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <!-- AltGr for a layout without that level (US). -->
+  <Style Selector="Button.key.unavailable">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
   <Style Selector="Button.key:pointerover, Button.key.focused">
     <Setter Property="Background" Value="{StaticResource Line}" />
   </Style>
-  <!-- Shift on, or the symbols page shown. -->
+  <!-- Shift or AltGr on. -->
   <Style Selector="Button.key.on">
     <Setter Property="Background" Value="{StaticResource Accent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />

@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 using Arcadia.App.Input;
-using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
+using Arcadia.Core.Search;
 using Arcadia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -17,7 +17,7 @@ public enum SpecialKey
     /// <summary>L3: the launcher filter and sort order.</summary>
     Filter,
 
-    /// <summary>LB: upper case, tapped or held.</summary>
+    /// <summary>LB: the shift level, tapped or held.</summary>
     Shift,
 
     /// <summary>Y.</summary>
@@ -26,35 +26,43 @@ public enum SpecialKey
     /// <summary>X: deletes the last character, held: one after another.</summary>
     Erase,
 
-    /// <summary>RB: between the letters and the symbols, tapped or held.</summary>
-    Symbols,
+    /// <summary>RB: the AltGr level, tapped or held; greyed out for a layout without one.</summary>
+    AltGr,
 }
 
 /// <summary>One key of the on-screen keyboard.</summary>
 public sealed partial class KeyViewModel : ViewModelBase
 {
-    public KeyViewModel(string label, double width, double centre, Action<KeyViewModel> press, char? character = null, SpecialKey? special = null, string? glyph = null)
+    public KeyViewModel(string label, double width, double centre, Action<KeyViewModel> press, KeyCap? cap = null, SpecialKey? special = null, string? glyph = null)
     {
         Label = label;
         Width = width;
         Centre = centre;
-        Character = character;
+        Cap = cap;
         Special = special;
         Glyph = glyph;
         PressCommand = new RelayCommand(() => press(this));
     }
 
-    /// <summary>The character in upper case while shift is on, the name of a special key.</summary>
+    /// <summary>What a press types on the shown level, the name of a special key; empty for a key that types nothing.</summary>
     [ObservableProperty]
     public partial string Label { get; set; }
+
+    /// <summary>Drawn small above <see cref="Label"/> on the normal level: the shift character, as printed on the key.</summary>
+    [ObservableProperty]
+    public partial string? ShiftHint { get; set; }
+
+    /// <summary>Drawn small at the bottom right on the normal level: the AltGr character.</summary>
+    [ObservableProperty]
+    public partial string? AltGrHint { get; set; }
 
     public double Width { get; }
 
     /// <summary>Horizontal centre relative to the keyboard's middle; up and down go to the nearest key.</summary>
     public double Centre { get; }
 
-    /// <summary>The character in lower case; <see cref="Label"/> shows what a press types.</summary>
-    public char? Character { get; }
+    /// <summary>What a character key types on each level; null for a special key.</summary>
+    public KeyCap? Cap { get; }
 
     public SpecialKey? Special { get; }
 
@@ -72,9 +80,13 @@ public sealed partial class KeyViewModel : ViewModelBase
 
     public bool IsWide => Special is not null;
 
-    /// <summary>A switch that is on: shift, or the symbols page.</summary>
+    /// <summary>A switch that is on: shift or AltGr.</summary>
     [ObservableProperty]
     public partial bool IsOn { get; set; }
+
+    /// <summary>Greyed out: AltGr for a layout without that level.</summary>
+    [ObservableProperty]
+    public partial bool IsUnavailable { get; set; }
 
     [ObservableProperty]
     public partial bool IsFocused { get; set; }
@@ -102,17 +114,19 @@ public sealed partial class LayoutItemViewModel(KeyboardLayout layout, Action<Ke
 }
 
 /// <summary>
-/// The on-screen keyboard of the search: four rows of characters from the chosen layout (or the
-/// symbols page) and a row of special keys. The D-pad moves the focus; up and down go to the key
-/// nearest in position. Shift (LB) and the symbols page (RB) are on while held, or switched on and
-/// off by a tap.
+/// The on-screen keyboard of the search: the character rows of the chosen real layout and a row of
+/// special keys. The keys show what they type on the shown level: on the normal one also the shift
+/// and AltGr characters small, as printed on a real key; with shift (LB) or AltGr (RB) only that
+/// level's characters. Both are on while held, or switched on and off by a tap, and only one at a
+/// time. The D-pad moves the focus over the keys that type something (<see cref="KeyGrid"/>).
 /// </summary>
 public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
 {
-    private const double KeyWidth = 96;
+    /// <summary>13 keys, the longest row, fit the width the keyboard had before (owner, 2026-10-21).</summary>
+    private const double KeyWidth = 80;
     private const double KeyGap = 8;
 
-    /// <summary>Held at least this long without typing, shift or the symbols go off on release instead of staying on.</summary>
+    /// <summary>Held at least this long without typing, shift or AltGr go off on release instead of staying on.</summary>
     private static readonly TimeSpan HoldTime = TimeSpan.FromMilliseconds(500);
 
     // About as wide as the character rows: R3, L3, LB, Y, X, RB.
@@ -123,13 +137,13 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
         (SpecialKey.Shift, 160, "LB", "⇧ Groß"),
         (SpecialKey.Space, 240, "Y", "Leertaste"),
         (SpecialKey.Erase, 180, "X", "Löschen"),
-        (SpecialKey.Symbols, 160, "RB", string.Empty),
+        (SpecialKey.AltGr, 160, "RB", "AltGr"),
     ];
 
     private readonly Action<KeyViewModel> _press;
     private readonly Action<KeyboardLayout> _layoutChosen;
     private readonly LatchGesture _shift;
-    private readonly LatchGesture _symbols;
+    private readonly LatchGesture _altGr;
     private int _row = 1;
     private int _column;
     private int _menuIndex;
@@ -139,9 +153,9 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
         _press = press;
         _layoutChosen = layoutChosen;
         _shift = new LatchGesture(HoldTime, time);
-        _shift.Changed += _ => ShowCase();
-        _symbols = new LatchGesture(HoldTime, time);
-        _symbols.Changed += _ => ShowPage();
+        _shift.Changed += _ => ShowLevel();
+        _altGr = new LatchGesture(HoldTime, time);
+        _altGr.Changed += _ => ShowLevel();
         LayoutItems = KeyboardLayout.All.Select(l => new LayoutItemViewModel(l, Choose)).ToList();
         Layout = layout;
         BuildRows();
@@ -151,10 +165,8 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
     [ObservableProperty]
     public partial KeyboardLayout Layout { get; private set; }
 
-    /// <summary>RB switched to the symbols page.</summary>
-    public bool IsSymbols => _symbols.IsOn;
-
-    public bool IsShifted => _shift.IsOn;
+    /// <summary>The level the keys show and type; AltGr wins should both be on for a moment.</summary>
+    public KeyLevel Level => _altGr.IsOn ? KeyLevel.AltGr : _shift.IsOn ? KeyLevel.Shift : KeyLevel.Normal;
 
     public ObservableCollection<KeyRowViewModel> Rows { get; } = [];
 
@@ -165,41 +177,40 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
 
     public KeyViewModel FocusedKey => Rows[_row].Keys[_column];
 
-    /// <summary>Moves the focus; it stays at the keyboard's edges.</summary>
+    /// <summary>Moves the focus over the keys that type something; it stays at the keyboard's edges.</summary>
     public void Move(UiAction direction)
     {
         switch (direction)
         {
-            case UiAction.Left:
-                SetFocus(_row, Math.Max(0, _column - 1));
+            case UiAction.Left or UiAction.Right:
+                SetFocus(_row, KeyGrid.Sideways(Spots(Rows[_row]), _column, direction == UiAction.Left ? -1 : 1));
                 break;
-            case UiAction.Right:
-                SetFocus(_row, Math.Min(Rows[_row].Keys.Count - 1, _column + 1));
-                break;
-            case UiAction.Up when _row > 0:
-                SetFocus(_row - 1, Nearest(Rows[_row - 1], FocusedKey.Centre));
-                break;
-            case UiAction.Down when _row < Rows.Count - 1:
-                SetFocus(_row + 1, Nearest(Rows[_row + 1], FocusedKey.Centre));
+            case UiAction.Up or UiAction.Down:
+                var (row, column) = KeyGrid.Vertical(Rows.Select(Spots).ToList(), _row, _column, direction == UiAction.Up ? -1 : 1);
+                SetFocus(row, column);
                 break;
         }
     }
 
-    /// <summary>What a press of <paramref name="key"/> types: its character, in upper case while shift is on.</summary>
+    /// <summary>What a press of <paramref name="key"/> types: its character on the shown level, nothing for an empty key.</summary>
     public string Typed(KeyViewModel key)
     {
-        if (key.Character is not { } character)
+        if (key.Cap?.On(Level) is not { } character)
         {
             return string.Empty;
         }
 
         _shift.Use();
-        _symbols.Use();
-        return (IsShifted ? char.ToUpper(character, Formatting.Culture) : character).ToString();
+        _altGr.Use();
+        return character.ToString();
     }
 
-    /// <summary>LB down: shift is on at once, so a letter typed while holding it is upper case.</summary>
-    public void PressShift() => _shift.Press();
+    /// <summary>LB down: shift is on at once, so a key pressed while holding it types its shift character.</summary>
+    public void PressShift()
+    {
+        _altGr.Reset();
+        _shift.Press();
+    }
 
     /// <summary>LB up: off after a hold, switched after a tap.</summary>
     public void ReleaseShift() => _shift.Release();
@@ -208,19 +219,37 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
     public void CancelShift() => _shift.Cancel();
 
     /// <summary>The shift key pressed with A or clicked.</summary>
-    public void ToggleShift() => _shift.Toggle();
+    public void ToggleShift()
+    {
+        _altGr.Reset();
+        _shift.Toggle();
+    }
 
-    /// <summary>RB down: the symbols show at once, so one typed while holding it is a symbol.</summary>
-    public void PressSymbols() => _symbols.Press();
+    /// <summary>RB down: AltGr is on at once, so a key pressed while holding it types its AltGr character.</summary>
+    public void PressAltGr()
+    {
+        if (Layout.HasAltGr)
+        {
+            _shift.Reset();
+            _altGr.Press();
+        }
+    }
 
-    /// <summary>RB up: back to the letters after a hold, switched after a tap.</summary>
-    public void ReleaseSymbols() => _symbols.Release();
+    /// <summary>RB up: off after a hold, switched after a tap.</summary>
+    public void ReleaseAltGr() => _altGr.Release();
 
     /// <summary>RB's release may never arrive, e.g. when the window loses focus.</summary>
-    public void CancelSymbols() => _symbols.Cancel();
+    public void CancelAltGr() => _altGr.Cancel();
 
-    /// <summary>The symbols key pressed with A or clicked.</summary>
-    public void ToggleSymbols() => _symbols.Toggle();
+    /// <summary>The AltGr key pressed with A or clicked.</summary>
+    public void ToggleAltGr()
+    {
+        if (Layout.HasAltGr)
+        {
+            _shift.Reset();
+            _altGr.Toggle();
+        }
+    }
 
     public void ToggleLayoutMenu()
     {
@@ -263,27 +292,20 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
     private void Choose(KeyboardLayout layout)
     {
         CloseLayoutMenu();
-        if (layout == Layout && !IsSymbols)
+        if (layout == Layout)
         {
             return;
         }
 
-        // Picking a layout on the symbols page goes back to the letters, so the choice shows.
-        var changed = layout != Layout;
         Layout = layout;
-        if (IsSymbols)
+        if (!layout.HasAltGr)
         {
-            _symbols.Reset();
-        }
-        else
-        {
-            ShowPage();
+            _altGr.Reset();
         }
 
-        if (changed)
-        {
-            _layoutChosen(layout);
-        }
+        BuildRows();
+        SetFocus(_row, _column);
+        _layoutChosen(layout);
     }
 
     private void UpdateMenuFocus()
@@ -303,23 +325,16 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
         }
     }
 
-    private void ShowPage()
-    {
-        OnPropertyChanged(nameof(IsSymbols));
-        BuildRows();
-        SetFocus(_row, _column);
-    }
-
     private void BuildRows()
     {
         Rows.Clear();
-        foreach (var characters in (IsSymbols ? KeyboardLayout.Symbols : Layout).Rows)
+        foreach (var caps in Layout.Rows)
         {
-            var left = -RowWidth(characters.Select(_ => KeyWidth)) / 2;
+            var left = -RowWidth(caps.Select(_ => KeyWidth)) / 2;
             var keys = new List<KeyViewModel>();
-            foreach (var character in characters)
+            foreach (var cap in caps)
             {
-                keys.Add(new KeyViewModel(character.ToString(), KeyWidth, left + (KeyWidth / 2), _press, character: character));
+                keys.Add(new KeyViewModel(string.Empty, KeyWidth, left + (KeyWidth / 2), _press, cap: cap));
                 left += KeyWidth + KeyGap;
             }
 
@@ -336,52 +351,46 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
 
         Rows.Add(new KeyRowViewModel(special));
         _column = Math.Min(_column, Rows[_row].Keys.Count - 1);
-        ShowCase();
+        ShowLevel();
     }
 
-    /// <summary>The labels follow shift and the page: upper-case letters, "ABC" back from the symbols.</summary>
-    private void ShowCase()
+    /// <summary>
+    /// The labels follow the level like on Steam's keyboard: on the normal level the character with the
+    /// shift and AltGr ones small beside it, on the others only that level's character, or nothing.
+    /// </summary>
+    private void ShowLevel()
     {
-        OnPropertyChanged(nameof(IsShifted));
+        OnPropertyChanged(nameof(Level));
+        var level = Level;
         foreach (var key in Rows.SelectMany(r => r.Keys))
         {
             switch (key.Special)
             {
                 case null:
-                    key.Label = (IsShifted && !IsSymbols ? char.ToUpper(key.Character!.Value, Formatting.Culture) : key.Character!.Value).ToString();
+                    key.Label = key.Cap!.On(level)?.ToString() ?? string.Empty;
+                    key.ShiftHint = level == KeyLevel.Normal ? key.Cap.ShiftHint?.ToString() : null;
+                    key.AltGrHint = level == KeyLevel.Normal ? key.Cap.AltGr?.ToString() : null;
                     break;
                 case SpecialKey.Layout:
                     key.Label = Layout.Code;
                     break;
                 case SpecialKey.Shift:
-                    key.IsOn = IsShifted;
+                    key.IsOn = level == KeyLevel.Shift;
                     break;
-                case SpecialKey.Symbols:
-                    key.Label = IsSymbols ? "ABC" : KeyboardLayout.Symbols.Code;
-                    key.IsOn = IsSymbols;
+                case SpecialKey.AltGr:
+                    key.IsOn = level == KeyLevel.AltGr;
+                    key.IsUnavailable = !Layout.HasAltGr;
                     break;
             }
         }
     }
+
+    private static List<KeySpot> Spots(KeyRowViewModel row) => row.Keys.Select(k => new KeySpot(k.Centre, k.Cap is not null && k.Label.Length == 0)).ToList();
 
     private static double RowWidth(IEnumerable<double> widths)
     {
         var list = widths.ToList();
         return list.Sum() + (KeyGap * (list.Count - 1));
-    }
-
-    private static int Nearest(KeyRowViewModel row, double centre)
-    {
-        var best = 0;
-        for (var i = 1; i < row.Keys.Count; i++)
-        {
-            if (Math.Abs(row.Keys[i].Centre - centre) < Math.Abs(row.Keys[best].Centre - centre))
-            {
-                best = i;
-            }
-        }
-
-        return best;
     }
 
     private void SetFocus(int row, int column)

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Arcadia.Launchers;
 
 namespace Arcadia.Core.Tests;
@@ -5,14 +6,17 @@ namespace Arcadia.Core.Tests;
 public sealed class ProcessWatchTests
 {
     [Fact]
-    public void The_folder_a_running_program_was_started_from_is_found()
+    public void The_folder_a_running_program_was_started_from_is_found_unless_it_is_a_service()
     {
+        // Windows services run in session 0 and never count; a test run as a service (some CI agents) checks just that.
         var ownFolder = Path.GetDirectoryName(Environment.ProcessPath)!;
+        using var self = Process.GetCurrentProcess();
+        var isService = OperatingSystem.IsWindows() && self.SessionId == 0;
         var elsewhere = Directory.CreateTempSubdirectory().FullName;
         try
         {
-            Assert.Equal(ownFolder, ProcessWatch.FirstRunningFrom([elsewhere, ownFolder]));
-            Assert.True(ProcessWatch.AnyRunningFrom(ownFolder));
+            Assert.Equal(isService ? null : ownFolder, ProcessWatch.FirstRunningFrom([elsewhere, ownFolder]));
+            Assert.Equal(!isService, ProcessWatch.AnyRunningFrom(ownFolder));
         }
         finally
         {

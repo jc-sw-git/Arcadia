@@ -1,6 +1,8 @@
+using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Steam;
 using System.ComponentModel;
 
 namespace Arcadia.ControllerSupport;
@@ -144,8 +146,11 @@ public sealed class ControllerSupportService(
     private volatile bool _shuttingDown;
     private DateTimeOffset _lastStart = DateTimeOffset.MinValue;
 
-    /// <summary>The Steam game SISR is paused for because it emulated other controllers there, and which (#124).</summary>
-    private volatile PauseForOtherControllers? _pausedForOtherControllers;
+    /// <summary>The Steam game SISR is paused for because Steam Input takes other controllers there too (#124).</summary>
+    private volatile SteamInputPause? _steamInputPause;
+
+    /// <summary>The running Steam app whose Steam Input setting was read and needs no pause; read once per game.</summary>
+    private int? _steamInputCheckedFor;
 
     /// <summary>Other controllers SISR emulates while no Steam game runs, for the log and the settings.</summary>
     private volatile string? _otherControllers;
@@ -722,15 +727,21 @@ public sealed class ControllerSupportService(
 
     private async Task UpdateControllerStateAsync(CancellationToken cancellationToken)
     {
-        // SISR picks up a controller switched on (or off) after it started; the preview follows.
         if (State is not (SisrState.NoController or SisrState.Running) || !sisr.IsRunning
-            || await sisr.Api.GetEmulatedControllersAsync(cancellationToken) is not { } controllers)
+            || await PauseForSteamInputGameAsync(cancellationToken))
+        {
+            return;
+        }
+
+        // SISR picks up a controller switched on (or off) after it started; the preview follows.
+        if (await sisr.Api.GetEmulatedControllersAsync(cancellationToken) is not { } controllers)
         {
             return;
         }
 
         var others = controllers.Others.Count > 0 ? string.Join(", ", controllers.Others.Select(c => c.Description)) : null;
-        if (others is not null && await PauseForOtherControllersAsync(others, cancellationToken))
+        if (others is not null && _platform.RunningSteamAppId() is { } appId
+            && await PauseForSteamGameAsync(appId, others, $"SISR bildet einen anderen Controller als den Steam Controller nach ({others})", cancellationToken))
         {
             return;
         }
@@ -754,16 +765,40 @@ public sealed class ControllerSupportService(
     }
 
     /// <summary>
-    /// SISR emulates a controller that isn't a Steam Controller, e.g. an Xbox pad: Steam hands it to SISR
-    /// because the running Steam game has Steam Input on for it. Steam takes SISR's virtual Xbox 360
-    /// controller over again and the game gets no input at all (#124). SISR can't be told to leave one
-    /// device alone, so it pauses until that game ends. The Steam Controller goes through Steam Input in
-    /// Steam games anyway, so the game still gets it (assumed, see docs/controller-support.md).
-    /// False if no Steam game runs, or an action holds the gate (the next check tries again).
+    /// A Steam game started outside Arcadia (or before SISR) whose Steam Input also takes other
+    /// controllers: SISR pauses for it as <see cref="BeginGameAsync"/> would. Steam's setting is read
+    /// once per game; false while no Steam game runs or the setting asks for no pause.
     /// </summary>
-    private async Task<bool> PauseForOtherControllersAsync(string others, CancellationToken cancellationToken)
+    private async Task<bool> PauseForSteamInputGameAsync(CancellationToken cancellationToken)
     {
-        if (_platform.RunningSteamAppId() is not { } appId || !await _gate.WaitAsync(TimeSpan.Zero, cancellationToken))
+        var appId = _platform.RunningSteamAppId();
+        if (appId is null || appId == _steamInputCheckedFor)
+        {
+            _steamInputCheckedFor = appId;
+            return false;
+        }
+
+        var setting = await Task.Run(() => _platform.SteamInputFor(appId.Value), cancellationToken);
+        if (setting?.CoversOtherControllers != true)
+        {
+            Log?.Invoke($"Steam-Spiel {appId} läuft, Steam Input: {setting?.Description ?? "Einstellung nicht lesbar"}");
+            _steamInputCheckedFor = appId;
+            return false;
+        }
+
+        return await PauseForSteamGameAsync(appId.Value, controllers: null, $"Steam Input gilt auch für andere Controller ({setting.Description})", cancellationToken);
+    }
+
+    /// <summary>
+    /// In a Steam game whose Steam Input takes other controllers than the Steam Controller (e.g. an Xbox pad),
+    /// the game gets no input from them while SISR runs, whether or not SISR emulates them yet: on the owner's
+    /// PC SISR took the pad late or never, and the game reacted to it only once SISR was gone (#124). SISR
+    /// can't be told to leave one device alone, so it pauses until that game ends. In such a game Steam
+    /// Input brings the Steam Controller too. False if an action holds the gate (the next check tries again).
+    /// </summary>
+    private async Task<bool> PauseForSteamGameAsync(int appId, string? controllers, string reason, CancellationToken cancellationToken)
+    {
+        if (!await _gate.WaitAsync(TimeSpan.Zero, cancellationToken))
         {
             return false;
         }
@@ -777,15 +812,14 @@ public sealed class ControllerSupportService(
             }
 
             var game = _platform.RunningSteamGame() ?? $"App {appId}";
-            Log?.Invoke($"SISR bildet einen anderen Controller als den Steam Controller nach ({others}): In „{game}“ gilt Steam Input auch für ihn. SISR pausiert, bis das Spiel endet");
-            var pause = new PauseForOtherControllers(game, others);
-            _pausedForOtherControllers = pause;
+            Log?.Invoke($"{reason}: SISR pausiert, bis „{game}“ endet");
             _otherControllers = null;
             PauseWhile(
                 () => _platform.RunningSteamAppId() == appId,
                 startTimeout: TimeSpan.Zero,
                 $"Steam-Spiel {appId}",
-                ended: () => Interlocked.CompareExchange(ref _pausedForOtherControllers, null, pause));
+                new SteamInputPause(game, controllers),
+                ended: () => { });
             await StopSisrAndReleaseControllerAsync(cancellationToken);
             return true;
         }
@@ -795,7 +829,13 @@ public sealed class ControllerSupportService(
         }
     }
 
-    private sealed record PauseForOtherControllers(string Game, string Controllers);
+    /// <summary>What the settings say while SISR is paused for a Steam game with Steam Input for other controllers.</summary>
+    private sealed record SteamInputPause(string Game, string? Controllers);
+
+    private static int? SteamAppIdOf(Game game) =>
+        game.LauncherId == KnownLaunchers.Steam.Id && int.TryParse(game.Id, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var appId)
+            ? appId
+            : null;
 
     public async Task CheckForUpdateAsync(CancellationToken cancellationToken = default)
     {
@@ -879,21 +919,42 @@ public sealed class ControllerSupportService(
 
     /// <summary>
     /// Called right before <paramref name="game"/> starts. If SISR must not run for it, SISR is
-    /// stopped until the game has ended (watched through its install directory).
+    /// stopped until the game has ended (watched through its install directory): on "Steam Input",
+    /// and on "Xbox 360 Controller (SISR)" for a Steam game whose Steam Input takes other controllers
+    /// too (see <see cref="PauseForSteamGameAsync"/>).
     /// </summary>
     public async Task BeginGameAsync(Game game, CancellationToken cancellationToken = default)
     {
         // Only pause for games that will actually start and whose process we can watch; otherwise
         // SISR would sit paused waiting for a process that never appears.
-        if (!Enabled || Settings.ControllerSupportFor(game) || game.Launch is LaunchTarget.None
-            || game.InstallDirectory is not { } directory || !Directory.Exists(directory))
+        if (!Enabled || game.Launch is LaunchTarget.None || game.InstallDirectory is not { } directory || !Directory.Exists(directory))
         {
             return;
         }
 
+        SteamInputPause? steamInput = null;
+        if (Settings.ControllerSupportFor(game))
+        {
+            if (SteamAppIdOf(game) is not { } appId)
+            {
+                return;
+            }
+
+            // Steam's settings are a large file; the game start shouldn't wait on the UI thread for it.
+            var setting = await Task.Run(() => _platform.SteamInputFor(appId), CancellationToken.None);
+            Log?.Invoke($"„{game.Title}“ startet auf SISR, Steam Input: {setting?.Description ?? "Einstellung nicht lesbar"}");
+            if (setting?.CoversOtherControllers != true)
+            {
+                return;
+            }
+
+            Log?.Invoke($"Steam Input gilt in „{game.Title}“ auch für andere Controller: SISR pausiert, bis das Spiel endet");
+            steamInput = new SteamInputPause(game.Title, Controllers: null);
+        }
+
         // Counted before waiting for the gate, so whatever holds it can't start SISR meanwhile.
         // Not cancellable: the watch below is what ends the pause again.
-        Pause(directory);
+        Pause(directory, steamInput);
         await _gate.WaitAsync(CancellationToken.None);
         try
         {
@@ -921,10 +982,10 @@ public sealed class ControllerSupportService(
         SettleRestingState();
     }
 
-    private void Pause(string directory)
+    private void Pause(string directory, SteamInputPause? steamInput = null)
     {
         _pausedDirectories.AddOrUpdate(directory, 1, (_, n) => n + 1);
-        PauseWhile(() => _platform.AnyRunningFrom(directory), startTimeout: TimeSpan.FromMinutes(2), $"Spiel in {directory}", ended: () =>
+        PauseWhile(() => _platform.AnyRunningFrom(directory), startTimeout: TimeSpan.FromMinutes(2), $"Spiel in {directory}", steamInput, ended: () =>
         {
             if (_pausedDirectories.AddOrUpdate(directory, 0, (_, n) => n - 1) <= 0)
             {
@@ -936,12 +997,25 @@ public sealed class ControllerSupportService(
     /// <summary>
     /// Keeps SISR paused while <paramref name="running"/> holds, after waiting up to
     /// <paramref name="startTimeout"/> for it to begin; <paramref name="ended"/> runs under the gate when it is over.
+    /// <paramref name="steamInput"/> is shown in the settings meanwhile.
     /// </summary>
-    private void PauseWhile(Func<bool> running, TimeSpan startTimeout, string what, Action ended)
+    private void PauseWhile(Func<bool> running, TimeSpan startTimeout, string what, SteamInputPause? steamInput, Action ended)
     {
+        if (steamInput is not null)
+        {
+            _steamInputPause = steamInput;
+        }
+
         Interlocked.Increment(ref _pausedGames);
         OnChanged();
-        _ = Task.Run(() => WatchPausedGameAsync(running, startTimeout, what, ended), CancellationToken.None);
+        _ = Task.Run(() => WatchPausedGameAsync(running, startTimeout, what, () =>
+        {
+            ended();
+            if (steamInput is not null)
+            {
+                Interlocked.CompareExchange(ref _steamInputPause, null, steamInput);
+            }
+        }), CancellationToken.None);
     }
 
     private async Task WatchPausedGameAsync(Func<bool> running, TimeSpan startTimeout, string what, Action ended)
@@ -1041,10 +1115,11 @@ public sealed class ControllerSupportService(
             issues.Add(new("sisr-external", HealthSeverity.Warning, "Ein SISR aus einem anderen Ordner läuft", "Zwei SISR-Instanzen erzeugen doppelte Controller. Die zweite sollte beendet werden.", HealthFix.StopExternalSisr, "Beenden"));
         }
 
-        if (_pausedForOtherControllers is { } pause)
+        if (_steamInputPause is { } pause)
         {
+            var controllers = pause.Controllers is { } names ? $" ({names})" : string.Empty;
             issues.Add(new("sisr-paused-other-controller", HealthSeverity.Warning, $"SISR pausiert für „{pause.Game}“",
-                $"In diesem Spiel gilt Steam Input auch für andere Controller ({pause.Controllers}). SISR würde sie mit übernehmen, und das Spiel bekäme keine Eingaben mehr. Bis es endet, bekommt es alle Controller über Steam Input. Soll der Steam Controller als Xbox 360 Controller ankommen, schalte in Steam in den Controller-Einstellungen des Spiels Steam Input für die anderen Controller aus."));
+                $"In diesem Spiel gilt Steam Input auch für andere Controller als den Steam Controller{controllers}. Solange SISR läuft, bekäme das Spiel von ihnen keine Eingaben. Bis es endet, bekommt es alle Controller über Steam Input, auch den Steam Controller. Soll der Steam Controller als Xbox 360 Controller ankommen, schalte in Steam in den Controller-Einstellungen des Spiels Steam Input für die anderen Controller aus."));
         }
 
         var state = State;

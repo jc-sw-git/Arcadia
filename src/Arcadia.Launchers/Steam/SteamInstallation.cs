@@ -23,6 +23,9 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
 
     public string? ShortcutsPath => UserDataDirectory is { } dir ? Path.Combine(dir, "config", "shortcuts.vdf") : null;
 
+    /// <summary>The account's settings, among them Steam Input per game (<see cref="SteamInputSetting"/>).</summary>
+    public string? LocalConfigPath => UserDataDirectory is { } dir ? Path.Combine(dir, "config", "localconfig.vdf") : null;
+
     /// <summary>
     /// The userdata folder of the active account. If nobody is logged in right now (e.g. Steam is
     /// closed): the only account, or with several the one that logged in last (<see cref="LastLoggedInUserId"/>).

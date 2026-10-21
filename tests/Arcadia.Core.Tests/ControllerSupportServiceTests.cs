@@ -3,6 +3,7 @@ using System.Net;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Steam;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Arcadia.Core.Tests;
@@ -1026,6 +1027,93 @@ public sealed class ControllerSupportServiceTests : IDisposable
         AssertNoUnexpectedTransition();
     }
 
+    private static readonly SteamInputSetting SteamInputForAll = new("2", XboxSupport: false, GenericSupport: false);
+
+    private static readonly SteamInputSetting SteamInputOff = new("0", XboxSupport: false, GenericSupport: false);
+
+    [Fact]
+    public async Task A_Steam_game_on_SISR_with_Steam_Input_for_every_controller_pauses_SISR_before_it_starts()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        var game = SteamGame();
+        service.SetModeFor(game, useSisr: true);
+        _platform.SteamInput[1] = SteamInputForAll;
+        _platform.RunningDirectories.Add(game.InstallDirectory!);
+
+        await service.BeginGameAsync(game);
+        await service.RefreshAsync();
+
+        Assert.False(_sisr.Running);
+        Assert.Equal(SisrState.Paused, service.State);
+        Assert.Contains(service.Issues, i => i.Id == "sisr-paused-other-controller" && i.Title.Contains("Steam-Spiel"));
+
+        _platform.RunningDirectories.Clear();
+        await AdvanceUntil(() => _sisr.Starts == 1);
+        await service.RefreshAsync();
+        Assert.DoesNotContain(service.Issues, i => i.Id == "sisr-paused-other-controller");
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task A_Steam_game_on_SISR_without_Steam_Input_keeps_SISR_running()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        var game = SteamGame();
+        service.SetModeFor(game, useSisr: true);
+        _platform.SteamInput[1] = SteamInputOff;
+
+        await service.BeginGameAsync(game);
+
+        Assert.True(_sisr.Running);
+        Assert.Equal(SisrState.Running, service.State);
+        Assert.Empty(service.PausedFor);
+    }
+
+    [Fact]
+    public async Task A_Steam_game_with_Steam_Input_for_every_controller_started_elsewhere_pauses_SISR_before_SISR_takes_a_pad()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _platform.SteamAppId = 4231820;
+        _platform.SteamGame = "Castlevania: Belmont's Curse";
+        _platform.SteamInput[4231820] = SteamInputForAll;
+        await service.WatchAsync();
+
+        Assert.False(_sisr.Running);
+        Assert.Equal(SisrState.Paused, service.State);
+        lock (_log)
+        {
+            Assert.Contains(_log, line => line.Contains("UseSteamControllerConfig 2") && line.Contains("Castlevania"));
+        }
+
+        _platform.SteamAppId = null;
+        await AdvanceUntil(() => _sisr.Starts == 1);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task Steams_setting_is_read_once_per_game()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        _platform.SteamAppId = 4231820;
+        _platform.SteamInput[4231820] = SteamInputOff;
+
+        await service.WatchAsync();
+        await service.WatchAsync();
+        await service.WatchAsync();
+
+        Assert.True(_sisr.Running);
+        Assert.Equal(1, _platform.SteamInputReads);
+    }
+
     private sealed class FakeSisr(HttpClient http) : ISisrHost
     {
         public SisrApiClient Api { get; } = new(http, SisrHost.ApiPort);
@@ -1226,6 +1314,17 @@ public sealed class ControllerSupportServiceTests : IDisposable
         public int? SteamAppId { get; set; }
 
         public int? RunningSteamAppId() => SteamAppId;
+
+        /// <summary>Steam Input per Steam app, as Steam's localconfig.vdf has it; missing means unreadable.</summary>
+        public Dictionary<int, SteamInputSetting> SteamInput { get; } = [];
+
+        public int SteamInputReads { get; private set; }
+
+        public SteamInputSetting? SteamInputFor(int appId)
+        {
+            SteamInputReads++;
+            return SteamInput.GetValueOrDefault(appId);
+        }
 
         public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken)
         {

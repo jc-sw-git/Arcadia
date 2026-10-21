@@ -64,6 +64,9 @@ public interface IControllerSupportPlatform
     /// <summary>The app id of the Steam game running right now, or null.</summary>
     int? RunningSteamAppId();
 
+    /// <summary>How Steam Input is set for the Steam game <paramref name="appId"/>, or null if Steam's settings can't be read.</summary>
+    SteamInputSetting? SteamInputFor(int appId);
+
     /// <summary>Asks Steam to exit and waits for it; false if it is still running after the timeout.</summary>
     Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken);
 
@@ -183,6 +186,24 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
     public string? RunningSteamGame() => SteamInstallation.RunningGameName();
 
     public int? RunningSteamAppId() => SteamInstallation.RunningAppId();
+
+    public SteamInputSetting? SteamInputFor(int appId)
+    {
+        if (SteamInstallation.Find()?.LocalConfigPath is not { } path || !File.Exists(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            return SteamInputSetting.Read(File.ReadAllText(path), appId);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Steam is writing the file; the check from SISR's devices still catches the game.
+            return null;
+        }
+    }
 
     public async Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken) =>
         await SteamInstallation.ShutdownAsync(SteamExitTimeout, time, cancellationToken);

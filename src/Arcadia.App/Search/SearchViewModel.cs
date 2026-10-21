@@ -223,7 +223,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     /// <summary>
     /// Everything the search does itself. With the keyboard out: the D-pad and A on the keys, and
     /// the buttons that stand for keys (X deletes, held: one after another; Y types a space; LB
-    /// shift; RB symbols, both tapped or held; R3 the layout menu). With it in, the D-pad moves
+    /// shift; RB AltGr, both tapped or held; R3 the layout menu). With it in, the D-pad moves
     /// through the hits and X brings the keyboard back. The right stick or a real keyboard's arrows
     /// move through the hits, LT/RT or Page Up/Down turn them.
     /// </summary>
@@ -306,7 +306,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         return false;
     }
 
-    /// <summary>A button was let go: ends a held erase, shift or symbols page.</summary>
+    /// <summary>A button was let go: ends a held erase, shift or AltGr.</summary>
     public void Release(UiAction action)
     {
         switch (action)
@@ -318,7 +318,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
                 Keyboard.ReleaseShift();
                 break;
             case UiAction.NextTab:
-                Keyboard.ReleaseSymbols();
+                Keyboard.ReleaseAltGr();
                 break;
         }
     }
@@ -328,7 +328,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     {
         _erase.Release();
         Keyboard.CancelShift();
-        Keyboard.CancelSymbols();
+        Keyboard.CancelAltGr();
     }
 
     /// <summary>The button below the hits: the keyboard out or back in.</summary>
@@ -457,7 +457,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
                 Keyboard.PressShift();
                 break;
             case UiAction.NextTab:
-                Keyboard.PressSymbols();
+                Keyboard.PressAltGr();
                 break;
             case UiAction.KeyboardLayout:
                 Keyboard.ToggleLayoutMenu();
@@ -538,7 +538,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     /// <summary>A key pressed with A or clicked.</summary>
     private void Press(KeyViewModel key)
     {
-        if (key.Character is not null)
+        if (key.Cap is not null)
         {
             Type(Keyboard.Typed(key));
             return;
@@ -561,8 +561,8 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
             case SpecialKey.Erase:
                 Erase();
                 break;
-            case SpecialKey.Symbols:
-                Keyboard.ToggleSymbols();
+            case SpecialKey.AltGr:
+                Keyboard.ToggleAltGr();
                 break;
         }
     }

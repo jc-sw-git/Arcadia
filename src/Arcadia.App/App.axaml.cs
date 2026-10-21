@@ -25,7 +25,7 @@ public partial class App : Application
     private static readonly TimeSpan InstallCheckInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan InstallProgressInterval = TimeSpan.FromSeconds(2);
 
-    /// <summary>How often Arcadia asks which games run (#95); in the background only for games it started (#94).</summary>
+    /// <summary>How often Arcadia asks which games run (#95), in front and in the background.</summary>
     private static readonly TimeSpan RunningGamesInterval = TimeSpan.FromSeconds(2);
 
     /// <summary>
@@ -238,12 +238,12 @@ public partial class App : Application
             var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, "Update-Prüfung"));
             updateCheck.Start();
 
-            // Which games run (#95): asked off the UI thread; in the background only for games Arcadia started, whose
-            // end brings Arcadia back (#94). Coming to the front asks at once.
+            // Which games run (#95): asked off the UI thread, also in the background (Arcadia may be seen on a second
+            // screen); the end of a game Arcadia started brings it back (#94). Coming to the front asks at once.
             var running = new DispatcherTimer(RunningGamesInterval, DispatcherPriority.Background, async (_, _) =>
-                await AppErrors.Guard(() => viewModel.PollRunningGamesAsync(mouseMode.IsArcadiaActive), "Laufende Spiele"));
+                await AppErrors.Guard(viewModel.PollRunningGamesAsync, "Laufende Spiele"));
             running.Start();
-            window.Activated += (_, _) => viewModel.PollRunningGamesAsync(arcadiaInFront: true).Forget("Laufende Spiele");
+            window.Activated += (_, _) => viewModel.PollRunningGamesAsync().Forget("Laufende Spiele");
             viewModel.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey).Forget("Nach dem Spiel zurück zu Arcadia");
 
             async Task ReturnAfterGameAsync(string gameKey)
@@ -302,7 +302,7 @@ public partial class App : Application
 
             AppLog.Write($"Arcadia gestartet: {string.Join(' ', args)}");
             viewModel.LoadAsync().Forget("Bibliothek laden");
-            viewModel.PollRunningGamesAsync(arcadiaInFront: !args.Contains(BackgroundArgument)).Forget("Laufende Spiele");
+            viewModel.PollRunningGamesAsync().Forget("Laufende Spiele");
             updates.CheckIfDueAsync().Forget("Update-Prüfung");
         }
 

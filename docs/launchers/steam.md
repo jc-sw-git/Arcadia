@@ -44,7 +44,7 @@ so Arcadia offers no "Controller-Layout" action for now (owner's decision).
 `SteamRunningGames` reads `HKCU\Software\Valve\Steam\Apps\<appid>\Running` (1 while the game runs) and, like SISR
 already does, `RunningAppID` (the game Steam started last, while it runs; it counts even without the flag). There
 are thousands of `Apps` keys (every app Steam ever touched), so only a poll after a pause of more than 10 s (Arcadia
-was in the background, or it just started) reads them all; the polls in between read `RunningAppID` and the keys
+just started, or the PC slept) reads them all; the polls in between read `RunningAppID` and the keys
 of the games already running. A game that starts meanwhile becomes `RunningAppID`. "Läuft seit" is the last write
 time of the app's key, read once per run (`RegQueryInfoKey`). **Unverified:** the refinement named the `Running`
 flag, but it wasn't checked on the owner's PC yet, nor whether Steam writes the key exactly at the start and clears

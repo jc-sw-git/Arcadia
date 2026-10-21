@@ -25,8 +25,8 @@ public sealed record RunningChanges(bool StatesChanged, IReadOnlyList<EndedGame>
 /// <summary>
 /// Which games run (#95), whether started from Arcadia or in their launcher: as the launcher reports it
 /// (<see cref="IRunningGamesMonitor"/>), else by the games' processes (<see cref="ProcessGames"/>, only for launchers
-/// without a monitor). While Arcadia is in front it asks every launcher; in the background only the launchers of games
-/// started from Arcadia, to notice their end (#94), and not at all without one.
+/// without a monitor). It asks every launcher in every poll, also while Arcadia is in the background: Arcadia may be seen
+/// on a second screen, and a game that ends must not go on showing "Läuft" (owner, 2026-10-21).
 /// </summary>
 public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames processes, TimeProvider time)
 {
@@ -57,9 +57,6 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
     /// <summary>The games started from Arcadia that haven't ended; an update restart hands them to the next Arcadia.</summary>
     public IReadOnlyCollection<string> StartedFromArcadia => [.. _starting.Keys.Union(_startedFromArcadia)];
 
-    /// <summary>Only a game started from Arcadia is watched while Arcadia is in the background.</summary>
-    public bool WatchesInBackground => _starting.Count > 0 || _startedFromArcadia.Count > 0;
-
     /// <summary>The library's games: those of launchers without a monitor are found by their processes.</summary>
     public void SetLibrary(IEnumerable<Game> games)
     {
@@ -79,26 +76,19 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
     /// </summary>
     public void ResumeStartedFromArcadia(string gameKey) => Starting(gameKey);
 
-    /// <summary>
-    /// Asks the launchers which games run, off the calling thread. Returns null without asking while a poll still runs,
-    /// or in the background with no game started from Arcadia.
-    /// </summary>
-    public async Task<RunningChanges?> PollAsync(bool arcadiaInFront)
+    /// <summary>Asks the launchers which games run, off the calling thread. Returns null without asking while a poll still runs.</summary>
+    public async Task<RunningChanges?> PollAsync()
     {
-        if (_polling || (!arcadiaInFront && !WatchesInBackground))
+        if (_polling)
         {
             return null;
         }
 
         var watched = _starting.Keys.Union(_startedFromArcadia).ToHashSet(StringComparer.Ordinal);
-        var watchedLaunchers = watched.Select(LauncherIdOf).ToHashSet(StringComparer.Ordinal);
         var enabled = launchers.Enabled;
-        var monitors = enabled
-            .Where(i => i.RunningGames is not null && (arcadiaInFront || watchedLaunchers.Contains(i.Launcher.Id)))
-            .Select(i => i.RunningGames!)
-            .ToList();
+        var monitors = enabled.Where(i => i.RunningGames is not null).Select(i => i.RunningGames!).ToList();
         var byProcess = FallbackLaunchers(enabled);
-        var scan = byProcess.Count > 0 && (arcadiaInFront || watchedLaunchers.Overlaps(byProcess));
+        var scan = byProcess.Count > 0;
 
         // Only a game started from Arcadia may own a process whose path can't be read.
         var unreadableMayBe = watched.Where(key => byProcess.Contains(LauncherIdOf(key))).ToHashSet(StringComparer.Ordinal);
@@ -184,7 +174,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
             }
         }
 
-        // A game whose launcher was switched off would be watched in the background for ever.
+        // A game whose launcher was switched off would be awaited for ever.
         _startedFromArcadia.RemoveWhere(key => !enabled.Contains(LauncherIdOf(key)));
         _running = running;
         return new RunningChanges(changed, ended);

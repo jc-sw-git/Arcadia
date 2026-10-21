@@ -866,6 +866,9 @@ Verlauf:
       `docs/launchers/steam.md` festhalten. · E2E: nein (echter Launcher)
 - [ ] **T95-13** CPU von Arcadia neben einem aus Arcadia gestarteten Spiel, 60 s, wie in T103-3: unter 1 %. ·
       E2E: nein (Messung am PC des Owners)
+- [ ] **T95-14** Arcadia auf dem zweiten Monitor, nicht im Vordergrund: Ein Spiel direkt in Steam bzw. Epic starten
+      zeigt nach höchstens 2 s „Läuft“, sein Ende nach höchstens 2 s wieder „Spielen“, ohne dass Arcadia den Fokus
+      bekommt. · E2E: nein (echter Launcher, zwei Monitore)
 
 Verlauf:
 
@@ -878,6 +881,8 @@ Verlauf:
 | T95-1 bis T95-3, T95-11 (Logik) | 2026-10-21 | Claude | `dotnet test`, Linux: `EpicRunningGamesTests`, `SteamRunningGamesTests` (Registry nachgebildet), `ProcessGamesTests`, `RunningGamesTrackerTests` | ⚠️ Start-/Stop-Zeilen, halbe Zeilen, neues Log, Registry-Flag und `RunningAppID`, Prozesse aus dem Spielordner und mit nicht lesbarem Pfad, „Wird gestartet …“ mit 2-min-Grenze grün; echte Launcher nicht | Lauf am PC des Owners |
 | T95-13 (Prozesssuche) | 2026-10-21 | Claude | Release-Build, Linux, nachgebildete Prozesstabelle mit 351 Prozessen, 5.000 Spiele | ⚠️ ohne die Windows-Aufrufe je Prozess: Ordner der 5.000 Spiele aufbauen 3,2 ms (nur bei einer neuen Bibliothek), erste Runde 0,5 ms, jede weitere Runde ohne neue Prozesse 40 µs; Windows fragt nur neue Prozesse ab. Läuft für Steam und Epic gar nicht | CPU neben dem Spiel am PC des Owners |
 | T95-4, T95-13 | 2026-10-21 | Juri | PC des Owners, Branch `feat/laufende-spiele-anzeigen-94-95` (Stand 25197b1), Debug aus VS Code (Arcadia als Teil des .NET-Host-Prozesses) | ✅ „Zurück ins Spiel“ holt das Spiel nach vorne. CPU laut Task-Manager meist 0–0,5 %, neben dem Spiel Spitzen bis 0,7 %; RAM knapp 200 MB. ⚠️ Debug-Build im .NET-Host, nicht der Release-Build | CPU im installierten Release-Build nachmessen |
+| T95-3, T95-14 | 2026-10-21 | Juri | PC des Owners, Stand 25197b1, Debug aus VS Code, Arcadia auf dem zweiten Monitor | ❌ Ein in Steam/Epic gestartetes Spiel erst gesehen, als Arcadia den Fokus bekam; ebenso sein Ende, „Zurück ins Spiel“ dazwischen meldete einen fehlenden Prozess | Im Hintergrund alle Launcher fragen, nicht nur für aus Arcadia gestartete Spiele |
+| T95-14 (Logik) | 2026-10-21 | Claude | `dotnet test`, Linux: `RunningGamesTrackerTests` | ⚠️ Jede Runde fragt jeden Launcher und sucht Prozesse, auch ohne aus Arcadia gestartetes Spiel; echte Launcher und CPU nicht | Lauf und CPU-Messung (T95-13) am PC des Owners |
 
 ## #94 Nach einem aus Arcadia gestarteten Spiel kommt Arcadia wieder in den Vordergrund
 

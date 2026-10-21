@@ -34,11 +34,11 @@ public sealed class RunningGamesTrackerTests
         var tracker = CreateTracker();
         _steam.Running.Add(new RunningGame("440", Started));
 
-        var changes = await tracker.PollAsync(arcadiaInFront: true);
+        var changes = await tracker.PollAsync();
 
         Assert.True(changes?.StatesChanged);
         Assert.Equal(new RunState(RunPhase.Running, Started), tracker.StateOf("steam:440"));
-        Assert.False((await tracker.PollAsync(arcadiaInFront: true))?.StatesChanged);
+        Assert.False((await tracker.PollAsync())?.StatesChanged);
     }
 
     [Fact]
@@ -46,10 +46,10 @@ public sealed class RunningGamesTrackerTests
     {
         var tracker = CreateTracker();
         _steam.Running.Add(new RunningGame("440", Started));
-        await tracker.PollAsync(arcadiaInFront: true);
+        await tracker.PollAsync();
 
         _steam.Running.Clear();
-        var changes = await tracker.PollAsync(arcadiaInFront: true);
+        var changes = await tracker.PollAsync();
 
         Assert.Equal([new EndedGame("steam:440", StartedFromArcadia: false)], changes?.Ended);
         Assert.Null(tracker.StateOf("steam:440"));
@@ -62,11 +62,11 @@ public sealed class RunningGamesTrackerTests
         tracker.Starting("steam:440");
 
         Assert.Equal(new RunState(RunPhase.Starting, Started.AddMinutes(1)), tracker.StateOf("steam:440"));
-        await tracker.PollAsync(arcadiaInFront: true);
+        await tracker.PollAsync();
         Assert.Equal(RunPhase.Starting, tracker.StateOf("steam:440")?.Phase);
 
         _steam.Running.Add(new RunningGame("440", Started.AddMinutes(1)));
-        var changes = await tracker.PollAsync(arcadiaInFront: true);
+        var changes = await tracker.PollAsync();
 
         Assert.True(changes?.StatesChanged);
         Assert.Equal(RunPhase.Running, tracker.StateOf("steam:440")?.Phase);
@@ -79,14 +79,13 @@ public sealed class RunningGamesTrackerTests
         var tracker = CreateTracker();
         tracker.Starting("steam:440");
         _steam.Running.Add(new RunningGame("440", Started));
-        await tracker.PollAsync(arcadiaInFront: false);
+        await tracker.PollAsync();
 
         _steam.Running.Clear();
-        var changes = await tracker.PollAsync(arcadiaInFront: false);
+        var changes = await tracker.PollAsync();
 
         Assert.Equal([new EndedGame("steam:440", StartedFromArcadia: true)], changes?.Ended);
         Assert.Empty(tracker.StartedFromArcadia);
-        Assert.False(tracker.WatchesInBackground);
     }
 
     [Fact]
@@ -96,11 +95,11 @@ public sealed class RunningGamesTrackerTests
         tracker.Starting("steam:440");
 
         _time.Advance(RunningGamesTracker.StartTimeout);
-        await tracker.PollAsync(arcadiaInFront: true);
+        await tracker.PollAsync();
         Assert.NotNull(tracker.StateOf("steam:440"));
 
         _time.Advance(TimeSpan.FromSeconds(1));
-        var changes = await tracker.PollAsync(arcadiaInFront: true);
+        var changes = await tracker.PollAsync();
 
         Assert.True(changes?.StatesChanged);
         Assert.Null(tracker.StateOf("steam:440"));
@@ -116,34 +115,24 @@ public sealed class RunningGamesTrackerTests
         tracker.StartFailed("steam:440");
 
         Assert.Null(tracker.StateOf("steam:440"));
-        Assert.False(tracker.WatchesInBackground);
+        Assert.Empty(tracker.StartedFromArcadia);
     }
 
     [Fact]
-    public async Task In_the_background_nothing_is_asked_without_a_game_started_from_arcadia()
+    public async Task Every_poll_asks_every_launcher_also_without_a_game_started_from_arcadia()
     {
-        var tracker = CreateTracker();
-
-        Assert.Null(await tracker.PollAsync(arcadiaInFront: false));
-        Assert.Equal(0, _steam.Polls);
-        Assert.Equal(0, _epic.Polls);
-    }
-
-    [Fact]
-    public async Task In_the_background_only_the_launcher_of_a_game_started_from_arcadia_is_asked()
-    {
-        var tracker = CreateTracker();
+        // A game started in its launcher while Arcadia is in the background, e.g. on a second screen (owner, 2026-10-21).
+        var tracker = CreateTracker(new FakeIntegration(FakeIntegration.LauncherOf("gog")));
         _epic.Running.Add(new RunningGame("Chess", Started));
-        await tracker.PollAsync(arcadiaInFront: true);
-        tracker.Starting("steam:440");
 
-        await tracker.PollAsync(arcadiaInFront: false);
+        await tracker.PollAsync();
+        _epic.Running.Clear();
+        var changes = await tracker.PollAsync();
 
         Assert.Equal(2, _steam.Polls);
-        Assert.Equal(1, _epic.Polls);
-
-        // What isn't asked stays as it was.
-        Assert.Equal(RunPhase.Running, tracker.StateOf("epic:Chess")?.Phase);
+        Assert.Equal(2, _epic.Polls);
+        Assert.Equal(2, _processes.Rounds);
+        Assert.Equal([new EndedGame("epic:Chess", StartedFromArcadia: false)], changes?.Ended);
     }
 
     [Fact]
@@ -152,12 +141,12 @@ public sealed class RunningGamesTrackerTests
         var failing = new FailingRunningGames("gog");
         var tracker = CreateTracker(new FakeIntegration(FakeIntegration.LauncherOf("gog")) { RunningGames = failing });
         _steam.Running.Add(new RunningGame("440", Started));
-        await tracker.PollAsync(arcadiaInFront: true);
+        await tracker.PollAsync();
         Assert.Equal(RunPhase.Running, tracker.StateOf("gog:witcher")?.Phase);
 
         failing.Fails = true;
         _steam.Running.Clear();
-        var changes = await tracker.PollAsync(arcadiaInFront: true);
+        var changes = await tracker.PollAsync();
 
         Assert.Equal([new EndedGame("steam:440", StartedFromArcadia: false)], changes?.Ended);
         Assert.Equal(RunPhase.Running, tracker.StateOf("gog:witcher")?.Phase);
@@ -169,10 +158,10 @@ public sealed class RunningGamesTrackerTests
     {
         var tracker = CreateTracker();
         _steam.Running.Add(new RunningGame("440", Started));
-        await tracker.PollAsync(arcadiaInFront: true);
+        await tracker.PollAsync();
 
         _steam.Running[0] = new RunningGame("440", null);
-        await tracker.PollAsync(arcadiaInFront: true);
+        await tracker.PollAsync();
 
         Assert.Equal(Started, tracker.StateOf("steam:440")?.Since);
     }
@@ -181,11 +170,11 @@ public sealed class RunningGamesTrackerTests
     public async Task Processes_are_only_searched_for_launchers_that_dont_report_their_games()
     {
         var tracker = CreateTracker();
-        await tracker.PollAsync(arcadiaInFront: true);
+        await tracker.PollAsync();
         Assert.Equal(0, _processes.Rounds);
 
         var withFallback = CreateTracker(new FakeIntegration(FakeIntegration.LauncherOf("gog")));
-        await withFallback.PollAsync(arcadiaInFront: true);
+        await withFallback.PollAsync();
         Assert.Equal(1, _processes.Rounds);
     }
 
@@ -197,28 +186,15 @@ public sealed class RunningGamesTrackerTests
         _processes.Running[20] = new ProcessDetails(@"D:\Games\Witcher 3\witcher3.exe", Started);
         _processes.Running[21] = new ProcessDetails(@"D:\Steam\common\TF2\hl2.exe", Started);
 
-        await tracker.PollAsync(arcadiaInFront: true);
+        await tracker.PollAsync();
 
         // Steam's game counts only as Steam reports it.
         Assert.Equal(new RunState(RunPhase.Running, Started), tracker.StateOf("gog:witcher"));
         Assert.Null(tracker.StateOf("steam:440"));
 
         _processes.Running.Remove(20);
-        var changes = await tracker.PollAsync(arcadiaInFront: true);
+        var changes = await tracker.PollAsync();
         Assert.Equal([new EndedGame("gog:witcher", StartedFromArcadia: false)], changes?.Ended);
-    }
-
-    [Fact]
-    public async Task In_the_background_processes_are_only_searched_for_a_game_started_from_arcadia_without_a_report()
-    {
-        var tracker = CreateTracker(new FakeIntegration(FakeIntegration.LauncherOf("gog")));
-        tracker.Starting("steam:440");
-        await tracker.PollAsync(arcadiaInFront: false);
-        Assert.Equal(0, _processes.Rounds);
-
-        tracker.Starting("gog:witcher");
-        await tracker.PollAsync(arcadiaInFront: false);
-        Assert.Equal(1, _processes.Rounds);
     }
 
     [Fact]
@@ -227,15 +203,15 @@ public sealed class RunningGamesTrackerTests
         var tracker = CreateTracker();
         tracker.Starting("steam:440");
         _steam.Running.Add(new RunningGame("440", Started));
-        await tracker.PollAsync(arcadiaInFront: true);
+        await tracker.PollAsync();
 
         _disabled.Add("steam");
-        var changes = await tracker.PollAsync(arcadiaInFront: true);
+        var changes = await tracker.PollAsync();
 
         Assert.True(changes?.StatesChanged);
         Assert.Empty(changes!.Ended);
         Assert.Null(tracker.StateOf("steam:440"));
-        Assert.False(tracker.WatchesInBackground);
+        Assert.Empty(tracker.StartedFromArcadia);
     }
 
     [Fact]
@@ -243,10 +219,10 @@ public sealed class RunningGamesTrackerTests
     {
         var blocking = new BlockingRunningGames("gog");
         var tracker = CreateTracker(new FakeIntegration(FakeIntegration.LauncherOf("gog")) { RunningGames = blocking });
-        var first = tracker.PollAsync(arcadiaInFront: true);
+        var first = tracker.PollAsync();
         Assert.True(blocking.Entered.Wait(TimeSpan.FromSeconds(10)));
 
-        Assert.Null(await tracker.PollAsync(arcadiaInFront: true));
+        Assert.Null(await tracker.PollAsync());
 
         blocking.Release.Set();
         Assert.NotNull(await first);
@@ -260,9 +236,9 @@ public sealed class RunningGamesTrackerTests
         _steam.Running.Add(new RunningGame("440", Started));
         tracker.ResumeStartedFromArcadia("steam:440");
 
-        await tracker.PollAsync(arcadiaInFront: false);
+        await tracker.PollAsync();
         _steam.Running.Clear();
-        var changes = await tracker.PollAsync(arcadiaInFront: false);
+        var changes = await tracker.PollAsync();
 
         Assert.Equal([new EndedGame("steam:440", StartedFromArcadia: true)], changes?.Ended);
     }

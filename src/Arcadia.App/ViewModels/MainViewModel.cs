@@ -271,12 +271,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     }
 
     /// <summary>
-    /// Asks the launchers which games run (#95) and updates the covers. Called periodically and when Arcadia comes to the
-    /// front; in the background only games started from Arcadia are watched, so their end is noticed (#94).
+    /// Asks the launchers which games run (#95) and updates the covers. Called periodically, also in the background, and
+    /// when Arcadia comes to the front; the end of a game started from Arcadia may bring it back (#94).
     /// </summary>
-    public async Task PollRunningGamesAsync(bool arcadiaInFront)
+    public async Task PollRunningGamesAsync()
     {
-        if (await _running.PollAsync(arcadiaInFront) is not { } changes)
+        if (await _running.PollAsync() is not { } changes)
         {
             return;
         }

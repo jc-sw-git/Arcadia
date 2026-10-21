@@ -31,7 +31,7 @@ public interface ISteamAppsRegistry
 /// </summary>
 public sealed partial class SteamRunningGames(TimeProvider time, ISteamAppsRegistry? registry = null) : IRunningGamesMonitor
 {
-    /// <summary>Polls further apart than this (Arcadia was in the background) read every app again.</summary>
+    /// <summary>Polls further apart than this (Arcadia just started, or the PC slept) read every app again.</summary>
     public static readonly TimeSpan FullReadAfter = TimeSpan.FromSeconds(10);
 
     private readonly ISteamAppsRegistry _registry = registry ?? new SystemRegistry();

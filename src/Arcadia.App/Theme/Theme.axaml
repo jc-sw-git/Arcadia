@@ -130,6 +130,12 @@
     <BoxShadows x:Key="DetailShadow">0 30 80 0 #73000000</BoxShadows>
     <BoxShadows x:Key="CoverShadow">0 24 50 0 #80000000</BoxShadows>
     <BoxShadows x:Key="DialogShadow">0 40 100 0 #99000000</BoxShadows>
+    <!-- Button and key glyphs: a darker lower edge, like a key cap (owner, 2026-10-21). -->
+    <BoxShadows x:Key="GlyphEdge">inset 0 -2 0 0 #1B222B</BoxShadows>
+    <BoxShadows x:Key="GlyphEdgeDark">inset 0 -2 0 0 #99000000</BoxShadows>
+    <BoxShadows x:Key="GlyphButtonEdge">inset 0 -2 0 0 #141A21</BoxShadows>
+    <!-- Dividers between groups in the header. -->
+    <SolidColorBrush x:Key="Divider" Color="#2A3440" />
 
     <!-- Search (#12). -->
     <SolidColorBrush x:Key="KeyboardSurface" Color="#11161D" />
@@ -195,12 +201,30 @@
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Padding" Value="8,0" />
   </Style>
+  <Style Selector="Border.glyph">
+    <Setter Property="BoxShadow" Value="{StaticResource GlyphEdge}" />
+  </Style>
   <Style Selector="Border.glyph.round">
     <Setter Property="Width" Value="28" />
     <Setter Property="Padding" Value="0" />
   </Style>
+  <!-- Keyboard keys and mouse buttons are square, controller buttons round (owner, 2026-10-21). -->
+  <Style Selector="Border.glyph.kbd, .keys Border.glyph">
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
   <Style Selector="Border.glyph.dark">
     <Setter Property="Background" Value="{StaticResource OnAccent}" />
+    <Setter Property="BoxShadow" Value="{StaticResource GlyphEdgeDark}" />
+  </Style>
+  <!-- A hint with nothing to show for the input in use (KeyHint). -->
+  <Style Selector="ctl|KeyHint.noKeys">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="Border.divider">
+    <Setter Property="Width" Value="1" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="Background" Value="{StaticResource Divider}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
   <Style Selector="Border.glyph > TextBlock">
     <Setter Property="FontSize" Value="13" />
@@ -220,6 +244,12 @@
     <Setter Property="Padding" Value="12,0" />
     <Setter Property="FontSize" Value="14" />
     <Setter Property="FontWeight" Value="ExtraBold" />
+  </Style>
+  <Style Selector="Button.glyphButton.keycap /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource GlyphButtonEdge}" />
+  </Style>
+  <Style Selector="Button.glyphButton.kbd">
+    <Setter Property="CornerRadius" Value="8" />
   </Style>
   <Style Selector="Button.glyphButton:pointerover">
     <Setter Property="Background" Value="{StaticResource Line}" />
@@ -630,6 +660,29 @@
     <Setter Property="CornerRadius" Value="24" />
     <Setter Property="FontSize" Value="15" />
     <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button.carouselNav.kbd">
+    <Setter Property="CornerRadius" Value="10" />
+  </Style>
+
+  <!-- Search and settings in the header: the key that opens them beside their symbol (#127). -->
+  <Style Selector="Button.headerChip">
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Padding" Value="8,0,14,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.headerChip:pointerover">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <!-- The tab strip's dividers keep their gap while hidden, so the strip doesn't move when they appear. -->
+  <Style Selector="Border.tabDivider">
+    <Setter Property="Opacity" Value="0" />
+  </Style>
+  <Style Selector="Border.tabDivider.shown">
+    <Setter Property="Opacity" Value="1" />
   </Style>
 
   <!-- Entries of a game's context menu. -->
@@ -1110,6 +1163,10 @@
     <Setter Property="CornerRadius" Value="11" />
     <Setter Property="Padding" Value="6,0" />
     <Setter Property="Margin" Value="1,0" />
+  </Style>
+  <Style Selector="Border.glyph.inline.round">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Padding" Value="0" />
   </Style>
   <Style Selector="Border.glyph.inline > TextBlock">
     <Setter Property="FontSize" Value="13" />

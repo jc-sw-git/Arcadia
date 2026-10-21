@@ -203,19 +203,16 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
 
     /// <summary>The controller is in use: the button legend and the buttons' glyphs show.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsCloseGlyph))]
+    [NotifyPropertyChangedFor(nameof(ShowsStickHint))]
     public partial bool UsesController { get; set; }
 
     /// <summary>The on-screen keyboard is out, and the hits get one row above it; in, they fill a grid.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsCloseGlyph), nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar))]
+    [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar))]
     public partial bool IsKeyboardOut { get; set; }
 
     /// <summary>Beside the keyboard only the right stick picks a hit, so it's said above the hits too, not only in the legend.</summary>
     public bool ShowsStickHint => UsesController && IsKeyboardOut;
-
-    /// <summary>B closes the search only with the keyboard in; with it out, B puts the keyboard away first.</summary>
-    public bool ShowsCloseGlyph => UsesController && !IsKeyboardOut;
 
     private int ResultRows => IsKeyboardOut ? 1 : ResultRowsWithoutKeyboard;
 

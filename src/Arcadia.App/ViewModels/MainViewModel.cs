@@ -100,6 +100,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     [ObservableProperty]
     public partial bool ShowsCloseButtons { get; private set; }
 
+    /// <summary>
+    /// The hints show the controller's buttons; after a key press or a click the keyboard's keys and the mouse (#127).
+    /// The mouse merely moving changes nothing, so a nudged mouse doesn't swap the hints under the controller.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool UsesController { get; private set; } = true;
+
+    partial void OnUsesControllerChanged(bool value) => InputHints.UsesController = value;
+
     /// <summary>The Steam Controller mode of the focused game: "Xbox 360 Controller (SISR)" or "Steam Input".</summary>
     [ObservableProperty]
     public partial string FocusedControllerSupportText { get; private set; } = string.Empty;
@@ -166,6 +175,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     public partial GameDetailViewModel? Detail { get; private set; }
 
     public bool IsDetailOpen => Detail is not null;
+
+    /// <summary>A detail page from the library that X left for the search; B in the search brings it back (#127).</summary>
+    private GameDetailViewModel? _detailBehindSearch;
 
     public bool IsLibraryShown => Detail is null;
 
@@ -376,6 +388,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     {
         _input = InputKind.Gamepad;
         ShowsCloseButtons = false;
+        UsesController = true;
         if (Search is { } search)
         {
             search.UsesController = true;
@@ -389,6 +402,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     {
         _input = InputKind.Keyboard;
         ShowsCloseButtons = true;
+        UsesController = false;
         if (Search is { } search)
         {
             search.UsesController = false;
@@ -401,6 +415,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     {
         _input = InputKind.Pointer;
         ShowsCloseButtons = true;
+        UsesController = false;
         if (Search is { } search)
         {
             search.UsesController = false;
@@ -551,6 +566,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             case UiAction.Options:
                 // No context menu here: its actions are buttons on the page (owner, 2026-10-17).
                 break;
+            case UiAction.Search:
+                OpenSearch();
+                break;
             default:
                 detail.Handle(action);
                 break;
@@ -578,16 +596,18 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     }
 
     /// <summary>
-    /// Back to the library, on the page of the game shown last and with the focus on it; or back
-    /// to the search, with the focus on that game among the hits.
+    /// B: always back to the library (owner, 2026-10-21), on the page of the game shown last and with the focus on it.
+    /// From the search that is the tab of the game's launcher, and the search closes.
     /// </summary>
     [RelayCommand]
     private void CloseDetail()
     {
-        if (Detail is { IsFromSearch: true } fromSearch && Search is { } search)
+        if (Detail is { IsFromSearch: true } fromSearch)
         {
             Detail = null;
-            search.FocusHit(fromSearch.Current.Tile.Game.Key);
+            _detailBehindSearch = null;
+            CloseSearch();
+            ShowInLibrary(fromSearch.Current.Tile.Game);
             return;
         }
 
@@ -601,6 +621,31 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         var pageSize = PageSizes.Effective(_settings.Current.PreferredPageSize, tab.Count);
         _requestedPage = detail.Index / pageSize;
         Refresh(focusIndex: detail.Index % pageSize);
+    }
+
+    /// <summary>The library on the tab of <paramref name="game"/>'s launcher, on its page and with the focus on it.</summary>
+    private void ShowInLibrary(Game game)
+    {
+        if (Tabs.FirstOrDefault(t => t.Launcher.Id == game.LauncherId) is not { } tab)
+        {
+            return;
+        }
+
+        if (tab != SelectedTab)
+        {
+            ChooseTab(tab);
+        }
+
+        var games = SortedGames(tab);
+        var index = Carousel.Find(games, game.Key, 0);
+        if (index < 0)
+        {
+            return;
+        }
+
+        var pageSize = PageSizes.Effective(_settings.Current.PreferredPageSize, tab.Count);
+        _requestedPage = index / pageSize;
+        Refresh(focusIndex: index % pageSize);
     }
 
     /// <summary>The list changed (rescan, new sort): the detail page keeps its game in the middle.</summary>
@@ -618,13 +663,30 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     /// <summary>Every shown game comes from a tab, so its launcher has one.</summary>
     private LauncherInfo LauncherOf(Game game) => Tabs.First(t => t.Launcher.Id == game.LauncherId).Launcher;
 
-    /// <summary>X in the library: the search over all launchers, with the on-screen keyboard.</summary>
+    /// <summary>
+    /// X: the search over all launchers, with the on-screen keyboard. From a detail page opened from the search, back to
+    /// the search with its text; from any other detail page, the search over it, and B there leads back to it (#127).
+    /// </summary>
     [RelayCommand]
     private void OpenSearch()
     {
         if (Tabs.Count == 0)
         {
             return;
+        }
+
+        if (Detail is { IsFromSearch: true } fromSearch && Search is { } open)
+        {
+            Detail = null;
+            open.FocusHit(fromSearch.Current.Tile.Game.Key);
+            return;
+        }
+
+        if (Detail is { } detail)
+        {
+            _acceptHold.Cancel();
+            _detailBehindSearch = detail;
+            Detail = null;
         }
 
         // Opened with the gamepad, the search starts with the on-screen keyboard; by key or click without.
@@ -652,6 +714,16 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
         Search?.Dispose();
         Search = null;
+
+        // Back to the detail page the search was opened from, if its game is still in the tab.
+        if (_detailBehindSearch is { } detail)
+        {
+            _detailBehindSearch = null;
+            if (SelectedTab is { } tab && detail.Update(SortedGames(tab), Formatting.SortLabel(_settings.Current.LibrarySort)))
+            {
+                Detail = detail;
+            }
+        }
     }
 
     private bool IsSearchFilterOpen => ViewOptions is not null && _createViewOptions == CreateSearchFilter;
@@ -1131,6 +1203,18 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         SelectedTab = tab;
         _requestedPage = 0;
         Refresh(focusIndex: 0);
+    }
+
+    /// <summary>1 … 0 on the keyboard: launcher tab 1 … 10, like LB/RB also on the detail page (#127).</summary>
+    public void ChooseTabNumber(int index)
+    {
+        if (IsDialogOpen || Detail?.IsFromSearch == true || index >= Tabs.Count || Tabs[index] == SelectedTab)
+        {
+            return;
+        }
+
+        _acceptHold.Cancel();
+        ChooseTab(Tabs[index]);
     }
 
     private void CycleTab(int delta)

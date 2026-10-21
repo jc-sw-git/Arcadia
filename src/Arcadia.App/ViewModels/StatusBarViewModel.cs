@@ -26,6 +26,7 @@ public partial class StatusBarViewModel : ViewModelBase
 
     /// <summary>Steam Controller (SISR) is on and has status messages; the header shows the worst one's symbol.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
     public partial bool HasControllerStatus { get; private set; }
 
     /// <summary>All of them are only information (e.g. SISR paused for a game): the blue i.</summary>
@@ -40,10 +41,12 @@ public partial class StatusBarViewModel : ViewModelBase
     public partial string ControllerStatusText { get; private set; } = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
     public partial bool HasSisrUpdate { get; private set; }
 
     /// <summary>A newer Arcadia is on GitHub; shown as an update symbol in the header.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
     public partial bool HasArcadiaUpdate { get; private set; }
 
     [ObservableProperty]
@@ -51,7 +54,11 @@ public partial class StatusBarViewModel : ViewModelBase
 
     /// <summary>SISR is starting and the controller isn't emulated yet; shown as a spinner in the header.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
     public partial bool IsControllerStarting { get; private set; }
+
+    /// <summary>Something stands left of the search chip, so a divider separates it (owner, 2026-10-21).</summary>
+    public bool HasAnyStatus => IsControllerStarting || HasControllerStatus || HasSisrUpdate || HasArcadiaUpdate;
 
     [ObservableProperty]
     public partial string Clock { get; private set; } = string.Empty;

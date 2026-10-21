@@ -1,6 +1,7 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
              x:Class="Arcadia.App.Views.GameDetailView"
              x:DataType="vm:GameDetailViewModel"
              ClipToBounds="True">
@@ -10,9 +11,10 @@
   <UserControl.Resources>
     <DataTemplate x:Key="DetailAction" x:DataType="vm:GameActionViewModel">
       <Button Classes="plain detailAction" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding IsDanger}" Classes.focused="{Binding IsFocused}"
-              IsEnabled="{Binding IsEnabled}" Command="{Binding InvokeCommand}" ToolTip.Tip="{Binding Note}">
+              IsEnabled="{Binding IsEnabled}" Command="{Binding InvokeCommand}"
+              ToolTip.Tip="{Binding DisabledReason}" ToolTip.ShowOnDisabled="True">
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Border Classes="glyph round dark" IsVisible="{Binding IsPrimary}"><TextBlock Text="A" /></Border>
+          <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" IsVisible="{Binding IsPrimary}" />
           <!-- The icons are drawn in a 24 px box; scaled to 20 px like the design. -->
           <Viewbox Width="20" Height="20" IsVisible="{Binding !IsPrimary}" VerticalAlignment="Center">
             <Path Data="{Binding Icon}" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round"
@@ -51,10 +53,10 @@
                 <Border CornerRadius="20" ClipToBounds="True">
                   <DockPanel>
                     <!-- Hero: placeholder backdrop in the cover's hue until artwork arrives (#13). -->
-                    <Panel DockPanel.Dock="Top" Height="372" Background="{Binding Backdrop}" ClipToBounds="True">
+                    <Panel DockPanel.Dock="Top" Height="352" Background="{Binding Backdrop}" ClipToBounds="True">
                       <Ellipse Width="700" Height="700" Stroke="{Binding Ring}" StrokeThickness="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-140,-60,0" />
                       <Ellipse Width="380" Height="380" Stroke="{Binding Ring}" StrokeThickness="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,40,120,0" />
-                      <Grid ColumnDefinitions="210,*" ColumnSpacing="40" Margin="48,0,48,36" VerticalAlignment="Bottom">
+                      <Grid ColumnDefinitions="210,*" ColumnSpacing="40" Margin="48,0,48,24" VerticalAlignment="Bottom">
                         <Border Width="210" Height="315" CornerRadius="12" Background="{Binding Tile.CoverBrush}" BoxShadow="{StaticResource CoverShadow}">
                           <Panel>
                             <Border Classes="shade" CornerRadius="12" IsVisible="{Binding !Tile.IsInstalled}" />
@@ -83,14 +85,14 @@
                               </StackPanel>
                             </Border>
                           </StackPanel>
-                          <TextBlock Text="{Binding Tile.Title}" FontSize="64" FontWeight="ExtraBold" LineHeight="70" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                          <TextBlock Text="{Binding Tile.Title}" FontSize="64" FontWeight="ExtraBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                      Foreground="{StaticResource TextStrong}" />
                         </StackPanel>
                       </Grid>
                     </Panel>
 
                     <!-- Key figures, information only. -->
-                    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,*,*,*" ColumnSpacing="16" Margin="48,24,48,36">
+                    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,*,*,*" ColumnSpacing="16" Margin="48,16,48,36">
                       <Border Classes="detailStat">
                         <StackPanel Spacing="6">
                           <TextBlock Classes="label" Text="ZULETZT GESPIELT" FontSize="13" />
@@ -122,32 +124,33 @@
                     </Grid>
 
                     <!-- The context menu's actions as buttons in three rows: actions, the game's own settings, uninstall
-                         (owner, 2026-10-21). -->
-                    <StackPanel Spacing="10" Margin="48,20,48,0">
+                         (owner, 2026-10-21). 20 px between rows and 16 between buttons leave room for the focus ring (#127);
+                         the hero above gave up the height for it. -->
+                    <StackPanel Spacing="20" Margin="48,20,48,0">
                       <ItemsControl ItemsSource="{Binding TopRow}" ItemTemplate="{StaticResource DetailAction}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" Spacing="12" />
+                            <StackPanel Orientation="Horizontal" Spacing="16" />
                           </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                       </ItemsControl>
                       <ItemsControl ItemsSource="{Binding GameSettingsRow}" ItemTemplate="{StaticResource DetailAction}" IsVisible="{Binding HasGameSettings}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" Spacing="12" />
+                            <StackPanel Orientation="Horizontal" Spacing="16" />
                           </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                       </ItemsControl>
                       <ContentControl Classes="smallActions" Content="{Binding Uninstall}" ContentTemplate="{StaticResource DetailAction}" ClipToBounds="False"
                                       HorizontalAlignment="Left" />
                       <!-- Both notes share one line, so the three rows of buttons leave room for the key figures below. -->
-                      <WrapPanel ItemSpacing="28" LineSpacing="4">
+                      <WrapPanel ItemSpacing="28" LineSpacing="4" IsVisible="{Binding HasNotes}">
                         <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasUpdateNote}">
                           <Path Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7.5v5.5M12 16.5v.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.2" StrokeLineCap="Round"
                                 Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
                           <TextBlock Text="{Binding UpdateNote}" FontSize="16" Foreground="{StaticResource AccentSoft}" VerticalAlignment="Center" />
                         </StackPanel>
-                        <TextBlock Text="{Binding ActionNote}" IsVisible="{Binding HasActionNote}" FontSize="16" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding PlayNote}" IsVisible="{Binding HasPlayNote}" FontSize="16" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
                       </WrapPanel>
                     </StackPanel>
                   </DockPanel>
@@ -166,10 +169,16 @@
          them: at a scaled window size the edge rounds to another pixel than the window's, which left a line of cover. -->
     <Border Width="384" HorizontalAlignment="Left" Margin="-2,0,0,0" IsHitTestVisible="False" IsVisible="{Binding HasNeighbours}" Background="{StaticResource CarouselFadeLeft}" />
     <Border Width="384" HorizontalAlignment="Right" Margin="0,0,-2,0" IsHitTestVisible="False" IsVisible="{Binding HasNeighbours}" Background="{StaticResource CarouselFadeRight}" />
-    <Button Classes="plain glyphButton carouselNav" Content="LT" HorizontalAlignment="Left" Margin="80,0,0,0" IsVisible="{Binding HasNeighbours}"
-            Command="{Binding PreviousCommand}" ToolTip.Tip="Vorheriges Spiel (Bild ↑, Umschalt+← oder Mausrad)" />
-    <Button Classes="plain glyphButton carouselNav" Content="RT" HorizontalAlignment="Right" Margin="0,0,80,0" IsVisible="{Binding HasNeighbours}"
-            Command="{Binding NextCommand}" ToolTip.Tip="Nächstes Spiel (Bild ↓, Umschalt+→ oder Mausrad)" />
+    <Button Classes="plain glyphButton keycap carouselNav" Classes.kbd="{Binding !$parent[Window].((vm:MainViewModel)DataContext).UsesController}"
+            HorizontalAlignment="Left" Margin="80,0,0,0" IsVisible="{Binding HasNeighbours}"
+            Command="{Binding PreviousCommand}" ToolTip.Tip="Vorheriges Spiel (Q, Bild ↑ oder Mausrad)">
+      <ctl:KeyText Pad="LT" Keys="Q" />
+    </Button>
+    <Button Classes="plain glyphButton keycap carouselNav" Classes.kbd="{Binding !$parent[Window].((vm:MainViewModel)DataContext).UsesController}"
+            HorizontalAlignment="Right" Margin="0,0,80,0" IsVisible="{Binding HasNeighbours}"
+            Command="{Binding NextCommand}" ToolTip.Tip="Nächstes Spiel (E, Bild ↓ oder Mausrad)">
+      <ctl:KeyText Pad="RT" Keys="E" />
+    </Button>
   </Panel>
 
   <UserControl.Styles>

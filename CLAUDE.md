@@ -123,7 +123,7 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch` (also `PathOf(pid)` and the foreground process), Steam (`SteamScanner`, `SteamInstallMonitor`, `SteamContentLog`, `SteamLoginLog`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, presses and releases, auto-repeat for D-pad and sticks), `HoldGesture` (tap vs. hold), `RepeatGesture` (held erase), `LatchGesture` (shift: tap or hold), `SoloButtons` (View/Menu act alone, not together), `ButtonText` (the buttons in a text); mouse mode (#64): `MouseMode` (Back + Start, `Polled` readings, also in the background), `MouseModeMapping` (buttons → mouse/keys), `MouseModeAutomation`, `StickCurve`, `SendInputOutput` (`IMouseKeyboardOutput`), `ReturnWithView` (View held brings Arcadia back), `ControllerActivity`/`InjectedInputGate`/`SteamDesktopInputFilter` (drop Steam's desktop layout) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost` (`ISisrHost`), `SisrApiClient`, `UsbipDriver`, `UsbipPorts`, `GitHubReleases`, `ControllerSupportService` (`SisrState`), `ControllerSupportPlatform` (Windows/Steam, replaced in tests), `ControllerSupportRemoval` (uninstall) |
-| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu) and `GameDetailViewModel` (detail carousel, `Views/GameDetailView.axaml`) are its children; `Search/` holds `SearchViewModel` (search page; hits shown in `HitSlotViewModel` places that keep their controls when the hit changes), `OnScreenKeyboardViewModel`; `Controls/` holds `ButtonTextBlock` (buttons drawn framed inside a text), `HoldRing`, `RevealPanel` (the sliding keyboard), `SharedWidthRow` and `CollapsingStack` (the shrinking chips); mouse mode: `Services/MouseModeHost` (wiring, overlay, automation), `Services/ForegroundGame`, `Views/MouseModeOverlay` (own non-activating window, clicks pass outside its region) with `Controls/ScreenEdgeFill` |
+| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu) and `GameDetailViewModel` (detail carousel, `Views/GameDetailView.axaml`) are its children; `Search/` holds `SearchViewModel` (search page; hits shown in `HitSlotViewModel` places that keep their controls when the hit changes), `OnScreenKeyboardViewModel`; `Controls/` holds `ButtonTextBlock` (buttons drawn framed inside a text), `KeyHint`/`KeyText` (a hint or label showing the controller's button or the keyboard's key, after `Input/InputHints`), `HoldRing`, `RevealPanel` (the sliding keyboard), `SharedWidthRow` and `CollapsingStack` (the shrinking chips); mouse mode: `Services/MouseModeHost` (wiring, overlay, automation), `Services/ForegroundGame`, `Views/MouseModeOverlay` (own non-activating window, clicks pass outside its region) with `Controls/ScreenEdgeFill` |
 | `tests/Arcadia.Core.Tests` | xUnit |
 
 Big Picture UI is laid out at 1920×1080 inside a `Viewbox`; a window of another shape gets bars in the window's
@@ -148,7 +148,20 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
 - Dependent options sit in the same box as their main switch.
 - UI texts name a controller button by the symbol on it, not by its name: ⧉ and ≡, not View/Back and Menu/Start
   (Xbox symbols for now; later those of the controller in use, #72), framed like in the legend also inside a text
-  (`ButtonTextBlock`) (owner, 2026-10-20).
+  (`ButtonTextBlock`; in prose other buttons are written in brackets, e.g. "[L3]", "[LS]") (owner, 2026-10-20).
+- Every button hint follows the input in use (#127, owner 2026-10-21): after a controller button the controller's
+  buttons, after a key or a click the keyboard's keys and the mouse (`KeyHint`, `KeyText`; the mouse merely moving
+  changes nothing). Controller buttons are round or a pill, keys square with rounded corners, both with a darker
+  lower edge. An element no key reaches shows only its icon. Search and settings are chips in the header (key +
+  symbol), so the footer doesn't list them.
+- The keyboard plays like a game, one hand on WASD (owner, 2026-10-21): WASD move, Space = A (held: details),
+  Esc = B, F = X, V = Y, Q/E = LT/RT, Shift+Q/E = LB/RB, 1 … 0 = launcher tab 1–10, Enter = ≡, R = ⧉. Arrows,
+  Page Up/Down, Ctrl+Tab, F2, the menu key and Shift+F10 stay as unadvertised alternatives. In the search a real
+  keyboard types, so only keys without text act there (arrows, Enter = ≡ starts the hit, Esc, Page Up/Down).
+- The header's tab strip sits in the middle between logo and status, as wide as its tabs need, LB/RB right beside
+  them. At its widest it keeps 40 px to both, with a divider in each gap; the selected tab stands in its middle and
+  it fades out where more tabs follow. Dividers also stand between a status message and the search chip and
+  between the settings chip and the date (owner, 2026-10-21).
 - Dialogs (Ansicht, settings, prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs (e.g. the
   mouse mode's help) has no "Schließen" button besides (owner, 2026-10-20).
@@ -161,7 +174,9 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
 - The detail page is a carousel through the tab's games in the library's sort order, across pages and
   wrapping at the ends (two games: the other on both sides; one: no neighbours). LT/RT turn it, LB/RB switch
   the tab and stay on the detail page (first game), Y re-sorts with the shown game kept in the middle, B returns
-  to the library page of the game shown last (owner, 2026-10-17).
+  to the library page of the game shown last (owner, 2026-10-17). X opens the search over it; B in the search
+  returns to it (#127). Below the buttons only "Spielen" has a note (update, installation); a disabled button tells
+  why in its tooltip, since the focus skips it (owner, 2026-10-21).
 - Search (#12): opened with X the on-screen keyboard is out, the hits sit in one row above it (sliding sideways,
   faded neighbours at the edges, LT/RT buttons beside them, "RS Treffer wählen" above); opened with F or a click,
   or after B, a real key or the tab on the keyboard's top edge, it slides in and the hits fill a grid that scrolls
@@ -179,7 +194,9 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   nothing typed show an empty state the theme draws (`ContentControl.searchEmpty`). ™ ® © count for nothing in
   the search. The `/launcher` prefix still works when typed but isn't advertised; chips and filter rewrite a typed
   prefix and never add one. A detail page opened from the search turns through the hits in their order; LB/RB
-  and Y do nothing there, B returns to the search with its text unchanged (owner, 2026-10-17 and 2026-10-18).
+  and Y do nothing there, X returns to the search with its text unchanged, and B, as on every detail page, goes to
+  the library: the tab of the game's launcher, its page, the game focused; the search closes (owner, 2026-10-17,
+  2026-10-18 and 2026-10-21).
 - On-screen keyboard (#129): a 1:1 replica of the chosen real layout, like Steam's keyboard (it is to serve outside
   Arcadia later, #110): the character rows as printed on the keys, no Tab, caps lock, enter or shift keys. On the
   normal level a key shows its character large, the shift one small above (left out when it is just the capital

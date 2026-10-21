@@ -95,12 +95,18 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     public bool HasUpdateNote => UpdateNote is not null;
 
-    /// <summary>What the focused button does beyond its label, e.g. that uninstalling opens the launcher.</summary>
+    /// <summary>
+    /// Why "Spielen" isn't available, e.g. the running installation. The other buttons show nothing below them: their
+    /// label says what they do, and a disabled one explains itself in its tooltip (owner, 2026-10-21).
+    /// </summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasActionNote))]
-    public partial string? ActionNote { get; private set; }
+    [NotifyPropertyChangedFor(nameof(HasPlayNote), nameof(HasNotes))]
+    public partial string? PlayNote { get; private set; }
 
-    public bool HasActionNote => ActionNote is not null;
+    public bool HasPlayNote => PlayNote is not null;
+
+    /// <summary>The line below the buttons has something to say; without, it takes no room.</summary>
+    public bool HasNotes => HasUpdateNote || HasPlayNote;
 
     public IRelayCommand SelectCommand { get; }
 
@@ -128,7 +134,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
                 break;
             case UiAction.Accept when Focused is { } focused:
                 focused.Invoke();
-                UpdateActionNote();
+                UpdatePlayNote();
                 break;
         }
     }
@@ -154,10 +160,8 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         {
             FocusKind(focusedKind);
         }
-        else
-        {
-            UpdateActionNote();
-        }
+
+        UpdatePlayNote();
     }
 
     partial void OnOffsetChanged(int value)
@@ -178,6 +182,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         {
             OnPropertyChanged(nameof(UpdateNote));
             OnPropertyChanged(nameof(HasUpdateNote));
+            OnPropertyChanged(nameof(HasNotes));
             RebuildActions();
         }
     }
@@ -282,16 +287,12 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         {
             focused.IsFocused = true;
         }
-
-        UpdateActionNote();
     }
 
-    private void UpdateActionNote()
+    private void UpdatePlayNote()
     {
         // "Spielen" explains itself through the update note; a disabled "Spielen" is the running installation.
         var play = TopRow.FirstOrDefault(a => a.Kind == GameActionKind.Play);
-        ActionNote = Focused is { Kind: not GameActionKind.Play, Note: { } note } ? note
-            : Tile.UpdateAvailable ? null
-            : play?.Note;
+        PlayNote = Tile.UpdateAvailable ? null : play?.Note;
     }
 }

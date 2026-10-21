@@ -930,6 +930,9 @@ Steam Controller Support, Fehlerbehandlung). IDs `G-<n>`. Wo nichts anderes steh
       Wiedereinstecken während Arcadia läuft. · E2E: nein (echte Hardware)
 - [ ] **G-32** Der Fokusrahmen ist überall vollständig sichtbar und nicht abgeschnitten: Spielkachel,
       „Ansicht“ (Sortierung und Seitengröße), Einstellungen und ihre Knöpfe. · E2E: ja
+- [ ] **G-33** Kontextmenü in der Bibliothek (Owner, 2026-10-21): Rechtsklick auf eine Kachel öffnet es neben der
+      Kachel; ⧉, R und ein Klick auf „Optionen“ in der Vorschau öffnen es über dem Button „Optionen“ (linke und
+      untere Kante auf denen des Buttons). · E2E: ja
 
 ### Tastatur und Maus
 
@@ -1004,6 +1007,7 @@ Verlauf:
 | G-32 | 2026-10-17 | Claude | Branch `fix/focus-ring-clipped`, Linux, Xvfb 1920×1080 `--demo` | ✅ Kachel (auch oberste Reihe), Seitengröße in „Ansicht“ und erste Einstellungszeile mit vollem Rahmen | Kontrolle am PC des Owners |
 | G-32 | 2026-10-17 | Juri | PC des Owners, Branch `fix/focus-ring-clipped` | ❌ Sortier-Schalter in „Ansicht“ noch oben und unten abgeschnitten; Kachelrahmen unten dunkler | `ItemsControl` schneidet ebenfalls zu; Schlagschatten lag über dem Rahmen |
 | G-32 | 2026-10-17 | Claude | Branch `fix/focus-ring-clipped`, Linux, Xvfb 1920×1080 `--demo` | ✅ Sortier-Schalter mit vollem Rahmen, Kachelrahmen unten so hell wie oben | Kontrolle am PC des Owners |
+| G-33 | 2026-10-21 | Claude | Branch `feat/laufende-spiele-anzeigen-94-95`, Linux, Xvfb `--demo`, Maus und Tastatur per xdotool | ✅ Rechtsklick: Menü rechts neben der Kachel; R und Klick auf „Optionen“: Menü über dem Button, unten und links bündig. ⧉ am Controller nicht gesehen (kein XInput unter Linux), läuft aber über denselben Weg wie R | Controller am PC des Owners |
 
 ## Explorativer Test
 

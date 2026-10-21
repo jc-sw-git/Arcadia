@@ -194,7 +194,7 @@
                       </StackPanel>
                     </Viewbox>
                   </Button>
-                  <Button Classes="plain secondary" HorizontalAlignment="Stretch" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenMenuCommand}"
+                  <Button Name="PreviewOptionsButton" Classes="plain secondary" HorizontalAlignment="Stretch" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenMenuCommand}"
                           ToolTip.Tip="Weitere Aktionen (R oder Rechtsklick auf ein Cover)">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                       <ctl:KeyHint Pad="⧉" Keys="R" />
@@ -986,7 +986,7 @@
         </Border>
       </Panel>
 
-      <!-- Context menu of the focused game, anchored next to its cover (placed in MainWindow.axaml.cs). -->
+      <!-- Context menu of the focused game, beside its cover or over "Optionen" (placed in MainWindow.axaml.cs). -->
       <Panel Name="GameMenuLayer" Grid.RowSpan="4" IsVisible="{Binding IsGameMenuOpen}">
         <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CloseMenuCommand}" />

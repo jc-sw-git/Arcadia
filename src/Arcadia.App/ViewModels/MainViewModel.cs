@@ -820,7 +820,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
                 StartHold(hit, UiAction.Accept);
                 break;
             case UiAction.Options when search.FocusedResult is { } hit:
-                GameMenu = new GameMenuViewModel(hit, GameActionViewModel.For(hit, this));
+                GameMenu = new GameMenuViewModel(hit, GameActionViewModel.For(hit, this)) { AtCover = true };
                 break;
             default:
                 search.Handle(action);
@@ -885,7 +885,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
 
         tile.FocusCommand.Execute(null);
-        GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, this));
+        GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, this)) { AtCover = true };
     }
 
     private GameTileViewModel CreateSearchTile(Game game, Action<GameTileViewModel> focus) =>
@@ -1004,13 +1004,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
     }
 
-    /// <summary>Opens the context menu of the focused game.</summary>
+    /// <summary>Opens the context menu of the focused game over the preview's "Optionen" button (⧉, R, a click on it).</summary>
     [RelayCommand]
-    private void OpenMenu()
+    private void OpenMenu() => OpenMenu(atCover: false);
+
+    private void OpenMenu(bool atCover)
     {
         if (FocusedGame is { } tile)
         {
-            GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, this));
+            GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, this)) { AtCover = atCover };
         }
     }
 
@@ -1023,7 +1025,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
 
         Focus(tile);
-        OpenMenu();
+        OpenMenu(atCover: true);
     }
 
     [RelayCommand]

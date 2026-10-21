@@ -145,7 +145,8 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   tab the user last chose, always on page 1 with the first game focused (owner, 2026-10-17).
 - One "Ansicht" modal (Y) for sort + page size. X = search (all launchers, on-screen keyboard,
   `/steam-epic term` prefix, keyword per launcher), R3 = keyboard layout switch, View/⧉ or
-  right click = context menu, Menu/☰ = settings (swapped by the owner, 2026-10-17). No "all launchers" tab. No dedicated favourite button.
+  right click = context menu, Menu/☰ = settings (swapped by the owner, 2026-10-17). The context menu stands beside the cover
+  after a right click on it, over the preview's "Optionen" button after ⧉, R or a click on that button (owner, 2026-10-21). No "all launchers" tab. No dedicated favourite button.
 - Dependent options sit in the same box as their main switch.
 - UI texts name a controller button by the symbol on it, not by its name: ⧉ and ≡, not View/Back and Menu/Start
   (Xbox symbols for now; later those of the controller in use, #72), framed like in the legend also inside a text

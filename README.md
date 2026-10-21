@@ -5,12 +5,24 @@ Ein Game-Launcher, der alle anderen Launcher vereint. Jeder verbundene Launcher
 eigenen Tab. Arcadia läuft im **Big-Picture-Modus** komplett per Controller und im
 **Desktop-Modus** mit Maus und Tastatur.
 
-> Status: **Grundgerüst.** Bibliothek mit Launcher-Tabs, paginiertem Raster,
-> Vorschau, Sortierung/Seitengröße und Controller-Steuerung läuft. Echter Launcher
-> bisher: Epic. Alles Weitere siehe [docs/roadmap.md](docs/roadmap.md).
+> Status: **vor der ersten Version (0.x).** Steam und Epic laufen echt (Bibliothek,
+> Spielstart, Installationen, Updates), die übrigen Launcher gibt es bisher nur als
+> Demo-Daten. Dazu Detailseite, Kontextmenü, Suche über alle Launcher mit
+> Bildschirmtastatur und Steam Controller Support. Alles Weitere siehe
+> [docs/roadmap.md](docs/roadmap.md).
 >
 > Arcadia ist aus SteamButler hervorgegangen. Der alte Rust-Code liegt als
 > Vorlage für die Portierung unter [`legacy/steambutler-rs`](legacy/steambutler-rs).
+
+## Installation
+
+Nur Windows x64. Den Installer `Arcadia-win-Setup.exe` gibt es unter
+[Releases](https://github.com/jc-sw-git/Arcadia/releases); er installiert ohne Adminrechte
+nach `%LOCALAPPDATA%\Arcadia` und Arcadia aktualisiert sich danach selbst.
+
+Der Installer ist **noch nicht signiert**. Windows SmartScreen warnt deshalb beim ersten
+Start („Der Computer wurde durch Windows geschützt“): „Weitere Informationen“ → „Trotzdem
+ausführen“. Wer dem nicht traut, baut Arcadia selbst (siehe unten).
 
 ## Aufbau
 
@@ -19,7 +31,7 @@ eigenen Tab. Arcadia läuft im **Big-Picture-Modus** komplett per Controller und
 | Projekt | Zweck |
 |---------|-------|
 | `src/Arcadia.Core` | Plattformunabhängig: Modell (`Game`, `LauncherInfo`, `LaunchTarget`), Sortierung, Paginierung samt Seitengrößen-Regel, Such-Präfix (`/steam-epic …`) |
-| `src/Arcadia.Launchers` | Scanner je Launcher (Epic real inkl. nicht installierter Spiele, Demo-Daten), Spielstart und Installation |
+| `src/Arcadia.Launchers` | Scanner je Launcher (Steam und Epic real, Demo-Daten für die übrigen), Spielstart und Installation |
 | `src/Arcadia.Input` | Controller-Eingabe (XInput unter Windows) |
 | `src/Arcadia.ControllerSupport` | „Steam Controller Support“: verwaltet SISR (Installation, Start/Stopp, Updates) und überwacht SISR, VIIPER, usbip-Treiber und Steam |
 | `src/Arcadia.App` | Avalonia-Oberfläche (MVVM mit CommunityToolkit.Mvvm) |
@@ -54,7 +66,7 @@ dotnet run --project src/Arcadia.App -- --demo
 | Details eines Spiels | A halten (1 s) oder ⧉ → „Details anzeigen“ | Enter halten |
 | Einstellungen | Menü (≡) | F2 |
 | Suche über alle Launcher | X | F, Strg+F |
-| In der Suche: löschen / Leerzeichen / Filter / zu den Treffern / Tastaturlayout | X / Y / LT / ≡ / R3 | Rücktaste / Leertaste / „/“ tippen / Enter / Klick auf den Globus |
+| In der Suche: löschen / Leerzeichen / Filter und Sortierung / Treffer starten / Tastaturlayout | X / Y / L3 / ≡ / R3 | Rücktaste / Leertaste / Klick auf den Sortier-Knopf / Enter / Klick auf den Globus |
 
 Maus: Klick wählt ein Spiel aus, Doppelklick startet es. Auf der Detailseite blättert das Mausrad durch die Spiele.
 
@@ -75,6 +87,11 @@ Spiele aus anderen Launchern.
 
 Logs: `%LOCALAPPDATA%\Arcadia\logs\` (`arcadia.log`, `sisr.log`). Drittsoftware: siehe
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+## Mitmachen
+
+Beiträge sind willkommen: siehe [CONTRIBUTING.md](CONTRIBUTING.md). Sicherheitslücken bitte
+nicht als Issue, sondern wie in [SECURITY.md](SECURITY.md) beschrieben melden.
 
 ## Lizenz
 

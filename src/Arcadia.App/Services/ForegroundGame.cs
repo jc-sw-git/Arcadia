@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Arcadia.Core.Library;
 using Arcadia.Launchers;
 
@@ -25,17 +24,56 @@ public static class ForegroundGame
         return path is null ? launched.GameStartedBefore(id) : games.GameOf(path);
     }
 
-    /// <summary>The ids of the running processes, for <see cref="LaunchedGames.Starting"/>.</summary>
-    public static IReadOnlyList<int> RunningProcessIds()
+    /// <summary>
+    /// What is in front a moment after <paramref name="gameKey"/>, started from Arcadia, ended (#94): only
+    /// <see cref="ForegroundAfterGame.Other"/> keeps Arcadia behind. <paramref name="launcherPrograms"/> are the file
+    /// names of the game's launcher (<c>ILauncherIntegration.ProgramNames</c>).
+    /// </summary>
+    public static ForegroundAfterGame InFrontAfter(string gameKey, GameFolders games, LaunchedGames launched, IReadOnlyCollection<string> launcherPrograms)
     {
-        var processes = Process.GetProcesses();
-        var ids = new int[processes.Length];
-        for (var i = 0; i < processes.Length; i++)
+        if (ProcessWatch.ForegroundProcessId() is not { } id)
         {
-            ids[i] = processes[i].Id;
-            processes[i].Dispose();
+            return ForegroundAfterGame.Nothing;
         }
 
-        return ids;
+        if (id == Environment.ProcessId)
+        {
+            return ForegroundAfterGame.Arcadia;
+        }
+
+        if (ForegroundGuard.IsDesktopInFront())
+        {
+            return ForegroundAfterGame.Desktop;
+        }
+
+        var path = ProcessWatch.PathOf(id);
+        if ((path is null ? launched.GameStartedBefore(id) : games.GameOf(path)) == gameKey)
+        {
+            return ForegroundAfterGame.TheGame;
+        }
+
+        return path is not null && launcherPrograms.Contains(Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
+            ? ForegroundAfterGame.ItsLauncher
+            : ForegroundAfterGame.Other;
     }
+}
+
+/// <summary>What is in front when a game started from Arcadia ended (#94).</summary>
+public enum ForegroundAfterGame
+{
+    /// <summary>No window, e.g. right after the game's window closed.</summary>
+    Nothing,
+
+    Arcadia,
+
+    Desktop,
+
+    /// <summary>A window of the game that ended, e.g. its crash reporter.</summary>
+    TheGame,
+
+    /// <summary>A program of the game's launcher, e.g. Epic asking to rate the game.</summary>
+    ItsLauncher,
+
+    /// <summary>Another program, which the user switched to during the game; it keeps the front.</summary>
+    Other,
 }

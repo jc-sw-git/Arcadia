@@ -193,8 +193,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
     private HashSet<string> FallbackLaunchers(IEnumerable<ILauncherIntegration>? enabled = null) =>
         (enabled ?? launchers.Enabled).Where(i => i.RunningGames is null).Select(i => i.Launcher.Id).ToHashSet(StringComparer.Ordinal);
 
-    /// <summary>The launcher part of a <see cref="Game.Key"/>.</summary>
-    private static string LauncherIdOf(string gameKey) => gameKey.IndexOf(':', StringComparison.Ordinal) is var colon and >= 0 ? gameKey[..colon] : gameKey;
+    private static string LauncherIdOf(string gameKey) => Game.LauncherIdOf(gameKey);
 
     private sealed record Report(string LauncherId, IReadOnlyList<RunningGame> Games);
 

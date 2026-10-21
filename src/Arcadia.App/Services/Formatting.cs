@@ -45,6 +45,13 @@ public static class Formatting
     public static string DateAndTime(DateTimeOffset? value) =>
         value is { } v ? v.ToLocalTime().ToString("dd.MM.yyyy, HH:mm", Culture) : "–";
 
+    /// <summary>"18:04" in local time; "20.10., 23:14" if that wasn't on <paramref name="now"/>'s day.</summary>
+    public static string TimeOfDay(DateTimeOffset value, DateTimeOffset now)
+    {
+        var local = value.ToLocalTime();
+        return local.ToString(local.Date == now.ToLocalTime().Date ? "HH:mm" : "dd.MM., HH:mm", Culture);
+    }
+
     /// <summary>"09.10.2026" in local time, or "–".</summary>
     public static string Date(DateTimeOffset? value) =>
         value is { } v ? v.ToLocalTime().ToString("dd.MM.yyyy", Culture) : "–";

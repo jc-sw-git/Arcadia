@@ -30,6 +30,8 @@
     <SolidColorBrush x:Key="AccentHover" Color="#5AAEFF" />
     <SolidColorBrush x:Key="AccentSoft" Color="#8CC6FF" />
     <SolidColorBrush x:Key="OnAccent" Color="#06101C" />
+    <!-- Status message levels: information (blue i), warning (yellow triangle), error (red X, Danger). -->
+    <SolidColorBrush x:Key="Info" Color="#5AAEFF" />
     <SolidColorBrush x:Key="Warning" Color="#F5B868" />
     <SolidColorBrush x:Key="Success" Color="#6FD99A" />
     <SolidColorBrush x:Key="Danger" Color="#FF9A8F" />

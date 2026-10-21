@@ -466,8 +466,8 @@
   <Style Selector="Button.primary">
     <Setter Property="Height" Value="60" />
     <Setter Property="CornerRadius" Value="30" />
-    <!-- Keeps the label clear of the rounded ends, also when it shrinks to fit; as much as "Optionen" beside it. -->
-    <Setter Property="Padding" Value="14,0" />
+    <!-- Keeps the label clear of the rounded ends, also when it shrinks to fit. -->
+    <Setter Property="Padding" Value="20,0" />
     <Setter Property="Background" Value="{StaticResource Accent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
     <Setter Property="FontSize" Value="20" />
@@ -476,12 +476,11 @@
   <Style Selector="Button.primary:pointerover">
     <Setter Property="Background" Value="{StaticResource AccentHover}" />
   </Style>
-  <!-- Next to the primary button in the preview, e.g. "⧉ Optionen"; a circle when only the symbol is left. -->
+  <!-- Below the primary button in the preview, e.g. "⧉ Optionen". -->
   <Style Selector="Button.secondary">
     <Setter Property="Height" Value="60" />
-    <Setter Property="MinWidth" Value="60" />
     <Setter Property="CornerRadius" Value="30" />
-    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="Padding" Value="20,0" />
     <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
     <Setter Property="Foreground" Value="{StaticResource Text}" />
     <Setter Property="FontSize" Value="17" />

@@ -185,25 +185,22 @@
               </Panel>
               <DockPanel Grid.Row="1" Margin="24,22,24,24">
                 <StackPanel DockPanel.Dock="Bottom" Spacing="10">
-                  <!-- A long label ("Zurück ins Spiel" beside the Space key) takes the room of the word "Optionen";
-                       only what still doesn't fit then shrinks. -->
-                  <ctl:PrimaryRow Spacing="10">
-                    <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
-                      <Viewbox StretchDirection="DownOnly">
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                          <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" />
-                          <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
-                        </StackPanel>
-                      </Viewbox>
-                    </Button>
-                    <Button Classes="plain secondary" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenMenuCommand}"
-                            ToolTip.Tip="Weitere Aktionen (R oder Rechtsklick auf ein Cover)">
-                      <ctl:CollapsingStack Spacing="10" EndPadding="6">
-                        <ctl:KeyHint Pad="⧉" Keys="R" />
-                        <TextBlock Text="Optionen" VerticalAlignment="Center" />
-                      </ctl:CollapsingStack>
-                    </Button>
-                  </ctl:PrimaryRow>
+                  <!-- One below the other, so a long label ("Zurück ins Spiel" beside the Space key) has the full width. -->
+                  <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
+                    <Viewbox StretchDirection="DownOnly">
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" />
+                        <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </Viewbox>
+                  </Button>
+                  <Button Classes="plain secondary" HorizontalAlignment="Stretch" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenMenuCommand}"
+                          ToolTip.Tip="Weitere Aktionen (R oder Rechtsklick auf ein Cover)">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <ctl:KeyHint Pad="⧉" Keys="R" />
+                      <TextBlock Text="Optionen" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
                   <TextBlock IsVisible="{Binding UpdateAvailable}" Classes="actionHint">
                     <Run Text="{Binding LauncherName}" /><Run Text=" installiert das Update ggf. vor dem Start" />
                   </TextBlock>

@@ -825,6 +825,77 @@ Verlauf:
 | T129-1, T129-2, T129-3, T129-6, T129-7 | 2026-10-21 | Claude | Branch `feat/bildschirmtastatur-als-nachbildung-echter-tastaturlayouts-129`, Linux, Xvfb 1920×1080 `--demo`, Fenster 1600×900, nur Maus per xdotool | ✅ DE mit Umschalt- und AltGr-Zeichen in der bisherigen Breite; Klick auf „AltGr“ zeigt nur ² ³ { [ ] } \ @ € ~ \| µ, auf „⇧ Groß“ nur ° ! " … Q W E …; Klick auf „a“ tippt „a“; US mit ausgegrautem „AltGr“, Klick darauf ändert nichts | Controller (LB/RB gehalten, D-Pad über leere Tasten) am PC des Owners |
 | T129-4, T129-5, T129-6 | 2026-10-21 | Claude | wie oben, Unit-Tests (`KeyboardLayoutTests`, `KeyGridTests`) | ⚠️ Layouts aller fünf Sprachen, Tottasten und das Überspringen leerer Tasten grün; mit dem Controller nicht gefahren | Lauf am PC des Owners |
 
+## #95 Laufende Spiele anzeigen statt „Spielen“ anzubieten
+
+- [ ] **T95-1** Ein Steam-Spiel mit A starten: Kachel „Startet“, Vorschau und Detailseite „Wird gestartet …“, dann
+      „Läuft“ (Kachel) bzw. „Läuft seit HH:MM“ (Vorschau, Detailseite, Suchtreffer); A, Footer und Kontextmenü heißen
+      „Zurück ins Spiel“, kein Update-Symbol. Nach dem Beenden zeigt alles wieder „Spielen“. · E2E: nein (echter
+      Launcher, echtes Spiel)
+- [ ] **T95-2** Wie T95-1 mit einem Epic-Spiel. · E2E: nein (echter Launcher, echtes Spiel)
+- [ ] **T95-3** Ein Spiel direkt in Steam starten, dann zu Arcadia wechseln: Es zeigt nach höchstens 2 s „Läuft“;
+      nach dem Beenden wieder „Spielen“. Dasselbe mit Epic. · E2E: nein (echter Launcher, echtes Spiel)
+- [ ] **T95-4** „Zurück ins Spiel“ nur mit dem Controller, je einmal über A in der Bibliothek, den Button der
+      Detailseite und das Kontextmenü: Das Spielfenster kommt nach vorne, auch wenn es minimiert war. Ein Spiel ohne
+      Fenster (noch im Ladebildschirm des Launchers) bringt einen Toast. · E2E: nein (echtes Spiel)
+- [ ] **T95-5** Ein Spiel, das als Administrator läuft (z. B. per Rechtsklick „Als Administrator ausführen“ aus seinem
+      Ordner gestartet): „Zurück ins Spiel“ holt es nach vorne oder meldet per Toast, dass es nicht ging; Ergebnis im
+      Verlauf notieren. · E2E: nein (UAC)
+- [ ] **T95-6** Während „Wird gestartet …“ nochmals A drücken: Toast „… wird bereits gestartet …“, das Spiel startet
+      nicht ein zweites Mal. · E2E: nein (echter Launcher)
+- [ ] **T95-7** Während ein Spiel läuft, ein anderes aus Arcadia starten: Es startet (sofern der Launcher es
+      zulässt), beide zeigen „Läuft“. · E2E: nein (echte Spiele)
+- [ ] **T95-8** Demo-Daten (`--demo`): In jedem Launcher läuft ein Spiel (Kachel „Läuft“, Vorschau „Läuft seit …“,
+      25 min vor dem Start von Arcadia). Detailseite: Chip „LÄUFT SEIT …“, Button „Zurück ins Spiel“, „Deinstallieren …“
+      ausgegraut mit Tooltip „Erst wenn das Spiel beendet ist“; Kontextmenü ebenso. A darauf bringt den Toast „Arcadia
+      findet kein Fenster …“. · E2E: ja
+- [ ] **T95-9** Mit angeschlossenem Steam Controller (SISR an), während ein Spiel läuft: Der Steam-Controller-Modus in
+      Vorschau, Detailseite und Kontextmenü ist ausgegraut, Tooltip bzw. Hinweis „Gilt erst beim nächsten Start – änderbar,
+      wenn das Spiel beendet ist“; „Individueller Mausmodus“ bleibt änderbar. Nach dem Spielende ist der Modus wieder
+      änderbar. · E2E: nein (Steam Controller)
+- [ ] **T95-10** Nach dem Beenden eines Steam- und eines Epic-Spiels stimmen „Zuletzt gespielt“ und die Spielzeit in
+      Vorschau und Detailseite (bei Steam spätestens 30 s nach dem Ende); mit der Sortierung „Zuletzt gespielt · neueste
+      zuerst“ steht das Spiel vorne. · E2E: nein (echte Spiele)
+- [ ] **T95-11** Programm mit nicht lesbarem Pfad, aus Arcadia gestartet: zeigt „Läuft“ und danach wieder „Spielen“.
+      Erst prüfbar, sobald ein Launcher ohne eigenes Signal kommt (Steam und Epic melden laufende Spiele selbst, die
+      Prozesssuche läuft für sie nicht); bis dahin decken `ProcessGamesTests` und `RunningGamesTrackerTests` es ab.
+      · E2E: nein (noch kein Launcher ohne eigenes Signal)
+- [ ] **T95-12** Steams Flag prüfen: Während ein Steam-Spiel läuft,
+      `Get-ItemProperty HKCU:\Software\Valve\Steam\Apps\<appid> | Select Running` zeigt 1, nach dem Ende 0; auch nach
+      einem Absturz (Spiel im Task-Manager beenden). „Läuft seit“ stimmt mit der Startzeit überein. Ergebnis in
+      `docs/launchers/steam.md` festhalten. · E2E: nein (echter Launcher)
+- [ ] **T95-13** CPU von Arcadia neben einem aus Arcadia gestarteten Spiel, 60 s, wie in T103-3: unter 1 %. ·
+      E2E: nein (Messung am PC des Owners)
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T95-8 | 2026-10-21 | Claude | Branch `feat/laufende-spiele-anzeigen-94-95`, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool (Pfeile, R, Leertaste gehalten, Leertaste, F, Tippen) | ✅ Screenshots im Projektordner `screenshots/laufende-spiele-94-95/`: Kachel- und Treffer-Badge „Läuft“, Vorschau „Läuft seit 18:19“, „Zurück ins Spiel“ in Button und Footer (in der Vorschau verkleinert, damit er neben „Optionen“ passt), Detailseite mit Chip und ausgegrautem „Deinstallieren …“, Kontextmenü, Toast ohne Fenster. „Wird gestartet …“ nicht zu sehen, weil Demo-Spiele nicht starten | Echte Launcher am PC des Owners |
+| T95-1 bis T95-3, T95-11 (Logik) | 2026-10-21 | Claude | `dotnet test`, Linux: `EpicRunningGamesTests`, `SteamRunningGamesTests` (Registry nachgebildet), `ProcessGamesTests`, `RunningGamesTrackerTests` | ⚠️ Start-/Stop-Zeilen, halbe Zeilen, neues Log, Registry-Flag und `RunningAppID`, Prozesse aus dem Spielordner und mit nicht lesbarem Pfad, „Wird gestartet …“ mit 2-min-Grenze grün; echte Launcher nicht | Lauf am PC des Owners |
+| T95-13 (Prozesssuche) | 2026-10-21 | Claude | Release-Build, Linux, nachgebildete Prozesstabelle mit 351 Prozessen, 5.000 Spiele | ⚠️ ohne die Windows-Aufrufe je Prozess: Ordner der 5.000 Spiele aufbauen 3,2 ms (nur bei einer neuen Bibliothek), erste Runde 0,5 ms, jede weitere Runde ohne neue Prozesse 40 µs; Windows fragt nur neue Prozesse ab. Läuft für Steam und Epic gar nicht | CPU neben dem Spiel am PC des Owners |
+
+## #94 Nach einem aus Arcadia gestarteten Spiel kommt Arcadia wieder in den Vordergrund
+
+- [ ] **T94-1** Ein Steam-Spiel aus Arcadia starten, spielen, beenden: Etwa 1 s später ist Arcadia vorne und mit dem
+      Controller bedienbar. · E2E: nein (echtes Spiel)
+- [ ] **T94-2** Wie T94-1 mit einem Epic-Spiel, nach dem Epic das Bewertungsfenster öffnet: Arcadia liegt darüber und
+      ist mit dem Controller bedienbar. · E2E: nein (echtes Spiel)
+- [ ] **T94-3** Ein Spiel direkt im Launcher starten und beenden: Arcadia bleibt, wo es war. · E2E: nein (echtes Spiel)
+- [ ] **T94-4** Ein Spiel aus Arcadia starten, mit Alt+Tab in den Browser wechseln, das Spiel enden lassen (z. B. im
+      Task-Manager beenden): Arcadia bleibt hinten. · E2E: nein (echtes Spiel)
+- [ ] **T94-5** Während ein aus Arcadia gestartetes Spiel läuft, Arcadia aktualisieren („Jetzt aktualisieren“): nach
+      dem Spielende kommt das neue Arcadia nach vorne. · E2E: nein (Update, echtes Spiel)
+- [ ] **T94-6** Mausmodus „Automatisch“, bzw. „Von Hand“ mit „Mausmodus beenden, wenn Arcadia im Vordergrund ist“: Ist
+      der Mausmodus beim Spielende an, endet er, sobald Arcadia nach vorne kommt. · E2E: nein (echtes Spiel, Controller)
+- [ ] **T94-7** Ein aus Arcadia gestartetes Programm mit nicht lesbarem Pfad beenden: Arcadia ist vorne. Erst prüfbar
+      wie T95-11. · E2E: nein (noch kein Launcher ohne eigenes Signal)
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T94-1, T94-3, T94-5, T94-7 (Logik) | 2026-10-21 | Claude | `dotnet test`, Linux: `RunningGamesTrackerTests` | ⚠️ Nur das Ende eines aus Arcadia gestarteten Spiels meldet „aus Arcadia“, auch nach der Übergabe beim Update; Fenster und Vordergrund nur unter Windows prüfbar | Lauf am PC des Owners |
+
 ## Grundgerüst (ohne Issue)
 
 Alles, was Arcadia schon kann, aber zu keinem Issue gehört (Grundgerüst aus `docs/roadmap.md`,

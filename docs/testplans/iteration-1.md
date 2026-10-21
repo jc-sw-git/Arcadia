@@ -877,6 +877,7 @@ Verlauf:
 | T95-8 (Vorschau-Button) | 2026-10-21 | Claude | Branch `feat/laufende-spiele-anzeigen-94-95`, Linux, Xvfb `--demo`, Tastatur per xdotool | ✅ Buttons untereinander in voller Breite: „Zurück ins Spiel“ und „Installieren“ mit Tastatur, „Spielen“ mit Controller in voller Größe ganz im Button, „⧉/R Optionen“ ausgeschrieben darunter; nichts überlappt die Angaben darüber | — |
 | T95-1 bis T95-3, T95-11 (Logik) | 2026-10-21 | Claude | `dotnet test`, Linux: `EpicRunningGamesTests`, `SteamRunningGamesTests` (Registry nachgebildet), `ProcessGamesTests`, `RunningGamesTrackerTests` | ⚠️ Start-/Stop-Zeilen, halbe Zeilen, neues Log, Registry-Flag und `RunningAppID`, Prozesse aus dem Spielordner und mit nicht lesbarem Pfad, „Wird gestartet …“ mit 2-min-Grenze grün; echte Launcher nicht | Lauf am PC des Owners |
 | T95-13 (Prozesssuche) | 2026-10-21 | Claude | Release-Build, Linux, nachgebildete Prozesstabelle mit 351 Prozessen, 5.000 Spiele | ⚠️ ohne die Windows-Aufrufe je Prozess: Ordner der 5.000 Spiele aufbauen 3,2 ms (nur bei einer neuen Bibliothek), erste Runde 0,5 ms, jede weitere Runde ohne neue Prozesse 40 µs; Windows fragt nur neue Prozesse ab. Läuft für Steam und Epic gar nicht | CPU neben dem Spiel am PC des Owners |
+| T95-4, T95-13 | 2026-10-21 | Juri | PC des Owners, Branch `feat/laufende-spiele-anzeigen-94-95` (Stand 25197b1), Debug aus VS Code (Arcadia als Teil des .NET-Host-Prozesses) | ✅ „Zurück ins Spiel“ holt das Spiel nach vorne. CPU laut Task-Manager meist 0–0,5 %, neben dem Spiel Spitzen bis 0,7 %; RAM knapp 200 MB. ⚠️ Debug-Build im .NET-Host, nicht der Release-Build | CPU im installierten Release-Build nachmessen |
 
 ## #94 Nach einem aus Arcadia gestarteten Spiel kommt Arcadia wieder in den Vordergrund
 
@@ -899,6 +900,7 @@ Verlauf:
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | T94-1, T94-3, T94-5, T94-7 (Logik) | 2026-10-21 | Claude | `dotnet test`, Linux: `RunningGamesTrackerTests` | ⚠️ Nur das Ende eines aus Arcadia gestarteten Spiels meldet „aus Arcadia“, auch nach der Übergabe beim Update; Fenster und Vordergrund nur unter Windows prüfbar | Lauf am PC des Owners |
+| T94-1 | 2026-10-21 | Juri | PC des Owners, Branch `feat/laufende-spiele-anzeigen-94-95` (Stand 25197b1), Debug aus VS Code (Arcadia als Teil des .NET-Host-Prozesses) | ✅ Nach dem Beenden des Spiels kam Arcadia wieder nach vorne. Danach kurz 1,2 % CPU, vermutlich das Neueinlesen der Bibliothek nach dem Spielende (Spielzeit, „Zuletzt gespielt“), das gleich und 30 s später läuft | — |
 
 ## Grundgerüst (ohne Issue)
 

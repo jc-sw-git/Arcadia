@@ -728,23 +728,32 @@
                           </ItemsControl.ItemsPanel>
                           <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="search:KeyViewModel">
-                              <Button Classes="plain key" Classes.wide="{Binding IsWide}" Classes.on="{Binding IsOn}" Classes.focused="{Binding IsFocused}"
-                                      Width="{Binding Width}" Command="{Binding PressCommand}">
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                  <!-- The pad's button for the key, only while the controller is in use. -->
-                                  <Border Classes="glyph small" Classes.round="{Binding IsRoundGlyph}" VerticalAlignment="Center">
-                                    <Border.IsVisible>
-                                      <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                        <Binding Path="HasGlyph" />
-                                        <Binding Path="$parent[ctl:RevealPanel].((search:SearchViewModel)DataContext).UsesController" />
-                                      </MultiBinding>
-                                    </Border.IsVisible>
-                                    <TextBlock Text="{Binding Glyph}" />
-                                  </Border>
-                                  <Path Classes="globe" IsVisible="{Binding IsLayoutKey}" Data="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M3 12h18 M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9 M12 3C9.5 5.7 8.4 8.7 8.4 12s1.1 6.3 3.6 9"
-                                        StrokeThickness="1.8" Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" />
-                                  <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                                </StackPanel>
+                              <Button Classes="plain key" Classes.wide="{Binding IsWide}" Classes.on="{Binding IsOn}" Classes.unavailable="{Binding IsUnavailable}"
+                                      Classes.focused="{Binding IsFocused}" Width="{Binding Width}" Command="{Binding PressCommand}">
+                                <Panel>
+                                  <!-- A character key as printed on a real one: the shift character small above, the AltGr one small at the
+                                       bottom right; both only on the normal level (like Steam's keyboard, owner 2026-10-21). -->
+                                  <Panel IsVisible="{Binding !IsWide}">
+                                    <TextBlock Classes="keyHint" Text="{Binding ShiftHint}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,3,0,0" />
+                                    <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,8,0,0" />
+                                    <TextBlock Classes="keyHint" Text="{Binding AltGrHint}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,4" />
+                                  </Panel>
+                                  <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsWide}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <!-- The pad's button for the key, only while the controller is in use. -->
+                                    <Border Classes="glyph small" Classes.round="{Binding IsRoundGlyph}" VerticalAlignment="Center">
+                                      <Border.IsVisible>
+                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                          <Binding Path="HasGlyph" />
+                                          <Binding Path="$parent[ctl:RevealPanel].((search:SearchViewModel)DataContext).UsesController" />
+                                        </MultiBinding>
+                                      </Border.IsVisible>
+                                      <TextBlock Text="{Binding Glyph}" />
+                                    </Border>
+                                    <Path Classes="globe" IsVisible="{Binding IsLayoutKey}" Data="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M3 12h18 M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9 M12 3C9.5 5.7 8.4 8.7 8.4 12s1.1 6.3 3.6 9"
+                                          StrokeThickness="1.8" Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                                  </StackPanel>
+                                </Panel>
                               </Button>
                             </DataTemplate>
                           </ItemsControl.ItemTemplate>

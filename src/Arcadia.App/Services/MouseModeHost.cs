@@ -383,7 +383,7 @@ public sealed class MouseModeHost : IDisposable
     }
 
     /// <summary>
-    /// "Deaktivierten Mausmodus im Spiel erzwingen": while a game that forbids it is in front, the mode
+    /// "Beenden des Mausmodus in Spielen erzwingen": while a game that forbids it is in front, the mode
     /// ends and Back + Start doesn't switch it on. Checked with the foreground, every <see cref="DesktopFilterCheckInterval"/>.
     /// </summary>
     private void UpdateGameBlock()

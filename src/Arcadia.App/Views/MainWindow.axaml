@@ -1240,8 +1240,8 @@
                   <Button Classes="plain settingRow" Classes.focused="{Binding EndInFrontItem.IsFocused}" Classes.unavailable="{Binding !EndInFrontApplies}" Command="{Binding ToggleEndInFrontCommand}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
-                        <TextBlock Text="Beenden, wenn Arcadia nach vorne kommt" FontSize="18" FontWeight="Bold" />
-                        <TextBlock ctl:ButtonTextBlock.Text="Nur „Von Hand“: Holt ⧉ oder ein Klick Arcadia nach vorne, wird der Controller wieder zum Controller. In Arcadia eingeschaltet, bleibt der Mausmodus an."
+                        <TextBlock Text="Mausmodus beenden, wenn Arcadia im Vordergrund ist" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="Nur „Von Hand“: Sobald du wieder in das Fenster von Arcadia klickst oder Arcadia nach vorne holst (z. B. durch „Mit ⧉ zurück zu Arcadia“), schaltet sich der Mausmodus automatisch ab. Aktivierst du den Mausmodus von Hand, während Arcadia bereits im Vordergrund ist, bleibt er so lange aktiv, bis Arcadia das nächste Mal in den Vordergrund zurückgeholt wird, also z. B. durch Raus- und wieder Reinklicken."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding EndWhenArcadiaInFront}" VerticalAlignment="Center">
@@ -1252,7 +1252,7 @@
                   <Button Classes="plain settingRow" Classes.focused="{Binding InGamesItem.IsFocused}" Classes.unavailable="{Binding !InGamesApplies}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
-                        <TextBlock Text="Deaktivierten Mausmodus im Spiel erzwingen (nur „Von Hand“)" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" />
+                        <TextBlock Text="Beenden des Mausmodus in Spielen erzwingen" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" />
                         <TextBlock ctl:ButtonTextBlock.Text="{Binding InGamesText}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">

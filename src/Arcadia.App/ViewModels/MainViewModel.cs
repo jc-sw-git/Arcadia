@@ -979,9 +979,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     bool IGameActionHost.ShowGameMouseMode => ShowGameMouseMode;
 
-    string IGameActionHost.GameMouseModeOf(Game game) => GameMouseModes.Of(_settings.Current.MouseMode.GameChoiceFor(game.Key));
+    bool? IGameActionHost.GameMouseModeOf(Game game) => _settings.Current.MouseMode.GameChoiceFor(game.Key);
 
-    string IGameActionHost.DefaultGameMouseMode => GameMouseModes.Of(_settings.Current.MouseMode.PerGameDefaultAllowed);
+    bool IGameActionHost.DefaultGameMouseModeAllowed => _settings.Current.MouseMode.PerGameDefaultAllowed;
 
     void IGameActionHost.CycleGameMouseMode(GameTileViewModel tile) => CycleGameMouseModeOf(tile.Game);
 
@@ -1010,19 +1010,23 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         UpdateGameMouseModeState();
     }
 
+    private bool _shownDefaultMouseModeAllowed = true;
+
     private void UpdateGameMouseModeState()
     {
         var mouseMode = _settings.Current.MouseMode;
         var show = mouseMode.Activation == MouseModeActivation.Manual && mouseMode.InGames == MouseModeInGames.PerGame;
-        if (ShowGameMouseMode != show)
+        // The detail page's button names what "Standard" means, so a changed default rebuilds it too.
+        if (ShowGameMouseMode != show || _shownDefaultMouseModeAllowed != mouseMode.PerGameDefaultAllowed)
         {
             ShowGameMouseMode = show;
+            _shownDefaultMouseModeAllowed = mouseMode.PerGameDefaultAllowed;
             Detail?.RebuildActions();
         }
 
         if (FocusedGame?.Game is { } game)
         {
-            FocusedGameMouseModeText = GameMouseModes.Of(mouseMode.GameChoiceFor(game.Key));
+            FocusedGameMouseModeText = GameMouseModes.Of(mouseMode.GameChoiceFor(game.Key), mouseMode.PerGameDefaultAllowed);
         }
     }
 

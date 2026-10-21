@@ -16,7 +16,7 @@ public enum MouseModeActivation
     Automatic,
 }
 
-/// <summary>"Deaktivierten Mausmodus im Spiel erzwingen (nur „Von Hand“)" (owner, 2026-10-20).</summary>
+/// <summary>"Beenden des Mausmodus in Spielen erzwingen", only for "Von Hand" (owner, 2026-10-20 and 2026-10-21).</summary>
 public enum MouseModeInGames
 {
     /// <summary>"Nein": Back + Start switches the mouse mode on in games too.</summary>
@@ -48,7 +48,7 @@ public sealed record MouseModeSettings
     /// <summary>"Beenden, wenn Arcadia nach vorne kommt"; only for <see cref="MouseModeActivation.Manual"/>, the automatic mode always ends then.</summary>
     public bool EndWhenArcadiaInFront { get; init; } = true;
 
-    /// <summary>"Deaktivierten Mausmodus im Spiel erzwingen"; only for <see cref="MouseModeActivation.Manual"/>.</summary>
+    /// <summary>"Beenden des Mausmodus in Spielen erzwingen"; only for <see cref="MouseModeActivation.Manual"/>.</summary>
     public MouseModeInGames InGames { get; init; } = MouseModeInGames.Allowed;
 
     /// <summary>"Standardeinstellung bei „Individuell“": "Erlaubt" (true) or "Deaktiviert".</summary>

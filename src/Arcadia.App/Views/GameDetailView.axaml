@@ -121,8 +121,9 @@
                       </Border>
                     </Grid>
 
-                    <!-- The context menu's actions as buttons, in two rows (owner, 2026-10-17). -->
-                    <StackPanel Spacing="12" Margin="48,24,48,0">
+                    <!-- The context menu's actions as buttons in three rows: actions, the game's own settings, uninstall
+                         (owner, 2026-10-21). -->
+                    <StackPanel Spacing="10" Margin="48,20,48,0">
                       <ItemsControl ItemsSource="{Binding TopRow}" ItemTemplate="{StaticResource DetailAction}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
@@ -130,22 +131,24 @@
                           </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                       </ItemsControl>
-                      <Grid ColumnDefinitions="*,Auto" Classes="smallActions">
-                        <ItemsControl ItemsSource="{Binding BottomRow}" ItemTemplate="{StaticResource DetailAction}">
-                          <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                              <StackPanel Orientation="Horizontal" Spacing="12" />
-                            </ItemsPanelTemplate>
-                          </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                        <ContentControl Grid.Column="1" Content="{Binding Uninstall}" ContentTemplate="{StaticResource DetailAction}" ClipToBounds="False" />
-                      </Grid>
-                      <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasUpdateNote}">
-                        <Path Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7.5v5.5M12 16.5v.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.2" StrokeLineCap="Round"
-                              Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding UpdateNote}" FontSize="16" Foreground="{StaticResource AccentSoft}" VerticalAlignment="Center" />
-                      </StackPanel>
-                      <TextBlock Text="{Binding ActionNote}" IsVisible="{Binding HasActionNote}" FontSize="16" Foreground="{StaticResource TextMuted}" />
+                      <ItemsControl ItemsSource="{Binding GameSettingsRow}" ItemTemplate="{StaticResource DetailAction}" IsVisible="{Binding HasGameSettings}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="12" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                      </ItemsControl>
+                      <ContentControl Classes="smallActions" Content="{Binding Uninstall}" ContentTemplate="{StaticResource DetailAction}" ClipToBounds="False"
+                                      HorizontalAlignment="Left" />
+                      <!-- Both notes share one line, so the three rows of buttons leave room for the key figures below. -->
+                      <WrapPanel ItemSpacing="28" LineSpacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasUpdateNote}">
+                          <Path Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7.5v5.5M12 16.5v.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.2" StrokeLineCap="Round"
+                                Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding UpdateNote}" FontSize="16" Foreground="{StaticResource AccentSoft}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding ActionNote}" IsVisible="{Binding HasActionNote}" FontSize="16" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+                      </WrapPanel>
                     </StackPanel>
                   </DockPanel>
                 </Border>

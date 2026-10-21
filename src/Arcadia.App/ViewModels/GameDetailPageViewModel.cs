@@ -72,14 +72,21 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     public bool IsSide => Offset != 0;
 
-    /// <summary>Spielen, In … öffnen, Favorit, Steam Controller mode.</summary>
+    /// <summary>Spielen, Zu Favoriten, In … öffnen, Artwork ändern (owner, 2026-10-21).</summary>
     [ObservableProperty]
     public partial IReadOnlyList<GameActionViewModel> TopRow { get; private set; } = [];
 
-    /// <summary>Artwork; <see cref="Uninstall"/> stands apart at the right end of the row.</summary>
+    /// <summary>
+    /// What can be set for this game alone: Steam Controller mode, "Individueller Mausmodus"; later e.g. launch
+    /// options or the controller layout (owner, 2026-10-21). Empty when nothing applies.
+    /// </summary>
     [ObservableProperty]
-    public partial IReadOnlyList<GameActionViewModel> BottomRow { get; private set; } = [];
+    [NotifyPropertyChangedFor(nameof(HasGameSettings))]
+    public partial IReadOnlyList<GameActionViewModel> GameSettingsRow { get; private set; } = [];
 
+    public bool HasGameSettings => GameSettingsRow.Count > 0;
+
+    /// <summary>"Deinstallieren …", alone in the last row.</summary>
     [ObservableProperty]
     public partial GameActionViewModel? Uninstall { get; private set; }
 
@@ -114,7 +121,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
                 MoveInRow(1);
                 break;
             case UiAction.Up:
-                MoveToRow(0);
+                MoveToRow(-1);
                 break;
             case UiAction.Down:
                 MoveToRow(1);
@@ -138,8 +145,8 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         // No context menu here: everything it offers is a button of its own, except "Details", which is this page.
         List<GameActionViewModel> InOrder(params GameActionKind[] kinds) =>
             kinds.SelectMany(kind => actions.Where(a => a.Kind == kind)).ToList();
-        TopRow = InOrder(GameActionKind.Play, GameActionKind.OpenInLauncher, GameActionKind.Favorite, GameActionKind.ControllerMode, GameActionKind.MouseMode);
-        BottomRow = InOrder(GameActionKind.Artwork);
+        TopRow = InOrder(GameActionKind.Play, GameActionKind.Favorite, GameActionKind.OpenInLauncher, GameActionKind.Artwork);
+        GameSettingsRow = InOrder(GameActionKind.ControllerMode, GameActionKind.MouseMode);
         Uninstall = actions.FirstOrDefault(a => a.Kind == GameActionKind.Uninstall);
 
         _focusColumn = -1;
@@ -175,17 +182,20 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         }
     }
 
+    private const int RowCount = 3;
+
     private IReadOnlyList<GameActionViewModel>? Row(int row) => row switch
     {
         0 => TopRow,
-        1 => Uninstall is null ? BottomRow : [.. BottomRow, Uninstall],
+        1 => GameSettingsRow,
+        2 => Uninstall is null ? [] : [Uninstall],
         _ => null,
     };
 
     /// <summary>Focuses the button of <paramref name="kind"/>, else "Spielen", else the first one available.</summary>
     public void FocusKind(GameActionKind? kind)
     {
-        for (var row = 0; row < 2; row++)
+        for (var row = 0; row < RowCount; row++)
         {
             var actions = Row(row)!;
             for (var column = 0; column < actions.Count; column++)
@@ -198,7 +208,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
             }
         }
 
-        for (var row = 0; row < 2; row++)
+        for (var row = 0; row < RowCount; row++)
         {
             var actions = Row(row)!;
             for (var column = 0; column < actions.Count; column++)
@@ -232,22 +242,28 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Up/down land on the available button of the other row that is nearest in order, preferring the left one.</summary>
-    private void MoveToRow(int row)
+    /// <summary>
+    /// Up/down go to the next row in that direction with an available button (an empty settings row is skipped) and
+    /// land on the one nearest in order, preferring the left one; they stop at the first and last row.
+    /// </summary>
+    private void MoveToRow(int delta)
     {
-        if (row == _focusRow || _focusColumn < 0 || Row(row) is not { } actions)
+        if (_focusColumn < 0)
         {
             return;
         }
 
-        for (var distance = 0; distance < actions.Count + _focusColumn + 1; distance++)
+        for (var row = _focusRow + delta; Row(row) is { } actions; row += delta)
         {
-            foreach (var column in new[] { _focusColumn - distance, _focusColumn + distance })
+            for (var distance = 0; distance < actions.Count + _focusColumn + 1; distance++)
             {
-                if (column >= 0 && column < actions.Count && actions[column].IsEnabled)
+                foreach (var column in new[] { _focusColumn - distance, _focusColumn + distance })
                 {
-                    SetFocus(row, column);
-                    return;
+                    if (column >= 0 && column < actions.Count && actions[column].IsEnabled)
+                    {
+                        SetFocus(row, column);
+                        return;
+                    }
                 }
             }
         }

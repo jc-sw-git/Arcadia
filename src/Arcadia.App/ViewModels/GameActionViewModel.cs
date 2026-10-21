@@ -34,14 +34,14 @@ public interface IGameActionHost
 
     void ToggleControllerMode(GameTileViewModel tile);
 
-    /// <summary>True when the mouse mode is "Von Hand" with "Deaktivierten Mausmodus im Spiel erzwingen" on "Individuell".</summary>
+    /// <summary>True when the mouse mode is "Von Hand" with "Beenden des Mausmodus in Spielen erzwingen" on "Individuell".</summary>
     bool ShowGameMouseMode { get; }
 
-    /// <summary>The game's "Individueller Mausmodus": "Standard", "Erlaubt" or "Deaktiviert".</summary>
-    string GameMouseModeOf(Game game);
+    /// <summary>The game's "Individueller Mausmodus": allowed, forbidden, or null for "Standard".</summary>
+    bool? GameMouseModeOf(Game game);
 
-    /// <summary>What "Standard" means now: "Erlaubt" or "Deaktiviert".</summary>
-    string DefaultGameMouseMode { get; }
+    /// <summary>What "Standard" means now: allowed or forbidden.</summary>
+    bool DefaultGameMouseModeAllowed { get; }
 
     void CycleGameMouseMode(GameTileViewModel tile);
 
@@ -182,9 +182,9 @@ public sealed partial class GameActionViewModel : ViewModelBase
             mouse = new(GameActionKind.MouseMode, string.Empty, null, true, () =>
             {
                 host.CycleGameMouseMode(tile);
-                mouse!.ShowGameMouseMode(host.GameMouseModeOf(game), host.DefaultGameMouseMode);
+                mouse!.ShowGameMouseMode(host.GameMouseModeOf(game), host.DefaultGameMouseModeAllowed);
             });
-            mouse.ShowGameMouseMode(host.GameMouseModeOf(game), host.DefaultGameMouseMode);
+            mouse.ShowGameMouseMode(host.GameMouseModeOf(game), host.DefaultGameMouseModeAllowed);
             actions.Add(mouse);
         }
 
@@ -199,19 +199,12 @@ public sealed partial class GameActionViewModel : ViewModelBase
         return actions;
     }
 
-    private void ShowGameMouseMode(string mode, string defaultMode)
+    private void ShowGameMouseMode(bool? choice, bool defaultAllowed)
     {
+        var mode = GameMouseModes.Of(choice, defaultAllowed);
         Label = $"Mausmodus: {mode}";
         ButtonLabel = mode;
-        var next = mode switch
-        {
-            GameMouseModes.Default => GameMouseModes.Allowed,
-            GameMouseModes.Allowed => GameMouseModes.Blocked,
-            _ => GameMouseModes.Default,
-        };
-        Note = mode == GameMouseModes.Default
-            ? $"„Standard“ heißt gerade „{defaultMode}“ · A wechselt zu „{next}“"
-            : $"A wechselt zu „{next}“";
+        Note = $"A wechselt zu „{GameMouseModes.Of(GameMouseModes.Next(choice), defaultAllowed)}“";
     }
 
     private void ShowControllerMode(string mode)

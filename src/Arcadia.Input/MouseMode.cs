@@ -5,7 +5,7 @@ namespace Arcadia.Input;
 /// <param name="HoldTime">"Haltedauer": how long Back + Start must be held.</param>
 /// <param name="PointerSpeed">"Zeigergeschwindigkeit", 1–9.</param>
 /// <param name="BlockedHere">
-/// A game is in front in which "Deaktivierten Mausmodus im Spiel erzwingen" forbids it: the mode ends,
+/// A game is in front in which "Beenden des Mausmodus in Spielen erzwingen" forbids it: the mode ends,
 /// and Back + Start doesn't switch it on (owner, 2026-10-20).
 /// </param>
 public sealed record MouseModeOptions(bool Enabled, TimeSpan HoldTime, int PointerSpeed, bool BlockedHere = false);

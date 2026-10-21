@@ -399,10 +399,12 @@ Verlauf:
       Sortierung. · E2E: ja
 - [ ] **T11-6** B (und ein Klick auf die Pfadleiste) führt zurück in die Bibliothek, auf die Seite des
       zuletzt gezeigten Spiels mit Fokus darauf. · E2E: ja
-- [ ] **T11-7** Schaltflächen wie im Kontextmenü, ohne „Details anzeigen“: oben „A Spielen“ (fokussiert),
-      „In <Launcher> öffnen“, „Zu Favoriten“ (deaktiviert) und mit verbundenem Steam Controller
-      „STEAM CONTROLLER <Modus>“ (A wechselt); unten „Artwork ändern“ (deaktiviert)
-      und rechts abgesetzt „Deinstallieren …“ in Rot mit derselben Rückfrage wie im Menü. Das D-Pad
+- [ ] **T11-7** Schaltflächen wie im Kontextmenü, ohne „Details anzeigen“, in drei Reihen (Owner, 2026-10-21):
+      oben „A Spielen“ (fokussiert), „Zu Favoriten“ (deaktiviert), „In <Launcher> öffnen“, „Artwork ändern“
+      (deaktiviert); darunter die Einstellungen des Spiels, mit verbundenem Steam Controller
+      „STEAM CONTROLLER <Modus>“ (A wechselt) und bei „Individuell“ „INDIVIDUELLER MAUSMODUS“ (ohne beide fehlt die
+      Reihe, ↑/↓ überspringen sie); zuletzt allein „Deinstallieren …“ in Rot mit derselben Rückfrage wie im Menü.
+      Nichts ragt aus der Karte, auch mit beiden Einstellungen und „Standard (deaktiviert)“. Das D-Pad
       überspringt deaktivierte Schaltflächen; unter den Reihen steht der Hinweis der fokussierten
       Schaltfläche (z. B. „Nur in Epic Games möglich – öffnet Epic Games“). ⧉ öffnet hier kein Menü. · E2E: ja
 - [ ] **T11-8** Mit Update: Chip „UPDATE VERFÜGBAR“, „Spielen“ bleibt, darunter „<Launcher> installiert
@@ -590,8 +592,8 @@ Verlauf:
 - [ ] **T64-4** L3 antippen: Zeiger ein Drittel so schnell, nochmal antippen: wieder normal. Kurz antippen, während
       der Stick bewegt wird, schaltet genauso um. L3 halten (ab 0,5 s) und den Stick bewegen: langsam, solange
       gehalten, danach normal. · E2E: nein
-- [ ] **T64-5** View gehalten holt Arcadia aus dem Mausmodus nach vorne (auch aus dem minimierten Zustand, siehe T64-13). Mit „Beenden, wenn
-      Arcadia nach vorne kommt“ (Standard) endet der Mausmodus dabei mit „Mausmodus aus“; in Arcadia von Hand
+- [ ] **T64-5** View gehalten holt Arcadia aus dem Mausmodus nach vorne (auch aus dem minimierten Zustand, siehe T64-13). Mit „Mausmodus beenden,
+      wenn Arcadia im Vordergrund ist“ (Standard) endet der Mausmodus dabei mit „Mausmodus aus“; in Arcadia von Hand
       eingeschaltet bleibt er an und bedient Arcadia wie eine Maus. Option aus: er bleibt auch beim Wechsel an.
       Die Option gilt nur bei „Von Hand“ und ist sonst abgeblendet. · E2E: nein
 - [ ] **T64-6** „Mausmodus“ auf „Automatisch“: Wechsel per Alt+Tab zum Explorer → „Mausmodus an“ ohne Rand und
@@ -651,13 +653,13 @@ Verlauf:
 - [ ] **T64-18** Mausmodus an, Windows-Bildschirmtastatur (osk.exe) offen: mit A auf Tasten klicken. Noch nicht
       gesehen, Ergebnis im Verlauf notieren: der Filter verwirft vermutlich auch ihre Tasten, weil sie sie wie Steam
       per `SendInput` schickt. · E2E: nein
-- [ ] **T64-19** „Von Hand“, „Deaktivierten Mausmodus im Spiel erzwingen (nur „Von Hand“)“: „Nein“: ⧉ + ≡ schaltet
+- [ ] **T64-19** „Von Hand“, „Beenden des Mausmodus in Spielen erzwingen“: „Nein“: ⧉ + ≡ schaltet
       den Mausmodus auch in einem Spiel aus der Bibliothek ein. „Ja“: in so einem Spiel zeigt ⧉ + ≡ gehalten „Mausmodus
       ist in diesem Spiel deaktiviert“ (ohne Vibrieren), und ein eingeschalteter Mausmodus endet, sobald das Spiel nach
       vorne kommt („Mausmodus aus – in diesem Spiel deaktiviert“); im Explorer geht er weiter. „Individuell“: die Zeile
       „Standardeinstellung bei „Individuell““ wird bedienbar, Vorschau und Detailseite zeigen „Individueller
-      Mausmodus“ (Standard → Erlaubt → Deaktiviert, mit A oder Klick), und jedes Spiel folgt seiner Wahl oder bei
-      „Standard“ der Standardeinstellung. Bei „Automatisch“ oder „Aus“ sind beide Zeilen abgeblendet und die
+      Mausmodus“ („Standard (erlaubt)“ bzw. „Standard (deaktiviert)“ nach der Standardeinstellung → Erlaubt →
+      Deaktiviert, mit A oder Klick), und jedes Spiel folgt seiner Wahl oder bei „Standard“ der Standardeinstellung. Bei „Automatisch“ oder „Aus“ sind beide Zeilen abgeblendet und die
       Schaltfläche fehlt. Alles bleibt nach einem Neustart erhalten. · E2E: nein
 - [ ] **T64-15** Die Boxen „Mausmodus“ und „Zurück zu Arcadia“ und „So funktioniert's“ nennen Tasten über ihr
       Symbol (⧉, ≡), nirgends „Back“, „Start“, „View“ oder „Menu“. Die Symbole stehen im Text in einer runden
@@ -687,6 +689,7 @@ Verlauf:
 | T64-14, T64-16 (M3, M5) | 2026-10-20 | Claude | Nach Juris Freigabe von M3 und M5; Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool; `dotnet test` | ✅ Eigene Box „Steams Desktop-Belegung ignorieren“ unter „Zurück zu Arcadia“, mit dem Steuerkreuz erreichbar (die Liste scrollt mit), Enter schaltet um. Pfade mit `/`, doppelten Trennern, `.`/`..` und `\\?\` passen (`GameFoldersTests`, vorher rot); `LaunchedGamesTests`. Hooks, Anti-Cheat-Spiel und Vordergrund unter Windows nicht geprüft | T64-14, T64-16 am PC des Owners |
 | T64-17 (nur Text) | 2026-10-20 | Claude | Linux, Xvfb 1920×1080 `--demo`, Maus per xdotool | ✅ Der Hinweis zum Steam Controller auf „Steam Input“ steht unter den Nachteilen des Steam Controller Supports, nicht mehr in „So funktioniert's“ (Juri) | T64-17 am PC des Owners |
 | T64-7, T64-8, T64-19, T64-17 (Texte) | 2026-10-20 | Claude | Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool; `dotnet test` (`MouseModeInGamesTests`, `MouseModeTests`, `SettingsServiceTests`, `GameFoldersTests`, `LaunchedGamesTests`) | ✅ Neue Texte für „Von Hand“ und „Automatisch“; „Deaktivierten Mausmodus im Spiel erzwingen“ wechselt Nein/Ja/Individuell, „Standardeinstellung bei „Individuell““ wird erst bei „Individuell“ bedienbar; Vorschau und Detailseite zeigen „Individueller Mausmodus“, A wechselt Standard → Erlaubt → Deaktiviert und die Vorschau folgt. Nachteile des Steam Controller Supports gekürzt, Grenze „Spiel sieht die Eingaben“ entfernt. Sperre im Spiel unter Windows nicht geprüft (Logik per Test) | T64-19 am PC des Owners |
+| T64-5, T64-19, T11-7 (Texte, Detailseite) | 2026-10-21 | Claude | Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool; `dotnet test` | ✅ Neue Titel und Texte in der Box „Mausmodus“; Vorschau und Detailseite zeigen „Standard (deaktiviert)“, A wechselt zu „Erlaubt“; Detailseite in drei Reihen, ↓/↑ durch alle drei, mit Update-Hinweis und Hinweis der Schaltfläche in einer Zeile ragt nichts in die Kennzahlen. Steam-Controller-Zeile nicht gesehen (kein Steam Controller unter Linux) | Lauf am PC des Owners |
 
 ## #124 SISR übernimmt bei Steam Input für Xbox-Controller auch den Xbox Controller
 

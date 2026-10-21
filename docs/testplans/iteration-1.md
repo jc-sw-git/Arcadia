@@ -732,6 +732,42 @@ Verlauf:
 | T124-1 | 2026-10-21 | Juri | PC des Owners, PR #125 (Pause nach Steams Einstellung) | ✅ „Sieht grundsätzlich erstmal gut aus“; Hinweis zeigte noch das Warnsymbol | Drei Stufen Info/Warnung/Fehler (T124-9) |
 | T124-9 | 2026-10-21 | Claude | Branch wie oben, Linux, Unit-Tests (Stufen der Meldungen); App gebaut, nicht gestartet | ⚠️ Stufen grün, Symbole nicht angesehen | Lauf am PC des Owners |
 
+## #100 Beenden von Arcadia bricht einen laufenden SISR-Start ab
+
+Mit echtem Steam Controller und Steam.
+
+- [ ] **T100-1** Steam Controller Support einschalten und Arcadia sofort schließen (Fenster ✕ oder Alt+F4, solange
+      SISR noch startet, in den ersten Sekunden). Nach höchstens 8 Sekunden ist Arcadia weg und es läuft kein
+      `SISR.exe` und kein `viiper.exe` mehr (Task-Manager); in `arcadia.log` steht „SISR wird beendet“ und
+      „SISR beendet (läuft noch: False)“. · E2E: nein (echtes SISR)
+- [ ] **T100-2** Steam beenden, Support einschalten (Arcadia startet Steam, „Steam wird gestartet …“) und Arcadia
+      währenddessen schließen: Arcadia schließt ohne die Wartezeit von einer Minute, es startet kein SISR. · E2E: nein (echtes Steam)
+- [ ] **T100-3** Neustart für ein Update bei laufendem SISR: SISR läuft weiter (unverändert, T23). · E2E: nein (Update)
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T100-1, T100-2 (Logik) | 2026-10-21 | Claude | Branch `td/sisr-shutdown-and-usbip-signature-100-29`, Linux, `dotnet test` (`ControllerSupportServiceTests`, Fake-SISR, `FakeTimeProvider`) | ✅ vorher rot (SISR, das `quit` ignoriert, hielt das Beenden auf; Warten auf Steam wurde nicht abgebrochen), nachher grün | Echter Ablauf am PC des Owners |
+
+## #29 usbip-Installer vor dem Start mit Adminrechten prüfen
+
+- [ ] **T29-1** Steam Controller Support auf einem PC ohne usbip-win2 einrichten („SISR installieren“): Der Treiber
+      wird installiert, die Windows-Abfrage (UAC) zeigt „Cloudyne Systems (Scheibling Consulting AB)“ als
+      Herausgeber. In `%TEMP%\Arcadia` bleibt kein Installer zurück. · E2E: nein (UAC, Kerneltreiber)
+- [ ] **T29-2** Den Herausgeber in `UsbipRelease.Publisher` testweise ändern (lokaler Build) und den Treiber erneut
+      installieren: keine UAC-Abfrage, die Einstellungen zeigen „… nicht von … signiert. Installiere den Treiber
+      bitte selbst: https://github.com/vadimgrn/usbip-win2/releases/latest“, SISR bleibt aus. · E2E: nein (UAC)
+- [ ] **T29-3** Ohne Internetzugang zum Sperrlisten-Server (z. B. OCSP-Hosts von GlobalSign blockiert) den Treiber
+      installieren: Die Prüfung schlägt mit dem Windows-Code (`0x80092013`) fehl, es startet nichts, die Meldung
+      nennt den Link zur manuellen Installation. · E2E: nein (Netzwerk, Kerneltreiber)
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T29-2 (Logik) | 2026-10-21 | Claude | Branch `td/sisr-shutdown-and-usbip-signature-100-29`, Linux, `dotnet test` (`InstallerSignatureTests`, selbst erzeugte Zertifikate, Fake-`IAuthenticode`) | ✅ nicht signiert, ungültige Signatur, falsche Organisation, Land oder Registriernummer, doppelte Organisation: kein Start; passender Herausgeber startet | `WinVerifyTrust` selbst läuft nur unter Windows: T29-1 bis T29-3 am PC des Owners |
+
 ## #103 Laufende Spiele ohne Exceptions erkennen
 
 - [ ] **T103-1** Arcadia im Debugger (Rider/Visual Studio) starten, ein Steam-Spiel starten (SISR pausiert) und

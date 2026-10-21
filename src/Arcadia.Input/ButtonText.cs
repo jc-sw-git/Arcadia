@@ -7,8 +7,9 @@ public sealed record ButtonTextPart(string Text, bool IsButton);
 
 /// <summary>
 /// Finds the controller buttons in a text, so they can be drawn with a frame like on the controller
-/// (owner, 2026-10-20). In prose only the symbols ⧉ and ≡ count: a lone "A" there may be a word.
-/// In a list of buttons (the mouse mode's help) the names A, LB, L3, … count too.
+/// (owner, 2026-10-20). In prose the symbols ⧉ and ≡ count, and a name in brackets such as "[L3]":
+/// a lone "A" there may be a word. In a list of buttons (the mouse mode's help) the bare names A, LB,
+/// L3, LS, D-Pad, … count too.
 /// </summary>
 public static partial class ButtonText
 {
@@ -23,7 +24,7 @@ public static partial class ButtonText
                 parts.Add(new ButtonTextPart(text[start..match.Index], IsButton: false));
             }
 
-            parts.Add(new ButtonTextPart(match.Value, IsButton: true));
+            parts.Add(new ButtonTextPart(match.Groups["name"].Success ? match.Groups["name"].Value : match.Value, IsButton: true));
             start = match.Index + match.Length;
         }
 
@@ -35,9 +36,12 @@ public static partial class ButtonText
         return parts;
     }
 
-    [GeneratedRegex("[⧉≡]")]
+    /// <summary>A, B, X and Y are round on the controller; the other buttons are drawn as a pill.</summary>
+    public static bool IsRound(string button) => button is "A" or "B" or "X" or "Y";
+
+    [GeneratedRegex(@"[⧉≡]|\[(?<name>LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y|D-Pad)\]")]
     private static partial Regex Symbols();
 
-    [GeneratedRegex(@"[⧉≡]|\b(?:LB|RB|LT|RT|L3|R3|A|B|X|Y)\b")]
+    [GeneratedRegex(@"[⧉≡]|\[(?<name>LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y|D-Pad)\]|\bD-Pad\b|\b(?:LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y)\b")]
     private static partial Regex SymbolsOrNames();
 }

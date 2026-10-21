@@ -125,7 +125,7 @@
       <!-- Toolbar: current tab and view options -->
       <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto" IsVisible="{Binding IsLibraryShown}">
         <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-          <TextBlock Text="{Binding SelectedTab.Name, FallbackValue=''}" FontSize="34" FontWeight="ExtraBold" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding SelectedTab?.Name, TargetNullValue=''}" FontSize="34" FontWeight="ExtraBold" VerticalAlignment="Center" />
           <TextBlock Text="{Binding CountText}" FontSize="18" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,8,0,0" />
         </StackPanel>
         <Button Grid.Column="1" Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}" IsVisible="{Binding SelectedTab, Converter={x:Static ObjectConverters.IsNotNull}}">
@@ -141,20 +141,20 @@
         <Button Classes="plain" HorizontalAlignment="Left" Command="{Binding CloseDetailCommand}" ToolTip.Tip="Zurück (Esc)">
           <StackPanel Orientation="Horizontal" Spacing="14">
             <ctl:KeyHint Pad="B" Keys="Esc" />
-            <TextBlock Classes="crumb" Text="Bibliothek" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}" />
-            <TextBlock Classes="crumb separator" Text="/" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}" />
-            <TextBlock Classes="crumb" Text="{Binding Detail.TabName, FallbackValue=''}" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}" />
-            <TextBlock Classes="crumb" Text="Suche" IsVisible="{Binding Detail.IsFromSearch, FallbackValue=False}" />
+            <TextBlock Classes="crumb" Text="Bibliothek" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
+            <TextBlock Classes="crumb separator" Text="/" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
+            <TextBlock Classes="crumb" Text="{Binding Detail?.TabName, TargetNullValue=''}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
+            <TextBlock Classes="crumb" Text="Suche" IsVisible="{Binding Detail?.IsFromSearch, TargetNullValue=False}" />
             <TextBlock Classes="crumb separator" Text="/" />
-            <TextBlock Classes="crumb current" Text="{Binding Detail.Current.Tile.Title, FallbackValue=''}" />
+            <TextBlock Classes="crumb current" Text="{Binding Detail?.Current.Tile.Title, TargetNullValue=''}" />
           </StackPanel>
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="20">
-          <TextBlock Text="{Binding Detail.PositionText, FallbackValue=''}" FontSize="17" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
-          <Button Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}">
+          <TextBlock Text="{Binding Detail?.PositionText, TargetNullValue=''}" FontSize="17" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+          <Button Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <ctl:KeyHint Pad="Y" Keys="V" />
-              <TextBlock Text="{Binding Detail.SortLabel, FallbackValue=''}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Detail?.SortLabel, TargetNullValue=''}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
         </StackPanel>
@@ -167,7 +167,7 @@
       <!-- Body: preview panel and cover grid -->
       <Grid Grid.Row="2" ColumnDefinitions="400,*" Margin="80,0,0,0" ColumnSpacing="40" IsVisible="{Binding IsLibraryShown}">
 
-        <Border Classes="preview" Classes.holding="{Binding FocusedGame.IsHolding, FallbackValue=False}" Background="{StaticResource Surface}" CornerRadius="16" ClipToBounds="True" Margin="0,18,0,16"
+        <Border Classes="preview" Classes.holding="{Binding FocusedGame?.IsHolding, TargetNullValue=False}" Background="{StaticResource Surface}" CornerRadius="16" ClipToBounds="True" Margin="0,18,0,16"
                 IsVisible="{Binding FocusedGame, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Panel>
             <Grid RowDefinitions="180,*" DataContext="{Binding FocusedGame}" x:DataType="vm:GameTileViewModel">
@@ -192,7 +192,7 @@
                         <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
                       </StackPanel>
                     </Button>
-                    <Button Grid.Column="1" Classes="plain secondary" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenMenuCommand}"
+                    <Button Grid.Column="1" Classes="plain secondary" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenMenuCommand}"
                             ToolTip.Tip="Weitere Aktionen (R oder Rechtsklick auf ein Cover)">
                       <StackPanel Orientation="Horizontal" Spacing="10">
                         <ctl:KeyHint Pad="⧉" Keys="R" />
@@ -255,19 +255,19 @@
                       <TextBlock Text="{Binding LocationText}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
                     </StackPanel>
                   </Grid>
-                  <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowControllerSupport}">
+                  <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowControllerSupport, TargetNullValue=False}">
                     <TextBlock Classes="label" Text="STEAM CONTROLLER" />
                     <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10. -->
-                    <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CycleControllerSupportCommand}"
+                    <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
                             ToolTip.Tip="Klicken wechselt zwischen „Xbox 360 Controller (SISR)“ und „Steam Input“">
-                      <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext).FocusedControllerSupportText}" />
+                      <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
                     </Button>
                   </StackPanel>
-                  <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowGameMouseMode}">
+                  <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowGameMouseMode, TargetNullValue=False}">
                     <TextBlock Classes="label" Text="INDIVIDUELLER MAUSMODUS" />
-                    <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CycleGameMouseModeCommand}"
+                    <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleGameMouseModeCommand}"
                             ToolTip.Tip="Klicken wechselt zwischen „Standard“, „Erlaubt“ und „Deaktiviert“">
-                      <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext).FocusedGameMouseModeText}" />
+                      <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedGameMouseModeText}" />
                     </Button>
                   </StackPanel>
                 </StackPanel>
@@ -380,13 +380,13 @@
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsDetailOpen}">
           <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="Aktion wählen" />
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="Auswählen" />
-          <ctl:KeyHint Pad="Y" Keys="V" Text="Ansicht" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}" />
-          <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" IsVisible="{Binding Detail.IsFromLibrary, FallbackValue=False}" />
+          <ctl:KeyHint Pad="Y" Keys="V" Text="Ansicht" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Mausrad" Text="Spiel" />
           <ctl:KeyHint Pad="B" Keys="Esc" Text="Zurück" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsLibraryShown}">
-          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Doppelklick" Text="{Binding FocusedGame.PrimaryActionText, FallbackValue='Spielen'}" />
+          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Doppelklick" Text="{Binding FocusedGame?.PrimaryActionText, TargetNullValue='Spielen'}" />
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="halten: Details" />
           <ctl:KeyHint Pad="⧉" Keys="R" Alt="Rechtsklick" Text="Optionen" />
           <ctl:KeyHint Pad="Y" Keys="V" Text="Ansicht" />
@@ -453,7 +453,7 @@
               <TextBlock Text="ARCADIA" FontSize="24" FontWeight="ExtraBold" LetterSpacing="1.4" VerticalAlignment="Center" />
               <TextBlock Text="Suche" FontSize="24" Foreground="{StaticResource TextFaint}" Margin="8,0,0,0" VerticalAlignment="Center" />
             </StackPanel>
-            <Button Grid.Column="1" Classes="plain" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CloseSearchCommand}" ToolTip.Tip="Suche schließen (Esc)">
+            <Button Grid.Column="1" Classes="plain" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CloseSearchCommand}" ToolTip.Tip="Suche schließen (Esc)">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <!-- B closes the search only with the keyboard in; with it out, B puts the keyboard away first. -->
                 <ctl:KeyHint Pad="B" Keys="Esc" IsVisible="{Binding !IsKeyboardOut}" />
@@ -512,7 +512,7 @@
             </ItemsControl>
             <!-- Shows when the chips come close to the sort button (MainWindow.axaml.cs). -->
             <Border Grid.Column="1" Name="SortDivider" Classes="divider unneeded" Margin="16,0,20,0" />
-            <Button Grid.Column="2" Name="SearchSortButton" Classes="plain toolbar" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenSearchFilterCommand}" ToolTip.Tip="Filter und Sortierung (L3)">
+            <Button Grid.Column="2" Name="SearchSortButton" Classes="plain toolbar" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenSearchFilterCommand}" ToolTip.Tip="Filter und Sortierung (L3)">
               <StackPanel Orientation="Horizontal" Spacing="12">
                 <Border Classes="glyph" IsVisible="{Binding UsesController}"><TextBlock Text="L3" /></Border>
                 <TextBlock Text="{Binding SortText}" VerticalAlignment="Center" />
@@ -551,7 +551,7 @@
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Border Classes="glyph"><TextBlock Text="≡" /></Border>
-                    <TextBlock Classes="hint" Text="{Binding FocusedResult.PrimaryActionText, FallbackValue='Spielen'}" />
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Border Classes="glyph"><TextBlock Text="≡" /></Border>
@@ -569,7 +569,7 @@
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Border Classes="glyph round"><TextBlock Text="A" /></Border>
-                    <TextBlock Classes="hint" Text="{Binding FocusedResult.PrimaryActionText, FallbackValue='Spielen'}" />
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Border Classes="glyph round"><TextBlock Text="A" /></Border>
@@ -606,7 +606,7 @@
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Border Classes="glyph"><TextBlock Text="Doppelklick" /></Border>
-                    <TextBlock Classes="hint" Text="{Binding FocusedResult.PrimaryActionText, FallbackValue='Spielen'}" />
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Border Classes="glyph"><TextBlock Text="Klick" /></Border>
@@ -636,7 +636,7 @@
                     <Border Classes="glyph"><TextBlock Text="Enter" /></Border>
                     <TextBlock Classes="hint" Text="/" />
                     <Border Classes="glyph"><TextBlock Text="Doppelklick" /></Border>
-                    <TextBlock Classes="hint" Text="{Binding FocusedResult.PrimaryActionText, FallbackValue='Spielen'}" />
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Border Classes="glyph"><TextBlock Text="Enter" /></Border>
@@ -712,7 +712,7 @@
                                       <Border.IsVisible>
                                         <MultiBinding Converter="{x:Static BoolConverters.And}">
                                           <Binding Path="HasGlyph" />
-                                          <Binding Path="$parent[ctl:RevealPanel].((search:SearchViewModel)DataContext).UsesController" />
+                                          <Binding Path="$parent[ctl:RevealPanel].((search:SearchViewModel)DataContext)?.UsesController" TargetNullValue="False" />
                                         </MultiBinding>
                                       </Border.IsVisible>
                                       <TextBlock Text="{Binding Glyph}" />
@@ -960,7 +960,7 @@
                   <StackPanel>
                     <Border IsVisible="{Binding StartsGroup}" Height="1" Background="{StaticResource Line}" Margin="8,6" />
                     <Button Classes="plain menuItem" Classes.focused="{Binding IsFocused}" Classes.danger="{Binding IsDanger}" IsEnabled="{Binding IsEnabled}"
-                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).InvokeMenuActionCommand}" CommandParameter="{Binding}">
+                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.InvokeMenuActionCommand}" CommandParameter="{Binding}">
                       <Grid ColumnDefinitions="24,*" ColumnSpacing="14">
                         <Path Classes="icon" Data="{Binding Icon}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
                               Width="24" Height="24" Stretch="None" VerticalAlignment="Top" />
@@ -995,9 +995,9 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="12">
               <Button Classes="plain action danger" Classes.focused="{Binding IsConfirmFocused}" Content="{Binding ConfirmLabel}"
-                      Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ConfirmCommand}" />
+                      Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ConfirmCommand}" />
               <Button Classes="plain action" Classes.focused="{Binding IsCancelFocused}" Content="Abbrechen"
-                      Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CancelConfirmationCommand}" />
+                      Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CancelConfirmationCommand}" />
             </StackPanel>
             <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
@@ -1456,7 +1456,7 @@
               </Border>
             </StackPanel>
             <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
-                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowsCloseButtons}" Command="{Binding ClosePromptCommand}">
+                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding ClosePromptCommand}">
               <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
             </Button>
             </Panel>
@@ -1506,7 +1506,7 @@
               </Border>
             </StackPanel>
             <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
-                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowsCloseButtons}" Command="{Binding ClosePromptCommand}">
+                    IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding ClosePromptCommand}">
               <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
             </Button>
             </Panel>

@@ -8,6 +8,8 @@ namespace Arcadia.Launchers;
 public static partial class ProcessWatch
 {
     private const uint QueryLimitedInformation = 0x1000;
+    private const int ErrorInsufficientBuffer = 122;
+    private const int ServicesSession = 0;
 
     public static bool IsRunning(string processName)
     {
@@ -42,18 +44,8 @@ public static partial class ProcessWatch
         {
             using (process)
             {
-                string? path;
-                try
-                {
-                    path = process.MainModule?.FileName;
-                }
-                catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or NotSupportedException)
-                {
-                    // System processes, other users' processes, or one that just exited.
-                    continue;
-                }
-
-                if (path is not null && roots.Find(r => path.StartsWith(r.Root, StringComparison.OrdinalIgnoreCase)) is { Directory: { } match })
+                if (ExecutablePathOf(process) is { } path
+                    && roots.Find(r => path.StartsWith(r.Root, StringComparison.OrdinalIgnoreCase)) is { Directory: { } match })
                 {
                     return match;
                 }
@@ -64,9 +56,35 @@ public static partial class ProcessWatch
     }
 
     /// <summary>
+    /// On Windows through <see cref="PathOf"/>: <c>MainModule</c> needs the full query and memory read rights,
+    /// so it threw for every system, service and elevated process (about 150 exceptions per round beside a
+    /// running game) and missed games running as administrator.
+    /// </summary>
+    private static string? ExecutablePathOf(Process process)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            // Services run in session 0. Some anti-cheat or update services live in the game's folder and never
+            // end, so the game would never count as closed; a game run as administrator is in the user's session.
+            return process.SessionId == ServicesSession ? null : PathOf(process.Id);
+        }
+
+        try
+        {
+            return process.MainModule?.FileName;
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or NotSupportedException)
+        {
+            // Other users' processes, or one that just exited.
+            return null;
+        }
+    }
+
+    /// <summary>
     /// The full path of the executable <paramref name="processId"/> runs, or null if it can't be read
-    /// (the process ended, or another user's). Unlike <c>Process.MainModule</c> this needs only the
-    /// limited query right, so it also works for processes running as administrator, and doesn't throw.
+    /// (the process ended, or a protected one such as Idle or Secure System). Unlike <c>Process.MainModule</c>
+    /// this needs only the limited query right, so it also works for processes running as administrator or as
+    /// another user, and doesn't throw.
     /// </summary>
     public static string? PathOf(int processId)
     {
@@ -83,16 +101,14 @@ public static partial class ProcessWatch
 
         try
         {
-            // Long paths (\\?\…) can exceed MAX_PATH; 32,767 characters is the most Windows allows.
-            foreach (var size in (int[])[1024, 32767])
+            // Runs for every process each round while a game is watched, so the usual case stays off the heap.
+            // Only a path longer than that (\\?\…) needs more; 32,767 characters is the most Windows allows.
+            if (TryQueryPath(process, stackalloc char[1024]) is { } path)
             {
-                if (TryQueryPath(process, size) is { } path)
-                {
-                    return path;
-                }
+                return path;
             }
 
-            return null;
+            return Marshal.GetLastPInvokeError() == ErrorInsufficientBuffer ? TryQueryPath(process, new char[32767]) : null;
         }
         finally
         {
@@ -100,13 +116,12 @@ public static partial class ProcessWatch
         }
     }
 
-    private static unsafe string? TryQueryPath(IntPtr process, int size)
+    private static unsafe string? TryQueryPath(IntPtr process, Span<char> buffer)
     {
-        var buffer = new char[size];
-        var length = (uint)size;
+        var length = (uint)buffer.Length;
         fixed (char* path = buffer)
         {
-            return QueryFullProcessImageName(process, 0, path, ref length) ? new string(buffer, 0, (int)length) : null;
+            return QueryFullProcessImageName(process, 0, path, ref length) ? new string(path, 0, (int)length) : null;
         }
     }
 

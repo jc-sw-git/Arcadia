@@ -883,6 +883,7 @@ Verlauf:
 | T95-4, T95-13 | 2026-10-21 | Juri | PC des Owners, Branch `feat/laufende-spiele-anzeigen-94-95` (Stand 25197b1), Debug aus VS Code (Arcadia als Teil des .NET-Host-Prozesses) | ✅ „Zurück ins Spiel“ holt das Spiel nach vorne. CPU laut Task-Manager meist 0–0,5 %, neben dem Spiel Spitzen bis 0,7 %; RAM knapp 200 MB. ⚠️ Debug-Build im .NET-Host, nicht der Release-Build | CPU im installierten Release-Build nachmessen |
 | T95-3, T95-14 | 2026-10-21 | Juri | PC des Owners, Stand 25197b1, Debug aus VS Code, Arcadia auf dem zweiten Monitor | ❌ Ein in Steam/Epic gestartetes Spiel erst gesehen, als Arcadia den Fokus bekam; ebenso sein Ende, „Zurück ins Spiel“ dazwischen meldete einen fehlenden Prozess | Im Hintergrund alle Launcher fragen, nicht nur für aus Arcadia gestartete Spiele |
 | T95-14 (Logik) | 2026-10-21 | Claude | `dotnet test`, Linux: `RunningGamesTrackerTests` | ⚠️ Jede Runde fragt jeden Launcher und sucht Prozesse, auch ohne aus Arcadia gestartetes Spiel; echte Launcher und CPU nicht | Lauf und CPU-Messung (T95-13) am PC des Owners |
+| T95-14, T95-13 | 2026-10-21 | Juri | PC des Owners, Stand 271511b, Debug aus VS Code, Arcadia auf dem zweiten Monitor | ✅ Spiel in Steam/Epic gestartet und beendet: „Läuft“ und wieder „Spielen“ ohne Fokus auf Arcadia. CPU laut Task-Manager unverändert, Sprünge unter 1 %. ⚠️ Debug-Build im .NET-Host | CPU im Release-Build bei der Abnahme |
 
 ## #94 Nach einem aus Arcadia gestarteten Spiel kommt Arcadia wieder in den Vordergrund
 

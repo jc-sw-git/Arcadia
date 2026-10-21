@@ -166,12 +166,12 @@ public sealed partial class XInputGamepadSource : IGamepadSource
         return pressed;
     }
 
-    /// <summary>A fresh look at the given controllers, between two polls: is one of them in use right now?</summary>
-    internal static bool AnyInUseNow(IReadOnlyList<int> slots)
+    /// <summary>A fresh look at the given controllers, between two polls: does one of them pass <paramref name="test"/> right now?</summary>
+    internal static bool AnyNow(IReadOnlyList<int> slots, Func<GamepadReading, bool> test)
     {
         foreach (var slot in slots)
         {
-            if (XInputGetState((uint)slot, out var state) == 0 && ControllerActivity.IsInUse(ToReading(slot, state.Gamepad)))
+            if (XInputGetState((uint)slot, out var state) == 0 && test(ToReading(slot, state.Gamepad)))
             {
                 return true;
             }

@@ -137,7 +137,7 @@ public partial class App : Application
                     // Only react while Arcadia is the active window, so playing a game doesn't drive the library.
                     Dispatcher.UIThread.Post(() =>
                     {
-                        if (window.IsActive)
+                        if (mouseMode.IsArcadiaActive)
                         {
                             viewModel.HandleGamepad(action);
                             window.FollowSettingsFocus();

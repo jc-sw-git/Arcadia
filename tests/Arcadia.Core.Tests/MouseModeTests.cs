@@ -12,7 +12,7 @@ public sealed class MouseModeTests
     private readonly FakeTimeProvider _time = new();
     private readonly RecordingOutput _output = new();
     private readonly List<string> _events = [];
-    private MouseModeOptions _options = new(Enabled: true, ComboEnabled: true, HoldTime, PointerSpeed: 5);
+    private MouseModeOptions _options = new(Enabled: true, HoldTime, PointerSpeed: 5);
     private readonly MouseMode _mode;
 
     public MouseModeTests()
@@ -20,7 +20,47 @@ public sealed class MouseModeTests
         _mode = new MouseMode(_output, () => _options, _time);
         _mode.HoldStarted += rest => _events.Add($"hold {rest.TotalSeconds:0.0}");
         _mode.HoldCancelled += () => _events.Add("cancelled");
-        _mode.Switched += s => _events.Add($"{(s.IsOn ? "on" : "off")} {(s.IsAutomatic ? "auto" : $"slot {s.Slot}")}");
+        _mode.Switched += s => _events.Add($"{(s.IsOn ? "on" : "off")} {(s.IsAutomatic ? "auto" : $"slot {s.Slot}")}{(s.ByGame ? " by game" : string.Empty)}");
+        _mode.Refused += slot => _events.Add($"refused slot {slot}");
+    }
+
+    [Fact]
+    public void A_game_that_forbids_the_mouse_mode_ends_it_when_it_comes_to_the_front()
+    {
+        SwitchOn();
+        _events.Clear();
+
+        _options = _options with { BlockedHere = true };
+        Update();
+
+        Assert.Equal(["off auto by game"], _events);
+        Assert.False(_mode.IsOn);
+    }
+
+    [Fact]
+    public void Back_and_start_held_in_a_game_that_forbids_it_switch_nothing_on_but_say_so()
+    {
+        _options = _options with { BlockedHere = true };
+
+        HoldFor(PadButtons.View | PadButtons.Menu, HoldTime + Poll);
+        _mode.Request(true);
+        Update();
+
+        Assert.Equal(["hold 2.8", "refused slot 0"], _events);
+        Assert.False(_mode.IsOn);
+    }
+
+    [Fact]
+    public void Once_the_game_is_no_longer_in_front_back_and_start_switch_it_on_again()
+    {
+        _options = _options with { BlockedHere = true };
+        HoldFor(PadButtons.View | PadButtons.Menu, HoldTime + Poll);
+        HoldFor(PadButtons.None, Poll);
+
+        _options = _options with { BlockedHere = false };
+        HoldFor(PadButtons.View | PadButtons.Menu, HoldTime + Poll);
+
+        Assert.Equal(["hold 2.8", "refused slot 0", "hold 2.8", "on slot 0"], _events);
     }
 
     [Fact]
@@ -92,7 +132,7 @@ public sealed class MouseModeTests
     [Fact]
     public void Switched_off_in_the_settings_the_combination_does_nothing()
     {
-        _options = _options with { ComboEnabled = false };
+        _options = _options with { Enabled = false };
 
         HoldFor(PadButtons.View | PadButtons.Menu, HoldTime * 2);
 
@@ -271,6 +311,21 @@ public sealed class MouseModeTests
         _output.PointerX = 0;
         MoveRightFor(TimeSpan.FromSeconds(1));
         Assert.InRange(_output.PointerX, 1495, 1500);
+    }
+
+    [Fact]
+    public void L3_clicked_briefly_while_pointing_toggles_the_slow_pointer()
+    {
+        SwitchOn();
+        MoveRightFor(TimeSpan.FromMilliseconds(200));
+        for (var i = 0; i < 20; i++)
+        {
+            Update(Pad(0, PadButtons.LeftStickClick, left: new StickPosition(1, 0)));
+        }
+
+        _output.PointerX = 0;
+        MoveRightFor(TimeSpan.FromSeconds(1));
+        Assert.InRange(_output.PointerX, 495, 500);
     }
 
     [Fact]

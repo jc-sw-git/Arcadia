@@ -80,9 +80,9 @@
             <TextBlock Text="Controller wird eingerichtet …" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
           </StackPanel>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  IsVisible="{Binding Status.HasControllerWarning}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{Binding Status.ControllerWarningText}">
-            <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" Stroke="{StaticResource Warning}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
-                  Width="24" Height="24" Stretch="None" />
+                  IsVisible="{Binding Status.HasControllerStatus}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{Binding Status.ControllerStatusText}">
+            <!-- Symbol and colour come from the statusIcon styles, so no local Data or Stroke. -->
+            <Path Classes="statusIcon" Classes.info="{Binding Status.IsControllerStatusInfo}" Classes.error="{Binding Status.IsControllerStatusError}" />
           </Button>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
                   IsVisible="{Binding Status.HasSisrUpdate}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Neue SISR-Version verfügbar">
@@ -252,6 +252,13 @@
                     <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
                             ToolTip.Tip="Klicken wechselt zwischen „Xbox 360 Controller (SISR)“ und „Steam Input“">
                       <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
+                    </Button>
+                  </StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowGameMouseMode}">
+                    <TextBlock Classes="label" Text="INDIVIDUELLER MAUSMODUS" />
+                    <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CycleGameMouseModeCommand}"
+                            ToolTip.Tip="Klicken wechselt zwischen „Standard“, „Erlaubt“ und „Deaktiviert“">
+                      <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext).FocusedGameMouseModeText}" />
                     </Button>
                   </StackPanel>
                 </StackPanel>
@@ -1142,9 +1149,8 @@
                         <DataTemplate x:DataType="vm:HealthIssueViewModel">
                           <Border Background="{StaticResource SurfaceHover}" CornerRadius="12" Padding="16,12">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                              <!-- No local Stroke: a local value would override the error style. -->
-                              <Path Classes="issueIcon" Classes.error="{Binding IsError}" Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" StrokeThickness="2"
-                                    StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="None" VerticalAlignment="Top" />
+                              <!-- No local Data or Stroke: a local value would override the severity styles. -->
+                              <Path Classes="statusIcon" Classes.info="{Binding IsInfo}" Classes.error="{Binding IsError}" VerticalAlignment="Top" />
                               <StackPanel Grid.Column="1" Spacing="3">
                                 <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" />
                                 <TextBlock Text="{Binding Detail}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
@@ -1180,10 +1186,8 @@
                     </StackPanel>
                     <StackPanel Spacing="8">
                       <TextBlock Classes="label" Text="NACHTEILE" />
-                      <TextBlock Classes="bullet" Text="• Steam muss im Hintergrund laufen, und Steams lokale Debug-Schnittstelle (CEF) muss aktiv sein." />
-                      <TextBlock Classes="bullet" Text="• Benötigt den usbip-Treiber. Die Installation fragt einmalig nach Administratorrechten." />
-                      <TextBlock Classes="bullet" Text="• SISR ist laut seinem Entwickler noch experimentell; Abstürze sind möglich. Arcadia startet SISR dann automatisch neu." />
-                      <TextBlock Classes="bullet" Text="• Steht ein Steam-Spiel auf „Xbox 360 Controller (SISR)“, kommen Eingaben doppelt an." />
+                      <TextBlock Classes="bullet" Text="• Steam muss im Hintergrund laufen." />
+                      <TextBlock Classes="bullet" ctl:ButtonTextBlock.Text="• Arcadia erkennt den Steam Controller nur, solange er als Xbox 360 Controller läuft. In Spielen auf „Steam Input“ wirken mit ihm deshalb weder ⧉ + ≡ für den Mausmodus noch ⧉ halten für „Zurück zu Arcadia“." />
                     </StackPanel>
                     <TextBlock FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap"
                                Text="SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR" />
@@ -1191,38 +1195,27 @@
                 </StackPanel>
               </Border>
 
-              <!-- Mouse mode (#64): the main switch and everything that depends on it in one box. -->
+              <!-- Mouse mode (#64): how it is switched on and everything that depends on it in one box. -->
               <Border Background="{StaticResource SurfaceSunken}" CornerRadius="16" Padding="8" DataContext="{Binding MouseMode}" x:DataType="vm:MouseModeSettingsViewModel">
                 <StackPanel Spacing="4">
-                  <Button Classes="plain settingRow" Classes.focused="{Binding EnabledItem.IsFocused}" Command="{Binding ToggleEnabledCommand}">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding ActivationItem.IsFocused}">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                      <StackPanel Spacing="4">
+                      <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Mausmodus" FontSize="20" FontWeight="Bold" />
-                        <TextBlock Text="Macht den Controller zur Maus, damit sich Launcher-Fenster und Windows-Dialoge vom Sofa aus bedienen lassen. Aus: Der Mausmodus geht nie an, die Einstellungen darunter bleiben erhalten."
-                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="{Binding ActivationText}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
-                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding Enabled}" VerticalAlignment="Center">
-                        <Ellipse />
-                      </Border>
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="plain stepperArrow" Command="{Binding ActivationItem.DecreaseCommand}" IsEnabled="{Binding ActivationItem.CanDecrease}" Content="‹" />
+                        <TextBlock Classes="stepperValue" Text="{Binding ActivationItem.ValueText}" />
+                        <Button Classes="plain stepperArrow" Command="{Binding ActivationItem.IncreaseCommand}" IsEnabled="{Binding ActivationItem.CanIncrease}" Content="›" />
+                      </StackPanel>
                     </Grid>
                   </Button>
-                  <Button Classes="plain settingRow" Classes.focused="{Binding ComboItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleComboCommand}" Margin="20,0,0,0">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                      <StackPanel Spacing="4">
-                        <TextBlock Text="Mit Back + Start umschalten" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Back + Start gedrückt halten macht den Controller zur Maus und wieder zurück – auch wenn Arcadia im Hintergrund ist. Ausschalten, wenn ein Spiel die Kombination selbst braucht."
-                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
-                      </StackPanel>
-                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding ComboEnabled}" VerticalAlignment="Center">
-                        <Ellipse />
-                      </Border>
-                    </Grid>
-                  </Button>
-                  <Button Classes="plain settingRow" Classes.focused="{Binding HoldItem.IsFocused}" Classes.unavailable="{Binding !HoldTimeApplies}" Margin="20,0,0,0">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding HoldItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Haltedauer" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="So lange müssen Back und Start gehalten werden." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="So lange müssen ⧉ und ≡ gehalten werden." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button Classes="plain stepperArrow" Command="{Binding HoldItem.DecreaseCommand}" IsEnabled="{Binding HoldItem.CanDecrease}" Content="‹" />
@@ -1244,11 +1237,11 @@
                       </StackPanel>
                     </Grid>
                   </Button>
-                  <Button Classes="plain settingRow" Classes.focused="{Binding EndInFrontItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleEndInFrontCommand}" Margin="20,0,0,0">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding EndInFrontItem.IsFocused}" Classes.unavailable="{Binding !EndInFrontApplies}" Command="{Binding ToggleEndInFrontCommand}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
-                        <TextBlock Text="Beenden, wenn Arcadia nach vorne kommt" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Holt View oder ein Klick Arcadia nach vorne, wird der Controller wieder zum Controller. In Arcadia von Hand eingeschaltet, bleibt der Mausmodus an."
+                        <TextBlock Text="Mausmodus beenden, wenn Arcadia im Vordergrund ist" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="Nur „Von Hand“: Sobald du wieder in das Fenster von Arcadia klickst oder Arcadia nach vorne holst (z. B. durch „Mit ⧉ zurück zu Arcadia“), schaltet sich der Mausmodus automatisch ab. Aktivierst du den Mausmodus von Hand, während Arcadia bereits im Vordergrund ist, bleibt er so lange aktiv, bis Arcadia das nächste Mal in den Vordergrund zurückgeholt wird, also z. B. durch Raus- und wieder Reinklicken."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding EndWhenArcadiaInFront}" VerticalAlignment="Center">
@@ -1256,28 +1249,31 @@
                       </Border>
                     </Grid>
                   </Button>
-                  <Button Classes="plain settingRow" Classes.focused="{Binding AutoStartItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleAutoStartCommand}" Margin="20,0,0,0">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding InGamesItem.IsFocused}" Classes.unavailable="{Binding !InGamesApplies}" Margin="20,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                      <StackPanel Spacing="4">
-                        <TextBlock Text="Automatisch einschalten, wenn Arcadia den Fokus verliert" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Sofort und ohne Back + Start – außer ein Spiel aus der Bibliothek kommt nach vorne. Kommt danach ein Spiel nach vorne, endet der Mausmodus wieder."
-                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                      <StackPanel Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="Beenden des Mausmodus in Spielen erzwingen" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="{Binding InGamesText}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
-                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding StartWhenArcadiaLosesFocus}" VerticalAlignment="Center">
-                        <Ellipse />
-                      </Border>
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="plain stepperArrow" Command="{Binding InGamesItem.DecreaseCommand}" IsEnabled="{Binding InGamesItem.CanDecrease}" Content="‹" />
+                        <TextBlock Classes="stepperValue" Text="{Binding InGamesItem.ValueText}" />
+                        <Button Classes="plain stepperArrow" Command="{Binding InGamesItem.IncreaseCommand}" IsEnabled="{Binding InGamesItem.CanIncrease}" Content="›" />
+                      </StackPanel>
                     </Grid>
                   </Button>
-                  <Button Classes="plain settingRow" Classes.focused="{Binding SteamLayoutItem.IsFocused}" Classes.unavailable="{Binding !Enabled}" Command="{Binding ToggleSteamLayoutCommand}" Margin="20,0,0,0">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding PerGameDefaultItem.IsFocused}" Classes.unavailable="{Binding !PerGameDefaultApplies}" Margin="40,0,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                      <StackPanel Spacing="4">
-                        <TextBlock Text="Steams Desktop-Belegung ignorieren" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Außerhalb von Spielen macht Steam aus dem Controller selbst Maus und Tasten, z. B. aus Back + Start ein Alt+Tab. Arcadia verwirft diese Eingaben, solange kein Spiel aus der Bibliothek vorne ist, und im Mausmodus immer."
+                      <StackPanel Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="Standardeinstellung bei „Individuell“" FontSize="18" FontWeight="Bold" />
+                        <TextBlock Text="„Standard“ ist für jedes Spiel auf der Detailseite vorausgewählt. „Erlaubt“ wird den Mausmodus erlauben. „Deaktiviert“ wird ihn deaktivieren."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
-                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding IgnoreSteamDesktopLayout}" VerticalAlignment="Center">
-                        <Ellipse />
-                      </Border>
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="plain stepperArrow" Command="{Binding PerGameDefaultItem.DecreaseCommand}" IsEnabled="{Binding PerGameDefaultItem.CanDecrease}" Content="‹" />
+                        <TextBlock Classes="stepperValue" Text="{Binding PerGameDefaultItem.ValueText}" />
+                        <Button Classes="plain stepperArrow" Command="{Binding PerGameDefaultItem.IncreaseCommand}" IsEnabled="{Binding PerGameDefaultItem.CanIncrease}" Content="›" />
+                      </StackPanel>
                     </Grid>
                   </Button>
 
@@ -1295,8 +1291,8 @@
                   <Button Classes="plain settingRow" Classes.focused="{Binding EnabledItem.IsFocused}" Command="{Binding ToggleEnabledCommand}">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4">
-                        <TextBlock Text="Mit View zurück zu Arcadia" FontSize="20" FontWeight="Bold" />
-                        <TextBlock Text="View gedrückt halten holt Arcadia nach vorne, wenn es im Hintergrund ist – aus einem Spiel, einem Launcher oder dem Mausmodus. In Arcadia öffnet View weiter das Menü."
+                        <TextBlock ctl:ButtonTextBlock.Text="Mit ⧉ zurück zu Arcadia" FontSize="20" FontWeight="Bold" />
+                        <TextBlock ctl:ButtonTextBlock.Text="⧉ gedrückt halten holt Arcadia nach vorne, wenn es im Hintergrund ist – aus einem Spiel, einem Launcher oder dem Mausmodus. In Arcadia öffnet ⧉ weiter das Menü."
                                    FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <Border Grid.Column="1" Classes="switch" Classes.on="{Binding Enabled}" VerticalAlignment="Center">
@@ -1308,13 +1304,33 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Haltedauer" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="So lange muss View gehalten werden. „Sofort“ wechselt schon beim kurzen Drücken." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="So lange muss ⧉ gehalten werden. „Sofort“ wechselt schon beim kurzen Drücken." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button Classes="plain stepperArrow" Command="{Binding HoldItem.DecreaseCommand}" IsEnabled="{Binding HoldItem.CanDecrease}" Content="‹" />
                         <TextBlock Classes="stepperValue" Text="{Binding HoldItem.ValueText}" />
                         <Button Classes="plain stepperArrow" Command="{Binding HoldItem.IncreaseCommand}" IsEnabled="{Binding HoldItem.CanIncrease}" Content="›" />
                       </StackPanel>
+                    </Grid>
+                  </Button>
+                  <TextBlock IsVisible="{Binding SaveError, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding SaveError}" Margin="20,8,20,12"
+                             FontSize="15" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+
+              <!-- Steam's desktop layout (#64): its own box, independent of the mouse mode (owner, 2026-10-20). -->
+              <Border Background="{StaticResource SurfaceSunken}" CornerRadius="16" Padding="8" DataContext="{Binding SteamDesktopLayout}" x:DataType="vm:SteamDesktopLayoutSettingsViewModel">
+                <StackPanel Spacing="4">
+                  <Button Classes="plain settingRow" Classes.focused="{Binding EnabledItem.IsFocused}" Command="{Binding ToggleCommand}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="Steams Desktop-Belegung ignorieren" FontSize="20" FontWeight="Bold" />
+                        <TextBlock ctl:ButtonTextBlock.Text="Läuft Steam, macht es aus dem Controller selbst Maus und Tasten, z. B. aus ⧉ + ≡ ein Alt+Tab, und Eingaben kommen in Arcadia doppelt an. Arcadia verwirft diese Eingaben."
+                                   FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <Border Grid.Column="1" Classes="switch" Classes.on="{Binding Enabled}" VerticalAlignment="Center">
+                        <Ellipse />
+                      </Border>
                     </Grid>
                   </Button>
                   <TextBlock IsVisible="{Binding SaveError, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding SaveError}" Margin="20,8,20,12"
@@ -1516,7 +1532,7 @@
             <Panel>
             <StackPanel Spacing="24">
               <TextBlock Text="Mausmodus – so funktioniert's" FontSize="30" FontWeight="ExtraBold" />
-              <TextBlock Classes="promptBody" Text="Back + Start gedrückt halten, bis der Bildschirmrand voll ist: Der Controller steuert jetzt die Maus, auch in Fenstern außerhalb von Arcadia. Genauso geht es zurück. Jeder verbundene Controller kann umschalten und den Zeiger bewegen." />
+              <TextBlock Classes="promptBody" ctl:ButtonTextBlock.Text="⧉ + ≡ gedrückt halten, bis der Bildschirmrand voll ist: Der Controller steuert jetzt die Maus, auch in Fenstern außerhalb von Arcadia. Genauso geht es zurück. Jeder verbundene Controller kann umschalten und den Zeiger bewegen." />
               <ItemsControl ItemsSource="{x:Static vm:MouseModeSettingsViewModel.HelpRows}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -1526,7 +1542,7 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:MouseModeHelpRow">
                     <Grid ColumnDefinitions="240,*" ColumnSpacing="20">
-                      <TextBlock Text="{Binding Input}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
+                      <TextBlock ctl:ButtonTextBlock.Buttons="{Binding Input}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
                       <TextBlock Grid.Column="1" Text="{Binding Effect}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
                     </Grid>
                   </DataTemplate>
@@ -1583,10 +1599,24 @@
     <Style Selector="Ellipse.statusDot.active">
       <Setter Property="Fill" Value="{StaticResource Success}" />
     </Style>
-    <Style Selector="Path.issueIcon">
+    <!-- Status messages (owner, 2026-10-21): a warning by default, info a blue i in a circle, error a red X. -->
+    <Style Selector="Path.statusIcon">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="Stretch" Value="None" />
+      <Setter Property="StrokeThickness" Value="2" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="Data" Value="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" />
       <Setter Property="Stroke" Value="{StaticResource Warning}" />
     </Style>
-    <Style Selector="Path.issueIcon.error">
+    <Style Selector="Path.statusIcon.info">
+      <Setter Property="Data" Value="M2.5 12a9.5 9.5 0 1 0 19 0a9.5 9.5 0 1 0 -19 0z M12 11v5.5 M12 7.6v.3" />
+      <Setter Property="Stroke" Value="{StaticResource Info}" />
+    </Style>
+    <Style Selector="Path.statusIcon.error">
+      <Setter Property="Data" Value="M5.5 5.5l13 13 M18.5 5.5l-13 13" />
+      <Setter Property="StrokeThickness" Value="2.6" />
       <Setter Property="Stroke" Value="{StaticResource Danger}" />
     </Style>
     <Style Selector="TextBlock.bullet">

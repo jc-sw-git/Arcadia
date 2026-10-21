@@ -3,6 +3,7 @@ using System.Net;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Steam;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Arcadia.Core.Tests;
@@ -390,6 +391,27 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task The_controller_still_counts_as_connected_while_SISR_is_paused_for_a_game()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        Assert.Equal(SisrState.Running, service.State);
+
+        var game = SteamGame();
+        _platform.RunningDirectories.Add(game.InstallDirectory!);
+        await service.BeginGameAsync(game);
+        Assert.Equal(SisrState.Paused, service.State);
+        Assert.True(service.SteamControllerConnected);
+
+        _platform.RunningDirectories.Clear();
+        await AdvanceUntil(() => _sisr.Starts == 1);
+        Assert.Equal(SisrState.Starting, service.State);
+        Assert.True(service.SteamControllerConnected);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
     public async Task SISR_runs_again_when_the_game_ends()
     {
         var service = Create();
@@ -470,7 +492,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         Assert.Equal(ControllerSupportService.MaxRestartsPerWindow, _sisr.Starts);
         Assert.Equal(SisrState.Failed, service.State);
-        Assert.Contains(service.Issues, i => i.Id == "sisr-crashing");
+        Assert.Contains(service.Issues, i => i.Id == "sisr-crashing" && i.Severity == HealthSeverity.Error);
 
         // Once the window has passed, Arcadia tries again.
         _time.Advance(ControllerSupportService.CrashWindow);
@@ -715,6 +737,22 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Switched_on_but_no_longer_installed_is_a_warning_and_another_platform_an_error()
+    {
+        var service = Create();
+        _sisr.Installed = false;
+
+        await service.RefreshAsync();
+
+        Assert.Contains(service.Issues, i => i.Id == "sisr-missing" && i.Severity == HealthSeverity.Warning);
+
+        _platform.IsSupported = false;
+        await service.RefreshAsync();
+
+        Assert.Contains(service.Issues, i => i.Id == "platform" && i.Severity == HealthSeverity.Error);
+    }
+
+    [Fact]
     public async Task A_tick_while_off_notices_a_change_in_the_setup()
     {
         var service = Create(enabled: false);
@@ -936,6 +974,183 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.All(games, game => Assert.True(saved.ControllerSupportFor(game)));
     }
 
+    [Fact]
+    public async Task An_Xbox_pad_that_SISR_emulates_is_no_Steam_Controller()
+    {
+        var service = Create();
+        _api.Controllers = 0;
+        _api.XboxPads = 1;
+        _sisr.Running = true;
+
+        await service.TickAsync();
+
+        Assert.Equal(SisrState.NoController, service.State);
+        Assert.False(service.SteamControllerConnected);
+        Assert.True(_sisr.Running);
+        Assert.Contains(service.Issues, i => i.Id == "sisr-other-controller" && i.Severity == HealthSeverity.Warning && i.Detail.Contains("Xbox 360 Controller"));
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task SISR_emulating_an_Xbox_pad_in_a_Steam_game_pauses_until_the_game_ends()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        Assert.Equal(SisrState.Running, service.State);
+
+        // The game has Steam Input on for Xbox pads: Steam hands the pad to SISR as soon as it starts.
+        _platform.SteamAppId = 1245620;
+        _platform.SteamGame = "Elden Ring";
+        _api.XboxPads = 1;
+        await service.WatchAsync();
+
+        Assert.False(_sisr.Running);
+        Assert.Equal(1, _sisr.Stops);
+        Assert.Equal(1, _platform.LayoutResets);
+        Assert.Equal(SisrState.Paused, service.State);
+        Assert.Empty(service.PausedFor);
+        await service.TickAsync();
+        Assert.Equal(0, _sisr.Starts);
+        Assert.Contains(service.Issues, i => i.Id == "sisr-paused-other-controller" && i.Severity == HealthSeverity.Info && i.Title.Contains("Elden Ring"));
+        lock (_log)
+        {
+            Assert.Contains(_log, line => line.Contains("Xbox 360 Controller (ohne USB-ID)") && line.Contains("Elden Ring"));
+        }
+
+        _platform.SteamAppId = null;
+        await AdvanceUntil(() => _sisr.Starts == 1);
+        await service.RefreshAsync();
+
+        Assert.DoesNotContain(service.Issues, i => i.Id == "sisr-paused-other-controller");
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task A_Steam_game_on_SISR_with_only_the_Steam_Controller_keeps_SISR_running()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        _platform.SteamAppId = 1245620;
+
+        await service.TickAsync();
+        await service.WatchAsync();
+
+        Assert.True(_sisr.Running);
+        Assert.Equal(SisrState.Running, service.State);
+        Assert.DoesNotContain(service.Issues, i => i.Id.StartsWith("sisr-paused", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_pause_for_another_controller_also_lasts_when_a_launched_game_pause_ends_first()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        _platform.SteamAppId = 1245620;
+        _api.XboxPads = 1;
+        await service.WatchAsync();
+        Assert.Equal(SisrState.Paused, service.State);
+
+        // A second game started from Arcadia on "Steam Input" ends while the Steam game still runs.
+        var game = SteamGame();
+        _platform.RunningDirectories.Add(game.InstallDirectory!);
+        await service.BeginGameAsync(game);
+        _platform.RunningDirectories.Clear();
+        await AdvanceUntil(() => service.PausedFor.Count == 0);
+
+        Assert.Equal(0, _sisr.Starts);
+        Assert.Equal(SisrState.Paused, service.State);
+        AssertNoUnexpectedTransition();
+    }
+
+    private static readonly SteamInputSetting SteamInputForAll = new("2", XboxSupport: false, GenericSupport: false);
+
+    private static readonly SteamInputSetting SteamInputOff = new("0", XboxSupport: false, GenericSupport: false);
+
+    [Fact]
+    public async Task A_Steam_game_on_SISR_with_Steam_Input_for_every_controller_pauses_SISR_before_it_starts()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        var game = SteamGame();
+        service.SetModeFor(game, useSisr: true);
+        _platform.SteamInput[1] = SteamInputForAll;
+        _platform.RunningDirectories.Add(game.InstallDirectory!);
+
+        await service.BeginGameAsync(game);
+        await service.RefreshAsync();
+
+        Assert.False(_sisr.Running);
+        Assert.Equal(SisrState.Paused, service.State);
+        Assert.Contains(service.Issues, i => i.Id == "sisr-paused-other-controller" && i.Title.Contains("Steam-Spiel"));
+
+        _platform.RunningDirectories.Clear();
+        await AdvanceUntil(() => _sisr.Starts == 1);
+        await service.RefreshAsync();
+        Assert.DoesNotContain(service.Issues, i => i.Id == "sisr-paused-other-controller");
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task A_Steam_game_on_SISR_without_Steam_Input_keeps_SISR_running()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        var game = SteamGame();
+        service.SetModeFor(game, useSisr: true);
+        _platform.SteamInput[1] = SteamInputOff;
+
+        await service.BeginGameAsync(game);
+
+        Assert.True(_sisr.Running);
+        Assert.Equal(SisrState.Running, service.State);
+        Assert.Empty(service.PausedFor);
+    }
+
+    [Fact]
+    public async Task A_Steam_game_with_Steam_Input_for_every_controller_started_elsewhere_pauses_SISR_before_SISR_takes_a_pad()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _platform.SteamAppId = 4231820;
+        _platform.SteamGame = "Castlevania: Belmont's Curse";
+        _platform.SteamInput[4231820] = SteamInputForAll;
+        await service.WatchAsync();
+
+        Assert.False(_sisr.Running);
+        Assert.Equal(SisrState.Paused, service.State);
+        lock (_log)
+        {
+            Assert.Contains(_log, line => line.Contains("UseSteamControllerConfig 2") && line.Contains("Castlevania"));
+        }
+
+        _platform.SteamAppId = null;
+        await AdvanceUntil(() => _sisr.Starts == 1);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task Steams_setting_is_read_once_per_game()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        _platform.SteamAppId = 4231820;
+        _platform.SteamInput[4231820] = SteamInputOff;
+
+        await service.WatchAsync();
+        await service.WatchAsync();
+        await service.WatchAsync();
+
+        Assert.True(_sisr.Running);
+        Assert.Equal(1, _platform.SteamInputReads);
+    }
+
     private sealed class FakeSisr(HttpClient http) : ISisrHost
     {
         public SisrApiClient Api { get; } = new(http, SisrHost.ApiPort);
@@ -1052,8 +1267,17 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         public bool Reachable { get; set; } = true;
 
-        /// <summary>Controllers SISR emulates; 0 is a dongle without a switched-on controller.</summary>
+        /// <summary>Steam Controllers SISR emulates; 0 is a dongle without a switched-on controller.</summary>
         public int Controllers { get; set; } = 1;
+
+        /// <summary>Xbox pads SISR emulates as well, because Steam Input is on for them (#124).</summary>
+        public int XboxPads { get; set; }
+
+        private string Devices() => "[" + string.Join(",", Enumerable.Repeat(SteamControllerDevice, Controllers).Concat(Enumerable.Repeat(XboxPadDevice, XboxPads))) + "]";
+
+        private const string SteamControllerDevice = """{"real_device":{"id":1,"name":"Steam Controller","path":"\\\\?\\HID#VID_28DE&PID_1304&MI_02#8&1&0&0000","player_index":0},"viiper_device":{}}""";
+
+        private const string XboxPadDevice = """{"real_device":{"id":2,"name":"Xbox 360 Controller","path":"XInput#0","player_index":1},"viiper_device":{}}""";
 
         public TaskCompletionSource? Gate { get; set; }
 
@@ -1070,7 +1294,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
             }
 
             var path = request.RequestUri!.AbsolutePath;
-            var json = path.EndsWith("/devices") ? (Controllers > 0 ? """[{"viiper_device":{}}]""" : "[]")
+            var json = path.EndsWith("/devices") ? Devices()
                 : path.EndsWith("/version/info") ? """{"version":"1.0"}"""
                 : path.EndsWith("/steam/status") ? """{"steam_running":true,"cef_debug_enabled":true,"cef_debug_reachable":true,"marker_shortcut_present":true}"""
                 : path.EndsWith("/viiper/ping") ? """{"status":{"version":"1.0"}}"""
@@ -1123,6 +1347,21 @@ public sealed class ControllerSupportServiceTests : IDisposable
         public void EnableCefDebugging() => IsCefDebuggingEnabled = true;
 
         public string? RunningSteamGame() => SteamGame;
+
+        public int? SteamAppId { get; set; }
+
+        public int? RunningSteamAppId() => SteamAppId;
+
+        /// <summary>Steam Input per Steam app, as Steam's localconfig.vdf has it; missing means unreadable.</summary>
+        public Dictionary<int, SteamInputSetting> SteamInput { get; } = [];
+
+        public int SteamInputReads { get; private set; }
+
+        public SteamInputSetting? SteamInputFor(int appId)
+        {
+            SteamInputReads++;
+            return SteamInput.GetValueOrDefault(appId);
+        }
 
         public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken)
         {

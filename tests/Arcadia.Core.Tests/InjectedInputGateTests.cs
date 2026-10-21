@@ -85,5 +85,26 @@ public sealed class InjectedInputGateTests
         Assert.True(activity.IsInUse());
     }
 
+    [Fact]
+    public void The_combination_counts_while_view_and_menu_are_held_together_and_a_moment_after()
+    {
+        var time = new FakeTimeProvider();
+        var activity = new ControllerActivity(time);
+        var centre = new StickPosition(0, 0);
+
+        activity.Note([new GamepadReading(0, PadButtons.View | PadButtons.A, centre, centre)]);
+        Assert.False(activity.IsComboHeld());
+
+        activity.Note([new GamepadReading(0, PadButtons.None, centre, centre), new GamepadReading(1, PadButtons.View | PadButtons.Menu, centre, centre)]);
+        Assert.True(activity.IsComboHeld());
+
+        activity.Note([new GamepadReading(1, PadButtons.Menu, centre, centre)]);
+        time.Advance(ControllerActivity.Grace);
+        Assert.True(activity.IsComboHeld());
+        time.Advance(TimeSpan.FromMilliseconds(1));
+        Assert.False(activity.IsComboHeld());
+        Assert.True(activity.IsInUse());
+    }
+
     private bool Press(int key, bool down) => _gate.Press(key, down, foreign: true, () => _inUse);
 }

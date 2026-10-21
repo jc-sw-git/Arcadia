@@ -24,12 +24,20 @@ public partial class StatusBarViewModel : ViewModelBase
         UpdateArcadiaUpdateState();
     }
 
-    /// <summary>Steam Controller (SISR) is on but something is wrong; shown as a warning in the header.</summary>
+    /// <summary>Steam Controller (SISR) is on and has status messages; the header shows the worst one's symbol.</summary>
     [ObservableProperty]
-    public partial bool HasControllerWarning { get; private set; }
+    public partial bool HasControllerStatus { get; private set; }
+
+    /// <summary>All of them are only information (e.g. SISR paused for a game): the blue i.</summary>
+    [ObservableProperty]
+    public partial bool IsControllerStatusInfo { get; private set; }
+
+    /// <summary>One of them is a lasting failure: the red X. Neither this nor <see cref="IsControllerStatusInfo"/>: the warning triangle.</summary>
+    [ObservableProperty]
+    public partial bool IsControllerStatusError { get; private set; }
 
     [ObservableProperty]
-    public partial string ControllerWarningText { get; private set; } = string.Empty;
+    public partial string ControllerStatusText { get; private set; } = string.Empty;
 
     [ObservableProperty]
     public partial bool HasSisrUpdate { get; private set; }
@@ -69,12 +77,16 @@ public partial class StatusBarViewModel : ViewModelBase
         var support = _controllerSupport;
         HasSisrUpdate = support.Enabled && support.AvailableUpdate is not null;
         IsControllerStarting = support.Enabled && support.State == SisrState.Starting;
-        HasControllerWarning = support.Enabled && support.Issues.Count > 0;
-        ControllerWarningText = support.Issues.Count switch
+        var issues = support.Issues;
+        var worst = issues.Count > 0 ? issues.Max(i => i.Severity) : HealthSeverity.Info;
+        HasControllerStatus = support.Enabled && issues.Count > 0;
+        IsControllerStatusInfo = worst == HealthSeverity.Info;
+        IsControllerStatusError = worst == HealthSeverity.Error;
+        ControllerStatusText = issues.Count switch
         {
             0 => string.Empty,
-            1 => $"Steam Controller (SISR): {support.Issues[0].Title}",
-            var n => $"Steam Controller (SISR): {n} Probleme",
+            1 => $"Steam Controller (SISR): {issues[0].Title}",
+            var n => $"Steam Controller (SISR): {n} Meldungen",
         };
     }
 }

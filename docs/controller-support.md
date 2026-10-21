@@ -51,6 +51,36 @@ focus handling or anything SISR/usbip related.
   (`SisrState.Running`); `WatchAsync` (every 2 s) moves Running ↔ NoController as the controller is switched on or off.
   Windows' HID list is no use: the wireless dongle shows as a Valve device (`VID_28DE`) even with the
   controller off (owner's PC, 2026-10-16).
+- SISR emulates every controller Steam Input hands it, not only the Steam Controller (SISR `input/device_store.go`,
+  read 2026-10-20). With Steam Input on for Xbox pads in a game's controller settings, SISR took the owner's
+  physical Xbox pad as soon as the game started, Steam took SISR's virtual Xbox 360 controller over again, and
+  the game got no input from it in either mode until the support was switched off (owner, 2026-10-20, #124).
+  So only an emulated device whose `real_device` in `/api/v1/devices` is a Valve device counts as a Steam
+  Controller: `VID_28DE` in its SDL path, except Steam's virtual gamepad `28DE:11FF`; without a vendor id in the
+  path, a name with "Steam Controller" or "Steam Deck" (`SisrGamepad.IsValveController`). An Xbox pad behind
+  Steam Input has SDL's XInput path (`XInput#0`) without a vendor id (seen, below); what SISR reports for the
+  Steam Controller isn't seen yet. `arcadia.log` names every other controller SISR emulates.
+- In a Steam game whose Steam Input also takes other controllers, the game gets no input from them while SISR
+  runs, whether SISR emulates them yet or not. Owner's PC, 2026-10-21, Castlevania: Belmont's Curse (4231820)
+  set to Steam Input for every controller, 8BitDo Ultimate 2 (an Xbox-style pad) and the Steam Controller, game
+  on "Xbox 360 Controller (SISR)": once SISR never took the pad within a minute, once only 85 s after the start,
+  and the game ignored the pad all along; after SISR stopped it worked. SISR reports such a pad as `XInput
+  Controller #1` or by its name, path `XInput#…`, no USB id. When SISR starts outside a game it sees the pad as
+  a Steam virtual gamepad for 2 s, until it forces its marker's layout (sisr.log).
+- So Arcadia reads Steam's setting for the game from the account's `localconfig.vdf`
+  (`UserLocalConfigStore/apps/<appid>/UseSteamControllerConfig`: "0" off, "1" or missing Steam's default, "2" on
+  for every controller; "2" for that game, the only values seen) and the default's global
+  `SteamController_XBoxSupport` / `SteamController_GenericGamepadSupport` (`SteamInputSetting`). How Steam
+  stores Steam Input for only some controller types isn't known yet; `arcadia.log` names the values read. If
+  it covers other controllers ("2", or the default with Xbox or generic support on), SISR pauses for that
+  game even on "Xbox 360 Controller (SISR)": before a start from Arcadia (`BeginGameAsync`), or within 2 s for a
+  Steam game that runs otherwise (`RunningAppID`, read once per game). In such a game Steam Input brings the
+  Steam Controller too. As a fallback, SISR also pauses while a Steam game runs if it emulates any other
+  controller (Steam's default can be changed by the game itself). The settings show "SISR pausiert für „…“"
+  with the way out (Steam Input off for the other controllers in that game); Arcadia can't make SISR leave one
+  device alone (only a filter in SISR or #112 could). A pause noticed during the game isn't handed over an
+  update restart; the new Arcadia pauses again within 2 s. Without a Steam game the settings only warn "SISR
+  übernimmt einen anderen Controller".
 - SISR may only run while Steam is ready: `steam` and `steamwebhelper` run, a user is logged in
   (`ActiveProcess\ActiveUser`) and the client finished that login: the latest `Starting login` in
   `logs/steamui_login.txt` is followed by `SetLoginState: Success` (`SteamLoginLog`). `ActiveUser` is set as
@@ -118,6 +148,28 @@ focus handling or anything SISR/usbip related.
 - `SteamDesktopInputFilter` drops simulated (`SendInput`) mouse and key input while a controller is in use (or was
   less than 150 ms ago); Arcadia's own input carries a marker in `dwExtraInfo` and passes. Assumed, not yet seen on the
   owner's PC: Steam sends its desktop layout with `SendInput`. `arcadia.log` names how many inputs were dropped.
-- It runs only while needed: never while a library game is in front without the mouse mode, so a game's own Steam
-  layout (e.g. keys for a game without controller support) still reaches it.
+- Beside a library game without the mouse mode it drops input only while ⧉ + ≡ are held (`DesktopFilterScope.ComboHeld`),
+  so a game's own Steam layout (e.g. keys for a game without controller support) still reaches it. Seen on the
+  owner's PC (2026-10-20): in a Steam game with an Xbox pad (Steam Input presumably off for it) Steam's desktop layout
+  still made Alt+Tab of Back + Start; with the Steam Controller (Steam Input on) it didn't. So a hook stays in beside
+  games too, but only the keyboard one (Alt+Tab is keys; a gaming mouse would send up to 8,000 events a second through
+  Arcadia), and none while no XInput controller is connected. The hook thread runs at the highest priority, because
+  every input waits for it. Windows removes a low-level hook that once took too long without telling (Microsoft's docs
+  for `LowLevelKeyboardProc`), e.g. during a GC pause, so the thread sets its hooks anew every 30 s and on every change
+  of scope, the new one before the old one goes. The option is its own box and works with the mouse mode "Aus" too
+  (owner, 2026-10-20): Steam's layout doubles Arcadia's own navigation as well. Not yet seen: whether the filter also drops the Windows on-screen
+  keyboard (osk.exe), which sends its keys with `SendInput` too (T64-18).
+- The Steam Controller reaches Arcadia only through SISR. While SISR is paused for a game on "Steam Input", Arcadia
+  doesn't see it at all: no Back + Start, no View held (named under the Steam Controller Support's "Nachteile", owner 2026-10-20; a fix needs #112 or #72).
+- "Arcadia in front" is decided by the foreground window (`ProcessWatch.ForegroundProcessId`), not by the window's
+  Activated/Deactivated: on the owner's PC Arcadia sometimes took a game's controller input as its own after
+  switching between the game and Arcadia, and View held didn't bring it back (2026-10-20, cause not found).
+  A game in borderless full screen is a topmost window and can stay above Arcadia while Arcadia has the foreground
+  (found in review, not seen): "in front" also needs that no other program's window covers Arcadia whole, and View
+  held keeps Arcadia topmost until it loses the focus when `BringToFront` alone left it covered (`ForegroundGuard`).
+  The owner has three monitors and saw no difference between borderless and exclusive full screen, so the likelier
+  way is that Arcadia really got the foreground on another monitor: Steam's Alt+Tab, or a click in the mouse mode
+  (RT or A) with the pointer the game hides lying over Arcadia. So the mouse mode, switched on with a game in front,
+  puts the pointer in the middle of the game's window, and `arcadia.log` names every foreground change (process
+  file name, game or not, and whether Avalonia's activation disagrees) and where the foreground is after View held.
 

@@ -103,10 +103,25 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     [ObservableProperty]
     public partial string FocusedControllerSupportText { get; private set; } = string.Empty;
 
-    partial void OnFocusedGameChanged(GameTileViewModel? value) => UpdateControllerSupportState();
+    /// <summary>"Individueller Mausmodus" shows on games ("Von Hand" with "Individuell").</summary>
+    [ObservableProperty]
+    public partial bool ShowGameMouseMode { get; private set; }
+
+    /// <summary>The focused game's "Individueller Mausmodus": "Standard", "Erlaubt" or "Deaktiviert".</summary>
+    [ObservableProperty]
+    public partial string FocusedGameMouseModeText { get; private set; } = string.Empty;
+
+    partial void OnFocusedGameChanged(GameTileViewModel? value)
+    {
+        UpdateControllerSupportState();
+        UpdateGameMouseModeState();
+    }
 
     /// <summary>The install folders of the library's games: a process from one of them is a game in front.</summary>
     public GameFolders GameFolders { get; private set; } = GameFolders.Empty;
+
+    /// <summary>Games Arcadia started, for a game in front whose path can't be read.</summary>
+    public LaunchedGames LaunchedGames { get; } = new();
 
     /// <summary>Raised when Arcadia should bring its window back to the front.</summary>
     public event EventHandler? ForegroundRequested;
@@ -956,7 +971,64 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     [RelayCommand]
     private void CloseSettings() => Settings = null;
 
-    partial void OnSettingsChanged(SettingsViewModel? oldValue, SettingsViewModel? newValue) => oldValue?.Dispose();
+    partial void OnSettingsChanged(SettingsViewModel? oldValue, SettingsViewModel? newValue)
+    {
+        oldValue?.Dispose();
+        UpdateGameMouseModeState();
+    }
+
+    bool IGameActionHost.ShowGameMouseMode => ShowGameMouseMode;
+
+    bool? IGameActionHost.GameMouseModeOf(Game game) => _settings.Current.MouseMode.GameChoiceFor(game.Key);
+
+    bool IGameActionHost.DefaultGameMouseModeAllowed => _settings.Current.MouseMode.PerGameDefaultAllowed;
+
+    void IGameActionHost.CycleGameMouseMode(GameTileViewModel tile) => CycleGameMouseModeOf(tile.Game);
+
+    /// <summary>Switches the focused game's "Individueller Mausmodus": Standard → Erlaubt → Deaktiviert.</summary>
+    [RelayCommand]
+    private void CycleGameMouseMode()
+    {
+        if (FocusedGame?.Game is { } game)
+        {
+            CycleGameMouseModeOf(game);
+        }
+    }
+
+    private void CycleGameMouseModeOf(Game game)
+    {
+        try
+        {
+            _settings.Update(s => s with { MouseMode = s.MouseMode.WithGameChoice(game.Key, GameMouseModes.Next(s.MouseMode.GameChoiceFor(game.Key))) });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AppLog.Write($"Individueller Mausmodus nicht gespeichert: {ex.Message}");
+            Toast.Show("Die Änderung konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
+        }
+
+        UpdateGameMouseModeState();
+    }
+
+    private bool _shownDefaultMouseModeAllowed = true;
+
+    private void UpdateGameMouseModeState()
+    {
+        var mouseMode = _settings.Current.MouseMode;
+        var show = mouseMode.Activation == MouseModeActivation.Manual && mouseMode.InGames == MouseModeInGames.PerGame;
+        // The detail page's button names what "Standard" means, so a changed default rebuilds it too.
+        if (ShowGameMouseMode != show || _shownDefaultMouseModeAllowed != mouseMode.PerGameDefaultAllowed)
+        {
+            ShowGameMouseMode = show;
+            _shownDefaultMouseModeAllowed = mouseMode.PerGameDefaultAllowed;
+            Detail?.RebuildActions();
+        }
+
+        if (FocusedGame?.Game is { } game)
+        {
+            FocusedGameMouseModeText = GameMouseModes.Of(mouseMode.GameChoiceFor(game.Key), mouseMode.PerGameDefaultAllowed);
+        }
+    }
 
     /// <summary>Switches the focused game between "Xbox 360 Controller (SISR)" and "Steam Input".</summary>
     [RelayCommand]
@@ -1162,7 +1234,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         var progress = new Progress<LaunchStage>(stage => OnLaunchStage(tile, stage));
 
         // Games that use Steam Input themselves would get every input twice while SISR runs.
-        var result = await _launcher.TryStartAsync(tile.Game, token => _controllerSupport.BeginGameAsync(tile.Game, token), progress);
+        var result = await _launcher.TryStartAsync(tile.Game, async token =>
+        {
+            LaunchedGames.Starting(tile.Game.Key, await Task.Run(ForegroundGame.RunningProcessIds, token));
+            await _controllerSupport.BeginGameAsync(tile.Game, token);
+        }, progress);
         switch (result)
         {
             case { Outcome: LaunchOutcome.Failed, Error: { } error }:

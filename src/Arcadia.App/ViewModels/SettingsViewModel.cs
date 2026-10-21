@@ -71,6 +71,9 @@ public sealed class HealthIssueViewModel(HealthIssue issue, Action<HealthFix> fi
 
     public string Detail => issue.Detail;
 
+    /// <summary>Intended behaviour, shown with a blue i; neither this nor <see cref="IsError"/> is a warning.</summary>
+    public bool IsInfo => issue.Severity == HealthSeverity.Info;
+
     public bool IsError => issue.Severity == HealthSeverity.Error;
 
     public bool HasFix => issue.Fix != HealthFix.None;
@@ -124,6 +127,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     {
         MouseMode = new MouseModeSettingsViewModel(settings, () => ShowPrompt(SettingsPrompt.MouseModeHelp));
         ReturnWithView = new ReturnWithViewSettingsViewModel(settings);
+        SteamDesktopLayout = new SteamDesktopLayoutSettingsViewModel(settings);
 
         // The help shows no button of its own (owner, 2026-10-20); this unseen item lets A close it as B does.
         _closeMouseModeHelp = new SettingsItemViewModel(ClosePrompt);
@@ -179,6 +183,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     public MouseModeSettingsViewModel MouseMode { get; }
 
     public ReturnWithViewSettingsViewModel ReturnWithView { get; }
+
+    public SteamDesktopLayoutSettingsViewModel SteamDesktopLayout { get; }
 
     private static readonly TimeSpan PromptCheckInterval = TimeSpan.FromSeconds(1);
 
@@ -677,6 +683,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         HasIssues = Issues.Count > 0;
 
+        // Information (e.g. SISR paused for a game) is intended behaviour, not a problem.
+        var hasProblems = _support.Issues.Any(i => i.Severity > HealthSeverity.Info);
+
         // Once on, the switch stays even if something breaks later; the problem shows below it.
         var setup = _support.Setup;
         NeedsMarker = _support.Issues.Any(i => i.Fix == HealthFix.CreateMarker);
@@ -695,8 +704,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         var state = _support.State;
         IsInTransition = IsEnabled && state is SisrState.Starting or SisrState.Stopping;
-        IsHealthy = IsEnabled && !HasIssues && BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
-        StatusText = (IsEnabled, state == SisrState.Paused, HasIssues) switch
+        IsHealthy = IsEnabled && !hasProblems && BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
+        StatusText = (IsEnabled, state == SisrState.Paused, hasProblems) switch
         {
             (false, _, _) when ShowInstall => "Nicht eingerichtet – „SISR installieren“ richtet alles Nötige ein und schaltet die Option ein.",
             (false, _, _) => "Aus – außerhalb von Steam läuft der Steam Controller im Desktop-Modus (Maus und Tastatur).",
@@ -744,7 +753,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         // Keep the controller focus on the same item where possible. All items lose it first, so
         // the row behind an open prompt doesn't keep its ring.
-        foreach (var item in new[] { _toggle, _update, _checkUpdates, _arcadiaUpdate, _retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop, _retrySteamStart, _cancelSteamStart, _confirmMarkerAccounts, _cancelMarkerAccounts, _closeMouseModeHelp }.Concat(MarkerAccounts).Concat(MouseMode.Items).Concat(ReturnWithView.Items))
+        foreach (var item in new[] { _toggle, _update, _checkUpdates, _arcadiaUpdate, _retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop, _retrySteamStart, _cancelSteamStart, _confirmMarkerAccounts, _cancelMarkerAccounts, _closeMouseModeHelp }.Concat(MarkerAccounts).Concat(MouseMode.Items).Concat(ReturnWithView.Items).Concat(SteamDesktopLayout.Items))
         {
             item.IsFocused = false;
         }
@@ -783,6 +792,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         items.AddRange(Issues.Where(i => i.HasFix));
         items.AddRange(MouseMode.Items);
         items.AddRange(ReturnWithView.Items);
+        items.AddRange(SteamDesktopLayout.Items);
         if (CanSearchForUpdates)
         {
             items.Add(_checkUpdates);

@@ -24,6 +24,9 @@ public partial class MouseModeOverlay : Window
     /// <summary>Let go early, the edge runs back this fast.</summary>
     private static readonly TimeSpan RunBackTime = TimeSpan.FromMilliseconds(250);
 
+    /// <summary>The flash (<c>ScreenEdgeFill.flash</c> in the theme) has faded out by then; the edge goes before the animation ends.</summary>
+    private static readonly TimeSpan FlashTime = TimeSpan.FromMilliseconds(450);
+
     /// <summary>"Mausmodus an/aus" shows this long; then nothing stays.</summary>
     private static readonly TimeSpan LabelTime = TimeSpan.FromSeconds(2);
 
@@ -88,6 +91,7 @@ public partial class MouseModeOverlay : Window
             Edge.Progress = 1;
             Edge.IsVisible = true;
             Edge.Classes.Add("flash");
+            DispatcherTimer.RunOnce(() => EndFlashIfStill(generation), FlashTime);
         }
         else
         {
@@ -174,6 +178,15 @@ public partial class MouseModeOverlay : Window
         }
     }
 
+    private void EndFlashIfStill(int generation)
+    {
+        if (generation == _generation)
+        {
+            Edge.IsVisible = false;
+            Edge.Classes.Remove("flash");
+        }
+    }
+
     private void DisappearIfStill(int generation)
     {
         if (generation != _generation)
@@ -181,12 +194,21 @@ public partial class MouseModeOverlay : Window
             return;
         }
 
-        Hide();
         Edge.Transitions = null;
         Edge.Progress = 0;
         Edge.Classes.Remove("flash");
         Label.IsVisible = false;
         HideReturnBox();
+
+        // Windows shows a hidden window's last frame again on the next Show, so the overlay hides only
+        // after an empty frame was drawn; otherwise the last "Mausmodus an/aus" flickers up at the next hold.
+        RequestAnimationFrame(_ => RequestAnimationFrame(_ =>
+        {
+            if (generation == _generation)
+            {
+                Hide();
+            }
+        }));
     }
 
     /// <summary>No activation, no taskbar or Alt+Tab entry, and a region of only the edge and the label area, so clicks pass everywhere else.</summary>

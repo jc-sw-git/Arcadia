@@ -74,6 +74,78 @@ public sealed partial class ForegroundGuard(MainWindow window)
         AppLog.Write($"Fokus kurz zum Desktop gewechselt, damit Steam die Desktop-Belegung übernimmt (zurück: {back}).");
     }
 
+    /// <summary>
+    /// Brings Arcadia to the front while another program has it, e.g. View in the mouse mode (#64):
+    /// Windows lets a background program take the foreground only with its input queue attached.
+    /// </summary>
+    public static void BringBack(MainWindow window)
+    {
+        if (window.WindowState == WindowState.Minimized)
+        {
+            window.WindowState = WindowState.Normal;
+        }
+
+        if (OperatingSystem.IsWindows() && window.TryGetPlatformHandle() is { } handle)
+        {
+            TakeForeground(handle.Handle);
+        }
+
+        window.BringToFront();
+
+        // BringToFront leaves Arcadia below every topmost window, e.g. a game in borderless full screen.
+        // Then it stays topmost until it loses the focus, and the game, topmost too, comes back above it.
+        if (OperatingSystem.IsWindows() && window.TryGetPlatformHandle() is { } shown && !IsUncovered(shown.Handle))
+        {
+            window.Topmost = true;
+            window.Deactivated += EndTopmost;
+
+            void EndTopmost(object? sender, EventArgs e)
+            {
+                window.Deactivated -= EndTopmost;
+                window.Topmost = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Whether <paramref name="window"/> can be seen: the foreground window can still be hidden behind a
+    /// topmost window, e.g. a game in borderless full screen. Hidden means another program's window lies
+    /// at its centre and covers it whole; a small window kept on top (say, a task manager) doesn't hide it.
+    /// Callable from any thread.
+    /// </summary>
+    public static bool IsUncovered(IntPtr window)
+    {
+        if (!OperatingSystem.IsWindows() || !GetWindowRect(window, out var bounds))
+        {
+            return true;
+        }
+
+        const uint Root = 2;
+        var centre = new Point((bounds.Left + bounds.Right) / 2, (bounds.Top + bounds.Bottom) / 2);
+        var atCentre = GetAncestor(WindowFromPoint(centre), Root);
+        if (atCentre == IntPtr.Zero || GetWindowThreadProcessId(atCentre, out var processId) == 0 || processId == Environment.ProcessId)
+        {
+            return true;
+        }
+
+        return !GetWindowRect(atCentre, out var cover)
+            || cover.Left > bounds.Left || cover.Top > bounds.Top || cover.Right < bounds.Right || cover.Bottom < bounds.Bottom;
+    }
+
+    /// <summary>
+    /// Puts the pointer in the middle of the foreground window. Games hide the pointer, so after the
+    /// mouse mode came on in a game it may sit over Arcadia on another monitor, and the first click
+    /// (RT or A) would bring Arcadia to the front unseen (review of #64, three monitors).
+    /// </summary>
+    public static void CentrePointerOnForeground()
+    {
+        if (OperatingSystem.IsWindows() && GetForegroundWindow() is var foreground && foreground != IntPtr.Zero
+            && GetWindowRect(foreground, out var bounds))
+        {
+            _ = SetCursorPos((bounds.Left + bounds.Right) / 2, (bounds.Top + bounds.Bottom) / 2);
+        }
+    }
+
     /// <summary>Tested: 150 ms is reliably noticed by Steam, 40 ms is not.</summary>
     private static readonly TimeSpan BounceDuration = TimeSpan.FromMilliseconds(150);
 
@@ -116,6 +188,35 @@ public sealed partial class ForegroundGuard(MainWindow window)
 
     [LibraryImport("user32.dll")]
     private static partial IntPtr GetForegroundWindow();
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetWindowRect(IntPtr window, out Rect bounds);
+
+    [LibraryImport("user32.dll")]
+    private static partial IntPtr WindowFromPoint(Point point);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetCursorPos(int x, int y);
+
+    [LibraryImport("user32.dll")]
+    private static partial IntPtr GetAncestor(IntPtr window, uint flags);
+
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")]
+    private static partial uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private readonly record struct Point(int X, int Y);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Rect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
 
     [LibraryImport("user32.dll")]
     private static partial uint GetWindowThreadProcessId(IntPtr window, IntPtr processId);

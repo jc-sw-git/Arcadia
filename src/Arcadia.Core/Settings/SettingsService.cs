@@ -10,7 +10,7 @@ public sealed class SettingsService(SettingsStore store)
     private readonly Lock _lock = new();
 
     // Volatile: the thread pool reads what the UI thread wrote, without taking the lock.
-    private volatile AppSettings _current = store.Load().WithValidLibraryView();
+    private volatile AppSettings _current = store.Load().WithValidLibraryView().WithValidMouseMode();
 
     public AppSettings Current => _current;
 

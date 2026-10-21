@@ -40,7 +40,16 @@ public interface IGamepadSource : IDisposable
     /// <summary>Raised once when a pressed button is let go; same thread rules as <see cref="ButtonPressed"/>.</summary>
     event Action<GamepadButton>? ButtonReleased;
 
+    /// <summary>
+    /// Raised on every poll, before that poll's button events and on the same thread, with what each
+    /// connected controller reports (sticks included). The list is only valid during the call.
+    /// </summary>
+    event Action<IReadOnlyList<GamepadReading>>? Polled;
+
     void Start();
+
+    /// <summary>A short rumble on the controller in <paramref name="slot"/>, if it has motors. Callable from any thread.</summary>
+    void Rumble(int slot);
 }
 
 public static class GamepadSource
@@ -65,7 +74,17 @@ public sealed class NullGamepadSource : IGamepadSource
         remove { }
     }
 
+    public event Action<IReadOnlyList<GamepadReading>>? Polled
+    {
+        add { }
+        remove { }
+    }
+
     public void Start()
+    {
+    }
+
+    public void Rumble(int slot)
     {
     }
 

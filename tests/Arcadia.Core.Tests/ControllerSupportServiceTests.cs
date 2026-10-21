@@ -391,6 +391,27 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task The_controller_still_counts_as_connected_while_SISR_is_paused_for_a_game()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        Assert.Equal(SisrState.Running, service.State);
+
+        var game = SteamGame();
+        _platform.RunningDirectories.Add(game.InstallDirectory!);
+        await service.BeginGameAsync(game);
+        Assert.Equal(SisrState.Paused, service.State);
+        Assert.True(service.SteamControllerConnected);
+
+        _platform.RunningDirectories.Clear();
+        await AdvanceUntil(() => _sisr.Starts == 1);
+        Assert.Equal(SisrState.Starting, service.State);
+        Assert.True(service.SteamControllerConnected);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
     public async Task SISR_runs_again_when_the_game_ends()
     {
         var service = Create();

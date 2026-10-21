@@ -40,8 +40,15 @@ public partial class MainWindow : Window
 
     private const double HitGridTop = 40;
 
+    /// <summary>The focus ring around a setting reaches this far beyond it (FocusRing in Theme.axaml).</summary>
+    private const double FocusRingRoom = 8;
+
+    /// <summary>The pointer must move this far (window pixels) from where it rested to count as the mouse being used.</summary>
+    private const double PointerMoveThreshold = 6;
+
     private readonly HashSet<Key> _keysDown = [];
     private MainViewModel? _viewModel;
+    private Point? _restingPointer;
     private SearchViewModel? _search;
 
     public MainWindow()
@@ -68,6 +75,7 @@ public partial class MainWindow : Window
 
         // Which input is in use decides whether the search shows its on-screen keyboard.
         AddHandler(PointerPressedEvent, (_, _) => _viewModel?.NotePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerMovedEvent, OnPointerMovedAnywhere, RoutingStrategies.Tunnel, handledEventsToo: true);
 
         // Ends a held click on a cover, wherever the mouse is let go.
         AddHandler(PointerReleasedEvent, (_, _) => _viewModel?.ReleasePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
@@ -153,10 +161,16 @@ public partial class MainWindow : Window
             Services.AppLog.Write($"Taste: {e.Key} → {action}");
             _viewModel.Handle(action);
             e.Handled = true;
-            if (_viewModel.IsSettingsOpen)
-            {
-                Dispatcher.UIThread.Post(BringFocusedSettingIntoView, DispatcherPriority.Loaded);
-            }
+            FollowSettingsFocus();
+        }
+    }
+
+    /// <summary>After a key or button press: keeps the focused setting in view while the settings are open.</summary>
+    public void FollowSettingsFocus()
+    {
+        if (_viewModel?.IsSettingsOpen == true)
+        {
+            Dispatcher.UIThread.Post(BringFocusedSettingIntoView, DispatcherPriority.Loaded);
         }
     }
 
@@ -196,6 +210,32 @@ public partial class MainWindow : Window
             Key.F10 when e.KeyModifiers == KeyModifiers.Shift => UiAction.Options,
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// A real mouse movement shows the dialogs' ✕. Windows also reports a pointer "move" when only the content under a
+    /// resting pointer changes, so a few pixels from where it rested don't count.
+    /// </summary>
+    private void OnPointerMovedAnywhere(object? sender, PointerEventArgs e)
+    {
+        var position = e.GetPosition(this);
+        if (_viewModel is null || _viewModel.ShowsCloseButtons)
+        {
+            _restingPointer = position;
+            return;
+        }
+
+        if (_restingPointer is not { } resting)
+        {
+            _restingPointer = position;
+            return;
+        }
+
+        if (Math.Abs(position.X - resting.X) + Math.Abs(position.Y - resting.Y) > PointerMoveThreshold)
+        {
+            _restingPointer = position;
+            _viewModel.NotePointerMoved();
+        }
     }
 
     private void OnTextInput(object? sender, TextInputEventArgs e)
@@ -388,7 +428,7 @@ public partial class MainWindow : Window
     {
         // Settings items carry the "focused" class; the dialog's scroll viewer is their nearest one.
         var focused = this.GetVisualDescendants().OfType<Button>()
-            .FirstOrDefault(b => b.Classes.Contains("focused") && b.IsEffectivelyVisible && b.DataContext is SettingsViewModel or SettingsItemViewModel);
+            .FirstOrDefault(b => b.Classes.Contains("focused") && b.IsEffectivelyVisible && b.DataContext is SettingsViewModel or SettingsItemViewModel or MouseModeSettingsViewModel or ReturnWithViewSettingsViewModel or SteamDesktopLayoutSettingsViewModel);
         if (focused?.FindAncestorOfType<ScrollViewer>() is not { } scroller)
         {
             return;
@@ -401,7 +441,8 @@ public partial class MainWindow : Window
         }
         else
         {
-            focused.BringIntoView();
+            // With room for the focus ring, which the scroll viewer would otherwise cut off at its edge.
+            focused.BringIntoView(new Rect(focused.Bounds.Size).Inflate(FocusRingRoom));
         }
     }
 

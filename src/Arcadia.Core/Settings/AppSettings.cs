@@ -38,6 +38,18 @@ public sealed record AppSettings
     /// <summary>The on-screen keyboard's layout the user picked last; null for the default (German).</summary>
     public string? KeyboardLayout { get; init; }
 
+    /// <summary>The controller as a mouse (#64).</summary>
+    public MouseModeSettings MouseMode { get; init; } = new();
+
+    /// <summary>View held brings Arcadia back from the background (#64); independent of the mouse mode.</summary>
+    public ReturnWithViewSettings ReturnWithView { get; init; } = new();
+
+    /// <summary>
+    /// "Steams Desktop-Belegung ignorieren" (#64): the mouse and keys Steam makes of the controller are
+    /// dropped. Independent of the mouse mode, because Steam's layout also doubles Arcadia's own navigation (owner, 2026-10-20).
+    /// </summary>
+    public bool IgnoreSteamDesktopLayout { get; init; } = true;
+
     /// <summary>
     /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
     /// hand — with the defaults, instead of failing on them later.
@@ -46,6 +58,13 @@ public sealed record AppSettings
     {
         LibrarySort = Enum.IsDefined(LibrarySort.Field) && Enum.IsDefined(LibrarySort.Direction) ? LibrarySort : SortOrder.Default,
         PreferredPageSize = PageSizes.Options.Contains(PreferredPageSize) ? PreferredPageSize : PageSizes.Default,
+    };
+
+    /// <summary>Like <see cref="WithValidLibraryView"/> for the mouse mode and View's way back; also replaces a <c>null</c> written by hand.</summary>
+    public AppSettings WithValidMouseMode() => this with
+    {
+        MouseMode = (MouseMode ?? new MouseModeSettings()).WithValidValues(),
+        ReturnWithView = (ReturnWithView ?? new ReturnWithViewSettings()).WithValidValues(),
     };
 
     /// <summary>

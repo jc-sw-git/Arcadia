@@ -119,11 +119,11 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 | Project | Content |
 |---|---|
 | `src/Arcadia.Launchers.Abstractions` | What a launcher is made of, with no dependency on the rest: `ILauncherIntegration` (scanner, optional client and install monitor, `Locate`), `ILauncherScanner`, `ILauncherClient`, `IInstallMonitor`, models (`Game`, `LauncherInfo`, `LaunchTarget`). The future plugin interface for launchers |
-| `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `Carousel` (detail page neighbours), `SearchQuery` (prefix parser), `GameSearch` (hits by relevance or a sort order; titles folded and sorted once, so a key press is one ordinal pass), `LauncherScope` (chips and prefix in step), `HitWindow` (the hits on screen, turned with LT/RT), `AppSettings`/`SettingsStore`/`SettingsService` (the one shared copy of the settings), `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions) |
-| `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch`, Steam (`SteamScanner`, `SteamInstallMonitor`, `SteamContentLog`, `SteamLoginLog`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
-| `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, presses and releases, auto-repeat for D-pad and sticks), `HoldGesture` (tap vs. hold), `RepeatGesture` (held erase), `LatchGesture` (shift: tap or hold) |
+| `src/Arcadia.Core` | `LauncherRegistry` (the registered launchers; reads see only the enabled ones), `KnownLaunchers`, `GameSorter`, `PageSizes`/`PageWindow`, `Carousel` (detail page neighbours), `SearchQuery` (prefix parser), `GameSearch` (hits by relevance or a sort order; titles folded and sorted once, so a key press is one ordinal pass), `LauncherScope` (chips and prefix in step), `HitWindow` (the hits on screen, turned with LT/RT), `AppSettings`/`SettingsStore`/`SettingsService` (the one shared copy of the settings), `LibraryService`/`LibraryRefresher` (scan and rescan), `InstallTracker` (installs started from Arcadia or in the launcher), `Changelog` (release notes between versions), `GameFolders` (install folders of the library, to tell a game in front; paths compared in one spelling), `LaunchedGames` (a game Arcadia started whose path can't be read), `MouseModeSettings`, `ReturnWithViewSettings` |
+| `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch` (also `PathOf(pid)` and the foreground process), Steam (`SteamScanner`, `SteamInstallMonitor`, `SteamContentLog`, `SteamLoginLog`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
+| `src/Arcadia.Input` | `XInputGamepadSource` (polls 4 slots, presses and releases, auto-repeat for D-pad and sticks), `HoldGesture` (tap vs. hold), `RepeatGesture` (held erase), `LatchGesture` (shift: tap or hold), `SoloButtons` (View/Menu act alone, not together), `ButtonText` (the buttons in a text); mouse mode (#64): `MouseMode` (Back + Start, `Polled` readings, also in the background), `MouseModeMapping` (buttons → mouse/keys), `MouseModeAutomation`, `StickCurve`, `SendInputOutput` (`IMouseKeyboardOutput`), `ReturnWithView` (View held brings Arcadia back), `ControllerActivity`/`InjectedInputGate`/`SteamDesktopInputFilter` (drop Steam's desktop layout) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost` (`ISisrHost`), `SisrApiClient`, `UsbipDriver`, `UsbipPorts`, `GitHubReleases`, `ControllerSupportService` (`SisrState`), `ControllerSupportPlatform` (Windows/Steam, replaced in tests), `ControllerSupportRemoval` (uninstall) |
-| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu) and `GameDetailViewModel` (detail carousel, `Views/GameDetailView.axaml`) are its children; `Search/` holds `SearchViewModel` (search page; hits shown in `HitSlotViewModel` places that keep their controls when the hit changes), `OnScreenKeyboardViewModel` and `KeyboardLayout`; `Controls/` holds `HoldRing`, `RevealPanel` (the sliding keyboard), `SharedWidthRow` and `CollapsingStack` (the shrinking chips) |
+| `src/Arcadia.App` | Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`, `ArcadiaUpdateService` (Velopack). `MainViewModel` holds navigation and wires the parts; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu) and `GameDetailViewModel` (detail carousel, `Views/GameDetailView.axaml`) are its children; `Search/` holds `SearchViewModel` (search page; hits shown in `HitSlotViewModel` places that keep their controls when the hit changes), `OnScreenKeyboardViewModel` and `KeyboardLayout`; `Controls/` holds `ButtonTextBlock` (buttons drawn framed inside a text), `HoldRing`, `RevealPanel` (the sliding keyboard), `SharedWidthRow` and `CollapsingStack` (the shrinking chips); mouse mode: `Services/MouseModeHost` (wiring, overlay, automation), `Services/ForegroundGame`, `Views/MouseModeOverlay` (own non-activating window, clicks pass outside its region) with `Controls/ScreenEdgeFill` |
 | `tests/Arcadia.Core.Tests` | xUnit |
 
 Big Picture UI is laid out at 1920×1080 inside a `Viewbox`; a window of another shape gets bars in the window's
@@ -146,10 +146,18 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   `/steam-epic term` prefix, keyword per launcher), R3 = keyboard layout switch, View/⧉ or
   right click = context menu, Menu/☰ = settings (swapped by the owner, 2026-10-17). No "all launchers" tab. No dedicated favourite button.
 - Dependent options sit in the same box as their main switch.
+- UI texts name a controller button by the symbol on it, not by its name: ⧉ and ≡, not View/Back and Menu/Start
+  (Xbox symbols for now; later those of the controller in use, #72), framed like in the legend also inside a text
+  (`ButtonTextBlock`) (owner, 2026-10-20).
+- Dialogs (Ansicht, settings, prompts) show an ✕ in the top right corner while mouse or keyboard is in use
+  (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs (e.g. the
+  mouse mode's help) has no "Schließen" button besides (owner, 2026-10-20).
 - A starts a game on release; holding A for 1 s opens the detail page (a ring around the preview fills from
   0.2 s on, letting go before 1 s cancels). With the mouse a click picks a cover, a double click starts it and
   holding the left button 1 s opens the details with the same ring (owner, 2026-10-19). The context menu and the detail page offer the same actions
-  (`GameActionViewModel.For`); the detail page has no menu, its actions are buttons (owner, 2026-10-17).
+  (`GameActionViewModel.For`); the detail page has no menu, its actions are buttons (owner, 2026-10-17) in three rows:
+  Spielen, Zu Favoriten, In … öffnen, Artwork ändern; then the game's own settings (Steam Controller mode,
+  "Individueller Mausmodus", later e.g. launch options); last "Deinstallieren …" alone (owner, 2026-10-21).
 - The detail page is a carousel through the tab's games in the library's sort order, across pages and
   wrapping at the ends (two games: the other on both sides; one: no neighbours). LT/RT turn it, LB/RB switch
   the tab and stay on the detail page (first game), Y re-sorts with the shown game kept in the middle, B returns
@@ -172,6 +180,25 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   the search. The `/launcher` prefix still works when typed but isn't advertised; chips and filter rewrite a typed
   prefix and never add one. A detail page opened from the search turns through the hits in their order; LB/RB
   and Y do nothing there, B returns to the search with its text unchanged (owner, 2026-10-17 and 2026-10-18).
+- Mouse mode (#64): Back + Start held (1–9 s, default 3) switches it, also with Arcadia in the background; one mode for all
+  pads; never saved (Arcadia starts normal). Its buttons are listed in `MouseModeSettingsViewModel.HelpRows`; in it
+  Arcadia ignores gamepad navigation. View and Menu therefore act on release, or once held alone 0.2 s (so ≡ held still
+  opens details), and not at all when pressed together (owner, 2026-10-19). "Mausmodus" is one choice of three, so only one way
+  decides (owner, 2026-10-20): "Aus" (all off, the other values kept), "Von Hand" (Back + Start; "Mausmodus beenden, wenn Arcadia im Vordergrund ist"
+  optionally ends it when Arcadia comes to the front) or "Automatisch" (on when Arcadia loses the focus to a non-game, off when Arcadia or a game comes to
+  the front; Back + Start overrides it until Arcadia was in front again, e.g. for a game Arcadia doesn't know).
+  "Beenden des Mausmodus in Spielen erzwingen" (only "Von Hand"): "Nein", "Ja" (in a library game in front Back + Start
+  doesn't switch it on and a game coming to the front ends it) or "Individuell" (a default "Erlaubt"/"Deaktiviert", and
+  "Individueller Mausmodus" in each game's preview and detail page: "Standard (erlaubt)" or "Standard (deaktiviert)",
+  naming the default, then "Erlaubt", "Deaktiviert") (owner, 2026-10-20 and 2026-10-21). "Zurück zu Arcadia" is its own setting: View held alone (0–9 s, default 1; 0 at once) brings
+  Arcadia back from the background, with or without the mouse mode, with a box whose frame fills (owner, 2026-10-20).
+  Exceptions per process are planned for later. "Steams Desktop-Belegung ignorieren" (on; its own box, independent of
+  the mouse mode, owner 2026-10-20) drops simulated mouse and keys from other programs while a controller is in use; beside a library game without the mouse mode only while ⧉ + ≡ are
+  held, and then only keys (`SteamDesktopInputFilter`: low-level hooks only while a controller is connected and the
+  option needs them, set anew every 30 s because Windows drops a slow hook silently). "Arcadia in front" is the
+  foreground window's process and no other program's window covering Arcadia whole (`MouseModeHost.IsArcadiaActive`),
+  not Avalonia's activation, which got out of step beside games. A game in front is a process from a library game's
+  folder, or one whose path can't be read (anti-cheat) that started after Arcadia last started a game (owner, 2026-10-20).
 - Status messages (`HealthIssue`, header and the settings box they belong to) have three levels, each with its own
   symbol: **Info** (round blue i) for intended behaviour in a situation, e.g. SISR paused because other controllers
   use Steam Input; **Warning** (yellow triangle with !) when a function is impaired and the user must act, e.g.

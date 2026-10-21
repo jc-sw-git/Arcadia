@@ -80,9 +80,9 @@
             <TextBlock Text="Controller wird eingerichtet …" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
           </StackPanel>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  IsVisible="{Binding Status.HasControllerWarning}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{Binding Status.ControllerWarningText}">
-            <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" Stroke="{StaticResource Warning}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
-                  Width="24" Height="24" Stretch="None" />
+                  IsVisible="{Binding Status.HasControllerStatus}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{Binding Status.ControllerStatusText}">
+            <!-- Symbol and colour come from the statusIcon styles, so no local Data or Stroke. -->
+            <Path Classes="statusIcon" Classes.info="{Binding Status.IsControllerStatusInfo}" Classes.error="{Binding Status.IsControllerStatusError}" />
           </Button>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
                   IsVisible="{Binding Status.HasSisrUpdate}" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Neue SISR-Version verfügbar">
@@ -1135,9 +1135,8 @@
                         <DataTemplate x:DataType="vm:HealthIssueViewModel">
                           <Border Background="{StaticResource SurfaceHover}" CornerRadius="12" Padding="16,12">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                              <!-- No local Stroke: a local value would override the error style. -->
-                              <Path Classes="issueIcon" Classes.error="{Binding IsError}" Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" StrokeThickness="2"
-                                    StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="None" VerticalAlignment="Top" />
+                              <!-- No local Data or Stroke: a local value would override the severity styles. -->
+                              <Path Classes="statusIcon" Classes.info="{Binding IsInfo}" Classes.error="{Binding IsError}" VerticalAlignment="Top" />
                               <StackPanel Grid.Column="1" Spacing="3">
                                 <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" />
                                 <TextBlock Text="{Binding Detail}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
@@ -1381,10 +1380,24 @@
     <Style Selector="Ellipse.statusDot.active">
       <Setter Property="Fill" Value="{StaticResource Success}" />
     </Style>
-    <Style Selector="Path.issueIcon">
+    <!-- Status messages (owner, 2026-10-21): a warning by default, info a blue i in a circle, error a red X. -->
+    <Style Selector="Path.statusIcon">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="Stretch" Value="None" />
+      <Setter Property="StrokeThickness" Value="2" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="Data" Value="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.3" />
       <Setter Property="Stroke" Value="{StaticResource Warning}" />
     </Style>
-    <Style Selector="Path.issueIcon.error">
+    <Style Selector="Path.statusIcon.info">
+      <Setter Property="Data" Value="M2.5 12a9.5 9.5 0 1 0 19 0a9.5 9.5 0 1 0 -19 0z M12 11v5.5 M12 7.6v.3" />
+      <Setter Property="Stroke" Value="{StaticResource Info}" />
+    </Style>
+    <Style Selector="Path.statusIcon.error">
+      <Setter Property="Data" Value="M5.5 5.5l13 13 M18.5 5.5l-13 13" />
+      <Setter Property="StrokeThickness" Value="2.6" />
       <Setter Property="Stroke" Value="{StaticResource Danger}" />
     </Style>
     <Style Selector="TextBlock.bullet">

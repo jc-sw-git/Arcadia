@@ -471,7 +471,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         Assert.Equal(ControllerSupportService.MaxRestartsPerWindow, _sisr.Starts);
         Assert.Equal(SisrState.Failed, service.State);
-        Assert.Contains(service.Issues, i => i.Id == "sisr-crashing");
+        Assert.Contains(service.Issues, i => i.Id == "sisr-crashing" && i.Severity == HealthSeverity.Error);
 
         // Once the window has passed, Arcadia tries again.
         _time.Advance(ControllerSupportService.CrashWindow);
@@ -716,6 +716,22 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Switched_on_but_no_longer_installed_is_a_warning_and_another_platform_an_error()
+    {
+        var service = Create();
+        _sisr.Installed = false;
+
+        await service.RefreshAsync();
+
+        Assert.Contains(service.Issues, i => i.Id == "sisr-missing" && i.Severity == HealthSeverity.Warning);
+
+        _platform.IsSupported = false;
+        await service.RefreshAsync();
+
+        Assert.Contains(service.Issues, i => i.Id == "platform" && i.Severity == HealthSeverity.Error);
+    }
+
+    [Fact]
     public async Task A_tick_while_off_notices_a_change_in_the_setup()
     {
         var service = Create(enabled: false);
@@ -950,7 +966,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Equal(SisrState.NoController, service.State);
         Assert.False(service.SteamControllerConnected);
         Assert.True(_sisr.Running);
-        Assert.Contains(service.Issues, i => i.Id == "sisr-other-controller" && i.Detail.Contains("Xbox 360 Controller"));
+        Assert.Contains(service.Issues, i => i.Id == "sisr-other-controller" && i.Severity == HealthSeverity.Warning && i.Detail.Contains("Xbox 360 Controller"));
         AssertNoUnexpectedTransition();
     }
 
@@ -975,7 +991,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Empty(service.PausedFor);
         await service.TickAsync();
         Assert.Equal(0, _sisr.Starts);
-        Assert.Contains(service.Issues, i => i.Id == "sisr-paused-other-controller" && i.Title.Contains("Elden Ring"));
+        Assert.Contains(service.Issues, i => i.Id == "sisr-paused-other-controller" && i.Severity == HealthSeverity.Info && i.Title.Contains("Elden Ring"));
         lock (_log)
         {
             Assert.Contains(_log, line => line.Contains("Xbox 360 Controller (ohne USB-ID)") && line.Contains("Elden Ring"));

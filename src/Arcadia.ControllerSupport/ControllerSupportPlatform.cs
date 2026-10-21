@@ -229,7 +229,7 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
         var usbip = UsbipDriver.InstalledVersion();
         if (usbip is null)
         {
-            issues.Add(new("usbip-missing", HealthSeverity.Error, "usbip-Treiber fehlt", "SISR erzeugt den virtuellen Controller über diesen Treiber. Die Installation fragt einmalig nach Administratorrechten.", HealthFix.InstallUsbip, "Installieren"));
+            issues.Add(new("usbip-missing", HealthSeverity.Warning, "usbip-Treiber fehlt", "SISR erzeugt den virtuellen Controller über diesen Treiber. Die Installation fragt einmalig nach Administratorrechten.", HealthFix.InstallUsbip, "Installieren"));
         }
         else if (usbip < UsbipDriver.MinimumVersion)
         {
@@ -237,7 +237,7 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
         }
         else if (!UsbipDriver.IsRunning())
         {
-            issues.Add(new("usbip-stopped", HealthSeverity.Error, "usbip-Treiber ist nicht aktiv", "Der Treiber ist installiert, aber nicht geladen. Meist hilft ein Neustart des PCs, sonst eine Neuinstallation.", HealthFix.InstallUsbip, "Neu installieren"));
+            issues.Add(new("usbip-stopped", HealthSeverity.Warning, "usbip-Treiber ist nicht aktiv", "Der Treiber ist installiert, aber nicht geladen. Meist hilft ein Neustart des PCs, sonst eine Neuinstallation.", HealthFix.InstallUsbip, "Neu installieren"));
         }
         else if (settings.UsbipInstalledAt is { } installedAt && installedAt > LastBootTime(now))
         {
@@ -246,7 +246,7 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
         if (SteamInstallation.Find() is null)
         {
-            issues.Add(new("steam-missing", HealthSeverity.Error, "Steam wurde nicht gefunden", "SISR liest den Controller über Steam Input; Steam muss installiert sein."));
+            issues.Add(new("steam-missing", HealthSeverity.Warning, "Steam wurde nicht gefunden", "SISR liest den Controller über Steam Input; Steam muss installiert sein."));
         }
         else if (!SteamInstallation.IsRunning)
         {

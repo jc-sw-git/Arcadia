@@ -172,6 +172,12 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   the search. The `/launcher` prefix still works when typed but isn't advertised; chips and filter rewrite a typed
   prefix and never add one. A detail page opened from the search turns through the hits in their order; LB/RB
   and Y do nothing there, B returns to the search with its text unchanged (owner, 2026-10-17 and 2026-10-18).
+- Status messages (`HealthIssue`, header and the settings box they belong to) have three levels, each with its own
+  symbol: **Info** (round blue i) for intended behaviour in a situation, e.g. SISR paused because other controllers
+  use Steam Input; **Warning** (yellow triangle with !) when a function is impaired and the user must act, e.g.
+  Steam not running, usbip driver missing, SISR switched on but no longer installed; **Error** (red X) for lasting
+  failures, e.g. SISR keeps crashing. The header shows the worst level; info alone doesn't make a status unhealthy
+  (owner, 2026-10-21).
 - Launcher actions (open in the launcher, uninstall) are `LaunchTarget`s on `Game`;
   a null one is shown disabled with the reason, or for uninstall opens the launcher instead.
 - If an update is available, A still says "Spielen" and starts the game; the launcher installs the update

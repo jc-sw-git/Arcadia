@@ -7,9 +7,16 @@ using System.ComponentModel;
 
 namespace Arcadia.ControllerSupport;
 
+/// <summary>How a status message is shown (owner, 2026-10-21); ordered, so the header shows the worst one.</summary>
 public enum HealthSeverity
 {
+    /// <summary>Intended behaviour in a particular situation, e.g. SISR paused for a game: a blue i.</summary>
+    Info,
+
+    /// <summary>A feature works only partly and the user has to act, e.g. Steam not running: a yellow triangle.</summary>
     Warning,
+
+    /// <summary>A lasting failure, e.g. SISR crashing again and again: a red X.</summary>
     Error,
 }
 
@@ -1093,7 +1100,7 @@ public sealed class ControllerSupportService(
         var issues = new List<HealthIssue>();
         if (!sisr.IsInstalled)
         {
-            issues.Add(new("sisr-missing", HealthSeverity.Error, "SISR ist nicht installiert", "Ohne SISR kommt der Steam Controller nicht als Gamepad an.", HealthFix.InstallSisr, "Installieren"));
+            issues.Add(new("sisr-missing", HealthSeverity.Warning, "SISR ist nicht installiert", "Ohne SISR kommt der Steam Controller nicht als Gamepad an.", HealthFix.InstallSisr, "Installieren"));
         }
 
         issues.AddRange(_platform.CheckDependencies(Settings, time.GetUtcNow()));
@@ -1107,7 +1114,7 @@ public sealed class ControllerSupportService(
         if (sisr.IsInstalled && !_platform.HasSisrMarker(sisr.ExecutablePath))
         {
             // Read from Steam's shortcuts, not asked from SISR: SISR doesn't start without it.
-            issues.Add(new("marker-missing", HealthSeverity.Error, "Steam-Eintrag für SISR fehlt", "Über den Eintrag „SISR Marker“ legt Steam fest, welche Controller-Belegung SISR verwendet. Zum Anlegen wird Steam kurz beendet.", HealthFix.CreateMarker, "Anlegen"));
+            issues.Add(new("marker-missing", HealthSeverity.Warning, "Steam-Eintrag für SISR fehlt", "Über den Eintrag „SISR Marker“ legt Steam fest, welche Controller-Belegung SISR verwendet. Zum Anlegen wird Steam kurz beendet.", HealthFix.CreateMarker, "Anlegen"));
         }
 
         if (sisr.ExternalInstances().Count > 0)
@@ -1118,7 +1125,7 @@ public sealed class ControllerSupportService(
         if (_steamInputPause is { } pause)
         {
             var controllers = pause.Controllers is { } names ? $" ({names})" : string.Empty;
-            issues.Add(new("sisr-paused-other-controller", HealthSeverity.Warning, $"SISR pausiert für „{pause.Game}“",
+            issues.Add(new("sisr-paused-other-controller", HealthSeverity.Info, $"SISR pausiert für „{pause.Game}“",
                 $"In diesem Spiel gilt Steam Input auch für andere Controller als den Steam Controller{controllers}. Solange SISR läuft, bekäme das Spiel von ihnen keine Eingaben. Bis es endet, bekommt es alle Controller über Steam Input, auch den Steam Controller. Soll der Steam Controller als Xbox 360 Controller ankommen, schalte in Steam in den Controller-Einstellungen des Spiels Steam Input für die anderen Controller aus."));
         }
 
@@ -1152,7 +1159,7 @@ public sealed class ControllerSupportService(
 
         if (steam.SteamRunning && !steam.CefDebugEnabled)
         {
-            issues.Add(new("cef-disabled", HealthSeverity.Error, "Steam-Debug-Schnittstelle ist aus", "SISR braucht Steams lokale Debug-Schnittstelle (CEF). Zum Aktivieren startet Steam einmal neu.", HealthFix.EnableCefDebugging, "Aktivieren"));
+            issues.Add(new("cef-disabled", HealthSeverity.Warning, "Steam-Debug-Schnittstelle ist aus", "SISR braucht Steams lokale Debug-Schnittstelle (CEF). Zum Aktivieren startet Steam einmal neu.", HealthFix.EnableCefDebugging, "Aktivieren"));
         }
         else if (steam.SteamRunning && !steam.CefDebugReachable)
         {
@@ -1162,7 +1169,7 @@ public sealed class ControllerSupportService(
         var viiper = await sisr.Api.PingViiperAsync(cancellationToken);
         if (string.IsNullOrEmpty(viiper?.Status?.Version))
         {
-            issues.Add(new("viiper-down", HealthSeverity.Error, "VIIPER antwortet nicht", "VIIPER erzeugt die virtuellen Controller für SISR. Ein Neustart von SISR startet es mit.", HealthFix.RestartSisr, "SISR neu starten"));
+            issues.Add(new("viiper-down", HealthSeverity.Warning, "VIIPER antwortet nicht", "VIIPER erzeugt die virtuellen Controller für SISR. Ein Neustart von SISR startet es mit.", HealthFix.RestartSisr, "SISR neu starten"));
         }
     }
 

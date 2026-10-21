@@ -253,7 +253,8 @@ errors land with stack trace in `arcadia.log` and as a toast. No `_ = SomethingA
   from inside a template with `$parent[Window].((vm:MainViewModel)DataContext)?.Prop`.
 - A binding path through a property that can be null (`Detail.X`, `FocusedGame.X`, a `DataContext` not set yet)
   logs a binding error each time, `FallbackValue` or not. Write `Detail?.X` and give a value type a
-  `TargetNullValue` (`IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}"`).
+  `TargetNullValue` (`IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}"`). `XamlBindingTests` checks
+  both on every `.axaml` against the App's properties declared nullable (`T? Name`), so declare nullable what can be null.
 
 **Launcher and controller findings** (verified on the owner's PC; read the matching file before
 touching that code, and add new findings there, not here):

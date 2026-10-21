@@ -185,9 +185,10 @@
               </Panel>
               <DockPanel Grid.Row="1" Margin="24,22,24,24">
                 <StackPanel DockPanel.Dock="Bottom" Spacing="10">
-                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                  <!-- A long label ("Zurück ins Spiel" beside the Space key) takes the room of the word "Optionen";
+                       only what still doesn't fit then shrinks. -->
+                  <ctl:PrimaryRow Spacing="10">
                     <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
-                      <!-- A long label ("Zurück ins Spiel" beside the Space key) shrinks to fit beside "Optionen". -->
                       <Viewbox StretchDirection="DownOnly">
                         <StackPanel Orientation="Horizontal" Spacing="12">
                           <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" />
@@ -195,14 +196,14 @@
                         </StackPanel>
                       </Viewbox>
                     </Button>
-                    <Button Grid.Column="1" Classes="plain secondary" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenMenuCommand}"
+                    <Button Classes="plain secondary" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenMenuCommand}"
                             ToolTip.Tip="Weitere Aktionen (R oder Rechtsklick auf ein Cover)">
-                      <StackPanel Orientation="Horizontal" Spacing="10">
+                      <ctl:CollapsingStack Spacing="10" EndPadding="6">
                         <ctl:KeyHint Pad="⧉" Keys="R" />
                         <TextBlock Text="Optionen" VerticalAlignment="Center" />
-                      </StackPanel>
+                      </ctl:CollapsingStack>
                     </Button>
-                  </Grid>
+                  </ctl:PrimaryRow>
                   <TextBlock IsVisible="{Binding UpdateAvailable}" Classes="actionHint">
                     <Run Text="{Binding LauncherName}" /><Run Text=" installiert das Update ggf. vor dem Start" />
                   </TextBlock>

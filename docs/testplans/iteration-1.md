@@ -845,7 +845,9 @@ Verlauf:
 - [ ] **T95-7** Während ein Spiel läuft, ein anderes aus Arcadia starten: Es startet (sofern der Launcher es
       zulässt), beide zeigen „Läuft“. · E2E: nein (echte Spiele)
 - [ ] **T95-8** Demo-Daten (`--demo`): In jedem Launcher läuft ein Spiel (Kachel „Läuft“, Vorschau „Läuft seit …“,
-      25 min vor dem Start von Arcadia). Detailseite: Chip „LÄUFT SEIT …“, Button „Zurück ins Spiel“, „Deinstallieren …“
+      25 min vor dem Start von Arcadia). Vorschau: „Zurück ins Spiel“ steht ganz im Button, mit Abstand zur Rundung,
+      mit Controller wie mit Tastatur; daneben bleibt von „Optionen“ nur das Symbol (⧉ bzw. R), bei „Spielen“ steht
+      es wieder ausgeschrieben. Detailseite: Chip „LÄUFT SEIT …“, Button „Zurück ins Spiel“, „Deinstallieren …“
       ausgegraut mit Tooltip „Erst wenn das Spiel beendet ist“; Kontextmenü ebenso. A darauf bringt den Toast „Arcadia
       findet kein Fenster …“. · E2E: ja
 - [ ] **T95-9** Mit angeschlossenem Steam Controller (SISR an), während ein Spiel läuft: Der Steam-Controller-Modus in
@@ -870,7 +872,9 @@ Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
-| T95-8 | 2026-10-21 | Claude | Branch `feat/laufende-spiele-anzeigen-94-95`, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool (Pfeile, R, Leertaste gehalten, Leertaste, F, Tippen) | ✅ Screenshots im Projektordner `screenshots/laufende-spiele-94-95/`: Kachel- und Treffer-Badge „Läuft“, Vorschau „Läuft seit 18:19“, „Zurück ins Spiel“ in Button und Footer (in der Vorschau verkleinert, damit er neben „Optionen“ passt), Detailseite mit Chip und ausgegrautem „Deinstallieren …“, Kontextmenü, Toast ohne Fenster. „Wird gestartet …“ nicht zu sehen, weil Demo-Spiele nicht starten | Echte Launcher am PC des Owners |
+| T95-8 | 2026-10-21 | Claude | Branch `feat/laufende-spiele-anzeigen-94-95`, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool (Pfeile, R, Leertaste gehalten, Leertaste, F, Tippen) | ✅ Screenshots im Projektordner `screenshots/laufende-spiele-94-95/`: Kachel- und Treffer-Badge „Läuft“, Vorschau „Läuft seit 18:19“, „Zurück ins Spiel“ in Button und Footer, Detailseite mit Chip und ausgegrautem „Deinstallieren …“, Kontextmenü, Toast ohne Fenster. „Wird gestartet …“ nicht zu sehen, weil Demo-Spiele nicht starten | Echte Launcher am PC des Owners |
+| T95-8 (Vorschau-Button) | 2026-10-21 | Juri | Screenshot des Laufs oben | ❌ „Zurück ins Spiel“ in der Vorschau nicht ganz im Button: verkleinert, stößt aber rechts an die Rundung (der Button hatte keinen Innenabstand) | Innenabstand; „Optionen“ gibt sein Wort ab, wenn der Text den Platz braucht |
+| T95-8 (Vorschau-Button) | 2026-10-21 | Claude | Branch `feat/laufende-spiele-anzeigen-94-95`, Linux, Xvfb `--demo`, Tastatur per xdotool; Controller-Hinweise mit einer nicht eingecheckten Änderung erzwungen (unter Linux kein XInput) | ✅ „Zurück ins Spiel“ mit Controller und Tastatur in voller Größe ganz im Button, daneben ⧉ bzw. R allein; „Installieren“ mit Tastatur ebenso; „Spielen“ und „Installieren“ mit Controller und „Spielen“ mit Tastatur weiter mit „Optionen“ ausgeschrieben, auch nach einem Spiel mit langem Text | — |
 | T95-1 bis T95-3, T95-11 (Logik) | 2026-10-21 | Claude | `dotnet test`, Linux: `EpicRunningGamesTests`, `SteamRunningGamesTests` (Registry nachgebildet), `ProcessGamesTests`, `RunningGamesTrackerTests` | ⚠️ Start-/Stop-Zeilen, halbe Zeilen, neues Log, Registry-Flag und `RunningAppID`, Prozesse aus dem Spielordner und mit nicht lesbarem Pfad, „Wird gestartet …“ mit 2-min-Grenze grün; echte Launcher nicht | Lauf am PC des Owners |
 | T95-13 (Prozesssuche) | 2026-10-21 | Claude | Release-Build, Linux, nachgebildete Prozesstabelle mit 351 Prozessen, 5.000 Spiele | ⚠️ ohne die Windows-Aufrufe je Prozess: Ordner der 5.000 Spiele aufbauen 3,2 ms (nur bei einer neuen Bibliothek), erste Runde 0,5 ms, jede weitere Runde ohne neue Prozesse 40 µs; Windows fragt nur neue Prozesse ab. Läuft für Steam und Epic gar nicht | CPU neben dem Spiel am PC des Owners |
 

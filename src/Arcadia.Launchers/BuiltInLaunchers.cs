@@ -26,7 +26,7 @@ public static class BuiltInLaunchers
     {
         ILauncherIntegration[] integrations =
         [
-            new SteamIntegration(),
+            new SteamIntegration(time),
             new EpicIntegration(time),
         ];
 

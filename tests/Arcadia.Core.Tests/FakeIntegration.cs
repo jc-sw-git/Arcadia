@@ -14,6 +14,10 @@ internal sealed class FakeIntegration(LauncherInfo launcher) : ILauncherIntegrat
 
     public IInstallMonitor? InstallMonitor { get; init; }
 
+    public IRunningGamesMonitor? RunningGames { get; init; }
+
+    public IReadOnlyCollection<string> ProgramNames { get; init; } = [];
+
     public string? Locate() => null;
 
     public static LauncherRegistry Registry(params ILauncherIntegration[] integrations) => new(integrations, _ => true);
@@ -62,5 +66,21 @@ internal sealed class FakeMonitor(string launcherId) : IInstallMonitor
         Polls++;
         Gate?.Wait(TimeSpan.FromSeconds(10));
         return new InstallSnapshot(new Dictionary<string, InstallProgress>(Active), new Dictionary<string, InstallOutcome>(Finished));
+    }
+}
+
+/// <summary>Reports <see cref="Running"/>; counts its polls.</summary>
+internal sealed class FakeRunningGames(string launcherId) : IRunningGamesMonitor
+{
+    public List<RunningGame> Running { get; } = [];
+
+    public int Polls { get; private set; }
+
+    public string LauncherId => launcherId;
+
+    public IReadOnlyList<RunningGame> Poll()
+    {
+        Polls++;
+        return [.. Running];
     }
 }

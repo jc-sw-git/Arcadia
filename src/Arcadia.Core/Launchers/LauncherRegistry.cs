@@ -29,7 +29,8 @@ public sealed class LauncherRegistry
             }
             else if (integration.Scanner.Launcher.Id != id
                 || (integration.Client is { LauncherId: var clientId } && clientId != id)
-                || (integration.InstallMonitor is { LauncherId: var monitorId } && monitorId != id))
+                || (integration.InstallMonitor is { LauncherId: var monitorId } && monitorId != id)
+                || (integration.RunningGames is { LauncherId: var runningId } && runningId != id))
             {
                 // Games, tabs and installs are matched by launcher id; a part with another id would never match.
                 rejected.Add($"Launcher „{id}“ enthält Teile eines anderen Launchers.");

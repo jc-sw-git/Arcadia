@@ -125,6 +125,70 @@ public static partial class ProcessWatch
         }
     }
 
+    /// <summary>
+    /// The ids of the running processes, without opening any of them; elsewhere than on Windows through
+    /// <see cref="Process.GetProcesses()"/>.
+    /// </summary>
+    public static int[] RunningProcessIds()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            var processes = Process.GetProcesses();
+            var ids = new int[processes.Length];
+            for (var i = 0; i < processes.Length; i++)
+            {
+                ids[i] = processes[i].Id;
+                processes[i].Dispose();
+            }
+
+            return ids;
+        }
+
+        // Windows fills the buffer and says how much it used; a full buffer may have cut the list short.
+        for (var capacity = 1024; ; capacity *= 2)
+        {
+            var buffer = new uint[capacity];
+            if (!EnumProcesses(buffer, (uint)(capacity * sizeof(uint)), out var used))
+            {
+                return [];
+            }
+
+            var count = (int)(used / sizeof(uint));
+            if (count < capacity)
+            {
+                return Array.ConvertAll(buffer[..count], id => (int)id);
+            }
+        }
+    }
+
+    /// <summary>Whether <paramref name="processId"/> is a service (session 0); null if the process ended or it isn't Windows.</summary>
+    public static bool? IsService(int processId) =>
+        OperatingSystem.IsWindows() && ProcessIdToSessionId((uint)processId, out var session) ? session == ServicesSession : null;
+
+    /// <summary>When <paramref name="processId"/> started, or null if that can't be read (it ended, or it is protected).</summary>
+    public static DateTimeOffset? StartTimeOf(int processId)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        var process = OpenProcess(QueryLimitedInformation, false, (uint)processId);
+        if (process == IntPtr.Zero)
+        {
+            return null;
+        }
+
+        try
+        {
+            return GetProcessTimes(process, out var created, out _, out _, out _) ? DateTimeOffset.FromFileTime(created) : null;
+        }
+        finally
+        {
+            CloseHandle(process);
+        }
+    }
+
     /// <summary>The process that owns the foreground window, or null if there is none (e.g. the secure desktop shows).</summary>
     public static int? ForegroundProcessId()
     {
@@ -166,6 +230,18 @@ public static partial class ProcessWatch
     [LibraryImport("kernel32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool CloseHandle(IntPtr handle);
+
+    [LibraryImport("kernel32.dll", EntryPoint = "K32EnumProcesses")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool EnumProcesses([Out] uint[] processIds, uint size, out uint used);
+
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool ProcessIdToSessionId(uint processId, out uint sessionId);
+
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetProcessTimes(IntPtr process, out long creation, out long exit, out long kernel, out long user);
 
     [LibraryImport("user32.dll")]
     private static partial IntPtr GetForegroundWindow();

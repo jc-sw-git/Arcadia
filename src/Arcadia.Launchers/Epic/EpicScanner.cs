@@ -287,7 +287,7 @@ public sealed class EpicScanner(
         }
     }
 
-    private static string DefaultLogDirectory() => Path.Combine(
+    public static string DefaultLogDirectory() => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "EpicGamesLauncher", "Saved", "Logs");
 

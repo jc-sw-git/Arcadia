@@ -1,3 +1,5 @@
+using Arcadia.App.Keyboard;
+using Arcadia.App.Search;
 using Arcadia.App.ViewModels;
 using Arcadia.App.Views;
 using Arcadia.Core.Library;
@@ -12,8 +14,9 @@ namespace Arcadia.App.Services;
 /// <summary>
 /// Wires the mouse mode (#64) into Arcadia: it follows every poll of the controllers (also with
 /// Arcadia in the background), shows its feedback over the screen, rumbles the controller that
-/// switched, and runs the automation from the settings on Arcadia's focus changes. Y opens its
-/// on-screen keyboard over the window in front (#110, <see cref="MouseModeKeyboardViewModel"/>). Beside
+/// switched, and runs the automation from the settings on Arcadia's focus changes. Y opens Arcadia's
+/// on-screen keyboard over the window in front (#110, <see cref="OnScreenKeyboardViewModel"/>), or with the
+/// search in front takes over the search's keyboard. Beside
 /// it, View held brings Arcadia back (<see cref="ReturnWithView"/>), and Steam's desktop layout is
 /// dropped where the settings ask for it (<see cref="IDesktopInputFilter"/>).
 /// </summary>
@@ -46,8 +49,12 @@ public sealed class MouseModeHost : IDisposable
     private readonly TimeProvider _time;
 
     // Made the first time Y opens it, so a session without it costs nothing.
-    private MouseModeKeyboardViewModel? _keyboard;
+    private OnScreenKeyboardViewModel? _keyboard;
     private MouseModeKeyboardWindow? _keyboardWindow;
+
+    // The keyboard the buttons go to while it is open: the window's, or the search's with Arcadia in front.
+    private OnScreenKeyboardViewModel? _openKeyboard;
+    private SearchViewModel? _typingSearch;
 
     // A game was in front at the last check; one coming to the front closes the keyboard.
     private bool _gameWasInFront;
@@ -117,7 +124,7 @@ public sealed class MouseModeHost : IDisposable
         _mode.HoldCancelled += () => Dispatcher.UIThread.Post(_overlay.CancelHold);
         _mode.Switched += OnSwitched;
         _mode.KeyboardOpened += () => Dispatcher.UIThread.Post(OpenKeyboard);
-        _mode.KeyboardButtonChanged += (button, down) => Dispatcher.UIThread.Post(() => _keyboard?.Handle(button, down));
+        _mode.KeyboardButtonChanged += (button, down) => Dispatcher.UIThread.Post(() => _openKeyboard?.Handle(button, down));
         // No rumble: over a game in exclusive full screen it would read as "switched".
         _mode.Refused += slot =>
         {
@@ -312,7 +319,8 @@ public sealed class MouseModeHost : IDisposable
 
     /// <summary>
     /// Y in the mouse mode: the keyboard opens over the window in front, at the edge chosen last unless the
-    /// caret would lie under it there. Should that fail, the buttons go back to the mouse at once.
+    /// caret would lie under it there. With Arcadia's search in front, its own keyboard takes the buttons instead,
+    /// so there are never two (owner, 2026-10-22). Should that fail, the buttons go back to the mouse at once.
     /// </summary>
     private void OpenKeyboard()
     {
@@ -323,19 +331,29 @@ public sealed class MouseModeHost : IDisposable
 
         try
         {
+            if (IsArcadiaActive && _viewModel is { IsSearchShown: true, IsDialogOpen: false, Search: { } search })
+            {
+                _typingSearch = search;
+                search.KeyboardClosed += OnSearchKeyboardClosed;
+                search.StartMouseModeTyping();
+                _openKeyboard = search.Keyboard;
+                AppLog.Write("Bildschirmtastatur der Suche übernimmt die Tasten");
+                return;
+            }
+
             var settings = _settings.Current;
             var layout = KeyboardLayout.Find(settings.KeyboardLayout);
             if (_keyboard is null || _keyboardWindow is null)
             {
-                _keyboard = new MouseModeKeyboardViewModel(_output, layout, settings.MouseMode.KeyboardAtTop, _activity.IsInUse, _time, action => Dispatcher.UIThread.Post(action));
-                _keyboard.Hidden += () => CloseKeyboard("B oder Ausblenden");
-                _keyboard.Docked += OnKeyboardDocked;
+                var target = new WindowInFrontTarget(_output, () => CloseKeyboard("B oder Ausblenden"), OnKeyboardDocked);
+                _keyboard = new OnScreenKeyboardViewModel(layout, target, _time, action => Dispatcher.UIThread.Post(action), _activity.IsInUse);
                 _keyboard.LayoutChosen += chosen => SaveKeyboardSetting(s => s with { KeyboardLayout = chosen.Id });
                 _keyboardWindow = new MouseModeKeyboardWindow { DataContext = _keyboard };
             }
 
             var atTop = _keyboardWindow.Open(settings.MouseMode.KeyboardAtTop);
             _keyboard.Open(layout, atTop);
+            _openKeyboard = _keyboard;
             _gameWasInFront = GameInFront();
             AppLog.Write($"Bildschirmtastatur offen ({(atTop ? "oben" : "unten")}, {layout.Code})");
         }
@@ -349,8 +367,16 @@ public sealed class MouseModeHost : IDisposable
     /// <summary>Closes the keyboard; the mouse mode goes on with the buttons as the mouse's.</summary>
     private void CloseKeyboard(string reason)
     {
-        var wasOpen = _mode.IsKeyboardOpen || _keyboardWindow?.IsVisible == true;
+        var wasOpen = _mode.IsKeyboardOpen || _keyboardWindow?.IsVisible == true || _typingSearch is not null;
         _mode.CloseKeyboard();
+        _openKeyboard = null;
+        if (_typingSearch is { } search)
+        {
+            _typingSearch = null;
+            search.KeyboardClosed -= OnSearchKeyboardClosed;
+            search.EndMouseModeTyping();
+        }
+
         _keyboard?.Closed();
         _keyboardWindow?.Hide();
         if (wasOpen)
@@ -359,9 +385,21 @@ public sealed class MouseModeHost : IDisposable
         }
     }
 
-    /// <summary>A game coming to the front closes the keyboard; one that was in front when it opened doesn't.</summary>
+    /// <summary>B, the search closing or its keyboard put away by other means: the buttons are the mouse's again.</summary>
+    private void OnSearchKeyboardClosed() => CloseKeyboard("Tastatur der Suche weg");
+
+    /// <summary>
+    /// A game coming to the front closes the keyboard; one that was in front when it opened doesn't. The search's
+    /// keyboard lets go once Arcadia isn't in front, so the buttons don't type into it behind another window.
+    /// </summary>
     private void CloseKeyboardForGame()
     {
+        if (_typingSearch is not null && !IsArcadiaActive)
+        {
+            CloseKeyboard("Arcadia nicht mehr vorne");
+            return;
+        }
+
         if (_keyboardWindow?.IsVisible != true)
         {
             return;

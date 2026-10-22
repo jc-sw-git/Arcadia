@@ -3,7 +3,7 @@ using Arcadia.Core.Search;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Arcadia.App.Search;
+namespace Arcadia.App.Keyboard;
 
 /// <summary>An entry of the layout menu (R3).</summary>
 public sealed partial class LayoutItemViewModel(KeyboardLayout layout, Action<KeyboardLayout> pick) : ViewModelBase
@@ -20,7 +20,7 @@ public sealed partial class LayoutItemViewModel(KeyboardLayout layout, Action<Ke
 }
 
 /// <summary>
-/// The layout menu (R3) of an on-screen keyboard, shared by the search's and the mouse mode's: all layouts,
+/// The layout menu (R3) of the on-screen keyboard (<see cref="OnScreenKeyboardViewModel"/>): all layouts,
 /// the chosen one ticked. Up and down move through it, A picks; a pick closes it.
 /// </summary>
 public sealed partial class LayoutMenuViewModel : ViewModelBase

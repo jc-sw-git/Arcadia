@@ -1120,46 +1120,6 @@
     </Setter>
   </Style>
 
-  <!-- On-screen keyboard. -->
-  <Style Selector="Button.key">
-    <Setter Property="Height" Value="56" />
-    <Setter Property="CornerRadius" Value="10" />
-    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
-    <Setter Property="Foreground" Value="{StaticResource Text}" />
-    <Setter Property="FontSize" Value="22" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <!-- Filled, so the shift and AltGr characters of a character key sit at its edges. -->
-    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-    <Setter Property="VerticalContentAlignment" Value="Stretch" />
-  </Style>
-  <Style Selector="Button.key.wide">
-    <Setter Property="FontSize" Value="17" />
-  </Style>
-  <Style Selector="Button.key TextBlock.keyHint">
-    <Setter Property="FontSize" Value="14" />
-    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
-  </Style>
-  <!-- AltGr for a layout without that level (US). -->
-  <Style Selector="Button.key.unavailable">
-    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
-  </Style>
-  <Style Selector="Button.key:pointerover, Button.key.focused">
-    <Setter Property="Background" Value="{StaticResource Line}" />
-  </Style>
-  <!-- Shift or AltGr on. -->
-  <Style Selector="Button.key.on">
-    <Setter Property="Background" Value="{StaticResource Accent}" />
-    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
-  </Style>
-  <Style Selector="Button.key.on:pointerover, Button.key.on.focused">
-    <Setter Property="Background" Value="{StaticResource AccentHover}" />
-  </Style>
-  <Style Selector="Button.key.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
-  </Style>
-  <Style Selector="Button.key Path.globe">
-    <Setter Property="Stroke" Value="{StaticResource Text}" />
-  </Style>
   <!-- A button inside a line of text (ButtonTextBlock), e.g. "⧉ + ≡ gedrückt halten". -->
   <Style Selector="Border.glyph.inline">
     <Setter Property="MinWidth" Value="22" />
@@ -1189,7 +1149,7 @@
     <Setter Property="FontSize" Value="11" />
   </Style>
 
-  <!-- The mouse mode's on-screen keyboard (#110), in its own window over other programs. -->
+  <!-- The on-screen keyboard (#110): its window over other programs in the mouse mode, and its keys there and in the search. -->
   <Style Selector="Border.mouseModeKeyboard">
     <Setter Property="Background" Value="{StaticResource KeyboardSurface}" />
     <Setter Property="BorderBrush" Value="{StaticResource Line}" />
@@ -1296,16 +1256,12 @@
     <Setter Property="BoxShadow" Value="{StaticResource LayoutMenuShadow}" />
     <Setter Property="Padding" Value="10" />
   </Style>
-  <!-- Lower than the search's, so all five fit beside the keys inside the keyboard's window. -->
-  <Style Selector="Border.keyboardLayoutMenu Button.layoutItem">
-    <Setter Property="Height" Value="50" />
-  </Style>
-
-  <!-- The keyboard's layout menu (R3). -->
+  <!-- The keyboard's layout menu (R3). Low enough for all five to fit within the keys' height: the mouse mode's window
+       is only as large as the keyboard. -->
   <Style Selector="Button.layoutItem">
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-    <Setter Property="Height" Value="60" />
+    <Setter Property="Height" Value="46" />
     <Setter Property="Padding" Value="12,0" />
     <Setter Property="CornerRadius" Value="10" />
     <Setter Property="Foreground" Value="{StaticResource Text}" />

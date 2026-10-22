@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Arcadia.App.Input;
+using Arcadia.App.Keyboard;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Library;
@@ -50,14 +51,15 @@ public sealed record SearchEmptyState(bool IsNoHits, string Title, string Text);
 
 /// <summary>
 /// The search over all launchers (#12): a text that may start with a <c>/launcher</c> prefix, the
-/// launchers it covers (chips, filter, prefix, kept in step), the hits and an on-screen keyboard.
-/// With the keyboard out the hits sit in one row above it: the D-pad (left stick) types, the right
+/// launchers it covers (chips, filter, prefix, kept in step), the hits and Arcadia's on-screen keyboard
+/// (<see cref="OnScreenKeyboardViewModel"/>; without tab and the edge key, ↵ starts the focused hit, the arrows
+/// move the caret). With the keyboard out the hits sit in one row above it: the D-pad (left stick) types, the right
 /// stick picks a hit, LT/RT turn the hits. With the keyboard in (B, a real keyboard, the button
 /// below the hits) they fill a grid that scrolls up and down, and the D-pad moves through them too;
 /// X brings the keyboard back. Starting a hit, its details, its menu and the filter dialog are the
 /// window's business (<see cref="MainViewModel"/>).
 /// </summary>
-public sealed partial class SearchViewModel : ViewModelBase, IDisposable
+public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, IDisposable
 {
     /// <summary>Hits per row, in both layouts.</summary>
     public const int ResultColumns = 7;
@@ -65,12 +67,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     /// <summary>Rows of hits in a window with the on-screen keyboard in; beside it there is room for one.</summary>
     public const int ResultRowsWithoutKeyboard = 2;
 
-    // As a held Backspace on a typical keyboard.
-    private static readonly TimeSpan EraseRepeatDelay = TimeSpan.FromMilliseconds(400);
-    private static readonly TimeSpan EraseRepeatInterval = TimeSpan.FromMilliseconds(60);
-
     private readonly Func<Game, Action<GameTileViewModel>, GameTileViewModel> _createTile;
-    private readonly RepeatGesture _erase;
     private IReadOnlyList<LauncherLibrary> _libraries;
     private GameSearch _search;
     private IReadOnlyList<LauncherInfo> _launchers = [];
@@ -80,6 +77,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     private int _focus;
     private bool _hitsChanged;
     private List<GameTileViewModel> _results = [];
+    private TextWithCaret _text = TextWithCaret.AtEnd(string.Empty);
 
     public SearchViewModel(
         IReadOnlyList<LauncherLibrary> libraries,
@@ -93,18 +91,23 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         _libraries = libraries;
         _search = new GameSearch(libraries.SelectMany(l => l.Games), Formatting.Culture);
         _createTile = createTile;
+        Keyboard = new OnScreenKeyboardViewModel(layout, this, time, post);
+        Keyboard.LayoutChosen += layoutChosen;
+        // A search field has no tab order to go through, and the keyboard is part of the page, with no edge to move to.
+        Keyboard.Configure(key => key.Kind is BoardKeyKind.Tab or BoardKeyKind.Dock ? BoardKeyState.Hidden : BoardKeyState.Shown);
         UsesController = usesController;
+        Keyboard.UsesController = usesController;
         IsKeyboardOut = usesController;
         _window = HitWindow.Of(0, ResultRows, ResultColumns);
-        Keyboard = new OnScreenKeyboardViewModel(layout, Press, layoutChosen, time);
-        _erase = new RepeatGesture(EraseRepeatDelay, EraseRepeatInterval, time, post);
-        _erase.Repeated += Erase;
         BuildChips();
         Recompute(keepFocusOn: null);
     }
 
-    /// <summary>The filter key on the on-screen keyboard was clicked.</summary>
-    public event Action? FilterRequested;
+    /// <summary>↵ on the on-screen keyboard: start the focused hit, as ≡ does.</summary>
+    public event Action? StartRequested;
+
+    /// <summary>The on-screen keyboard went in or the search closed; the mouse mode lets go of it (#110).</summary>
+    public event Action? KeyboardClosed;
 
     /// <summary>
     /// The hits on screen moved. The argument is where the window started before, so the view can
@@ -113,8 +116,12 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     public event Action<int?>? WindowMoved;
 
     /// <summary>What was typed, prefix included.</summary>
-    [ObservableProperty]
-    public partial string Text { get; private set; } = string.Empty;
+    public string Text => _text.Text;
+
+    /// <summary>The field shows the caret between these two; the on-screen keyboard's arrows move it.</summary>
+    public string TextBeforeCaret => _text.BeforeCaret;
+
+    public string TextAfterCaret => _text.AfterCaret;
 
     public ObservableCollection<SearchChipViewModel> Chips { get; } = [];
 
@@ -206,13 +213,18 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(ShowsStickHint))]
     public partial bool UsesController { get; set; }
 
+    /// <summary>The mouse mode types on the keyboard (Y, #110): its buttons are the keyboard's, the sticks and triggers the mouse's.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsStickHint))]
+    public partial bool IsInMouseMode { get; private set; }
+
     /// <summary>The on-screen keyboard is out, and the hits get one row above it; in, they fill a grid.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar))]
     public partial bool IsKeyboardOut { get; set; }
 
     /// <summary>Beside the keyboard only the right stick picks a hit, so it's said above the hits too, not only in the legend.</summary>
-    public bool ShowsStickHint => UsesController && IsKeyboardOut;
+    public bool ShowsStickHint => UsesController && IsKeyboardOut && !IsInMouseMode;
 
     private int ResultRows => IsKeyboardOut ? 1 : ResultRowsWithoutKeyboard;
 
@@ -229,15 +241,11 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     /// </summary>
     public void Handle(UiAction action)
     {
-        if (Keyboard.IsLayoutMenuOpen)
+        if (Keyboard.LayoutMenu.IsOpen)
         {
-            if (action is UiAction.KeyboardLayout or UiAction.Back)
+            if (KeyboardButtonOf(action) is { } button)
             {
-                Keyboard.CloseLayoutMenu();
-            }
-            else
-            {
-                Keyboard.HandleLayoutMenu(action);
+                Keyboard.ButtonDown(button);
             }
 
             return;
@@ -250,7 +258,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
                 IsKeyboardOut = true;
                 break;
             case UiAction.Search when UsesController:
-                _erase.Press();
+                Keyboard.ButtonDown(KeyboardButton.Erase);
                 break;
             case UiAction.Search:
                 Erase();
@@ -291,9 +299,9 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     /// <summary>B: closes the layout menu, else puts the keyboard away. False if there was neither, so B leaves the search.</summary>
     public bool Back()
     {
-        if (Keyboard.IsLayoutMenuOpen)
+        if (Keyboard.LayoutMenu.IsOpen)
         {
-            Keyboard.CloseLayoutMenu();
+            Keyboard.LayoutMenu.Close();
             return true;
         }
 
@@ -309,25 +317,28 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     /// <summary>A button was let go: ends a held erase, shift or AltGr.</summary>
     public void Release(UiAction action)
     {
-        switch (action)
+        if (KeyboardButtonOf(action) is { } button)
         {
-            case UiAction.Search or UiAction.Accept:
-                _erase.Release();
-                break;
-            case UiAction.PreviousTab:
-                Keyboard.ReleaseShift();
-                break;
-            case UiAction.NextTab:
-                Keyboard.ReleaseAltGr();
-                break;
+            Keyboard.ButtonUp(button);
         }
     }
 
     /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
-    public void CancelHeldButtons()
+    public void CancelHeldButtons() => Keyboard.CancelPresses();
+
+    /// <summary>Y in the mouse mode with the search in front (#110): the keyboard comes out and takes the mouse mode's buttons.</summary>
+    public void StartMouseModeTyping()
     {
-        _erase.Release();
-        Keyboard.CancelLevelPresses();
+        IsKeyboardOut = true;
+        IsInMouseMode = true;
+        Keyboard.UsesController = true;
+    }
+
+    /// <summary>The mouse mode let go of the keyboard; it stays out for the controller or the mouse.</summary>
+    public void EndMouseModeTyping()
+    {
+        IsInMouseMode = false;
+        Keyboard.CancelPresses();
     }
 
     /// <summary>The button below the hits: the keyboard out or back in.</summary>
@@ -342,24 +353,58 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void TurnOn() => Turn(1);
 
-    /// <summary>Text from a real keyboard; control characters are dropped.</summary>
+    /// <summary>Text from a real keyboard or the on-screen one, at the caret; control characters are dropped.</summary>
     public void Type(string text)
     {
         var typed = new string(text.Where(c => !char.IsControl(c)).ToArray());
         if (typed.Length > 0)
         {
-            SetText(Text + typed);
+            SetText(_text.Insert(typed));
         }
     }
 
+    /// <summary>Backspace: the character before the caret.</summary>
     public void Erase()
     {
-        if (Text.Length > 0)
+        if (_text.Caret > 0)
         {
-            // A surrogate pair is one character to the user.
-            var cut = Text.Length > 1 && char.IsLowSurrogate(Text[^1]) ? 2 : 1;
-            SetText(Text[..^cut]);
+            SetText(_text.EraseBefore());
         }
+    }
+
+    void IKeyboardTarget.Type(char character) => Type(character.ToString());
+
+    /// <summary>↵ starts the focused hit; the arrows move the caret, up and down to the start and the end of the text.</summary>
+    void IKeyboardTarget.Press(BoardKeyKind key, bool withShift)
+    {
+        switch (key)
+        {
+            case BoardKeyKind.Backspace:
+                Erase();
+                break;
+            case BoardKeyKind.Enter:
+                StartRequested?.Invoke();
+                break;
+            case BoardKeyKind.Left:
+                MoveCaret(_text.Left());
+                break;
+            case BoardKeyKind.Right:
+                MoveCaret(_text.Right());
+                break;
+            case BoardKeyKind.Up:
+                MoveCaret(_text.Home());
+                break;
+            case BoardKeyKind.Down:
+                MoveCaret(_text.End());
+                break;
+        }
+    }
+
+    void IKeyboardTarget.Hide() => IsKeyboardOut = false;
+
+    void IKeyboardTarget.Dock(bool atTop)
+    {
+        // The search's keyboard has no edge key (Configure in the constructor).
     }
 
     /// <summary>
@@ -381,8 +426,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
             _chosen = [.. next];
         }
 
-        Text = LauncherScope.Rewrite(Text, next, _launchers);
-        Recompute(keepFocusOn: null);
+        SetText(TextWithCaret.AtEnd(LauncherScope.Rewrite(Text, next, _launchers)));
     }
 
     /// <summary>A new order for the hits; as in the library, the focus goes to the first one.</summary>
@@ -430,14 +474,24 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public void Dispose() => _erase.Dispose();
+    public void Dispose()
+    {
+        if (IsKeyboardOut)
+        {
+            KeyboardClosed?.Invoke();
+        }
+
+        Keyboard.Dispose();
+    }
+
+    partial void OnUsesControllerChanged(bool value) => Keyboard.UsesController = value;
 
     partial void OnIsKeyboardOutChanged(bool value)
     {
         if (!value)
         {
-            Keyboard.CloseLayoutMenu();
-            CancelHeldButtons();
+            Keyboard.Closed();
+            KeyboardClosed?.Invoke();
         }
 
         _window = _window.WithLayout(ResultRows, ResultColumns, _focus);
@@ -447,28 +501,31 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     /// <summary>The D-pad and the buttons that stand for keys, while the keyboard is out.</summary>
     private void HandleKeyboard(UiAction action)
     {
-        switch (action)
+        if (KeyboardButtonOf(action) is { } button)
         {
-            case UiAction.ViewOptions:
-                Type(" ");
-                break;
-            case UiAction.PreviousTab:
-                Keyboard.PressShift();
-                break;
-            case UiAction.NextTab:
-                Keyboard.PressAltGr();
-                break;
-            case UiAction.KeyboardLayout:
-                Keyboard.ToggleLayoutMenu();
-                break;
-            case UiAction.Accept:
-                PressFocusedKey();
-                break;
-            case UiAction.Up or UiAction.Down or UiAction.Left or UiAction.Right:
-                Keyboard.Move(action);
-                break;
+            Keyboard.ButtonDown(button);
         }
     }
+
+    /// <summary>
+    /// The keyboard's meaning of Arcadia's buttons: the D-pad and A on the keys, X erases, Y space, LB shift, RB
+    /// AltGr, R3 the layout menu, B puts it away (closing the layout menu first).
+    /// </summary>
+    private static KeyboardButton? KeyboardButtonOf(UiAction action) => action switch
+    {
+        UiAction.Up => KeyboardButton.Up,
+        UiAction.Down => KeyboardButton.Down,
+        UiAction.Left => KeyboardButton.Left,
+        UiAction.Right => KeyboardButton.Right,
+        UiAction.Accept => KeyboardButton.Type,
+        UiAction.Search => KeyboardButton.Erase,
+        UiAction.ViewOptions => KeyboardButton.Space,
+        UiAction.PreviousTab => KeyboardButton.Shift,
+        UiAction.NextTab => KeyboardButton.AltGr,
+        UiAction.KeyboardLayout => KeyboardButton.Layout,
+        UiAction.Back => KeyboardButton.Hide,
+        _ => null,
+    };
 
     /// <summary>The D-pad, or a real keyboard's arrows, while the keyboard is in.</summary>
     private void HandleHits(UiAction action)
@@ -521,55 +578,24 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>A on the focused key. Erase repeats while A is held, like X.</summary>
-    private void PressFocusedKey()
+    private void SetText(TextWithCaret text)
     {
-        if (Keyboard.FocusedKey.Special == SpecialKey.Erase)
-        {
-            _erase.Press();
-        }
-        else
-        {
-            Press(Keyboard.FocusedKey);
-        }
-    }
-
-    /// <summary>A key pressed with A or clicked.</summary>
-    private void Press(KeyViewModel key)
-    {
-        if (key.Cap is not null)
-        {
-            Type(Keyboard.Typed(key));
-            return;
-        }
-
-        switch (key.Special)
-        {
-            case SpecialKey.Layout:
-                Keyboard.ToggleLayoutMenu();
-                break;
-            case SpecialKey.Filter:
-                FilterRequested?.Invoke();
-                break;
-            case SpecialKey.Shift:
-                Keyboard.ToggleShift();
-                break;
-            case SpecialKey.Space:
-                Type(" ");
-                break;
-            case SpecialKey.Erase:
-                Erase();
-                break;
-            case SpecialKey.AltGr:
-                Keyboard.ToggleAltGr();
-                break;
-        }
-    }
-
-    private void SetText(string text)
-    {
-        Text = text;
+        _text = text;
+        OnPropertyChanged(nameof(Text));
+        ShowCaret();
         Recompute(keepFocusOn: null);
+    }
+
+    private void MoveCaret(TextWithCaret text)
+    {
+        _text = text;
+        ShowCaret();
+    }
+
+    private void ShowCaret()
+    {
+        OnPropertyChanged(nameof(TextBeforeCaret));
+        OnPropertyChanged(nameof(TextAfterCaret));
     }
 
     private void BuildChips()

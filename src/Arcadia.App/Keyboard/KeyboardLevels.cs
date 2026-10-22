@@ -1,10 +1,10 @@
 using Arcadia.Core.Search;
 using Arcadia.Input;
 
-namespace Arcadia.App.Search;
+namespace Arcadia.App.Keyboard;
 
 /// <summary>
-/// The shift (LB) and AltGr (RB) levels of an on-screen keyboard, shared by the search's and the mouse mode's:
+/// The shift (LB) and AltGr (RB) levels of the on-screen keyboard (<see cref="OnScreenKeyboardViewModel"/>):
 /// each is on while held, or switched on and off by a tap, and only one is on at a time. AltGr stays off
 /// for a layout without that level.
 /// </summary>

@@ -698,7 +698,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             _input == InputKind.Gamepad,
             _time,
             action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
-        search.FilterRequested += OpenSearchFilter;
+        search.StartRequested += () =>
+        {
+            if (search.FocusedResult is { } hit)
+            {
+                Start(hit);
+            }
+        };
         Search = search;
     }
 
@@ -736,7 +742,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     /// </summary>
     private void HandleSearch(SearchViewModel search, UiAction action)
     {
-        if (search.Keyboard.IsLayoutMenuOpen)
+        if (search.Keyboard.LayoutMenu.IsOpen)
         {
             search.Handle(action);
             return;
@@ -801,7 +807,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     /// <summary>Text from a real keyboard while the search is shown.</summary>
     public void TypeInSearch(string text)
     {
-        if (IsSearchShown && !IsDialogOpen && Search is { Keyboard.IsLayoutMenuOpen: false } search)
+        if (IsSearchShown && !IsDialogOpen && Search is { Keyboard.LayoutMenu.IsOpen: false } search)
         {
             _acceptHold.Cancel();
             search.Type(text);

@@ -797,11 +797,11 @@ Verlauf:
 ## #129 Bildschirmtastatur als Nachbildung echter Tastaturlayouts
 
 - [ ] **T129-1** Suche mit X öffnen, Layout DE: Die Zeichenreihen sind die der echten deutschen Tastatur
-      (`^ 1 … 0 ß ´` / `q … ü +` / `a … ä #` / `< y … , . -`), ohne Tab, Feststelltaste, Eingabe und Umschalt.
+      (`^ 1 … 0 ß ´` / `q … ü +` / `a … ä #` / `< y … , . -`), angeordnet wie auf der echten Tastatur (seit #110,
+      siehe T110-10).
       Jede Taste zeigt groß ihr Zeichen, klein darüber das Umschalt-Zeichen (bei Buchstaben keins) und klein
-      rechts unten das AltGr-Zeichen (z. B. q mit @, e mit €, 7 mit {, + mit * und ~). Die Tastatur ist so
-      breit wie vorher. · E2E: ja
-- [ ] **T129-2** LB kurz tippen: Taste „⇧ Groß“ hervorgehoben, die Tasten zeigen nur noch das Umschalt-Zeichen
+      rechts unten das AltGr-Zeichen (z. B. q mit @, e mit €, 7 mit {, + mit * und ~). · E2E: ja
+- [ ] **T129-2** LB kurz tippen: Tasten „⇧ Umschalt“ hervorgehoben, die Tasten zeigen nur noch das Umschalt-Zeichen
       (z. B. °, !, ?, Q, *, >), bleibt so, nochmal tippen schaltet aus. LB gehalten gilt nur, solange es gehalten
       wird. Getippt wird das gezeigte Zeichen. · E2E: ja
 - [ ] **T129-3** RB kurz tippen: Taste „AltGr“ hervorgehoben, die Tasten zeigen nur ihr AltGr-Zeichen, alle anderen
@@ -816,7 +816,7 @@ Verlauf:
       Umschalt- und AltGr-Zeichen (US: `` ` `` … `=` / `q … ] \`, ohne <-Taste; UK: `#` und `\`, AltGr 4 = €;
       FR: AZERTY mit `& é " ' (` in der Zahlenreihe; ES: `º … ¡`, ñ). Bei US ist „AltGr“ ausgegraut und RB
       bzw. ein Klick darauf tun nichts; ist AltGr beim Wechsel zu US an, geht es aus. · E2E: ja
-- [ ] **T129-7** Mit der Maus: ein Klick auf eine Taste tippt das gezeigte Zeichen, Klicks auf „⇧ Groß“ und
+- [ ] **T129-7** Mit der Maus: ein Klick auf eine Taste tippt das gezeigte Zeichen, Klicks auf „⇧ Umschalt“ und
       „AltGr“ schalten die Ebene um. · E2E: ja
 
 Verlauf:
@@ -856,6 +856,16 @@ Verlauf:
 - [ ] **T110-9** „So funktioniert's“ listet „Y: Bildschirmtastatur (B blendet sie aus)“ und nennt bei den Grenzen,
       dass Windows die Tastatur über Spielen im exklusiven Vollbild nicht zeigt. „Zurück zu Arcadia“: Haltedauer
       1–9 s, kein „Sofort“. · E2E: ja
+- [ ] **T110-10** Suche mit X öffnen: dieselbe Tastatur wie im Mausmodus (Anordnung, Sondertasten, rechter Block),
+      nur ↹ und „Nach oben“ fehlen, ihre Plätze bleiben leer. D-Pad und linker Stick bewegen den Fokus, ↵ (A oder
+      Klick) startet den fokussierten Treffer wie ≡, „Ausblenden“ fährt die Tastatur ein wie B. Filter und Sortierung
+      weiter mit L3 oder dem Knopf in der Chip-Reihe. · E2E: ja
+- [ ] **T110-11** In der Suche „hollow“ tippen, dann dreimal ← der Tastatur: die Einfügemarke steht nach „hol“, ein
+      getipptes Zeichen und ⌫ wirken dort, ebenso eine echte Tastatur. ↑ setzt sie an den Anfang, ↓ ans Ende. · E2E: ja
+- [ ] **T110-12** Mausmodus an, Arcadias Suche vorne (per RT auf den Such-Chip geöffnet): Y öffnet keine zweite
+      Tastatur, die Tastatur der Suche fährt aus und nimmt die Belegung aus T110-2/T110-3, die Legende zeigt LS, RT, LT,
+      RS, L3. ≡ startet den Treffer. B fährt sie ein, danach sind A und B wieder Klick und Esc. Kommt ein anderes
+      Fenster nach vorne, geben die Knöpfe die Tastatur der Suche frei. · E2E: nein
 
 Verlauf:
 
@@ -863,6 +873,8 @@ Verlauf:
 |---|---|---|---|---|---|
 | T110-1, T110-3, T110-4, T110-5, T110-7 (nur Ansicht) | 2026-10-22 | Claude | Branch `feat/bildschirmtastatur-fuer-fremde-fenster-110`, Linux, Xvfb 1920×1080 `--demo`; Tastaturfenster lokal per Testcode geöffnet und Tasten ausgelöst (nicht eingecheckt) | ✅ DE unten mit hohem Enter, Umschalt- und AltGr-Ebene (leere Tasten übersprungen), US oben in ANSI-Form mit offenem Layout-Menü und ausgegrautem AltGr, Legende nach Mausklick. Fokus behalten, `SendInput`, Einfügemarke und Monitore nur unter Windows prüfbar | Lauf am PC des Owners |
 | T110-2 bis T110-6 (Logik) | 2026-10-22 | Claude | `dotnet test` (`MouseModeKeyboardTests`, `FullKeyboardTests`, `KeyboardPlacementTests`, `ReturnWithViewTests`, `SettingsServiceTests`) | ✅ Belegung bei offener Tastatur, ⧉ kurz vs. gehalten, ≡ als Enter, Übergabe gehaltener Tasten, ISO/ANSI-Form, Fokus am hohen Enter, Platzierung und Rand, „Sofort“ → 1 s | Echte Eingaben unter Windows nicht geprüft |
+| T110-1 bis T110-9 | 2026-10-22 | Juri | Screenshots aus PR #134 | ⚠️ Sieht gut aus, Test unter Windows später. Neu: dieselbe Tastatur für alle Tastaturen in Arcadia, Module können Tasten ausgrauen oder ausblenden | Suche nutzt die gemeinsame Tastatur (T110-10 bis T110-12 neu) |
+| T110-10 bis T110-12 (nur Ansicht), T110-4 | 2026-10-22 | Claude | Branch nach der gemeinsamen Tastatur, Linux, Xvfb 1920×1080 `--demo`; Suche und Tasten lokal per Testcode ausgelöst (nicht eingecheckt); `dotnet test` (`TextWithCaretTests`) | ✅ Suche mit der gemeinsamen Tastatur (ohne ↹ und „Nach oben“, Plätze leer), Layout-Menü passt in die Tastatur, Einfügemarke nach dreimal ← in „hol\|low“, Mausmodus-Legende in der Suche; Fenster im Mausmodus unverändert (DE mit Umschalt, US oben mit Layout-Menü). Controller, Mausmodus-Weitergabe und Start per ↵ unter Windows nicht geprüft | Lauf am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

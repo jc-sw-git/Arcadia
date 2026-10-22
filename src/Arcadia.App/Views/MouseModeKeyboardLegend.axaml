@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:kb="using:Arcadia.App.Keyboard"
+             x:Class="Arcadia.App.Views.MouseModeKeyboardLegend"
+             x:DataType="kb:OnScreenKeyboardViewModel">
+
+  <!-- The buttons of the on-screen keyboard in the mouse mode that aren't printed on its keys (#110): the sticks and
+       triggers stay the mouse. Over other windows and in the search alike. -->
+  <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+    <StackPanel Orientation="Horizontal" Spacing="26" IsVisible="{Binding UsesController}">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+        <TextBlock Classes="keyboardHint" Text="Tasten wählen" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+        <TextBlock Classes="keyboardHint" Text="Tippen" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border Classes="glyph"><TextBlock Text="LS" /></Border>
+        <TextBlock Classes="keyboardHint" Text="Mauszeiger" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border Classes="glyph"><TextBlock Text="RT" /></Border>
+        <TextBlock Classes="keyboardHint" Text="Linksklick" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border Classes="glyph"><TextBlock Text="LT" /></Border>
+        <TextBlock Classes="keyboardHint" Text="Rechtsklick" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border Classes="glyph"><TextBlock Text="RS" /></Border>
+        <TextBlock Classes="keyboardHint" Text="Mausrad" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border Classes="glyph"><TextBlock Text="L3" /></Border>
+        <TextBlock Classes="keyboardHint" Text="Langsamer Zeiger" />
+      </StackPanel>
+    </StackPanel>
+    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding !UsesController}">
+      <Border Classes="glyph kbd"><TextBlock Text="Klick" /></Border>
+      <TextBlock Classes="keyboardHint" Text="Taste tippen" />
+    </StackPanel>
+  </Panel>
+</UserControl>

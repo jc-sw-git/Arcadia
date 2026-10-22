@@ -512,9 +512,11 @@
                 <Panel VerticalAlignment="Center">
                   <TextBlock Text="Spiele suchen …" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource TextFaint}"
                              IsVisible="{Binding Text, Converter={x:Static StringConverters.IsNullOrEmpty}}" Margin="6,0,0,0" />
+                  <!-- The caret stands where typing goes; the on-screen keyboard's arrows move it (#110). -->
                   <StackPanel Orientation="Horizontal" Spacing="3">
-                    <TextBlock Text="{Binding Text}" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding TextBeforeCaret}" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center" />
                     <Border Classes="caret" Width="3" Height="34" CornerRadius="1.5" Background="{StaticResource Accent}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding TextAfterCaret}" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center" />
                   </StackPanel>
                 </Panel>
               </DockPanel>
@@ -567,7 +569,11 @@
             <Panel>
             <!-- The band bleeds into the bars beside and below the layout (Theme.axaml, bleed). -->
             <Border Classes="bleedDown" Background="{StaticResource KeyboardSurface}" />
-            <Panel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="80,0">
+            <!-- In the mouse mode the keyboard has the mouse mode's buttons (#110), the same as over other windows. -->
+            <Panel IsVisible="{Binding IsInMouseMode}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="80,0">
+              <views:MouseModeKeyboardLegend DataContext="{Binding Keyboard}" />
+            </Panel>
+            <Panel IsVisible="{Binding !IsInMouseMode}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="80,0">
               <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding UsesController}">
                 <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding IsKeyboardOut}">
                   <StackPanel Orientation="Horizontal" Spacing="10">
@@ -720,91 +726,7 @@
             </Button>
             <ctl:RevealPanel Classes="keyboardDrawer bleed" Classes.out="{Binding IsKeyboardOut}">
               <Border Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
-                <Panel HorizontalAlignment="Center">
-                  <ItemsControl ItemsSource="{Binding Keyboard.Rows}">
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <StackPanel Spacing="8" />
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="search:KeyRowViewModel">
-                        <ItemsControl ItemsSource="{Binding Keys}" HorizontalAlignment="Center">
-                          <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                              <StackPanel Orientation="Horizontal" Spacing="8" />
-                            </ItemsPanelTemplate>
-                          </ItemsControl.ItemsPanel>
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="search:KeyViewModel">
-                              <Button Classes="plain key" Classes.wide="{Binding IsWide}" Classes.on="{Binding IsOn}" Classes.unavailable="{Binding IsUnavailable}"
-                                      Classes.focused="{Binding IsFocused}" Width="{Binding Width}" Command="{Binding PressCommand}">
-                                <Panel>
-                                  <!-- A character key as printed on a real one: the shift character small above, the AltGr one small at the
-                                       bottom right; both only on the normal level (like Steam's keyboard, owner 2026-10-21). -->
-                                  <Panel IsVisible="{Binding !IsWide}">
-                                    <TextBlock Classes="keyHint" Text="{Binding ShiftHint}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,3,0,0" />
-                                    <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,8,0,0" />
-                                    <TextBlock Classes="keyHint" Text="{Binding AltGrHint}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,4" />
-                                  </Panel>
-                                  <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsWide}" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <!-- The pad's button for the key, only while the controller is in use. -->
-                                    <Border Classes="glyph small" Classes.round="{Binding IsRoundGlyph}" VerticalAlignment="Center">
-                                      <Border.IsVisible>
-                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                          <Binding Path="HasGlyph" />
-                                          <Binding Path="$parent[ctl:RevealPanel].((search:SearchViewModel)DataContext)?.UsesController" TargetNullValue="False" />
-                                        </MultiBinding>
-                                      </Border.IsVisible>
-                                      <TextBlock Text="{Binding Glyph}" />
-                                    </Border>
-                                    <Path Classes="globe" IsVisible="{Binding IsLayoutKey}" Data="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M3 12h18 M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9 M12 3C9.5 5.7 8.4 8.7 8.4 12s1.1 6.3 3.6 9"
-                                          StrokeThickness="1.8" Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                                  </StackPanel>
-                                </Panel>
-                              </Button>
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-
-                  <!-- Layout menu above the R3 key; a canvas, so it doesn't make the keyboard taller. -->
-                  <Canvas Height="0" VerticalAlignment="Bottom">
-                    <Border Canvas.Left="0" Canvas.Bottom="68" Width="380" IsVisible="{Binding Keyboard.IsLayoutMenuOpen}" Background="{StaticResource SurfaceRaised}"
-                            CornerRadius="14" BoxShadow="{StaticResource LayoutMenuShadow}" Padding="10">
-                      <StackPanel Spacing="2">
-                        <TextBlock Text="TASTATURLAYOUT" FontSize="13" FontWeight="Bold" LetterSpacing="1.3" Foreground="{StaticResource TextMuted}" Margin="12,8,12,10" />
-                        <ItemsControl ItemsSource="{Binding Keyboard.LayoutItems}">
-                          <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                              <StackPanel Spacing="2" />
-                            </ItemsPanelTemplate>
-                          </ItemsControl.ItemsPanel>
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="search:LayoutItemViewModel">
-                              <Button Classes="plain layoutItem" Classes.selected="{Binding IsSelected}" Classes.focused="{Binding IsFocused}" Command="{Binding PickCommand}">
-                                <DockPanel>
-                                  <Border DockPanel.Dock="Left" Width="44" Height="30" CornerRadius="6" Background="{StaticResource Line}" VerticalAlignment="Center" Margin="0,0,14,0">
-                                    <TextBlock Text="{Binding Layout.Code}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="0.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                  </Border>
-                                  <Path DockPanel.Dock="Right" IsVisible="{Binding IsSelected}" Data="M5 12l5 5 9-10" Stroke="{StaticResource Accent}" StrokeThickness="2.6"
-                                        StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center" />
-                                  <StackPanel Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Layout.Name}" FontSize="17" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding Layout.Kind}" FontSize="13" Foreground="{StaticResource TextMuted}" />
-                                  </StackPanel>
-                                </DockPanel>
-                              </Button>
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                      </StackPanel>
-                    </Border>
-                  </Canvas>
-                </Panel>
+                <views:OnScreenKeyboardView DataContext="{Binding Keyboard}" HorizontalAlignment="Center" />
               </Border>
             </ctl:RevealPanel>
           </StackPanel>

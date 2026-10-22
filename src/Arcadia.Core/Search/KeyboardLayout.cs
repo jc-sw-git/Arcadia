@@ -29,15 +29,29 @@ public sealed record KeyCap(char Normal, char? Shift, char? AltGr)
     public char? ShiftHint => Shift is { } shift && shift != char.ToUpperInvariant(Normal) ? shift : null;
 }
 
+/// <summary>The physical shape of a keyboard: the key rows' lengths and the Enter key differ (#110).</summary>
+public enum KeyboardForm
+{
+    /// <summary>European: a tall Enter over two rows, a key between left shift and the first letter.</summary>
+    Iso,
+
+    /// <summary>American: a wide Enter in the home row, backslash above it, a wide left shift.</summary>
+    Ansi,
+}
+
 /// <summary>
 /// A real keyboard layout, row by row from the number row down, as printed on the keys (owner,
 /// 2026-10-21: the on-screen keyboard is a 1:1 replica of the real keyboard, like Steam's, so it can
-/// later also serve outside Arcadia, #110). Tab, caps lock, enter and shift have no keys of their own.
+/// also serve outside Arcadia, #110). Tab, caps lock, enter and shift aren't in the rows; the mouse
+/// mode's keyboard adds them where they sit on the real one (<see cref="FullKeyboard"/>).
 /// </summary>
 /// <param name="Id">Stored in the settings.</param>
 /// <param name="Code">Shown on the layout key, e.g. "DE".</param>
 public sealed record KeyboardLayout(string Id, string Code, string Name, string Kind, IReadOnlyList<IReadOnlyList<KeyCap>> Rows)
 {
+    /// <summary>Where the character keys sit on the real keyboard (<see cref="FullKeyboard"/>).</summary>
+    public KeyboardForm Form { get; init; } = KeyboardForm.Iso;
+
     public static KeyboardLayout German { get; } = new("de", "DE", "Deutsch", "QWERTZ",
     [
         Row("^1234567890ß´", "°!\"§$%&/()=?`", "  ²³   {[]}\\ "),
@@ -56,7 +70,7 @@ public sealed record KeyboardLayout(string Id, string Code, string Name, string 
             Row("qwertyuiop[]\\", "QWERTYUIOP{}|", string.Empty),
             Row("asdfghjkl;'", "ASDFGHJKL:\"", string.Empty),
             Row("zxcvbnm,./", "ZXCVBNM<>?", string.Empty),
-        ]),
+        ]) { Form = KeyboardForm.Ansi },
         new("en-gb", "UK", "English (UK)", "QWERTY",
         [
             Row("`1234567890-=", "¬!\"£$%^&*()_+", "¦   €"),

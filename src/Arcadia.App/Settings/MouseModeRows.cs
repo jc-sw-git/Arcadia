@@ -119,6 +119,7 @@ public sealed class MouseModeRows
         new("B", "Esc"),
         new("LB / RB", "Umschalt+Tab / Tab"),
         new("≡", "Enter"),
+        new("Y", "Bildschirmtastatur (B blendet sie aus)"),
         new("⧉ halten", "Holt Arcadia nach vorne (Einstellung „Zurück zu Arcadia“)"),
         new("⧉ + ≡ halten", "Zurück zum normalen Controller (bei „Automatisch“, bis Arcadia wieder vorne war)"),
     ];
@@ -128,7 +129,7 @@ public sealed class MouseModeRows
     [
         "Windows-Abfragen nach Administratorrechten (UAC) laufen auf einem geschützten Bildschirm, den keine Eingabe von Arcadia erreicht.",
         "Fenster von Programmen, die als Administrator laufen, lassen Eingaben eines Arcadia ohne Administratorrechte nicht durch.",
-        "Über Spielen im exklusiven Vollbild zeigt Windows den Rand und den Hinweis nicht an; das Umschalten spürst du dann nur am Vibrieren.",
+        "Über Spielen im exklusiven Vollbild zeigt Windows den Rand, den Hinweis und die Bildschirmtastatur nicht an; das Umschalten spürst du dann nur am Vibrieren.",
     ];
 
     /// <summary>In the order the controller moves through them.</summary>
@@ -205,13 +206,13 @@ public sealed class ReturnWithViewRows
             "Haltedauer",
             () => Current.HoldSeconds,
             value => Change(s => s with { HoldSeconds = value }),
-            value => value == 0 ? "Sofort" : ChoiceRowViewModel.Seconds(value),
+            ChoiceRowViewModel.Seconds,
             ReturnWithViewSettings.Min,
             ReturnWithViewSettings.Max)
         {
             Group = Group,
             Subtitle = "So lange muss ⧉ gehalten werden.",
-            Info = [new InfoText("So lange muss ⧉ gehalten werden. „Sofort“ wechselt schon beim kurzen Drücken.")],
+            Info = [new InfoText("So lange muss ⧉ gehalten werden. Kurz gedrückt schiebt ⧉ die Bildschirmtastatur des Mausmodus an den anderen Bildschirmrand.")],
         };
         Update();
     }

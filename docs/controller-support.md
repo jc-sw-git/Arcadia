@@ -121,6 +121,24 @@ focus handling or anything SISR/usbip related.
   one, so its devices share the address; on another port the skip is merely cautious (its port isn't known). So the address picks VIIPER's devices; a
   port remembered at SISR's start would miss devices attached later (controller reconnects) or after an
   Arcadia restart, and usbip reuses freed port numbers.
+- Exiting Arcadia (#100, `ControllerSupportService.ShutdownAsync`): the shutdown cancels what waits (SISR coming up,
+  Steam starting, a download under the gate; `_shutdown`), asks SISR to quit within 3 s and kills it after that.
+  Before the fix SISR was only stopped politely: a SISR that was still `Starting` (API not up) never answered
+  `quit`, `SisrHost.StopAsync` waited its 5 s before killing, and the gate wait of 2 s came on top, so the
+  6 s that `App` waited ran out and Arcadia exited with SISR still running. Found by reading the code and
+  reproduced with a fake SISR that ignores quit (`Exiting_while_SISR_starts_…`, red before the fix); not yet
+  seen on the owner's PC (T100-1). `SisrHost.StopAsync` now also kills at once when the quit request wasn't accepted.
+- The usbip-win2 installer runs with administrator rights, so it must be signed by the right publisher (#29,
+  `InstallerSignature`, `UsbipRelease.Publisher`): before `runas`, `WinVerifyTrust` (chain, expiry, revocation, via
+  Windows) must succeed and the signer certificate's subject must match organization `Cloudyne Systems (Scheibling
+  Consulting AB)`, country `SE` and registration number (`SERIALNUMBER`) `559171-6567`. No thumbprint or serial
+  number: they change with each renewal. Checked by the owner on the 0.9.8.1 installer on 2026-10-21 (`Get-AuthenticodeSignature`:
+  Status Valid, issuer GlobalSign GCC R45 EV CodeSigning CA 2020, valid until 2027-05-03). A mismatch, an unsigned
+  file or an offline revocation check aborts with a message and the link to the manual install; nothing starts. The
+  file stays open for reading without write access from the check until the process runs, so it can't be swapped in
+  between. The SHA-256 from the release API stays: it only shows that the download is what GitHub lists. When the
+  publisher changes its certificate holder, installation stops working until `UsbipRelease.Publisher` is updated.
+  The SISR zip (no admin rights) is not signature-checked.
 - While SISR or VIIPER start or stop, in the background too, the settings take only B
   (`ControllerSupportService.IsSettling`, owner 2026-10-16). A Steam that runs but never finishes its login
   doesn't lock them, so switching off stays possible.

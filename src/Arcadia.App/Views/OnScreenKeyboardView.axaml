@@ -1,0 +1,129 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:kb="using:Arcadia.App.Keyboard"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             x:Class="Arcadia.App.Views.OnScreenKeyboardView"
+             x:DataType="kb:OnScreenKeyboardViewModel"
+             Width="1598" Height="292" ClipToBounds="False">
+
+  <!-- Arcadia's on-screen keyboard, the same in the search and over other windows in the mouse mode (#110): the keys of
+       the real keyboard of the chosen layout, placed in the design's pixels (BoardKeyViewModel), and the layout menu. The
+       legend below it is the user's, as only they know which buttons mean what besides the keys. A UserControl clips to its
+       bounds, which cut the focus ring of the keys at the edges; whoever shows the keyboard leaves room around it. -->
+  <Panel>
+    <ItemsControl Name="BoardKeys" ItemsSource="{Binding Keys}" Width="1598" Height="292" HorizontalAlignment="Left" VerticalAlignment="Top">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <Canvas />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.Styles>
+        <Style Selector="ItemsControl#BoardKeys > ContentPresenter" x:DataType="kb:BoardKeyViewModel">
+          <Setter Property="Canvas.Left" Value="{Binding Left}" />
+          <Setter Property="Canvas.Top" Value="{Binding Top}" />
+        </Style>
+      </ItemsControl.Styles>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="kb:BoardKeyViewModel">
+          <Button Classes="plain boardKey" IsVisible="{Binding !IsHidden}" Classes.tallEnter="{Binding IsTallEnter}" Classes.blank="{Binding IsBlank}" Classes.on="{Binding IsOn}"
+                  Classes.unavailable="{Binding IsUnavailable}" Classes.focused="{Binding IsFocused}"
+                  Width="{Binding Width}" Height="{Binding Height}" Command="{Binding PressCommand}">
+            <Panel>
+              <!-- A character key as printed on a real one: the shift character small above, the AltGr one small at the
+                   bottom right; both only on the normal level (#129). -->
+              <Panel IsVisible="{Binding IsCharacter}">
+                <TextBlock Classes="keyHint" Text="{Binding ShiftHint}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,3,0,0" />
+                <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,6,0,0" />
+                <TextBlock Classes="keyHint" Text="{Binding AltGrHint}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,6" />
+              </Panel>
+
+              <!-- Backspace, tab, shift, space, AltGr, the right block and the arrows: symbol or icon at the left edge, the name in
+                   the middle, the button at the right edge (owner, 2026-10-22). -->
+              <ctl:CentredDockPanel IsVisible="{Binding IsLabelled}" Spacing="8" Margin="12,0,10,3">
+                <Border DockPanel.Dock="Right" Classes="glyph small" Classes.round="{Binding IsRoundGlyph}" VerticalAlignment="Center">
+                  <Border.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                      <Binding Path="HasGlyph" />
+                      <Binding Path="$parent[UserControl].((kb:OnScreenKeyboardViewModel)DataContext)?.UsesController" TargetNullValue="False" />
+                    </MultiBinding>
+                  </Border.IsVisible>
+                  <TextBlock Text="{Binding Glyph}" />
+                </Border>
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                  <Path Classes="keyIcon" IsVisible="{Binding IsLayoutKey}" Width="22" Height="22" Stretch="Uniform" StrokeThickness="1.8" VerticalAlignment="Center"
+                        Data="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M3 12h18 M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9 M12 3C9.5 5.7 8.4 8.7 8.4 12s1.1 6.3 3.6 9" />
+                  <!-- A monitor with the keyboard's bar where it goes and an arrow that way. -->
+                  <Panel IsVisible="{Binding IsDockKey}" Width="34" Height="26" VerticalAlignment="Center">
+                    <Panel IsVisible="{Binding PointsUp}">
+                      <Path Classes="keyIcon" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round"
+                            Data="M3.5 1.5h18a2 2 0 0 1 2 2v13a2 2 0 0 1 -2 2h-18a2 2 0 0 1 -2 -2v-13a2 2 0 0 1 2 -2z M8 24h9 M29 17V4 M25.5 7.5L29 4l3.5 3.5" />
+                      <Rectangle Classes="keyIconBar" Width="14" Height="3" Margin="5.5,13,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    </Panel>
+                    <Panel IsVisible="{Binding !PointsUp}">
+                      <Path Classes="keyIcon" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round"
+                            Data="M3.5 1.5h18a2 2 0 0 1 2 2v13a2 2 0 0 1 -2 2h-18a2 2 0 0 1 -2 -2v-13a2 2 0 0 1 2 -2z M8 24h9 M29 4v13 M25.5 13.5L29 17l3.5 -3.5" />
+                      <Rectangle Classes="keyIconBar" Width="14" Height="3" Margin="5.5,4,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    </Panel>
+                  </Panel>
+                  <!-- A keyboard going down. -->
+                  <Path Classes="keyIcon" IsVisible="{Binding IsHideKey}" Width="34" Height="26" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" VerticalAlignment="Center"
+                        Data="M3.5 1.5h20a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-20a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2z M6 6h2 M11 6h2 M16 6h2 M21 6h0.5 M6 11h16 M9.5 19.5L13.5 23.5l4 -4" />
+                  <TextBlock Classes="keySymbol" IsVisible="{Binding HasSymbolBesideName}" Text="{Binding Symbol}" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Classes="keyText" Text="{Binding Text}" VerticalAlignment="Center" />
+                <TextBlock Classes="keySymbol" IsVisible="{Binding HasSymbolAlone}" Text="{Binding Symbol}" VerticalAlignment="Center" />
+              </ctl:CentredDockPanel>
+
+              <!-- The tall ISO Enter: an upside-down L over two rows, its name in the upper part, ≡ in the lower one. Only the
+                   shape takes clicks (the key's background is none), so the corner beside it still reaches the key there. -->
+              <Panel IsVisible="{Binding IsTallEnter}">
+                <Path Classes="enterFace" Data="M8,0 H116 A8,8 0 0 1 124,8 V104 A8,8 0 0 1 116,112 H30 A8,8 0 0 1 22,104 V60 A8,8 0 0 0 14,52 H8 A8,8 0 0 1 0,44 V8 A8,8 0 0 1 8,0 Z" />
+                <Border Classes="enterEdge" Margin="22,0,0,0" />
+                <Path Classes="enterRing" Data="M8,0 H116 A8,8 0 0 1 124,8 V104 A8,8 0 0 1 116,112 H30 A8,8 0 0 1 22,104 V60 A8,8 0 0 0 14,52 H8 A8,8 0 0 1 0,44 V8 A8,8 0 0 1 8,0 Z" />
+                <ctl:CentredDockPanel Spacing="8" Height="52" Margin="12,0,10,0" VerticalAlignment="Top">
+                  <TextBlock DockPanel.Dock="Left" Classes="keySymbol" Text="{Binding Symbol}" VerticalAlignment="Center" />
+                  <TextBlock Classes="keyText" Text="{Binding Text}" VerticalAlignment="Center" />
+                </ctl:CentredDockPanel>
+                <Border Classes="glyph small" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,13"
+                        IsVisible="{Binding $parent[UserControl].((kb:OnScreenKeyboardViewModel)DataContext)?.UsesController, TargetNullValue=False}">
+                  <TextBlock Text="{Binding Glyph}" />
+                </Border>
+              </Panel>
+            </Panel>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <!-- Layout menu (R3) over the right block, inside the keyboard: the mouse mode's window is only as large as it. -->
+    <Border Classes="keyboardLayoutMenu" IsVisible="{Binding LayoutMenu.IsOpen}" HorizontalAlignment="Right" VerticalAlignment="Top">
+      <StackPanel Spacing="2">
+        <TextBlock Text="TASTATURLAYOUT" FontSize="13" FontWeight="Bold" LetterSpacing="1.3" Foreground="{StaticResource TextMuted}" Margin="12,6,12,8" />
+        <ItemsControl ItemsSource="{Binding LayoutMenu.Items}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="2" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="kb:LayoutItemViewModel">
+              <Button Classes="plain layoutItem" Classes.selected="{Binding IsSelected}" Classes.focused="{Binding IsFocused}" Command="{Binding PickCommand}">
+                <DockPanel>
+                  <Border DockPanel.Dock="Left" Width="44" Height="30" CornerRadius="6" Background="{StaticResource Line}" VerticalAlignment="Center" Margin="0,0,14,0">
+                    <TextBlock Text="{Binding Layout.Code}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="0.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <Path DockPanel.Dock="Right" IsVisible="{Binding IsSelected}" Data="M5 12l5 5 9-10" Stroke="{StaticResource Accent}" StrokeThickness="2.6"
+                        StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center" />
+                  <StackPanel Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Layout.Name}" FontSize="17" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Layout.Kind}" FontSize="13" Foreground="{StaticResource TextMuted}" />
+                  </StackPanel>
+                </DockPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </Panel>
+</UserControl>

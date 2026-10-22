@@ -1,32 +1,78 @@
 namespace Arcadia.Core.Search;
 
-/// <summary>A key of the on-screen keyboard as the focus sees it.</summary>
-/// <param name="Centre">Horizontal centre relative to the keyboard's middle.</param>
-/// <param name="IsEmpty">Types nothing on the shown level; the focus passes over it.</param>
-public readonly record struct KeySpot(double Centre, bool IsEmpty);
+/// <summary>A key of the on-screen keyboard as the focus sees it, measured in keys (a row is one key high).</summary>
+/// <param name="Centre">Horizontal centre, measured from the same point in every row.</param>
+/// <param name="IsEmpty">Types nothing on the shown level, or is greyed out or left out; the focus passes over it.</param>
+/// <param name="Key">
+/// Names a key that stands in two rows (the tall ISO Enter) with the same number in both, so the focus treats
+/// both parts as one key; -1 for a key of one row.
+/// </param>
+/// <param name="Width">The key's width in this row, including the gap to its neighbour.</param>
+public readonly record struct KeySpot(double Centre, bool IsEmpty, int Key = -1, double Width = 1)
+{
+    public double LeftEdge => Centre - (Width / 2);
+
+    public double RightEdge => Centre + (Width / 2);
+}
 
 /// <summary>
-/// Moving the focus over the on-screen keyboard's rows of differing length: left and right go to the
-/// next key in the row, up and down to the key nearest in position in the next row. Keys that are
-/// empty on the shown level (AltGr: most of them) are passed over, like on Steam's keyboard (owner,
-/// 2026-10-21), and so are rows with no key to go to. At the keyboard's edges the focus stays.
+/// Moving the focus over the on-screen keyboard's rows of differing length. Keys that are empty on the shown
+/// level (AltGr: most of them), greyed out or left out are passed over, like on Steam's keyboard (owner,
+/// 2026-10-21). Left and right go to the next key in the row; when the row has none in that direction, to the
+/// nearest key wholly on that side in another row (from ² on AltGr left to ↹, owner 2026-10-22). Up and down
+/// go to the nearest key above or below, counting rows and keys alike, so a far key in the next row doesn't
+/// win over one right below in the row after (from ↹ on AltGr down to ⇧, not to ↵). Where nothing is left
+/// in that direction the focus stays.
 /// </summary>
 public static class KeyGrid
 {
     private const double TieBreak = 0.01;
 
+    // Adjacent keys share an edge; sums of quarter keys are exact, this only guards against rounding.
+    private const double EdgeSlack = 1e-6;
+
     /// <summary>The next key to the left (<paramref name="step"/> -1) or right (+1); the same key at the edge.</summary>
-    public static int Sideways(IReadOnlyList<KeySpot> row, int column, int step)
+    public static (int Row, int Column) Sideways(IReadOnlyList<IReadOnlyList<KeySpot>> rows, int row, int column, int step)
     {
-        for (var i = column + step; i >= 0 && i < row.Count; i += step)
+        if (NextInRow(rows[row], column, step) is { } next)
         {
-            if (!row[i].IsEmpty)
+            return (row, next);
+        }
+
+        // The tall Enter goes on from its other part too, whichever row the focus came to it in.
+        var (first, last) = RowsOf(rows, row, column);
+        var spot = rows[row][column];
+        for (var r = first; r <= last; r++)
+        {
+            if (r != row && NextInRow(rows[r], ColumnOf(rows[r], spot.Key), step) is { } other)
             {
-                return i;
+                return (r, other);
             }
         }
 
-        return column;
+        (int Row, int Column)? best = null;
+        var bestDistance = double.MaxValue;
+        for (var r = 0; r < rows.Count; r++)
+        {
+            if (r >= first && r <= last)
+            {
+                continue;
+            }
+
+            var rowsAway = r < first ? first - r : r - last;
+            for (var c = 0; c < rows[r].Count; c++)
+            {
+                var candidate = rows[r][c];
+                var beside = step < 0 ? candidate.RightEdge <= spot.LeftEdge + EdgeSlack : candidate.LeftEdge >= spot.RightEdge - EdgeSlack;
+                var distance = Distance(rowsAway, candidate.Centre - spot.Centre);
+                if (!candidate.IsEmpty && beside && distance < bestDistance)
+                {
+                    (best, bestDistance) = ((r, c), distance);
+                }
+            }
+        }
+
+        return best ?? (row, column);
     }
 
     /// <summary>
@@ -38,28 +84,98 @@ public static class KeyGrid
     public static (int Row, int Column) Vertical(IReadOnlyList<IReadOnlyList<KeySpot>> rows, int row, int column, int step)
     {
         var centre = rows[row][column].Centre - (step * TieBreak);
-        for (var r = row + step; r >= 0 && r < rows.Count; r += step)
+        var (first, last) = RowsOf(rows, row, column);
+        var from = step < 0 ? first : last;
+        (int Row, int Column)? best = null;
+        var bestDistance = double.MaxValue;
+        for (var r = from + step; r >= 0 && r < rows.Count; r += step)
         {
-            if (Nearest(rows[r], centre) is { } nearest)
+            for (var c = 0; c < rows[r].Count; c++)
             {
-                return (r, nearest);
+                var distance = Distance(r - from, rows[r][c].Centre - centre);
+                if (!rows[r][c].IsEmpty && distance < bestDistance)
+                {
+                    (best, bestDistance) = ((r, c), distance);
+                }
             }
         }
 
-        return (row, column);
+        return best ?? (row, column);
     }
 
-    private static int? Nearest(IReadOnlyList<KeySpot> row, double centre)
+    /// <summary>
+    /// The key the focus may rest on nearest to <paramref name="centre"/> in <paramref name="row"/>, in any row:
+    /// where the focus goes when its key empties (AltGr switched on) or the layout changes; null if there is none.
+    /// </summary>
+    public static (int Row, int Column)? Closest(IReadOnlyList<IReadOnlyList<KeySpot>> rows, int row, double centre)
     {
-        int? best = null;
-        for (var i = 0; i < row.Count; i++)
+        (int Row, int Column)? best = null;
+        var bestDistance = double.MaxValue;
+        for (var r = 0; r < rows.Count; r++)
         {
-            if (!row[i].IsEmpty && (best is not { } b || Math.Abs(row[i].Centre - centre) < Math.Abs(row[b].Centre - centre)))
+            for (var c = 0; c < rows[r].Count; c++)
             {
-                best = i;
+                var distance = Distance(r - row, rows[r][c].Centre - centre);
+                if (!rows[r][c].IsEmpty && distance < bestDistance)
+                {
+                    (best, bestDistance) = ((r, c), distance);
+                }
             }
         }
 
         return best;
     }
+
+    private static int? NextInRow(IReadOnlyList<KeySpot> row, int column, int step)
+    {
+        for (var i = column + step; i >= 0 && i < row.Count; i += step)
+        {
+            if (!row[i].IsEmpty)
+            {
+                return i;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The first and last row the key at <paramref name="row"/>, <paramref name="column"/> stands in.</summary>
+    private static (int First, int Last) RowsOf(IReadOnlyList<IReadOnlyList<KeySpot>> rows, int row, int column)
+    {
+        var key = rows[row][column].Key;
+        if (key < 0)
+        {
+            return (row, row);
+        }
+
+        var first = row;
+        while (first > 0 && ColumnOf(rows[first - 1], key) >= 0)
+        {
+            first--;
+        }
+
+        var last = row;
+        while (last < rows.Count - 1 && ColumnOf(rows[last + 1], key) >= 0)
+        {
+            last++;
+        }
+
+        return (first, last);
+    }
+
+    private static int ColumnOf(IReadOnlyList<KeySpot> row, int key)
+    {
+        for (var i = 0; i < row.Count; i++)
+        {
+            if (row[i].Key == key)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    // Squared: only compared, never shown.
+    private static double Distance(double rows, double keys) => (rows * rows) + (keys * keys);
 }

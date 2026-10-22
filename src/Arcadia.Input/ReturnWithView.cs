@@ -2,7 +2,7 @@ namespace Arcadia.Input;
 
 /// <summary>"Zurück zu Arcadia" from the settings, read on every poll.</summary>
 /// <param name="Enabled">Off, View in the background does nothing.</param>
-/// <param name="HoldTime">How long View must be held; zero brings Arcadia back as soon as View is clearly alone.</param>
+/// <param name="HoldTime">How long View must be held; at least <see cref="ReturnWithView.SoloDelay"/>.</param>
 public sealed record ReturnWithViewOptions(bool Enabled, TimeSpan HoldTime);
 
 /// <summary>
@@ -10,8 +10,8 @@ public sealed record ReturnWithViewOptions(bool Enabled, TimeSpan HoldTime);
 /// the mouse mode and without it. Feed it every poll of the gamepad source.
 /// </summary>
 /// <remarks>
-/// View with Menu is Back + Start, the mouse mode's switch, so View must be alone: with no hold time
-/// it acts when let go alone or once held alone <see cref="SoloDelay"/>, as View does in Arcadia.
+/// View with Menu is Back + Start, the mouse mode's switch, so View must be alone. A tap does nothing here:
+/// there is no "at once" (owner, 2026-10-22), so a tap is free to move the mouse mode's on-screen keyboard.
 /// <see cref="Update"/> and all events run on the gamepad's poll thread.
 /// </remarks>
 public sealed class ReturnWithView
@@ -57,13 +57,7 @@ public sealed class ReturnWithView
         var viewDown = (held & PadButtons.View) != 0;
         if (!viewDown)
         {
-            var tapped = _since is not null && !_spent && _options().HoldTime <= TimeSpan.Zero;
             Reset();
-            if (tapped && Eligible())
-            {
-                Requested?.Invoke();
-            }
-
             return;
         }
 

@@ -54,17 +54,13 @@ public sealed class ReturnWithViewTests
     }
 
     [Fact]
-    public void With_no_hold_time_a_tap_or_0_2_s_alone_brings_arcadia_back_and_back_and_start_do_not()
+    public void A_tap_does_nothing_so_it_can_move_the_on_screen_keyboard()
     {
-        _options = _options with { HoldTime = TimeSpan.Zero };
-
         Tap(PadButtons.View);
-        HoldFor(PadButtons.View, TimeSpan.FromSeconds(1));
-        HoldFor(PadButtons.None, Poll);
-        HoldFor(PadButtons.View | PadButtons.Menu, TimeSpan.FromSeconds(1));
+        HoldFor(PadButtons.View, TimeSpan.FromMilliseconds(150));
         HoldFor(PadButtons.None, Poll);
 
-        Assert.Equal(["arcadia", "arcadia"], _events);
+        Assert.Empty(_events);
     }
 
     [Fact]

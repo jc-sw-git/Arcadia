@@ -54,6 +54,12 @@ public sealed record MouseModeSettings
     /// <summary>"Standardeinstellung bei „Individuell“": "Erlaubt" (true) or "Deaktiviert".</summary>
     public bool PerGameDefaultAllowed { get; init; } = true;
 
+    /// <summary>
+    /// The on-screen keyboard (Y, #110) opens at the top edge of the screen; moved there or back with ⧉ or its
+    /// key, and kept for the next time.
+    /// </summary>
+    public bool KeyboardAtTop { get; init; }
+
     /// <summary>"Individueller Mausmodus" per game, keyed by <c>Game.Key</c>: allowed or not; a missing key is "Standard".</summary>
     public Dictionary<string, bool> GameChoices { get; init; } = [];
 

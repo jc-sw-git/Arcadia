@@ -137,8 +137,11 @@ public sealed class ControllerSupportService(
     /// <summary>Downloading and unpacking SISR or the usbip driver.</summary>
     private static readonly TimeSpan InstallTimeout = TimeSpan.FromMinutes(5);
 
-    /// <summary>On exit, how long to wait for a running action before stopping SISR anyway.</summary>
-    private static readonly TimeSpan ShutdownWait = TimeSpan.FromSeconds(2);
+    /// <summary>
+    /// On exit, how long the polite way (wait for the running action, SISR's own quit) may take before SISR
+    /// is killed. <c>App</c> waits for <see cref="ShutdownAsync"/> a little longer than this plus the kill.
+    /// </summary>
+    private static readonly TimeSpan ShutdownGraceful = TimeSpan.FromSeconds(3);
 
     private static readonly Dictionary<SisrState, SisrState[]> AllowedTransitions = new()
     {
@@ -172,6 +175,9 @@ public sealed class ControllerSupportService(
     private int _watching;
     private int _pausedGames;
     private volatile bool _shuttingDown;
+
+    /// <summary>Cancelled when Arcadia exits: ends the waits of an open start and of the actions under the gate.</summary>
+    private readonly CancellationTokenSource _shutdown = new();
     private DateTimeOffset _lastStart = DateTimeOffset.MinValue;
 
     /// <summary>The Steam game SISR is paused for because Steam Input takes other controllers there too (#124).</summary>
@@ -283,9 +289,9 @@ public sealed class ControllerSupportService(
         {
             // Installing is "SISR installieren"'s job; the switch is only offered when SISR is there.
             // SISR needs a running Steam, so switching on starts Steam first.
-            await RunBusyAsync(_platform.IsSteamReady ? "SISR wird gestartet …" : "Steam wird gestartet …", async () =>
+            await RunBusyAsync(_platform.IsSteamReady ? "SISR wird gestartet …" : "Steam wird gestartet …", async token =>
             {
-                if (!await StartSteamAndWaitAsync(cancellationToken))
+                if (!await StartSteamAndWaitAsync(token))
                 {
                     Log?.Invoke($"Steam ist nach {SteamStartTimeout.TotalSeconds:0} s nicht bereit; Steam Controller (SISR) wieder aus");
                     UpdateSettings(settings => settings with { SteamControllerSupport = false });
@@ -298,12 +304,12 @@ public sealed class ControllerSupportService(
                 SetBusyText("SISR wird gestartet …");
                 _restarts.Clear();
                 StartSisr();
-            });
+            }, cancellationToken);
         }
         else
         {
             // Through the same gate as starting, so a quick off → on waits for SISR to be gone.
-            await RunBusyAsync("SISR wird beendet …", () => StopSisrAndReleaseControllerAsync(cancellationToken));
+            await RunBusyAsync("SISR wird beendet …", StopSisrAndReleaseControllerAsync, cancellationToken);
         }
 
         await RefreshAsync(cancellationToken);
@@ -362,7 +368,7 @@ public sealed class ControllerSupportService(
     /// (<see cref="MarkerAccountsToChoose"/>); null writes it for the logged-in or last account.
     /// </summary>
     public Task InstallAsync(IReadOnlyCollection<uint>? markerAccounts = null, CancellationToken cancellationToken = default) =>
-        RunBusyAsync("SISR wird eingerichtet …", async () =>
+        RunBusyAsync("SISR wird eingerichtet …", async token =>
         {
             if (InstallBlocker() is { } blocker)
             {
@@ -389,11 +395,11 @@ public sealed class ControllerSupportService(
                     if (sisr.IsRunning)
                     {
                         SetBusyText("SISR wird beendet …");
-                        await StopSisrAndReleaseControllerAsync(cancellationToken);
+                        await StopSisrAndReleaseControllerAsync(token);
                     }
 
                     SetBusyText("Steam wird beendet …");
-                    if (!await _platform.StopSteamAsync(time, cancellationToken))
+                    if (!await _platform.StopSteamAsync(time, token))
                     {
                         throw new InvalidOperationException("Steam ließ sich nicht beenden. Beende Steam selbst und versuche es dann erneut.");
                     }
@@ -410,13 +416,13 @@ public sealed class ControllerSupportService(
                 if (!sisr.IsInstalled)
                 {
                     SetBusyText("SISR wird installiert …");
-                    await InstallLatestSisrAsync(cancellationToken);
+                    await InstallLatestSisrAsync(token);
                 }
 
                 if (!_platform.IsUsbipReady)
                 {
                     SetBusyText("usbip-Treiber wird installiert – bitte die Windows-Abfrage bestätigen …");
-                    if (!await WithTimeoutAsync(token => _platform.InstallUsbipAsync(http, token), InstallTimeout, "Der Treiber-Download", cancellationToken))
+                    if (!await WithTimeoutAsync(token => _platform.InstallUsbipAsync(http, token), InstallTimeout, "Der Treiber-Download", token))
                     {
                         throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt.");
                     }
@@ -451,11 +457,11 @@ public sealed class ControllerSupportService(
             {
                 // SISR may only start once the restarted Steam is up; if it takes longer, the tick starts it.
                 SetBusyText("Steam wird gestartet …");
-                await ProcessWatch.WaitUntilAsync(() => _platform.IsSteamReady, SteamStartTimeout, time, cancellationToken);
+                await ProcessWatch.WaitUntilAsync(() => _platform.IsSteamReady, SteamStartTimeout, time, token);
             }
 
             StartSisr();
-        });
+        }, cancellationToken);
 
     /// <summary>
     /// Restarts Steam itself, as "SISR installieren" does: SISR first (it would lose Steam under it),
@@ -531,14 +537,39 @@ public sealed class ControllerSupportService(
         }
     }
 
-    /// <summary>Stops SISR when Arcadia exits; nothing starts it again afterwards.</summary>
+    /// <summary>
+    /// Stops SISR when Arcadia exits; nothing starts it again afterwards (#100). Whatever waits meanwhile
+    /// (SISR coming up, Steam starting, a download) is cancelled, and SISR is asked to quit within
+    /// <see cref="ShutdownGraceful"/>, then killed: a SISR that is still starting doesn't answer its API.
+    /// </summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)
     {
         _shuttingDown = true;
-        var entered = await _gate.WaitAsync(ShutdownWait, cancellationToken);
+        _shutdown.Cancel();
+
+        using var graceful = new CancellationTokenSource(ShutdownGraceful, time);
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, graceful.Token);
+        var entered = false;
         try
         {
-            await StopSisrAndReleaseControllerAsync(cancellationToken);
+            try
+            {
+                await _gate.WaitAsync(limit.Token);
+                entered = true;
+                await StopSisrAndReleaseControllerAsync(limit.Token);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                Log?.Invoke($"SISR ließ sich nicht innerhalb von {ShutdownGraceful.TotalSeconds:0} Sekunden beenden");
+            }
+
+            if (sisr.IsRunning)
+            {
+                Log?.Invoke("SISR wird beim Beenden von Arcadia hart beendet");
+                await Task.Run(sisr.Kill, CancellationToken.None);
+                await sisr.CleanUpViiperAsync(CancellationToken.None);
+                SettleAfterStop();
+            }
         }
         finally
         {
@@ -889,27 +920,27 @@ public sealed class ControllerSupportService(
     }
 
     public Task InstallUpdateAsync(CancellationToken cancellationToken = default) =>
-        RunBusyAsync("SISR wird aktualisiert …", async () =>
+        RunBusyAsync("SISR wird aktualisiert …", async token =>
         {
             var release = AvailableUpdate
-                ?? await WithTimeoutAsync(sisr.GetLatestReleaseAsync, ReleaseLookupTimeout, "GitHub", cancellationToken)
+                ?? await WithTimeoutAsync(sisr.GetLatestReleaseAsync, ReleaseLookupTimeout, "GitHub", token)
                 ?? throw new InvalidOperationException("Die aktuelle SISR-Version konnte nicht ermittelt werden.");
-            await StopSisrAsync(cancellationToken);
-            await WithTimeoutAsync(token => sisr.InstallAsync(release, token), InstallTimeout, "Der SISR-Download", cancellationToken);
+            await StopSisrAsync(token);
+            await WithTimeoutAsync(token => sisr.InstallAsync(release, token), InstallTimeout, "Der SISR-Download", token);
             AvailableUpdate = null;
             StartSisr();
-        });
+        }, cancellationToken);
 
     public Task ApplyFixAsync(HealthFix fix, CancellationToken cancellationToken = default) => fix switch
     {
-        HealthFix.InstallSisr => RunBusyAsync("SISR wird installiert …", async () =>
+        HealthFix.InstallSisr => RunBusyAsync("SISR wird installiert …", async token =>
         {
-            await InstallLatestSisrAsync(cancellationToken);
+            await InstallLatestSisrAsync(token);
             StartSisr();
-        }),
-        HealthFix.InstallUsbip => RunBusyAsync("usbip-Treiber wird installiert – bitte die Windows-Abfrage bestätigen …", async () =>
+        }, cancellationToken),
+        HealthFix.InstallUsbip => RunBusyAsync("usbip-Treiber wird installiert – bitte die Windows-Abfrage bestätigen …", async token =>
         {
-            if (!await WithTimeoutAsync(token => _platform.InstallUsbipAsync(http, token), InstallTimeout, "Der Treiber-Download", cancellationToken))
+            if (!await WithTimeoutAsync(token => _platform.InstallUsbipAsync(http, token), InstallTimeout, "Der Treiber-Download", token))
             {
                 throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt.");
             }
@@ -917,13 +948,13 @@ public sealed class ControllerSupportService(
             // The update replaces the emulated USB host controller under VIIPER; SISR (and with it
             // VIIPER) must reconnect, otherwise the virtual controller stays attached to the old one.
             UpdateSettings(settings => settings with { UsbipInstalledAt = time.GetUtcNow() });
-            await StopSisrAsync(cancellationToken);
+            await StopSisrAsync(token);
             _restarts.Clear();
             StartSisr();
-        }),
-        HealthFix.StartSteam => RunBusyAsync("Steam wird gestartet …", async () =>
+        }, cancellationToken),
+        HealthFix.StartSteam => RunBusyAsync("Steam wird gestartet …", async token =>
         {
-            if (!await StartSteamAndWaitAsync(cancellationToken))
+            if (!await StartSteamAndWaitAsync(token))
             {
                 throw new TimeoutException("Steam ließ sich nicht starten.");
             }
@@ -931,22 +962,22 @@ public sealed class ControllerSupportService(
             SetBusyText("SISR wird gestartet …");
             _restarts.Clear();
             StartSisr();
-        }),
-        HealthFix.EnableCefDebugging => RunBusyAsync("Steam-Debug-Schnittstelle wird aktiviert …", () => RestartSteamAsync(enableCefDebugging: true, cancellationToken)),
-        HealthFix.RestartSteam => RunBusyAsync("Steam wird neu gestartet …", () => RestartSteamAsync(enableCefDebugging: false, cancellationToken)),
+        }, cancellationToken),
+        HealthFix.EnableCefDebugging => RunBusyAsync("Steam-Debug-Schnittstelle wird aktiviert …", token => RestartSteamAsync(enableCefDebugging: true, token), cancellationToken),
+        HealthFix.RestartSteam => RunBusyAsync("Steam wird neu gestartet …", token => RestartSteamAsync(enableCefDebugging: false, token), cancellationToken),
         // Closes Steam, so the settings ask first (or report a running Steam game) and call InstallAsync themselves.
         HealthFix.CreateMarker => throw new ArgumentException("Der Steam-Eintrag wird über InstallAsync angelegt, nachdem die Einstellungen gefragt haben.", nameof(fix)),
-        HealthFix.StopExternalSisr => RunBusyAsync("Andere SISR-Instanz wird beendet …", () =>
+        HealthFix.StopExternalSisr => RunBusyAsync("Andere SISR-Instanz wird beendet …", token =>
         {
             sisr.StopExternalInstances();
             return Task.CompletedTask;
-        }),
-        HealthFix.RestartSisr => RunBusyAsync("SISR wird neu gestartet …", async () =>
+        }, cancellationToken),
+        HealthFix.RestartSisr => RunBusyAsync("SISR wird neu gestartet …", async token =>
         {
-            await StopSisrAsync(cancellationToken);
+            await StopSisrAsync(token);
             _restarts.Clear();
             StartSisr();
-        }),
+        }, cancellationToken),
         _ => Task.CompletedTask,
     };
 
@@ -1270,7 +1301,16 @@ public sealed class ControllerSupportService(
             return;
         }
 
-        _ = Task.Run(() => WaitUntilReadyAsync(generation));
+        if (_shuttingDown)
+        {
+            // Arcadia began exiting while the process started; its shutdown may have looked before it existed.
+            sisr.Kill();
+            MoveTo(SisrState.Stopped);
+            SisrStarted?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
+        _ = Task.Run(() => WaitUntilReadyAsync(generation, _shutdown.Token));
     }
 
     /// <summary>
@@ -1278,7 +1318,7 @@ public sealed class ControllerSupportService(
     /// Steam's overlay and has Steam force its layout right after its API comes up — that's when
     /// the foreground can jump, so "started" is only reported after that.
     /// </summary>
-    private async Task WaitUntilReadyAsync(int generation)
+    private async Task WaitUntilReadyAsync(int generation, CancellationToken cancellationToken)
     {
         try
         {
@@ -1286,18 +1326,30 @@ public sealed class ControllerSupportService(
             SisrControllers? controllers = null;
             while (time.GetUtcNow() < deadline && sisr.IsRunning)
             {
+                // Not cancelled itself: the API call has its own short timeout, and cancelling a request in flight
+                // throws inside HttpClient, which shows up as an exception in the debugger on every exit (owner, 2026-10-22).
                 controllers = await sisr.Api.GetEmulatedControllersAsync();
                 if (controllers?.Total > 0)
                 {
                     break;
                 }
 
-                await Task.Delay(TimeSpan.FromMilliseconds(500), time);
+                if (!await DelayUnlessCancelledAsync(TimeSpan.FromMilliseconds(500), cancellationToken))
+                {
+                    break;
+                }
             }
 
             if (controllers?.Total > 0 && time.GetUtcNow() - _lastStart < MinimumSettleTime)
             {
-                await Task.Delay(MinimumSettleTime - (time.GetUtcNow() - _lastStart), time);
+                await DelayUnlessCancelledAsync(MinimumSettleTime - (time.GetUtcNow() - _lastStart), cancellationToken);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // Arcadia exits; its shutdown stops SISR.
+                Log?.Invoke("Warten auf SISR abgebrochen: Arcadia wird beendet");
+                return;
             }
 
             var steamControllers = controllers?.SteamControllers ?? 0;
@@ -1307,6 +1359,11 @@ public sealed class ControllerSupportService(
             var next = !sisr.IsRunning ? SisrState.Stopped : steamControllers > 0 ? SisrState.Running : SisrState.NoController;
             TryMove(SisrState.Starting, next, generation);
         }
+        catch (OperationCanceledException)
+        {
+            // Arcadia exits; its shutdown stops SISR.
+            Log?.Invoke("Warten auf SISR abgebrochen: Arcadia wird beendet");
+        }
         catch (Exception ex)
         {
             Log?.Invoke($"Warten auf SISR fehlgeschlagen: {ex}");
@@ -1315,6 +1372,18 @@ public sealed class ControllerSupportService(
         {
             SisrStarted?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    /// <summary>Waits, and returns false when cancelled first. Doesn't throw for that: exiting is no error.</summary>
+    private async Task<bool> DelayUnlessCancelledAsync(TimeSpan delay, CancellationToken cancellationToken)
+    {
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var cancelled = new TaskCompletionSource();
+        await using var registration = cancellationToken.Register(() => cancelled.TrySetResult());
+        var elapsed = Task.Delay(delay, time, stop.Token);
+        var first = await Task.WhenAny(elapsed, cancelled.Task);
+        await stop.CancelAsync();
+        return first == elapsed;
     }
 
     /// <summary>How long to wait for SISR to emulate a controller before giving up waiting.</summary>
@@ -1456,15 +1525,32 @@ public sealed class ControllerSupportService(
         return true;
     }
 
-    private async Task RunBusyAsync(string text, Func<Task> action)
+    /// <summary>
+    /// Runs an action under the gate with the busy text shown. Exiting Arcadia cancels the token the
+    /// action gets (and the wait for the gate), so the shutdown isn't held up by a download or by Steam starting.
+    /// </summary>
+    private async Task RunBusyAsync(string text, Func<CancellationToken, Task> action, CancellationToken cancellationToken)
     {
-        await _gate.WaitAsync();
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _shutdown.Token);
+        try
+        {
+            await _gate.WaitAsync(linked.Token);
+        }
+        catch (OperationCanceledException) when (_shuttingDown)
+        {
+            return;
+        }
+
         BusyText = text;
         LastError = null;
         OnChanged();
         try
         {
-            await action();
+            await action(linked.Token);
+        }
+        catch (OperationCanceledException) when (_shuttingDown)
+        {
+            Log?.Invoke($"{text} abgebrochen: Arcadia wird beendet");
         }
         catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or IOException
                                        or UnauthorizedAccessException or Win32Exception or TimeoutException)
@@ -1477,7 +1563,10 @@ public sealed class ControllerSupportService(
             SettleRestingState();
             BusyText = null;
             _gate.Release();
-            await RefreshAsync();
+            if (!_shuttingDown)
+            {
+                await RefreshAsync();
+            }
         }
     }
 

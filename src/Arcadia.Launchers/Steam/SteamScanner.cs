@@ -200,10 +200,14 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
         (flags & FullyInstalled) != 0
         || ((flags & (UpdateRequired | UpdateRunning | UpdateStarted)) != 0 && ParseLong(buildId) is > 0);
 
+    // The later of the account's and the manifest's last start: Steam needn't write both at the same moment, and right
+    // after a game Arcadia rescans to sort by it (#95).
     private static Game WithPlayStats(Game game, IReadOnlyDictionary<uint, SteamPlayStats> stats) =>
         stats.TryGetValue(uint.Parse(game.Id, CultureInfo.InvariantCulture), out var played)
-            ? game with { LastPlayedAt = played.LastPlayedAt ?? game.LastPlayedAt, Playtime = played.Playtime }
+            ? game with { LastPlayedAt = Later(played.LastPlayedAt, game.LastPlayedAt), Playtime = played.Playtime }
             : game;
+
+    private static DateTimeOffset? Later(DateTimeOffset? a, DateTimeOffset? b) => a > b || b is null ? a : b;
 
     // installdir comes from a file any local program can write; it must stay a single folder
     // name inside steamapps/common so the path can't point anywhere else.

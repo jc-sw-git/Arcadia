@@ -1,4 +1,5 @@
 using Arcadia.App.Services;
+using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -9,9 +10,12 @@ namespace Arcadia.App.ViewModels;
 /// <summary>One cover in the grid, plus everything the preview panel shows for it.</summary>
 public partial class GameTileViewModel : ViewModelBase
 {
+    private readonly DateTimeOffset _now;
+
     public GameTileViewModel(Game game, LauncherInfo launcher, DateTimeOffset now, Action<GameTileViewModel> focus, Action<GameTileViewModel> activate)
     {
         Game = game;
+        _now = now;
         (CoverBrush, AccentBrush) = Formatting.CoverBrushes(game.Title);
         LauncherName = launcher.DisplayName;
         LauncherMonogram = launcher.DisplayName[..1];
@@ -35,12 +39,48 @@ public partial class GameTileViewModel : ViewModelBase
 
     public bool IsInstalled => Game.IsInstalled;
 
-    public bool UpdateAvailable => Game.IsInstalled && Game.UpdateAvailable && InstallState is null;
+    /// <summary>The update icon; a running game shows that it runs instead, its update comes with the next start.</summary>
+    public bool UpdateAvailable => Game.IsInstalled && Game.UpdateAvailable && InstallState is null && RunState is null;
 
     public string PrimaryActionText => InstallState?.Phase == InstallPhase.Uninstalling ? "Wird deinstalliert …"
         : InstallState is not null ? $"{InstallVerb} …"
         : !Game.IsInstalled ? "Installieren"
+        : IsStarting ? "Wird gestartet …"
+        : IsRunning ? "Zurück ins Spiel"
         : "Spielen";
+
+    /// <summary>Whether the game runs, or was handed to its launcher and doesn't run yet (#95); null if neither.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsRunning), nameof(IsStarting), nameof(IsRunningOrStarting), nameof(NextStartOnlyReason), nameof(RunStateText),
+        nameof(RunStateShortText), nameof(UpdateAvailable), nameof(PrimaryActionText))]
+    public partial RunState? RunState { get; set; }
+
+    public bool IsRunning => RunState?.Phase == RunPhase.Running;
+
+    public bool IsStarting => RunState?.Phase == RunPhase.Starting;
+
+    /// <summary>"Deinstallieren …" and settings that would only apply to the next start wait until the game ended.</summary>
+    public bool IsRunningOrStarting => RunState is not null;
+
+    /// <summary>Why a setting for the game's next start can't be changed now; null while it can.</summary>
+    public string? NextStartOnlyReason => IsRunningOrStarting ? GameActionViewModel.NextStartOnly : null;
+
+    /// <summary>"Läuft seit 18:04" for the preview and the detail page; with the date if it started on another day.</summary>
+    public string RunStateText => RunState switch
+    {
+        null => string.Empty,
+        { Phase: RunPhase.Starting } => "Wird gestartet …",
+        { Since: { } since } => $"Läuft seit {Formatting.TimeOfDay(since, _now)}",
+        _ => "Läuft",
+    };
+
+    /// <summary>Fits the badge on a cover.</summary>
+    public string RunStateShortText => RunState?.Phase switch
+    {
+        null => string.Empty,
+        RunPhase.Starting => "Startet",
+        _ => "Läuft",
+    };
 
     /// <summary>The running installation of this game, or null.</summary>
     [ObservableProperty]

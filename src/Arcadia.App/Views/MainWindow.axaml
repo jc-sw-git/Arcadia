@@ -185,21 +185,22 @@
               </Panel>
               <DockPanel Grid.Row="1" Margin="24,22,24,24">
                 <StackPanel DockPanel.Dock="Bottom" Spacing="10">
-                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                    <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
+                  <!-- One below the other, so a long label ("Zurück ins Spiel" beside the Space key) has the full width. -->
+                  <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
+                    <Viewbox StretchDirection="DownOnly">
                       <StackPanel Orientation="Horizontal" Spacing="12">
                         <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" />
                         <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
                       </StackPanel>
-                    </Button>
-                    <Button Grid.Column="1" Classes="plain secondary" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenMenuCommand}"
-                            ToolTip.Tip="Weitere Aktionen (R oder Rechtsklick auf ein Cover)">
-                      <StackPanel Orientation="Horizontal" Spacing="10">
-                        <ctl:KeyHint Pad="⧉" Keys="R" />
-                        <TextBlock Text="Optionen" VerticalAlignment="Center" />
-                      </StackPanel>
-                    </Button>
-                  </Grid>
+                    </Viewbox>
+                  </Button>
+                  <Button Name="PreviewOptionsButton" Classes="plain secondary" HorizontalAlignment="Stretch" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenMenuCommand}"
+                          ToolTip.Tip="Weitere Aktionen (R oder Rechtsklick auf ein Cover)">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <ctl:KeyHint Pad="⧉" Keys="R" />
+                      <TextBlock Text="Optionen" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
                   <TextBlock IsVisible="{Binding UpdateAvailable}" Classes="actionHint">
                     <Run Text="{Binding LauncherName}" /><Run Text=" installiert das Update ggf. vor dem Start" />
                   </TextBlock>
@@ -217,6 +218,14 @@
                     <StackPanel IsVisible="{Binding UpdateAvailable}" Orientation="Horizontal" Spacing="8">
                       <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
                       <TextBlock Text="Update verfügbar" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Accent}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel IsVisible="{Binding IsRunning}" Orientation="Horizontal" Spacing="8">
+                      <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource Running}" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding RunStateText}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Running}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel IsVisible="{Binding IsStarting}" Orientation="Horizontal" Spacing="8">
+                      <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeJoin="Round" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding RunStateText}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
                     </StackPanel>
                   </StackPanel>
                   <StackPanel Spacing="10" IsVisible="{Binding IsInstallActive}">
@@ -259,7 +268,8 @@
                     <TextBlock Classes="label" Text="STEAM CONTROLLER" />
                     <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10. -->
                     <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
-                            ToolTip.Tip="Klicken wechselt zwischen „Xbox 360 Controller (SISR)“ und „Steam Input“">
+                            IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Xbox 360 Controller (SISR)“ und „Steam Input“'}">
                       <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
                     </Button>
                   </StackPanel>
@@ -304,6 +314,21 @@
                       <Border Classes="installBadge" IsVisible="{Binding UpdateAvailable}" Width="30" Height="30" CornerRadius="15"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Update verfügbar">
                         <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
+                      </Border>
+                      <!-- A running game (#95), like the update symbol; while it starts, without animation, since Arcadia is then behind the game. -->
+                      <Border Classes="installBadge" IsVisible="{Binding IsRunning}" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource Running}" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource Running}" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Border>
+                      <Border Classes="installBadge" IsVisible="{Binding IsStarting}" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeJoin="Round" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                        </StackPanel>
                       </Border>
                       <Border Classes="installBadge" IsVisible="{Binding IsInstallActive}" Height="30" CornerRadius="15" Padding="8,0,11,0"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
@@ -423,6 +448,21 @@
                   <Border Classes="installBadge" IsVisible="{Binding UpdateAvailable}" Width="30" Height="30" CornerRadius="15"
                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Update verfügbar">
                     <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
+                  </Border>
+                  <!-- A running game (#95), like the update symbol; while it starts, without animation, since Arcadia is then behind the game. -->
+                  <Border Classes="installBadge" IsVisible="{Binding IsRunning}" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource Running}" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource Running}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Border>
+                  <Border Classes="installBadge" IsVisible="{Binding IsStarting}" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeJoin="Round" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                    </StackPanel>
                   </Border>
                   <Border Classes="installBadge" IsVisible="{Binding IsInstallActive}" Height="30" CornerRadius="15" Padding="8,0,11,0"
                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
@@ -868,7 +908,7 @@
         </Border>
       </Panel>
 
-      <!-- Context menu of the focused game, anchored next to its cover (placed in MainWindow.axaml.cs). -->
+      <!-- Context menu of the focused game, beside its cover or over "Optionen" (placed in MainWindow.axaml.cs). -->
       <Panel Name="GameMenuLayer" Grid.RowSpan="4" IsVisible="{Binding IsGameMenuOpen}">
         <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding CloseMenuCommand}" />

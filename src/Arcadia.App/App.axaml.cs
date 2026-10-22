@@ -8,6 +8,7 @@ using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Arcadia.Launchers;
+using Arcadia.Launchers.Abstractions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -24,6 +25,15 @@ public partial class App : Application
     private static readonly TimeSpan InstallCheckInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan InstallProgressInterval = TimeSpan.FromSeconds(2);
 
+    /// <summary>How often Arcadia asks which games run (#95), in front and in the background.</summary>
+    private static readonly TimeSpan RunningGamesInterval = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// After a game started from Arcadia ended, Arcadia waits this long before it comes to the front, so the launcher's
+    /// windows (Epic's rating) open first and Arcadia lands above them (owner, 2026-10-20).
+    /// </summary>
+    private static readonly TimeSpan ReturnAfterGameDelay = TimeSpan.FromSeconds(1);
+
     /// <summary>How often Arcadia asks its update service; the service itself checks GitHub only every few hours.</summary>
     private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromMinutes(30);
 
@@ -32,6 +42,9 @@ public partial class App : Application
 
     /// <summary>Hands a SISR pause for a running game over to the Arcadia started after an update.</summary>
     private const string SisrPausedArgument = "--sisr-paused-for";
+
+    /// <summary>Hands a game started from Arcadia over to the Arcadia started after an update, so its end brings Arcadia back (#94).</summary>
+    private const string StartedGameArgument = "--started-game";
 
     /// <summary>View and Menu held alone this long act without waiting for the release, so ≡ held on a search hit still opens its details.</summary>
     private static readonly TimeSpan SoloButtonDelay = TimeSpan.FromMilliseconds(200);
@@ -81,6 +94,16 @@ public partial class App : Application
                 }
             }
 
+            var launchedGames = new LaunchedGames();
+            var runningGames = new RunningGamesTracker(launchers, new ProcessGames(new SystemProcessTable(), launchedGames), time) { Log = AppLog.Write };
+            for (var i = 0; i < args.Length - 1; i++)
+            {
+                if (args[i] == StartedGameArgument)
+                {
+                    runningGames.ResumeStartedFromArcadia(args[i + 1]);
+                }
+            }
+
             var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
             var viewModel = new MainViewModel(
                 new LibraryService(launchers),
@@ -88,6 +111,8 @@ public partial class App : Application
                 controllerSupport,
                 updates,
                 new InstallTracker(launchers, time),
+                runningGames,
+                launchedGames,
                 settings,
                 time);
             var window = new MainWindow { DataContext = viewModel };
@@ -110,7 +135,7 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
 
             // The downloaded update installs once Arcadia has exited; closing normally also stops SISR.
-            updates.RestartArguments = () => RestartArguments(args, window.IsActive, controllerSupport.PausedFor);
+            updates.RestartArguments = () => RestartArguments(args, window.IsActive, controllerSupport.PausedFor, runningGames.StartedFromArcadia);
             updates.RestartRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
 
             var foreground = new ForegroundGuard(window);
@@ -212,6 +237,36 @@ public partial class App : Application
             installs.Start();
             var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, "Update-Prüfung"));
             updateCheck.Start();
+
+            // Which games run (#95): asked off the UI thread, also in the background (Arcadia may be seen on a second
+            // screen); the end of a game Arcadia started brings it back (#94). Coming to the front asks at once.
+            var running = new DispatcherTimer(RunningGamesInterval, DispatcherPriority.Background, async (_, _) =>
+                await AppErrors.Guard(viewModel.PollRunningGamesAsync, "Laufende Spiele"));
+            running.Start();
+            window.Activated += (_, _) => viewModel.PollRunningGamesAsync().Forget("Laufende Spiele");
+            viewModel.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey).Forget("Nach dem Spiel zurück zu Arcadia");
+
+            async Task ReturnAfterGameAsync(string gameKey)
+            {
+                await Task.Delay(ReturnAfterGameDelay, time);
+                if (mouseMode.IsArcadiaActive)
+                {
+                    return;
+                }
+
+                // The user switched to another program meanwhile: it keeps the front (owner, 2026-10-20).
+                var launcherPrograms = launchers.Find(Game.LauncherIdOf(gameKey))?.ProgramNames ?? [];
+                if (ForegroundGame.InFrontAfter(gameKey, viewModel.GameFolders, launchedGames, launcherPrograms) is var front and not ForegroundAfterGame.Other)
+                {
+                    AppLog.Write($"{gameKey} beendet, vorne: {front} – Arcadia kommt nach vorne");
+                    ForegroundGuard.BringBack(window);
+                }
+                else
+                {
+                    AppLog.Write($"{gameKey} beendet, ein anderes Programm ist vorne – Arcadia bleibt hinten");
+                }
+            }
+
             Task.Run(async () =>
             {
                 SisrHost.RemoveLegacyCopy();
@@ -226,6 +281,7 @@ public partial class App : Application
                 installs.Stop();
                 installProgress.Stop();
                 updateCheck.Stop();
+                running.Stop();
                 _gamepad.Dispose();
 
                 // After the polling stopped: lets go of a mouse button or key the mouse mode still holds.
@@ -246,6 +302,7 @@ public partial class App : Application
 
             AppLog.Write($"Arcadia gestartet: {string.Join(' ', args)}");
             viewModel.LoadAsync().Forget("Bibliothek laden");
+            viewModel.PollRunningGamesAsync().Forget("Laufende Spiele");
             updates.CheckIfDueAsync().Forget("Update-Prüfung");
         }
 
@@ -253,12 +310,12 @@ public partial class App : Application
     }
 
     /// <summary>Arcadia's own arguments for the start after an update, plus the state to carry over.</summary>
-    private static string[] RestartArguments(string[] args, bool inFront, IEnumerable<string> pausedFor)
+    private static string[] RestartArguments(string[] args, bool inFront, IEnumerable<string> pausedFor, IEnumerable<string> startedGames)
     {
         var kept = new List<string>();
         for (var i = 0; i < args.Length; i++)
         {
-            if (args[i] == SisrPausedArgument)
+            if (args[i] is SisrPausedArgument or StartedGameArgument)
             {
                 i++;
             }
@@ -277,6 +334,12 @@ public partial class App : Application
         {
             kept.Add(SisrPausedArgument);
             kept.Add(directory);
+        }
+
+        foreach (var gameKey in startedGames)
+        {
+            kept.Add(StartedGameArgument);
+            kept.Add(gameKey);
         }
 
         return [.. kept];

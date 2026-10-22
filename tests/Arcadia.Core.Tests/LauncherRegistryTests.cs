@@ -2,6 +2,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Demo;
 using Arcadia.Launchers.Steam;
 using Microsoft.Extensions.Time.Testing;
 
@@ -100,10 +101,11 @@ public sealed class LauncherRegistryTests
             new FakeIntegration(KnownLaunchers.Epic) { Scanner = new FakeScanner(KnownLaunchers.Gog) },
             new FakeIntegration(KnownLaunchers.Epic) { Client = new FakeClient("gog") },
             new FakeIntegration(KnownLaunchers.Epic) { InstallMonitor = new FakeMonitor("gog") },
+            new FakeIntegration(KnownLaunchers.Epic) { RunningGames = new FakeRunningGames("gog") },
             new FakeIntegration(KnownLaunchers.Steam));
 
         Assert.Equal("steam", Assert.Single(registry.All).Launcher.Id);
-        Assert.Equal(3, registry.Rejected.Count);
+        Assert.Equal(4, registry.Rejected.Count);
     }
 
     [Fact]
@@ -117,6 +119,22 @@ public sealed class LauncherRegistryTests
         Assert.Empty(demo.Rejected);
         Assert.NotNull(demo.Find("epic")?.InstallMonitor);
         Assert.IsType<SteamIntegration>(demo.Find("steam"));
+
+        // Every launcher with a signal of its own reports its running games; the demo shows one per tab.
+        Assert.All(demo.All, integration => Assert.NotNull(integration.RunningGames));
+    }
+
+    [Fact]
+    public async Task A_demo_library_has_one_installed_game_running()
+    {
+        var now = new DateTimeOffset(2026, 10, 21, 18, 0, 0, TimeSpan.Zero);
+        var scanner = new DemoScanner(KnownLaunchers.Gog, 40, now);
+        var running = new DemoRunningGames(scanner, now);
+
+        var game = Assert.Single(running.Poll());
+        Assert.Contains(await scanner.ScanAsync(), g => g.Id == game.GameId && g.IsInstalled);
+        Assert.Equal(now.AddMinutes(-25), game.StartedAt);
+        Assert.Equal(running.Poll(), running.Poll());
     }
 
     private sealed class FakeClient(string launcherId) : ILauncherClient

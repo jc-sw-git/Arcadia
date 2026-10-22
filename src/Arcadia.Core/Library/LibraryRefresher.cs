@@ -39,11 +39,14 @@ public sealed class LibraryRefresher(LibraryService library, TimeProvider time)
         }
     }
 
-    /// <summary>True if launchers or games differ in anything a tab or cover shows.</summary>
+    /// <summary>
+    /// True if launchers or games differ in anything a tab or cover shows, or in what the library sorts by: after a game
+    /// ended, its playtime and last start come with the next rescan (#95).
+    /// </summary>
     public static bool HasChanged(IReadOnlyList<LauncherLibrary> current, IReadOnlyList<LauncherLibrary> scanned)
     {
         static string Signature(IEnumerable<LauncherLibrary> libraries) => string.Join('|', libraries
-            .SelectMany(l => l.Games.Select(g => $"{l.Launcher.Id}/{g.Key}:{g.IsInstalled}:{g.UpdateAvailable}:{g.InstallDirectory}"))
+            .SelectMany(l => l.Games.Select(g => $"{l.Launcher.Id}/{g.Key}:{g.IsInstalled}:{g.UpdateAvailable}:{g.InstallDirectory}:{g.LastPlayedAt?.UtcTicks}:{g.Playtime?.Ticks}"))
             .Order(StringComparer.Ordinal));
 
         return current.Count != scanned.Count || Signature(current) != Signature(scanned);

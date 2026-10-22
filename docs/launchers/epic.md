@@ -34,3 +34,12 @@ rotate away — and, on each launcher start, `Sending response: {…"get-install
 `installedVersion` and `hasUpdate` per app; a report whose version differs from the manifest's `AppVersionString` is stale. An update has no progress measure (the install dir
 is full from the start), so `EpicInstallMonitor` reports it without a fraction. The library is also rescanned when the window is activated
 and when a selected installed game's directory is missing.
+
+## Running games (#95, 2026-10-21)
+
+`EpicRunningGames` reads the current `EpicGamesLauncher.log`: an app with a `Started tracking playtime` line and no
+`Stopped` line after it runs, since the time of that line. Each poll reads only what was added since the last one
+(up to the last complete line); a log whose first bytes differ from those read before, or that got shorter, is a new
+one (Epic starts a new log with every launcher start) and is read from its start. If the launcher crashes while a
+game runs, the game shows "Läuft" until the launcher's next start writes a new log. The process search over the
+install folder doesn't run for Epic games (owner, 2026-10-21: only a fallback for launchers without a signal).

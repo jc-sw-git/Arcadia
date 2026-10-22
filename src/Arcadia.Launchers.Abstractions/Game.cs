@@ -60,4 +60,7 @@ public sealed record Game
 
     /// <summary>The <see cref="Key"/> of a game known only by launcher and native id.</summary>
     public static string KeyOf(string launcherId, string id) => $"{launcherId}:{id}";
+
+    /// <summary>The launcher id in a <see cref="Key"/>; launcher ids hold no colon, native ids may.</summary>
+    public static string LauncherIdOf(string key) => key.IndexOf(':', StringComparison.Ordinal) is var colon and >= 0 ? key[..colon] : key;
 }

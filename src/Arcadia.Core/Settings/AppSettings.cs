@@ -9,8 +9,8 @@ namespace Arcadia.Core.Settings;
 public sealed record AppSettings
 {
     /// <summary>
-    /// "Steam Controller als Xbox 360 Gamepad verwenden": run SISR so the Steam Controller works as
-    /// a system-wide Xbox 360 pad, in Arcadia and in games that were not started through Steam.
+    /// "Steam Controller Kompatibilität": run SISR so the Steam Controller works as
+    /// a system-wide Xbox pad, in Arcadia and in games that were not started through Steam.
     /// </summary>
     public bool SteamControllerSupport { get; init; }
 
@@ -76,7 +76,7 @@ public sealed record AppSettings
         SteamControllerSupport
         && (ControllerSupportOverrides.TryGetValue(game.Key, out var enabled) ? enabled : DefaultControllerSupportFor(game));
 
-    /// <summary>The mode a game starts with: "Steam Input" for Steam games, "Xbox 360 Controller (SISR)" for all others.</summary>
+    /// <summary>The mode a game starts with: "Steam Input" for Steam games, "Xbox Controller (SISR)" for all others.</summary>
     public static bool DefaultControllerSupportFor(Game game) => game.LauncherId != KnownLaunchers.Steam.Id;
 
     /// <summary>

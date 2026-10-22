@@ -89,6 +89,29 @@
       <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
       <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
     </LinearGradientBrush>
+    <!-- The settings page's info panel (#15) where it can scroll on: the same curve on the panel's surface. -->
+    <LinearGradientBrush x:Key="InfoFadeTop" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="#FF151B23" />
+      <GradientStop Offset="0.125" Color="#F5151B23" />
+      <GradientStop Offset="0.25" Color="#DA151B23" />
+      <GradientStop Offset="0.375" Color="#B0151B23" />
+      <GradientStop Offset="0.5" Color="#80151B23" />
+      <GradientStop Offset="0.625" Color="#4F151B23" />
+      <GradientStop Offset="0.75" Color="#25151B23" />
+      <GradientStop Offset="0.875" Color="#0A151B23" />
+      <GradientStop Offset="1" Color="#00151B23" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="InfoFadeBottom" StartPoint="0%,100%" EndPoint="0%,0%">
+      <GradientStop Offset="0" Color="#FF151B23" />
+      <GradientStop Offset="0.125" Color="#F5151B23" />
+      <GradientStop Offset="0.25" Color="#DA151B23" />
+      <GradientStop Offset="0.375" Color="#B0151B23" />
+      <GradientStop Offset="0.5" Color="#80151B23" />
+      <GradientStop Offset="0.625" Color="#4F151B23" />
+      <GradientStop Offset="0.75" Color="#25151B23" />
+      <GradientStop Offset="0.875" Color="#0A151B23" />
+      <GradientStop Offset="1" Color="#00151B23" />
+    </LinearGradientBrush>
     <LinearGradientBrush x:Key="CarouselFadeLeft" StartPoint="0%,0%" EndPoint="100%,0%">
       <GradientStop Offset="0" Color="{StaticResource BgColor}" />
       <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
@@ -737,6 +760,143 @@
   </Style>
   <Style Selector="Button.menuItem:disabled TextBlock.note">
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+
+  <!-- The settings page (#15, pattern "Leiste"): a column of rows, each with its value on the right, and the info panel. -->
+  <Style Selector="Path.tabIcon">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.settingsGroup">
+    <Setter Property="Margin" Value="18,18,0,6" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.settingRow.pageRow">
+    <Setter Property="MinHeight" Value="74" />
+    <Setter Property="Padding" Value="18,12,22,12" />
+    <Setter Property="CornerRadius" Value="14" />
+  </Style>
+  <Style Selector="Button.settingRow.pageRow.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Border.infoPanel">
+    <Setter Property="Background" Value="{StaticResource Surface}" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <!-- A box in the info panel below the description, e.g. "Status" (owner, 2026-10-22); a frame only, so mode cards
+       inside keep their own background. -->
+  <Style Selector="Border.infoSection">
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="22,18" />
+  </Style>
+  <Style Selector="TextBlock.infoText">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="LineHeight" Value="27" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="Ellipse.infoBullet">
+    <Setter Property="Width" Value="6" />
+    <Setter Property="Height" Value="6" />
+    <Setter Property="Margin" Value="0,11,0,0" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Fill" Value="{StaticResource Accent}" />
+  </Style>
+  <!-- A switch or a choice: ◀ value ▶, the arrows for the mouse, ◀ ▶ on the D-pad for the controller. -->
+  <Style Selector="Border.valuePill">
+    <Setter Property="Width" Value="250" />
+    <Setter Property="Height" Value="46" />
+    <Setter Property="CornerRadius" Value="23" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Button.settingRow.focused Border.valuePill">
+    <Setter Property="Background" Value="{StaticResource Bg}" />
+  </Style>
+  <Style Selector="Border.valuePill.locked">
+    <Setter Property="Opacity" Value="0.35" />
+  </Style>
+  <Style Selector="Button.valueArrow">
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="30" />
+    <Setter Property="CornerRadius" Value="15" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.valueArrow Path">
+    <Setter Property="Stroke" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.settingRow.focused Button.valueArrow, Button.valueArrow:pointerover">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Button.settingRow.focused Button.valueArrow Path, Button.valueArrow:pointerover Path">
+    <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.valueArrow:disabled">
+    <Setter Property="Opacity" Value="0.3" />
+  </Style>
+  <Style Selector="Path.chevronLeft, Path.chevronRight">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="StrokeThickness" Value="3" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Path.chevronLeft">
+    <Setter Property="Data" Value="M15 5l-7 7 7 7" />
+  </Style>
+  <Style Selector="Path.chevronRight">
+    <Setter Property="Data" Value="M9 5l7 7-7 7" />
+  </Style>
+  <Style Selector="TextBlock.valueText">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="Border.valuePill TextBlock.valueText.on">
+    <Setter Property="Foreground" Value="{StaticResource Success}" />
+  </Style>
+  <!-- An action on the right of a row ("Jetzt aktualisieren ›"); the whole row is the button. -->
+  <Style Selector="StackPanel.rowGo">
+    <Setter Property="MinWidth" Value="250" />
+  </Style>
+  <Style Selector="StackPanel.rowGo > TextBlock">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="StackPanel.rowGo > Path">
+    <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="StackPanel.rowGo.primary > TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="StackPanel.rowGo.primary > Path">
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="StackPanel.rowGo.disabled">
+    <Setter Property="Opacity" Value="0.5" />
+  </Style>
+  <Style Selector="TextBlock.rowValue">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
   </Style>
 
   <!-- Not available on this PC (no Windows, no Steam): the setting row stays readable but greyed out. -->

@@ -6,7 +6,7 @@ public enum MouseButton
     Right,
 }
 
-/// <summary>The keys the mouse mode presses.</summary>
+/// <summary>The keys the mouse mode and its on-screen keyboard press.</summary>
 public enum OutputKey
 {
     Up,
@@ -17,6 +17,7 @@ public enum OutputKey
     Tab,
     Shift,
     Enter,
+    Backspace,
 }
 
 /// <summary>Where the mouse mode's pointer movement, clicks, wheel and keys go: the system's input queue.</summary>
@@ -32,6 +33,12 @@ public interface IMouseKeyboardOutput
 
     /// <summary>A key down (repeated while held, as a keyboard does) or up.</summary>
     void SetKey(OutputKey key, bool down);
+
+    /// <summary>
+    /// Types <paramref name="character"/> as itself, whatever keyboard layout Windows uses, so umlauts and
+    /// AltGr characters arrive as shown on the on-screen keyboard (#110).
+    /// </summary>
+    void Type(char character);
 }
 
 public static class MouseKeyboardOutput
@@ -57,6 +64,10 @@ public sealed class NullMouseKeyboardOutput : IMouseKeyboardOutput
     }
 
     public void SetKey(OutputKey key, bool down)
+    {
+    }
+
+    public void Type(char character)
     {
     }
 }

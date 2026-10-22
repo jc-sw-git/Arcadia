@@ -28,6 +28,7 @@ public sealed partial class SendInputOutput : IMouseKeyboardOutput
 
     private const uint KeyExtended = 0x0001;
     private const uint KeyUp = 0x0002;
+    private const uint KeyUnicode = 0x0004;
 
     private const int VirtualScreenX = 76;
     private const int VirtualScreenY = 77;
@@ -103,19 +104,28 @@ public sealed partial class SendInputOutput : IMouseKeyboardOutput
             OutputKey.Escape => ((ushort)0x1B, false),
             OutputKey.Tab => ((ushort)0x09, false),
             OutputKey.Shift => ((ushort)0xA0, false),
+            OutputKey.Backspace => ((ushort)0x08, false),
             _ => ((ushort)0x0D, false),
         };
 
         // The scan code too: some programs read it instead of the virtual key.
         var scanCode = (ushort)MapVirtualKey(virtualKey, 0);
         var flags = (extended ? KeyExtended : 0) | (down ? 0 : KeyUp);
-        var input = new Input
-        {
-            Type = InputKeyboard,
-            Data = new InputData { Keyboard = new KeyboardInput { VirtualKey = virtualKey, ScanCode = scanCode, Flags = flags, ExtraInfo = ArcadiaMarker } },
-        };
-        Send(input);
+        Send(KeyboardInputOf(virtualKey, scanCode, flags));
     }
+
+    /// <summary>A Unicode "key" carries the character itself; the target gets it as typed text, not as a key of its layout.</summary>
+    public void Type(char character)
+    {
+        Send(KeyboardInputOf(0, character, KeyUnicode));
+        Send(KeyboardInputOf(0, character, KeyUnicode | KeyUp));
+    }
+
+    private static Input KeyboardInputOf(ushort virtualKey, ushort scanCode, uint flags) => new()
+    {
+        Type = InputKeyboard,
+        Data = new InputData { Keyboard = new KeyboardInput { VirtualKey = virtualKey, ScanCode = scanCode, Flags = flags, ExtraInfo = ArcadiaMarker } },
+    };
 
     private static Input MouseInput(int dx, int dy, uint data, uint flags) => new()
     {

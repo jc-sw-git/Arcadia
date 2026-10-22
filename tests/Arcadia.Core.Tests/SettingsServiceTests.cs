@@ -118,16 +118,28 @@ public sealed class SettingsServiceTests : IDisposable
         Assert.Equal(MouseModeActivation.Manual, service.Current.MouseMode.Activation);
         Assert.True(service.Current.IgnoreSteamDesktopLayout);
 
-        service.Update(s => s with { ReturnWithView = new ReturnWithViewSettings { Enabled = false, HoldSeconds = 0 } });
+        service.Update(s => s with { ReturnWithView = new ReturnWithViewSettings { Enabled = false, HoldSeconds = 9 } });
         var restarted = new SettingsService(new SettingsStore(SettingsPath)).Current.ReturnWithView;
 
         Assert.False(restarted.Enabled);
-        Assert.Equal(0, restarted.HoldSeconds);
+        Assert.Equal(9, restarted.HoldSeconds);
+    }
+
+    [Fact]
+    public void The_on_screen_keyboard_opens_at_the_bottom_until_moved_and_keeps_its_edge()
+    {
+        var service = new SettingsService(new SettingsStore(SettingsPath));
+        Assert.False(service.Current.MouseMode.KeyboardAtTop);
+
+        service.Update(s => s with { MouseMode = s.MouseMode with { KeyboardAtTop = true } });
+
+        Assert.True(new SettingsService(new SettingsStore(SettingsPath)).Current.MouseMode.KeyboardAtTop);
     }
 
     [Theory]
     [InlineData("""{ "ReturnWithView": { "HoldSeconds": -1, "Enabled": false } }""", false)]
     [InlineData("""{ "ReturnWithView": { "HoldSeconds": 10 } }""", true)]
+    [InlineData("""{ "ReturnWithView": { "HoldSeconds": 0, "Enabled": false } }""", false)]
     [InlineData("""{ "ReturnWithView": null }""", true)]
     public void Broken_return_with_view_values_fall_back_to_the_defaults_and_keep_the_rest(string json, bool enabled)
     {

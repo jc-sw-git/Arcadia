@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:kb="using:Arcadia.App.Keyboard"
+        xmlns:views="using:Arcadia.App.Views"
+        x:Class="Arcadia.App.Views.MouseModeKeyboardWindow"
+        x:DataType="kb:OnScreenKeyboardViewModel"
+        Title="Arcadia Bildschirmtastatur"
+        WindowDecorations="None"
+        WindowStartupLocation="Manual"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        CanResize="False"
+        Focusable="False">
+
+  <!-- The mouse mode's on-screen keyboard (#110), over any window. Laid out at 1920×1080 like the search and scaled
+       with the monitor (KeyboardPlacement). It never takes the focus, so the field behind keeps it, even on a click. -->
+  <Viewbox Stretch="Uniform">
+    <Border Classes="mouseModeKeyboard" Width="1646" Height="384" Padding="24,20,24,16">
+      <DockPanel>
+        <!-- Only what isn't printed on the keys; it names the input in use (#127). -->
+        <Border Classes="mouseModeKeyboardLegend" DockPanel.Dock="Bottom">
+          <views:MouseModeKeyboardLegend />
+        </Border>
+
+        <views:OnScreenKeyboardView HorizontalAlignment="Left" VerticalAlignment="Top" />
+      </DockPanel>
+    </Border>
+  </Viewbox>
+</Window>

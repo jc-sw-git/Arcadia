@@ -414,27 +414,4 @@ public sealed class MouseModeTests
 
     private static GamepadReading Pad(int slot, PadButtons buttons, StickPosition? left = null, StickPosition? right = null) =>
         new(slot, buttons, left ?? Centre, right ?? Centre);
-
-    private sealed class RecordingOutput : IMouseKeyboardOutput
-    {
-        public List<string> Events { get; } = [];
-
-        public int PointerX { get; set; }
-
-        public int PointerY { get; set; }
-
-        public int WheelVertical { get; private set; }
-
-        public void MovePointer(int dx, int dy)
-        {
-            PointerX += dx;
-            PointerY += dy;
-        }
-
-        public void SetButton(MouseButton button, bool down) => Events.Add($"{button}Button {(down ? "down" : "up")}");
-
-        public void Scroll(int vertical, int horizontal) => WheelVertical += vertical;
-
-        public void SetKey(OutputKey key, bool down) => Events.Add($"{key} {(down ? "down" : "up")}");
-    }
 }

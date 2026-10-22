@@ -8,7 +8,11 @@ namespace Arcadia.Input;
 /// A game is in front in which "Beenden des Mausmodus in Spielen erzwingen" forbids it: the mode ends,
 /// and Back + Start doesn't switch it on (owner, 2026-10-20).
 /// </param>
-public sealed record MouseModeOptions(bool Enabled, TimeSpan HoldTime, int PointerSpeed, bool BlockedHere = false);
+/// <param name="ReturnHoldTime">
+/// "Zurück zu Arcadia"'s hold time, null when it is off; with the on-screen keyboard open, View let go
+/// sooner moves the keyboard to the other edge.
+/// </param>
+public sealed record MouseModeOptions(bool Enabled, TimeSpan HoldTime, int PointerSpeed, bool BlockedHere = false, TimeSpan? ReturnHoldTime = null);
 
 /// <summary>The mouse mode went on or off.</summary>
 /// <param name="Slot">The controller whose Back + Start switched it; null when Arcadia switched it by itself.</param>
@@ -56,6 +60,8 @@ public sealed class MouseMode
         _options = options;
         _time = time;
         _mapping = new MouseModeMapping(output, time);
+        _mapping.KeyboardOpened += () => KeyboardOpened?.Invoke();
+        _mapping.KeyboardButtonChanged += (button, down) => KeyboardButtonChanged?.Invoke(button, down);
     }
 
     /// <summary>Back + Start have been held past <see cref="FeedbackDelay"/>; the argument is the rest of the hold time.</summary>
@@ -69,7 +75,16 @@ public sealed class MouseMode
     /// <summary>Back + Start were held long enough, but the game in front forbids the mode; the argument is the controller's slot.</summary>
     public event Action<int>? Refused;
 
+    /// <summary>Y opened the on-screen keyboard (#110); the buttons are the keyboard's until <see cref="CloseKeyboard"/> or the mode ends.</summary>
+    public event Action? KeyboardOpened;
+
+    /// <summary>A button of the open keyboard went down (true) or up; see <see cref="KeyboardButton"/>.</summary>
+    public event Action<KeyboardButton, bool>? KeyboardButtonChanged;
+
     public bool IsOn => _isOn;
+
+    /// <summary>The on-screen keyboard is open; it closes with the mode. Readable from any thread.</summary>
+    public bool IsKeyboardOpen => _mapping.IsKeyboardOpen;
 
     /// <summary>On because Arcadia switched it on by itself (and may switch it off again by itself).</summary>
     public bool IsAutomatic => _isAutomatic;
@@ -79,6 +94,9 @@ public sealed class MouseMode
 
     /// <summary>Arcadia switches by itself (the automation in the settings); applied on the next poll.</summary>
     public void Request(bool on) => Interlocked.Exchange(ref _request, on ? 1 : 2);
+
+    /// <summary>The keyboard closed (B, or Arcadia closed it); from the next poll the buttons are the mouse's again. Callable from any thread.</summary>
+    public void CloseKeyboard() => _mapping.CloseKeyboard();
 
     public void Update(IReadOnlyList<GamepadReading> pads)
     {
@@ -112,7 +130,7 @@ public sealed class MouseMode
         UpdateCombo(pads, options);
         if (_isOn)
         {
-            _mapping.Update(pads, options.PointerSpeed);
+            _mapping.Update(pads, options.PointerSpeed, options.ReturnHoldTime);
         }
     }
 

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:kb="using:Arcadia.App.Keyboard"
+             xmlns:ctl="using:Arcadia.App.Controls"
              x:Class="Arcadia.App.Views.OnScreenKeyboardView"
              x:DataType="kb:OnScreenKeyboardViewModel"
              Width="1598" Height="292" ClipToBounds="False">
@@ -36,8 +37,9 @@
                 <TextBlock Classes="keyHint" Text="{Binding AltGrHint}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,6" />
               </Panel>
 
-              <!-- Backspace, tab, shift, space, AltGr, the right block and the arrows: symbol and name, the button on the right. -->
-              <DockPanel IsVisible="{Binding IsLabelled}" Margin="12,0,10,3">
+              <!-- Backspace, tab, shift, space, AltGr, the right block and the arrows: symbol or icon at the left edge, the name in
+                   the middle, the button at the right edge (owner, 2026-10-22). -->
+              <ctl:CentredDockPanel IsVisible="{Binding IsLabelled}" Spacing="8" Margin="12,0,10,3">
                 <Border DockPanel.Dock="Right" Classes="glyph small" Classes.round="{Binding IsRoundGlyph}" VerticalAlignment="Center">
                   <Border.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
@@ -47,7 +49,7 @@
                   </Border.IsVisible>
                   <TextBlock Text="{Binding Glyph}" />
                 </Border>
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" HorizontalAlignment="Left">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
                   <Path Classes="keyIcon" IsVisible="{Binding IsLayoutKey}" Width="22" Height="22" Stretch="Uniform" StrokeThickness="1.8" VerticalAlignment="Center"
                         Data="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M3 12h18 M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9 M12 3C9.5 5.7 8.4 8.7 8.4 12s1.1 6.3 3.6 9" />
                   <!-- A monitor with the keyboard's bar where it goes and an arrow that way. -->
@@ -66,10 +68,11 @@
                   <!-- A keyboard going down. -->
                   <Path Classes="keyIcon" IsVisible="{Binding IsHideKey}" Width="34" Height="26" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" VerticalAlignment="Center"
                         Data="M3.5 1.5h20a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-20a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2z M6 6h2 M11 6h2 M16 6h2 M21 6h0.5 M6 11h16 M9.5 19.5L13.5 23.5l4 -4" />
-                  <TextBlock Classes="keySymbol" IsVisible="{Binding HasSymbol}" Text="{Binding Symbol}" VerticalAlignment="Center" />
-                  <TextBlock Classes="keyText" Text="{Binding Text}" VerticalAlignment="Center" />
+                  <TextBlock Classes="keySymbol" IsVisible="{Binding HasSymbolBesideName}" Text="{Binding Symbol}" VerticalAlignment="Center" />
                 </StackPanel>
-              </DockPanel>
+                <TextBlock Classes="keyText" Text="{Binding Text}" VerticalAlignment="Center" />
+                <TextBlock Classes="keySymbol" IsVisible="{Binding HasSymbolAlone}" Text="{Binding Symbol}" VerticalAlignment="Center" />
+              </ctl:CentredDockPanel>
 
               <!-- The tall ISO Enter: an upside-down L over two rows, its name in the upper part, ≡ in the lower one. Only the
                    shape takes clicks (the key's background is none), so the corner beside it still reaches the key there. -->
@@ -77,10 +80,10 @@
                 <Path Classes="enterFace" Data="M8,0 H116 A8,8 0 0 1 124,8 V104 A8,8 0 0 1 116,112 H30 A8,8 0 0 1 22,104 V60 A8,8 0 0 0 14,52 H8 A8,8 0 0 1 0,44 V8 A8,8 0 0 1 8,0 Z" />
                 <Border Classes="enterEdge" Margin="22,0,0,0" />
                 <Path Classes="enterRing" Data="M8,0 H116 A8,8 0 0 1 124,8 V104 A8,8 0 0 1 116,112 H30 A8,8 0 0 1 22,104 V60 A8,8 0 0 0 14,52 H8 A8,8 0 0 1 0,44 V8 A8,8 0 0 1 8,0 Z" />
-                <StackPanel Orientation="Horizontal" Spacing="8" Height="52" Margin="12,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
-                  <TextBlock Classes="keySymbol" Text="{Binding Symbol}" VerticalAlignment="Center" />
+                <ctl:CentredDockPanel Spacing="8" Height="52" Margin="12,0,10,0" VerticalAlignment="Top">
+                  <TextBlock DockPanel.Dock="Left" Classes="keySymbol" Text="{Binding Symbol}" VerticalAlignment="Center" />
                   <TextBlock Classes="keyText" Text="{Binding Text}" VerticalAlignment="Center" />
-                </StackPanel>
+                </ctl:CentredDockPanel>
                 <Border Classes="glyph small" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,13"
                         IsVisible="{Binding $parent[UserControl].((kb:OnScreenKeyboardViewModel)DataContext)?.UsesController, TargetNullValue=False}">
                   <TextBlock Text="{Binding Glyph}" />

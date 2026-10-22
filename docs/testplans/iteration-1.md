@@ -915,7 +915,8 @@ Verlauf:
       Mitte des Monitors, auf dem der Editor liegt; der Editor behält den Fokus (Titelleiste aktiv, Cursor blinkt).
       Reihen wie die echte deutsche Tastatur: ⌫ „Löschen“ oben rechts, ↹ Tab, hohes ↵ Enter über zwei Reihen,
       Feststelltaste als leere dunkle Taste, ⇧ links und rechts, Leertaste, AltGr, keine Strg/Alt/Win-Tasten; rechts
-      „Layout: DE“, „Nach oben“, „Ausblenden“ und die Pfeile. Alle Tasten mit dunklerer Unterkante. · E2E: nein
+      „Layout: DE“, „Nach oben“, „Ausblenden“ und die Pfeile. Alle Tasten mit dunklerer Unterkante. Die Namen (Tab, Umschalt, Enter, Leertaste, Layout, Ausblenden …)
+      stehen mittig in der Taste, Symbol bzw. Icon links, Controller-Taste rechts am Rand. · E2E: nein
 - [ ] **T110-2** D-Pad bewegt den Fokus (über die Feststelltaste hinweg, vom hohen Enter nach oben/unten weiter),
       A tippt das gezeigte Zeichen in den Editor, X löscht (gehalten: wiederholt), Y tippt ein Leerzeichen,
       ≡ Enter, ↹ Tab, Pfeile bewegen den Cursor. Ä, €, @, { und ^ (Tottaste: sofort, ohne Folgebuchstaben) kommen
@@ -968,6 +969,8 @@ Verlauf:
 | T110-10 bis T110-12 (nur Ansicht), T110-4 | 2026-10-22 | Claude | Branch nach der gemeinsamen Tastatur, Linux, Xvfb 1920×1080 `--demo`; Suche und Tasten lokal per Testcode ausgelöst (nicht eingecheckt); `dotnet test` (`TextWithCaretTests`) | ✅ Suche mit der gemeinsamen Tastatur (ohne ↹ und „Nach oben“, Plätze leer), Layout-Menü passt in die Tastatur, Einfügemarke nach dreimal ← in „hol\|low“, Mausmodus-Legende in der Suche; Fenster im Mausmodus unverändert (DE mit Umschalt, US oben mit Layout-Menü). Controller, Mausmodus-Weitergabe und Start per ↵ unter Windows nicht geprüft | Lauf am PC des Owners |
 | T110-2, T110-10 | 2026-10-22 | Juri | PC des Owners, PR #134 | ❌ Startmenü liegt über der Tastatur; Fokusrahmen an den Rändern abgeschnitten; mit AltGr führt ↓ von ↹ auf ↵, ← von ² tut nichts, ← vom hohen ↵ hängt davon ab, woher der Fokus kam | Navigation nach Abstand über alle Reihen, das hohe ↵ ist in beiden Reihen eine Taste (Test `On_the_german_altgr_level_…`); `UserControl` schnitt den Rahmen ab; Tastatur geht bei jedem Vordergrundwechsel wieder nach oben, über das Startmenü nur mit UIAccess (T110-13 bis T110-15 neu) |
 | T110-13, T110-14 | 2026-10-22 | Claude | Branch nach dem Fix, Linux, Xvfb 1920×1080 `--demo`; Fenster und Suche lokal per Testcode geöffnet, Tasten ausgelöst (nicht eingecheckt); `dotnet test` (`KeyGridTests`, `FullKeyboardTests`) | ✅ Vor dem Fix Rahmen an ^ und → außen abgeschnitten, danach ganz, im Fenster und in der Suche; AltGr an: Fokus springt von „a“ auf @, ← auf ↹, ↓ auf ⇧. T110-15 nur im Code, unter Windows nicht geprüft | Lauf am PC des Owners |
+| T110-1, T110-10 | 2026-10-22 | Juri | PC des Owners, PR #134 | ⚠️ Tastennamen sollen mittig stehen, Icons und Controller-Tasten am Rand | Namen mittig (`CentredDockPanel`), Pfeile mittig als ihr einziges Zeichen |
+| T110-1, T110-10 (nur Ansicht) | 2026-10-22 | Claude | Branch nach dem Fix, Linux, Xvfb 1920×1080 `--demo`; Fenster und Suche lokal per Testcode geöffnet (nicht eingecheckt) | ✅ DE und US im Fenster, DE in der Suche: Namen mittig, beim schmalen AltGr und hohen Enter so weit mittig, wie Symbol und Controller-Taste Platz lassen; Pfeile mittig | Lauf am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

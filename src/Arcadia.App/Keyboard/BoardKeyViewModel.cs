@@ -61,11 +61,17 @@ public sealed partial class BoardKeyViewModel : ViewModelBase
 
     public bool HasSymbol => Symbol.Length > 0;
 
+    /// <summary>A key with a name shows its symbol at the left edge; one without (the arrows) in the middle, as its label.</summary>
+    public bool HasSymbolBesideName => HasSymbol && Text.Length > 0;
+
+    public bool HasSymbolAlone => HasSymbol && Text.Length == 0;
+
     /// <summary>The symbol printed on a real key, e.g. ⌫; empty for the right block's own keys, which have icons.</summary>
     public string Symbol { get; }
 
     /// <summary>The key's name beside its symbol; the layout and dock keys change theirs.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSymbolBesideName), nameof(HasSymbolAlone))]
     public partial string Text { get; set; }
 
     /// <summary>The controller button that does the same, shown on the key while the controller is in use.</summary>

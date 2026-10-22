@@ -2,8 +2,10 @@ namespace Arcadia.Input;
 
 /// <summary>
 /// The controller as a mouse: left stick pointer, A/RT left button, X/LT right button, right stick
-/// wheel, D-pad arrows, B Esc, LB/RB Shift+Tab/Tab, Menu Enter, L3 the slow pointer. View is left
-/// to <see cref="ReturnWithView"/>. All controllers act together.
+/// wheel, D-pad arrows, B Esc, LB/RB Shift+Tab/Tab, Menu Enter, L3 the slow pointer, Y the on-screen
+/// keyboard. View held is left to <see cref="ReturnWithView"/>. All controllers act together.
+/// While the on-screen keyboard is open (#110), the sticks, the triggers and L3 stay the mouse and the
+/// other buttons are the keyboard's (<see cref="KeyboardButton"/>), passed on as events.
 /// </summary>
 /// <remarks>Runs on the gamepad's poll thread, like <see cref="MouseMode"/>.</remarks>
 internal sealed class MouseModeMapping
@@ -30,6 +32,27 @@ internal sealed class MouseModeMapping
         (PadButtons.DPadRight, OutputKey.Right),
     ];
 
+    /// <summary>The buttons the on-screen keyboard takes over, apart from View and Menu (<see cref="SoloButtons"/>).</summary>
+    private static readonly (PadButtons Button, KeyboardButton Key)[] KeyboardButtons =
+    [
+        (PadButtons.DPadUp, KeyboardButton.Up),
+        (PadButtons.DPadDown, KeyboardButton.Down),
+        (PadButtons.DPadLeft, KeyboardButton.Left),
+        (PadButtons.DPadRight, KeyboardButton.Right),
+        (PadButtons.A, KeyboardButton.Type),
+        (PadButtons.X, KeyboardButton.Erase),
+        (PadButtons.Y, KeyboardButton.Space),
+        (PadButtons.LeftShoulder, KeyboardButton.Shift),
+        (PadButtons.RightShoulder, KeyboardButton.AltGr),
+        (PadButtons.RightStickClick, KeyboardButton.Layout),
+        (PadButtons.B, KeyboardButton.Hide),
+    ];
+
+    /// <summary>Everything but the mouse's own buttons (triggers, L3): their meaning changes when the keyboard opens or closes.</summary>
+    private const PadButtons Repurposed = PadButtons.DPadUp | PadButtons.DPadDown | PadButtons.DPadLeft | PadButtons.DPadRight
+        | PadButtons.A | PadButtons.B | PadButtons.X | PadButtons.Y | PadButtons.LeftShoulder | PadButtons.RightShoulder
+        | PadButtons.RightStickClick | PadButtons.View | PadButtons.Menu;
+
     private readonly IMouseKeyboardOutput _output;
     private readonly TimeProvider _time;
     private readonly LatchGesture _slow;
@@ -37,12 +60,20 @@ internal sealed class MouseModeMapping
     private readonly Dictionary<OutputKey, long> _nextRepeat = [];
     private readonly HashSet<OutputKey> _keysDown = [];
 
-    // Held when the mode began; ignored until let go, so a held A doesn't click.
+    // Held when the mode began or the keyboard opened or closed; ignored until let go, so a held A doesn't click.
     private PadButtons _ignored;
+
+    // Set here when Y opens the keyboard, cleared from the UI thread when it closes.
+    private volatile bool _keyboardOpen;
+
+    // Whether the buttons went to the keyboard at the last poll; a change hands them over.
+    private bool _buttonsOnKeyboard;
+    private long _viewPressedAt;
     private PadButtons _previous;
     private bool _leftDown;
     private bool _rightDown;
     private long _lastUpdate;
+    private TimeSpan? _returnHoldTime;
     private double _pointerRestX;
     private double _pointerRestY;
     private double _wheelRestVertical;
@@ -61,9 +92,22 @@ internal sealed class MouseModeMapping
 
     public bool IsSlow => _slow.IsOn;
 
+    /// <summary>Y opened the on-screen keyboard; from this poll on, the buttons are the keyboard's.</summary>
+    public event Action? KeyboardOpened;
+
+    /// <summary>A button of the open keyboard went down (true) or up; Enter and Dock come as a tap, down and up at once.</summary>
+    public event Action<KeyboardButton, bool>? KeyboardButtonChanged;
+
+    public bool IsKeyboardOpen => _keyboardOpen;
+
+    /// <summary>The keyboard was closed (B, or Arcadia closed it); the buttons are the mouse's again from the next poll.</summary>
+    public void CloseKeyboard() => _keyboardOpen = false;
+
     public void Begin(PadButtons held)
     {
         _ignored = held;
+        _keyboardOpen = false;
+        _buttonsOnKeyboard = false;
         _previous = PadButtons.None;
         _lastUpdate = _time.GetTimestamp();
         _pointerRestX = _pointerRestY = _wheelRestVertical = _wheelRestHorizontal = 0;
@@ -71,21 +115,23 @@ internal sealed class MouseModeMapping
         _solo.Reset();
     }
 
-    /// <summary>Lets go of every button and key the mode holds down.</summary>
+    /// <summary>Lets go of every button and key the mode holds down; the keyboard closes with the mode.</summary>
     public void End()
     {
         SetButton(MouseButton.Left, ref _leftDown, false);
         SetButton(MouseButton.Right, ref _rightDown, false);
-        foreach (var key in _keysDown.ToList())
-        {
-            KeyUp(key);
-        }
-
+        ReleaseKeys();
+        _keyboardOpen = false;
+        _buttonsOnKeyboard = false;
         _slow.Reset();
         _solo.Reset();
     }
 
-    public void Update(IReadOnlyList<GamepadReading> pads, int pointerSpeed)
+    /// <param name="returnHoldTime">
+    /// "Zurück zu Arcadia"'s hold time, null when it is off: with the keyboard open, View let go sooner is a tap
+    /// that moves the keyboard; held longer, it brought Arcadia back instead.
+    /// </param>
+    public void Update(IReadOnlyList<GamepadReading> pads, int pointerSpeed, TimeSpan? returnHoldTime = null)
     {
         var now = _time.GetTimestamp();
         var step = _time.GetElapsedTime(_lastUpdate, now);
@@ -103,13 +149,83 @@ internal sealed class MouseModeMapping
 
         _ignored &= merged;
         var current = merged & ~_ignored;
+        if (!_keyboardOpen && (current & ~_previous & PadButtons.Y) != 0)
+        {
+            _keyboardOpen = true;
+            KeyboardOpened?.Invoke();
+        }
+
+        var keyboard = _keyboardOpen;
+        if (keyboard != _buttonsOnKeyboard)
+        {
+            HandOverButtons(current, keyboard);
+            current &= ~_ignored;
+        }
+
         var pressed = current & ~_previous;
         var released = _previous & ~current;
         _previous = current;
 
-        SetButton(MouseButton.Left, ref _leftDown, (current & (PadButtons.A | PadButtons.RightTrigger)) != 0);
-        SetButton(MouseButton.Right, ref _rightDown, (current & (PadButtons.X | PadButtons.LeftTrigger)) != 0);
+        SetButton(MouseButton.Left, ref _leftDown, (current & (keyboard ? PadButtons.RightTrigger : PadButtons.A | PadButtons.RightTrigger)) != 0);
+        SetButton(MouseButton.Right, ref _rightDown, (current & (keyboard ? PadButtons.LeftTrigger : PadButtons.X | PadButtons.LeftTrigger)) != 0);
 
+        if ((pressed & PadButtons.View) != 0)
+        {
+            _viewPressedAt = now;
+        }
+
+        if ((pressed & PadButtons.LeftStickClick) != 0)
+        {
+            _slow.Press();
+        }
+        else if ((released & PadButtons.LeftStickClick) != 0)
+        {
+            _slow.Release();
+        }
+
+        _returnHoldTime = returnHoldTime;
+        Solo(PadButtons.View, GamepadButton.View, pressed, released);
+        Solo(PadButtons.Menu, GamepadButton.Menu, pressed, released);
+
+        if (keyboard)
+        {
+            foreach (var (button, key) in KeyboardButtons)
+            {
+                if ((pressed & button) != 0)
+                {
+                    KeyboardButtonChanged?.Invoke(key, true);
+                }
+                else if ((released & button) != 0)
+                {
+                    KeyboardButtonChanged?.Invoke(key, false);
+                }
+            }
+        }
+        else
+        {
+            FollowKeys(current, pressed, released, now);
+        }
+
+        MovePointer(pads, pointerSpeed, step);
+        TurnWheel(pads, step);
+    }
+
+    /// <summary>
+    /// The keyboard opened or closed: the buttons held now meant something else when they went down, so they
+    /// count only once let go, and keys the mouse mode held go up.
+    /// </summary>
+    private void HandOverButtons(PadButtons held, bool toKeyboard)
+    {
+        _buttonsOnKeyboard = toKeyboard;
+        ReleaseKeys();
+        _ignored |= held & Repurposed;
+        _previous &= ~_ignored;
+        _solo.Reset();
+    }
+
+    /// <summary>The mouse mode's keys without the keyboard: Esc, Tab, Shift+Tab and the arrows.</summary>
+    private void FollowKeys(PadButtons current, PadButtons pressed, PadButtons released, long now)
+    {
         FollowKey(PadButtons.B, OutputKey.Escape, pressed, released);
         FollowKey(PadButtons.RightShoulder, OutputKey.Tab, pressed, released);
         if ((pressed & PadButtons.LeftShoulder) != 0)
@@ -132,21 +248,14 @@ internal sealed class MouseModeMapping
                 _nextRepeat[key] = now + Ticks(RepeatInterval);
             }
         }
+    }
 
-        if ((pressed & PadButtons.LeftStickClick) != 0)
+    private void ReleaseKeys()
+    {
+        foreach (var key in _keysDown.ToList())
         {
-            _slow.Press();
+            KeyUp(key);
         }
-        else if ((released & PadButtons.LeftStickClick) != 0)
-        {
-            _slow.Release();
-        }
-
-        Solo(PadButtons.View, GamepadButton.View, pressed, released);
-        Solo(PadButtons.Menu, GamepadButton.Menu, pressed, released);
-
-        MovePointer(pads, pointerSpeed, step);
-        TurnWheel(pads, step);
     }
 
     private void MovePointer(IReadOnlyList<GamepadReading> pads, int speed, TimeSpan step)
@@ -219,14 +328,29 @@ internal sealed class MouseModeMapping
         }
     }
 
+    /// <summary>View and Menu act on release, so their keys are a tap: down and up at once.</summary>
     private void OnSoloPressed(GamepadButton button)
     {
-        if (button == GamepadButton.Menu)
+        if (button == GamepadButton.Menu && _buttonsOnKeyboard)
         {
-            // Acts on release, so Enter is a tap: down and up at once.
+            KeyboardTap(KeyboardButton.Enter);
+        }
+        else if (button == GamepadButton.Menu)
+        {
             _output.SetKey(OutputKey.Enter, true);
             _output.SetKey(OutputKey.Enter, false);
         }
+        else if (button == GamepadButton.View && _buttonsOnKeyboard
+            && (_returnHoldTime is not { } holdTime || _time.GetElapsedTime(_viewPressedAt) < holdTime))
+        {
+            KeyboardTap(KeyboardButton.Dock);
+        }
+    }
+
+    private void KeyboardTap(KeyboardButton key)
+    {
+        KeyboardButtonChanged?.Invoke(key, true);
+        KeyboardButtonChanged?.Invoke(key, false);
     }
 
     private void FollowKey(PadButtons button, OutputKey key, PadButtons pressed, PadButtons released)

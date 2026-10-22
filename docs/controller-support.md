@@ -14,7 +14,7 @@ focus handling or anything SISR/usbip related.
   `POST /api/v1/quit`. Ready = API answers and `/api/v1/devices` shows a `viiper_device`.
 - Default: SISR runs except while a game from the Steam launcher runs (double input);
   per-game override in `AppSettings.ControllerSupportOverrides`.
-  On 2026-10-18 the owner saw no double input in one Steam game set to "Xbox 360 Controller (SISR)". His guess:
+  On 2026-10-18 the owner saw no double input in one Steam game set to "Xbox Controller (SISR)". His guess:
   SISR takes the controller's input before Steam Input hands it to the game. Unverified and one game only, so the
   default stays.
 - Everything that starts or stops SISR (periodic tick, game pause and its end, on/off, update, fixes, exit)
@@ -31,8 +31,8 @@ focus handling or anything SISR/usbip related.
 
 ## Setup and naming (#85, #92, 2026-10-16)
 
-- In the UI the setting is "Steam Controller als Xbox 360 Gamepad verwenden", short "Steam Controller (SISR)".
-  Per game there are two modes: "Xbox 360 Controller (SISR)" (SISR runs) and "Steam Input" (SISR paused).
+- In the UI the setting is "Steam Controller Kompatibilität", short "Steam Controller (SISR)".
+  Per game there are two modes: "Xbox Controller (SISR)" (SISR runs) and "Steam Input" (SISR paused).
   Steam games start on Steam Input, all others on SISR; `ControllerSupportOverrides` stores only deviations.
   In code the feature keeps its old name (`ControllerSupportService`, `AppSettings.SteamControllerSupport`).
 - The switch is offered only when `ControllerSupportService.Setup` is `Ready`: SISR installed, usbip-win2 ≥
@@ -63,7 +63,7 @@ focus handling or anything SISR/usbip related.
 - In a Steam game whose Steam Input also takes other controllers, the game gets no input from them while SISR
   runs, whether SISR emulates them yet or not. Owner's PC, 2026-10-21, Castlevania: Belmont's Curse (4231820)
   set to Steam Input for every controller, 8BitDo Ultimate 2 (an Xbox-style pad) and the Steam Controller, game
-  on "Xbox 360 Controller (SISR)": once SISR never took the pad within a minute, once only 85 s after the start,
+  on "Xbox Controller (SISR)": once SISR never took the pad within a minute, once only 85 s after the start,
   and the game ignored the pad all along; after SISR stopped it worked. SISR reports such a pad as `XInput
   Controller #1` or by its name, path `XInput#…`, no USB id. When SISR starts outside a game it sees the pad as
   a Steam virtual gamepad for 2 s, until it forces its marker's layout (sisr.log).
@@ -73,7 +73,7 @@ focus handling or anything SISR/usbip related.
   `SteamController_XBoxSupport` / `SteamController_GenericGamepadSupport` (`SteamInputSetting`). How Steam
   stores Steam Input for only some controller types isn't known yet; `arcadia.log` names the values read. If
   it covers other controllers ("2", or the default with Xbox or generic support on), SISR pauses for that
-  game even on "Xbox 360 Controller (SISR)": before a start from Arcadia (`BeginGameAsync`), or within 2 s for a
+  game even on "Xbox Controller (SISR)": before a start from Arcadia (`BeginGameAsync`), or within 2 s for a
   Steam game that runs otherwise (`RunningAppID`, read once per game). In such a game Steam Input brings the
   Steam Controller too. As a fallback, SISR also pauses while a Steam game runs if it emulates any other
   controller (Steam's default can be changed by the game itself). The settings show "SISR pausiert für „…“"

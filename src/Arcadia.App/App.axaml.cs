@@ -165,7 +165,6 @@ public partial class App : Application
                         if (mouseMode.IsArcadiaActive)
                         {
                             viewModel.HandleGamepad(action);
-                            window.FollowSettingsFocus();
                         }
                     });
                 }

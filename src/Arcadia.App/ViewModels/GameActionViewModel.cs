@@ -56,6 +56,9 @@ public sealed partial class GameActionViewModel : ViewModelBase
 {
     private const string NotYetAvailable = "Folgt in einer späteren Version";
 
+    /// <summary>Why a game's setting that applies when it starts can't be changed while it runs (#95).</summary>
+    public const string NextStartOnly = "Gilt erst beim nächsten Start – änderbar, wenn das Spiel beendet ist";
+
     private readonly Action _invoke;
 
     private GameActionViewModel(GameActionKind kind, string label, string? note, bool isEnabled, Action invoke, string? buttonLabel = null)
@@ -147,12 +150,15 @@ public sealed partial class GameActionViewModel : ViewModelBase
         var busy = tile.InstallState is not null;
         var actions = new List<GameActionViewModel>();
 
-        // While an installation, update or uninstall runs, its status takes the place of the primary action.
+        // While an installation, update or uninstall runs, its status takes the place of the primary action. A running
+        // game is brought back to the front; one being started says so again instead of starting twice (#95).
         actions.Add(busy
             ? new(GameActionKind.Play, tile.InstallStatusText, tile.ShowLauncherControlsHint ? $"Pausieren und Abbrechen in {launcher}" : null, false, () => { })
-            : game.IsInstalled
-                ? new(GameActionKind.Play, "Spielen", tile.UpdateAvailable ? $"{launcher} installiert ggf. vorher das Update" : null, true, () => host.Play(tile))
-                : new(GameActionKind.Play, "Installieren", $"Die Installation wird in {launcher} geöffnet", true, () => host.Play(tile)));
+            : !game.IsInstalled
+                ? new(GameActionKind.Play, "Installieren", $"Die Installation wird in {launcher} geöffnet", true, () => host.Play(tile))
+                : tile.IsRunningOrStarting
+                    ? new(GameActionKind.Play, tile.PrimaryActionText, null, true, () => host.Play(tile))
+                    : new(GameActionKind.Play, "Spielen", tile.UpdateAvailable ? $"{launcher} installiert ggf. vorher das Update" : null, true, () => host.Play(tile)));
 
         actions.Add(new(GameActionKind.Details, "Details anzeigen", null, true, () => host.ShowDetails(tile)));
         actions.Add(new(GameActionKind.Favorite, "Zu Favoriten hinzufügen", NotYetAvailable, false, () => { }, "Zu Favoriten"));
@@ -170,15 +176,22 @@ public sealed partial class GameActionViewModel : ViewModelBase
             return actions;
         }
 
+        // The Steam Controller mode decides whether SISR pauses when the game starts, so a change applies to the next
+        // start only and waits until the game ended (#95). The mouse mode's choice applies at once and stays open.
         if (host.ShowControllerMode)
         {
             GameActionViewModel? mode = null;
-            mode = new(GameActionKind.ControllerMode, string.Empty, null, true, () =>
+            mode = new(GameActionKind.ControllerMode, string.Empty, null, !tile.IsRunningOrStarting, () =>
             {
                 host.ToggleControllerMode(tile);
                 mode!.ShowControllerMode(host.ControllerModeOf(game));
             });
             mode.ShowControllerMode(host.ControllerModeOf(game));
+            if (tile.IsRunningOrStarting)
+            {
+                mode.Note = NextStartOnly;
+            }
+
             actions.Add(mode);
         }
 
@@ -196,11 +209,13 @@ public sealed partial class GameActionViewModel : ViewModelBase
 
         actions.Add(busy
             ? new(GameActionKind.Uninstall, "Deinstallieren …", "Erst wenn die laufende Installation fertig ist", false, () => { })
-            : game.Uninstall is not null
-                ? new(GameActionKind.Uninstall, "Deinstallieren …", null, true, () => host.Uninstall(tile))
-                : game.OpenInLauncher is not null
-                    ? new(GameActionKind.Uninstall, "Deinstallieren …", $"Nur in {launcher} möglich – öffnet {launcher}", true, () => host.Uninstall(tile))
-                    : new(GameActionKind.Uninstall, "Deinstallieren …", $"Nur in {launcher} möglich", false, () => { }));
+            : tile.IsRunningOrStarting
+                ? new(GameActionKind.Uninstall, "Deinstallieren …", "Erst wenn das Spiel beendet ist", false, () => { })
+                : game.Uninstall is not null
+                    ? new(GameActionKind.Uninstall, "Deinstallieren …", null, true, () => host.Uninstall(tile))
+                    : game.OpenInLauncher is not null
+                        ? new(GameActionKind.Uninstall, "Deinstallieren …", $"Nur in {launcher} möglich – öffnet {launcher}", true, () => host.Uninstall(tile))
+                        : new(GameActionKind.Uninstall, "Deinstallieren …", $"Nur in {launcher} möglich", false, () => { }));
 
         return actions;
     }

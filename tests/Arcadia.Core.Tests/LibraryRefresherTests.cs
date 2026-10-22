@@ -67,6 +67,17 @@ public sealed class LibraryRefresherTests
     }
 
     [Fact]
+    public void A_new_playtime_or_last_start_is_a_change_since_the_library_sorts_by_it()
+    {
+        var before = new LauncherLibrary(KnownLaunchers.Steam, [GameOf("steam", "620") with { Playtime = TimeSpan.FromHours(2), LastPlayedAt = new DateTimeOffset(2026, 10, 20, 18, 0, 0, TimeSpan.Zero) }]);
+        var played = before.Games[0] with { Playtime = TimeSpan.FromHours(3), LastPlayedAt = new DateTimeOffset(2026, 10, 21, 18, 0, 0, TimeSpan.Zero) };
+
+        Assert.True(LibraryRefresher.HasChanged([before], [before with { Games = [played] }]));
+        Assert.True(LibraryRefresher.HasChanged([before], [before with { Games = [played with { Playtime = before.Games[0].Playtime }] }]));
+        Assert.False(LibraryRefresher.HasChanged([before], [before with { Games = [before.Games[0] with { }] }]));
+    }
+
+    [Fact]
     public async Task Throttles_unforced_rescans()
     {
         var refresher = CreateRefresher();

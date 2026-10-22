@@ -23,7 +23,10 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
 
     public LauncherInfo Launcher => launcher;
 
-    public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default) => Task.FromResult(Generate());
+
+    /// <summary>The same games on every call.</summary>
+    public IReadOnlyList<Game> Generate()
     {
         var random = new Random(StableSeed(launcher.Id));
         var titles = new HashSet<string>(StringComparer.Ordinal);
@@ -88,7 +91,7 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
             });
         }
 
-        return Task.FromResult<IReadOnlyList<Game>>(games);
+        return games;
     }
 
     // string.GetHashCode is randomized per process; this keeps demo data identical across runs.

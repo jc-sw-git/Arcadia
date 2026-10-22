@@ -84,6 +84,18 @@
                                 <TextBlock Text="UPDATE VERFÜGBAR" FontSize="14" FontWeight="ExtraBold" LetterSpacing="0.8" Foreground="{StaticResource OnAccent}" VerticalAlignment="Center" />
                               </StackPanel>
                             </Border>
+                            <Border Classes="detailChip running" IsVisible="{Binding Tile.IsRunning}">
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource OnRunning}" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding RunStateUpper}" FontSize="14" FontWeight="ExtraBold" LetterSpacing="0.8" Foreground="{StaticResource OnRunning}" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </Border>
+                            <Border Classes="detailChip" IsVisible="{Binding Tile.IsStarting}">
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.4" StrokeJoin="Round" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding RunStateUpper}" FontSize="14" FontWeight="ExtraBold" LetterSpacing="0.8" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </Border>
                           </StackPanel>
                           <TextBlock Text="{Binding Tile.Title}" FontSize="64" FontWeight="ExtraBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                      Foreground="{StaticResource TextStrong}" />

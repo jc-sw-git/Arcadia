@@ -83,6 +83,15 @@ public sealed class GameFoldersTests
     }
 
     [Fact]
+    public void Of_two_folders_inside_each_other_the_inner_one_names_the_game()
+    {
+        var folders = GameFolders.Of([Game(@"C:\Games"), Game(@"C:\Games\Hades")]);
+
+        Assert.Equal(@"test:C:\Games\Hades", folders.GameOf(@"C:\Games\Hades\Hades.exe"));
+        Assert.Equal(@"test:C:\Games", folders.GameOf(@"C:\Games\Other\other.exe"));
+    }
+
+    [Fact]
     public void Empty_contains_nothing()
     {
         Assert.False(GameFolders.Empty.Contain(@"C:\Windows\explorer.exe"));

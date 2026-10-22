@@ -248,7 +248,9 @@ public sealed class SteamScannerTests : IDisposable
         var bloons = games[0];
         Assert.True(bloons.UpdateAvailable);
         Assert.Equal(TimeSpan.FromMinutes(3466), bloons.Playtime);
-        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1775672229), bloons.LastPlayedAt);
+
+        // The manifest's last start (1775679163) is later than the account's; the later one counts.
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1775679163), bloons.LastPlayedAt);
         Assert.NotNull(bloons.InstalledAt);
         Assert.Null(games[1].Playtime);
         Assert.Null(games[1].InstalledAt);

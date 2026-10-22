@@ -16,6 +16,12 @@ public sealed class GameMenuViewModel : ViewModelBase
 
     public string Title { get; }
 
+    /// <summary>
+    /// Opened at a cover (a right click, or a hit in the search): the menu stands beside it. Else, opened with ⧉, R or
+    /// "Optionen", it stands over the preview's "Optionen" button (owner, 2026-10-21).
+    /// </summary>
+    public bool AtCover { get; init; }
+
     public IReadOnlyList<GameActionViewModel> Actions { get; }
 
     /// <returns>False if the action closes the menu.</returns>

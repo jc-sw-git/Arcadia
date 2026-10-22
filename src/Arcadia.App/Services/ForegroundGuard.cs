@@ -133,6 +133,28 @@ public sealed partial class ForegroundGuard(MainWindow window)
     }
 
     /// <summary>
+    /// Whether the desktop is the foreground window: the shell's desktop window, the one behind the icons, or the taskbar.
+    /// Callable from any thread.
+    /// </summary>
+    public static unsafe bool IsDesktopInFront()
+    {
+        if (!OperatingSystem.IsWindows() || GetForegroundWindow() is var foreground && foreground == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        if (foreground == GetShellWindow())
+        {
+            return true;
+        }
+
+        const int Capacity = 32;
+        var name = stackalloc char[Capacity];
+        var length = GetClassName(foreground, name, Capacity);
+        return new ReadOnlySpan<char>(name, Math.Max(length, 0)) is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd";
+    }
+
+    /// <summary>
     /// Puts the pointer in the middle of the foreground window. Games hide the pointer, so after the
     /// mouse mode came on in a game it may sit over Arcadia on another monitor, and the first click
     /// (RT or A) would bring Arcadia to the front unseen (review of #64, three monitors).
@@ -238,6 +260,9 @@ public sealed partial class ForegroundGuard(MainWindow window)
 
     [LibraryImport("user32.dll")]
     private static partial IntPtr GetShellWindow();
+
+    [LibraryImport("user32.dll", EntryPoint = "GetClassNameW")]
+    private static unsafe partial int GetClassName(IntPtr window, char* name, int capacity);
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

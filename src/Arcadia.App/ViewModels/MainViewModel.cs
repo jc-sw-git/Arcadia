@@ -24,6 +24,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     private static readonly TimeSpan UninstallSettleTime = TimeSpan.FromSeconds(5);
 
+    /// <summary>Steam may write a game's playtime a while after it ended, so the library is read once more after this.</summary>
+    private static readonly TimeSpan PlayStatsSettleTime = TimeSpan.FromSeconds(30);
+
     /// <summary>A shorter press of A starts the game; the ring around the preview fills from here on.</summary>
     private static readonly TimeSpan HoldFeedbackDelay = TimeSpan.FromMilliseconds(200);
 
@@ -33,6 +36,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     private readonly LibraryService _library;
     private readonly LibraryRefresher _refresher;
     private readonly InstallTracker _installs;
+    private readonly RunningGamesTracker _running;
     private readonly GameLaunchService _launcher;
     private readonly ControllerSupportService _controllerSupport;
     private readonly ArcadiaUpdateService _updates;
@@ -53,6 +57,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         ControllerSupportService controllerSupport,
         ArcadiaUpdateService updates,
         InstallTracker installs,
+        RunningGamesTracker running,
+        LaunchedGames launchedGames,
         SettingsService settings,
         TimeProvider time)
     {
@@ -62,6 +68,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         _controllerSupport = controllerSupport;
         _updates = updates;
         _installs = installs;
+        _running = running;
+        LaunchedGames = launchedGames;
         _settings = settings;
         _time = time;
         Status = new StatusBarViewModel(controllerSupport, updates, time);
@@ -131,10 +139,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     public GameFolders GameFolders { get; private set; } = GameFolders.Empty;
 
     /// <summary>Games Arcadia started, for a game in front whose path can't be read.</summary>
-    public LaunchedGames LaunchedGames { get; } = new();
+    public LaunchedGames LaunchedGames { get; }
 
     /// <summary>Raised when Arcadia should bring its window back to the front.</summary>
     public event EventHandler? ForegroundRequested;
+
+    /// <summary>A game started from Arcadia ended, with its key: Arcadia may come back to the front (#94).</summary>
+    public event EventHandler<string>? StartedGameEnded;
 
     public ObservableCollection<LauncherTabViewModel> Tabs { get; } = [];
 
@@ -248,7 +259,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             return;
         }
 
-        foreach (var tile in PageGames.Concat(Detail?.Pages.Select(p => p.Tile) ?? []).Concat(Search?.Results ?? []))
+        foreach (var tile in ShownTiles())
         {
             tile.InstallState = _installs.StateOf(tile.Game.Key);
         }
@@ -258,6 +269,55 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             await ReportInstallResultsAsync(results);
         }
     }
+
+    /// <summary>
+    /// Asks the launchers which games run (#95) and updates the covers. Called periodically, also in the background, and
+    /// when Arcadia comes to the front; the end of a game started from Arcadia may bring it back (#94).
+    /// </summary>
+    public async Task PollRunningGamesAsync()
+    {
+        if (await _running.PollAsync() is not { } changes)
+        {
+            return;
+        }
+
+        if (changes.StatesChanged)
+        {
+            UpdateRunStates();
+        }
+
+        if (changes.Ended.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var ended in changes.Ended)
+        {
+            AppLog.Write($"{ended.GameKey} läuft nicht mehr{(ended.StartedFromArcadia ? " (aus Arcadia gestartet)" : string.Empty)}");
+            if (ended.StartedFromArcadia)
+            {
+                StartedGameEnded?.Invoke(this, ended.GameKey);
+            }
+        }
+
+        // Playtime and "Zuletzt gespielt" changed, and the library may be sorted by them.
+        await RefreshLibraryAsync(force: true);
+        Task.Delay(PlayStatsSettleTime, _time).ContinueWith(
+            _ => RefreshLibraryAsync(force: true),
+            TaskScheduler.FromCurrentSynchronizationContext()).Unwrap().Forget("Bibliothek aktualisieren");
+    }
+
+    private void UpdateRunStates()
+    {
+        foreach (var tile in ShownTiles())
+        {
+            tile.RunState = _running.StateOf(tile.Game.Key);
+        }
+    }
+
+    /// <summary>The covers of the page, the detail page's games and the search's hits.</summary>
+    private IEnumerable<GameTileViewModel> ShownTiles() =>
+        PageGames.Concat(Detail?.Pages.Select(p => p.Tile) ?? []).Concat(Search?.Results ?? []);
 
     private async Task ReportInstallResultsAsync(IReadOnlyList<InstallResult> results)
     {
@@ -319,6 +379,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     private void ApplyLibraries(IReadOnlyList<LauncherLibrary> libraries)
     {
         GameFolders = GameFolders.Of(libraries.SelectMany(l => l.Games));
+        _running.SetLibrary(libraries.SelectMany(l => l.Games));
         foreach (var gone in Tabs.Where(t => libraries.All(l => l.Launcher.Id != t.Launcher.Id)).ToList())
         {
             Tabs.Remove(gone);
@@ -658,7 +719,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     }
 
     private GameTileViewModel CreateDetailTile(Game game) =>
-        new(game, LauncherOf(game), _time.GetLocalNow(), _ => { }, _ => { }) { InstallState = _installs.StateOf(game.Key) };
+        new(game, LauncherOf(game), _time.GetLocalNow(), _ => { }, _ => { }) { InstallState = _installs.StateOf(game.Key), RunState = _running.StateOf(game.Key) };
 
     /// <summary>Every shown game comes from a tab, so its launcher has one.</summary>
     private LauncherInfo LauncherOf(Game game) => Tabs.First(t => t.Launcher.Id == game.LauncherId).Launcher;
@@ -759,7 +820,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
                 StartHold(hit, UiAction.Accept);
                 break;
             case UiAction.Options when search.FocusedResult is { } hit:
-                GameMenu = new GameMenuViewModel(hit, GameActionViewModel.For(hit, this));
+                GameMenu = new GameMenuViewModel(hit, GameActionViewModel.For(hit, this)) { AtCover = true };
                 break;
             default:
                 search.Handle(action);
@@ -824,7 +885,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
 
         tile.FocusCommand.Execute(null);
-        GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, this));
+        GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, this)) { AtCover = true };
     }
 
     private GameTileViewModel CreateSearchTile(Game game, Action<GameTileViewModel> focus) =>
@@ -833,7 +894,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             focus(tile);
             Start(tile);
         })
-        { InstallState = _installs.StateOf(game.Key) };
+        { InstallState = _installs.StateOf(game.Key), RunState = _running.StateOf(game.Key) };
 
     /// <summary>A rescan: same input, fresh hits; a detail page opened from the search keeps its game.</summary>
     private void UpdateSearch()
@@ -943,13 +1004,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
     }
 
-    /// <summary>Opens the context menu of the focused game.</summary>
+    /// <summary>Opens the context menu of the focused game over the preview's "Optionen" button (⧉, R, a click on it).</summary>
     [RelayCommand]
-    private void OpenMenu()
+    private void OpenMenu() => OpenMenu(atCover: false);
+
+    private void OpenMenu(bool atCover)
     {
         if (FocusedGame is { } tile)
         {
-            GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, this));
+            GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, this)) { AtCover = atCover };
         }
     }
 
@@ -962,7 +1025,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
 
         Focus(tile);
-        OpenMenu();
+        OpenMenu(atCover: true);
     }
 
     [RelayCommand]
@@ -1103,11 +1166,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
     }
 
-    /// <summary>Switches the focused game between "Xbox 360 Controller (SISR)" and "Steam Input".</summary>
+    /// <summary>Switches the focused game between "Xbox 360 Controller (SISR)" and "Steam Input"; not while it runs (#95).</summary>
     [RelayCommand]
     private void CycleControllerSupport()
     {
-        if (FocusedGame?.Game is not { } game)
+        if (FocusedGame is not { IsRunningOrStarting: false, Game: var game })
         {
             return;
         }
@@ -1292,7 +1355,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         Start(tile);
     }
 
-    /// <summary>Starts the game, or installs it, or says why neither is possible right now.</summary>
+    /// <summary>
+    /// Starts the game, or installs it, or brings it back to the front while it runs, or says why none of that is
+    /// possible right now.
+    /// </summary>
     private void Start(GameTileViewModel tile)
     {
         if (tile.InstallState is { } install)
@@ -1303,6 +1369,17 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
                     ? $"„{tile.Title}“ wird gerade deinstalliert."
                     : $"„{tile.Title}“ wird bereits {(tile.IsInstalled ? "aktualisiert" : "installiert")} – Pausieren und Abbrechen in {tile.LauncherName}.");
             return;
+        }
+
+        switch (_running.StateOf(tile.Game.Key)?.Phase)
+        {
+            case RunPhase.Starting:
+                // A second A must not start the game twice (#95).
+                Toast.Show($"„{tile.Title}“ wird bereits gestartet …");
+                return;
+            case RunPhase.Running:
+                ReturnToGameAsync(tile).Forget("Zurück ins Spiel");
+                return;
         }
 
         if (!tile.IsInstalled)
@@ -1316,14 +1393,21 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     private async Task LaunchAsync(GameTileViewModel tile)
     {
+        _running.Starting(tile.Game.Key);
+        UpdateRunStates();
         var progress = new Progress<LaunchStage>(stage => OnLaunchStage(tile, stage));
 
         // Games that use Steam Input themselves would get every input twice while SISR runs.
         var result = await _launcher.TryStartAsync(tile.Game, async token =>
         {
-            LaunchedGames.Starting(tile.Game.Key, await Task.Run(ForegroundGame.RunningProcessIds, token));
+            LaunchedGames.Starting(tile.Game.Key, await Task.Run(ProcessWatch.RunningProcessIds, token));
             await _controllerSupport.BeginGameAsync(tile.Game, token);
         }, progress);
+        if (result.Outcome != LaunchOutcome.Requested)
+        {
+            StartFailed(tile);
+        }
+
         switch (result)
         {
             case { Outcome: LaunchOutcome.Failed, Error: { } error }:
@@ -1332,6 +1416,40 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             case { Outcome: LaunchOutcome.FailedUnexpectedly }:
                 Toast.Show($"„{tile.Title}“ konnte wegen eines unerwarteten Fehlers nicht gestartet werden – Details stehen in arcadia.log.");
                 break;
+            case { Outcome: LaunchOutcome.AlreadyLaunching }:
+                Toast.Show($"Ein anderes Spiel wird gerade gestartet – „{tile.Title}“ bitte gleich noch einmal starten.");
+                break;
+        }
+    }
+
+    /// <summary>The game shows "Spielen" again.</summary>
+    private void StartFailed(GameTileViewModel tile)
+    {
+        _running.StartFailed(tile.Game.Key);
+        UpdateRunStates();
+    }
+
+    /// <summary>
+    /// "Zurück ins Spiel" (#95): the game's window comes to the front. Arcadia is in front itself, so Windows lets it hand
+    /// the foreground on. A game without a window of its own (it is still loading, or runs in the tray) is named in a toast.
+    /// </summary>
+    private async Task ReturnToGameAsync(GameTileViewModel tile)
+    {
+        var key = tile.Game.Key;
+        var folders = GameFolders;
+        var window = await Task.Run(() => GameWindow.Find(key, folders, LaunchedGames));
+        if (window == 0)
+        {
+            AppLog.Write($"Zurück ins Spiel: kein Fenster von {key} gefunden");
+            Toast.Show($"Arcadia findet kein Fenster von „{tile.Title}“ – vielleicht startet es noch oder läuft ohne Fenster.");
+            return;
+        }
+
+        var shown = GameWindow.BringToFront(window);
+        AppLog.Write($"Zurück ins Spiel: {key} {(shown ? "vorne" : "ließ sich nicht nach vorne holen")}");
+        if (!shown)
+        {
+            Toast.Show($"„{tile.Title}“ ließ sich nicht nach vorne holen.");
         }
     }
 
@@ -1379,9 +1497,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
                 Toast.Show(tile.UpdateAvailable ? $"„{tile.Title}“ wird gestartet – {tile.LauncherName} installiert ggf. vorher das Update …" : $"„{tile.Title}“ wird gestartet …");
                 break;
             case LaunchStage.NotStartable:
+                StartFailed(tile);
                 Toast.Show($"Demo-Spiel: Hier würde jetzt „{tile.Title}“ gestartet.");
                 break;
             case LaunchStage.NotConfirmed:
+                StartFailed(tile);
                 Toast.Show($"„{tile.Title}“ ist nicht gestartet – bitte in {tile.LauncherName} nachsehen.");
                 break;
         }
@@ -1408,7 +1528,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         PageGames.Clear();
         foreach (var game in sorted.Skip(window.Start).Take(window.Length))
         {
-            PageGames.Add(new GameTileViewModel(game, tab.Launcher, now, Focus, Activate) { InstallState = _installs.StateOf(game.Key) });
+            PageGames.Add(new GameTileViewModel(game, tab.Launcher, now, Focus, Activate) { InstallState = _installs.StateOf(game.Key), RunState = _running.StateOf(game.Key) });
         }
 
         KeepHoldOnRebuiltPage();

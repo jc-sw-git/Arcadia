@@ -90,6 +90,9 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     [ObservableProperty]
     public partial GameActionViewModel? Uninstall { get; private set; }
 
+    /// <summary>"LÄUFT SEIT 18:04" or "WIRD GESTARTET …" for the chip beside the launcher's (#95).</summary>
+    public string RunStateUpper => Tile.RunStateText.ToUpper(Formatting.Culture);
+
     /// <summary>The launcher may install a pending update before the game starts (owner, 2026-10-12).</summary>
     public string? UpdateNote => Tile.UpdateAvailable ? $"{Tile.LauncherName} installiert das Update eventuell, bevor das Spiel startet." : null;
 
@@ -178,11 +181,12 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     private void OnTilePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(GameTileViewModel.InstallState))
+        if (e.PropertyName is nameof(GameTileViewModel.InstallState) or nameof(GameTileViewModel.RunState))
         {
             OnPropertyChanged(nameof(UpdateNote));
             OnPropertyChanged(nameof(HasUpdateNote));
             OnPropertyChanged(nameof(HasNotes));
+            OnPropertyChanged(nameof(RunStateUpper));
             RebuildActions();
         }
     }

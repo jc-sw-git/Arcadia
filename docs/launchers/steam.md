@@ -38,3 +38,16 @@ but first verifies every file (and resets modified ones).
 `steam://controllerconfig/<id>` is unreliable (owner's PC, 2026-10-18): Steam goes to the game in its library, but
 often, mostly on the first call, the controller configurator doesn't open; a second call mostly works. Cause unknown,
 so Arcadia offers no "Controller-Layout" action for now (owner's decision).
+
+## Running games (#95, 2026-10-21)
+
+`SteamRunningGames` reads `HKCU\Software\Valve\Steam\Apps\<appid>\Running` (1 while the game runs) and, like SISR
+already does, `RunningAppID` (the game Steam started last, while it runs; it counts even without the flag). There
+are thousands of `Apps` keys (every app Steam ever touched), so only a poll after a pause of more than 10 s (Arcadia
+just started, or the PC slept) reads them all; the polls in between read `RunningAppID` and the keys
+of the games already running. A game that starts meanwhile becomes `RunningAppID`. "Läuft seit" is the last write
+time of the app's key, read once per run (`RegQueryInfoKey`). **Unverified:** the refinement named the `Running`
+flag, but it wasn't checked on the owner's PC yet, nor whether Steam writes the key exactly at the start and clears
+the flag when the game ends or crashes (test plan T95-12). Play stats: Steam writes `LastPlayed` into the manifest
+at the start and the account's `localconfig.vdf` at some point after the end; the scanner takes the later of both,
+and Arcadia rescans right after a game ended and 30 s later.

@@ -34,6 +34,9 @@
     <SolidColorBrush x:Key="Info" Color="#5AAEFF" />
     <SolidColorBrush x:Key="Warning" Color="#F5B868" />
     <SolidColorBrush x:Key="Success" Color="#6FD99A" />
+    <!-- A running game (#95): the badge on its cover, the preview's line and the detail page's chip. -->
+    <SolidColorBrush x:Key="Running" Color="#6FD99A" />
+    <SolidColorBrush x:Key="OnRunning" Color="#06140C" />
     <SolidColorBrush x:Key="Danger" Color="#FF9A8F" />
     <SolidColorBrush x:Key="SurfaceHover" Color="#1A212B" />
     <SolidColorBrush x:Key="SurfaceDisabled" Color="#11161D" />
@@ -463,6 +466,8 @@
   <Style Selector="Button.primary">
     <Setter Property="Height" Value="60" />
     <Setter Property="CornerRadius" Value="30" />
+    <!-- Keeps the label clear of the rounded ends, also when it shrinks to fit. -->
+    <Setter Property="Padding" Value="20,0" />
     <Setter Property="Background" Value="{StaticResource Accent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
     <Setter Property="FontSize" Value="20" />
@@ -471,11 +476,11 @@
   <Style Selector="Button.primary:pointerover">
     <Setter Property="Background" Value="{StaticResource AccentHover}" />
   </Style>
-  <!-- Next to the primary button in the preview, e.g. "⧉ Optionen". -->
+  <!-- Below the primary button in the preview, e.g. "⧉ Optionen". -->
   <Style Selector="Button.secondary">
     <Setter Property="Height" Value="60" />
     <Setter Property="CornerRadius" Value="30" />
-    <Setter Property="Padding" Value="14,0,20,0" />
+    <Setter Property="Padding" Value="20,0" />
     <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
     <Setter Property="Foreground" Value="{StaticResource Text}" />
     <Setter Property="FontSize" Value="17" />
@@ -617,6 +622,10 @@
   </Style>
   <Style Selector="Border.detailChip.update">
     <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Padding" Value="10,6,14,6" />
+  </Style>
+  <Style Selector="Border.detailChip.running">
+    <Setter Property="Background" Value="{StaticResource Running}" />
     <Setter Property="Padding" Value="10,6,14,6" />
   </Style>
   <Style Selector="Border.detailStat">

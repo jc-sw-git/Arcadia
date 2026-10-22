@@ -8,6 +8,10 @@ namespace Arcadia.Launchers.Epic;
 /// <summary>One play session the Epic launcher tracked. <see cref="End"/> is null while the game runs or if the launcher died.</summary>
 public sealed record EpicPlaySession(string AppName, DateTimeOffset Start, DateTimeOffset? End);
 
+/// <summary>One <c>Started/Stopped tracking playtime</c> line of the Epic log.</summary>
+/// <param name="Time">UTC, as the log writes it.</param>
+public sealed record EpicPlaytimeEvent(string AppName, bool Started, DateTimeOffset Time);
+
 /// <summary>What the launcher last reported about an installed app (<c>get-installed-apps-response</c>).</summary>
 public sealed record EpicInstalledAppState(string InstalledVersion, bool HasUpdate);
 
@@ -28,6 +32,9 @@ public static partial class EpicLauncherLog
 {
     private const string InstalledAppsMarker = "\"name\":\"get-installed-apps-response\"";
     private const string ResponsePrefix = "Sending response: ";
+
+    /// <summary>Every playtime line holds this; lines without it are passed over before the expression runs.</summary>
+    public const string PlaytimeMarker = "tracking playtime for ";
 
     /// <summary>
     /// The launcher's logs, oldest first: the backups Epic rotates at each start
@@ -61,18 +68,16 @@ public static partial class EpicLauncherLog
         IReadOnlyDictionary<string, EpicInstalledAppState>? installedApps = null;
         foreach (var line in lines)
         {
-            if (line.Contains("tracking playtime for ", StringComparison.Ordinal) && PlaytimeLine().Match(line) is { Success: true } match
-                && ParseTime(match.Groups["time"].Value) is { } time)
+            if (ParsePlaytime(line) is { } playtime)
             {
-                var app = match.Groups["app"].Value;
-                if (match.Groups["what"].Value == "Started")
+                if (playtime.Started)
                 {
-                    open[app] = sessions.Count;
-                    sessions.Add(new EpicPlaySession(app, time, null));
+                    open[playtime.AppName] = sessions.Count;
+                    sessions.Add(new EpicPlaySession(playtime.AppName, playtime.Time, null));
                 }
-                else if (open.Remove(app, out var index) && time >= sessions[index].Start)
+                else if (open.Remove(playtime.AppName, out var index) && playtime.Time >= sessions[index].Start)
                 {
-                    sessions[index] = sessions[index] with { End = time };
+                    sessions[index] = sessions[index] with { End = playtime.Time };
                 }
             }
             else if (line.Contains(InstalledAppsMarker, StringComparison.Ordinal) && ParseInstalledApps(line) is { } report)
@@ -83,6 +88,13 @@ public static partial class EpicLauncherLog
 
         return new EpicLogFacts(sessions, installedApps);
     }
+
+    /// <summary>A <c>Started/Stopped tracking playtime</c> line: which app, whether it started or stopped, and when; else null.</summary>
+    public static EpicPlaytimeEvent? ParsePlaytime(string line) =>
+        line.Contains(PlaytimeMarker, StringComparison.Ordinal) && PlaytimeLine().Match(line) is { Success: true } match
+        && ParseTime(match.Groups["time"].Value) is { } time
+            ? new EpicPlaytimeEvent(match.Groups["app"].Value, match.Groups["what"].Value == "Started", time)
+            : null;
 
     public static EpicLogFacts ParseFile(string path)
     {

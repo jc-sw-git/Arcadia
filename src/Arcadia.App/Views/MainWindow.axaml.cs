@@ -458,11 +458,17 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// Puts the context menu beside the focused cover: to its right, or to its left where the
-    /// right side has no room, top-aligned with the cover and kept inside the window.
+    /// right side has no room, top-aligned with the cover and kept inside the window. Opened without
+    /// a cover, it stands over the preview's "Optionen" button.
     /// </summary>
     private void PlaceGameMenu()
     {
         GameMenuPanel.Opacity = 1;
+        if (_viewModel?.GameMenu is { AtCover: false } && PlaceOverOptionsButton())
+        {
+            return;
+        }
+
         if (MenuAnchor() is not { } cover
             || cover.TranslatePoint(default, GameMenuLayer) is not { } topLeft)
         {
@@ -476,6 +482,20 @@ public partial class MainWindow : Window
         var x = right + width <= GameMenuLayer.Bounds.Width - MenuGap ? right : topLeft.X - MenuGap - width;
         var y = Math.Clamp(topLeft.Y, MenuGap, Math.Max(MenuGap, GameMenuLayer.Bounds.Height - height - MenuGap));
         GameMenuPanel.Margin = new Thickness(Math.Max(MenuGap, x), y, 0, 0);
+    }
+
+    /// <summary>Covers the preview's "Optionen" button with the menu, left and bottom edges on the button's, kept inside the window.</summary>
+    private bool PlaceOverOptionsButton()
+    {
+        if (!PreviewOptionsButton.IsEffectivelyVisible || PreviewOptionsButton.TranslatePoint(default, GameMenuLayer) is not { } topLeft)
+        {
+            return false;
+        }
+
+        var bottom = topLeft.Y + PreviewOptionsButton.Bounds.Height;
+        var x = Math.Clamp(topLeft.X, MenuGap, Math.Max(MenuGap, GameMenuLayer.Bounds.Width - GameMenuPanel.Bounds.Width - MenuGap));
+        GameMenuPanel.Margin = new Thickness(x, Math.Max(MenuGap, bottom - GameMenuPanel.Bounds.Height), 0, 0);
+        return true;
     }
 
     /// <summary>The cover whose menu is open: the focused hit while the search is shown, else the focused cover.</summary>

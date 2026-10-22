@@ -82,23 +82,64 @@ public class FullKeyboardTests
         Assert.Throws<ArgumentException>(() => FullKeyboard.For(german with { Form = KeyboardForm.Ansi }));
     }
 
+    // The board as the focus sees it on a level: caps lock and keys without a character there are empty.
+    private static List<IReadOnlyList<KeySpot>> Spots(FullKeyboard board, KeyLevel level) =>
+        [.. board.Rows.Select((row, r) => (IReadOnlyList<KeySpot>)row
+            .Select(k => new KeySpot(
+                k.CentreIn(r),
+                k.Kind == BoardKeyKind.CapsLock || (k.Kind == BoardKeyKind.Character && k.Cap!.On(level) is null),
+                board.Keys.ToList().IndexOf(k),
+                k.WidthIn(r)))
+            .ToList())];
+
+    private static (int Row, int Column) Find(FullKeyboard board, int row, Func<BoardKey, bool> match) =>
+        (row, board.Rows[row].ToList().FindIndex(k => match(k)));
+
     [Fact]
     public void The_focus_leaves_the_tall_enter_up_and_down_instead_of_landing_on_it_again()
     {
         var board = FullKeyboard.For(KeyboardLayout.German);
-        var rows = board.Rows.Select((row, r) => (IReadOnlyList<KeySpot>)row
-            .Select(k => new KeySpot(k.CentreIn(r), k.Kind == BoardKeyKind.CapsLock, board.Keys.ToList().IndexOf(k))).ToList()).ToList();
-        int Column(int row, Func<BoardKey, bool> match) => board.Rows[row].ToList().FindIndex(k => match(k));
-        var enterTop = Column(1, k => k.Kind == BoardKeyKind.Enter);
-        var enterBottom = Column(2, k => k.Kind == BoardKeyKind.Enter);
-        var backspace = Column(0, k => k.Kind == BoardKeyKind.Backspace);
-        var hash = Column(2, k => k.Cap?.Normal == '#');
-        var rightShift = Column(3, k => k.Kind == BoardKeyKind.Shift && k.Left > 1);
+        var rows = Spots(board, KeyLevel.Normal);
+        var enterTop = Find(board, 1, k => k.Kind == BoardKeyKind.Enter);
+        var enterBottom = Find(board, 2, k => k.Kind == BoardKeyKind.Enter);
+        var backspace = Find(board, 0, k => k.Kind == BoardKeyKind.Backspace);
+        var hash = Find(board, 2, k => k.Cap?.Normal == '#');
+        var rightShift = Find(board, 3, k => k.Kind == BoardKeyKind.Shift && k.Left > 1);
 
-        Assert.Equal((1, enterTop), KeyGrid.Vertical(rows, 0, backspace, 1));
-        Assert.Equal((3, rightShift), KeyGrid.Vertical(rows, 1, enterTop, 1));
-        Assert.Equal((0, backspace), KeyGrid.Vertical(rows, 2, enterBottom, -1));
-        Assert.Equal(enterBottom, KeyGrid.Sideways(rows[2], hash, 1));
-        Assert.Equal(1, KeyGrid.Sideways(rows[2], 1, -1));
+        Assert.Equal(enterTop, KeyGrid.Vertical(rows, 0, backspace.Column, 1));
+        Assert.Equal(rightShift, KeyGrid.Vertical(rows, 1, enterTop.Column, 1));
+        Assert.Equal(backspace, KeyGrid.Vertical(rows, 2, enterBottom.Column, -1));
+        Assert.Equal(enterBottom, KeyGrid.Sideways(rows, 2, hash.Column, 1));
+        Assert.Equal(hash, KeyGrid.Sideways(rows, 2, enterBottom.Column, -1));
+    }
+
+    [Fact]
+    public void On_the_german_altgr_level_the_focus_goes_where_the_keys_are_not_to_the_only_key_of_the_next_row()
+    {
+        // Owner's findings, 2026-10-22: the home row has only Enter on AltGr, the number row nothing left of ².
+        var board = FullKeyboard.For(KeyboardLayout.German);
+        var rows = Spots(board, KeyLevel.AltGr);
+        var tab = Find(board, 1, k => k.Kind == BoardKeyKind.Tab);
+        var leftShift = Find(board, 3, k => k.Kind == BoardKeyKind.Shift && k.Left == 0);
+        var squared = Find(board, 0, k => k.Cap?.AltGr == '²');
+        var tilde = Find(board, 1, k => k.Cap?.AltGr == '~');
+        var enterBottom = Find(board, 2, k => k.Kind == BoardKeyKind.Enter);
+
+        Assert.Equal(leftShift, KeyGrid.Vertical(rows, tab.Row, tab.Column, 1));
+        Assert.Equal(tab, KeyGrid.Vertical(rows, leftShift.Row, leftShift.Column, -1));
+        Assert.Equal(tab, KeyGrid.Sideways(rows, squared.Row, squared.Column, -1));
+        Assert.Equal(tilde, KeyGrid.Sideways(rows, enterBottom.Row, enterBottom.Column, -1));
+    }
+
+    [Fact]
+    public void Left_of_the_first_key_of_a_row_the_focus_goes_to_the_key_beside_it_in_a_neighbouring_row()
+    {
+        var board = FullKeyboard.For(KeyboardLayout.German);
+        var rows = Spots(board, KeyLevel.Normal);
+        var a = Find(board, 2, k => k.Cap?.Normal == 'a');
+        var tab = Find(board, 1, k => k.Kind == BoardKeyKind.Tab);
+
+        Assert.Equal(tab, KeyGrid.Sideways(rows, a.Row, a.Column, -1));
+        Assert.Equal(tab, KeyGrid.Sideways(rows, tab.Row, tab.Column, -1));
     }
 }

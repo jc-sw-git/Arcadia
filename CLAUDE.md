@@ -207,7 +207,10 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   with symbol and name, caps lock a blank key the focus skips, no Ctrl/Alt/Win; a right block with "Layout: DE" (R3),
   "Nach oben/unten" (⧉), "Ausblenden" (B) and the arrows. Whoever shows it decides what it types into and may grey
   out or leave out keys at any time (`IKeyboardTarget`, `Configure`); a left-out key leaves its place empty. With
-  the controller the D-pad (left stick) moves over the keys; in the mouse mode the buttons are the mouse mode's
+  the controller the D-pad (left stick) moves over the keys, passing over empty, greyed-out and left-out ones: left/right
+  at a row's last key go on to the nearest key wholly beside it in another row (² on AltGr: left to ↹), up/down to the
+  nearest key above or below, so a far key in the next row doesn't win over one right below in the row after (↹ on
+  AltGr: down to ⇧, not ↵); the tall Enter is one key in both rows (owner, 2026-10-22); in the mouse mode the buttons are the mouse mode's
   (below). On the
   normal level a key shows its character large, the shift one small above (left out when it is just the capital
   letter) and the AltGr one small at the bottom right; with shift or AltGr on, only that level's characters, keys
@@ -226,7 +229,8 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   naming the default, then "Erlaubt", "Deaktiviert") (owner, 2026-10-20 and 2026-10-21). "Zurück zu Arcadia" is its own setting: View held alone (1–9 s, default 1; no "at once", since a tap of ⧉ moves the mouse mode's keyboard, #110) brings
   Arcadia back from the background, with or without the mouse mode, with a box whose frame fills (owner, 2026-10-20).
   Exceptions per process are planned for later. Mouse mode's on-screen keyboard (#110): Y opens it in front of other
-  windows (own topmost window that never takes the focus; characters go out as Unicode with `SendInput`, ⌫ ↹ ↵ and the
+  windows (own topmost window that never takes the focus and goes back on top whenever another window comes to the
+  front; the Start menu and Windows' other shell flyouts still cover it, only signed programs under Program Files get above them; characters go out as Unicode with `SendInput`, ⌫ ↹ ↵ and the
   arrows as keys), B hides it (layout menu first), the mouse mode goes on. While it is open: D-pad focus, A types,
   X erases (held: repeats), Y space, LB shift (also on ↹ ↵ and the arrows) and RB AltGr as in the search, ≡ Enter,
   R3 layout menu, ⧉ tapped moves it to the other screen edge (saved), ⧉ held = "Zurück zu Arcadia" and ⧉ + ≡ as
@@ -280,7 +284,7 @@ errors land with stack trace in `arcadia.log` and as a toast. No `_ = SomethingA
 - `SystemDecorations` is now `WindowDecorations`. Box shadows of `Button.plain` go on the
   template part: `Button.x /template/ Border#Chrome`.
 - Fluent's `Button` and `ItemsControl` clip to their bounds, so an outer focus ring (BoxShadow) is cut off;
-  `Theme.axaml` sets `ClipToBounds=False` on both. A focus ring also needs room in clipping parents
+  `Theme.axaml` sets `ClipToBounds=False` on both. A `UserControl` clips too; set it on the one whose edge a ring reaches. A focus ring also needs room in clipping parents
   (`ScrollViewer` padding). With several BoxShadows, the later one paints on top.
 - Compiled bindings: every `DataTemplate` needs `x:DataType`; reach the window's view model
   from inside a template with `$parent[Window].((vm:MainViewModel)DataContext)?.Prop`.

@@ -25,6 +25,9 @@ public partial class MouseModeKeyboardWindow : Window
 
     private Screen? _screen;
 
+    // The window in front when the keyboard last went to the top.
+    private IntPtr _foregroundWhenRaised;
+
     public MouseModeKeyboardWindow()
     {
         InitializeComponent();
@@ -62,7 +65,8 @@ public partial class MouseModeKeyboardWindow : Window
         if (OperatingSystem.IsWindows() && TryGetPlatformHandle() is { } handle)
         {
             const uint NoActivateFlag = 0x10, ShowWindow = 0x40;
-            SetWindowPos(handle.Handle, new IntPtr(-1) /* HWND_TOPMOST */, rect.X, rect.Y, rect.Width, rect.Height, NoActivateFlag | ShowWindow);
+            SetWindowPos(handle.Handle, TopMost, rect.X, rect.Y, rect.Width, rect.Height, NoActivateFlag | ShowWindow);
+            _foregroundWhenRaised = GetForegroundWindow();
             var radius = (int)Math.Round(RegionCornerRadius * rect.Height / DesignHeight);
             var region = CreateRoundRectRgn(0, 0, rect.Width + 1, rect.Height + 1, radius * 2, radius * 2);
             if (SetWindowRgn(handle.Handle, region, true) == 0)
@@ -77,6 +81,30 @@ public partial class MouseModeKeyboardWindow : Window
             Width = rect.Width / scaling;
             Height = rect.Height / scaling;
         }
+    }
+
+    /// <summary>
+    /// A window made topmost after the keyboard (a program's "always on top", a notification) would cover it, so each
+    /// time another window comes to the front the keyboard goes to the top again. The Start menu, Windows' search and
+    /// the other shell flyouts lie in a band above every program's window that only signed programs installed under
+    /// Program Files reach (UIAccess); while one of them is open it still covers the keyboard.
+    /// </summary>
+    public void StayOnTop()
+    {
+        if (!OperatingSystem.IsWindows() || !IsVisible || TryGetPlatformHandle() is not { } handle)
+        {
+            return;
+        }
+
+        var foreground = GetForegroundWindow();
+        if (foreground == _foregroundWhenRaised)
+        {
+            return;
+        }
+
+        _foregroundWhenRaised = foreground;
+        const uint NoSize = 0x1, NoMove = 0x2, NoActivateFlag = 0x10;
+        SetWindowPos(handle.Handle, TopMost, 0, 0, 0, 0, NoSize | NoMove | NoActivateFlag);
     }
 
     /// <summary>The keyboard at one edge of the monitor's work area (the taskbar stays visible), sized like the search.</summary>
@@ -98,6 +126,8 @@ public partial class MouseModeKeyboardWindow : Window
             top);
     }
 
+    private static readonly IntPtr TopMost = new(-1);
+
     private const uint NoActivate = 0x08000000;
     private const uint ToolWindow = 0x00000080;
 
@@ -118,6 +148,9 @@ public partial class MouseModeKeyboardWindow : Window
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool SetWindowPos(IntPtr window, IntPtr insertAfter, int x, int y, int width, int height, uint flags);
+
+    [LibraryImport("user32.dll")]
+    private static partial IntPtr GetForegroundWindow();
 
     [LibraryImport("gdi32.dll")]
     private static partial IntPtr CreateRoundRectRgn(int left, int top, int right, int bottom, int cornerWidth, int cornerHeight);

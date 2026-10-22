@@ -3,11 +3,12 @@
              xmlns:kb="using:Arcadia.App.Keyboard"
              x:Class="Arcadia.App.Views.OnScreenKeyboardView"
              x:DataType="kb:OnScreenKeyboardViewModel"
-             Width="1598" Height="292">
+             Width="1598" Height="292" ClipToBounds="False">
 
   <!-- Arcadia's on-screen keyboard, the same in the search and over other windows in the mouse mode (#110): the keys of
        the real keyboard of the chosen layout, placed in the design's pixels (BoardKeyViewModel), and the layout menu. The
-       legend below it is the user's, as only they know which buttons mean what besides the keys. -->
+       legend below it is the user's, as only they know which buttons mean what besides the keys. A UserControl clips to its
+       bounds, which cut the focus ring of the keys at the edges; whoever shows the keyboard leaves room around it. -->
   <Panel>
     <ItemsControl Name="BoardKeys" ItemsSource="{Binding Keys}" Width="1598" Height="292" HorizontalAlignment="Left" VerticalAlignment="Top">
       <ItemsControl.ItemsPanel>

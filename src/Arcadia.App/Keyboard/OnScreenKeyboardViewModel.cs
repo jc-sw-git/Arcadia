@@ -338,21 +338,23 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         }
 
         BuildKeys();
-        SetFocus(_row, NearestInRow(_row, centre));
+        FocusClosest(centre);
     }
 
     /// <summary>Moves the focus over the keys that do something; it stays at the keyboard's edges.</summary>
     private void Move(KeyboardButton direction)
     {
-        switch (direction)
+        (int Row, int Column)? target = direction switch
         {
-            case KeyboardButton.Left or KeyboardButton.Right:
-                SetFocus(_row, KeyGrid.Sideways(Spots(_row), _column, direction == KeyboardButton.Left ? -1 : 1));
-                break;
-            case KeyboardButton.Up or KeyboardButton.Down:
-                var (row, column) = KeyGrid.Vertical(Enumerable.Range(0, _board.Rows.Count).Select(Spots).ToList(), _row, _column, direction == KeyboardButton.Up ? -1 : 1);
-                SetFocus(row, column);
-                break;
+            KeyboardButton.Left => KeyGrid.Sideways(AllSpots(), _row, _column, -1),
+            KeyboardButton.Right => KeyGrid.Sideways(AllSpots(), _row, _column, 1),
+            KeyboardButton.Up => KeyGrid.Vertical(AllSpots(), _row, _column, -1),
+            KeyboardButton.Down => KeyGrid.Vertical(AllSpots(), _row, _column, 1),
+            _ => null,
+        };
+        if (target is { } to)
+        {
+            SetFocus(to.Row, to.Column);
         }
     }
 
@@ -412,7 +414,14 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         }
 
         // AltGr empties most keys, a key may be left out; the focus mustn't stay on one that does nothing.
-        SetFocus(_row, FocusedKey.IsSkipped ? NearestInRow(_row, FocusedKey.Key.CentreIn(_row)) : _column);
+        if (FocusedKey.IsSkipped)
+        {
+            FocusClosest(FocusedKey.Key.CentreIn(_row));
+        }
+        else
+        {
+            SetFocus(_row, _column);
+        }
     }
 
     private void UpdateDockKey()
@@ -431,23 +440,19 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
 
     private int IndexInRow(int row, BoardKeyViewModel key) => _board.Rows[row].ToList().IndexOf(key.Key);
 
-    private List<KeySpot> Spots(int row) =>
-        _board.Rows[row].Select(k => _keyViews[k]).Select(k => new KeySpot(k.Key.CentreIn(row), k.IsSkipped, k.Index)).ToList();
+    private List<IReadOnlyList<KeySpot>> AllSpots() =>
+        Enumerable.Range(0, _board.Rows.Count)
+            .Select(row => (IReadOnlyList<KeySpot>)_board.Rows[row]
+                .Select(k => _keyViews[k])
+                .Select(k => new KeySpot(k.Key.CentreIn(row), k.IsSkipped, k.Index, k.Key.WidthIn(row)))
+                .ToList())
+            .ToList();
 
-    /// <summary>The key in <paramref name="row"/> nearest to <paramref name="centre"/> that the focus may rest on.</summary>
-    private int NearestInRow(int row, double centre)
+    /// <summary>Puts the focus on the key nearest to <paramref name="centre"/> in the focused row that it may rest on.</summary>
+    private void FocusClosest(double centre)
     {
-        var spots = Spots(row);
-        var best = 0;
-        for (var i = 0; i < spots.Count; i++)
-        {
-            if (!spots[i].IsEmpty && (spots[best].IsEmpty || Math.Abs(spots[i].Centre - centre) < Math.Abs(spots[best].Centre - centre)))
-            {
-                best = i;
-            }
-        }
-
-        return best;
+        var (row, column) = KeyGrid.Closest(AllSpots(), _row, centre) ?? (_row, _column);
+        SetFocus(row, column);
     }
 
     private void SetFocus(int row, int column)

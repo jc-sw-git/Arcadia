@@ -949,6 +949,14 @@ Verlauf:
       Tastatur, die Tastatur der Suche fährt aus und nimmt die Belegung aus T110-2/T110-3, die Legende zeigt LS, RT, LT,
       RS, L3. ≡ startet den Treffer. B fährt sie ein, danach sind A und B wieder Klick und Esc. Kommt ein anderes
       Fenster nach vorne, geben die Knöpfe die Tastatur der Suche frei. · E2E: nein
+- [ ] **T110-13** Tastatur im Mausmodus, AltGr an (RB): von ↹ nach unten landet der Fokus auf ⇧ (LB), nicht auf ↵;
+      von ² nach links auf ↹; vom hohen ↵ nach links auf ~, egal ob er von „Löschen“ oder von „Umschalt“ kam. Ohne
+      AltGr: von „a“ nach links auf ↹. In der Suche ebenso (dort ohne ↹: von ² nach links auf ⇧). · E2E: ja
+- [ ] **T110-14** Der Fokusrahmen ist an allen vier Rändern der Tastatur ganz zu sehen (^, ⌫, „Layout: DE“, →, ⇧
+      links unten, Leertaste), im Mausmodus und in der Suche. · E2E: ja
+- [ ] **T110-15** Tastatur offen, ein anderes Fenster „immer im Vordergrund“ (z. B. der Task-Manager mit dieser
+      Option) nach vorne holen: spätestens nach ¼ s liegt die Tastatur wieder darüber. Startmenü und Windows-Suche
+      dürfen sie verdecken, solange sie offen sind (Grenze von Windows, siehe CLAUDE.md). · E2E: nein
 
 Verlauf:
 
@@ -958,6 +966,8 @@ Verlauf:
 | T110-2 bis T110-6 (Logik) | 2026-10-22 | Claude | `dotnet test` (`MouseModeKeyboardTests`, `FullKeyboardTests`, `KeyboardPlacementTests`, `ReturnWithViewTests`, `SettingsServiceTests`) | ✅ Belegung bei offener Tastatur, ⧉ kurz vs. gehalten, ≡ als Enter, Übergabe gehaltener Tasten, ISO/ANSI-Form, Fokus am hohen Enter, Platzierung und Rand, „Sofort“ → 1 s | Echte Eingaben unter Windows nicht geprüft |
 | T110-1 bis T110-9 | 2026-10-22 | Juri | Screenshots aus PR #134 | ⚠️ Sieht gut aus, Test unter Windows später. Neu: dieselbe Tastatur für alle Tastaturen in Arcadia, Module können Tasten ausgrauen oder ausblenden | Suche nutzt die gemeinsame Tastatur (T110-10 bis T110-12 neu) |
 | T110-10 bis T110-12 (nur Ansicht), T110-4 | 2026-10-22 | Claude | Branch nach der gemeinsamen Tastatur, Linux, Xvfb 1920×1080 `--demo`; Suche und Tasten lokal per Testcode ausgelöst (nicht eingecheckt); `dotnet test` (`TextWithCaretTests`) | ✅ Suche mit der gemeinsamen Tastatur (ohne ↹ und „Nach oben“, Plätze leer), Layout-Menü passt in die Tastatur, Einfügemarke nach dreimal ← in „hol\|low“, Mausmodus-Legende in der Suche; Fenster im Mausmodus unverändert (DE mit Umschalt, US oben mit Layout-Menü). Controller, Mausmodus-Weitergabe und Start per ↵ unter Windows nicht geprüft | Lauf am PC des Owners |
+| T110-2, T110-10 | 2026-10-22 | Juri | PC des Owners, PR #134 | ❌ Startmenü liegt über der Tastatur; Fokusrahmen an den Rändern abgeschnitten; mit AltGr führt ↓ von ↹ auf ↵, ← von ² tut nichts, ← vom hohen ↵ hängt davon ab, woher der Fokus kam | Navigation nach Abstand über alle Reihen, das hohe ↵ ist in beiden Reihen eine Taste (Test `On_the_german_altgr_level_…`); `UserControl` schnitt den Rahmen ab; Tastatur geht bei jedem Vordergrundwechsel wieder nach oben, über das Startmenü nur mit UIAccess (T110-13 bis T110-15 neu) |
+| T110-13, T110-14 | 2026-10-22 | Claude | Branch nach dem Fix, Linux, Xvfb 1920×1080 `--demo`; Fenster und Suche lokal per Testcode geöffnet, Tasten ausgelöst (nicht eingecheckt); `dotnet test` (`KeyGridTests`, `FullKeyboardTests`) | ✅ Vor dem Fix Rahmen an ^ und → außen abgeschnitten, danach ganz, im Fenster und in der Suche; AltGr an: Fokus springt von „a“ auf @, ← auf ↹, ↓ auf ⇧. T110-15 nur im Code, unter Windows nicht geprüft | Lauf am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

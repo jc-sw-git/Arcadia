@@ -117,7 +117,7 @@ public sealed class MouseModeHost : IDisposable
             CheckArcadiaInFront();
             UpdateGameBlock();
             UpdateDesktopFilter();
-            CloseKeyboardForGame();
+            FollowForegroundWithKeyboard();
         });
 
         _mode.HoldStarted += fillTime => Dispatcher.UIThread.Post(() => _overlay.ShowHold(fillTime));
@@ -389,10 +389,11 @@ public sealed class MouseModeHost : IDisposable
     private void OnSearchKeyboardClosed() => CloseKeyboard("Tastatur der Suche weg");
 
     /// <summary>
-    /// A game coming to the front closes the keyboard; one that was in front when it opened doesn't. The search's
-    /// keyboard lets go once Arcadia isn't in front, so the buttons don't type into it behind another window.
+    /// A game coming to the front closes the keyboard; one that was in front when it opened doesn't, and any other
+    /// window coming to the front puts the keyboard back on top. The search's keyboard lets go once Arcadia isn't
+    /// in front, so the buttons don't type into it behind another window.
     /// </summary>
-    private void CloseKeyboardForGame()
+    private void FollowForegroundWithKeyboard()
     {
         if (_typingSearch is not null && !IsArcadiaActive)
         {
@@ -409,6 +410,10 @@ public sealed class MouseModeHost : IDisposable
         if (gameInFront && !_gameWasInFront)
         {
             CloseKeyboard("Spiel vorne");
+        }
+        else
+        {
+            _keyboardWindow.StayOnTop();
         }
 
         _gameWasInFront = gameInFront;

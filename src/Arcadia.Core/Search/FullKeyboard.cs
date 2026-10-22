@@ -42,6 +42,9 @@ public sealed record BoardKey(BoardKeyKind Kind, int Row, double Left, double Wi
     /// <summary>The horizontal centre of the key's part in <paramref name="row"/>; the focus moves by these.</summary>
     public double CentreIn(int row) =>
         row != Row && LowerLeft is { } lowerLeft ? (lowerLeft + Left + Width) / 2 : Left + (Width / 2);
+
+    /// <summary>The width of the key's part in <paramref name="row"/>.</summary>
+    public double WidthIn(int row) => row != Row && LowerLeft is { } lowerLeft ? Left + Width - lowerLeft : Width;
 }
 
 /// <summary>

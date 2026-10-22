@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Arcadia.App.Input;
 using Arcadia.App.Search;
+using Arcadia.App.Settings;
 using Arcadia.App.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
@@ -15,8 +16,6 @@ namespace Arcadia.App.Views;
 
 public partial class MainWindow : Window
 {
-    private const double TabScrollStep = 320;
-
     /// <summary>Space between a cover and its context menu, and between the menu and the window's edge.</summary>
     private const double MenuGap = 24;
 
@@ -42,6 +41,12 @@ public partial class MainWindow : Window
     /// <summary>The focus ring around a setting reaches this far beyond it (FocusRing in Theme.axaml).</summary>
     private const double FocusRingRoom = 8;
 
+    /// <summary>A step of RS (or Shift+W/S) through the settings' info panel.</summary>
+    private const double InfoScrollStep = 160;
+
+    /// <summary>Room kept above a focused setting, so its group's heading comes into view with the group's first row.</summary>
+    private const double SettingsGroupRoom = 48;
+
     /// <summary>The pointer must move this far (window pixels) from where it rested to count as the mouse being used.</summary>
     private const double PointerMoveThreshold = 6;
 
@@ -49,6 +54,9 @@ public partial class MainWindow : Window
     private MainViewModel? _viewModel;
     private Point? _restingPointer;
     private SearchViewModel? _search;
+    private SettingsPageViewModel? _settingsPage;
+    private readonly TabStrip _tabs;
+    private readonly TabStrip _categories;
 
     public MainWindow()
     {
@@ -86,9 +94,10 @@ public partial class MainWindow : Window
             _viewModel?.CancelHold();
         };
         GridScroller.ScrollChanged += (_, _) => UpdateGridFades();
-        TabScroller.ScrollChanged += (_, _) => UpdateTabEdges();
-        TabScroller.SizeChanged += (_, _) => UpdateTabEdges();
-        TabScroller.PointerWheelChanged += OnTabsWheel;
+        _tabs = new TabStrip(TabScroller, TabList, TabEdgeLeft, TabEdgeRight, TabDividerLeft, TabDividerRight, () => _viewModel?.IsTabStripShown != false);
+        _categories = new TabStrip(CategoryScroller, CategoryList, CategoryEdgeLeft, CategoryEdgeRight, CategoryDividerLeft, CategoryDividerRight, () => true);
+        InfoScroller.ScrollChanged += (_, _) => UpdateInfoFades();
+        InfoScroller.SizeChanged += (_, _) => UpdateInfoFades();
 
         // Coming back from a launcher: games may have been installed or uninstalled there.
         Activated += async (_, _) =>
@@ -168,16 +177,6 @@ public partial class MainWindow : Window
             Services.AppLog.Write($"Taste: {e.Key} → {action}");
             _viewModel.Handle(action);
             e.Handled = true;
-            FollowSettingsFocus();
-        }
-    }
-
-    /// <summary>After a key or button press: keeps the focused setting in view while the settings are open.</summary>
-    public void FollowSettingsFocus()
-    {
-        if (_viewModel?.IsSettingsOpen == true)
-        {
-            Dispatcher.UIThread.Post(BringFocusedSettingIntoView, DispatcherPriority.Loaded);
         }
     }
 
@@ -196,6 +195,11 @@ public partial class MainWindow : Window
     /// </summary>
     private UiAction? ActionFor(KeyEventArgs e)
     {
+        if (_viewModel is { IsSettingsOpen: true })
+        {
+            return SettingsActionFor(e) ?? UiActionMap.FromKey(e.Key, e.KeyModifiers);
+        }
+
         if (_viewModel is not { IsSearchShown: true, IsDialogOpen: false })
         {
             return UiActionMap.FromKey(e.Key, e.KeyModifiers);
@@ -218,6 +222,19 @@ public partial class MainWindow : Window
             _ => null,
         };
     }
+
+    /// <summary>
+    /// On the settings page Q/E switch the category as LB/RB do, without Shift for now (#15); LT/RT have nothing to turn
+    /// there. Shift+W/S (and Page Up/Down) scroll the info panel as RS does.
+    /// </summary>
+    private static UiAction? SettingsActionFor(KeyEventArgs e) => (e.Key, e.KeyModifiers) switch
+    {
+        (Key.Q, KeyModifiers.None) => UiAction.PreviousTab,
+        (Key.E, KeyModifiers.None) => UiAction.NextTab,
+        (Key.W, KeyModifiers.Shift) or (Key.PageUp, _) => UiAction.SecondaryUp,
+        (Key.S, KeyModifiers.Shift) or (Key.PageDown, _) => UiAction.SecondaryDown,
+        _ => null,
+    };
 
     /// <summary>
     /// A real mouse movement shows the dialogs' ✕. Windows also reports a pointer "move" when only the content under a
@@ -329,10 +346,13 @@ public partial class MainWindow : Window
                 Dispatcher.UIThread.Post(PlaceGameMenu, DispatcherPriority.Loaded);
                 break;
             case nameof(MainViewModel.SelectedTab):
-                Dispatcher.UIThread.Post(BringSelectedTabIntoView, DispatcherPriority.Loaded);
+                Dispatcher.UIThread.Post(() => _tabs.Center(_viewModel?.SelectedTab), DispatcherPriority.Loaded);
                 break;
             case nameof(MainViewModel.IsTabStripShown):
-                Dispatcher.UIThread.Post(UpdateTabEdges, DispatcherPriority.Loaded);
+                Dispatcher.UIThread.Post(_tabs.UpdateEdges, DispatcherPriority.Loaded);
+                break;
+            case nameof(MainViewModel.Settings):
+                FollowSettingsPage(_viewModel?.Settings);
                 break;
             case nameof(MainViewModel.Search):
                 if (_search is not null)
@@ -430,29 +450,59 @@ public partial class MainWindow : Window
         GridFadeBottom.Classes.Set("shown", offset < max - 1);
     }
 
-    /// <summary>
-    /// Scrolls the settings to the item the controller focus is on. A whole section is shown when
-    /// it fits, so e.g. the changelog below "Jetzt aktualisieren" comes into view with it.
-    /// </summary>
-    private void BringFocusedSettingIntoView()
+    /// <summary>The settings page opened or closed: its focus and its info panel are followed from here on.</summary>
+    private void FollowSettingsPage(SettingsPageViewModel? page)
     {
-        // Settings items carry the "focused" class; the dialog's scroll viewer is their nearest one.
-        var focused = this.GetVisualDescendants().OfType<Button>()
-            .FirstOrDefault(b => b.Classes.Contains("focused") && b.IsEffectivelyVisible && b.DataContext is SettingsViewModel or SettingsItemViewModel or MouseModeSettingsViewModel or ReturnWithViewSettingsViewModel or SteamDesktopLayoutSettingsViewModel);
-        if (focused?.FindAncestorOfType<ScrollViewer>() is not { } scroller)
+        if (_settingsPage is not null)
+        {
+            _settingsPage.FocusMoved -= OnSettingsFocusMoved;
+            _settingsPage.InfoScrollRequested -= OnInfoScrollRequested;
+        }
+
+        _settingsPage = page;
+        if (page is not null)
+        {
+            page.FocusMoved += OnSettingsFocusMoved;
+            page.InfoScrollRequested += OnInfoScrollRequested;
+            OnSettingsFocusMoved(page, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>Another row or category: the row comes into view, the info panel starts at its top, the tab stands in the middle.</summary>
+    private void OnSettingsFocusMoved(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
+    {
+        if (_settingsPage is not { } page)
         {
             return;
         }
 
-        var section = focused.FindAncestorOfType<Border>() is { } border && border.Classes.Contains("settingsSection") ? border : null;
-        if (section is not null && section.Bounds.Height <= scroller.Viewport.Height)
+        _categories.Center(page.Selected);
+        InfoScroller.Offset = default;
+        UpdateInfoFades();
+        if (page.FocusedRow is { } row && SettingsRows.ContainerFromItem(row) is { } container)
         {
-            section.BringIntoView();
+            // With room for the focus ring, and above it for the group's heading the row may stand under.
+            var bounds = new Rect(container.Bounds.Size).Inflate(FocusRingRoom);
+            container.BringIntoView(row.StartsGroup ? bounds.Inflate(new Thickness(0, SettingsGroupRoom, 0, 0)) : bounds);
         }
-        else
+    }, DispatcherPriority.Loaded);
+
+    private void OnInfoScrollRequested(object? sender, int direction)
+    {
+        var max = Math.Max(0, InfoScroller.Extent.Height - InfoScroller.Viewport.Height);
+        InfoScroller.Offset = new Vector(0, Math.Clamp(InfoScroller.Offset.Y + (direction * InfoScrollStep), 0, max));
+    }
+
+    /// <summary>A fade shows only at an edge the info panel can still scroll towards; the footer then names RS.</summary>
+    private void UpdateInfoFades()
+    {
+        var offset = InfoScroller.Offset.Y;
+        var max = InfoScroller.Extent.Height - InfoScroller.Viewport.Height;
+        InfoFadeTop.Classes.Set("shown", offset > 1);
+        InfoFadeBottom.Classes.Set("shown", offset < max - 1);
+        if (_settingsPage is { } page)
         {
-            // With room for the focus ring, which the scroll viewer would otherwise cut off at its edge.
-            focused.BringIntoView(new Rect(focused.Bounds.Size).Inflate(FocusRingRoom));
+            page.InfoOverflows = max > 1;
         }
     }
 
@@ -507,47 +557,5 @@ public partial class MainWindow : Window
         }
 
         return _viewModel?.FocusedGame is { } tile ? GameGrid.ContainerFromIndex(_viewModel.PageGames.IndexOf(tile)) : null;
-    }
-
-    /// <summary>
-    /// When not all tabs fit, the strip turns so the selected tab stands in its middle, as far as the ends allow, with
-    /// the faded neighbours on both sides (owner, 2026-10-21).
-    /// </summary>
-    private void BringSelectedTabIntoView()
-    {
-        if (_viewModel?.SelectedTab is not { } tab || TabList.ContainerFromItem(tab) is not { } container)
-        {
-            return;
-        }
-
-        var left = container.TranslatePoint(default, TabList)?.X ?? 0;
-        SetTabOffset(left + (container.Bounds.Width / 2) - (TabScroller.Viewport.Width / 2));
-    }
-
-    /// <summary>The wheel turns the tab strip sideways when not all tabs fit.</summary>
-    private void OnTabsWheel(object? sender, PointerWheelEventArgs e)
-    {
-        SetTabOffset(TabScroller.Offset.X - (e.Delta.Y + e.Delta.X) * TabScrollStep);
-        e.Handled = true;
-    }
-
-    private void SetTabOffset(double offset)
-    {
-        var max = Math.Max(0, TabScroller.Extent.Width - TabScroller.Viewport.Width);
-        TabScroller.Offset = new Vector(Math.Clamp(offset, 0, max), 0);
-        Dispatcher.UIThread.Post(UpdateTabEdges, DispatcherPriority.Background);
-    }
-
-    private void UpdateTabEdges()
-    {
-        var offset = TabScroller.Offset.X;
-        var max = Math.Max(0, TabScroller.Extent.Width - TabScroller.Viewport.Width);
-        TabEdgeLeft.IsVisible = offset > 1;
-        TabEdgeRight.IsVisible = offset < max - 1;
-
-        // At its widest the strip is as close to logo and status as it gets; the dividers mark that (owner, 2026-10-21).
-        var widest = max > 0 && _viewModel?.IsTabStripShown != false;
-        TabDividerLeft.Classes.Set("shown", widest);
-        TabDividerRight.Classes.Set("shown", widest);
     }
 }

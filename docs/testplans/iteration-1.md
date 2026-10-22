@@ -908,6 +908,45 @@ Verlauf:
 | T94-1, T94-3, T94-5, T94-7 (Logik) | 2026-10-21 | Claude | `dotnet test`, Linux: `RunningGamesTrackerTests` | ⚠️ Nur das Ende eines aus Arcadia gestarteten Spiels meldet „aus Arcadia“, auch nach der Übergabe beim Update; Fenster und Vordergrund nur unter Windows prüfbar | Lauf am PC des Owners |
 | T94-1 | 2026-10-21 | Juri | PC des Owners, Branch `feat/laufende-spiele-anzeigen-94-95` (Stand 25197b1), Debug aus VS Code (Arcadia als Teil des .NET-Host-Prozesses) | ✅ Nach dem Beenden des Spiels kam Arcadia wieder nach vorne. Danach kurz 1,2 % CPU, vermutlich das Neueinlesen der Bibliothek nach dem Spielende (Spielzeit, „Zuletzt gespielt“), das gleich und 30 s später läuft | — |
 
+## #15 Einstellungsseite mit Kategorien im Header
+
+- [ ] **T15-1** In der Bibliothek auf Seite 2 ein Spiel fokussieren, ≡ drücken: Die Einstellungen ersetzen die ganze
+      Seite. B führt zurück auf denselben Tab, dieselbe Seite und dasselbe Spiel. Ebenso mit Enter und Esc, mit einem
+      Klick auf den Chip und ✕, und von einer Detailseite aus (B führt auf die Detailseite zurück). · E2E: ja
+- [ ] **T15-2** LB/RB, Q/E und ein Klick auf eine Kategorie wechseln die Kategorie; nach der letzten kommt die erste.
+      Der gewählte Tab steht in der Mitte; folgen mehr Kategorien, als Platz haben, fadet die Leiste an diesem Ende aus.
+      Den Fadeout erst prüfbar, wenn es genug Kategorien gibt (#136 und später). · E2E: ja
+- [ ] **T15-3** Steam Controller Support an, Steam beenden: Neben „Controller“ steht das Warnsymbol. Ein Spiel mit
+      „Steam Input“ starten (SISR pausiert, nur Info): kein Symbol. Ein Fehler (SISR stürzt wiederholt ab) zeigt das
+      rote X. · E2E: nein (Steam, SISR)
+- [ ] **T15-4** Nur mit dem Controller in „Controller“: ▲ ▼ fokussieren Zeile für Zeile und halten am Ende an, die Zeile
+      bleibt im Bild samt Gruppenüberschrift. ◀ ▶ ändern Schalter und Auswahlen sofort, A schaltet um bzw. zählt weiter,
+      bei Aktionen („Beheben“, „Aktualisieren“, „SISR installieren“) löst A sie aus. „Mausmodus: Aus“ graut die
+      abhängigen Zeilen aus, ihre Werte bleiben. Nach einem Neustart sind alle Änderungen noch da. · E2E: ja
+- [ ] **T15-5** Der Footer nennt nur die Tasten der fokussierten Zeile („◀▶ Ändern“, „A Umschalten“, „A Beheben“ …),
+      dazu „LB RB Kategorie“ und „B Zurück“; nach einer Taste oder einem Klick die Tasten und die Maus. · E2E: ja
+- [ ] **T15-6** „Mausmodus – so funktioniert's“ fokussieren: Das Infopanel zeigt die Tasten und die Grenzen, unten fadet
+      es aus, der Footer nennt RS. RS, Umschalt+W/S, Bild auf/ab und das Mausrad scrollen; oben fadet es dann aus. Eine
+      andere Zeile beginnt das Infopanel wieder oben. · E2E: ja
+- [ ] **T15-7** „SISR installieren“ bei laufendem Steam: „Steam beenden?“ erscheint als Dialog über der Seite; B schließt
+      nur den Dialog, die Seite bleibt. Während Steam oder SISR starten, nimmt die Kategorie keine Eingaben an, B und
+      LB/RB gehen. · E2E: nein (SISR, Steam)
+- [ ] **T15-8** „Über Arcadia“ im installierten älteren Release-Kandidaten: Version, „Nach Updates suchen“, „Jetzt
+      aktualisieren“ und „Was ist neu“ (Versionen im Infopanel) sind Zeilen; A auf „Jetzt aktualisieren“ aktualisiert.
+      · E2E: nein (Update)
+- [ ] **T15-9** Mit einer Hand an der Tastatur (W/S, A/D, Leertaste, Esc, Q/E, Umschalt+W/S) und allein mit der Maus
+      (Klick auf Zeilen, Pfeile neben den Werten, Kategorien, ✕, Mausrad im Infopanel) ist jede Einstellung erreichbar.
+      · E2E: ja
+- [ ] **T15-10** Die Symbole im Header der Bibliothek öffnen die passende Kategorie: Controller-Warnung und
+      SISR-Update „Controller“, Arcadia-Update „Über Arcadia“. · E2E: ja
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T15-1, T15-2, T15-4 bis T15-6, T15-9 | 2026-10-22 | Claude | Branch `feat/einstellungsseite-mit-kategorien-im-header-15`, Linux, Avalonia headless gerendert 1920×1080, `--demo`-Bibliothek, Controller-Aktionen ins View-Model, Tastatur über `NoteKeyboard`, Klicks über Headless-Eingaben | ⚠️ Seite, Kategorien, Gruppen, Werte, Ausgrauen, Infopanel mit Scrollen und Fades, Footer für Controller und Tastatur, Klick auf Pfeil, Kategorie und ✕ wie erwartet; echte Tasten und echter Controller nicht, Fadeout der Leiste mangels Kategorien nicht | Lauf am PC des Owners |
+| T15-3, T15-7, T15-8 | 2026-10-22 | Claude | wie oben | ⚠️ Unter Linux ist Steam Controller Support „nur unter Windows verfügbar“, kein Update: nur `HealthIssuesTests` (Symbol nur bei Warnung oder Fehler) und `ListFocusTests` | Lauf am PC des Owners |
+
 ## Grundgerüst (ohne Issue)
 
 Alles, was Arcadia schon kann, aber zu keinem Issue gehört (Grundgerüst aus `docs/roadmap.md`,

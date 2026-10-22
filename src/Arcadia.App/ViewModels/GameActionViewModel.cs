@@ -1,3 +1,4 @@
+using Arcadia.App.Settings;
 using Arcadia.Launchers.Abstractions;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;

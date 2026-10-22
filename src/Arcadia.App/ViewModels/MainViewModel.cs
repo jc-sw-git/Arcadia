@@ -3,6 +3,7 @@ using System.ComponentModel;
 using Arcadia.App.Input;
 using Arcadia.App.Search;
 using Arcadia.App.Services;
+using Arcadia.App.Settings;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
@@ -97,7 +98,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSettingsOpen))]
-    public partial SettingsViewModel? Settings { get; private set; }
+    public partial SettingsPageViewModel? Settings { get; private set; }
 
     public bool IsSettingsOpen => Settings is not null;
 
@@ -1102,12 +1103,32 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     }
 
     [RelayCommand]
-    private void OpenSettings() => Settings = new SettingsViewModel(_controllerSupport, _updates, _settings, _updates.InstallAsync);
+    private void OpenSettings() => ShowSettings(first: null);
+
+    /// <summary>The header's Steam Controller symbols: straight to the category the message belongs to.</summary>
+    [RelayCommand]
+    private void OpenControllerSettings() => ShowSettings(typeof(ControllerSettingsViewModel));
+
+    /// <summary>The header's Arcadia update symbol.</summary>
+    [RelayCommand]
+    private void OpenAboutSettings() => ShowSettings(typeof(AboutSettingsViewModel));
+
+    /// <summary>The settings page (#15) in place of the library, which stays as it is underneath for the way back.</summary>
+    private void ShowSettings(Type? first)
+    {
+        var changes = new SettingsChanges(_settings);
+        SettingsCategoryViewModel[] categories =
+        [
+            new ControllerSettingsViewModel(_controllerSupport, changes),
+            new AboutSettingsViewModel(_updates, _updates.InstallAsync),
+        ];
+        Settings = new SettingsPageViewModel(categories, changes, categories.FirstOrDefault(c => c.GetType() == first));
+    }
 
     [RelayCommand]
     private void CloseSettings() => Settings = null;
 
-    partial void OnSettingsChanged(SettingsViewModel? oldValue, SettingsViewModel? newValue)
+    partial void OnSettingsChanged(SettingsPageViewModel? oldValue, SettingsPageViewModel? newValue)
     {
         oldValue?.Dispose();
         UpdateGameMouseModeState();

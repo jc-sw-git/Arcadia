@@ -52,6 +52,27 @@ public enum ControllerSupportSetup
 
 public sealed record HealthIssue(string Id, HealthSeverity Severity, string Title, string Detail, HealthFix Fix = HealthFix.None, string? FixLabel = null);
 
+public static class HealthIssues
+{
+    /// <summary>
+    /// The worst level among the problems: a warning or an error, the symbol beside the settings category they belong to
+    /// (#15). Null when there are none or only information, which is intended behaviour and marks nothing.
+    /// </summary>
+    public static HealthSeverity? WorstProblem(IEnumerable<HealthIssue> issues)
+    {
+        HealthSeverity? worst = null;
+        foreach (var issue in issues)
+        {
+            if (issue.Severity > HealthSeverity.Info && (worst is null || issue.Severity > worst))
+            {
+                worst = issue.Severity;
+            }
+        }
+
+        return worst;
+    }
+}
+
 /// <summary>
 /// Where Arcadia's SISR is in its life. Every change goes through one method, which knows the
 /// allowed transitions; the UI reads only this state.

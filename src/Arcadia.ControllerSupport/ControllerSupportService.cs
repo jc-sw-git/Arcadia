@@ -123,6 +123,12 @@ public sealed class ControllerSupportService(
     private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(24);
     private static readonly TimeSpan StartupGrace = TimeSpan.FromSeconds(15);
 
+    /// <summary>
+    /// Right after its start SISR may see a pad as Steam's virtual gamepad until it forces its marker's layout
+    /// (about 2 s in sisr.log); only what it reports after that counts towards a pause for another controller.
+    /// </summary>
+    private static readonly TimeSpan OtherControllerGrace = TimeSpan.FromSeconds(5);
+
     /// <summary>How long Steam may take to log in before the settings say so; a normal start takes seconds.</summary>
     private static readonly TimeSpan SteamLoginGrace = TimeSpan.FromSeconds(30);
 
@@ -187,7 +193,20 @@ public sealed class ControllerSupportService(
     private int? _steamInputCheckedFor;
 
     /// <summary>Other controllers SISR emulates while no Steam game runs, for the log and the settings.</summary>
-    private volatile string? _otherControllers;
+    private volatile OtherControllers? _otherControllers;
+
+    /// <summary>Checks in a row that saw SISR emulate another controller outside a game; one alone may be SISR starting up.</summary>
+    private int _otherControllerSightings;
+
+    /// <summary>The other controllers SISR is paused for outside a game (#143).</summary>
+    private volatile OtherControllers? _otherControllerPause;
+
+    /// <summary>"Erneut versuchen" ends the pause for another controller.</summary>
+    private volatile bool _otherControllerRetry;
+
+    /// <summary>Completed to have the watches of paused games look again now instead of after their next delay.</summary>
+    private TaskCompletionSource _lookAtPausesNow = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     private bool _checkedThisSession;
     private bool _initialized;
 
@@ -803,9 +822,17 @@ public sealed class ControllerSupportService(
             return;
         }
 
-        var others = controllers.Others.Count > 0 ? string.Join(", ", controllers.Others.Select(c => c.Description)) : null;
+        var others = OtherControllers.Of(controllers.Others);
         if (others is not null && _platform.RunningSteamAppId() is { } appId
-            && await PauseForSteamGameAsync(appId, others, $"SISR bildet einen anderen Controller als den Steam Controller nach ({others})", cancellationToken))
+            && await PauseForSteamGameAsync(appId, others.Names, $"SISR bildet einen anderen Controller als den Steam Controller nach ({others.ForLog})", cancellationToken))
+        {
+            return;
+        }
+
+        _otherControllerSightings = others is null ? 0
+            : time.GetUtcNow() - _lastStart > OtherControllerGrace ? _otherControllerSightings + 1
+            : _otherControllerSightings;
+        if (others is not null && _otherControllerSightings >= 2 && await PauseForOtherControllerAsync(others, cancellationToken))
         {
             return;
         }
@@ -815,7 +842,7 @@ public sealed class ControllerSupportService(
             _otherControllers = others;
             Log?.Invoke(others is null
                 ? "SISR bildet nur noch Steam Controller nach"
-                : $"SISR bildet einen anderen Controller als den Steam Controller nach, ohne dass ein Steam-Spiel läuft: {others}");
+                : $"SISR bildet einen anderen Controller als den Steam Controller nach, ohne dass ein Steam-Spiel läuft: {others.ForLog}");
         }
 
         if (controllers.SteamControllers > 0)
@@ -891,6 +918,82 @@ public sealed class ControllerSupportService(
         {
             _gate.Release();
         }
+    }
+
+    /// <summary>
+    /// Outside a game SISR emulates other controllers when Steam Input takes their whole type (Steam → Einstellungen →
+    /// Controller → Erweiterte Controllereinstellungen). Steam then takes SISR's virtual pads again and SISR emulates
+    /// those too: on the owner's PC (2026-10-22, #143) the Steam Controller worked only now and then, and pads with
+    /// sticks stuck at an edge drove Arcadia for minutes. So SISR pauses until Steam's setting for Xbox and
+    /// generic pads goes off (if it was on) or the user asks to try again. False if an action holds the gate.
+    /// </summary>
+    private async Task<bool> PauseForOtherControllerAsync(OtherControllers others, CancellationToken cancellationToken)
+    {
+        if (!await _gate.WaitAsync(TimeSpan.Zero, cancellationToken))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (!Enabled || IsPaused || _shuttingDown || !sisr.IsRunning)
+            {
+                return true;
+            }
+
+            var defaults = await Task.Run(() => _platform.SteamInputDefaults(), cancellationToken);
+            var coveredByDefault = defaults?.CoversOtherControllersByDefault == true;
+            Log?.Invoke($"SISR bildet ohne Steam-Spiel einen anderen Controller nach ({others.ForLog}), Steam Input: {defaults?.Description ?? "Einstellung nicht lesbar"}. SISR pausiert, bis {(coveredByDefault ? "Steam Input für Xbox- und generische Controller aus ist oder " : string.Empty)}„Erneut versuchen“ gewählt wird");
+            _otherControllers = null;
+            _otherControllerSightings = 0;
+            _otherControllerRetry = false;
+            _otherControllerPause = others;
+            PauseWhile(
+                () => !_otherControllerRetry && !(coveredByDefault && _platform.SteamInputDefaults()?.CoversOtherControllersByDefault == false),
+                startTimeout: TimeSpan.Zero,
+                "anderer Controller",
+                steamInput: null,
+                ended: () =>
+                {
+                    _otherControllerPause = null;
+                    Log?.Invoke(_otherControllerRetry ? "SISR wird erneut versucht" : "Steam Input für andere Controller ist aus: SISR läuft wieder");
+                });
+            await StopSisrAndReleaseControllerAsync(cancellationToken);
+            return true;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>The owner's advice (2026-10-22) when another controller uses Steam Input outside a game.</summary>
+    private const string SteamInputAdvice =
+        "Es wird empfohlen, in Steam die Steam-Eingabe nur für den Steam Controller zu verwenden, wenn gleichzeitig die Steam Controller Kompatibilität in Arcadia genutzt wird. "
+        + "Schalte sie daher für andere Gamepads in Steam unter Einstellungen → Controller → Erweiterte Controllereinstellungen aus. "
+        + "Es kann sonst zu unvorhergesehenem Verhalten wie Phantomeingaben oder nicht erkannten Controllereingaben kommen.";
+
+    /// <summary>Controllers other than the Steam Controller that SISR emulates: named for the settings, with USB ids for the log.</summary>
+    private sealed record OtherControllers(string Names, int Count, string ForLog)
+    {
+        /// <summary>
+        /// The pads by their own names; SISR's own virtual pads that Steam took again only carry Steam's or SDL's
+        /// stand-in names (<see cref="SisrGamepad.HasStandInName"/>) and are left out unless nothing else is there.
+        /// </summary>
+        public static OtherControllers? Of(IReadOnlyList<SisrGamepad> pads)
+        {
+            if (pads.Count == 0)
+            {
+                return null;
+            }
+
+            var named = pads.Where(p => !p.HasStandInName).ToList();
+            var shown = (named.Count > 0 ? named : pads).Select(p => p.DisplayName).Distinct().ToList();
+            return new(string.Join(", ", shown), shown.Count, string.Join(", ", pads.Select(p => p.Description)));
+        }
+
+        /// <summary>The verb after <see cref="Names"/>.</summary>
+        public string Use => Count == 1 ? "verwendet" : "verwenden";
     }
 
     /// <summary>What the settings say while SISR is paused for a Steam game with Steam Input for other controllers.</summary>
@@ -972,6 +1075,7 @@ public sealed class ControllerSupportService(
             sisr.StopExternalInstances();
             return Task.CompletedTask;
         }, cancellationToken),
+        HealthFix.RestartSisr when _otherControllerPause is not null => RetryAfterOtherController(),
         HealthFix.RestartSisr => RunBusyAsync("SISR wird neu gestartet …", async token =>
         {
             await StopSisrAsync(token);
@@ -980,6 +1084,17 @@ public sealed class ControllerSupportService(
         }, cancellationToken),
         _ => Task.CompletedTask,
     };
+
+    /// <summary>
+    /// Ends the pause for another controller at once and starts SISR. If Steam Input still takes another
+    /// controller, SISR reports it within a few seconds, without any input on it, and the pause begins again.
+    /// </summary>
+    private Task RetryAfterOtherController()
+    {
+        _otherControllerRetry = true;
+        Interlocked.Exchange(ref _lookAtPausesNow, new(TaskCreationOptions.RunContinuationsAsynchronously)).TrySetResult();
+        return Task.CompletedTask;
+    }
 
     /// <summary>
     /// Called right before <paramref name="game"/> starts. If SISR must not run for it, SISR is
@@ -1090,7 +1205,7 @@ public sealed class ControllerSupportService(
             {
                 while (running())
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(3), time);
+                    await Task.WhenAny(Task.Delay(TimeSpan.FromSeconds(3), time), Volatile.Read(ref _lookAtPausesNow).Task);
                 }
             }
         }
@@ -1186,11 +1301,20 @@ public sealed class ControllerSupportService(
                 $"In diesem Spiel gilt Steam Input auch für andere Controller als den Steam Controller{controllers}. Solange SISR läuft, bekäme das Spiel von ihnen keine Eingaben. Bis es endet, bekommt es alle Controller über Steam Input, auch den Steam Controller. Soll der Steam Controller als Xbox Controller ankommen, schalte in Steam in den Controller-Einstellungen des Spiels Steam Input für die anderen Controller aus."));
         }
 
+        if (_otherControllerPause is { } blocking)
+        {
+            issues.Add(new("sisr-paused-other-controller-type", HealthSeverity.Warning, "SISR pausiert wegen eines anderen Controllers",
+                $"SISR wurde pausiert, weil {blocking.Names} in Steam ebenfalls Steam-Eingabe als Steuerungsmethode {blocking.Use}. {SteamInputAdvice}",
+                HealthFix.RestartSisr, "Erneut versuchen"));
+        }
+
         var state = State;
         if (state is SisrState.Running or SisrState.NoController && _otherControllers is { } others)
         {
-            issues.Add(new("sisr-other-controller", HealthSeverity.Warning, "SISR übernimmt einen anderen Controller",
-                $"SISR bildet auch {others} nach, weil Steam Input für diesen Controller eingeschaltet ist. Arcadia zählt ihn nicht als Steam Controller. Schalte Steam Input für diese Controller in Steams Controller-Einstellungen aus."));
+            // Seen on the owner's PC (2026-10-22, #143): Steam Input on for a whole controller type in Steam's
+            // settings hands that pad to SISR outside any game, and the Steam Controller stops working.
+            issues.Add(new("sisr-other-controller", HealthSeverity.Warning, "Anderer Controller verwendet Steam-Eingabe",
+                $"{others.Names} {others.Use} in Steam ebenfalls Steam-Eingabe als Steuerungsmethode. {SteamInputAdvice}"));
         }
 
         if (state == SisrState.Failed)
@@ -1353,7 +1477,7 @@ public sealed class ControllerSupportService(
             }
 
             var steamControllers = controllers?.SteamControllers ?? 0;
-            Log?.Invoke($"SISR bereit: {steamControllers} Steam Controller und {controllers?.Others.Count ?? 0} andere Controller emuliert");
+            Log?.Invoke($"SISR bereit: {steamControllers} Steam Controller und {controllers?.Others.Count ?? 0} andere Controller über Steam Input");
 
             // Only if nothing stopped or restarted SISR meanwhile. Other controllers are the quick check's to pause for.
             var next = !sisr.IsRunning ? SisrState.Stopped : steamControllers > 0 ? SisrState.Running : SisrState.NoController;

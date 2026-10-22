@@ -24,6 +24,12 @@ public sealed record SteamInputSetting(string? GameSetting, bool XboxSupport, bo
         _ => null,
     };
 
+    /// <summary>
+    /// Steam Input takes Xbox or generic pads outside games too (Steam → Einstellungen → Controller → Erweiterte
+    /// Controllereinstellungen). How Steam stores the same for PlayStation and Nintendo pads isn't known yet.
+    /// </summary>
+    public bool CoversOtherControllersByDefault => XboxSupport || GenericSupport;
+
     /// <summary>For the log.</summary>
     public string Description =>
         $"UseSteamControllerConfig {GameSetting ?? "nicht gesetzt"}, Xbox-Unterstützung {(XboxSupport ? "an" : "aus")}, generische Unterstützung {(GenericSupport ? "an" : "aus")}";

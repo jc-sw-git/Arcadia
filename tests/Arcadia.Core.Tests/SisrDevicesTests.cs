@@ -11,6 +11,8 @@ public sealed class SisrDevicesTests
     [InlineData(@"\\?\hid#vid_28de&pid_1142&mi_01#7&abc&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}", "Steam Controller")]
     [InlineData(@"\\?\HID#VID_28DE&PID_1205&MI_02#8&abc&0&0000", "Steam Deck")]
     [InlineData(null, "Steam Controller")]
+    // Steam's virtual gamepad that SISR paired with itself because it opened before the physical controller.
+    [InlineData(@"\\?\HID#VID_28DE&PID_11FF&IG_00#8&abc&0&0000", "Steam Controller")]
     public void A_Valve_device_is_a_Steam_Controller(string? path, string name)
     {
         Assert.True(new SisrGamepad(name, path).IsValveController);
@@ -38,6 +40,18 @@ public sealed class SisrDevicesTests
         Assert.Equal("Xbox 360 Controller (ohne USB-ID)", new SisrGamepad("Xbox 360 Controller", "XInput#0").Description);
     }
 
+    [Theory]
+    [InlineData("#controller_xbox360", "Xbox 360 Controller")]
+    [InlineData("#Controller_PS5", "PlayStation 5 Controller")]
+    [InlineData("#controller_switch_pro", "Nintendo Switch Pro Controller")]
+    [InlineData("#controller_something_new", "Controller (something new)")]
+    [InlineData("8BitDo Ultimate 2", "8BitDo Ultimate 2")]
+    [InlineData(null, "Unbekannter Controller")]
+    public void The_settings_name_Steams_controller_types_in_plain_words(string? name, string shown)
+    {
+        Assert.Equal(shown, new SisrGamepad(name, "XInput#0").DisplayName);
+    }
+
     [Fact]
     public async Task Only_emulated_devices_count_and_one_without_a_physical_device_counts_as_Steam_Controller()
     {
@@ -58,6 +72,26 @@ public sealed class SisrDevicesTests
         Assert.Equal(2, controllers.SteamControllers);
         Assert.Equal("Xbox 360 Controller", Assert.Single(controllers.Others).Name);
         Assert.Equal(3, controllers.Total);
+    }
+
+    [Fact]
+    public async Task A_pad_Steam_Input_hands_to_SISR_counts_before_SISR_emulates_it()
+    {
+        // SISR creates the VIIPER device only on the pad's first input; Steam's virtual gamepad is there before.
+        const string devices = """
+            [
+              {"real_device":{"id":4,"name":"Steam Controller","path":"\\\\?\\HID#VID_28DE&PID_1304&MI_02#8&1&0&0000","player_index":0},"steam_virtual_device":{"id":8,"name":"Steam Controller","steam_handle":"557011650481269","player_index":0},"viiper_device":{"busId":1,"devId":"1"}},
+              {"real_device":{"id":7,"name":"8BitDo Ultimate 2 Wireless Controller for PC","path":"XInput#1","player_index":1},"steam_virtual_device":{"id":9,"name":"8BitDo Ultimate 2 Wireless Controller for PC","steam_handle":"445232051150315420","player_index":1}},
+              {"real_device":{"id":5,"name":"PS5 Controller","path":"\\\\?\\HID#VID_054C&PID_0CE6&MI_03#8&1&0&0000","player_index":2}}
+            ]
+            """;
+        using var http = new HttpClient(new DevicesHandler(devices));
+
+        var controllers = await new SisrApiClient(http, SisrHost.ApiPort).GetEmulatedControllersAsync();
+
+        Assert.NotNull(controllers);
+        Assert.Equal(1, controllers.SteamControllers);
+        Assert.Equal("8BitDo Ultimate 2 Wireless Controller for PC", Assert.Single(controllers.Others).Name);
     }
 
     [Fact]

@@ -53,6 +53,7 @@ public sealed class MouseModeRows
             MouseModeSettings.Max)
         {
             Group = Group,
+            Indent = 1,
             Subtitle = "So lange müssen ⧉ und ≡ gehalten werden.",
             Info = [new InfoText("So lange müssen ⧉ und ≡ gehalten werden.")],
         };
@@ -66,6 +67,7 @@ public sealed class MouseModeRows
             MouseModeSettings.Max)
         {
             Group = Group,
+            Indent = 1,
             Subtitle = "Wie schnell [LS] den Mauszeiger bewegt.",
             Info = [new InfoText("Wie schnell [LS] den Mauszeiger bewegt. [L3] macht ihn langsamer.")],
         };
@@ -76,6 +78,7 @@ public sealed class MouseModeRows
             value => Change(s => s with { EndWhenArcadiaInFront = value }))
         {
             Group = Group,
+            Indent = 1,
             Subtitle = "Nur „Von Hand“",
             Info = [new InfoText("Nur „Von Hand“: Sobald du wieder in das Fenster von Arcadia klickst oder Arcadia nach vorne holst (z. B. durch „Mit ⧉ zurück zu Arcadia“), schaltet sich der Mausmodus automatisch ab. Aktivierst du den Mausmodus von Hand, während Arcadia bereits im Vordergrund ist, bleibt er so lange aktiv, bis Arcadia das nächste Mal in den Vordergrund zurückgeholt wird, also z. B. durch Raus- und wieder Reinklicken.")],
         };
@@ -89,6 +92,7 @@ public sealed class MouseModeRows
             (int)MouseModeInGames.PerGame)
         {
             Group = Group,
+            Indent = 1,
             Subtitle = "Nur „Von Hand“",
         };
         _perGameDefault = new ChoiceRowViewModel(
@@ -101,6 +105,7 @@ public sealed class MouseModeRows
             1)
         {
             Group = Group,
+            Indent = 2,
             Subtitle = "Vorausgewählt für jedes Spiel auf der Detailseite",
             Info = [new InfoText("„Standard“ ist für jedes Spiel auf der Detailseite vorausgewählt. „Erlaubt“ wird den Mausmodus erlauben. „Deaktiviert“ wird ihn deaktivieren.")],
         };
@@ -211,6 +216,7 @@ public sealed class ReturnWithViewRows
             ReturnWithViewSettings.Max)
         {
             Group = Group,
+            Indent = 1,
             Subtitle = "So lange muss ⧉ gehalten werden.",
             Info = [new InfoText("So lange muss ⧉ gehalten werden. Kurz gedrückt schiebt ⧉ die Bildschirmtastatur des Mausmodus an den anderen Bildschirmrand.")],
         };

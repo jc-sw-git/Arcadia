@@ -785,6 +785,31 @@
     <Setter Property="LetterSpacing" Value="1.5" />
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
   </Style>
+  <!-- A group of settings in a box of its own; each row is a piece of it, the first and last round it off (owner,
+       2026-10-22). The padding leaves room for the focus ring. -->
+  <Style Selector="Border.groupBox">
+    <Setter Property="Background" Value="{StaticResource Surface}" />
+    <Setter Property="Padding" Value="8,1" />
+  </Style>
+  <Style Selector="Border.groupBox.first">
+    <Setter Property="Padding" Value="8,8,8,1" />
+    <Setter Property="CornerRadius" Value="20,20,0,0" />
+  </Style>
+  <Style Selector="Border.groupBox.last">
+    <Setter Property="Padding" Value="8,1,8,8" />
+    <Setter Property="CornerRadius" Value="0,0,20,20" />
+  </Style>
+  <Style Selector="Border.groupBox.first.last">
+    <Setter Property="Padding" Value="8" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+  <!-- A setting that depends on the one above it stands in below it (owner, 2026-10-22). -->
+  <Style Selector="Button.settingRow.indent">
+    <Setter Property="Margin" Value="36,0,0,0" />
+  </Style>
+  <Style Selector="Button.settingRow.indentTwice">
+    <Setter Property="Margin" Value="72,0,0,0" />
+  </Style>
   <Style Selector="Button.settingRow.pageRow">
     <Setter Property="MinHeight" Value="74" />
     <Setter Property="Padding" Value="18,12,22,12" />

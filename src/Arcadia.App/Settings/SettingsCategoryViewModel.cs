@@ -101,9 +101,11 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     {
         // A row may change its group without moving (a launcher switched off, #136).
         string? group = null;
-        foreach (var row in rows)
+        for (var i = 0; i < rows.Count; i++)
         {
-            row.StartsGroup = row.Group is not null && row.Group != group;
+            var row = rows[i];
+            row.StartsGroup = i == 0 || row.Group != group;
+            row.EndsGroup = i == rows.Count - 1 || rows[i + 1].Group != row.Group;
             group = row.Group;
         }
 

@@ -43,11 +43,29 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     /// <summary>The heading of the group the row belongs to, e.g. "MAUSMODUS"; may change while the row is shown (#136).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGroupHeading))]
     public partial string? Group { get; set; }
 
-    /// <summary>The first row of its group: the group's heading stands above it.</summary>
+    /// <summary>The first row of its group: the group's heading stands above it, and its box begins.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGroupHeading))]
     public partial bool StartsGroup { get; set; }
+
+    public bool HasGroupHeading => StartsGroup && !string.IsNullOrEmpty(Group);
+
+    /// <summary>The last row of its group: the group's box ends below it (owner, 2026-10-22).</summary>
+    [ObservableProperty]
+    public partial bool EndsGroup { get; set; }
+
+    /// <summary>
+    /// How far the row stands in: 1 below the setting it depends on, 2 below one that depends itself (owner,
+    /// 2026-10-22), e.g. "Haltedauer" under "Mausmodus".
+    /// </summary>
+    public int Indent { get; init; }
+
+    public bool IsIndented => Indent == 1;
+
+    public bool IsIndentedTwice => Indent >= 2;
 
     [ObservableProperty]
     public partial bool IsFocused { get; set; }

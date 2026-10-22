@@ -117,12 +117,12 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             value => changes.Apply(s => s with { IgnoreSteamDesktopLayout = value }, "Steams Desktop-Belegung ignorieren"))
         {
             Group = "STEAM",
-            Subtitle = "Maus und Tasten, die Steam aus dem Controller macht, verwerfen",
+            Subtitle = "Z. B. Steams Alt+Tab bei ⧉ + ≡ verwerfen",
             Info =
             [
-                new InfoText("Läuft Steam, macht es außerhalb von Spielen selbst Maus und Tasten aus dem Controller („Desktop-Belegung“), z. B. aus ⧉ + ≡ ein Alt+Tab oder aus dem rechten Stick die Maus. Arcadia bekommt dann jede Eingabe doppelt: als Controller-Taste und als Maus oder Taste von Steam."),
-                new InfoText("Ist die Option an, verwirft Arcadia diese Maus- und Tasteneingaben, solange ein Controller benutzt wird. Echte Maus und Tastatur wirken weiter. Neben einem Spiel aus der Bibliothek verwirft Arcadia nur Tasten, und nur solange ⧉ + ≡ gehalten werden, damit das Spiel Steams Belegung behält."),
-                new InfoText("Empfohlen, wenn du den Mausmodus benutzt: Sonst bewegen Steam und Arcadia den Mauszeiger gleichzeitig, und Tasten kommen doppelt an."),
+                new InfoText("Läuft Steam, macht es außerhalb von Spielen aus manchen Controller-Eingaben selbst Tasten („Desktop-Belegung“): Hältst du ⧉ + ≡, löst Steam mit jedem Controller ein Alt+Tab aus."),
+                new InfoText("Ist die Option an, verwirft Arcadia solche Tasten und Mausbewegungen von Steam, solange ein Controller benutzt wird. Echte Maus und Tastatur wirken weiter. Neben einem Spiel aus der Bibliothek verwirft Arcadia nur Tasten, und nur solange ⧉ + ≡ gehalten werden, damit das Spiel Steams Belegung behält."),
+                new InfoText("Empfohlen, wenn du den Mausmodus benutzt: ⧉ + ≡ schaltet ihn um, und ohne diese Option wechselt Steam dabei zugleich mit Alt+Tab das Fenster."),
             ],
         };
 

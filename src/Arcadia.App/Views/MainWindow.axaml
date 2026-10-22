@@ -390,13 +390,8 @@
         <!-- Loading / empty states -->
         <TextBlock Grid.ColumnSpan="2" IsVisible="{Binding IsLoading}" Text="Bibliothek wird geladen …" FontSize="22"
                    Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-        <StackPanel Grid.ColumnSpan="2" IsVisible="{Binding IsEmpty}" Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="760">
-          <TextBlock Text="Kein Launcher aktiv" FontSize="30" FontWeight="ExtraBold" HorizontalAlignment="Center" />
-          <TextBlock Text="Arcadia hat keinen unterstützten Launcher gefunden, oder alle sind abgeschaltet. Einschalten lassen sie sich in den Einstellungen unter „Launcher“. Zum Ausprobieren: Arcadia mit --demo starten."
-                     FontSize="18" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" TextAlignment="Center" />
-        </StackPanel>
-
-        <!-- An active launcher without games, or no longer found (#136): its tab says so, with the way to its settings. -->
+        <!-- An active launcher without games, or no longer found, or no launcher active at all (#136): the library says so,
+             with the way to the launcher settings. -->
         <Panel Grid.ColumnSpan="2" IsVisible="{Binding IsEmptyTabShown}" Margin="0,0,80,0">
           <Ellipse Width="900" Height="560" Fill="{StaticResource EmptyStateGlow}" IsHitTestVisible="False" />
           <StackPanel DataContext="{Binding EmptyTab}" x:DataType="vm:EmptyTabViewModel" Spacing="22" MaxWidth="760" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -428,7 +423,7 @@
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsEmptyTabShown}">
           <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Wechseln" />
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="Auswählen" />
-          <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" />
+          <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" IsVisible="{Binding EmptyTab?.HasTab, TargetNullValue=False}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding AreGamesShown}">
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Doppelklick" Text="{Binding FocusedGame?.PrimaryActionText, TargetNullValue='Spielen'}" />
@@ -1113,7 +1108,12 @@
                           <!-- No local Data or Stroke: a local value would override the severity styles. -->
                           <Path Classes="statusIcon" Classes.info="{Binding IsInfo}" Classes.error="{Binding IsError}" IsVisible="{Binding HasSeverity}" VerticalAlignment="Center" />
                           <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                            <TextBlock ctl:ButtonTextBlock.Text="{Binding Title}" FontSize="19" FontWeight="Bold" TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                              <TextBlock ctl:ButtonTextBlock.Text="{Binding Title}" FontSize="19" FontWeight="Bold" TextWrapping="Wrap" />
+                              <!-- No local Fill: it would override the "active" style. -->
+                              <Ellipse Classes="statusDot" Classes.active="{Binding IsLampOn}" Width="10" Height="10" VerticalAlignment="Center"
+                                       IsVisible="{Binding HasLamp}" />
+                            </StackPanel>
                             <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                           </StackPanel>
                           <ContentControl Grid.Column="2" Content="{Binding}" VerticalAlignment="Center">
@@ -1187,176 +1187,186 @@
             </ScrollViewer>
 
             <!-- The focused row explained. RS (or the wheel) scrolls it; the fades say there is more (MainWindow.axaml.cs). -->
-            <Border Grid.Column="1" Classes="infoPanel">
-              <Panel>
-                <ScrollViewer Name="InfoScroller" VerticalScrollBarVisibility="Hidden">
-                  <StackPanel Spacing="20" Margin="32,30">
-                    <TextBlock Classes="label" FontSize="14" Text="{Binding FocusedRow?.InfoTitle, TargetNullValue=''}" TextWrapping="Wrap" />
-                    <ItemsControl ItemsSource="{Binding FocusedRow?.Info}">
-                      <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                          <StackPanel Spacing="16" />
-                        </ItemsPanelTemplate>
-                      </ItemsControl.ItemsPanel>
-                      <ItemsControl.DataTemplates>
-                        <DataTemplate x:DataType="settings:InfoText">
-                          <TextBlock Classes="infoText" ctl:ButtonTextBlock.Text="{Binding Text}" />
-                        </DataTemplate>
-                        <DataTemplate x:DataType="settings:InfoHeading">
-                          <TextBlock Classes="label" Text="{Binding Text}" Margin="0,8,0,0" />
-                        </DataTemplate>
-                        <DataTemplate x:DataType="settings:InfoBullet">
-                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                            <Ellipse Classes="infoBullet" />
-                            <TextBlock Grid.Column="1" Classes="infoText" ctl:ButtonTextBlock.Text="{Binding Text}" />
-                          </Grid>
-                        </DataTemplate>
-                        <DataTemplate x:DataType="settings:InfoCard">
-                          <Border Classes="modeCard">
-                            <StackPanel Spacing="4">
-                              <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" />
-                              <TextBlock Classes="bullet" Text="{Binding Text}" />
-                              <TextBlock Classes="modeDefault" Text="{Binding Note}" />
-                            </StackPanel>
-                          </Border>
-                        </DataTemplate>
-                        <DataTemplate x:DataType="settings:InfoKey">
-                          <Grid ColumnDefinitions="170,*" ColumnSpacing="16">
-                            <TextBlock ctl:ButtonTextBlock.Buttons="{Binding Input}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
-                            <TextBlock Grid.Column="1" Text="{Binding Effect}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
-                          </Grid>
-                        </DataTemplate>
-                        <!-- Its blocks find the templates of this ItemsControl, up the tree. -->
-                        <DataTemplate x:DataType="settings:InfoSection">
-                          <Border Classes="infoSection">
-                            <StackPanel Spacing="14">
-                              <TextBlock Classes="label" Text="{Binding Title}" />
-                              <ItemsControl ItemsSource="{Binding Blocks}">
-                                <ItemsControl.ItemsPanel>
-                                  <ItemsPanelTemplate>
-                                    <StackPanel Spacing="14" />
-                                  </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                              </ItemsControl>
-                            </StackPanel>
-                          </Border>
-                        </DataTemplate>
-                        <DataTemplate x:DataType="settings:InfoStatus">
-                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                            <Panel Width="24" Height="24" VerticalAlignment="Top">
-                              <Path Classes="spinner" IsVisible="{Binding IsInTransition}"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
-                              <!-- No local Fill: it would override the "active" style. -->
-                              <Ellipse Classes="statusDot" Classes.active="{Binding IsHealthy}" Width="12" Height="12" IsVisible="{Binding ShowsDot}" />
-                            </Panel>
-                            <TextBlock Grid.Column="1" Classes="infoText" Text="{Binding Text}" />
-                          </Grid>
-                        </DataTemplate>
-                        <DataTemplate x:DataType="settings:InfoError">
-                          <TextBlock Text="{Binding Text}" FontSize="16" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
-                        </DataTemplate>
-                        <!-- The launcher settings (#136): a note, the tab strip in miniature, the launcher's head, its facts. -->
-                        <DataTemplate x:DataType="settings:InfoNote">
-                          <Border Classes="infoNote">
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                              <Path Classes="statusIcon" VerticalAlignment="Top" />
-                              <TextBlock Grid.Column="1" Text="{Binding Text}" />
+            <!-- Beside the rows: a preview of what the focused row changes, if it has one (e.g. the launchers' tab strip,
+                 #136), and below it the row explained. -->
+            <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="20">
+              <Grid.DataTemplates>
+                <DataTemplate x:DataType="settings:InfoText">
+                  <TextBlock Classes="infoText" ctl:ButtonTextBlock.Text="{Binding Text}" />
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoHeading">
+                  <TextBlock Classes="label" Text="{Binding Text}" Margin="0,8,0,0" />
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoBullet">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <Ellipse Classes="infoBullet" />
+                    <TextBlock Grid.Column="1" Classes="infoText" ctl:ButtonTextBlock.Text="{Binding Text}" />
+                  </Grid>
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoCard">
+                  <Border Classes="modeCard">
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" />
+                      <TextBlock Classes="bullet" Text="{Binding Text}" />
+                      <TextBlock Classes="modeDefault" Text="{Binding Note}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoKey">
+                  <Grid ColumnDefinitions="170,*" ColumnSpacing="16">
+                    <TextBlock ctl:ButtonTextBlock.Buttons="{Binding Input}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Effect}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
+                  </Grid>
+                </DataTemplate>
+                <!-- Its blocks find the templates of this ItemsControl, up the tree. -->
+                <DataTemplate x:DataType="settings:InfoSection">
+                  <Border Classes="infoSection">
+                    <StackPanel Spacing="14">
+                      <TextBlock Classes="label" Text="{Binding Title}" />
+                      <ItemsControl ItemsSource="{Binding Blocks}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <StackPanel Spacing="14" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoStatus">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                    <Panel Width="24" Height="24" VerticalAlignment="Top">
+                      <Path Classes="spinner" IsVisible="{Binding IsInTransition}"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                      <!-- No local Fill: it would override the "active" style. -->
+                      <Ellipse Classes="statusDot" Classes.active="{Binding IsHealthy}" Width="12" Height="12" IsVisible="{Binding ShowsDot}" />
+                    </Panel>
+                    <TextBlock Grid.Column="1" Classes="infoText" Text="{Binding Text}" />
+                  </Grid>
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoError">
+                  <TextBlock Text="{Binding Text}" FontSize="16" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
+                </DataTemplate>
+                <!-- The launcher settings (#136): a note, the tab strip in miniature, the launcher's head, its facts. -->
+                <DataTemplate x:DataType="settings:InfoNote">
+                  <Border Classes="infoNote">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                      <Path Classes="statusIcon" VerticalAlignment="Top" />
+                      <TextBlock Grid.Column="1" Text="{Binding Text}" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoTabBar">
+                  <Border Classes="miniTabs">
+                    <Panel>
+                      <TextBlock Classes="launcherState" Text="Kein Launcher aktiv – die Bibliothek bleibt leer." IsVisible="{Binding IsEmpty}" />
+                      <ItemsControl ItemsSource="{Binding Tabs}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <WrapPanel />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="settings:InfoTab">
+                            <Border Classes="miniTab" Classes.selected="{Binding IsSelected}" Classes.highlighted="{Binding IsHighlighted}" Margin="0,3,6,3">
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Classes="launcherLogo" Width="22" Height="22" CornerRadius="6" Background="{Binding TileBrush}" VerticalAlignment="Center">
+                                  <TextBlock Text="{Binding Monogram}" FontSize="12" />
+                                </Border>
+                                <TextBlock Classes="miniTabName" Text="{Binding Name}" />
+                              </StackPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </Panel>
+                  </Border>
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoLauncher">
+                  <StackPanel Orientation="Horizontal" Spacing="18">
+                    <Border Classes="launcherLogo" Width="64" Height="64" CornerRadius="16" Background="{Binding TileBrush}">
+                      <TextBlock Text="{Binding Monogram}" FontSize="30" />
+                    </Border>
+                    <StackPanel Spacing="4" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" />
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Ellipse Classes="statusDot" Classes.active="{Binding IsActive}" Width="9" Height="9" VerticalAlignment="Center" />
+                        <TextBlock Classes="launcherState" Classes.active="{Binding IsActive}" Text="{Binding StateText}" />
+                      </StackPanel>
+                    </StackPanel>
+                  </StackPanel>
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoFacts">
+                  <StackPanel Spacing="2">
+                    <TextBlock Classes="label" Text="{Binding Title}" Margin="0,4,0,0" />
+                    <ItemsControl ItemsSource="{Binding Facts}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="settings:InfoFact">
+                          <Border Classes="infoFact">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+                              <TextBlock Classes="factLabel" Text="{Binding Label}" />
+                              <TextBlock Grid.Column="1" Classes="factValue" Classes.muted="{Binding IsMuted}" Classes.good="{Binding IsGood}" Text="{Binding Value}"
+                                         ToolTip.Tip="{Binding Value}" />
                             </Grid>
                           </Border>
                         </DataTemplate>
-                        <DataTemplate x:DataType="settings:InfoTabBar">
-                          <Border Classes="miniTabs">
-                            <Panel>
-                              <TextBlock Classes="launcherState" Text="Kein Launcher aktiv – die Bibliothek bleibt leer." IsVisible="{Binding IsEmpty}" />
-                              <ItemsControl ItemsSource="{Binding Tabs}">
-                                <ItemsControl.ItemsPanel>
-                                  <ItemsPanelTemplate>
-                                    <WrapPanel />
-                                  </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                  <DataTemplate x:DataType="settings:InfoTab">
-                                    <Border Classes="miniTab" Classes.selected="{Binding IsSelected}" Classes.highlighted="{Binding IsHighlighted}" Margin="0,3,6,3">
-                                      <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <Border Classes="launcherLogo" Width="22" Height="22" CornerRadius="6" Background="{Binding TileBrush}" VerticalAlignment="Center">
-                                          <TextBlock Text="{Binding Monogram}" FontSize="12" />
-                                        </Border>
-                                        <TextBlock Classes="miniTabName" Text="{Binding Name}" />
-                                      </StackPanel>
-                                    </Border>
-                                  </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                              </ItemsControl>
-                            </Panel>
-                          </Border>
-                        </DataTemplate>
-                        <DataTemplate x:DataType="settings:InfoLauncher">
-                          <StackPanel Orientation="Horizontal" Spacing="18">
-                            <Border Classes="launcherLogo" Width="64" Height="64" CornerRadius="16" Background="{Binding TileBrush}">
-                              <TextBlock Text="{Binding Monogram}" FontSize="30" />
-                            </Border>
-                            <StackPanel Spacing="4" VerticalAlignment="Center">
-                              <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" />
-                              <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Ellipse Classes="statusDot" Classes.active="{Binding IsActive}" Width="9" Height="9" VerticalAlignment="Center" />
-                                <TextBlock Classes="launcherState" Classes.active="{Binding IsActive}" Text="{Binding StateText}" />
-                              </StackPanel>
-                            </StackPanel>
-                          </StackPanel>
-                        </DataTemplate>
-                        <DataTemplate x:DataType="settings:InfoFacts">
-                          <StackPanel Spacing="2">
-                            <TextBlock Classes="label" Text="{Binding Title}" Margin="0,4,0,0" />
-                            <ItemsControl ItemsSource="{Binding Facts}">
-                              <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="settings:InfoFact">
-                                  <Border Classes="infoFact">
-                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
-                                      <TextBlock Classes="factLabel" Text="{Binding Label}" />
-                                      <TextBlock Grid.Column="1" Classes="factValue" Classes.muted="{Binding IsMuted}" Classes.good="{Binding IsGood}" Text="{Binding Value}"
-                                                 ToolTip.Tip="{Binding Value}" />
-                                    </Grid>
-                                  </Border>
-                                </DataTemplate>
-                              </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                          </StackPanel>
-                        </DataTemplate>
-                        <DataTemplate x:DataType="settings:InfoFootnote">
-                          <TextBlock Text="{Binding Text}" FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap" />
-                        </DataTemplate>
-                        <DataTemplate x:DataType="settings:InfoRelease">
-                          <StackPanel Spacing="10">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                              <Border Background="{StaticResource VersionPill}" CornerRadius="10" Padding="10,3">
-                                <TextBlock Text="{Binding VersionText}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentSoft}" />
-                              </Border>
-                              <TextBlock Text="{Binding DateText}" FontSize="14" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
-                            </StackPanel>
-                            <ItemsControl ItemsSource="{Binding Changes}">
-                              <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                  <StackPanel Spacing="6" />
-                                </ItemsPanelTemplate>
-                              </ItemsControl.ItemsPanel>
-                              <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="x:String">
-                                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="4,0,0,0">
-                                    <Ellipse Width="6" Height="6" Fill="{StaticResource Accent}" VerticalAlignment="Top" Margin="0,8,0,0" />
-                                    <TextBlock Grid.Column="1" Text="{Binding}" FontSize="15" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
-                                  </Grid>
-                                </DataTemplate>
-                              </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                          </StackPanel>
-                        </DataTemplate>
-                      </ItemsControl.DataTemplates>
+                      </ItemsControl.ItemTemplate>
                     </ItemsControl>
                   </StackPanel>
-                </ScrollViewer>
-                <Border Name="InfoFadeTop" Classes="listFade" Background="{StaticResource InfoFadeTop}" VerticalAlignment="Top" CornerRadius="20,20,0,0" />
-                <Border Name="InfoFadeBottom" Classes="listFade" Background="{StaticResource InfoFadeBottom}" VerticalAlignment="Bottom" CornerRadius="0,0,20,20" />
-              </Panel>
-            </Border>
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoFootnote">
+                  <TextBlock Text="{Binding Text}" FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap" />
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoRelease">
+                  <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Border Background="{StaticResource VersionPill}" CornerRadius="10" Padding="10,3">
+                        <TextBlock Text="{Binding VersionText}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentSoft}" />
+                      </Border>
+                      <TextBlock Text="{Binding DateText}" FontSize="14" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Changes}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="6" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="4,0,0,0">
+                            <Ellipse Width="6" Height="6" Fill="{StaticResource Accent}" VerticalAlignment="Top" Margin="0,8,0,0" />
+                            <TextBlock Grid.Column="1" Text="{Binding}" FontSize="15" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </DataTemplate>
+              </Grid.DataTemplates>
+              <Border Classes="infoPanel" IsVisible="{Binding FocusedRow?.HasPreview, TargetNullValue=False}">
+                <StackPanel Spacing="20" Margin="32,30">
+                  <TextBlock Classes="label" FontSize="14" Text="{Binding FocusedRow?.PreviewTitle, TargetNullValue=''}" />
+                  <ItemsControl ItemsSource="{Binding FocusedRow?.Preview}" />
+                </StackPanel>
+              </Border>
+              <Border Grid.Row="1" Classes="infoPanel">
+                <Panel>
+                  <ScrollViewer Name="InfoScroller" VerticalScrollBarVisibility="Hidden">
+                    <StackPanel Spacing="20" Margin="32,30">
+                      <TextBlock Classes="label" FontSize="14" Text="{Binding FocusedRow?.InfoTitle, TargetNullValue=''}" TextWrapping="Wrap" />
+                      <ItemsControl ItemsSource="{Binding FocusedRow?.Info}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <StackPanel Spacing="16" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                      </ItemsControl>
+                    </StackPanel>
+                  </ScrollViewer>
+                  <Border Name="InfoFadeTop" Classes="listFade" Background="{StaticResource InfoFadeTop}" VerticalAlignment="Top" CornerRadius="20,20,0,0" />
+                  <Border Name="InfoFadeBottom" Classes="listFade" Background="{StaticResource InfoFadeBottom}" VerticalAlignment="Bottom" CornerRadius="0,0,20,20" />
+                </Panel>
+              </Border>
+            </Grid>
           </Grid>
 
           <!-- Footer: the buttons of the focused row and the page, for the input in use (#127). -->

@@ -61,7 +61,7 @@ public sealed record InfoNote(string Text) : InfoBlock;
 /// <param name="IsGood">Something that works as it should, e.g. "werden überwacht".</param>
 public sealed record InfoFact(string Label, string Value, bool IsMuted = false, bool IsGood = false);
 
-/// <summary>Facts under a small heading, line by line, e.g. "ALLGEMEIN" of a launcher (#136).</summary>
+/// <summary>Facts under a small heading, line by line, e.g. "BIBLIOTHEK" of a launcher (#136).</summary>
 public sealed record InfoFacts(string Title, IReadOnlyList<InfoFact> Facts) : InfoBlock;
 
 /// <summary>A launcher as its tab shows it: logo and name.</summary>

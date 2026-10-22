@@ -218,9 +218,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     public partial bool IsLoading { get; private set; } = true;
 
     [ObservableProperty]
-    public partial bool IsEmpty { get; private set; }
-
-    [ObservableProperty]
     public partial string CountText { get; private set; } = string.Empty;
 
     [ObservableProperty]
@@ -410,7 +407,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         AppLog.Write($"Neu eingelesen{(launcher is null ? string.Empty : $" für {launcher.Id}")}: {watch.ElapsedMilliseconds} ms");
         if (launcher is null)
         {
-            Toast.Show("Alle Launcher sind neu eingelesen.");
+            Toast.Show(Tabs.Count == 0 ? "Weiterhin ist kein Launcher aktiv." : "Alle Launcher sind neu eingelesen.");
             return;
         }
 
@@ -490,7 +487,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
             }
         }
 
-        IsEmpty = Tabs.Count == 0;
         UpdateSearch();
         if (SelectedTab is null || !Tabs.Contains(SelectedTab))
         {
@@ -504,12 +500,19 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
 
             PageGames.Clear();
             PageButtons.Clear();
-            EmptyTab = null;
+            EmptyTab = EmptyTab is { HasNoLauncher: true } shown && Tabs.Count == 0 ? shown : null;
             CountText = RangeText = ViewSummary = string.Empty;
             if (Tabs.Count > 0)
             {
                 // SelectTab, not ChooseTab: a launcher missing from this scan must not overwrite the user's choice.
                 SelectTab(Tabs.FirstOrDefault(t => t.Launcher.Id == _settings.Current.LastTabLauncherId) ?? Tabs[0]);
+            }
+            else
+            {
+                EmptyTab ??= new EmptyTabViewModel(
+                    null,
+                    () => ShowSettings(typeof(LauncherSettingsViewModel)),
+                    () => RescanAsync(null).Forget("Erneut suchen"));
             }
 
             RefreshLauncherSettings();
@@ -1677,7 +1680,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
 
         EmptyTab = tab.Count > 0 ? null
             : EmptyTab is { } shown && shown.Tab == tab && shown.IsMissing == !tab.IsFound ? shown
-            : new EmptyTabViewModel(tab, OpenLauncherSettings, empty => RescanAsync(empty.Launcher).Forget("Neu einlesen"));
+            : new EmptyTabViewModel(tab, () => OpenLauncherSettings(tab), () => RescanAsync(tab.Launcher).Forget("Neu einlesen"));
         var installed = tab.Games.Count(g => g.IsInstalled);
         var installedText = installed == tab.Count ? string.Empty : $" · {installed} installiert";
         CountText = EmptyTab is { } emptyTab ? emptyTab.Summary : $"{tab.Count} Spiele{installedText} · Seite {window.PageIndex + 1} von {window.PageCount}";

@@ -851,8 +851,9 @@
   <Style Selector="Button.valueArrow:disabled">
     <Setter Property="Opacity" Value="0.3" />
   </Style>
+  <!-- As wide as the chevron itself (7 × 14): a square box left it off-centre in its button (owner, 2026-10-22). -->
   <Style Selector="Path.chevronLeft, Path.chevronRight">
-    <Setter Property="Width" Value="14" />
+    <Setter Property="Width" Value="7" />
     <Setter Property="Height" Value="14" />
     <Setter Property="Stretch" Value="Uniform" />
     <Setter Property="StrokeThickness" Value="3" />
@@ -1573,7 +1574,7 @@
       <DataTemplate x:DataType="vm:EmptyTabViewModel">
         <Panel Width="200" Height="140">
           <!-- No games: two covers and a dashed one to come. -->
-          <Canvas IsVisible="{Binding !IsMissing}">
+          <Canvas IsVisible="{Binding HasNoGames}">
             <Border Canvas.Left="34" Canvas.Top="22" Width="62" Height="88" CornerRadius="10" Background="{StaticResource EmptyStateCard}"
                     BorderBrush="{StaticResource EmptyStateCardLine}" BorderThickness="3" RenderTransform="rotate(-10deg)" />
             <Border Canvas.Left="104" Canvas.Top="22" Width="62" Height="88" CornerRadius="10" Background="{StaticResource EmptyStateCard}"
@@ -1583,11 +1584,22 @@
             <Path Data="M92 62h16 M100 54v16" Stroke="{StaticResource EmptyStateSparkle}" StrokeThickness="3" StrokeLineCap="Round" />
             <Path Data="M28 18l3 7 7 3-7 3-3 7-3-7-7-3 7-3z M176 104l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" Fill="{StaticResource EmptyStateSparkle}" />
           </Canvas>
+          <!-- No launcher active: a tab strip with dashed tabs still to fill, one about to be switched on. -->
+          <Canvas IsVisible="{Binding HasNoLauncher}">
+            <Rectangle Canvas.Left="6" Canvas.Top="52" Width="54" Height="34" RadiusX="17" RadiusY="17" Fill="{StaticResource EmptyStateCard}"
+                       Stroke="{StaticResource EmptyStateCardLine}" StrokeThickness="3" StrokeDashArray="2.6,2.3" />
+            <Rectangle Canvas.Left="140" Canvas.Top="52" Width="54" Height="34" RadiusX="17" RadiusY="17" Fill="{StaticResource EmptyStateCard}"
+                       Stroke="{StaticResource EmptyStateCardLine}" StrokeThickness="3" StrokeDashArray="2.6,2.3" />
+            <Border Canvas.Left="64" Canvas.Top="44" Width="72" Height="50" CornerRadius="25" Background="{StaticResource EmptyStateLens}"
+                    BorderBrush="{StaticResource EmptyStateCardBadge}" BorderThickness="3" />
+            <Path Data="M92 69h16 M100 61v16" Stroke="{StaticResource EmptyStateSparkle}" StrokeThickness="3.5" StrokeLineCap="Round" />
+            <Path Data="M34 20l3 7 7 3-7 3-3 7-3-7-7-3 7-3z M170 104l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" Fill="{StaticResource EmptyStateSparkle}" />
+          </Canvas>
           <!-- Not found: the launcher's logo with a question mark. -->
           <Canvas IsVisible="{Binding IsMissing}">
             <Border Canvas.Left="62" Canvas.Top="20" Width="76" Height="76" CornerRadius="18" Background="{StaticResource EmptyStateCard}"
                     BorderBrush="{StaticResource EmptyStateCardLine}" BorderThickness="3">
-              <TextBlock Text="{Binding Tab.Monogram}" FontSize="40" FontWeight="ExtraBold" Foreground="{StaticResource TextFaint}"
+              <TextBlock Text="{Binding Monogram}" FontSize="40" FontWeight="ExtraBold" Foreground="{StaticResource TextFaint}"
                          HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <Ellipse Canvas.Left="108" Canvas.Top="72" Width="48" Height="48" Fill="{StaticResource EmptyStateLens}" Stroke="{StaticResource EmptyStateLensRim}" StrokeThickness="4" />

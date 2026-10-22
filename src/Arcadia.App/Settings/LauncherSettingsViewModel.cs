@@ -212,6 +212,11 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     /// <summary>◀ ▶ on a row, or its arrows: on goes to the end of the active ones, off to the top of the inactive ones.</summary>
     private void SwitchTo(LauncherRowViewModel row, bool on)
     {
+        if (IsReordering)
+        {
+            return;
+        }
+
         var active = _host.Launchers.ActiveIds;
         var id = row.Launcher.Id;
         Choose(LauncherSelection.Placed(active, id, on ? active.Count : null), on ? null : id);
@@ -291,21 +296,15 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         var installed = library?.Games.Count(g => g.IsInstalled) ?? 0;
         var integration = launchers.Registered(id);
         var location = launchers.LocationOf(id);
-        List<InfoBlock> info = [new InfoTabBar([.. tabs.Select(tab => new InfoTab(tab.Launcher.DisplayName, tab.Monogram, tab.TileBrush, tab.Launcher.Id == _host.SelectedLauncherId, tab == row))])];
+        InfoBlock[] preview = [new InfoTabBar([.. tabs.Select(tab => new InfoTab(tab.Launcher.DisplayName, tab.Monogram, tab.TileBrush, tab.Launcher.Id == _host.SelectedLauncherId, tab == row))])];
+
+        // Whether it is active, its tab, key and keyword are in the preview and the row already (owner, 2026-10-22).
+        List<InfoBlock> info = [new InfoLauncher(name, row.Monogram, row.TileBrush, isActive ? $"Aktiv · Tab {tabNumber}" : isFound ? "Nicht aktiv" : "Nicht installiert", isActive)];
         if (note is not null)
         {
             info.Add(new InfoNote(note));
         }
 
-        info.Add(new InfoLauncher(name, row.Monogram, row.TileBrush, isActive ? $"Aktiv · Tab {tabNumber}" : isFound ? "Nicht aktiv" : "Nicht installiert", isActive));
-        info.Add(new InfoFacts("ALLGEMEIN",
-        [
-            new InfoFact("Aktiv", isActive ? "An" : "Aus", IsMuted: !isActive, IsGood: isActive),
-            new InfoFact("Tab", tabNumber is { } number ? number <= 10 ? $"{number} · Taste {number % 10}" : $"{number}" : "–", IsMuted: !isActive),
-            new InfoFact("Name im Tab", name),
-            new InfoFact("Such-Kürzel", keyword),
-            new InfoFact("Logo", "Standard"),
-        ]));
         var scannedAt = _host.ScannedAt(id);
         info.Add(new InfoFacts("BIBLIOTHEK",
         [
@@ -331,7 +330,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             }, IsMuted: !isActive, IsGood: isActive),
         ]));
 
-        row.Show(isActive, isFound, tabNumber, status, warning, info);
+        row.Show(isActive, isFound, tabNumber, status, warning, preview, info);
     }
 
     private static string GameCount(int count) => count == 1 ? "1 Spiel" : $"{count} Spiele";

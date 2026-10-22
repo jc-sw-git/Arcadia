@@ -29,6 +29,18 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     public bool HasSubtitle => !string.IsNullOrEmpty(Subtitle);
 
+    /// <summary>
+    /// A lamp beside the title that shows at a glance whether what the row switches on really runs, e.g. SISR (owner,
+    /// 2026-10-22): green while it runs, grey while it doesn't; null shows none.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLamp), nameof(IsLampOn))]
+    public partial bool? Lamp { get; protected set; }
+
+    public bool HasLamp => Lamp is not null;
+
+    public bool IsLampOn => Lamp == true;
+
     /// <summary>The heading of the group the row belongs to, e.g. "MAUSMODUS"; may change while the row is shown (#136).</summary>
     [ObservableProperty]
     public partial string? Group { get; set; }
@@ -66,6 +78,19 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     [ObservableProperty]
     public partial IReadOnlyList<InfoBlock> Info { get; set; } = [];
 
+    /// <summary>
+    /// A box of its own above the info panel showing what the row changes, e.g. the tab strip of the launchers (#136, owner
+    /// 2026-10-22); empty shows none.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPreview))]
+    public partial IReadOnlyList<InfoBlock> Preview { get; set; } = [];
+
+    public bool HasPreview => Preview.Count > 0;
+
+    /// <summary>The heading of <see cref="Preview"/>.</summary>
+    public virtual string PreviewTitle => string.Empty;
+
     /// <summary>◀ ▶ change the row's value.</summary>
     public virtual bool CanChange => false;
 
@@ -97,6 +122,12 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     private void Click()
     {
         Point();
+        Clicked();
+    }
+
+    /// <summary>What a click on the row does once it has the focus.</summary>
+    protected virtual void Clicked()
+    {
         if (CanActivate)
         {
             Activate();

@@ -350,6 +350,9 @@ public partial class MainWindow : Window
         if (_draggingLauncher && _settingsPage?.Selected is LauncherSettingsViewModel launchers)
         {
             launchers.Drop();
+
+            // A drag ends where it began often enough; the row's click would then switch the launcher.
+            e.Handled = true;
         }
 
         _pressedLauncher = null;

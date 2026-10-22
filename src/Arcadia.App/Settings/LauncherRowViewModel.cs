@@ -69,7 +69,9 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
 
     public override bool CanChange => HasSwitch;
 
-    public override string InfoTitle => "TAB-LEISTE";
+    public override string PreviewTitle => "TAB-LEISTE";
+
+    public override string InfoTitle => "LAUNCHER-DETAILS";
 
     public override void Change(int delta)
     {
@@ -79,9 +81,21 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
         }
     }
 
+    /// <summary>
+    /// A click anywhere on the row flips the switch, not just one on its arrows: the arrows were too small a target, and a
+    /// click that only focused felt lost (owner, 2026-10-22). A stays for the launcher's page (#137).
+    /// </summary>
+    protected override void Clicked()
+    {
+        if (HasSwitch)
+        {
+            Change(IsActive ? -1 : 1);
+        }
+    }
+
     /// <param name="tabNumber">Its place among the tabs from 1, or null while inactive.</param>
     /// <param name="warning">Why the launcher needs a look (e.g. "Keine Spiele gefunden"), shown instead of the state.</param>
-    public void Show(bool isActive, bool isFound, int? tabNumber, string statusText, string? warning, IReadOnlyList<InfoBlock> info)
+    public void Show(bool isActive, bool isFound, int? tabNumber, string statusText, string? warning, IReadOnlyList<InfoBlock> preview, IReadOnlyList<InfoBlock> info)
     {
         var actionsChanged = IsActive != isActive || IsFound != isFound;
         IsActive = isActive;
@@ -90,6 +104,7 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
         StatusText = warning ?? statusText;
         Severity = warning is null ? null : HealthSeverity.Warning;
         IsHealthy = isActive && warning is null;
+        Preview = preview;
         Info = info;
         if (actionsChanged)
         {

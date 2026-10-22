@@ -833,6 +833,13 @@
   <Style Selector="Border.valuePill.locked">
     <Setter Property="Opacity" Value="0.35" />
   </Style>
+  <!-- The whole switch is a target, not just its arrows (owner, 2026-10-22); the arrows lie on top of it. -->
+  <Style Selector="Button.valueToggle">
+    <Setter Property="Margin" Value="-8,0" />
+    <Setter Property="CornerRadius" Value="23" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+  </Style>
   <Style Selector="Button.valueArrow">
     <Setter Property="Width" Value="30" />
     <Setter Property="Height" Value="30" />
@@ -1490,9 +1497,9 @@
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
   </Style>
+  <!-- Not moved aside: the list's edge would cut off the ring (owner, 2026-10-22). -->
   <Style Selector="Button.settingRow.lifted">
     <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
-    <Setter Property="RenderTransform" Value="translateX(18px)" />
   </Style>
   <Style Selector="Button.settingRow.lifted /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource LiftedRing}" />

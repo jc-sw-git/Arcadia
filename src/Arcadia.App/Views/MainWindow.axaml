@@ -1087,15 +1087,18 @@
                                 </StackPanel>
                                 <Panel Grid.Column="3" VerticalAlignment="Center">
                                   <Border Classes="valuePill" IsVisible="{Binding HasSwitch}">
-                                    <Grid ColumnDefinitions="Auto,*,Auto">
-                                      <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanDecrease}" ToolTip.Tip="Abschalten">
-                                        <Path Classes="chevronLeft" />
-                                      </Button>
-                                      <TextBlock Grid.Column="1" Classes="valueText" Classes.on="{Binding IsActive}" Text="{Binding ValueText}" />
-                                      <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding CanIncrease}" ToolTip.Tip="Einschalten">
-                                        <Path Classes="chevronRight" />
-                                      </Button>
-                                    </Grid>
+                                    <Panel>
+                                      <Button Classes="plain valueToggle" Command="{Binding ToggleCommand}" IsEnabled="{Binding CanChange}" />
+                                      <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanDecrease}" ToolTip.Tip="Abschalten">
+                                          <Path Classes="chevronLeft" />
+                                        </Button>
+                                        <TextBlock Grid.Column="1" Classes="valueText" Classes.on="{Binding IsActive}" Text="{Binding ValueText}" IsHitTestVisible="False" />
+                                        <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding CanIncrease}" ToolTip.Tip="Einschalten">
+                                          <Path Classes="chevronRight" />
+                                        </Button>
+                                      </Grid>
+                                    </Panel>
                                   </Border>
                                   <Border Classes="valuePill" IsVisible="{Binding !HasSwitch}" ToolTip.Tip="Nicht auf diesem PC installiert">
                                     <TextBlock Classes="valueText missing" Text="Nicht installiert" />

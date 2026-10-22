@@ -303,7 +303,7 @@ public partial class MainWindow : Window
         var source = e.Source as Control;
         if (!e.GetCurrentPoint(SettingsRows).Properties.IsLeftButtonPressed
             || source?.DataContext is not LauncherRowViewModel { CanMove: true } row
-            || source.FindAncestorOfType<Button>(includeSelf: true) is { } button && button.Classes.Contains("valueArrow"))
+            || source.FindAncestorOfType<Button>(includeSelf: true) is { } button && (button.Classes.Contains("valueArrow") || button.Classes.Contains("valueToggle")))
         {
             return;
         }

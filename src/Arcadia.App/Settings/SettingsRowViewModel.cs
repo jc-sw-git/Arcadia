@@ -122,12 +122,6 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     private void Click()
     {
         Point();
-        Clicked();
-    }
-
-    /// <summary>What a click on the row does once it has the focus.</summary>
-    protected virtual void Clicked()
-    {
         if (CanActivate)
         {
             Activate();

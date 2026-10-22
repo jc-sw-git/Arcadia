@@ -177,7 +177,7 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
 - Launchers (#136, owner 2026-10-22): the settings' first category "Launcher" lists "Aktiv · erscheinen als Tabs" in tab
   order (key 1 … 0), then "Nicht aktiv" (installed first, then not found, greyed out). ◀ ▶ switch "Aktiv": off means not
   scanned, no tab, no search hits, not watched; on goes to the end of the active ones, off to the top of the inactive
-  ones; a click anywhere on the row switches it too. Not found can't be switched on; active and no longer found can be
+  ones; a click anywhere on the switch's box switches it too (a click on the row stays free for #137). Not found can't be switched on; active and no longer found can be
   switched off. Y lifts a row, ▲ ▼ move it,
   Y drops it (under "Nicht aktiv": off), B cancels; the mouse drags. X reads all again; A opens the launcher's page
   (#137). Saved as `ActiveLaunchers` (order = tabs); without it every launcher found is active. An active launcher

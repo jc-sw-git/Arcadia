@@ -3,6 +3,7 @@ using Arcadia.ControllerSupport;
 using Arcadia.Launchers.Abstractions;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace Arcadia.App.Settings;
 
@@ -82,15 +83,14 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
     }
 
     /// <summary>
-    /// A click anywhere on the row flips the switch, not just one on its arrows: the arrows were too small a target, and a
-    /// click that only focused felt lost (owner, 2026-10-22). A stays for the launcher's page (#137).
+    /// A click anywhere on the switch flips it, not just one on its arrows, which were too small a target (owner,
+    /// 2026-10-22). A click on the rest of the row stays free for the launcher's page (#137).
     /// </summary>
-    protected override void Clicked()
+    [RelayCommand]
+    private void Toggle()
     {
-        if (HasSwitch)
-        {
-            Change(IsActive ? -1 : 1);
-        }
+        Point();
+        Change(IsActive ? -1 : 1);
     }
 
     /// <param name="tabNumber">Its place among the tabs from 1, or null while inactive.</param>

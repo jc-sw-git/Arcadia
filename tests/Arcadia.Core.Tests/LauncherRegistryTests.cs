@@ -28,7 +28,7 @@ public sealed class LauncherRegistryTests
         var epicScanner = new FakeScanner(KnownLaunchers.Epic) { Games = [GameOf("epic", "a")] };
         var epicMonitor = new FakeMonitor("epic");
         var gogScanner = new FakeScanner(KnownLaunchers.Gog) { Games = [GameOf("gog", "b")] };
-        var registry = new LauncherRegistry(
+        var registry = FakeIntegration.Registry(
             [
                 new FakeIntegration(KnownLaunchers.Epic) { Scanner = epicScanner, InstallMonitor = epicMonitor },
                 new FakeIntegration(KnownLaunchers.Gog) { Scanner = gogScanner },
@@ -58,7 +58,7 @@ public sealed class LauncherRegistryTests
     {
         var enabled = true;
         var client = new FakeClient("epic");
-        var registry = new LauncherRegistry([new FakeIntegration(KnownLaunchers.Epic) { Client = client }], _ => enabled);
+        var registry = FakeIntegration.Registry([new FakeIntegration(KnownLaunchers.Epic) { Client = client }], _ => enabled);
         var launches = new GameLaunchService(registry);
 
         await launches.StartAsync(GameOf("epic", "a"));
@@ -114,7 +114,7 @@ public sealed class LauncherRegistryTests
         var real = BuiltInLaunchers.Create(_time, demo: false);
         Assert.Equal(["steam", "epic"], real.Select(i => i.Launcher.Id));
 
-        var demo = new LauncherRegistry(BuiltInLaunchers.Create(_time, demo: true), _ => true);
+        var demo = new LauncherRegistry(BuiltInLaunchers.Create(_time, demo: true), () => null);
         Assert.Equal(KnownLaunchers.All.Select(l => l.Id), demo.All.Select(i => i.Launcher.Id));
         Assert.Empty(demo.Rejected);
         Assert.NotNull(demo.Find("epic")?.InstallMonitor);

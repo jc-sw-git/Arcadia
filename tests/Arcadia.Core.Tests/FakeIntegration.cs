@@ -18,9 +18,17 @@ internal sealed class FakeIntegration(LauncherInfo launcher) : ILauncherIntegrat
 
     public IReadOnlyCollection<string> ProgramNames { get; init; } = [];
 
-    public string? Locate() => null;
+    /// <summary>Where <see cref="Locate"/> finds the launcher; null: not installed.</summary>
+    public string? Location { get; set; } = $@"C:\Launchers\{launcher.Id}";
 
-    public static LauncherRegistry Registry(params ILauncherIntegration[] integrations) => new(integrations, _ => true);
+    public string? Locate() => Location;
+
+    /// <summary>Without a choice of the user: every launcher found is active.</summary>
+    public static LauncherRegistry Registry(params ILauncherIntegration[] integrations) => new(integrations, () => null);
+
+    /// <summary>The registered launchers that pass <paramref name="isActive"/> are active, in registered order.</summary>
+    public static LauncherRegistry Registry(IReadOnlyList<ILauncherIntegration> integrations, Func<string, bool> isActive) =>
+        new(integrations, () => integrations.Select(i => i.Launcher.Id).Where(isActive).ToList());
 
     public static LauncherInfo LauncherOf(string id) => new(id, id, id);
 }

@@ -71,16 +71,17 @@ public partial class App : Application
             var time = TimeProvider.System;
             var http = new HttpClient();
 
-            // Every launcher is active until #15 lets the user choose.
+            var settings = new SettingsService(SettingsStore.CreateDefault());
+
+            // The user chooses the active launchers and their order in the settings (#136); until then, all found ones.
             var launchers = new LauncherRegistry(
                 BuiltInLaunchers.Create(time, demo: args.Contains("--demo", StringComparer.OrdinalIgnoreCase)),
-                isEnabled: _ => true);
+                () => settings.Current.ActiveLaunchers);
             foreach (var problem in launchers.Rejected)
             {
                 AppLog.Write(problem);
             }
 
-            var settings = new SettingsService(SettingsStore.CreateDefault());
             var controllerSupport = new ControllerSupportService(settings, SisrHost.CreateDefault(http), http, time)
             {
                 Log = AppLog.Write,
@@ -106,7 +107,7 @@ public partial class App : Application
 
             var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
             var viewModel = new MainViewModel(
-                new LibraryService(launchers),
+                new LibraryService(launchers, time),
                 new GameLaunchService(launchers) { Log = AppLog.Write },
                 controllerSupport,
                 updates,

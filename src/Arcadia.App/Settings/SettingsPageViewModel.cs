@@ -62,6 +62,11 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
             return true;
         }
 
+        if (category.Handle(action))
+        {
+            return true;
+        }
+
         switch (action)
         {
             case UiAction.Up:
@@ -104,6 +109,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
     {
         foreach (var category in Categories)
         {
+            category.Leave();
             category.FocusMoved -= OnFocusMoved;
             category.PropertyChanged -= OnCategoryChanged;
             category.Dispose();
@@ -129,6 +135,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
 
         if (Selected is { } previous)
         {
+            previous.Leave();
             previous.IsSelected = false;
         }
 

@@ -40,11 +40,11 @@ public sealed class LibraryRefresherTests
         _epic.Games = [GameOf("epic", "a", installed: false)];
         var scanned = await CreateRefresher().RefreshAsync(() => current);
 
-        Assert.False(Assert.Single(Assert.Single(scanned!).Games).IsInstalled);
+        Assert.False(Assert.Single(scanned!.Single(l => l.Launcher.Id == "epic").Games).IsInstalled);
     }
 
     [Fact]
-    public async Task Returns_the_rescan_when_a_launcher_is_gone()
+    public async Task An_active_launcher_without_games_keeps_its_place()
     {
         _epic.Games = [GameOf("epic", "a")];
         _gog.Games = [GameOf("gog", "b")];
@@ -53,7 +53,21 @@ public sealed class LibraryRefresherTests
         _gog.Games = [];
         var scanned = await CreateRefresher().RefreshAsync(() => current);
 
-        Assert.Equal("epic", Assert.Single(scanned!).Launcher.Id);
+        Assert.NotNull(scanned);
+        Assert.Equal(["epic", "gog"], scanned.Select(l => l.Launcher.Id));
+        Assert.Empty(scanned[1].Games);
+    }
+
+    [Fact]
+    public void A_new_tab_order_or_a_launcher_no_longer_found_is_a_change()
+    {
+        var epic = new LauncherLibrary(KnownLaunchers.Epic, [GameOf("epic", "a")]);
+        var gog = new LauncherLibrary(KnownLaunchers.Gog, []);
+
+        Assert.True(LibraryRefresher.HasChanged([epic, gog], [gog, epic]));
+        Assert.True(LibraryRefresher.HasChanged([epic, gog], [epic, gog with { IsFound = false }]));
+        Assert.True(LibraryRefresher.HasChanged([epic, gog], [epic]));
+        Assert.False(LibraryRefresher.HasChanged([epic, gog], [epic, gog with { }]));
     }
 
     [Fact]
@@ -100,7 +114,7 @@ public sealed class LibraryRefresherTests
     }
 
     [Fact]
-    public async Task Skips_a_rescan_while_the_previous_one_runs()
+    public async Task Skips_an_unforced_rescan_while_the_previous_one_runs()
     {
         var refresher = CreateRefresher();
         IReadOnlyList<LauncherLibrary> empty = [];
@@ -108,10 +122,30 @@ public sealed class LibraryRefresherTests
         _epic.Gate = new TaskCompletionSource();
 
         var first = refresher.RefreshAsync(() => empty, force: true);
-        Assert.Null(await refresher.RefreshAsync(() => empty, force: true));
+        _time.Advance(LibraryRefresher.Throttle);
+        Assert.Null(await refresher.RefreshAsync(() => empty));
 
         _epic.Gate.SetResult();
         Assert.NotNull(await first);
         Assert.Equal(1, _epic.Scans);
+    }
+
+    [Fact]
+    public async Task A_forced_rescan_waits_for_the_running_one_and_scans_again()
+    {
+        // E.g. a launcher switched on while a rescan runs that started before (#136).
+        var refresher = CreateRefresher();
+        IReadOnlyList<LauncherLibrary> empty = [];
+        _epic.Games = [GameOf("epic", "a")];
+        _epic.Gate = new TaskCompletionSource();
+
+        var first = refresher.RefreshAsync(() => empty, force: true);
+        var second = refresher.RefreshAsync(() => empty, force: true);
+        Assert.False(second.IsCompleted);
+
+        _epic.Gate.SetResult();
+        Assert.NotNull(await first);
+        Assert.NotNull(await second);
+        Assert.Equal(2, _epic.Scans);
     }
 }

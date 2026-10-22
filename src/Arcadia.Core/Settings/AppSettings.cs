@@ -32,6 +32,12 @@ public sealed record AppSettings
     /// </summary>
     public int PreferredPageSize { get; init; } = PageSizes.Default;
 
+    /// <summary>
+    /// The active launchers in tab order (#136): only they are scanned, watched and shown as tabs. Null until the user
+    /// chooses; until then every launcher found on this PC is active (<see cref="LauncherSelection"/>).
+    /// </summary>
+    public IReadOnlyList<string>? ActiveLaunchers { get; init; }
+
     /// <summary>The <see cref="LauncherInfo.Id"/> of the tab Arcadia opens with; null for the first tab.</summary>
     public string? LastTabLauncherId { get; init; }
 

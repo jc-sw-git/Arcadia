@@ -20,7 +20,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public partial string Title { get; set; } = title;
 
     /// <summary>The heading of the info panel: the title in capitals, like the group headings.</summary>
-    public string InfoTitle => Title.ToUpper(System.Globalization.CultureInfo.GetCultureInfo("de-DE"));
+    public virtual string InfoTitle => Title.ToUpper(System.Globalization.CultureInfo.GetCultureInfo("de-DE"));
 
     /// <summary>One short line below the title; the long explanation goes into <see cref="Info"/>.</summary>
     [ObservableProperty]
@@ -29,8 +29,9 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     public bool HasSubtitle => !string.IsNullOrEmpty(Subtitle);
 
-    /// <summary>The heading of the group the row belongs to, e.g. "MAUSMODUS".</summary>
-    public string? Group { get; init; }
+    /// <summary>The heading of the group the row belongs to, e.g. "MAUSMODUS"; may change while the row is shown (#136).</summary>
+    [ObservableProperty]
+    public partial string? Group { get; set; }
 
     /// <summary>The first row of its group: the group's heading stands above it.</summary>
     [ObservableProperty]
@@ -38,6 +39,10 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     [ObservableProperty]
     public partial bool IsFocused { get; set; }
+
+    /// <summary>Lifted to be moved, e.g. a launcher with Y or the mouse (#136): ▲ ▼ move it until it is put down.</summary>
+    [ObservableProperty]
+    public partial bool IsLifted { get; set; }
 
     /// <summary>
     /// Depends on a main setting that is off (e.g. "Haltedauer" with "Mausmodus: Aus"): greyed out, but it keeps its

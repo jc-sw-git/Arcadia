@@ -59,6 +59,11 @@ public partial class MainWindow : Window
 
     /// <summary>The mouse focused the row: it is under the pointer already, so the rows don't scroll to it.</summary>
     private bool _focusedByPointer;
+
+    /// <summary>A launcher row the left button went down on (#136); moved far enough, it is dragged.</summary>
+    private LauncherRowViewModel? _pressedLauncher;
+    private Point _launcherPressPoint;
+    private bool _draggingLauncher;
     private SearchViewModel? _search;
     private SettingsPageViewModel? _settingsPage;
     private readonly TabStrip _tabs;
@@ -90,6 +95,11 @@ public partial class MainWindow : Window
         AddHandler(PointerPressedEvent, (_, _) => _viewModel?.NotePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(PointerMovedEvent, OnPointerMovedAnywhere, RoutingStrategies.Tunnel, handledEventsToo: true);
         SettingsRows.AddHandler(PointerMovedEvent, OnSettingsRowPointerMoved, RoutingStrategies.Bubble, handledEventsToo: true);
+
+        // Launchers are moved by dragging them (#136). Tunnel: the row's button captures the pointer on its press.
+        SettingsRows.AddHandler(PointerPressedEvent, OnLauncherRowPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+        SettingsRows.AddHandler(PointerMovedEvent, OnLauncherRowDragged, RoutingStrategies.Tunnel, handledEventsToo: true);
+        SettingsRows.AddHandler(PointerReleasedEvent, OnLauncherRowReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
 
         // Ends a held click on a cover, wherever the mouse is let go.
         AddHandler(PointerReleasedEvent, (_, _) => _viewModel?.ReleasePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
@@ -284,6 +294,66 @@ public partial class MainWindow : Window
             _focusedByPointer = true;
             row.Point();
         }
+    }
+
+    private void OnLauncherRowPressed(object? sender, PointerPressedEventArgs e)
+    {
+        _pressedLauncher = null;
+        _draggingLauncher = false;
+        var source = e.Source as Control;
+        if (!e.GetCurrentPoint(SettingsRows).Properties.IsLeftButtonPressed
+            || source?.DataContext is not LauncherRowViewModel { CanMove: true } row
+            || source.FindAncestorOfType<Button>(includeSelf: true) is { } button && button.Classes.Contains("valueArrow"))
+        {
+            return;
+        }
+
+        _pressedLauncher = row;
+        _launcherPressPoint = e.GetPosition(SettingsRows);
+    }
+
+    /// <summary>The dragged launcher stands below the rows whose middle is above the pointer.</summary>
+    private void OnLauncherRowDragged(object? sender, PointerEventArgs e)
+    {
+        if (_pressedLauncher is not { } row || _settingsPage?.Selected is not LauncherSettingsViewModel launchers)
+        {
+            return;
+        }
+
+        var position = e.GetPosition(SettingsRows);
+        if (!_draggingLauncher)
+        {
+            if (Math.Abs(position.Y - _launcherPressPoint.Y) + Math.Abs(position.X - _launcherPressPoint.X) <= PointerMoveThreshold)
+            {
+                return;
+            }
+
+            _draggingLauncher = true;
+            launchers.BeginDrag(row);
+        }
+
+        var above = 0;
+        foreach (var other in launchers.Rows)
+        {
+            if (other != row && SettingsRows.ContainerFromItem(other) is { } container
+                && container.TranslatePoint(new Point(0, container.Bounds.Height / 2), SettingsRows) is { } middle && middle.Y < position.Y)
+            {
+                above++;
+            }
+        }
+
+        launchers.DragTo(above);
+    }
+
+    private void OnLauncherRowReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (_draggingLauncher && _settingsPage?.Selected is LauncherSettingsViewModel launchers)
+        {
+            launchers.Drop();
+        }
+
+        _pressedLauncher = null;
+        _draggingLauncher = false;
     }
 
     private void OnTextInput(object? sender, TextInputEventArgs e)

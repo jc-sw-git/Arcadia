@@ -14,6 +14,7 @@ public partial class LauncherTabViewModel : ViewModelBase
     {
         Launcher = library.Launcher;
         Games = library.Games;
+        IsFound = library.IsFound;
         TileBrush = Formatting.LauncherTileBrush(Launcher.Id);
         SelectCommand = new RelayCommand(() => select(this));
     }
@@ -24,6 +25,12 @@ public partial class LauncherTabViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Count))]
     public partial IReadOnlyList<Game> Games { get; set; }
+
+    /// <summary>False if the launcher is active but no longer installed: the tab says so instead of showing games (#136).</summary>
+    [ObservableProperty]
+    public partial bool IsFound { get; set; }
+
+    public LauncherLibrary Library => new(Launcher, Games, IsFound);
 
     public string Name => Launcher.DisplayName;
 

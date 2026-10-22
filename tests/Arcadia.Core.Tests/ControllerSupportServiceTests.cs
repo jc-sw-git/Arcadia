@@ -1123,6 +1123,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Contains("Xbox 360 Controller", issue.Detail);
         Assert.Contains("Phantomeingaben", issue.Detail);
         Assert.DoesNotContain("Steam Input", issue.Detail);
+
+        // Below the row's title one short line; the whole advice stays in the info panel (owner, 2026-10-22).
+        Assert.Equal("Es wurden weitere Controller erkannt, die Steam-Eingabe in Steam nutzen.", issue.ShortText);
         await service.TickAsync();
         Assert.Equal(0, _sisr.Starts);
 

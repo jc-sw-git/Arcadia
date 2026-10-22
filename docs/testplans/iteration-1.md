@@ -1121,6 +1121,10 @@ Verlauf:
       · E2E: nein (SISR)
 - [ ] **T136-11** Die Pfeile in den Werte-Chips (◀ ▶) stehen mittig in ihrem Kreis. Ein angehobener Launcher zeigt seine
       Umrandung ganz, auch rechts. · E2E: nein (Optik)
+- [ ] **T136-12** Eine Meldung in „Controller“ (z. B. „SISR pausiert wegen eines anderen Controllers“) hat unter dem
+      Namen nur eine kurze Zeile („Es wurden weitere Controller erkannt, die Steam-Eingabe in Steam nutzen.“), der ganze
+      Text steht im Infopanel. Ihre Aktion („Erneut versuchen“) ist eine Pille so breit wie die Werte-Chips, die sich
+      blau füllt, solange die Zeile den Fokus hat. · E2E: nein (SISR)
 
 A auf einem Launcher öffnet seine Detailseite erst mit #137.
 
@@ -1131,6 +1135,7 @@ Verlauf:
 | T136-1, T136-2, T136-4 bis T136-7 | 2026-10-22 | Claude | Branch `feat/launcher-aktivieren-und-anordnen-136`, Debug, Linux in der Cloud mit Xvfb 1920×1080, `--demo`-Bibliothek (Steam und Epic dort „nicht gefunden“), Tasten und Klicks über xdotool | ⚠️ Liste, Schalter, Anheben/Verschieben/Ablegen samt Abbruch, Ablegen unter „Nicht aktiv“ (in `settings.json` gespeichert, Tab weg), Ziehen mit der Maus, beide leeren Tabs und ihre Knöpfe, Infopanel, Toast über der Seite wie erwartet; kein echter Controller, keine echten Launcher | Lauf am PC des Owners |
 | T136-3 | 2026-10-22 | Claude | wie oben | ⚠️ Nur mit Demo-Launchern ohne Fundort; echte Deinstallation nicht | Lauf am PC des Owners |
 | T136-2, T136-5, T136-7, T136-11 (Juris Feedback) | 2026-10-22 | Claude | wie oben | ⚠️ Klick auf den Schalter schaltet um (erst auf die ganze Zeile, von Juri verworfen), zwei Boxen, „Kein Launcher aktiv“ samt Knöpfen (Leertaste öffnet die Einstellungen, Klick schaltet GOG ein, Tab erscheint), Pfeile mittig | Lauf am PC des Owners |
+| T136-12 | 2026-10-22 | Claude | wie oben; Aktionszeilen in „Über Arcadia“ lokal eingeblendet | ⚠️ Pille unfokussiert, fokussiert und als Hauptaktion gesehen; die SISR-Meldung selbst nur per Test (`ShortText`) | Lauf am PC des Owners |
 | T136-10 | 2026-10-22 | Claude | wie oben | ⚠️ Unter Linux ist SISR nicht verfügbar, Lampe nur gebaut, nicht gesehen | Lauf am PC des Owners |
 | T136-9 | 2026-10-22 | Claude | wie oben, Demo-Zahlen lokal auf 1.045 Spiele aus 4 Launchern erhöht | ⚠️ 426 ms eingelesen (außerhalb des UI-Threads), 37 ms angezeigt; kein Release-Build, nicht der PC des Owners | Messung am PC des Owners |
 

@@ -638,7 +638,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             }
 
             row.Title = issue.Title;
-            row.Subtitle = issue.Detail;
+            row.Subtitle = issue.ShortText;
             row.Severity = issue.Severity;
             row.ActionText = issue.Fix == HealthFix.None ? string.Empty : issue.FixLabel ?? "Beheben";
             row.IsEnabled = !IsBusy && !IsSettling;

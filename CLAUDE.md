@@ -185,7 +185,9 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   "Launcher-Einstellungen" and "Neu einlesen" / "Erneut suchen"); with no launcher active the library says "Kein Launcher
   aktiv" the same way. Beside the rows two boxes: "Tab-Leiste" (the tabs as they will be) and "Launcher-Details" (head,
   warnings, library, location; no repeat of what row and preview show). "Steam Controller Kompatibilität" has a lamp
-  beside its name while on: green while SISR runs (owner, 2026-10-22).
+  beside its name while on: green while SISR runs. A status message row shows one short line below its title
+  (`HealthIssue.Summary`), the whole text in the info panel; descriptions below a row name stay at one, at most two
+  lines. A row's action is a pill as wide as the value chips, filled with the accent while focused (owner, 2026-10-22).
 - Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has
   no "Schließen" button besides (owner, 2026-10-20).

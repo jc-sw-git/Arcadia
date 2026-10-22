@@ -885,26 +885,43 @@
   <Style Selector="Border.valuePill TextBlock.valueText.on">
     <Setter Property="Foreground" Value="{StaticResource Success}" />
   </Style>
-  <!-- An action on the right of a row ("Jetzt aktualisieren ›"); the whole row is the button. -->
-  <Style Selector="StackPanel.rowGo">
-    <Setter Property="MinWidth" Value="250" />
+  <!-- An action on the right of a row ("Erneut versuchen ›"): a pill as wide as the value chips, so the rows' right edge
+       stays one column; it fills with the accent while its row has the focus, like a button about to be pressed
+       (owner, 2026-10-22). The whole row is the button. -->
+  <Style Selector="Border.rowGo">
+    <Setter Property="Width" Value="250" />
+    <Setter Property="Height" Value="46" />
+    <Setter Property="CornerRadius" Value="23" />
+    <Setter Property="Padding" Value="22,0,18,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
   </Style>
-  <Style Selector="StackPanel.rowGo > TextBlock">
+  <Style Selector="Border.rowGo TextBlock">
     <Setter Property="FontSize" Value="16" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
     <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
-  <Style Selector="StackPanel.rowGo > Path">
+  <Style Selector="Border.rowGo Path">
     <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
   </Style>
-  <Style Selector="StackPanel.rowGo.primary > TextBlock">
+  <Style Selector="Border.rowGo.primary TextBlock">
     <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
   </Style>
-  <Style Selector="StackPanel.rowGo.primary > Path">
+  <Style Selector="Border.rowGo.primary Path">
     <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
   </Style>
-  <Style Selector="StackPanel.rowGo.disabled">
+  <Style Selector="Button.settingRow.focused Border.rowGo">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Button.settingRow.focused Border.rowGo TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.settingRow.focused Border.rowGo Path">
+    <Setter Property="Stroke" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Border.rowGo.disabled">
     <Setter Property="Opacity" Value="0.5" />
   </Style>
   <Style Selector="TextBlock.rowValue">

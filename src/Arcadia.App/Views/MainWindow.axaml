@@ -1167,11 +1167,12 @@
                                 </Border>
                               </DataTemplate>
                               <DataTemplate x:DataType="settings:ActionRowViewModel">
-                                <StackPanel Classes="rowGo" Classes.primary="{Binding IsPrimary}" Classes.disabled="{Binding !IsEnabled}" Orientation="Horizontal" Spacing="10"
-                                            IsVisible="{Binding HasAction}">
-                                  <TextBlock Text="{Binding ActionText}" />
-                                  <Path Classes="chevronRight" />
-                                </StackPanel>
+                                <Border Classes="rowGo" Classes.primary="{Binding IsPrimary}" Classes.disabled="{Binding !IsEnabled}" IsVisible="{Binding HasAction}">
+                                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBlock Text="{Binding ActionText}" />
+                                    <Path Grid.Column="1" Classes="chevronRight" />
+                                  </Grid>
+                                </Border>
                               </DataTemplate>
                               <DataTemplate x:DataType="settings:InfoRowViewModel">
                                 <TextBlock Classes="rowValue" Text="{Binding ValueText}" IsVisible="{Binding HasValue}" />

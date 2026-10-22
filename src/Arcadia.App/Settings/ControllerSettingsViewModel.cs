@@ -542,6 +542,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         {
             (false, _, _) when showInstall => "Nicht eingerichtet – „SISR installieren“ richtet alles Nötige ein und schaltet die Option ein.",
             (false, _, _) => "Aus – außerhalb von Steam läuft der Steam Controller im Desktop-Modus (Maus und Tastatur).",
+            (true, true, true) => "Pausiert – die Meldungen unter der Einstellung sagen, warum.",
             (true, true, _) => "Pausiert – ein Spiel mit „Steam Input“ läuft.",
             (true, false, true) => "Eingeschaltet, aber nicht voll funktionsfähig – die Meldungen unter der Einstellung sagen, was fehlt.",
             _ => state switch

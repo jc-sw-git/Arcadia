@@ -1062,6 +1062,160 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task The_warning_names_Steams_controller_type_readably_and_says_the_Steam_Controller_may_fail()
+    {
+        var service = Create();
+        _api.XboxPadName = "#controller_xbox360";
+        _api.XboxPads = 1;
+        _sisr.Running = true;
+
+        await service.TickAsync();
+
+        var issue = Assert.Single(service.Issues, i => i.Id == "sisr-other-controller");
+        Assert.Contains("Xbox 360 Controller", issue.Detail);
+        Assert.DoesNotContain("#controller", issue.Detail);
+        Assert.DoesNotContain("USB-ID", issue.Detail);
+        Assert.Contains("Phantomeingaben", issue.Detail);
+        Assert.DoesNotContain("Steam Input", issue.Detail);
+        Assert.Contains("Erweiterte Controllereinstellungen", issue.Detail);
+        lock (_log)
+        {
+            Assert.Contains(_log, line => line.Contains("#controller_xbox360 (ohne USB-ID)"));
+        }
+    }
+
+    [Fact]
+    public async Task SISR_emulating_another_controller_once_outside_a_game_keeps_running()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _api.XboxPads = 1;
+        await service.WatchAsync();
+        _api.XboxPads = 0;
+        await service.WatchAsync();
+
+        Assert.True(_sisr.Running);
+        Assert.Equal(0, _sisr.Stops);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task SISR_emulating_another_controller_outside_a_game_pauses_until_Steam_Input_for_Xbox_pads_is_off()
+    {
+        var service = Create();
+        _platform.SteamInputDefault = new SteamInputSetting(null, XboxSupport: true, GenericSupport: false);
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _api.XboxPadName = "#controller_xbox360";
+        _api.XboxPads = 1;
+        await service.WatchAsync();
+        await service.WatchAsync();
+
+        Assert.False(_sisr.Running);
+        Assert.Equal(SisrState.Paused, service.State);
+        await service.RefreshAsync();
+        var issue = Assert.Single(service.Issues, i => i.Id == "sisr-paused-other-controller-type");
+        Assert.Equal(HealthSeverity.Warning, issue.Severity);
+        Assert.Equal(HealthFix.RestartSisr, issue.Fix);
+        Assert.Contains("Xbox 360 Controller", issue.Detail);
+        Assert.Contains("Phantomeingaben", issue.Detail);
+        Assert.DoesNotContain("Steam Input", issue.Detail);
+        await service.TickAsync();
+        Assert.Equal(0, _sisr.Starts);
+
+        _api.XboxPads = 0;
+        _platform.SteamInputDefault = new SteamInputSetting(null, XboxSupport: false, GenericSupport: false);
+        await AdvanceUntil(() => _sisr.Starts == 1);
+        await service.RefreshAsync();
+
+        Assert.DoesNotContain(service.Issues, i => i.Id == "sisr-paused-other-controller-type");
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task A_pad_under_Steam_Input_pauses_SISR_before_anyone_touches_it()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _api.UntouchedXboxPads = 1;
+        await service.WatchAsync();
+        await service.WatchAsync();
+
+        Assert.Equal(SisrState.Paused, service.State);
+        await service.RefreshAsync();
+        Assert.Contains(service.Issues, i => i.Id == "sisr-paused-other-controller-type" && i.Detail.Contains("8BitDo Ultimate 2"));
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task The_pause_names_the_real_pad_rather_than_SISRs_own_pads_that_Steam_took_again()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _api.XboxPadName = "#controller_xbox360";
+        _api.XboxPads = 1;
+        _api.UntouchedXboxPads = 1;
+        await service.WatchAsync();
+        await service.WatchAsync();
+        await service.RefreshAsync();
+
+        var issue = Assert.Single(service.Issues, i => i.Id == "sisr-paused-other-controller-type");
+        Assert.StartsWith("SISR wurde pausiert, weil 8BitDo Ultimate 2 Wireless Controller for PC in Steam ebenfalls Steam-Eingabe als Steuerungsmethode verwendet.", issue.Detail);
+        Assert.DoesNotContain("Xbox 360", issue.Detail);
+    }
+
+    [Fact]
+    public async Task Trying_again_while_Steam_Input_still_takes_the_pad_pauses_again()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        _api.UntouchedXboxPads = 1;
+        await service.WatchAsync();
+        await service.WatchAsync();
+        Assert.Equal(SisrState.Paused, service.State);
+
+        await service.ApplyFixAsync(HealthFix.RestartSisr);
+        await AdvanceUntil(() => service.State == SisrState.Running);
+        _time.Advance(TimeSpan.FromSeconds(6));
+        await service.WatchAsync();
+        await service.WatchAsync();
+
+        Assert.Equal(SisrState.Paused, service.State);
+        Assert.Equal(1, _sisr.Starts);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task Trying_again_ends_the_pause_for_another_controller()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        _api.XboxPads = 1;
+        await service.WatchAsync();
+        await service.WatchAsync();
+        Assert.Equal(SisrState.Paused, service.State);
+
+        // Steam's setting can't be read here, so only the user ends the pause.
+        _time.Advance(TimeSpan.FromSeconds(30));
+        await Task.Delay(10);
+        Assert.Equal(0, _sisr.Starts);
+
+        _api.XboxPads = 0;
+        await service.ApplyFixAsync(HealthFix.RestartSisr);
+        await AdvanceUntil(() => _sisr.Starts == 1);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
     public async Task SISR_emulating_an_Xbox_pad_in_a_Steam_game_pauses_until_the_game_ends()
     {
         var service = Create();
@@ -1350,7 +1504,17 @@ public sealed class ControllerSupportServiceTests : IDisposable
         /// <summary>Xbox pads SISR emulates as well, because Steam Input is on for them (#124).</summary>
         public int XboxPads { get; set; }
 
-        private string Devices() => "[" + string.Join(",", Enumerable.Repeat(SteamControllerDevice, Controllers).Concat(Enumerable.Repeat(XboxPadDevice, XboxPads))) + "]";
+        /// <summary>The name SDL gives the Xbox pads; behind Steam Input it can be Steam's untranslated type (#143).</summary>
+        public string XboxPadName { get; set; } = "Xbox 360 Controller";
+
+        /// <summary>Xbox pads Steam Input hands to SISR that nobody touched yet, so SISR doesn't emulate them (#143).</summary>
+        public int UntouchedXboxPads { get; set; }
+
+        private string Devices() => "[" + string.Join(",", Enumerable.Repeat(SteamControllerDevice, Controllers)
+            .Concat(Enumerable.Repeat(XboxPadDevice.Replace("Xbox 360 Controller", XboxPadName, StringComparison.Ordinal), XboxPads))
+            .Concat(Enumerable.Repeat(UntouchedXboxPadDevice, UntouchedXboxPads))) + "]";
+
+        private const string UntouchedXboxPadDevice = """{"real_device":{"id":3,"name":"8BitDo Ultimate 2 Wireless Controller for PC","path":"XInput#1","player_index":2},"steam_virtual_device":{"id":4,"name":"8BitDo Ultimate 2 Wireless Controller for PC","steam_handle":"445232051150315420","player_index":2}}""";
 
         private const string SteamControllerDevice = """{"real_device":{"id":1,"name":"Steam Controller","path":"\\\\?\\HID#VID_28DE&PID_1304&MI_02#8&1&0&0000","player_index":0},"viiper_device":{}}""";
 
@@ -1439,6 +1603,11 @@ public sealed class ControllerSupportServiceTests : IDisposable
             SteamInputReads++;
             return SteamInput.GetValueOrDefault(appId);
         }
+
+        /// <summary>Steam Input outside games; null is unreadable.</summary>
+        public SteamInputSetting? SteamInputDefault { get; set; }
+
+        public SteamInputSetting? SteamInputDefaults() => SteamInputDefault;
 
         public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken)
         {

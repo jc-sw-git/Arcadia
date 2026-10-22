@@ -29,11 +29,49 @@ public sealed partial record SisrGamepad(
     /// </summary>
     public bool IsValveController =>
         UsbId() is { } id
-            ? id.Vendor.Equals("28DE", StringComparison.OrdinalIgnoreCase) && !id.Product.Equals("11FF", StringComparison.OrdinalIgnoreCase)
-            : Name is { } name && (name.Contains("Steam Controller", StringComparison.OrdinalIgnoreCase) || name.Contains("Steam Deck", StringComparison.OrdinalIgnoreCase));
+            ? id.Vendor.Equals("28DE", StringComparison.OrdinalIgnoreCase) && (!id.Product.Equals("11FF", StringComparison.OrdinalIgnoreCase) || HasValveName)
+            : HasValveName;
+
+    // SISR pairs a Steam virtual gamepad opened before its physical device with itself; then only the name tells.
+    private bool HasValveName =>
+        Name is { } name && (name.Contains("Steam Controller", StringComparison.OrdinalIgnoreCase) || name.Contains("Steam Deck", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Name and USB id for the log; the path itself carries an instance id that says nothing more.</summary>
     public string Description => UsbId() is { } id ? $"{Name} ({id.Vendor}:{id.Product})" : $"{Name} (ohne USB-ID)";
+
+    /// <summary>
+    /// The name for the settings. Behind Steam Input SDL sometimes gets Steam's untranslated controller type,
+    /// e.g. <c>#controller_xbox360</c> (owner's PC, 2026-10-22, Steam Input on for every Xbox pad).
+    /// </summary>
+    public string DisplayName => Name switch
+    {
+        null or "" => "Unbekannter Controller",
+        { } name when name.StartsWith(SteamTypePrefix, StringComparison.OrdinalIgnoreCase) => SteamTypeName(name[SteamTypePrefix.Length..]),
+        { } name => name,
+    };
+
+    private const string SteamTypePrefix = "#controller_";
+
+    /// <summary>
+    /// Named by Steam's controller type (<c>#controller_xbox360</c>) or SDL's slot (<c>XInput Controller #2</c>), not by
+    /// the device: on the owner's PC these were SISR's own virtual pads that Steam took again (2026-10-22, #143).
+    /// </summary>
+    public bool HasStandInName =>
+        Name is null || Name.StartsWith(SteamTypePrefix, StringComparison.OrdinalIgnoreCase)
+        || Name.StartsWith("XInput Controller", StringComparison.OrdinalIgnoreCase);
+
+    private static string SteamTypeName(string type) => type.ToLowerInvariant() switch
+    {
+        "xbox360" => "Xbox 360 Controller",
+        "xboxone" => "Xbox One Controller",
+        "xboxelite" => "Xbox Elite Controller",
+        "ps3" => "PlayStation 3 Controller",
+        "ps4" => "PlayStation 4 Controller",
+        "ps5" => "PlayStation 5 Controller",
+        "switch_pro" => "Nintendo Switch Pro Controller",
+        "generic" => "Generischer Controller",
+        _ => $"Controller ({type.Replace('_', ' ')})",
+    };
 
     private (string Vendor, string Product)? UsbId() =>
         Path is not null && UsbIdPattern().Match(Path) is { Success: true } match
@@ -44,12 +82,22 @@ public sealed partial record SisrGamepad(
     private static partial Regex UsbIdPattern();
 }
 
-/// <summary>One entry of SISR's <c>/devices</c>: the physical gamepad and, while SISR emulates it, the VIIPER device.</summary>
+/// <summary>
+/// One entry of SISR's <c>/devices</c>: the physical gamepad, Steam's virtual gamepad for it while Steam Input
+/// takes it, and, while SISR emulates it, the VIIPER device.
+/// </summary>
 public sealed record SisrDevice(
     [property: JsonPropertyName("real_device")] SisrGamepad? RealDevice,
-    [property: JsonPropertyName("viiper_device")] System.Text.Json.JsonElement? ViiperDevice)
+    [property: JsonPropertyName("viiper_device")] System.Text.Json.JsonElement? ViiperDevice,
+    [property: JsonPropertyName("steam_virtual_device")] SisrGamepad? SteamVirtualDevice = null)
 {
     public bool IsEmulated => ViiperDevice is not null;
+
+    /// <summary>
+    /// Steam Input hands this device to SISR. SISR creates its VIIPER device only on the device's first input
+    /// (SISR 0.6.2, <c>event/handler/gamepadupdated</c>), so this tells it before anyone touches the pad (#143).
+    /// </summary>
+    public bool IsUnderSteamInput => SteamVirtualDevice is not null;
 
     /// <summary>
     /// SISR emulates every controller Steam Input hands it, not only the Steam Controller (#124). Without
@@ -58,7 +106,10 @@ public sealed record SisrDevice(
     public bool IsSteamController => RealDevice?.IsValveController ?? true;
 }
 
-/// <summary>The controllers SISR emulates: Steam Controllers, and any other controller Steam Input gave it.</summary>
+/// <summary>
+/// The Steam Controllers SISR emulates, and any other controller Steam Input gave SISR, emulated yet or not
+/// (<see cref="SisrDevice.IsUnderSteamInput"/>).
+/// </summary>
 public sealed record SisrControllers(int SteamControllers, IReadOnlyList<SisrGamepad> Others)
 {
     public int Total => SteamControllers + Others.Count;
@@ -88,8 +139,8 @@ public sealed class SisrApiClient(HttpClient http, int port)
         await GetVersionAsync(cancellationToken) is not null;
 
     /// <summary>
-    /// The controllers SISR currently emulates (entries with a VIIPER device), or null if SISR
-    /// doesn't answer.
+    /// The Steam Controllers SISR currently emulates and the other controllers Steam Input hands it, or null
+    /// if SISR doesn't answer.
     /// </summary>
     public async Task<SisrControllers?> GetEmulatedControllersAsync(CancellationToken cancellationToken = default)
     {
@@ -98,11 +149,10 @@ public sealed class SisrApiClient(HttpClient http, int port)
             return null;
         }
 
-        var emulated = (await GetAsync<List<SisrDevice?>>("devices", cancellationToken) ?? [])
-            .OfType<SisrDevice>().Where(d => d.IsEmulated).ToList();
+        var devices = (await GetAsync<List<SisrDevice?>>("devices", cancellationToken) ?? []).OfType<SisrDevice>().ToList();
         return new SisrControllers(
-            emulated.Count(d => d.IsSteamController),
-            emulated.Where(d => !d.IsSteamController).Select(d => d.RealDevice!).ToList());
+            devices.Count(d => d.IsEmulated && d.IsSteamController),
+            devices.Where(d => !d.IsSteamController && (d.IsEmulated || d.IsUnderSteamInput)).Select(d => d.RealDevice!).ToList());
     }
 
     public Task<bool> QuitAsync(CancellationToken cancellationToken = default) => SendAsync("quit", cancellationToken);

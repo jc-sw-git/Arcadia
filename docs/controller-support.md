@@ -86,8 +86,11 @@ focus handling or anything SISR/usbip related.
   untranslated type, e.g. `#controller_xbox360`; `SisrGamepad.DisplayName` turns it into plain words. Steam then
   takes SISR's virtual pads again and SISR emulates those too (`#controller_xbox360`, `XInput Controller #2`):
   in `arcadia.log` such pads held both sticks up, or the D-pad down or right, for minutes, so Arcadia's hints kept
-  jumping back to the controller. So once SISR emulates another controller in two checks in a row outside a
-  Steam game, SISR pauses (same warning, with "Erneut versuchen"; wording by the owner, 2026-10-22). The pause ends when Steam's
+  jumping back to the controller. SISR creates its VIIPER device for a pad only on the pad's first input
+  (SISR 0.6.2, `event/handler/gamepadupdated`), so emulated devices alone showed the problem only after someone
+  touched the pad; `/api/v1/devices` lists `steam_virtual_device` for every pad Steam Input hands to SISR before
+  that (`SisrDevice.IsUnderSteamInput`). So once SISR reports another controller under Steam Input in two checks
+  in a row outside a Steam game (not in the first 5 s after its start, while it forces its marker's layout), SISR pauses (same warning, with "Erneut versuchen"; wording by the owner, 2026-10-22). The pause ends when Steam's
   `SteamController_XBoxSupport` / `SteamController_GenericGamepadSupport` go off (if one was on when it began;
   read from `localconfig.vdf` only when the file changed) or with "Erneut versuchen". Where Steam stores the same
   for PlayStation and Nintendo pads isn't known; `localconfig.vdf` only lists `ControllerTypesUsed`.

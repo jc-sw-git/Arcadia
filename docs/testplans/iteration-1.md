@@ -960,6 +960,9 @@ Verlauf:
       wenigen Sekunden von selbst wieder, der Steam Controller funktioniert, die Warnung ist weg. · E2E: nein
 - [ ] **T143-4** Wie T143-2, dann den Xbox Controller ausschalten und „Erneut versuchen“ wählen (mit dem Steam
       Controller über Steams Desktop-Belegung oder der Maus): SISR startet, der Steam Controller funktioniert. · E2E: nein
+- [ ] **T143-6** Wie T143-2, Steam Input für Xbox bleibt an, den Xbox Controller nicht anfassen: „Erneut versuchen“
+      startet SISR sofort, und nach wenigen Sekunden (ohne Eingabe am Xbox Controller) pausiert SISR wieder mit der
+      Warnung. Ebenso direkt nach dem Start von Arcadia. · E2E: nein
 - [ ] **T143-5** Steam Input für Xbox-Controller aus, Steam Controller und Xbox Controller verbunden: SISR läuft
       und pausiert nicht, auch nicht direkt nach dem Start von Arcadia. · E2E: nein
 
@@ -970,6 +973,8 @@ Verlauf:
 | T143-1 | 2026-10-22 | Claude | Branch `fix/steam-input-fuer-ganze-controllertypen-143`, Linux, ohne .NET SDK; Unit-Tests (`SisrDevicesTests`, `ControllerSupportServiceTests`) nur in CI | ⚠️ App nicht gestartet | Lauf am PC des Owners |
 | T143-2 (vorher) | 2026-10-22 | Juri | PC des Owners, `main` (Stand #133), Steam Input für Xbox an, 8BitDo Ultimate 2 und Steam Controller | ❌ Hinweise springen zurück auf Controller; `arcadia.log`: SISR bildet `#controller_xbox360`, `XInput Controller #2` und den 8BitDo nach, Phantom-Eingaben (23:59 je 469× linker und rechter Stick oben in einer Minute) | Pause für andere Controller außerhalb von Spielen |
 | T143-2 bis T143-5 | 2026-10-22 | Claude | Branch wie oben, Linux, Unit-Tests mit nachgebildetem SISR nur in CI | ⚠️ App nicht gestartet | Lauf am PC des Owners |
+| T143-4, T143-6 | 2026-10-22 | Juri | PC des Owners, PR #144 (zweiter Stand) | ❌ „Erneut versuchen“ wirkt erst nach einem Moment und startet SISR, ohne dass ein noch an Steam Input hängender Controller erkannt wird; erkannt erst nach einer Eingabe an ihm, ebenso nach dem Start von Arcadia | Erkennung über `steam_virtual_device` (SISR legt sein VIIPER-Gerät erst bei der ersten Eingabe an), Retry sofort |
+| T143-6 | 2026-10-22 | Claude | Branch wie oben, Linux, Unit-Tests mit nachgebildetem SISR nur in CI; SISR 0.6.2 Quelltext gelesen | ⚠️ App nicht gestartet | Lauf am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

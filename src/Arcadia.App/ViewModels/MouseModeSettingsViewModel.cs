@@ -125,6 +125,7 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
         new("B", "Esc"),
         new("LB / RB", "Umschalt+Tab / Tab"),
         new("≡", "Enter"),
+        new("Y", "Bildschirmtastatur (B blendet sie aus)"),
         new("⧉ halten", "Holt Arcadia nach vorne (Einstellung „Zurück zu Arcadia“)"),
         new("⧉ + ≡ halten", "Zurück zum normalen Controller (bei „Automatisch“, bis Arcadia wieder vorne war)"),
     ];
@@ -134,7 +135,7 @@ public sealed partial class MouseModeSettingsViewModel : ViewModelBase
     [
         "Windows-Abfragen nach Administratorrechten (UAC) laufen auf einem geschützten Bildschirm, den keine Eingabe von Arcadia erreicht.",
         "Fenster von Programmen, die als Administrator laufen, lassen Eingaben eines Arcadia ohne Administratorrechte nicht durch.",
-        "Über Spielen im exklusiven Vollbild zeigt Windows den Rand und den Hinweis nicht an; das Umschalten spürst du dann nur am Vibrieren.",
+        "Über Spielen im exklusiven Vollbild zeigt Windows den Rand, den Hinweis und die Bildschirmtastatur nicht an; das Umschalten spürst du dann nur am Vibrieren.",
     ];
 
     /// <summary>"Mausmodus": Aus, Von Hand or Automatisch. Aus: every other row counts for nothing but keeps its value.</summary>
@@ -231,7 +232,7 @@ public sealed partial class ReturnWithViewSettingsViewModel : ViewModelBase
         HoldItem = new SettingsStepperViewModel(
             () => Current.HoldSeconds,
             value => Change(s => s with { HoldSeconds = value }),
-            value => value == 0 ? "Sofort" : SettingsStepperViewModel.Seconds(value),
+            SettingsStepperViewModel.Seconds,
             ReturnWithViewSettings.Min,
             ReturnWithViewSettings.Max);
         ToggleEnabledCommand = new RelayCommand(EnabledItem.Activate);

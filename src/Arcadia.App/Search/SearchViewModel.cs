@@ -327,8 +327,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IDisposable
     public void CancelHeldButtons()
     {
         _erase.Release();
-        Keyboard.CancelShift();
-        Keyboard.CancelAltGr();
+        Keyboard.CancelLevelPresses();
     }
 
     /// <summary>The button below the hits: the keyboard out or back in.</summary>

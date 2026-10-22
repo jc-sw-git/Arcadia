@@ -1,9 +1,13 @@
 namespace Arcadia.Core.Search;
 
 /// <summary>A key of the on-screen keyboard as the focus sees it.</summary>
-/// <param name="Centre">Horizontal centre relative to the keyboard's middle.</param>
+/// <param name="Centre">Horizontal centre, measured from the same point in every row.</param>
 /// <param name="IsEmpty">Types nothing on the shown level; the focus passes over it.</param>
-public readonly record struct KeySpot(double Centre, bool IsEmpty);
+/// <param name="Key">
+/// Names a key that stands in two rows (the tall ISO Enter) with the same number in both, so up and down
+/// leave it instead of landing on it again; -1 for a key of one row.
+/// </param>
+public readonly record struct KeySpot(double Centre, bool IsEmpty, int Key = -1);
 
 /// <summary>
 /// Moving the focus over the on-screen keyboard's rows of differing length: left and right go to the
@@ -38,9 +42,10 @@ public static class KeyGrid
     public static (int Row, int Column) Vertical(IReadOnlyList<IReadOnlyList<KeySpot>> rows, int row, int column, int step)
     {
         var centre = rows[row][column].Centre - (step * TieBreak);
+        var key = rows[row][column].Key;
         for (var r = row + step; r >= 0 && r < rows.Count; r += step)
         {
-            if (Nearest(rows[r], centre) is { } nearest)
+            if (Nearest(rows[r], centre) is { } nearest && (key < 0 || rows[r][nearest].Key != key))
             {
                 return (r, nearest);
             }

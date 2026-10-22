@@ -1,6 +1,7 @@
 using Arcadia.App.ViewModels;
 using Arcadia.App.Views;
 using Arcadia.Core.Library;
+using Arcadia.Core.Search;
 using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Arcadia.Launchers;
@@ -11,9 +12,10 @@ namespace Arcadia.App.Services;
 /// <summary>
 /// Wires the mouse mode (#64) into Arcadia: it follows every poll of the controllers (also with
 /// Arcadia in the background), shows its feedback over the screen, rumbles the controller that
-/// switched, and runs the automation from the settings on Arcadia's focus changes. Beside it, View
-/// held brings Arcadia back (<see cref="ReturnWithView"/>), and Steam's desktop layout is dropped
-/// where the settings ask for it (<see cref="IDesktopInputFilter"/>).
+/// switched, and runs the automation from the settings on Arcadia's focus changes. Y opens its
+/// on-screen keyboard over the window in front (#110, <see cref="MouseModeKeyboardViewModel"/>). Beside
+/// it, View held brings Arcadia back (<see cref="ReturnWithView"/>), and Steam's desktop layout is
+/// dropped where the settings ask for it (<see cref="IDesktopInputFilter"/>).
 /// </summary>
 public sealed class MouseModeHost : IDisposable
 {
@@ -40,6 +42,15 @@ public sealed class MouseModeHost : IDisposable
     private readonly ControllerActivity _activity;
     private readonly IDesktopInputFilter _desktopFilter;
     private readonly MouseModeOverlay _overlay = new();
+    private readonly IMouseKeyboardOutput _output = MouseKeyboardOutput.CreateDefault();
+    private readonly TimeProvider _time;
+
+    // Made the first time Y opens it, so a session without it costs nothing.
+    private MouseModeKeyboardViewModel? _keyboard;
+    private MouseModeKeyboardWindow? _keyboardWindow;
+
+    // A game was in front at the last check; one coming to the front closes the keyboard.
+    private bool _gameWasInFront;
     private readonly DispatcherTimer _foregroundCheck;
     private readonly DispatcherTimer _focusLossSettle;
     private readonly DispatcherTimer _desktopFilterCheck;
@@ -60,6 +71,7 @@ public sealed class MouseModeHost : IDisposable
     // Only the poll thread reads these two.
     private MouseModeSettings? _optionsFrom;
     private MouseModeOptions? _options;
+    private ReturnWithViewSettings? _optionsReturnFrom;
     private ReturnWithViewSettings? _returnOptionsFrom;
     private ReturnWithViewOptions? _returnOptions;
 
@@ -76,7 +88,8 @@ public sealed class MouseModeHost : IDisposable
         _settings = settings;
         _window = window;
         _viewModel = viewModel;
-        _mode = new MouseMode(MouseKeyboardOutput.CreateDefault(), CurrentOptions, time);
+        _time = time;
+        _mode = new MouseMode(_output, CurrentOptions, time);
         // "Automatisch" always ends when Arcadia comes to the front; "Von Hand" only with its option.
         _automation = new MouseModeAutomation(
             _mode,
@@ -97,11 +110,14 @@ public sealed class MouseModeHost : IDisposable
             CheckArcadiaInFront();
             UpdateGameBlock();
             UpdateDesktopFilter();
+            CloseKeyboardForGame();
         });
 
         _mode.HoldStarted += fillTime => Dispatcher.UIThread.Post(() => _overlay.ShowHold(fillTime));
         _mode.HoldCancelled += () => Dispatcher.UIThread.Post(_overlay.CancelHold);
         _mode.Switched += OnSwitched;
+        _mode.KeyboardOpened += () => Dispatcher.UIThread.Post(OpenKeyboard);
+        _mode.KeyboardButtonChanged += (button, down) => Dispatcher.UIThread.Post(() => _keyboard?.Handle(button, down));
         // No rumble: over a game in exclusive full screen it would read as "switched".
         _mode.Refused += slot =>
         {
@@ -142,6 +158,8 @@ public sealed class MouseModeHost : IDisposable
         _mode.Stop();
         _desktopFilter.Dispose();
         _overlay.Close();
+        _keyboard?.Dispose();
+        _keyboardWindow?.Close();
     }
 
     private void OnPolled(IReadOnlyList<GamepadReading> pads)
@@ -177,12 +195,19 @@ public sealed class MouseModeHost : IDisposable
     private MouseModeOptions CurrentOptions()
     {
         var settings = _settings.Current.MouseMode;
+        var returnSettings = _settings.Current.ReturnWithView;
         var blocked = _blockedByGame;
-        if (_options is null || !ReferenceEquals(settings, _optionsFrom) || blocked != _optionsBlocked)
+        if (_options is null || !ReferenceEquals(settings, _optionsFrom) || !ReferenceEquals(returnSettings, _optionsReturnFrom) || blocked != _optionsBlocked)
         {
             _optionsFrom = settings;
+            _optionsReturnFrom = returnSettings;
             _optionsBlocked = blocked;
-            _options = new MouseModeOptions(settings.Activation != MouseModeActivation.Off, TimeSpan.FromSeconds(settings.HoldSeconds), settings.PointerSpeed, blocked);
+            _options = new MouseModeOptions(
+                settings.Activation != MouseModeActivation.Off,
+                TimeSpan.FromSeconds(settings.HoldSeconds),
+                settings.PointerSpeed,
+                blocked,
+                returnSettings.Enabled ? TimeSpan.FromSeconds(returnSettings.HoldSeconds) : null);
         }
 
         return _options;
@@ -203,6 +228,7 @@ public sealed class MouseModeHost : IDisposable
 
     private void ReturnToArcadia()
     {
+        CloseKeyboard("Arcadia kommt nach vorne");
         _overlay.EndReturnHold();
         AppLog.Write("View gehalten: Arcadia kommt nach vorne");
         ForegroundGuard.BringBack(_window);
@@ -274,9 +300,100 @@ public sealed class MouseModeHost : IDisposable
                 _ => "Mausmodus aus",
             };
             _overlay.ShowSwitched(text, flash: !change.IsAutomatic);
+            if (!change.IsOn)
+            {
+                CloseKeyboard("Mausmodus aus");
+            }
+
             UpdateForegroundCheck();
             UpdateDesktopFilter();
         });
+    }
+
+    /// <summary>
+    /// Y in the mouse mode: the keyboard opens over the window in front, at the edge chosen last unless the
+    /// caret would lie under it there. Should that fail, the buttons go back to the mouse at once.
+    /// </summary>
+    private void OpenKeyboard()
+    {
+        if (!_mode.IsKeyboardOpen)
+        {
+            return;
+        }
+
+        try
+        {
+            var settings = _settings.Current;
+            var layout = KeyboardLayout.Find(settings.KeyboardLayout);
+            if (_keyboard is null || _keyboardWindow is null)
+            {
+                _keyboard = new MouseModeKeyboardViewModel(_output, layout, settings.MouseMode.KeyboardAtTop, _activity.IsInUse, _time, action => Dispatcher.UIThread.Post(action));
+                _keyboard.Hidden += () => CloseKeyboard("B oder Ausblenden");
+                _keyboard.Docked += OnKeyboardDocked;
+                _keyboard.LayoutChosen += chosen => SaveKeyboardSetting(s => s with { KeyboardLayout = chosen.Id });
+                _keyboardWindow = new MouseModeKeyboardWindow { DataContext = _keyboard };
+            }
+
+            var atTop = _keyboardWindow.Open(settings.MouseMode.KeyboardAtTop);
+            _keyboard.Open(layout, atTop);
+            _gameWasInFront = GameInFront();
+            AppLog.Write($"Bildschirmtastatur offen ({(atTop ? "oben" : "unten")}, {layout.Code})");
+        }
+        catch (Exception ex)
+        {
+            AppErrors.Report(ex, "Bildschirmtastatur öffnen");
+            CloseKeyboard("Fehler beim Öffnen");
+        }
+    }
+
+    /// <summary>Closes the keyboard; the mouse mode goes on with the buttons as the mouse's.</summary>
+    private void CloseKeyboard(string reason)
+    {
+        var wasOpen = _mode.IsKeyboardOpen || _keyboardWindow?.IsVisible == true;
+        _mode.CloseKeyboard();
+        _keyboard?.Closed();
+        _keyboardWindow?.Hide();
+        if (wasOpen)
+        {
+            AppLog.Write($"Bildschirmtastatur zu ({reason})");
+        }
+    }
+
+    /// <summary>A game coming to the front closes the keyboard; one that was in front when it opened doesn't.</summary>
+    private void CloseKeyboardForGame()
+    {
+        if (_keyboardWindow?.IsVisible != true)
+        {
+            return;
+        }
+
+        var gameInFront = GameInFront();
+        if (gameInFront && !_gameWasInFront)
+        {
+            CloseKeyboard("Spiel vorne");
+        }
+
+        _gameWasInFront = gameInFront;
+    }
+
+    /// <summary>⧉ tapped or the dock key: the other edge, kept for the next time.</summary>
+    private void OnKeyboardDocked(bool atTop)
+    {
+        _keyboardWindow?.MoveTo(atTop);
+        SaveKeyboardSetting(s => s with { MouseMode = s.MouseMode with { KeyboardAtTop = atTop } });
+    }
+
+    /// <summary>The change applies at once; if settings.json can't be written, only until Arcadia closes.</summary>
+    private void SaveKeyboardSetting(Func<AppSettings, AppSettings> change)
+    {
+        try
+        {
+            _settings.Update(change);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AppLog.Write($"Einstellung der Bildschirmtastatur nicht gespeichert: {ex.Message}");
+        }
     }
 
     /// <summary>Arcadia's process has the foreground; on Windows by asking Windows, elsewhere by the window's activation.</summary>

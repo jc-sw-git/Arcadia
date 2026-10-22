@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using Arcadia.App.Input;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Search;
-using Arcadia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -99,35 +98,18 @@ public sealed class KeyRowViewModel(IReadOnlyList<KeyViewModel> keys)
     public IReadOnlyList<KeyViewModel> Keys { get; } = keys;
 }
 
-/// <summary>An entry of the layout menu (R3).</summary>
-public sealed partial class LayoutItemViewModel(KeyboardLayout layout, Action<KeyboardLayout> pick) : ViewModelBase
-{
-    public KeyboardLayout Layout { get; } = layout;
-
-    [ObservableProperty]
-    public partial bool IsSelected { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsFocused { get; set; }
-
-    public IRelayCommand PickCommand { get; } = new RelayCommand(() => pick(layout));
-}
-
 /// <summary>
 /// The on-screen keyboard of the search: the character rows of the chosen real layout and a row of
 /// special keys. The keys show what they type on the shown level: on the normal one also the shift
 /// and AltGr characters small, as printed on a real key; with shift (LB) or AltGr (RB) only that
-/// level's characters. Both are on while held, or switched on and off by a tap, and only one at a
-/// time. The D-pad moves the focus over the keys that type something (<see cref="KeyGrid"/>).
+/// level's characters (<see cref="KeyboardLevels"/>). The D-pad moves the focus over the keys that
+/// type something (<see cref="KeyGrid"/>).
 /// </summary>
 public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
 {
     /// <summary>13 keys, the longest row, fit the width the keyboard had before (owner, 2026-10-21).</summary>
     private const double KeyWidth = 80;
     private const double KeyGap = 8;
-
-    /// <summary>Held at least this long without typing, shift or AltGr go off on release instead of staying on.</summary>
-    private static readonly TimeSpan HoldTime = TimeSpan.FromMilliseconds(500);
 
     // About as wide as the character rows: R3, L3, LB, Y, X, RB.
     private static readonly (SpecialKey Key, double Width, string Glyph, string Label)[] SpecialKeys =
@@ -142,21 +124,17 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
 
     private readonly Action<KeyViewModel> _press;
     private readonly Action<KeyboardLayout> _layoutChosen;
-    private readonly LatchGesture _shift;
-    private readonly LatchGesture _altGr;
+    private readonly KeyboardLevels _levels;
     private int _row = 1;
     private int _column;
-    private int _menuIndex;
 
     public OnScreenKeyboardViewModel(KeyboardLayout layout, Action<KeyViewModel> press, Action<KeyboardLayout> layoutChosen, TimeProvider time)
     {
         _press = press;
         _layoutChosen = layoutChosen;
-        _shift = new LatchGesture(HoldTime, time);
-        _shift.Changed += _ => ShowLevel();
-        _altGr = new LatchGesture(HoldTime, time);
-        _altGr.Changed += _ => ShowLevel();
-        LayoutItems = KeyboardLayout.All.Select(l => new LayoutItemViewModel(l, Choose)).ToList();
+        _levels = new KeyboardLevels(() => Layout.HasAltGr, time);
+        _levels.Changed += ShowLevel;
+        LayoutMenu = new LayoutMenuViewModel(layout, Choose);
         Layout = layout;
         BuildRows();
         SetFocus(_row, _column);
@@ -165,15 +143,14 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
     [ObservableProperty]
     public partial KeyboardLayout Layout { get; private set; }
 
-    /// <summary>The level the keys show and type; AltGr wins should both be on for a moment.</summary>
-    public KeyLevel Level => _altGr.IsOn ? KeyLevel.AltGr : _shift.IsOn ? KeyLevel.Shift : KeyLevel.Normal;
+    /// <summary>The level the keys show and type.</summary>
+    public KeyLevel Level => _levels.Level;
 
     public ObservableCollection<KeyRowViewModel> Rows { get; } = [];
 
-    public IReadOnlyList<LayoutItemViewModel> LayoutItems { get; }
+    public LayoutMenuViewModel LayoutMenu { get; }
 
-    [ObservableProperty]
-    public partial bool IsLayoutMenuOpen { get; private set; }
+    public bool IsLayoutMenuOpen => LayoutMenu.IsOpen;
 
     public KeyViewModel FocusedKey => Rows[_row].Keys[_column];
 
@@ -200,75 +177,34 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
             return string.Empty;
         }
 
-        _shift.Use();
-        _altGr.Use();
+        _levels.Use();
         return character.ToString();
     }
 
     /// <summary>LB down: shift is on at once, so a key pressed while holding it types its shift character.</summary>
-    public void PressShift()
-    {
-        _altGr.Reset();
-        _shift.Press();
-    }
+    public void PressShift() => _levels.PressShift();
 
     /// <summary>LB up: off after a hold, switched after a tap.</summary>
-    public void ReleaseShift() => _shift.Release();
-
-    /// <summary>LB's release may never arrive, e.g. when the window loses focus.</summary>
-    public void CancelShift() => _shift.Cancel();
+    public void ReleaseShift() => _levels.ReleaseShift();
 
     /// <summary>The shift key pressed with A or clicked.</summary>
-    public void ToggleShift()
-    {
-        _altGr.Reset();
-        _shift.Toggle();
-    }
+    public void ToggleShift() => _levels.ToggleShift();
 
     /// <summary>RB down: AltGr is on at once, so a key pressed while holding it types its AltGr character.</summary>
-    public void PressAltGr()
-    {
-        if (Layout.HasAltGr)
-        {
-            _shift.Reset();
-            _altGr.Press();
-        }
-    }
+    public void PressAltGr() => _levels.PressAltGr();
 
     /// <summary>RB up: off after a hold, switched after a tap.</summary>
-    public void ReleaseAltGr() => _altGr.Release();
-
-    /// <summary>RB's release may never arrive, e.g. when the window loses focus.</summary>
-    public void CancelAltGr() => _altGr.Cancel();
+    public void ReleaseAltGr() => _levels.ReleaseAltGr();
 
     /// <summary>The AltGr key pressed with A or clicked.</summary>
-    public void ToggleAltGr()
-    {
-        if (Layout.HasAltGr)
-        {
-            _shift.Reset();
-            _altGr.Toggle();
-        }
-    }
+    public void ToggleAltGr() => _levels.ToggleAltGr();
 
-    public void ToggleLayoutMenu()
-    {
-        if (IsLayoutMenuOpen)
-        {
-            CloseLayoutMenu();
-            return;
-        }
+    /// <summary>LB's and RB's releases may never arrive, e.g. when the window loses focus.</summary>
+    public void CancelLevelPresses() => _levels.CancelPresses();
 
-        _menuIndex = KeyboardLayout.All.ToList().IndexOf(Layout);
-        UpdateMenuFocus();
-        IsLayoutMenuOpen = true;
-    }
+    public void ToggleLayoutMenu() => LayoutMenu.Toggle();
 
-    public void CloseLayoutMenu()
-    {
-        IsLayoutMenuOpen = false;
-        UpdateMenuFocus();
-    }
+    public void CloseLayoutMenu() => LayoutMenu.Close();
 
     /// <summary>Up/down move through the open layout menu, A picks.</summary>
     public void HandleLayoutMenu(UiAction action)
@@ -276,53 +212,34 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase
         switch (action)
         {
             case UiAction.Up:
-                _menuIndex = Math.Max(0, _menuIndex - 1);
-                UpdateMenuFocus();
+                LayoutMenu.Up();
                 break;
             case UiAction.Down:
-                _menuIndex = Math.Min(LayoutItems.Count - 1, _menuIndex + 1);
-                UpdateMenuFocus();
+                LayoutMenu.Down();
                 break;
             case UiAction.Accept:
-                Choose(LayoutItems[_menuIndex].Layout);
+                LayoutMenu.Accept();
                 break;
         }
     }
 
     private void Choose(KeyboardLayout layout)
     {
-        CloseLayoutMenu();
         if (layout == Layout)
         {
             return;
         }
 
         Layout = layout;
+        LayoutMenu.Selected = layout;
         if (!layout.HasAltGr)
         {
-            _altGr.Reset();
+            _levels.ResetAltGr();
         }
 
         BuildRows();
         SetFocus(_row, _column);
         _layoutChosen(layout);
-    }
-
-    private void UpdateMenuFocus()
-    {
-        for (var i = 0; i < LayoutItems.Count; i++)
-        {
-            LayoutItems[i].IsFocused = IsLayoutMenuOpen && i == _menuIndex;
-            LayoutItems[i].IsSelected = LayoutItems[i].Layout == Layout;
-        }
-    }
-
-    partial void OnLayoutChanged(KeyboardLayout value)
-    {
-        foreach (var item in LayoutItems)
-        {
-            item.IsSelected = item.Layout == value;
-        }
     }
 
     private void BuildRows()

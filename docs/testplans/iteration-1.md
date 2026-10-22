@@ -624,7 +624,8 @@ Verlauf:
 - [ ] **T64-13** „Mit ⧉ zurück zu Arcadia“ (Standard: an, 1 Sekunde), Arcadia im Hintergrund (Explorer, Launcher,
       ein Spiel; mit und ohne Mausmodus): View gehalten zeigt ab 0,2 s oben „Zurück zu Arcadia“, dessen Rahmen sich
       über die Haltedauer füllt, dann kommt Arcadia nach vorne, ohne dass sich das Menü öffnet. Früher loslassen:
-      der Rahmen läuft zurück. „Sofort“: kurzes Drücken genügt, ohne Fenster. Back + Start löst es nie aus. Aus:
+      der Rahmen läuft zurück. Die Haltedauer geht von 1 bis 9 s, „Sofort“ gibt es nicht mehr (#110); ein
+      gespeichertes „Sofort“ wird 1 s. Back + Start löst es nie aus. Aus:
       View tut im Hintergrund nichts. In Arcadia öffnet View weiter das Menü. · E2E: nein
 - [ ] **T64-14** Steam läuft (Steam Controller oder Xbox-Pad mit Steam Input), „Steams Desktop-Belegung ignorieren“
       (eigene Box unter „Zurück zu Arcadia“, wirkt auch bei Mausmodus „Aus“) an: Back + Start im Explorer öffnet kein Alt+Tab-Fenster mehr, im Mausmodus kommen nur Arcadias Zeiger und
@@ -824,6 +825,44 @@ Verlauf:
 |---|---|---|---|---|---|
 | T129-1, T129-2, T129-3, T129-6, T129-7 | 2026-10-21 | Claude | Branch `feat/bildschirmtastatur-als-nachbildung-echter-tastaturlayouts-129`, Linux, Xvfb 1920×1080 `--demo`, Fenster 1600×900, nur Maus per xdotool | ✅ DE mit Umschalt- und AltGr-Zeichen in der bisherigen Breite; Klick auf „AltGr“ zeigt nur ² ³ { [ ] } \ @ € ~ \| µ, auf „⇧ Groß“ nur ° ! " … Q W E …; Klick auf „a“ tippt „a“; US mit ausgegrautem „AltGr“, Klick darauf ändert nichts | Controller (LB/RB gehalten, D-Pad über leere Tasten) am PC des Owners |
 | T129-4, T129-5, T129-6 | 2026-10-21 | Claude | wie oben, Unit-Tests (`KeyboardLayoutTests`, `KeyGridTests`) | ⚠️ Layouts aller fünf Sprachen, Tottasten und das Überspringen leerer Tasten grün; mit dem Controller nicht gefahren | Lauf am PC des Owners |
+
+## #110 Bildschirmtastatur für fremde Fenster (Y im Mausmodus)
+
+- [ ] **T110-1** Mausmodus an, Editor (Notepad) vorne, Textfeld aktiv: Y öffnet die Bildschirmtastatur unten in der
+      Mitte des Monitors, auf dem der Editor liegt; der Editor behält den Fokus (Titelleiste aktiv, Cursor blinkt).
+      Reihen wie die echte deutsche Tastatur: ⌫ „Löschen“ oben rechts, ↹ Tab, hohes ↵ Enter über zwei Reihen,
+      Feststelltaste als leere dunkle Taste, ⇧ links und rechts, Leertaste, AltGr, keine Strg/Alt/Win-Tasten; rechts
+      „Layout: DE“, „Nach oben“, „Ausblenden“ und die Pfeile. Alle Tasten mit dunklerer Unterkante. · E2E: nein
+- [ ] **T110-2** D-Pad bewegt den Fokus (über die Feststelltaste hinweg, vom hohen Enter nach oben/unten weiter),
+      A tippt das gezeigte Zeichen in den Editor, X löscht (gehalten: wiederholt), Y tippt ein Leerzeichen,
+      ≡ Enter, ↹ Tab, Pfeile bewegen den Cursor. Ä, €, @, { und ^ (Tottaste: sofort, ohne Folgebuchstaben) kommen
+      richtig an. · E2E: nein
+- [ ] **T110-3** LB tippen schaltet Umschalt an und aus, gehalten nur solange; RB genauso AltGr, nur eins zugleich.
+      Mit Umschalt an: Pfeile markieren Text, ↹ springt zurück (Umschalt+Tab). · E2E: nein
+- [ ] **T110-4** R3 öffnet das Layout-Menü oben rechts (D-Pad, A wählt, B schließt nur das Menü). Bei US: Tastatur
+      in ANSI-Form (breites Enter in der mittleren Reihe, \ darüber, breites linkes ⇧), AltGr ausgegraut. Das
+      gewählte Layout gilt danach auch in Arcadias Suche und umgekehrt. · E2E: ja
+- [ ] **T110-5** ⧉ kurz: die Tastatur springt an den oberen Rand, die Taste heißt „Nach unten“ (Pfeil nach unten);
+      nochmal: zurück. Beim nächsten Öffnen (auch nach Neustart) liegt sie am zuletzt gewählten Rand – außer die
+      Einfügemarke des Ziels läge darunter, dann am anderen. · E2E: nein
+- [ ] **T110-6** B blendet die Tastatur aus, der Mausmodus bleibt (A klickt wieder, B ist wieder Esc). ⧉ gehalten
+      (1 s) holt Arcadia zurück und schließt die Tastatur; ⧉ + ≡ beendet den Mausmodus samt Tastatur; ein Spiel,
+      das nach vorne kommt, schließt sie auch. Die Sticks, RT und LT bleiben bei offener Tastatur die Maus. · E2E: nein
+- [ ] **T110-7** Mit der Maus: ein Klick auf eine Taste tippt sie, der Editor behält den Fokus, der Controller-Fokus
+      springt auf die geklickte Taste; die Legende oben zeigt nach dem Klick „Klick Taste tippen“, nach einer
+      Controller-Taste wieder die Buttons. · E2E: nein
+- [ ] **T110-8** Mehrere Monitore bzw. 4K: Die Tastatur öffnet auf dem Monitor des Vordergrundfensters und ist so
+      groß wie Arcadias Big-Picture-Ansicht dort (auf 4K doppelt so groß wie auf Full HD). · E2E: nein
+- [ ] **T110-9** „So funktioniert's“ listet „Y: Bildschirmtastatur (B blendet sie aus)“ und nennt bei den Grenzen,
+      dass Windows die Tastatur über Spielen im exklusiven Vollbild nicht zeigt. „Zurück zu Arcadia“: Haltedauer
+      1–9 s, kein „Sofort“. · E2E: ja
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T110-1, T110-3, T110-4, T110-5, T110-7 (nur Ansicht) | 2026-10-22 | Claude | Branch `feat/bildschirmtastatur-fuer-fremde-fenster-110`, Linux, Xvfb 1920×1080 `--demo`; Tastaturfenster lokal per Testcode geöffnet und Tasten ausgelöst (nicht eingecheckt) | ✅ DE unten mit hohem Enter, Umschalt- und AltGr-Ebene (leere Tasten übersprungen), US oben in ANSI-Form mit offenem Layout-Menü und ausgegrautem AltGr, Legende nach Mausklick. Fokus behalten, `SendInput`, Einfügemarke und Monitore nur unter Windows prüfbar | Lauf am PC des Owners |
+| T110-2 bis T110-6 (Logik) | 2026-10-22 | Claude | `dotnet test` (`MouseModeKeyboardTests`, `FullKeyboardTests`, `KeyboardPlacementTests`, `ReturnWithViewTests`, `SettingsServiceTests`) | ✅ Belegung bei offener Tastatur, ⧉ kurz vs. gehalten, ≡ als Enter, Übergabe gehaltener Tasten, ISO/ANSI-Form, Fokus am hohen Enter, Platzierung und Rand, „Sofort“ → 1 s | Echte Eingaben unter Windows nicht geprüft |
 
 ## Grundgerüst (ohne Issue)
 

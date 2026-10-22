@@ -732,11 +732,11 @@
 
                   <!-- Layout menu above the R3 key; a canvas, so it doesn't make the keyboard taller. -->
                   <Canvas Height="0" VerticalAlignment="Bottom">
-                    <Border Canvas.Left="0" Canvas.Bottom="68" Width="380" IsVisible="{Binding Keyboard.IsLayoutMenuOpen}" Background="{StaticResource SurfaceRaised}"
+                    <Border Canvas.Left="0" Canvas.Bottom="68" Width="380" IsVisible="{Binding Keyboard.LayoutMenu.IsOpen}" Background="{StaticResource SurfaceRaised}"
                             CornerRadius="14" BoxShadow="{StaticResource LayoutMenuShadow}" Padding="10">
                       <StackPanel Spacing="2">
                         <TextBlock Text="TASTATURLAYOUT" FontSize="13" FontWeight="Bold" LetterSpacing="1.3" Foreground="{StaticResource TextMuted}" Margin="12,8,12,10" />
-                        <ItemsControl ItemsSource="{Binding Keyboard.LayoutItems}">
+                        <ItemsControl ItemsSource="{Binding Keyboard.LayoutMenu.Items}">
                           <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                               <StackPanel Spacing="2" />
@@ -1248,7 +1248,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
                       <StackPanel Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="Haltedauer" FontSize="18" FontWeight="Bold" />
-                        <TextBlock ctl:ButtonTextBlock.Text="So lange muss ⧉ gehalten werden. „Sofort“ wechselt schon beim kurzen Drücken." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                        <TextBlock ctl:ButtonTextBlock.Text="So lange muss ⧉ gehalten werden. Kurz gedrückt schiebt ⧉ die Bildschirmtastatur des Mausmodus an den anderen Bildschirmrand." FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button Classes="plain stepperArrow" Command="{Binding HoldItem.DecreaseCommand}" IsEnabled="{Binding HoldItem.CanDecrease}" Content="‹" />

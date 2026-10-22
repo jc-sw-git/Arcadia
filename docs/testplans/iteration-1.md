@@ -952,14 +952,24 @@ Verlauf:
       anderen Controller“, nennen den Controller in Klartext (z. B. „Xbox 360 Controller“, kein „#controller_…“,
       keine USB-ID) und sagen, dass der Steam Controller deshalb nicht funktioniert und wo man es abschaltet.
       `arcadia.log` nennt den Controller mit Steams Namen und USB-ID. · E2E: nein (echtes Steam mit zwei Controllern)
-- [ ] **T143-2** Wie T143-1: In Arcadia die Maus bewegen und klicken, eine Taste drücken. Die Hinweise und das ✕
-      der Dialoge bleiben auf Maus/Tastatur, bis ein Controller-Knopf gedrückt wird. · E2E: nein
+- [ ] **T143-2** Wie T143-1: Innerhalb weniger Sekunden pausiert SISR, die Einstellungen zeigen „SISR pausiert
+      wegen eines anderen Controllers“ mit „Erneut versuchen“, der Status „Pausiert – siehe unten.“. In Arcadia die
+      Maus bewegen und klicken, eine Taste drücken: Die Hinweise und das ✕ der Dialoge bleiben auf Maus/Tastatur, bis
+      ein Controller-Knopf gedrückt wird; der Xbox Controller steuert Arcadia normal. · E2E: nein
+- [ ] **T143-3** Wie T143-2, dann in Steam Steam Input für Xbox-Controller wieder ausschalten: SISR läuft nach
+      wenigen Sekunden von selbst wieder, der Steam Controller funktioniert, die Warnung ist weg. · E2E: nein
+- [ ] **T143-4** Wie T143-2, dann den Xbox Controller ausschalten und „Erneut versuchen“ wählen (mit dem Steam
+      Controller über Steams Desktop-Belegung oder der Maus): SISR startet, der Steam Controller funktioniert. · E2E: nein
+- [ ] **T143-5** Steam Input für Xbox-Controller aus, Steam Controller und Xbox Controller verbunden: SISR läuft
+      und pausiert nicht, auch nicht direkt nach dem Start von Arcadia. · E2E: nein
 
 Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | T143-1 | 2026-10-22 | Claude | Branch `fix/steam-input-fuer-ganze-controllertypen-143`, Linux, ohne .NET SDK; Unit-Tests (`SisrDevicesTests`, `ControllerSupportServiceTests`) nur in CI | ⚠️ App nicht gestartet | Lauf am PC des Owners |
+| T143-2 (vorher) | 2026-10-22 | Juri | PC des Owners, `main` (Stand #133), Steam Input für Xbox an, 8BitDo Ultimate 2 und Steam Controller | ❌ Hinweise springen zurück auf Controller; `arcadia.log`: SISR bildet `#controller_xbox360`, `XInput Controller #2` und den 8BitDo nach, Phantom-Eingaben (23:59 je 469× linker und rechter Stick oben in einer Minute) | Pause für andere Controller außerhalb von Spielen |
+| T143-2 bis T143-5 | 2026-10-22 | Claude | Branch wie oben, Linux, Unit-Tests mit nachgebildetem SISR nur in CI | ⚠️ App nicht gestartet | Lauf am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

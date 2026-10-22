@@ -83,7 +83,14 @@ focus handling or anything SISR/usbip related.
   "Steam Controller blockiert durch einen anderen Controller": with Steam Input on for a whole controller type
   (Steam → Einstellungen → Controller → Erweiterte Controllereinstellungen) SISR takes that pad outside any game
   and the Steam Controller stops working (owner's PC, 2026-10-22, #143). SDL then names the pad by Steam's
-  untranslated type, e.g. `#controller_xbox360`; `SisrGamepad.DisplayName` turns it into plain words.
+  untranslated type, e.g. `#controller_xbox360`; `SisrGamepad.DisplayName` turns it into plain words. Steam then
+  takes SISR's virtual pads again and SISR emulates those too (`#controller_xbox360`, `XInput Controller #2`):
+  in `arcadia.log` such pads held both sticks up, or the D-pad down or right, for minutes, so Arcadia's hints kept
+  jumping back to the controller. So once SISR emulates another controller in two checks in a row outside a
+  Steam game, SISR pauses ("SISR pausiert wegen eines anderen Controllers", warning). The pause ends when Steam's
+  `SteamController_XBoxSupport` / `SteamController_GenericGamepadSupport` go off (if one was on when it began;
+  read from `localconfig.vdf` only when the file changed) or with "Erneut versuchen". Where Steam stores the same
+  for PlayStation and Nintendo pads isn't known; `localconfig.vdf` only lists `ControllerTypesUsed`.
 - SISR may only run while Steam is ready: `steam` and `steamwebhelper` run, a user is logged in
   (`ActiveProcess\ActiveUser`) and the client finished that login: the latest `Starting login` in
   `logs/steamui_login.txt` is followed by `SetLoginState: Success` (`SteamLoginLog`). `ActiveUser` is set as

@@ -67,6 +67,9 @@ public interface IControllerSupportPlatform
     /// <summary>How Steam Input is set for the Steam game <paramref name="appId"/>, or null if Steam's settings can't be read.</summary>
     SteamInputSetting? SteamInputFor(int appId);
 
+    /// <summary>Steam's Steam Input defaults outside any game, or null if Steam's settings can't be read. Cheap while the file is unchanged.</summary>
+    SteamInputSetting? SteamInputDefaults();
+
     /// <summary>Asks Steam to exit and waits for it; false if it is still running after the timeout.</summary>
     Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken);
 
@@ -204,6 +207,37 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
             return null;
         }
     }
+
+    public SteamInputSetting? SteamInputDefaults()
+    {
+        if (SteamInstallation.Find()?.LocalConfigPath is not { } path || !File.Exists(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            // Asked every few seconds while SISR is paused for another controller; the file is about 1 MB.
+            var written = File.GetLastWriteTimeUtc(path);
+            if (_defaults is { } cached && cached.Path == path && cached.Written == written)
+            {
+                return cached.Setting;
+            }
+
+            var setting = SteamInputSetting.Read(File.ReadAllText(path), appId: 0);
+            _defaults = new(path, written, setting);
+            return setting;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    // A reference, so a reader on another thread sees a whole entry or none.
+    private volatile CachedDefaults? _defaults;
+
+    private sealed record CachedDefaults(string Path, DateTime Written, SteamInputSetting? Setting);
 
     public async Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken) =>
         await SteamInstallation.ShutdownAsync(SteamExitTimeout, time, cancellationToken);

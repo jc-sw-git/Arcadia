@@ -709,6 +709,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         {
             (false, _, _) when ShowInstall => "Nicht eingerichtet – „SISR installieren“ richtet alles Nötige ein und schaltet die Option ein.",
             (false, _, _) => "Aus – außerhalb von Steam läuft der Steam Controller im Desktop-Modus (Maus und Tastatur).",
+            (true, true, true) => "Pausiert – siehe unten.",
             (true, true, _) => "Pausiert – ein Spiel mit „Steam Input“ läuft.",
             (true, false, true) => "Eingeschaltet, aber nicht voll funktionsfähig – siehe unten.",
             _ => state switch

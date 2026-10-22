@@ -1084,6 +1084,78 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SISR_emulating_another_controller_once_outside_a_game_keeps_running()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _api.XboxPads = 1;
+        await service.WatchAsync();
+        _api.XboxPads = 0;
+        await service.WatchAsync();
+
+        Assert.True(_sisr.Running);
+        Assert.Equal(0, _sisr.Stops);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task SISR_emulating_another_controller_outside_a_game_pauses_until_Steam_Input_for_Xbox_pads_is_off()
+    {
+        var service = Create();
+        _platform.SteamInputDefault = new SteamInputSetting(null, XboxSupport: true, GenericSupport: false);
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _api.XboxPadName = "#controller_xbox360";
+        _api.XboxPads = 1;
+        await service.WatchAsync();
+        await service.WatchAsync();
+
+        Assert.False(_sisr.Running);
+        Assert.Equal(SisrState.Paused, service.State);
+        await service.RefreshAsync();
+        var issue = Assert.Single(service.Issues, i => i.Id == "sisr-paused-other-controller-type");
+        Assert.Equal(HealthSeverity.Warning, issue.Severity);
+        Assert.Equal(HealthFix.RestartSisr, issue.Fix);
+        Assert.Contains("Xbox 360 Controller", issue.Detail);
+        Assert.Contains("Steam Controller funktioniert nicht", issue.Detail);
+        await service.TickAsync();
+        Assert.Equal(0, _sisr.Starts);
+
+        _api.XboxPads = 0;
+        _platform.SteamInputDefault = new SteamInputSetting(null, XboxSupport: false, GenericSupport: false);
+        await AdvanceUntil(() => _sisr.Starts == 1);
+        await service.RefreshAsync();
+
+        Assert.DoesNotContain(service.Issues, i => i.Id == "sisr-paused-other-controller-type");
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task Trying_again_ends_the_pause_for_another_controller()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        _api.XboxPads = 1;
+        await service.WatchAsync();
+        await service.WatchAsync();
+        Assert.Equal(SisrState.Paused, service.State);
+
+        // Steam's setting can't be read here, so only the user ends the pause.
+        _time.Advance(TimeSpan.FromSeconds(30));
+        await Task.Delay(10);
+        Assert.Equal(0, _sisr.Starts);
+
+        _api.XboxPads = 0;
+        await service.ApplyFixAsync(HealthFix.RestartSisr);
+        await AdvanceUntil(() => _sisr.Starts == 1);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
     public async Task SISR_emulating_an_Xbox_pad_in_a_Steam_game_pauses_until_the_game_ends()
     {
         var service = Create();
@@ -1464,6 +1536,11 @@ public sealed class ControllerSupportServiceTests : IDisposable
             SteamInputReads++;
             return SteamInput.GetValueOrDefault(appId);
         }
+
+        /// <summary>Steam Input outside games; null is unreadable.</summary>
+        public SteamInputSetting? SteamInputDefault { get; set; }
+
+        public SteamInputSetting? SteamInputDefaults() => SteamInputDefault;
 
         public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken)
         {

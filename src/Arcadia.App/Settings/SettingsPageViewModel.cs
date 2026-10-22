@@ -62,12 +62,6 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
             return true;
         }
 
-        // While Steam or SISR start, B still leaves; another category may be looked at meanwhile.
-        if (category.IsLocked && action is not (UiAction.Back or UiAction.Settings or UiAction.PreviousTab or UiAction.NextTab))
-        {
-            return true;
-        }
-
         switch (action)
         {
             case UiAction.Up:

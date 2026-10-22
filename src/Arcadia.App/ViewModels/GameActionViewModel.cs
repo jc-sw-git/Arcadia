@@ -24,7 +24,7 @@ public interface IGameActionHost
     /// <summary>True when the Steam Controller mode matters (option on, Steam Controller connected).</summary>
     bool ShowControllerMode { get; }
 
-    /// <summary>"Xbox 360 Controller (SISR)" or "Steam Input".</summary>
+    /// <summary>"Xbox Controller (SISR)" or "Steam Input".</summary>
     string ControllerModeOf(Game game);
 
     void Play(GameTileViewModel tile);
@@ -240,6 +240,6 @@ public sealed partial class GameActionViewModel : ViewModelBase
 /// <summary>The names of the two Steam Controller modes (#92).</summary>
 public static class ControllerModes
 {
-    public const string Sisr = "Xbox 360 Controller (SISR)";
+    public const string Sisr = "Xbox Controller (SISR)";
     public const string Steam = "Steam Input";
 }

@@ -27,6 +27,18 @@ public sealed record InfoKey(string Input, string Effect) : InfoBlock;
 /// <summary>Something that went wrong, in the danger colour.</summary>
 public sealed record InfoError(string Text) : InfoBlock;
 
+/// <summary>
+/// A box of its own below the row's description, e.g. "Status" or "So funktioniert es" of Steam Controller Support:
+/// facts about the setting that are nothing to set, so they are no rows (owner, 2026-10-22).
+/// </summary>
+public sealed record InfoSection(string Title, IReadOnlyList<InfoBlock> Blocks) : InfoBlock;
+
+/// <summary>The state of something running: a dot (green while all is well) or a spinner while it starts or stops.</summary>
+public sealed record InfoStatus(string Text, bool IsHealthy, bool IsInTransition) : InfoBlock
+{
+    public bool ShowsDot => !IsInTransition;
+}
+
 /// <summary>Small print at the end, e.g. licence and source.</summary>
 public sealed record InfoFootnote(string Text) : InfoBlock;
 

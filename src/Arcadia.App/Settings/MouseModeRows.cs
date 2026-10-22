@@ -3,7 +3,7 @@ using Arcadia.Core.Settings;
 
 namespace Arcadia.App.Settings;
 
-/// <summary>One line of "So funktioniert's": a button and what it does in the mouse mode.</summary>
+/// <summary>One line of "So funktioniert es": a button and what it does in the mouse mode.</summary>
 public sealed record MouseModeHelpRow(string Input, string Effect);
 
 /// <summary>
@@ -27,7 +27,6 @@ public sealed class MouseModeRows
     private readonly SwitchRowViewModel _endInFront;
     private readonly ChoiceRowViewModel _inGames;
     private readonly ChoiceRowViewModel _perGameDefault;
-    private readonly InfoRowViewModel _help;
 
     public MouseModeRows(SettingsChanges changes)
     {
@@ -105,13 +104,6 @@ public sealed class MouseModeRows
             Subtitle = "Vorausgewählt für jedes Spiel auf der Detailseite",
             Info = [new InfoText("„Standard“ ist für jedes Spiel auf der Detailseite vorausgewählt. „Erlaubt“ wird den Mausmodus erlauben. „Deaktiviert“ wird ihn deaktivieren.")],
         };
-        _help = new InfoRowViewModel("mouse-mode-help", "Mausmodus – so funktioniert's")
-        {
-            Group = Group,
-            Subtitle = "Die Tasten des Mausmodus und wo er nicht hilft",
-            Info = HelpInfo(),
-        };
-
         Update();
     }
 
@@ -140,24 +132,25 @@ public sealed class MouseModeRows
     ];
 
     /// <summary>In the order the controller moves through them.</summary>
-    public IReadOnlyList<SettingsRowViewModel> Rows => [_activation, _hold, _speed, _endInFront, _inGames, _perGameDefault, _help];
+    public IReadOnlyList<SettingsRowViewModel> Rows => [_activation, _hold, _speed, _endInFront, _inGames, _perGameDefault];
 
     private MouseModeSettings Current => _changes.Current.MouseMode;
 
-    private static IReadOnlyList<InfoBlock> HelpInfo() =>
+    /// <summary>Below the description of "Mausmodus", in a box of its own (owner, 2026-10-22).</summary>
+    private static readonly InfoSection Help = new("SO FUNKTIONIERT ES",
     [
         new InfoText("⧉ + ≡ gedrückt halten, bis der Bildschirmrand voll ist: Der Controller steuert jetzt die Maus, auch in Fenstern außerhalb von Arcadia. Genauso geht es zurück. Jeder verbundene Controller kann umschalten und den Zeiger bewegen."),
         .. HelpRows.Select(r => new InfoKey(r.Input, r.Effect)),
         new InfoHeading("GRENZEN"),
         .. HelpLimits.Select(l => new InfoBullet(l)),
-    ];
+    ]);
 
     /// <summary>What the chosen way of switching does, under "Mausmodus".</summary>
     private string ActivationText => Current.Activation switch
     {
         MouseModeActivation.Off => "Der Controller bleibt immer ein Controller.",
-        MouseModeActivation.Automatic => "Bei „Automatisch“ schaltet Arcadia automatisch in den Mausmodus, sobald Arcadia (oder ein Arcadia bekanntes Spiel) nicht mehr den Fokus hat, das heißt nicht mehr im Vordergrund läuft. Der Controller kann dann den Mauszeiger bedienen. Unter „So funktioniert's“ erhältst du weitere Informationen dazu. Kommt Arcadia (oder ein Spiel) zurück in den Fokus, wird der Mausmodus automatisch beendet. Dies passiert auch dann, wenn „Mausmodus beenden, wenn Arcadia im Vordergrund ist“ ausgeschaltet ist.",
-        _ => "Durch Halten von ⧉ + ≡ wechselst du in den Mausmodus. Dies erlaubt dem Controller, den Mauszeiger zu steuern. Erneutes Halten schaltet den Modus aus. Unter „So funktioniert's“ erhältst du weitere Informationen dazu.",
+        MouseModeActivation.Automatic => "Bei „Automatisch“ schaltet Arcadia automatisch in den Mausmodus, sobald Arcadia (oder ein Arcadia bekanntes Spiel) nicht mehr den Fokus hat, das heißt nicht mehr im Vordergrund läuft. Der Controller kann dann den Mauszeiger bedienen. Unten unter „So funktioniert es“ erfährst du mehr dazu. Kommt Arcadia (oder ein Spiel) zurück in den Fokus, wird der Mausmodus automatisch beendet. Dies passiert auch dann, wenn „Mausmodus beenden, wenn Arcadia im Vordergrund ist“ ausgeschaltet ist.",
+        _ => "Durch Halten von ⧉ + ≡ wechselst du in den Mausmodus. Dies erlaubt dem Controller, den Mauszeiger zu steuern. Erneutes Halten schaltet den Modus aus. Unten unter „So funktioniert es“ erfährst du mehr dazu.",
     };
 
     /// <summary>What the chosen value of "Beenden des Mausmodus in Spielen erzwingen" does (owner's wording, 2026-10-21).</summary>
@@ -184,7 +177,7 @@ public sealed class MouseModeRows
         _endInFront.IsDimmed = !manual;
         _inGames.IsDimmed = !manual;
         _perGameDefault.IsDimmed = !manual || Current.InGames != MouseModeInGames.PerGame;
-        _activation.Info = [new InfoText(ActivationText)];
+        _activation.Info = [new InfoText(ActivationText), Help];
         _inGames.Info = [new InfoText(InGamesText)];
     }
 }

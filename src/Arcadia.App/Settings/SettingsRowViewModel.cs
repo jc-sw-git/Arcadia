@@ -80,6 +80,9 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     {
     }
 
+    /// <summary>The mouse moved over the row: it takes the focus, so the info panel explains it before a click changes it.</summary>
+    public void Point() => Pointed?.Invoke(this);
+
     public virtual void Activate()
     {
     }
@@ -88,7 +91,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     [RelayCommand]
     private void Click()
     {
-        Pointed?.Invoke(this);
+        Point();
         if (CanActivate)
         {
             Activate();
@@ -105,7 +108,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     private void Step(int delta)
     {
-        Pointed?.Invoke(this);
+        Point();
         if (CanChange)
         {
             Change(delta);
@@ -241,17 +244,4 @@ public partial class InfoRowViewModel(string key, string title) : SettingsRowVie
     public partial string ValueText { get; set; } = string.Empty;
 
     public bool HasValue => ValueText.Length > 0;
-}
-
-/// <summary>The state of something running, with a dot (green while all is well) or a spinner while it starts or stops.</summary>
-public sealed partial class StatusRowViewModel(string key, string title) : InfoRowViewModel(key, title)
-{
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsDot))]
-    public partial bool IsInTransition { get; set; }
-
-    public bool ShowsDot => !IsInTransition;
-
-    [ObservableProperty]
-    public partial bool IsHealthy { get; set; }
 }

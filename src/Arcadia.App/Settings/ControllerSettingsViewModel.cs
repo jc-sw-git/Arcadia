@@ -59,9 +59,10 @@ public enum SettingsPrompt
 }
 
 /// <summary>
-/// The category "Controller" (#15): Steam Controller Support (switch, status, problems with their fix, how it works,
-/// drawbacks), the mouse mode, "Zurück zu Arcadia" and Steam's desktop layout, as rows of the page. Installing SISR
-/// asks its questions in dialogs over the page.
+/// The category "Controller" (#15): Steam Controller Support (switch, problems with their fix, SISR's update), the mouse
+/// mode, "Zurück zu Arcadia" and Steam's desktop layout, as rows of the page. Status, how it works, drawbacks and SISR's
+/// version are nothing to set, so they are boxes in the switch's info panel (owner, 2026-10-22). Installing SISR asks its
+/// questions in dialogs over the page.
 /// </summary>
 public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewModel
 {
@@ -71,10 +72,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     private readonly ControllerSupportService _support;
     private readonly SisrRowViewModel _sisr;
-    private readonly StatusRowViewModel _status;
-    private readonly ActionRowViewModel _version;
-    private readonly InfoRowViewModel _howItWorks;
-    private readonly InfoRowViewModel _drawbacks;
+    private readonly ActionRowViewModel _update;
     private readonly MouseModeRows _mouseMode;
     private readonly ReturnWithViewRows _returnWithView;
     private readonly SwitchRowViewModel _steamDesktopLayout;
@@ -103,40 +101,12 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         {
             Group = SteamControllerGroup,
             Subtitle = "Für Spiele außerhalb von Steam und für Arcadia",
-            Info =
-            [
-                new InfoText("Mit dieser Einstellung wird der Steam Controller als Xbox 360 Gamepad behandelt. Das ist nützlich, wenn du den Steam Controller auch in Spielen außerhalb von Steam (oder in Arcadia) benutzen möchtest, da er dort sonst im „Desktop-Modus“ läuft. Dies ist eine Besonderheit des Steam Controllers."),
-                new InfoText("Dafür wird die Drittanbieter-Software SISR benötigt und bei Bedarf automatisch installiert. Arcadia startet SISR unsichtbar im Hintergrund."),
-            ],
         };
-        _status = new StatusRowViewModel("sisr-status", "Status") { Group = SteamControllerGroup };
-        _version = new ActionRowViewModel("sisr-version", "SISR", () => _support.InstallUpdateAsync().Forget("SISR aktualisieren"))
+        _update = new ActionRowViewModel("sisr-update", "SISR aktualisieren", () => _support.InstallUpdateAsync().Forget("SISR aktualisieren"))
         {
             Group = SteamControllerGroup,
+            ActionText = "Aktualisieren",
             IsPrimary = true,
-        };
-        _howItWorks = new InfoRowViewModel("sisr-how-it-works", "So funktioniert es")
-        {
-            Group = SteamControllerGroup,
-            Subtitle = "Zwei Modi für den Steam Controller, pro Spiel wählbar",
-            Info =
-            [
-                new InfoText("Ist diese Option aktiv (und ein Steam Controller verbunden), kann in Arcadia pro Spiel zwischen zwei Modi für den Steam Controller gewechselt werden:"),
-                new InfoCard("Xbox 360 Controller (SISR)", "Arcadia behandelt den Steam Controller für dieses Spiel wie einen Xbox 360 Controller.", "Vorauswahl für Spiele außerhalb von Steam"),
-                new InfoCard("Steam Input", "Das Standardverhalten des Steam Controllers. Empfohlen für Steam-Spiele oder wenn du außerhalb von Steam den Desktop-Modus nutzen möchtest; der Controller simuliert dann Maus und Tastatur.", "Vorauswahl für Spiele aus Steam"),
-                new InfoText("Dafür wird die Drittanbieter-Software SISR benötigt und bei Bedarf automatisch installiert. Arcadia startet SISR unsichtbar im Hintergrund."),
-                new InfoFootnote("SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR"),
-            ],
-        };
-        _drawbacks = new InfoRowViewModel("sisr-drawbacks", "Nachteile")
-        {
-            Group = SteamControllerGroup,
-            Subtitle = "Steam muss laufen; Grenzen bei „Steam Input“",
-            Info =
-            [
-                new InfoBullet("Steam muss im Hintergrund laufen."),
-                new InfoBullet("Arcadia erkennt den Steam Controller nur, solange er als Xbox 360 Controller läuft. In Spielen auf „Steam Input“ wirken mit ihm deshalb weder ⧉ + ≡ für den Mausmodus noch ⧉ halten für „Zurück zu Arcadia“."),
-            ],
         };
         _mouseMode = new MouseModeRows(changes);
         _returnWithView = new ReturnWithViewRows(changes);
@@ -148,7 +118,12 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         {
             Group = "STEAM",
             Subtitle = "Maus und Tasten, die Steam aus dem Controller macht, verwerfen",
-            Info = [new InfoText("Läuft Steam, macht es aus dem Controller selbst Maus und Tasten, z. B. aus ⧉ + ≡ ein Alt+Tab, und Eingaben kommen in Arcadia doppelt an. Arcadia verwirft diese Eingaben.")],
+            Info =
+            [
+                new InfoText("Läuft Steam, macht es außerhalb von Spielen selbst Maus und Tasten aus dem Controller („Desktop-Belegung“), z. B. aus ⧉ + ≡ ein Alt+Tab oder aus dem rechten Stick die Maus. Arcadia bekommt dann jede Eingabe doppelt: als Controller-Taste und als Maus oder Taste von Steam."),
+                new InfoText("Ist die Option an, verwirft Arcadia diese Maus- und Tasteneingaben, solange ein Controller benutzt wird. Echte Maus und Tastatur wirken weiter. Neben einem Spiel aus der Bibliothek verwirft Arcadia nur Tasten, und nur solange ⧉ + ≡ gehalten werden, damit das Spiel Steams Belegung behält."),
+                new InfoText("Empfohlen, wenn du den Mausmodus benutzt: Sonst bewegen Steam und Arcadia den Mauszeiger gleichzeitig, und Tasten kommen doppelt an."),
+            ],
         };
 
         _retryInstall = new PromptButtonViewModel(ContinueInstall);
@@ -258,8 +233,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     public string SteamStartFailedTitle => SteamLoginHangs ? "Steam meldet sich nicht an" : "Steam startet nicht";
 
     public string SteamStartFailedText => SteamLoginHangs
-        ? "Steam läuft, hat sich aber nicht innerhalb von einer Minute fertig angemeldet. Erst danach kann SISR den Steam Controller als Xbox 360 Gamepad weiterreichen."
-        : "Steam konnte nicht innerhalb von einer Minute gestartet werden. Ohne Steam kann SISR den Steam Controller nicht als Xbox 360 Gamepad weiterreichen.";
+        ? "Steam läuft, hat sich aber nicht innerhalb von einer Minute fertig angemeldet. Erst danach kann SISR den Steam Controller als Xbox Controller weiterreichen."
+        : "Steam konnte nicht innerhalb von einer Minute gestartet werden. Ohne Steam kann SISR den Steam Controller nicht als Xbox Controller weiterreichen.";
 
     public string SteamStartFailedHint => SteamLoginHangs
         ? "Die Einstellung bleibt deshalb aus. Ein Neustart von Steam hilft meist; danach wird sie eingeschaltet."
@@ -268,6 +243,9 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     public string SteamStartFailedAction => SteamLoginHangs ? "Steam neu starten" : "Erneut versuchen";
 
     private bool IsBusy => _support.BusyText is not null;
+
+    /// <summary>Steam, SISR or VIIPER start or stop: what depends on them can't be changed now, the rest can.</summary>
+    private bool IsSettling => _support.IsSettling;
 
     public override void HandleDialog(UiAction action)
     {
@@ -297,10 +275,10 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support.ClearError();
     }
 
-    /// <summary>A, ◀ ▶ or a click on "Steam Controller als Xbox 360 Gamepad verwenden": switch, or install first.</summary>
+    /// <summary>A, ◀ ▶ or a click on "Steam Controller Kompatibilität": switch, or install first.</summary>
     private void ActivateSisr(bool? on)
     {
-        if (IsBusy || IsLocked)
+        if (IsBusy || IsSettling)
         {
             return;
         }
@@ -439,7 +417,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <summary>The marker can only be written while Steam is closed, so it goes through the install prompts.</summary>
     private void ApplyFix(HealthFix fix)
     {
-        if (IsBusy || IsLocked)
+        if (IsBusy || IsSettling)
         {
             return;
         }
@@ -538,7 +516,6 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     {
         var enabled = _support.Enabled;
         var setup = _support.Setup;
-        IsLocked = _support.IsSettling;
 
         // Information (e.g. SISR paused for a game) is intended behaviour, not a problem.
         var hasProblems = _support.Issues.Any(i => i.Severity > HealthSeverity.Info);
@@ -551,7 +528,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _sisr.Update(
             unavailable ? SisrRowMode.Unavailable : showInstall ? SisrRowMode.Install : SisrRowMode.Switch,
             enabled,
-            IsLocked,
+            IsSettling,
             setup == ControllerSupportSetup.SteamMissing ? "Benötigt Steam." : "Momentan nur unter Windows verfügbar.");
         if (IsInstallPrompt && ((!showInstall && !needsMarker) || IsBusy))
         {
@@ -561,47 +538,53 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         }
 
         var state = _support.State;
-        _status.Subtitle = (enabled, state == SisrState.Paused, hasProblems) switch
+        var statusText = (enabled, state == SisrState.Paused, hasProblems) switch
         {
             (false, _, _) when showInstall => "Nicht eingerichtet – „SISR installieren“ richtet alles Nötige ein und schaltet die Option ein.",
             (false, _, _) => "Aus – außerhalb von Steam läuft der Steam Controller im Desktop-Modus (Maus und Tastatur).",
             (true, true, _) => "Pausiert – ein Spiel mit „Steam Input“ läuft.",
-            (true, false, true) => "Eingeschaltet, aber nicht voll funktionsfähig – siehe unten.",
+            (true, false, true) => "Eingeschaltet, aber nicht voll funktionsfähig – die Meldungen unter der Einstellung sagen, was fehlt.",
             _ => state switch
             {
-                SisrState.Starting => "SISR startet – der Steam Controller wird gleich als Xbox 360 Controller eingerichtet …",
+                SisrState.Starting => "SISR startet – der Steam Controller wird gleich als Xbox Controller eingerichtet …",
                 SisrState.NoController => "Bereit, aber kein Steam Controller gefunden – schalte ihn ein.",
-                SisrState.Running => "Aktiv – der Steam Controller wird als Xbox 360 Controller erkannt.",
+                SisrState.Running => "Aktiv – der Steam Controller wird als Xbox Controller erkannt.",
                 SisrState.Stopping => "SISR wird beendet …",
                 _ => "Wird gestartet …",
             },
         };
-        _status.IsInTransition = enabled && state is SisrState.Starting or SisrState.Stopping;
-        _status.IsHealthy = enabled && !hasProblems && _support.BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
-        _status.Info =
+        var healthy = enabled && !hasProblems && _support.BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
+        var settlingNow = enabled && state is SisrState.Starting or SisrState.Stopping;
+        var status = new InfoSection("STATUS",
         [
-            new InfoText(_status.Subtitle),
+            new InfoStatus(statusText, healthy, settlingNow),
             .. _support.BusyText is { } busy ? [new InfoText(busy)] : Array.Empty<InfoBlock>(),
             .. _support.LastError is { } error ? [new InfoError(error)] : Array.Empty<InfoBlock>(),
-        ];
-
-        _version.Title = _support.Sisr.InstalledVersion is { } version ? $"SISR {version}" : "SISR ist noch nicht installiert";
-        _version.Subtitle = _support.AvailableUpdate is { } update ? $"Neue Version verfügbar: {update.Tag}" : null;
-        _version.ActionText = _support.AvailableUpdate is not null ? "Aktualisieren" : string.Empty;
-        _version.IsEnabled = !IsBusy;
-        _version.Info =
+        ]);
+        var version = new InfoSection("SISR-VERSION",
         [
-            .. _version.Subtitle is { } updateText ? [new InfoText(updateText)] : Array.Empty<InfoBlock>(),
-            new InfoFootnote("SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR"),
-        ];
+            new InfoText(_support.Sisr.InstalledVersion is { } installed ? $"SISR {installed}" : "SISR ist noch nicht installiert."),
+            .. _support.AvailableUpdate is { } available ? [new InfoText($"Neue Version verfügbar: {available.Tag}")] : Array.Empty<InfoBlock>(),
+            SisrCredit,
+        ]);
+        _sisr.Info = unavailable
+            ? [.. SisrDescription, HowItWorks, Drawbacks]
+            : [.. SisrDescription, status, HowItWorks, Drawbacks, version];
+
+        var hasUpdate = !unavailable && _support.AvailableUpdate is not null;
+        if (_support.AvailableUpdate is { } update)
+        {
+            _update.Subtitle = $"Neue Version verfügbar: {update.Tag}";
+            _update.Info = [new InfoText($"SISR {update.Tag} ersetzt die installierte Version {_support.Sisr.InstalledVersion}."), SisrCredit];
+        }
+
+        _update.IsEnabled = !IsBusy && !IsSettling;
 
         SetRows(
         [
             _sisr,
-            .. unavailable ? Array.Empty<SettingsRowViewModel>() : [_status, _version],
             .. IssueRows(),
-            _howItWorks,
-            _drawbacks,
+            .. hasUpdate ? [_update] : Array.Empty<SettingsRowViewModel>(),
             .. _mouseMode.Rows,
             .. _returnWithView.Rows,
             _steamDesktopLayout,
@@ -614,6 +597,28 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             button.IsFocused = Prompt != SettingsPrompt.None && buttons.Count > 0 && button == buttons[_promptFocus];
         }
     }
+
+    /// <summary>What "Steam Controller Kompatibilität" does, at the top of its info panel.</summary>
+    private static readonly InfoBlock[] SisrDescription =
+    [
+        new InfoText("Mit dieser Einstellung wird der Steam Controller als Xbox Controller erkannt. Das ist nützlich, wenn du den Steam Controller auch in Spielen außerhalb von Steam (oder in Arcadia) benutzen möchtest, da er dort sonst im „Desktop-Modus“ läuft. Dies ist eine Besonderheit des Steam Controllers."),
+        new InfoText("Dafür wird die Drittanbieter-Software SISR benötigt und bei Bedarf automatisch installiert. Arcadia startet SISR unsichtbar im Hintergrund."),
+    ];
+
+    private static readonly InfoSection HowItWorks = new("SO FUNKTIONIERT ES",
+    [
+        new InfoText("Ist diese Option aktiv (und ein Steam Controller verbunden), kann in Arcadia pro Spiel zwischen zwei Modi für den Steam Controller gewechselt werden:"),
+        new InfoCard(ViewModels.ControllerModes.Sisr, "Arcadia lässt den Steam Controller in diesem Spiel als Xbox Controller erkennen.", "Vorauswahl für Spiele außerhalb von Steam"),
+        new InfoCard(ViewModels.ControllerModes.Steam, "Das Standardverhalten des Steam Controllers. Empfohlen für Steam-Spiele oder wenn du außerhalb von Steam den Desktop-Modus nutzen möchtest; der Controller simuliert dann Maus und Tastatur.", "Vorauswahl für Spiele aus Steam"),
+    ]);
+
+    private static readonly InfoSection Drawbacks = new("NACHTEILE",
+    [
+        new InfoBullet("Steam muss im Hintergrund laufen."),
+        new InfoBullet("Arcadia erkennt den Steam Controller nur, solange er als Xbox Controller läuft. In Spielen auf „Steam Input“ wirken mit ihm deshalb weder ⧉ + ≡ für den Mausmodus noch ⧉ halten für „Zurück zu Arcadia“."),
+    ]);
+
+    private static readonly InfoFootnote SisrCredit = new("SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR");
 
     /// <summary>One row per problem, with its fix as the row's action; a row stays the same while its problem lasts.</summary>
     private List<SettingsRowViewModel> IssueRows()
@@ -634,7 +639,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             row.Subtitle = issue.Detail;
             row.Severity = issue.Severity;
             row.ActionText = issue.Fix == HealthFix.None ? string.Empty : issue.FixLabel ?? "Beheben";
-            row.IsEnabled = !IsBusy;
+            row.IsEnabled = !IsBusy && !IsSettling;
             row.Info = [new InfoText(issue.Detail)];
             rows.Add(row);
         }
@@ -675,7 +680,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     }
 }
 
-/// <summary>What "Steam Controller als Xbox 360 Gamepad verwenden" offers on this PC.</summary>
+/// <summary>What "Steam Controller Kompatibilität" offers on this PC.</summary>
 public enum SisrRowMode
 {
     /// <summary>Everything is in place (or the setting is already on): a switch.</summary>
@@ -688,9 +693,9 @@ public enum SisrRowMode
     Unavailable,
 }
 
-/// <summary>"Steam Controller als Xbox 360 Gamepad verwenden": a switch, "SISR installieren", or why neither is possible.</summary>
+/// <summary>"Steam Controller Kompatibilität": a switch, "SISR installieren", or why neither is possible.</summary>
 public sealed partial class SisrRowViewModel(Action<bool?> activate)
-    : SettingsRowViewModel("sisr", "Steam Controller als Xbox 360 Gamepad verwenden")
+    : SettingsRowViewModel("sisr", "Steam Controller Kompatibilität")
 {
     private string _subtitle = string.Empty;
 

@@ -788,6 +788,14 @@
     <Setter Property="CornerRadius" Value="20" />
     <Setter Property="ClipToBounds" Value="True" />
   </Style>
+  <!-- A box in the info panel below the description, e.g. "Status" (owner, 2026-10-22); a frame only, so mode cards
+       inside keep their own background. -->
+  <Style Selector="Border.infoSection">
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="22,18" />
+  </Style>
   <Style Selector="TextBlock.infoText">
     <Setter Property="FontSize" Value="18" />
     <Setter Property="LineHeight" Value="27" />

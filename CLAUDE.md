@@ -169,8 +169,10 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   back to the same place. Categories are tabs in the header like the launcher tabs (LB/RB, Q/E without Shift for now, a
   click), only those with content; a warning or an error of a category shows its symbol beside the name, info nothing.
   Pattern "Leiste" for every category: one column of rows, ▲ ▼ (W/S) move, ◀ ▶ (A/D) change switches and choices at
-  once, A (Space) starts actions; the info panel beside them explains the focused row, RS (Shift+W/S, the wheel)
-  scrolls it, fades show more. The footer names the focused row's buttons. Applies at once, no save button. Questions
+  once, A (Space) starts actions; only settings and actions are rows, facts about a setting (e.g. SISR's status,
+  version, drawbacks) are boxes (`InfoSection`) below its description in the info panel. The info panel beside the
+  rows explains the focused row, RS (Shift+W/S, the wheel) scrolls it, fades show more; the mouse over a row focuses
+  it. A row that can't change now (e.g. while SISR starts) still takes the focus. The footer names the focused row's buttons. Applies at once, no save button. Questions
   (e.g. "Steam beenden?") stay dialogs over the page; the header's status symbols open their category.
 - Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has

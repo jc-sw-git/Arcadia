@@ -104,7 +104,7 @@ public enum SisrState
 }
 
 /// <summary>
-/// Steam Controller Support ("Steam Controller als Xbox 360 Gamepad verwenden"): keeps Arcadia's
+/// Steam Controller Support ("Steam Controller Kompatibilität"): keeps Arcadia's
 /// SISR running while it is enabled, pauses it for games that use Steam Input themselves, watches
 /// SISR and its dependencies, installs them, and checks for SISR updates.
 /// </summary>
@@ -549,7 +549,7 @@ public sealed class ControllerSupportService(
         }
     }
 
-    /// <summary>Per game: true = "Xbox 360 Controller (SISR)", false = "Steam Input".</summary>
+    /// <summary>Per game: true = "Xbox Controller (SISR)", false = "Steam Input".</summary>
     public void SetModeFor(Game game, bool useSisr) => UpdateSettings(settings => settings.WithControllerSupportChoice(game, useSisr));
 
     /// <summary>
@@ -953,7 +953,7 @@ public sealed class ControllerSupportService(
     /// <summary>
     /// Called right before <paramref name="game"/> starts. If SISR must not run for it, SISR is
     /// stopped until the game has ended (watched through its install directory): on "Steam Input",
-    /// and on "Xbox 360 Controller (SISR)" for a Steam game whose Steam Input takes other controllers
+    /// and on "Xbox Controller (SISR)" for a Steam game whose Steam Input takes other controllers
     /// too (see <see cref="PauseForSteamGameAsync"/>).
     /// </summary>
     public async Task BeginGameAsync(Game game, CancellationToken cancellationToken = default)
@@ -1152,7 +1152,7 @@ public sealed class ControllerSupportService(
         {
             var controllers = pause.Controllers is { } names ? $" ({names})" : string.Empty;
             issues.Add(new("sisr-paused-other-controller", HealthSeverity.Info, $"SISR pausiert für „{pause.Game}“",
-                $"In diesem Spiel gilt Steam Input auch für andere Controller als den Steam Controller{controllers}. Solange SISR läuft, bekäme das Spiel von ihnen keine Eingaben. Bis es endet, bekommt es alle Controller über Steam Input, auch den Steam Controller. Soll der Steam Controller als Xbox 360 Controller ankommen, schalte in Steam in den Controller-Einstellungen des Spiels Steam Input für die anderen Controller aus."));
+                $"In diesem Spiel gilt Steam Input auch für andere Controller als den Steam Controller{controllers}. Solange SISR läuft, bekäme das Spiel von ihnen keine Eingaben. Bis es endet, bekommt es alle Controller über Steam Input, auch den Steam Controller. Soll der Steam Controller als Xbox Controller ankommen, schalte in Steam in den Controller-Einstellungen des Spiels Steam Input für die anderen Controller aus."));
         }
 
         var state = State;

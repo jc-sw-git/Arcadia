@@ -78,7 +78,7 @@
 
         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Status.IsControllerStarting}" VerticalAlignment="Center"
-                      ToolTip.Tip="SISR startet und richtet den Steam Controller als Xbox-360-Controller ein">
+                      ToolTip.Tip="SISR startet und richtet den Steam Controller als Xbox Controller ein">
             <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
             <TextBlock Text="Controller wird eingerichtet …" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
           </StackPanel>
@@ -270,7 +270,7 @@
                     <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10. -->
                     <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
                             IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
-                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Xbox 360 Controller (SISR)“ und „Steam Input“'}">
+                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Xbox Controller (SISR)“ und „Steam Input“'}">
                       <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
                     </Button>
                   </StackPanel>
@@ -1117,10 +1117,10 @@
             </StackPanel>
           </Grid>
 
-          <!-- Rows and the info panel of the shown category. While Steam or SISR start, its rows take no clicks (the
-               controller is blocked in the view model). -->
+          <!-- Rows and the info panel of the shown category. The mouse over a row focuses it (MainWindow.axaml.cs), so
+               the info panel explains it before a click changes it. -->
           <Grid Grid.Row="1" Margin="80,0,80,22" ColumnDefinitions="*,620" ColumnSpacing="56" DataContext="{Binding Settings?.Selected}" x:DataType="settings:SettingsCategoryViewModel">
-            <ScrollViewer Name="SettingsRowsScroller" VerticalScrollBarVisibility="Hidden" Padding="8" Margin="-8" IsHitTestVisible="{Binding !IsLocked}">
+            <ScrollViewer Name="SettingsRowsScroller" VerticalScrollBarVisibility="Hidden" Padding="8" Margin="-8">
               <ItemsControl Name="SettingsRows" ItemsSource="{Binding Rows}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -1193,13 +1193,6 @@
                                   <Path Classes="chevronRight" />
                                 </StackPanel>
                               </DataTemplate>
-                              <DataTemplate x:DataType="settings:StatusRowViewModel">
-                                <Panel Width="24" Height="24">
-                                  <Path Classes="spinner" IsVisible="{Binding IsInTransition}"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
-                                  <!-- No local Fill: it would override the "active" style. -->
-                                  <Ellipse Classes="statusDot" Classes.active="{Binding IsHealthy}" Width="12" Height="12" IsVisible="{Binding ShowsDot}" />
-                                </Panel>
-                              </DataTemplate>
                               <DataTemplate x:DataType="settings:InfoRowViewModel">
                                 <TextBlock Classes="rowValue" Text="{Binding ValueText}" IsVisible="{Binding HasValue}" />
                               </DataTemplate>
@@ -1253,6 +1246,31 @@
                             <TextBlock Grid.Column="1" Text="{Binding Effect}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
                           </Grid>
                         </DataTemplate>
+                        <!-- Its blocks find the templates of this ItemsControl, up the tree. -->
+                        <DataTemplate x:DataType="settings:InfoSection">
+                          <Border Classes="infoSection">
+                            <StackPanel Spacing="14">
+                              <TextBlock Classes="label" Text="{Binding Title}" />
+                              <ItemsControl ItemsSource="{Binding Blocks}">
+                                <ItemsControl.ItemsPanel>
+                                  <ItemsPanelTemplate>
+                                    <StackPanel Spacing="14" />
+                                  </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                              </ItemsControl>
+                            </StackPanel>
+                          </Border>
+                        </DataTemplate>
+                        <DataTemplate x:DataType="settings:InfoStatus">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                            <Panel Width="24" Height="24" VerticalAlignment="Top">
+                              <Path Classes="spinner" IsVisible="{Binding IsInTransition}"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                              <!-- No local Fill: it would override the "active" style. -->
+                              <Ellipse Classes="statusDot" Classes.active="{Binding IsHealthy}" Width="12" Height="12" IsVisible="{Binding ShowsDot}" />
+                            </Panel>
+                            <TextBlock Grid.Column="1" Classes="infoText" Text="{Binding Text}" />
+                          </Grid>
+                        </DataTemplate>
                         <DataTemplate x:DataType="settings:InfoError">
                           <TextBlock Text="{Binding Text}" FontSize="16" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
                         </DataTemplate>
@@ -1286,7 +1304,6 @@
                         </DataTemplate>
                       </ItemsControl.DataTemplates>
                     </ItemsControl>
-                    <TextBlock Text="Wirkt sofort, ohne Speichern." FontSize="15" Foreground="{StaticResource TextFaint}" IsVisible="{Binding FocusedRow?.CanChange, TargetNullValue=False}" />
                   </StackPanel>
                 </ScrollViewer>
                 <Border Name="InfoFadeTop" Classes="listFade" Background="{StaticResource InfoFadeTop}" VerticalAlignment="Top" CornerRadius="20,20,0,0" />

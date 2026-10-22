@@ -118,7 +118,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     partial void OnUsesControllerChanged(bool value) => InputHints.UsesController = value;
 
-    /// <summary>The Steam Controller mode of the focused game: "Xbox 360 Controller (SISR)" or "Steam Input".</summary>
+    /// <summary>The Steam Controller mode of the focused game: "Xbox Controller (SISR)" or "Steam Input".</summary>
     [ObservableProperty]
     public partial string FocusedControllerSupportText { get; private set; } = string.Empty;
 
@@ -1187,7 +1187,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         }
     }
 
-    /// <summary>Switches the focused game between "Xbox 360 Controller (SISR)" and "Steam Input"; not while it runs (#95).</summary>
+    /// <summary>Switches the focused game between "Xbox Controller (SISR)" and "Steam Input"; not while it runs (#95).</summary>
     [RelayCommand]
     private void CycleControllerSupport()
     {

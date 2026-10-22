@@ -53,6 +53,12 @@ public partial class MainWindow : Window
     private readonly HashSet<Key> _keysDown = [];
     private MainViewModel? _viewModel;
     private Point? _restingPointer;
+
+    /// <summary>Where the pointer last focused a settings row; rows scrolling under a resting pointer don't count.</summary>
+    private Point? _rowPointer;
+
+    /// <summary>The mouse focused the row: it is under the pointer already, so the rows don't scroll to it.</summary>
+    private bool _focusedByPointer;
     private SearchViewModel? _search;
     private SettingsPageViewModel? _settingsPage;
     private readonly TabStrip _tabs;
@@ -83,6 +89,7 @@ public partial class MainWindow : Window
         // Which input is in use decides whether the search shows its on-screen keyboard.
         AddHandler(PointerPressedEvent, (_, _) => _viewModel?.NotePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(PointerMovedEvent, OnPointerMovedAnywhere, RoutingStrategies.Tunnel, handledEventsToo: true);
+        SettingsRows.AddHandler(PointerMovedEvent, OnSettingsRowPointerMoved, RoutingStrategies.Bubble, handledEventsToo: true);
 
         // Ends a held click on a cover, wherever the mouse is let go.
         AddHandler(PointerReleasedEvent, (_, _) => _viewModel?.ReleasePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
@@ -259,6 +266,23 @@ public partial class MainWindow : Window
         {
             _restingPointer = position;
             _viewModel.NotePointerMoved();
+        }
+    }
+
+    /// <summary>The mouse over a settings row focuses it, so its info shows before a click changes its value (owner, 2026-10-22).</summary>
+    private void OnSettingsRowPointerMoved(object? sender, PointerEventArgs e)
+    {
+        var position = e.GetPosition(this);
+        if (_rowPointer is { } last && Math.Abs(position.X - last.X) + Math.Abs(position.Y - last.Y) <= PointerMoveThreshold)
+        {
+            return;
+        }
+
+        _rowPointer = position;
+        if ((e.Source as StyledElement)?.DataContext is SettingsRowViewModel { IsFocused: false } row)
+        {
+            _focusedByPointer = true;
+            row.Point();
         }
     }
 
@@ -479,7 +503,9 @@ public partial class MainWindow : Window
         _categories.Center(page.Selected);
         InfoScroller.Offset = default;
         UpdateInfoFades();
-        if (page.FocusedRow is { } row && SettingsRows.ContainerFromItem(row) is { } container)
+        var byPointer = _focusedByPointer;
+        _focusedByPointer = false;
+        if (!byPointer && page.FocusedRow is { } row && SettingsRows.ContainerFromItem(row) is { } container)
         {
             // With room for the focus ring, and above it for the group's heading the row may stand under.
             var bounds = new Rect(container.Bounds.Size).Inflate(FocusRingRoom);

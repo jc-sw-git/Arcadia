@@ -52,10 +52,6 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     [ObservableProperty]
     public partial object? Dialog { get; protected set; }
 
-    /// <summary>The rows take no input for now (e.g. while Steam starts); B still leaves.</summary>
-    [ObservableProperty]
-    public partial bool IsLocked { get; protected set; }
-
     /// <summary>A click on the category's tab.</summary>
     public IRelayCommand? SelectCommand { get; set; }
 

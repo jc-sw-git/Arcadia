@@ -1305,18 +1305,30 @@ public sealed class ControllerSupportService(
             SisrControllers? controllers = null;
             while (time.GetUtcNow() < deadline && sisr.IsRunning)
             {
-                controllers = await sisr.Api.GetEmulatedControllersAsync(cancellationToken);
+                // Not cancelled itself: the API call has its own short timeout, and cancelling a request in flight
+                // throws inside HttpClient, which shows up as an exception in the debugger on every exit (owner, 2026-10-22).
+                controllers = await sisr.Api.GetEmulatedControllersAsync();
                 if (controllers?.Total > 0)
                 {
                     break;
                 }
 
-                await Task.Delay(TimeSpan.FromMilliseconds(500), time, cancellationToken);
+                if (!await DelayUnlessCancelledAsync(TimeSpan.FromMilliseconds(500), cancellationToken))
+                {
+                    break;
+                }
             }
 
             if (controllers?.Total > 0 && time.GetUtcNow() - _lastStart < MinimumSettleTime)
             {
-                await Task.Delay(MinimumSettleTime - (time.GetUtcNow() - _lastStart), time, cancellationToken);
+                await DelayUnlessCancelledAsync(MinimumSettleTime - (time.GetUtcNow() - _lastStart), cancellationToken);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // Arcadia exits; its shutdown stops SISR.
+                Log?.Invoke("Warten auf SISR abgebrochen: Arcadia wird beendet");
+                return;
             }
 
             var steamControllers = controllers?.SteamControllers ?? 0;
@@ -1339,6 +1351,18 @@ public sealed class ControllerSupportService(
         {
             SisrStarted?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    /// <summary>Waits, and returns false when cancelled first. Doesn't throw for that: exiting is no error.</summary>
+    private async Task<bool> DelayUnlessCancelledAsync(TimeSpan delay, CancellationToken cancellationToken)
+    {
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var cancelled = new TaskCompletionSource();
+        await using var registration = cancellationToken.Register(() => cancelled.TrySetResult());
+        var elapsed = Task.Delay(delay, time, stop.Token);
+        var first = await Task.WhenAny(elapsed, cancelled.Task);
+        await stop.CancelAsync();
+        return first == elapsed;
     }
 
     /// <summary>How long to wait for SISR to emulate a controller before giving up waiting.</summary>

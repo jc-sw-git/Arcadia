@@ -166,7 +166,7 @@ public sealed class ControllerSupportService(
     private int? _steamInputCheckedFor;
 
     /// <summary>Other controllers SISR emulates while no Steam game runs, for the log and the settings.</summary>
-    private volatile string? _otherControllers;
+    private volatile OtherControllers? _otherControllers;
     private bool _checkedThisSession;
     private bool _initialized;
 
@@ -782,9 +782,9 @@ public sealed class ControllerSupportService(
             return;
         }
 
-        var others = controllers.Others.Count > 0 ? string.Join(", ", controllers.Others.Select(c => c.Description)) : null;
+        var others = OtherControllers.Of(controllers.Others);
         if (others is not null && _platform.RunningSteamAppId() is { } appId
-            && await PauseForSteamGameAsync(appId, others, $"SISR bildet einen anderen Controller als den Steam Controller nach ({others})", cancellationToken))
+            && await PauseForSteamGameAsync(appId, others.Names, $"SISR bildet einen anderen Controller als den Steam Controller nach ({others.ForLog})", cancellationToken))
         {
             return;
         }
@@ -794,7 +794,7 @@ public sealed class ControllerSupportService(
             _otherControllers = others;
             Log?.Invoke(others is null
                 ? "SISR bildet nur noch Steam Controller nach"
-                : $"SISR bildet einen anderen Controller als den Steam Controller nach, ohne dass ein Steam-Spiel läuft: {others}");
+                : $"SISR bildet einen anderen Controller als den Steam Controller nach, ohne dass ein Steam-Spiel läuft: {others.ForLog}");
         }
 
         if (controllers.SteamControllers > 0)
@@ -870,6 +870,15 @@ public sealed class ControllerSupportService(
         {
             _gate.Release();
         }
+    }
+
+    /// <summary>Controllers other than the Steam Controller that SISR emulates: named for the settings, with USB ids for the log.</summary>
+    private sealed record OtherControllers(string Names, string ForLog)
+    {
+        public static OtherControllers? Of(IReadOnlyList<SisrGamepad> pads) =>
+            pads.Count == 0
+                ? null
+                : new(string.Join(", ", pads.Select(p => p.DisplayName).Distinct()), string.Join(", ", pads.Select(p => p.Description)));
     }
 
     /// <summary>What the settings say while SISR is paused for a Steam game with Steam Input for other controllers.</summary>
@@ -1168,8 +1177,10 @@ public sealed class ControllerSupportService(
         var state = State;
         if (state is SisrState.Running or SisrState.NoController && _otherControllers is { } others)
         {
-            issues.Add(new("sisr-other-controller", HealthSeverity.Warning, "SISR übernimmt einen anderen Controller",
-                $"SISR bildet auch {others} nach, weil Steam Input für diesen Controller eingeschaltet ist. Arcadia zählt ihn nicht als Steam Controller. Schalte Steam Input für diese Controller in Steams Controller-Einstellungen aus."));
+            // Seen on the owner's PC (2026-10-22, #143): Steam Input on for a whole controller type in Steam's
+            // settings hands that pad to SISR outside any game, and the Steam Controller stops working.
+            issues.Add(new("sisr-other-controller", HealthSeverity.Warning, "Steam Controller blockiert durch einen anderen Controller",
+                $"In Steam ist Steam Input auch für diesen Controller eingeschaltet: {others.Names}. Deshalb übernimmt SISR ihn, und der Steam Controller funktioniert nicht. Schalte Steam Input für diesen Controllertyp in Steam unter Einstellungen → Controller → Erweiterte Controllereinstellungen aus."));
         }
 
         if (state == SisrState.Failed)

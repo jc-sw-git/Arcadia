@@ -79,8 +79,11 @@ focus handling or anything SISR/usbip related.
   controller (Steam's default can be changed by the game itself). The settings show "SISR pausiert für „…“"
   with the way out (Steam Input off for the other controllers in that game); Arcadia can't make SISR leave one
   device alone (only a filter in SISR or #112 could). A pause noticed during the game isn't handed over an
-  update restart; the new Arcadia pauses again within 2 s. Without a Steam game the settings only warn "SISR
-  übernimmt einen anderen Controller".
+  update restart; the new Arcadia pauses again within 2 s. Without a Steam game the settings only warn
+  "Steam Controller blockiert durch einen anderen Controller": with Steam Input on for a whole controller type
+  (Steam → Einstellungen → Controller → Erweiterte Controllereinstellungen) SISR takes that pad outside any game
+  and the Steam Controller stops working (owner's PC, 2026-10-22, #143). SDL then names the pad by Steam's
+  untranslated type, e.g. `#controller_xbox360`; `SisrGamepad.DisplayName` turns it into plain words.
 - SISR may only run while Steam is ready: `steam` and `steamwebhelper` run, a user is logged in
   (`ActiveProcess\ActiveUser`) and the client finished that login: the latest `Starting login` in
   `logs/steamui_login.txt` is followed by `SetLoginState: Success` (`SteamLoginLog`). `ActiveUser` is set as

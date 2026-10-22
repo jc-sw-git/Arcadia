@@ -1062,6 +1062,28 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task The_warning_names_Steams_controller_type_readably_and_says_the_Steam_Controller_is_blocked()
+    {
+        var service = Create();
+        _api.XboxPadName = "#controller_xbox360";
+        _api.XboxPads = 1;
+        _sisr.Running = true;
+
+        await service.TickAsync();
+
+        var issue = Assert.Single(service.Issues, i => i.Id == "sisr-other-controller");
+        Assert.Contains("Xbox 360 Controller", issue.Detail);
+        Assert.DoesNotContain("#controller", issue.Detail);
+        Assert.DoesNotContain("USB-ID", issue.Detail);
+        Assert.Contains("Steam Controller funktioniert nicht", issue.Detail);
+        Assert.Contains("Erweiterte Controllereinstellungen", issue.Detail);
+        lock (_log)
+        {
+            Assert.Contains(_log, line => line.Contains("#controller_xbox360 (ohne USB-ID)"));
+        }
+    }
+
+    [Fact]
     public async Task SISR_emulating_an_Xbox_pad_in_a_Steam_game_pauses_until_the_game_ends()
     {
         var service = Create();
@@ -1350,7 +1372,10 @@ public sealed class ControllerSupportServiceTests : IDisposable
         /// <summary>Xbox pads SISR emulates as well, because Steam Input is on for them (#124).</summary>
         public int XboxPads { get; set; }
 
-        private string Devices() => "[" + string.Join(",", Enumerable.Repeat(SteamControllerDevice, Controllers).Concat(Enumerable.Repeat(XboxPadDevice, XboxPads))) + "]";
+        /// <summary>The name SDL gives the Xbox pads; behind Steam Input it can be Steam's untranslated type (#143).</summary>
+        public string XboxPadName { get; set; } = "Xbox 360 Controller";
+
+        private string Devices() => "[" + string.Join(",", Enumerable.Repeat(SteamControllerDevice, Controllers).Concat(Enumerable.Repeat(XboxPadDevice.Replace("Xbox 360 Controller", XboxPadName, StringComparison.Ordinal), XboxPads))) + "]";
 
         private const string SteamControllerDevice = """{"real_device":{"id":1,"name":"Steam Controller","path":"\\\\?\\HID#VID_28DE&PID_1304&MI_02#8&1&0&0000","player_index":0},"viiper_device":{}}""";
 

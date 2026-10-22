@@ -944,6 +944,23 @@ Verlauf:
 | T94-1, T94-3, T94-5, T94-7 (Logik) | 2026-10-21 | Claude | `dotnet test`, Linux: `RunningGamesTrackerTests` | ⚠️ Nur das Ende eines aus Arcadia gestarteten Spiels meldet „aus Arcadia“, auch nach der Übergabe beim Update; Fenster und Vordergrund nur unter Windows prüfbar | Lauf am PC des Owners |
 | T94-1 | 2026-10-21 | Juri | PC des Owners, Branch `feat/laufende-spiele-anzeigen-94-95` (Stand 25197b1), Debug aus VS Code (Arcadia als Teil des .NET-Host-Prozesses) | ✅ Nach dem Beenden des Spiels kam Arcadia wieder nach vorne. Danach kurz 1,2 % CPU, vermutlich das Neueinlesen der Bibliothek nach dem Spielende (Spielzeit, „Zuletzt gespielt“), das gleich und 30 s später läuft | — |
 
+## #143 Steam Input für ganze Controllertypen legt den Steam Controller lahm
+
+- [ ] **T143-1** Steam Controller Support an, Steam Controller und Xbox Controller verbunden, kein Spiel läuft. In
+      Steam unter Einstellungen → Controller → Erweiterte Controllereinstellungen Steam Input für Xbox-Controller
+      einschalten: Die Einstellungen → Steam Controller Support warnen „Steam Controller blockiert durch einen
+      anderen Controller“, nennen den Controller in Klartext (z. B. „Xbox 360 Controller“, kein „#controller_…“,
+      keine USB-ID) und sagen, dass der Steam Controller deshalb nicht funktioniert und wo man es abschaltet.
+      `arcadia.log` nennt den Controller mit Steams Namen und USB-ID. · E2E: nein (echtes Steam mit zwei Controllern)
+- [ ] **T143-2** Wie T143-1: In Arcadia die Maus bewegen und klicken, eine Taste drücken. Die Hinweise und das ✕
+      der Dialoge bleiben auf Maus/Tastatur, bis ein Controller-Knopf gedrückt wird. · E2E: nein
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T143-1 | 2026-10-22 | Claude | Branch `fix/steam-input-fuer-ganze-controllertypen-143`, Linux, ohne .NET SDK; Unit-Tests (`SisrDevicesTests`, `ControllerSupportServiceTests`) nur in CI | ⚠️ App nicht gestartet | Lauf am PC des Owners |
+
 ## Grundgerüst (ohne Issue)
 
 Alles, was Arcadia schon kann, aber zu keinem Issue gehört (Grundgerüst aus `docs/roadmap.md`,

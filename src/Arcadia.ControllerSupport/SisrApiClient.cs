@@ -35,6 +35,32 @@ public sealed partial record SisrGamepad(
     /// <summary>Name and USB id for the log; the path itself carries an instance id that says nothing more.</summary>
     public string Description => UsbId() is { } id ? $"{Name} ({id.Vendor}:{id.Product})" : $"{Name} (ohne USB-ID)";
 
+    /// <summary>
+    /// The name for the settings. Behind Steam Input SDL sometimes gets Steam's untranslated controller type,
+    /// e.g. <c>#controller_xbox360</c> (owner's PC, 2026-10-22, Steam Input on for every Xbox pad).
+    /// </summary>
+    public string DisplayName => Name switch
+    {
+        null or "" => "Unbekannter Controller",
+        { } name when name.StartsWith(SteamTypePrefix, StringComparison.OrdinalIgnoreCase) => SteamTypeName(name[SteamTypePrefix.Length..]),
+        { } name => name,
+    };
+
+    private const string SteamTypePrefix = "#controller_";
+
+    private static string SteamTypeName(string type) => type.ToLowerInvariant() switch
+    {
+        "xbox360" => "Xbox 360 Controller",
+        "xboxone" => "Xbox One Controller",
+        "xboxelite" => "Xbox Elite Controller",
+        "ps3" => "PlayStation 3 Controller",
+        "ps4" => "PlayStation 4 Controller",
+        "ps5" => "PlayStation 5 Controller",
+        "switch_pro" => "Nintendo Switch Pro Controller",
+        "generic" => "Generischer Controller",
+        _ => $"Controller ({type.Replace('_', ' ')})",
+    };
+
     private (string Vendor, string Product)? UsbId() =>
         Path is not null && UsbIdPattern().Match(Path) is { Success: true } match
             ? (match.Groups[1].Value.ToUpperInvariant(), match.Groups[2].Value.ToUpperInvariant())

@@ -38,6 +38,18 @@ public sealed class SisrDevicesTests
         Assert.Equal("Xbox 360 Controller (ohne USB-ID)", new SisrGamepad("Xbox 360 Controller", "XInput#0").Description);
     }
 
+    [Theory]
+    [InlineData("#controller_xbox360", "Xbox 360 Controller")]
+    [InlineData("#Controller_PS5", "PlayStation 5 Controller")]
+    [InlineData("#controller_switch_pro", "Nintendo Switch Pro Controller")]
+    [InlineData("#controller_something_new", "Controller (something new)")]
+    [InlineData("8BitDo Ultimate 2", "8BitDo Ultimate 2")]
+    [InlineData(null, "Unbekannter Controller")]
+    public void The_settings_name_Steams_controller_types_in_plain_words(string? name, string shown)
+    {
+        Assert.Equal(shown, new SisrGamepad(name, "XInput#0").DisplayName);
+    }
+
     [Fact]
     public async Task Only_emulated_devices_count_and_one_without_a_physical_device_counts_as_Steam_Controller()
     {

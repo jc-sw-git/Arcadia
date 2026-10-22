@@ -1075,7 +1075,8 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Contains("Xbox 360 Controller", issue.Detail);
         Assert.DoesNotContain("#controller", issue.Detail);
         Assert.DoesNotContain("USB-ID", issue.Detail);
-        Assert.Contains("Steam Controller kann in Arcadia oder in Spielen nicht mehr funktionieren", issue.Detail);
+        Assert.Contains("Phantomeingaben", issue.Detail);
+        Assert.DoesNotContain("Steam Input", issue.Detail);
         Assert.Contains("Erweiterte Controllereinstellungen", issue.Detail);
         lock (_log)
         {
@@ -1120,7 +1121,8 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Equal(HealthSeverity.Warning, issue.Severity);
         Assert.Equal(HealthFix.RestartSisr, issue.Fix);
         Assert.Contains("Xbox 360 Controller", issue.Detail);
-        Assert.Contains("Steam Controller kann in Arcadia oder in Spielen nicht mehr funktionieren", issue.Detail);
+        Assert.Contains("Phantomeingaben", issue.Detail);
+        Assert.DoesNotContain("Steam Input", issue.Detail);
         await service.TickAsync();
         Assert.Equal(0, _sisr.Starts);
 
@@ -1148,6 +1150,25 @@ public sealed class ControllerSupportServiceTests : IDisposable
         await service.RefreshAsync();
         Assert.Contains(service.Issues, i => i.Id == "sisr-paused-other-controller-type" && i.Detail.Contains("8BitDo Ultimate 2"));
         AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task The_pause_names_the_real_pad_rather_than_SISRs_own_pads_that_Steam_took_again()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _api.XboxPadName = "#controller_xbox360";
+        _api.XboxPads = 1;
+        _api.UntouchedXboxPads = 1;
+        await service.WatchAsync();
+        await service.WatchAsync();
+        await service.RefreshAsync();
+
+        var issue = Assert.Single(service.Issues, i => i.Id == "sisr-paused-other-controller-type");
+        Assert.StartsWith("SISR wurde pausiert, weil 8BitDo Ultimate 2 Wireless Controller for PC in Steam ebenfalls Steam-Eingabe als Steuerungsmethode verwendet.", issue.Detail);
+        Assert.DoesNotContain("Xbox 360", issue.Detail);
     }
 
     [Fact]

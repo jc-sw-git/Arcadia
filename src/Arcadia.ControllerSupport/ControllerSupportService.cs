@@ -946,13 +946,33 @@ public sealed class ControllerSupportService(
         }
     }
 
+    /// <summary>The owner's advice (2026-10-22) when another controller uses Steam Input outside a game.</summary>
+    private const string SteamInputAdvice =
+        "Es wird empfohlen, in Steam die Steam-Eingabe nur für den Steam Controller zu verwenden, wenn gleichzeitig die Steam Controller Kompatibilität in Arcadia genutzt wird. "
+        + "Schalte sie daher für andere Gamepads in Steam unter Einstellungen → Controller → Erweiterte Controllereinstellungen aus. "
+        + "Es kann sonst zu unvorhergesehenem Verhalten wie Phantomeingaben oder nicht erkannten Controllereingaben kommen.";
+
     /// <summary>Controllers other than the Steam Controller that SISR emulates: named for the settings, with USB ids for the log.</summary>
-    private sealed record OtherControllers(string Names, string ForLog)
+    private sealed record OtherControllers(string Names, int Count, string ForLog)
     {
-        public static OtherControllers? Of(IReadOnlyList<SisrGamepad> pads) =>
-            pads.Count == 0
-                ? null
-                : new(string.Join(", ", pads.Select(p => p.DisplayName).Distinct()), string.Join(", ", pads.Select(p => p.Description)));
+        /// <summary>
+        /// The pads by their own names; SISR's own virtual pads that Steam took again only carry Steam's or SDL's
+        /// stand-in names (<see cref="SisrGamepad.HasStandInName"/>) and are left out unless nothing else is there.
+        /// </summary>
+        public static OtherControllers? Of(IReadOnlyList<SisrGamepad> pads)
+        {
+            if (pads.Count == 0)
+            {
+                return null;
+            }
+
+            var named = pads.Where(p => !p.HasStandInName).ToList();
+            var shown = (named.Count > 0 ? named : pads).Select(p => p.DisplayName).Distinct().ToList();
+            return new(string.Join(", ", shown), shown.Count, string.Join(", ", pads.Select(p => p.Description)));
+        }
+
+        /// <summary>The verb after <see cref="Names"/>.</summary>
+        public string Use => Count == 1 ? "verwendet" : "verwenden";
     }
 
     /// <summary>What the settings say while SISR is paused for a Steam game with Steam Input for other controllers.</summary>
@@ -1262,8 +1282,8 @@ public sealed class ControllerSupportService(
 
         if (_otherControllerPause is { } blocking)
         {
-            issues.Add(new("sisr-paused-other-controller-type", HealthSeverity.Warning, "Ein anderer Controller verwendet ebenfalls Steam Input",
-                $"Auch {blocking.Names} verwendet in Steam Steam Input. Wir empfehlen, das in Steam unter Einstellungen → Controller → Erweiterte Controllereinstellungen auszuschalten. Sonst kann es zu unvorhersehbarem Verhalten bei Controller-Eingaben kommen: Es können Phantomeingaben ankommen, und der Steam Controller kann in Arcadia oder in Spielen nicht mehr funktionieren oder sich sogar aufhängen. Deshalb ist SISR pausiert. Ist Steam Input dort aus, läuft SISR von selbst wieder; „Erneut versuchen“ startet es sofort neu.",
+            issues.Add(new("sisr-paused-other-controller-type", HealthSeverity.Warning, "SISR pausiert wegen eines anderen Controllers",
+                $"SISR wurde pausiert, weil {blocking.Names} in Steam ebenfalls Steam-Eingabe als Steuerungsmethode {blocking.Use}. {SteamInputAdvice}",
                 HealthFix.RestartSisr, "Erneut versuchen"));
         }
 
@@ -1272,8 +1292,8 @@ public sealed class ControllerSupportService(
         {
             // Seen on the owner's PC (2026-10-22, #143): Steam Input on for a whole controller type in Steam's
             // settings hands that pad to SISR outside any game, and the Steam Controller stops working.
-            issues.Add(new("sisr-other-controller", HealthSeverity.Warning, "Ein anderer Controller verwendet ebenfalls Steam Input",
-                $"Auch {others.Names} verwendet in Steam Steam Input. Wir empfehlen, das in Steam unter Einstellungen → Controller → Erweiterte Controllereinstellungen auszuschalten. Sonst kann es zu unvorhersehbarem Verhalten bei Controller-Eingaben kommen: Es können Phantomeingaben ankommen, und der Steam Controller kann in Arcadia oder in Spielen nicht mehr funktionieren oder sich sogar aufhängen."));
+            issues.Add(new("sisr-other-controller", HealthSeverity.Warning, "Anderer Controller verwendet Steam-Eingabe",
+                $"{others.Names} {others.Use} in Steam ebenfalls Steam-Eingabe als Steuerungsmethode. {SteamInputAdvice}"));
         }
 
         if (state == SisrState.Failed)

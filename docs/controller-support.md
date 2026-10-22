@@ -80,7 +80,7 @@ focus handling or anything SISR/usbip related.
   with the way out (Steam Input off for the other controllers in that game); Arcadia can't make SISR leave one
   device alone (only a filter in SISR or #112 could). A pause noticed during the game isn't handed over an
   update restart; the new Arcadia pauses again within 2 s. Without a Steam game the settings only warn
-  "Ein anderer Controller verwendet ebenfalls Steam Input": with Steam Input on for a whole controller type
+  "Anderer Controller verwendet Steam-Eingabe" (the owner's wording, 2026-10-22: German Steam says "Steam-Eingabe", never "Steam Input"; the pad's own name before SISR's re-taken pads named `#controller_…` or `XInput Controller #n`, `SisrGamepad.HasStandInName`): with Steam Input on for a whole controller type
   (Steam → Einstellungen → Controller → Erweiterte Controllereinstellungen) SISR takes that pad outside any game
   and the Steam Controller stops working (owner's PC, 2026-10-22, #143). SDL then names the pad by Steam's
   untranslated type, e.g. `#controller_xbox360`; `SisrGamepad.DisplayName` turns it into plain words. Steam then
@@ -90,7 +90,7 @@ focus handling or anything SISR/usbip related.
   (SISR 0.6.2, `event/handler/gamepadupdated`), so emulated devices alone showed the problem only after someone
   touched the pad; `/api/v1/devices` lists `steam_virtual_device` for every pad Steam Input hands to SISR before
   that (`SisrDevice.IsUnderSteamInput`). So once SISR reports another controller under Steam Input in two checks
-  in a row outside a Steam game (not in the first 5 s after its start, while it forces its marker's layout), SISR pauses (same warning, with "Erneut versuchen"; wording by the owner, 2026-10-22). The pause ends when Steam's
+  in a row outside a Steam game (not in the first 5 s after its start, while it forces its marker's layout), SISR pauses ("SISR pausiert wegen eines anderen Controllers", with "Erneut versuchen"). The pause ends when Steam's
   `SteamController_XBoxSupport` / `SteamController_GenericGamepadSupport` go off (if one was on when it began;
   read from `localconfig.vdf` only when the file changed) or with "Erneut versuchen". Where Steam stores the same
   for PlayStation and Nintendo pads isn't known; `localconfig.vdf` only lists `ControllerTypesUsed`.

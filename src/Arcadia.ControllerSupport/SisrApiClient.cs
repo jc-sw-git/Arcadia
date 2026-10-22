@@ -52,6 +52,14 @@ public sealed partial record SisrGamepad(
 
     private const string SteamTypePrefix = "#controller_";
 
+    /// <summary>
+    /// Named by Steam's controller type (<c>#controller_xbox360</c>) or SDL's slot (<c>XInput Controller #2</c>), not by
+    /// the device: on the owner's PC these were SISR's own virtual pads that Steam took again (2026-10-22, #143).
+    /// </summary>
+    public bool HasStandInName =>
+        Name is null || Name.StartsWith(SteamTypePrefix, StringComparison.OrdinalIgnoreCase)
+        || Name.StartsWith("XInput Controller", StringComparison.OrdinalIgnoreCase);
+
     private static string SteamTypeName(string type) => type.ToLowerInvariant() switch
     {
         "xbox360" => "Xbox 360 Controller",

@@ -948,11 +948,12 @@ Verlauf:
 
 - [ ] **T143-1** Steam Controller Support an, Steam Controller und Xbox Controller verbunden, kein Spiel läuft. In
       Steam unter Einstellungen → Controller → Erweiterte Controllereinstellungen Steam Input für Xbox-Controller
-      einschalten: Die Einstellungen → Steam Controller Support warnen „Ein anderer Controller verwendet
-      ebenfalls Steam Input“, nennen den Controller in Klartext (z. B. „Xbox 360 Controller“, kein „#controller_…“,
-      keine USB-ID) und empfehlen, es in Steam abzuschalten (Phantomeingaben, Steam Controller kann ausfallen oder hängen).
+      einschalten: Die Einstellungen → Steam Controller Support warnen „SISR pausiert wegen eines
+      anderen Controllers“ (T143-2) mit dem echten Namen des Controllers (z. B. „8BitDo Ultimate 2 …“, kein
+      „#controller_…“, kein „XInput Controller #…“, keine USB-ID), „Steam-Eingabe“ statt „Steam Input“ und der
+      Empfehlung, sie in Steam nur für den Steam Controller zu verwenden.
       `arcadia.log` nennt den Controller mit Steams Namen und USB-ID. · E2E: nein (echtes Steam mit zwei Controllern)
-- [ ] **T143-2** Wie T143-1: Innerhalb weniger Sekunden pausiert SISR, die Einstellungen zeigen dieselbe
+- [ ] **T143-2** Wie T143-1: Innerhalb weniger Sekunden pausiert SISR, die Einstellungen zeigen diese
       Warnung mit „Erneut versuchen“, der Status „Pausiert – siehe unten.“. In Arcadia die
       Maus bewegen und klicken, eine Taste drücken: Die Hinweise und das ✕ der Dialoge bleiben auf Maus/Tastatur, bis
       ein Controller-Knopf gedrückt wird; der Xbox Controller steuert Arcadia normal. · E2E: nein

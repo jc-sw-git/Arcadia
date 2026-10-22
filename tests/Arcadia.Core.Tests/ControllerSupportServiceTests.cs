@@ -567,6 +567,22 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task An_usbip_installer_with_the_wrong_signature_leaves_SISR_off_with_the_message()
+    {
+        var service = Create(enabled: false);
+        _platform.IsUsbipReady = false;
+        _platform.UsbipInstallError = new UntrustedInstallerException("Der Installer wurde nicht gestartet. Er ist nicht signiert.");
+
+        await service.InstallAsync();
+
+        Assert.Contains("nicht signiert", service.LastError);
+        Assert.False(service.Enabled);
+        Assert.Equal(SisrState.Off, service.State);
+        Assert.Equal(0, _sisr.Starts);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
     public async Task Nothing_starts_SISR_after_shutdown()
     {
         var service = Create();
@@ -578,6 +594,60 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         Assert.False(_sisr.Running);
         Assert.Equal(0, _sisr.Starts);
+    }
+
+    [Fact]
+    public async Task Exiting_while_SISR_starts_stops_it_even_if_it_ignores_the_quit_request()
+    {
+        var service = Create();
+        _sisr.StopHangs = true;
+        _api.Controllers = 0;
+        await service.TickAsync();
+        Assert.Equal(SisrState.Starting, service.State);
+
+        var shutdown = service.ShutdownAsync();
+        await AdvanceUntil(() => shutdown.IsCompleted);
+        await shutdown;
+
+        Assert.False(_sisr.Running);
+        Assert.Equal(1, _sisr.Kills);
+        Assert.NotEqual(SisrState.Starting, service.State);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task Exiting_ends_the_wait_for_a_starting_SISR()
+    {
+        var service = Create();
+        _api.Controllers = 0;
+        var started = new TaskCompletionSource();
+        service.SisrStarted += (_, _) => started.TrySetResult();
+        await service.TickAsync();
+
+        await service.ShutdownAsync();
+
+        // Without advancing time: the wait for SISR's controllers (up to 10 s) is cancelled, not run out.
+        Assert.Same(started.Task, await Task.WhenAny(started.Task, Task.Delay(TimeSpan.FromSeconds(5))));
+        Assert.False(_sisr.Running);
+    }
+
+    [Fact]
+    public async Task Exiting_cancels_an_action_that_waits_for_Steam()
+    {
+        var service = Create(enabled: false);
+        _platform.IsSteamRunning = false;
+        _platform.SteamWontStart = true;
+        var on = service.SetEnabledAsync(true);
+        await Task.Delay(50);
+        Assert.False(on.IsCompleted);
+
+        await service.ShutdownAsync();
+
+        // The minute Steam may take is not waited for; Arcadia can leave.
+        Assert.Same(on, await Task.WhenAny(on, Task.Delay(TimeSpan.FromSeconds(5))));
+        Assert.Equal(0, _sisr.Starts);
+        Assert.Null(service.BusyText);
+        Assert.Null(service.LastError);
     }
 
     [Fact]
@@ -1168,6 +1238,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public bool ReleaseLookupHangs { get; set; }
 
+        /// <summary>The process ignores the quit request (a SISR still starting up), so only a kill ends it.</summary>
+        public bool StopHangs { get; set; }
+
         public TaskCompletionSource? ReleaseLookupGate { get; set; }
 
         public int Starts { get; private set; }
@@ -1236,15 +1309,19 @@ public sealed class ControllerSupportServiceTests : IDisposable
             Running = !StartLeavesItStopped;
         }
 
-        public Task StopAsync(CancellationToken cancellationToken = default)
+        public async Task StopAsync(CancellationToken cancellationToken = default)
         {
+            if (StopHangs)
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+
             if (Running)
             {
                 Stops++;
             }
 
             Running = false;
-            return Task.CompletedTask;
         }
 
         public int Kills { get; private set; }
@@ -1381,9 +1458,16 @@ public sealed class ControllerSupportServiceTests : IDisposable
             IsSteamRunning = !SteamWontStart;
         }
 
+        public Exception? UsbipInstallError { get; set; }
+
         public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken)
         {
             UsbipInstalls++;
+            if (UsbipInstallError is { } error)
+            {
+                throw error;
+            }
+
             IsUsbipReady = !UsbipInstallDeclined;
             return Task.FromResult(!UsbipInstallDeclined);
         }

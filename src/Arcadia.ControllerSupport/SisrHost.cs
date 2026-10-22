@@ -241,8 +241,9 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
             return;
         }
 
-        await Api.QuitAsync(cancellationToken);
-        if (await ProcessWatch.WaitUntilAsync(() => !IsRunning, TimeSpan.FromSeconds(5), TimeProvider.System, cancellationToken))
+        // A SISR that doesn't take the request (still starting, API not up) won't quit by itself: no point in waiting.
+        if (await Api.QuitAsync(cancellationToken)
+            && await ProcessWatch.WaitUntilAsync(() => !IsRunning, TimeSpan.FromSeconds(5), TimeProvider.System, cancellationToken))
         {
             return;
         }

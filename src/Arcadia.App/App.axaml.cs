@@ -295,7 +295,8 @@ public partial class App : Application
                 }
                 else
                 {
-                    Task.Run(() => controllerSupport.ShutdownAsync()).Wait(TimeSpan.FromSeconds(6));
+                    // Its own limit is 3 s before it kills SISR; the rest is for the kill and the clean-up.
+                    Task.Run(() => controllerSupport.ShutdownAsync()).Wait(TimeSpan.FromSeconds(8));
                 }
                 AppLog.Write("Arcadia beendet.");
             };

@@ -1134,6 +1134,45 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_pad_under_Steam_Input_pauses_SISR_before_anyone_touches_it()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+
+        _api.UntouchedXboxPads = 1;
+        await service.WatchAsync();
+        await service.WatchAsync();
+
+        Assert.Equal(SisrState.Paused, service.State);
+        await service.RefreshAsync();
+        Assert.Contains(service.Issues, i => i.Id == "sisr-paused-other-controller-type" && i.Detail.Contains("8BitDo Ultimate 2"));
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task Trying_again_while_Steam_Input_still_takes_the_pad_pauses_again()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        await service.TickAsync();
+        _api.UntouchedXboxPads = 1;
+        await service.WatchAsync();
+        await service.WatchAsync();
+        Assert.Equal(SisrState.Paused, service.State);
+
+        await service.ApplyFixAsync(HealthFix.RestartSisr);
+        await AdvanceUntil(() => service.State == SisrState.Running);
+        _time.Advance(TimeSpan.FromSeconds(6));
+        await service.WatchAsync();
+        await service.WatchAsync();
+
+        Assert.Equal(SisrState.Paused, service.State);
+        Assert.Equal(1, _sisr.Starts);
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
     public async Task Trying_again_ends_the_pause_for_another_controller()
     {
         var service = Create();
@@ -1447,7 +1486,14 @@ public sealed class ControllerSupportServiceTests : IDisposable
         /// <summary>The name SDL gives the Xbox pads; behind Steam Input it can be Steam's untranslated type (#143).</summary>
         public string XboxPadName { get; set; } = "Xbox 360 Controller";
 
-        private string Devices() => "[" + string.Join(",", Enumerable.Repeat(SteamControllerDevice, Controllers).Concat(Enumerable.Repeat(XboxPadDevice.Replace("Xbox 360 Controller", XboxPadName, StringComparison.Ordinal), XboxPads))) + "]";
+        /// <summary>Xbox pads Steam Input hands to SISR that nobody touched yet, so SISR doesn't emulate them (#143).</summary>
+        public int UntouchedXboxPads { get; set; }
+
+        private string Devices() => "[" + string.Join(",", Enumerable.Repeat(SteamControllerDevice, Controllers)
+            .Concat(Enumerable.Repeat(XboxPadDevice.Replace("Xbox 360 Controller", XboxPadName, StringComparison.Ordinal), XboxPads))
+            .Concat(Enumerable.Repeat(UntouchedXboxPadDevice, UntouchedXboxPads))) + "]";
+
+        private const string UntouchedXboxPadDevice = """{"real_device":{"id":3,"name":"8BitDo Ultimate 2 Wireless Controller for PC","path":"XInput#1","player_index":2},"steam_virtual_device":{"id":4,"name":"8BitDo Ultimate 2 Wireless Controller for PC","steam_handle":"445232051150315420","player_index":2}}""";
 
         private const string SteamControllerDevice = """{"real_device":{"id":1,"name":"Steam Controller","path":"\\\\?\\HID#VID_28DE&PID_1304&MI_02#8&1&0&0000","player_index":0},"viiper_device":{}}""";
 

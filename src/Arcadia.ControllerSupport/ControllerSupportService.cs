@@ -102,6 +102,12 @@ public sealed class ControllerSupportService(
     private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(24);
     private static readonly TimeSpan StartupGrace = TimeSpan.FromSeconds(15);
 
+    /// <summary>
+    /// Right after its start SISR may see a pad as Steam's virtual gamepad until it forces its marker's layout
+    /// (about 2 s in sisr.log); only what it reports after that counts towards a pause for another controller.
+    /// </summary>
+    private static readonly TimeSpan OtherControllerGrace = TimeSpan.FromSeconds(5);
+
     /// <summary>How long Steam may take to log in before the settings say so; a normal start takes seconds.</summary>
     private static readonly TimeSpan SteamLoginGrace = TimeSpan.FromSeconds(30);
 
@@ -176,6 +182,9 @@ public sealed class ControllerSupportService(
 
     /// <summary>"Erneut versuchen" ends the pause for another controller.</summary>
     private volatile bool _otherControllerRetry;
+
+    /// <summary>Completed to have the watches of paused games look again now instead of after their next delay.</summary>
+    private TaskCompletionSource _lookAtPausesNow = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private bool _checkedThisSession;
     private bool _initialized;
@@ -799,7 +808,9 @@ public sealed class ControllerSupportService(
             return;
         }
 
-        _otherControllerSightings = others is null ? 0 : _otherControllerSightings + 1;
+        _otherControllerSightings = others is null ? 0
+            : time.GetUtcNow() - _lastStart > OtherControllerGrace ? _otherControllerSightings + 1
+            : _otherControllerSightings;
         if (others is not null && _otherControllerSightings >= 2 && await PauseForOtherControllerAsync(others, cancellationToken))
         {
             return;
@@ -1033,10 +1044,14 @@ public sealed class ControllerSupportService(
         _ => Task.CompletedTask,
     };
 
-    /// <summary>Ends the pause for another controller; its watch notices within a few seconds and starts SISR.</summary>
+    /// <summary>
+    /// Ends the pause for another controller at once and starts SISR. If Steam Input still takes another
+    /// controller, SISR reports it within a few seconds, without any input on it, and the pause begins again.
+    /// </summary>
     private Task RetryAfterOtherController()
     {
         _otherControllerRetry = true;
+        Interlocked.Exchange(ref _lookAtPausesNow, new(TaskCreationOptions.RunContinuationsAsynchronously)).TrySetResult();
         return Task.CompletedTask;
     }
 
@@ -1149,7 +1164,7 @@ public sealed class ControllerSupportService(
             {
                 while (running())
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(3), time);
+                    await Task.WhenAny(Task.Delay(TimeSpan.FromSeconds(3), time), Volatile.Read(ref _lookAtPausesNow).Task);
                 }
             }
         }
@@ -1421,7 +1436,7 @@ public sealed class ControllerSupportService(
             }
 
             var steamControllers = controllers?.SteamControllers ?? 0;
-            Log?.Invoke($"SISR bereit: {steamControllers} Steam Controller und {controllers?.Others.Count ?? 0} andere Controller emuliert");
+            Log?.Invoke($"SISR bereit: {steamControllers} Steam Controller und {controllers?.Others.Count ?? 0} andere Controller über Steam Input");
 
             // Only if nothing stopped or restarted SISR meanwhile. Other controllers are the quick check's to pause for.
             var next = !sisr.IsRunning ? SisrState.Stopped : steamControllers > 0 ? SisrState.Running : SisrState.NoController;

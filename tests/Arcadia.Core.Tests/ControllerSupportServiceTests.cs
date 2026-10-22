@@ -1062,7 +1062,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task The_warning_names_Steams_controller_type_readably_and_says_the_Steam_Controller_is_blocked()
+    public async Task The_warning_names_Steams_controller_type_readably_and_says_the_Steam_Controller_may_fail()
     {
         var service = Create();
         _api.XboxPadName = "#controller_xbox360";
@@ -1075,7 +1075,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Contains("Xbox 360 Controller", issue.Detail);
         Assert.DoesNotContain("#controller", issue.Detail);
         Assert.DoesNotContain("USB-ID", issue.Detail);
-        Assert.Contains("Steam Controller funktioniert nicht", issue.Detail);
+        Assert.Contains("Steam Controller kann in Arcadia oder in Spielen nicht mehr funktionieren", issue.Detail);
         Assert.Contains("Erweiterte Controllereinstellungen", issue.Detail);
         lock (_log)
         {
@@ -1120,7 +1120,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Equal(HealthSeverity.Warning, issue.Severity);
         Assert.Equal(HealthFix.RestartSisr, issue.Fix);
         Assert.Contains("Xbox 360 Controller", issue.Detail);
-        Assert.Contains("Steam Controller funktioniert nicht", issue.Detail);
+        Assert.Contains("Steam Controller kann in Arcadia oder in Spielen nicht mehr funktionieren", issue.Detail);
         await service.TickAsync();
         Assert.Equal(0, _sisr.Starts);
 

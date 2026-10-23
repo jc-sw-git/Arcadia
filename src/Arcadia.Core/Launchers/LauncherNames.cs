@@ -1,3 +1,4 @@
+using System.Text;
 using Arcadia.Core.Search;
 using Arcadia.Launchers.Abstractions;
 
@@ -56,6 +57,10 @@ public static class LauncherNames
             : null;
     }
 
-    /// <summary>A lower-case letter of any language (the search folds the prefix to lower case) or a digit 0–9.</summary>
-    public static bool IsKeywordCharacter(char c) => char.IsAsciiDigit(c) || (char.IsLetter(c) && char.IsLower(c));
+    /// <summary>
+    /// A lower-case letter of any language (the search folds the prefix to lower case) or a digit 0–9. Not a special form
+    /// of another letter, such as µ (the micro sign beside the Greek μ): it is a symbol to the user (owner, 2026-10-23).
+    /// </summary>
+    public static bool IsKeywordCharacter(char c) =>
+        char.IsAsciiDigit(c) || (char.IsLetter(c) && char.IsLower(c) && c.ToString().IsNormalized(NormalizationForm.FormKC));
 }

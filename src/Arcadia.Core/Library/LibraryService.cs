@@ -26,7 +26,8 @@ public sealed class LibraryService(LauncherRegistry launchers, TimeProvider? tim
         await Task.Run(launchers.Locate, cancellationToken);
         return await Task.WhenAll(launchers.Enabled.Select(async integration =>
         {
-            var launcher = integration.Launcher;
+            // With the name and keyword the user gave it (#137).
+            var launcher = launchers.Info(integration.Launcher.Id);
             if (!launchers.IsFound(launcher.Id))
             {
                 return new LauncherLibrary(launcher, [], IsFound: false);

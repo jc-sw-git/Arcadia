@@ -20,8 +20,70 @@ public sealed class MouseModeTests
         _mode = new MouseMode(_output, () => _options, _time);
         _mode.HoldStarted += rest => _events.Add($"hold {rest.TotalSeconds:0.0}");
         _mode.HoldCancelled += () => _events.Add("cancelled");
-        _mode.Switched += s => _events.Add($"{(s.IsOn ? "on" : "off")} {(s.IsAutomatic ? "auto" : $"slot {s.Slot}")}{(s.ByGame ? " by game" : string.Empty)}");
+        _mode.Switched += s => _events.Add($"{(s.IsOn ? "on" : "off")} {(s.IsAutomatic ? "auto" : $"slot {s.Slot}")}{(s.ByGame ? " by game" : string.Empty)}{(s.ForDialog ? " for dialog" : string.Empty)}");
         _mode.Refused += slot => _events.Add($"refused slot {slot}");
+    }
+
+    [Fact]
+    public void A_dialog_switches_the_mode_on_and_off_again_after_it()
+    {
+        _mode.HoldForDialog(true);
+        Update();
+        Assert.True(_mode.IsOn);
+
+        _mode.HoldForDialog(false);
+        Update();
+
+        Assert.Equal(["on auto for dialog", "off auto for dialog"], _events);
+        Assert.False(_mode.IsOn);
+    }
+
+    [Fact]
+    public void A_mode_that_was_on_before_the_dialog_stays_on_after_it()
+    {
+        SwitchOn();
+        _events.Clear();
+
+        _mode.HoldForDialog(true);
+        Update();
+        _mode.HoldForDialog(false);
+        Update();
+
+        Assert.Empty(_events);
+        Assert.True(_mode.IsOn);
+    }
+
+    [Fact]
+    public void A_dialog_needs_the_mouse_also_with_the_mode_off_in_the_settings_or_beside_a_game_that_forbids_it()
+    {
+        _options = _options with { Enabled = false, BlockedHere = true };
+
+        _mode.HoldForDialog(true);
+        Update();
+        _mode.Request(false);
+        Update();
+        Assert.True(_mode.IsOn);
+
+        _mode.HoldForDialog(false);
+        Update();
+        Assert.False(_mode.IsOn);
+    }
+
+    [Fact]
+    public void Switched_on_by_hand_during_a_dialog_the_mode_stays_on_after_it()
+    {
+        _mode.HoldForDialog(true);
+        Update();
+        HoldFor(PadButtons.View | PadButtons.Menu, HoldTime + Poll);
+        HoldFor(PadButtons.None, Poll);
+        HoldFor(PadButtons.View | PadButtons.Menu, HoldTime + Poll);
+        HoldFor(PadButtons.None, Poll);
+        Assert.True(_mode.IsOn);
+
+        _mode.HoldForDialog(false);
+        Update();
+
+        Assert.True(_mode.IsOn);
     }
 
     [Fact]

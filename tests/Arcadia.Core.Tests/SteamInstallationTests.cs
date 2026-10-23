@@ -93,4 +93,27 @@ public class SteamInstallationTests : IDisposable
     [Fact]
     public void Without_userdata_there_are_no_accounts() =>
         Assert.Empty(new SteamInstallation(_root, activeUserId: null).Accounts());
+
+    [Fact]
+    public void A_folder_picked_by_hand_is_Steam_if_it_holds_steam_exe_and_steamapps()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "steamapps"));
+        File.WriteAllText(Path.Combine(_root, "steam.exe"), string.Empty);
+
+        Assert.Equal(_root, SteamInstallation.RootIn(_root));
+        Assert.Equal(_root, SteamInstallation.RootIn(_root + Path.DirectorySeparatorChar));
+        Assert.Equal(_root, SteamInstallation.RootIn(Path.Combine(_root, "steamapps")));
+    }
+
+    [Fact]
+    public void A_folder_without_steam_exe_or_steamapps_or_a_relative_one_is_no_Steam()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "steamapps"));
+
+        Assert.Null(SteamInstallation.RootIn(_root));
+        File.WriteAllText(Path.Combine(_root, "steam.exe"), string.Empty);
+        Assert.Null(SteamInstallation.RootIn(Path.Combine(_root, "config")));
+        Assert.Null(SteamInstallation.RootIn("Steam"));
+        Assert.Null(SteamInstallation.RootIn(string.Empty));
+    }
 }

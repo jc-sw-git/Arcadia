@@ -38,4 +38,7 @@ public interface ILauncherIntegration
     /// </summary>
     /// <returns>Where the launcher was found, as shown to the user, or null if it isn't installed.</returns>
     string? Locate();
+
+    /// <summary>Lets the user pick the launcher's folder when <see cref="Locate"/> doesn't find it; null if it can't (#138).</summary>
+    ILauncherFolderChoice? FolderChoice => null;
 }

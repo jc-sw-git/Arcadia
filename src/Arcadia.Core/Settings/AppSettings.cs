@@ -138,7 +138,15 @@ public sealed record AppSettings
 
 public sealed class SettingsStore(string path)
 {
+    private const int ReadAttempts = 3;
+
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
+
+    /// <summary>A virus scanner or a sync tool (OneDrive) may hold the file for a moment.</summary>
+    private static readonly TimeSpan ReadRetryDelay = TimeSpan.FromMilliseconds(100);
+
+    // The file exists but couldn't be read at the start: it may still hold the user's settings.
+    private bool _keepUnreadFile;
 
     public string Path { get; } = path;
 
@@ -148,23 +156,36 @@ public sealed class SettingsStore(string path)
     /// <summary>
     /// Missing or unreadable files yield the defaults rather than an error. A file that can't be
     /// parsed is kept as <c>settings.json.broken</c>, because the next save would overwrite it.
+    /// A file that can't be read even after a short wait is not overwritten while Arcadia runs
+    /// (<see cref="Save"/> refuses), so a lock at the start doesn't cost the user their settings.
     /// </summary>
     public AppSettings Load()
     {
-        try
+        for (var attempt = 1; ; attempt++)
         {
-            return File.Exists(Path)
-                ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(Path), Json) ?? new AppSettings()
-                : new AppSettings();
-        }
-        catch (JsonException)
-        {
-            KeepBrokenFile();
-            return new AppSettings();
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return new AppSettings();
+            try
+            {
+                _keepUnreadFile = false;
+                return File.Exists(Path)
+                    ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(Path), Json) ?? new AppSettings()
+                    : new AppSettings();
+            }
+            catch (JsonException)
+            {
+                KeepBrokenFile();
+                return new AppSettings();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                if (attempt < ReadAttempts)
+                {
+                    Thread.Sleep(ReadRetryDelay);
+                    continue;
+                }
+
+                _keepUnreadFile = File.Exists(Path);
+                return new AppSettings();
+            }
         }
     }
 
@@ -180,8 +201,14 @@ public sealed class SettingsStore(string path)
         }
     }
 
+    /// <exception cref="IOException">The file couldn't be saved, or it couldn't be read at the start and is kept as it is.</exception>
     public void Save(AppSettings settings)
     {
+        if (_keepUnreadFile)
+        {
+            throw new IOException($"{System.IO.Path.GetFileName(Path)} ließ sich beim Start nicht lesen und wird deshalb nicht überschrieben.");
+        }
+
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
         var temp = Path + ".tmp";
         File.WriteAllText(temp, JsonSerializer.Serialize(settings, Json));

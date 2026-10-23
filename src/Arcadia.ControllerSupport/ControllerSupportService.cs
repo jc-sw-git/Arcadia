@@ -1738,7 +1738,16 @@ public sealed class ControllerSupportService(
 
     private void UpdateSettings(Func<AppSettings, AppSettings> change)
     {
-        sharedSettings.Update(change);
+        try
+        {
+            sharedSettings.Update(change);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The change holds for this session; a save that failed must not stop SISR's start, stop or update.
+            Log?.Invoke($"Einstellung von Steam Controller Support nicht gespeichert: {ex.Message}");
+        }
+
         OnChanged();
     }
 

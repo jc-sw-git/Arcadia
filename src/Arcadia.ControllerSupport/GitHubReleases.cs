@@ -117,7 +117,8 @@ public static class VerifiedDownload
 {
     /// <summary>
     /// Downloads an asset to <paramref name="targetFile"/> and checks its SHA-256 against the
-    /// digest GitHub publishes. Assets without a published digest are rejected.
+    /// digest GitHub publishes. Assets without a published digest are rejected. Nothing is left
+    /// at <paramref name="targetFile"/> unless the download is complete and verified.
     /// </summary>
     public static async Task DownloadAsync(HttpClient http, ReleaseAsset asset, string targetFile, CancellationToken cancellationToken = default)
     {
@@ -127,25 +128,33 @@ public static class VerifiedDownload
         }
 
         Directory.CreateDirectory(Path.GetDirectoryName(targetFile)!);
-        using (var request = new HttpRequestMessage(HttpMethod.Get, asset.DownloadUrl))
+        try
         {
-            request.Headers.UserAgent.ParseAdd("Arcadia");
-            using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            response.EnsureSuccessStatusCode();
-            await using var file = File.Create(targetFile);
-            await response.Content.CopyToAsync(file, cancellationToken);
-        }
+            using (var request = new HttpRequestMessage(HttpMethod.Get, asset.DownloadUrl))
+            {
+                request.Headers.UserAgent.ParseAdd("Arcadia");
+                using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                await using var file = File.Create(targetFile);
+                await response.Content.CopyToAsync(file, cancellationToken);
+            }
 
-        string actual;
-        await using (var file = File.OpenRead(targetFile))
-        {
-            actual = Convert.ToHexStringLower(await SHA256.HashDataAsync(file, cancellationToken));
-        }
+            string actual;
+            await using (var file = File.OpenRead(targetFile))
+            {
+                actual = Convert.ToHexStringLower(await SHA256.HashDataAsync(file, cancellationToken));
+            }
 
-        if (!string.Equals(actual, asset.Sha256, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(actual, asset.Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"Prüfsumme von {asset.Name} stimmt nicht – Download verworfen.");
+            }
+        }
+        catch
         {
+            // A download cut off (timeout, offline, Arcadia closing) would stay in %TEMP% for good.
             File.Delete(targetFile);
-            throw new InvalidOperationException($"Prüfsumme von {asset.Name} stimmt nicht – Download verworfen.");
+            throw;
         }
     }
 }

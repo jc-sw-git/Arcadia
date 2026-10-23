@@ -75,7 +75,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             _rows[launcher.Id] = new LauncherRowViewModel(launcher, host.Logos.BadgeOf(launcher), SwitchTo, OpenPage);
         }
 
-        _head = new LauncherPageHeadViewModel(Turn);
+        _head = new LauncherPageHeadViewModel(Turn, () => Back());
         _activeRow = new LauncherActiveRowViewModel(
             () => _page is { } id && _host.Launchers.ActiveIds.Contains(id),
             on => SwitchTo(_rows[_page!], on),

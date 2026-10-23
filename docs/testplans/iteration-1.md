@@ -1149,9 +1149,11 @@ Verlauf:
 - [ ] **T137-1** In Einstellungen → „Launcher“ öffnen A (Leertaste) oder ein Klick auf eine Zeile die Seite des
       Launchers: oben Logo, „Launcher / Name“ und Zustand, daneben die Nachbarn der Liste. Gruppen „Allgemein“ (Aktiv,
       Name im Tab, Such-Kürzel, Logo) und „Bibliothek“ (Ordner, falls nötig, Neu einlesen). B (Esc) führt zurück zur
-      Liste, der Launcher der Seite hat den Fokus. · E2E: ja
-- [ ] **T137-2** LT/RT (⇧ Q / ⇧ E, ein Klick auf einen Nachbarn) blättern zum vorigen/nächsten Launcher in der
-      Reihenfolge der Liste, am Ende wieder zum ersten. Mit nur einem Launcher gibt es keine Nachbarn. · E2E: ja
+      Liste, der Launcher der Seite hat den Fokus; ebenso ein Klick auf „Launcher“ über dem Namen. · E2E: ja
+- [ ] **T137-2** LT/RT (Q/E, ein Klick auf einen Nachbarn) blättern zum vorigen/nächsten Launcher in der
+      Reihenfolge der Liste, am Ende wieder zum ersten. Mit nur einem Launcher gibt es keine Nachbarn. ⇧ Q / ⇧ E (LB/RB)
+      wechseln in allen Einstellungen die Kategorie, Q/E die Tabs innerhalb einer, wie in der Bibliothek. Der Rahmen beim
+      Überfahren eines Nachbarn ist ganz zu sehen, auch rechts. · E2E: ja
 - [ ] **T137-3** „Aktiv“ auf der Seite schaltet wie in der Liste; ein nicht gefundener lässt sich nicht einschalten. Der
       Kopf zeigt „Aktiv · Tab N“, „Nicht aktiv“ oder „Nicht installiert“. · E2E: ja
 - [ ] **T137-4** A (Leertaste, ein Klick) auf „Name im Tab“ öffnet die Bildschirmtastatur unter der Seite (ohne ↹ und die
@@ -1214,6 +1216,7 @@ Verlauf:
 | T138-2 | 2026-10-23 | Claude | wie oben, GTK-Dateiwahl statt der von Windows | ⚠️ PNG und SVG übernommen, kaputte Datei abgelehnt (Toast), Logo nach Neustart noch da, ◀ stellt den Standard her und löscht die Kopie | Lauf am PC des Owners |
 | T138-3 | 2026-10-23 | Claude | wie oben, gefälschte Steam-Ordner (`steam.exe` + `steamapps`) | ⚠️ Ordner ohne Steam abgelehnt, mit Steam angenommen: Steam an, gefunden, eingelesen (0 Spiele) | Lauf am PC des Owners |
 | T138-2, T137-7 (Juris Feedback) | 2026-10-23 | Claude | wie oben | ⚠️ „Logo“ als Knopf „Hochladen …“, eingerückte Zeile „Standardlogo“ erscheint mit eigenem Logo und verschwindet nach „Wiederherstellen“ (Fokus zurück auf „Logo“); „Jetzt einlesen“ liest nur GOG (5 ms, Toast „31 Spiele in GOG Galaxy gefunden.“), dass die anderen nicht gelesen werden nur per Test | Lauf am PC des Owners |
+| T137-1, T137-2 (Juris Feedback) | 2026-10-23 | Claude | wie oben | ⚠️ Klick auf „Launcher“ über dem Namen führt zur Liste (Fokus auf dem Launcher), E blättert zum nächsten Launcher, ⇧ E/⇧ Q wechseln die Kategorie, Rahmen des rechten Nachbarn beim Überfahren ganz zu sehen | Lauf am PC des Owners |
 | T137-6 (Juris Feedback) | 2026-10-23 | Claude | wie oben | ⚠️ Tastatur des Kürzels (DE): Sonderzeichen, Leertaste und ⇧ ausgegraut, Buchstaben, Umlaute, ß und Ziffern wählbar; AltGr aus, seit µ nicht mehr zählt (Juri: ein Sonderzeichen); das Überspringen mit dem Steuerkreuz nicht gesehen (kein Controller), es nutzt die schon getestete Sperre ausgegrauter Tasten | Lauf am PC des Owners |
 | T138-4 | 2026-10-23 | Claude | wie oben | ⚠️ Zeile, Ausgrauen bei „Aus“ gesehen; das Einschalten beim Dialog nur per Test (`MouseMode`), unter Linux kein Mausmodus | Lauf am PC des Owners |
 

@@ -70,9 +70,9 @@ public sealed partial class LauncherActiveRowViewModel(Func<bool> isActive, Acti
 
 /// <summary>
 /// The head of a launcher's page (#137): its logo, name and state, and beside it the launchers before and after it in the
-/// list, which LT/RT (or a click on them) turn to.
+/// list, which LT/RT (or a click on them) turn to. "Launcher" above the name goes back to the list, like B.
 /// </summary>
-public sealed partial class LauncherPageHeadViewModel(Action<int> turn) : ObservableObject
+public sealed partial class LauncherPageHeadViewModel(Action<int> turn, Action back) : ObservableObject
 {
     [ObservableProperty]
     public partial LauncherBadge? Badge { get; set; }
@@ -101,6 +101,9 @@ public sealed partial class LauncherPageHeadViewModel(Action<int> turn) : Observ
 
     [RelayCommand]
     private void TurnOn() => turn(1);
+
+    [RelayCommand]
+    private void Back() => back();
 }
 
 /// <summary>A launcher beside the shown one on its page.</summary>

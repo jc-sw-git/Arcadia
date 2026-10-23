@@ -167,8 +167,8 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   it fades out where more tabs follow. Dividers also stand between a status message and the search chip and
   between the settings chip and the date (owner, 2026-10-21).
 - Settings (#15, owner 2026-10-21 and 2026-10-22): a whole page in place of the library (≡, Enter, the chip); B or ✕ go
-  back to the same place. Categories are tabs in the header like the launcher tabs (LB/RB, Q/E without Shift for now, a
-  click), only those with content; a warning or an error of a category shows its symbol beside the name, info nothing.
+  back to the same place. Categories are tabs in the header like the launcher tabs (LB/RB, Shift+Q/E, a
+  click; Q/E = LT/RT switch tabs inside a category, e.g. launcher pages, as in the library, owner 2026-10-23), only those with content; a warning or an error of a category shows its symbol beside the name, info nothing.
   Pattern "Leiste" for every category: one column of rows, ▲ ▼ (W/S) move, ◀ ▶ (A/D) change switches and choices at
   once, A (Space) starts actions; only settings and actions are rows, facts about a setting (e.g. SISR's status,
   version, drawbacks) are boxes (`InfoSection`) below its description in the info panel. The info panel beside the
@@ -191,7 +191,8 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   (`HealthIssue.Summary`), the whole text in the info panel; descriptions below a row name stay at one, at most two
   lines. A row's action is a pill as wide as the value chips, filled with the accent while focused (owner, 2026-10-22).
 - Launcher page (#137, #138, owner 2026-10-23): A or a click on a launcher in the list opens its page in place of the rows;
-  B goes back to the list with that launcher focused, LT/RT (Shift+Q/E, a click on a neighbour in the head) turn to the
+  B (or a click on "Launcher" above its name) goes back to the list with that launcher focused, LT/RT (Q/E, a click on a
+  neighbour in the head) turn to the
   launcher before or after it in the list's order, wrapping. Groups "Allgemein": Aktiv, "Name im Tab", "Such-Kürzel",
   "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only active and found). Name and keyword are written with the shared
   on-screen keyboard below the page (without ↹ and the edge key; the search's buttons, ≡/Enter take, B/Esc drop); a

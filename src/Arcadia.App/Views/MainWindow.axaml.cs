@@ -253,15 +253,16 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// On the settings page Q/E switch the category as LB/RB do, without Shift for now (#15); so Shift+Q/E stand for LT/RT,
-    /// which turn a launcher's page to the next launcher (#137). Shift+W/S (and Page Up/Down) scroll the info panel as RS does.
+    /// On the settings page Shift+Q/E switch the category as LB/RB do and Q/E the tabs inside one as LT/RT do, e.g. a
+    /// launcher's page to the next launcher (#137), as in the library (owner, 2026-10-23). Shift+W/S (and Page Up/Down)
+    /// scroll the info panel as RS does.
     /// </summary>
     private static UiAction? SettingsActionFor(KeyEventArgs e) => (e.Key, e.KeyModifiers) switch
     {
-        (Key.Q, KeyModifiers.None) => UiAction.PreviousTab,
-        (Key.E, KeyModifiers.None) => UiAction.NextTab,
-        (Key.Q, KeyModifiers.Shift) => UiAction.PreviousPage,
-        (Key.E, KeyModifiers.Shift) => UiAction.NextPage,
+        (Key.Q, KeyModifiers.Shift) => UiAction.PreviousTab,
+        (Key.E, KeyModifiers.Shift) => UiAction.NextTab,
+        (Key.Q, KeyModifiers.None) => UiAction.PreviousPage,
+        (Key.E, KeyModifiers.None) => UiAction.NextPage,
         (Key.W, KeyModifiers.Shift) or (Key.PageUp, _) => UiAction.SecondaryUp,
         (Key.S, KeyModifiers.Shift) or (Key.PageDown, _) => UiAction.SecondaryDown,
         _ => null,

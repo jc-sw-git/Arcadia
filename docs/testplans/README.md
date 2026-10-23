@@ -35,15 +35,15 @@ ergänzt, liest nur dessen Datei, nicht den ganzen Ordner.
 
 1. **Feature-Iteration N** (Meilenstein „Iteration N“): Issues umsetzen, jeder PR ergänzt den Testplan.
 2. **Abschluss-Review** (Code): Prüfliste im Review-Issue, Befunde beheben oder als Issue einplanen.
-   Dazu gehört eine Retrospektive der Prozesse: Für jeden Prozess entscheidet der Owner, ob er
-   bleibt, geändert wird oder wegfällt.
 3. **Abschluss-Test** (manuell): alle Testfälle am Release-Kandidaten, danach ein explorativer
    Test mit Auftrag und Zeitrahmen. Ergebnis: Häkchen, Verlauf, die Liste der Abnahmetests.
-4. **Release.**
-5. **Abnahme-Iteration N** (Meilenstein „Abnahme Iteration N“): alle Testfälle mit `E2E: ja`
+4. **Retrospektive** (eigenes Issue, erst nach Review und Abschluss-Test): Für jeden Prozess
+   entscheidet der Owner, ob er bleibt, geändert wird oder wegfällt.
+5. **Release.**
+6. **Abnahme-Iteration N** (Meilenstein „Abnahme Iteration N“): alle Testfälle mit `E2E: ja`
    werden automatisierte Abnahmetests in der Pipeline. Feature-Iteration N+1 beginnt erst, wenn
    sie abgeschlossen ist, damit Änderungen in N+1 Brüche in Features aus N sofort zeigen.
-6. **Feature-Iteration N+1** beginnt mit den großen `type:tech-debt`-Befunden aus dem Review,
+7. **Feature-Iteration N+1** beginnt mit den großen `type:tech-debt`-Befunden aus dem Review,
    jetzt abgesichert durch die Abnahmetests.
 
 ## Vorlage für ein Issue

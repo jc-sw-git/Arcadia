@@ -1168,7 +1168,8 @@ Verlauf:
       sichtbar, bei DE auch AltGr (µ zählt nicht); Steuerkreuz und Stick überspringen sie, Y tippt kein Leerzeichen, LB schaltet nicht um; bei FR bleibt ⇧
       an (Ziffern), auf ⇧ sind dann nur die Ziffern wählbar. Der Name im Tab bietet alle Tasten. · E2E: ja
 - [ ] **T137-7** Das Infopanel erklärt die fokussierte Zeile; über „Aktiv“, „Name im Tab“ und „Logo“ steht die Vorschau
-      „Tab-Leiste“, beim Kürzel ein Beispiel. „Neu einlesen“ ist für einen inaktiven oder nicht gefundenen Launcher
+      „Launcher-Reihenfolge“ (Untertitel „Eine Vorschau der Reihenfolge, in der die Launcher aufgeführt werden“; der in
+      der Bibliothek gewählte Tab ist darin nicht weiß, nur der Launcher der Seite umrandet), beim Kürzel ein Beispiel. „Neu einlesen“ ist für einen inaktiven oder nicht gefundenen Launcher
       ausgegraut (Grund unter dem Namen), sonst liest es nur diesen Launcher ein (`arcadia.log`: „Neu eingelesen für …“) und
       nennt danach Spiele und Zeit. „Neu einlesen“ auf einem leeren Tab ebenso. · E2E: ja
 - [ ] **T137-8** Alles aus T137-1 bis T137-7 allein mit dem Controller, mit einer Hand an der Tastatur und allein mit der

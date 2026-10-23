@@ -16,9 +16,6 @@ public interface ILauncherSettingsHost
     /// <summary>The file and folder dialogs; null until the window is there.</summary>
     ISystemDialogs? Dialogs { get; }
 
-    /// <summary>The launcher of the library's selected tab, or null.</summary>
-    string? SelectedLauncherId { get; }
-
     /// <summary>The games of an active launcher as its tab shows them; null while it has no tab (inactive, or not read yet).</summary>
     LauncherLibrary? LibraryOf(string launcherId);
 

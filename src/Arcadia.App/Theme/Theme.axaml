@@ -1687,12 +1687,6 @@
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
-  <Style Selector="Border.miniTab.selected">
-    <Setter Property="Background" Value="{StaticResource TextStrong}" />
-  </Style>
-  <Style Selector="Border.miniTab.selected TextBlock.miniTabName">
-    <Setter Property="Foreground" Value="{StaticResource Bg}" />
-  </Style>
   <Style Selector="Border.miniTab.highlighted">
     <Setter Property="BoxShadow" Value="{StaticResource SearchFieldRing}" />
   </Style>

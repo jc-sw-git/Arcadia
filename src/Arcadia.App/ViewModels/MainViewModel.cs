@@ -475,7 +475,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
 
     LauncherRegistry ILauncherSettingsHost.Launchers => _library.Launchers;
 
-    string? ILauncherSettingsHost.SelectedLauncherId => SelectedTab?.Launcher.Id;
 
     LauncherLibrary? ILauncherSettingsHost.LibraryOf(string launcherId) => Tabs.FirstOrDefault(t => t.Launcher.Id == launcherId)?.Library;
 

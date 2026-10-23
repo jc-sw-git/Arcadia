@@ -25,6 +25,11 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private const string GeneralGroup = "ALLGEMEIN";
     private const string LibraryGroup = "BIBLIOTHEK";
     private const string ListYAction = "Verschieben";
+
+    /// <summary>The box with the tabs in miniature beside the list and the page (owner, 2026-10-23).</summary>
+    internal const string OrderPreviewTitle = "LAUNCHER-REIHENFOLGE";
+
+    internal const string OrderPreviewSubtitle = "Eine Vorschau der Reihenfolge, in der die Launcher aufgeführt werden";
     private const string ListXAction = "Alle neu einlesen";
 
     private readonly ILauncherSettingsHost _host;
@@ -78,13 +83,15 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         {
             Group = GeneralGroup,
             Subtitle = "Als Tab zeigen, in der Suche und beim Einlesen",
-            PreviewTitle = "TAB-LEISTE",
+            PreviewTitle = OrderPreviewTitle,
+            PreviewSubtitle = OrderPreviewSubtitle,
         };
         _nameRow = new TextRowViewModel("launcher-name", "Name im Tab", () => PageInfo.DisplayName, Edit)
         {
             Group = GeneralGroup,
             Subtitle = "So heißt der Tab in der Leiste",
-            PreviewTitle = "TAB-LEISTE",
+            PreviewTitle = OrderPreviewTitle,
+            PreviewSubtitle = OrderPreviewSubtitle,
         };
         _keywordRow = new TextRowViewModel("launcher-keyword", "Such-Kürzel", () => PageInfo.SearchKeyword, Edit)
         {
@@ -96,14 +103,16 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         {
             Group = GeneralGroup,
             ActionText = "Hochladen …",
-            PreviewTitle = "TAB-LEISTE",
+            PreviewTitle = OrderPreviewTitle,
+            PreviewSubtitle = OrderPreviewSubtitle,
         };
         _defaultLogoRow = new ActionRowViewModel("launcher-logo-default", "Standardlogo", RestoreLogo)
         {
             Group = GeneralGroup,
             Indent = 1,
             ActionText = "Wiederherstellen",
-            PreviewTitle = "TAB-LEISTE",
+            PreviewTitle = OrderPreviewTitle,
+            PreviewSubtitle = OrderPreviewSubtitle,
         };
         _folderRow = new ActionRowViewModel("launcher-folder", "Ordner", () => PickFolderAsync().Forget("Ordner wählen"))
         {
@@ -373,7 +382,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         _head.Previous = Neighbour(-1);
         _head.Next = Neighbour(1);
 
-        var tabBar = new InfoTabBar([.. tabs.Select(tab => new InfoTab(tab.Launcher.DisplayName, tab.Badge, tab.Launcher.Id == _host.SelectedLauncherId, tab == row))]);
+        var tabBar = new InfoTabBar([.. tabs.Select(tab => new InfoTab(tab.Launcher.DisplayName, tab.Badge, tab == row))]);
         var keyword = $"{SearchQuery.PrefixMarker}{launcher.SearchKeyword}";
 
         _activeRow.Refresh();
@@ -740,7 +749,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         var installed = library?.Games.Count(g => g.IsInstalled) ?? 0;
         var integration = launchers.Registered(id);
         var location = launchers.LocationOf(id);
-        InfoBlock[] preview = [new InfoTabBar([.. tabs.Select(tab => new InfoTab(tab.Launcher.DisplayName, tab.Badge, tab.Launcher.Id == _host.SelectedLauncherId, tab == row))])];
+        InfoBlock[] preview = [new InfoTabBar([.. tabs.Select(tab => new InfoTab(tab.Launcher.DisplayName, tab.Badge, tab == row))])];
 
         // Whether it is active, its tab, key and keyword are in the preview and the row already (owner, 2026-10-22).
         List<InfoBlock> info = [new InfoLauncher(name, row.Badge, isActive ? $"Aktiv · Tab {tabNumber}" : isFound ? "Nicht aktiv" : "Nicht installiert", isActive)];

@@ -65,11 +65,13 @@ public sealed record InfoFact(string Label, string Value, bool IsMuted = false, 
 public sealed record InfoFacts(string Title, IReadOnlyList<InfoFact> Facts) : InfoBlock;
 
 /// <summary>A launcher as its tab shows it: logo and name.</summary>
-/// <param name="IsSelected">The library's selected tab.</param>
 /// <param name="IsHighlighted">The launcher the info panel is about.</param>
-public sealed record InfoTab(string Name, Services.LauncherBadge Badge, bool IsSelected, bool IsHighlighted);
+public sealed record InfoTab(string Name, Services.LauncherBadge Badge, bool IsHighlighted);
 
-/// <summary>The library's tab strip in miniature, in its current order (#136).</summary>
+/// <summary>
+/// The library's tab strip in miniature, in its current order (#136); which tab the library shows doesn't matter here
+/// (owner, 2026-10-23).
+/// </summary>
 public sealed record InfoTabBar(IReadOnlyList<InfoTab> Tabs) : InfoBlock
 {
     public bool IsEmpty => Tabs.Count == 0;

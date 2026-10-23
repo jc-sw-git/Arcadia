@@ -184,7 +184,8 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   (#137, below). Saved as `ActiveLaunchers` (order = tabs); without it every launcher found is active. An active launcher
   without games or no longer found keeps its tab with an empty state ("Keine Spiele in …" / "… nicht gefunden",
   "Launcher-Einstellungen" and "Neu einlesen" / "Erneut suchen"); with no launcher active the library says "Kein Launcher
-  aktiv" the same way. Beside the rows two boxes: "Tab-Leiste" (the tabs as they will be) and "Launcher-Details" (head,
+  aktiv" the same way. Beside the rows two boxes: "Launcher-Reihenfolge" (the tabs as they will be, the
+  library's selected tab not marked, owner 2026-10-23) and "Launcher-Details" (head,
   warnings, library, location; no repeat of what row and preview show). "Steam Controller Kompatibilität" has a lamp
   beside its name while on: green while SISR runs. A status message row shows one short line below its title
   (`HealthIssue.Summary`), the whole text in the info panel; descriptions below a row name stay at one, at most two

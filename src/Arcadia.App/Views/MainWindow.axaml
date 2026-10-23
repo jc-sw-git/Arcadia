@@ -1324,7 +1324,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                           <DataTemplate x:DataType="settings:InfoTab">
-                            <Border Classes="miniTab" Classes.selected="{Binding IsSelected}" Classes.highlighted="{Binding IsHighlighted}" Margin="0,3,6,3">
+                            <Border Classes="miniTab" Classes.highlighted="{Binding IsHighlighted}" Margin="0,3,6,3">
                               <StackPanel Orientation="Horizontal" Spacing="8">
                                 <ctl:LauncherLogo Classes="launcherLogo" Badge="{Binding Badge}" Width="22" Height="22" VerticalAlignment="Center" />
                                 <TextBlock Classes="miniTabName" Text="{Binding Name}" />
@@ -1397,7 +1397,10 @@
               </Grid.DataTemplates>
               <Border Classes="infoPanel" IsVisible="{Binding FocusedRow?.HasPreview, TargetNullValue=False}">
                 <StackPanel Spacing="20" Margin="32,30">
-                  <TextBlock Classes="label" FontSize="14" Text="{Binding FocusedRow?.PreviewTitle, TargetNullValue=''}" />
+                  <StackPanel Spacing="6">
+                    <TextBlock Classes="label" FontSize="14" Text="{Binding FocusedRow?.PreviewTitle, TargetNullValue=''}" />
+                    <TextBlock Text="{Binding FocusedRow?.PreviewSubtitle, TargetNullValue=''}" IsVisible="{Binding FocusedRow?.HasPreviewSubtitle, TargetNullValue=False}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                  </StackPanel>
                   <ItemsControl ItemsSource="{Binding FocusedRow?.Preview}" />
                 </StackPanel>
               </Border>

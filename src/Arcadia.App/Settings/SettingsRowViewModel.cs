@@ -116,6 +116,11 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     /// <summary>The heading of <see cref="Preview"/>.</summary>
     public virtual string PreviewTitle { get; init; } = string.Empty;
 
+    /// <summary>A line below <see cref="PreviewTitle"/> that says what the box shows; empty shows nothing.</summary>
+    public virtual string PreviewSubtitle { get; init; } = string.Empty;
+
+    public bool HasPreviewSubtitle => PreviewSubtitle.Length > 0;
+
     /// <summary>◀ ▶ change the row's value.</summary>
     public virtual bool CanChange => false;
 

@@ -1043,7 +1043,8 @@
           <!-- Rows and the info panel of the shown category. The mouse over a row focuses it (MainWindow.axaml.cs), so
                the info panel explains it before a click changes it. -->
           <Grid Grid.Row="1" Margin="80,0,80,22" ColumnDefinitions="*,620" ColumnSpacing="56" DataContext="{Binding Settings?.Selected}" x:DataType="settings:SettingsCategoryViewModel">
-            <DockPanel>
+            <!-- While a text is written, the on-screen keyboard takes the clicks: ↵ takes it, "Ausblenden" drops it. -->
+            <DockPanel IsHitTestVisible="{Binding !IsEditing}">
             <!-- Above the rows, e.g. a launcher's logo, name and its neighbours on its page (#137). -->
             <ContentControl DockPanel.Dock="Top" Content="{Binding Head}" IsVisible="{Binding Head, Converter={x:Static ObjectConverters.IsNotNull}}">
               <ContentControl.DataTemplates>

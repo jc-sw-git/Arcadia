@@ -134,7 +134,8 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
         {
             row.Pointed = r =>
             {
-                if (!IsReordering)
+                // A lifted row or a text being written keeps the focus where it is.
+                if (!IsReordering && !IsEditing)
                 {
                     FocusAt(Rows.IndexOf(r));
                 }

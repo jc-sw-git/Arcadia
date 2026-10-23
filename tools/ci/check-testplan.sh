@@ -17,18 +17,19 @@ if [[ -z "$issues" ]]; then
   exit 0
 fi
 
-added=$(git diff --unified=0 "$base...$head" -- 'docs/testplans/iteration-*.md' | grep -E '^\+[^+]' || true)
+added=$(git diff --unified=0 "$base...$head" -- 'docs/testplans/iteration-*' | grep -E '^\+[^+]' || true)
 
 missing=()
 for issue in $issues; do
-  # Matches the issue heading "## #23 …" or a test case "**T23-1**" / history row "| T23-1 |".
-  if ! printf '%s\n' "$added" | grep -qE "(## #${issue}\b|\bT${issue}-[0-9]+)"; then
+  # Matches the issue heading "# #23 …" (its own file) or "## #23 …" or a test case "**T23-1**" / history row "| T23-1 |".
+  # A here-string, not a pipe: with pipefail, grep -q closing the pipe early would fail printf on a large diff.
+  if ! grep -qE "(^\+##? #${issue}\b|\bT${issue}-[0-9]+)" <<< "$added"; then
     missing+=("#$issue")
   fi
 done
 
 if (( ${#missing[@]} )); then
-  echo "::error::The PR closes ${missing[*]} but adds no tests for it to docs/testplans/iteration-*.md (see docs/testplans/README.md)."
+  echo "::error::The PR closes ${missing[*]} but adds no tests for it to docs/testplans/iteration-<n>/ (see docs/testplans/README.md)."
   exit 1
 fi
 echo "Test plan updated for: $(echo $issues | sed 's/[0-9]\+/#&/g')."

@@ -1,20 +1,24 @@
 # Testpläne
 
-Ein Testplan pro Feature-Iteration (`iteration-1.md`, `iteration-2.md`, …). Er ist die einzige
-Quelle für alle manuellen Tests dieser Iteration: was getestet werden soll, wer wann was getestet
-hat, was dabei schiefging und was daraus wurde.
+Ein Testplan pro Feature-Iteration, als Ordner (`iteration-1/`, `iteration-2/`, …): eine Datei pro
+Issue (`<Issue dreistellig>-<titel>.md`, z. B. `015-einstellungsseite.md`) und ein `README.md` als
+Übersicht mit der Liste der Dateien, dem Abschluss-Test, dem explorativen Test und den Abnahmetests.
+Er ist die einzige Quelle für alle manuellen Tests dieser Iteration: was getestet werden soll, wer
+wann was getestet hat, was dabei schiefging und was daraus wurde. Wer ein Issue testet oder
+ergänzt, liest nur dessen Datei, nicht den ganzen Ordner.
 
 ## Regeln
 
-- **Jeder PR, der ein Issue schließt, ergänzt den Testplan** um die Testfälle dieses Issues
+- **Jeder PR, der ein Issue schließt, ergänzt den Testplan** um eine Datei mit den Testfällen dieses Issues
+  und eine Zeile in der Übersicht
   (Definition of Done in `CLAUDE.md`; der CI-Check `Testplan` prüft das). Braucht ein Issue keine
   neuen manuellen Tests (z. B. ein Refactoring von Features, die schon automatisiert oder durch
   bestehende Testfälle abgedeckt sind), bekommt es trotzdem einen Abschnitt mit einer Zeile, warum,
   und nennt die bestehenden Testfälle, die es berühren:
-  `## #67 MainViewModel aufteilen` → „Keine neuen Testfälle: reines Refactoring; berührt T41-3 bis T41-6.“
+  `# #67 MainViewModel aufteilen` → „Keine neuen Testfälle: reines Refactoring; berührt T41-3 bis T41-6.“
   So bleibt die Historie vollständig, und der Abschluss-Test weiß, was das Refactoring berührt hat.
 - **Testfall-IDs** heißen `T<Issue>-<laufende Nummer>`, z. B. `T15-2`. Was zu keinem Issue
-  gehört (das Grundgerüst in Iteration 1), steht im Abschnitt „Grundgerüst“ mit `G-<n>`. Sie ändern sich nie; ein
+  gehört (das Grundgerüst in Iteration 1), steht in `grundgeruest.md` mit `G-<n>`. Sie ändern sich nie; ein
   überholter Testfall wird ~~durchgestrichen~~ mit Grund, nicht gelöscht.
 - **Jeder Testfall ist markiert:** `E2E: ja` (soll als automatisierter Abnahmetest in die
   Pipeline) oder `E2E: nein (Grund)` (z. B. echter Steam Controller, UAC, echte Launcher-Installation).
@@ -44,8 +48,10 @@ hat, was dabei schiefging und was daraus wurde.
 
 ## Vorlage für ein Issue
 
+Datei `iteration-<n>/<Issue dreistellig>-<titel>.md`:
+
 ```markdown
-## #<Issue> <Titel>
+# #<Issue> <Titel>
 
 - [ ] **T<Issue>-1** <Was tun, was muss passieren; nur Controller, B geht zurück> · E2E: ja
 - [ ] **T<Issue>-2** <…> · E2E: nein (<Grund>)

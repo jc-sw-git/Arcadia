@@ -52,3 +52,28 @@ public sealed record InfoRelease(string VersionText, string DateText, IReadOnlyL
         entry.PublishedAt is { } date ? date.ToLocalTime().ToString("d. MMMM yyyy", German) : string.Empty,
         entry.Changes.Count > 0 ? entry.Changes : ["Keine Änderungen aufgeführt."]);
 }
+
+/// <summary>Something the user may want to act on, e.g. "Keine Spiele gefunden", in a box above the rest.</summary>
+public sealed record InfoNote(string Text) : InfoBlock;
+
+/// <summary>A fact in a line: what on the left, its value on the right, e.g. "Such-Kürzel  /epic".</summary>
+/// <param name="IsMuted">Something missing or off, e.g. "Aus" or "–".</param>
+/// <param name="IsGood">Something that works as it should, e.g. "werden überwacht".</param>
+public sealed record InfoFact(string Label, string Value, bool IsMuted = false, bool IsGood = false);
+
+/// <summary>Facts under a small heading, line by line, e.g. "BIBLIOTHEK" of a launcher (#136).</summary>
+public sealed record InfoFacts(string Title, IReadOnlyList<InfoFact> Facts) : InfoBlock;
+
+/// <summary>A launcher as its tab shows it: logo and name.</summary>
+/// <param name="IsSelected">The library's selected tab.</param>
+/// <param name="IsHighlighted">The launcher the info panel is about.</param>
+public sealed record InfoTab(string Name, string Monogram, Avalonia.Media.IBrush TileBrush, bool IsSelected, bool IsHighlighted);
+
+/// <summary>The library's tab strip in miniature, in its current order (#136).</summary>
+public sealed record InfoTabBar(IReadOnlyList<InfoTab> Tabs) : InfoBlock
+{
+    public bool IsEmpty => Tabs.Count == 0;
+}
+
+/// <summary>A launcher's logo, name and state at the head of its info, e.g. "Aktiv · Tab 2".</summary>
+public sealed record InfoLauncher(string Name, string Monogram, Avalonia.Media.IBrush TileBrush, string StateText, bool IsActive) : InfoBlock;

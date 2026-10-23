@@ -556,6 +556,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         };
         var healthy = enabled && !hasProblems && _support.BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
         var settlingNow = enabled && state is SisrState.Starting or SisrState.Stopping;
+        _sisr.ShowRunning(enabled ? state == SisrState.Running && !hasProblems : null);
         var status = new InfoSection("STATUS",
         [
             new InfoStatus(statusText, healthy, settlingNow),
@@ -637,7 +638,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             }
 
             row.Title = issue.Title;
-            row.Subtitle = issue.Detail;
+            row.Subtitle = issue.ShortText;
             row.Severity = issue.Severity;
             row.ActionText = issue.Fix == HealthFix.None ? string.Empty : issue.FixLabel ?? "Beheben";
             row.IsEnabled = !IsBusy && !IsSettling;
@@ -728,6 +729,9 @@ public sealed partial class SisrRowViewModel(Action<bool?> activate)
     public override void Change(int delta) => activate(delta > 0);
 
     public override void Activate() => activate(null);
+
+    /// <summary>Whether SISR really runs: null while the option is off, the switch says so.</summary>
+    public void ShowRunning(bool? isRunning) => Lamp = isRunning;
 
     public void Update(SisrRowMode mode, bool isOn, bool isLocked, string unavailableText)
     {

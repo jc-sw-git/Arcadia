@@ -24,7 +24,7 @@ public sealed class RunningGamesTrackerTests
             new FakeIntegration(FakeIntegration.LauncherOf("epic")) { RunningGames = _epic },
             .. extra,
         ];
-        var registry = new LauncherRegistry(integrations, id => !_disabled.Contains(id));
+        var registry = FakeIntegration.Registry(integrations, id => !_disabled.Contains(id));
         return new RunningGamesTracker(registry, new ProcessGames(_processes, new LaunchedGames()), _time) { Log = _log.Add };
     }
 

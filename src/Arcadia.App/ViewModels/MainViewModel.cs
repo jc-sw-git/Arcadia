@@ -18,7 +18,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace Arcadia.App.ViewModels;
 
 /// <summary>The Big Picture library: launcher tabs, a paginated cover grid and the preview panel.</summary>
-public partial class MainViewModel : ViewModelBase, IGameActionHost
+public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSettingsHost
 {
     /// <summary>Must match the column count of the grid in MainWindow.axaml.</summary>
     public const int GridColumns = 8;
@@ -183,7 +183,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
     /// <summary>The detail page; it takes the place of the cover grid while open, and of the search when opened from there.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsDetailOpen), nameof(IsLibraryShown), nameof(IsSearchShown), nameof(IsTabStripShown))]
+    [NotifyPropertyChangedFor(nameof(IsDetailOpen), nameof(IsLibraryShown), nameof(IsSearchShown), nameof(IsTabStripShown), nameof(IsEmptyTabShown), nameof(AreGamesShown))]
     public partial GameDetailViewModel? Detail { get; private set; }
 
     public bool IsDetailOpen => Detail is not null;
@@ -192,6 +192,16 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     private GameDetailViewModel? _detailBehindSearch;
 
     public bool IsLibraryShown => Detail is null;
+
+    /// <summary>The selected tab has no games, or its launcher is no longer found (#136): it says so instead of covers.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEmptyTabShown), nameof(AreGamesShown))]
+    public partial EmptyTabViewModel? EmptyTab { get; private set; }
+
+    public bool IsEmptyTabShown => IsLibraryShown && EmptyTab is not null;
+
+    /// <summary>The library shows covers: the preview, the grid, the pages and their buttons in the footer.</summary>
+    public bool AreGamesShown => IsLibraryShown && EmptyTab is null;
 
     /// <summary>The search over all launchers (#12); it covers the library while open.</summary>
     [ObservableProperty]
@@ -208,9 +218,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     public partial bool IsLoading { get; private set; } = true;
 
     [ObservableProperty]
-    public partial bool IsEmpty { get; private set; }
-
-    [ObservableProperty]
     public partial string CountText { get; private set; } = string.Empty;
 
     [ObservableProperty]
@@ -222,9 +229,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     public async Task LoadAsync()
     {
         IsLoading = true;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
         var libraries = await _library.LoadAsync();
+        var scanned = watch.ElapsedMilliseconds;
         IsLoading = false;
         ApplyLibraries(libraries);
+
+        // The scan runs off the UI thread; only showing it blocks the UI (#136 measures both).
+        AppLog.Write($"Bibliothek: {libraries.Sum(l => l.Games.Count)} Spiele aus {libraries.Count} Launchern in {scanned} ms eingelesen, in {watch.ElapsedMilliseconds - scanned} ms angezeigt");
     }
 
     /// <summary>
@@ -368,10 +380,81 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         {
             ApplyLibraries(libraries);
         }
+
+        // "Zuletzt eingelesen" changed even if nothing else did.
+        RefreshLauncherSettings();
     }
 
-    private IReadOnlyList<LauncherLibrary> CurrentLibraries() =>
-        Tabs.Select(t => new LauncherLibrary(t.Launcher, t.Games)).ToList();
+    private IReadOnlyList<LauncherLibrary> CurrentLibraries() => Tabs.Select(t => t.Library).ToList();
+
+    /// <summary>The libraries the search covers: a tab without games has nothing to find (#136).</summary>
+    private IReadOnlyList<LauncherLibrary> SearchedLibraries() => Tabs.Where(t => t.Count > 0).Select(t => t.Library).ToList();
+
+    /// <summary>
+    /// "Neu einlesen" or "Erneut suchen" on an empty tab, X in the launcher settings: reads every active launcher again
+    /// and says what came of it, for <paramref name="launcher"/> or for all.
+    /// </summary>
+    private async Task RescanAsync(LauncherInfo? launcher)
+    {
+        if (IsLoading)
+        {
+            return;
+        }
+
+        Toast.Show(launcher is null ? "Alle Launcher werden neu eingelesen …" : $"{launcher.DisplayName} wird neu eingelesen …", sticky: true);
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        await RefreshLibraryAsync(force: true);
+        AppLog.Write($"Neu eingelesen{(launcher is null ? string.Empty : $" für {launcher.Id}")}: {watch.ElapsedMilliseconds} ms");
+        if (launcher is null)
+        {
+            Toast.Show(Tabs.Count == 0 ? "Weiterhin ist kein Launcher aktiv." : "Alle Launcher sind neu eingelesen.");
+            return;
+        }
+
+        var name = launcher.DisplayName;
+        Toast.Show(Tabs.FirstOrDefault(t => t.Launcher.Id == launcher.Id) switch
+        {
+            null => $"{name} ist nicht aktiv.",
+            { IsFound: false } => $"{name} ist weiterhin nicht zu finden.",
+            { Count: 0 } => $"Weiterhin keine Spiele in {name}.",
+            { Count: var count } => count == 1 ? $"1 Spiel in {name} gefunden." : $"{count} Spiele in {name} gefunden.",
+        });
+    }
+
+    /// <summary>
+    /// The user switched launchers on or off or moved them (#136): tabs follow at once from what is already read; a
+    /// launcher switched on is read now.
+    /// </summary>
+    private void ApplyLauncherChoice()
+    {
+        if (IsLoading)
+        {
+            return;
+        }
+
+        var active = _library.Launchers.ActiveIds;
+        var shown = CurrentLibraries();
+        var kept = active.Select(id => shown.FirstOrDefault(l => l.Launcher.Id == id)).OfType<LauncherLibrary>().ToList();
+        ApplyLibraries(kept);
+        if (kept.Count < active.Count)
+        {
+            RefreshLibraryAsync(force: true).Forget("Bibliothek aktualisieren");
+        }
+    }
+
+    private void RefreshLauncherSettings() => Settings?.Categories.OfType<LauncherSettingsViewModel>().FirstOrDefault()?.Refresh();
+
+    LauncherRegistry ILauncherSettingsHost.Launchers => _library.Launchers;
+
+    string? ILauncherSettingsHost.SelectedLauncherId => SelectedTab?.Launcher.Id;
+
+    LauncherLibrary? ILauncherSettingsHost.LibraryOf(string launcherId) => Tabs.FirstOrDefault(t => t.Launcher.Id == launcherId)?.Library;
+
+    DateTimeOffset? ILauncherSettingsHost.ScannedAt(string launcherId) => _library.ScannedAt(launcherId);
+
+    void ILauncherSettingsHost.LauncherChoiceChanged() => ApplyLauncherChoice();
+
+    void ILauncherSettingsHost.RescanLaunchers() => RescanAsync(null).Forget("Launcher neu einlesen");
 
     /// <summary>
     /// Shows the scanned libraries: one tab per launcher in the scanned order, launchers that are
@@ -397,13 +480,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             }
 
             Tabs[index].Games = library.Games;
+            Tabs[index].IsFound = library.IsFound;
             if (index != i)
             {
                 Tabs.Move(index, i);
             }
         }
 
-        IsEmpty = Tabs.Count == 0;
         UpdateSearch();
         if (SelectedTab is null || !Tabs.Contains(SelectedTab))
         {
@@ -417,19 +500,29 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
             PageGames.Clear();
             PageButtons.Clear();
+            EmptyTab = EmptyTab is { HasNoLauncher: true } shown && Tabs.Count == 0 ? shown : null;
             CountText = RangeText = ViewSummary = string.Empty;
             if (Tabs.Count > 0)
             {
                 // SelectTab, not ChooseTab: a launcher missing from this scan must not overwrite the user's choice.
                 SelectTab(Tabs.FirstOrDefault(t => t.Launcher.Id == _settings.Current.LastTabLauncherId) ?? Tabs[0]);
             }
+            else
+            {
+                EmptyTab ??= new EmptyTabViewModel(
+                    null,
+                    () => ShowSettings(typeof(LauncherSettingsViewModel)),
+                    () => RescanAsync(null).Forget("Erneut suchen"));
+            }
 
+            RefreshLauncherSettings();
             return;
         }
 
         var focusIndex = FocusedGame is { } focused ? PageGames.IndexOf(focused) : 0;
         Refresh(focusIndex, FocusedGame?.Game.Key);
         UpdateDetail();
+        RefreshLauncherSettings();
     }
 
     private int IndexOfTab(string launcherId)
@@ -545,6 +638,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
         if (Search is { } search)
         {
             HandleSearch(search, action);
+            return;
+        }
+
+        if (EmptyTab is { } empty && action is UiAction.Left or UiAction.Right or UiAction.Accept)
+        {
+            empty.Handle(action);
             return;
         }
 
@@ -732,7 +831,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     [RelayCommand]
     private void OpenSearch()
     {
-        if (Tabs.Count == 0)
+        if (Tabs.All(t => t.Count == 0))
         {
             return;
         }
@@ -753,7 +852,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
 
         // Opened with the gamepad, the search starts with the on-screen keyboard; by key or click without.
         var search = new SearchViewModel(
-            CurrentLibraries(),
+            SearchedLibraries(),
             KeyboardLayout.Find(_settings.Current.KeyboardLayout),
             layout => SaveView(settings => settings with { KeyboardLayout = layout.Id }),
             CreateSearchTile,
@@ -911,14 +1010,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             return;
         }
 
-        if (Tabs.Count == 0)
+        if (Tabs.All(t => t.Count == 0))
         {
             Detail = Detail?.IsFromSearch == true ? null : Detail;
             CloseSearch();
             return;
         }
 
-        search.Update(CurrentLibraries());
+        search.Update(SearchedLibraries());
         RebuildViewOptions();
         KeepHoldOnRebuiltPage();
         if (Detail is { IsFromSearch: true } detail && !detail.Update(search.Hits, null))
@@ -1111,6 +1210,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     [RelayCommand]
     private void OpenSettings() => ShowSettings(first: null);
 
+    /// <summary>"Launcher-Einstellungen" on an empty tab: the category "Launcher" with that launcher focused (#136).</summary>
+    private void OpenLauncherSettings(LauncherTabViewModel tab) => ShowSettings(typeof(LauncherSettingsViewModel), tab.Launcher.Id);
+
     /// <summary>The header's Steam Controller symbols: straight to the category the message belongs to.</summary>
     [RelayCommand]
     private void OpenControllerSettings() => ShowSettings(typeof(ControllerSettingsViewModel));
@@ -1120,11 +1222,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
     private void OpenAboutSettings() => ShowSettings(typeof(AboutSettingsViewModel));
 
     /// <summary>The settings page (#15) in place of the library, which stays as it is underneath for the way back.</summary>
-    private void ShowSettings(Type? first)
+    private void ShowSettings(Type? first, string? launcherId = null)
     {
         var changes = new SettingsChanges(_settings);
         SettingsCategoryViewModel[] categories =
         [
+            new LauncherSettingsViewModel(this, changes, _time, launcherId),
             new ControllerSettingsViewModel(_controllerSupport, changes),
             new AboutSettingsViewModel(_updates, _updates.InstallAsync),
         ];
@@ -1575,9 +1678,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost
             PageButtons.Add(new PageButtonViewModel(page, page == window.PageIndex, GoToPage));
         }
 
+        EmptyTab = tab.Count > 0 ? null
+            : EmptyTab is { } shown && shown.Tab == tab && shown.IsMissing == !tab.IsFound ? shown
+            : new EmptyTabViewModel(tab, () => OpenLauncherSettings(tab), () => RescanAsync(tab.Launcher).Forget("Neu einlesen"));
         var installed = tab.Games.Count(g => g.IsInstalled);
         var installedText = installed == tab.Count ? string.Empty : $" · {installed} installiert";
-        CountText = $"{tab.Count} Spiele{installedText} · Seite {window.PageIndex + 1} von {window.PageCount}";
+        CountText = EmptyTab is { } emptyTab ? emptyTab.Summary : $"{tab.Count} Spiele{installedText} · Seite {window.PageIndex + 1} von {window.PageCount}";
         RangeText = window.Length == 0 ? string.Empty : $"{window.Start + 1}–{window.Start + window.Length} von {sorted.Count}";
         ViewSummary = $"{Formatting.SortLabel(view.LibrarySort)}  ·  {pageSize} pro Seite";
     }

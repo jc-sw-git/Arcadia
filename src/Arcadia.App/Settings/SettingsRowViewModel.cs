@@ -20,7 +20,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public partial string Title { get; set; } = title;
 
     /// <summary>The heading of the info panel: the title in capitals, like the group headings.</summary>
-    public string InfoTitle => Title.ToUpper(System.Globalization.CultureInfo.GetCultureInfo("de-DE"));
+    public virtual string InfoTitle => Title.ToUpper(System.Globalization.CultureInfo.GetCultureInfo("de-DE"));
 
     /// <summary>One short line below the title; the long explanation goes into <see cref="Info"/>.</summary>
     [ObservableProperty]
@@ -29,15 +29,50 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     public bool HasSubtitle => !string.IsNullOrEmpty(Subtitle);
 
-    /// <summary>The heading of the group the row belongs to, e.g. "MAUSMODUS".</summary>
-    public string? Group { get; init; }
-
-    /// <summary>The first row of its group: the group's heading stands above it.</summary>
+    /// <summary>
+    /// A lamp beside the title that shows at a glance whether what the row switches on really runs, e.g. SISR (owner,
+    /// 2026-10-22): green while it runs, grey while it doesn't; null shows none.
+    /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLamp), nameof(IsLampOn))]
+    public partial bool? Lamp { get; protected set; }
+
+    public bool HasLamp => Lamp is not null;
+
+    public bool IsLampOn => Lamp == true;
+
+    /// <summary>The heading of the group the row belongs to, e.g. "MAUSMODUS"; may change while the row is shown (#136).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGroupHeading))]
+    public partial string? Group { get; set; }
+
+    /// <summary>The first row of its group: the group's heading stands above it, and its box begins.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGroupHeading))]
     public partial bool StartsGroup { get; set; }
+
+    public bool HasGroupHeading => StartsGroup && !string.IsNullOrEmpty(Group);
+
+    /// <summary>The last row of its group: the group's box ends below it (owner, 2026-10-22).</summary>
+    [ObservableProperty]
+    public partial bool EndsGroup { get; set; }
+
+    /// <summary>
+    /// How far the row stands in: 1 below the setting it depends on, 2 below one that depends itself (owner,
+    /// 2026-10-22), e.g. "Haltedauer" under "Mausmodus".
+    /// </summary>
+    public int Indent { get; init; }
+
+    public bool IsIndented => Indent == 1;
+
+    public bool IsIndentedTwice => Indent >= 2;
 
     [ObservableProperty]
     public partial bool IsFocused { get; set; }
+
+    /// <summary>Lifted to be moved, e.g. a launcher with Y or the mouse (#136): ▲ ▼ move it until it is put down.</summary>
+    [ObservableProperty]
+    public partial bool IsLifted { get; set; }
 
     /// <summary>
     /// Depends on a main setting that is off (e.g. "Haltedauer" with "Mausmodus: Aus"): greyed out, but it keeps its
@@ -60,6 +95,19 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     /// <summary>What the info panel shows while the row has the focus.</summary>
     [ObservableProperty]
     public partial IReadOnlyList<InfoBlock> Info { get; set; } = [];
+
+    /// <summary>
+    /// A box of its own above the info panel showing what the row changes, e.g. the tab strip of the launchers (#136, owner
+    /// 2026-10-22); empty shows none.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPreview))]
+    public partial IReadOnlyList<InfoBlock> Preview { get; set; } = [];
+
+    public bool HasPreview => Preview.Count > 0;
+
+    /// <summary>The heading of <see cref="Preview"/>.</summary>
+    public virtual string PreviewTitle => string.Empty;
 
     /// <summary>◀ ▶ change the row's value.</summary>
     public virtual bool CanChange => false;

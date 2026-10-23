@@ -50,7 +50,16 @@ public enum ControllerSupportSetup
     SteamMissing,
 }
 
-public sealed record HealthIssue(string Id, HealthSeverity Severity, string Title, string Detail, HealthFix Fix = HealthFix.None, string? FixLabel = null);
+/// <param name="Detail">The whole explanation, for the info panel.</param>
+/// <param name="Summary">
+/// One short line below the title where <paramref name="Detail"/> is longer than two lines (owner, 2026-10-22); null:
+/// the detail is short enough.
+/// </param>
+public sealed record HealthIssue(string Id, HealthSeverity Severity, string Title, string Detail, HealthFix Fix = HealthFix.None, string? FixLabel = null, string? Summary = null)
+{
+    /// <summary>The line below the title of the issue's settings row.</summary>
+    public string ShortText => Summary ?? Detail;
+}
 
 public static class HealthIssues
 {
@@ -967,6 +976,9 @@ public sealed class ControllerSupportService(
         }
     }
 
+    /// <summary>The owner's line below the title of those warnings (2026-10-22); the advice stays in the info panel.</summary>
+    private const string OtherControllersSummary = "Es wurden weitere Controller erkannt, die Steam-Eingabe in Steam nutzen.";
+
     /// <summary>The owner's advice (2026-10-22) when another controller uses Steam Input outside a game.</summary>
     private const string SteamInputAdvice =
         "Es wird empfohlen, in Steam die Steam-Eingabe nur für den Steam Controller zu verwenden, wenn gleichzeitig die Steam Controller Kompatibilität in Arcadia genutzt wird. "
@@ -1298,14 +1310,15 @@ public sealed class ControllerSupportService(
         {
             var controllers = pause.Controllers is { } names ? $" ({names})" : string.Empty;
             issues.Add(new("sisr-paused-other-controller", HealthSeverity.Info, $"SISR pausiert für „{pause.Game}“",
-                $"In diesem Spiel gilt Steam Input auch für andere Controller als den Steam Controller{controllers}. Solange SISR läuft, bekäme das Spiel von ihnen keine Eingaben. Bis es endet, bekommt es alle Controller über Steam Input, auch den Steam Controller. Soll der Steam Controller als Xbox Controller ankommen, schalte in Steam in den Controller-Einstellungen des Spiels Steam Input für die anderen Controller aus."));
+                $"In diesem Spiel gilt Steam Input auch für andere Controller als den Steam Controller{controllers}. Solange SISR läuft, bekäme das Spiel von ihnen keine Eingaben. Bis es endet, bekommt es alle Controller über Steam Input, auch den Steam Controller. Soll der Steam Controller als Xbox Controller ankommen, schalte in Steam in den Controller-Einstellungen des Spiels Steam Input für die anderen Controller aus.",
+                Summary: "In diesem Spiel nutzen weitere Controller Steam-Eingabe."));
         }
 
         if (_otherControllerPause is { } blocking)
         {
             issues.Add(new("sisr-paused-other-controller-type", HealthSeverity.Warning, "SISR pausiert wegen eines anderen Controllers",
                 $"SISR wurde pausiert, weil {blocking.Names} in Steam ebenfalls Steam-Eingabe als Steuerungsmethode {blocking.Use}. {SteamInputAdvice}",
-                HealthFix.RestartSisr, "Erneut versuchen"));
+                HealthFix.RestartSisr, "Erneut versuchen", OtherControllersSummary));
         }
 
         var state = State;
@@ -1314,7 +1327,8 @@ public sealed class ControllerSupportService(
             // Seen on the owner's PC (2026-10-22, #143): Steam Input on for a whole controller type in Steam's
             // settings hands that pad to SISR outside any game, and the Steam Controller stops working.
             issues.Add(new("sisr-other-controller", HealthSeverity.Warning, "Anderer Controller verwendet Steam-Eingabe",
-                $"{others.Names} {others.Use} in Steam ebenfalls Steam-Eingabe als Steuerungsmethode. {SteamInputAdvice}"));
+                $"{others.Names} {others.Use} in Steam ebenfalls Steam-Eingabe als Steuerungsmethode. {SteamInputAdvice}",
+                Summary: OtherControllersSummary));
         }
 
         if (state == SisrState.Failed)

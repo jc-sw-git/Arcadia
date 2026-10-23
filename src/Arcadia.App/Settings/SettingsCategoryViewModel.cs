@@ -52,6 +52,19 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     [ObservableProperty]
     public partial object? Dialog { get; protected set; }
 
+    /// <summary>What Y does on the rows, for the footer (e.g. "Verschieben"); null if nothing.</summary>
+    public string? YActionText { get; protected init; }
+
+    /// <summary>What X does on the rows, for the footer (e.g. "Alle neu einlesen"); null if nothing.</summary>
+    public string? XActionText { get; protected init; }
+
+    /// <summary>
+    /// A row is lifted and moves with ▲ ▼ (#136): the footer names only that, and the mouse passing over rows doesn't take
+    /// the focus from it.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsReordering { get; protected set; }
+
     /// <summary>A click on the category's tab.</summary>
     public IRelayCommand? SelectCommand { get; set; }
 
@@ -59,6 +72,14 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     public event EventHandler? FocusMoved;
 
     public void MoveFocus(int delta) => FocusAt(ListFocus.Move(_focus, delta, Rows.Count));
+
+    /// <summary>An input for the category itself before the page's own (e.g. Y, X); true if it took it.</summary>
+    public virtual bool Handle(UiAction action) => false;
+
+    /// <summary>Another category is shown or the page closes: something half done (a lifted row) is dropped.</summary>
+    public virtual void Leave()
+    {
+    }
 
     /// <summary>An input while <see cref="Dialog"/> is open; B closes the dialog, not the page.</summary>
     public virtual void HandleDialog(UiAction action)
@@ -78,6 +99,16 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     /// </summary>
     protected void SetRows(IReadOnlyList<SettingsRowViewModel> rows)
     {
+        // A row may change its group without moving (a launcher switched off, #136).
+        string? group = null;
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var row = rows[i];
+            row.StartsGroup = i == 0 || row.Group != group;
+            row.EndsGroup = i == rows.Count - 1 || rows[i + 1].Group != row.Group;
+            group = row.Group;
+        }
+
         if (Rows.SequenceEqual(rows))
         {
             return;
@@ -86,12 +117,15 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
         var focusedKey = FocusedRow?.Key;
         var previousIndex = Math.Max(0, _focus);
         Rows.Clear();
-        string? group = null;
         foreach (var row in rows)
         {
-            row.StartsGroup = row.Group is not null && row.Group != group;
-            group = row.Group;
-            row.Pointed = r => FocusAt(Rows.IndexOf(r));
+            row.Pointed = r =>
+            {
+                if (!IsReordering)
+                {
+                    FocusAt(Rows.IndexOf(r));
+                }
+            };
             Rows.Add(row);
         }
 
@@ -106,6 +140,9 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
             FocusAt(index);
         }
     }
+
+    /// <summary>Puts the focus on <paramref name="row"/>, e.g. the launcher a tab's "Launcher-Einstellungen" was chosen for.</summary>
+    protected void Focus(SettingsRowViewModel row) => FocusAt(Rows.IndexOf(row));
 
     private void FocusAt(int index)
     {

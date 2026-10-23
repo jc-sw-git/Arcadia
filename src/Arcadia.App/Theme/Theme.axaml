@@ -1,7 +1,8 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ctl="using:Arcadia.App.Controls"
-        xmlns:search="using:Arcadia.App.Search">
+        xmlns:search="using:Arcadia.App.Search"
+        xmlns:vm="using:Arcadia.App.ViewModels">
 
   <!-- Colors from the Big Picture designs. -->
   <Styles.Resources>
@@ -20,6 +21,13 @@
     <SolidColorBrush x:Key="PromptIconWarning" Color="#4A3418" />
     <SolidColorBrush x:Key="PromptGame" Color="#1F2833" />
     <SolidColorBrush x:Key="Line" Color="#2A3440" />
+    <!-- The line between the rows of a settings group: full in the middle, gone 10 % before the box's edges (owner,
+         2026-10-23). -->
+    <LinearGradientBrush x:Key="GroupDivider" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Offset="0.1" Color="#002A3440" />
+      <GradientStop Offset="0.5" Color="#FF34404E" />
+      <GradientStop Offset="0.9" Color="#002A3440" />
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="LineStrong" Color="#3A4552" />
     <SolidColorBrush x:Key="Text" Color="#E8EDF2" />
     <SolidColorBrush x:Key="TextStrong" Color="#F2F5F8" />
@@ -182,6 +190,11 @@
     <SolidColorBrush x:Key="EmptyStateMiss" Color="#9AA7B4" />
     <SolidColorBrush x:Key="EmptyStateSparkle" Color="#8CC6FF" />
     <BoxShadows x:Key="SearchFieldRing">0 0 0 3 #3B9EFF</BoxShadows>
+    <!-- The launcher settings (#136): a lifted launcher, the note above its info, the lines of facts. -->
+    <BoxShadows x:Key="LiftedRing">0 0 0 3 #3B9EFF, 0 22 44 0 #99000000</BoxShadows>
+    <SolidColorBrush x:Key="NoteSurface" Color="#2A2113" />
+    <SolidColorBrush x:Key="NoteText" Color="#F5D6A8" />
+    <SolidColorBrush x:Key="FactLine" Color="#1A212B" />
     <!-- Sets the launcher badge off from any cover colour. -->
     <BoxShadows x:Key="LauncherBadgeRing">0 0 0 2 #990B0F14</BoxShadows>
     <BoxShadows x:Key="LayoutMenuShadow">0 24 60 0 #99000000, 0 0 0 1 #2A3440</BoxShadows>
@@ -779,6 +792,41 @@
     <Setter Property="LetterSpacing" Value="1.5" />
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
   </Style>
+  <!-- A group of settings in a box of its own; each row is a piece of it, the first and last round it off, a line
+       parts the rows (owner, 2026-10-22). The padding around each row leaves room for its focus ring, which the next
+       piece would otherwise paint over. -->
+  <Style Selector="Border.groupBox">
+    <Setter Property="Background" Value="{StaticResource Surface}" />
+    <Setter Property="BorderBrush" Value="{StaticResource GroupDivider}" />
+    <!-- The box shows through where the line fades out. -->
+    <Setter Property="BackgroundSizing" Value="OuterBorderEdge" />
+    <!-- The line tops every piece but the first; each piece reaches 1 px under the one above, so the scaled layout
+         leaves no seam between them. -->
+    <Setter Property="BorderThickness" Value="0,2,0,0" />
+    <Setter Property="Margin" Value="0,-1,0,0" />
+    <Setter Property="Padding" Value="8,5" />
+  </Style>
+  <Style Selector="Border.groupBox.first">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Margin" Value="0" />
+    <Setter Property="Padding" Value="8,8,8,5" />
+    <Setter Property="CornerRadius" Value="20,20,0,0" />
+  </Style>
+  <Style Selector="Border.groupBox.last">
+    <Setter Property="Padding" Value="8,5,8,8" />
+    <Setter Property="CornerRadius" Value="0,0,20,20" />
+  </Style>
+  <Style Selector="Border.groupBox.first.last">
+    <Setter Property="Padding" Value="8" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+  <!-- A setting that depends on the one above it stands in below it (owner, 2026-10-22). -->
+  <Style Selector="Button.settingRow.indent">
+    <Setter Property="Margin" Value="36,0,0,0" />
+  </Style>
+  <Style Selector="Button.settingRow.indentTwice">
+    <Setter Property="Margin" Value="72,0,0,0" />
+  </Style>
   <Style Selector="Button.settingRow.pageRow">
     <Setter Property="MinHeight" Value="74" />
     <Setter Property="Padding" Value="18,12,22,12" />
@@ -827,6 +875,13 @@
   <Style Selector="Border.valuePill.locked">
     <Setter Property="Opacity" Value="0.35" />
   </Style>
+  <!-- The whole switch is a target, not just its arrows (owner, 2026-10-22); the arrows lie on top of it. -->
+  <Style Selector="Button.valueToggle">
+    <Setter Property="Margin" Value="-8,0" />
+    <Setter Property="CornerRadius" Value="23" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+  </Style>
   <Style Selector="Button.valueArrow">
     <Setter Property="Width" Value="30" />
     <Setter Property="Height" Value="30" />
@@ -845,8 +900,9 @@
   <Style Selector="Button.valueArrow:disabled">
     <Setter Property="Opacity" Value="0.3" />
   </Style>
+  <!-- As wide as the chevron itself (7 × 14): a square box left it off-centre in its button (owner, 2026-10-22). -->
   <Style Selector="Path.chevronLeft, Path.chevronRight">
-    <Setter Property="Width" Value="14" />
+    <Setter Property="Width" Value="7" />
     <Setter Property="Height" Value="14" />
     <Setter Property="Stretch" Value="Uniform" />
     <Setter Property="StrokeThickness" Value="3" />
@@ -871,26 +927,43 @@
   <Style Selector="Border.valuePill TextBlock.valueText.on">
     <Setter Property="Foreground" Value="{StaticResource Success}" />
   </Style>
-  <!-- An action on the right of a row ("Jetzt aktualisieren ›"); the whole row is the button. -->
-  <Style Selector="StackPanel.rowGo">
-    <Setter Property="MinWidth" Value="250" />
+  <!-- An action on the right of a row ("Erneut versuchen ›"): a pill as wide as the value chips, so the rows' right edge
+       stays one column; it fills with the accent while its row has the focus, like a button about to be pressed
+       (owner, 2026-10-22). The whole row is the button. -->
+  <Style Selector="Border.rowGo">
+    <Setter Property="Width" Value="250" />
+    <Setter Property="Height" Value="46" />
+    <Setter Property="CornerRadius" Value="23" />
+    <Setter Property="Padding" Value="22,0,18,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
   </Style>
-  <Style Selector="StackPanel.rowGo > TextBlock">
+  <Style Selector="Border.rowGo TextBlock">
     <Setter Property="FontSize" Value="16" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
     <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
-  <Style Selector="StackPanel.rowGo > Path">
+  <Style Selector="Border.rowGo Path">
     <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
   </Style>
-  <Style Selector="StackPanel.rowGo.primary > TextBlock">
+  <Style Selector="Border.rowGo.primary TextBlock">
     <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
   </Style>
-  <Style Selector="StackPanel.rowGo.primary > Path">
+  <Style Selector="Border.rowGo.primary Path">
     <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
   </Style>
-  <Style Selector="StackPanel.rowGo.disabled">
+  <Style Selector="Button.settingRow.focused Border.rowGo">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Button.settingRow.focused Border.rowGo TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.settingRow.focused Border.rowGo Path">
+    <Setter Property="Stroke" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Border.rowGo.disabled">
     <Setter Property="Opacity" Value="0.5" />
   </Style>
   <Style Selector="TextBlock.rowValue">
@@ -1440,5 +1513,168 @@
   </Style>
   <Style Selector="Button.layoutItem.focused /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource FocusRingInset}" />
+  </Style>
+  <!-- The launcher settings (#136). A launcher's row: its tab key, logo, name and state; dimmed while inactive. -->
+  <Style Selector="Border.tabKey">
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="30" />
+    <Setter Property="CornerRadius" Value="7" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BoxShadow" Value="{StaticResource KeyCapEdge}" />
+  </Style>
+  <Style Selector="Border.tabKey > TextBlock">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.launcherLogo > TextBlock">
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Panel.launcherInactive > Border.launcherLogo, StackPanel.launcherInactive > TextBlock.launcherName">
+    <Setter Property="Opacity" Value="0.5" />
+  </Style>
+  <Style Selector="TextBlock.launcherStatus">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.launcherStatus.warning">
+    <Setter Property="Foreground" Value="{StaticResource Warning}" />
+  </Style>
+  <Style Selector="Path.statusIcon.small">
+    <Setter Property="Width" Value="18" />
+    <Setter Property="Height" Value="18" />
+    <Setter Property="Stretch" Value="Uniform" />
+  </Style>
+  <Style Selector="TextBlock.valueText.missing">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <!-- Not moved aside: the list's edge would cut off the ring (owner, 2026-10-22). -->
+  <Style Selector="Button.settingRow.lifted">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.settingRow.lifted /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource LiftedRing}" />
+  </Style>
+
+  <!-- Its info panel: a note, the tab strip in miniature, the launcher's head and lines of facts. -->
+  <Style Selector="Border.infoNote">
+    <Setter Property="Background" Value="{StaticResource NoteSurface}" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="18,16" />
+  </Style>
+  <Style Selector="Border.infoNote TextBlock">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="LineHeight" Value="23" />
+    <Setter Property="Foreground" Value="{StaticResource NoteText}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="Border.miniTabs">
+    <Setter Property="Background" Value="{StaticResource Bg}" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="12" />
+  </Style>
+  <Style Selector="Border.miniTab">
+    <Setter Property="Height" Value="38" />
+    <Setter Property="CornerRadius" Value="19" />
+    <Setter Property="Padding" Value="8,0,14,0" />
+  </Style>
+  <Style Selector="Border.miniTab TextBlock.miniTabName">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.miniTab.selected">
+    <Setter Property="Background" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Border.miniTab.selected TextBlock.miniTabName">
+    <Setter Property="Foreground" Value="{StaticResource Bg}" />
+  </Style>
+  <Style Selector="Border.miniTab.highlighted">
+    <Setter Property="BoxShadow" Value="{StaticResource SearchFieldRing}" />
+  </Style>
+  <Style Selector="TextBlock.launcherState">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.launcherState.active">
+    <Setter Property="Foreground" Value="{StaticResource Success}" />
+  </Style>
+  <Style Selector="Border.infoFact">
+    <Setter Property="BorderBrush" Value="{StaticResource FactLine}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="MinHeight" Value="44" />
+  </Style>
+  <Style Selector="Border.infoFact TextBlock">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.infoFact TextBlock.factLabel">
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Border.infoFact TextBlock.factValue">
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextAlignment" Value="Right" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="Border.infoFact TextBlock.factValue.muted">
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Border.infoFact TextBlock.factValue.good">
+    <Setter Property="Foreground" Value="{StaticResource Success}" />
+  </Style>
+
+  <!-- An active launcher's tab without games, or of a launcher no longer found (#136): a picture in the style of the
+       search's empty state. -->
+  <Style Selector="ContentControl.tabEmpty">
+    <Setter Property="ContentTemplate">
+      <DataTemplate x:DataType="vm:EmptyTabViewModel">
+        <Panel Width="200" Height="140">
+          <!-- No games: two covers and a dashed one to come. -->
+          <Canvas IsVisible="{Binding HasNoGames}">
+            <Border Canvas.Left="34" Canvas.Top="22" Width="62" Height="88" CornerRadius="10" Background="{StaticResource EmptyStateCard}"
+                    BorderBrush="{StaticResource EmptyStateCardLine}" BorderThickness="3" RenderTransform="rotate(-10deg)" />
+            <Border Canvas.Left="104" Canvas.Top="22" Width="62" Height="88" CornerRadius="10" Background="{StaticResource EmptyStateCard}"
+                    BorderBrush="{StaticResource EmptyStateCardLine}" BorderThickness="3" RenderTransform="rotate(10deg)" />
+            <Rectangle Canvas.Left="69" Canvas.Top="14" Width="62" Height="96" RadiusX="10" RadiusY="10" Fill="{StaticResource EmptyStateLens}"
+                       Stroke="{StaticResource EmptyStateCardBadge}" StrokeThickness="3" StrokeDashArray="2.6,2.3" />
+            <Path Data="M92 62h16 M100 54v16" Stroke="{StaticResource EmptyStateSparkle}" StrokeThickness="3" StrokeLineCap="Round" />
+            <Path Data="M28 18l3 7 7 3-7 3-3 7-3-7-7-3 7-3z M176 104l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" Fill="{StaticResource EmptyStateSparkle}" />
+          </Canvas>
+          <!-- No launcher active: a tab strip with dashed tabs still to fill, one about to be switched on. -->
+          <Canvas IsVisible="{Binding HasNoLauncher}">
+            <Rectangle Canvas.Left="6" Canvas.Top="52" Width="54" Height="34" RadiusX="17" RadiusY="17" Fill="{StaticResource EmptyStateCard}"
+                       Stroke="{StaticResource EmptyStateCardLine}" StrokeThickness="3" StrokeDashArray="2.6,2.3" />
+            <Rectangle Canvas.Left="140" Canvas.Top="52" Width="54" Height="34" RadiusX="17" RadiusY="17" Fill="{StaticResource EmptyStateCard}"
+                       Stroke="{StaticResource EmptyStateCardLine}" StrokeThickness="3" StrokeDashArray="2.6,2.3" />
+            <Border Canvas.Left="64" Canvas.Top="44" Width="72" Height="50" CornerRadius="25" Background="{StaticResource EmptyStateLens}"
+                    BorderBrush="{StaticResource EmptyStateCardBadge}" BorderThickness="3" />
+            <Path Data="M92 69h16 M100 61v16" Stroke="{StaticResource EmptyStateSparkle}" StrokeThickness="3.5" StrokeLineCap="Round" />
+            <Path Data="M34 20l3 7 7 3-7 3-3 7-3-7-7-3 7-3z M170 104l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" Fill="{StaticResource EmptyStateSparkle}" />
+          </Canvas>
+          <!-- Not found: the launcher's logo with a question mark. -->
+          <Canvas IsVisible="{Binding IsMissing}">
+            <Border Canvas.Left="62" Canvas.Top="20" Width="76" Height="76" CornerRadius="18" Background="{StaticResource EmptyStateCard}"
+                    BorderBrush="{StaticResource EmptyStateCardLine}" BorderThickness="3">
+              <TextBlock Text="{Binding Monogram}" FontSize="40" FontWeight="ExtraBold" Foreground="{StaticResource TextFaint}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <Ellipse Canvas.Left="108" Canvas.Top="72" Width="48" Height="48" Fill="{StaticResource EmptyStateLens}" Stroke="{StaticResource EmptyStateLensRim}" StrokeThickness="4" />
+            <Path Data="M126 88a7 7 0 1 1 9 7c-2 1-3 2-3 4" Stroke="{StaticResource EmptyStateSparkle}" StrokeThickness="3.5" StrokeLineCap="Round" />
+            <Ellipse Canvas.Left="129.6" Canvas.Top="103.6" Width="4.8" Height="4.8" Fill="{StaticResource EmptyStateSparkle}" />
+            <Path Data="M40 30l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" Fill="{StaticResource EmptyStateSparkle}" />
+          </Canvas>
+        </Panel>
+      </DataTemplate>
+    </Setter>
   </Style>
 </Styles>

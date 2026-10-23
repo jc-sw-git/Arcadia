@@ -79,8 +79,8 @@ public sealed class MouseModeRows
         {
             Group = Group,
             Indent = 1,
-            Subtitle = "Nur „Von Hand“",
-            Info = [new InfoText("Nur „Von Hand“: Sobald du wieder in das Fenster von Arcadia klickst oder Arcadia nach vorne holst (z. B. durch „Mit ⧉ zurück zu Arcadia“), schaltet sich der Mausmodus automatisch ab. Aktivierst du den Mausmodus von Hand, während Arcadia bereits im Vordergrund ist, bleibt er so lange aktiv, bis Arcadia das nächste Mal in den Vordergrund zurückgeholt wird, also z. B. durch Raus- und wieder Reinklicken.")],
+            Subtitle = "Nur aktiv im Modus „Von Hand“",
+            Info = [new InfoText("Sobald du wieder in das Fenster von Arcadia klickst oder Arcadia nach vorne holst (z. B. durch „Mit ⧉ zurück zu Arcadia“), schaltet sich der Mausmodus automatisch ab. Aktivierst du den Mausmodus von Hand, während Arcadia bereits im Vordergrund ist, bleibt er so lange aktiv, bis Arcadia das nächste Mal in den Vordergrund zurückgeholt wird, also z. B. durch Raus- und wieder Reinklicken.")],
         };
         _inGames = new ChoiceRowViewModel(
             "mouse-mode-in-games",
@@ -93,7 +93,7 @@ public sealed class MouseModeRows
         {
             Group = Group,
             Indent = 1,
-            Subtitle = "Nur „Von Hand“",
+            Subtitle = "Nur aktiv im Modus „Von Hand“",
         };
         _perGameDefault = new ChoiceRowViewModel(
             "mouse-mode-per-game-default",
@@ -162,9 +162,9 @@ public sealed class MouseModeRows
     /// <summary>What the chosen value of "Beenden des Mausmodus in Spielen erzwingen" does (owner's wording, 2026-10-21).</summary>
     private string InGamesText => Current.InGames switch
     {
-        MouseModeInGames.Blocked => "Nur „Von Hand“: Der Mausmodus wird automatisch beendet und kann auch nicht mehr von Hand aktiviert werden, sobald ein Spiel im Vordergrund läuft. Das Spiel muss dafür in Arcadias Bibliothek vorhanden sein.",
-        MouseModeInGames.PerGame => "Nur „Von Hand“: Es kann pro Spiel (auf der Detailseite) entschieden werden, ob der Mausmodus beendet wird oder erlaubt ist.",
-        _ => "Nur „Von Hand“: Der Mausmodus bleibt auch in Spielen aktiv und kann auch aktiviert werden, wenn das Spiel gerade im Vordergrund läuft.",
+        MouseModeInGames.Blocked => "Der Mausmodus wird automatisch beendet und kann auch nicht mehr von Hand aktiviert werden, sobald ein Spiel im Vordergrund läuft. Das Spiel muss dafür in Arcadias Bibliothek vorhanden sein.",
+        MouseModeInGames.PerGame => "Es kann pro Spiel (auf der Detailseite) entschieden werden, ob der Mausmodus beendet wird oder erlaubt ist.",
+        _ => "Der Mausmodus bleibt auch in Spielen aktiv und kann auch aktiviert werden, wenn das Spiel gerade im Vordergrund läuft.",
     };
 
     private void Change(Func<MouseModeSettings, MouseModeSettings> change)

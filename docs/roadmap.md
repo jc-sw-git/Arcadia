@@ -19,7 +19,7 @@ Bevor Code entsteht, gehen Owner und Claude die wahrscheinlichsten Szenarien gem
 - Jedes Issue ist ein in sich geschlossenes Inkrement, das in das Epic einzahlt.
 - Richtwert: Was ein Issue an Kontext braucht (Code, Doku, Logs, Diskussion), bleibt unter etwa
   150k Tokens. Mehr ist ein Zeichen, das Issue weiter zu teilen; keine harte Grenze.
-- Ob Refinement pro Issue oder pro Epic besser klappt, ist Thema der Retrospektive in #66.
+- Ob Refinement pro Issue oder pro Epic besser klappt, ist Thema der Retrospektive (Issue „Retro Iteration 1“, #150).
 
 ## Erledigt (Grundgerüst)
 

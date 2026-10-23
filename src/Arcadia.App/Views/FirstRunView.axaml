@@ -3,6 +3,7 @@
              xmlns:vm="using:Arcadia.App.ViewModels"
              xmlns:ctl="using:Arcadia.App.Controls"
              xmlns:setup="using:Arcadia.App.Setup"
+             xmlns:settings="using:Arcadia.App.Settings"
              x:Class="Arcadia.App.Views.FirstRunView"
              x:DataType="setup:FirstRunViewModel">
 
@@ -14,9 +15,7 @@
       <Border Classes="groupBox" Classes.first="{Binding StartsGroup}" Classes.last="{Binding EndsGroup}">
         <Button Classes="plain settingRow pageRow" Classes.focused="{Binding IsFocused}" Classes.unavailable="{Binding !IsFound}" Command="{Binding ClickCommand}">
           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="20">
-            <Border Classes="launcherLogo" Width="44" Height="44" CornerRadius="11" Background="{Binding TileBrush}" VerticalAlignment="Center">
-              <TextBlock Text="{Binding Monogram}" FontSize="20" />
-            </Border>
+            <ctl:LauncherLogo Classes="launcherLogo" Badge="{Binding Badge}" Width="44" Height="44" VerticalAlignment="Center" />
             <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
               <TextBlock Classes="launcherName" Text="{Binding Name}" FontSize="20" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
               <StackPanel Orientation="Horizontal" Spacing="8">
@@ -63,8 +62,12 @@
           <TextBlock Text="Einrichtung" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
         </StackPanel>
         <!-- No ✕: there is nothing to go back to before the launchers are chosen. -->
-        <TextBlock Grid.Column="2" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Status.Clock, TargetNullValue=''}"
-                   FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+          <TextBlock Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Status.Date, TargetNullValue=''}"
+                     FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Status.Clock, TargetNullValue=''}"
+                     FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
       </Grid>
 
       <Grid Grid.Row="1" Margin="80,0,80,22" ColumnDefinitions="*,620" ColumnSpacing="56">
@@ -91,63 +94,92 @@
           </Panel>
         </DockPanel>
 
-        <!-- The focused launcher explained; below, which become tabs and "Fertig". -->
-        <Border Grid.Column="1" Classes="infoPanel">
-          <DockPanel Margin="32,30">
-            <StackPanel DockPanel.Dock="Bottom" Spacing="14">
-              <TextBlock Text="{Binding Summary}" FontSize="16" LineHeight="23" Foreground="{StaticResource TextMuted}" TextAlignment="Center" TextWrapping="Wrap" />
-              <Button Classes="plain finish" Command="{Binding FinishCommand}" ToolTip.Tip="Fertig (Enter)">
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                  <ctl:KeyHint Pad="≡" Keys="Enter" IsDark="True" />
-                  <TextBlock Text="Fertig" VerticalAlignment="Center" />
-                </StackPanel>
-              </Button>
+        <!-- As in the launcher settings: the tabs as they will be above, the focused launcher explained below, then "Fertig". -->
+        <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="20">
+          <Border Classes="infoPanel">
+            <StackPanel Spacing="20" Margin="32,30">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="label" FontSize="14" Text="{Binding TabBarTitle}" />
+                <TextBlock Text="{Binding TabBarSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+              </StackPanel>
+              <Border Classes="miniTabs" DataContext="{Binding TabBar}" x:DataType="settings:InfoTabBar">
+                <Panel>
+                  <TextBlock Classes="launcherState" Text="Kein Launcher aktiv – die Bibliothek bleibt leer." IsVisible="{Binding IsEmpty}" />
+                  <ItemsControl ItemsSource="{Binding Tabs}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="settings:InfoTab">
+                        <Border Classes="miniTab" Classes.highlighted="{Binding IsHighlighted}" Margin="0,3,6,3">
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ctl:LauncherLogo Classes="launcherLogo" Badge="{Binding Badge}" Width="22" Height="22" VerticalAlignment="Center" />
+                            <TextBlock Classes="miniTabName" Text="{Binding Name}" />
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Panel>
+              </Border>
             </StackPanel>
-            <Panel IsVisible="{Binding HasFocusedRow}">
-              <StackPanel Spacing="22" DataContext="{Binding FocusedRow}" x:DataType="setup:FirstRunLauncherViewModel">
-                <StackPanel Orientation="Horizontal" Spacing="18">
-                  <Border Classes="launcherLogo" Width="64" Height="64" CornerRadius="16" Background="{Binding TileBrush}">
-                    <TextBlock Text="{Binding Monogram}" FontSize="30" />
-                  </Border>
-                  <StackPanel Spacing="4" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <Ellipse Classes="statusDot" Classes.active="{Binding IsOn}" Width="9" Height="9" VerticalAlignment="Center" />
-                      <TextBlock Classes="launcherState" Classes.active="{Binding IsOn}" Text="{Binding StateText}" />
+          </Border>
+          <Border Grid.Row="1" Classes="infoPanel">
+            <DockPanel Margin="32,30">
+              <StackPanel DockPanel.Dock="Bottom">
+                <Button Classes="plain finish" Command="{Binding FinishCommand}" ToolTip.Tip="Fertig (Enter)">
+                  <StackPanel Orientation="Horizontal" Spacing="12">
+                    <ctl:KeyHint Pad="≡" Keys="Enter" IsDark="True" />
+                    <TextBlock Text="Fertig" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+              <Panel IsVisible="{Binding HasFocusedRow}">
+                <StackPanel Spacing="22" DataContext="{Binding FocusedRow}" x:DataType="setup:FirstRunLauncherViewModel">
+                  <StackPanel Orientation="Horizontal" Spacing="18">
+                    <ctl:LauncherLogo Classes="launcherLogo" Badge="{Binding Badge}" Width="64" Height="64" />
+                    <StackPanel Spacing="4" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" />
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Ellipse Classes="statusDot" Classes.active="{Binding IsOn}" Width="9" Height="9" VerticalAlignment="Center" />
+                        <TextBlock Classes="launcherState" Classes.active="{Binding IsOn}" Text="{Binding StateText}" />
+                      </StackPanel>
                     </StackPanel>
                   </StackPanel>
-                </StackPanel>
-                <StackPanel Spacing="2">
-                  <Border Classes="infoFact">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
-                      <TextBlock Classes="factLabel" Text="Spiele" />
-                      <TextBlock Grid.Column="1" Classes="factValue" Classes.muted="{Binding !IsFound}" Text="{Binding GamesText}" />
-                    </Grid>
-                  </Border>
-                  <Border Classes="infoFact">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
-                      <TextBlock Classes="factLabel" Text="Gefunden unter" />
-                      <TextBlock Grid.Column="1" Classes="factValue" Classes.muted="{Binding !IsFound}" Text="{Binding LocationText}" ToolTip.Tip="{Binding LocationText}" />
-                    </Grid>
-                  </Border>
-                  <Border Classes="infoFact">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
-                      <TextBlock Classes="factLabel" Text="Such-Kürzel" />
-                      <TextBlock Grid.Column="1" Classes="factValue" Text="{Binding Keyword}" />
-                    </Grid>
-                  </Border>
-                </StackPanel>
-                <Border Classes="infoSection">
-                  <StackPanel Spacing="8">
-                    <TextBlock Text="Später änderbar" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
-                    <TextBlock Classes="infoText" FontSize="16" LineHeight="24"
-                               Text="Unter Einstellungen › Launcher schaltest du Launcher an oder aus, änderst die Reihenfolge der Tabs, Namen, Kürzel und Logos." />
+                  <StackPanel Spacing="2">
+                    <Border Classes="infoFact">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+                        <TextBlock Classes="factLabel" Text="Spiele" />
+                        <TextBlock Grid.Column="1" Classes="factValue" Classes.muted="{Binding !IsFound}" Text="{Binding GamesText}" />
+                      </Grid>
+                    </Border>
+                    <Border Classes="infoFact">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+                        <TextBlock Classes="factLabel" Text="Gefunden unter" />
+                        <TextBlock Grid.Column="1" Classes="factValue" Classes.muted="{Binding !IsFound}" Text="{Binding LocationText}" ToolTip.Tip="{Binding LocationText}" />
+                      </Grid>
+                    </Border>
+                    <Border Classes="infoFact">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+                        <TextBlock Classes="factLabel" Text="Such-Kürzel" />
+                        <TextBlock Grid.Column="1" Classes="factValue" Text="{Binding Keyword}" />
+                      </Grid>
+                    </Border>
                   </StackPanel>
-                </Border>
-              </StackPanel>
-            </Panel>
-          </DockPanel>
-        </Border>
+                  <Border Classes="infoSection">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="Später änderbar" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
+                      <TextBlock Classes="infoText" FontSize="16" LineHeight="24"
+                                 Text="Unter Einstellungen › Launcher schaltest du Launcher an oder aus, änderst die Reihenfolge der Tabs, Namen, Kürzel und Logos." />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </Panel>
+            </DockPanel>
+          </Border>
+        </Grid>
       </Grid>
 
       <!-- Footer: ◀ ▶ switch, ≡ ends; B does nothing here. -->

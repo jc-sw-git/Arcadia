@@ -51,6 +51,41 @@ public sealed class LibraryRefresher(LibraryService library, TimeProvider time)
     }
 
     /// <summary>
+    /// Rescans only <paramref name="launcherId"/> ("Neu einlesen" on its page, #137) after a running rescan; the other
+    /// launchers keep what <paramref name="current"/> shows. A launcher that is active but has no tab yet is read with all
+    /// the others, so the tabs come out in order. Doesn't count for <see cref="Throttle"/>: it reads one launcher only.
+    /// </summary>
+    /// <returns>The libraries with the rescanned launcher if anything changed, otherwise null.</returns>
+    public async Task<IReadOnlyList<LauncherLibrary>?> RefreshAsync(Func<IReadOnlyList<LauncherLibrary>> current, string launcherId)
+    {
+        while (_running is { IsCompleted: false } running)
+        {
+            await running;
+        }
+
+        var scan = ScanAsync(current, launcherId);
+        _running = scan;
+        return await scan;
+    }
+
+    private async Task<IReadOnlyList<LauncherLibrary>?> ScanAsync(Func<IReadOnlyList<LauncherLibrary>> current, string launcherId)
+    {
+        if (await library.LoadAsync(launcherId) is not { } rescanned)
+        {
+            return null;
+        }
+
+        var shown = current();
+        if (!shown.Any(l => l.Launcher.Id == launcherId))
+        {
+            return await ScanAsync(current);
+        }
+
+        var scanned = shown.Select(l => l.Launcher.Id == launcherId ? rescanned : l).ToList();
+        return HasChanged(shown, scanned) ? scanned : null;
+    }
+
+    /// <summary>
     /// True if launchers or games differ in anything a tab or cover shows, or in what the library sorts by: after a game
     /// ended, its playtime and last start come with the next rescan (#95). Launchers count in their tab order (#136).
     /// </summary>

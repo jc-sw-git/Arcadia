@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
 using Arcadia.App.Input;
+using Arcadia.App.Services;
+using Arcadia.App.Settings;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Navigation;
+using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -23,14 +26,16 @@ public sealed partial class FirstRunViewModel : ViewModelBase
     private readonly Dictionary<string, FirstRunLauncherViewModel> _rows = new(StringComparer.Ordinal);
     private int _focus;
 
+    /// <param name="badgeOf">A launcher's logo, as its tab shows it.</param>
     /// <param name="done">"Fertig", with the launchers switched on in registered order.</param>
-    public FirstRunViewModel(LauncherRegistry launchers, Action<IReadOnlyList<string>> done)
+    public FirstRunViewModel(LauncherRegistry launchers, Func<LauncherInfo, LauncherBadge> badgeOf, Action<IReadOnlyList<string>> done)
     {
         _launchers = launchers;
         _done = done;
         foreach (var integration in launchers.All)
         {
-            _rows[integration.Launcher.Id] = new FirstRunLauncherViewModel(integration.Launcher, SwitchTo, Focus);
+            var launcher = launchers.Info(integration.Launcher.Id);
+            _rows[launcher.Id] = new FirstRunLauncherViewModel(launcher, badgeOf(launcher), SwitchTo, Focus);
         }
     }
 
@@ -59,9 +64,16 @@ public sealed partial class FirstRunViewModel : ViewModelBase
 
     public bool HasFocusedRow => FocusedRow is not null;
 
-    /// <summary>Above "Fertig": which launchers become tabs.</summary>
+    /// <summary>
+    /// The tabs the launchers switched on will be, as the launcher settings preview them (owner, 2026-10-23), with the
+    /// focused launcher framed.
+    /// </summary>
     [ObservableProperty]
-    public partial string Summary { get; private set; } = string.Empty;
+    public partial InfoTabBar TabBar { get; private set; } = new([]);
+
+    public string TabBarTitle => LauncherSettingsViewModel.OrderPreviewTitle;
+
+    public string TabBarSubtitle => LauncherSettingsViewModel.OrderPreviewSubtitle;
 
     /// <summary>Another launcher has the focus: the view brings it into sight.</summary>
     public event EventHandler? FocusMoved;
@@ -146,7 +158,7 @@ public sealed partial class FirstRunViewModel : ViewModelBase
         Numbered();
     }
 
-    /// <summary>The tab each launcher switched on will be, and the summary above "Fertig".</summary>
+    /// <summary>The tab each launcher switched on will be, and the preview of the tabs.</summary>
     private void Numbered()
     {
         var on = Found.Where(r => r.IsOn).ToList();
@@ -155,13 +167,11 @@ public sealed partial class FirstRunViewModel : ViewModelBase
             row.TabNumber = on.IndexOf(row) + 1;
         }
 
-        Summary = on.Count switch
-        {
-            0 => "Kein Launcher wird zum Tab. Die Bibliothek bleibt leer, bis du unter Einstellungen › Launcher einen einschaltest.",
-            1 => $"1 Launcher wird zum Tab: {on[0].Name}",
-            _ => $"{on.Count} Launcher werden zu Tabs: {string.Join(", ", on.Select(r => r.Name))}",
-        };
+        ShowTabBar();
     }
+
+    private void ShowTabBar() =>
+        TabBar = new InfoTabBar([.. Found.Where(r => r.IsOn).Select(r => new InfoTab(r.Name, r.Badge, r == FocusedRow))]);
 
     private void Focus(FirstRunLauncherViewModel row) => FocusAt(Rows().ToList().IndexOf(row));
 
@@ -187,6 +197,7 @@ public sealed partial class FirstRunViewModel : ViewModelBase
             row.IsFocused = true;
         }
 
+        ShowTabBar();
         FocusMoved?.Invoke(this, EventArgs.Empty);
     }
 

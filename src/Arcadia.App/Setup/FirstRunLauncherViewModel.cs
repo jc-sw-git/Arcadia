@@ -2,7 +2,6 @@ using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Search;
 using Arcadia.Launchers.Abstractions;
-using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -21,11 +20,10 @@ public sealed partial class FirstRunLauncherViewModel : ViewModelBase
     private IReadOnlyList<Game>? _games;
     private string? _location;
 
-    public FirstRunLauncherViewModel(LauncherInfo launcher, Action<FirstRunLauncherViewModel, bool> switchTo, Action<FirstRunLauncherViewModel> pointed)
+    public FirstRunLauncherViewModel(LauncherInfo launcher, LauncherBadge badge, Action<FirstRunLauncherViewModel, bool> switchTo, Action<FirstRunLauncherViewModel> pointed)
     {
         Launcher = launcher;
-        Monogram = launcher.DisplayName[..1];
-        TileBrush = Formatting.LauncherTileBrush(launcher.Id);
+        Badge = badge;
         Keyword = $"{SearchQuery.PrefixMarker}{launcher.SearchKeyword}";
         _switch = switchTo;
         _pointed = pointed;
@@ -35,10 +33,8 @@ public sealed partial class FirstRunLauncherViewModel : ViewModelBase
 
     public string Name => Launcher.DisplayName;
 
-    public string Monogram { get; }
-
-    /// <summary>Placeholder until launcher logos (#138).</summary>
-    public IBrush TileBrush { get; }
+    /// <summary>Its logo, as its tab shows it (#138).</summary>
+    public LauncherBadge Badge { get; }
 
     /// <summary>The search's keyword for it, e.g. "/steam".</summary>
     public string Keyword { get; }

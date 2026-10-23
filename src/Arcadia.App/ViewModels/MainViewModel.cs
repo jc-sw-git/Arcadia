@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Arcadia.App.Input;
+using Arcadia.App.Keyboard;
 using Arcadia.App.Search;
 using Arcadia.App.Services;
 using Arcadia.App.Settings;
@@ -43,6 +44,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     private readonly ControllerSupportService _controllerSupport;
     private readonly ArcadiaUpdateService _updates;
     private readonly SettingsService _settings;
+    private readonly LauncherLogos _logos;
     private readonly FirstRunSetup _firstRun;
     private readonly TimeProvider _time;
     private readonly HoldGesture _acceptHold;
@@ -63,10 +65,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         RunningGamesTracker running,
         LaunchedGames launchedGames,
         SettingsService settings,
+        LauncherLogos logos,
         FirstRunSetup firstRun,
         TimeProvider time)
     {
         _library = library;
+        _logos = logos;
         _refresher = new LibraryRefresher(library, time);
         _launcher = launcher;
         _controllerSupport = controllerSupport;
@@ -80,7 +84,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         if (firstRun.IsPending)
         {
             // Shown from the start, so the library never flashes up before it; its launchers follow once they are read.
-            FirstRun = new FirstRunViewModel(library.Launchers, CompleteFirstRun);
+            FirstRun = new FirstRunViewModel(library.Launchers, logos.BadgeOf, CompleteFirstRun);
         }
 
         Status = new StatusBarViewModel(controllerSupport, updates, time);
@@ -133,7 +137,16 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     [ObservableProperty]
     public partial bool UsesController { get; private set; } = true;
 
-    partial void OnUsesControllerChanged(bool value) => InputHints.UsesController = value;
+    partial void OnUsesControllerChanged(bool value)
+    {
+        InputHints.UsesController = value;
+
+        // The keyboard of a text being written in the settings names the controller's buttons or the keys (#137).
+        if (Settings?.Selected.Editor is { } editor)
+        {
+            editor.Keyboard.UsesController = value;
+        }
+    }
 
     /// <summary>The Steam Controller mode of the focused game: "Xbox Controller (SISR)" or "Steam Input".</summary>
     [ObservableProperty]
@@ -402,14 +415,30 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         RefreshLauncherSettings();
     }
 
+    /// <summary>Reads one launcher again ("Neu einlesen", #137); the other tabs keep their games.</summary>
+    private async Task RefreshLauncherAsync(string launcherId)
+    {
+        if (IsLoading)
+        {
+            return;
+        }
+
+        if (await _refresher.RefreshAsync(CurrentLibraries, launcherId) is { } libraries)
+        {
+            ApplyLibraries(libraries);
+        }
+
+        RefreshLauncherSettings();
+    }
+
     private IReadOnlyList<LauncherLibrary> CurrentLibraries() => Tabs.Select(t => t.Library).ToList();
 
     /// <summary>The libraries the search covers: a tab without games has nothing to find (#136).</summary>
     private IReadOnlyList<LauncherLibrary> SearchedLibraries() => Tabs.Where(t => t.Count > 0).Select(t => t.Library).ToList();
 
     /// <summary>
-    /// "Neu einlesen" or "Erneut suchen" on an empty tab, X in the launcher settings: reads every active launcher again
-    /// and says what came of it, for <paramref name="launcher"/> or for all.
+    /// "Neu einlesen" on an empty tab or a launcher's page reads <paramref name="launcher"/> again; "Erneut suchen" with no
+    /// launcher active and X in the launcher settings read all (null). Says what came of it.
     /// </summary>
     private async Task RescanAsync(LauncherInfo? launcher)
     {
@@ -420,7 +449,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
 
         Toast.Show(launcher is null ? "Alle Launcher werden neu eingelesen …" : $"{launcher.DisplayName} wird neu eingelesen …", sticky: true);
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        await RefreshLibraryAsync(force: true);
+        await (launcher is null ? RefreshLibraryAsync(force: true) : RefreshLauncherAsync(launcher.Id));
         AppLog.Write($"Neu eingelesen{(launcher is null ? string.Empty : $" für {launcher.Id}")}: {watch.ElapsedMilliseconds} ms");
         if (launcher is null)
         {
@@ -481,7 +510,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
 
     LauncherRegistry ILauncherSettingsHost.Launchers => _library.Launchers;
 
-    string? ILauncherSettingsHost.SelectedLauncherId => SelectedTab?.Launcher.Id;
 
     LauncherLibrary? ILauncherSettingsHost.LibraryOf(string launcherId) => Tabs.FirstOrDefault(t => t.Launcher.Id == launcherId)?.Library;
 
@@ -490,6 +518,50 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     void ILauncherSettingsHost.LauncherChoiceChanged() => ApplyLauncherChoice();
 
     void ILauncherSettingsHost.RescanLaunchers() => RescanAsync(null).Forget("Launcher neu einlesen");
+
+    LauncherLogos ILauncherSettingsHost.Logos => _logos;
+
+    /// <summary>The file and folder dialogs over the window (#138); set once the window is there.</summary>
+    public ISystemDialogs? Dialogs { get; set; }
+
+    void ILauncherSettingsHost.LauncherLooksChanged() => ApplyLauncherLooks();
+
+    void ILauncherSettingsHost.RescanLauncher(string launcherId) =>
+        RescanAsync(_library.Launchers.Info(launcherId)).Forget("Launcher neu einlesen");
+
+    OnScreenKeyboardViewModel ILauncherSettingsHost.CreateKeyboard(IKeyboardTarget target)
+    {
+        var keyboard = new OnScreenKeyboardViewModel(
+            KeyboardLayout.Find(_settings.Current.KeyboardLayout),
+            target,
+            _time,
+            action => Avalonia.Threading.Dispatcher.UIThread.Post(action))
+        {
+            UsesController = UsesController,
+        };
+        keyboard.LayoutChosen += layout => SaveView(settings => settings with { KeyboardLayout = layout.Id });
+        return keyboard;
+    }
+
+    void ILauncherSettingsHost.Notify(string message) => Toast.Show(message);
+
+    /// <summary>
+    /// A launcher was renamed, got another keyword or logo (#137, #138): tabs, covers, the empty tab and the search show it
+    /// at once; nothing needs to be read again.
+    /// </summary>
+    private void ApplyLauncherLooks()
+    {
+        foreach (var tab in Tabs)
+        {
+            var launcher = _library.Launchers.Info(tab.Launcher.Id);
+            tab.Launcher = launcher;
+            tab.Badge = _logos.BadgeOf(launcher);
+        }
+
+        EmptyTab = EmptyTab is { HasNoLauncher: true } shown ? shown : null;
+        Refresh(FocusedGame is { } focused ? PageGames.IndexOf(focused) : 0, FocusedGame?.Game.Key);
+        UpdateSearch();
+    }
 
     /// <summary>
     /// Shows the scanned libraries: one tab per launcher in the scanned order, launchers that are
@@ -511,7 +583,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
             var index = IndexOfTab(library.Launcher.Id);
             if (index < 0)
             {
-                Tabs.Insert(i, new LauncherTabViewModel(library, ChooseTab));
+                Tabs.Insert(i, new LauncherTabViewModel(library, _logos.BadgeOf(library.Launcher), ChooseTab));
                 continue;
             }
 
@@ -861,10 +933,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     }
 
     private GameTileViewModel CreateDetailTile(Game game) =>
-        new(game, LauncherOf(game), _time.GetLocalNow(), _ => { }, _ => { }) { InstallState = _installs.StateOf(game.Key), RunState = _running.StateOf(game.Key) };
+        new(game, LauncherOf(game), BadgeOf(game), _time.GetLocalNow(), _ => { }, _ => { }) { InstallState = _installs.StateOf(game.Key), RunState = _running.StateOf(game.Key) };
 
     /// <summary>Every shown game comes from a tab, so its launcher has one.</summary>
     private LauncherInfo LauncherOf(Game game) => Tabs.First(t => t.Launcher.Id == game.LauncherId).Launcher;
+
+    private LauncherBadge BadgeOf(Game game) => Tabs.First(t => t.Launcher.Id == game.LauncherId).Badge;
 
     /// <summary>
     /// X: the search over all launchers, with the on-screen keyboard. From a detail page opened from the search, back to
@@ -898,6 +972,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
             KeyboardLayout.Find(_settings.Current.KeyboardLayout),
             layout => SaveView(settings => settings with { KeyboardLayout = layout.Id }),
             CreateSearchTile,
+            _logos.BadgeOf,
             _input == InputKind.Gamepad,
             _time,
             action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
@@ -1037,7 +1112,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     }
 
     private GameTileViewModel CreateSearchTile(Game game, Action<GameTileViewModel> focus) =>
-        new(game, LauncherOf(game), _time.GetLocalNow(), focus, tile =>
+        new(game, LauncherOf(game), BadgeOf(game), _time.GetLocalNow(), focus, tile =>
         {
             focus(tile);
             Start(tile);
@@ -1080,6 +1155,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         }
 
         Search?.Release(action);
+        Settings?.Release(action);
     }
 
     /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
@@ -1087,6 +1163,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     {
         _acceptHold.Cancel();
         Search?.CancelHeldButtons();
+        Settings?.CancelHeldButtons();
     }
 
     /// <summary>
@@ -1700,7 +1777,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         PageGames.Clear();
         foreach (var game in sorted.Skip(window.Start).Take(window.Length))
         {
-            PageGames.Add(new GameTileViewModel(game, tab.Launcher, now, Focus, Activate) { InstallState = _installs.StateOf(game.Key), RunState = _running.StateOf(game.Key) });
+            PageGames.Add(new GameTileViewModel(game, tab.Launcher, tab.Badge, now, Focus, Activate) { InstallState = _installs.StateOf(game.Key), RunState = _running.StateOf(game.Key) });
         }
 
         KeepHoldOnRebuiltPage();

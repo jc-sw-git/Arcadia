@@ -24,27 +24,43 @@ public sealed class LibraryService(LauncherRegistry launchers, TimeProvider? tim
     {
         // Launchers come and go between scans; without a choice of the user, the ones found decide which are active.
         await Task.Run(launchers.Locate, cancellationToken);
-        return await Task.WhenAll(launchers.Enabled.Select(async integration =>
-        {
-            var launcher = integration.Launcher;
-            if (!launchers.IsFound(launcher.Id))
-            {
-                return new LauncherLibrary(launcher, [], IsFound: false);
-            }
+        return await Task.WhenAll(launchers.Enabled.Select(integration => ScanAsync(integration, cancellationToken)));
+    }
 
-            try
-            {
-                var games = await integration.Scanner.ScanAsync(cancellationToken);
-                _scannedAt[launcher.Id] = _time.GetUtcNow();
-                return new LauncherLibrary(launcher, games);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                // One broken launcher must not take down the whole library.
-                System.Diagnostics.Trace.TraceWarning($"Scanning {launcher.DisplayName} failed: {ex}");
-                return new LauncherLibrary(launcher, []);
-            }
-        }));
+    /// <summary>
+    /// Reads one active launcher again, e.g. "Neu einlesen" on its page (#137), without scanning the others; null if it
+    /// isn't active.
+    /// </summary>
+    public async Task<LauncherLibrary?> LoadAsync(string launcherId, CancellationToken cancellationToken = default)
+    {
+        // Its folder may just have been chosen (#138), so it is looked for again first.
+        await Task.Run(launchers.Locate, cancellationToken);
+        return launchers.Enabled.FirstOrDefault(i => i.Launcher.Id == launcherId) is { } integration
+            ? await ScanAsync(integration, cancellationToken)
+            : null;
+    }
+
+    private async Task<LauncherLibrary> ScanAsync(ILauncherIntegration integration, CancellationToken cancellationToken)
+    {
+        // With the name and keyword the user gave it (#137).
+        var launcher = launchers.Info(integration.Launcher.Id);
+        if (!launchers.IsFound(launcher.Id))
+        {
+            return new LauncherLibrary(launcher, [], IsFound: false);
+        }
+
+        try
+        {
+            var games = await integration.Scanner.ScanAsync(cancellationToken);
+            _scannedAt[launcher.Id] = _time.GetUtcNow();
+            return new LauncherLibrary(launcher, games);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // One broken launcher must not take down the whole library.
+            System.Diagnostics.Trace.TraceWarning($"Scanning {launcher.DisplayName} failed: {ex}");
+            return new LauncherLibrary(launcher, []);
+        }
     }
 
     /// <summary>When the launcher's games were last read; null if they never were since Arcadia started.</summary>

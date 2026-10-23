@@ -27,6 +27,22 @@ Arcadia's installer and self-update. Its library is part of Arcadia; its `Update
 - License: MIT
 - Source: https://github.com/velopack/velopack
 
+## Svg.Skia
+
+Reads SVG files the user picks as launcher logos (#138). Its library and its dependencies (Svg.Model, ShimSkiaSharp,
+ExCSS) are part of Arcadia.
+
+- Author: Wiesław Šoltés
+- License: MIT
+- Source: https://github.com/wieslawsoltes/Svg.Skia
+
+## Launcher logos
+
+The Steam and Epic Games logos in `SteamIntegration` and `EpicIntegration` are drawn from the paths of simple-icons
+16.35.0 (https://github.com/simple-icons/simple-icons, CC0 1.0). The names and logos are trademarks of Valve Corporation
+and Epic Games, Inc. They are used unchanged and only to name the launcher; they are not covered by Arcadia's GPL and
+are replaced on request of their owner.
+
 ## mattpocock/skills
 
 The Claude skills `.claude/skills/refinement` and `.claude/skills/diagnose` (incl. `hitl-loop.template.ps1`)

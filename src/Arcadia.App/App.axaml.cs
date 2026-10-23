@@ -82,8 +82,12 @@ public partial class App : Application
             var firstRun = new FirstRunSetup(settings, demo, forced: args.Contains(FirstRunArgument, StringComparer.OrdinalIgnoreCase));
 
             // The first start asks which launchers are active (#139), the settings change them and their order (#136);
-            // while the question shows, every launcher found is read, so it can count their games.
-            var launchers = new LauncherRegistry(BuiltInLaunchers.Create(time, demo), firstRun.ChosenLaunchers);
+            // while the question shows, every launcher found is read, so it can count their games. Names, keywords and
+            // folders the user gave launchers apply from their next read (#137, #138).
+            var launchers = new LauncherRegistry(
+                BuiltInLaunchers.Create(time, demo),
+                firstRun.ChosenLaunchers,
+                id => settings.Current.PreferencesOf(id));
             foreach (var problem in launchers.Rejected)
             {
                 AppLog.Write(problem);
@@ -122,6 +126,7 @@ public partial class App : Application
                 runningGames,
                 launchedGames,
                 settings,
+                new LauncherLogos(settings, LauncherLogos.DefaultFolder),
                 firstRun,
                 time);
             var window = new MainWindow { DataContext = viewModel };
@@ -155,6 +160,7 @@ public partial class App : Application
 
             _gamepad = GamepadSource.CreateDefault();
             var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
+            viewModel.Dialogs = new SystemDialogs(window, () => viewModel.UsesController, () => mouseMode);
 
             void Press(GamepadButton button)
             {

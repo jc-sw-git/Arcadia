@@ -1,3 +1,4 @@
+using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Launchers;
@@ -11,6 +12,7 @@ public sealed class LauncherRegistry
     private readonly IReadOnlyList<ILauncherIntegration> _all;
     private readonly IReadOnlyList<string> _ids;
     private readonly Func<IReadOnlyList<string>?> _chosen;
+    private readonly Func<string, LauncherPreferences> _preferences;
 
     // Replaced as a whole by Locate, so a reader on another thread sees either the old or the new locations.
     private volatile IReadOnlyDictionary<string, string?>? _locations;
@@ -20,9 +22,11 @@ public sealed class LauncherRegistry
     /// The user's active launchers in tab order, or null if the user never chose. Asked on every read, so a change
     /// applies at once.
     /// </param>
-    public LauncherRegistry(IEnumerable<ILauncherIntegration> integrations, Func<IReadOnlyList<string>?> chosen)
+    /// <param name="preferences">What the user changed about a launcher (#137, #138), asked on every read; null: nothing.</param>
+    public LauncherRegistry(IEnumerable<ILauncherIntegration> integrations, Func<IReadOnlyList<string>?> chosen, Func<string, LauncherPreferences>? preferences = null)
     {
         _chosen = chosen;
+        _preferences = preferences ?? (_ => new LauncherPreferences());
 
         // A broken integration is left out rather than stopping Arcadia; later it may come from a plugin.
         var accepted = new List<ILauncherIntegration>();
@@ -58,6 +62,25 @@ public sealed class LauncherRegistry
 
     /// <summary>Every registered launcher, active or not, e.g. for the launcher settings.</summary>
     public IReadOnlyList<ILauncherIntegration> All => _all;
+
+    /// <summary>
+    /// The launcher as Arcadia shows it: with the name and search keyword the user gave it (#137). A value that breaks the
+    /// rules (<see cref="LauncherNames"/>), e.g. edited by hand in settings.json, gives way to the launcher's own.
+    /// </summary>
+    /// <exception cref="ArgumentException">No launcher with this id is registered.</exception>
+    public LauncherInfo Info(string launcherId)
+    {
+        var own = Registered(launcherId)?.Launcher ?? throw new ArgumentException($"Launcher „{launcherId}“ ist nicht registriert.", nameof(launcherId));
+        var preferences = _preferences(launcherId);
+        var name = preferences.Name is { } chosenName && LauncherNames.NameProblem(chosenName) is null ? chosenName.Trim() : own.DisplayName;
+        var keyword = preferences.Keyword is { } chosenKeyword && chosenKeyword.Length is > 0 and <= LauncherNames.MaxKeywordLength && chosenKeyword.All(LauncherNames.IsKeywordCharacter)
+            ? chosenKeyword
+            : own.SearchKeyword;
+        return own with { DisplayName = name, SearchKeyword = keyword };
+    }
+
+    /// <summary>Every registered launcher as Arcadia shows it (<see cref="Info"/>), in registered order.</summary>
+    public IReadOnlyList<LauncherInfo> Shown => _ids.Select(Info).ToList();
 
     /// <summary>The ids of the active launchers, in tab order.</summary>
     public IReadOnlyList<string> ActiveIds => LauncherSelection.Active(_ids, _chosen(), IsFound);
@@ -95,6 +118,7 @@ public sealed class LauncherRegistry
         {
             try
             {
+                UseChosenFolder(integration);
                 locations[integration.Launcher.Id] = integration.Locate();
             }
             catch (Exception ex)
@@ -106,5 +130,20 @@ public sealed class LauncherRegistry
         }
 
         _locations = locations;
+    }
+
+    /// <summary>
+    /// A folder the user picked for the launcher (#138) is checked again before every search: a folder that no longer holds
+    /// the launcher (moved, deleted, or edited by hand in settings.json) gives way to the launcher's own search.
+    /// </summary>
+    private void UseChosenFolder(ILauncherIntegration integration)
+    {
+        if (integration.FolderChoice is not { } choice)
+        {
+            return;
+        }
+
+        var folder = _preferences(integration.Launcher.Id).Folder is { } chosen ? choice.Find(chosen) : null;
+        choice.Use(folder);
     }
 }

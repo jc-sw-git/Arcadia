@@ -148,4 +148,76 @@ public sealed class LibraryRefresherTests
         Assert.NotNull(await second);
         Assert.Equal(2, _epic.Scans);
     }
+
+    [Fact]
+    public async Task Rescanning_one_launcher_scans_only_it_and_keeps_the_others()
+    {
+        _epic.Games = [GameOf("epic", "a")];
+        _gog.Games = [GameOf("gog", "b")];
+        var refresher = CreateRefresher();
+        var current = await refresher.RefreshAsync(() => [], force: true);
+
+        _epic.Games = [GameOf("epic", "a"), GameOf("epic", "c")];
+        _gog.Games = [];
+        var scanned = await refresher.RefreshAsync(() => current!, "epic");
+
+        Assert.NotNull(scanned);
+        Assert.Equal(["epic", "gog"], scanned.Select(l => l.Launcher.Id));
+        Assert.Equal(2, scanned[0].Games.Count);
+        Assert.Same(current![1], scanned[1]);
+        Assert.Equal((2, 1), (_epic.Scans, _gog.Scans));
+    }
+
+    [Fact]
+    public async Task Rescanning_one_unchanged_launcher_returns_nothing()
+    {
+        _epic.Games = [GameOf("epic", "a")];
+        var refresher = CreateRefresher();
+        var current = await refresher.RefreshAsync(() => [], force: true);
+
+        Assert.Null(await refresher.RefreshAsync(() => current!, "epic"));
+        Assert.Equal(2, _epic.Scans);
+    }
+
+    [Fact]
+    public async Task Rescanning_an_inactive_launcher_scans_nothing()
+    {
+        var refresher = new LibraryRefresher(new LibraryService(FakeIntegration.Registry(
+            [new FakeIntegration(KnownLaunchers.Epic) { Scanner = _epic }, new FakeIntegration(KnownLaunchers.Gog) { Scanner = _gog }],
+            id => id == "epic")), _time);
+
+        Assert.Null(await refresher.RefreshAsync(() => [], "gog"));
+        Assert.Equal((0, 0), (_epic.Scans, _gog.Scans));
+    }
+
+    [Fact]
+    public async Task An_active_launcher_without_a_tab_yet_is_read_with_all_the_others()
+    {
+        _epic.Games = [GameOf("epic", "a")];
+        _gog.Games = [GameOf("gog", "b")];
+        var refresher = CreateRefresher();
+        IReadOnlyList<LauncherLibrary> onlyEpic = [new LauncherLibrary(KnownLaunchers.Epic, [GameOf("epic", "a")])];
+
+        var scanned = await refresher.RefreshAsync(() => onlyEpic, "gog");
+
+        Assert.NotNull(scanned);
+        Assert.Equal(["epic", "gog"], scanned.Select(l => l.Launcher.Id));
+    }
+
+    [Fact]
+    public async Task Rescanning_one_launcher_waits_for_a_running_rescan()
+    {
+        var refresher = CreateRefresher();
+        _epic.Games = [GameOf("epic", "a")];
+        _epic.Gate = new TaskCompletionSource();
+
+        var all = refresher.RefreshAsync(() => [], force: true);
+        var one = refresher.RefreshAsync(() => [new LauncherLibrary(KnownLaunchers.Epic, []), new LauncherLibrary(KnownLaunchers.Gog, [])], "epic");
+        Assert.False(one.IsCompleted);
+
+        _epic.Gate.SetResult();
+        await all;
+        Assert.NotNull(await one);
+        Assert.Equal(2, _epic.Scans);
+    }
 }

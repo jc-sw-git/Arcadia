@@ -785,18 +785,22 @@
     <Setter Property="LetterSpacing" Value="1.5" />
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
   </Style>
-  <!-- A group of settings in a box of its own; each row is a piece of it, the first and last round it off (owner,
-       2026-10-22). The padding leaves room for the focus ring. -->
+  <!-- A group of settings in a box of its own; each row is a piece of it, the first and last round it off, a line
+       parts the rows (owner, 2026-10-22). The padding around each row leaves room for its focus ring, which the next
+       piece would otherwise paint over. -->
   <Style Selector="Border.groupBox">
     <Setter Property="Background" Value="{StaticResource Surface}" />
-    <Setter Property="Padding" Value="8,1" />
+    <Setter Property="BorderBrush" Value="{StaticResource Line}" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="Padding" Value="8,5" />
   </Style>
   <Style Selector="Border.groupBox.first">
-    <Setter Property="Padding" Value="8,8,8,1" />
+    <Setter Property="Padding" Value="8,8,8,5" />
     <Setter Property="CornerRadius" Value="20,20,0,0" />
   </Style>
   <Style Selector="Border.groupBox.last">
-    <Setter Property="Padding" Value="8,1,8,8" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="8,5,8,8" />
     <Setter Property="CornerRadius" Value="0,0,20,20" />
   </Style>
   <Style Selector="Border.groupBox.first.last">

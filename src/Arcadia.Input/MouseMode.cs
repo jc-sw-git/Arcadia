@@ -17,7 +17,8 @@ public sealed record MouseModeOptions(bool Enabled, TimeSpan HoldTime, int Point
 /// <summary>The mouse mode went on or off.</summary>
 /// <param name="Slot">The controller whose Back + Start switched it; null when Arcadia switched it by itself.</param>
 /// <param name="ByGame">Ended because a game in which it is forbidden came to the front.</param>
-public sealed record MouseModeSwitch(bool IsOn, int? Slot, bool ByGame = false)
+/// <param name="ForDialog">On for a Windows dialog Arcadia opened, or off again after it (#138).</param>
+public sealed record MouseModeSwitch(bool IsOn, int? Slot, bool ByGame = false, bool ForDialog = false)
 {
     public bool IsAutomatic => Slot is null;
 }
@@ -54,6 +55,13 @@ public sealed class MouseMode
 
     // A switch asked for from another thread, applied on the next poll: 0 none, 1 on, 2 off.
     private int _request;
+
+    // A Windows dialog Arcadia opened, asked for from another thread like _request: 0 none, 1 opened, 2 closed.
+    private int _dialogRequest;
+    private bool _dialogOpen;
+
+    // The mode came on for the open dialog, so it goes off again after it.
+    private bool _onForDialog;
 
     public MouseMode(IMouseKeyboardOutput output, Func<MouseModeOptions> options, TimeProvider time)
     {
@@ -95,6 +103,14 @@ public sealed class MouseMode
     /// <summary>Arcadia switches by itself (the automation in the settings); applied on the next poll.</summary>
     public void Request(bool on) => Interlocked.Exchange(ref _request, on ? 1 : 2);
 
+    /// <summary>
+    /// A Windows dialog Arcadia opened from the controller, which the controller can't steer (a file or folder choice),
+    /// opened (true) or closed (#138, owner 2026-10-22): the mode comes on for it, also with "Mausmodus: Aus" in the
+    /// settings or beside a game that forbids it, nothing switches it off while the dialog is open, and it goes off after the
+    /// dialog if it came on for it. Applied on the next poll; callable from any thread.
+    /// </summary>
+    public void HoldForDialog(bool open) => Interlocked.Exchange(ref _dialogRequest, open ? 1 : 2);
+
     /// <summary>The keyboard closed (B, or Arcadia closed it); from the next poll the buttons are the mouse's again. Callable from any thread.</summary>
     public void CloseKeyboard() => _mapping.CloseKeyboard();
 
@@ -107,22 +123,23 @@ public sealed class MouseMode
             _held |= pad.Buttons;
         }
 
+        UpdateDialog();
         switch (Interlocked.Exchange(ref _request, 0))
         {
             case 1 when options.Enabled && !options.BlockedHere:
                 Switch(true, slot: null);
                 break;
-            case 2:
+            case 2 when !_dialogOpen:
                 Switch(false, slot: null);
                 break;
         }
 
-        // Switched off in the settings while on: the controller is a controller again at once.
-        if (!options.Enabled)
+        // Switched off in the settings while on: the controller is a controller again at once. An open dialog needs the mouse.
+        if (!_dialogOpen && !options.Enabled)
         {
             Switch(false, slot: null);
         }
-        else if (options.BlockedHere)
+        else if (!_dialogOpen && options.BlockedHere)
         {
             Switch(false, slot: null, byGame: true);
         }
@@ -136,6 +153,31 @@ public sealed class MouseMode
 
     /// <summary>Lets go of everything the mode holds down, e.g. when Arcadia closes in the middle of a drag.</summary>
     public void Stop() => Switch(false, slot: null, announce: false);
+
+    private void UpdateDialog()
+    {
+        switch (Interlocked.Exchange(ref _dialogRequest, 0))
+        {
+            case 1:
+                _dialogOpen = true;
+                if (!_isOn)
+                {
+                    Switch(true, slot: null, forDialog: true);
+                    _onForDialog = true;
+                }
+
+                break;
+            case 2:
+                _dialogOpen = false;
+                if (_onForDialog)
+                {
+                    _onForDialog = false;
+                    Switch(false, slot: null, forDialog: true);
+                }
+
+                break;
+        }
+    }
 
     private void UpdateCombo(IReadOnlyList<GamepadReading> pads, MouseModeOptions options)
     {
@@ -206,8 +248,14 @@ public sealed class MouseMode
         }
     }
 
-    private void Switch(bool on, int? slot, bool announce = true, bool byGame = false)
+    private void Switch(bool on, int? slot, bool announce = true, bool byGame = false, bool forDialog = false)
     {
+        if (slot is not null)
+        {
+            // Switched by hand during a dialog: that choice stays after it.
+            _onForDialog = false;
+        }
+
         if (_isOn == on)
         {
             return;
@@ -226,7 +274,7 @@ public sealed class MouseMode
         _isOn = on;
         if (announce)
         {
-            Switched?.Invoke(new MouseModeSwitch(on, slot, byGame));
+            Switched?.Invoke(new MouseModeSwitch(on, slot, byGame, forDialog));
         }
     }
 }

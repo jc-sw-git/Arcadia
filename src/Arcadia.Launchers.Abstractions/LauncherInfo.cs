@@ -4,6 +4,11 @@ namespace Arcadia.Launchers.Abstractions;
 /// A launcher Arcadia can connect to. Every connected launcher gets its own tab in the library.
 /// </summary>
 /// <param name="Id">Stable identifier, used as part of <see cref="Game.Key"/> and in settings.</param>
-/// <param name="DisplayName">Name shown on the tab.</param>
-/// <param name="SearchKeyword">Default keyword for the search prefix, e.g. <c>/epic</c>.</param>
-public sealed record LauncherInfo(string Id, string DisplayName, string SearchKeyword);
+/// <param name="DisplayName">Name shown on the tab; the user may give it another (#137).</param>
+/// <param name="SearchKeyword">Default keyword for the search prefix, e.g. <c>/epic</c>; the user may choose another (#137).</param>
+/// <param name="Logo">
+/// The launcher's real logo as one-colour SVG path data in a 24 × 24 box (#138). Arcadia draws it in the text colour of
+/// where it stands, dark on a light tab and light on a dark one, so it needs no variants; null shows the name's first
+/// letter instead. Use the maker's logo unchanged and as its brand guidelines allow.
+/// </param>
+public sealed record LauncherInfo(string Id, string DisplayName, string SearchKeyword, string? Logo = null);

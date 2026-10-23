@@ -16,13 +16,12 @@ namespace Arcadia.App.Search;
 /// <summary>A launcher chip; the first one stands for all launchers. The mouse switches them, the controller uses the filter (L3).</summary>
 public sealed partial class SearchChipViewModel : ViewModelBase
 {
-    public SearchChipViewModel(LauncherInfo? launcher, Action<LauncherInfo?> toggle)
+    public SearchChipViewModel(LauncherInfo? launcher, LauncherBadge? badge, Action<LauncherInfo?> toggle)
     {
         Launcher = launcher;
+        Badge = badge;
         Name = launcher?.DisplayName ?? "Alle Launcher";
         Keyword = launcher is null ? string.Empty : $"{SearchQuery.PrefixMarker}{launcher.SearchKeyword}";
-        Monogram = launcher?.DisplayName[..1] ?? string.Empty;
-        TileBrush = launcher is null ? null : Formatting.LauncherTileBrush(launcher.Id);
         ToggleCommand = new RelayCommand(() => toggle(launcher));
     }
 
@@ -35,9 +34,8 @@ public sealed partial class SearchChipViewModel : ViewModelBase
 
     public string Keyword { get; }
 
-    public string Monogram { get; }
-
-    public IBrush? TileBrush { get; }
+    /// <summary>The launcher's logo (#138); null for "Alle Launcher".</summary>
+    public LauncherBadge? Badge { get; }
 
     [ObservableProperty]
     public partial bool IsOn { get; set; }
@@ -78,12 +76,14 @@ public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, ID
     private bool _hitsChanged;
     private List<GameTileViewModel> _results = [];
     private TextWithCaret _text = TextWithCaret.AtEnd(string.Empty);
+    private readonly Func<LauncherInfo, LauncherBadge> _badgeOf;
 
     public SearchViewModel(
         IReadOnlyList<LauncherLibrary> libraries,
         KeyboardLayout layout,
         Action<KeyboardLayout> layoutChosen,
         Func<Game, Action<GameTileViewModel>, GameTileViewModel> createTile,
+        Func<LauncherInfo, LauncherBadge> badgeOf,
         bool usesController,
         TimeProvider time,
         Action<Action> post)
@@ -91,6 +91,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, ID
         _libraries = libraries;
         _search = new GameSearch(libraries.SelectMany(l => l.Games), Formatting.Culture);
         _createTile = createTile;
+        _badgeOf = badgeOf;
         Keyboard = new OnScreenKeyboardViewModel(layout, this, time, post);
         Keyboard.LayoutChosen += layoutChosen;
         // A search field has no tab order to go through, and the keyboard is part of the page, with no edge to move to.
@@ -611,10 +612,10 @@ public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, ID
         }
 
         Chips.Clear();
-        Chips.Add(new SearchChipViewModel(null, ToggleLauncher));
+        Chips.Add(new SearchChipViewModel(null, null, ToggleLauncher));
         foreach (var launcher in _launchers)
         {
-            Chips.Add(new SearchChipViewModel(launcher, ToggleLauncher));
+            Chips.Add(new SearchChipViewModel(launcher, _badgeOf(launcher), ToggleLauncher));
         }
     }
 

@@ -24,6 +24,7 @@ public sealed class MouseModeRows
     private readonly ChoiceRowViewModel _activation;
     private readonly ChoiceRowViewModel _hold;
     private readonly ChoiceRowViewModel _speed;
+    private readonly SwitchRowViewModel _forDialogs;
     private readonly SwitchRowViewModel _endInFront;
     private readonly ChoiceRowViewModel _inGames;
     private readonly ChoiceRowViewModel _perGameDefault;
@@ -70,6 +71,17 @@ public sealed class MouseModeRows
             Indent = 1,
             Subtitle = "Wie schnell [LS] den Mauszeiger bewegt.",
             Info = [new InfoText("Wie schnell [LS] den Mauszeiger bewegt. [L3] macht ihn langsamer.")],
+        };
+        _forDialogs = new SwitchRowViewModel(
+            "mouse-mode-for-dialogs",
+            "Bei System-Dialogfenstern einschalten",
+            () => Current.ForDialogs,
+            value => Change(s => s with { ForDialogs = value }))
+        {
+            Group = Group,
+            Indent = 1,
+            Subtitle = "Für Dialogfenster wie die Datei- oder Ordnerwahl",
+            Info = [new InfoText("Öffnest du mit dem Controller in Arcadia ein Windows-Dialogfenster, das sich nur mit Maus und Tastatur bedienen lässt (z. B. wenn du eigene Logos oder Artworks hochlädst), schaltet sich der Mausmodus ein, solange das Fenster offen ist.")],
         };
         _endInFront = new SwitchRowViewModel(
             "mouse-mode-end-in-front",
@@ -138,7 +150,7 @@ public sealed class MouseModeRows
     ];
 
     /// <summary>In the order the controller moves through them.</summary>
-    public IReadOnlyList<SettingsRowViewModel> Rows => [_activation, _hold, _speed, _endInFront, _inGames, _perGameDefault];
+    public IReadOnlyList<SettingsRowViewModel> Rows => [_activation, _hold, _speed, _forDialogs, _endInFront, _inGames, _perGameDefault];
 
     private MouseModeSettings Current => _changes.Current.MouseMode;
 
@@ -180,6 +192,7 @@ public sealed class MouseModeRows
         var manual = Current.Activation == MouseModeActivation.Manual;
         _hold.IsDimmed = !enabled;
         _speed.IsDimmed = !enabled;
+        _forDialogs.IsDimmed = !enabled;
         _endInFront.IsDimmed = !manual;
         _inGames.IsDimmed = !manual;
         _perGameDefault.IsDimmed = !manual || Current.InGames != MouseModeInGames.PerGame;

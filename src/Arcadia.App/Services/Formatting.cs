@@ -94,6 +94,10 @@ public static class Formatting
             new SolidColorBrush(new HslColor(1, hue, 0.40, 0.28).ToRgb()));
     }
 
+    /// <summary>The first letter of a name, as a whole character also when it is made of several (e.g. an emoji).</summary>
+    public static string Monogram(string name) =>
+        name.Trim() is { Length: > 0 } trimmed ? trimmed[..StringInfo.GetNextTextElementLength(trimmed)].ToUpper(Culture) : "?";
+
     public static IBrush LauncherTileBrush(string launcherId) =>
         new SolidColorBrush(new HslColor(1, StableHash(launcherId) % 360, 0.35, 0.30).ToRgb());
 

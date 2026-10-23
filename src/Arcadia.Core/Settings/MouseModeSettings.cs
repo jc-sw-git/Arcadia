@@ -45,6 +45,13 @@ public sealed record MouseModeSettings
     /// <summary>"Zeigergeschwindigkeit".</summary>
     public int PointerSpeed { get; init; } = 5;
 
+    /// <summary>
+    /// "Bei System-Dialogfenstern einschalten" (#138, owner 2026-10-23): a Windows dialog Arcadia opens from the controller (a
+    /// file or folder choice) switches the mode on and, if it came on for it, off again after it. For "Von Hand" and
+    /// "Automatisch": a dialog belongs to Arcadia, so Arcadia stays in front and "Automatisch" alone wouldn't switch.
+    /// </summary>
+    public bool ForDialogs { get; init; } = true;
+
     /// <summary>"Beenden, wenn Arcadia nach vorne kommt"; only for <see cref="MouseModeActivation.Manual"/>, the automatic mode always ends then.</summary>
     public bool EndWhenArcadiaInFront { get; init; } = true;
 

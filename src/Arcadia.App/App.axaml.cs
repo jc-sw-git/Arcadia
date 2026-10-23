@@ -74,9 +74,11 @@ public partial class App : Application
             var settings = new SettingsService(SettingsStore.CreateDefault());
 
             // The user chooses the active launchers and their order in the settings (#136); until then, all found ones.
+            // Names, keywords and folders the user gave launchers apply from their next read (#137, #138).
             var launchers = new LauncherRegistry(
                 BuiltInLaunchers.Create(time, demo: args.Contains("--demo", StringComparer.OrdinalIgnoreCase)),
-                () => settings.Current.ActiveLaunchers);
+                () => settings.Current.ActiveLaunchers,
+                id => settings.Current.PreferencesOf(id));
             foreach (var problem in launchers.Rejected)
             {
                 AppLog.Write(problem);
@@ -115,6 +117,7 @@ public partial class App : Application
                 runningGames,
                 launchedGames,
                 settings,
+                new LauncherLogos(settings, LauncherLogos.DefaultFolder),
                 time);
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
@@ -147,6 +150,7 @@ public partial class App : Application
 
             _gamepad = GamepadSource.CreateDefault();
             var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
+            viewModel.Dialogs = new SystemDialogs(window, () => viewModel.UsesController, () => mouseMode);
 
             void Press(GamepadButton button)
             {

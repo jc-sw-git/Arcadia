@@ -25,7 +25,8 @@ public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action 
 
     public bool HasNoGames => tab is { IsFound: true };
 
-    public string Monogram => tab?.Monogram ?? string.Empty;
+    /// <summary>The launcher's logo (#138); null when no launcher is active.</summary>
+    public Services.LauncherBadge? Badge => tab?.Badge;
 
     public string Title => tab switch
     {

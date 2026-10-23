@@ -1,7 +1,6 @@
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.Launchers.Abstractions;
-using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -9,27 +8,29 @@ namespace Arcadia.App.Settings;
 
 /// <summary>
 /// A launcher in the category "Launcher" (#136): its tab key, logo, name and state, and the switch "Aktiv". ◀ ▶ switch it,
-/// Y lifts it to move it (<see cref="LauncherSettingsViewModel"/>).
+/// Y lifts it to move it, A or a click open its page (#137) (<see cref="LauncherSettingsViewModel"/>).
 /// </summary>
 public sealed partial class LauncherRowViewModel : SettingsRowViewModel
 {
     private readonly Action<LauncherRowViewModel, bool> _switch;
+    private readonly Action<LauncherRowViewModel> _open;
 
-    public LauncherRowViewModel(LauncherInfo launcher, Action<LauncherRowViewModel, bool> switchTo)
+    public LauncherRowViewModel(LauncherInfo launcher, LauncherBadge badge, Action<LauncherRowViewModel, bool> switchTo, Action<LauncherRowViewModel> open)
         : base(launcher.Id, launcher.DisplayName)
     {
         Launcher = launcher;
-        Monogram = launcher.DisplayName[..1];
-        TileBrush = Formatting.LauncherTileBrush(launcher.Id);
+        Badge = badge;
         _switch = switchTo;
+        _open = open;
     }
 
-    public LauncherInfo Launcher { get; }
+    /// <summary>With the name and keyword the user gave it (#137).</summary>
+    [ObservableProperty]
+    public partial LauncherInfo Launcher { get; private set; }
 
-    public string Monogram { get; }
-
-    /// <summary>Placeholder until launcher logos (#138).</summary>
-    public IBrush TileBrush { get; }
+    /// <summary>Its logo (#138).</summary>
+    [ObservableProperty]
+    public partial LauncherBadge Badge { get; private set; }
 
     /// <summary>Shown as a tab; off: not read, not watched, no tab.</summary>
     [ObservableProperty]
@@ -70,9 +71,25 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
 
     public override bool CanChange => HasSwitch;
 
-    public override string PreviewTitle => "TAB-LEISTE";
+    public override string PreviewTitle => LauncherSettingsViewModel.OrderPreviewTitle;
+
+    public override string PreviewSubtitle => LauncherSettingsViewModel.OrderPreviewSubtitle;
 
     public override string InfoTitle => "LAUNCHER-DETAILS";
+
+    public override bool CanActivate => true;
+
+    public override string ActivateText => "Öffnen";
+
+    public override void Activate() => _open(this);
+
+    /// <summary>The user renamed it, gave it another keyword or logo.</summary>
+    public void ShowLooks(LauncherInfo launcher, LauncherBadge badge)
+    {
+        Launcher = launcher;
+        Title = launcher.DisplayName;
+        Badge = badge;
+    }
 
     public override void Change(int delta)
     {

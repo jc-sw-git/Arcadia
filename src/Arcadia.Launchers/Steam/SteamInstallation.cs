@@ -172,8 +172,52 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
         return steam?.GetValue("RunningAppID") is int appId && appId != 0 ? appId : null;
     }
 
+    // Set by the user's folder choice (#138). Static, because every part of Arcadia that needs Steam asks Find, and a PC
+    // has one Steam; replaced as a whole, so another thread sees the old folder or the new one.
+    private static volatile string? _chosenRoot;
+
+    /// <summary>
+    /// The folder the user picked for Steam in the launcher settings (#138), one <see cref="RootIn"/> accepted; from then on
+    /// <see cref="Find"/> looks only there. Null: Steam is looked for in the registry and the usual place again.
+    /// </summary>
+    public static string? ChosenRoot
+    {
+        get => _chosenRoot;
+        set => _chosenRoot = value;
+    }
+
+    /// <summary>
+    /// The Steam folder at <paramref name="folder"/>: the folder itself if it holds <c>steam.exe</c> and <c>steamapps</c>,
+    /// or the one above if the user picked <c>steamapps</c> itself. Null if there is no Steam.
+    /// </summary>
+    public static string? RootIn(string folder)
+    {
+        if (string.IsNullOrWhiteSpace(folder) || !Path.IsPathFullyQualified(folder))
+        {
+            return null;
+        }
+
+        var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
+        if (IsRoot(full))
+        {
+            return full;
+        }
+
+        return string.Equals(Path.GetFileName(full), "steamapps", StringComparison.OrdinalIgnoreCase)
+            && Path.GetDirectoryName(full) is { } parent && IsRoot(parent)
+            ? parent
+            : null;
+
+        static bool IsRoot(string dir) => File.Exists(Path.Combine(dir, "steam.exe")) && Directory.Exists(Path.Combine(dir, "steamapps"));
+    }
+
     public static SteamInstallation? Find()
     {
+        if (ChosenRoot is { } chosen)
+        {
+            return Directory.Exists(chosen) ? new SteamInstallation(chosen, ActiveUserFromRegistry()) : null;
+        }
+
         if (!OperatingSystem.IsWindows())
         {
             return null;
@@ -190,9 +234,19 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
             }
         }
 
+        return new SteamInstallation(root, ActiveUserFromRegistry());
+    }
+
+    /// <summary>The account logged in to the running Steam; a Steam without registry entry has none, so null.</summary>
+    private static uint? ActiveUserFromRegistry()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
         using var process = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam\ActiveProcess");
-        uint? activeUser = process?.GetValue("ActiveUser") is int value ? unchecked((uint)value) : null;
-        return new SteamInstallation(root, activeUser);
+        return process?.GetValue("ActiveUser") is int value ? unchecked((uint)value) : null;
     }
 
     /// <summary>Asks a running Steam to shut down and waits for it.</summary>

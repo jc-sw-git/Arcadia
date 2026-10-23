@@ -53,10 +53,23 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     public partial object? Dialog { get; protected set; }
 
     /// <summary>What Y does on the rows, for the footer (e.g. "Verschieben"); null if nothing.</summary>
-    public string? YActionText { get; protected init; }
+    [ObservableProperty]
+    public partial string? YActionText { get; protected set; }
 
     /// <summary>What X does on the rows, for the footer (e.g. "Alle neu einlesen"); null if nothing.</summary>
-    public string? XActionText { get; protected init; }
+    [ObservableProperty]
+    public partial string? XActionText { get; protected set; }
+
+    /// <summary>Above the rows, e.g. a launcher's logo and name on its page (#137); null shows nothing.</summary>
+    [ObservableProperty]
+    public partial object? Head { get; protected set; }
+
+    /// <summary>A text being written with the on-screen keyboard (#137); it takes every input until it closes.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEditing))]
+    public partial TextEditorViewModel? Editor { get; protected set; }
+
+    public bool IsEditing => Editor is not null;
 
     /// <summary>
     /// A row is lifted and moves with ▲ ▼ (#136): the footer names only that, and the mouse passing over rows doesn't take
@@ -121,7 +134,8 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
         {
             row.Pointed = r =>
             {
-                if (!IsReordering)
+                // A lifted row or a text being written keeps the focus where it is.
+                if (!IsReordering && !IsEditing)
                 {
                     FocusAt(Rows.IndexOf(r));
                 }

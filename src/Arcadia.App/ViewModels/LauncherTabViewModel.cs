@@ -1,7 +1,6 @@
 using Arcadia.App.Services;
 using Arcadia.Core.Library;
 using Arcadia.Launchers.Abstractions;
-using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -10,16 +9,23 @@ namespace Arcadia.App.ViewModels;
 /// <summary>A launcher tab in the header.</summary>
 public partial class LauncherTabViewModel : ViewModelBase
 {
-    public LauncherTabViewModel(LauncherLibrary library, Action<LauncherTabViewModel> select)
+    public LauncherTabViewModel(LauncherLibrary library, LauncherBadge badge, Action<LauncherTabViewModel> select)
     {
         Launcher = library.Launcher;
+        Badge = badge;
         Games = library.Games;
         IsFound = library.IsFound;
-        TileBrush = Formatting.LauncherTileBrush(Launcher.Id);
         SelectCommand = new RelayCommand(() => select(this));
     }
 
-    public LauncherInfo Launcher { get; }
+    /// <summary>Replaced when the user renames the launcher or gives it another keyword (#137).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Name))]
+    public partial LauncherInfo Launcher { get; set; }
+
+    /// <summary>Its logo (#138); replaced when the user picks another or renames it.</summary>
+    [ObservableProperty]
+    public partial LauncherBadge Badge { get; set; }
 
     /// <summary>Replaced when the library is rescanned, e.g. after an installation.</summary>
     [ObservableProperty]
@@ -34,12 +40,7 @@ public partial class LauncherTabViewModel : ViewModelBase
 
     public string Name => Launcher.DisplayName;
 
-    public string Monogram => Launcher.DisplayName[..1];
-
     public int Count => Games.Count;
-
-    /// <summary>Placeholder until launcher logos (default or user-uploaded) are supported.</summary>
-    public IBrush TileBrush { get; }
 
     [ObservableProperty]
     public partial bool IsSelected { get; set; }

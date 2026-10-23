@@ -31,6 +31,7 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Svg.Skia" Version="5.1.1" />
     <!-- Keep in step with the vpk tool in .config/dotnet-tools.json. -->
     <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>

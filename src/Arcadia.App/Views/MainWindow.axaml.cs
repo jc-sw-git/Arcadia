@@ -173,6 +173,18 @@ public partial class MainWindow : Window
             return;
         }
 
+        // A text being written in the settings (#137): keys that type nothing act on it, the rest arrive as text.
+        if (_viewModel?.Settings?.Selected.Editor is { } editor)
+        {
+            if (editor.HandleKey(e.Key))
+            {
+                Services.AppLog.Write($"Taste: {e.Key} → Texteingabe");
+                e.Handled = true;
+            }
+
+            return;
+        }
+
         if (_viewModel is { IsSearchShown: false } && UiActionMap.TabNumber(e.Key, e.KeyModifiers) is { } tab)
         {
             Services.AppLog.Write($"Taste: {e.Key} → Launcher {tab + 1}");
@@ -241,13 +253,16 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// On the settings page Q/E switch the category as LB/RB do, without Shift for now (#15); LT/RT have nothing to turn
-    /// there. Shift+W/S (and Page Up/Down) scroll the info panel as RS does.
+    /// On the settings page Shift+Q/E switch the category as LB/RB do and Q/E the tabs inside one as LT/RT do, e.g. a
+    /// launcher's page to the next launcher (#137), as in the library (owner, 2026-10-23). Shift+W/S (and Page Up/Down)
+    /// scroll the info panel as RS does.
     /// </summary>
     private static UiAction? SettingsActionFor(KeyEventArgs e) => (e.Key, e.KeyModifiers) switch
     {
-        (Key.Q, KeyModifiers.None) => UiAction.PreviousTab,
-        (Key.E, KeyModifiers.None) => UiAction.NextTab,
+        (Key.Q, KeyModifiers.Shift) => UiAction.PreviousTab,
+        (Key.E, KeyModifiers.Shift) => UiAction.NextTab,
+        (Key.Q, KeyModifiers.None) => UiAction.PreviousPage,
+        (Key.E, KeyModifiers.None) => UiAction.NextPage,
         (Key.W, KeyModifiers.Shift) or (Key.PageUp, _) => UiAction.SecondaryUp,
         (Key.S, KeyModifiers.Shift) or (Key.PageDown, _) => UiAction.SecondaryDown,
         _ => null,
@@ -361,6 +376,13 @@ public partial class MainWindow : Window
 
     private void OnTextInput(object? sender, TextInputEventArgs e)
     {
+        if (_viewModel?.Settings?.Selected.Editor is { } editor && !string.IsNullOrEmpty(e.Text))
+        {
+            editor.Type(e.Text);
+            e.Handled = true;
+            return;
+        }
+
         if (_viewModel is { IsSearchShown: true } && !string.IsNullOrEmpty(e.Text))
         {
             _viewModel.TypeInSearch(e.Text);

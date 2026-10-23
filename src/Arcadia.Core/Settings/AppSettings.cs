@@ -38,6 +38,9 @@ public sealed record AppSettings
     /// </summary>
     public IReadOnlyList<string>? ActiveLaunchers { get; init; }
 
+    /// <summary>Name, search keyword, logo and folder the user gave a launcher (#137, #138), by <see cref="LauncherInfo.Id"/>.</summary>
+    public IReadOnlyDictionary<string, LauncherPreferences> Launchers { get; init; } = new Dictionary<string, LauncherPreferences>();
+
     /// <summary>The <see cref="LauncherInfo.Id"/> of the tab Arcadia opens with; null for the first tab.</summary>
     public string? LastTabLauncherId { get; init; }
 
@@ -72,6 +75,27 @@ public sealed record AppSettings
         MouseMode = (MouseMode ?? new MouseModeSettings()).WithValidValues(),
         ReturnWithView = (ReturnWithView ?? new ReturnWithViewSettings()).WithValidValues(),
     };
+
+    /// <summary>What the user changed about the launcher; nothing changed gives an empty entry.</summary>
+    public LauncherPreferences PreferencesOf(string launcherId) =>
+        (Launchers ?? new Dictionary<string, LauncherPreferences>()).GetValueOrDefault(launcherId) ?? new LauncherPreferences();
+
+    /// <summary>Changes what the user set for the launcher; an entry left with nothing set is removed.</summary>
+    public AppSettings WithLauncherPreferences(string launcherId, Func<LauncherPreferences, LauncherPreferences> change)
+    {
+        var launchers = new Dictionary<string, LauncherPreferences>(Launchers ?? new Dictionary<string, LauncherPreferences>(), StringComparer.Ordinal);
+        var changed = change(PreferencesOf(launcherId));
+        if (changed.IsEmpty)
+        {
+            launchers.Remove(launcherId);
+        }
+        else
+        {
+            launchers[launcherId] = changed;
+        }
+
+        return this with { Launchers = launchers };
+    }
 
     /// <summary>
     /// Whether SISR should run while <paramref name="game"/> runs. Without an override it runs for

@@ -1130,7 +1130,7 @@ Verlauf:
       „Beenden des Mausmodus in Spielen erzwingen“ noch einmal „Standardeinstellung bei „Individuell““, unter „Mit ⧉
       zurück zu Arcadia“ die „Haltedauer“. Fokus, Hover und Klick gehen wie vorher. · E2E: nein (Optik)
 
-A auf einem Launcher öffnet seine Detailseite erst mit #137.
+A auf einem Launcher öffnet seine Seite (#137).
 
 Verlauf:
 
@@ -1143,6 +1143,83 @@ Verlauf:
 | T136-13 | 2026-10-22 | Claude | wie oben | ⚠️ Boxen in „Launcher“ und „Controller“, Einrückung in zwei Stufen gesehen | Lauf am PC des Owners |
 | T136-10 | 2026-10-22 | Claude | wie oben | ⚠️ Unter Linux ist SISR nicht verfügbar, Lampe nur gebaut, nicht gesehen | Lauf am PC des Owners |
 | T136-9 | 2026-10-22 | Claude | wie oben, Demo-Zahlen lokal auf 1.045 Spiele aus 4 Launchern erhöht | ⚠️ 426 ms eingelesen (außerhalb des UI-Threads), 37 ms angezeigt; kein Release-Build, nicht der PC des Owners | Messung am PC des Owners |
+
+## #137 Launcher bearbeiten: Name und Such-Kürzel, eine Seite je Launcher
+
+- [ ] **T137-1** In Einstellungen → „Launcher“ öffnen A (Leertaste) oder ein Klick auf eine Zeile die Seite des
+      Launchers: oben Logo, „Launcher / Name“ und Zustand, daneben die Nachbarn der Liste. Gruppen „Allgemein“ (Aktiv,
+      Name im Tab, Such-Kürzel, Logo) und „Bibliothek“ (Ordner, falls nötig, Neu einlesen). B (Esc) führt zurück zur
+      Liste, der Launcher der Seite hat den Fokus; ebenso ein Klick auf „Launcher“ über dem Namen. Esc/B dort und Q/E
+      bzw. LT/RT an den Nachbarn stehen als Tasten-Chip (Controller rund, Tastatur eckig), nicht als bloßer Text. · E2E: ja
+- [ ] **T137-2** LT/RT (Q/E, ein Klick auf einen Nachbarn) blättern zum vorigen/nächsten Launcher in der
+      Reihenfolge der Liste, am Ende wieder zum ersten. Mit nur einem Launcher gibt es keine Nachbarn. ⇧ Q / ⇧ E (LB/RB)
+      wechseln in allen Einstellungen die Kategorie, Q/E die Tabs innerhalb einer, wie in der Bibliothek. Der Rahmen beim
+      Überfahren eines Nachbarn ist ganz zu sehen, auch rechts. · E2E: ja
+- [ ] **T137-3** „Aktiv“ auf der Seite schaltet wie in der Liste; ein nicht gefundener lässt sich nicht einschalten. Der
+      Kopf zeigt „Aktiv · Tab N“, „Nicht aktiv“ oder „Nicht installiert“. · E2E: ja
+- [ ] **T137-4** A (Leertaste, ein Klick) auf „Name im Tab“ öffnet die Bildschirmtastatur unter der Seite (ohne ↹ und die
+      Randtaste), das Feld zeigt den Text mit Cursor; die Leertaste, die die Tastatur öffnet, tippt kein Leerzeichen.
+      Mit dem Controller: Steuerkreuz und A tippen, X löscht, Y Leerzeichen, LB/RB ⇧/AltGr, R3 Layout, ≡ übernimmt, B
+      verwirft. Mit der echten Tastatur: tippen, Pfeile/Pos1/Ende bewegen den Cursor, Enter übernimmt, Esc verwirft. Die
+      Maus fokussiert solange keine andere Zeile. Der Footer nennt die Tasten der Tastatur. · E2E: ja
+- [ ] **T137-5** Ein übernommener Name steht sofort im Tab, in der Liste, in den Filter-Chips und Treffern der Suche, in
+      Vorschau und Detailseite; nach einem Neustart noch. Leer übernommen gilt wieder der Standardname. · E2E: ja
+- [ ] **T137-6** „Such-Kürzel“: das Feld zeigt „/“ davor. Ein Kürzel, das ein anderer Launcher schon hat, mit „-“, mit
+      Großbuchstaben/Sonderzeichen oder zu lang zeigt sofort rot den Grund; übernommen bleibt das alte und ein Toast
+      sagt warum. Ein gültiges gilt sofort in der Suche (`/kürzel begriff`) und im Chip. Die Bildschirmtastatur des
+      Kürzels bietet nur gültige Tasten: Sonderzeichen, Leertaste und ⇧ (bei DE) sind ausgegraut, ihr Zeichen bleibt
+      sichtbar, bei DE auch AltGr (µ zählt nicht); Steuerkreuz und Stick überspringen sie, Y tippt kein Leerzeichen, LB schaltet nicht um; bei FR bleibt ⇧
+      an (Ziffern), auf ⇧ sind dann nur die Ziffern wählbar. Der Name im Tab bietet alle Tasten. · E2E: ja
+- [ ] **T137-7** Das Infopanel erklärt die fokussierte Zeile; über „Aktiv“, „Name im Tab“ und „Logo“ steht die Vorschau
+      „Launcher-Reihenfolge“ (Untertitel „Eine Vorschau der Reihenfolge, in der die Launcher aufgeführt werden“; der in
+      der Bibliothek gewählte Tab ist darin nicht weiß, nur der Launcher der Seite umrandet), beim Kürzel ein Beispiel. „Neu einlesen“ ist für einen inaktiven oder nicht gefundenen Launcher
+      ausgegraut (Grund unter dem Namen), sonst liest es nur diesen Launcher ein (`arcadia.log`: „Neu eingelesen für …“) und
+      nennt danach Spiele und Zeit. „Neu einlesen“ auf einem leeren Tab ebenso. · E2E: ja
+- [ ] **T137-8** Alles aus T137-1 bis T137-7 allein mit dem Controller, mit einer Hand an der Tastatur und allein mit der
+      Maus. · E2E: ja
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T137-1 bis T137-7 | 2026-10-23 | Claude | Branch `feat/launcher-bearbeiten-und-logos-137-138`, Debug, Linux in der Cloud mit Xvfb 1920×1080, `--demo`-Bibliothek, Tasten und Klicks über xdotool | ⚠️ Seite per Leertaste und Klick, Blättern mit ⇧ E, zurück mit Esc (Fokus auf dem Launcher), Name mit der Tastatur geändert (Tabs, Chips, Treffer folgen, keine Leertaste getippt), belegtes Kürzel „/ubi“ rot und abgelehnt, `/gog` sucht mit neuem Namen; kein echter Controller | Lauf am PC des Owners |
+| T137-8 | 2026-10-23 | Claude | wie oben | ⚠️ Nur Tastatur und Maus; Controller nur über die Tasten, die seine Aktionen auslösen | Lauf am PC des Owners |
+
+## #138 Launcher-Logos, Ordnerwahl und Windows-Dialoge mit dem Controller
+
+- [ ] **T138-1** Steam und Epic zeigen ihr Logo statt des Anfangsbuchstabens: im Tab (hell auf dunkel, dunkel auf dem
+      gewählten Tab), in der Liste, in Vorschau und Detailseite, auf den Treffern der Suche (auf dunklem Grund) und in
+      den Filter-Chips. Launcher ohne Logo behalten Buchstabe und Kachel. · E2E: ja
+- [ ] **T138-2** „Logo“ ist ein Knopf „Hochladen …“ (A, Leertaste, Klick), kein ◀ ▶-Schalter; er öffnet die Dateiwahl von
+      Windows. Ein PNG, SVG, ICO oder WebP bis 2 MB ersetzt das Logo überall sofort, ins 24 × 24-Feld eingepasst
+      (Seitenverhältnis bleibt); nach einem Neustart noch, auch wenn die Originaldatei gelöscht ist. Eine kaputte oder zu
+      große Datei: Toast „Logo nicht übernommen: …“, das alte bleibt. Nur mit eigenem Logo steht eingerückt darunter
+      „Standardlogo“ mit „Wiederherstellen“; das stellt das Standardlogo wieder her, die Zeile verschwindet und der Fokus
+      steht wieder auf „Logo“. · E2E: nein (Windows-Dialog)
+- [ ] **T138-3** Findet Arcadia einen Launcher nicht, steht auf seiner Seite „Ordner“ mit Warnung. „Ordner wählen …“
+      öffnet die Ordnerwahl; ein Ordner ohne den Launcher: Toast „Dort liegt kein Steam: Arcadia sucht …“, nichts
+      ändert sich. Der richtige Ordner (für Steam mit `steam.exe` und `steamapps`, oder `steamapps` selbst): der Launcher
+      wird gefunden, eingeschaltet und eingelesen; nach einem Neustart noch. Ein Launcher, den Arcadia selbst findet,
+      zeigt die Zeile nicht. · E2E: nein (Windows-Dialog)
+- [ ] **T138-4** Einstellungen → „Controller“ → Mausmodus: „Bei System-Dialogfenstern einschalten“ steht unter
+      „Mausmodus“, ausgegraut bei „Aus“, gilt für „Von Hand“ und „Automatisch“. An und mit dem Controller einen Dialog
+      geöffnet (Logo, Ordner): der Mausmodus ist an, solange der Dialog offen ist, und danach wieder aus (war er vorher
+      an, bleibt er an). Aus, oder mit Maus/Tastatur geöffnet: der Mausmodus bleibt, wie er ist. · E2E: nein
+      (Windows-Dialog)
+- [ ] **T138-5** Logos in Tabs, Liste und Suche sehen mit eigenen Bildern (breit, hoch, transparent, SVG) sauber aus,
+      nichts ragt aus seinem Feld; ein inaktiver Launcher zeigt sein Logo blasser. · E2E: nein (Optik)
+
+Verlauf:
+
+| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+|---|---|---|---|---|---|
+| T138-1, T138-5 | 2026-10-23 | Claude | Branch `feat/launcher-bearbeiten-und-logos-137-138`, Debug, Linux in der Cloud mit Xvfb 1920×1080, `--demo`-Bibliothek | ⚠️ Steam- und Epic-Logo in der Liste, Logos in Tabs, Chips, Treffern und Detailseite gesehen; breites PNG eingepasst | Lauf am PC des Owners |
+| T138-2 | 2026-10-23 | Claude | wie oben, GTK-Dateiwahl statt der von Windows | ⚠️ PNG und SVG übernommen, kaputte Datei abgelehnt (Toast), Logo nach Neustart noch da, ◀ stellt den Standard her und löscht die Kopie | Lauf am PC des Owners |
+| T138-3 | 2026-10-23 | Claude | wie oben, gefälschte Steam-Ordner (`steam.exe` + `steamapps`) | ⚠️ Ordner ohne Steam abgelehnt, mit Steam angenommen: Steam an, gefunden, eingelesen (0 Spiele) | Lauf am PC des Owners |
+| T138-2, T137-7 (Juris Feedback) | 2026-10-23 | Claude | wie oben | ⚠️ „Logo“ als Knopf „Hochladen …“, eingerückte Zeile „Standardlogo“ erscheint mit eigenem Logo und verschwindet nach „Wiederherstellen“ (Fokus zurück auf „Logo“); „Jetzt einlesen“ liest nur GOG (5 ms, Toast „31 Spiele in GOG Galaxy gefunden.“), dass die anderen nicht gelesen werden nur per Test | Lauf am PC des Owners |
+| T137-1, T137-2 (Juris Feedback) | 2026-10-23 | Claude | wie oben | ⚠️ Klick auf „Launcher“ über dem Namen führt zur Liste (Fokus auf dem Launcher), E blättert zum nächsten Launcher, ⇧ E/⇧ Q wechseln die Kategorie, Rahmen des rechten Nachbarn beim Überfahren ganz zu sehen | Lauf am PC des Owners |
+| T137-6 (Juris Feedback) | 2026-10-23 | Claude | wie oben | ⚠️ Tastatur des Kürzels (DE): Sonderzeichen, Leertaste und ⇧ ausgegraut, Buchstaben, Umlaute, ß und Ziffern wählbar; AltGr aus, seit µ nicht mehr zählt (Juri: ein Sonderzeichen); das Überspringen mit dem Steuerkreuz nicht gesehen (kein Controller), es nutzt die schon getestete Sperre ausgegrauter Tasten | Lauf am PC des Owners |
+| T138-4 | 2026-10-23 | Claude | wie oben | ⚠️ Zeile, Ausgrauen bei „Aus“ gesehen; das Einschalten beim Dialog nur per Test (`MouseMode`), unter Linux kein Mausmodus | Lauf am PC des Owners |
 
 ## Grundgerüst (ohne Issue)
 

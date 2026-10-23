@@ -22,19 +22,21 @@ public sealed partial class TextEditorViewModel : ViewModelBase, IKeyboardTarget
     /// <param name="problemOf">Why a text can't be taken, or null if it can.</param>
     /// <param name="take">Takes a text without problem; false if it couldn't, and the editor stays open.</param>
     /// <param name="close">The editor is done, the text taken or dropped.</param>
+    /// <param name="takes">The characters the text may hold; the on-screen keyboard greys out the others. Null: all.</param>
     public TextEditorViewModel(
         string text,
         Func<string, string?> problemOf,
         Func<string, bool> take,
         Action close,
-        Func<IKeyboardTarget, OnScreenKeyboardViewModel> createKeyboard)
+        Func<IKeyboardTarget, OnScreenKeyboardViewModel> createKeyboard,
+        Func<char, bool>? takes = null)
     {
         _text = TextWithCaret.AtEnd(text);
         _problemOf = problemOf;
         _take = take;
         _close = close;
         Keyboard = createKeyboard(this);
-        Keyboard.Configure(key => key.Kind is BoardKeyKind.Tab or BoardKeyKind.Dock ? BoardKeyState.Hidden : BoardKeyState.Shown);
+        Keyboard.Configure(key => key.Kind is BoardKeyKind.Tab or BoardKeyKind.Dock ? BoardKeyState.Hidden : BoardKeyState.Shown, takes);
         Problem = problemOf(text);
     }
 

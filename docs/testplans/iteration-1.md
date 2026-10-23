@@ -1163,7 +1163,10 @@ Verlauf:
       Vorschau und Detailseite; nach einem Neustart noch. Leer übernommen gilt wieder der Standardname. · E2E: ja
 - [ ] **T137-6** „Such-Kürzel“: das Feld zeigt „/“ davor. Ein Kürzel, das ein anderer Launcher schon hat, mit „-“, mit
       Großbuchstaben/Sonderzeichen oder zu lang zeigt sofort rot den Grund; übernommen bleibt das alte und ein Toast
-      sagt warum. Ein gültiges gilt sofort in der Suche (`/kürzel begriff`) und im Chip. · E2E: ja
+      sagt warum. Ein gültiges gilt sofort in der Suche (`/kürzel begriff`) und im Chip. Die Bildschirmtastatur des
+      Kürzels bietet nur gültige Tasten: Sonderzeichen, Leertaste und ⇧ (bei DE) sind ausgegraut, ihr Zeichen bleibt
+      sichtbar, Steuerkreuz und Stick überspringen sie, Y tippt kein Leerzeichen, LB schaltet nicht um; bei FR bleibt ⇧
+      an (Ziffern), auf ⇧ sind dann nur die Ziffern wählbar. Der Name im Tab bietet alle Tasten. · E2E: ja
 - [ ] **T137-7** Das Infopanel erklärt die fokussierte Zeile; über „Aktiv“, „Name im Tab“ und „Logo“ steht die Vorschau
       „Tab-Leiste“, beim Kürzel ein Beispiel. „Neu einlesen“ ist für einen inaktiven oder nicht gefundenen Launcher
       ausgegraut (Grund unter dem Namen), sonst liest es nur diesen Launcher ein (`arcadia.log`: „Neu eingelesen für …“) und
@@ -1210,6 +1213,7 @@ Verlauf:
 | T138-2 | 2026-10-23 | Claude | wie oben, GTK-Dateiwahl statt der von Windows | ⚠️ PNG und SVG übernommen, kaputte Datei abgelehnt (Toast), Logo nach Neustart noch da, ◀ stellt den Standard her und löscht die Kopie | Lauf am PC des Owners |
 | T138-3 | 2026-10-23 | Claude | wie oben, gefälschte Steam-Ordner (`steam.exe` + `steamapps`) | ⚠️ Ordner ohne Steam abgelehnt, mit Steam angenommen: Steam an, gefunden, eingelesen (0 Spiele) | Lauf am PC des Owners |
 | T138-2, T137-7 (Juris Feedback) | 2026-10-23 | Claude | wie oben | ⚠️ „Logo“ als Knopf „Hochladen …“, eingerückte Zeile „Standardlogo“ erscheint mit eigenem Logo und verschwindet nach „Wiederherstellen“ (Fokus zurück auf „Logo“); „Jetzt einlesen“ liest nur GOG (5 ms, Toast „31 Spiele in GOG Galaxy gefunden.“), dass die anderen nicht gelesen werden nur per Test | Lauf am PC des Owners |
+| T137-6 (Juris Feedback) | 2026-10-23 | Claude | wie oben | ⚠️ Tastatur des Kürzels (DE): Sonderzeichen, Leertaste und ⇧ ausgegraut, Buchstaben, Umlaute, ß und Ziffern wählbar; AltGr bleibt an, weil µ ein Kleinbuchstabe ist; das Überspringen mit dem Steuerkreuz nicht gesehen (kein Controller), es nutzt die schon getestete Sperre ausgegrauter Tasten | Lauf am PC des Owners |
 | T138-4 | 2026-10-23 | Claude | wie oben | ⚠️ Zeile, Ausgrauen bei „Aus“ gesehen; das Einschalten beim Dialog nur per Test (`MouseMode`), unter Linux kein Mausmodus | Lauf am PC des Owners |
 
 ## Grundgerüst (ohne Issue)

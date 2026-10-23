@@ -480,7 +480,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
                 return true;
             },
             () => CloseEditor(row, editor!),
-            _host.CreateKeyboard);
+            _host.CreateKeyboard,
+            // A keyword offers only the keys it may hold (owner, 2026-10-23); a name takes any character.
+            isName ? null : LauncherNames.IsKeywordCharacter);
         row.Editor = editor;
         Editor = editor;
     }

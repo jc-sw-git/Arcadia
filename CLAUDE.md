@@ -194,7 +194,8 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   launcher before or after it in the list's order, wrapping. Groups "Allgemein": Aktiv, "Name im Tab", "Such-Kürzel",
   "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only active and found). Name and keyword are written with the shared
   on-screen keyboard below the page (without ↹ and the edge key; the search's buttons, ≡/Enter take, B/Esc drop); a
-  problem (keyword taken, "-", too long) shows in red while typing, taken anyway the old value stays and a toast says
+  keyword's keyboard offers only the keys it may hold (lower-case letters and digits); a
+  problem (keyword taken, too long) shows in red while typing, taken anyway the old value stays and a toast says
   why; empty means the launcher's own again. "Logo" is a button, not a choice (owner, 2026-10-23):
   "Hochladen …" opens the file dialog (PNG, SVG, ICO, WebP up to 2 MB, copied); only while an own logo is used an indented
   row "Standardlogo" below it offers "Wiederherstellen". In the tab a logo is fitted into 24 × 24 px. "Neu einlesen" reads
@@ -244,7 +245,10 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   the keys where the real one has them (DE, UK, FR, ES ISO with the tall Enter, US ANSI), ⌫ ↹ ↵ ⇧ space and AltGr
   with symbol and name (the name centred in the key, symbol or icon at its left edge, the button at its right), caps lock a blank key the focus skips, no Ctrl/Alt/Win; a right block with "Layout: DE" (R3),
   "Nach oben/unten" (⧉), "Ausblenden" (B) and the arrows. Whoever shows it decides what it types into and may grey
-  out or leave out keys at any time (`IKeyboardTarget`, `Configure`); a left-out key leaves its place empty. With
+  out or leave out keys at any time (`IKeyboardTarget`, `Configure`); a left-out key leaves its place empty. It may also
+  name the characters its text takes: then every key whose character on the shown level isn't one is greyed out (symbol
+  still shown, the focus passes over it), the space bar too, and ⇧ or AltGr when their level offers none (owner, 2026-10-23;
+  e.g. a launcher's keyword). With
   the controller the D-pad (left stick) moves over the keys, passing over empty, greyed-out and left-out ones: left/right
   at a row's last key go on to the nearest key wholly beside it in another row (² on AltGr: left to ↹), up/down to the
   nearest key above or below, so a far key in the next row doesn't win over one right below in the row after (↹ on

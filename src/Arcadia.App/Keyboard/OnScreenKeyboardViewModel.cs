@@ -34,6 +34,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
     private readonly RepeatGesture _erase;
     private readonly Dictionary<BoardKey, BoardKeyViewModel> _keyViews = [];
     private Func<BoardKey, BoardKeyState> _stateOf = _ => BoardKeyState.Shown;
+    private Func<char, bool> _takes = _ => true;
     private FullKeyboard _board;
     private KeyboardButton _moveDirection;
     private int _row = 2;
@@ -82,9 +83,14 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
     public BoardKeyViewModel FocusedKey => KeyAt(_row, _column);
 
     /// <summary>Greys out or leaves out keys; asked again for every key whenever the layout changes.</summary>
-    public void Configure(Func<BoardKey, BoardKeyState> stateOf)
+    /// <param name="takes">
+    /// The characters the text may hold, e.g. a launcher's keyword (#137); null: all. A key whose character on the shown
+    /// level isn't one is greyed out, the space bar too, and shift or AltGr when their level offers none.
+    /// </param>
+    public void Configure(Func<BoardKey, BoardKeyState> stateOf, Func<char, bool>? takes = null)
     {
         _stateOf = stateOf;
+        _takes = takes ?? (_ => true);
         ShowStates();
         ShowLevel();
     }
@@ -380,9 +386,25 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         {
             var state = _stateOf(key.Key);
             key.IsHidden = state == BoardKeyState.Hidden;
-            key.IsUnavailable = state == BoardKeyState.Disabled || (key.Key.Kind == BoardKeyKind.AltGr && !_board.Layout.HasAltGr);
+            key.IsUnavailable = state == BoardKeyState.Disabled || !Offers(key.Key);
         }
     }
+
+    /// <summary>
+    /// Whether a key can type something the text takes on the shown level. A character key without a character there is
+    /// skipped anyway, but not greyed out.
+    /// </summary>
+    private bool Offers(BoardKey key) => key.Kind switch
+    {
+        BoardKeyKind.Character => key.Cap!.On(_levels.Level) is not { } character || _takes(character),
+        BoardKeyKind.Space => _takes(' '),
+        BoardKeyKind.Shift => OffersLevel(KeyLevel.Shift),
+        BoardKeyKind.AltGr => _board.Layout.HasAltGr && OffersLevel(KeyLevel.AltGr),
+        _ => true,
+    };
+
+    private bool OffersLevel(KeyLevel level) =>
+        _board.Keys.Any(k => k.Kind == BoardKeyKind.Character && k.Cap!.On(level) is { } character && _takes(character));
 
     /// <summary>
     /// The labels follow the level like on Steam's keyboard: on the normal level the character with the
@@ -391,6 +413,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
     private void ShowLevel()
     {
         OnPropertyChanged(nameof(Level));
+        ShowStates();
         var level = _levels.Level;
         foreach (var key in Keys)
         {

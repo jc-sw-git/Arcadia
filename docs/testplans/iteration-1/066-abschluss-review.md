@@ -10,6 +10,9 @@ Nur die Korrekturen aus dem Review; die Befunde selbst stehen im Issue.
 - [ ] **T66-3** Ist `settings.json` beim Start gesperrt (z. B. in einem Editor exklusiv geöffnet), startet Arcadia mit den
       Standardwerten und überschreibt die Datei nicht; beim nächsten Start ohne Sperre sind alle Einstellungen wieder da. · E2E: nein (Dateisperre unter Windows)
 - [ ] **T66-4** „Nach Updates suchen“ ohne Netzwerk endet nach höchstens 30 s mit einer Meldung, statt endlos zu suchen. · E2E: nein (installierter Build ohne Netzwerk)
+- [ ] **T66-5** Wechselt man bei laufendem Arcadia zu einem anderen Programm (z. B. Browser) und zu einem Spiel, nennen die
+      Zeilen `Vordergrund: …` in `arcadia.log` nur „Arcadia“, „Spiel“, „kein Spiel“ oder „kein Fenster“, nie den
+      Programmnamen; ein Wechsel zwischen zwei Nicht-Spielen schreibt keine neue Zeile. · E2E: nein (echte Fensterwechsel unter Windows)
 
 Verlauf:
 
@@ -18,3 +21,4 @@ Verlauf:
 | T66-1 | 2026-10-23 | Claude | Branch `td/abschluss-review-iteration-1-66`, Linux, Release, Xvfb, `--demo`; Ersetzung per Unit-Test (`LogPrivacyTests`) | ✅ Version, OS und „nicht installiert“ im Log | Windows-Pfade am PC des Owners |
 | T66-2 | 2026-10-23 | Claude | dito, Container ohne GPU (Software-Rendering) | ✅ 1.001 Spiele: 2,0 s, 223 MB; 5.001 Spiele: 2,0 s, 237 MB (Einlesen 0,35 s, Anzeigen 0,06 s). Suche 0,2–0,5 ms pro Taste, Sortieren 4–6 ms bei 5.001 Spielen | Messung am PC des Owners |
 | T66-3 | 2026-10-23 | Claude | dito, Unit-Test mit exklusiv gesperrter Datei (`SettingsServiceTests`) | ✅ Datei unverändert, kurze Sperre wird abgewartet | Sperre unter Windows am PC des Owners |
+| T66-5 | 2026-10-23 | Claude | Branch `td/vordergrund-log-nur-spiel-66`, Linux, nur Build und Tests (unter Linux gibt es keinen Windows-Vordergrund) | ➖ nicht ausführbar | Fensterwechsel am PC des Owners |

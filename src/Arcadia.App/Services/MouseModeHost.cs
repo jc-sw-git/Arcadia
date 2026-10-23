@@ -35,6 +35,9 @@ public sealed class MouseModeHost : IDisposable
     /// <summary>This often Arcadia checks whether it is in front and how much of Steam's desktop layout to drop.</summary>
     private static readonly TimeSpan DesktopFilterCheckInterval = TimeSpan.FromMilliseconds(250);
 
+    /// <summary>How the foreground log names Arcadia itself.</summary>
+    private const string ArcadiaInFront = "Arcadia";
+
     private readonly IGamepadSource _gamepad;
     private readonly SettingsService _settings;
     private readonly MainWindow _window;
@@ -69,7 +72,7 @@ public sealed class MouseModeHost : IDisposable
     private bool _ownsForeground;
     private nint _windowHandle;
     private DesktopFilterScope _desktopFilterScope;
-    private int? _loggedForegroundId;
+    private string? _loggedForeground;
     private bool? _loggedActive;
     private int? _lastForegroundId;
     private GameFolders? _lastForegroundFolders;
@@ -265,20 +268,23 @@ public sealed class MouseModeHost : IDisposable
     /// </summary>
     private void LogForegroundChange()
     {
-        var foreground = ProcessWatch.ForegroundProcessId();
+        var foreground = DescribeForeground();
         var active = _window.IsActive;
-        if (foreground == _loggedForegroundId && active == _loggedActive)
+        if (foreground == _loggedForeground && active == _loggedActive)
         {
             return;
         }
 
-        _loggedForegroundId = foreground;
+        _loggedForeground = foreground;
         _loggedActive = active;
-        var mismatch = active != (foreground == Environment.ProcessId) ? " (widerspricht dem Vordergrund)" : string.Empty;
-        AppLog.Write($"Vordergrund: {DescribeForeground()}; Arcadia laut Fenster {(active ? "aktiv" : "inaktiv")}{mismatch}");
+        var mismatch = active != (foreground == ArcadiaInFront) ? " (widerspricht dem Vordergrund)" : string.Empty;
+        AppLog.Write($"Vordergrund: {foreground}; Arcadia laut Fenster {(active ? "aktiv" : "inaktiv")}{mismatch}");
     }
 
-    /// <summary>The foreground process's file name and kind, for the log; no paths (they may contain the user's name).</summary>
+    /// <summary>
+    /// Only the kind of window in front, never the program: which programs someone uses is private, and the log only
+    /// needs to show how Arcadia and a game took turns (owner, 2026-10-23).
+    /// </summary>
     private string DescribeForeground()
     {
         if (ProcessWatch.ForegroundProcessId() is not { } id)
@@ -288,11 +294,10 @@ public sealed class MouseModeHost : IDisposable
 
         if (id == Environment.ProcessId)
         {
-            return "Arcadia";
+            return ArcadiaInFront;
         }
 
-        var name = ProcessWatch.PathOf(id) is { } path ? Path.GetFileName(path) : $"Prozess {id}";
-        return $"{name} ({(ForegroundGame.IsInFront(_viewModel.GameFolders, _viewModel.LaunchedGames) ? "Spiel" : "kein Spiel")})";
+        return GameInFront() ? "Spiel" : "kein Spiel";
     }
 
     private void OnSwitched(MouseModeSwitch change)

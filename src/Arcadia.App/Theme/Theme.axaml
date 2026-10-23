@@ -1659,6 +1659,26 @@
     <Setter Property="BoxShadow" Value="{StaticResource LiftedRing}" />
   </Style>
 
+  <!-- The first start's "Fertig" (#139): ≡ ends the question from any row, so it is always drawn ready, the width of the
+       info panel. -->
+  <Style Selector="Button.finish">
+    <Setter Property="Height" Value="64" />
+    <Setter Property="CornerRadius" Value="32" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.finish:pointerover">
+    <Setter Property="Background" Value="{StaticResource AccentHover}" />
+  </Style>
+  <Style Selector="Button.finish:disabled">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+
   <!-- Its info panel: a note, the tab strip in miniature, the launcher's head and lines of facts. -->
   <Style Selector="Border.infoNote">
     <Setter Property="Background" Value="{StaticResource NoteSurface}" />

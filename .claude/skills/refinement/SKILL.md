@@ -22,7 +22,7 @@ open question of the same round waits for the next round.
 
 Cover, where they apply: the most likely player scenarios (controller first, B goes back), what happens
 on errors and with missing launchers or data, what is explicitly out of scope, and which DoD criteria
-are tricky for this work. Skip what `CLAUDE.md` or an earlier decision already settles.
+are tricky for this work. Skip what `CLAUDE.md`, `docs/product/` or an earlier decision already settles.
 
 Write in German, numbered, each with your recommendation, worded so "ja" accepts it:
 

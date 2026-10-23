@@ -1,0 +1,12 @@
+name: Doc sizes
+
+on:
+  pull_request:
+
+jobs:
+  doc-sizes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: CLAUDE.md and docs stay within their size limits
+        run: tools/ci/check-doc-sizes.sh

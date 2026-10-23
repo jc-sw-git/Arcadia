@@ -1149,7 +1149,8 @@ Verlauf:
 - [ ] **T137-1** In Einstellungen → „Launcher“ öffnen A (Leertaste) oder ein Klick auf eine Zeile die Seite des
       Launchers: oben Logo, „Launcher / Name“ und Zustand, daneben die Nachbarn der Liste. Gruppen „Allgemein“ (Aktiv,
       Name im Tab, Such-Kürzel, Logo) und „Bibliothek“ (Ordner, falls nötig, Neu einlesen). B (Esc) führt zurück zur
-      Liste, der Launcher der Seite hat den Fokus; ebenso ein Klick auf „Launcher“ über dem Namen. · E2E: ja
+      Liste, der Launcher der Seite hat den Fokus; ebenso ein Klick auf „Launcher“ über dem Namen. Esc/B dort und Q/E
+      bzw. LT/RT an den Nachbarn stehen als Tasten-Chip (Controller rund, Tastatur eckig), nicht als bloßer Text. · E2E: ja
 - [ ] **T137-2** LT/RT (Q/E, ein Klick auf einen Nachbarn) blättern zum vorigen/nächsten Launcher in der
       Reihenfolge der Liste, am Ende wieder zum ersten. Mit nur einem Launcher gibt es keine Nachbarn. ⇧ Q / ⇧ E (LB/RB)
       wechseln in allen Einstellungen die Kategorie, Q/E die Tabs innerhalb einer, wie in der Bibliothek. Der Rahmen beim

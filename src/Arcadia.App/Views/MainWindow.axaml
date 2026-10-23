@@ -1057,7 +1057,7 @@
                       <StackPanel Orientation="Horizontal" Spacing="6">
                         <Button Classes="plain neighbour breadcrumb" Margin="-6,0,0,0" Command="{Binding BackCommand}" ToolTip.Tip="Zurück zur Liste">
                           <StackPanel Orientation="Horizontal" Spacing="8">
-                            <ctl:KeyText Pad="B" Keys="Esc" />
+                            <ctl:KeyHint Pad="B" Keys="Esc" VerticalAlignment="Center" />
                             <TextBlock Text="Launcher" VerticalAlignment="Center" />
                           </StackPanel>
                         </Button>
@@ -1069,7 +1069,7 @@
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" IsVisible="{Binding HasNeighbours}">
                       <Button Classes="plain neighbour" Command="{Binding TurnBackCommand}" ToolTip.Tip="Voriger Launcher">
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                          <ctl:KeyText Pad="LT" Keys="Q" />
+                          <ctl:KeyHint Pad="LT" Keys="Q" VerticalAlignment="Center" />
                           <ctl:LauncherLogo Classes="neighbourLogo" Badge="{Binding Previous?.Badge}" Width="24" Height="24" VerticalAlignment="Center" />
                           <TextBlock Text="{Binding Previous?.Name, TargetNullValue=''}" VerticalAlignment="Center" />
                         </StackPanel>
@@ -1079,7 +1079,7 @@
                         <StackPanel Orientation="Horizontal" Spacing="10">
                           <ctl:LauncherLogo Classes="neighbourLogo" Badge="{Binding Next?.Badge}" Width="24" Height="24" VerticalAlignment="Center" />
                           <TextBlock Text="{Binding Next?.Name, TargetNullValue=''}" VerticalAlignment="Center" />
-                          <ctl:KeyText Pad="RT" Keys="E" />
+                          <ctl:KeyHint Pad="RT" Keys="E" VerticalAlignment="Center" />
                         </StackPanel>
                       </Button>
                     </StackPanel>

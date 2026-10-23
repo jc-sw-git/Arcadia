@@ -315,7 +315,9 @@ public partial class App : Application
                 AppLog.Write("Arcadia beendet.");
             };
 
-            AppLog.Write($"Arcadia gestartet: {string.Join(' ', args)}");
+            // Version and Windows build first: a bug report with only the log must say what it is about.
+            AppLog.Write($"Arcadia {updates.CurrentVersion} gestartet ({System.Runtime.InteropServices.RuntimeInformation.OSDescription}, "
+                + $"{(updates.IsInstalled ? "installiert" : "nicht installiert")}): {string.Join(' ', args)}");
             viewModel.LoadAsync().Forget("Bibliothek laden");
             viewModel.PollRunningGamesAsync().Forget("Laufende Spiele");
             updates.CheckIfDueAsync().Forget("Update-Prüfung");

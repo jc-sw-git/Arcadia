@@ -265,8 +265,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         IsLoading = false;
         ApplyLibraries(libraries);
 
-        // The scan runs off the UI thread; only showing it blocks the UI (#136 measures both).
-        AppLog.Write($"Bibliothek: {libraries.Sum(l => l.Games.Count)} Spiele aus {libraries.Count} Launchern in {scanned} ms eingelesen, in {watch.ElapsedMilliseconds - scanned} ms angezeigt");
+        // The scan runs off the UI thread; only showing it blocks the UI (#136 measures both). Time since the process
+        // started and memory are what the budgets in CLAUDE.md name (start < 2 s with 1,000 games, < 400 MB with 5,000).
+        using var process = System.Diagnostics.Process.GetCurrentProcess();
+        var sinceStart = (long)(DateTime.Now - process.StartTime).TotalMilliseconds;
+        AppLog.Write($"Bibliothek: {libraries.Sum(l => l.Games.Count)} Spiele aus {libraries.Count} Launchern in {scanned} ms eingelesen, "
+            + $"in {watch.ElapsedMilliseconds - scanned} ms angezeigt; {sinceStart} ms nach dem Start, {Environment.WorkingSet / (1024 * 1024)} MB Arbeitsspeicher");
     }
 
     /// <summary>

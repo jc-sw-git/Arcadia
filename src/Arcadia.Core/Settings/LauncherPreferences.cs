@@ -10,5 +10,6 @@ namespace Arcadia.Core.Settings;
 public sealed record LauncherPreferences(string? Name = null, string? Keyword = null, string? LogoFile = null, string? Folder = null)
 {
     /// <summary>Nothing changed: the entry can go.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool IsEmpty => Name is null && Keyword is null && LogoFile is null && Folder is null;
 }

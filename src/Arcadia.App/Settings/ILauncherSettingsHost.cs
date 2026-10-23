@@ -1,12 +1,20 @@
+using Arcadia.App.Keyboard;
+using Arcadia.App.Services;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 
 namespace Arcadia.App.Settings;
 
-/// <summary>What the launcher settings (#136) need from the library they configure.</summary>
+/// <summary>What the launcher settings (#136, #137, #138) need from the library they configure.</summary>
 public interface ILauncherSettingsHost
 {
     LauncherRegistry Launchers { get; }
+
+    /// <summary>The launchers' logos: the user's pictures and the launchers' own (#138).</summary>
+    LauncherLogos Logos { get; }
+
+    /// <summary>The file and folder dialogs; null until the window is there.</summary>
+    ISystemDialogs? Dialogs { get; }
 
     /// <summary>The launcher of the library's selected tab, or null.</summary>
     string? SelectedLauncherId { get; }
@@ -20,6 +28,18 @@ public interface ILauncherSettingsHost
     /// <summary>The active launchers or their order changed: tabs follow at once, a launcher switched on is read.</summary>
     void LauncherChoiceChanged();
 
+    /// <summary>A launcher's name, keyword or logo changed (#137, #138): tabs, covers and search show it at once.</summary>
+    void LauncherLooksChanged();
+
     /// <summary>X: reads every active launcher again ("Alle neu einlesen").</summary>
     void RescanLaunchers();
+
+    /// <summary>"Neu einlesen" on a launcher's page, or its folder was chosen (#138): reads it again and says what came of it.</summary>
+    void RescanLauncher(string launcherId);
+
+    /// <summary>The on-screen keyboard for a text of the settings, in the layout last chosen.</summary>
+    OnScreenKeyboardViewModel CreateKeyboard(IKeyboardTarget target);
+
+    /// <summary>A short message at the bottom, e.g. why a text wasn't taken.</summary>
+    void Notify(string message);
 }

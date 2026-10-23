@@ -155,6 +155,23 @@ public sealed class MouseModeHost : IDisposable
     /// </summary>
     public bool IsArcadiaActive => OwnsForeground() && (_windowHandle == 0 || ForegroundGuard.IsUncovered(_windowHandle));
 
+    /// <summary>
+    /// A Windows dialog Arcadia opened from the controller opens (true) or closed (#138): with "Bei System-Dialogfenstern
+    /// einschalten" the mode comes on for it and goes off after it, if it came on for it. Nothing with "Mausmodus: Aus".
+    /// </summary>
+    /// <returns>Whether the mode was asked to come on, so the caller lets go of it after the dialog.</returns>
+    public bool HoldForDialog(bool open)
+    {
+        if (open && _settings.Current.MouseMode is not { Activation: not MouseModeActivation.Off, ForDialogs: true })
+        {
+            return false;
+        }
+
+        AppLog.Write(open ? "Windows-Dialog offen: Mausmodus für ihn" : "Windows-Dialog zu");
+        _mode.HoldForDialog(open);
+        return true;
+    }
+
     /// <summary>Call after the gamepad source stopped polling: lets go of a held mouse button or key.</summary>
     public void Dispose()
     {
@@ -301,6 +318,7 @@ public sealed class MouseModeHost : IDisposable
 
             var text = (change.IsOn, change.IsAutomatic, gameInFront) switch
             {
+                (true, _, _) when change.ForDialog => "Mausmodus an, solange das Windows-Fenster offen ist",
                 (false, _, _) when change.ByGame => "Mausmodus aus – in diesem Spiel deaktiviert",
                 (true, false, true) => "Mausmodus an – das Spiel sieht die Eingaben weiterhin",
                 (true, _, _) => "Mausmodus an",

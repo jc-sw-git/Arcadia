@@ -12,14 +12,13 @@ public partial class GameTileViewModel : ViewModelBase
 {
     private readonly DateTimeOffset _now;
 
-    public GameTileViewModel(Game game, LauncherInfo launcher, DateTimeOffset now, Action<GameTileViewModel> focus, Action<GameTileViewModel> activate)
+    public GameTileViewModel(Game game, LauncherInfo launcher, LauncherBadge launcherBadge, DateTimeOffset now, Action<GameTileViewModel> focus, Action<GameTileViewModel> activate)
     {
         Game = game;
         _now = now;
         (CoverBrush, AccentBrush) = Formatting.CoverBrushes(game.Title);
         LauncherName = launcher.DisplayName;
-        LauncherMonogram = launcher.DisplayName[..1];
-        LauncherBrush = Formatting.LauncherTileBrush(launcher.Id);
+        LauncherBadge = launcherBadge;
         LastPlayedText = Formatting.LastPlayed(game.LastPlayedAt, now);
         PlaytimeText = Formatting.Playtime(game.Playtime);
         SizeText = Formatting.Size(game.InstallSizeBytes);
@@ -145,9 +144,8 @@ public partial class GameTileViewModel : ViewModelBase
 
     public string LauncherName { get; }
 
-    public string LauncherMonogram { get; }
-
-    public IBrush LauncherBrush { get; }
+    /// <summary>The launcher's logo (#138).</summary>
+    public LauncherBadge LauncherBadge { get; }
 
     public string LastPlayedText { get; }
 

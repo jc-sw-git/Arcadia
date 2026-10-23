@@ -53,10 +53,7 @@
                   <DataTemplate x:DataType="vm:LauncherTabViewModel">
                     <Button Classes="plain tab" Classes.selected="{Binding IsSelected}" Command="{Binding SelectCommand}">
                       <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Border Width="24" Height="24" CornerRadius="6" Background="{Binding TileBrush}" ClipToBounds="True">
-                          <TextBlock Text="{Binding Monogram}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}"
-                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
+                        <ctl:LauncherLogo Badge="{Binding Badge}" Width="24" Height="24" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
                         <Border IsVisible="{Binding IsSelected}" Background="{StaticResource Bg}" CornerRadius="10" Padding="9,3" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Count}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
@@ -254,9 +251,7 @@
                     <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3">
                       <TextBlock Classes="label" Text="LAUNCHER" />
                       <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Border Width="20" Height="20" CornerRadius="5" Background="{Binding LauncherBrush}">
-                          <TextBlock Text="{Binding LauncherMonogram}" FontSize="11" FontWeight="ExtraBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
+                        <ctl:LauncherLogo Badge="{Binding LauncherBadge}" Width="20" Height="20" VerticalAlignment="Center" />
                         <TextBlock Classes="value" Text="{Binding LauncherName}" />
                       </StackPanel>
                     </StackPanel>
@@ -450,8 +445,8 @@
                 <Panel>
                   <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
                   <DockPanel Margin="12">
-                    <Border DockPanel.Dock="Top" Classes="launcherBadge" Width="28" Height="28" CornerRadius="7" Background="{Binding LauncherBrush}" HorizontalAlignment="Left">
-                      <TextBlock Text="{Binding LauncherMonogram}" FontSize="14" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Border DockPanel.Dock="Top" Classes="launcherBadge" Width="28" Height="28" CornerRadius="7" HorizontalAlignment="Left">
+                      <ctl:LauncherLogo Classes="onCover" Badge="{Binding LauncherBadge}" />
                     </Border>
                     <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Bottom"
                                TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
@@ -556,9 +551,7 @@
                     <Border DockPanel.Dock="Right" IsVisible="{Binding !IsLauncher}" Classes="divider" Margin="16,0,6,0" />
                     <Button Classes="plain chip" Classes.all="{Binding !IsLauncher}" Classes.on="{Binding IsOn}" Command="{Binding ToggleCommand}" ToolTip.Tip="{Binding Name}">
                       <ctl:CollapsingStack Spacing="10" EndPadding="8">
-                        <Border Classes="chipLogo" IsVisible="{Binding IsLauncher}" Width="24" Height="24" CornerRadius="6" Background="{Binding TileBrush}" VerticalAlignment="Center">
-                          <TextBlock Text="{Binding Monogram}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
+                        <ctl:LauncherLogo Classes="chipLogo" IsVisible="{Binding IsLauncher}" Badge="{Binding Badge}" Width="24" Height="24" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding Name}" ctl:CollapsingStack.MinShrinkWidth="44" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                         <TextBlock IsVisible="{Binding IsLauncher}" Text="{Binding Keyword}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextFaint}" VerticalAlignment="Center" />
                       </ctl:CollapsingStack>
@@ -1050,6 +1043,39 @@
           <!-- Rows and the info panel of the shown category. The mouse over a row focuses it (MainWindow.axaml.cs), so
                the info panel explains it before a click changes it. -->
           <Grid Grid.Row="1" Margin="80,0,80,22" ColumnDefinitions="*,620" ColumnSpacing="56" DataContext="{Binding Settings?.Selected}" x:DataType="settings:SettingsCategoryViewModel">
+            <DockPanel>
+            <!-- Above the rows, e.g. a launcher's logo, name and its neighbours on its page (#137). -->
+            <ContentControl DockPanel.Dock="Top" Content="{Binding Head}" IsVisible="{Binding Head, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <ContentControl.DataTemplates>
+                <DataTemplate x:DataType="settings:LauncherPageHeadViewModel">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="20" Margin="18,4,0,8">
+                    <ctl:LauncherLogo Classes="launcherLogo" Badge="{Binding Badge}" Width="56" Height="56" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                      <TextBlock Text="Launcher /" FontSize="15" Foreground="{StaticResource TextMuted}" />
+                      <TextBlock Text="{Binding Name}" FontSize="36" FontWeight="ExtraBold" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <!-- LT/RT, Shift+Q/E or a click: the launcher before or after it in the list. -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" IsVisible="{Binding HasNeighbours}">
+                      <Button Classes="plain neighbour" Command="{Binding TurnBackCommand}" ToolTip.Tip="Voriger Launcher">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                          <ctl:KeyText Pad="LT" Keys="⇧ Q" />
+                          <ctl:LauncherLogo Classes="neighbourLogo" Badge="{Binding Previous?.Badge}" Width="24" Height="24" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding Previous?.Name, TargetNullValue=''}" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+                      <Border Classes="divider" Height="24" />
+                      <Button Classes="plain neighbour" Command="{Binding TurnOnCommand}" ToolTip.Tip="Nächster Launcher">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                          <ctl:LauncherLogo Classes="neighbourLogo" Badge="{Binding Next?.Badge}" Width="24" Height="24" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding Next?.Name, TargetNullValue=''}" VerticalAlignment="Center" />
+                          <ctl:KeyText Pad="RT" Keys="⇧ E" />
+                        </StackPanel>
+                      </Button>
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ContentControl.DataTemplates>
+            </ContentControl>
             <ScrollViewer Name="SettingsRowsScroller" VerticalScrollBarVisibility="Hidden" Padding="8" Margin="-8">
               <ItemsControl Name="SettingsRows" ItemsSource="{Binding Rows}">
                 <ItemsControl.ItemsPanel>
@@ -1074,9 +1100,7 @@
                                     <TextBlock Text="{Binding TabKey}" />
                                   </Border>
                                   <Panel Grid.Column="1" Classes.launcherInactive="{Binding !IsActive}" VerticalAlignment="Center">
-                                    <Border Classes="launcherLogo" Width="44" Height="44" CornerRadius="11" Background="{Binding TileBrush}">
-                                      <TextBlock Text="{Binding Monogram}" FontSize="20" />
-                                    </Border>
+                                    <ctl:LauncherLogo Classes="launcherLogo" Badge="{Binding Badge}" Width="44" Height="44" />
                                   </Panel>
                                   <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Center" Classes.launcherInactive="{Binding !IsActive}">
                                     <TextBlock Classes="launcherName" Text="{Binding Title}" FontSize="20" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
@@ -1120,9 +1144,25 @@
                                          IsVisible="{Binding HasLamp}" />
                               </StackPanel>
                               <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                              <TextBlock Classes="rowProblem" Text="{Binding Problem}" IsVisible="{Binding HasProblem}" />
                             </StackPanel>
                             <ContentControl Grid.Column="2" Content="{Binding}" VerticalAlignment="Center">
                               <ContentControl.DataTemplates>
+                                <!-- A text (#137): its value with a pencil; while it is written, the text with its caret. -->
+                                <DataTemplate x:DataType="settings:TextRowViewModel">
+                                  <Border Classes="textField" Classes.editing="{Binding IsEditing}" Classes.problem="{Binding HasProblem}">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                      <StackPanel Orientation="Horizontal" ClipToBounds="True">
+                                        <TextBlock Classes="fieldPrefix" Text="{Binding Prefix}" IsVisible="{Binding HasPrefix}" />
+                                        <TextBlock Classes="fieldText" Text="{Binding ValueText}" IsVisible="{Binding !IsEditing}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Classes="fieldText" Text="{Binding Editor?.TextBeforeCaret, TargetNullValue=''}" IsVisible="{Binding IsEditing}" />
+                                        <Border Classes="caret fieldCaret" IsVisible="{Binding IsEditing}" />
+                                        <TextBlock Classes="fieldText" Text="{Binding Editor?.TextAfterCaret, TargetNullValue=''}" IsVisible="{Binding IsEditing}" />
+                                      </StackPanel>
+                                      <Path Grid.Column="1" Classes="pencil" IsVisible="{Binding !IsEditing}" />
+                                    </Grid>
+                                  </Border>
+                                </DataTemplate>
                                 <DataTemplate x:DataType="settings:SisrRowViewModel">
                                   <Panel>
                                     <Border Classes="valuePill" Classes.locked="{Binding IsLocked}" IsVisible="{Binding IsSwitch}">
@@ -1192,6 +1232,7 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </ScrollViewer>
+            </DockPanel>
 
             <!-- Beside the rows: a preview of what the focused row changes, if it has one (e.g. the launchers' tab strip,
                  #136), and below it the row explained. RS (or the wheel) scrolls it; the fades say there is more
@@ -1250,6 +1291,14 @@
                     <TextBlock Grid.Column="1" Classes="infoText" Text="{Binding Text}" />
                   </Grid>
                 </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoExample">
+                  <Border Classes="infoExample">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <TextBlock Classes="exampleSample" Text="{Binding Sample}" />
+                      <TextBlock Classes="exampleEffect" Text="{Binding Effect}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoError">
                   <TextBlock Text="{Binding Text}" FontSize="16" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
                 </DataTemplate>
@@ -1276,9 +1325,7 @@
                           <DataTemplate x:DataType="settings:InfoTab">
                             <Border Classes="miniTab" Classes.selected="{Binding IsSelected}" Classes.highlighted="{Binding IsHighlighted}" Margin="0,3,6,3">
                               <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Border Classes="launcherLogo" Width="22" Height="22" CornerRadius="6" Background="{Binding TileBrush}" VerticalAlignment="Center">
-                                  <TextBlock Text="{Binding Monogram}" FontSize="12" />
-                                </Border>
+                                <ctl:LauncherLogo Classes="launcherLogo" Badge="{Binding Badge}" Width="22" Height="22" VerticalAlignment="Center" />
                                 <TextBlock Classes="miniTabName" Text="{Binding Name}" />
                               </StackPanel>
                             </Border>
@@ -1290,9 +1337,7 @@
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoLauncher">
                   <StackPanel Orientation="Horizontal" Spacing="18">
-                    <Border Classes="launcherLogo" Width="64" Height="64" CornerRadius="16" Background="{Binding TileBrush}">
-                      <TextBlock Text="{Binding Monogram}" FontSize="30" />
-                    </Border>
+                    <ctl:LauncherLogo Classes="launcherLogo" Badge="{Binding Badge}" Width="64" Height="64" />
                     <StackPanel Spacing="4" VerticalAlignment="Center">
                       <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" />
                       <StackPanel Orientation="Horizontal" Spacing="8">
@@ -1376,6 +1421,14 @@
             </Grid>
           </Grid>
 
+          <!-- The on-screen keyboard while a text of the settings is written (#137), the same as the search's. -->
+          <ctl:RevealPanel Grid.Row="1" Classes="keyboardDrawer bleed" Classes.out="{Binding Settings?.Selected.IsEditing, TargetNullValue=False}" VerticalAlignment="Bottom"
+                           IsVisible="{Binding Settings?.Selected.IsEditing, TargetNullValue=False}">
+            <Border Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
+              <views:OnScreenKeyboardView DataContext="{Binding Settings?.Selected.Editor?.Keyboard}" HorizontalAlignment="Center" />
+            </Border>
+          </ctl:RevealPanel>
+
           <!-- Footer: the buttons of the focused row and the page, for the input in use (#127). -->
           <Border Grid.Row="2" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Margin="-1920,0" Padding="2000,0"
                   DataContext="{Binding Settings}" x:DataType="settings:SettingsPageViewModel">
@@ -1384,6 +1437,16 @@
             <TextBlock Text="{Binding Changes.Error}" IsVisible="{Binding Changes.Error, Converter={x:Static ObjectConverters.IsNotNull}}" MaxWidth="900"
                        HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="15" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
             <!-- A launcher lifted to be moved (#136): only what moves it, puts it down or cancels. -->
+            <!-- A text being written (#137): the on-screen keyboard's buttons. -->
+            <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding Selected.IsEditing}">
+              <ctl:KeyHint Pad="A" Alt="Klick" Text="Eingeben" />
+              <ctl:KeyHint Pad="X" Keys="⌫" Text="Löschen" />
+              <ctl:KeyHint Pad="Y" Text="Leerzeichen" />
+              <ctl:KeyHint Pad="LB|RB" Text="⇧ / AltGr" />
+              <ctl:KeyHint Pad="≡" Keys="Enter" Text="Übernehmen" />
+              <ctl:KeyHint Pad="B" Keys="Esc" Text="Verwerfen" />
+            </StackPanel>
+            <Panel IsVisible="{Binding !Selected.IsEditing}">
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding Selected.IsReordering}">
               <ctl:KeyHint Pad="▲▼" Keys="W|S" Alt="Ziehen" Text="Verschieben" />
               <ctl:KeyHint Pad="Y" Keys="V" Alt="Loslassen" Text="Ablegen" />
@@ -1395,9 +1458,11 @@
               <ctl:KeyHint Pad="Y" Keys="V" Alt="Ziehen" Text="{Binding Selected.YActionText}" IsVisible="{Binding Selected.YActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="X" Keys="F" Text="{Binding Selected.XActionText}" IsVisible="{Binding Selected.XActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="Infotext" IsVisible="{Binding InfoOverflows}" />
+              <ctl:KeyHint Pad="LT|RT" Keys="⇧ Q|⇧ E" Alt="Klick" Text="Launcher" IsVisible="{Binding Selected.Head, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="LB|RB" Keys="Q|E" Alt="Klick" Text="Kategorie" IsVisible="{Binding HasSeveralCategories}" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="Zurück" />
             </StackPanel>
+            </Panel>
             </Panel>
           </Border>
         </Grid>

@@ -62,6 +62,12 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
             return true;
         }
 
+        if (category.Editor is { } editor)
+        {
+            editor.Handle(action);
+            return true;
+        }
+
         if (category.Handle(action))
         {
             return true;
@@ -104,6 +110,12 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
 
         return true;
     }
+
+    /// <summary>A button or key was let go: ends a held erase, shift or AltGr while a text is written.</summary>
+    public void Release(UiAction action) => Selected.Editor?.Release(action);
+
+    /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
+    public void CancelHeldButtons() => Selected.Editor?.CancelHeldButtons();
 
     public void Dispose()
     {

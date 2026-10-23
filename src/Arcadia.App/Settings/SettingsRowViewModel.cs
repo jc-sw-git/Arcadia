@@ -27,7 +27,14 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     [NotifyPropertyChangedFor(nameof(HasSubtitle))]
     public partial string? Subtitle { get; set; }
 
-    public bool HasSubtitle => !string.IsNullOrEmpty(Subtitle);
+    public bool HasSubtitle => !string.IsNullOrEmpty(Subtitle) && !HasProblem;
+
+    /// <summary>Why what is being entered can't be taken, e.g. a keyword in use (#137); shown in place of the subtitle.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasProblem), nameof(HasSubtitle))]
+    public partial string? Problem { get; protected set; }
+
+    public bool HasProblem => Problem is not null;
 
     /// <summary>
     /// A lamp beside the title that shows at a glance whether what the row switches on really runs, e.g. SISR (owner,
@@ -107,7 +114,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public bool HasPreview => Preview.Count > 0;
 
     /// <summary>The heading of <see cref="Preview"/>.</summary>
-    public virtual string PreviewTitle => string.Empty;
+    public virtual string PreviewTitle { get; init; } = string.Empty;
 
     /// <summary>◀ ▶ change the row's value.</summary>
     public virtual bool CanChange => false;
@@ -199,7 +206,8 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
 
     public bool CanDecrease => _get() > _min;
 
-    public bool CanIncrease => _get() < _max;
+    /// <summary>▶ goes on; a subclass may hold it back, e.g. "Aktiv" for a launcher that isn't installed (#137).</summary>
+    public virtual bool CanIncrease => _get() < _max;
 
     public override bool CanChange => true;
 
@@ -209,9 +217,25 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
 
     public override bool ShowsActivateHint => false;
 
-    public override void Change(int delta) => Set(Math.Clamp(_get() + delta, _min, _max));
+    public override void Change(int delta)
+    {
+        if (delta > 0 && !CanIncrease)
+        {
+            return;
+        }
 
-    public override void Activate() => Set(_get() >= _max ? _min : _get() + 1);
+        Set(Math.Clamp(_get() + delta, _min, _max));
+    }
+
+    public override void Activate()
+    {
+        if (_get() < _max && !CanIncrease)
+        {
+            return;
+        }
+
+        Set(_get() >= _max ? _min : _get() + 1);
+    }
 
     /// <summary>The value changed elsewhere (or a value it is shown with), so it is read again.</summary>
     public void Refresh()
@@ -242,7 +266,7 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
 }
 
 /// <summary>On or off, a choice of two: ◀ is "Aus", ▶ is "An", A switches.</summary>
-public sealed partial class SwitchRowViewModel(string key, string title, Func<bool> get, Action<bool> set)
+public partial class SwitchRowViewModel(string key, string title, Func<bool> get, Action<bool> set)
     : ChoiceRowViewModel(key, title, () => get() ? 1 : 0, value => set(value == 1), value => value == 1 ? "An" : "Aus", 0, 1)
 {
     public bool IsOn => get();

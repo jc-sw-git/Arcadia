@@ -67,7 +67,7 @@ public sealed record InfoFacts(string Title, IReadOnlyList<InfoFact> Facts) : In
 /// <summary>A launcher as its tab shows it: logo and name.</summary>
 /// <param name="IsSelected">The library's selected tab.</param>
 /// <param name="IsHighlighted">The launcher the info panel is about.</param>
-public sealed record InfoTab(string Name, string Monogram, Avalonia.Media.IBrush TileBrush, bool IsSelected, bool IsHighlighted);
+public sealed record InfoTab(string Name, Services.LauncherBadge Badge, bool IsSelected, bool IsHighlighted);
 
 /// <summary>The library's tab strip in miniature, in its current order (#136).</summary>
 public sealed record InfoTabBar(IReadOnlyList<InfoTab> Tabs) : InfoBlock
@@ -76,4 +76,7 @@ public sealed record InfoTabBar(IReadOnlyList<InfoTab> Tabs) : InfoBlock
 }
 
 /// <summary>A launcher's logo, name and state at the head of its info, e.g. "Aktiv · Tab 2".</summary>
-public sealed record InfoLauncher(string Name, string Monogram, Avalonia.Media.IBrush TileBrush, string StateText, bool IsActive) : InfoBlock;
+public sealed record InfoLauncher(string Name, Services.LauncherBadge Badge, string StateText, bool IsActive) : InfoBlock;
+
+/// <summary>Something to type and what it does, e.g. "/steam hollow" – "sucht nur in Steam" (#137).</summary>
+public sealed record InfoExample(string Sample, string Effect) : InfoBlock;

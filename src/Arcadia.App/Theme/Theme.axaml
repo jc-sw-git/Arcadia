@@ -21,6 +21,13 @@
     <SolidColorBrush x:Key="PromptIconWarning" Color="#4A3418" />
     <SolidColorBrush x:Key="PromptGame" Color="#1F2833" />
     <SolidColorBrush x:Key="Line" Color="#2A3440" />
+    <!-- The line between the rows of a settings group: full in the middle, gone 10 % before the box's edges (owner,
+         2026-10-23). -->
+    <LinearGradientBrush x:Key="GroupDivider" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Offset="0.1" Color="#002A3440" />
+      <GradientStop Offset="0.5" Color="#FF34404E" />
+      <GradientStop Offset="0.9" Color="#002A3440" />
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="LineStrong" Color="#3A4552" />
     <SolidColorBrush x:Key="Text" Color="#E8EDF2" />
     <SolidColorBrush x:Key="TextStrong" Color="#F2F5F8" />
@@ -790,16 +797,22 @@
        piece would otherwise paint over. -->
   <Style Selector="Border.groupBox">
     <Setter Property="Background" Value="{StaticResource Surface}" />
-    <Setter Property="BorderBrush" Value="{StaticResource Line}" />
-    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="BorderBrush" Value="{StaticResource GroupDivider}" />
+    <!-- The box shows through where the line fades out. -->
+    <Setter Property="BackgroundSizing" Value="OuterBorderEdge" />
+    <!-- The line tops every piece but the first; each piece reaches 1 px under the one above, so the scaled layout
+         leaves no seam between them. -->
+    <Setter Property="BorderThickness" Value="0,2,0,0" />
+    <Setter Property="Margin" Value="0,-1,0,0" />
     <Setter Property="Padding" Value="8,5" />
   </Style>
   <Style Selector="Border.groupBox.first">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Margin" Value="0" />
     <Setter Property="Padding" Value="8,8,8,5" />
     <Setter Property="CornerRadius" Value="20,20,0,0" />
   </Style>
   <Style Selector="Border.groupBox.last">
-    <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Padding" Value="8,5,8,8" />
     <Setter Property="CornerRadius" Value="0,0,20,20" />
   </Style>

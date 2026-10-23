@@ -21,9 +21,16 @@ public static class BuiltInLaunchers
     };
 
     /// <param name="demo">Adds a demo library for every known launcher that has no integration yet (<c>--demo</c>).</param>
+    /// <param name="demoGames">
+    /// How many demo games in all, shared in the same proportions (<c>--demo-games 5000</c>), to measure Arcadia with a
+    /// large library against the budgets in <c>CLAUDE.md</c>; null for the usual sizes.
+    /// </param>
     /// <returns>In the order of <see cref="KnownLaunchers.All"/>, which is the tab order.</returns>
-    public static IReadOnlyList<ILauncherIntegration> Create(TimeProvider time, bool demo)
+    public static IReadOnlyList<ILauncherIntegration> Create(TimeProvider time, bool demo, int? demoGames = null)
     {
+        var total = DemoGameCounts.Values.Sum();
+        int DemoCount(int usual) => demoGames is { } wanted ? Math.Max(1, (int)Math.Round((double)usual * wanted / total)) : usual;
+
         ILauncherIntegration[] integrations =
         [
             new SteamIntegration(time),
@@ -39,7 +46,7 @@ public static class BuiltInLaunchers
             }
             else if (demo && DemoGameCounts.TryGetValue(launcher.Id, out var count))
             {
-                ordered.Add(new DemoIntegration(launcher, count, time.GetLocalNow()));
+                ordered.Add(new DemoIntegration(launcher, DemoCount(count), time.GetLocalNow()));
             }
         }
 

@@ -21,6 +21,8 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
         "Requiem", "Drift", "Citadel", "Orbit", "Legacy", "Wilds", "Circuit", "Ember", "Expanse", "Outpost",
     ];
 
+    private const int MissesBeforeNumbering = 50;
+
     public LauncherInfo Launcher => launcher;
 
     public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default) => Task.FromResult(Generate());
@@ -31,9 +33,9 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
         var random = new Random(StableSeed(launcher.Id));
         var titles = new HashSet<string>(StringComparer.Ordinal);
         var games = new List<Game>(gameCount);
-        var maxTitles = Adjectives.Length * Nouns.Length * 3;
+        var misses = 0;
 
-        while (games.Count < Math.Min(gameCount, maxTitles))
+        while (games.Count < gameCount)
         {
             var title = $"{Adjectives[random.Next(Adjectives.Length)]} {Nouns[random.Next(Nouns.Length)]}";
             var suffix = random.NextDouble();
@@ -48,8 +50,17 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
 
             if (!titles.Add(title))
             {
-                continue;
+                // Only a library of thousands (--demo-games) runs out of names; it numbers them then.
+                if (++misses < MissesBeforeNumbering)
+                {
+                    continue;
+                }
+
+                title = $"{title} {games.Count + 1}";
+                titles.Add(title);
             }
+
+            misses = 0;
 
             // Roughly a third of a library is owned but not installed.
             if (random.NextDouble() < 0.3)

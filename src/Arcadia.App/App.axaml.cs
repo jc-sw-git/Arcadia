@@ -40,6 +40,9 @@ public partial class App : Application
     /// <summary>Demo libraries for every launcher without an integration; skips the first start's question and saves no launchers.</summary>
     private const string DemoArgument = "--demo";
 
+    /// <summary>With <see cref="DemoArgument"/>: this many demo games in all, e.g. 5000 to measure a large library.</summary>
+    private const string DemoGamesArgument = "--demo-games";
+
     /// <summary>Shows the first start's question again, even after it was answered (#139), e.g. to try it out.</summary>
     private const string FirstRunArgument = "--first-run";
 
@@ -85,7 +88,7 @@ public partial class App : Application
             // while the question shows, every launcher found is read, so it can count their games. Names, keywords and
             // folders the user gave launchers apply from their next read (#137, #138).
             var launchers = new LauncherRegistry(
-                BuiltInLaunchers.Create(time, demo),
+                BuiltInLaunchers.Create(time, demo, DemoGames(args)),
                 firstRun.ChosenLaunchers,
                 id => settings.Current.PreferencesOf(id));
             foreach (var problem in launchers.Rejected)
@@ -315,13 +318,24 @@ public partial class App : Application
                 AppLog.Write("Arcadia beendet.");
             };
 
-            AppLog.Write($"Arcadia gestartet: {string.Join(' ', args)}");
+            // Version and Windows build first: a bug report with only the log must say what it is about.
+            AppLog.Write($"Arcadia {updates.CurrentVersion} gestartet ({System.Runtime.InteropServices.RuntimeInformation.OSDescription}, "
+                + $"{(updates.IsInstalled ? "installiert" : "nicht installiert")}): {string.Join(' ', args)}");
             viewModel.LoadAsync().Forget("Bibliothek laden");
             viewModel.PollRunningGamesAsync().Forget("Laufende Spiele");
             updates.CheckIfDueAsync().Forget("Update-Prüfung");
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static int? DemoGames(string[] args)
+    {
+        var at = Array.FindIndex(args, a => a.Equals(DemoGamesArgument, StringComparison.OrdinalIgnoreCase));
+        return at >= 0 && at + 1 < args.Length && int.TryParse(args[at + 1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var count)
+            && count is > 0 and <= 100_000
+            ? count
+            : null;
     }
 
     /// <summary>Arcadia's own arguments for the start after an update, plus the state to carry over.</summary>

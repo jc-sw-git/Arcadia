@@ -185,4 +185,44 @@ public sealed class SettingsServiceTests : IDisposable
         service.Update(settings => settings with { LastTabLauncherId = "epic" });
         Assert.Equal(100, new SettingsStore(SettingsPath).Load().PreferredPageSize);
     }
+
+    [Fact]
+    public void A_settings_file_locked_at_the_start_is_not_overwritten()
+    {
+        File.WriteAllText(SettingsPath, """{ "PreferredPageSize": 50, "ActiveLaunchers": ["steam"] }""");
+        SettingsService service;
+        using (new FileStream(SettingsPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            service = new SettingsService(new SettingsStore(SettingsPath));
+        }
+
+        var error = Record.Exception(() => service.Update(settings => settings with { PreferredPageSize = 100 }));
+
+        Assert.IsType<IOException>(error);
+        Assert.Equal(100, service.Current.PreferredPageSize);
+        var kept = new SettingsStore(SettingsPath).Load();
+        Assert.Equal(50, kept.PreferredPageSize);
+        Assert.Equal(["steam"], kept.ActiveLaunchers);
+    }
+
+    [Fact]
+    public void A_settings_file_locked_only_for_a_moment_is_read()
+    {
+        File.WriteAllText(SettingsPath, """{ "PreferredPageSize": 50 }""");
+        var locked = new FileStream(SettingsPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        // A thread of its own: a busy thread pool (all tests run in parallel) could release the lock too late.
+        var release = new Thread(() =>
+        {
+            Thread.Sleep(20);
+            locked.Dispose();
+        });
+        release.Start();
+        var service = new SettingsService(new SettingsStore(SettingsPath));
+        release.Join();
+
+        Assert.Equal(50, service.Current.PreferredPageSize);
+        service.Update(settings => settings with { PreferredPageSize = 100 });
+        Assert.Equal(100, new SettingsStore(SettingsPath).Load().PreferredPageSize);
+    }
 }

@@ -17,6 +17,9 @@ public sealed class ArcadiaUpdateService(HttpClient http, TimeProvider time)
 
     private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(6);
 
+    /// <summary>Velopack's own limit is 30 minutes, which would leave "Nach Updates suchen" spinning that long.</summary>
+    private static readonly TimeSpan CheckTimeout = TimeSpan.FromSeconds(30);
+
     // Stable releases only; pre-release tags (v0.2.0-beta.1) are for testers who install them by hand.
     private readonly UpdateManager _manager = new(new GithubSource(RepositoryUrl, accessToken: null, prerelease: false));
     private UpdateInfo? _update;
@@ -76,10 +79,15 @@ public sealed class ArcadiaUpdateService(HttpClient http, TimeProvider time)
         OnChanged();
         try
         {
-            _update = await _manager.CheckForUpdatesAsync();
+            _update = await _manager.CheckForUpdatesAsync().WaitAsync(CheckTimeout, time);
             Changelog = _update is null ? [] : await LoadChangelogAsync(_update);
             LastChecked = time.GetUtcNow();
             Log?.Invoke(_update is null ? "Arcadia-Update: aktuell" : $"Arcadia-Update verfügbar: {AvailableVersion}");
+        }
+        catch (TimeoutException)
+        {
+            LastError = manual ? "Die Suche nach Updates ist fehlgeschlagen: GitHub antwortet nicht." : null;
+            Log?.Invoke($"Arcadia-Update-Prüfung: keine Antwort nach {CheckTimeout.TotalSeconds:0} s");
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

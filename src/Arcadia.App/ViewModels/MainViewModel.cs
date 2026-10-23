@@ -398,14 +398,30 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         RefreshLauncherSettings();
     }
 
+    /// <summary>Reads one launcher again ("Neu einlesen", #137); the other tabs keep their games.</summary>
+    private async Task RefreshLauncherAsync(string launcherId)
+    {
+        if (IsLoading)
+        {
+            return;
+        }
+
+        if (await _refresher.RefreshAsync(CurrentLibraries, launcherId) is { } libraries)
+        {
+            ApplyLibraries(libraries);
+        }
+
+        RefreshLauncherSettings();
+    }
+
     private IReadOnlyList<LauncherLibrary> CurrentLibraries() => Tabs.Select(t => t.Library).ToList();
 
     /// <summary>The libraries the search covers: a tab without games has nothing to find (#136).</summary>
     private IReadOnlyList<LauncherLibrary> SearchedLibraries() => Tabs.Where(t => t.Count > 0).Select(t => t.Library).ToList();
 
     /// <summary>
-    /// "Neu einlesen" or "Erneut suchen" on an empty tab, X in the launcher settings: reads every active launcher again
-    /// and says what came of it, for <paramref name="launcher"/> or for all.
+    /// "Neu einlesen" on an empty tab or a launcher's page reads <paramref name="launcher"/> again; "Erneut suchen" with no
+    /// launcher active and X in the launcher settings read all (null). Says what came of it.
     /// </summary>
     private async Task RescanAsync(LauncherInfo? launcher)
     {
@@ -416,7 +432,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
 
         Toast.Show(launcher is null ? "Alle Launcher werden neu eingelesen …" : $"{launcher.DisplayName} wird neu eingelesen …", sticky: true);
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        await RefreshLibraryAsync(force: true);
+        await (launcher is null ? RefreshLibraryAsync(force: true) : RefreshLauncherAsync(launcher.Id));
         AppLog.Write($"Neu eingelesen{(launcher is null ? string.Empty : $" für {launcher.Id}")}: {watch.ElapsedMilliseconds} ms");
         if (launcher is null)
         {

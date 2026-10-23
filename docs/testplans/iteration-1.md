@@ -1166,7 +1166,8 @@ Verlauf:
       sagt warum. Ein gültiges gilt sofort in der Suche (`/kürzel begriff`) und im Chip. · E2E: ja
 - [ ] **T137-7** Das Infopanel erklärt die fokussierte Zeile; über „Aktiv“, „Name im Tab“ und „Logo“ steht die Vorschau
       „Tab-Leiste“, beim Kürzel ein Beispiel. „Neu einlesen“ ist für einen inaktiven oder nicht gefundenen Launcher
-      ausgegraut (Grund unter dem Namen), sonst liest es ein und nennt danach Spiele und Zeit. · E2E: ja
+      ausgegraut (Grund unter dem Namen), sonst liest es nur diesen Launcher ein (`arcadia.log`: „Neu eingelesen für …“) und
+      nennt danach Spiele und Zeit. „Neu einlesen“ auf einem leeren Tab ebenso. · E2E: ja
 - [ ] **T137-8** Alles aus T137-1 bis T137-7 allein mit dem Controller, mit einer Hand an der Tastatur und allein mit der
       Maus. · E2E: ja
 
@@ -1182,10 +1183,12 @@ Verlauf:
 - [ ] **T138-1** Steam und Epic zeigen ihr Logo statt des Anfangsbuchstabens: im Tab (hell auf dunkel, dunkel auf dem
       gewählten Tab), in der Liste, in Vorschau und Detailseite, auf den Treffern der Suche (auf dunklem Grund) und in
       den Filter-Chips. Launcher ohne Logo behalten Buchstabe und Kachel. · E2E: ja
-- [ ] **T138-2** „Logo“ ▶ oder A öffnet die Dateiwahl von Windows. Ein PNG, SVG, ICO oder WebP bis 2 MB ersetzt das Logo
-      überall sofort, ins 24 × 24-Feld eingepasst (Seitenverhältnis bleibt); nach einem Neustart noch, auch wenn die
-      Originaldatei gelöscht ist. Eine kaputte oder zu große Datei: Toast „Logo nicht übernommen: …“, das alte bleibt.
-      ◀ stellt das Standardlogo wieder her. · E2E: nein (Windows-Dialog)
+- [ ] **T138-2** „Logo“ ist ein Knopf „Hochladen …“ (A, Leertaste, Klick), kein ◀ ▶-Schalter; er öffnet die Dateiwahl von
+      Windows. Ein PNG, SVG, ICO oder WebP bis 2 MB ersetzt das Logo überall sofort, ins 24 × 24-Feld eingepasst
+      (Seitenverhältnis bleibt); nach einem Neustart noch, auch wenn die Originaldatei gelöscht ist. Eine kaputte oder zu
+      große Datei: Toast „Logo nicht übernommen: …“, das alte bleibt. Nur mit eigenem Logo steht eingerückt darunter
+      „Standardlogo“ mit „Wiederherstellen“; das stellt das Standardlogo wieder her, die Zeile verschwindet und der Fokus
+      steht wieder auf „Logo“. · E2E: nein (Windows-Dialog)
 - [ ] **T138-3** Findet Arcadia einen Launcher nicht, steht auf seiner Seite „Ordner“ mit Warnung. „Ordner wählen …“
       öffnet die Ordnerwahl; ein Ordner ohne den Launcher: Toast „Dort liegt kein Steam: Arcadia sucht …“, nichts
       ändert sich. Der richtige Ordner (für Steam mit `steam.exe` und `steamapps`, oder `steamapps` selbst): der Launcher
@@ -1206,6 +1209,7 @@ Verlauf:
 | T138-1, T138-5 | 2026-10-23 | Claude | Branch `feat/launcher-bearbeiten-und-logos-137-138`, Debug, Linux in der Cloud mit Xvfb 1920×1080, `--demo`-Bibliothek | ⚠️ Steam- und Epic-Logo in der Liste, Logos in Tabs, Chips, Treffern und Detailseite gesehen; breites PNG eingepasst | Lauf am PC des Owners |
 | T138-2 | 2026-10-23 | Claude | wie oben, GTK-Dateiwahl statt der von Windows | ⚠️ PNG und SVG übernommen, kaputte Datei abgelehnt (Toast), Logo nach Neustart noch da, ◀ stellt den Standard her und löscht die Kopie | Lauf am PC des Owners |
 | T138-3 | 2026-10-23 | Claude | wie oben, gefälschte Steam-Ordner (`steam.exe` + `steamapps`) | ⚠️ Ordner ohne Steam abgelehnt, mit Steam angenommen: Steam an, gefunden, eingelesen (0 Spiele) | Lauf am PC des Owners |
+| T138-2, T137-7 (Juris Feedback) | 2026-10-23 | Claude | wie oben | ⚠️ „Logo“ als Knopf „Hochladen …“, eingerückte Zeile „Standardlogo“ erscheint mit eigenem Logo und verschwindet nach „Wiederherstellen“ (Fokus zurück auf „Logo“); „Jetzt einlesen“ liest nur GOG (5 ms, Toast „31 Spiele in GOG Galaxy gefunden.“), dass die anderen nicht gelesen werden nur per Test | Lauf am PC des Owners |
 | T138-4 | 2026-10-23 | Claude | wie oben | ⚠️ Zeile, Ausgrauen bei „Aus“ gesehen; das Einschalten beim Dialog nur per Test (`MouseMode`), unter Linux kein Mausmodus | Lauf am PC des Owners |
 
 ## Grundgerüst (ohne Issue)

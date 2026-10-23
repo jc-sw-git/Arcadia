@@ -195,8 +195,10 @@ view models (`MainViewModel.Handle(UiAction)`), not with Avalonia focus: buttons
   "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only active and found). Name and keyword are written with the shared
   on-screen keyboard below the page (without ↹ and the edge key; the search's buttons, ≡/Enter take, B/Esc drop); a
   problem (keyword taken, "-", too long) shows in red while typing, taken anyway the old value stays and a toast says
-  why; empty means the launcher's own again. Own logo: ▶ or A open the file dialog (PNG, SVG, ICO, WebP up to 2 MB, copied),
-  ◀ the launcher's own logo; in the tab it is fitted into 24 × 24 px. "Ordner" is only a fallback when Arcadia can't find
+  why; empty means the launcher's own again. "Logo" is a button, not a choice (owner, 2026-10-23):
+  "Hochladen …" opens the file dialog (PNG, SVG, ICO, WebP up to 2 MB, copied); only while an own logo is used an indented
+  row "Standardlogo" below it offers "Wiederherstellen". In the tab a logo is fitted into 24 × 24 px. "Neu einlesen" reads
+  only that launcher (also on its empty tab); X in the list and "Erneut suchen" with no launcher active read all. "Ordner" is only a fallback when Arcadia can't find
   the launcher (no choice between automatic and own): the folder is checked when picked and taken only if the launcher
   is there, then it is switched on and read. The mouse mode's "Bei System-Dialogfenstern einschalten" (under "Mausmodus",
   for "Von Hand" and "Automatisch", greyed out with "Aus") switches it on while a dialog opened from the controller is open.

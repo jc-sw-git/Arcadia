@@ -69,35 +69,6 @@ public sealed partial class LauncherActiveRowViewModel(Func<bool> isActive, Acti
 }
 
 /// <summary>
-/// "Logo" (#138): ◀ Standard / Eigenes ▶. ▶ and A open the file dialog to pick a picture, ◀ brings back the launcher's own
-/// logo. The pick runs in the dialog, so the value shown changes only when a picture was taken.
-/// </summary>
-public sealed partial class LogoRowViewModel(Func<bool> hasOwn, Action pick, Action restore)
-    : ChoiceRowViewModel("launcher-logo", "Logo", () => hasOwn() ? 1 : 0, value => (value == 1 ? pick : restore)(), value => value == 1 ? "Eigenes" : "Standard", 0, 1)
-{
-    public override string ActivateText => "Datei wählen …";
-
-    public override bool ShowsActivateHint => true;
-
-    /// <summary>Another picture may replace an own one, so ▶ always opens the dialog.</summary>
-    public override bool CanIncrease => true;
-
-    public override void Change(int delta)
-    {
-        if (delta > 0)
-        {
-            pick();
-        }
-        else
-        {
-            base.Change(delta);
-        }
-    }
-
-    public override void Activate() => pick();
-}
-
-/// <summary>
 /// The head of a launcher's page (#137): its logo, name and state, and beside it the launchers before and after it in the
 /// list, which LT/RT (or a click on them) turn to.
 /// </summary>

@@ -39,7 +39,8 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private readonly LauncherActiveRowViewModel _activeRow;
     private readonly TextRowViewModel _nameRow;
     private readonly TextRowViewModel _keywordRow;
-    private readonly LogoRowViewModel _logoRow;
+    private readonly ActionRowViewModel _logoRow;
+    private readonly ActionRowViewModel _defaultLogoRow;
     private readonly ActionRowViewModel _folderRow;
     private readonly ActionRowViewModel _rescanRow;
 
@@ -90,15 +91,23 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             Group = GeneralGroup,
             Prefix = SearchQuery.PrefixMarker.ToString(),
         };
-        _logoRow = new LogoRowViewModel(() => PagePreferences.LogoFile is not null, () => PickLogoAsync().Forget("Logo wählen"), RestoreLogo)
+        // Two buttons, not a choice (owner, 2026-10-23): uploading is always offered, going back only while an own logo is used.
+        _logoRow = new ActionRowViewModel("launcher-logo", "Logo", () => PickLogoAsync().Forget("Logo wählen"))
         {
             Group = GeneralGroup,
-            Subtitle = "Im Tab immer auf 24 × 24 px eingepasst",
+            ActionText = "Hochladen …",
+            PreviewTitle = "TAB-LEISTE",
+        };
+        _defaultLogoRow = new ActionRowViewModel("launcher-logo-default", "Standardlogo", RestoreLogo)
+        {
+            Group = GeneralGroup,
+            Indent = 1,
+            ActionText = "Wiederherstellen",
             PreviewTitle = "TAB-LEISTE",
         };
         _folderRow = new ActionRowViewModel("launcher-folder", "Ordner", () => PickFolderAsync().Forget("Ordner wählen"))
         {
-            Group = GeneralGroup,
+            Group = LibraryGroup,
             ActionText = "Ordner wählen …",
         };
         _rescanRow = new ActionRowViewModel("launcher-rescan", "Neu einlesen", () => _host.RescanLauncher(_page!))
@@ -398,15 +407,21 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             new InfoFootnote($"Standard: {SearchQuery.PrefixMarker}{original.SearchKeyword}. Wirkt sofort, ohne Speichern."),
         ];
 
-        _logoRow.Refresh();
+        var hasOwnLogo = preferences.LogoFile is not null;
+        var defaultLogo = original.Logo is null ? "der Anfangsbuchstabe auf einer farbigen Kachel" : $"das Logo von {original.DisplayName}";
+        _logoRow.Subtitle = hasOwnLogo ? "Eigenes Bild · im Tab auf 24 × 24 px eingepasst" : "Standardlogo · im Tab auf 24 × 24 px eingepasst";
         _logoRow.Preview = [tabBar];
         _logoRow.Info =
         [
             new InfoText("Ein eigenes Bild ersetzt das Logo überall: im Tab, in der Liste, in der Suche und auf den Spielen. PNG, SVG, ICO oder WebP bis 2 MB. Arcadia legt eine Kopie ab; die Datei selbst kannst du danach verschieben oder löschen."),
             new InfoText("Im Tab wird jedes Logo in ein Feld von 24 × 24 px eingepasst. Das Seitenverhältnis bleibt, freie Fläche bleibt leer."),
-            new InfoFootnote(original.Logo is null
-                ? "Standard: der Anfangsbuchstabe auf einer farbigen Kachel. ◀ stellt ihn wieder her."
-                : $"Standard: das Logo von {original.DisplayName}. ◀ stellt es wieder her."),
+            new InfoFootnote($"Standard: {defaultLogo}."),
+        ];
+        _defaultLogoRow.Subtitle = "Eigenes Bild entfernen";
+        _defaultLogoRow.Preview = [tabBar];
+        _defaultLogoRow.Info =
+        [
+            new InfoText($"Entfernt das eigene Bild; {name} zeigt wieder {defaultLogo}. Arcadia löscht seine Kopie des Bilds."),
         ];
 
         // Only a fallback: shown while Arcadia can't find the launcher by itself, or a folder was chosen (owner, 2026-10-23).
@@ -443,7 +458,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             new InfoText($"Liest die Spiele von {name} sofort neu ein, etwa nach einer Installation, die Arcadia nicht mitbekommen hat. Sonst liest Arcadia neu ein, wenn es wieder nach vorne kommt."),
         ];
 
-        SetRows([_activeRow, _nameRow, _keywordRow, _logoRow, .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), _rescanRow]);
+        SetRows([_activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), _rescanRow]);
     }
 
     /// <summary>A on "Name im Tab" or "Such-Kürzel": the on-screen keyboard over the text, checked while it is typed.</summary>
@@ -493,7 +508,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         LooksChanged();
     }
 
-    /// <summary>"Logo": ▶ or A, the file dialog; a picture that passes the checks replaces the logo everywhere.</summary>
+    /// <summary>"Logo" → "Hochladen …": the file dialog; a picture that passes the checks replaces the logo everywhere.</summary>
     private async Task PickLogoAsync()
     {
         if (_page is not { } id || _host.Dialogs is not { } dialogs || _isPicking)
@@ -533,7 +548,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         }
     }
 
-    /// <summary>"Logo": ◀, the launcher's own logo again; the copy of the picture goes.</summary>
+    /// <summary>"Standardlogo" → "Wiederherstellen": the launcher's own logo again; the copy of the picture goes.</summary>
     private void RestoreLogo()
     {
         if (_page is not { } id || _changes.Current.PreferencesOf(id).LogoFile is not { } fileName)
@@ -545,6 +560,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         _host.Logos.Delete(fileName);
         AppLog.Write($"Standardlogo für {id}");
         LooksChanged();
+
+        // The row pressed is gone; the focus goes back to the logo, not on to the next row.
+        Focus(_logoRow);
     }
 
     /// <summary>

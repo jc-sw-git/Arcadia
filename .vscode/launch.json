@@ -22,6 +22,28 @@
       "cwd": "${workspaceFolder}/src/Arcadia.App",
       "console": "internalConsole",
       "stopAtEntry": false
+    },
+    {
+      "name": "Arcadia (First-Run)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/Arcadia.App/bin/Debug/net10.0/Arcadia.dll",
+      "args": ["--first-run"],
+      "cwd": "${workspaceFolder}/src/Arcadia.App",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Arcadia (Demo & First-Run)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/Arcadia.App/bin/Debug/net10.0/Arcadia.dll",
+      "args": ["--demo","--first-run"],
+      "cwd": "${workspaceFolder}/src/Arcadia.App",
+      "console": "internalConsole",
+      "stopAtEntry": false
     }
   ]
 }

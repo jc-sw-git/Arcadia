@@ -1510,6 +1510,11 @@
         </ContentControl>
       </Panel>
 
+      <!-- The first start's question which launchers Arcadia uses (#139): over everything but the toast until "Fertig". -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsFirstRunShown}">
+        <views:FirstRunView DataContext="{Binding FirstRun}" />
+      </Panel>
+
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->
       <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding Toast.IsVisible}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"
               Padding="24,14" Margin="0,0,0,96" HorizontalAlignment="Center" VerticalAlignment="Bottom" BoxShadow="{StaticResource ToastShadow}">

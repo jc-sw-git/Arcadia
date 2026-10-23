@@ -1,0 +1,162 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:setup="using:Arcadia.App.Setup"
+             x:Class="Arcadia.App.Views.FirstRunView"
+             x:DataType="setup:FirstRunViewModel">
+
+  <!-- The first start's question which launchers Arcadia uses (#139), in place of the library: the launchers on the left,
+       pattern "Leiste" like the settings, the focused one explained on the right above "Fertig". The mouse over a row
+       focuses it (FirstRunView.axaml.cs). -->
+  <UserControl.Resources>
+    <DataTemplate x:Key="LauncherRow" x:DataType="setup:FirstRunLauncherViewModel">
+      <Border Classes="groupBox" Classes.first="{Binding StartsGroup}" Classes.last="{Binding EndsGroup}">
+        <Button Classes="plain settingRow pageRow" Classes.focused="{Binding IsFocused}" Classes.unavailable="{Binding !IsFound}" Command="{Binding ClickCommand}">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="20">
+            <Border Classes="launcherLogo" Width="44" Height="44" CornerRadius="11" Background="{Binding TileBrush}" VerticalAlignment="Center">
+              <TextBlock Text="{Binding Monogram}" FontSize="20" />
+            </Border>
+            <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+              <TextBlock Classes="launcherName" Text="{Binding Name}" FontSize="20" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <!-- No local Fill: it would override the "active" style. -->
+                <Ellipse Classes="statusDot" Classes.active="{Binding IsOn}" Width="9" Height="9" VerticalAlignment="Center" />
+                <TextBlock Classes="launcherStatus" Text="{Binding StatusText}" />
+              </StackPanel>
+            </StackPanel>
+            <Panel Grid.Column="2" VerticalAlignment="Center">
+              <Border Classes="valuePill" IsVisible="{Binding IsFound}">
+                <Panel>
+                  <Button Classes="plain valueToggle" Command="{Binding ToggleSwitchCommand}" />
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanDecrease}" ToolTip.Tip="Aus">
+                      <Path Classes="chevronLeft" />
+                    </Button>
+                    <TextBlock Grid.Column="1" Classes="valueText" Classes.on="{Binding IsOn}" Text="{Binding ValueText}" IsHitTestVisible="False" />
+                    <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding CanIncrease}" ToolTip.Tip="An">
+                      <Path Classes="chevronRight" />
+                    </Button>
+                  </Grid>
+                </Panel>
+              </Border>
+              <Border Classes="valuePill" IsVisible="{Binding !IsFound}" ToolTip.Tip="Nicht auf diesem PC installiert">
+                <TextBlock Classes="valueText missing" Text="Nicht installiert" />
+              </Border>
+            </Panel>
+          </Grid>
+        </Button>
+      </Border>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <Panel>
+    <!-- Covers the library in the bars beside the layout too. -->
+    <Border Classes="bleedAll" Background="{StaticResource Bg}" />
+    <Grid RowDefinitions="104,*,72">
+      <Grid Margin="80,0" ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+          <Path Data="M4 30V16a13 13 0 0 1 26 0v14 M11 30v-8h12v8" Stroke="{StaticResource Accent}" StrokeThickness="3"
+                StrokeLineCap="Round" StrokeJoin="Round" Width="34" Height="34" />
+          <TextBlock Text="ARCADIA" FontSize="24" FontWeight="ExtraBold" LetterSpacing="1.4" VerticalAlignment="Center" />
+          <Border Classes="divider" Margin="6,0" Height="26" />
+          <TextBlock Text="Einrichtung" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+        </StackPanel>
+        <!-- No ✕: there is nothing to go back to before the launchers are chosen. -->
+        <TextBlock Grid.Column="2" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Status.Clock, TargetNullValue=''}"
+                   FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+      </Grid>
+
+      <Grid Grid.Row="1" Margin="80,0,80,22" ColumnDefinitions="*,620" ColumnSpacing="56">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="18,6,0,8">
+            <TextBlock Text="WILLKOMMEN" FontSize="15" FontWeight="Bold" LetterSpacing="2" Foreground="{StaticResource Accent}" />
+            <TextBlock Text="Welche Launcher soll Arcadia nutzen?" FontSize="42" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" TextWrapping="Wrap" />
+            <TextBlock Text="Was Arcadia gefunden hat, ist schon an. Jeder Launcher, der an ist, bekommt einen Tab." FontSize="18"
+                       Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+          </StackPanel>
+          <Panel>
+            <StackPanel Orientation="Horizontal" Spacing="14" Margin="18,30,0,0" VerticalAlignment="Top" IsVisible="{Binding IsSearching}">
+              <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+              <TextBlock Text="Arcadia sucht nach Launchern …" FontSize="20" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+            </StackPanel>
+            <ScrollViewer Name="RowsScroller" VerticalScrollBarVisibility="Hidden" Padding="8" Margin="-8" IsVisible="{Binding IsReady}">
+              <StackPanel>
+                <TextBlock Classes="settingsGroup" Text="GEFUNDEN" IsVisible="{Binding HasFound}" />
+                <ItemsControl Name="FoundRows" ItemsSource="{Binding Found}" ItemTemplate="{StaticResource LauncherRow}" />
+                <TextBlock Classes="settingsGroup" Text="NICHT GEFUNDEN" IsVisible="{Binding HasMissing}" />
+                <ItemsControl Name="MissingRows" ItemsSource="{Binding Missing}" ItemTemplate="{StaticResource LauncherRow}" />
+              </StackPanel>
+            </ScrollViewer>
+          </Panel>
+        </DockPanel>
+
+        <!-- The focused launcher explained; below, which become tabs and "Fertig". -->
+        <Border Grid.Column="1" Classes="infoPanel">
+          <DockPanel Margin="32,30">
+            <StackPanel DockPanel.Dock="Bottom" Spacing="14">
+              <TextBlock Text="{Binding Summary}" FontSize="16" LineHeight="23" Foreground="{StaticResource TextMuted}" TextAlignment="Center" TextWrapping="Wrap" />
+              <Button Classes="plain finish" Command="{Binding FinishCommand}" ToolTip.Tip="Fertig (Enter)">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <ctl:KeyHint Pad="≡" Keys="Enter" IsDark="True" />
+                  <TextBlock Text="Fertig" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+            <Panel IsVisible="{Binding HasFocusedRow}">
+              <StackPanel Spacing="22" DataContext="{Binding FocusedRow}" x:DataType="setup:FirstRunLauncherViewModel">
+                <StackPanel Orientation="Horizontal" Spacing="18">
+                  <Border Classes="launcherLogo" Width="64" Height="64" CornerRadius="16" Background="{Binding TileBrush}">
+                    <TextBlock Text="{Binding Monogram}" FontSize="30" />
+                  </Border>
+                  <StackPanel Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Ellipse Classes="statusDot" Classes.active="{Binding IsOn}" Width="9" Height="9" VerticalAlignment="Center" />
+                      <TextBlock Classes="launcherState" Classes.active="{Binding IsOn}" Text="{Binding StateText}" />
+                    </StackPanel>
+                  </StackPanel>
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <Border Classes="infoFact">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+                      <TextBlock Classes="factLabel" Text="Spiele" />
+                      <TextBlock Grid.Column="1" Classes="factValue" Classes.muted="{Binding !IsFound}" Text="{Binding GamesText}" />
+                    </Grid>
+                  </Border>
+                  <Border Classes="infoFact">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+                      <TextBlock Classes="factLabel" Text="Gefunden unter" />
+                      <TextBlock Grid.Column="1" Classes="factValue" Classes.muted="{Binding !IsFound}" Text="{Binding LocationText}" ToolTip.Tip="{Binding LocationText}" />
+                    </Grid>
+                  </Border>
+                  <Border Classes="infoFact">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+                      <TextBlock Classes="factLabel" Text="Such-Kürzel" />
+                      <TextBlock Grid.Column="1" Classes="factValue" Text="{Binding Keyword}" />
+                    </Grid>
+                  </Border>
+                </StackPanel>
+                <Border Classes="infoSection">
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="Später änderbar" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
+                    <TextBlock Classes="infoText" FontSize="16" LineHeight="24"
+                               Text="Unter Einstellungen › Launcher schaltest du Launcher an oder aus, änderst die Reihenfolge der Tabs, Namen, Kürzel und Logos." />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </Panel>
+          </DockPanel>
+        </Border>
+      </Grid>
+
+      <!-- Footer: ◀ ▶ switch, ≡ ends; B does nothing here. -->
+      <Border Grid.Row="2" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Margin="-1920,0" Padding="2000,0">
+        <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsReady}">
+          <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="Klick" Text="An / Aus" />
+          <ctl:KeyHint Pad="≡" Keys="Enter" Alt="Klick" Text="Fertig" />
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Panel>
+</UserControl>

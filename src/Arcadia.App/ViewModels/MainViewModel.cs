@@ -4,6 +4,7 @@ using Arcadia.App.Input;
 using Arcadia.App.Search;
 using Arcadia.App.Services;
 using Arcadia.App.Settings;
+using Arcadia.App.Setup;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
@@ -42,6 +43,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     private readonly ControllerSupportService _controllerSupport;
     private readonly ArcadiaUpdateService _updates;
     private readonly SettingsService _settings;
+    private readonly FirstRunSetup _firstRun;
     private readonly TimeProvider _time;
     private readonly HoldGesture _acceptHold;
     private GameTileViewModel? _holdTile;
@@ -61,6 +63,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         RunningGamesTracker running,
         LaunchedGames launchedGames,
         SettingsService settings,
+        FirstRunSetup firstRun,
         TimeProvider time)
     {
         _library = library;
@@ -72,7 +75,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         _running = running;
         LaunchedGames = launchedGames;
         _settings = settings;
+        _firstRun = firstRun;
         _time = time;
+        if (firstRun.IsPending)
+        {
+            // Shown from the start, so the library never flashes up before it; its launchers follow once they are read.
+            FirstRun = new FirstRunViewModel(library.Launchers, CompleteFirstRun);
+        }
+
         Status = new StatusBarViewModel(controllerSupport, updates, time);
         Toast = new ToastViewModel(time);
         AppErrors.Occurred += message => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(message));
@@ -101,6 +111,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     public partial SettingsPageViewModel? Settings { get; private set; }
 
     public bool IsSettingsOpen => Settings is not null;
+
+    /// <summary>The first start's question which launchers Arcadia uses (#139), in place of the library until "Fertig".</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFirstRunShown))]
+    public partial FirstRunViewModel? FirstRun { get; private set; }
+
+    public bool IsFirstRunShown => FirstRun is not null;
 
     [ObservableProperty]
     public partial bool ShowControllerSupport { get; private set; }
@@ -179,7 +196,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     public bool IsConfirmationOpen => Confirmation is not null;
 
     /// <summary>A dialog or menu over the page takes the input.</summary>
-    public bool IsDialogOpen => IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen;
+    public bool IsDialogOpen => IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen;
 
     /// <summary>The detail page; it takes the place of the cover grid while open, and of the search when opened from there.</summary>
     [ObservableProperty]
@@ -442,6 +459,24 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         }
     }
 
+    /// <summary>"Fertig" in the first start's question: only the launchers switched on there keep their tab.</summary>
+    private void CompleteFirstRun(IReadOnlyList<string> active)
+    {
+        try
+        {
+            _firstRun.Complete(active);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AppLog.Write($"Launcherauswahl nicht gespeichert: {ex.Message}");
+            Toast.Show("Die Launcherauswahl konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
+        }
+
+        AppLog.Write($"Ersteinrichtung abgeschlossen, aktive Launcher: {string.Join(", ", active)}");
+        FirstRun = null;
+        ApplyLauncherChoice();
+    }
+
     private void RefreshLauncherSettings() => Settings?.Categories.OfType<LauncherSettingsViewModel>().FirstOrDefault()?.Refresh();
 
     LauncherRegistry ILauncherSettingsHost.Launchers => _library.Launchers;
@@ -462,6 +497,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     /// </summary>
     private void ApplyLibraries(IReadOnlyList<LauncherLibrary> libraries)
     {
+        FirstRun?.Show(libraries);
         GameFolders = GameFolders.Of(libraries.SelectMany(l => l.Games));
         _running.SetLibrary(libraries.SelectMany(l => l.Games));
         foreach (var gone in Tabs.Where(t => libraries.All(l => l.Launcher.Id != t.Launcher.Id)).ToList())
@@ -586,6 +622,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         if (action != _holdAction)
         {
             _acceptHold.Cancel();
+        }
+
+        if (FirstRun is { } firstRun)
+        {
+            firstRun.Handle(action);
+            return;
         }
 
         if (Settings is { } settings)

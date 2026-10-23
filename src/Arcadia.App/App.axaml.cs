@@ -37,6 +37,12 @@ public partial class App : Application
     /// <summary>How often Arcadia asks its update service; the service itself checks GitHub only every few hours.</summary>
     private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromMinutes(30);
 
+    /// <summary>Demo libraries for every launcher without an integration; skips the first start's question and saves no launchers.</summary>
+    private const string DemoArgument = "--demo";
+
+    /// <summary>Shows the first start's question again, even after it was answered (#139), e.g. to try it out.</summary>
+    private const string FirstRunArgument = "--first-run";
+
     /// <summary>Set on the restart after an update while Arcadia wasn't in front (e.g. a game was).</summary>
     private const string BackgroundArgument = "--background";
 
@@ -72,11 +78,12 @@ public partial class App : Application
             var http = new HttpClient();
 
             var settings = new SettingsService(SettingsStore.CreateDefault());
+            var demo = args.Contains(DemoArgument, StringComparer.OrdinalIgnoreCase);
+            var firstRun = new FirstRunSetup(settings, demo, forced: args.Contains(FirstRunArgument, StringComparer.OrdinalIgnoreCase));
 
-            // The user chooses the active launchers and their order in the settings (#136); until then, all found ones.
-            var launchers = new LauncherRegistry(
-                BuiltInLaunchers.Create(time, demo: args.Contains("--demo", StringComparer.OrdinalIgnoreCase)),
-                () => settings.Current.ActiveLaunchers);
+            // The first start asks which launchers are active (#139), the settings change them and their order (#136);
+            // while the question shows, every launcher found is read, so it can count their games.
+            var launchers = new LauncherRegistry(BuiltInLaunchers.Create(time, demo), firstRun.ChosenLaunchers);
             foreach (var problem in launchers.Rejected)
             {
                 AppLog.Write(problem);
@@ -115,6 +122,7 @@ public partial class App : Application
                 runningGames,
                 launchedGames,
                 settings,
+                firstRun,
                 time);
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
@@ -320,7 +328,8 @@ public partial class App : Application
             {
                 i++;
             }
-            else if (args[i] != BackgroundArgument)
+            // --first-run asked once; the start after an update must not ask again.
+            else if (args[i] != BackgroundArgument && !args[i].Equals(FirstRunArgument, StringComparison.OrdinalIgnoreCase))
             {
                 kept.Add(args[i]);
             }

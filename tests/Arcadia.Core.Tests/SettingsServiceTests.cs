@@ -206,14 +206,20 @@ public sealed class SettingsServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_settings_file_locked_only_for_a_moment_is_read()
+    public void A_settings_file_locked_only_for_a_moment_is_read()
     {
         File.WriteAllText(SettingsPath, """{ "PreferredPageSize": 50 }""");
         var locked = new FileStream(SettingsPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-        var release = Task.Delay(TimeSpan.FromMilliseconds(50)).ContinueWith(_ => locked.Dispose(), TaskScheduler.Default);
 
+        // A thread of its own: a busy thread pool (all tests run in parallel) could release the lock too late.
+        var release = new Thread(() =>
+        {
+            Thread.Sleep(20);
+            locked.Dispose();
+        });
+        release.Start();
         var service = new SettingsService(new SettingsStore(SettingsPath));
-        await release;
+        release.Join();
 
         Assert.Equal(50, service.Current.PreferredPageSize);
         service.Update(settings => settings with { PreferredPageSize = 100 });

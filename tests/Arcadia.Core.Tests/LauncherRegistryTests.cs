@@ -137,6 +137,32 @@ public sealed class LauncherRegistryTests
         Assert.Equal(running.Poll(), running.Poll());
     }
 
+    [Fact]
+    public async Task A_large_demo_library_has_as_many_games_as_asked_with_unique_titles()
+    {
+        var demo = BuiltInLaunchers.Create(_time, demo: true, demoGames: 5000).OfType<DemoIntegration>().ToList();
+
+        var games = new List<Game>();
+        foreach (var integration in demo)
+        {
+            games.AddRange(await integration.Scanner.ScanAsync());
+        }
+
+        Assert.InRange(games.Count, 4990, 5010);
+        Assert.All(games.GroupBy(g => g.LauncherId), library => Assert.Equal(library.Count(), library.Select(g => g.Title).Distinct().Count()));
+    }
+
+    [Fact]
+    public void The_usual_demo_library_stays_the_same()
+    {
+        var now = new DateTimeOffset(2026, 10, 21, 18, 0, 0, TimeSpan.Zero);
+
+        var titles = new DemoScanner(KnownLaunchers.Xbox, 62, now).Generate().Select(g => g.Title).ToList();
+
+        Assert.Equal(62, titles.Count);
+        Assert.DoesNotContain(titles, t => char.IsDigit(t[^1]));
+    }
+
     private sealed class FakeClient(string launcherId) : ILauncherClient
     {
         public int Starts { get; private set; }

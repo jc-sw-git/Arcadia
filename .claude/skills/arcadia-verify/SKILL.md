@@ -20,7 +20,9 @@ In a fresh PowerShell after installing the SDK, reload PATH first:
 `$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')`.
 
 Start options: `--demo` (demo libraries for all launchers, skips the first start's page), `--first-run` (shows the
-first start's launcher question again; with `--demo` the answer holds for the session only).
+first start's launcher question again; with `--demo` the answer holds for the session only), `--demo-games 5000` (with
+`--demo`: that many demo games in all, to measure a large library). After the start, `arcadia.log` names the time from
+the process start to the shown library and the working set (line `Bibliothek: …`), the values of the budgets in `CLAUDE.md`.
 
 ## 2. Tell the owner before driving the app
 

@@ -23,7 +23,6 @@ reference for porting (binary VDF codec, scanner ideas, architecture notes).
 dotnet build Arcadia.slnx
 dotnet test Arcadia.slnx
 dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all launchers
-dotnet run --project src/Arcadia.App -- --first-run   # the first start's launcher question again (with --demo: saves nothing)
 ```
 
 - .NET 10 SDK. `Directory.Build.props` sets `TreatWarningsAsErrors` — keep the build warning-free.

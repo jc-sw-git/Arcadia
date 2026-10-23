@@ -19,6 +19,9 @@ dotnet test Arcadia.slnx --no-build -nologo
 In a fresh PowerShell after installing the SDK, reload PATH first:
 `$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')`.
 
+Start options: `--demo` (demo libraries for all launchers, skips the first start's page), `--first-run` (shows the
+first start's launcher question again; with `--demo` the answer holds for the session only).
+
 ## 2. Tell the owner before driving the app
 
 The owner frequently tests by hand at the same time; key presses from both collide (this happened).

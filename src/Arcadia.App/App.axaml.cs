@@ -110,7 +110,12 @@ public partial class App : Application
             }
 
             var launchedGames = new LaunchedGames();
-            var runningGames = new RunningGamesTracker(launchers, new ProcessGames(new SystemProcessTable(), launchedGames), time) { Log = AppLog.Write };
+            var installTracker = new InstallTracker(launchers, time);
+            var runningGames = new RunningGamesTracker(launchers, new ProcessGames(new SystemProcessTable(), launchedGames), time)
+            {
+                Log = AppLog.Write,
+                IsInstalling = key => installTracker.StateOf(key) is not null,
+            };
             for (var i = 0; i < args.Length - 1; i++)
             {
                 if (args[i] == StartedGameArgument)
@@ -125,7 +130,7 @@ public partial class App : Application
                 new GameLaunchService(launchers) { Log = AppLog.Write },
                 controllerSupport,
                 updates,
-                new InstallTracker(launchers, time),
+                installTracker,
                 runningGames,
                 launchedGames,
                 settings,

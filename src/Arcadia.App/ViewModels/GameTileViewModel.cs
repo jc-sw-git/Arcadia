@@ -51,12 +51,17 @@ public partial class GameTileViewModel : ViewModelBase
     /// <summary>Whether the game runs, or was handed to its launcher and doesn't run yet (#95); null if neither.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsRunning), nameof(IsStarting), nameof(IsRunningOrStarting), nameof(NextStartOnlyReason), nameof(RunStateText),
-        nameof(RunStateShortText), nameof(UpdateAvailable), nameof(PrimaryActionText))]
+        nameof(RunStateShortText), nameof(UpdateAvailable), nameof(PrimaryActionText), nameof(ShowRunningBadge), nameof(ShowStartingBadge))]
     public partial RunState? RunState { get; set; }
 
     public bool IsRunning => RunState?.Phase == RunPhase.Running;
 
     public bool IsStarting => RunState?.Phase == RunPhase.Starting;
+
+    // A cover has room for one badge (#167): a launcher that updates the game before starting it shows the update's progress.
+    public bool ShowRunningBadge => IsRunning && InstallState is null;
+
+    public bool ShowStartingBadge => IsStarting && InstallState is null;
 
     /// <summary>"Deinstallieren …" and settings that would only apply to the next start wait until the game ended.</summary>
     public bool IsRunningOrStarting => RunState is not null;
@@ -85,7 +90,7 @@ public partial class GameTileViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsInstallActive), nameof(UpdateAvailable), nameof(ShowInstallBadge), nameof(CanActivate), nameof(PrimaryActionText),
         nameof(InstallPercent), nameof(IsInstallIndeterminate), nameof(IsInstallPaused), nameof(IsInstallQueued), nameof(IsInstallSpinning),
-        nameof(InstallStatusText), nameof(InstallShortText), nameof(ShowLauncherControlsHint))]
+        nameof(InstallStatusText), nameof(InstallShortText), nameof(ShowLauncherControlsHint), nameof(ShowRunningBadge), nameof(ShowStartingBadge))]
     public partial InstallProgress? InstallState { get; set; }
 
     public bool IsInstallActive => InstallState is not null;

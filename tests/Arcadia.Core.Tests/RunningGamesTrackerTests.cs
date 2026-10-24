@@ -15,6 +15,7 @@ public sealed class RunningGamesTrackerTests
     private readonly CountingProcessTable _processes = new();
     private readonly HashSet<string> _disabled = [];
     private readonly List<string> _log = [];
+    private readonly HashSet<string> _installing = [];
 
     private RunningGamesTracker CreateTracker(params ILauncherIntegration[] extra)
     {
@@ -25,7 +26,11 @@ public sealed class RunningGamesTrackerTests
             .. extra,
         ];
         var registry = FakeIntegration.Registry(integrations, id => !_disabled.Contains(id));
-        return new RunningGamesTracker(registry, new ProcessGames(_processes, new LaunchedGames()), _time) { Log = _log.Add };
+        return new RunningGamesTracker(registry, new ProcessGames(_processes, new LaunchedGames()), _time)
+        {
+            Log = _log.Add,
+            IsInstalling = _installing.Contains,
+        };
     }
 
     [Fact]
@@ -104,6 +109,72 @@ public sealed class RunningGamesTrackerTests
         Assert.True(changes?.StatesChanged);
         Assert.Null(tracker.StateOf("steam:440"));
         Assert.Single(_log);
+    }
+
+    [Fact]
+    public async Task A_game_its_launcher_updates_first_is_starting_for_as_long_as_the_update_runs()
+    {
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+        _installing.Add("steam:440");
+
+        _time.Advance(RunningGamesTracker.StartTimeout * 10);
+        await tracker.PollAsync();
+        Assert.Equal(RunPhase.Starting, tracker.StateOf("steam:440")?.Phase);
+
+        _installing.Clear();
+        _steam.Running.Add(new RunningGame("440", _time.GetUtcNow()));
+        await tracker.PollAsync();
+
+        Assert.Equal(RunPhase.Running, tracker.StateOf("steam:440")?.Phase);
+        Assert.Equal(["steam:440"], tracker.StartedFromArcadia);
+    }
+
+    [Fact]
+    public async Task After_an_update_the_start_waits_the_start_timeout_again()
+    {
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+        _installing.Add("steam:440");
+        _time.Advance(RunningGamesTracker.StartTimeout * 10);
+        await tracker.PollAsync();
+
+        _installing.Clear();
+        _time.Advance(RunningGamesTracker.StartTimeout);
+        await tracker.PollAsync();
+        Assert.Equal(RunPhase.Starting, tracker.StateOf("steam:440")?.Phase);
+
+        _time.Advance(TimeSpan.FromSeconds(1));
+        await tracker.PollAsync();
+
+        Assert.Null(tracker.StateOf("steam:440"));
+    }
+
+    [Fact]
+    public async Task A_start_keeps_when_arcadia_asked_while_the_update_runs()
+    {
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+        var asked = _time.GetUtcNow();
+        _installing.Add("steam:440");
+
+        _time.Advance(TimeSpan.FromMinutes(5));
+        await tracker.PollAsync();
+
+        Assert.Equal(new RunState(RunPhase.Starting, asked), tracker.StateOf("steam:440"));
+    }
+
+    [Fact]
+    public async Task An_update_doesnt_keep_a_start_of_a_switched_off_launcher()
+    {
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+        _installing.Add("steam:440");
+        _disabled.Add("steam");
+
+        await tracker.PollAsync();
+
+        Assert.Null(tracker.StateOf("steam:440"));
     }
 
     [Fact]

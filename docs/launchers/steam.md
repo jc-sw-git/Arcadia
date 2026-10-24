@@ -58,7 +58,8 @@ of the games already running. A game that starts meanwhile becomes `RunningAppID
 time of the app's key, read once per run (`RegQueryInfoKey`). Checked on the owner's PC (T95-12,
 2026-10-24): Steam sets `Running` to 1 while the game runs and back to 0 when it ends, also when the game is killed in
 Task Manager. **But the flag can stick:** Marvel's Guardians of the Galaxy (1088850), not installed, still had
-`Running` = 1 from some earlier session; cause unknown (a crash of Steam itself, or an uninstall while it ran). A
-stale flag would show such a game as running for good once it is installed again (#182). Play stats: Steam writes `LastPlayed` into the manifest
-at the start and the account's `localconfig.vdf` at some point after the end; the scanner takes the later of both,
+`Running` = 1, its key last written on 2026-10-20 although it was last played in 2025; cause unknown. Not the cause:
+`steam://rungameid` on an uninstalled game (opens the install dialog, leaves `Running` at 0; checked 2026-10-24). A
+stale flag would show such a game as running for good once it is installed again (#182).
+Play stats: Steam writes `LastPlayed` into the manifest at the start and the account's `localconfig.vdf` at some point after the end; the scanner takes the later of both,
 and Arcadia rescans right after a game ended and 30 s later.

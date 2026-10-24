@@ -60,3 +60,4 @@ Verlauf:
 | T95-1 bis T95-10, T95-14 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
 | T95-11 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ⏭️ Noch nicht prüfbar: Steam und Epic melden laufende Spiele selbst, es gibt noch keinen Launcher ohne eigenes Signal | Bleibt offen, bis ein solcher Launcher kommt |
 | T95-13 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners, neben einem aus Arcadia gestarteten Steam-Spiel, 60 s | ✅ 0,13 % CPU | – |
+| T95-12 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners, Castlevania: Belmont's Curse | ⚠️ Flag 1 beim Spielen, 0 nach normalem Ende und nach Beenden im Task-Manager; aber bei Marvel's Guardians of the Galaxy (nicht installiert) hing es auf 1. „Läuft seit“ noch nicht gemeldet | Hängendes Flag → #182 (Iteration 2); Ergebnis in `docs/launchers/steam.md` |

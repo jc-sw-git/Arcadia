@@ -15,7 +15,9 @@ Agreed with the owner; don't change without asking. Read this before changing th
   "Launcher-Einstellungen" and "Neu einlesen" / "Erneut suchen"); with no launcher active the library says "Kein Launcher
   aktiv" the same way, with only "Launcher-Einstellungen" (nothing to read before one is switched on, owner 2026-10-24). Beside the rows two boxes: "Launcher-Reihenfolge" (the tabs as they will be, the
   library's selected tab not marked, owner 2026-10-23) and "Launcher-Details" (head,
-  warnings, library, location; no repeat of what row and preview show). "Steam Controller Kompatibilität" has a lamp
+  status message, library, location; no repeat of what row and preview show). An active launcher no longer found is a
+  warning; one without games is information (blue i in its row and note, no symbol on the category's tab, owner
+  2026-10-24). "Steam Controller Kompatibilität" has a lamp
   beside its name while on: green while SISR runs. A status message row shows one short line below its title
   (`HealthIssue.Summary`), the whole text in the info panel; descriptions below a row name stay at one, at most two
   lines. A row's action is a pill as wide as the value chips, filled with the accent while focused (owner, 2026-10-22).

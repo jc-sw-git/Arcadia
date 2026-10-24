@@ -194,6 +194,8 @@
     <BoxShadows x:Key="LiftedRing">0 0 0 3 #3B9EFF, 0 22 44 0 #99000000</BoxShadows>
     <SolidColorBrush x:Key="NoteSurface" Color="#2A2113" />
     <SolidColorBrush x:Key="NoteText" Color="#F5D6A8" />
+    <SolidColorBrush x:Key="InfoNoteSurface" Color="#13212F" />
+    <SolidColorBrush x:Key="InfoNoteText" Color="#BFDDFF" />
     <SolidColorBrush x:Key="FactLine" Color="#1A212B" />
     <!-- Sets the launcher badge off from any cover colour. -->
     <BoxShadows x:Key="LauncherBadgeRing">0 0 0 2 #990B0F14</BoxShadows>
@@ -1643,6 +1645,9 @@
   <Style Selector="TextBlock.launcherStatus.warning">
     <Setter Property="Foreground" Value="{StaticResource Warning}" />
   </Style>
+  <Style Selector="TextBlock.launcherStatus.info">
+    <Setter Property="Foreground" Value="{StaticResource Info}" />
+  </Style>
   <Style Selector="Path.statusIcon.small">
     <Setter Property="Width" Value="18" />
     <Setter Property="Height" Value="18" />
@@ -1692,6 +1697,13 @@
     <Setter Property="LineHeight" Value="23" />
     <Setter Property="Foreground" Value="{StaticResource NoteText}" />
     <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <!-- A note in its level's colour (owner, 2026-10-24): amber a warning, blue information. -->
+  <Style Selector="Border.infoNote.info">
+    <Setter Property="Background" Value="{StaticResource InfoNoteSurface}" />
+  </Style>
+  <Style Selector="Border.infoNote.info TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource InfoNoteText}" />
   </Style>
   <Style Selector="Border.miniTabs">
     <Setter Property="Background" Value="{StaticResource Bg}" />

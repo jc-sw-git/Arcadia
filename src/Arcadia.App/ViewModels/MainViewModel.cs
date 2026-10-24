@@ -441,8 +441,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     private IReadOnlyList<LauncherLibrary> SearchedLibraries() => Tabs.Where(t => t.Count > 0).Select(t => t.Library).ToList();
 
     /// <summary>
-    /// "Neu einlesen" on an empty tab or a launcher's page reads <paramref name="launcher"/> again; "Erneut suchen" with no
-    /// launcher active and X in the launcher settings read all (null). Says what came of it.
+    /// "Neu einlesen" on an empty tab or a launcher's page reads <paramref name="launcher"/> again; X and "Alle neu einlesen"
+    /// in the launcher settings read all (null). Says what came of it.
     /// </summary>
     private async Task RescanAsync(LauncherInfo? launcher)
     {
@@ -621,10 +621,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
             }
             else
             {
-                EmptyTab ??= new EmptyTabViewModel(
-                    null,
-                    () => ShowSettings(typeof(LauncherSettingsViewModel)),
-                    () => RescanAsync(null).Forget("Erneut suchen"));
+                EmptyTab ??= new EmptyTabViewModel(null, () => ShowSettings(typeof(LauncherSettingsViewModel)), rescan: null);
             }
 
             RefreshLauncherSettings();

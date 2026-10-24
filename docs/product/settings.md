@@ -20,7 +20,7 @@ Agreed with the owner; don't change without asking. Read this before changing th
   (e.g. "Steam beenden?") stay dialogs over the page; the header's status symbols open their category.
 - Status messages (`HealthIssue`, header, the settings row and category they belong to) have three levels, each with its own
   symbol: **Info** (round blue i) for intended behaviour in a situation, e.g. SISR paused because other controllers
-  use Steam Input; **Warning** (yellow triangle with !) when a function is impaired and the user must act, e.g.
+  use Steam Input, or a launcher without games; **Warning** (yellow triangle with !) when a function is impaired and the user must act, e.g.
   Steam not running, usbip driver missing, SISR switched on but no longer installed; **Error** (red X) for lasting
   failures, e.g. SISR keeps crashing. The header shows the worst level; info alone doesn't make a status unhealthy
   (owner, 2026-10-21).

@@ -395,7 +395,7 @@
             <TextBlock Text="{Binding Text}" FontSize="19" LineHeight="28" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" TextAlignment="Center" />
             <StackPanel Orientation="Horizontal" Spacing="14" HorizontalAlignment="Center" Margin="0,12,0,0">
               <Button Classes="plain action primaryAction" Classes.focused="{Binding IsSettingsFocused}" Command="{Binding OpenSettingsCommand}" Content="Launcher-Einstellungen" />
-              <Button Classes="plain action" Classes.focused="{Binding IsRescanFocused}" Command="{Binding RescanCommand}" Content="{Binding RescanText}" />
+              <Button Classes="plain action" Classes.focused="{Binding IsRescanFocused}" Command="{Binding RescanCommand}" Content="{Binding RescanText}" IsVisible="{Binding CanRescan}" />
             </StackPanel>
           </StackPanel>
         </Panel>
@@ -416,7 +416,7 @@
           <ctl:KeyHint Pad="B" Keys="Esc" Text="Zurück" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsEmptyTabShown}">
-          <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Wechseln" />
+          <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Wechseln" IsVisible="{Binding EmptyTab?.CanRescan, TargetNullValue=False}" />
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="Auswählen" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" IsVisible="{Binding EmptyTab?.HasTab, TargetNullValue=False}" />
         </StackPanel>
@@ -1118,8 +1118,8 @@
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                       <!-- No local Fill or Data: they would override the styles. -->
                                       <Ellipse Classes="statusDot" Classes.active="{Binding IsHealthy}" Width="9" Height="9" VerticalAlignment="Center" IsVisible="{Binding !HasSeverity}" />
-                                      <Path Classes="statusIcon small" IsVisible="{Binding HasSeverity}" VerticalAlignment="Center" />
-                                      <TextBlock Classes="launcherStatus" Classes.warning="{Binding HasSeverity}" Text="{Binding StatusText}" />
+                                      <Path Classes="statusIcon small" Classes.info="{Binding IsInfo}" IsVisible="{Binding HasSeverity}" VerticalAlignment="Center" />
+                                      <TextBlock Classes="launcherStatus" Classes.warning="{Binding HasSeverity}" Classes.info="{Binding IsInfo}" Text="{Binding StatusText}" />
                                     </StackPanel>
                                   </StackPanel>
                                   <Panel Grid.Column="3" VerticalAlignment="Center">
@@ -1221,9 +1221,11 @@
                                 </DataTemplate>
                                 <DataTemplate x:DataType="settings:ActionRowViewModel">
                                   <Border Classes="rowGo" Classes.primary="{Binding IsPrimary}" Classes.disabled="{Binding !IsEnabled}" IsVisible="{Binding HasAction}">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                      <TextBlock Text="{Binding ActionText}" />
-                                      <Path Grid.Column="1" Classes="chevronRight" />
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                      <ctl:KeyHint Pad="{Binding ShortcutPad}" Keys="{Binding ShortcutKeys}" IsDark="{Binding IsFocused}" VerticalAlignment="Center"
+                                                   IsVisible="{Binding HasShortcut}" />
+                                      <TextBlock Grid.Column="1" Text="{Binding ActionText}" />
+                                      <Path Grid.Column="2" Classes="chevronRight" />
                                     </Grid>
                                   </Border>
                                 </DataTemplate>
@@ -1315,9 +1317,9 @@
                 </DataTemplate>
                 <!-- The launcher settings (#136): a note, the tab strip in miniature, the launcher's head, its facts. -->
                 <DataTemplate x:DataType="settings:InfoNote">
-                  <Border Classes="infoNote">
+                  <Border Classes="infoNote" Classes.info="{Binding IsInfo}">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                      <Path Classes="statusIcon" VerticalAlignment="Top" />
+                      <Path Classes="statusIcon" Classes.info="{Binding IsInfo}" VerticalAlignment="Top" />
                       <TextBlock Grid.Column="1" Text="{Binding Text}" />
                     </Grid>
                   </Border>

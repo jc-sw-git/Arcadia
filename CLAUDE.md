@@ -28,7 +28,7 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
 - .NET 10 SDK. `Directory.Build.props` sets `TreatWarningsAsErrors` — keep the build warning-free.
 - A running Arcadia locks `bin/` → close it before building: `Get-Process Arcadia | % { $_.CloseMainWindow() }`
   (CloseMainWindow, not Stop-Process: Arcadia must shut SISR down cleanly).
-- Logs: `%LOCALAPPDATA%\Arcadia-Logs\arcadia.log` (keys, gamepad buttons, SISR start/stop),
+- Logs: `%APPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, SISR start/stop),
   `sisr.log` (SISR's own log, overwritten per start). Settings: `%APPDATA%\Arcadia\settings.json`.
 - Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log:
   `Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} | ? ProviderName -match '.NET Runtime'`.
@@ -94,8 +94,8 @@ scalability. Performance beats readability only when a measurement breaks a budg
 decided on purpose is named in the PR (and in the review issue).
 
 **Iterations:** feature iteration N (milestone "Iteration N": issues → code review → manual test →
-retrospective of the processes (own issue, keep, change or drop each) → release), then acceptance iteration N (milestone "Abnahme Iteration N": every `E2E: ja`
-test case of N becomes an automated acceptance test in CI). Feature iteration N+1 starts only
+retrospective of the processes (own issue, keep, change or drop each) → release), then acceptance iteration N (milestone "Abnahme Iteration N": the core
+flows of N become automated acceptance tests in CI; the other `E2E: ja` cases become issues of N+1, see `docs/testplans/README.md`). Feature iteration N+1 starts only
 when acceptance iteration N is closed, so a change in N+1 that breaks a feature of N shows at once.
 
 ## Layout
@@ -130,6 +130,7 @@ area. Read the file of the area you touch before changing it, and add new decisi
 | Settings page, status messages | `docs/product/settings.md` |
 | Launchers: activate and order, launcher page, first start | `docs/product/launchers.md` |
 | Running games, Arcadia back to the front | `docs/product/running-games.md` |
+| UI texts: wording, length, listing new texts in the PR | `docs/product/ui-texts.md` |
 
 **Errors:** a game start goes through `GameLaunchService.TryStartAsync`, which never throws. Work nobody awaits
 (timer handlers, `Task`s started from sync code) runs through `AppErrors.Guard`/`.Forget(context)`: unexpected
@@ -183,6 +184,10 @@ Every step of a session resends its whole context, so keep it small (owner, 2026
   debt). Rename generated names such as `claude/project-thread-…` before the first push.
 - **Never** end commit messages with a `Co-Authored-By` trailer.
 - Commit messages: English, imperative subject, body explains why.
+- At most two open UI PRs at a time (the owner tests them one after the other). After each merge to `main`, check
+  yourself that your open PR is still mergeable and resolve conflicts before the owner finds them.
+- Code PRs get a review by Codex (`AGENTS.md`) as the standard; a second review by an independent Claude thread
+  only on the owner's request, e.g. for large or often reworked PRs (retro Iteration 1).
 - Opening a PR needs no prior OK (tell the owner the link). Merging, tags/releases, closing issues and posting
   comments only on the owner's explicit word.
 - License: GPL-3.0-only. Third-party notes in `THIRD-PARTY-NOTICES.md`.

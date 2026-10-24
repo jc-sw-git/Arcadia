@@ -112,16 +112,19 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
     }
 
     /// <param name="tabNumber">Its place among the tabs from 1, or null while inactive.</param>
-    /// <param name="warning">Why the launcher needs a look (e.g. "Keine Spiele gefunden"), shown instead of the state.</param>
-    public void Show(bool isActive, bool isFound, int? tabNumber, string statusText, string? warning, IReadOnlyList<InfoBlock> preview, IReadOnlyList<InfoBlock> info)
+    /// <param name="notice">
+    /// A status message shown with its level's symbol instead of the state, e.g. "Nicht gefunden" (a warning) or "Keine
+    /// Spiele gefunden" (information).
+    /// </param>
+    public void Show(bool isActive, bool isFound, int? tabNumber, string statusText, (string Text, HealthSeverity Severity)? notice, IReadOnlyList<InfoBlock> preview, IReadOnlyList<InfoBlock> info)
     {
         var actionsChanged = IsActive != isActive || IsFound != isFound;
         IsActive = isActive;
         IsFound = isFound;
         TabKey = tabNumber is >= 1 and <= 10 ? (tabNumber.Value % 10).ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
-        StatusText = warning ?? statusText;
-        Severity = warning is null ? null : HealthSeverity.Warning;
-        IsHealthy = isActive && warning is null;
+        StatusText = notice?.Text ?? statusText;
+        Severity = notice?.Severity;
+        IsHealthy = isActive && notice is null;
         Preview = preview;
         Info = info;
         if (actionsChanged)

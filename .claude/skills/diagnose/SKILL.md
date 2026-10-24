@@ -31,6 +31,10 @@ owner's exact symptom (not "didn't crash"), gives the same verdict every run and
 such check is possible, say so, list what you tried and ask for an environment or a captured
 artifact. No hypotheses before this exists.
 
+**Third-party behaviour is observed, not read.** For SISR, Steam, Epic or drivers, what their source code
+or docs suggest is a hypothesis, not a fact (retro Iteration 1: #124 and #144 were built on such guesses and
+failed on the owner's PC). Observe it first (their logs, a probe line, one run on the owner's PC), then build.
+
 ## 2. Reproduce and minimise
 
 Confirm the check shows the symptom the owner described, not a nearby one. Then cut inputs, files and

@@ -4,11 +4,13 @@
   publishes self-contained and runs `vpk pack` → `artifacts/releases/Arcadia-win-Setup.exe` + update feed.
   Installs without admin rights to `%LOCALAPPDATA%\Arcadia\current\Arcadia.exe`. Nothing else may go into
   `%LOCALAPPDATA%\Arcadia`: the setup takes any file there for an installation and deletes the folder on
-  "overwrite" or repair, so the logs live in `%LOCALAPPDATA%\Arcadia-Logs` (`LogLocation`; up to 0.1.0-rc.1 they
-  were in `Arcadia\logs` and move at the next start). Uninstalling removes the logs too, the settings stay.
+  "overwrite" or repair. Arcadia's own files (settings, logos, Epic play times, logs) are all in `%APPDATA%\Arcadia`
+  (`LogLocation`; logs of 0.1.0-rc.1 in `%LOCALAPPDATA%\Arcadia\logs` move there at the next start).
   The `Velopack` package and the `vpk` tool (`.config/dotnet-tools.json`) share one version.
-- `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Uninstalling asks (20 s, default
-  no — Velopack kills the hook after 30 s) whether SISR, VIIPER and usbip-win2 go too (`ControllerSupportRemoval`).
+- `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Uninstalling asks whether SISR, VIIPER and
+  usbip-win2 go too (`ControllerSupportRemoval`) and whether `%APPDATA%\Arcadia` goes too (owner, 2026-10-24); both
+  default to no. Velopack kills the uninstall hook after 30 s and removing SISR takes up to ~10 s, so the questions
+  share 20 s and say how long they wait.
 - `ArcadiaUpdateService` checks GitHub Releases (stable only) every 6 h and on "Nach Updates suchen" in
   Einstellungen → "Über Arcadia". "Jetzt aktualisieren" shows only with an update; it downloads, Arcadia closes
   and Velopack installs silently (no input needed) and restarts it. Updating while a game runs is fine: SISR

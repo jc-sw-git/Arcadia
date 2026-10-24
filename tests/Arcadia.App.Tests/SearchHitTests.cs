@@ -53,7 +53,10 @@ public sealed class SearchHitTests
         arcadia.Press(UiAction.Back);
         Assert.Null(arcadia.Main.GameMenu);
 
-        arcadia.PressDown(UiAction.Settings).Wait(PastHoldTime);
+        arcadia.PressDown(UiAction.Settings).Wait(TimeSpan.FromMilliseconds(300));
+        Assert.True(search.FocusedResult!.IsHolding);
+        Assert.Null(arcadia.Main.Detail);
+        arcadia.Wait(PastHoldTime - TimeSpan.FromMilliseconds(300));
         var detail = Assert.IsType<GameDetailViewModel>(arcadia.Main.Detail);
         Assert.True(detail.IsFromSearch);
         Assert.Equal("River Raid", detail.Current.Tile.Title);

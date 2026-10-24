@@ -153,6 +153,10 @@ public sealed class OnScreenKeyboardTests
         arcadia.Hold(UiAction.NextTab, Tap);
         Assert.Equal(KeyLevel.AltGr, keyboard.Level);
         Assert.All(keyboard.Keys.Where(k => k.Key.Kind == BoardKeyKind.Shift), key => Assert.False(key.IsOn));
+
+        // Shift really went off, it doesn't come back when AltGr goes.
+        arcadia.Hold(UiAction.NextTab, Tap);
+        Assert.Equal(KeyLevel.Normal, keyboard.Level);
     }
 
     [AvaloniaFact]

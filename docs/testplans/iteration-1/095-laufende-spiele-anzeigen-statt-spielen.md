@@ -37,7 +37,7 @@
       `Get-ItemProperty HKCU:\Software\Valve\Steam\Apps\<appid> | Select Running` zeigt 1, nach dem Ende 0; auch nach
       einem Absturz (Spiel im Task-Manager beenden). „Läuft seit“ stimmt mit der Startzeit überein. Ergebnis in
       `docs/launchers/steam.md` festhalten. · E2E: nein (echter Launcher)
-- [ ] **T95-13** CPU von Arcadia neben einem aus Arcadia gestarteten Spiel, 60 s, wie in T103-3: unter 1 %. ·
+- [x] **T95-13** CPU von Arcadia neben einem aus Arcadia gestarteten Spiel, 60 s, wie in T103-3: unter 1 %. ·
       E2E: nein (Messung am PC des Owners)
 - [x] **T95-14** Arcadia auf dem zweiten Monitor, nicht im Vordergrund: Ein Spiel direkt in Steam bzw. Epic starten
       zeigt nach höchstens 2 s „Läuft“, sein Ende nach höchstens 2 s wieder „Spielen“, ohne dass Arcadia den Fokus
@@ -59,3 +59,4 @@ Verlauf:
 | T95-14, T95-13 | 2026-10-21 | Juri | PC des Owners, Stand 271511b, Debug aus VS Code, Arcadia auf dem zweiten Monitor | ✅ Spiel in Steam/Epic gestartet und beendet: „Läuft“ und wieder „Spielen“ ohne Fokus auf Arcadia. CPU laut Task-Manager unverändert, Sprünge unter 1 %. ⚠️ Debug-Build im .NET-Host | CPU im Release-Build bei der Abnahme |
 | T95-1 bis T95-10, T95-14 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
 | T95-11 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ⏭️ Noch nicht prüfbar: Steam und Epic melden laufende Spiele selbst, es gibt noch keinen Launcher ohne eigenes Signal | Bleibt offen, bis ein solcher Launcher kommt |
+| T95-13 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners, neben einem aus Arcadia gestarteten Steam-Spiel, 60 s | ✅ 0,13 % CPU | – |

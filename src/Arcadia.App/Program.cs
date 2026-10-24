@@ -51,11 +51,13 @@ sealed partial class Program
             .LogToTrace();
 
     /// <summary>
-    /// Velopack ends the uninstall hook after 30 s. Removing SISR usually takes a few seconds (closing Steam for the
-    /// marker, VIIPER's uninstaller), so the questions share 20 s and each says how long it waits. If the removal
-    /// runs long, Velopack ends it after the important steps (<see cref="ControllerSupportRemoval.Remove"/>).
+    /// Velopack's Update.exe (1.2.161) ends the uninstall hook after 60 s; its API docs still say 30 s, so check
+    /// <c>commands/uninstall.rs</c> when Velopack is updated. Removing SISR usually takes a few seconds and at most
+    /// about 20 s (closing Steam for the marker, VIIPER's uninstaller), so the questions share 40 s and each says how
+    /// long it waits. If the removal runs long, Velopack ends it after the important steps
+    /// (<see cref="ControllerSupportRemoval.Remove"/>).
     /// </summary>
-    private const uint QuestionsTimeoutMs = 20_000;
+    private const uint QuestionsTimeoutMs = 40_000;
 
     /// <summary>
     /// Asks whether SISR and what belongs to it, and Arcadia's own files (settings, logos, logs) should go too.

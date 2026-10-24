@@ -9,7 +9,8 @@
   The `Velopack` package and the `vpk` tool (`.config/dotnet-tools.json`) share one version.
 - `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Uninstalling asks whether SISR, VIIPER and
   usbip-win2 go too (`ControllerSupportRemoval`) and whether `%APPDATA%\Arcadia` goes too (owner, 2026-10-24); both
-  default to no. Velopack kills the uninstall hook after 30 s, so the questions share 20 s and say how long they wait;
+  default to no. Velopack's Update.exe kills the uninstall hook after 60 s (`commands/uninstall.rs` in 1.2.161; its C#
+  docs say 30 s, recheck on updates), so the questions share 40 s and say how long they wait;
   the removal runs the important steps first. The "SISR Marker" goes from every account's `shortcuts.vdf`, with Steam
   closed (up to 8 s) and started again, because Steam rewrites that file from memory on exit (owner, 2026-10-24).
 - `ArcadiaUpdateService` checks GitHub Releases (stable only) every 6 h and on "Nach Updates suchen" in

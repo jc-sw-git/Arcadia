@@ -3,6 +3,7 @@ using System.Runtime.Versioning;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Diagnostics;
+using Arcadia.Launchers.Steam;
 using Avalonia;
 using Velopack;
 
@@ -50,8 +51,9 @@ sealed partial class Program
             .LogToTrace();
 
     /// <summary>
-    /// Velopack ends the uninstall hook after 30 s. Removing SISR takes up to about 10 s (VIIPER's uninstaller and
-    /// stopping processes wait), so the questions share the other 20 s and each says how long it waits.
+    /// Velopack ends the uninstall hook after 30 s. Removing SISR usually takes a few seconds (closing Steam for the
+    /// marker, VIIPER's uninstaller), so the questions share 20 s and each says how long it waits. If the removal
+    /// runs long, Velopack ends it after the important steps (<see cref="ControllerSupportRemoval.Remove"/>).
     /// </summary>
     private const uint QuestionsTimeoutMs = 20_000;
 
@@ -92,6 +94,7 @@ sealed partial class Program
             + "Soll auch SISR für den Steam Controller mit allem, was dazugehört, entfernt werden?\n\n"
             + string.Concat(parts.Select(p => $"•  {p}\n"))
             + "\nAndere Programme, die SISR nutzen, funktionieren danach nicht mehr. "
+            + (SteamInstallation.IsRunning ? "Steam wird dafür kurz beendet und wieder gestartet. " : string.Empty)
             + $"Ohne Antwort innerhalb von {timeoutMs / 1000} Sekunden bleibt SISR installiert; Arcadia wird trotzdem deinstalliert.";
         return Ask(text, timeoutMs);
     }

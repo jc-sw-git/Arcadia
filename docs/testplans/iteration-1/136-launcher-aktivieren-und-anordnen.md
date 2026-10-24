@@ -1,44 +1,45 @@
 # #136 Launcher aktivieren und anordnen
 
-- [ ] **T136-1** Ohne gespeicherte Auswahl (frische `settings.json`): Alle gefundenen Launcher sind aktiv und haben einen
+- [ ] ~~**T136-1** Ohne gespeicherte Auswahl (frische `settings.json`): Alle gefundenen Launcher sind aktiv und haben einen
       Tab wie bisher. In Einstellungen → „Launcher“ (erste Kategorie) stehen sie unter „Aktiv · erscheinen als Tabs“ in
       Tab-Reihenfolge mit ihrer Taste 1 … 0; unter „Nicht aktiv“ zuerst die installierten, dann die nicht gefundenen,
-      ausgegraut mit „Nicht installiert“. · E2E: ja
-- [ ] **T136-2** ◀ ▶ (A/D, mit der Maus ein Klick irgendwo auf den Schalter „Aktiv“/„Aus“) auf einem aktiven Launcher: „Aus“, er steht oben unter „Nicht
+      ausgegraut mit „Nicht installiert“.~~ Überholt durch #139: Ohne gespeicherte Auswahl startet die Ersteinrichtung
+      (T139-1). · E2E: ja
+- [x] **T136-2** ◀ ▶ (A/D, mit der Maus ein Klick irgendwo auf den Schalter „Aktiv“/„Aus“) auf einem aktiven Launcher: „Aus“, er steht oben unter „Nicht
       aktiv“, sein Tab verschwindet, seine Spiele fehlen in der Suche. Wieder an: Er steht am Ende der aktiven, bekommt den
       letzten Tab und wird eingelesen. Nach einem Neustart gilt die Auswahl samt Reihenfolge noch. · E2E: ja
-- [ ] **T136-3** Ein nicht gefundener Launcher lässt sich nicht einschalten (◀ ▶ tun nichts, der Fokus hält trotzdem an
+- [x] **T136-3** Ein nicht gefundener Launcher lässt sich nicht einschalten (◀ ▶ tun nichts, der Fokus hält trotzdem an
       ihm); ein aktiver, der nicht mehr gefunden wird (deinstalliert), lässt sich ausschalten. · E2E: nein (Deinstallation)
-- [ ] **T136-4** Y (V) hebt die Zeile an (Rahmen, Footer „▲▼ Verschieben, Y Ablegen, B Abbrechen“), ▲ ▼ (W/S) schieben
+- [x] **T136-4** Y (V) hebt die Zeile an (Rahmen, Footer „▲▼ Verschieben, Y Ablegen, B Abbrechen“), ▲ ▼ (W/S) schieben
       sie; Y legt sie ab und die Tabs folgen sofort. B (Esc) bricht ab und alles steht wie vorher. Unter „Nicht aktiv“
       abgelegt ist der Launcher aus. Mit der Maus: Zeile ziehen und loslassen, ebenso. · E2E: ja
-- [ ] **T136-5** Rechts stehen zwei Boxen: „Tab-Leiste“ zeigt die Tabs in der aktuellen Reihenfolge (der fokussierte
+- [x] **T136-5** Rechts stehen zwei Boxen: „Tab-Leiste“ zeigt die Tabs in der aktuellen Reihenfolge (der fokussierte
       Launcher markiert, ein inaktiver nicht darin), darunter „Launcher-Details“: Logo, Name und Zustand, Warnungen, dann
       Spiele/installiert, zuletzt eingelesen, Fundort, Installationen, laufende Spiele. RS scrollt die Details, ein Fade
       zeigt mehr. · E2E: ja
-- [ ] **T136-6** X (F) liest alle aktiven Launcher neu ein; ein Toast „Alle Launcher sind neu eingelesen.“ erscheint über
+- [x] **T136-6** X (F) liest alle aktiven Launcher neu ein; ein Toast „Alle Launcher sind neu eingelesen.“ erscheint über
       der Seite. · E2E: ja
-- [ ] **T136-7** Ein aktiver Launcher ohne Spiele behält seinen Tab: „Keine Spiele in …“ mit „Launcher-Einstellungen“ und
+- [x] **T136-7** Ein aktiver Launcher ohne Spiele behält seinen Tab: „Keine Spiele in …“ mit „Launcher-Einstellungen“ und
       „Neu einlesen“; einer, der nicht mehr gefunden wird: „… nicht gefunden“ mit „Erneut suchen“. ◀ ▶ und A, die Maus
       und Leertaste bedienen beide Knöpfe; „Launcher-Einstellungen“ öffnet die Kategorie mit diesem Launcher fokussiert.
       Alle Launcher aus: „Kein Launcher aktiv“ mit leeren Tabs als Bild, „Launcher-Einstellungen“ und „Erneut suchen“,
       ohne Hinweis auf `--demo`. · E2E: ja
 - [ ] **T136-8** Alles aus T136-2 bis T136-7 allein mit dem Controller, mit einer Hand an der Tastatur und allein mit der
       Maus. · E2E: ja
-- [ ] **T136-9** Release-Build am PC des Owners, Bibliothek mit rund 1.000 Spielen: `arcadia.log` nennt „Bibliothek:
+- [x] **T136-9** Release-Build am PC des Owners, Bibliothek mit rund 1.000 Spielen: `arcadia.log` nennt „Bibliothek:
       N Spiele aus M Launchern in X ms eingelesen, in Y ms angezeigt“; Start bis zur bedienbaren Bibliothek < 2 s.
       · E2E: nein (Messung)
-- [ ] **T136-10** In „Controller“ steht bei eingeschalteter „Steam Controller Kompatibilität“ eine Lampe hinter dem Namen:
+- [x] **T136-10** In „Controller“ steht bei eingeschalteter „Steam Controller Kompatibilität“ eine Lampe hinter dem Namen:
       grün, solange SISR läuft, grau, solange es startet, pausiert, keinen Controller findet oder ein Problem hat;
       ausgeschaltet keine Lampe.
       · E2E: nein (SISR)
-- [ ] **T136-11** Die Pfeile in den Werte-Chips (◀ ▶) stehen mittig in ihrem Kreis. Ein angehobener Launcher zeigt seine
+- [x] **T136-11** Die Pfeile in den Werte-Chips (◀ ▶) stehen mittig in ihrem Kreis. Ein angehobener Launcher zeigt seine
       Umrandung ganz, auch rechts. · E2E: nein (Optik)
-- [ ] **T136-12** Eine Meldung in „Controller“ (z. B. „SISR pausiert wegen eines anderen Controllers“) hat unter dem
+- [x] **T136-12** Eine Meldung in „Controller“ (z. B. „SISR pausiert wegen eines anderen Controllers“) hat unter dem
       Namen nur eine kurze Zeile („Es wurden weitere Controller erkannt, die Steam-Eingabe in Steam nutzen.“), der ganze
       Text steht im Infopanel. Ihre Aktion („Erneut versuchen“) ist eine Pille so breit wie die Werte-Chips, die sich
       blau füllt, solange die Zeile den Fokus hat. · E2E: nein (SISR)
-- [ ] **T136-13** In jeder Kategorie steht jede Gruppe in einer eigenen Box. In „Controller“ stehen die abhängigen
+- [x] **T136-13** In jeder Kategorie steht jede Gruppe in einer eigenen Box. In „Controller“ stehen die abhängigen
       Einstellungen eingerückt unter ihrer Haupteinstellung: unter „Mausmodus“ alle übrigen Zeilen der Gruppe, unter
       „Beenden des Mausmodus in Spielen erzwingen“ noch einmal „Standardeinstellung bei „Individuell““, unter „Mit ⧉
       zurück zu Arcadia“ die „Haltedauer“. Fokus, Hover und Klick gehen wie vorher. · E2E: nein (Optik)
@@ -61,3 +62,7 @@ Verlauf:
 | T136-10 | 2026-10-22 | Claude | wie oben | ⚠️ Unter Linux ist SISR nicht verfügbar, Lampe nur gebaut, nicht gesehen | Lauf am PC des Owners |
 | T136-9 | 2026-10-22 | Claude | wie oben, Demo-Zahlen lokal auf 1.045 Spiele aus 4 Launchern erhöht | ⚠️ 426 ms eingelesen (außerhalb des UI-Threads), 37 ms angezeigt; kein Release-Build, nicht der PC des Owners | Messung am PC des Owners |
 | T136-16 | 2026-10-24 | Claude | Branch `feat/keine-spiele-als-info`, Debug, Linux in der Cloud mit Xvfb 1920×1080, `--demo` mit Amazon lokal auf 0 Spiele gesetzt, Tasten über xdotool | ⚠️ Zeile „Keine Spiele gefunden“ blau mit i, blaue Box in „Launcher-Details“, kein Symbol am Tab „Launcher“ gesehen; Warnung für einen nicht mehr gefundenen aktiven Launcher nicht nachgestellt (Code unverändert) | Lauf am PC des Owners |
+| T136-2 bis T136-7, T136-9 bis T136-13 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T136-8 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ❌ T136-6 („Neu einlesen“, X) ist mit der Maus nicht zu erreichen | Wird in einem eigenen Thread behoben |
+| T136-16 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | Nicht im Lauf: kam nach 0.1.0-rc.1 hinzu (PR #177) | Mit dem nächsten Release-Kandidaten |
+| T136-1 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | Überholt: eine frische `settings.json` startet die Ersteinrichtung (#139) | Durchgestrichen; prüft T139-1 |

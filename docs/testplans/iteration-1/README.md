@@ -3,7 +3,7 @@
 Meilenstein „Iteration 1“. Format und Regeln: [README](../README.md). Die Häkchen setzt erst der
 Abschluss-Test am installierten Release-Kandidaten.
 
-**Abschluss-Test:** Release-Kandidat 0.1.0-rc.1, getestet von Juri, ab 2026-10-24 (#74, läuft).
+**Abschluss-Test:** Release-Kandidat 0.1.0-rc.1, getestet von Juri, am 2026-10-24 (#74).
 
 Eine Datei pro Issue (bzw. für das Grundgerüst). Ein PR, der ein Issue schließt, legt dessen Datei an
 und trägt sie hier ein; wer ein Issue testet, liest nur dessen Datei.
@@ -61,6 +61,7 @@ Funde am 0.1.0-rc.1 (Juri, 2026-10-24, bei Testfällen und nebenbei):
 - Installationsort nicht wählbar → #161 (Iteration 2).
 - Statusmeldungen im Header sind mit dem Controller nicht erreichbar → #166.
 - Spielstart, der im Original-Launcher erst ein Update auslöst: die Anzeigen „Startet“ und „Lädt“ überlappen → #167 (Iteration 2), Entwurf PR #168.
+- Steams Flag `Running` kann hängen bleiben (T95-12), ein Spiel gälte dann dauerhaft als laufend → #182 (Iteration 2).
 
 ## Abnahmetests (E2E)
 

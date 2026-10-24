@@ -42,6 +42,10 @@
       Einstellungen eingerückt unter ihrer Haupteinstellung: unter „Mausmodus“ alle übrigen Zeilen der Gruppe, unter
       „Beenden des Mausmodus in Spielen erzwingen“ noch einmal „Standardeinstellung bei „Individuell““, unter „Mit ⧉
       zurück zu Arcadia“ die „Haltedauer“. Fokus, Hover und Klick gehen wie vorher. · E2E: nein (Optik)
+- [ ] **T136-16** Ein aktiver Launcher ohne Spiele ist eine Info, keine Warnung (Juri, 2026-10-24): In seiner Zeile steht
+      „Keine Spiele gefunden“ blau mit dem runden i, in „Launcher-Details“ der Hinweis in einer blauen Box mit i; der Tab
+      „Launcher“ zeigt dafür kein Symbol. Ein aktiver, nicht mehr gefundener Launcher bleibt eine Warnung (gelbes Dreieck,
+      Symbol am Tab). · E2E: ja
 
 A auf einem Launcher öffnet seine Seite (#137).
 
@@ -56,3 +60,4 @@ Verlauf:
 | T136-13 | 2026-10-22 | Claude | wie oben | ⚠️ Boxen in „Launcher“ und „Controller“, Einrückung in zwei Stufen gesehen | Lauf am PC des Owners |
 | T136-10 | 2026-10-22 | Claude | wie oben | ⚠️ Unter Linux ist SISR nicht verfügbar, Lampe nur gebaut, nicht gesehen | Lauf am PC des Owners |
 | T136-9 | 2026-10-22 | Claude | wie oben, Demo-Zahlen lokal auf 1.045 Spiele aus 4 Launchern erhöht | ⚠️ 426 ms eingelesen (außerhalb des UI-Threads), 37 ms angezeigt; kein Release-Build, nicht der PC des Owners | Messung am PC des Owners |
+| T136-16 | 2026-10-24 | Claude | Branch `feat/keine-spiele-als-info`, Debug, Linux in der Cloud mit Xvfb 1920×1080, `--demo` mit Amazon lokal auf 0 Spiele gesetzt, Tasten über xdotool | ⚠️ Zeile „Keine Spiele gefunden“ blau mit i, blaue Box in „Launcher-Details“, kein Symbol am Tab „Launcher“ gesehen; Warnung für einen nicht mehr gefundenen aktiven Launcher nicht nachgestellt (Code unverändert) | Lauf am PC des Owners |

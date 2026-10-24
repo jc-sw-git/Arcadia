@@ -1118,8 +1118,8 @@
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                       <!-- No local Fill or Data: they would override the styles. -->
                                       <Ellipse Classes="statusDot" Classes.active="{Binding IsHealthy}" Width="9" Height="9" VerticalAlignment="Center" IsVisible="{Binding !HasSeverity}" />
-                                      <Path Classes="statusIcon small" IsVisible="{Binding HasSeverity}" VerticalAlignment="Center" />
-                                      <TextBlock Classes="launcherStatus" Classes.warning="{Binding HasSeverity}" Text="{Binding StatusText}" />
+                                      <Path Classes="statusIcon small" Classes.info="{Binding IsInfo}" IsVisible="{Binding HasSeverity}" VerticalAlignment="Center" />
+                                      <TextBlock Classes="launcherStatus" Classes.warning="{Binding HasSeverity}" Classes.info="{Binding IsInfo}" Text="{Binding StatusText}" />
                                     </StackPanel>
                                   </StackPanel>
                                   <Panel Grid.Column="3" VerticalAlignment="Center">
@@ -1315,9 +1315,9 @@
                 </DataTemplate>
                 <!-- The launcher settings (#136): a note, the tab strip in miniature, the launcher's head, its facts. -->
                 <DataTemplate x:DataType="settings:InfoNote">
-                  <Border Classes="infoNote">
+                  <Border Classes="infoNote" Classes.info="{Binding IsInfo}">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                      <Path Classes="statusIcon" VerticalAlignment="Top" />
+                      <Path Classes="statusIcon" Classes.info="{Binding IsInfo}" VerticalAlignment="Top" />
                       <TextBlock Grid.Column="1" Text="{Binding Text}" />
                     </Grid>
                   </Border>

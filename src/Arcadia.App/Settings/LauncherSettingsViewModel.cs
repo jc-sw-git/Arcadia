@@ -145,7 +145,8 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             ShowState(_rows[id], tabs);
         }
 
-        Marker = _host.Launchers.ActiveIds.Any(id => _rows[id].HasSeverity) ? HealthSeverity.Warning : null;
+        // A launcher without games is information, which the category's tab doesn't show (owner, 2026-10-24).
+        Marker = _host.Launchers.ActiveIds.Any(id => _rows[id].Severity > HealthSeverity.Info) ? HealthSeverity.Warning : null;
         if (_page is { } page)
         {
             ShowPage(page, tabs);
@@ -724,16 +725,18 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         var library = isActive ? _host.LibraryOf(id) : null;
         var keyword = $"{SearchQuery.PrefixMarker}{row.Launcher.SearchKeyword}";
 
-        string? warning = null;
+        // The status message: short in the row instead of the state, the whole text atop the info panel.
+        (string Text, HealthSeverity Severity)? notice = null;
         string? note = null;
         if (isActive && !isFound)
         {
-            warning = "Nicht gefunden";
+            notice = ("Nicht gefunden", HealthSeverity.Warning);
             note = $"Arcadia findet {name} auf diesem PC nicht mehr. Ist es deinstalliert, schalte den Launcher hier ab, dann verschwindet sein Tab.";
         }
         else if (library is { Games.Count: 0 })
         {
-            warning = "Keine Spiele gefunden";
+            // Nothing is broken and nothing needs doing: information, not a warning (owner, 2026-10-24).
+            notice = ("Keine Spiele gefunden", HealthSeverity.Info);
             note = $"{name} ist installiert, aber Arcadia hat dort keine Spiele gefunden. Sobald du dort ein Spiel kaufst oder installierst, erscheint es im Tab.";
         }
 
@@ -753,9 +756,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
 
         // Whether it is active, its tab, key and keyword are in the preview and the row already (owner, 2026-10-22).
         List<InfoBlock> info = [new InfoLauncher(name, row.Badge, isActive ? $"Aktiv · Tab {tabNumber}" : isFound ? "Nicht aktiv" : "Nicht installiert", isActive)];
-        if (note is not null)
+        if (notice is { } message && note is not null)
         {
-            info.Add(new InfoNote(note));
+            info.Add(new InfoNote(note, message.Severity));
         }
 
         var scannedAt = _host.ScannedAt(id);
@@ -783,7 +786,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             }, IsMuted: !isActive, IsGood: isActive),
         ]));
 
-        row.Show(isActive, isFound, tabNumber, status, warning, preview, info);
+        row.Show(isActive, isFound, tabNumber, status, notice, preview, info);
     }
 
     private static string GameCount(int count) => count == 1 ? "1 Spiel" : $"{count} Spiele";

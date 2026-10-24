@@ -35,14 +35,24 @@ ergänzt, liest nur dessen Datei, nicht den ganzen Ordner.
 
 1. **Feature-Iteration N** (Meilenstein „Iteration N“): Issues umsetzen, jeder PR ergänzt den Testplan.
 2. **Abschluss-Review** (Code): Prüfliste im Review-Issue, Befunde beheben oder als Issue einplanen.
+   Die Prüfliste fragt auch, ob `CLAUDE.md`, `docs/` und Skills noch stimmen.
 3. **Abschluss-Test** (manuell): alle Testfälle am Release-Kandidaten, danach ein explorativer
-   Test mit Auftrag und Zeitrahmen. Ergebnis: Häkchen, Verlauf, die Liste der Abnahmetests.
+   Test. Auftrag und Zeitrahmen des explorativen Tests stehen in der Übersicht, bevor er beginnt.
+   Ergebnis: Häkchen, Verlauf, die Liste der Abnahmetests.
+   - **Messung:** die Budgets aus `CLAUDE.md` einmal am PC des Owners (Release-Build), als Zeile im Verlauf.
+   - **Update-Fälle** testet ein zweiter Release-Kandidat (z. B. rc.1 → rc.2 per Self-Update),
+     nicht erst das nächste Release.
+   - **Funde:** Vor dem Release wird nur behoben, was Daten, Sicherheit oder eine Kernfunktion bricht;
+     alles andere wird ein Issue für Iteration N+1. Neue Ideen aus dem Test werden nur als Issue angelegt.
 4. **Retrospektive** (eigenes Issue, erst nach Review und Abschluss-Test): Für jeden Prozess
    entscheidet der Owner, ob er bleibt, geändert wird oder wegfällt.
 5. **Release.**
-6. **Abnahme-Iteration N** (Meilenstein „Abnahme Iteration N“): alle Testfälle mit `E2E: ja`
-   werden automatisierte Abnahmetests in der Pipeline. Feature-Iteration N+1 beginnt erst, wenn
-   sie abgeschlossen ist, damit Änderungen in N+1 Brüche in Features aus N sofort zeigen.
+6. **Abnahme-Iteration N** (Meilenstein „Abnahme Iteration N“): die Kernabläufe (Start, Navigation,
+   Suche, Spielstart, Einstellungen und was N daran ändert) werden automatisierte Abnahmetests in der
+   Pipeline; Abnahme-Iteration 1 baut dafür zuerst die Infrastruktur. Die übrigen Testfälle mit
+   `E2E: ja` werden je ein Issue und laufen in Iteration N+1 mit (Retro Iteration 1, Owner 2026-10-24).
+   Feature-Iteration N+1 beginnt erst, wenn die Abnahme-Iteration abgeschlossen ist, damit Änderungen
+   in N+1 Brüche in Features aus N sofort zeigen.
 7. **Feature-Iteration N+1** beginnt mit den großen `type:tech-debt`-Befunden aus dem Review,
    jetzt abgesichert durch die Abnahmetests.
 

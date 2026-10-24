@@ -25,8 +25,20 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
             category.PropertyChanged += OnCategoryChanged;
         }
 
+        var links = categories
+            .SelectMany(target => target.LauncherPageLinks.Select(link =>
+                (target.Name.ToUpperInvariant(), link, (Action)(() => OpenLink(target, link.TargetRowKey)))))
+            .ToList();
+        foreach (var launchers in categories.OfType<LauncherSettingsViewModel>())
+        {
+            launchers.ShowLinks(links);
+        }
+
         Select(categories.FirstOrDefault(c => c.Dialog is not null) ?? first ?? categories[0]);
     }
+
+    /// <summary>The category a link was followed from, which B goes back to; null when no link led here.</summary>
+    private SettingsCategoryViewModel? _linkedFrom;
 
     public IReadOnlyList<SettingsCategoryViewModel> Categories { get; }
 
@@ -102,8 +114,13 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
             case UiAction.SecondaryDown:
                 InfoScrollRequested?.Invoke(this, 1);
                 break;
+            case UiAction.Back when category.Back():
+                break;
+            case UiAction.Back when _linkedFrom is { } from:
+                Select(from);
+                break;
             case UiAction.Back:
-                return category.Back();
+                return false;
             case UiAction.Settings:
                 return false;
         }
@@ -138,8 +155,19 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
 
     private void Cycle(int delta) => Select(Categories[ListFocus.Cycle(Categories.ToList().IndexOf(Selected), delta, Categories.Count)]);
 
+    /// <summary>A link on a launcher's page (#169): its category with the row focused; B goes back to the page.</summary>
+    private void OpenLink(SettingsCategoryViewModel target, string rowKey)
+    {
+        var from = Selected;
+        Select(target);
+        target.FocusRow(rowKey);
+        _linkedFrom = from;
+    }
+
     private void Select(SettingsCategoryViewModel category)
     {
+        // Any other way to a category ends the way back of a link.
+        _linkedFrom = null;
         if (Selected == category)
         {
             return;

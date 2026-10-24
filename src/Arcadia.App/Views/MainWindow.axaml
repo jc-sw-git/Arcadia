@@ -1151,7 +1151,7 @@
                               <StackPanel Orientation="Horizontal" Spacing="12">
                                 <TextBlock ctl:ButtonTextBlock.Text="{Binding Title}" FontSize="19" FontWeight="Bold" TextWrapping="Wrap" />
                                 <!-- No local Fill: it would override the "active" style. -->
-                                <Ellipse Classes="statusDot" Classes.active="{Binding IsLampOn}" Width="10" Height="10" VerticalAlignment="Center"
+                                <Ellipse Classes="statusDot" Classes.active="{Binding IsLampWorking}" Classes.warning="{Binding IsLampProblem}" Classes.error="{Binding IsLampFailure}" Width="10" Height="10" VerticalAlignment="Center"
                                          IsVisible="{Binding HasLamp}" />
                               </StackPanel>
                               <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
@@ -1274,7 +1274,7 @@
                 <DataTemplate x:DataType="settings:InfoKey">
                   <Grid ColumnDefinitions="170,*" ColumnSpacing="16">
                     <TextBlock ctl:ButtonTextBlock.Buttons="{Binding Input}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
-                    <TextBlock Grid.Column="1" Text="{Binding Effect}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
+                    <TextBlock Grid.Column="1" ctl:ButtonTextBlock.Text="{Binding Effect}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
                   </Grid>
                 </DataTemplate>
                 <!-- Its blocks find the templates of this ItemsControl, up the tree. -->
@@ -1619,6 +1619,12 @@
     </Style>
     <Style Selector="Ellipse.statusDot.active">
       <Setter Property="Fill" Value="{StaticResource Success}" />
+    </Style>
+    <Style Selector="Ellipse.statusDot.warning">
+      <Setter Property="Fill" Value="{StaticResource Warning}" />
+    </Style>
+    <Style Selector="Ellipse.statusDot.error">
+      <Setter Property="Fill" Value="{StaticResource Danger}" />
     </Style>
     <!-- Status messages (owner, 2026-10-21): a warning by default, info a blue i in a circle, error a red X. -->
     <Style Selector="Path.statusIcon">

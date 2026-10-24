@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
+using Arcadia.Core.Launchers;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -59,14 +60,18 @@ public enum SettingsPrompt
 }
 
 /// <summary>
-/// The category "Controller" (#15): Steam Controller Support (switch, problems with their fix, SISR's update), the mouse
-/// mode, "Zurück zu Arcadia" and Steam's desktop layout, as rows of the page. Status, how it works, drawbacks and SISR's
+/// The category "Controller" (#15): the group "Steam" with Steam Controller Support (switch, problems with their fix,
+/// SISR's update) and Steam's desktop layout (#169), then the mouse mode and "Zurück zu Arcadia", as rows of the page. Status, how it works, drawbacks and SISR's
 /// version are nothing to set, so they are boxes in the switch's info panel (owner, 2026-10-22). Installing SISR asks its
 /// questions in dialogs over the page.
 /// </summary>
 public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewModel
 {
-    private const string SteamControllerGroup = "STEAM CONTROLLER";
+    /// <summary>
+    /// Everything Steam does to the controllers, in one group (owner, 2026-10-24). The desktop layout isn't a
+    /// dependent of the SISR switch: it covers every controller, SISR only the Steam Controller.
+    /// </summary>
+    private const string SteamGroup = "STEAM";
 
     private static readonly TimeSpan PromptCheckInterval = TimeSpan.FromSeconds(1);
 
@@ -99,12 +104,13 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support = support;
         _sisr = new SisrRowViewModel(ActivateSisr)
         {
-            Group = SteamControllerGroup,
-            Subtitle = "Für Spiele außerhalb von Steam und für Arcadia",
+            Group = SteamGroup,
+            Subtitle = "Erlaubt es, den Steam Controller auch in Spielen außerhalb von Steam zu verwenden",
         };
         _update = new ActionRowViewModel("sisr-update", "SISR aktualisieren", () => _support.InstallUpdateAsync().Forget("SISR aktualisieren"))
         {
-            Group = SteamControllerGroup,
+            Group = SteamGroup,
+            Indent = 1,
             ActionText = "Aktualisieren",
             IsPrimary = true,
         };
@@ -116,8 +122,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             () => changes.Current.IgnoreSteamDesktopLayout,
             value => changes.Apply(s => s with { IgnoreSteamDesktopLayout = value }, "Steams Desktop-Belegung ignorieren"))
         {
-            Group = "STEAM",
-            Subtitle = "Z. B. Steams Alt+Tab bei ⧉ + ≡ verwerfen",
+            Group = SteamGroup,
+            Subtitle = "Alle Controller: z. B. Steams Alt+Tab bei ⧉ + ≡ verwerfen",
             Info =
             [
                 new InfoText("Läuft Steam, macht es außerhalb von Spielen aus manchen Controller-Eingaben selbst Tasten („Desktop-Belegung“): Hältst du ⧉ + ≡, löst Steam mit jedem Controller ein Alt+Tab aus."),
@@ -160,6 +166,16 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support.WatchSetup = true;
         Task.Run(() => _support.RefreshAsync()).Forget("Einstellungen aktualisieren");
     }
+
+    /// <summary>Steam's page points here too: Steam decides how the controllers behave outside its games (#169).</summary>
+    public override IReadOnlyList<SettingsLink> LauncherPageLinks { get; } =
+    [
+        new(KnownLaunchers.Steam.Id, "Controller-Einstellungen für Steam", "Steam Controller Kompatibilität und Steams Desktop-Belegung", "sisr",
+        [
+            new InfoText("Was Steam mit deinen Controllern macht, stellst du unter Controller → Steam ein: ob Arcadia den Steam Controller mit SISR auch außerhalb von Steam nutzbar macht, und ob es Steams Desktop-Belegung für alle Controller ignoriert."),
+            new InfoText("[A] springt dorthin, [B] kommt hierher zurück."),
+        ]),
+    ];
 
     public PromptButtonViewModel RetryInstallItem => _retryInstall;
 
@@ -525,11 +541,13 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         var needsMarker = _support.Issues.Any(i => i.Fix == HealthFix.CreateMarker);
         var unavailable = !enabled && setup is ControllerSupportSetup.UnsupportedPlatform or ControllerSupportSetup.SteamMissing;
         var showInstall = !enabled && setup == ControllerSupportSetup.NeedsInstall;
+        var state = _support.State;
         _sisr.Update(
             unavailable ? SisrRowMode.Unavailable : showInstall ? SisrRowMode.Install : SisrRowMode.Switch,
             enabled,
             IsSettling,
-            setup == ControllerSupportSetup.SteamMissing ? "Benötigt Steam." : "Momentan nur unter Windows verfügbar.");
+            setup == ControllerSupportSetup.SteamMissing ? "Benötigt Steam." : "Momentan nur unter Windows verfügbar.",
+            enabled ? ShortStatus(state, hasProblems) : null);
         if (IsInstallPrompt && ((!showInstall && !needsMarker) || IsBusy))
         {
             // Installed some other way, or something else started: the question is moot.
@@ -537,7 +555,6 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             _promptCheck.Stop();
         }
 
-        var state = _support.State;
         var statusText = (enabled, state == SisrState.Paused, hasProblems) switch
         {
             (false, _, _) when showInstall => "Nicht eingerichtet – „SISR installieren“ richtet alles Nötige ein und schaltet die Option ein.",
@@ -556,7 +573,12 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         };
         var healthy = enabled && !hasProblems && _support.BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
         var settlingNow = enabled && state is SisrState.Starting or SisrState.Stopping;
-        _sisr.ShowRunning(enabled ? state == SisrState.Running && !hasProblems : null);
+        _sisr.ShowLamp(!enabled ? null : Marker switch
+        {
+            HealthSeverity.Error => RowLamp.Failure,
+            HealthSeverity.Warning => RowLamp.Problem,
+            _ => state == SisrState.Running ? RowLamp.Working : RowLamp.Resting,
+        });
         var status = new InfoSection("STATUS",
         [
             new InfoStatus(statusText, healthy, settlingNow),
@@ -587,9 +609,9 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             _sisr,
             .. IssueRows(),
             .. hasUpdate ? [_update] : Array.Empty<SettingsRowViewModel>(),
+            _steamDesktopLayout,
             .. _mouseMode.Rows,
             .. _returnWithView.Rows,
-            _steamDesktopLayout,
         ]);
 
         var buttons = PromptButtons();
@@ -599,6 +621,22 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             button.IsFocused = Prompt != SettingsPrompt.None && buttons.Count > 0 && button == buttons[_promptFocus];
         }
     }
+
+    /// <summary>While the option is on, its row says in one line how it is doing instead of what it is for (owner, 2026-10-24).</summary>
+    private static string ShortStatus(SisrState state, bool hasProblems) => (state == SisrState.Paused, hasProblems) switch
+    {
+        (true, true) => "Pausiert – die Meldungen darunter sagen, warum",
+        (true, false) => "Pausiert, solange ein Spiel mit „Steam Input“ läuft",
+        (false, true) => "Nicht voll funktionsfähig – die Meldungen darunter sagen, was fehlt",
+        _ => state switch
+        {
+            SisrState.Starting => "SISR startet …",
+            SisrState.NoController => "Bereit, aber kein Steam Controller gefunden",
+            SisrState.Running => "Aktiv – der Steam Controller läuft als Xbox Controller",
+            SisrState.Stopping => "SISR wird beendet …",
+            _ => "Wird gestartet …",
+        },
+    };
 
     /// <summary>What "Steam Controller Kompatibilität" does, at the top of its info panel.</summary>
     private static readonly InfoBlock[] SisrDescription =
@@ -633,7 +671,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             if (!_issueRows.TryGetValue(issue.Id, out var row))
             {
                 var fix = issue.Fix;
-                row = new ActionRowViewModel($"issue:{issue.Id}", issue.Title, () => ApplyFix(fix)) { Group = SteamControllerGroup };
+                row = new ActionRowViewModel($"issue:{issue.Id}", issue.Title, () => ApplyFix(fix)) { Group = SteamGroup, Indent = 1 };
                 _issueRows[issue.Id] = row;
             }
 
@@ -730,10 +768,11 @@ public sealed partial class SisrRowViewModel(Action<bool?> activate)
 
     public override void Activate() => activate(null);
 
-    /// <summary>Whether SISR really runs: null while the option is off, the switch says so.</summary>
-    public void ShowRunning(bool? isRunning) => Lamp = isRunning;
+    /// <summary>Whether SISR really works: null while the option is off, the switch says so.</summary>
+    public void ShowLamp(RowLamp? lamp) => Lamp = lamp;
 
-    public void Update(SisrRowMode mode, bool isOn, bool isLocked, string unavailableText)
+    /// <param name="status">How the option is doing while it is on, shown in place of what it is for; null while off.</param>
+    public void Update(SisrRowMode mode, bool isOn, bool isLocked, string unavailableText, string? status)
     {
         if (_subtitle.Length == 0)
         {
@@ -744,7 +783,7 @@ public sealed partial class SisrRowViewModel(Action<bool?> activate)
         IsOn = isOn;
         IsLocked = isLocked;
         IsDimmed = mode == SisrRowMode.Unavailable;
-        Subtitle = mode == SisrRowMode.Unavailable ? unavailableText : _subtitle;
+        Subtitle = mode == SisrRowMode.Unavailable ? unavailableText : status ?? _subtitle;
         NotifyActionsChanged();
     }
 }

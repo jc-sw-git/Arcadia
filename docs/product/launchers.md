@@ -15,14 +15,15 @@ Agreed with the owner; don't change without asking. Read this before changing th
   aktiv" the same way. Beside the rows two boxes: "Launcher-Reihenfolge" (the tabs as they will be, the
   library's selected tab not marked, owner 2026-10-23) and "Launcher-Details" (head,
   warnings, library, location; no repeat of what row and preview show). "Steam Controller Kompatibilität" has a lamp
-  beside its name while on: green while SISR runs. A status message row shows one short line below its title
+  beside its name while on (colours: `docs/product/settings.md`). A status message row shows one short line below its title
   (`HealthIssue.Summary`), the whole text in the info panel; descriptions below a row name stay at one, at most two
   lines. A row's action is a pill as wide as the value chips, filled with the accent while focused (owner, 2026-10-22).
 - Launcher page (#137, #138, owner 2026-10-23): A or a click on a launcher in the list opens its page in place of the rows;
   B (or a click on "Launcher" above its name) goes back to the list with that launcher focused, LT/RT (Q/E, a click on a
   neighbour in the head) turn to the
   launcher before or after it in the list's order, wrapping. Groups "Allgemein": Aktiv, "Name im Tab", "Such-Kürzel",
-  "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only active and found). Name and keyword are written with the shared
+  "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only active and found); below them links from other categories,
+  e.g. on Steam's page "Controller" → "Controller-Einstellungen für Steam" (#169, `docs/product/settings.md`). Name and keyword are written with the shared
   on-screen keyboard below the page (without ↹ and the edge key; the search's buttons, ≡/Enter take, B/Esc drop); a
   keyword's keyboard offers only the keys it may hold (lower-case letters and digits); a
   problem (keyword taken, too long) shows in red while typing, taken anyway the old value stays and a toast says

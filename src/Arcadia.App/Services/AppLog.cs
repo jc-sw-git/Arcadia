@@ -17,7 +17,8 @@ public static class AppLog
 
     private static readonly string UserProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-    public static string Directory => LogLocation.Directory;
+    /// <summary>Set only by the App's tests, so they never write into the user's own log.</summary>
+    public static string Directory { get; internal set; } = LogLocation.Directory;
 
     public static void Write(string message)
     {

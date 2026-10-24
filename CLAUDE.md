@@ -42,7 +42,8 @@ Update flow, uninstall, CI artifacts: `docs/releases.md`.
 
 ## Verifying UI changes
 
-Tests cover Core/Launchers/ControllerSupport logic, not the UI. For UI changes, run the app and
+Tests cover Core/Launchers/ControllerSupport logic and, in `Arcadia.App.Tests`, the core flows through the view models
+(acceptance tests, no rendering). For UI changes, run the app and
 look at it — see the skill `.claude/skills/arcadia-verify/SKILL.md` and the scripts in
 `tools/dev/` (screenshot with key presses, foreground tracing, XInput probe, Steam shortcuts).
 The owner often tests manually at the same time — say before driving the app with keys.
@@ -109,6 +110,7 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 | `src/Arcadia.ControllerSupport` | Steam Controller Support (SISR, usbip-win2) |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM), `Theme/Theme.axaml`, `MainViewModel` (navigation) and its children |
 | `tests/Arcadia.Core.Tests` | xUnit |
+| `tests/Arcadia.App.Tests` | Acceptance tests (xUnit v3, Avalonia headless): `ArcadiaDriver` presses buttons on `MainViewModel`; rules in `docs/testplans/README.md` |
 
 Which class does what: `docs/architecture.md` (read it, or grep, rather than guessing). Big Picture UI is laid out at
 1920×1080 inside a `Viewbox`. Focus/navigation is done in the view models (`MainViewModel.Handle(UiAction)`), not with

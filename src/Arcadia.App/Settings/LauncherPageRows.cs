@@ -65,7 +65,7 @@ public sealed partial class TextRowViewModel(string key, string title, Func<stri
 public sealed partial class LauncherActiveRowViewModel(Func<bool> isActive, Action<bool> switchTo, Func<bool> isFound)
     : SwitchRowViewModel("launcher-active", "Aktiv", isActive, switchTo)
 {
-    public override bool CanIncrease => base.CanIncrease && isFound();
+    protected override bool Allows(int value) => value == 0 || isFound();
 }
 
 /// <summary>

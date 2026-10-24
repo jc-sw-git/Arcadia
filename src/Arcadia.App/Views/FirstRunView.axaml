@@ -29,11 +29,11 @@
                 <Panel>
                   <Button Classes="plain valueToggle" Command="{Binding ToggleSwitchCommand}" />
                   <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanDecrease}" ToolTip.Tip="Aus">
+                    <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanDecrease}" ToolTip.Tip="Umschalten">
                       <Path Classes="chevronLeft" />
                     </Button>
                     <TextBlock Grid.Column="1" Classes="valueText" Classes.on="{Binding IsOn}" Text="{Binding ValueText}" IsHitTestVisible="False" />
-                    <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding CanIncrease}" ToolTip.Tip="An">
+                    <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding CanIncrease}" ToolTip.Tip="Umschalten">
                       <Path Classes="chevronRight" />
                     </Button>
                   </Grid>

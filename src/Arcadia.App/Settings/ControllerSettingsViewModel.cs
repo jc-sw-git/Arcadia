@@ -726,7 +726,8 @@ public sealed partial class SisrRowViewModel(Action<bool?> activate)
     public override string ActivateText => IsInstall ? "SISR installieren" : "Umschalten";
 
     /// <summary>◀ switches off, ▶ on (or installs first).</summary>
-    public override void Change(int delta) => activate(delta > 0);
+    /// <summary>◀ and ▶ both switch it, like every ◀ ▶ selector (owner, 2026-10-24).</summary>
+    public override void Change(int delta) => activate(null);
 
     public override void Activate() => activate(null);
 

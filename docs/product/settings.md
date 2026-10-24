@@ -13,7 +13,10 @@ Agreed with the owner; don't change without asking. Read this before changing th
   once, A (Space) starts actions; only settings and actions are rows, facts about a setting (e.g. SISR's status,
   version, drawbacks) are boxes (`InfoSection`) below its description in the info panel. The info panel beside the
   rows explains the focused row, RS (Shift+W/S, the wheel) scrolls it, fades show more; the mouse over a row focuses
-  it. A row that can't change now (e.g. while SISR starts) still takes the focus. The footer names the focused row's buttons. Applies at once, no save button. Questions
+  it. ◀ ▶ wrap at the ends of a value range (e.g. Zeigergeschwindigkeit 1 → ◀ → 9; a switch flips with
+  either arrow), so an arrow is never greyed out just for standing at an end: a click on a greyed-out arrow fell
+  through to the row and changed the value the other way (owner, 2026-10-24). Only a value that can't be taken greys
+  an arrow out (e.g. "Aktiv" for a launcher that isn't installed). A row that can't change now (e.g. while SISR starts) still takes the focus. The footer names the focused row's buttons. Applies at once, no save button. Questions
   (e.g. "Steam beenden?") stay dialogs over the page; the header's status symbols open their category.
 - Status messages (`HealthIssue`, header, the settings row and category they belong to) have three levels, each with its own
   symbol: **Info** (round blue i) for intended behaviour in a situation, e.g. SISR paused because other controllers

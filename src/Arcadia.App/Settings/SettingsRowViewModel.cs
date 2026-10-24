@@ -1,5 +1,6 @@
 using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
+using Arcadia.Core.Navigation;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -187,7 +188,8 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
 /// <summary>
 /// A value out of a few, e.g. "Mausmodus: Aus / Von Hand / Automatisch" or a number from 1 to 9: ◀ ▶ step through them
-/// and stop at the ends; A counts on and starts again at the first after the last, so A alone reaches every value.
+/// and wrap at the ends, so an arrow is never greyed out just for standing at an end (owner, 2026-10-24); A counts on
+/// like ▶, so A alone reaches every value.
 /// </summary>
 public partial class ChoiceRowViewModel : SettingsRowViewModel
 {
@@ -209,10 +211,9 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
 
     public string ValueText => _format(_get());
 
-    public bool CanDecrease => _get() > _min;
+    public bool CanDecrease => CanStep(-1);
 
-    /// <summary>▶ goes on; a subclass may hold it back, e.g. "Aktiv" for a launcher that isn't installed (#137).</summary>
-    public virtual bool CanIncrease => _get() < _max;
+    public bool CanIncrease => CanStep(1);
 
     public override bool CanChange => true;
 
@@ -224,23 +225,13 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
 
     public override void Change(int delta)
     {
-        if (delta > 0 && !CanIncrease)
+        if (CanStep(delta))
         {
-            return;
+            Set(ValueCycle.Step(_get(), delta, _min, _max));
         }
-
-        Set(Math.Clamp(_get() + delta, _min, _max));
     }
 
-    public override void Activate()
-    {
-        if (_get() < _max && !CanIncrease)
-        {
-            return;
-        }
-
-        Set(_get() >= _max ? _min : _get() + 1);
-    }
+    public override void Activate() => Change(1);
 
     /// <summary>The value changed elsewhere (or a value it is shown with), so it is read again.</summary>
     public void Refresh()
@@ -258,6 +249,15 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
     {
     }
 
+    /// <summary>Whether the row may take this value; a subclass may hold one back, e.g. "Aktiv" for a launcher that isn't installed (#137).</summary>
+    protected virtual bool Allows(int value) => true;
+
+    private bool CanStep(int delta)
+    {
+        var target = ValueCycle.Step(_get(), delta, _min, _max);
+        return target != _get() && Allows(target);
+    }
+
     private void Set(int value)
     {
         if (value == _get())
@@ -270,7 +270,7 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
     }
 }
 
-/// <summary>On or off, a choice of two: ◀ is "Aus", ▶ is "An", A switches.</summary>
+/// <summary>On or off, a choice of two: ◀, ▶ and A all switch it.</summary>
 public partial class SwitchRowViewModel(string key, string title, Func<bool> get, Action<bool> set)
     : ChoiceRowViewModel(key, title, () => get() ? 1 : 0, value => set(value == 1), value => value == 1 ? "An" : "Aus", 0, 1)
 {

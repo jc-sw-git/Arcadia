@@ -46,7 +46,7 @@ public sealed partial class FirstRunLauncherViewModel : ViewModelBase
 
     /// <summary>Becomes a tab after "Fertig".</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ValueText), nameof(CanDecrease), nameof(CanIncrease), nameof(StateText))]
+    [NotifyPropertyChangedFor(nameof(ValueText), nameof(StateText))]
     public partial bool IsOn { get; set; }
 
     [ObservableProperty]
@@ -67,9 +67,10 @@ public sealed partial class FirstRunLauncherViewModel : ViewModelBase
 
     public string ValueText => IsOn ? "An" : "Aus";
 
-    public bool CanDecrease => IsFound && IsOn;
+    /// <summary>A choice of two wraps like every ◀ ▶ selector, so both arrows switch it (owner, 2026-10-24).</summary>
+    public bool CanDecrease => IsFound;
 
-    public bool CanIncrease => IsFound && !IsOn;
+    public bool CanIncrease => IsFound;
 
     /// <summary>The line below its name, e.g. "Gefunden · 128 Spiele".</summary>
     public string StatusText => (IsFound, _games?.Count) switch
@@ -121,14 +122,8 @@ public sealed partial class FirstRunLauncherViewModel : ViewModelBase
         OnPropertyChanged(nameof(LocationText));
     }
 
-    /// <summary>◀ (negative) switches it off, ▶ on.</summary>
-    public void Change(int delta)
-    {
-        if (delta < 0 ? CanDecrease : CanIncrease)
-        {
-            _switch(this, delta > 0);
-        }
-    }
+    /// <summary>◀ and ▶ both flip it.</summary>
+    public void Change(int delta) => Toggle();
 
     /// <summary>A and a click on the switch flip it.</summary>
     public void Toggle()

@@ -37,16 +37,18 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public bool HasProblem => Problem is not null;
 
     /// <summary>
-    /// A lamp beside the title that shows at a glance whether what the row switches on really runs, e.g. SISR (owner,
-    /// 2026-10-22): green while it runs, grey while it doesn't; null shows none.
+    /// A lamp beside the title that shows at a glance whether what the row switches on really works, e.g. SISR (owner,
+    /// 2026-10-22 and 2026-10-24); null shows none.
     /// </summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasLamp), nameof(IsLampOn))]
-    public partial bool? Lamp { get; protected set; }
+    [NotifyPropertyChangedFor(nameof(HasLamp), nameof(IsLampWorking), nameof(IsLampProblem))]
+    public partial RowLamp? Lamp { get; protected set; }
 
     public bool HasLamp => Lamp is not null;
 
-    public bool IsLampOn => Lamp == true;
+    public bool IsLampWorking => Lamp == RowLamp.Working;
+
+    public bool IsLampProblem => Lamp == RowLamp.Problem;
 
     /// <summary>The heading of the group the row belongs to, e.g. "MAUSMODUS"; may change while the row is shown (#136).</summary>
     [ObservableProperty]
@@ -321,4 +323,17 @@ public partial class InfoRowViewModel(string key, string title) : SettingsRowVie
     public partial string ValueText { get; set; } = string.Empty;
 
     public bool HasValue => ValueText.Length > 0;
+}
+
+/// <summary>The colour of a row's lamp (owner, 2026-10-24).</summary>
+public enum RowLamp
+{
+    /// <summary>Grey: on, but resting for now, e.g. SISR paused for a game.</summary>
+    Resting,
+
+    /// <summary>Green: on and ready.</summary>
+    Working,
+
+    /// <summary>Yellow: a problem below the row needs the user.</summary>
+    Problem,
 }

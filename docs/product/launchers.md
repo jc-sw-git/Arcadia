@@ -15,7 +15,7 @@ Agreed with the owner; don't change without asking. Read this before changing th
   aktiv" the same way. Beside the rows two boxes: "Launcher-Reihenfolge" (the tabs as they will be, the
   library's selected tab not marked, owner 2026-10-23) and "Launcher-Details" (head,
   warnings, library, location; no repeat of what row and preview show). "Steam Controller Kompatibilität" has a lamp
-  beside its name while on: green while SISR runs. A status message row shows one short line below its title
+  beside its name while on (colours: `docs/product/settings.md`). A status message row shows one short line below its title
   (`HealthIssue.Summary`), the whole text in the info panel; descriptions below a row name stay at one, at most two
   lines. A row's action is a pill as wide as the value chips, filled with the accent while focused (owner, 2026-10-22).
 - Launcher page (#137, #138, owner 2026-10-23): A or a click on a launcher in the list opens its page in place of the rows;

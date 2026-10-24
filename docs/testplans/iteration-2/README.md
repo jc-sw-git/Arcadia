@@ -10,7 +10,7 @@ Issue testet, liest nur dessen Datei.
 
 | Datei | Issue | Titel | Testfälle |
 |---|---|---|---|
-| [169-steam-einstellungen-in-einer-gruppe.md](169-steam-einstellungen-in-einer-gruppe.md) | #169 | Steam-Einstellungen in einer Gruppe „Steam“ bündeln | 5 |
+| [169-steam-einstellungen-in-einer-gruppe.md](169-steam-einstellungen-in-einer-gruppe.md) | #169 | Steam-Einstellungen in einer Gruppe „Steam“ bündeln | 8 |
 
 ## Explorativer Test
 

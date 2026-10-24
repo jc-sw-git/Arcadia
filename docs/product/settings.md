@@ -9,7 +9,12 @@ Agreed with the owner; don't change without asking. Read this before changing th
 - Category "Controller": the group "Steam" comes first and holds everything Steam does to the controllers (#169,
   owner 2026-10-24): "Steam Controller Kompatibilität" (SISR) with its messages and update, then "Steams
   Desktop-Belegung ignorieren". The latter is no dependent of the SISR switch (it covers every controller, SISR only
-  the Steam Controller), so it isn't indented; the subtitles say "Nur Steam Controller" / "Alle Controller".
+  the Steam Controller), so it isn't indented; the desktop layout's subtitle starts with "Alle Controller".
+  "Steam Controller Kompatibilität" (owner 2026-10-24): while off or not installed its subtitle says what it is for
+  ("Erlaubt es, den Steam Controller auch in Spielen außerhalb von Steam zu verwenden"), while on a one-line status.
+  Its lamp is green when SISR runs and nothing is wrong, grey when on but resting (paused, starting, no Steam
+  Controller), yellow when a problem below needs the user (warning or error). Its problems and "SISR aktualisieren"
+  stand right below it, indented.
   Steam's launcher page links there (owner 2026-10-24): group "Controller", row "Controller-Einstellungen für Steam",
   A opens the category with the focus on "Steam Controller Kompatibilität", B goes back to Steam's page. The settings
   stay in "Controller" because they work without Steam's tab too; a category offers such links

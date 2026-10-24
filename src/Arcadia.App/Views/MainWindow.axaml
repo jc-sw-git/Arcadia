@@ -1221,9 +1221,11 @@
                                 </DataTemplate>
                                 <DataTemplate x:DataType="settings:ActionRowViewModel">
                                   <Border Classes="rowGo" Classes.primary="{Binding IsPrimary}" Classes.disabled="{Binding !IsEnabled}" IsVisible="{Binding HasAction}">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                      <TextBlock Text="{Binding ActionText}" />
-                                      <Path Grid.Column="1" Classes="chevronRight" />
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                      <ctl:KeyHint Pad="{Binding ShortcutPad}" Keys="{Binding ShortcutKeys}" IsDark="{Binding IsFocused}" VerticalAlignment="Center"
+                                                   IsVisible="{Binding HasShortcut}" />
+                                      <TextBlock Grid.Column="1" Text="{Binding ActionText}" />
+                                      <Path Grid.Column="2" Classes="chevronRight" />
                                     </Grid>
                                   </Border>
                                 </DataTemplate>

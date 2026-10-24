@@ -301,6 +301,13 @@ public partial class ActionRowViewModel(string key, string title, Action run) : 
     [ObservableProperty]
     public partial bool IsPrimary { get; set; }
 
+    /// <summary>A button that does the same from anywhere in the list, shown in the pill (e.g. "X" / "F"); null shows none.</summary>
+    public string? ShortcutPad { get; init; }
+
+    public string? ShortcutKeys { get; init; }
+
+    public bool HasShortcut => ShortcutPad is not null;
+
     public override bool CanActivate => HasAction && IsEnabled;
 
     public override string ActivateText => HasAction ? ActionText : base.ActivateText;

@@ -44,7 +44,7 @@
       zurück zu Arcadia“ die „Haltedauer“. Fokus, Hover und Klick gehen wie vorher. · E2E: nein (Optik)
 
 - [ ] **T136-14** Unter den Launchern steht in der Gruppe „Bibliothek“ die Zeile „Alle neu einlesen“ mit der Pille
-      „Jetzt einlesen“. Ein Klick darauf (nur Maus) liest alle aktiven Launcher neu ein wie X, mit demselben Toast; mit dem
+      „Jetzt einlesen“, darin die Glyphe [X] (nach Taste oder Klick F). Ein Klick darauf (nur Maus) liest alle aktiven Launcher neu ein wie X, mit demselben Toast; mit dem
       Controller erreicht ▼ die Zeile, A liest ein. Ohne aktiven Launcher ist sie ausgegraut. · E2E: ja
 - [ ] **T136-15** Alle Launcher aus: „Kein Launcher aktiv“ zeigt nur „Launcher-Einstellungen“, kein „Erneut suchen“; ◀ ▶
       ändern nichts, A und ein Klick öffnen die Einstellungen. · E2E: ja
@@ -63,3 +63,4 @@ Verlauf:
 | T136-10 | 2026-10-22 | Claude | wie oben | ⚠️ Unter Linux ist SISR nicht verfügbar, Lampe nur gebaut, nicht gesehen | Lauf am PC des Owners |
 | T136-9 | 2026-10-22 | Claude | wie oben, Demo-Zahlen lokal auf 1.045 Spiele aus 4 Launchern erhöht | ⚠️ 426 ms eingelesen (außerhalb des UI-Threads), 37 ms angezeigt; kein Release-Build, nicht der PC des Owners | Messung am PC des Owners |
 | T136-14, T136-15 | 2026-10-24 | Claude | Branch `feat/alle-launcher-per-maus-neu-einlesen`, Release, Linux in der Cloud mit Xvfb 1920×1080, `--demo`, Tasten und Klicks über xdotool | ⚠️ Zeile mit ▼ erreicht, Leertaste und Klick lesen ein (Toast), Fußleiste ohne „Verschieben“ auf der Zeile; alle Launcher aus: nur „Launcher-Einstellungen“, D ändert nichts, „Wechseln“ fehlt in der Fußleiste; kein echter Controller | Lauf am PC des Owners |
+| T136-14 (Juris Feedback) | 2026-10-24 | Claude | wie oben | ⚠️ Glyphe F in der Pille unfokussiert und fokussiert gesehen, [X] nur gebaut (kein Controller); Controller-Symbol im Einstellungs-Header jetzt mittig zum Text | Lauf am PC des Owners |

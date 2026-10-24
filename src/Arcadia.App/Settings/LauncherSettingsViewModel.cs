@@ -132,6 +132,8 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         {
             Group = LibraryGroup,
             ActionText = "Jetzt einlesen",
+            ShortcutPad = "X",
+            ShortcutKeys = "F",
             Info =
             [
                 new InfoText("Liest die Spiele aller aktiven Launcher sofort neu ein, etwa nach einer Installation, die Arcadia nicht mitbekommen hat. Sonst liest Arcadia neu ein, wenn es wieder nach vorne kommt."),

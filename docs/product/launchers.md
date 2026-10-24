@@ -9,7 +9,7 @@ Agreed with the owner; don't change without asking. Read this before changing th
   ones; a click anywhere on the switch's box switches it too (a click elsewhere on the row opens its page). Not found can't be switched on; active and no longer found can be
   switched off. Y lifts a row, ▲ ▼ move it,
   Y drops it (under "Nicht aktiv": off), B cancels; the mouse drags. X, or the row "Alle neu einlesen" in a group "Bibliothek"
-  below the launchers (for the mouse alone, owner 2026-10-24), reads all again; A opens the launcher's page
+  below the launchers (for the mouse alone, its pill shows [X] / F, owner 2026-10-24), reads all again; A opens the launcher's page
   (#137, below). Saved as `ActiveLaunchers` (order = tabs); without it every launcher found is active. An active launcher
   without games or no longer found keeps its tab with an empty state ("Keine Spiele in …" / "… nicht gefunden",
   "Launcher-Einstellungen" and "Neu einlesen" / "Erneut suchen"); with no launcher active the library says "Kein Launcher

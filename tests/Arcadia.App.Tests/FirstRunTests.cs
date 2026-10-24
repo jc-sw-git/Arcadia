@@ -30,6 +30,28 @@ public sealed class FirstRunTests
     }
 
     [AvaloniaFact]
+    [Trait("Testfall", "T139-1")]
+    public async Task A_launcher_not_found_cannot_be_switched_on()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(TwoFoundOneMissing, new AppSettings());
+        var firstRun = arcadia.Main.FirstRun!;
+
+        arcadia.Press(UiAction.Down, times: 2);
+        Assert.Equal("Amazon Games", firstRun.FocusedRow?.Name);
+
+        // Each switch action on its own: two that worked would cancel each other out.
+        foreach (var action in new[] { UiAction.Right, UiAction.Left, UiAction.Accept })
+        {
+            arcadia.Press(action);
+            Assert.False(firstRun.Missing.Single().IsOn, $"{action} hat den nicht gefundenen Launcher eingeschaltet.");
+        }
+
+        arcadia.Press(UiAction.Settings);
+        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown, "die Bibliothek soll nach \"Fertig\" erscheinen");
+        Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.Main.Tabs.Select(tab => tab.Name));
+    }
+
+    [AvaloniaFact]
     [Trait("Testfall", "T139-3")]
     public async Task Only_the_launchers_left_on_become_tabs_also_after_a_restart_and_the_question_does_not_come_again()
     {

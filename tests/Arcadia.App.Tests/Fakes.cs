@@ -11,13 +11,15 @@ namespace Arcadia.App.Tests;
 /// A launcher with the demo library's games whose starts are recorded instead of run, so a test sees which game the
 /// controller started, on every platform and without a launcher installed.
 /// </summary>
-internal sealed class TestLauncher(LauncherInfo launcher, int gameCount, DateTimeOffset now, RecordedStarts starts) : ILauncherIntegration
+internal sealed class TestLauncher(LauncherSpec spec, DateTimeOffset now, RecordedStarts starts) : ILauncherIntegration
 {
-    public LauncherInfo Launcher => launcher;
+    public LauncherInfo Launcher => spec.Launcher;
 
-    public ILauncherScanner Scanner { get; } = new DemoScanner(launcher, gameCount, now);
+    public ILauncherScanner Scanner { get; } = spec.Library is { } library
+        ? new FixedScanner(spec.Launcher, library)
+        : new DemoScanner(spec.Launcher, spec.Games, now);
 
-    public ILauncherClient? Client { get; } = new RecordingClient(launcher.Id, starts);
+    public ILauncherClient? Client { get; } = new RecordingClient(spec.Launcher.Id, starts);
 
     public IInstallMonitor? InstallMonitor => null;
 
@@ -25,10 +27,38 @@ internal sealed class TestLauncher(LauncherInfo launcher, int gameCount, DateTim
 
     public IReadOnlyCollection<string> ProgramNames => [];
 
-    /// <summary>Null: the launcher isn't installed, e.g. to see that a tab of an uninstalled launcher goes away.</summary>
-    public string? Location { get; set; } = "Test";
+    public string? Locate() => spec.IsInstalled ? "Test" : null;
+}
 
-    public string? Locate() => Location;
+internal sealed class FixedScanner(LauncherInfo launcher, IReadOnlyList<Game> games) : ILauncherScanner
+{
+    public LauncherInfo Launcher => launcher;
+
+    public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default) => Task.FromResult(games);
+}
+
+/// <summary>Games whose every title and date a test names, so its expectations don't come from Arcadia's own code.</summary>
+internal static class TestGames
+{
+    public static Game Installed(LauncherInfo launcher, string title, DateTimeOffset installedAt, DateTimeOffset? lastPlayedAt = null) => new()
+    {
+        Id = title,
+        LauncherId = launcher.Id,
+        Title = title,
+        Launch = new LaunchTarget.None(),
+        InstalledAt = installedAt,
+        LastPlayedAt = lastPlayedAt,
+    };
+
+    public static Game NotInstalled(LauncherInfo launcher, string title) => new()
+    {
+        Id = title,
+        LauncherId = launcher.Id,
+        Title = title,
+        Launch = new LaunchTarget.None(),
+        IsInstalled = false,
+        Install = new LaunchTarget.None(),
+    };
 }
 
 /// <summary>The games the launchers were asked to start, in order.</summary>

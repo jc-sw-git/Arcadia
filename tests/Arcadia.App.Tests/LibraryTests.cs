@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Avalonia.Headless.XUnit;
 
@@ -103,27 +104,40 @@ public sealed class LibraryTests
         Assert.Equal(6, main.PageGames.Count);
     }
 
-    [AvaloniaFact]
-    [Trait("Testfall", "G-13")]
-    public async Task Sorting_by_last_played_puts_the_newest_first_and_games_never_played_last()
+    /// <summary>Five games whose order under every sort is written out by hand, so the expectation is not Arcadia's own sorter.</summary>
+    private static readonly LauncherSpec SortLibrary = LauncherSpec.With(
+        KnownLaunchers.Gog,
+        TestGames.Installed(KnownLaunchers.Gog, "Echo", installedAt: Day(2024, 3, 3), lastPlayedAt: Day(2025, 12, 24)),
+        TestGames.NotInstalled(KnownLaunchers.Gog, "Delta"),
+        TestGames.Installed(KnownLaunchers.Gog, "Charlie", installedAt: Day(2026, 9, 1), lastPlayedAt: Day(2026, 10, 20)),
+        TestGames.Installed(KnownLaunchers.Gog, "bravo", installedAt: Day(2025, 5, 1)),
+        TestGames.Installed(KnownLaunchers.Gog, "Alpha", installedAt: Day(2026, 1, 10), lastPlayedAt: Day(2026, 10, 1)));
+
+    /// <summary>The rows and columns of "Ansicht": what the user picks and the order the tab must show then.</summary>
+    public static TheoryData<int, int, string, string[]> Sorts => new()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync();
-        var main = arcadia.Main;
+        { 0, 0, "Name A → Z", ["Alpha", "bravo", "Charlie", "Delta", "Echo"] },
+        { 0, 1, "Name Z → A", ["Echo", "Delta", "Charlie", "bravo", "Alpha"] },
+        { 1, 0, "Installationsdatum, neueste zuerst", ["Charlie", "Alpha", "bravo", "Echo", "Delta"] },
+        { 1, 1, "Installationsdatum, älteste zuerst", ["Echo", "bravo", "Alpha", "Charlie", "Delta"] },
+        { 2, 0, "Zuletzt gespielt, neueste zuerst", ["Charlie", "Alpha", "Echo", "bravo", "Delta"] },
+        { 2, 1, "Zuletzt gespielt, älteste zuerst", ["Echo", "Alpha", "Charlie", "bravo", "Delta"] },
+    };
 
-        // All 31 GOG games on one page (50), then "Zuletzt gespielt – Neueste zuerst" (third row, first column).
+    [AvaloniaTheory]
+    [MemberData(nameof(Sorts))]
+    [Trait("Testfall", "G-13")]
+    public async Task Each_sort_in_view_options_orders_the_tab_with_games_without_a_date_last(int row, int column, string sort, string[] expected)
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync([SortLibrary]);
+
+        // From wherever the focus starts up to "Name A → Z", then to the wanted cell.
         arcadia.Press(UiAction.ViewOptions)
-            .Press(UiAction.Down, times: 3).Press(UiAction.Right, times: 2).Press(UiAction.Accept)
-            .Press(UiAction.Up).Press(UiAction.Left).Press(UiAction.Accept)
-            .Press(UiAction.Back);
+            .Press(UiAction.Up, times: 3).Press(UiAction.Left)
+            .Press(UiAction.Down, times: row).Press(UiAction.Right, times: column)
+            .Press(UiAction.Accept).Press(UiAction.Back);
 
-        Assert.Equal(31, main.PageGames.Count);
-        var lastPlayed = main.PageGames.Select(tile => tile.Game.LastPlayedAt).ToList();
-        var played = lastPlayed.TakeWhile(date => date is not null).ToList();
-        Assert.NotEmpty(played);
-        Assert.Contains(null, lastPlayed);
-        Assert.All(lastPlayed.Skip(played.Count), date => Assert.Null(date));
-        Assert.Equal(played.OrderDescending(), played);
-        Assert.Equal(new SortOrder(SortField.LastPlayed, SortDirection.Descending), arcadia.Settings.Current.LibrarySort);
+        Assert.True(expected.SequenceEqual(arcadia.Main.PageGames.Select(tile => tile.Title)), $"{sort}: {string.Join(", ", arcadia.Main.PageGames.Select(tile => tile.Title))}");
     }
 
     [AvaloniaFact]
@@ -132,11 +146,16 @@ public sealed class LibraryTests
     {
         using var first = await ArcadiaDriver.StartAsync();
         first.Press(UiAction.ViewOptions)
-            .Press(UiAction.Right).Press(UiAction.Accept)                 // Name Z → A
+            .Press(UiAction.Right).Press(UiAction.Accept)                                         // Name Z → A
             .Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Accept) // 10 per page
             .Press(UiAction.Back)
-            .Press(UiAction.NextTab).Press(UiAction.NextPage).Press(UiAction.Right);
-        var firstTitles = TitlesOfPageOne(first);
+            .Press(UiAction.NextTab);
+        var pageOne = first.Main.PageGames.Select(tile => tile.Title).ToList();
+
+        // Arcadia is closed elsewhere than page one and its first game.
+        first.Press(UiAction.NextPage).Press(UiAction.Right, times: 3);
+        Assert.Equal("2", CurrentPage(first));
+        Assert.Equal(3, FocusedIndex(first));
 
         using var restarted = await first.RestartAsync();
         var main = restarted.Main;
@@ -146,7 +165,7 @@ public sealed class LibraryTests
         Assert.Equal("1", CurrentPage(restarted));
         Assert.Equal(0, FocusedIndex(restarted));
         Assert.Equal(new SortOrder(SortField.Name, SortDirection.Descending), restarted.Settings.Current.LibrarySort);
-        Assert.Equal(firstTitles, main.PageGames.Select(tile => tile.Title));
+        Assert.Equal(pageOne, main.PageGames.Select(tile => tile.Title));
     }
 
     private static int FocusedIndex(ArcadiaDriver arcadia) =>
@@ -155,10 +174,5 @@ public sealed class LibraryTests
     private static string? CurrentPage(ArcadiaDriver arcadia) =>
         arcadia.Main.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;
 
-    /// <summary>Page one of the selected tab as the user would see it after going back there.</summary>
-    private static List<string> TitlesOfPageOne(ArcadiaDriver arcadia)
-    {
-        arcadia.Press(UiAction.PreviousPage, times: 10);
-        return [.. arcadia.Main.PageGames.Select(tile => tile.Title)];
-    }
+    private static DateTimeOffset Day(int year, int month, int day) => new(year, month, day, 18, 0, 0, TimeSpan.Zero);
 }

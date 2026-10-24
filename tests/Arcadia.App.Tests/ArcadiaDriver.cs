@@ -53,7 +53,7 @@ internal sealed class ArcadiaDriver : IDisposable
         Specs = launchers;
         Time = time;
         Starts = starts;
-        Launchers = launchers.Select(spec => new TestLauncher(spec.Launcher, spec.Games, Now, starts) { Location = spec.IsInstalled ? "Test" : null }).ToList();
+        Launchers = launchers.Select(spec => new TestLauncher(spec, Now, starts)).ToList();
 
         Settings = new SettingsService(new SettingsStore(SettingsPath));
         var firstRun = new FirstRunSetup(Settings, demo: false, forced: false);
@@ -132,20 +132,33 @@ internal sealed class ArcadiaDriver : IDisposable
     }
 
     /// <summary>A button held for <paramref name="duration"/> on the fake clock, then let go.</summary>
-    public ArcadiaDriver Hold(UiAction action, TimeSpan duration)
+    public ArcadiaDriver Hold(UiAction action, TimeSpan duration) => PressDown(action).Wait(duration).LetGo(action);
+
+    /// <summary>A button pressed and kept down, so a test can look at what happens while it is held.</summary>
+    public ArcadiaDriver PressDown(UiAction action)
     {
         Main.HandleGamepad(action);
         Dispatcher.UIThread.RunJobs();
+        return this;
+    }
 
+    public ArcadiaDriver LetGo(UiAction action)
+    {
+        Main.Release(action);
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
+    /// <summary>Time passes on the fake clock.</summary>
+    public ArcadiaDriver Wait(TimeSpan duration)
+    {
         // In small steps, as real time passes: a timer may start the next one from its callback on the UI thread.
-        for (var held = TimeSpan.Zero; held < duration; held += ClockStep)
+        for (var waited = TimeSpan.Zero; waited < duration; waited += ClockStep)
         {
             Time.Advance(ClockStep);
             Dispatcher.UIThread.RunJobs();
         }
 
-        Main.Release(action);
-        Dispatcher.UIThread.RunJobs();
         return this;
     }
 
@@ -166,6 +179,21 @@ internal sealed class ArcadiaDriver : IDisposable
             Dispatcher.UIThread.RunJobs();
             await Task.Delay(10);
         }
+    }
+
+    /// <summary>
+    /// Gives work handed to the thread pool time to show, for a test that checks something did <em>not</em> happen
+    /// (a game start on the press instead of the release).
+    /// </summary>
+    public async Task SettleAsync()
+    {
+        for (var i = 0; i < 10; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(10);
+        }
+
+        Dispatcher.UIThread.RunJobs();
     }
 
     public void Dispose()
@@ -191,5 +219,11 @@ internal sealed class ArcadiaDriver : IDisposable
     }
 }
 
-/// <summary>A launcher of the test: its games come from the demo library; <paramref name="IsInstalled"/> false hides it.</summary>
-internal sealed record LauncherSpec(LauncherInfo Launcher, int Games, bool IsInstalled = true);
+/// <summary>
+/// A launcher of the test: <paramref name="Games"/> games of the demo library, or exactly <paramref name="Library"/> where
+/// a test needs to know every title and date. <paramref name="IsInstalled"/> false: the launcher isn't found.
+/// </summary>
+internal sealed record LauncherSpec(LauncherInfo Launcher, int Games, bool IsInstalled = true, IReadOnlyList<Game>? Library = null)
+{
+    public static LauncherSpec With(LauncherInfo launcher, params Game[] library) => new(launcher, library.Length, Library: library);
+}

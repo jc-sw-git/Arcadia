@@ -8,5 +8,6 @@ Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
-| Alle 17 Abnahmetests | 2026-10-24 | Claude | PR-Branch, Linux-Container (.NET 10), `dotnet test` | ✅ grün | CI auf Windows, macOS, Linux |
+| Erste 17 Abnahmetests | 2026-10-24 | Claude | PR-Branch, Linux-Container (.NET 10), `dotnet test` | ✅ grün | CI auf Windows, macOS, Linux |
 | Alle 17 Abnahmetests, je einmal rot | 2026-10-24 | Claude | PR-Branch, Linux-Container, je eine gezielte Änderung im Produktcode | ✅ alle 17 rot, danach wieder grün | Änderungen pro Test im PR |
+| Nachbesserung nach Codex-Review (Neustart, Halten mit Zwischenzuständen, Suche nach Relevanz, Einstellungen bedienen, alle Sortierungen, gesperrte Launcher): 25 Tests | 2026-10-24 | Claude | PR-Branch, Linux-Container | ✅ grün; die 12 neuen Prüfungen je einmal rot | Abdeckung je Testfall in der Übersicht |

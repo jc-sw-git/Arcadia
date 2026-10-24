@@ -1274,7 +1274,7 @@
                 <DataTemplate x:DataType="settings:InfoKey">
                   <Grid ColumnDefinitions="170,*" ColumnSpacing="16">
                     <TextBlock ctl:ButtonTextBlock.Buttons="{Binding Input}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
-                    <TextBlock Grid.Column="1" Text="{Binding Effect}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
+                    <TextBlock Grid.Column="1" ctl:ButtonTextBlock.Text="{Binding Effect}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
                   </Grid>
                 </DataTemplate>
                 <!-- Its blocks find the templates of this ItemsControl, up the tree. -->

@@ -9,7 +9,8 @@ Agreed with the owner; don't change without asking. Read this before changing th
   after a right click on it, over the preview's "Optionen" button after ⧉, R or a click on that button (owner, 2026-10-21). No "all launchers" tab. No dedicated favourite button.
 - UI texts name a controller button by the symbol on it, not by its name: ⧉ and ≡, not View/Back and Menu/Start
   (Xbox symbols for now; later those of the controller in use, #72), framed like in the legend also inside a text
-  (`ButtonTextBlock`; in prose other buttons are written in brackets, e.g. "[L3]", "[LS]") (owner, 2026-10-20).
+  (`ButtonTextBlock`; in prose other buttons are written in brackets, e.g. "[L3]", "[LS]") (owner, 2026-10-20). Never a
+  bare "A" or "B" in a text: `ButtonGlyphTextTests` fails on one in the App's strings (owner, 2026-10-24).
 - Every button hint follows the input in use (#127, owner 2026-10-21): after a controller button the controller's
   buttons, after a key or a click the keyboard's keys and the mouse (`KeyHint`, `KeyText`; the mouse merely moving
   changes nothing). Controller buttons are round or a pill, keys square with rounded corners, both with a darker

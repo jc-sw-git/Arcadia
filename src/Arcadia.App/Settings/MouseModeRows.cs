@@ -136,7 +136,7 @@ public sealed class MouseModeRows
         new("B", "Esc"),
         new("LB / RB", "Umschalt+Tab / Tab"),
         new("≡", "Enter"),
-        new("Y", "Bildschirmtastatur (B blendet sie aus)"),
+        new("Y", "Bildschirmtastatur ([B] blendet sie aus)"),
         new("⧉ halten", "Holt Arcadia nach vorne (Einstellung „Zurück zu Arcadia“)"),
         new("⧉ + ≡ halten", "Zurück zum normalen Controller (bei „Automatisch“, bis Arcadia wieder vorne war)"),
     ];

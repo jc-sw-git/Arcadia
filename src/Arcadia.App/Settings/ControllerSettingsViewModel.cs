@@ -172,7 +172,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         new(KnownLaunchers.Steam.Id, "Controller-Einstellungen für Steam", "Steam Controller Kompatibilität und Steams Desktop-Belegung", "sisr",
         [
             new InfoText("Was Steam mit deinen Controllern macht, stellst du unter Controller → Steam ein: ob Arcadia den Steam Controller mit SISR auch außerhalb von Steam nutzbar macht, und ob es Steams Desktop-Belegung für alle Controller ignoriert."),
-            new InfoText("A springt dorthin, B kommt hierher zurück."),
+            new InfoText("[A] springt dorthin, [B] kommt hierher zurück."),
         ]),
     ];
 

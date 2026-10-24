@@ -27,5 +27,5 @@
   The owner has three monitors and saw no difference between borderless and exclusive full screen, so the likelier
   way is that Arcadia really got the foreground on another monitor: Steam's Alt+Tab, or a click in the mouse mode
   (RT or A) with the pointer the game hides lying over Arcadia. So the mouse mode, switched on with a game in front,
-  puts the pointer in the middle of the game's window, and `arcadia.log` names every foreground change (process
-  file name, game or not, and whether Avalonia's activation disagrees) and where the foreground is after View held.
+  puts the pointer in the middle of the game's window, and `arcadia.log` names every foreground change (Arcadia,
+  game, no game or no window, and whether Avalonia's activation disagrees; never the program, owner 2026-10-23) and where the foreground is after View held.

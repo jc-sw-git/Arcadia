@@ -27,7 +27,7 @@ Agreed with the owner; don't change without asking. Read this before changing th
   would lie under it; scales like the Big Picture layout. Shares the layout last chosen with the search. Closes
   when a game comes to the front or the mouse mode ends. With Arcadia's search in front, Y doesn't open a second
   keyboard: the search's takes the mouse mode's buttons (≡ = ↵ starts the hit) until B, the search closes or Arcadia
-  leaves the front (owner, 2026-10-22). "Steams Desktop-Belegung ignorieren" (on; its own box, independent of
+  leaves the front (owner, 2026-10-22). "Steams Desktop-Belegung ignorieren" (on; in the settings group "Steam", #169, independent of
   the mouse mode, owner 2026-10-20) drops simulated mouse and keys from other programs while a controller is in use; beside a library game without the mouse mode only while ⧉ + ≡ are
   held, and then only keys (`SteamDesktopInputFilter`: low-level hooks only while a controller is connected and the
   option needs them, set anew every 30 s because Windows drops a slow hook silently). "Arcadia in front" is the

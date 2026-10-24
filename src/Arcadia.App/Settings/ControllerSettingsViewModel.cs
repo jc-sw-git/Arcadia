@@ -59,14 +59,18 @@ public enum SettingsPrompt
 }
 
 /// <summary>
-/// The category "Controller" (#15): Steam Controller Support (switch, problems with their fix, SISR's update), the mouse
-/// mode, "Zurück zu Arcadia" and Steam's desktop layout, as rows of the page. Status, how it works, drawbacks and SISR's
+/// The category "Controller" (#15): the group "Steam" with Steam Controller Support (switch, problems with their fix,
+/// SISR's update) and Steam's desktop layout (#169), then the mouse mode and "Zurück zu Arcadia", as rows of the page. Status, how it works, drawbacks and SISR's
 /// version are nothing to set, so they are boxes in the switch's info panel (owner, 2026-10-22). Installing SISR asks its
 /// questions in dialogs over the page.
 /// </summary>
 public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewModel
 {
-    private const string SteamControllerGroup = "STEAM CONTROLLER";
+    /// <summary>
+    /// Everything Steam does to the controllers, in one group (owner, 2026-10-24). The desktop layout isn't a
+    /// dependent of the SISR switch: it covers every controller, SISR only the Steam Controller.
+    /// </summary>
+    private const string SteamGroup = "STEAM";
 
     private static readonly TimeSpan PromptCheckInterval = TimeSpan.FromSeconds(1);
 
@@ -99,12 +103,12 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support = support;
         _sisr = new SisrRowViewModel(ActivateSisr)
         {
-            Group = SteamControllerGroup,
-            Subtitle = "Für Spiele außerhalb von Steam und für Arcadia",
+            Group = SteamGroup,
+            Subtitle = "Nur Steam Controller: für Spiele außerhalb von Steam und für Arcadia",
         };
         _update = new ActionRowViewModel("sisr-update", "SISR aktualisieren", () => _support.InstallUpdateAsync().Forget("SISR aktualisieren"))
         {
-            Group = SteamControllerGroup,
+            Group = SteamGroup,
             ActionText = "Aktualisieren",
             IsPrimary = true,
         };
@@ -116,8 +120,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             () => changes.Current.IgnoreSteamDesktopLayout,
             value => changes.Apply(s => s with { IgnoreSteamDesktopLayout = value }, "Steams Desktop-Belegung ignorieren"))
         {
-            Group = "STEAM",
-            Subtitle = "Z. B. Steams Alt+Tab bei ⧉ + ≡ verwerfen",
+            Group = SteamGroup,
+            Subtitle = "Alle Controller: z. B. Steams Alt+Tab bei ⧉ + ≡ verwerfen",
             Info =
             [
                 new InfoText("Läuft Steam, macht es außerhalb von Spielen aus manchen Controller-Eingaben selbst Tasten („Desktop-Belegung“): Hältst du ⧉ + ≡, löst Steam mit jedem Controller ein Alt+Tab aus."),
@@ -587,9 +591,9 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             _sisr,
             .. IssueRows(),
             .. hasUpdate ? [_update] : Array.Empty<SettingsRowViewModel>(),
+            _steamDesktopLayout,
             .. _mouseMode.Rows,
             .. _returnWithView.Rows,
-            _steamDesktopLayout,
         ]);
 
         var buttons = PromptButtons();
@@ -633,7 +637,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             if (!_issueRows.TryGetValue(issue.Id, out var row))
             {
                 var fix = issue.Fix;
-                row = new ActionRowViewModel($"issue:{issue.Id}", issue.Title, () => ApplyFix(fix)) { Group = SteamControllerGroup };
+                row = new ActionRowViewModel($"issue:{issue.Id}", issue.Title, () => ApplyFix(fix)) { Group = SteamGroup };
                 _issueRows[issue.Id] = row;
             }
 

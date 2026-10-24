@@ -181,21 +181,6 @@ internal sealed class ArcadiaDriver : IDisposable
         }
     }
 
-    /// <summary>
-    /// Gives work handed to the thread pool time to show, for a test that checks something did <em>not</em> happen
-    /// (a game start on the press instead of the release).
-    /// </summary>
-    public async Task SettleAsync()
-    {
-        for (var i = 0; i < 10; i++)
-        {
-            Dispatcher.UIThread.RunJobs();
-            await Task.Delay(10);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-    }
-
     public void Dispose()
     {
         _http.Dispose();

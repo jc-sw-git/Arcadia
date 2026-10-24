@@ -20,14 +20,18 @@ public sealed class GameStartTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Press(UiAction.Right, times: 2);
-        var game = arcadia.Main.FocusedGame!.Game;
+        var tile = arcadia.Main.FocusedGame!;
+        var game = tile.Game;
 
         arcadia.PressDown(UiAction.Accept).Wait(Tap);
-        await arcadia.SettleAsync();
+        Assert.False(tile.IsRunningOrStarting);
         Assert.Empty(arcadia.Starts.Keys);
-        Assert.False(arcadia.Main.FocusedGame.IsHolding);
+        Assert.False(tile.IsHolding);
 
+        // The start is requested synchronously on the release; this is what lets the other tests assert "no start"
+        // without waiting for the thread pool.
         arcadia.LetGo(UiAction.Accept);
+        Assert.True(tile.IsStarting);
         await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count > 0, "der Launcher soll das Spiel starten");
 
         Assert.Equal([game.Key], arcadia.Starts.Keys);
@@ -57,8 +61,8 @@ public sealed class GameStartTests
         Assert.Equal("3 von 31", detail.PositionText);
 
         arcadia.LetGo(UiAction.Accept);
-        await arcadia.SettleAsync();
         Assert.Same(detail, arcadia.Main.Detail);
+        Assert.False(tile.IsRunningOrStarting);
         Assert.Empty(arcadia.Starts.Keys);
     }
 
@@ -77,8 +81,8 @@ public sealed class GameStartTests
 
         // Well past the moment the details would have opened: no timer of the cancelled hold may still fire.
         arcadia.Wait(TimeSpan.FromSeconds(2));
-        await arcadia.SettleAsync();
         Assert.False(arcadia.Main.IsDetailOpen);
+        Assert.False(tile.IsRunningOrStarting);
         Assert.Empty(arcadia.Starts.Keys);
     }
 }

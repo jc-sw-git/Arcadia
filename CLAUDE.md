@@ -28,7 +28,7 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
 - .NET 10 SDK. `Directory.Build.props` sets `TreatWarningsAsErrors` — keep the build warning-free.
 - A running Arcadia locks `bin/` → close it before building: `Get-Process Arcadia | % { $_.CloseMainWindow() }`
   (CloseMainWindow, not Stop-Process: Arcadia must shut SISR down cleanly).
-- Logs: `%LOCALAPPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, SISR start/stop),
+- Logs: `%LOCALAPPDATA%\Arcadia-Logs\arcadia.log` (keys, gamepad buttons, SISR start/stop),
   `sisr.log` (SISR's own log, overwritten per start). Settings: `%APPDATA%\Arcadia\settings.json`.
 - Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log:
   `Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} | ? ProviderName -match '.NET Runtime'`.

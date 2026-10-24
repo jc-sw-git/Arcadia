@@ -50,4 +50,4 @@ while ($clock.ElapsedMilliseconds -lt $TraceMs) {
 }
 "foreground: $($seen -join ' -> ')"
 "SISR running: $([bool](Get-Process SISR -ErrorAction SilentlyContinue))"
-Get-Content (Join-Path $env:LOCALAPPDATA 'Arcadia\logs\arcadia.log') -Tail 6
+Get-Content (Join-Path $env:LOCALAPPDATA 'Arcadia-Logs\arcadia.log') -Tail 6

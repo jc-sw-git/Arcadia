@@ -85,7 +85,7 @@ Spiele aus anderen Launchern.
   Debug-Schnittstelle; Probleme erscheinen als Warnung mit „Beheben“-Knopf.
 - Neue SISR-Versionen werden täglich geprüft und zum Update angeboten.
 
-Logs: `%LOCALAPPDATA%\Arcadia\logs\` (`arcadia.log`, `sisr.log`). Drittsoftware: siehe
+Logs: `%LOCALAPPDATA%\Arcadia-Logs\` (`arcadia.log`, `sisr.log`). Drittsoftware: siehe
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Mitmachen

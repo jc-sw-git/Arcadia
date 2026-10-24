@@ -1151,7 +1151,7 @@
                               <StackPanel Orientation="Horizontal" Spacing="12">
                                 <TextBlock ctl:ButtonTextBlock.Text="{Binding Title}" FontSize="19" FontWeight="Bold" TextWrapping="Wrap" />
                                 <!-- No local Fill: it would override the "active" style. -->
-                                <Ellipse Classes="statusDot" Classes.active="{Binding IsLampWorking}" Classes.warning="{Binding IsLampProblem}" Width="10" Height="10" VerticalAlignment="Center"
+                                <Ellipse Classes="statusDot" Classes.active="{Binding IsLampWorking}" Classes.warning="{Binding IsLampProblem}" Classes.error="{Binding IsLampFailure}" Width="10" Height="10" VerticalAlignment="Center"
                                          IsVisible="{Binding HasLamp}" />
                               </StackPanel>
                               <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
@@ -1622,6 +1622,9 @@
     </Style>
     <Style Selector="Ellipse.statusDot.warning">
       <Setter Property="Fill" Value="{StaticResource Warning}" />
+    </Style>
+    <Style Selector="Ellipse.statusDot.error">
+      <Setter Property="Fill" Value="{StaticResource Danger}" />
     </Style>
     <!-- Status messages (owner, 2026-10-21): a warning by default, info a blue i in a circle, error a red X. -->
     <Style Selector="Path.statusIcon">

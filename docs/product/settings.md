@@ -13,7 +13,7 @@ Agreed with the owner; don't change without asking. Read this before changing th
   "Steam Controller Kompatibilität" (owner 2026-10-24): while off or not installed its subtitle says what it is for
   ("Erlaubt es, den Steam Controller auch in Spielen außerhalb von Steam zu verwenden"), while on a one-line status.
   Its lamp is green when SISR runs and nothing is wrong, grey when on but resting (paused, starting, no Steam
-  Controller), yellow when a problem below needs the user (warning or error). Its problems and "SISR aktualisieren"
+  Controller), yellow when a warning below needs the user, red with an error below. Its problems and "SISR aktualisieren"
   stand right below it, indented.
   Steam's launcher page links there (owner 2026-10-24): group "Controller", row "Controller-Einstellungen für Steam",
   A opens the category with the focus on "Steam Controller Kompatibilität", B goes back to Steam's page. The settings

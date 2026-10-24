@@ -573,7 +573,12 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         };
         var healthy = enabled && !hasProblems && _support.BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
         var settlingNow = enabled && state is SisrState.Starting or SisrState.Stopping;
-        _sisr.ShowLamp(!enabled ? null : hasProblems ? RowLamp.Problem : state == SisrState.Running ? RowLamp.Working : RowLamp.Resting);
+        _sisr.ShowLamp(!enabled ? null : Marker switch
+        {
+            HealthSeverity.Error => RowLamp.Failure,
+            HealthSeverity.Warning => RowLamp.Problem,
+            _ => state == SisrState.Running ? RowLamp.Working : RowLamp.Resting,
+        });
         var status = new InfoSection("STATUS",
         [
             new InfoStatus(statusText, healthy, settlingNow),

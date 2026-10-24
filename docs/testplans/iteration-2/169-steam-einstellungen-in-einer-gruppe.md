@@ -19,7 +19,8 @@
       „Aktiv – der Steam Controller läuft als Xbox Controller“, „Pausiert, solange ein Spiel mit „Steam Input“ läuft“). · E2E: nein (SISR unter Windows)
 - [ ] **T169-7** Die Lampe neben dem Namen: grün, solange SISR läuft und keine Meldung da ist; grau, wenn an, aber
       pausiert (Steam-Spiel mit „Steam Input“), SISR startet oder kein Steam Controller gefunden; gelb, sobald eine
-      Meldung mit Warndreieck oder rotem X darunter steht (z. B. Steam beenden). Aus: keine Lampe. · E2E: nein (SISR und Steam unter Windows)
+      Meldung mit Warndreieck darunter steht (z. B. Steam läuft nicht); rot bei einer mit rotem X (z. B. SISR stürzt
+      immer wieder ab). Aus: keine Lampe. · E2E: nein (SISR und Steam unter Windows)
 - [ ] **T169-8** Meldungen und „SISR aktualisieren“ stehen direkt unter der Kompatibilität, eine Stufe eingerückt,
       vor „Steams Desktop-Belegung ignorieren“ (nicht eingerückt). · E2E: nein (SISR unter Windows)
 

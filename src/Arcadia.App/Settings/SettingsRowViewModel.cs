@@ -41,7 +41,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     /// 2026-10-22 and 2026-10-24); null shows none.
     /// </summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasLamp), nameof(IsLampWorking), nameof(IsLampProblem))]
+    [NotifyPropertyChangedFor(nameof(HasLamp), nameof(IsLampWorking), nameof(IsLampProblem), nameof(IsLampFailure))]
     public partial RowLamp? Lamp { get; protected set; }
 
     public bool HasLamp => Lamp is not null;
@@ -49,6 +49,8 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public bool IsLampWorking => Lamp == RowLamp.Working;
 
     public bool IsLampProblem => Lamp == RowLamp.Problem;
+
+    public bool IsLampFailure => Lamp == RowLamp.Failure;
 
     /// <summary>The heading of the group the row belongs to, e.g. "MAUSMODUS"; may change while the row is shown (#136).</summary>
     [ObservableProperty]
@@ -334,6 +336,9 @@ public enum RowLamp
     /// <summary>Green: on and ready.</summary>
     Working,
 
-    /// <summary>Yellow: a problem below the row needs the user.</summary>
+    /// <summary>Yellow: a warning below the row needs the user.</summary>
     Problem,
+
+    /// <summary>Red: an error below the row, e.g. SISR keeps crashing.</summary>
+    Failure,
 }

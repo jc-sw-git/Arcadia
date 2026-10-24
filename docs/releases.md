@@ -13,6 +13,8 @@
   docs say 30 s, recheck on updates), so the questions share 40 s and say how long they wait;
   the removal runs the important steps first. The "SISR Marker" goes from every account's `shortcuts.vdf`, with Steam
   closed (up to 8 s) and started again, because Steam rewrites that file from memory on exit (owner, 2026-10-24).
+  Uninstalling happens only from Windows; Arcadia offers no "Deinstallieren", and these questions need no controller
+  (owner, 2026-10-24: whoever removes Arcadia doesn't expect it). Asking without a time limit: #164.
 - `ArcadiaUpdateService` checks GitHub Releases (stable only) every 6 h and on "Nach Updates suchen" in
   Einstellungen → "Über Arcadia". "Jetzt aktualisieren" shows only with an update; it downloads, Arcadia closes
   and Velopack installs silently (no input needed) and restarts it. Updating while a game runs is fine: SISR

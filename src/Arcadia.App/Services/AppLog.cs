@@ -4,7 +4,7 @@ using Arcadia.Core.Diagnostics;
 namespace Arcadia.App.Services;
 
 /// <summary>
-/// A small append-only log in <c>%LOCALAPPDATA%\Arcadia\logs\arcadia.log</c>. Every gamepad
+/// A small append-only log in <c>arcadia.log</c> in <see cref="LogLocation"/>. Every gamepad
 /// button lands here, so once the file passes <see cref="MaxSize"/> it moves to
 /// <c>arcadia.log.1</c> (replacing the previous one) and a new file starts. Paths in the user's
 /// profile are written without the user's name (<see cref="LogPrivacy"/>).
@@ -17,8 +17,7 @@ public static class AppLog
 
     private static readonly string UserProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-    public static string Directory { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Arcadia", "logs");
+    public static string Directory => LogLocation.Directory;
 
     public static void Write(string message)
     {

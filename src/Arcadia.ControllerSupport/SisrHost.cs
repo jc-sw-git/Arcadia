@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using Arcadia.Core.Diagnostics;
 using Arcadia.Launchers;
 
 namespace Arcadia.ControllerSupport;
@@ -72,7 +73,7 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
     public static SisrHost CreateDefault(HttpClient http) => new(
         http,
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SISR"),
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Arcadia", "logs"));
+        LogLocation.Directory);
 
     public bool IsInstalled => File.Exists(ExecutablePath);
 

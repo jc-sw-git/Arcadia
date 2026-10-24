@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
+using Arcadia.Core.Diagnostics;
 using Avalonia;
 using Velopack;
 
@@ -24,6 +25,7 @@ sealed partial class Program
         }
 
         velopack.Run();
+        LogLocation.MoveOldLogs(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
 
         // Crashes used to show only in the Windows event log; now every one lands in arcadia.log.
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
@@ -65,6 +67,16 @@ sealed partial class Program
         else
         {
             QuitSisr();
+        }
+
+        // Velopack removes only its install folder; the logs live beside it (LogLocation).
+        try
+        {
+            Directory.Delete(LogLocation.Directory, recursive: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // A SISR left running keeps sisr.log open; the rest is gone, and nothing else depends on it.
         }
     }
 

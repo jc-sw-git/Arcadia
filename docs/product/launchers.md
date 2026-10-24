@@ -22,7 +22,8 @@ Agreed with the owner; don't change without asking. Read this before changing th
   B (or a click on "Launcher" above its name) goes back to the list with that launcher focused, LT/RT (Q/E, a click on a
   neighbour in the head) turn to the
   launcher before or after it in the list's order, wrapping. Groups "Allgemein": Aktiv, "Name im Tab", "Such-Kürzel",
-  "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only active and found). Name and keyword are written with the shared
+  "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only active and found); below them links from other categories,
+  e.g. on Steam's page "Controller" → "Controller-Einstellungen für Steam" (#169, `docs/product/settings.md`). Name and keyword are written with the shared
   on-screen keyboard below the page (without ↹ and the edge key; the search's buttons, ≡/Enter take, B/Esc drop); a
   keyword's keyboard offers only the keys it may hold (lower-case letters and digits); a
   problem (keyword taken, too long) shows in red while typing, taken anyway the old value stays and a toast says

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
+using Arcadia.Core.Launchers;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -164,6 +165,16 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support.WatchSetup = true;
         Task.Run(() => _support.RefreshAsync()).Forget("Einstellungen aktualisieren");
     }
+
+    /// <summary>Steam's page points here too: Steam decides how the controllers behave outside its games (#169).</summary>
+    public override IReadOnlyList<SettingsLink> LauncherPageLinks { get; } =
+    [
+        new(KnownLaunchers.Steam.Id, "Controller-Einstellungen für Steam", "Steam Controller Kompatibilität und Steams Desktop-Belegung", "sisr",
+        [
+            new InfoText("Was Steam mit deinen Controllern macht, stellst du unter Controller → Steam ein: ob Arcadia den Steam Controller mit SISR auch außerhalb von Steam nutzbar macht, und ob es Steams Desktop-Belegung für alle Controller ignoriert."),
+            new InfoText("A springt dorthin, B kommt hierher zurück."),
+        ]),
+    ];
 
     public PromptButtonViewModel RetryInstallItem => _retryInstall;
 

@@ -10,6 +10,10 @@ Agreed with the owner; don't change without asking. Read this before changing th
   owner 2026-10-24): "Steam Controller Kompatibilität" (SISR) with its messages and update, then "Steams
   Desktop-Belegung ignorieren". The latter is no dependent of the SISR switch (it covers every controller, SISR only
   the Steam Controller), so it isn't indented; the subtitles say "Nur Steam Controller" / "Alle Controller".
+  Steam's launcher page links there (owner 2026-10-24): group "Controller", row "Controller-Einstellungen für Steam",
+  A opens the category with the focus on "Steam Controller Kompatibilität", B goes back to Steam's page. The settings
+  stay in "Controller" because they work without Steam's tab too; a category offers such links
+  (`SettingsCategoryViewModel.LauncherPageLinks`), so the launcher page doesn't special-case Steam.
 - Settings (#15, owner 2026-10-21 and 2026-10-22): a whole page in place of the library (≡, Enter, the chip); B or ✕ go
   back to the same place. Categories are tabs in the header like the launcher tabs (LB/RB, Shift+Q/E, a
   click; Q/E = LT/RT switch tabs inside a category, e.g. launcher pages, as in the library, owner 2026-10-23), only those with content; a warning or an error of a category shows its symbol beside the name, info nothing.

@@ -48,6 +48,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private readonly ActionRowViewModel _defaultLogoRow;
     private readonly ActionRowViewModel _folderRow;
     private readonly ActionRowViewModel _rescanRow;
+    private readonly List<(string LauncherId, ActionRowViewModel Row)> _linkRows = [];
 
     private LauncherRowViewModel? _lifted;
 
@@ -130,6 +131,26 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         {
             Focus(row);
         }
+    }
+
+    /// <summary>
+    /// The rows other categories offer on launcher pages (#169), each in a group named after its category; set once by
+    /// the settings page, which knows all categories.
+    /// </summary>
+    public void ShowLinks(IEnumerable<(string Group, SettingsLink Link, Action Open)> links)
+    {
+        foreach (var (group, link, open) in links)
+        {
+            _linkRows.Add((link.LauncherId, new ActionRowViewModel($"link:{link.TargetRowKey}", link.Title, open)
+            {
+                Group = group,
+                Subtitle = link.Subtitle,
+                ActionText = "Öffnen",
+                Info = link.Info,
+            }));
+        }
+
+        Refresh();
     }
 
     /// <summary>The launcher whose page is shown, or null on the list.</summary>
@@ -467,7 +488,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             new InfoText($"Liest die Spiele von {name} sofort neu ein, etwa nach einer Installation, die Arcadia nicht mitbekommen hat. Sonst liest Arcadia neu ein, wenn es wieder nach vorne kommt."),
         ];
 
-        SetRows([_activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), _rescanRow]);
+        SetRows([_activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), _rescanRow, .. _linkRows.Where(l => l.LauncherId == id).Select(l => l.Row)]);
     }
 
     /// <summary>A on "Name im Tab" or "Such-Kürzel": the on-screen keyboard over the text, checked while it is typed.</summary>

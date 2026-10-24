@@ -1,6 +1,8 @@
 using Arcadia.App.Input;
+using Arcadia.App.Services;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
+using Arcadia.Input;
 using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;
@@ -31,6 +33,83 @@ public sealed class LibraryTests
         arcadia.Press(UiAction.Down, times: 5);
         Assert.Equal(main.PageGames.Count - 1, FocusedIndex(arcadia));
         Assert.Single(main.PageGames, tile => tile.IsFocused);
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "G-6")]
+    public async Task The_D_pad_held_repeats_the_move_after_a_moment_and_stops_at_the_edge_of_the_page()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+
+        // Shorter than the repeat delay: one step, as a tap.
+        arcadia.HoldPad(TimeSpan.FromMilliseconds(300), PadButtons.DPadRight);
+        Assert.Equal(1, FocusedIndex(arcadia));
+
+        // Held a second: it goes on by itself, several steps further.
+        arcadia.HoldPad(TimeSpan.FromSeconds(1), PadButtons.DPadRight);
+        Assert.InRange(FocusedIndex(arcadia), 5, 24);
+
+        // Held long, down: row by row to the last tile of the page (25 per page: 3 rows of 8 and one tile), no further.
+        arcadia.HoldPad(TimeSpan.FromSeconds(3), PadButtons.DPadDown);
+        Assert.Equal(arcadia.Main.PageGames.Count - 1, FocusedIndex(arcadia));
+        Assert.Equal("1", CurrentPage(arcadia));
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "G-6")]
+    public async Task The_left_stick_moves_the_focus_like_the_D_pad_but_not_when_only_nudged()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var tap = TimeSpan.FromMilliseconds(100);
+
+        arcadia.HoldPad(tap, leftStick: new StickPosition(0.9, 0));
+        Assert.Equal(1, FocusedIndex(arcadia));
+
+        // Up on the stick is positive.
+        arcadia.HoldPad(tap, leftStick: new StickPosition(0, -0.9));
+        Assert.Equal(1 + Arcadia.App.ViewModels.MainViewModel.GridColumns, FocusedIndex(arcadia));
+
+        arcadia.HoldPad(tap, leftStick: new StickPosition(0, 0.9)).HoldPad(tap, leftStick: new StickPosition(-0.9, 0));
+        Assert.Equal(0, FocusedIndex(arcadia));
+
+        // A stick that isn't quite at rest, or brushed in passing, doesn't navigate.
+        arcadia.HoldPad(TimeSpan.FromSeconds(1), leftStick: new StickPosition(0.3, -0.3));
+        Assert.Equal(0, FocusedIndex(arcadia));
+
+        // Held, it repeats like the D-pad.
+        arcadia.HoldPad(TimeSpan.FromSeconds(1), leftStick: new StickPosition(1, 0));
+        Assert.InRange(FocusedIndex(arcadia), 5, 24);
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "G-15")]
+    public async Task The_preview_shows_last_played_playtime_size_launcher_and_location_of_the_focused_game()
+    {
+        var folder = Path.GetTempPath();
+        var played = TestGames.Installed(KnownLaunchers.Gog, "Alpha", installedAt: Day(2026, 1, 10), lastPlayedAt: new(2026, 10, 23, 12, 0, 0, TimeSpan.Zero)) with
+        {
+            Playtime = TimeSpan.FromHours(12.5),
+            InstallSizeBytes = 38_118_773_964, // 35.5 GiB
+            InstallDirectory = folder,
+        };
+        var never = TestGames.Installed(KnownLaunchers.Gog, "Bravo", installedAt: Day(2026, 2, 1)) with { InstallDirectory = folder };
+        using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Gog, played, never)]);
+
+        var preview = arcadia.Main.FocusedGame!;
+        Assert.Equal("Alpha", preview.Title);
+        Assert.Equal("Gestern", preview.LastPlayedText);
+        Assert.Equal("12 Std.", preview.PlaytimeText);
+        Assert.Equal("35,5 GB", preview.SizeText);
+        Assert.Equal("GOG Galaxy", preview.LauncherName);
+        Assert.Equal(folder, preview.LocationText);
+
+        // The preview follows the focus; what the launcher doesn't report shows as such.
+        arcadia.Press(UiAction.Right);
+        preview = arcadia.Main.FocusedGame!;
+        Assert.Equal("Bravo", preview.Title);
+        Assert.Equal("Nie gespielt", preview.LastPlayedText);
+        Assert.Equal("–", preview.PlaytimeText);
+        Assert.Equal("–", preview.SizeText);
     }
 
     [AvaloniaFact]
@@ -166,6 +245,99 @@ public sealed class LibraryTests
         Assert.Equal(0, FocusedIndex(restarted));
         Assert.Equal(new SortOrder(SortField.Name, SortDirection.Descending), restarted.Settings.Current.LibrarySort);
         Assert.Equal(pageOne, main.PageGames.Select(tile => tile.Title));
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "T8-2")]
+    public async Task Sort_and_page_size_apply_to_every_tab_and_a_small_tab_shows_the_next_smaller_size_only_for_itself()
+    {
+        // GOG 31, Xbox 62, Amazon 6 games.
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var main = arcadia.Main;
+
+        arcadia.Press(UiAction.ViewOptions);
+        Assert.Equal("Sortierung und Einträge pro Seite, gültig für alle Launcher", main.ViewOptions!.Subtitle);
+        arcadia.Press(UiAction.Right).Press(UiAction.Accept)                                                            // Name Z → A
+            .Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Right, times: 2).Press(UiAction.Accept) // 50
+            .Press(UiAction.Back);
+        Assert.Equal(31, main.PageGames.Count);
+        AssertNameZtoA(arcadia);
+
+        arcadia.Press(UiAction.NextTab);
+        Assert.Equal("Xbox", main.SelectedTab?.Name);
+        Assert.Equal(50, main.PageGames.Count);
+        Assert.Equal("Name Z–A  ·  50 pro Seite", main.ViewSummary);
+        AssertNameZtoA(arcadia);
+
+        // Six games: 50 isn't offered there, so 10, the largest size it allows.
+        arcadia.Press(UiAction.NextTab);
+        Assert.Equal("Amazon Games", main.SelectedTab?.Name);
+        Assert.Equal(6, main.PageGames.Count);
+        Assert.Equal("Name Z–A  ·  10 pro Seite", main.ViewSummary);
+        AssertNameZtoA(arcadia);
+
+        // The choice itself is kept: the big tab shows 50 again.
+        arcadia.Press(UiAction.PreviousTab);
+        Assert.Equal("Xbox", main.SelectedTab?.Name);
+        Assert.Equal(50, main.PageGames.Count);
+        Assert.Equal("Name Z–A  ·  50 pro Seite", main.ViewSummary);
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "T8-3")]
+    public async Task A_last_tab_whose_launcher_is_gone_starts_in_the_first_tab_and_in_its_own_again_once_it_is_back()
+    {
+        using var first = await ArcadiaDriver.StartAsync();
+        first.Press(UiAction.NextTab);
+        Assert.Equal("Xbox", first.Main.SelectedTab?.Name);
+
+        // Xbox is gone from Arcadia, e.g. its integration was removed.
+        using var withoutXbox = await first.RestartAsync([ArcadiaDriver.DefaultLaunchers[0], ArcadiaDriver.DefaultLaunchers[2]]);
+        Assert.Equal(["GOG Galaxy", "Amazon Games"], withoutXbox.Main.Tabs.Select(tab => tab.Name));
+        Assert.Equal("GOG Galaxy", withoutXbox.Main.SelectedTab?.Name);
+        Assert.Same(withoutXbox.Main.PageGames[0], withoutXbox.Main.FocusedGame);
+        Assert.False(withoutXbox.Main.Toast.IsVisible, withoutXbox.Main.Toast.Text);
+
+        using var withXbox = await withoutXbox.RestartAsync(ArcadiaDriver.DefaultLaunchers);
+        Assert.Equal("Xbox", withXbox.Main.SelectedTab?.Name);
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "T41-7")]
+    public async Task Sorted_by_install_date_games_not_installed_come_last_in_both_directions()
+    {
+        var library = LauncherSpec.With(
+            KnownLaunchers.Gog,
+            TestGames.NotInstalled(KnownLaunchers.Gog, "Aaron"),
+            TestGames.Installed(KnownLaunchers.Gog, "Mitte", installedAt: Day(2025, 6, 1)),
+            TestGames.NotInstalled(KnownLaunchers.Gog, "Zora"),
+            TestGames.Installed(KnownLaunchers.Gog, "Neu", installedAt: Day(2026, 9, 1)),
+            TestGames.Installed(KnownLaunchers.Gog, "Alt", installedAt: Day(2024, 2, 1)));
+        using var arcadia = await ArcadiaDriver.StartAsync([library]);
+
+        ChooseSort(arcadia, row: 1, column: 0);
+        Assert.Equal(["Neu", "Mitte", "Alt"], Titles(arcadia).Take(3));
+        Assert.Equal(["Aaron", "Zora"], Titles(arcadia).Skip(3).Order());
+
+        ChooseSort(arcadia, row: 1, column: 1);
+        Assert.Equal(["Alt", "Mitte", "Neu"], Titles(arcadia).Take(3));
+        Assert.Equal(["Aaron", "Zora"], Titles(arcadia).Skip(3).Order());
+    }
+
+    /// <summary>"Ansicht", from wherever the focus starts up to "Name A → Z", then to the sort in that cell.</summary>
+    private static void ChooseSort(ArcadiaDriver arcadia, int row, int column) =>
+        arcadia.Press(UiAction.ViewOptions)
+            .Press(UiAction.Up, times: 3).Press(UiAction.Left)
+            .Press(UiAction.Down, times: row).Press(UiAction.Right, times: column)
+            .Press(UiAction.Accept).Press(UiAction.Back);
+
+    private static List<string> Titles(ArcadiaDriver arcadia) => arcadia.Main.PageGames.Select(tile => tile.Title).ToList();
+
+    private static void AssertNameZtoA(ArcadiaDriver arcadia)
+    {
+        var titles = Titles(arcadia);
+        var descending = titles.OrderDescending(StringComparer.Create(Formatting.Culture, ignoreCase: true)).ToList();
+        Assert.True(descending.SequenceEqual(titles), string.Join(", ", titles));
     }
 
     private static int FocusedIndex(ArcadiaDriver arcadia) =>

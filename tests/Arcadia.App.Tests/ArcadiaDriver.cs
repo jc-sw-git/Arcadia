@@ -7,6 +7,8 @@ using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Demo;
+using Arcadia.Input;
 using Avalonia.Threading;
 using Microsoft.Extensions.Time.Testing;
 
@@ -34,6 +36,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     private static readonly TimeSpan ClockStep = TimeSpan.FromMilliseconds(50);
 
+    /// <summary>How often the App reads the controllers (XInputGamepadSource).</summary>
+    private static readonly TimeSpan PadPoll = TimeSpan.FromMilliseconds(8);
+
     private readonly HttpClient _http = new();
     private readonly bool _ownsFolder;
 
@@ -46,28 +51,42 @@ internal sealed class ArcadiaDriver : IDisposable
         Velopack.VelopackApp.Build().Run();
     }
 
-    private ArcadiaDriver(string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts)
+    private readonly GamepadPolls _pad = new();
+
+    private ArcadiaDriver(string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts, LauncherInstalls installs)
     {
         Folder = folder;
         _ownsFolder = ownsFolder;
         Specs = launchers;
         Time = time;
         Starts = starts;
-        Launchers = launchers.Select(spec => new TestLauncher(spec, Now, starts)).ToList();
+        Installs = installs;
+        Launchers = launchers.Select(spec => spec.IsDemo
+            ? new DemoIntegration(spec.Launcher, spec.Games, Now)
+            : (ILauncherIntegration)new TestLauncher(spec, Now, starts, installs)).ToList();
+        _pad.ButtonPressed += button => PressButton(button);
+        _pad.ButtonReleased += button => ReleaseButton(button);
 
         Settings = new SettingsService(new SettingsStore(SettingsPath));
         var firstRun = new FirstRunSetup(Settings, demo: false, forced: false);
         var registry = new LauncherRegistry(Launchers, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
-        var controllerSupport = new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform());
+        var controllerSupport = new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform())
+        {
+            Log = AppLog.Write,
+        };
         var launchedGames = new LaunchedGames();
-        var installs = new InstallTracker(registry, time);
-        var running = new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time);
+        var installTracker = new InstallTracker(registry, time);
+        var running = new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time)
+        {
+            Log = AppLog.Write,
+            IsInstalling = key => installTracker.StateOf(key) is not null,
+        };
         Main = new MainViewModel(
             new LibraryService(registry, time),
-            new GameLaunchService(registry),
+            new GameLaunchService(registry) { Log = AppLog.Write },
             controllerSupport,
-            new ArcadiaUpdateService(_http, time),
-            installs,
+            new ArcadiaUpdateService(_http, time) { Log = AppLog.Write },
+            installTracker,
             running,
             launchedGames,
             Settings,
@@ -86,7 +105,21 @@ internal sealed class ArcadiaDriver : IDisposable
 
     public RecordedStarts Starts { get; }
 
-    public IReadOnlyList<TestLauncher> Launchers { get; }
+    /// <summary>What the launchers install in their own windows; kept across a restart, as the launchers keep running.</summary>
+    public LauncherInstalls Installs { get; }
+
+    public IReadOnlyList<ILauncherIntegration> Launchers { get; }
+
+    /// <summary>The App's <c>arcadia.log</c> as far as written; the tests share one log, so look for what is a test's own.</summary>
+    public static string Log
+    {
+        get
+        {
+            var path = Path.Combine(AppLog.Directory, "arcadia.log");
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            return new StreamReader(stream).ReadToEnd();
+        }
+    }
 
     public SettingsService Settings { get; }
 
@@ -105,7 +138,7 @@ internal sealed class ArcadiaDriver : IDisposable
             ActiveLaunchers = launchers.Select(spec => spec.Launcher.Id).ToList(),
         });
         var time = new FakeTimeProvider(Now);
-        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts());
+        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls());
         await driver.LoadAsync();
         return driver;
     }
@@ -113,7 +146,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>Arcadia closed and started again on the same settings, as the user does after a change.</summary>
     public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null)
     {
-        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts);
+        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs);
         await restarted.LoadAsync();
         return restarted;
     }
@@ -147,6 +180,62 @@ internal sealed class ArcadiaDriver : IDisposable
         Main.Release(action);
         Dispatcher.UIThread.RunJobs();
         return this;
+    }
+
+    /// <summary>A controller button went down, as the App's gamepad source reports it.</summary>
+    public ArcadiaDriver PressButton(GamepadButton button)
+    {
+        if (UiActionMap.FromGamepad(button) is { } action)
+        {
+            Main.HandleGamepad(action);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        return this;
+    }
+
+    public ArcadiaDriver ReleaseButton(GamepadButton button)
+    {
+        if (UiActionMap.FromGamepad(button) is { } action)
+        {
+            Main.Release(action);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// The controller held as <paramref name="buttons"/> and <paramref name="leftStick"/> say for
+    /// <paramref name="duration"/>, then let go: read every 8 ms as the App reads it, held directions repeat.
+    /// </summary>
+    public ArcadiaDriver HoldPad(TimeSpan duration, PadButtons buttons = PadButtons.None, StickPosition leftStick = default)
+    {
+        var held = new GamepadReading(0, buttons, leftStick, default);
+        for (var waited = TimeSpan.Zero; waited <= duration; waited += PadPoll)
+        {
+            _pad.Update([held], (long)Time.GetElapsedTime(0).TotalMilliseconds);
+            Time.Advance(PadPoll);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        _pad.Update([new GamepadReading(0, PadButtons.None, default, default)], (long)Time.GetElapsedTime(0).TotalMilliseconds);
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
+    /// <summary>What the App's timer does every few seconds: asks the launchers about their installations.</summary>
+    public async Task FollowInstallsAsync()
+    {
+        await Main.PollInstallsAsync();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>What the App's timer does every few seconds: asks the launchers which games run.</summary>
+    public async Task FollowRunningGamesAsync()
+    {
+        await Main.PollRunningGamesAsync();
+        Dispatcher.UIThread.RunJobs();
     }
 
     /// <summary>Time passes on the fake clock.</summary>
@@ -197,9 +286,11 @@ internal sealed class ArcadiaDriver : IDisposable
         }
     }
 
+    /// <summary>As the App starts: the library, and which games already run.</summary>
     private async Task LoadAsync()
     {
         await Main.LoadAsync();
+        await Main.PollRunningGamesAsync();
         Dispatcher.UIThread.RunJobs();
     }
 }
@@ -207,8 +298,9 @@ internal sealed class ArcadiaDriver : IDisposable
 /// <summary>
 /// A launcher of the test: <paramref name="Games"/> games of the demo library, or exactly <paramref name="Library"/> where
 /// a test needs to know every title and date. <paramref name="IsInstalled"/> false: the launcher isn't found.
+/// <paramref name="IsDemo"/>: Arcadia's own demo data (<c>--demo</c>), whose games can't be started and of which one runs.
 /// </summary>
-internal sealed record LauncherSpec(LauncherInfo Launcher, int Games, bool IsInstalled = true, IReadOnlyList<Game>? Library = null)
+internal sealed record LauncherSpec(LauncherInfo Launcher, int Games, bool IsInstalled = true, IReadOnlyList<Game>? Library = null, bool IsDemo = false)
 {
     public static LauncherSpec With(LauncherInfo launcher, params Game[] library) => new(launcher, library.Length, Library: library);
 }

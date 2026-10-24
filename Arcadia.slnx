@@ -8,6 +8,7 @@
     <Project Path="src/Arcadia.Launchers.Abstractions/Arcadia.Launchers.Abstractions.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Arcadia.App.Tests/Arcadia.App.Tests.csproj" />
     <Project Path="tests/Arcadia.Core.Tests/Arcadia.Core.Tests.csproj" />
   </Folder>
 </Solution>

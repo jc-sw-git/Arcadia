@@ -53,6 +53,15 @@ ergänzt, liest nur dessen Datei, nicht den ganzen Ordner.
    `E2E: ja` werden je ein Issue und laufen in Iteration N+1 mit (Retro Iteration 1, Owner 2026-10-24).
    Feature-Iteration N+1 beginnt erst, wenn die Abnahme-Iteration abgeschlossen ist, damit Änderungen
    in N+1 Brüche in Features aus N sofort zeigen.
+   Regeln für die Abnahmetests (Owner 2026-10-24, #184):
+   - Sie liegen in `tests/Arcadia.App.Tests` und sprechen nur über `ArcadiaDriver` (Tasten, Zeit, Neustart)
+     und was die View Models zeigen. Jeder Test trägt die IDs seiner Testfälle als `[Trait("Testfall", "T15-1")]`;
+     die Übersicht der Iteration listet sie unter „Abnahmetests“.
+   - **Einmal rot:** Jeder neue Abnahmetest ist vor dem PR einmal fehlgeschlagen, weil das Feature gezielt kaputt
+     gemacht wurde. Der PR nennt pro Test die Änderung, mit der er rot wurde.
+   - **Codex-Review** je PR: deckt jeder Test den Text seiner Testfall-IDs ab, wo sind Lücken?
+   - **Mutationstests** (Stryker.NET) einmal am Ende jeder Feature-Iteration; überlebende Mutanten werden Tests
+     oder `type:tech-debt`-Issues.
 7. **Feature-Iteration N+1** beginnt mit den großen `type:tech-debt`-Befunden aus dem Review,
    jetzt abgesichert durch die Abnahmetests.
 

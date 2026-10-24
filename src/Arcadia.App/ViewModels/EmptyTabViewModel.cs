@@ -7,10 +7,12 @@ namespace Arcadia.App.ViewModels;
 /// <summary>
 /// The library without games to show (#136): an active launcher's tab without games or of a launcher no longer found keeps
 /// its tab, and a library without any active launcher says so. Each in the style of the search's empty state, with
-/// "Launcher-Einstellungen" and "Neu einlesen" (or "Erneut suchen"). ◀ ▶ move between the two, A chooses.
+/// "Launcher-Einstellungen" and "Neu einlesen" (or "Erneut suchen"). ◀ ▶ move between the two, A chooses. With no launcher
+/// active only "Launcher-Einstellungen": reading again can't find anything before one is switched on there (owner, 2026-10-24).
 /// </summary>
 /// <param name="tab">The empty tab, or null when no launcher is active.</param>
-public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action openSettings, Action rescan) : ViewModelBase
+/// <param name="rescan">Reads the tab's launcher again; null when no launcher is active.</param>
+public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action openSettings, Action? rescan) : ViewModelBase
 {
     public LauncherTabViewModel? Tab => tab;
 
@@ -45,8 +47,10 @@ public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action 
     /// <summary>Below the tab's name, where a tab with games counts them.</summary>
     public string Summary => IsMissing ? "Launcher nicht gefunden" : "Keine Spiele";
 
-    /// <summary>Without a launcher, reading again also looks for launchers installed since.</summary>
+    /// <summary>A launcher no longer found is looked for again.</summary>
     public string RescanText => HasNoGames ? "Neu einlesen" : "Erneut suchen";
+
+    public bool CanRescan => rescan is not null;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsRescanFocused))]
@@ -61,7 +65,7 @@ public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action 
             case UiAction.Left:
                 IsSettingsFocused = true;
                 break;
-            case UiAction.Right:
+            case UiAction.Right when CanRescan:
                 IsSettingsFocused = false;
                 break;
             case UiAction.Accept when IsSettingsFocused:
@@ -77,5 +81,5 @@ public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action 
     private void OpenSettings() => openSettings();
 
     [RelayCommand]
-    private void Rescan() => rescan();
+    private void Rescan() => rescan?.Invoke();
 }

@@ -350,7 +350,7 @@ public partial class MainWindow : Window
         var above = 0;
         foreach (var other in launchers.Rows)
         {
-            if (other != row && SettingsRows.ContainerFromItem(other) is { } container
+            if (other is LauncherRowViewModel && other != row && SettingsRows.ContainerFromItem(other) is { } container
                 && container.TranslatePoint(new Point(0, container.Bounds.Height / 2), SettingsRows) is { } middle && middle.Y < position.Y)
             {
                 above++;

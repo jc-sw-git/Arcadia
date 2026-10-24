@@ -21,8 +21,8 @@
 - [ ] **T136-7** Ein aktiver Launcher ohne Spiele behält seinen Tab: „Keine Spiele in …“ mit „Launcher-Einstellungen“ und
       „Neu einlesen“; einer, der nicht mehr gefunden wird: „… nicht gefunden“ mit „Erneut suchen“. ◀ ▶ und A, die Maus
       und Leertaste bedienen beide Knöpfe; „Launcher-Einstellungen“ öffnet die Kategorie mit diesem Launcher fokussiert.
-      Alle Launcher aus: „Kein Launcher aktiv“ mit leeren Tabs als Bild, „Launcher-Einstellungen“ und „Erneut suchen“,
-      ohne Hinweis auf `--demo`. · E2E: ja
+      Alle Launcher aus: „Kein Launcher aktiv“ mit leeren Tabs als Bild, „Launcher-Einstellungen“ ~~und „Erneut suchen“~~
+      (seit 2026-10-24 nur „Launcher-Einstellungen“, T136-15), ohne Hinweis auf `--demo`. · E2E: ja
 - [ ] **T136-8** Alles aus T136-2 bis T136-7 allein mit dem Controller, mit einer Hand an der Tastatur und allein mit der
       Maus. · E2E: ja
 - [ ] **T136-9** Release-Build am PC des Owners, Bibliothek mit rund 1.000 Spielen: `arcadia.log` nennt „Bibliothek:
@@ -43,6 +43,12 @@
       „Beenden des Mausmodus in Spielen erzwingen“ noch einmal „Standardeinstellung bei „Individuell““, unter „Mit ⧉
       zurück zu Arcadia“ die „Haltedauer“. Fokus, Hover und Klick gehen wie vorher. · E2E: nein (Optik)
 
+- [ ] **T136-14** Unter den Launchern steht in der Gruppe „Bibliothek“ die Zeile „Alle neu einlesen“ mit der Pille
+      „Jetzt einlesen“. Ein Klick darauf (nur Maus) liest alle aktiven Launcher neu ein wie X, mit demselben Toast; mit dem
+      Controller erreicht ▼ die Zeile, A liest ein. Ohne aktiven Launcher ist sie ausgegraut. · E2E: ja
+- [ ] **T136-15** Alle Launcher aus: „Kein Launcher aktiv“ zeigt nur „Launcher-Einstellungen“, kein „Erneut suchen“; ◀ ▶
+      ändern nichts, A und ein Klick öffnen die Einstellungen. · E2E: ja
+
 A auf einem Launcher öffnet seine Seite (#137).
 
 Verlauf:
@@ -56,3 +62,4 @@ Verlauf:
 | T136-13 | 2026-10-22 | Claude | wie oben | ⚠️ Boxen in „Launcher“ und „Controller“, Einrückung in zwei Stufen gesehen | Lauf am PC des Owners |
 | T136-10 | 2026-10-22 | Claude | wie oben | ⚠️ Unter Linux ist SISR nicht verfügbar, Lampe nur gebaut, nicht gesehen | Lauf am PC des Owners |
 | T136-9 | 2026-10-22 | Claude | wie oben, Demo-Zahlen lokal auf 1.045 Spiele aus 4 Launchern erhöht | ⚠️ 426 ms eingelesen (außerhalb des UI-Threads), 37 ms angezeigt; kein Release-Build, nicht der PC des Owners | Messung am PC des Owners |
+| T136-14, T136-15 | 2026-10-24 | Claude | Branch `feat/alle-launcher-per-maus-neu-einlesen`, Release, Linux in der Cloud mit Xvfb 1920×1080, `--demo`, Tasten und Klicks über xdotool | ⚠️ Zeile mit ▼ erreicht, Leertaste und Klick lesen ein (Toast), Fußleiste ohne „Verschieben“ auf der Zeile; alle Launcher aus: nur „Launcher-Einstellungen“, D ändert nichts, „Wechseln“ fehlt in der Fußleiste; kein echter Controller | Lauf am PC des Owners |

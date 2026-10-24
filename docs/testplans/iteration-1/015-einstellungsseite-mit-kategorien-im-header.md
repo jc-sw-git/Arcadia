@@ -33,6 +33,10 @@
       während die Zeilen mit Tasten scrollen, bleibt der Fokus bei den Tasten. · E2E: ja
 - [x] **T15-10** Die Symbole im Header der Bibliothek öffnen die passende Kategorie: Controller-Warnung und
       SISR-Update „Controller“, Arcadia-Update „Über Arcadia“. · E2E: ja
+- [ ] **T15-11** Wählschalter laufen an den Enden um (owner, 2026-10-24, ohne Issue): „Zeigergeschwindigkeit“ auf 1,
+      ◀ (Taste A, Klick auf den linken Pfeil): 9; ▶ auf 9: 1. Kein Pfeil ist am Ende ausgegraut. Ein Schalter („An“/„Aus“,
+      „Aktiv“ eines Launchers, SISR, Ersteinrichtung) wechselt mit beiden Pfeilen; „Aktiv“ eines nicht installierten
+      Launchers bleibt gesperrt. · E2E: ja
 
 Verlauf:
 
@@ -42,3 +46,4 @@ Verlauf:
 | T15-4, T15-6, T15-7, T15-9 (Juris erstes Feedback) | 2026-10-22 | Claude | wie oben; für die Boxen „Status“ und „SISR-Version“ lokal „nicht verfügbar“ abgeschaltet | ⚠️ Boxen in der Reihenfolge Beschreibung, Status, So funktioniert es, Nachteile, SISR-Version; ▼ verlässt die nicht verfügbare SISR-Zeile; Mausmodus mit Box „So funktioniert es“; Maus über einer Zeile fokussiert sie, ▼ geht von dort weiter. Echtes SISR-Starten nicht | Lauf am PC des Owners |
 | T15-3, T15-7, T15-8 | 2026-10-22 | Claude | wie oben | ⚠️ Unter Linux ist Steam Controller Support „nur unter Windows verfügbar“, kein Update: nur `HealthIssuesTests` (Symbol nur bei Warnung oder Fehler) und `ListFocusTests` | Lauf am PC des Owners |
 | T15-1 bis T15-10 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T15-11 | 2026-10-24 | Claude | Branch `feat/wrap-value-selectors`, Linux, Xvfb 1920×1080, Release-Build, `--demo`, Klicks und Taste D über xdotool | ✅ Zeigergeschwindigkeit 5 → ▶×4 → 9 → ▶ → 1 → ◀ → 9, D auf 9 → 1, beide Pfeile an den Enden aktiv; „Bei System-Dialogfenstern“ ◀ zweimal: Aus, An; Launcher-„Aktiv“ mit beiden Pfeilen aktiv. SISR (nur Windows) und Ersteinrichtung nicht angesehen, echter Controller nicht | Lauf am PC des Owners |

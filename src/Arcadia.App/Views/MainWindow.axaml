@@ -1128,11 +1128,11 @@
                                       <Panel>
                                         <Button Classes="plain valueToggle" Command="{Binding ToggleCommand}" IsEnabled="{Binding CanChange}" />
                                         <Grid ColumnDefinitions="Auto,*,Auto">
-                                          <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanDecrease}" ToolTip.Tip="Abschalten">
+                                          <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanDecrease}" ToolTip.Tip="Umschalten">
                                             <Path Classes="chevronLeft" />
                                           </Button>
                                           <TextBlock Grid.Column="1" Classes="valueText" Classes.on="{Binding IsActive}" Text="{Binding ValueText}" IsHitTestVisible="False" />
-                                          <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding CanIncrease}" ToolTip.Tip="Einschalten">
+                                          <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding CanIncrease}" ToolTip.Tip="Umschalten">
                                             <Path Classes="chevronRight" />
                                           </Button>
                                         </Grid>
@@ -1179,11 +1179,11 @@
                                   <Panel>
                                     <Border Classes="valuePill" Classes.locked="{Binding IsLocked}" IsVisible="{Binding IsSwitch}">
                                       <Grid ColumnDefinitions="Auto,*,Auto">
-                                        <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding IsOn}">
+                                        <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanChange}">
                                           <Path Classes="chevronLeft" />
                                         </Button>
                                         <TextBlock Grid.Column="1" Classes="valueText" Classes.on="{Binding IsOn}" Text="{Binding ValueText}" />
-                                        <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding !IsOn}">
+                                        <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding CanChange}">
                                           <Path Classes="chevronRight" />
                                         </Button>
                                       </Grid>

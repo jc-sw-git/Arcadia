@@ -35,8 +35,8 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
 
 ## Releases
 
-Windows x64 only, installer and self-update with Velopack (`tools/release/Pack.ps1 -Version x.y.z`); push a tag
-`vX.Y.Z` to release. `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Versioning (owner's
+Windows x64 only, installer and self-update with Velopack (`tools/release/Pack.ps1 -Version x.y.z`); run the workflow
+"Tag release" on `main` to release (cloud sessions can't push tags). `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Versioning (owner's
 rule): SemVer, 0.x until 1.0; minor adds only non-breaking features, patch only fixes bugs (plugins are planned).
 Update flow, uninstall, CI artifacts: `docs/releases.md`.
 

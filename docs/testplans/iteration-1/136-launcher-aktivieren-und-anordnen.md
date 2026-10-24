@@ -22,8 +22,8 @@
 - [x] **T136-7** Ein aktiver Launcher ohne Spiele behält seinen Tab: „Keine Spiele in …“ mit „Launcher-Einstellungen“ und
       „Neu einlesen“; einer, der nicht mehr gefunden wird: „… nicht gefunden“ mit „Erneut suchen“. ◀ ▶ und A, die Maus
       und Leertaste bedienen beide Knöpfe; „Launcher-Einstellungen“ öffnet die Kategorie mit diesem Launcher fokussiert.
-      Alle Launcher aus: „Kein Launcher aktiv“ mit leeren Tabs als Bild, „Launcher-Einstellungen“ und „Erneut suchen“,
-      ohne Hinweis auf `--demo`. · E2E: ja
+      Alle Launcher aus: „Kein Launcher aktiv“ mit leeren Tabs als Bild, „Launcher-Einstellungen“ ~~und „Erneut suchen“~~
+      (seit 2026-10-24 nur „Launcher-Einstellungen“, T136-15), ohne Hinweis auf `--demo`. · E2E: ja
 - [ ] **T136-8** Alles aus T136-2 bis T136-7 allein mit dem Controller, mit einer Hand an der Tastatur und allein mit der
       Maus. · E2E: ja
 - [x] **T136-9** Release-Build am PC des Owners, Bibliothek mit rund 1.000 Spielen: `arcadia.log` nennt „Bibliothek:
@@ -43,6 +43,11 @@
       Einstellungen eingerückt unter ihrer Haupteinstellung: unter „Mausmodus“ alle übrigen Zeilen der Gruppe, unter
       „Beenden des Mausmodus in Spielen erzwingen“ noch einmal „Standardeinstellung bei „Individuell““, unter „Mit ⧉
       zurück zu Arcadia“ die „Haltedauer“. Fokus, Hover und Klick gehen wie vorher. · E2E: nein (Optik)
+- [ ] **T136-14** Unter den Launchern steht in der Gruppe „Bibliothek“ die Zeile „Alle neu einlesen“ mit der Pille
+      „Jetzt einlesen“, darin die Glyphe [X] (nach Taste oder Klick F). Ein Klick darauf (nur Maus) liest alle aktiven Launcher neu ein wie X, mit demselben Toast; mit dem
+      Controller erreicht ▼ die Zeile, A liest ein. Ohne aktiven Launcher ist sie ausgegraut. · E2E: ja
+- [ ] **T136-15** Alle Launcher aus: „Kein Launcher aktiv“ zeigt nur „Launcher-Einstellungen“, kein „Erneut suchen“; ◀ ▶
+      ändern nichts, A und ein Klick öffnen die Einstellungen. · E2E: ja
 - [ ] **T136-16** Ein aktiver Launcher ohne Spiele ist eine Info, keine Warnung (Juri, 2026-10-24): In seiner Zeile steht
       „Keine Spiele gefunden“ blau mit dem runden i, in „Launcher-Details“ der Hinweis in einer blauen Box mit i; der Tab
       „Launcher“ zeigt dafür kein Symbol. Ein aktiver, nicht mehr gefundener Launcher bleibt eine Warnung (gelbes Dreieck,
@@ -66,3 +71,5 @@ Verlauf:
 | T136-8 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ❌ T136-6 („Neu einlesen“, X) ist mit der Maus nicht zu erreichen | Wird in einem eigenen Thread behoben |
 | T136-16 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | Nicht im Lauf: kam nach 0.1.0-rc.1 hinzu (PR #177) | Mit dem nächsten Release-Kandidaten |
 | T136-1 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | Überholt: eine frische `settings.json` startet die Ersteinrichtung (#139) | Durchgestrichen; prüft T139-1 |
+| T136-14, T136-15 | 2026-10-24 | Claude | Branch `feat/alle-launcher-per-maus-neu-einlesen`, Release, Linux in der Cloud mit Xvfb 1920×1080, `--demo`, Tasten und Klicks über xdotool | ⚠️ Zeile mit ▼ erreicht, Leertaste und Klick lesen ein (Toast), Fußleiste ohne „Verschieben“ auf der Zeile; alle Launcher aus: nur „Launcher-Einstellungen“, D ändert nichts, „Wechseln“ fehlt in der Fußleiste; kein echter Controller | Lauf am PC des Owners |
+| T136-14 (Juris Feedback) | 2026-10-24 | Claude | wie oben | ⚠️ Glyphe F in der Pille unfokussiert und fokussiert gesehen, [X] nur gebaut (kein Controller); Controller-Symbol im Einstellungs-Header jetzt mittig zum Text | Lauf am PC des Owners |

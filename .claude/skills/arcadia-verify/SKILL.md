@@ -47,7 +47,7 @@ Then read the PNG. Keys: arrows, Enter, Esc, Q/E (tabs), PageUp/PageDown (pages)
 - **Is the controller emulated?** `./tools/dev/Probe-XInput.ps1` (slot 0 connected while SISR runs) and
   `Invoke-RestMethod http://127.0.0.1:47640/api/v1/devices`.
 - **Steam shortcuts:** `./tools/dev/Read-SteamShortcuts.ps1` (read-only).
-- **Logs:** `%LOCALAPPDATA%\Arcadia-Logs\arcadia.log`, `sisr.log`.
+- **Logs:** `%APPDATA%\Arcadia\logs\arcadia.log`, `sisr.log`.
 - **Crash without log line:** Windows event log, provider `.NET Runtime` (see CLAUDE.md).
 
 ## 5. What only the owner can check

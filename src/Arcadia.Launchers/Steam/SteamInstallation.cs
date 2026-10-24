@@ -81,6 +81,13 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
             .ToList();
     }
 
+    /// <summary>
+    /// The <c>shortcuts.vdf</c> of every userdata folder, also of accounts removed from Steam's login list: those
+    /// keep their folder, and logging in again brings their non-Steam games back.
+    /// </summary>
+    public IEnumerable<string> AllShortcutsPaths() =>
+        UserDataAccountIds().Select(id => Path.Combine(UserDataDirectoryOf(id), "config", "shortcuts.vdf"));
+
     private IEnumerable<uint> UserDataAccountIds()
     {
         var userData = Path.Combine(RootPath, "userdata");

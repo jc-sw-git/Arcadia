@@ -22,7 +22,7 @@ public sealed class LauncherViewTests
     [InlineData("A")]
     [InlineData("D")]
     [InlineData("Klick")]
-    [Trait("Testfall", "T136-2")]
+    [Trait("TestCase", "T136-2")]
     public async Task A_launcher_switched_off_goes_under_Nicht_aktiv_with_its_tab_and_hits_and_switched_on_again_comes_last_and_is_read(string how)
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Launchers);
@@ -61,7 +61,7 @@ public sealed class LauncherViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-8")]
+    [Trait("TestCase", "T136-8")]
     public async Task One_hand_on_the_keyboard_lifts_moves_puts_down_cancels_and_reads_all_again_with_the_toast_over_the_page()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Launchers);
@@ -96,7 +96,7 @@ public sealed class LauncherViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-8")]
+    [Trait("TestCase", "T136-8")]
     public async Task The_mouse_alone_drags_a_launcher_to_another_place_or_under_Nicht_aktiv_and_reads_all_again()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Launchers, new AppSettings { ActiveLaunchers = ["gog", "xbox"] });
@@ -128,7 +128,7 @@ public sealed class LauncherViewTests
     [AvaloniaTheory]
     [InlineData("Tastatur")]
     [InlineData("Maus")]
-    [Trait("Testfall", "T136-8")]
+    [Trait("TestCase", "T136-8")]
     public async Task The_buttons_of_a_tab_without_games_and_of_no_launcher_active_work_with_the_keyboard_and_the_mouse(string how)
     {
         IReadOnlyList<LauncherSpec> launchers = [new(KnownLaunchers.Gog, 31), new(KnownLaunchers.Xbox, 0)];

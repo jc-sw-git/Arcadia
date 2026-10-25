@@ -27,7 +27,7 @@ public sealed class SearchHitTests
     ];
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-7")]
+    [Trait("TestCase", "T12-7")]
     public async Task Start_tapped_on_a_hit_starts_it_on_the_release_or_installs_it_held_opens_its_details_and_View_its_menu()
     {
         using var arcadia = await SearchAsync("river");
@@ -69,7 +69,7 @@ public sealed class SearchHitTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-8")]
+    [Trait("TestCase", "T12-8")]
     public async Task The_details_of_a_hit_turn_through_the_hits_in_their_order_without_tabs_and_LB_RB_and_Y_do_nothing()
     {
         using var arcadia = await SearchAsync("river");
@@ -101,7 +101,7 @@ public sealed class SearchHitTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T127-4")]
+    [Trait("TestCase", "T127-4")]
     public async Task From_the_details_of_a_hit_X_returns_to_the_search_as_it_was_and_B_goes_to_the_game_in_its_launchers_listing()
     {
         // Thirty games before it in the Xbox tab, so it sits on page two.
@@ -139,7 +139,7 @@ public sealed class SearchHitTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T127-3")]
+    [Trait("TestCase", "T127-3")]
     public async Task X_on_a_detail_page_of_the_library_opens_the_search_and_B_there_comes_back_to_the_same_page()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(RiverLibrary);
@@ -164,7 +164,7 @@ public sealed class SearchHitTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-15")]
+    [Trait("TestCase", "T12-15")]
     public async Task L3_opens_filter_and_sort_whose_every_choice_counts_at_once_and_a_new_search_starts_by_relevance()
     {
         using var arcadia = await SearchAsync("river");

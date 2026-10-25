@@ -8,7 +8,7 @@ namespace Arcadia.App.Tests;
 public sealed class StartTests
 {
     [AvaloniaFact]
-    [Trait("Testfall", "G-1")]
+    [Trait("TestCase", "G-1")]
     public async Task Start_shows_a_tab_per_launcher_with_the_first_tab_selected_and_a_game_focused()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -21,7 +21,7 @@ public sealed class StartTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-2")]
+    [Trait("TestCase", "G-2")]
     public async Task A_fresh_system_without_any_launcher_says_so_after_the_first_question_without_an_error()
     {
         IReadOnlyList<LauncherSpec> noneFound = ArcadiaDriver.DefaultLaunchers.Select(spec => spec with { IsInstalled = false }).ToList();
@@ -40,7 +40,7 @@ public sealed class StartTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-2")]
+    [Trait("TestCase", "G-2")]
     public async Task Launchers_without_games_show_their_tabs_saying_so_without_an_error()
     {
         using var arcadia = await ArcadiaDriver.StartAsync([new(KnownLaunchers.Gog, 0), new(KnownLaunchers.Xbox, 0)]);
@@ -54,7 +54,7 @@ public sealed class StartTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-4")]
+    [Trait("TestCase", "G-4")]
     public async Task A_broken_settings_file_is_kept_as_broken_and_Arcadia_starts_with_the_defaults()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -74,7 +74,7 @@ public sealed class StartTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-5")]
+    [Trait("TestCase", "G-5")]
     public async Task The_log_keeps_the_user_profile_out_of_what_it_writes()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -91,7 +91,7 @@ public sealed class StartTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-30")]
+    [Trait("TestCase", "G-30")]
     public async Task The_clock_runs_and_no_status_symbol_shows_while_nothing_needs_one()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();

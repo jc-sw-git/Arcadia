@@ -16,7 +16,7 @@ public sealed class OnScreenKeyboardTests
     private static readonly TimeSpan ShortOfRepeat = TimeSpan.FromMilliseconds(300);
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-2")]
+    [Trait("TestCase", "T12-2")]
     public async Task The_D_pad_walks_the_keys_to_the_nearest_one_and_stops_at_the_edges_A_types_Y_a_space_X_erases()
     {
         using var arcadia = await OpenSearchAsync();
@@ -46,7 +46,7 @@ public sealed class OnScreenKeyboardTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-2")]
+    [Trait("TestCase", "T12-2")]
     public async Task X_held_or_A_held_on_the_erase_key_erases_one_then_after_a_pause_one_after_another()
     {
         using var arcadia = await OpenSearchAsync();
@@ -75,8 +75,8 @@ public sealed class OnScreenKeyboardTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-13")]
-    [Trait("Testfall", "T129-2")]
+    [Trait("TestCase", "T12-13")]
+    [Trait("TestCase", "T129-2")]
     public async Task LB_tapped_latches_shift_until_tapped_again_and_held_it_counts_only_while_held()
     {
         using var arcadia = await OpenSearchAsync();
@@ -117,7 +117,7 @@ public sealed class OnScreenKeyboardTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T129-3")]
+    [Trait("TestCase", "T129-3")]
     public async Task RB_tapped_latches_AltGr_whose_characters_alone_show_and_type_and_LB_and_RB_switch_each_other_off()
     {
         using var arcadia = await OpenSearchAsync();
@@ -160,7 +160,7 @@ public sealed class OnScreenKeyboardTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T129-4")]
+    [Trait("TestCase", "T129-4")]
     public async Task With_AltGr_on_the_D_pad_passes_over_empty_keys_and_rows_and_without_it_up_and_down_come_back()
     {
         using var arcadia = await OpenSearchAsync();
@@ -187,7 +187,7 @@ public sealed class OnScreenKeyboardTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T129-5")]
+    [Trait("TestCase", "T129-5")]
     public async Task The_dead_keys_type_their_character_at_once()
     {
         using var arcadia = await OpenSearchAsync();
@@ -212,7 +212,7 @@ public sealed class OnScreenKeyboardTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T129-1")]
+    [Trait("TestCase", "T129-1")]
     public async Task X_opens_the_German_keyboard_with_the_real_rows_and_the_shift_and_AltGr_characters_small_on_the_keys()
     {
         using var arcadia = await OpenSearchAsync();
@@ -237,7 +237,7 @@ public sealed class OnScreenKeyboardTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T129-6")]
+    [Trait("TestCase", "T129-6")]
     public async Task R3_switches_to_US_UK_FR_and_ES_each_with_its_real_keys()
     {
         using var arcadia = await OpenSearchAsync();
@@ -274,7 +274,7 @@ public sealed class OnScreenKeyboardTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T110-11")]
+    [Trait("TestCase", "T110-11")]
     public async Task The_keyboards_arrows_move_the_caret_where_typing_and_erasing_then_act_also_from_a_real_keyboard()
     {
         using var arcadia = await OpenSearchAsync();
@@ -301,7 +301,7 @@ public sealed class OnScreenKeyboardTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T110-13")]
+    [Trait("TestCase", "T110-13")]
     public async Task With_AltGr_on_left_of_the_first_key_with_a_character_leads_to_shift_and_left_of_the_tall_enter_to_the_tilde()
     {
         using var arcadia = await OpenSearchAsync();

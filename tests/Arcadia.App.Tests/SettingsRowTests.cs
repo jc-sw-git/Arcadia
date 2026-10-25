@@ -10,7 +10,7 @@ namespace Arcadia.App.Tests;
 public sealed class SettingsRowTests
 {
     [AvaloniaFact]
-    [Trait("Testfall", "T15-5")]
+    [Trait("TestCase", "T15-5")]
     public async Task The_footer_names_only_the_buttons_of_the_focused_row()
     {
         var steam = new FakeSteam { IsSteamRunning = true, HasMarker = false };
@@ -46,7 +46,7 @@ public sealed class SettingsRowTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T15-11")]
+    [Trait("TestCase", "T15-11")]
     public async Task Choices_wrap_at_their_ends_and_switches_flip_with_either_arrow()
     {
         var settings = new AppSettings
@@ -102,7 +102,7 @@ public sealed class SettingsRowTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T15-11")]
+    [Trait("TestCase", "T15-11")]
     public async Task Steam_Controller_Kompatibilitaet_switches_with_either_arrow()
     {
         var steam = new FakeSteam { IsSteamRunning = true };

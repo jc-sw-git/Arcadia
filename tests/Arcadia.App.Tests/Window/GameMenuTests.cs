@@ -28,7 +28,7 @@ public sealed class GameMenuTests
     ];
 
     [AvaloniaFact]
-    [Trait("Testfall", "T10-1")]
+    [Trait("TestCase", "T10-1")]
     public async Task View_right_click_Options_and_the_menu_key_open_the_menu_B_View_and_a_click_beside_it_close_it()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Library);
@@ -72,8 +72,8 @@ public sealed class GameMenuTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T10-1")]
-    [Trait("Testfall", "G-33")]
+    [Trait("TestCase", "T10-1")]
+    [Trait("TestCase", "G-33")]
     public async Task The_menu_stands_beside_its_cover_left_of_it_in_the_last_column_and_always_inside_the_window()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Library);
@@ -104,7 +104,7 @@ public sealed class GameMenuTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-33")]
+    [Trait("TestCase", "G-33")]
     public async Task View_R_and_a_click_on_Options_open_the_menu_over_the_Options_button_on_its_left_and_bottom_edges()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Library);
@@ -127,7 +127,7 @@ public sealed class GameMenuTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T10-2")]
+    [Trait("TestCase", "T10-2")]
     public async Task An_installed_game_lists_its_actions_with_the_update_note_disabled_ones_greyed_and_uninstall_in_red_after_a_line()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Library);

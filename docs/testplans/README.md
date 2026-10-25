@@ -75,7 +75,7 @@ not the whole folder.
      or, for the real window, through `ArcadiaWindow` (click, real key, mouse wheel, layout, pixels, focus ring; #191)
      and what view models and window show. Steam and Epic read recreated files with made-up IDs there
      (`Fixtures/`, `ArcadiaDriver.StartWithLaunchersAsync`, #193); nothing opens a real launcher. Every test carries
-     the IDs of its test cases as `[Trait("Testfall", "T15-1")]`;
+     the IDs of its test cases as `[Trait("TestCase", "T15-1")]`;
      the iteration's overview lists them under "Acceptance tests".
    - **Red once:** every new acceptance test failed once before the PR because the feature was broken
      on purpose. The PR names, per test, the change that made it red.

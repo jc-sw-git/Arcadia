@@ -13,7 +13,7 @@ public sealed class SteamInstallTests
     private static readonly SteamApp Sternenhafen = new("9200002", "Sternenhafen");
 
     [AvaloniaFact]
-    [Trait("Testfall", "T81-3")]
+    [Trait("TestCase", "T81-3")]
     public async Task A_Steam_download_shows_queue_progress_and_pause_and_a_new_install_ends_installed_with_a_note_without_a_restart()
     {
         using var files = new LauncherFiles();
@@ -51,7 +51,7 @@ public sealed class SteamInstallTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T81-4")]
+    [Trait("TestCase", "T81-4")]
     public async Task Of_two_Steam_downloads_only_the_one_Steam_works_on_downloads_and_the_other_waits()
     {
         using var files = new LauncherFiles();
@@ -74,7 +74,7 @@ public sealed class SteamInstallTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T81-5")]
+    [Trait("TestCase", "T81-5")]
     public async Task Cancelling_a_new_Steam_install_shows_a_note()
     {
         using var files = new LauncherFiles();
@@ -93,7 +93,7 @@ public sealed class SteamInstallTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T81-5")]
+    [Trait("TestCase", "T81-5")]
     public async Task Uninstalling_in_Steam_shows_a_note_and_the_game_leaves_the_tab()
     {
         using var files = new LauncherFiles();
@@ -111,7 +111,7 @@ public sealed class SteamInstallTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T81-5")]
+    [Trait("TestCase", "T81-5")]
     public async Task An_update_of_a_Steam_tool_gives_no_note()
     {
         using var files = new LauncherFiles();
@@ -130,7 +130,7 @@ public sealed class SteamInstallTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T81-6")]
+    [Trait("TestCase", "T81-6")]
     public async Task A_running_Steam_update_shows_as_updating_not_as_waiting_even_before_its_bytes_move()
     {
         using var files = new LauncherFiles();

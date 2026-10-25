@@ -16,7 +16,7 @@ public sealed class KeyboardAndMouseTests
     private static readonly TimeSpan HoldForDetails = TimeSpan.FromSeconds(1.1);
 
     [AvaloniaFact]
-    [Trait("Testfall", "T127-7")]
+    [Trait("TestCase", "T127-7")]
     public async Task The_hints_show_controller_buttons_after_a_button_and_keys_after_a_key_or_click_but_not_after_a_mouse_move()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -59,9 +59,9 @@ public sealed class KeyboardAndMouseTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T127-8")]
-    [Trait("Testfall", "G-10")]
-    [Trait("Testfall", "T10-4")]
+    [Trait("TestCase", "T127-8")]
+    [Trait("TestCase", "G-10")]
+    [Trait("TestCase", "T10-4")]
     public async Task The_keyboard_plays_like_the_controller()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -177,8 +177,8 @@ public sealed class KeyboardAndMouseTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-11")]
-    [Trait("Testfall", "T10-4")]
+    [Trait("TestCase", "G-11")]
+    [Trait("TestCase", "T10-4")]
     public async Task The_mouse_focuses_starts_holds_for_details_and_clicks_every_button_of_the_library()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -229,7 +229,7 @@ public sealed class KeyboardAndMouseTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T8-1")]
+    [Trait("TestCase", "T8-1")]
     public async Task A_tab_chosen_by_click_is_the_same_after_a_restart()
     {
         using var first = await ArcadiaWindow.ShowAsync();

@@ -15,7 +15,7 @@ public sealed class HeaderTests
     private static readonly IReadOnlyList<LauncherSpec> AllLaunchers = KnownLaunchers.All.Select(launcher => new LauncherSpec(launcher, 3)).ToList();
 
     [AvaloniaFact]
-    [Trait("Testfall", "T127-5")]
+    [Trait("TestCase", "T127-5")]
     public async Task Few_launchers_the_strip_stands_in_the_middle_as_wide_as_needed_with_LB_and_RB_beside_it_and_no_dividers()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -30,8 +30,8 @@ public sealed class HeaderTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T127-6")]
-    [Trait("Testfall", "G-7")]
+    [Trait("TestCase", "T127-6")]
+    [Trait("TestCase", "G-7")]
     public async Task Many_launchers_the_strip_reaches_logo_and_status_turns_with_LB_RB_and_the_wheel_and_fades_where_tabs_follow()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(AllLaunchers);

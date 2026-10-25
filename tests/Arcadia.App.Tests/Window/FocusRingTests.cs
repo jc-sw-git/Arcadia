@@ -10,7 +10,7 @@ namespace Arcadia.App.Tests;
 public sealed class FocusRingTests
 {
     [AvaloniaFact]
-    [Trait("Testfall", "G-32")]
+    [Trait("TestCase", "G-32")]
     public async Task The_ring_of_a_cover_shows_whole_at_the_grids_corners()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -27,7 +27,7 @@ public sealed class FocusRingTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-32")]
+    [Trait("TestCase", "G-32")]
     public async Task The_ring_shows_whole_on_every_choice_of_the_view_options()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -50,7 +50,7 @@ public sealed class FocusRingTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-32")]
+    [Trait("TestCase", "G-32")]
     public async Task The_ring_shows_whole_on_the_settings_rows_and_their_buttons()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();

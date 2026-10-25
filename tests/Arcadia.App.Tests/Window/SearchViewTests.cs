@@ -33,7 +33,7 @@ public sealed class SearchViewTests
     ];
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-1")]
+    [Trait("TestCase", "T12-1")]
     public async Task X_opens_the_search_with_its_head_field_chips_empty_state_keyboard_and_controller_legend_F_and_the_lens_without_the_keyboard()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
@@ -94,7 +94,7 @@ public sealed class SearchViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-4")]
+    [Trait("TestCase", "T12-4")]
     public async Task A_typed_prefix_searches_only_its_launchers_the_chips_follow_and_an_unknown_one_is_named_in_orange()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
@@ -119,7 +119,7 @@ public sealed class SearchViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-5")]
+    [Trait("TestCase", "T12-5")]
     public async Task Chips_and_the_L3_filter_switch_launchers_the_last_stays_on_and_Alle_Launcher_switches_all_on_a_typed_prefix_is_rewritten()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
@@ -160,7 +160,7 @@ public sealed class SearchViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-6")]
+    [Trait("TestCase", "T12-6")]
     public async Task R3_opens_the_layout_menu_over_the_hits_A_picks_a_layout_B_and_R3_close_it_first_and_the_layout_stays_after_a_restart()
     {
         using var first = await ArcadiaWindow.ShowAsync(Hollows);
@@ -203,7 +203,7 @@ public sealed class SearchViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-10")]
+    [Trait("TestCase", "T12-10")]
     public async Task A_real_keyboard_types_erases_moves_through_the_hits_starts_holds_for_details_and_closes_but_never_reaches_the_on_screen_keys()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
@@ -262,7 +262,7 @@ public sealed class SearchViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-12")]
+    [Trait("TestCase", "T12-12")]
     public async Task The_keyboard_rolls_out_and_in_with_its_tab_on_its_top_edge_by_X_B_a_click_on_the_tab_or_a_real_key_and_the_hits_follow()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
@@ -320,7 +320,7 @@ public sealed class SearchViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-16")]
+    [Trait("TestCase", "T12-16")]
     public async Task More_hits_than_fit_the_row_shows_faded_neighbours_and_turns_round_and_the_grid_scrolls_by_two_rows_and_stops_at_its_ends()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
@@ -411,7 +411,7 @@ public sealed class SearchViewTests
     }
 
     [AvaloniaTheory]
-    [Trait("Testfall", "T12-16")]
+    [Trait("TestCase", "T12-16")]
     [InlineData(1745, 1000, 1.0)]
     [InlineData(1536, 864, 1.25)]
     public async Task The_row_of_hits_fades_out_to_the_background_without_a_line_at_its_edges_also_at_a_scaled_size(int width, int height, double scaling)
@@ -425,7 +425,7 @@ public sealed class SearchViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-18")]
+    [Trait("TestCase", "T12-18")]
     public async Task The_first_click_on_a_key_or_the_tab_acts_and_switches_the_legend_to_the_mouse_a_button_brings_the_controller_back()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
@@ -460,7 +460,7 @@ public sealed class SearchViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T110-10")]
+    [Trait("TestCase", "T110-10")]
     public async Task The_searchs_keyboard_is_the_mouse_modes_without_tab_and_edge_key_its_enter_starts_the_hit_and_Ausblenden_puts_it_in()
     {
         using var mouseMode = MouseModeKeyboard.Show();
@@ -511,7 +511,7 @@ public sealed class SearchViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T110-14")]
+    [Trait("TestCase", "T110-14")]
     public async Task The_focus_ring_shows_whole_on_the_keys_at_the_keyboards_four_edges_in_the_search_and_in_the_mouse_mode()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);

@@ -15,7 +15,7 @@ public sealed class ControllerSupportTests
     private static readonly TimeSpan PastSteamStartTimeout = TimeSpan.FromSeconds(65);
 
     [AvaloniaTheory]
-    [Trait("Testfall", "T85-1")]
+    [Trait("TestCase", "T85-1")]
     [InlineData("SISR")]
     [InlineData("usbip-Treiber")]
     [InlineData("CEF-Debugging")]
@@ -54,7 +54,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-2")]
+    [Trait("TestCase", "T85-2")]
     public async Task With_Steam_running_SISR_installieren_asks_first_and_cancelling_installs_nothing()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
@@ -93,7 +93,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaTheory]
-    [Trait("Testfall", "T85-9")]
+    [Trait("TestCase", "T85-9")]
     [InlineData(false, true, "Momentan nur unter Windows verfügbar.")]
     [InlineData(true, false, "Benötigt Steam.")]
     public async Task Without_Windows_or_Steam_the_setting_is_greyed_out_says_why_and_A_does_nothing(bool windows, bool steamInstalled, string why)
@@ -116,7 +116,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-11")]
+    [Trait("TestCase", "T85-11")]
     public async Task Steam_not_starting_within_a_minute_shows_Steam_startet_nicht_with_cancel_and_retry()
     {
         var steam = new FakeSteam { StartsWhenAsked = false };
@@ -151,7 +151,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-11")]
+    [Trait("TestCase", "T85-11")]
     public async Task Steam_hanging_at_its_login_when_switching_on_shows_the_prompt_and_SISR_does_not_start()
     {
         var steam = new FakeSteam { IsSteamRunning = true, IsLoggedIn = false };
@@ -168,7 +168,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-14")]
+    [Trait("TestCase", "T85-14")]
     public async Task While_Steam_or_SISR_start_the_switch_is_locked_and_other_buttons_do_nothing()
     {
         var steam = new FakeSteam { StartsWhenAsked = false };
@@ -199,7 +199,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaTheory]
-    [Trait("Testfall", "T85-14")]
+    [Trait("TestCase", "T85-14")]
     [InlineData("Steam startet")]
     [InlineData("SISR startet")]
     public async Task While_Steam_or_SISR_start_B_leaves_the_settings_at_once(string starting)
@@ -220,7 +220,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-14")]
+    [Trait("TestCase", "T85-14")]
     public async Task With_Steam_hanging_at_its_login_the_switch_stays_usable()
     {
         var steam = new FakeSteam { IsSteamRunning = true, IsLoggedIn = false };
@@ -236,7 +236,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-16")]
+    [Trait("TestCase", "T85-16")]
     public async Task Steam_hanging_at_its_login_for_over_30_seconds_shows_a_message_with_Steam_neu_starten_and_SISR_keeps_running()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
@@ -260,7 +260,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T15-10")]
+    [Trait("TestCase", "T15-10")]
     public async Task The_header_symbols_open_their_category_Controller_for_SISR_and_Ueber_Arcadia_for_Arcadias_update()
     {
         var steam = new FakeSteam { IsSteamRunning = true, HasMarker = false };
@@ -282,7 +282,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T92-1")]
+    [Trait("TestCase", "T92-1")]
     public async Task The_setting_is_called_Steam_Controller_Kompatibilitaet_with_both_modes_and_no_text_says_Steam_Controller_Support()
     {
         var steam = new FakeSteam { IsSteamRunning = true, HasMarker = false };
@@ -302,7 +302,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T92-2")]
+    [Trait("TestCase", "T92-2")]
     public async Task The_preview_shows_Steam_Input_for_Steam_games_and_Xbox_Controller_SISR_for_all_others()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
@@ -321,7 +321,7 @@ public sealed class ControllerSupportTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T127-2")]
+    [Trait("TestCase", "T127-2")]
     public async Task On_the_detail_page_the_game_settings_show_no_note_below_the_buttons_and_the_context_menu_says_what_they_switch_to()
     {
         var steam = new FakeSteam { IsSteamRunning = true };

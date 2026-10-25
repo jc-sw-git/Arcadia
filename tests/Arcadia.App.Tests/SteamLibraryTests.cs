@@ -12,7 +12,7 @@ public sealed class SteamLibraryTests
     private static readonly TimeSpan PastHoldTime = TimeSpan.FromMilliseconds(1100);
 
     [AvaloniaFact]
-    [Trait("Testfall", "T1-1")]
+    [Trait("TestCase", "T1-1")]
     public async Task The_Steam_tab_shows_the_games_of_all_libraries_with_demos_but_without_tools_redistributables_and_soundtracks()
     {
         using var files = new LauncherFiles();
@@ -37,7 +37,7 @@ public sealed class SteamLibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T1-2")]
+    [Trait("TestCase", "T1-2")]
     public async Task Size_last_played_and_playtime_are_Steams_and_the_install_date_is_the_game_folders_creation()
     {
         var startedFromSteam = new DateTimeOffset(2026, 10, 20, 18, 30, 0, TimeSpan.Zero);
@@ -71,7 +71,7 @@ public sealed class SteamLibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T1-5")]
+    [Trait("TestCase", "T1-5")]
     public async Task Without_Steam_there_is_no_Steam_tab_and_no_error()
     {
         using var files = new LauncherFiles();
@@ -92,7 +92,7 @@ public sealed class SteamLibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T1-6")]
+    [Trait("TestCase", "T1-6")]
     public async Task With_demo_the_Steam_tab_shows_the_real_games_and_only_the_others_are_demo_libraries()
     {
         using var files = new LauncherFiles { Demo = true };
@@ -106,7 +106,7 @@ public sealed class SteamLibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T1-9")]
+    [Trait("TestCase", "T1-9")]
     public async Task A_library_whose_drive_is_gone_leaves_out_its_games_without_an_error_and_they_come_back_with_the_drive()
     {
         using var files = new LauncherFiles();

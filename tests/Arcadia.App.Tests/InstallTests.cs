@@ -17,7 +17,7 @@ public sealed class InstallTests
         Bravo);
 
     [AvaloniaFact]
-    [Trait("Testfall", "T10-3")]
+    [Trait("TestCase", "T10-3")]
     public async Task The_menu_of_a_game_not_installed_offers_installing_and_shows_a_running_installation_instead()
     {
         using var arcadia = await ArcadiaDriver.StartAsync([Library]);
@@ -46,7 +46,7 @@ public sealed class InstallTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T41-9")]
+    [Trait("TestCase", "T41-9")]
     public async Task A_game_waiting_in_the_queue_shows_the_hourglass_instead_of_the_spinner_on_the_cover_and_in_the_preview()
     {
         using var arcadia = await ArcadiaDriver.StartAsync([Library]);

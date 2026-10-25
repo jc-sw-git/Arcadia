@@ -8,7 +8,7 @@ namespace Arcadia.App.Tests;
 public sealed class SettingsTests
 {
     [AvaloniaFact]
-    [Trait("Testfall", "T15-1")]
+    [Trait("TestCase", "T15-1")]
     public async Task Menu_opens_the_settings_and_B_goes_back_to_the_same_tab_page_and_game()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -32,7 +32,7 @@ public sealed class SettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-31")]
+    [Trait("TestCase", "G-31")]
     public async Task The_settings_are_worked_with_the_controller_alone_rows_categories_and_values()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();

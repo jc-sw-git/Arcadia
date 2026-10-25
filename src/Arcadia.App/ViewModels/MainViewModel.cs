@@ -1249,6 +1249,16 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, IPageHost
     [RelayCommand]
     private void CloseViewOptions() => ViewOptions = null;
 
+    // A closed dialog lets go of its page and factory, so a closed search isn't kept alive by them.
+    partial void OnViewOptionsChanged(ViewOptionsViewModel? value)
+    {
+        if (value is null)
+        {
+            _createViewOptions = null;
+            _viewOptionsPage = null;
+        }
+    }
+
     [RelayCommand]
     private void ActivateFocused()
     {

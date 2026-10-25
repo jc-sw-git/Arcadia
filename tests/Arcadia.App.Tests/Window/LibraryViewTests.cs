@@ -1,5 +1,6 @@
 using Arcadia.App.Controls;
 using Arcadia.App.Input;
+using Arcadia.App.ViewModels;
 using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Epic;
@@ -61,12 +62,19 @@ public sealed class LibraryViewTests
         Assert.True(Brightness(tabLogos[0]) < 128, "Logo auf dem gewählten Tab dunkel");
         Assert.True(Brightness(tabLogos[1]) > 128, "Logo auf einem anderen Tab hell");
         Assert.Equal("G", tabLogos[2].Badge?.Monogram);
+        AssertDrawn(arcadia, "Tabs", tabLogos);
 
         // Preview, detail page.
-        AssertShapeIn(arcadia, "Vorschau", Logos(arcadia.Window).Where(logo => !tabs.IsVisualAncestorOf(logo)));
+        var preview = Logos(arcadia.Window).Where(logo => !tabs.IsVisualAncestorOf(logo)).ToList();
+        AssertShapeIn(arcadia, "Vorschau", preview);
+        AssertDrawn(arcadia, "Vorschau", preview);
         arcadia.Arcadia.PressDown(UiAction.Accept).Wait(TimeSpan.FromSeconds(1.1)).LetGo(UiAction.Accept);
         arcadia.Settle();
-        AssertShapeIn(arcadia, "Detailseite", Logos(arcadia.Window).Where(logo => !tabs.IsVisualAncestorOf(logo) && logo.Badge?.Shape is not null && arcadia.Bounds(logo).Top > 300));
+        var detail = Logos(arcadia.Window).Where(logo => !tabs.IsVisualAncestorOf(logo) && logo.Badge?.Shape is not null && arcadia.Bounds(logo).Top > 300).ToList();
+        AssertShapeIn(arcadia, "Detailseite", detail);
+        // Drawn is looked at on the page in the middle; its neighbours stand dimmed, cut off at the edges.
+        AssertDrawn(arcadia, "Detailseite", detail.Where(logo => logo.GetVisualAncestors().OfType<Panel>()
+            .Any(page => page.Classes.Contains("detailPage") && page.DataContext is GameDetailPageViewModel { IsCentre: true })));
         arcadia.Press(UiAction.Back);
 
         // Search: the hits on their dark plate and the filter chips.
@@ -77,12 +85,14 @@ public sealed class LibraryViewTests
         Assert.All(hits.Where(IsShape), logo => Assert.True(Brightness(logo) > 128, "Logo auf dunklem Grund hell"));
         var chips = Logos(arcadia.Window).Where(logo => logo.Classes.Contains("chipLogo")).ToList();
         AssertLogosOfAll(chips);
+        AssertDrawn(arcadia, "Suche", hits.Concat(chips));
 
         // The settings' list of launchers.
         arcadia.Press(UiAction.Back).Press(UiAction.Back).Press(UiAction.Settings);
         Assert.True(main.IsSettingsOpen);
         var listed = Logos(arcadia.Window).Where(logo => logo.Classes.Contains("launcherLogo")).ToList();
         AssertLogosOfAll(listed);
+        AssertDrawn(arcadia, "Einstellungen", listed);
     }
 
     private static Border Shade(Button tile) => tile.GetVisualDescendants().OfType<Border>().Single(border => border.Classes.Contains("shade"));
@@ -105,6 +115,36 @@ public sealed class LibraryViewTests
 
     private static void AssertShapeIn(ArcadiaWindow arcadia, string where, IEnumerable<LauncherLogo> logos) =>
         Assert.True(logos.Any(IsShape), $"{where}: kein Steam-Logo");
+
+    /// <summary>
+    /// The shapes of <paramref name="logos"/> are drawn and stand out: part of each logo's square is in its colour, part
+    /// clearly not (the ground it stands on).
+    /// </summary>
+    private static void AssertDrawn(ArcadiaWindow arcadia, string where, IEnumerable<LauncherLogo> logos)
+    {
+        var shapes = logos.Where(IsShape).ToList();
+        Assert.True(shapes.Count > 0, $"{where}: kein Logo zum Ansehen");
+        using var frame = arcadia.Capture();
+        foreach (var logo in shapes)
+        {
+            var bounds = arcadia.Bounds(logo);
+            var ink = ((ISolidColorBrush)logo.Foreground!).Color;
+            var pixels = new List<Color>();
+            for (var y = (int)Math.Ceiling(bounds.Top * frame.Scaling); y < (int)(bounds.Bottom * frame.Scaling); y++)
+            {
+                for (var x = (int)Math.Ceiling(bounds.Left * frame.Scaling); x < (int)(bounds.Right * frame.Scaling); x++)
+                {
+                    pixels.Add(frame.At(x, y));
+                }
+            }
+
+            var inked = pixels.Count(colour => ArcadiaWindow.Distance(colour, ink) <= 60);
+            var ground = pixels.Count(colour => ArcadiaWindow.Distance(colour, ink) > 150);
+            Assert.True(
+                inked >= pixels.Count / 10 && ground >= pixels.Count / 10,
+                $"{where}: Logo {logo.Badge!.Monogram} nicht zu sehen ({inked} in seiner Farbe, {ground} Grund von {pixels.Count} Pixeln)");
+        }
+    }
 
     private static double Brightness(LauncherLogo logo) => Brightness(((ISolidColorBrush)logo.Foreground!).Color);
 

@@ -504,7 +504,7 @@
               <TextBlock Text="ARCADIA" FontSize="24" FontWeight="ExtraBold" LetterSpacing="1.4" VerticalAlignment="Center" />
               <TextBlock Text="Suche" FontSize="24" Foreground="{StaticResource TextFaint}" Margin="8,0,0,0" VerticalAlignment="Center" />
             </StackPanel>
-            <Button Grid.Column="1" Classes="plain" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CloseSearchCommand}" ToolTip.Tip="Suche schließen (Esc)">
+            <Button Grid.Column="1" Name="SearchCloseButton" Classes="plain" Command="{Binding CloseCommand}" ToolTip.Tip="Suche schließen (Esc)">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <!-- B closes the search only with the keyboard in; with it out, B puts the keyboard away first. -->
                 <ctl:KeyHint Pad="B" Keys="Esc" IsVisible="{Binding !IsKeyboardOut}" />
@@ -563,7 +563,7 @@
             </ItemsControl>
             <!-- Shows when the chips come close to the sort button (MainWindow.axaml.cs). -->
             <Border Grid.Column="1" Name="SortDivider" Classes="divider unneeded" Margin="16,0,20,0" />
-            <Button Grid.Column="2" Name="SearchSortButton" Classes="plain toolbar" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenSearchFilterCommand}" ToolTip.Tip="Filter und Sortierung (L3)">
+            <Button Grid.Column="2" Name="SearchSortButton" Classes="plain toolbar" Command="{Binding OpenFilterCommand}" ToolTip.Tip="Filter und Sortierung (L3)">
               <StackPanel Orientation="Horizontal" Spacing="12">
                 <Border Classes="glyph" IsVisible="{Binding UsesController}"><TextBlock Text="L3" /></Border>
                 <TextBlock Text="{Binding SortText}" VerticalAlignment="Center" />

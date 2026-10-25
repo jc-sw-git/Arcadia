@@ -18,7 +18,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace Arcadia.App.ViewModels;
 
 /// <summary>The Big Picture library: launcher tabs, a paginated cover grid and the preview panel.</summary>
-public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncherSettingsHost
+public partial class MainViewModel : ViewModelBase, IGameActionsOwner, IPageHost, ILauncherSettingsHost
 {
     /// <summary>Must match the column count of the grid in MainWindow.axaml.</summary>
     public const int GridColumns = 8;
@@ -40,6 +40,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     private readonly TimeProvider _time;
     private readonly GameActions _actions;
     private Func<ViewOptionsViewModel?>? _createViewOptions;
+
+    // The page whose options the dialog shows; null for the library's view.
+    private IPage? _viewOptionsPage;
     private InputKind _input = InputKind.Gamepad;
     private int _requestedPage;
 
@@ -658,7 +661,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
 
         if (Search is { } search)
         {
-            HandleSearch(search, action);
+            search.Handle(action);
             return;
         }
 
@@ -868,8 +871,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
         }
 
         // Opened with the gamepad, the search starts with the on-screen keyboard; by key or click without.
-        var search = new SearchViewModel(
+        Search = new SearchViewModel(
             LauncherTabs,
+            _actions,
+            this,
             KeyboardLayout.Find(_settings.Current.KeyboardLayout),
             layout => SaveView(settings => settings with { KeyboardLayout = layout.Id }),
             CreateSearchTile,
@@ -877,21 +882,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
             _input == InputKind.Gamepad,
             _time,
             action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
-        search.StartRequested += () =>
-        {
-            if (search.FocusedResult is { } hit)
-            {
-                _actions.Start(hit);
-            }
-        };
-        Search = search;
     }
 
     /// <summary>Back to the library, where it was before the search.</summary>
-    [RelayCommand]
     private void CloseSearch()
     {
-        if (IsSearchFilterOpen)
+        if (ViewOptions is not null && _viewOptionsPage is not null && _viewOptionsPage == Search)
         {
             ViewOptions = null;
         }
@@ -909,113 +905,29 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
         }
     }
 
-    private bool IsSearchFilterOpen => ViewOptions is not null && _createViewOptions == CreateSearchFilter;
-
-    /// <summary>
-    /// While the on-screen keyboard is out, A types on it, so a hit is started with ≡: tapped it
-    /// starts the game on release, held it opens the details, as A on a cover. With the keyboard in,
-    /// A and Enter on a real keyboard do the same. ⧉ opens the hit's menu, L3 the filter. B closes
-    /// the layout menu first, then puts the keyboard away, then closes the search.
-    /// </summary>
-    private void HandleSearch(SearchViewModel search, UiAction action)
-    {
-        if (search.Keyboard.LayoutMenu.IsOpen)
-        {
-            search.Handle(action);
-            return;
-        }
-
-        switch (action)
-        {
-            case UiAction.Back when !search.Back():
-                CloseSearch();
-                break;
-            case UiAction.Back:
-                break;
-            case UiAction.Filter:
-                OpenSearchFilter();
-                break;
-            case UiAction.Settings when search.FocusedResult is { } hit:
-                _actions.Press(hit, UiAction.Settings);
-                break;
-            case UiAction.Accept when !search.IsKeyboardOut && search.FocusedResult is { } hit:
-                _actions.Press(hit, UiAction.Accept);
-                break;
-            case UiAction.Options when search.FocusedResult is { } hit:
-                GameMenu = new GameMenuViewModel(hit, GameActionViewModel.For(hit, _actions)) { AtCover = true };
-                break;
-            default:
-                search.Handle(action);
-                break;
-        }
-    }
-
-    /// <summary>L3 or the filter button: which launchers the search covers and in which order its hits come.</summary>
-    [RelayCommand]
-    private void OpenSearchFilter()
-    {
-        if (Search is not null)
-        {
-            ShowViewOptions(CreateSearchFilter);
-        }
-    }
-
-    private ViewOptionsViewModel? CreateSearchFilter()
-    {
-        if (Search is not { } search)
-        {
-            return null;
-        }
-
-        List<(string Label, bool IsOn, Action Toggle)> launchers = [("Alle Launcher", search.Scope.IsAll, () => ChangeSearch(s => s.ToggleLauncher(null)))];
-        launchers.AddRange(search.Launchers.Select(l => (l.DisplayName, search.Scope.LauncherIds.Contains(l.Id), (Action)(() => ChangeSearch(s => s.ToggleLauncher(l))))));
-        return ViewOptionsViewModel.ForSearch(launchers, search.Sort, sort => ChangeSearch(s => s.SetSort(sort)));
-    }
-
-    private void ChangeSearch(Action<SearchViewModel> change)
-    {
-        if (Search is { } search)
-        {
-            change(search);
-            RebuildViewOptions();
-        }
-    }
-
     /// <summary>Text from a real keyboard while the search is shown.</summary>
     public void TypeInSearch(string text)
     {
-        if (IsSearchShown && !IsDialogOpen && Search is { Keyboard.LayoutMenu.IsOpen: false } search)
+        if (IsSearchShown && !IsDialogOpen)
         {
-            _actions.CancelHold();
-            search.Type(text);
+            Search!.TypeFromKeyboard(text);
         }
     }
 
     /// <summary>The mouse wheel over the hits.</summary>
-    public void ScrollSearch(int delta)
-    {
-        _actions.CancelHold();
-        Search?.Scroll(delta);
-    }
+    public void ScrollSearch(int delta) => Search?.ScrollByWheel(delta);
 
     /// <summary>Right click on a hit: focus it and open its menu.</summary>
     public void OpenMenuForHit(GameTileViewModel tile)
     {
-        if (!IsSearchShown || Search is not { } search || !search.Results.Contains(tile) || IsDialogOpen)
+        if (IsSearchShown && !IsDialogOpen)
         {
-            return;
+            Search!.OpenMenuFor(tile);
         }
-
-        tile.FocusCommand.Execute(null);
-        GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, _actions)) { AtCover = true };
     }
 
-    private GameTileViewModel CreateSearchTile(Game game, Action<GameTileViewModel> focus) =>
-        new(game, LauncherTabs.LauncherOf(game), LauncherTabs.BadgeOf(game), _time.GetLocalNow(), focus, tile =>
-        {
-            focus(tile);
-            _actions.Start(tile);
-        })
+    private GameTileViewModel CreateSearchTile(Game game, Action<GameTileViewModel> focus, Action<GameTileViewModel> activate) =>
+        new(game, LauncherTabs.LauncherOf(game), LauncherTabs.BadgeOf(game), _time.GetLocalNow(), focus, activate)
         { InstallState = _installs.StateOf(game.Key), RunState = _running.StateOf(game.Key) };
 
     /// <summary>A rescan: same input, fresh hits; a detail page opened from the search keeps its game.</summary>
@@ -1071,10 +983,17 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     /// </summary>
     public void PressTile(GameTileViewModel tile)
     {
-        var shown = IsSearchShown
-            ? !IsDialogOpen && Search!.Results.Contains(tile)
-            : !IsSettingsOpen && !IsViewOptionsOpen && !IsConfirmationOpen && !IsDetailOpen && Search is null && PageGames.Contains(tile);
-        if (shown)
+        if (IsSearchShown)
+        {
+            if (!IsDialogOpen)
+            {
+                Search!.PressHit(tile);
+            }
+
+            return;
+        }
+
+        if (!IsSettingsOpen && !IsViewOptionsOpen && !IsConfirmationOpen && !IsDetailOpen && Search is null && PageGames.Contains(tile))
         {
             tile.FocusCommand.Execute(null);
             _actions.Press(tile, button: null);
@@ -1148,6 +1067,20 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     void IGameActionsOwner.CycleGameMouseMode(Game game) => CycleGameMouseModeOf(game);
 
     void IGameActionsOwner.RunStatesChanged() => UpdateRunStates();
+
+    void IPageHost.Close(IPage page)
+    {
+        if (page == Search)
+        {
+            CloseSearch();
+        }
+    }
+
+    void IPageHost.ShowViewOptions(IPage page, Func<ViewOptionsViewModel> create) => ShowViewOptions(create, page);
+
+    void IPageHost.ViewOptionsChanged() => RebuildViewOptions();
+
+    void IPageHost.ShowMenu(GameTileViewModel tile) => GameMenu = new GameMenuViewModel(tile, GameActionViewModel.For(tile, _actions)) { AtCover = true };
 
     [RelayCommand]
     private void OpenSettings() => ShowSettings(first: null);
@@ -1306,9 +1239,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     }
 
     /// <summary>The "Ansicht" dialog for the library or the search; <paramref name="create"/> rebuilds it after each choice.</summary>
-    private void ShowViewOptions(Func<ViewOptionsViewModel?> create)
+    private void ShowViewOptions(Func<ViewOptionsViewModel?> create, IPage? page = null)
     {
         _createViewOptions = create;
+        _viewOptionsPage = page;
         ViewOptions = create();
     }
 

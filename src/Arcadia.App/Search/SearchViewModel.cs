@@ -54,8 +54,9 @@ public sealed record SearchEmptyState(bool IsNoHits, string Title, string Text);
 /// move the caret). With the keyboard out the hits sit in one row above it: the D-pad (left stick) types, the right
 /// stick picks a hit, LT/RT turn the hits. With the keyboard in (B, a real keyboard, the button
 /// below the hits) they fill a grid that scrolls up and down, and the D-pad moves through them too;
-/// X brings the keyboard back. Starting a hit, its details, its menu and the filter dialog are the
-/// window's business (<see cref="MainViewModel"/>).
+/// X brings the keyboard back. The page takes all its buttons itself (#209): a hit is started and held through the
+/// window's one <see cref="GameActions"/>; closing, the hit's menu and the shared filter dialog are asked of
+/// <see cref="IPageHost"/>, as the rules between pages are the window's (<see cref="MainViewModel"/>).
 /// </summary>
 public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTarget, IDisposable
 {
@@ -65,7 +66,9 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
     /// <summary>Rows of hits in a window with the on-screen keyboard in; beside it there is room for one.</summary>
     public const int ResultRowsWithoutKeyboard = 2;
 
-    private readonly Func<Game, Action<GameTileViewModel>, GameTileViewModel> _createTile;
+    private readonly Func<Game, Action<GameTileViewModel>, Action<GameTileViewModel>, GameTileViewModel> _createTile;
+    private readonly GameActions _actions;
+    private readonly IPageHost _host;
     private readonly LauncherTabsViewModel _tabs;
     private IReadOnlyList<LauncherLibrary> _libraries;
     private GameSearch _search;
@@ -80,17 +83,24 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
     private readonly Func<LauncherInfo, LauncherBadge> _badgeOf;
 
     /// <param name="tabs">The launcher tabs; the search covers the ones with games.</param>
+    /// <param name="actions">The window's one <see cref="GameActions"/>: it holds the press in progress for every page.</param>
+    /// <param name="host">The window, asked to close the search and to show the hit's menu and the filter dialog.</param>
+    /// <param name="createTile">A hit's cover from its game, what focuses it and what a click on it does.</param>
     public SearchViewModel(
         LauncherTabsViewModel tabs,
+        GameActions actions,
+        IPageHost host,
         KeyboardLayout layout,
         Action<KeyboardLayout> layoutChosen,
-        Func<Game, Action<GameTileViewModel>, GameTileViewModel> createTile,
+        Func<Game, Action<GameTileViewModel>, Action<GameTileViewModel>, GameTileViewModel> createTile,
         Func<LauncherInfo, LauncherBadge> badgeOf,
         bool usesController,
         TimeProvider time,
         Action<Action> post)
     {
         _tabs = tabs;
+        _actions = actions;
+        _host = host;
         _libraries = tabs.SearchedLibraries();
         _search = new GameSearch(_libraries.SelectMany(l => l.Games), Formatting.Culture);
         _createTile = createTile;
@@ -106,9 +116,6 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         BuildChips();
         Recompute(keepFocusOn: null);
     }
-
-    /// <summary>↵ on the on-screen keyboard: start the focused hit, as ≡ does.</summary>
-    public event Action? StartRequested;
 
     /// <summary>The on-screen keyboard went in or the search closed; the mouse mode lets go of it (#110).</summary>
     public event Action? KeyboardClosed;
@@ -242,7 +249,11 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
     /// shift; RB AltGr, both tapped or held; R3 the layout menu). With it in, the D-pad moves
     /// through the hits and X brings the keyboard back. The right stick or a real keyboard's arrows
     /// move through the hits, LT/RT or Page Up/Down turn them.
+    /// While the keyboard is out, A types on it, so a hit is started with ≡: tapped it starts the game on release, held it
+    /// opens the details, as A on a cover. With the keyboard in, A and Enter on a real keyboard do the same. ⧉ opens the
+    /// hit's menu, L3 the filter. B closes the layout menu first, then puts the keyboard away, then closes the search.
     /// </summary>
+    /// <returns>Always true: the search ignores what it has no use for, and nothing reaches the library below it.</returns>
     public bool Handle(UiAction action)
     {
         if (Keyboard.LayoutMenu.IsOpen)
@@ -257,6 +268,23 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
 
         switch (action)
         {
+            case UiAction.Back when !Back():
+                _host.Close(this);
+                break;
+            case UiAction.Back:
+                break;
+            case UiAction.Filter:
+                OpenFilter();
+                break;
+            case UiAction.Settings when FocusedResult is { } hit:
+                _actions.Press(hit, UiAction.Settings);
+                break;
+            case UiAction.Accept when !IsKeyboardOut && FocusedResult is { } hit:
+                _actions.Press(hit, UiAction.Accept);
+                break;
+            case UiAction.Options when FocusedResult is { } hit:
+                _host.ShowMenu(hit);
+                break;
             // Backspace repeats by itself; X repeats while held.
             case UiAction.Search when UsesController && !IsKeyboardOut:
                 IsKeyboardOut = true;
@@ -302,15 +330,9 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         return true;
     }
 
-    /// <summary>B: closes the layout menu, else puts the keyboard away. False if there was neither, so B leaves the search.</summary>
-    public bool Back()
+    /// <summary>B with the layout menu closed: puts the keyboard away. False if it was in, so B leaves the search.</summary>
+    private bool Back()
     {
-        if (Keyboard.LayoutMenu.IsOpen)
-        {
-            Keyboard.LayoutMenu.Close();
-            return true;
-        }
-
         if (IsKeyboardOut)
         {
             IsKeyboardOut = false;
@@ -402,7 +424,11 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
                 Erase();
                 break;
             case BoardKeyKind.Enter:
-                StartRequested?.Invoke();
+                if (FocusedResult is { } hit)
+                {
+                    _actions.Start(hit);
+                }
+
                 break;
             case BoardKeyKind.Left:
                 MoveCaret(_text.Left());
@@ -478,6 +504,71 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
 
     /// <summary>The mouse wheel over the hits.</summary>
     public void Scroll(int delta) => MoveWindow(_window.Scroll(delta));
+
+    /// <summary>Text from a real keyboard; ignored while the layout menu is open. A held ≡ or Enter lets go, as the hits change.</summary>
+    public void TypeFromKeyboard(string text)
+    {
+        if (!Keyboard.LayoutMenu.IsOpen)
+        {
+            _actions.CancelHold();
+            Type(text);
+        }
+    }
+
+    /// <summary>The mouse wheel over the hits; a held hit lets go, as it may leave the screen.</summary>
+    public void ScrollByWheel(int delta)
+    {
+        _actions.CancelHold();
+        Scroll(delta);
+    }
+
+    /// <summary>
+    /// The left mouse button went down on a hit: held 1 s it opens the details, with the same ring as ≡. Let go sooner,
+    /// it was a click, which starts the game (<see cref="StartByPointer"/>). False if the tile is no hit shown here.
+    /// </summary>
+    public bool PressHit(GameTileViewModel tile)
+    {
+        if (!_results.Contains(tile))
+        {
+            return false;
+        }
+
+        tile.FocusCommand.Execute(null);
+        _actions.Press(tile, button: null);
+        return true;
+    }
+
+    /// <summary>Right click on a hit: focus it and open its menu.</summary>
+    public void OpenMenuFor(GameTileViewModel tile)
+    {
+        if (_results.Contains(tile))
+        {
+            tile.FocusCommand.Execute(null);
+            _host.ShowMenu(tile);
+        }
+    }
+
+    /// <summary>The close button, Esc's twin for the mouse.</summary>
+    [RelayCommand]
+    private void Close() => _host.Close(this);
+
+    /// <summary>L3 or the filter button: which launchers the search covers and in which order its hits come.</summary>
+    [RelayCommand]
+    private void OpenFilter() => _host.ShowViewOptions(this, CreateFilter);
+
+    /// <summary>The search's options for the shared dialog; each choice changes the search and has the dialog shown again.</summary>
+    private ViewOptionsViewModel CreateFilter()
+    {
+        List<(string Label, bool IsOn, Action Toggle)> launchers = [("Alle Launcher", Scope.IsAll, () => ChangeFilter(() => ToggleLauncher(null)))];
+        launchers.AddRange(Launchers.Select(l => (l.DisplayName, Scope.LauncherIds.Contains(l.Id), (Action)(() => ChangeFilter(() => ToggleLauncher(l))))));
+        return ViewOptionsViewModel.ForSearch(launchers, Sort, sort => ChangeFilter(() => SetSort(sort)));
+    }
+
+    private void ChangeFilter(Action change)
+    {
+        change();
+        _host.ViewOptionsChanged();
+    }
 
     /// <summary>The scroll bar beside the hits was dragged or clicked.</summary>
     public void ScrollTo(double start) => MoveWindow(_window.ScrolledTo((int)Math.Round(start)));
@@ -699,7 +790,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
             }
 
             _results = Hits.Take(sliceEnd).Skip(sliceStart)
-                .Select(game => shown.TryGetValue(game.Key, out var tile) && tile.Game == game ? tile : _createTile(game, FocusByPointer))
+                .Select(game => shown.TryGetValue(game.Key, out var tile) && tile.Game == game ? tile : _createTile(game, FocusByPointer, StartByPointer))
                 .ToList();
             FillSlots();
 
@@ -752,6 +843,13 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         {
             focused.IsFocused = true;
         }
+    }
+
+    /// <summary>A click on a hit (the press ended before the hold): it starts, focused.</summary>
+    private void StartByPointer(GameTileViewModel tile)
+    {
+        FocusByPointer(tile);
+        _actions.Start(tile);
     }
 
     /// <summary>A click on a hit focuses it; one only partly on screen comes into view.</summary>

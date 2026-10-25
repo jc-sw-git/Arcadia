@@ -235,6 +235,27 @@ public sealed class PageTransitionTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T209-1")]
+    public async Task The_search_filter_stays_open_with_the_searchs_options_after_a_rescan_and_closes_with_the_search_once_no_game_is_left()
+    {
+        var (games, gog) = Changeable(KnownLaunchers.Gog, "River Crossing", "River Raid");
+        using var arcadia = await SearchAsync([gog], "river");
+        arcadia.Press(UiAction.Filter);
+        Assert.True(arcadia.Main.ViewOptions?.HasLaunchers);
+
+        games.Add(Game(KnownLaunchers.Gog, "River Delta"));
+        await arcadia.RescanAsync();
+        Assert.True(arcadia.Main.ViewOptions?.HasLaunchers);
+        Assert.Equal(3, arcadia.Search!.Hits.Count);
+
+        games.Clear();
+        await arcadia.RescanAsync();
+        Assert.Null(arcadia.Search);
+        Assert.False(arcadia.Main.IsViewOptionsOpen);
+        Assert.True(arcadia.Main.IsEmptyTabShown);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T155-8")]
     public async Task B_that_closes_a_dialog_leaves_the_page_below_as_it_was()
     {

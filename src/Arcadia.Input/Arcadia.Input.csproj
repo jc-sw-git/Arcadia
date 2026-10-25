@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- Required by the LibraryImport source generator for the XInput P/Invoke. -->
+    <!-- Required by the LibraryImport source generator for the SDL3 P/Invoke. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <Import Project="Sdl3.targets" />
 
 </Project>

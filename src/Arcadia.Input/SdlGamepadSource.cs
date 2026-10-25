@@ -1,0 +1,365 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
+
+namespace Arcadia.Input;
+
+/// <summary>
+/// The SDL3 calls <see cref="SdlGamepadSource"/> needs. Behind an interface so the tests drive the source without
+/// the native library; <see cref="SdlGamepads"/> is the real one. Only one thread calls it at a time.
+/// </summary>
+public interface ISdlGamepads
+{
+    /// <summary>Sets SDL's hints and starts its gamepad subsystem; throws when the library is missing or fails.</summary>
+    /// <returns>SDL's version, for the log.</returns>
+    string Init();
+
+    /// <summary>The next gamepad that came or went since the last call; reads SDL's events, dropping all others.</summary>
+    bool NextDeviceChange(out uint id, out bool added);
+
+    PadDevice Describe(uint id);
+
+    /// <returns>The open gamepad, or 0 with <see cref="LastError"/> saying why not.</returns>
+    nint Open(uint id);
+
+    string LastError();
+
+    /// <summary>Reads the controllers anew between two calls of <see cref="NextDeviceChange"/>.</summary>
+    void Update();
+
+    SdlPadState Read(nint pad);
+
+    /// <summary>Rumbles for <paramref name="durationMs"/>, then stops by itself; a pad without motors ignores it.</summary>
+    void Rumble(nint pad, ushort strength, uint durationMs);
+
+    void Close(nint pad);
+
+    void Quit();
+}
+
+/// <summary>
+/// Reads every controller through SDL3's gamepad API (#72), Xbox pads included, and merges them into one stream of
+/// button presses and releases. <see cref="GamepadReading.PadId"/> is SDL's id of the device, new on every connect.
+/// SDL keeps reading while another program is in front, so View held and Back + Start work beside a game.
+/// </summary>
+/// <remarks>
+/// Polled every <see cref="PollIntervalMs"/>, like XInput before: the repeat of held directions and the mouse mode's
+/// pointer need a steady clock anyway. Missing or failing SDL ends only the controller input: it is reported once
+/// through the error callback, and keyboard and mouse keep working.
+/// </remarks>
+public sealed class SdlGamepadSource : IGamepadSource
+{
+    public const int PollIntervalMs = 8;
+
+    /// <summary>Long enough to feel, short enough not to get in the way.</summary>
+    private const uint RumbleMs = 150;
+    private const ushort RumbleStrength = 30000;
+
+    /// <summary>How long the low-level hook may wait for a fresh look while the poll thread reads; it must answer fast.</summary>
+    private static readonly TimeSpan FreshLookWait = TimeSpan.FromMilliseconds(2);
+
+    private readonly ISdlGamepads _sdl;
+    private readonly Action<string> _log;
+    private readonly Action<Exception> _failed;
+    private readonly CancellationTokenSource _stop = new();
+    private readonly GamepadPolls _polls = new();
+    private readonly List<GamepadReading> _readings = [];
+    private readonly ConcurrentQueue<int> _rumbleRequests = new();
+
+    // Guards every SDL call: the poll thread and the fresh look of the desktop filter's hook thread.
+    private readonly Lock _sdlLock = new();
+    private readonly Dictionary<uint, (nint Handle, PadDevice Device)> _pads = [];
+    private bool _open;
+    private volatile bool _lost;
+    private Thread? _thread;
+
+    /// <param name="log">Connects and disconnects, for <c>arcadia.log</c>; called on the poll thread.</param>
+    /// <param name="failed">Called once if SDL can't be used, or fails later; the controllers are then off.</param>
+    public SdlGamepadSource(ISdlGamepads sdl, Action<string> log, Action<Exception> failed)
+    {
+        _sdl = sdl;
+        _log = log;
+        _failed = failed;
+        _polls.ButtonPressed += button => ButtonPressed?.Invoke(button);
+        _polls.ButtonReleased += button => ButtonReleased?.Invoke(button);
+    }
+
+    public event Action<GamepadButton>? ButtonPressed;
+
+    public event Action<GamepadButton>? ButtonReleased;
+
+    public event Action<IReadOnlyList<GamepadReading>>? Polled;
+
+    public event Action? Lost;
+
+    public void Start()
+    {
+        if (_thread is not null)
+        {
+            return;
+        }
+
+        _thread = new Thread(Run) { IsBackground = true, Name = "Arcadia SDL gamepads" };
+        _thread.Start();
+    }
+
+    public void Rumble(int padId) => _rumbleRequests.Enqueue(padId);
+
+    public bool AnyNow(Func<GamepadReading, bool> test)
+    {
+        if (!_sdlLock.TryEnter(FreshLookWait))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (!_open)
+            {
+                return false;
+            }
+
+            _sdl.Update();
+            foreach (var (id, pad) in _pads)
+            {
+                if (test(SdlPadMapping.ToReading((int)id, _sdl.Read(pad.Handle))))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (Exception)
+        {
+            // Called inside Windows' input hook, where an exception would end Arcadia; the next poll reports it.
+            return false;
+        }
+        finally
+        {
+            _sdlLock.Exit();
+        }
+    }
+
+    /// <summary>Starts SDL. The poll thread calls it first; the tests call it directly.</summary>
+    /// <returns>False when SDL can't be used; already reported.</returns>
+    public bool Open()
+    {
+        try
+        {
+            lock (_sdlLock)
+            {
+                var version = _sdl.Init();
+                _open = true;
+                _log($"Controller: SDL {version} bereit");
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // DllNotFoundException, EntryPointNotFoundException, BadImageFormatException or SDL_Init failing.
+            _failed(ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// One poll: who came or went, what every controller reports, and their button events. A failing native call or
+    /// handler of <see cref="Polled"/> must not end Arcadia: the controllers stop for good instead (<see cref="Lost"/>).
+    /// </summary>
+    /// <param name="nowMs">A clock in milliseconds; only differences count.</param>
+    /// <returns>False once the controllers are lost; there is nothing more to poll.</returns>
+    public bool Poll(long nowMs)
+    {
+        if (_lost)
+        {
+            return false;
+        }
+
+        try
+        {
+            ReadControllers(nowMs);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Lose(ex);
+            return false;
+        }
+    }
+
+    private void ReadControllers(long nowMs)
+    {
+        lock (_sdlLock)
+        {
+            while (_sdl.NextDeviceChange(out var id, out var added))
+            {
+                if (added)
+                {
+                    Connect(id);
+                }
+                else
+                {
+                    Disconnect(id);
+                }
+            }
+
+            _readings.Clear();
+            foreach (var (id, pad) in _pads)
+            {
+                _readings.Add(SdlPadMapping.ToReading((int)id, _sdl.Read(pad.Handle)));
+            }
+
+            while (_rumbleRequests.TryDequeue(out var padId))
+            {
+                if (_pads.TryGetValue((uint)padId, out var pad))
+                {
+                    _sdl.Rumble(pad.Handle, RumbleStrength, RumbleMs);
+                }
+            }
+        }
+
+        Polled?.Invoke(_readings);
+        _polls.Update(_readings, nowMs);
+    }
+
+    /// <summary>Lets go of every controller and of SDL.</summary>
+    public void Close()
+    {
+        lock (_sdlLock)
+        {
+            if (!_open)
+            {
+                return;
+            }
+
+            _open = false;
+            foreach (var pad in _pads.Values)
+            {
+                _sdl.Close(pad.Handle);
+            }
+
+            _pads.Clear();
+            _sdl.Quit();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_stop.IsCancellationRequested)
+        {
+            return;
+        }
+
+        _stop.Cancel();
+        if (_thread is null)
+        {
+            Close();
+        }
+        else
+        {
+            // The thread closes SDL itself once its poll ends.
+            _thread.Join(TimeSpan.FromMilliseconds(500));
+        }
+
+        _stop.Dispose();
+    }
+
+    private void Run()
+    {
+        if (!Open())
+        {
+            return;
+        }
+
+        var clock = Stopwatch.StartNew();
+        try
+        {
+            while (!_stop.IsCancellationRequested && Poll(clock.ElapsedMilliseconds))
+            {
+                Thread.Sleep(PollIntervalMs);
+            }
+        }
+        finally
+        {
+            Close();
+        }
+    }
+
+    /// <summary>
+    /// The controllers stop for good: SDL is closed, every handler of <see cref="Lost"/> drops what it holds (each
+    /// one, even if another throws), and the error is reported last.
+    /// </summary>
+    private void Lose(Exception error)
+    {
+        _lost = true;
+        try
+        {
+            Close();
+        }
+        catch (Exception closeError)
+        {
+            Report(closeError);
+        }
+
+        foreach (var handler in Lost?.GetInvocationList() ?? [])
+        {
+            try
+            {
+                ((Action)handler)();
+            }
+            catch (Exception handlerError)
+            {
+                Report(handlerError);
+            }
+        }
+
+        Report(error);
+    }
+
+    private void Report(Exception error)
+    {
+        try
+        {
+            _failed(error);
+        }
+        catch (Exception)
+        {
+            // Reporting must not end the poll thread in turn; the controllers are already stopped.
+        }
+    }
+
+    private void Connect(uint id)
+    {
+        if (_pads.ContainsKey(id))
+        {
+            return;
+        }
+
+        var device = _sdl.Describe(id);
+        if (GamepadDevices.WhyIgnored(device) is { } reason)
+        {
+            _log($"Controller #{id} ignoriert ({reason}): {device}");
+            return;
+        }
+
+        var pad = _sdl.Open(id);
+        if (pad == 0)
+        {
+            _log($"Controller #{id} lässt sich nicht öffnen: {device}: {_sdl.LastError()}");
+            return;
+        }
+
+        _pads[id] = (pad, device);
+        _log($"Controller #{id} verbunden: {device}");
+    }
+
+    private void Disconnect(uint id)
+    {
+        if (_pads.Remove(id, out var pad))
+        {
+            _sdl.Close(pad.Handle);
+            _log($"Controller #{id} getrennt: {pad.Device}");
+        }
+    }
+}

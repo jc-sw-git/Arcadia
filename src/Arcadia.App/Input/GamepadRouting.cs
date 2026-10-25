@@ -31,6 +31,13 @@ public sealed class GamepadRouting
         _viewAndMenu.Cancelled += _ => Dispatcher.UIThread.Post(viewModel.CancelHold);
     }
 
+    /// <summary>The controllers are gone for good (<see cref="IGamepadSource.Lost"/>): held buttons are forgotten without acting.</summary>
+    public void Drop()
+    {
+        _viewAndMenu.Reset();
+        Dispatcher.UIThread.Post(_viewModel.CancelHold);
+    }
+
     /// <summary>On every poll of the controllers: View or Menu held alone long enough act now.</summary>
     public void Tick() => _viewAndMenu.Tick();
 

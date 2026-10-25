@@ -1,0 +1,30 @@
+<Project>
+
+  <!--
+    The official SDL3.dll for Windows x64 (#72), from SDL's GitHub release (linked from libsdl.org). Pinned: a new
+    version means a new URL and hash here. Downloaded once into obj/ and checked against its SHA-256 before use, then
+    copied next to Arcadia.exe (and into every test's output) like any other content.
+  -->
+  <PropertyGroup>
+    <Sdl3Version>3.4.18</Sdl3Version>
+    <Sdl3Url>https://github.com/libsdl-org/SDL/releases/download/release-$(Sdl3Version)/SDL3-$(Sdl3Version)-win32-x64.zip</Sdl3Url>
+    <Sdl3ZipSha256>75c2c0fc74e7d1206aaedc22893a35887332f4f85f5c8b74fddc10d177985f2c</Sdl3ZipSha256>
+    <Sdl3Dir>$(MSBuildProjectDirectory)/$(BaseIntermediateOutputPath)sdl3-$(Sdl3Version)/</Sdl3Dir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(Sdl3Dir)SDL3.dll" Link="SDL3.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <Target Name="FetchSdl3" BeforeTargets="AssignTargetPaths" Condition="!Exists('$(Sdl3Dir)SDL3.dll')">
+    <DownloadFile SourceUrl="$(Sdl3Url)" DestinationFolder="$(Sdl3Dir)" DestinationFileName="SDL3.zip" Retries="3" />
+    <GetFileHash Files="$(Sdl3Dir)SDL3.zip" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="Sdl3DownloadedSha256" />
+    </GetFileHash>
+    <Delete Files="$(Sdl3Dir)SDL3.zip" Condition="'$(Sdl3DownloadedSha256.ToLowerInvariant())' != '$(Sdl3ZipSha256)'" />
+    <Error Condition="'$(Sdl3DownloadedSha256.ToLowerInvariant())' != '$(Sdl3ZipSha256)'" Text="SDL3 download does not match its SHA-256 ($(Sdl3DownloadedSha256)); not used." />
+    <Unzip SourceFiles="$(Sdl3Dir)SDL3.zip" DestinationFolder="$(Sdl3Dir)" Include="SDL3.dll" />
+    <Delete Files="$(Sdl3Dir)SDL3.zip" />
+  </Target>
+
+</Project>

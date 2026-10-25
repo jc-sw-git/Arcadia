@@ -107,7 +107,7 @@ public sealed class MouseModeHost : IDisposable
             () => _settings.Current.MouseMode.Activation == MouseModeActivation.Automatic);
         _returnWithView = new ReturnWithView(CurrentReturnOptions, () => IsArcadiaActive, time);
         _activity = new ControllerActivity(time);
-        _desktopFilter = DesktopInputFilter.CreateDefault(_activity, AppLog.Write);
+        _desktopFilter = DesktopInputFilter.CreateDefault(_activity, gamepad, AppLog.Write);
         _arcadiaActive = window.IsActive;
         _ownsForeground = window.IsActive;
         _foregroundCheck = new DispatcherTimer(ForegroundCheckInterval, DispatcherPriority.Background, (_, _) => CheckForeground());
@@ -129,11 +129,11 @@ public sealed class MouseModeHost : IDisposable
         _mode.KeyboardOpened += () => Dispatcher.UIThread.Post(OpenKeyboard);
         _mode.KeyboardButtonChanged += (button, down) => Dispatcher.UIThread.Post(() => _openKeyboard?.Handle(button, down));
         // No rumble: over a game in exclusive full screen it would read as "switched".
-        _mode.Refused += slot =>
+        _mode.Refused += padId =>
         {
             Dispatcher.UIThread.Post(() =>
             {
-                AppLog.Write($"Back + Start an Controller {slot + 1}: Mausmodus in diesem Spiel deaktiviert");
+                AppLog.Write($"Back + Start an Controller #{padId}: Mausmodus in diesem Spiel deaktiviert");
                 _overlay.ShowSwitched("Mausmodus ist in diesem Spiel deaktiviert", flash: false);
             });
         };
@@ -141,6 +141,7 @@ public sealed class MouseModeHost : IDisposable
         _returnWithView.HoldCancelled += () => Dispatcher.UIThread.Post(_overlay.CancelReturnHold);
         _returnWithView.Requested += () => Dispatcher.UIThread.Post(ReturnToArcadia);
         _gamepad.Polled += OnPolled;
+        _gamepad.Lost += OnControllersLost;
         _window.Activated += OnArcadiaActivated;
         _window.Deactivated += OnArcadiaDeactivated;
     }
@@ -179,6 +180,7 @@ public sealed class MouseModeHost : IDisposable
     public void Dispose()
     {
         _gamepad.Polled -= OnPolled;
+        _gamepad.Lost -= OnControllersLost;
         _foregroundCheck.Stop();
         _focusLossSettle.Stop();
         _desktopFilterCheck.Stop();
@@ -214,6 +216,29 @@ public sealed class MouseModeHost : IDisposable
             catch (Exception stopError)
             {
                 AppLog.Write($"Mausmodus ließ sich nach dem Fehler nicht sauber beenden: {stopError}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// No poll will come any more (SDL failed, #72): the mouse mode lets go of its mouse buttons and keys, View's hold
+    /// ends, and with no controller left the desktop filter goes at its next check. On the poll thread, like OnPolled.
+    /// </summary>
+    private void OnControllersLost()
+    {
+        try
+        {
+            _mode.Stop();
+        }
+        finally
+        {
+            try
+            {
+                _returnWithView.Update([]);
+            }
+            finally
+            {
+                _activity.Note([]);
             }
         }
     }
@@ -302,15 +327,15 @@ public sealed class MouseModeHost : IDisposable
 
     private void OnSwitched(MouseModeSwitch change)
     {
-        if (change.Slot is { } slot)
+        if (change.PadId is { } padId)
         {
-            _gamepad.Rumble(slot);
+            _gamepad.Rumble(padId);
         }
 
         Dispatcher.UIThread.Post(() =>
         {
             var gameInFront = ForegroundGame.IsInFront(_viewModel.GameFolders, _viewModel.LaunchedGames);
-            AppLog.Write($"Mausmodus {(change.IsOn ? "an" : "aus")} ({(change.Slot is { } s ? $"Back + Start an Controller {s + 1}" : "automatisch")}{(gameInFront ? ", Spiel vorne" : string.Empty)})");
+            AppLog.Write($"Mausmodus {(change.IsOn ? "an" : "aus")} ({(change.PadId is { } s ? $"Back + Start an Controller #{s}" : "automatisch")}{(gameInFront ? ", Spiel vorne" : string.Empty)})");
             if (change.IsOn)
             {
                 // A held A must not open the details while the controller is a mouse.
@@ -530,7 +555,7 @@ public sealed class MouseModeHost : IDisposable
     private void UpdateDesktopFilter()
     {
         // After an error in OnPolled the controller activity isn't noted any more, so the filter goes too.
-        var scope = !_settings.Current.IgnoreSteamDesktopLayout || _failed || _activity.ConnectedSlots.Count == 0
+        var scope = !_settings.Current.IgnoreSteamDesktopLayout || _failed || _activity.ConnectedPads == 0
             ? DesktopFilterScope.Off
             : _mode.IsOn || !GameInFront() ? DesktopFilterScope.ControllerInUse : DesktopFilterScope.ComboHeld;
         if (scope == _desktopFilterScope)

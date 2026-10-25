@@ -11,7 +11,7 @@
   owner's PC (2026-10-20): in a Steam game with an Xbox pad (Steam Input presumably off for it) Steam's desktop layout
   still made Alt+Tab of Back + Start; with the Steam Controller (Steam Input on) it didn't. So a hook stays in beside
   games too, but only the keyboard one (Alt+Tab is keys; a gaming mouse would send up to 8,000 events a second through
-  Arcadia), and none while no XInput controller is connected. The hook thread runs at the highest priority, because
+  Arcadia), and none while no controller is connected. The hook thread runs at the highest priority, because
   every input waits for it. Windows removes a low-level hook that once took too long without telling (Microsoft's docs
   for `LowLevelKeyboardProc`), e.g. during a GC pause, so the thread sets its hooks anew every 30 s and on every change
   of scope, the new one before the old one goes. The option is its own box and works with the mouse mode "Aus" too

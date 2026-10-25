@@ -1,6 +1,6 @@
 namespace Arcadia.Input;
 
-/// <summary>The buttons of one controller as XInput reports them, plus the triggers pressed past half way.</summary>
+/// <summary>The buttons of one controller in Xbox naming, by position, plus the triggers pressed past half way.</summary>
 [Flags]
 public enum PadButtons : ushort
 {
@@ -16,7 +16,7 @@ public enum PadButtons : ushort
     LeftShoulder = 0x0100,
     RightShoulder = 0x0200,
 
-    // XInputGetState leaves these two bits unused; Arcadia puts the triggers there.
+    // The bits XInput left unused; Arcadia puts the triggers there.
     LeftTrigger = 0x0400,
     RightTrigger = 0x0800,
 
@@ -29,8 +29,8 @@ public enum PadButtons : ushort
 /// <summary>A stick's position, each axis from -1 to 1; up and right are positive.</summary>
 public readonly record struct StickPosition(double X, double Y);
 
-/// <summary>What one controller reports in one poll. <see cref="Slot"/> is its XInput slot (0–3).</summary>
-public readonly record struct GamepadReading(int Slot, PadButtons Buttons, StickPosition LeftStick, StickPosition RightStick)
+/// <summary>What one controller reports in one poll. <see cref="PadId"/> tells the controllers apart; SDL gives a new one on every connect.</summary>
+public readonly record struct GamepadReading(int PadId, PadButtons Buttons, StickPosition LeftStick, StickPosition RightStick)
 {
     public bool IsDown(PadButtons buttons) => (Buttons & buttons) == buttons;
 }

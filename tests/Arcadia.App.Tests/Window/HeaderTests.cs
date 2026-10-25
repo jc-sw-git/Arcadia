@@ -51,12 +51,12 @@ public sealed class HeaderTests
         // LB/RB: the selected tab comes to the middle as far as the ends allow, faded on both sides in between.
         arcadia.Press(UiAction.NextTab, times: 4);
         header = Header.Of(arcadia);
-        Assert.Equal("EA app", main.SelectedTab?.Name);
-        Assert.Equal(header.Scroller.Bounds.Width / 2, TabCentre(arcadia, header, main.SelectedTab!), tolerance: 2);
+        Assert.Equal("EA app", arcadia.Arcadia.SelectedTab?.Name);
+        Assert.Equal(header.Scroller.Bounds.Width / 2, TabCentre(arcadia, header, arcadia.Arcadia.SelectedTab!), tolerance: 2);
         Assert.Equal((true, true), (header.FadesLeft, header.FadesRight));
         arcadia.Press(UiAction.PreviousTab, times: 5);
         header = Header.Of(arcadia);
-        Assert.Equal("Amazon Games", main.SelectedTab?.Name);
+        Assert.Equal("Amazon Games", arcadia.Arcadia.SelectedTab?.Name);
         Assert.Equal((true, false), (header.FadesLeft, header.FadesRight));
 
         // The wheel over the tabs turns the strip back to its start.
@@ -68,7 +68,7 @@ public sealed class HeaderTests
         // A tab cut off at the faded edge is clickable.
         var cutOff = main.Tabs.First(tab => arcadia.Bounds(arcadia.Showing(tab)).Right > header.Strip.Right - 12);
         arcadia.Click(arcadia.Showing(cutOff));
-        Assert.Same(cutOff, main.SelectedTab);
+        Assert.Same(cutOff, arcadia.Arcadia.SelectedTab);
     }
 
     private static double TabCentre(ArcadiaWindow arcadia, Header header, LauncherTabViewModel tab) =>

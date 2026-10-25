@@ -10,6 +10,7 @@ its file.
 
 | File | Issue | Title | Test cases |
 |---|---|---|---|
+| [155-split-main-view-model-game-actions.md](155-split-main-view-model-game-actions.md) | #155 | Split MainViewModel: extract GameActions | 0 (refactoring) |
 | [169-steam-settings-in-one-group.md](169-steam-settings-in-one-group.md) | #169 | Group the Steam settings under "Steam" | 8 |
 
 ## Exploratory test
@@ -21,3 +22,4 @@ Charter: –. Time box: –. Findings: –.
 | Test cases | Tests |
 |---|---|
 | T169-1 to T169-8 | `tests/Arcadia.App.Tests/SteamSettingsGroupTests.cs` |
+| T155-1 to T155-12 | `tests/Arcadia.App.Tests/PageTransitionTests.cs` |

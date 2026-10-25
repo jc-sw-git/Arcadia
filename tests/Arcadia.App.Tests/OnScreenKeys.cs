@@ -10,7 +10,7 @@ namespace Arcadia.App.Tests;
 /// </summary>
 internal static class OnScreenKeys
 {
-    public static OnScreenKeyboardViewModel Keyboard(this ArcadiaDriver arcadia) => arcadia.Main.Search!.Keyboard;
+    public static OnScreenKeyboardViewModel Keyboard(this ArcadiaDriver arcadia) => arcadia.Search!.Keyboard;
 
     /// <summary>The focused key's label: its character on the shown level, or its symbol (⇧, ↵, ⌫ …).</summary>
     public static string FocusedLabel(this ArcadiaDriver arcadia) => LabelOf(arcadia.Keyboard().FocusedKey);

@@ -35,7 +35,7 @@ public sealed class KeyboardAndMouseTests
         // Only moving the mouse doesn't switch; a click does.
         arcadia.MouseMove(new Point(700, 500)).MouseMove(new Point(900, 600));
         AssertController(arcadia);
-        arcadia.Click(arcadia.Tile(arcadia.Arcadia.Main.PageGames[3]));
+        arcadia.Click(arcadia.Tile(arcadia.Arcadia.PageGames[3]));
         AssertKeyboard(arcadia);
 
         // The detail page and a dialog follow too.
@@ -93,17 +93,17 @@ public sealed class KeyboardAndMouseTests
         arcadia.KeyUp(Key.Space);
 
         // On the detail page: Q/E the game, 1 … 0 the launcher, Esc and Backspace back.
-        var shown = main.Detail!.Current.Tile.Title;
+        var shown = arcadia.Arcadia.Detail!.Current.Tile.Title;
         arcadia.Key(Key.E);
-        Assert.NotEqual(shown, main.Detail!.Current.Tile.Title);
+        Assert.NotEqual(shown, arcadia.Arcadia.Detail!.Current.Tile.Title);
         arcadia.Key(Key.Q);
-        Assert.Equal(shown, main.Detail!.Current.Tile.Title);
+        Assert.Equal(shown, arcadia.Arcadia.Detail!.Current.Tile.Title);
         arcadia.Key(Key.D2);
-        Assert.Equal("Xbox", main.SelectedTab?.Name);
+        Assert.Equal("Xbox", arcadia.Arcadia.SelectedTab?.Name);
         arcadia.Key(Key.Back);
         Assert.False(main.IsDetailOpen);
         arcadia.Key(Key.D1);
-        Assert.Equal("GOG Galaxy", main.SelectedTab?.Name);
+        Assert.Equal("GOG Galaxy", arcadia.Arcadia.SelectedTab?.Name);
 
         // Q/E, Page Up/Down the pages; Shift+Q/E and Ctrl+(Shift+)Tab the launchers; 1 … 0 too.
         arcadia.Key(Key.E);
@@ -115,15 +115,15 @@ public sealed class KeyboardAndMouseTests
         arcadia.Key(Key.PageUp);
         Assert.Equal("1", CurrentPage(main));
         arcadia.Key(Key.E, KeyModifiers.Shift);
-        Assert.Equal("Xbox", main.SelectedTab?.Name);
+        Assert.Equal("Xbox", arcadia.Arcadia.SelectedTab?.Name);
         arcadia.Key(Key.Q, KeyModifiers.Shift);
-        Assert.Equal("GOG Galaxy", main.SelectedTab?.Name);
+        Assert.Equal("GOG Galaxy", arcadia.Arcadia.SelectedTab?.Name);
         arcadia.Key(Key.Tab, KeyModifiers.Control);
-        Assert.Equal("Xbox", main.SelectedTab?.Name);
+        Assert.Equal("Xbox", arcadia.Arcadia.SelectedTab?.Name);
         arcadia.Key(Key.Tab, KeyModifiers.Control | KeyModifiers.Shift);
-        Assert.Equal("GOG Galaxy", main.SelectedTab?.Name);
+        Assert.Equal("GOG Galaxy", arcadia.Arcadia.SelectedTab?.Name);
         arcadia.Key(Key.D3);
-        Assert.Equal("Amazon Games", main.SelectedTab?.Name);
+        Assert.Equal("Amazon Games", arcadia.Arcadia.SelectedTab?.Name);
         arcadia.Key(Key.D1);
 
         // R options, V view, Esc closes each.
@@ -152,17 +152,17 @@ public sealed class KeyboardAndMouseTests
         arcadia.Key(Key.F);
         Assert.True(main.IsSearchShown);
         arcadia.Key(Key.W).Key(Key.A).Key(Key.S).Key(Key.D).Key(Key.Q).Key(Key.E).Key(Key.R).Key(Key.V).Key(Key.F);
-        Assert.Equal("wasdqervf", main.Search!.Text);
+        Assert.Equal("wasdqervf", arcadia.Arcadia.Search!.Text);
         arcadia.Key(Key.Back, times: 9);
-        Assert.Equal(string.Empty, main.Search!.Text);
+        Assert.Equal(string.Empty, arcadia.Arcadia.Search!.Text);
         // Not the game Space started above: that one is starting, and A brings it to the front instead.
-        var other = main.PageGames.Skip(1).First(tile => tile.Game.IsInstalled).Title;
+        var other = arcadia.Arcadia.PageGames.Skip(1).First(tile => tile.Game.IsInstalled).Title;
         foreach (var letter in other.ToLowerInvariant().Where(char.IsLetter).Take(6))
         {
             arcadia.Key(Enum.Parse<Key>(letter.ToString(), ignoreCase: true));
         }
 
-        var hit = main.Search!.FocusedResult!.Game.Key;
+        var hit = arcadia.Arcadia.Search!.FocusedResult!.Game.Key;
         arcadia.Key(Key.Enter);
         await arcadia.Arcadia.WaitUntilAsync(() => arcadia.Arcadia.Starts.Keys.Count == 2, "Enter startet den Treffer");
         Assert.Equal(hit, arcadia.Arcadia.Starts.Keys[^1]);
@@ -184,15 +184,15 @@ public sealed class KeyboardAndMouseTests
         using var arcadia = await ArcadiaWindow.ShowAsync();
         var main = arcadia.Arcadia.Main;
 
-        arcadia.Click(arcadia.Tile(main.PageGames[2]));
+        arcadia.Click(arcadia.Tile(arcadia.Arcadia.PageGames[2]));
         Assert.Equal(2, FocusedIndex(main));
         Assert.Empty(arcadia.Arcadia.Starts.Keys);
-        arcadia.DoubleClick(arcadia.Tile(main.PageGames[2]));
+        arcadia.DoubleClick(arcadia.Tile(arcadia.Arcadia.PageGames[2]));
         await arcadia.Arcadia.WaitUntilAsync(() => arcadia.Arcadia.Starts.Keys.Count == 1, "Doppelklick startet das Spiel");
-        Assert.Equal(main.PageGames[2].Game.Key, arcadia.Arcadia.Starts.Keys[0]);
+        Assert.Equal(arcadia.Arcadia.PageGames[2].Game.Key, arcadia.Arcadia.Starts.Keys[0]);
 
         // The left button held a second opens the details, with the blue ring around the preview meanwhile.
-        var cover = arcadia.CentreOf(arcadia.Tile(main.PageGames[4]));
+        var cover = arcadia.CentreOf(arcadia.Tile(arcadia.Arcadia.PageGames[4]));
         arcadia.MouseDown(cover);
         arcadia.Arcadia.Wait(TimeSpan.FromSeconds(0.3));
         var ring = arcadia.Settle().Window.GetVisualDescendants().OfType<HoldRing>().Single();
@@ -207,9 +207,9 @@ public sealed class KeyboardAndMouseTests
 
         // LB/RB, LT/RT, page numbers, tabs, "Ansicht", search and settings.
         arcadia.Click(arcadia.ButtonWithTip("Nächster Launcher"));
-        Assert.Equal("Xbox", main.SelectedTab?.Name);
+        Assert.Equal("Xbox", arcadia.Arcadia.SelectedTab?.Name);
         arcadia.Click(arcadia.ButtonWithTip("Vorheriger Launcher"));
-        Assert.Equal("GOG Galaxy", main.SelectedTab?.Name);
+        Assert.Equal("GOG Galaxy", arcadia.Arcadia.SelectedTab?.Name);
         arcadia.Click(arcadia.ButtonWithTip("Nächste Seite"));
         Assert.Equal("2", CurrentPage(main));
         arcadia.Click(arcadia.ButtonWithTip("Vorherige Seite"));
@@ -217,7 +217,7 @@ public sealed class KeyboardAndMouseTests
         arcadia.Click(PageButton(arcadia, "2"));
         Assert.Equal("2", CurrentPage(main));
         arcadia.Click(arcadia.Showing(main.Tabs[2]));
-        Assert.Equal("Amazon Games", main.SelectedTab?.Name);
+        Assert.Equal("Amazon Games", arcadia.Arcadia.SelectedTab?.Name);
         arcadia.Click(arcadia.Window.GetVisualDescendants().OfType<Button>().Single(button => button.IsEffectivelyVisible && button.Command == main.OpenViewOptionsCommand));
         Assert.True(main.IsViewOptionsOpen);
         arcadia.Key(Key.Escape);
@@ -237,10 +237,10 @@ public sealed class KeyboardAndMouseTests
 
         using var restarted = await first.RestartAsync();
         var main = restarted.Arcadia.Main;
-        Assert.Equal("Xbox", main.SelectedTab?.Name);
+        Assert.Equal("Xbox", restarted.Arcadia.SelectedTab?.Name);
         Assert.Equal("1", CurrentPage(main));
         Assert.Equal(0, FocusedIndex(main));
-        Assert.Contains("focused", restarted.Tile(main.PageGames[0]).Classes);
+        Assert.Contains("focused", restarted.Tile(restarted.Arcadia.PageGames[0]).Classes);
     }
 
     private static void AssertController(ArcadiaWindow arcadia)

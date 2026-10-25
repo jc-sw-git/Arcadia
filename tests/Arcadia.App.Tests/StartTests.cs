@@ -14,9 +14,9 @@ public sealed class StartTests
         using var arcadia = await ArcadiaDriver.StartAsync();
 
         Assert.Equal(["GOG Galaxy", "Xbox", "Amazon Games"], arcadia.Main.Tabs.Select(tab => tab.Name));
-        Assert.Same(arcadia.Main.Tabs[0], arcadia.Main.SelectedTab);
-        Assert.NotNull(arcadia.Main.FocusedGame);
-        Assert.Same(arcadia.Main.PageGames[0], arcadia.Main.FocusedGame);
+        Assert.Same(arcadia.Main.Tabs[0], arcadia.SelectedTab);
+        Assert.NotNull(arcadia.FocusedGame);
+        Assert.Same(arcadia.PageGames[0], arcadia.FocusedGame);
         Assert.True(arcadia.Main.AreGamesShown);
     }
 
@@ -47,7 +47,7 @@ public sealed class StartTests
 
         Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.Main.Tabs.Select(tab => tab.Name));
         Assert.Equal("Keine Spiele in GOG Galaxy", arcadia.Main.EmptyTab?.Title);
-        Assert.Null(arcadia.Main.FocusedGame);
+        Assert.Null(arcadia.FocusedGame);
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("Keine Spiele in Xbox", arcadia.Main.EmptyTab?.Title);
         Assert.False(arcadia.Main.Toast.IsVisible, arcadia.Main.Toast.Text);

@@ -39,7 +39,7 @@ public sealed class LauncherViewTests
         Assert.Equal(["GOG Galaxy", "Amazon Games"], arcadia.Arcadia.TabNames());
 
         arcadia.Press(UiAction.Back).Key(Key.F).Type("Ember");
-        Assert.Empty(main.Search!.Results);
+        Assert.Empty(arcadia.Arcadia.Search!.Results);
         Assert.Equal(["GOG Galaxy", "Amazon Games"], DrawnTabs(arcadia));
         arcadia.Press(UiAction.Back).Press(UiAction.Settings);
         arcadia.Arcadia.FocusRow("xbox");
@@ -54,7 +54,7 @@ public sealed class LauncherViewTests
         arcadia.Press(UiAction.Back);
         Assert.Equal(["GOG Galaxy", "Amazon Games", "Xbox"], DrawnTabs(arcadia));
         arcadia.Key(Key.F).Type("Ember");
-        Assert.Equal(["Ember Hollow"], main.Search!.Results.Select(hit => hit.Title));
+        Assert.Equal(["Ember Hollow"], arcadia.Arcadia.Search!.Results.Select(hit => hit.Title));
 
         using var restarted = await arcadia.RestartAsync();
         Assert.Equal(["GOG Galaxy", "Amazon Games", "Xbox"], DrawnTabs(restarted));

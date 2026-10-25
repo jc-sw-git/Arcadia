@@ -156,7 +156,7 @@ public sealed class EpicInstallTests
 
         Assert.Equal("Pausiert · 50\u00A0%", TileOf(arcadia, Leuchtturm).InstallStatusText);
         Assert.Equal("Wird installiert · 20\u00A0%", TileOf(arcadia, Salzwiesen).InstallStatusText);
-        Assert.Single(arcadia.Main.PageGames, tile => tile.IsInstallSpinning);
+        Assert.Single(arcadia.PageGames, tile => tile.IsInstallSpinning);
     }
 
     [AvaloniaFact]
@@ -195,8 +195,8 @@ public sealed class EpicInstallTests
         epic.Log(EpicFolder.Queued(app), EpicFolder.Started(app));
     }
 
-    private static Arcadia.App.ViewModels.GameTileViewModel Tile(ArcadiaDriver arcadia) => arcadia.Main.FocusedGame!;
+    private static Arcadia.App.ViewModels.GameTileViewModel Tile(ArcadiaDriver arcadia) => arcadia.FocusedGame!;
 
     private static Arcadia.App.ViewModels.GameTileViewModel TileOf(ArcadiaDriver arcadia, EpicApp app) =>
-        arcadia.Main.PageGames.Single(tile => tile.Title == app.Title);
+        arcadia.PageGames.Single(tile => tile.Title == app.Title);
 }

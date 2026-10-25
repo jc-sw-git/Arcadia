@@ -31,7 +31,7 @@ public sealed class SearchHitTests
     public async Task Start_tapped_on_a_hit_starts_it_on_the_release_or_installs_it_held_opens_its_details_and_View_its_menu()
     {
         using var arcadia = await SearchAsync("river");
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
         Assert.Equal("River Crossing", search.FocusedResult?.Title);
 
         // The start is requested synchronously (IsStarting); the launcher only hears of it later, on the thread pool.
@@ -59,9 +59,9 @@ public sealed class SearchHitTests
 
         arcadia.PressDown(UiAction.Settings).Wait(TimeSpan.FromMilliseconds(300));
         Assert.True(search.FocusedResult!.IsHolding);
-        Assert.Null(arcadia.Main.Detail);
+        Assert.Null(arcadia.Detail);
         arcadia.Wait(PastHoldTime - TimeSpan.FromMilliseconds(300));
-        var detail = Assert.IsType<GameDetailViewModel>(arcadia.Main.Detail);
+        var detail = Assert.IsType<GameDetailViewModel>(arcadia.Detail);
         Assert.True(detail.IsFromSearch);
         Assert.Equal("River Raid", detail.Current.Tile.Title);
         arcadia.LetGo(UiAction.Settings);
@@ -77,7 +77,7 @@ public sealed class SearchHitTests
         arcadia.Press(UiAction.SecondaryRight);
         arcadia.PressDown(UiAction.Settings).Wait(PastHoldTime).LetGo(UiAction.Settings);
 
-        var detail = Assert.IsType<GameDetailViewModel>(main.Detail);
+        var detail = Assert.IsType<GameDetailViewModel>(arcadia.Detail);
         Assert.True(detail.IsFromSearch);
         Assert.Null(detail.TabName);
         Assert.False(main.IsTabStripShown);
@@ -92,11 +92,11 @@ public sealed class SearchHitTests
         arcadia.Press(UiAction.PreviousPage);
         Assert.Equal("Riverbend", detail.Current.Tile.Title);
 
-        var tab = main.SelectedTab;
+        var tab = arcadia.SelectedTab;
         arcadia.Press(UiAction.NextTab).Press(UiAction.PreviousTab).Press(UiAction.ViewOptions);
-        Assert.Same(detail, main.Detail);
+        Assert.Same(detail, arcadia.Detail);
         Assert.Equal("Riverbend", detail.Current.Tile.Title);
-        Assert.Same(tab, main.SelectedTab);
+        Assert.Same(tab, arcadia.SelectedTab);
         Assert.Null(main.ViewOptions);
     }
 
@@ -116,26 +116,26 @@ public sealed class SearchHitTests
         var main = arcadia.Main;
         arcadia.Press(UiAction.Search);
         main.TypeInSearch("zephyr");
-        var search = main.Search!;
+        var search = arcadia.Search!;
         Assert.Equal(["Zephyr Gate", "Zephyr Run"], search.Hits.Select(game => game.Title));
 
         arcadia.PressDown(UiAction.Settings).Wait(PastHoldTime).LetGo(UiAction.Settings);
         arcadia.Press(UiAction.NextPage);
-        Assert.Equal("Zephyr Run", main.Detail?.Current.Tile.Title);
+        Assert.Equal("Zephyr Run", arcadia.Detail?.Current.Tile.Title);
 
         arcadia.Press(UiAction.Search);
-        Assert.Null(main.Detail);
-        Assert.Same(search, main.Search);
+        Assert.Null(arcadia.Detail);
+        Assert.Same(search, arcadia.Search);
         Assert.Equal("zephyr", search.Text);
         Assert.Equal("Zephyr Run", search.FocusedResult?.Title);
 
         arcadia.PressDown(UiAction.Settings).Wait(PastHoldTime).LetGo(UiAction.Settings);
         arcadia.Press(UiAction.Back);
-        Assert.Null(main.Detail);
-        Assert.Null(main.Search);
-        Assert.Equal("Xbox", main.SelectedTab?.Name);
-        Assert.Equal("2", main.PageButtons.Single(button => button.IsCurrent).Label);
-        Assert.Equal(zephyr.Key, main.FocusedGame?.Game.Key);
+        Assert.Null(arcadia.Detail);
+        Assert.Null(arcadia.Search);
+        Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
+        Assert.Equal("2", arcadia.CurrentPage);
+        Assert.Equal(zephyr.Key, arcadia.FocusedGame?.Game.Key);
     }
 
     [AvaloniaFact]
@@ -146,19 +146,19 @@ public sealed class SearchHitTests
         var main = arcadia.Main;
         arcadia.Press(UiAction.Right);
         arcadia.PressDown(UiAction.Accept).Wait(PastHoldTime).LetGo(UiAction.Accept);
-        var detail = Assert.IsType<GameDetailViewModel>(main.Detail);
+        var detail = Assert.IsType<GameDetailViewModel>(arcadia.Detail);
         var game = detail.Current.Tile.Game.Key;
 
         arcadia.Press(UiAction.Search);
         Assert.True(main.IsSearchShown);
-        Assert.Null(main.Detail);
+        Assert.Null(arcadia.Detail);
 
         // The first B puts the on-screen keyboard away, the second leaves the search.
         arcadia.Press(UiAction.Back);
         Assert.True(main.IsSearchShown);
         arcadia.Press(UiAction.Back);
-        Assert.Null(main.Search);
-        Assert.Same(detail, main.Detail);
+        Assert.Null(arcadia.Search);
+        Assert.Same(detail, arcadia.Detail);
         Assert.True(detail.IsFromLibrary);
         Assert.Equal(game, detail.Current.Tile.Game.Key);
     }
@@ -169,7 +169,7 @@ public sealed class SearchHitTests
     {
         using var arcadia = await SearchAsync("river");
         var main = arcadia.Main;
-        var search = main.Search!;
+        var search = arcadia.Search!;
 
         arcadia.Press(UiAction.Filter);
         var filter = Assert.IsType<ViewOptionsViewModel>(main.ViewOptions);
@@ -213,9 +213,9 @@ public sealed class SearchHitTests
 
         // Leave the search (B puts the keyboard away, B again closes) and search anew.
         arcadia.Press(UiAction.Back, times: 2);
-        Assert.Null(main.Search);
+        Assert.Null(arcadia.Search);
         arcadia.Press(UiAction.Search);
-        Assert.Equal("Sortiert nach Relevanz", main.Search!.SortText);
+        Assert.Equal("Sortiert nach Relevanz", arcadia.Search!.SortText);
     }
 
     /// <summary>X with the controller, then <paramref name="term"/> typed (the on-screen keyboard has tests of its own).</summary>

@@ -21,7 +21,7 @@ public sealed class RunningGameTests
         {
             var running = RunningTilesOf(arcadia).ToList();
             var tile = Assert.Single(running);
-            Assert.Equal(tab, arcadia.Main.SelectedTab);
+            Assert.Equal(tab, arcadia.SelectedTab);
             Assert.Equal("Läuft", tile.RunStateShortText);
             Assert.Equal(since, tile.RunStateText);
             Assert.Equal("Zurück ins Spiel", tile.PrimaryActionText);
@@ -39,7 +39,7 @@ public sealed class RunningGameTests
 
         // Its detail page.
         arcadia.Hold(UiAction.Accept, PastHoldTime);
-        var page = arcadia.Main.Detail!.Current;
+        var page = arcadia.Detail!.Current;
         Assert.Equal(game, page.Tile.Title);
         Assert.Equal(since.ToUpperInvariant(), page.RunStateUpper);
         Assert.Equal("Zurück ins Spiel", page.TopRow[0].ButtonLabel);
@@ -61,7 +61,7 @@ public sealed class RunningGameTests
         var running = new List<GameTileViewModel>();
         for (var page = 0; page < Math.Max(pages, 1); page++)
         {
-            running.AddRange(arcadia.Main.PageGames.Where(tile => tile.IsRunning));
+            running.AddRange(arcadia.PageGames.Where(tile => tile.IsRunning));
             arcadia.Press(UiAction.NextPage);
         }
 
@@ -72,13 +72,13 @@ public sealed class RunningGameTests
     /// <summary>Turns the pages of the selected tab until the running game shows and focuses it; returns its title.</summary>
     private static string FocusRunningGame(ArcadiaDriver arcadia)
     {
-        while (!arcadia.Main.PageGames.Any(tile => tile.IsRunning))
+        while (!arcadia.PageGames.Any(tile => tile.IsRunning))
         {
             arcadia.Press(UiAction.NextPage);
         }
 
-        var index = arcadia.Main.PageGames.ToList().FindIndex(tile => tile.IsRunning);
+        var index = arcadia.PageGames.ToList().FindIndex(tile => tile.IsRunning);
         arcadia.Press(UiAction.Right, times: index);
-        return arcadia.Main.FocusedGame!.Title;
+        return arcadia.FocusedGame!.Title;
     }
 }

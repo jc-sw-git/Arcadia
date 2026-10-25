@@ -312,11 +312,11 @@ public sealed class ControllerSupportTests
 
         await StartSisrAsync(arcadia);
         await arcadia.WaitUntilAsync(() => arcadia.Main.ShowControllerSupport, "der Steam Controller ist erkannt");
-        Assert.Equal("Steam", arcadia.Main.SelectedTab?.Name);
+        Assert.Equal("Steam", arcadia.SelectedTab?.Name);
         Assert.Equal(ControllerModes.Steam, arcadia.Main.FocusedControllerSupportText);
 
         arcadia.Press(UiAction.NextTab);
-        Assert.Equal("GOG Galaxy", arcadia.Main.SelectedTab?.Name);
+        Assert.Equal("GOG Galaxy", arcadia.SelectedTab?.Name);
         Assert.Equal(ControllerModes.Sisr, arcadia.Main.FocusedControllerSupportText);
     }
 
@@ -341,7 +341,7 @@ public sealed class ControllerSupportTests
         arcadia.Press(UiAction.Back);
 
         arcadia.Hold(UiAction.Accept, TimeSpan.FromMilliseconds(1100));
-        var page = arcadia.Main.Detail!.Current;
+        var page = arcadia.Detail!.Current;
         Assert.False(page.HasNotes);
 
         // Down to the row of the game's settings: "Steam Controller", then "Individueller Mausmodus".

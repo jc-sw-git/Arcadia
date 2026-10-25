@@ -46,7 +46,7 @@ public sealed class ViewAndMenuTests
     public async Task View_and_Menu_pressed_together_open_nothing()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        var focused = arcadia.Main.FocusedGame;
+        var focused = arcadia.FocusedGame;
 
         arcadia.PressButton(GamepadButton.View).Wait(BeforeSoloDelay).PressButton(GamepadButton.Menu).Wait(TimeSpan.FromSeconds(1));
         arcadia.ReleaseButton(GamepadButton.Menu).ReleaseButton(GamepadButton.View).Wait(PastSoloDelay);
@@ -57,11 +57,11 @@ public sealed class ViewAndMenuTests
         arcadia.ReleaseButton(GamepadButton.View).ReleaseButton(GamepadButton.Menu).Wait(PastSoloDelay);
         Assert.False(arcadia.Main.IsGameMenuOpen);
         Assert.False(arcadia.Main.IsSettingsOpen);
-        Assert.Same(focused, arcadia.Main.FocusedGame);
+        Assert.Same(focused, arcadia.FocusedGame);
 
         // The other buttons behave as before.
         arcadia.PressButton(GamepadButton.DPadRight).ReleaseButton(GamepadButton.DPadRight);
-        Assert.NotSame(focused, arcadia.Main.FocusedGame);
+        Assert.NotSame(focused, arcadia.FocusedGame);
     }
 
     [AvaloniaFact]
@@ -72,12 +72,12 @@ public sealed class ViewAndMenuTests
         arcadia.Press(UiAction.Search);
         var title = arcadia.Main.Tabs[0].Games[0].Title;
         arcadia.Main.TypeInSearch(title);
-        var hit = arcadia.Main.Search!.FocusedResult;
+        var hit = arcadia.Search!.FocusedResult;
         Assert.NotNull(hit);
 
         arcadia.PressButton(GamepadButton.Menu).Wait(TimeSpan.FromMilliseconds(1300));
         Assert.True(arcadia.Main.IsDetailOpen);
-        Assert.Equal(hit.Game.Key, arcadia.Main.Detail!.Current.Tile.Game.Key);
+        Assert.Equal(hit.Game.Key, arcadia.Detail!.Current.Tile.Game.Key);
         arcadia.ReleaseButton(GamepadButton.Menu);
         Assert.False(arcadia.Main.IsSettingsOpen);
     }
@@ -87,7 +87,7 @@ public sealed class ViewAndMenuTests
     public async Task With_a_game_in_front_or_in_the_mouse_mode_the_buttons_leave_Arcadia_alone()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        var focused = arcadia.Main.FocusedGame;
+        var focused = arcadia.FocusedGame;
 
         foreach (var (inFront, mouseMode) in new[] { (false, false), (true, true) })
         {
@@ -96,7 +96,7 @@ public sealed class ViewAndMenuTests
             arcadia.PressButton(GamepadButton.DPadRight).ReleaseButton(GamepadButton.DPadRight);
             arcadia.PressButton(GamepadButton.View).ReleaseButton(GamepadButton.View);
             arcadia.PressButton(GamepadButton.Menu).Wait(PastSoloDelay).ReleaseButton(GamepadButton.Menu);
-            Assert.Same(focused, arcadia.Main.FocusedGame);
+            Assert.Same(focused, arcadia.FocusedGame);
             Assert.False(arcadia.Main.IsGameMenuOpen);
             Assert.False(arcadia.Main.IsSettingsOpen);
         }
@@ -111,6 +111,6 @@ public sealed class ViewAndMenuTests
 
         arcadia.IsArcadiaInFront = true;
         arcadia.PressButton(GamepadButton.DPadRight).ReleaseButton(GamepadButton.DPadRight);
-        Assert.NotSame(focused, arcadia.Main.FocusedGame);
+        Assert.NotSame(focused, arcadia.FocusedGame);
     }
 }

@@ -89,7 +89,7 @@ public sealed class SteamInstallTests
 
         Assert.StartsWith("Installation von „", arcadia.Main.Toast.Text);
         Assert.EndsWith("“ abgebrochen.", arcadia.Main.Toast.Text);
-        Assert.DoesNotContain(arcadia.Main.PageGames, tile => tile.Title == Sternenhafen.Name);
+        Assert.DoesNotContain(arcadia.PageGames, tile => tile.Title == Sternenhafen.Name);
     }
 
     [AvaloniaFact]
@@ -107,7 +107,7 @@ public sealed class SteamInstallTests
         await arcadia.FollowInstallsAsync();
 
         Assert.Equal("„Kupferwald“ wurde deinstalliert.", arcadia.Main.Toast.Text);
-        Assert.Equal(["Sternenhafen"], arcadia.Main.PageGames.Select(tile => tile.Title));
+        Assert.Equal(["Sternenhafen"], arcadia.PageGames.Select(tile => tile.Title));
     }
 
     [AvaloniaFact]
@@ -158,5 +158,5 @@ public sealed class SteamInstallTests
     }
 
     private static Arcadia.App.ViewModels.GameTileViewModel TileOf(ArcadiaDriver arcadia, SteamApp app) =>
-        arcadia.Main.PageGames.Single(tile => tile.Title == app.Name);
+        arcadia.PageGames.Single(tile => tile.Title == app.Name);
 }

@@ -3,6 +3,10 @@ using Avalonia.Headless;
 
 [assembly: AvaloniaTestApplication(typeof(Arcadia.App.Tests.TestApplication))]
 
+// One headless application for all tests: set up anew for each test, it sometimes failed with "The calling thread cannot
+// access this object" in Avalonia's render loop. The driver builds every part of Arcadia per test anyway.
+[assembly: AvaloniaTestIsolation(AvaloniaTestIsolationLevel.PerAssembly)]
+
 namespace Arcadia.App.Tests;
 
 /// <summary>

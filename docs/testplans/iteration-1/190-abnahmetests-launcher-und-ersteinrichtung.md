@@ -13,3 +13,4 @@ Verlauf:
 |---|---|---|---|---|---|
 | 30 neue und 2 erweiterte Abnahmetests (Launcher-Einstellungen, Launcher-Seite, Ersteinrichtung) | 2026-10-25 | Claude | PR-Branch, Linux-Container (.NET 10), `dotnet test` | ❌ T137-5: leerer Name abgelehnt; sonst ✅ | Behoben, danach alle grün |
 | Alle 32, je einmal rot | 2026-10-25 | Claude | PR-Branch, Linux-Container, je eine gezielte Änderung im Produktcode | ✅ alle rot, danach wieder grün | Änderungen pro Test im PR |
+| Nachbesserung nach Codex-Review: Bildschirmtastatur des Kürzel-Editors (DE, FR, Name als Gegenprobe), 3 Tests | 2026-10-25 | Claude | PR-Branch, Linux-Container | ✅ grün; je einmal rot (Zeichenfilter entfernt, Leertaste immer frei, Navigation über ausgegraute Tasten, ⇧ bei FR gesperrt, Name mit Kürzel-Filter) | – |

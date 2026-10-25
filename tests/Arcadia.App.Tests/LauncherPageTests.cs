@@ -1,6 +1,8 @@
 using Arcadia.App.Input;
+using Arcadia.App.Keyboard;
 using Arcadia.App.Settings;
 using Arcadia.Core.Launchers;
+using Arcadia.Core.Search;
 using Arcadia.Core.Settings;
 using Avalonia.Headless.XUnit;
 using static Arcadia.App.Tests.TestGames;
@@ -172,6 +174,87 @@ public sealed class LauncherPageTests
 
     [AvaloniaFact]
     [Trait("Testfall", "T137-6")]
+    public async Task The_keywords_on_screen_keyboard_offers_only_keys_it_may_hold_and_the_D_pad_skips_the_others()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        arcadia.OpenLauncherSettings();
+        arcadia.Press(UiAction.Accept);
+        arcadia.FocusRow("launcher-keyword");
+        arcadia.Press(UiAction.Accept);
+        var editor = arcadia.Main.Settings!.Selected.Editor!;
+        var keyboard = editor.Keyboard;
+        Assert.Equal("de", keyboard.Layout.Id);
+
+        // Greyed out, its character still shown: special characters, the space bar, ⇧ and AltGr (µ doesn't count).
+        var comma = KeyWith(keyboard, ',');
+        Assert.True(comma.IsUnavailable);
+        Assert.Equal(",", comma.Label);
+        Assert.False(KeyWith(keyboard, 'g').IsUnavailable);
+        Assert.All(KeysOf(keyboard, BoardKeyKind.Space, BoardKeyKind.Shift, BoardKeyKind.AltGr), key => Assert.True(key.IsUnavailable, $"{key.Key.Kind} ist nicht ausgegraut."));
+
+        // Y types no space, LB and RB switch to no other level.
+        arcadia.Press(UiAction.ViewOptions);
+        Assert.Equal("gog", editor.Text);
+        arcadia.PressDown(UiAction.PreviousTab);
+        Assert.Equal(KeyLevel.Normal, keyboard.Level);
+        arcadia.LetGo(UiAction.PreviousTab).PressDown(UiAction.NextTab);
+        Assert.Equal(KeyLevel.Normal, keyboard.Level);
+        arcadia.LetGo(UiAction.NextTab);
+
+        // Along every row and down the board, the focus never rests on a greyed-out key.
+        var rows = keyboard.Keys.Select(key => key.Top).Distinct().Count();
+        for (var row = 0; row < rows; row++)
+        {
+            for (var step = 0; step < 16; step++)
+            {
+                arcadia.Press(row % 2 == 0 ? UiAction.Right : UiAction.Left);
+                Assert.False(keyboard.FocusedKey.IsUnavailable, $"Fokus auf der ausgegrauten Taste {keyboard.FocusedKey.Label}.");
+            }
+
+            arcadia.Press(UiAction.Down);
+            Assert.False(keyboard.FocusedKey.IsUnavailable, $"Fokus auf der ausgegrauten Taste {keyboard.FocusedKey.Label}.");
+        }
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "T137-6")]
+    public async Task On_a_French_keyboard_shift_stays_for_the_digits_and_offers_only_them()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings { ActiveLaunchers = ["gog", "xbox", "amazon"], KeyboardLayout = "fr" });
+        arcadia.OpenLauncherSettings();
+        arcadia.Press(UiAction.Accept);
+        arcadia.FocusRow("launcher-keyword");
+        arcadia.Press(UiAction.Accept);
+        var keyboard = arcadia.Main.Settings!.Selected.Editor!.Keyboard;
+        Assert.Equal("fr", keyboard.Layout.Id);
+        Assert.All(KeysOf(keyboard, BoardKeyKind.Shift), key => Assert.False(key.IsUnavailable));
+
+        arcadia.PressDown(UiAction.PreviousTab);
+        Assert.Equal(KeyLevel.Shift, keyboard.Level);
+        var offered = keyboard.Keys.Where(key => key.IsCharacter && !key.IsUnavailable && key.Label.Length > 0).Select(key => key.Label).ToList();
+        Assert.Equal(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"], offered.Order(StringComparer.Ordinal));
+        arcadia.LetGo(UiAction.PreviousTab);
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "T137-6")]
+    public async Task The_names_on_screen_keyboard_offers_every_key()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        arcadia.OpenLauncherSettings();
+        arcadia.Press(UiAction.Accept);
+        arcadia.FocusRow("launcher-name");
+        arcadia.Press(UiAction.Accept);
+        var editor = arcadia.Main.Settings!.Selected.Editor!;
+
+        Assert.False(KeyWith(editor.Keyboard, ',').IsUnavailable);
+        Assert.All(KeysOf(editor.Keyboard, BoardKeyKind.Space, BoardKeyKind.Shift, BoardKeyKind.AltGr), key => Assert.False(key.IsUnavailable));
+        arcadia.Press(UiAction.ViewOptions);
+        Assert.Equal("GOG Galaxy ", editor.Text);
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "T137-6")]
     public async Task A_valid_keyword_holds_at_once_in_the_search_and_its_chip()
     {
         IReadOnlyList<LauncherSpec> launchers =
@@ -270,6 +353,13 @@ public sealed class LauncherPageTests
         arcadia.Press(UiAction.Accept);
         Assert.Null(arcadia.Main.Toast.Text);
     }
+
+    /// <summary>The key that types <paramref name="character"/> on the normal level.</summary>
+    private static BoardKeyViewModel KeyWith(OnScreenKeyboardViewModel keyboard, char character) =>
+        keyboard.Keys.Single(key => key.IsCharacter && key.Key.Cap!.On(KeyLevel.Normal) == character);
+
+    private static IEnumerable<BoardKeyViewModel> KeysOf(OnScreenKeyboardViewModel keyboard, params BoardKeyKind[] kinds) =>
+        keyboard.Keys.Where(key => kinds.Contains(key.Key.Kind) && !key.IsHidden);
 }
 
 internal static class LauncherPageDriving

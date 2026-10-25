@@ -1,8 +1,7 @@
 # Roadmap
 
 Open work is tracked as **GitHub issues** (label `roadmap`, next up: `prio:next`).
-Roadmap: https://github.com/jc-sw-git/Arcadia/issues/26 – below it one epic per area (`type:epic`)
-as a sub-issue; the tasks hang as sub-issues on their epic. Features are `type:story`
+One epic per area (`type:epic`); the tasks hang as sub-issues on their epic. Features are `type:story`
 and start with a story line, bugs `bug`, technical work `type:tech-debt`.
 Manual tests per iteration and the course of an iteration: `docs/testplans/`.
 

@@ -8,7 +8,7 @@ reference for porting (binary VDF codec, scanner ideas, architecture notes).
 - **Designs (source of truth for UI):** https://claude.ai/artifact/8A9qxc67RcsuFmavaqCAuN
   (artboards: library, detail page, search, artwork modal, Spotify, launcher settings,
   localization, appearance, Big Picture settings, desktop mode). Read it before building UI.
-- **Open work:** GitHub issues (label `roadmap`). Roadmap #26 → one epic per area (`type:epic`)
+- **Open work:** GitHub issues (label `roadmap`). One epic per area (`type:epic`)
   → tasks, all linked as GitHub sub-issues. Add new issues as a sub-issue of the matching epic
   (`gh api -X POST repos/jc-sw-git/Arcadia/issues/<epic>/sub_issues -F sub_issue_id=<issue id, not number>`).
   Features are `type:story` and start with a `> **Story:**` line. See `docs/roadmap.md`.

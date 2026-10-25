@@ -273,7 +273,8 @@ internal sealed class ArcadiaWindow : IDisposable
             ? new Rect(control.Bounds.Size).TransformToAABB(transform)
             : throw new InvalidOperationException($"{control} steht nicht im Fenster.");
 
-    public Point CentreOf(Control control) => Bounds(control).Center;
+    /// <summary>The middle of the part of <paramref name="control"/> inside the window, where a click reaches it.</summary>
+    public Point CentreOf(Control control) => Bounds(control).Intersect(new Rect(Window.ClientSize)).Center;
 
     /// <summary>A colour of <c>Theme.axaml</c>, e.g. <c>BgColor</c>.</summary>
     public static Color ThemeColour(string key) => ThemeResource<Color>(key);

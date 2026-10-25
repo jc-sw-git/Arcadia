@@ -4,6 +4,7 @@ using Arcadia.App.Views;
 using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -58,42 +59,40 @@ public sealed class DetailPageViewTests
         var games = main.PageGames.Select(tile => tile.Title).ToList();
         OpenByHoldingA(arcadia);
 
-        // RT: the pages slide to the left (the track starts right of its rest and moves back to it), LT the other way.
-        // Read before the next frame: the slide runs on the render clock, which is real time.
-        arcadia.Arcadia.Press(UiAction.NextPage);
-        Assert.True(Slide(arcadia) > 0, $"RT schiebt nach links: Spur bei {Slide(arcadia)}");
+        // LT/RT slide the track to its new place. Only that a slide is set up is checked: headless, the transform's
+        // transition doesn't run on the render clock, so its direction and smoothness stay with the manual test.
+        arcadia.Press(UiAction.NextPage);
         AssertDetailOf(arcadia, games[1]);
-        Assert.Equal(0, Slide(arcadia.WaitForTransitions()), 1);
-        arcadia.Arcadia.Press(UiAction.PreviousPage);
-        Assert.True(Slide(arcadia) < 0, $"LT schiebt nach rechts: Spur bei {Slide(arcadia)}");
+        Assert.Contains(Track(arcadia).Transitions ?? [], transition =>
+            transition is DoubleTransition { Duration.TotalMilliseconds: > 0 } slide && slide.Property == TranslateTransform.XProperty);
+        arcadia.Press(UiAction.PreviousPage);
         AssertDetailOf(arcadia, games[0]);
 
         // Before the first stands the last, after the last the first.
-        arcadia.WaitForTransitions().Press(UiAction.PreviousPage);
+        arcadia.Press(UiAction.PreviousPage);
         Assert.Equal("31 von 31", main.Detail!.PositionText);
         arcadia.Press(UiAction.NextPage);
         AssertDetailOf(arcadia, games[0]);
 
         // Pressed quickly three times, three games on.
-        arcadia.WaitForTransitions().Press(UiAction.NextPage, times: 3);
+        arcadia.Press(UiAction.NextPage, times: 3);
         AssertDetailOf(arcadia, games[3]);
-        arcadia.WaitForTransitions();
 
         // A click on a neighbour, on RT and LT at the edges.
         arcadia.Click(NeighbourButton(arcadia, offset: 1));
         AssertDetailOf(arcadia, games[4]);
-        arcadia.WaitForTransitions().Click(CarouselButton(arcadia, "RT"));
+        arcadia.Click(CarouselButton(arcadia, next: true));
         AssertDetailOf(arcadia, games[5]);
-        arcadia.WaitForTransitions().Click(CarouselButton(arcadia, "LT"));
+        arcadia.Click(CarouselButton(arcadia, next: false));
         AssertDetailOf(arcadia, games[4]);
-        arcadia.WaitForTransitions().Click(NeighbourButton(arcadia, offset: -1));
+        arcadia.Click(NeighbourButton(arcadia, offset: -1));
         AssertDetailOf(arcadia, games[3]);
 
         // The wheel, one notch one game, down the next; Page Up/Down and Shift+arrows.
         var view = arcadia.Window.GetVisualDescendants().OfType<GameDetailView>().Single();
-        arcadia.WaitForTransitions().Wheel(view, notches: -1);
+        arcadia.Wheel(view, notches: -1);
         AssertDetailOf(arcadia, games[4]);
-        arcadia.WaitForTransitions().Wheel(view, notches: 1);
+        arcadia.Wheel(view, notches: 1);
         AssertDetailOf(arcadia, games[3]);
         arcadia.Key(Key.PageDown);
         AssertDetailOf(arcadia, games[4]);
@@ -152,13 +151,14 @@ public sealed class DetailPageViewTests
         var card = arcadia.Bounds(Card(page));
         Assert.All(buttons, button => Assert.True(card.Contains(arcadia.Bounds(button)), $"{Label(button)} ragt aus der Karte."));
 
-        // The D-pad skips the disabled buttons; the focused one's hint stands below the rows.
+        // The D-pad skips the disabled buttons. Since the owner's change of 2026-10-21 only "Spielen" has a line below
+        // the rows; a disabled button says why in its tooltip.
         arcadia.Press(UiAction.Right);
         Assert.Equal("In GOG Galaxy öffnen", Label(Focused(arcadia)));
         arcadia.Press(UiAction.Down);
         Assert.Equal("Deinstallieren …", Label(Focused(arcadia)));
-        var hint = arcadia.OneWithText("Nur in GOG Galaxy möglich – öffnet GOG Galaxy");
-        Assert.True(arcadia.Bounds(hint).Top > arcadia.Bounds(buttons[4]).Bottom, "Hinweis unter den Reihen");
+        Assert.Equal("Folgt in einer späteren Version", ToolTip.GetTip(buttons[1]));
+        Assert.Empty(arcadia.WithText("Nur in GOG Galaxy möglich – öffnet GOG Galaxy"));
 
         // ⧉ opens no menu here.
         arcadia.Press(UiAction.Options);
@@ -251,8 +251,8 @@ public sealed class DetailPageViewTests
             .ToList();
     }
 
-    private static double Slide(ArcadiaWindow arcadia) =>
-        ((TranslateTransform)arcadia.Window.GetVisualDescendants().OfType<Panel>().Single(panel => panel.Name == "Track").RenderTransform!).X;
+    private static TranslateTransform Track(ArcadiaWindow arcadia) =>
+        (TranslateTransform)arcadia.Window.GetVisualDescendants().OfType<Panel>().Single(panel => panel.Name == "Track").RenderTransform!;
 
     private static List<Control> Pages(ArcadiaWindow arcadia) => arcadia.Window.GetVisualDescendants()
         .OfType<Panel>()
@@ -269,9 +269,11 @@ public sealed class DetailPageViewTests
         Pages(arcadia).Single(page => page.DataContext is GameDetailPageViewModel side && side.Offset == offset)
             .GetVisualChildren().OfType<Button>().Single();
 
-    private static Button CarouselButton(ArcadiaWindow arcadia, string pad) => arcadia.Window.GetVisualDescendants()
+    /// <summary>RT at the right edge or LT at the left; after a click they name the keys E and Q.</summary>
+    private static Button CarouselButton(ArcadiaWindow arcadia, bool next) => arcadia.Window.GetVisualDescendants()
         .OfType<Button>()
-        .Single(button => button.Classes.Contains("carouselNav") && button.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == pad));
+        .Single(button => button.Classes.Contains("carouselNav") && button.IsEffectivelyVisible
+            && button.HorizontalAlignment == (next ? Avalonia.Layout.HorizontalAlignment.Right : Avalonia.Layout.HorizontalAlignment.Left));
 
     private static List<Button> DetailButtons(Control page) => page.GetVisualDescendants()
         .OfType<Button>()

@@ -54,8 +54,8 @@ For bugs that aren't obvious from the code, or a fix that didn't hold, use the s
 ## Definition of Done
 
 A change (PR) is done when all of this holds. Every feature iteration ends with a code review
-issue (e.g. #66) that checks the whole milestone again, then a review of the test plans for drift
-(manual retests only where needed); this list keeps both small. Larger review findings become `type:tech-debt` issues at
+issue (e.g. #66) that checks the whole milestone again, then an acceptance review of the test plans
+(drift, deferred and end-only cases); this list keeps both small. Larger review findings become `type:tech-debt` issues at
 the start of the next feature iteration. Process and test plan format: `docs/testplans/README.md`.
 
 - **Builds and tests:** `dotnet build` without warnings, `dotnet test` green, CI green on all platforms.
@@ -82,9 +82,9 @@ the start of the next feature iteration. Process and test plan format: `docs/tes
   the test runs done during implementation with their real environment. If nothing new needs a
   manual test (e.g. a refactoring of features already covered by tests), the issue's section
   says so in one line with the reason. The `Testplan` CI check fails without the section.
-- **Tested before merge:** the issue's `E2E: yes` cases are acceptance tests in the same PR before the owner tests;
-  then the owner runs the issue's whole test plan file, sends feedback in one batch, and it is fixed together
-  with Codex's PR comments in the same thread (details: `docs/testplans/README.md` → Before the merge).
+- **Tested before merge:** all of the issue's tests (unit, integration, an acceptance test per `E2E: yes` case) are in
+  the same PR before the owner tests; then the owner runs the issue's whole test plan file and Codex reviews; feedback
+  is fixed in one batch in the same thread (details: `docs/testplans/README.md` → Before the merge).
 - **Performant:** no blocking work on the UI thread; code on a hot path (start, scan, library,
   input, running in the background beside a game) stays within the budgets below, measured when touched.
 
@@ -97,10 +97,9 @@ safety, 3. controller first, 4. performance, 5. readability and maintainability,
 scalability. Performance beats readability only when a measurement breaks a budget. A conflict
 decided on purpose is named in the PR (and in the review issue).
 
-**Iterations:** feature iteration N (milestone "Iteration N": issues → code review → test plan review →
-retrospective of the processes (own issue, keep, change or drop each) → release), then acceptance iteration N (milestone "Acceptance Iteration N": the core
-flows of N become automated acceptance tests in CI; the other `E2E: yes` cases become issues of N+1, see `docs/testplans/README.md`). Feature iteration N+1 starts only
-when acceptance iteration N is closed, so a change in N+1 that breaks a feature of N shows at once.
+**Iterations:** milestone "Iteration N": issues, each with all its tests → code review → acceptance review →
+retrospective of the processes (own issue, keep, change or drop each) → release; then iteration N+1. There is no separate
+acceptance iteration (owner 2026-10-25; "Abnahme Iteration 1" was the last). Details: `docs/testplans/README.md`.
 
 ## Layout
 

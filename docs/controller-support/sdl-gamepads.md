@@ -34,4 +34,7 @@ Product rules (by position, extra buttons, what counts): `docs/product/controls.
   probe and no mouse or keys from its desktop layout. Windows itself sends `VK_GAMEPAD_*` keys (`0xC3`–`0xDA`) as
   simulated input to the window in front for an XInput pad, also with Steam closed (they switched tabs in Windows
   Terminal). SDL also listed the Steam Controller (`28DE:1304`, HID), which Arcadia ignores.
-  Not seen yet: DualSense and Switch Pro (Steam Input on: still read? desktop layout?).
+  Second run, by cable: the DualSense (`054C:0CE6`, HID) was read with Steam-Eingabe off and on, in front and in the
+  background, touchpad included, without any mouse or keys from Steam. The owner's Switch Pro (`057E:2009`, HID)
+  connected, SDL got only the real presses, but it vanished after about 10 s both times, and while connected Windows
+  sent about 200 `VK_GAMEPAD_*` keys a second (the "error codes" in the terminal); the owner suspects the pad is broken.

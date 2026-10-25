@@ -1,45 +1,47 @@
 # Arcadia
 
-Ein Game-Launcher, der alle anderen Launcher vereint. Jeder verbundene Launcher
-(Steam, Epic, GOG, Ubisoft, EA, Xbox, Battle.net, Amazon, eigene) bekommt einen
-eigenen Tab. Arcadia läuft im **Big-Picture-Modus** komplett per Controller und im
-**Desktop-Modus** mit Maus und Tastatur.
+A game launcher that unites all other launchers. Every connected launcher
+(Steam, Epic, GOG, Ubisoft, EA, Xbox, Battle.net, Amazon, your own) gets its own
+tab. Arcadia runs fully by controller in **Big Picture mode** and with mouse and
+keyboard in **desktop mode**.
 
-> Status: **vor der ersten Version (0.x).** Steam und Epic laufen echt (Bibliothek,
-> Spielstart, Installationen, Updates), die übrigen Launcher gibt es bisher nur als
-> Demo-Daten. Dazu Detailseite, Kontextmenü, Suche über alle Launcher mit
-> Bildschirmtastatur und Steam Controller Support. Alles Weitere siehe
+> Status: **before the first release (0.x).** Steam and Epic work for real (library,
+> game start, installs, updates); the other launchers exist only as demo data so far.
+> On top of that: detail page, context menu, search across all launchers with an
+> on-screen keyboard, and Steam Controller support. Everything else: see
 > [docs/roadmap.md](docs/roadmap.md).
 >
-> Arcadia ist aus SteamButler hervorgegangen. Der alte Rust-Code liegt als
-> Vorlage für die Portierung unter [`legacy/steambutler-rs`](legacy/steambutler-rs).
+> The user interface is German for now; localization is planned.
+>
+> Arcadia grew out of SteamButler. The old Rust code lives in
+> [`legacy/steambutler-rs`](legacy/steambutler-rs) as a reference for porting.
 
 ## Installation
 
-Nur Windows x64. Den Installer `Arcadia-win-Setup.exe` gibt es unter
-[Releases](https://github.com/jc-sw-git/Arcadia/releases); er installiert ohne Adminrechte
-nach `%LOCALAPPDATA%\Arcadia` und Arcadia aktualisiert sich danach selbst.
+Windows x64 only. The installer `Arcadia-win-Setup.exe` is available under
+[Releases](https://github.com/jc-sw-git/Arcadia/releases); it installs without admin rights
+to `%LOCALAPPDATA%\Arcadia`, and Arcadia updates itself from then on.
 
-Der Installer ist **noch nicht signiert**. Windows SmartScreen warnt deshalb beim ersten
-Start („Der Computer wurde durch Windows geschützt“): „Weitere Informationen“ → „Trotzdem
-ausführen“. Wer dem nicht traut, baut Arcadia selbst (siehe unten).
+The installer is **not signed yet**, so Windows SmartScreen warns on the first start
+("Windows protected your PC"): "More info" → "Run anyway". If you don't trust that,
+build Arcadia yourself (see below).
 
-## Aufbau
+## Structure
 
-.NET 10, C#, Oberfläche mit [Avalonia UI](https://avaloniaui.net/) (Windows, macOS, Linux).
+.NET 10, C#, user interface with [Avalonia UI](https://avaloniaui.net/) (Windows, macOS, Linux).
 
-| Projekt | Zweck |
-|---------|-------|
-| `src/Arcadia.Core` | Plattformunabhängig: Modell (`Game`, `LauncherInfo`, `LaunchTarget`), Sortierung, Paginierung samt Seitengrößen-Regel, Such-Präfix (`/steam-epic …`) |
-| `src/Arcadia.Launchers` | Scanner je Launcher (Steam und Epic real, Demo-Daten für die übrigen), Spielstart und Installation |
-| `src/Arcadia.Input` | Controller-Eingabe (XInput unter Windows) |
-| `src/Arcadia.ControllerSupport` | „Steam Controller Support“: verwaltet SISR (Installation, Start/Stopp, Updates) und überwacht SISR, VIIPER, usbip-Treiber und Steam |
-| `src/Arcadia.App` | Avalonia-Oberfläche (MVVM mit CommunityToolkit.Mvvm) |
-| `tests/Arcadia.Core.Tests` | xUnit-Tests für Kern und Scanner |
+| Project | Purpose |
+|---------|---------|
+| `src/Arcadia.Core` | Platform-independent: model (`Game`, `LauncherInfo`, `LaunchTarget`), sorting, paging including the page size rule, search prefix (`/steam-epic …`) |
+| `src/Arcadia.Launchers` | Scanner per launcher (Steam and Epic real, demo data for the others), game start and installation |
+| `src/Arcadia.Input` | Controller input (XInput on Windows) |
+| `src/Arcadia.ControllerSupport` | "Steam Controller Support": manages SISR (installation, start/stop, updates) and monitors SISR, VIIPER, the usbip driver and Steam |
+| `src/Arcadia.App` | Avalonia user interface (MVVM with CommunityToolkit.Mvvm) |
+| `tests/Arcadia.Core.Tests` | xUnit tests for core and scanners |
 
-## Build & Ausführen
+## Build & run
 
-Voraussetzung: [.NET 10 SDK](https://dotnet.microsoft.com/download).
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
 ```bash
 dotnet build
@@ -47,56 +49,55 @@ dotnet test
 dotnet run --project src/Arcadia.App -- --demo
 ```
 
-| Argument | Wirkung |
-|----------|---------|
-| `--demo` | Ergänzt fiktive Bibliotheken für Steam, GOG, Ubisoft, EA, Xbox, Battle.net und Amazon |
-| `--fullscreen` | Startet im Vollbild (umschalten mit `F11`) |
+| Argument | Effect |
+|----------|--------|
+| `--demo` | Adds fictional libraries for Steam, GOG, Ubisoft, EA, Xbox, Battle.net and Amazon |
+| `--fullscreen` | Starts in full screen (toggle with `F11`) |
 
-## Steuerung
+## Controls
 
-| Aktion | Controller | Tastatur |
+| Action | Controller | Keyboard |
 |--------|-----------|----------|
-| Navigieren | D-Pad / linker Stick | Pfeiltasten |
-| Spielen (beim Loslassen) | A | Enter / Leertaste |
-| Zurück / Dialog schließen | B | Esc |
-| Launcher wechseln | LB / RB | Q / E, Strg+Tab |
-| Seite wechseln (Detailseite: Spiel wechseln) | LT / RT | Bild ↑ / Bild ↓, Umschalt+← / Umschalt+→ |
-| Ansicht (Sortierung, pro Seite) | Y | V |
-| Optionen eines Spiels (Kontextmenü) | View (⧉) | Kontextmenü-Taste, Umschalt+F10, Rechtsklick |
-| Details eines Spiels | A halten (1 s) oder ⧉ → „Details anzeigen“ | Enter halten |
-| Einstellungen | Menü (≡) | F2 |
-| Suche über alle Launcher | X | F, Strg+F |
-| In der Suche: löschen / Leerzeichen / Filter und Sortierung / Treffer starten / Tastaturlayout | X / Y / L3 / ≡ / R3 | Rücktaste / Leertaste / Klick auf den Sortier-Knopf / Enter / Klick auf den Globus |
+| Navigate | D-pad / left stick | Arrow keys |
+| Play (on release) | A | Enter / Space |
+| Back / close dialog | B | Esc |
+| Switch launcher | LB / RB | Q / E, Ctrl+Tab |
+| Switch page (detail page: switch game) | LT / RT | Page Up / Page Down, Shift+← / Shift+→ |
+| View (sorting, per page) | Y | V |
+| Options of a game (context menu) | View (⧉) | Menu key, Shift+F10, right click |
+| Details of a game | Hold A (1 s) or ⧉ → "Details anzeigen" | Hold Enter |
+| Settings | Menu (≡) | F2 |
+| Search across all launchers | X | F, Ctrl+F |
+| In search: delete / space / filter and sorting / start result / keyboard layout | X / Y / L3 / ≡ / R3 | Backspace / Space / click the sort button / Enter / click the globe |
 
-Maus: Klick wählt ein Spiel aus, Doppelklick startet es. Auf der Detailseite blättert das Mausrad durch die Spiele.
+Mouse: a click selects a game, a double click starts it. On the detail page the mouse wheel scrolls through the games.
 
-## Steam Controller Support
+## Steam Controller support
 
-Steam reicht den Steam Controller an Programme, die es nicht selbst gestartet hat, nur als
-Maus und Tastatur weiter. Ist „Steam Controller Support“ in den Einstellungen eingeschaltet,
-betreibt Arcadia deshalb [SISR](https://github.com/Alia5/SISR): Es nimmt den Controller von
-Steam Input entgegen und stellt ihn systemweit als Xbox-Controller bereit — für Arcadia und für
-Spiele aus anderen Launchern.
+Steam passes the Steam Controller on to programs it didn't start itself only as mouse and
+keyboard. When "Steam Controller Support" is switched on in the settings, Arcadia therefore
+runs [SISR](https://github.com/Alia5/SISR): it takes the controller from Steam Input and
+provides it system-wide as an Xbox controller, for Arcadia and for games from other launchers.
 
-- Arcadia lädt SISR von GitHub (SHA-256-geprüft) nach `%LOCALAPPDATA%\Arcadia\sisr`, startet es
-  unsichtbar und beendet es mit Arcadia.
-- Bei Spielen aus dem Steam-Launcher pausiert SISR (sonst doppelte Eingaben); pro Spiel umstellbar.
-- Überwacht werden SISR, VIIPER, der usbip-Treiber (min. 0.9.8.1), Steam und Steams
-  Debug-Schnittstelle; Probleme erscheinen als Warnung mit „Beheben“-Knopf.
-- Neue SISR-Versionen werden täglich geprüft und zum Update angeboten.
+- Arcadia downloads SISR from GitHub (SHA-256 verified) to `%LOCALAPPDATA%\Arcadia\sisr`, starts it
+  invisibly and quits it with Arcadia.
+- For games from the Steam launcher SISR pauses (otherwise input arrives twice); this can be changed per game.
+- Monitored are SISR, VIIPER, the usbip driver (at least 0.9.8.1), Steam and Steam's
+  debug interface; problems show up as a warning with a fix button.
+- New SISR versions are checked daily and offered as an update.
 
-Logs: `%APPDATA%\Arcadia\logs\` (`arcadia.log`, `sisr.log`). Drittsoftware: siehe
+Logs: `%APPDATA%\Arcadia\logs\` (`arcadia.log`, `sisr.log`). Third-party software: see
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-## Mitmachen
+## Contributing
 
-Beiträge sind willkommen: siehe [CONTRIBUTING.md](CONTRIBUTING.md). Sicherheitslücken bitte
-nicht als Issue, sondern wie in [SECURITY.md](SECURITY.md) beschrieben melden.
+Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Please report security
+vulnerabilities not as an issue but as described in [SECURITY.md](SECURITY.md).
 
-## Lizenz
+## License
 
 Copyright (C) 2026 Juri Himmelreich
 
-Arcadia ist freie Software unter der **GNU General Public License v3.0** — siehe
-[LICENSE](LICENSE). Wer Arcadia oder eine abgewandelte Version weitergibt, muss sie ebenfalls
-unter GPL-3.0 inklusive Quellcode weitergeben. Drittsoftware: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+Arcadia is free software under the **GNU General Public License v3.0**, see
+[LICENSE](LICENSE). Anyone who distributes Arcadia or a modified version must also
+distribute it under GPL-3.0 including the source code. Third-party software: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

@@ -27,8 +27,8 @@ are tricky for this work. Skip what `CLAUDE.md`, `docs/product/` or an earlier d
 Ask in German (chat), numbered, each with your recommendation, worded so "ja" accepts it:
 
 ```
-**F1 – <Titel>:** <Frage, ggf. mit Optionen>
-➡️ Empfehlung: <Antwort>
+**F1 – <title>:** <question, with options if any>
+➡️ Empfehlung: <answer>
 ```
 
 Keep rounds short (about five questions). After each answer, recompute the frontier.

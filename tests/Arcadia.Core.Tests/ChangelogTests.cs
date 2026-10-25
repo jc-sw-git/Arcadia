@@ -5,9 +5,9 @@ namespace Arcadia.Core.Tests;
 public class ChangelogTests
 {
     private const string Body = """
-        **Installation:** `Arcadia-win-Setup.exe` herunterladen und starten.
+        **Installation:** download and run `Arcadia-win-Setup.exe`.
 
-        Arcadia ist freie Software (GPL-3.0). Quelltext dieser Version: https://github.com/jc-sw-git/Arcadia/tree/v0.2.0
+        Arcadia is free software (GPL-3.0). Source code of this version: https://github.com/jc-sw-git/Arcadia/tree/v0.2.0
 
         ## What's Changed
         * Show the changelog before updating by @jc-sw-git in https://github.com/jc-sw-git/Arcadia/pull/70

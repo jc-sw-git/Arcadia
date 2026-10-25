@@ -173,9 +173,6 @@ public partial class App : Application
             _gamepad.ButtonReleased += routing.Release;
             _gamepad.Start();
 
-            var clock = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => viewModel.Status.UpdateClock());
-            clock.Start();
-
             var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), "SISR-Überwachung"));
             monitoring.Start();
 
@@ -232,7 +229,6 @@ public partial class App : Application
 
             desktop.ShutdownRequested += (_, _) =>
             {
-                clock.Stop();
                 monitoring.Stop();
                 sisrWatch.Stop();
                 installs.Stop();

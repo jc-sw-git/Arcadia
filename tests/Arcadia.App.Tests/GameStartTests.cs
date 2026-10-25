@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.Core.Launchers;
 using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;
@@ -84,5 +85,77 @@ public sealed class GameStartTests
         Assert.False(arcadia.Main.IsDetailOpen);
         Assert.False(tile.IsRunningOrStarting);
         Assert.Empty(arcadia.Starts.Keys);
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "T27-1")]
+    public async Task A_start_that_fails_says_so_leaves_Arcadia_running_and_A_tries_again()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var tile = arcadia.Main.FocusedGame!;
+        arcadia.Starts.Failure = new IOException("Die Datei ist gesperrt.");
+
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text?.Contains("konnte nicht gestartet werden") == true, "ein Hinweis soll den Fehlstart nennen");
+        Assert.Equal($"„{tile.Title}“ konnte nicht gestartet werden: Die Datei ist gesperrt.", arcadia.Main.Toast.Text);
+        Assert.False(arcadia.Main.FocusedGame!.IsRunningOrStarting);
+        Assert.Equal("Spielen", arcadia.Main.FocusedGame.PrimaryActionText);
+
+        // The launcher works again; the second A starts the game.
+        arcadia.Starts.Failure = null;
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 2, "A soll den Start erneut versuchen");
+        Assert.Equal([tile.Game.Key, tile.Game.Key], arcadia.Starts.Keys);
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "T27-3")]
+    public async Task An_unexpected_error_goes_with_its_stack_trace_into_the_log_a_hint_names_the_log_and_the_controller_still_works()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var tile = arcadia.Main.FocusedGame!;
+        var marker = $"Unerwartet {Guid.NewGuid():N}";
+        arcadia.Starts.Failure = new NotSupportedException(marker);
+
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text?.Contains("arcadia.log") == true, "ein Hinweis soll das Log nennen");
+        Assert.Equal($"„{tile.Title}“ konnte wegen eines unerwarteten Fehlers nicht gestartet werden – Details stehen in arcadia.log.", arcadia.Main.Toast.Text);
+
+        var entry = ArcadiaDriver.Log.Split('\n').SkipWhile(line => !line.Contains(marker)).Take(3).ToList();
+        Assert.True(entry.Count == 3, $"Der Fehler fehlt in arcadia.log: {marker}");
+        Assert.Contains(nameof(NotSupportedException), entry[0]);
+        Assert.Contains(" at ", entry[1]);
+
+        // Arcadia goes on with the controller alone: on to the next installed game, which starts.
+        Assert.False(tile.IsRunningOrStarting);
+        do
+        {
+            arcadia.Press(UiAction.Right);
+        }
+        while (!arcadia.Main.FocusedGame!.IsInstalled);
+
+        var next = arcadia.Main.FocusedGame;
+        Assert.NotSame(tile, next);
+        arcadia.Starts.Failure = null;
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 2, "A soll das nächste Spiel starten");
+        Assert.Equal([tile.Game.Key, next.Game.Key], arcadia.Starts.Keys);
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "G-20")]
+    public async Task A_demo_game_shows_the_demo_hint_instead_of_an_error()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, 31, IsDemo: true)]);
+
+        // One demo game runs; another one is started.
+        var index = arcadia.Main.PageGames.ToList().FindIndex(tile => tile.IsInstalled && !tile.IsRunningOrStarting);
+        arcadia.Press(UiAction.Right, times: index);
+        var tile = arcadia.Main.FocusedGame!;
+
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text?.StartsWith("Demo-Spiel") == true, "der Demo-Hinweis soll erscheinen");
+        Assert.Equal($"Demo-Spiel: Hier würde jetzt „{tile.Title}“ gestartet.", arcadia.Main.Toast.Text);
+        await arcadia.WaitUntilAsync(() => !arcadia.Main.FocusedGame!.IsRunningOrStarting, "die Kachel soll wieder „Spielen“ zeigen");
     }
 }

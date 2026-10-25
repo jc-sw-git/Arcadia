@@ -11,7 +11,7 @@ namespace Arcadia.App.Tests;
 /// A launcher with the demo library's games whose starts are recorded instead of run, so a test sees which game the
 /// controller started, on every platform and without a launcher installed.
 /// </summary>
-internal sealed class TestLauncher(LauncherSpec spec, DateTimeOffset now, RecordedStarts starts) : ILauncherIntegration
+internal sealed class TestLauncher(LauncherSpec spec, DateTimeOffset now, RecordedStarts starts, LauncherInstalls installs) : ILauncherIntegration
 {
     public LauncherInfo Launcher => spec.Launcher;
 
@@ -21,13 +21,54 @@ internal sealed class TestLauncher(LauncherSpec spec, DateTimeOffset now, Record
 
     public ILauncherClient? Client { get; } = new RecordingClient(spec.Launcher.Id, starts);
 
-    public IInstallMonitor? InstallMonitor => null;
+    public IInstallMonitor? InstallMonitor { get; } = new TestInstallMonitor(spec.Launcher.Id, installs);
 
     public IRunningGamesMonitor? RunningGames => null;
 
     public IReadOnlyCollection<string> ProgramNames => [];
 
     public string? Locate() => spec.IsInstalled ? "Test" : null;
+}
+
+/// <summary>
+/// What the launchers' own windows are installing, as a test sets it: Arcadia learns it when it polls the install
+/// monitors (<see cref="ArcadiaDriver.FollowInstallsAsync"/>), as from a download started in the launcher.
+/// </summary>
+internal sealed class LauncherInstalls
+{
+    private readonly Dictionary<string, InstallProgress> _active = [];
+
+    public void Set(Game game, InstallProgress? progress)
+    {
+        lock (_active)
+        {
+            if (progress is null)
+            {
+                _active.Remove(game.Key);
+            }
+            else
+            {
+                _active[game.Key] = progress;
+            }
+        }
+    }
+
+    public InstallSnapshot Of(string launcherId)
+    {
+        lock (_active)
+        {
+            var active = _active.Where(entry => Game.LauncherIdOf(entry.Key) == launcherId)
+                .ToDictionary(entry => entry.Key[(launcherId.Length + 1)..], entry => entry.Value);
+            return new InstallSnapshot(active, new Dictionary<string, InstallOutcome>());
+        }
+    }
+}
+
+internal sealed class TestInstallMonitor(string launcherId, LauncherInstalls installs) : IInstallMonitor
+{
+    public string LauncherId => launcherId;
+
+    public InstallSnapshot Poll() => installs.Of(launcherId);
 }
 
 internal sealed class FixedScanner(LauncherInfo launcher, IReadOnlyList<Game> games) : ILauncherScanner
@@ -61,10 +102,13 @@ internal static class TestGames
     };
 }
 
-/// <summary>The games the launchers were asked to start, in order.</summary>
+/// <summary>The games the launchers were asked to start, in order, failed attempts included.</summary>
 internal sealed class RecordedStarts
 {
     private readonly List<string> _keys = [];
+
+    /// <summary>Thrown by the launcher at every start while set, as by a launcher whose start fails.</summary>
+    public Exception? Failure { get; set; }
 
     public IReadOnlyList<string> Keys
     {
@@ -93,6 +137,11 @@ internal sealed class RecordingClient(string launcherId, RecordedStarts starts) 
     public Task StartAsync(Game game, IProgress<LaunchStage>? progress = null, CancellationToken cancellationToken = default)
     {
         starts.Add(game.Key);
+        if (starts.Failure is { } failure)
+        {
+            throw failure;
+        }
+
         return Task.CompletedTask;
     }
 }

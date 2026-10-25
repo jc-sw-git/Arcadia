@@ -31,3 +31,4 @@ Thumbs.db
 
 # Release builds (tools/release/Pack.ps1)
 /artifacts
+tools/dev/logs/

@@ -23,24 +23,36 @@ public sealed class GamepadPollsTests
         Assert.Equal(["+A", "-A"], _events);
     }
 
+    /// <summary>The feel of holding the D-pad: the first repeat after 400 ms, then one every 90 ms (written out, not taken from the code).</summary>
     [Fact]
-    public void The_D_pad_repeats_after_the_delay_at_the_interval()
+    public void The_D_pad_repeats_after_400_ms_and_then_every_90_ms()
     {
-        for (var now = 0; now <= GamepadPolls.RepeatDelayMs + (2 * GamepadPolls.RepeatIntervalMs); now += 10)
-        {
-            Poll(now, PadButtons.DPadRight);
-        }
+        Poll(0, PadButtons.DPadRight);
+        Poll(399, PadButtons.DPadRight);
+        Assert.Equal(["+DPadRight"], _events);
 
+        Poll(400, PadButtons.DPadRight);
+        Assert.Equal(2, _events.Count);
+
+        Poll(489, PadButtons.DPadRight);
+        Assert.Equal(2, _events.Count);
+
+        Poll(490, PadButtons.DPadRight);
+        Assert.Equal(3, _events.Count);
+
+        Poll(579, PadButtons.DPadRight);
+        Poll(580, PadButtons.DPadRight);
         Assert.Equal(["+DPadRight", "+DPadRight", "+DPadRight", "+DPadRight"], _events);
     }
 
     [Fact]
-    public void Held_just_short_of_the_delay_the_D_pad_does_not_repeat()
+    public void The_right_stick_repeats_too_but_A_does_not()
     {
-        Poll(0, PadButtons.DPadDown);
-        Poll(GamepadPolls.RepeatDelayMs - 1, PadButtons.DPadDown);
+        var held = Reading(PadButtons.A, rightStick: new StickPosition(0, -0.9));
+        _polls.Update([held], 0);
+        _polls.Update([held], 400);
 
-        Assert.Equal(["+DPadDown"], _events);
+        Assert.Equal(["+A", "+RightStickDown", "+RightStickDown"], _events.Order());
     }
 
     [Theory]

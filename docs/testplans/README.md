@@ -64,6 +64,10 @@ not the whole folder.
    - **Update cases** are tested with a second release candidate (e.g. rc.1 → rc.2 by self-update),
      not only with the next release.
    - **Mutation tests** (Stryker.NET): surviving mutants become tests or `type:tech-debt` issues.
+   - **CI health check** (owner 2026-10-25): from the iteration's workflow runs on GitHub, flag crossed
+     thresholds and other anomalies (new flaky tests, failing scheduled jobs, artifact storage running out).
+     Thresholds: a PR's CI run over ~10 min, the test step over ~8 min, more than ~150 window tests
+     (`ArcadiaWindow`), runs queueing while PRs are open. Each finding becomes an issue for iteration N+1.
    - **Findings:** before the release only what breaks data, security or a core function is fixed;
      everything else becomes an issue for iteration N+1. New ideas from the test are only filed as issues.
 4. **Retrospective** (own issue, only after code review and acceptance review): for each process

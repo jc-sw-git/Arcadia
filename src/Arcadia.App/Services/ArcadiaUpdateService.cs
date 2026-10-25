@@ -11,7 +11,7 @@ namespace Arcadia.App.Services;
 /// request), collects the changelog since the running version, downloads on request and restarts
 /// into the new version. Only an installed Arcadia updates; from bin/ this stays idle.
 /// </summary>
-public sealed class ArcadiaUpdateService(HttpClient http, TimeProvider time)
+public sealed class ArcadiaUpdateService
 {
     public const string RepositoryUrl = "https://github.com/jc-sw-git/Arcadia";
 
@@ -20,9 +20,24 @@ public sealed class ArcadiaUpdateService(HttpClient http, TimeProvider time)
     /// <summary>Velopack's own limit is 30 minutes, which would leave "Nach Updates suchen" spinning that long.</summary>
     private static readonly TimeSpan CheckTimeout = TimeSpan.FromSeconds(30);
 
-    // Stable releases only; pre-release tags (v0.2.0-beta.1) are for testers who install them by hand.
-    private readonly UpdateManager _manager = new(new GithubSource(RepositoryUrl, accessToken: null, prerelease: false));
+    private readonly HttpClient http;
+    private readonly TimeProvider time;
+    private readonly UpdateManager _manager;
     private UpdateInfo? _update;
+
+    // Stable releases only; pre-release tags (v0.2.0-beta.1) are for testers who install them by hand.
+    public ArcadiaUpdateService(HttpClient http, TimeProvider time)
+        : this(http, time, new UpdateManager(new GithubSource(RepositoryUrl, accessToken: null, prerelease: false)))
+    {
+    }
+
+    /// <summary>With another installation and release feed, so the acceptance tests can stand in for GitHub.</summary>
+    internal ArcadiaUpdateService(HttpClient http, TimeProvider time, UpdateManager manager)
+    {
+        this.http = http;
+        this.time = time;
+        _manager = manager;
+    }
 
     /// <summary>Raised on any state change, possibly off the UI thread.</summary>
     public event EventHandler? Changed;

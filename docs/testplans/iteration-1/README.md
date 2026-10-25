@@ -53,6 +53,7 @@ und trägt sie hier ein; wer ein Issue testet, liest nur dessen Datei.
 | [184-abnahmetests-view-model-ebene.md](184-abnahmetests-view-model-ebene.md) | #184 | Abnahmetests auf View-Model-Ebene für die Kernabläufe | 0 |
 | [187-abnahmetests-view-model-bibliothek-detailseite.md](187-abnahmetests-view-model-bibliothek-detailseite.md) | #187 | Abnahmetests View-Model: Bibliothek, Detailseite, Spielstart und App-Start | 0 |
 | [188-abnahmetests-suche-und-tastatur.md](188-abnahmetests-suche-und-tastatur.md) | #188 | Abnahmetests View-Model: Suche und Bildschirmtastatur | 0 |
+| [189-abnahmetests-einstellungen-controller-updates.md](189-abnahmetests-einstellungen-controller-updates.md) | #189 | Abnahmetests View-Model: Einstellungen, Mausmodus, Controller-Support und Updates | 0 |
 
 ## Explorativer Test
 
@@ -72,7 +73,7 @@ Funde am 0.1.0-rc.1 (Juri, 2026-10-24, bei Testfällen und nebenbei):
 Wird beim Abschluss-Test aus allen Testfällen mit `E2E: ja` erstellt und in der Abnahme-Iteration
 umgesetzt.
 
-Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #187, #188; Regeln im [README](../README.md)):
+Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #187, #188, #189; Regeln im [README](../README.md)):
 
 | Testfall | Test | Abdeckung |
 |---|---|---|
@@ -125,6 +126,26 @@ Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #187, #18
 | T95-8 | `RunningGameTests.In_the_demo_data_one_game_per_launcher_runs_and_offers_Zurueck_ins_Spiel_but_no_uninstall` | teilweise: ohne Größe und Lage von „Zurück ins Spiel“ und „Optionen“, ohne Tastatur |
 | T15-1 | `SettingsTests.Menu_opens_the_settings_and_B_goes_back_to_the_same_tab_page_and_game` | teilweise: Controller, nicht Enter/Esc und Klick |
 | G-31 | `SettingsTests.The_settings_are_worked_with_the_controller_alone_rows_categories_and_values` | teilweise: Scrollen ins Bild nicht |
+| T15-5 | `SettingsRowTests.The_footer_names_only_the_buttons_of_the_focused_row` | teilweise: was der Footer nennt (◀▶, A mit Text, Kategorien), nicht der Wechsel zu Tasten und Maus nach Taste oder Klick |
+| T15-10 | `ControllerSupportTests.The_header_symbols_open_their_category_Controller_for_SISR_and_Ueber_Arcadia_for_Arcadias_update` | teilweise: Klick als Befehl des View Models, nicht auf das Symbol |
+| T15-11 | `SettingsRowTests.Choices_wrap_at_their_ends_and_switches_flip_with_either_arrow`, `…Steam_Controller_Kompatibilitaet_switches_with_either_arrow` | teilweise: ohne Schalter der Ersteinrichtung und ohne Taste A der Tastatur (die Tests drücken ◀) |
+| T23-2 | `UpdateTests.Without_a_newer_release_the_search_says_Arcadia_is_up_to_date_and_offers_no_update` | teilweise: Velopack mit `TestVelopackLocator` und eigener Quelle statt installiertem Arcadia und GitHub |
+| T23-4 | `UpdateTests.What_is_new_lists_the_changes_of_every_release_after_the_running_one_and_B_goes_back` | teilweise: wie T23-2 |
+| T64-7 | `MouseModeSettingsTests.Mausmodus_hold_and_speed_change_with_the_controller_apply_at_once_and_stay_after_a_restart` | teilweise: Werte und Neustart; wie sie wirken, prüft `MouseModeTests`; „startet immer im normalen Modus“ nicht (braucht das Fenster) |
+| T64-8 | `MouseModeSettingsTests.So_funktioniert_es_shows_the_buttons_and_the_limits` | teilweise: seit #15 eine Box im Infotext von „Mausmodus“ statt eines Dialogs mit A, B schließt die Einstellungen |
+| T64-10 | `ViewAndMenuTests.View_and_Menu_act_when_let_go_or_held_alone_a_moment`, `…pressed_together_open_nothing`, `…Menu_held_a_second_on_a_search_hit_still_opens_its_details`, `…With_a_game_in_front_or_in_the_mouse_mode_the_buttons_leave_Arcadia_alone` | teilweise: über `GamepadRouting` ohne XInput; von den anderen Tasten nur das Steuerkreuz |
+| T64-12 | `MouseModeSettingsTests.Mausmodus_Aus_dims_the_other_rows_which_keep_their_values_for_when_it_comes_back` | teilweise: die Einstellungen; ⧉ + ≡ und Fokuswechsel bei „Aus“ prüfen `MouseModeTests` und `MouseModeAutomationTests`, „Mausmodus aus“ nicht |
+| T64-15 | `MouseModeSettingsTests.The_mouse_mode_boxes_name_View_and_Menu_by_their_symbols_only` | teilweise: Texte, nicht die runde Umrandung |
+| T85-1 | `ControllerSupportTests.Without_SISR_or_what_it_needs_the_setting_offers_SISR_installieren_instead_of_the_switch` (vier Fälle) | ganz (Fake-Plattform) |
+| T85-2 | `ControllerSupportTests.With_Steam_running_SISR_installieren_asks_first_and_cancelling_installs_nothing` | ganz (Fake-Plattform) |
+| T85-9 | `ControllerSupportTests.Without_Windows_or_Steam_the_setting_is_greyed_out_says_why_and_A_does_nothing` | ganz (Fake-Plattform) |
+| T85-11 | `ControllerSupportTests.Steam_not_starting_within_a_minute_shows_Steam_startet_nicht_with_cancel_and_retry`, `…Steam_hanging_at_its_login_when_switching_on_shows_the_prompt_and_SISR_does_not_start` | ganz (Fake-Plattform, Uhr gefälscht) |
+| T85-14 | `ControllerSupportTests.While_Steam_or_SISR_start_the_switch_is_locked_and_other_buttons_do_nothing`, `…While_Steam_or_SISR_start_B_leaves_the_settings_at_once` (zwei Fälle), `…With_Steam_hanging_at_its_login_the_switch_stays_usable` | teilweise: Start von Steam und SISR; Beenden von selbst (nach dem Ende von Steam) nicht |
+| T85-16 | `ControllerSupportTests.Steam_hanging_at_its_login_for_over_30_seconds_shows_a_message_with_Steam_neu_starten_and_SISR_keeps_running` | ganz (Fake-Plattform) |
+| T92-1 | `ControllerSupportTests.The_setting_is_called_Steam_Controller_Kompatibilitaet_with_both_modes_and_no_text_says_Steam_Controller_Support` | teilweise: Einstellungen und Statusleiste, nicht die Deinstallationsfrage (Installer) |
+| T92-2 | `ControllerSupportTests.The_preview_shows_Steam_Input_for_Steam_games_and_Xbox_Controller_SISR_for_all_others` | teilweise: der Wert, nicht „ohne Dropdown-Pfeil“ |
+| T110-9 | `MouseModeSettingsTests.So_funktioniert_es_shows_the_buttons_and_the_limits`, `…Zurueck_zu_Arcadia_holds_from_1_to_9_seconds_without_Sofort` | ganz |
+| T127-2 | `ControllerSupportTests.On_the_detail_page_the_game_settings_show_no_note_below_the_buttons_and_the_context_menu_says_what_they_switch_to` | teilweise: ohne Tooltip über einem deaktivierten Button (Maus) |
 | T139-1 | `FirstRunTests.A_fresh_install_asks_first_with_the_launchers_found_switched_on`, `FirstRunTests.A_launcher_not_found_cannot_be_switched_on` | teilweise: ohne Spielzahl und Texte |
 | T139-3 | `FirstRunTests.Only_the_launchers_left_on_become_tabs_also_after_a_restart_and_the_question_does_not_come_again` | teilweise: „Fertig“ mit ≡, nicht Enter oder Klick |
 

@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.Input;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
@@ -8,7 +9,6 @@ using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Demo;
-using Arcadia.Input;
 using Avalonia.Threading;
 using Microsoft.Extensions.Time.Testing;
 
@@ -39,8 +39,9 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>How often the App reads the controllers (XInputGamepadSource).</summary>
     private static readonly TimeSpan PadPoll = TimeSpan.FromMilliseconds(8);
 
-    private readonly HttpClient _http = new();
+    private readonly HttpClient _http;
     private readonly bool _ownsFolder;
+    private readonly GamepadRouting _gamepad;
 
     static ArcadiaDriver()
     {
@@ -53,9 +54,13 @@ internal sealed class ArcadiaDriver : IDisposable
 
     private readonly GamepadPolls _pad = new();
 
-    private ArcadiaDriver(string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts, LauncherInstalls installs)
+    private ArcadiaDriver(string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts, LauncherInstalls installs, FakeSteam? steam, FakeReleases? releases)
     {
         Folder = folder;
+        Steam = steam;
+        Releases = releases;
+        _http = new HttpClient(new FakeNetwork(steam?.Sisr, releases));
+        steam?.Sisr.UseNetwork(_http);
         _ownsFolder = ownsFolder;
         Specs = launchers;
         Time = time;
@@ -70,10 +75,11 @@ internal sealed class ArcadiaDriver : IDisposable
         Settings = new SettingsService(new SettingsStore(SettingsPath));
         var firstRun = new FirstRunSetup(Settings, demo: false, forced: false);
         var registry = new LauncherRegistry(Launchers, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
-        var controllerSupport = new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform())
-        {
-            Log = AppLog.Write,
-        };
+        ControllerSupport = steam is null
+            ? new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform()) { Log = AppLog.Write }
+            : new ControllerSupportService(Settings, steam.Sisr, _http, time, steam) { Log = AppLog.Write };
+        Updates = releases is null ? new ArcadiaUpdateService(_http, time) : new ArcadiaUpdateService(_http, time, releases.Manager(folder));
+        Updates.Log = AppLog.Write;
         var launchedGames = new LaunchedGames();
         var installTracker = new InstallTracker(registry, time);
         var running = new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time)
@@ -84,8 +90,8 @@ internal sealed class ArcadiaDriver : IDisposable
         Main = new MainViewModel(
             new LibraryService(registry, time),
             new GameLaunchService(registry) { Log = AppLog.Write },
-            controllerSupport,
-            new ArcadiaUpdateService(_http, time) { Log = AppLog.Write },
+            ControllerSupport,
+            Updates,
             installTracker,
             running,
             launchedGames,
@@ -93,6 +99,7 @@ internal sealed class ArcadiaDriver : IDisposable
             new LauncherLogos(Settings, Path.Combine(folder, "logos")),
             firstRun,
             time);
+        _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time);
     }
 
     public string Folder { get; }
@@ -125,11 +132,28 @@ internal sealed class ArcadiaDriver : IDisposable
 
     public MainViewModel Main { get; }
 
+    /// <summary>Windows, Steam and SISR of the test; null: a PC without them, as on Linux.</summary>
+    public FakeSteam? Steam { get; }
+
+    /// <summary>The releases on GitHub; null: Arcadia runs from bin/, not installed.</summary>
+    public FakeReleases? Releases { get; }
+
+    public ControllerSupportService ControllerSupport { get; }
+
+    /// <summary>False: a game or another window is in front, and the controller's buttons leave Arcadia alone.</summary>
+    public bool IsArcadiaInFront { get; set; } = true;
+
+    /// <summary>True: the controller is a mouse, and its buttons don't drive Arcadia's navigation.</summary>
+    public bool IsMouseModeOn { get; set; }
+
+    public ArcadiaUpdateService Updates { get; }
+
     /// <summary>
     /// Starts Arcadia and waits until the library shows. Without <paramref name="settings"/>, the launchers are already
     /// chosen (as after the first start); pass settings without <see cref="AppSettings.ActiveLaunchers"/> for a fresh install.
     /// </summary>
-    public static async Task<ArcadiaDriver> StartAsync(IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null)
+    public static async Task<ArcadiaDriver> StartAsync(
+        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, FakeSteam? steam = null, FakeReleases? releases = null)
     {
         launchers ??= DefaultLaunchers;
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
@@ -138,7 +162,7 @@ internal sealed class ArcadiaDriver : IDisposable
             ActiveLaunchers = launchers.Select(spec => spec.Launcher.Id).ToList(),
         });
         var time = new FakeTimeProvider(Now);
-        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls());
+        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls(), steam, releases);
         await driver.LoadAsync();
         return driver;
     }
@@ -146,7 +170,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>Arcadia closed and started again on the same settings, as the user does after a change.</summary>
     public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null)
     {
-        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs);
+        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases);
         await restarted.LoadAsync();
         return restarted;
     }
@@ -162,6 +186,59 @@ internal sealed class ArcadiaDriver : IDisposable
         }
 
         return this;
+    }
+
+    /// <summary>
+    /// A controller button pressed down, through the same routing as the real controller: ⧉ and ≡ act only alone (on
+    /// release or held alone a moment), so a test can press both together. Let go with <see cref="ReleaseButton"/>.
+    /// </summary>
+    public ArcadiaDriver PressButton(GamepadButton button)
+    {
+        _gamepad.Press(button);
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
+    public ArcadiaDriver ReleaseButton(GamepadButton button)
+    {
+        _gamepad.Release(button);
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
+    /// <summary>A click on something the controller can't reach, e.g. a symbol in the header (#166).</summary>
+    public ArcadiaDriver Click(System.Windows.Input.ICommand command)
+    {
+        Assert.True(command.CanExecute(null), "Der Klick wirkt nicht: der Befehl ist gesperrt.");
+        command.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
+    /// <summary>The controller support's regular check (every few seconds in the App), e.g. SISR's update or Steam's login.</summary>
+    public async Task TickControllerSupportAsync()
+    {
+        await Task.Run(() => ControllerSupport.TickAsync());
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>
+    /// Lets time pass on the fake clock until <paramref name="condition"/> holds, for work that waits on the clock off the UI
+    /// thread (Steam starting, SISR coming up); fails the test with <paramref name="what"/> after <paramref name="limit"/>.
+    /// </summary>
+    public async Task WaitOnClockUntilAsync(Func<bool> condition, string what, TimeSpan limit)
+    {
+        for (var waited = TimeSpan.Zero; !condition(); waited += ClockStep)
+        {
+            if (waited > limit)
+            {
+                Assert.Fail($"Nach {limit.TotalSeconds:0} s auf der Uhr noch nicht eingetreten: {what}");
+            }
+
+            Wait(ClockStep);
+            await Task.Delay(1);
+            Dispatcher.UIThread.RunJobs();
+        }
     }
 
     /// <summary>A button held for <paramref name="duration"/> on the fake clock, then let go.</summary>
@@ -182,29 +259,6 @@ internal sealed class ArcadiaDriver : IDisposable
         return this;
     }
 
-    /// <summary>A controller button went down, as the App's gamepad source reports it.</summary>
-    public ArcadiaDriver PressButton(GamepadButton button)
-    {
-        if (UiActionMap.FromGamepad(button) is { } action)
-        {
-            Main.HandleGamepad(action);
-            Dispatcher.UIThread.RunJobs();
-        }
-
-        return this;
-    }
-
-    public ArcadiaDriver ReleaseButton(GamepadButton button)
-    {
-        if (UiActionMap.FromGamepad(button) is { } action)
-        {
-            Main.Release(action);
-            Dispatcher.UIThread.RunJobs();
-        }
-
-        return this;
-    }
-
     /// <summary>
     /// The controller held as <paramref name="buttons"/> and <paramref name="leftStick"/> say for
     /// <paramref name="duration"/>, then let go: read every 8 ms as the App reads it, held directions repeat.
@@ -215,6 +269,7 @@ internal sealed class ArcadiaDriver : IDisposable
         for (var waited = TimeSpan.Zero; waited <= duration; waited += PadPoll)
         {
             _pad.Update([held], (long)Time.GetElapsedTime(0).TotalMilliseconds);
+            _gamepad.Tick();
             Time.Advance(PadPoll);
             Dispatcher.UIThread.RunJobs();
         }
@@ -245,6 +300,7 @@ internal sealed class ArcadiaDriver : IDisposable
         for (var waited = TimeSpan.Zero; waited < duration; waited += ClockStep)
         {
             Time.Advance(ClockStep);
+            _gamepad.Tick();
             Dispatcher.UIThread.RunJobs();
         }
 

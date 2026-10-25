@@ -175,7 +175,9 @@ public sealed class LauncherPageViewTests
         AssertField(arcadia, name, "GOG Galaxy", "X");
         arcadia.Key(Key.Home);
         AssertField(arcadia, name, "", "GOG GalaxyX");
-        arcadia.Key(Key.Right).Key(Key.End).Key(Key.Back);
+        arcadia.Key(Key.Right);
+        AssertField(arcadia, name, "G", "OG GalaxyX");
+        arcadia.Key(Key.End).Key(Key.Back);
         AssertField(arcadia, name, "GOG Galaxy", "");
 
         arcadia.Type("Z").Key(Key.Escape);

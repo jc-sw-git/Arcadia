@@ -234,23 +234,30 @@ public sealed class SearchViewTests
         Assert.Same(keyBefore, search.Keyboard.FocusedKey);
         Assert.False(search.IsKeyboardOut);
 
-        // Enter starts the focused hit on its release.
-        var hit = search.FocusedResult!.Game.Key;
-        arcadia.Key(Key.Enter);
+        // Enter starts the focused hit on its release, not on its press. The start is requested synchronously
+        // (IsStarting); the launcher hears of it later.
+        var tile = search.FocusedResult!;
+        arcadia.KeyDown(Key.Enter);
+        Assert.False(tile.IsRunningOrStarting, "Enter gedrückt startet noch nicht");
+        arcadia.KeyUp(Key.Enter);
+        Assert.True(tile.IsStarting, "Enter losgelassen startet den Treffer");
         await arcadia.Arcadia.WaitUntilAsync(() => arcadia.Arcadia.Starts.Keys.Count == 1, "Enter startet den Treffer");
-        Assert.Equal(hit, arcadia.Arcadia.Starts.Keys[0]);
+        Assert.Equal(tile.Game.Key, arcadia.Arcadia.Starts.Keys[0]);
 
-        // Esc closes the search; held, Enter opens the details of a hit.
+        // Esc closes the search; held, Enter opens the details of a hit before it is let go, and letting go starts nothing.
         arcadia.Key(Key.Escape);
         Assert.False(main.IsSearchShown);
         arcadia.Key(Key.F).Type("Hollow").Key(Key.Right);
         search = main.Search!;
-        var other = search.FocusedResult!.Game.Key;
+        var other = search.FocusedResult!;
         arcadia.KeyDown(Key.Enter);
         arcadia.Arcadia.Wait(HoldForDetails);
+        arcadia.Settle();
+        Assert.True(main.IsDetailOpen, "Enter gehalten öffnet die Details schon vor dem Loslassen");
+        Assert.Equal(other.Game.Key, main.Detail!.Current.Tile.Game.Key);
         arcadia.KeyUp(Key.Enter);
         Assert.True(main.IsDetailOpen);
-        Assert.Equal(other, main.Detail!.Current.Tile.Game.Key);
+        Assert.False(other.IsRunningOrStarting, "Loslassen nach dem Halten startet nichts");
         Assert.Single(arcadia.Arcadia.Starts.Keys);
     }
 

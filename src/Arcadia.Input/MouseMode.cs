@@ -15,12 +15,12 @@ namespace Arcadia.Input;
 public sealed record MouseModeOptions(bool Enabled, TimeSpan HoldTime, int PointerSpeed, bool BlockedHere = false, TimeSpan? ReturnHoldTime = null);
 
 /// <summary>The mouse mode went on or off.</summary>
-/// <param name="Slot">The controller whose Back + Start switched it; null when Arcadia switched it by itself.</param>
+/// <param name="PadId">The controller whose Back + Start switched it; null when Arcadia switched it by itself.</param>
 /// <param name="ByGame">Ended because a game in which it is forbidden came to the front.</param>
 /// <param name="ForDialog">On for a Windows dialog Arcadia opened, or off again after it (#138).</param>
-public sealed record MouseModeSwitch(bool IsOn, int? Slot, bool ByGame = false, bool ForDialog = false)
+public sealed record MouseModeSwitch(bool IsOn, int? PadId, bool ByGame = false, bool ForDialog = false)
 {
-    public bool IsAutomatic => Slot is null;
+    public bool IsAutomatic => PadId is null;
 }
 
 /// <summary>
@@ -43,9 +43,9 @@ public sealed class MouseMode
     private readonly TimeProvider _time;
     private readonly MouseModeMapping _mapping;
 
-    // Slots whose combination already switched; they must let go before it counts again.
+    // Controllers whose combination already switched; they must let go before it counts again.
     private readonly HashSet<int> _spentCombos = [];
-    private int? _comboSlot;
+    private int? _comboPad;
     private long _comboSince;
     private bool _comboFeedback;
     private PadButtons _held;
@@ -80,7 +80,7 @@ public sealed class MouseMode
 
     public event Action<MouseModeSwitch>? Switched;
 
-    /// <summary>Back + Start were held long enough, but the game in front forbids the mode; the argument is the controller's slot.</summary>
+    /// <summary>Back + Start were held long enough, but the game in front forbids the mode; the argument is the controller's id.</summary>
     public event Action<int>? Refused;
 
     /// <summary>Y opened the on-screen keyboard (#110); the buttons are the keyboard's until <see cref="CloseKeyboard"/> or the mode ends.</summary>
@@ -98,7 +98,7 @@ public sealed class MouseMode
     public bool IsAutomatic => _isAutomatic;
 
     /// <summary>Back + Start are held on a controller and may switch the mode yet.</summary>
-    public bool IsComboHeld => _comboSlot is not null;
+    public bool IsComboHeld => _comboPad is not null;
 
     /// <summary>Arcadia switches by itself (the automation in the settings); applied on the next poll.</summary>
     public void Request(bool on) => Interlocked.Exchange(ref _request, on ? 1 : 2);
@@ -127,21 +127,21 @@ public sealed class MouseMode
         switch (Interlocked.Exchange(ref _request, 0))
         {
             case 1 when options.Enabled && !options.BlockedHere:
-                Switch(true, slot: null);
+                Switch(true, padId: null);
                 break;
             case 2 when !_dialogOpen:
-                Switch(false, slot: null);
+                Switch(false, padId: null);
                 break;
         }
 
         // Switched off in the settings while on: the controller is a controller again at once. An open dialog needs the mouse.
         if (!_dialogOpen && !options.Enabled)
         {
-            Switch(false, slot: null);
+            Switch(false, padId: null);
         }
         else if (!_dialogOpen && options.BlockedHere)
         {
-            Switch(false, slot: null, byGame: true);
+            Switch(false, padId: null, byGame: true);
         }
 
         UpdateCombo(pads, options);
@@ -152,7 +152,7 @@ public sealed class MouseMode
     }
 
     /// <summary>Lets go of everything the mode holds down, e.g. when Arcadia closes in the middle of a drag.</summary>
-    public void Stop() => Switch(false, slot: null, announce: false);
+    public void Stop() => Switch(false, padId: null, announce: false);
 
     private void UpdateDialog()
     {
@@ -162,7 +162,7 @@ public sealed class MouseMode
                 _dialogOpen = true;
                 if (!_isOn)
                 {
-                    Switch(true, slot: null, forDialog: true);
+                    Switch(true, padId: null, forDialog: true);
                     _onForDialog = true;
                 }
 
@@ -172,7 +172,7 @@ public sealed class MouseMode
                 if (_onForDialog)
                 {
                     _onForDialog = false;
-                    Switch(false, slot: null, forDialog: true);
+                    Switch(false, padId: null, forDialog: true);
                 }
 
                 break;
@@ -183,7 +183,7 @@ public sealed class MouseMode
     {
         if (_spentCombos.Count > 0)
         {
-            _spentCombos.RemoveWhere(slot => !pads.Any(p => p.Slot == slot && p.IsDown(Combo)));
+            _spentCombos.RemoveWhere(padId => !pads.Any(p => p.PadId == padId && p.IsDown(Combo)));
         }
 
         if (!options.Enabled)
@@ -192,9 +192,9 @@ public sealed class MouseMode
             return;
         }
 
-        if (_comboSlot is { } comboSlot)
+        if (_comboPad is { } comboPad)
         {
-            if (!pads.Any(p => p.Slot == comboSlot && p.IsDown(Combo)))
+            if (!pads.Any(p => p.PadId == comboPad && p.IsDown(Combo)))
             {
                 CancelCombo();
             }
@@ -204,16 +204,16 @@ public sealed class MouseMode
                 var held = _time.GetElapsedTime(_comboSince);
                 if (held >= holdTime)
                 {
-                    _comboSlot = null;
+                    _comboPad = null;
                     _comboFeedback = false;
-                    _spentCombos.Add(comboSlot);
+                    _spentCombos.Add(comboPad);
                     if (!_isOn && options.BlockedHere)
                     {
-                        Refused?.Invoke(comboSlot);
+                        Refused?.Invoke(comboPad);
                     }
                     else
                     {
-                        Switch(!_isOn, comboSlot);
+                        Switch(!_isOn, comboPad);
                     }
                 }
                 else if (!_comboFeedback && held >= FeedbackDelay)
@@ -224,13 +224,13 @@ public sealed class MouseMode
             }
         }
 
-        if (_comboSlot is null)
+        if (_comboPad is null)
         {
             foreach (var pad in pads)
             {
-                if (pad.IsDown(Combo) && !_spentCombos.Contains(pad.Slot))
+                if (pad.IsDown(Combo) && !_spentCombos.Contains(pad.PadId))
                 {
-                    _comboSlot = pad.Slot;
+                    _comboPad = pad.PadId;
                     _comboSince = _time.GetTimestamp();
                     break;
                 }
@@ -240,7 +240,7 @@ public sealed class MouseMode
 
     private void CancelCombo()
     {
-        _comboSlot = null;
+        _comboPad = null;
         if (_comboFeedback)
         {
             _comboFeedback = false;
@@ -248,9 +248,9 @@ public sealed class MouseMode
         }
     }
 
-    private void Switch(bool on, int? slot, bool announce = true, bool byGame = false, bool forDialog = false)
+    private void Switch(bool on, int? padId, bool announce = true, bool byGame = false, bool forDialog = false)
     {
-        if (slot is not null)
+        if (padId is not null)
         {
             // Switched by hand during a dialog: that choice stays after it.
             _onForDialog = false;
@@ -270,11 +270,11 @@ public sealed class MouseMode
             _mapping.End();
         }
 
-        _isAutomatic = on && slot is null;
+        _isAutomatic = on && padId is null;
         _isOn = on;
         if (announce)
         {
-            Switched?.Invoke(new MouseModeSwitch(on, slot, byGame, forDialog));
+            Switched?.Invoke(new MouseModeSwitch(on, padId, byGame, forDialog));
         }
     }
 }

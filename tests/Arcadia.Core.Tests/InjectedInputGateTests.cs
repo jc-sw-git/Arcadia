@@ -79,7 +79,7 @@ public sealed class InjectedInputGateTests
         Assert.True(activity.IsInUse());
         time.Advance(TimeSpan.FromMilliseconds(1));
         Assert.False(activity.IsInUse());
-        Assert.Equal([0, 2], activity.ConnectedSlots);
+        Assert.Equal(2, activity.ConnectedPads);
 
         activity.Note([new GamepadReading(2, PadButtons.View, centre, centre)]);
         Assert.True(activity.IsInUse());

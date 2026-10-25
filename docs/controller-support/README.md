@@ -37,6 +37,7 @@ More findings, one file per topic (read only the one you touch):
 | Starting and stopping SISR: Steam ready, marker, VIIPER, exit, usbip installer, first-run setup | [sisr-lifecycle.md](sisr-lifecycle.md) |
 | Steam's desktop layout and the mouse mode (#64) | [desktop-layout.md](desktop-layout.md) |
 | Steam Input without SISR: overlay helper, raw SDL3, VIIPER from C# (spike #112) | [steam-input-helper.md](steam-input-helper.md) |
+| Every other controller through SDL3: which devices, hints, rumble, errors (#72) | [sdl-gamepads.md](sdl-gamepads.md) |
 
 ## Setup and naming (#85, #92, 2026-10-16)
 

@@ -43,7 +43,7 @@ Before code is written, owner and Claude walk through the most likely scenarios 
 - "View" modal (Y), operable by controller
 - Preview panel on the left (last played, playtime, size, launcher, location)
 - Update marker (icon and hint; A starts the game, the launcher updates first)
-- Controller via XInput, keyboard, mouse
+- Controller via XInput, keyboard, mouse (SDL3 for every controller since #72)
 - Epic scanner (ported from SteamButler), demo data with `--demo`
 - Epic games also start when Epic isn't running (Epic is started in the background with `-silent`)
 - Steam Controller support via SISR: installation, start/stop with progress indicator, pause for Steam games,

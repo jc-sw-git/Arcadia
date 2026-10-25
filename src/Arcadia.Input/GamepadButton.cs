@@ -1,6 +1,6 @@
 namespace Arcadia.Input;
 
-/// <summary>Buttons in Xbox naming. PlayStation and Steam controllers map onto the same layout.</summary>
+/// <summary>Buttons in Xbox naming, by position: A is the bottom face button on every controller (#72).</summary>
 public enum GamepadButton
 {
     DPadUp,
@@ -48,18 +48,18 @@ public interface IGamepadSource : IDisposable
 
     void Start();
 
-    /// <summary>A short rumble on the controller in <paramref name="slot"/>, if it has motors. Callable from any thread.</summary>
-    void Rumble(int slot);
+    /// <summary>A short rumble on the controller <paramref name="padId"/>, if it has motors. Callable from any thread.</summary>
+    void Rumble(int padId);
+
+    /// <summary>
+    /// A fresh look at the controllers between two polls: does one of them pass <paramref name="test"/> right now?
+    /// For the desktop filter's hook, which must not miss a press Steam turned into a key before the next poll.
+    /// Callable from any thread; false if it can't look quickly.
+    /// </summary>
+    bool AnyNow(Func<GamepadReading, bool> test);
 }
 
-public static class GamepadSource
-{
-    /// <summary>The best source for the current platform.</summary>
-    public static IGamepadSource CreateDefault() =>
-        OperatingSystem.IsWindows() ? new XInputGamepadSource() : new NullGamepadSource();
-}
-
-/// <summary>Used where no gamepad backend exists yet (macOS / Linux before SDL support).</summary>
+/// <summary>Used where Arcadia ships no SDL (macOS / Linux for now).</summary>
 public sealed class NullGamepadSource : IGamepadSource
 {
     public event Action<GamepadButton>? ButtonPressed
@@ -84,9 +84,11 @@ public sealed class NullGamepadSource : IGamepadSource
     {
     }
 
-    public void Rumble(int slot)
+    public void Rumble(int padId)
     {
     }
+
+    public bool AnyNow(Func<GamepadReading, bool> test) => false;
 
     public void Dispose()
     {

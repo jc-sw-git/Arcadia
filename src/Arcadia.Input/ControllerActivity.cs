@@ -29,21 +29,19 @@ public sealed class ControllerActivity
         _time = time;
     }
 
-    /// <summary>Slots that answered in the last poll; a fresh look need only ask these.</summary>
-    public IReadOnlyList<int> ConnectedSlots { get; private set; } = [];
+    /// <summary>How many controllers the last poll read.</summary>
+    public int ConnectedPads { get; private set; }
 
     public void Note(IReadOnlyList<GamepadReading> pads)
     {
         bool inUse = false, comboHeld = false;
-        var slots = new int[pads.Count];
         for (var i = 0; i < pads.Count; i++)
         {
-            slots[i] = pads[i].Slot;
             inUse |= IsInUse(pads[i]);
             comboHeld |= IsComboHeld(pads[i]);
         }
 
-        ConnectedSlots = slots;
+        ConnectedPads = pads.Count;
         var now = _time.GetTimestamp();
         if (inUse)
         {

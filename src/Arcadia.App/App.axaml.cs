@@ -163,7 +163,7 @@ public partial class App : Application
             // Tested: Steam keeps SISR's layout after enforce=false + reset until the focus changes.
             controllerSupport.ControllerReleased += (_, _) => Dispatcher.UIThread.Post(() => foreground.BounceFocusAsync().Forget("Controller freigeben"));
 
-            _gamepad = GamepadSource.CreateDefault();
+            _gamepad = ControllerInput.Create(viewModel);
             var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
             viewModel.Dialogs = new SystemDialogs(window, () => viewModel.UsesController, () => mouseMode);
 

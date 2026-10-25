@@ -3,14 +3,14 @@ namespace Arcadia.Input;
 /// <summary>
 /// Turns what the controllers report in each poll into button presses and releases. The left stick counts as the
 /// D-pad; the D-pad and the right stick repeat while held, so holding one moves the focus on. Platform-free, so the
-/// acceptance tests hold the D-pad and tilt the stick through the same rules as <see cref="XInputGamepadSource"/>.
+/// acceptance tests hold the D-pad and tilt the stick through the same rules as <see cref="SdlGamepadSource"/>.
 /// </summary>
 public sealed class GamepadPolls
 {
     public const int RepeatDelayMs = 400;
     public const int RepeatIntervalMs = 90;
 
-    /// <summary>About half way; XInput's own dead zone is far smaller, so a resting stick never navigates.</summary>
+    /// <summary>About half way; far outside any stick's dead zone, so a resting stick never navigates.</summary>
     private const double StickThreshold = 16000 / 32767.0;
 
     private static readonly GamepadButton[] Repeating =

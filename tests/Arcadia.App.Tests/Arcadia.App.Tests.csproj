@@ -23,6 +23,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- SDL3 as a test sets it up, shared with the unit tests of the gamepad source. -->
+    <Compile Include="..\Arcadia.Core.Tests\FakeSdlGamepads.cs" Link="FakeSdlGamepads.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Arcadia.App\Arcadia.App.csproj" />
   </ItemGroup>
 

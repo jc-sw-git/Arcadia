@@ -9,6 +9,7 @@ using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Demo;
+using Arcadia.Tests.Sdl;
 using Avalonia.Threading;
 using Microsoft.Extensions.Time.Testing;
 
@@ -37,7 +38,7 @@ internal sealed class ArcadiaDriver : IDisposable
 
     private static readonly TimeSpan ClockStep = TimeSpan.FromMilliseconds(50);
 
-    /// <summary>How often the App reads the controllers (XInputGamepadSource).</summary>
+    /// <summary>How often the App reads the controllers (SdlGamepadSource).</summary>
     private static readonly TimeSpan PadPoll = TimeSpan.FromMilliseconds(8);
 
     private readonly HttpClient _http;
@@ -45,6 +46,7 @@ internal sealed class ArcadiaDriver : IDisposable
     private readonly Fixtures.LauncherFiles? _files;
     private readonly List<LaunchTarget> _opened;
     private readonly GamepadRouting _gamepad;
+    private readonly SdlGamepadSource _controllers;
 
     static ArcadiaDriver()
     {
@@ -115,9 +117,18 @@ internal sealed class ArcadiaDriver : IDisposable
             firstRun,
             time);
         _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time);
+
+        // The controllers as the App reads them (#72), through SDL as the test sets it up.
+        _controllers = ControllerInput.Create(Sdl, Main);
+        _controllers.Polled += _ => _gamepad.Tick();
+        _controllers.ButtonPressed += _gamepad.Press;
+        _controllers.ButtonReleased += _gamepad.Release;
     }
 
     public string Folder { get; }
+
+    /// <summary>SDL3 with the controllers a test plugs in; read only after <see cref="StartControllers"/>.</summary>
+    public FakeSdlGamepads Sdl { get; } = new();
 
     public string SettingsPath => Path.Combine(Folder, "settings.json");
 
@@ -327,6 +338,32 @@ internal sealed class ArcadiaDriver : IDisposable
         return this;
     }
 
+    /// <summary>Starts reading the controllers through <see cref="Sdl"/>, as the App does at its start.</summary>
+    public ArcadiaDriver StartControllers()
+    {
+        _controllers.Open();
+        Dispatcher.UIThread.RunJobs();
+        return PollControllers();
+    }
+
+    /// <summary>One read of the controllers, as the App does every 8 ms.</summary>
+    public ArcadiaDriver PollControllers()
+    {
+        _controllers.Poll((long)Time.GetElapsedTime(0).TotalMilliseconds);
+        Time.Advance(PadPoll);
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
+    /// <summary>The buttons pressed together on the controller <paramref name="pad"/> of <see cref="Sdl"/>, then let go.</summary>
+    public ArcadiaDriver PressOn(uint pad, params SdlPadState.Button[] buttons)
+    {
+        Sdl.Hold(pad, buttons);
+        PollControllers();
+        Sdl.Hold(pad);
+        return PollControllers();
+    }
+
     /// <summary>What the App's timer does every few seconds: asks the launchers which games run.</summary>
     public async Task FollowRunningGamesAsync()
     {
@@ -391,6 +428,7 @@ internal sealed class ArcadiaDriver : IDisposable
 
     public void Dispose()
     {
+        _controllers.Dispose();
         _http.Dispose();
         if (_ownsFolder)
         {

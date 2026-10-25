@@ -108,7 +108,7 @@ acceptance iteration (owner 2026-10-25; "Abnahme Iteration 1" was the last). Det
 | `src/Arcadia.Launchers.Abstractions` | What a launcher is made of (`ILauncherIntegration` …); the future plugin interface |
 | `src/Arcadia.Core` | Launcher registry and selection, library, search, settings, running games, keyboard layouts, paging |
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), Steam, Epic, Demo, game start |
-| `src/Arcadia.Input` | XInput, gestures, mouse mode, `SendInput`, Steam desktop input filter |
+| `src/Arcadia.Input` | Controllers via SDL3, gestures, mouse mode, `SendInput`, Steam desktop input filter |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support (SISR, usbip-win2) |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM), `Theme/Theme.axaml`, `MainViewModel` (navigation) and its children |
 | `tests/Arcadia.Core.Tests` | xUnit |

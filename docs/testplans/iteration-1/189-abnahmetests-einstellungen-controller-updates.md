@@ -13,3 +13,4 @@ Verlauf:
 |---|---|---|---|---|---|
 | 25 neue Abnahmetests (20 Testfälle) | 2026-10-24 | Claude | PR-Branch, Linux-Container (.NET 10), `dotnet test` | ✅ grün | CI auf Windows, macOS, Linux |
 | Alle 25 Tests, je einmal rot | 2026-10-25 | Claude | PR-Branch, Linux-Container, je eine gezielte Änderung im Produktcode | ✅ alle rot, danach wieder grün | Änderungen pro Test im PR |
+| Nach Codex-Review: B während Steam- und SISR-Start (T85-14), Tasten bei Spiel im Vordergrund und im Mausmodus (T64-10) | 2026-10-25 | Claude | PR-Branch, Linux-Container | ✅ grün; je einmal rot (B während der Sperre verschluckt; Sperren in `GamepadRouting` entfernt) | – |

@@ -81,4 +81,36 @@ public sealed class ViewAndMenuTests
         arcadia.ReleaseButton(GamepadButton.Menu);
         Assert.False(arcadia.Main.IsSettingsOpen);
     }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "T64-10")]
+    public async Task With_a_game_in_front_or_in_the_mouse_mode_the_buttons_leave_Arcadia_alone()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var focused = arcadia.Main.FocusedGame;
+
+        foreach (var (inFront, mouseMode) in new[] { (false, false), (true, true) })
+        {
+            arcadia.IsArcadiaInFront = inFront;
+            arcadia.IsMouseModeOn = mouseMode;
+            arcadia.PressButton(GamepadButton.DPadRight).ReleaseButton(GamepadButton.DPadRight);
+            arcadia.PressButton(GamepadButton.View).ReleaseButton(GamepadButton.View);
+            arcadia.PressButton(GamepadButton.Menu).Wait(PastSoloDelay).ReleaseButton(GamepadButton.Menu);
+            Assert.Same(focused, arcadia.Main.FocusedGame);
+            Assert.False(arcadia.Main.IsGameMenuOpen);
+            Assert.False(arcadia.Main.IsSettingsOpen);
+        }
+
+        // ⧉ pressed with Arcadia in front and let go after it lost the front (e.g. View held brought it back) opens nothing.
+        arcadia.IsArcadiaInFront = true;
+        arcadia.IsMouseModeOn = false;
+        arcadia.PressButton(GamepadButton.View).Wait(BeforeSoloDelay);
+        arcadia.IsArcadiaInFront = false;
+        arcadia.ReleaseButton(GamepadButton.View);
+        Assert.False(arcadia.Main.IsGameMenuOpen);
+
+        arcadia.IsArcadiaInFront = true;
+        arcadia.PressButton(GamepadButton.DPadRight).ReleaseButton(GamepadButton.DPadRight);
+        Assert.NotSame(focused, arcadia.Main.FocusedGame);
+    }
 }

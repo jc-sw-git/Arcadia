@@ -169,7 +169,7 @@ public sealed class ControllerSupportTests
 
     [AvaloniaFact]
     [Trait("Testfall", "T85-14")]
-    public async Task While_Steam_or_SISR_start_the_switch_is_locked_and_only_B_works()
+    public async Task While_Steam_or_SISR_start_the_switch_is_locked_and_other_buttons_do_nothing()
     {
         var steam = new FakeSteam { StartsWhenAsked = false };
         using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
@@ -193,9 +193,28 @@ public sealed class ControllerSupportTests
         arcadia.Press(UiAction.Left);
         Assert.True(arcadia.Settings.Current.SteamControllerSupport);
 
-        // Started, the switch works again; B leaves the settings at any time.
+        // Started, the switch works again.
         await arcadia.WaitOnClockUntilAsync(() => !sisr.IsLocked, "SISR ist gestartet", TimeSpan.FromSeconds(10));
         Assert.True(sisr.CanChange);
+    }
+
+    [AvaloniaTheory]
+    [Trait("Testfall", "T85-14")]
+    [InlineData("Steam startet")]
+    [InlineData("SISR startet")]
+    public async Task While_Steam_or_SISR_start_B_leaves_the_settings_at_once(string starting)
+    {
+        var steam = new FakeSteam { StartsWhenAsked = false };
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        var (_, sisr) = OpenController(arcadia);
+        arcadia.Press(UiAction.Accept).Wait(TimeSpan.FromSeconds(5));
+        if (starting == "SISR startet")
+        {
+            steam.IsSteamRunning = true;
+            await arcadia.WaitOnClockUntilAsync(() => arcadia.ControllerSupport.State == SisrState.Starting, "SISR startet", TimeSpan.FromSeconds(5));
+        }
+
+        Assert.True(sisr.IsLocked);
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsSettingsOpen);
     }

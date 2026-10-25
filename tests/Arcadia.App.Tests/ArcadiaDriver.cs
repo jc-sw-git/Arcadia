@@ -83,7 +83,7 @@ internal sealed class ArcadiaDriver : IDisposable
             new LauncherLogos(Settings, Path.Combine(folder, "logos")),
             firstRun,
             time);
-        _gamepad = new GamepadRouting(Main, isArcadiaActive: () => true, isMouseModeOn: () => false, time);
+        _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time);
     }
 
     public string Folder { get; }
@@ -109,6 +109,12 @@ internal sealed class ArcadiaDriver : IDisposable
     public FakeReleases? Releases { get; }
 
     public ControllerSupportService ControllerSupport { get; }
+
+    /// <summary>False: a game or another window is in front, and the controller's buttons leave Arcadia alone.</summary>
+    public bool IsArcadiaInFront { get; set; } = true;
+
+    /// <summary>True: the controller is a mouse, and its buttons don't drive Arcadia's navigation.</summary>
+    public bool IsMouseModeOn { get; set; }
 
     public ArcadiaUpdateService Updates { get; }
 

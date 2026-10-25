@@ -130,8 +130,8 @@ public sealed class GridFadeTests
     /// <summary>The fade's outer edge, the last device pixels of the grid, is the window's background across all covers.</summary>
     private static void AssertFadedToBackground(ArcadiaWindow arcadia, bool top)
     {
-        var grid = arcadia.Bounds(arcadia.Named<ScrollViewer>("GridScroller"));
         using var frame = arcadia.Capture();
+        var grid = arcadia.Bounds(arcadia.Named<ScrollViewer>("GridScroller"));
         var background = ArcadiaWindow.ThemeColour("BgColor");
         var edge = (int)Math.Round((top ? grid.Top : grid.Bottom) * frame.Scaling);
         // The outermost row of device pixels: there the fade has reached the background (a few steps off where the

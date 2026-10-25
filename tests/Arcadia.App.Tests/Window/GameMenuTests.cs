@@ -199,8 +199,8 @@ public sealed class GameMenuTests
     /// <summary>Some pixels of <paramref name="text"/> are drawn in <paramref name="colour"/>.</summary>
     private static bool HasDrawn(ArcadiaWindow arcadia, Control text, Color colour)
     {
-        var bounds = arcadia.Bounds(text);
         using var frame = arcadia.Capture();
+        var bounds = arcadia.Bounds(text);
         for (var y = bounds.Top; y < bounds.Bottom; y++)
         {
             for (var x = bounds.Left; x < bounds.Right; x++)

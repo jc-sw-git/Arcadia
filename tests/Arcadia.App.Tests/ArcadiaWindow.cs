@@ -231,9 +231,10 @@ internal sealed class ArcadiaWindow : IDisposable
         // The ring is the widest sharp outline; a narrower one painted over it (FocusRingGap) leaves a gap inside it.
         var outlines = Enumerable.Range(0, shadow.Count).Select(i => shadow[i]).Where(s => s.Blur == 0 && !s.IsInset).OrderBy(s => s.Spread).ToList();
         var outline = outlines[^1];
+        // Captured first: the capture waits for transitions (the cover's lift), and the bounds must be those it shows.
+        using var frame = Capture();
         var bounds = Bounds(control);
         var reach = (outline.Spread + 1) * ScaleOf(control);
-        using var frame = Capture();
         // Rounded corners bend the ring inwards: the sides are looked at in their middle, top and bottom along their
         // straight part too.
         var along = bounds.Width > 2 * bounds.Height ? new[] { 0.3, 0.5, 0.7 } : [0.5];

@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.Input;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
@@ -34,8 +35,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     private static readonly TimeSpan ClockStep = TimeSpan.FromMilliseconds(50);
 
-    private readonly HttpClient _http = new();
+    private readonly HttpClient _http;
     private readonly bool _ownsFolder;
+    private readonly GamepadRouting _gamepad;
 
     static ArcadiaDriver()
     {
@@ -46,9 +48,13 @@ internal sealed class ArcadiaDriver : IDisposable
         Velopack.VelopackApp.Build().Run();
     }
 
-    private ArcadiaDriver(string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts)
+    private ArcadiaDriver(string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts, FakeSteam? steam, FakeReleases? releases)
     {
         Folder = folder;
+        Steam = steam;
+        Releases = releases;
+        _http = new HttpClient(new FakeNetwork(steam?.Sisr, releases));
+        steam?.Sisr.UseNetwork(_http);
         _ownsFolder = ownsFolder;
         Specs = launchers;
         Time = time;
@@ -58,15 +64,18 @@ internal sealed class ArcadiaDriver : IDisposable
         Settings = new SettingsService(new SettingsStore(SettingsPath));
         var firstRun = new FirstRunSetup(Settings, demo: false, forced: false);
         var registry = new LauncherRegistry(Launchers, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
-        var controllerSupport = new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform());
+        ControllerSupport = steam is null
+            ? new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform())
+            : new ControllerSupportService(Settings, steam.Sisr, _http, time, steam);
+        Updates = releases is null ? new ArcadiaUpdateService(_http, time) : new ArcadiaUpdateService(_http, time, releases.Manager(folder));
         var launchedGames = new LaunchedGames();
         var installs = new InstallTracker(registry, time);
         var running = new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time);
         Main = new MainViewModel(
             new LibraryService(registry, time),
             new GameLaunchService(registry),
-            controllerSupport,
-            new ArcadiaUpdateService(_http, time),
+            ControllerSupport,
+            Updates,
             installs,
             running,
             launchedGames,
@@ -74,6 +83,7 @@ internal sealed class ArcadiaDriver : IDisposable
             new LauncherLogos(Settings, Path.Combine(folder, "logos")),
             firstRun,
             time);
+        _gamepad = new GamepadRouting(Main, isArcadiaActive: () => true, isMouseModeOn: () => false, time);
     }
 
     public string Folder { get; }
@@ -92,11 +102,22 @@ internal sealed class ArcadiaDriver : IDisposable
 
     public MainViewModel Main { get; }
 
+    /// <summary>Windows, Steam and SISR of the test; null: a PC without them, as on Linux.</summary>
+    public FakeSteam? Steam { get; }
+
+    /// <summary>The releases on GitHub; null: Arcadia runs from bin/, not installed.</summary>
+    public FakeReleases? Releases { get; }
+
+    public ControllerSupportService ControllerSupport { get; }
+
+    public ArcadiaUpdateService Updates { get; }
+
     /// <summary>
     /// Starts Arcadia and waits until the library shows. Without <paramref name="settings"/>, the launchers are already
     /// chosen (as after the first start); pass settings without <see cref="AppSettings.ActiveLaunchers"/> for a fresh install.
     /// </summary>
-    public static async Task<ArcadiaDriver> StartAsync(IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null)
+    public static async Task<ArcadiaDriver> StartAsync(
+        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, FakeSteam? steam = null, FakeReleases? releases = null)
     {
         launchers ??= DefaultLaunchers;
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
@@ -105,7 +126,7 @@ internal sealed class ArcadiaDriver : IDisposable
             ActiveLaunchers = launchers.Select(spec => spec.Launcher.Id).ToList(),
         });
         var time = new FakeTimeProvider(Now);
-        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts());
+        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), steam, releases);
         await driver.LoadAsync();
         return driver;
     }
@@ -113,7 +134,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>Arcadia closed and started again on the same settings, as the user does after a change.</summary>
     public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null)
     {
-        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts);
+        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Steam, Releases);
         await restarted.LoadAsync();
         return restarted;
     }
@@ -129,6 +150,59 @@ internal sealed class ArcadiaDriver : IDisposable
         }
 
         return this;
+    }
+
+    /// <summary>
+    /// A controller button pressed down, through the same routing as the real controller: ⧉ and ≡ act only alone (on
+    /// release or held alone a moment), so a test can press both together. Let go with <see cref="ReleaseButton"/>.
+    /// </summary>
+    public ArcadiaDriver PressButton(GamepadButton button)
+    {
+        _gamepad.Press(button);
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
+    public ArcadiaDriver ReleaseButton(GamepadButton button)
+    {
+        _gamepad.Release(button);
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
+    /// <summary>A click on something the controller can't reach, e.g. a symbol in the header (#166).</summary>
+    public ArcadiaDriver Click(System.Windows.Input.ICommand command)
+    {
+        Assert.True(command.CanExecute(null), "Der Klick wirkt nicht: der Befehl ist gesperrt.");
+        command.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
+    /// <summary>The controller support's regular check (every few seconds in the App), e.g. SISR's update or Steam's login.</summary>
+    public async Task TickControllerSupportAsync()
+    {
+        await Task.Run(() => ControllerSupport.TickAsync());
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>
+    /// Lets time pass on the fake clock until <paramref name="condition"/> holds, for work that waits on the clock off the UI
+    /// thread (Steam starting, SISR coming up); fails the test with <paramref name="what"/> after <paramref name="limit"/>.
+    /// </summary>
+    public async Task WaitOnClockUntilAsync(Func<bool> condition, string what, TimeSpan limit)
+    {
+        for (var waited = TimeSpan.Zero; !condition(); waited += ClockStep)
+        {
+            if (waited > limit)
+            {
+                Assert.Fail($"Nach {limit.TotalSeconds:0} s auf der Uhr noch nicht eingetreten: {what}");
+            }
+
+            Wait(ClockStep);
+            await Task.Delay(1);
+            Dispatcher.UIThread.RunJobs();
+        }
     }
 
     /// <summary>A button held for <paramref name="duration"/> on the fake clock, then let go.</summary>
@@ -156,6 +230,7 @@ internal sealed class ArcadiaDriver : IDisposable
         for (var waited = TimeSpan.Zero; waited < duration; waited += ClockStep)
         {
             Time.Advance(ClockStep);
+            _gamepad.Tick();
             Dispatcher.UIThread.RunJobs();
         }
 

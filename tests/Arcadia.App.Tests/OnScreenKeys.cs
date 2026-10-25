@@ -6,8 +6,7 @@ namespace Arcadia.App.Tests;
 
 /// <summary>
 /// The search's on-screen keyboard as the user works it with the controller: the D-pad walks the focus to a key, A
-/// presses it. Walking is greedy (row first, then sideways), so a test sees every step the user would take; a key the
-/// D-pad can't reach fails the test.
+/// presses it. Every step is a real press; a key the D-pad can't reach fails the test.
 /// </summary>
 internal static class OnScreenKeys
 {

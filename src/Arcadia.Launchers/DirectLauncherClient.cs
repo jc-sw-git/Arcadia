@@ -7,13 +7,16 @@ namespace Arcadia.Launchers;
 /// Starts a launch target as-is. Used for launchers that need no preparation and as the
 /// fallback for every launcher without its own client.
 /// </summary>
-public sealed class DirectLauncherClient : ILauncherClient
+/// <param name="start">Starts a target; defaults to <see cref="Start"/>.</param>
+public sealed class DirectLauncherClient(Func<LaunchTarget, bool>? start = null) : ILauncherClient
 {
+    private readonly Func<LaunchTarget, bool> _start = start ?? Start;
+
     public string? LauncherId => null;
 
     public Task StartAsync(Game game, IProgress<LaunchStage>? progress = null, CancellationToken cancellationToken = default)
     {
-        progress?.Report(Start(game.Launch) ? LaunchStage.Starting : LaunchStage.NotStartable);
+        progress?.Report(_start(game.Launch) ? LaunchStage.Starting : LaunchStage.NotStartable);
         return Task.CompletedTask;
     }
 

@@ -8,8 +8,11 @@ namespace Arcadia.Launchers.Steam;
 /// which starts Steam itself when needed, so there is no client of its own. Installs, updates and
 /// uninstalls are followed through the app manifests, running games through Steam's registry.
 /// </summary>
-public sealed class SteamIntegration(TimeProvider time) : ILauncherIntegration
+/// <param name="locate">Finds Steam; defaults to <see cref="SteamInstallation.Find"/>. The acceptance tests point it at a Steam folder of their own.</param>
+public sealed class SteamIntegration(TimeProvider time, Func<SteamInstallation?>? locate = null) : ILauncherIntegration
 {
+    private readonly Func<SteamInstallation?> _locate = locate ?? SteamInstallation.Find;
+
     /// <summary>
     /// Steam's logo (#138) from simple-icons (CC0), the shape Valve publishes; the name and the logo are Valve's
     /// trademarks (THIRD-PARTY-NOTICES.md).
@@ -19,17 +22,17 @@ public sealed class SteamIntegration(TimeProvider time) : ILauncherIntegration
 
     public LauncherInfo Launcher { get; } = KnownLaunchers.Steam with { Logo = Logo };
 
-    public ILauncherScanner Scanner { get; } = new SteamScanner();
+    public ILauncherScanner Scanner { get; } = new SteamScanner(locate);
 
     public ILauncherClient? Client => null;
 
-    public IInstallMonitor? InstallMonitor { get; } = new SteamInstallMonitor();
+    public IInstallMonitor? InstallMonitor { get; } = new SteamInstallMonitor(locate, time);
 
     public IRunningGamesMonitor? RunningGames { get; } = new SteamRunningGames(time);
 
     public IReadOnlyCollection<string> ProgramNames { get; } = ["steam.exe", "steamwebhelper.exe"];
 
-    public string? Locate() => SteamInstallation.Find()?.RootPath;
+    public string? Locate() => _locate()?.RootPath;
 
     public ILauncherFolderChoice? FolderChoice { get; } = new SteamFolderChoice();
 }

@@ -51,8 +51,12 @@ und trägt sie hier ein; wer ein Issue testet, liest nur dessen Datei.
 | [143-steam-input-fuer-ganze-controllertypen.md](143-steam-input-fuer-ganze-controllertypen.md) | #143 | Steam Input für ganze Controllertypen legt den Steam Controller lahm | 6 |
 | [167-update-und-startanzeige-ueberlappen.md](167-update-und-startanzeige-ueberlappen.md) | #167 | Cover: Update- und Startanzeige überlappen, wenn der Launcher vor dem Start aktualisiert | 5 |
 | [184-abnahmetests-view-model-ebene.md](184-abnahmetests-view-model-ebene.md) | #184 | Abnahmetests auf View-Model-Ebene für die Kernabläufe | 0 |
+| [187-abnahmetests-view-model-bibliothek-detailseite.md](187-abnahmetests-view-model-bibliothek-detailseite.md) | #187 | Abnahmetests View-Model: Bibliothek, Detailseite, Spielstart und App-Start | 0 |
 | [188-abnahmetests-suche-und-tastatur.md](188-abnahmetests-suche-und-tastatur.md) | #188 | Abnahmetests View-Model: Suche und Bildschirmtastatur | 0 |
+| [189-abnahmetests-einstellungen-controller-updates.md](189-abnahmetests-einstellungen-controller-updates.md) | #189 | Abnahmetests View-Model: Einstellungen, Mausmodus, Controller-Support und Updates | 0 |
+| [190-abnahmetests-launcher-und-ersteinrichtung.md](190-abnahmetests-launcher-und-ersteinrichtung.md) | #190 | Abnahmetests View-Model: Launcher-Einstellungen und Ersteinrichtung | 0 |
 | [191-abnahmetests-headless-ui-bibliothek.md](191-abnahmetests-headless-ui-bibliothek.md) | #191 | Abnahmetests Headless-UI: Bibliothek, Detailseite, Header, Maus und Tastatur | 0 |
+| [193-abnahmetests-launcher-fixtures.md](193-abnahmetests-launcher-fixtures.md) | #193 | Abnahmetests Launcher-Fixtures: Steam und Epic mit nachgestellten Dateien | 0 |
 
 ## Explorativer Test
 
@@ -72,21 +76,35 @@ Funde am 0.1.0-rc.1 (Juri, 2026-10-24, bei Testfällen und nebenbei):
 Wird beim Abschluss-Test aus allen Testfällen mit `E2E: ja` erstellt und in der Abnahme-Iteration
 umgesetzt.
 
-Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #188; Regeln im [README](../README.md)):
+Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #187, #188, #189, #190; Regeln im [README](../README.md)):
 
 | Testfall | Test | Abdeckung |
 |---|---|---|
 | G-1 | `StartTests.Start_shows_a_tab_per_launcher_with_the_first_tab_selected_and_a_game_focused` | ganz |
-| G-6 | `LibraryTests.The_D_pad_moves_the_focus_through_the_grid_and_stops_at_its_edges` | teilweise: ohne Wiederholung beim Halten, ohne Linker Stick, ohne Sichtbarkeit |
+| G-2 | `StartTests.A_fresh_system_without_any_launcher_says_so_after_the_first_question_without_an_error`, `StartTests.Launchers_without_games_show_their_tabs_saying_so_without_an_error` | ganz (Hinweis seit #136/#139: „Kein Launcher aktiv“ bzw. „Keine Spiele in …“) |
+| G-4 | `StartTests.A_broken_settings_file_is_kept_as_broken_and_Arcadia_starts_with_the_defaults` | ganz |
+| G-5 | `StartTests.The_log_keeps_the_user_profile_out_of_what_it_writes` | teilweise: nur Benutzerprofil aus dem Log; Tasten, Gamepad-Tasten, SISR und Rotation ab 5 MB nicht |
+| G-6 | `LibraryTests.The_D_pad_moves_the_focus_through_the_grid_and_stops_at_its_edges`, `…The_D_pad_held_repeats_the_move_after_a_moment_and_stops_at_the_edge_of_the_page`, `…The_left_stick_moves_the_focus_like_the_D_pad_but_not_when_only_nudged` | teilweise: Halten und Stick über `GamepadPolls`, nicht über XInput; ohne Sichtbarkeit |
 | G-7 | `LibraryTests.LB_and_RB_switch_the_launcher_tab_and_wrap_around` | teilweise: ohne Drehen und Ausblenden der Leiste |
 | G-8 | `LibraryTests.LT_and_RT_turn_the_pages_and_the_page_bar_shows_the_current_page` | ganz |
 | G-12, G-14 | `LibraryTests.View_options_change_the_page_size_at_once_and_offer_only_sizes_the_tab_can_fill` | ganz |
 | G-13 | `LibraryTests.Each_sort_in_view_options_orders_the_tab_with_games_without_a_date_last` (alle sechs Sortierungen) | ganz |
+| G-15 | `LibraryTests.The_preview_shows_last_played_playtime_size_launcher_and_location_of_the_focused_game` | ganz |
+| G-20 | `GameStartTests.A_demo_game_shows_the_demo_hint_instead_of_an_error` | ganz |
+| G-30 | `StartTests.The_clock_runs_and_no_status_symbol_shows_while_nothing_needs_one` | teilweise: Uhr und „ohne Bedarf kein Symbol“; Symbole bei Bedarf und Öffnen der Einstellungen nicht |
 | T8-1 | `LibraryTests.Sort_page_size_and_tab_are_the_same_after_a_restart_with_the_focus_on_page_one` | teilweise: Tab per LB/RB, nicht per Klick |
+| T8-2 | `LibraryTests.Sort_and_page_size_apply_to_every_tab_and_a_small_tab_shows_the_next_smaller_size_only_for_itself` | ganz |
+| T8-3 | `LibraryTests.A_last_tab_whose_launcher_is_gone_starts_in_the_first_tab_and_in_its_own_again_once_it_is_back` | teilweise: Launcher ganz fehlend; ein deinstallierter, aber aktiver Launcher behält seit #136 seinen Tab („nicht gefunden“) |
+| T10-3 | `InstallTests.The_menu_of_a_game_not_installed_offers_installing_and_shows_a_running_installation_instead` | ganz |
 | T10-4 | `GameStartTests.A_tapped_starts_the_focused_game_through_its_launcher_on_the_release`, `…A_held_shows_the_frame_then_opens_the_detail_page…`, `…A_let_go_between_the_frame_and_the_details_does_nothing_also_later` | teilweise: Rahmen als Zustand, nicht wie er aussieht |
 | T11-1 | `GameStartTests.A_held_shows_the_frame_then_opens_the_detail_page_after_a_second_while_still_held_and_starts_nothing` | teilweise: Halten und Position, ohne ⧉ → „Details anzeigen“, Pfadleiste, Nachbarn |
 | T11-2 | `DetailPageTests.LT_and_RT_show_the_previous_and_next_game_across_page_borders_and_wrap_around` | teilweise: ohne Animation |
+| T11-3 | `DetailPageTests.With_two_games_the_other_one_stands_on_both_sides_and_with_one_game_there_are_no_neighbours` | teilweise: ohne Abdunklung |
+| T11-4 | `DetailPageTests.LB_and_RB_switch_the_launcher_and_the_detail_page_stays_open_on_the_first_game_of_the_tab` | teilweise: LB/RB, nicht Klick auf einen Tab |
+| T11-5 | `DetailPageTests.Y_on_the_detail_page_says_it_shows_one_game_and_another_sort_keeps_the_game_while_neighbours_and_position_follow` | ganz |
 | T11-6 | `DetailPageTests.B_goes_back_to_the_library_on_the_page_of_the_game_shown_last_with_the_focus_on_it` | teilweise: B, nicht Klick auf die Pfadleiste |
+| T11-8 | `DetailPageTests.An_update_keeps_Spielen_with_a_note_and_a_game_not_installed_offers_Installieren_and_its_progress` | teilweise: ohne abgedunkeltes Cover |
+| T11-9 | `DetailPageTests.The_figures_show_last_played_with_date_and_time_playtime_by_the_launcher_install_date_with_path_and_size_with_drive` | teilweise: Werte, nicht wo sie stehen (nicht unter dem Titel) |
 | T12-2 | `OnScreenKeyboardTests.The_D_pad_walks_the_keys_to_the_nearest_one_and_stops_at_the_edges_A_types_Y_a_space_X_erases`, `…X_held_or_A_held_on_the_erase_key_erases_one_then_after_a_pause_one_after_another` | teilweise: ohne linken Stick und gehaltenes D-Pad (die Wiederholung kommt aus der Eingabe, nicht aus dem View Model) |
 | T12-3 | `SearchTests.Hits_come_from_all_launchers_by_relevance_whatever_the_case_accents_and_trademark_signs`, `SearchTests.An_accent_or_trademark_sign_in_the_title_or_the_term_does_not_matter_and_no_hit_shows_the_empty_state`, `SearchTests.Trademark_registered_and_copyright_signs_count_for_nothing_and_each_hit_names_its_launcher` | teilweise: Launchername, nicht Logo und Grafik (Aussehen) |
 | T12-7 | `SearchHitTests.Start_tapped_on_a_hit_starts_it_on_the_release_or_installs_it_held_opens_its_details_and_View_its_menu` | teilweise: Ring als Zustand; ohne Maus, Rechtsklick, Umschalt+F10 und Legende |
@@ -104,10 +122,81 @@ Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #188; Reg
 | T129-4 | `OnScreenKeyboardTests.With_AltGr_on_the_D_pad_passes_over_empty_keys_and_rows_and_without_it_up_and_down_come_back` | ganz (hoch von e geht auf 4, nicht wie im Beispiel auf 3; wieder runter auf e) |
 | T129-5 | `OnScreenKeyboardTests.The_dead_keys_type_their_character_at_once` | ganz |
 | T129-6 | `OnScreenKeyboardTests.R3_switches_to_US_UK_FR_and_ES_each_with_its_real_keys` | teilweise: Tasten stichprobenhaft; Klick auf das graue AltGr nicht |
+| T27-1 | `GameStartTests.A_start_that_fails_says_so_leaves_Arcadia_running_and_A_tries_again` | ganz (Fake-Launcher, der beim Start wirft) |
+| T27-3 | `GameStartTests.An_unexpected_error_goes_with_its_stack_trace_into_the_log_a_hint_names_the_log_and_the_controller_still_works` | ganz (Fake-Launcher, der beim Start wirft) |
+| T41-7 | `LibraryTests.Sorted_by_install_date_games_not_installed_come_last_in_both_directions` | ganz |
+| T41-9 | `InstallTests.A_game_waiting_in_the_queue_shows_the_hourglass_instead_of_the_spinner_on_the_cover_and_in_the_preview` | teilweise: Zustand der Kachel, nicht das Symbol selbst; Warteschlange aus einem Fake-Monitor, nicht aus Epics Dateien |
+| T95-8 | `RunningGameTests.In_the_demo_data_one_game_per_launcher_runs_and_offers_Zurueck_ins_Spiel_but_no_uninstall` | teilweise: ohne Größe und Lage von „Zurück ins Spiel“ und „Optionen“, ohne Tastatur |
 | T15-1 | `SettingsTests.Menu_opens_the_settings_and_B_goes_back_to_the_same_tab_page_and_game` | teilweise: Controller, nicht Enter/Esc und Klick |
 | G-31 | `SettingsTests.The_settings_are_worked_with_the_controller_alone_rows_categories_and_values` | teilweise: Scrollen ins Bild nicht |
-| T139-1 | `FirstRunTests.A_fresh_install_asks_first_with_the_launchers_found_switched_on`, `FirstRunTests.A_launcher_not_found_cannot_be_switched_on` | teilweise: ohne Spielzahl und Texte |
+| T15-5 | `SettingsRowTests.The_footer_names_only_the_buttons_of_the_focused_row` | teilweise: was der Footer nennt (◀▶, A mit Text, Kategorien), nicht der Wechsel zu Tasten und Maus nach Taste oder Klick |
+| T15-10 | `ControllerSupportTests.The_header_symbols_open_their_category_Controller_for_SISR_and_Ueber_Arcadia_for_Arcadias_update` | teilweise: Klick als Befehl des View Models, nicht auf das Symbol |
+| T15-11 | `SettingsRowTests.Choices_wrap_at_their_ends_and_switches_flip_with_either_arrow`, `…Steam_Controller_Kompatibilitaet_switches_with_either_arrow` | teilweise: ohne Schalter der Ersteinrichtung und ohne Taste A der Tastatur (die Tests drücken ◀) |
+| T23-2 | `UpdateTests.Without_a_newer_release_the_search_says_Arcadia_is_up_to_date_and_offers_no_update` | teilweise: Velopack mit `TestVelopackLocator` und eigener Quelle statt installiertem Arcadia und GitHub |
+| T23-4 | `UpdateTests.What_is_new_lists_the_changes_of_every_release_after_the_running_one_and_B_goes_back` | teilweise: wie T23-2 |
+| T64-7 | `MouseModeSettingsTests.Mausmodus_hold_and_speed_change_with_the_controller_apply_at_once_and_stay_after_a_restart` | teilweise: Werte und Neustart; wie sie wirken, prüft `MouseModeTests`; „startet immer im normalen Modus“ nicht (braucht das Fenster) |
+| T64-8 | `MouseModeSettingsTests.So_funktioniert_es_shows_the_buttons_and_the_limits` | teilweise: seit #15 eine Box im Infotext von „Mausmodus“ statt eines Dialogs mit A, B schließt die Einstellungen |
+| T64-10 | `ViewAndMenuTests.View_and_Menu_act_when_let_go_or_held_alone_a_moment`, `…pressed_together_open_nothing`, `…Menu_held_a_second_on_a_search_hit_still_opens_its_details`, `…With_a_game_in_front_or_in_the_mouse_mode_the_buttons_leave_Arcadia_alone` | teilweise: über `GamepadRouting` ohne XInput; von den anderen Tasten nur das Steuerkreuz |
+| T64-12 | `MouseModeSettingsTests.Mausmodus_Aus_dims_the_other_rows_which_keep_their_values_for_when_it_comes_back` | teilweise: die Einstellungen; ⧉ + ≡ und Fokuswechsel bei „Aus“ prüfen `MouseModeTests` und `MouseModeAutomationTests`, „Mausmodus aus“ nicht |
+| T64-15 | `MouseModeSettingsTests.The_mouse_mode_boxes_name_View_and_Menu_by_their_symbols_only` | teilweise: Texte, nicht die runde Umrandung |
+| T85-1 | `ControllerSupportTests.Without_SISR_or_what_it_needs_the_setting_offers_SISR_installieren_instead_of_the_switch` (vier Fälle) | ganz (Fake-Plattform) |
+| T85-2 | `ControllerSupportTests.With_Steam_running_SISR_installieren_asks_first_and_cancelling_installs_nothing` | ganz (Fake-Plattform) |
+| T85-9 | `ControllerSupportTests.Without_Windows_or_Steam_the_setting_is_greyed_out_says_why_and_A_does_nothing` | ganz (Fake-Plattform) |
+| T85-11 | `ControllerSupportTests.Steam_not_starting_within_a_minute_shows_Steam_startet_nicht_with_cancel_and_retry`, `…Steam_hanging_at_its_login_when_switching_on_shows_the_prompt_and_SISR_does_not_start` | ganz (Fake-Plattform, Uhr gefälscht) |
+| T85-14 | `ControllerSupportTests.While_Steam_or_SISR_start_the_switch_is_locked_and_other_buttons_do_nothing`, `…While_Steam_or_SISR_start_B_leaves_the_settings_at_once` (zwei Fälle), `…With_Steam_hanging_at_its_login_the_switch_stays_usable` | teilweise: Start von Steam und SISR; Beenden von selbst (nach dem Ende von Steam) nicht |
+| T85-16 | `ControllerSupportTests.Steam_hanging_at_its_login_for_over_30_seconds_shows_a_message_with_Steam_neu_starten_and_SISR_keeps_running` | ganz (Fake-Plattform) |
+| T92-1 | `ControllerSupportTests.The_setting_is_called_Steam_Controller_Kompatibilitaet_with_both_modes_and_no_text_says_Steam_Controller_Support` | teilweise: Einstellungen und Statusleiste, nicht die Deinstallationsfrage (Installer) |
+| T92-2 | `ControllerSupportTests.The_preview_shows_Steam_Input_for_Steam_games_and_Xbox_Controller_SISR_for_all_others` | teilweise: der Wert, nicht „ohne Dropdown-Pfeil“ |
+| T110-9 | `MouseModeSettingsTests.So_funktioniert_es_shows_the_buttons_and_the_limits`, `…Zurueck_zu_Arcadia_holds_from_1_to_9_seconds_without_Sofort` | ganz |
+| T127-2 | `ControllerSupportTests.On_the_detail_page_the_game_settings_show_no_note_below_the_buttons_and_the_context_menu_says_what_they_switch_to` | teilweise: ohne Tooltip über einem deaktivierten Button (Maus) |
+| T136-4 | `LauncherSettingsTests.Y_lifts_a_launcher_the_D_pad_moves_it_and_Y_puts_it_down_with_the_tabs_following_at_once`, `…B_while_a_launcher_is_lifted_puts_everything_back_as_it_was`, `…A_launcher_put_down_under_the_inactive_ones_is_off_and_its_tab_goes` | teilweise: ohne Maus (Ziehen), Rahmen und Footer nur als Zustand |
+| T136-5 | `LauncherSettingsTests.Beside_the_list_the_tab_strip_shows_the_tabs_in_order_and_the_details_explain_the_focused_launcher` | teilweise: ohne Logo, RS-Scrollen und Fade; Warnungen in T136-16 |
+| T136-6 | `LauncherSettingsTests.X_reads_all_active_launchers_again_and_a_toast_says_so` | teilweise: Toast als Text, nicht seine Lage |
+| T136-7 | `LauncherSettingsTests.A_tab_without_games_keeps_its_tab_and_its_buttons_read_again_or_open_its_launcher_settings`, `…A_tab_of_a_launcher_no_longer_found_keeps_its_tab_and_looks_for_it_again`, `…With_every_launcher_off_the_library_says_so_and_offers_only_the_launcher_settings` | teilweise: ohne Maus und Leertaste, ohne Bild der leeren Tabs |
+| T136-14 | `LauncherSettingsTests.The_row_read_all_again_is_reached_with_the_D_pad_and_A_reads_like_X`, `…Without_an_active_launcher_the_row_read_all_again_is_greyed_out_and_A_does_nothing` | teilweise: Glyphe nur als Wert, ohne Klick |
+| T136-15 | `LauncherSettingsTests.With_every_launcher_off_the_library_says_so_and_offers_only_the_launcher_settings` | teilweise: ohne Klick |
+| T136-16 | `LauncherSettingsTests.An_active_launcher_without_games_is_information_without_a_symbol_at_the_category`, `…An_active_launcher_no_longer_found_stays_a_warning_with_a_symbol_at_the_category` | teilweise: Farbe und Symbol nur als Stufe |
+| T137-2 | `LauncherPageTests.LT_and_RT_turn_to_the_launcher_before_and_after_in_the_order_of_the_list_and_wrap_around`, `…A_single_launcher_has_no_neighbours_to_turn_to` | teilweise: ohne Klick auf Nachbarn und Rahmen beim Überfahren |
+| T137-3 | `LauncherPageTests.Active_on_the_page_switches_like_the_list_and_the_head_shows_the_state`, `…A_launcher_not_found_cannot_be_switched_on_on_its_page` | ganz |
+| T137-5 | `LauncherPageTests.A_name_taken_shows_at_once_in_tab_list_search_preview_and_details_also_after_a_restart`, `…A_name_taken_empty_is_the_launchers_own_name_again` | teilweise: in der Suche nur der Chip, nicht die Treffer |
+| T137-6 | `LauncherPageTests.A_keyword_taken_by_another_launcher_or_against_the_rules_is_red_at_once_and_not_taken`, `…A_valid_keyword_holds_at_once_in_the_search_and_its_chip`, `…The_keywords_on_screen_keyboard_offers_only_keys_it_may_hold_and_the_D_pad_skips_the_others`, `…On_a_French_keyboard_shift_stays_for_the_digits_and_offers_only_them`, `…The_names_on_screen_keyboard_offers_every_key` | teilweise: rot und ausgegraut nur als Zustand, ohne Stick |
+| T137-7 | `LauncherPageTests.The_info_panel_previews_the_order_with_only_the_pages_launcher_framed_and_gives_an_example_for_the_keyword`, `…Read_again_on_the_page_reads_only_this_launcher_and_then_names_its_games_and_the_time`, `…Read_again_is_greyed_out_with_the_reason_for_a_launcher_inactive_or_not_found` | teilweise: ohne Log-Zeile, Erklärtexte nur vorhanden |
+| T139-1 | `FirstRunTests.A_fresh_install_asks_first_with_the_launchers_found_switched_on`, `FirstRunTests.A_launcher_not_found_cannot_be_switched_on` | teilweise: ohne Überschrift und Ausgrauen |
+| T139-2 | `FirstRunTests.The_preview_shows_the_launchers_switched_on_as_tabs_and_follows_every_switch` | teilweise: ohne Datum und Uhrzeit, „Später änderbar“, „Fertig“ und Text der leeren Vorschau |
 | T139-3 | `FirstRunTests.Only_the_launchers_left_on_become_tabs_also_after_a_restart_and_the_question_does_not_come_again` | teilweise: „Fertig“ mit ≡, nicht Enter oder Klick |
+| T139-4 | `FirstRunTests.Settings_of_a_version_without_a_choice_of_launchers_bring_the_question_and_keep_everything_else` | ganz |
+| T139-5 | `FirstRunTests.Demo_skips_the_question_with_every_launcher_active_and_saves_no_choice`, `…First_run_asks_again_also_with_a_saved_choice`, `…Demo_with_first_run_keeps_the_answer_only_until_Arcadia_closes` | teilweise: Schalter ohne Kommandozeile, Test-Launcher statt Demo-Bibliothek |
+| T139-7 | `FirstRunTests.Done_with_no_launcher_switched_on_shows_no_launcher_active`, `…Done_with_no_launcher_found_shows_no_launcher_active` | ganz |
+
+Launcher-Fixtures (#193): Die echten Integrationen von Steam und Epic lesen nachgestellte Dateien in einem Temp-Ordner
+(`Fixtures/SteamFolder`, `Fixtures/EpicFolder`, Formate nach `docs/launchers/`); was der Launcher selbst tut, zeigt nur
+der echte Launcher im Abschluss-Test.
+
+| Testfall | Test | Abdeckung |
+|---|---|---|
+| T1-1 | `SteamLibraryTests.The_Steam_tab_shows_the_games_of_all_libraries_with_demos_but_without_tools_redistributables_and_soundtracks` | ganz |
+| T1-2 | `SteamLibraryTests.Size_last_played_and_playtime_are_Steams_and_the_install_date_is_the_game_folders_creation` | teilweise: gegen die Dateien, nicht gegen Steams Anzeige; unter Linux ohne eigenes Erstelldatum |
+| T1-5 | `SteamLibraryTests.Without_Steam_there_is_no_Steam_tab_and_no_error` | ganz |
+| T1-6 | `SteamLibraryTests.With_demo_the_Steam_tab_shows_the_real_games_and_only_the_others_are_demo_libraries` | ganz |
+| T1-9 | `SteamLibraryTests.A_library_whose_drive_is_gone_leaves_out_its_games_without_an_error_and_they_come_back_with_the_drive` | teilweise: Ordner verschoben statt Laufwerk abgezogen |
+| T41-3 | `EpicInstallTests.An_install_from_Arcadia_waits_for_confirmation_then_queues_downloads_and_ends_installed_without_a_restart` | teilweise: Epics Dialog nur als geöffnete URI |
+| T41-4 | `EpicInstallTests.Pause_resume_and_cancel_in_Epic_show_in_Arcadia_and_install_is_locked_while_one_runs` | ganz |
+| T41-5 | `EpicInstallTests.An_install_started_in_Epic_itself_shows_in_Arcadia_with_its_state` | ganz |
+| T41-6 | `EpicLibraryTests.A_game_uninstalled_in_Epic_shows_as_not_installed_once_Arcadias_window_is_active_again`, `…once_it_is_selected` | teilweise: Aktivieren des Fensters wie `MainWindow.Activated`, nicht per Alt+Tab |
+| T41-8 | `EpicInstallTests.A_paused_install_that_is_cancelled_loses_its_progress` | ganz |
+| T41-10 | `EpicInstallTests.When_Epic_resumes_another_game_the_first_shows_as_paused_and_only_the_second_downloads` | ganz |
+| T42-1 | `EpicLibraryTests.The_Epic_tab_shows_every_game_of_the_library_installed_or_not_but_no_Unreal_Engine_or_editor` | teilweise: gegen eine kleine Bibliothek, nicht gegen Epics 333 |
+| T42-2 | `EpicLibraryTests.No_DLC_season_pass_beta_soundtrack_or_preorder_bonus_shows_as_a_game` | ganz |
+| T42-3 | `EpicLibraryTests.Without_the_catalog_cache_the_tab_shows_the_installed_games_and_no_error` | ganz |
+| T42-4 | `EpicLibraryTests.Titles_lose_the_question_marks_of_trademark_signs_and_umlauts_stay_broken` | ganz |
+| T81-1 | `EpicLibraryTests.The_update_icon_shows_while_Epic_reports_an_update_and_goes_once_the_update_is_installed` | ganz |
+| T81-2 | `EpicLibraryTests.Last_played_comes_from_Epics_log_and_stays_after_Epic_deleted_that_log` | ganz |
+| T81-3 | `SteamInstallTests.A_Steam_download_shows_queue_progress_and_pause_and_a_new_install_ends_installed_with_a_note_without_a_restart` | teilweise: Warteschlange, % und Pause am Update eines installierten Spiels; eine neue Installation hat bis zum Ende keine Kachel |
+| T81-4 | `SteamInstallTests.Of_two_Steam_downloads_only_the_one_Steam_works_on_downloads_and_the_other_waits` | ganz |
+| T81-5 | `SteamInstallTests.Cancelling_a_new_Steam_install_shows_a_note`, `…Uninstalling_in_Steam_shows_a_note_and_the_game_leaves_the_tab`, `…An_update_of_a_Steam_tool_gives_no_note` | teilweise: der Hinweis zum Abbruch einer neuen Installation nennt „Spiel“, weil Arcadia den Titel nicht kennt |
+| T81-6 | `SteamInstallTests.A_running_Steam_update_shows_as_updating_not_as_waiting_even_before_its_bytes_move`, `EpicInstallTests.An_Epic_update_shows_as_updating_without_a_percentage_and_not_as_almost_done` | ganz |
+| T85-15 | `SteamControllerSetupTests.With_one_Steam_account_the_marker_is_written_without_asking_and_SISR_starts`, `…Without_any_Steam_account_the_install_says_so_at_once_and_leaves_Steam_and_the_option_alone`, `…Without_any_Steam_account_a_running_Steam_is_not_closed` | teilweise: Windows, SISR und Steams Neustart nachgestellt; läuft Steam, kommt „Steam beenden?“ vor der Meldung |
+| T85-19 | `SteamControllerSetupTests.With_several_accounts_the_user_picks_with_the_D_pad_who_gets_the_marker_before_Steam_closes`, `…Without_a_tick_there_is_no_going_on_and_B_cancels_the_install`, `…With_only_another_account_chosen_SISR_does_not_start_and_the_settings_offer_to_add_the_entry`, `…With_one_account_listed_the_question_does_not_come_even_if_more_userdata_folders_exist` | teilweise: Windows und SISR nachgestellt, „Abbrechen“ nur per B |
 
 Mit dem echten Fenster (Avalonia Headless mit Skia, `ArcadiaWindow`; #191): Klicks, echte Tasten, Lage und Pixel.
 

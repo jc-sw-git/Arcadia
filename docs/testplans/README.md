@@ -71,7 +71,8 @@ ergänzt, liest nur dessen Datei, nicht den ganzen Ordner.
    Regeln für die Abnahmetests (Owner 2026-10-24, #184):
    - Sie liegen in `tests/Arcadia.App.Tests` und sprechen nur über `ArcadiaDriver` (Tasten, Zeit, Neustart)
      bzw. für das echte Fenster über `ArcadiaWindow` (Klick, echte Taste, Mausrad, Lage, Pixel, Fokusrahmen; #191)
-     und was View Models und Fenster zeigen. Jeder Test trägt die IDs seiner Testfälle als `[Trait("Testfall", "T15-1")]`;
+     und was View Models und Fenster zeigen. Steam und Epic lesen dort nachgestellte Dateien mit erfundenen IDs
+     (`Fixtures/`, `ArcadiaDriver.StartWithLaunchersAsync`, #193); nichts öffnet einen echten Launcher. Jeder Test trägt die IDs seiner Testfälle als `[Trait("Testfall", "T15-1")]`;
      die Übersicht der Iteration listet sie unter „Abnahmetests“.
    - **Einmal rot:** Jeder neue Abnahmetest ist vor dem PR einmal fehlgeschlagen, weil das Feature gezielt kaputt
      gemacht wurde. Der PR nennt pro Test die Änderung, mit der er rot wurde.

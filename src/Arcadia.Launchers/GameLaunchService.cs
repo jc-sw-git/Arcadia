@@ -26,9 +26,14 @@ public enum LaunchOutcome
 public sealed record LaunchResult(LaunchOutcome Outcome, Exception? Error = null);
 
 /// <summary>Routes a start request to the client of the game's launcher.</summary>
-public sealed class GameLaunchService(LauncherRegistry launchers)
+/// <param name="open">
+/// Hands a launch target to the system; defaults to <see cref="DirectLauncherClient.Start"/>. The acceptance tests record
+/// the targets instead, so no launcher opens on the PC that runs them.
+/// </param>
+public sealed class GameLaunchService(LauncherRegistry launchers, Func<LaunchTarget, bool>? open = null)
 {
-    private readonly DirectLauncherClient _fallback = new();
+    private readonly Func<LaunchTarget, bool> _open = open ?? DirectLauncherClient.Start;
+    private readonly DirectLauncherClient _fallback = new(open);
     private int _launching;
 
     /// <summary>Optional diagnostics sink (Arcadia's log file).</summary>
@@ -92,9 +97,9 @@ public sealed class GameLaunchService(LauncherRegistry launchers)
 
     /// <summary>Hands an uninstalled game to its launcher's install dialog.</summary>
     /// <returns>False if Arcadia has no way to install the game (demo data, unsupported launcher).</returns>
-    public static bool Install(Game game) => Open(game.Install);
+    public bool Install(Game game) => Open(game.Install);
 
     /// <summary>Hands a launcher action (install, uninstall, show the game, …) to the launcher.</summary>
     /// <returns>False if there is nothing to open (no such action, or demo data).</returns>
-    public static bool Open(LaunchTarget? target) => target is not null && DirectLauncherClient.Start(target);
+    public bool Open(LaunchTarget? target) => target is not null && _open(target);
 }

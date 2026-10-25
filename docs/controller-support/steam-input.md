@@ -45,3 +45,6 @@ Verified on the owner's PC. Overview and the other files: [README](README.md).
   `SteamController_XBoxSupport` / `SteamController_GenericGamepadSupport` go off (if one was on when it began;
   read from `localconfig.vdf` only when the file changed) or with "Erneut versuchen". Where Steam stores the same
   for PlayStation and Nintendo pads isn't known; `localconfig.vdf` only lists `ControllerTypesUsed`.
+- On the owner's PC (2026-10-25, #72 test) SISR several times reported the DualSense as under Steam Input although
+  Steam Input was off for it, so SISR stayed paused; restarting SISR ended it. Probably a hang in SISR itself (cause
+  not checked); it goes away with SISR (#212, #213).

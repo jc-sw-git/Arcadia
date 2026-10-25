@@ -28,9 +28,10 @@ public interface IDesktopInputFilter : IDisposable
 public static class DesktopInputFilter
 {
     /// <summary>Low-level hooks on Windows; nothing elsewhere.</summary>
+    /// <param name="gamepads">Asked for a fresh look when the last poll saw no controller in use.</param>
     /// <param name="log">Problems of the hooks, for <c>arcadia.log</c>; called from any thread.</param>
-    public static IDesktopInputFilter CreateDefault(ControllerActivity activity, Action<string> log) =>
-        OperatingSystem.IsWindows() ? new SteamDesktopInputFilter(activity, log) : new NullDesktopInputFilter();
+    public static IDesktopInputFilter CreateDefault(ControllerActivity activity, IGamepadSource gamepads, Action<string> log) =>
+        OperatingSystem.IsWindows() ? new SteamDesktopInputFilter(activity, gamepads, log) : new NullDesktopInputFilter();
 }
 
 /// <summary>Used where Steam's desktop layout can't be filtered (macOS / Linux for now).</summary>
@@ -89,13 +90,13 @@ public sealed unsafe partial class SteamDesktopInputFilter : IDesktopInputFilter
     private nint _mouseHook;
     private bool _hookFailureLogged;
 
-    public SteamDesktopInputFilter(ControllerActivity activity, Action<string> log)
+    public SteamDesktopInputFilter(ControllerActivity activity, IGamepadSource gamepads, Action<string> log)
     {
         _activity = activity;
         _log = log;
         _controllerInUse = () => _scope == DesktopFilterScope.ComboHeld
-            ? _activity.IsComboHeld() || XInputGamepadSource.AnyNow(_activity.ConnectedSlots, ControllerActivity.IsComboHeld)
-            : _activity.IsInUse() || XInputGamepadSource.AnyNow(_activity.ConnectedSlots, ControllerActivity.IsInUse);
+            ? _activity.IsComboHeld() || gamepads.AnyNow(ControllerActivity.IsComboHeld)
+            : _activity.IsInUse() || gamepads.AnyNow(ControllerActivity.IsInUse);
     }
 
     public int? SetScope(DesktopFilterScope scope)

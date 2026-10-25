@@ -20,6 +20,12 @@ Agreed with the owner; don't change without asking. Read this before changing th
   Esc = B, F = X, V = Y, Q/E = LT/RT, Shift+Q/E = LB/RB, 1 … 0 = launcher tab 1–10, Enter = ≡, R = ⧉. Arrows,
   Page Up/Down, Ctrl+Tab, F2, the menu key and Shift+F10 stay as unadvertised alternatives. In the search a real
   keyboard types, so only keys without text act there (arrows, Enter = ≡ starts the hit, Esc, Page Up/Down).
+- Every common controller works the same, with Steam running or not and with Steam-Eingabe on or off for it (#72,
+  owner 2026-10-25): Xbox, PlayStation, Nintendo and pads modelled on them, read through SDL3. Buttons count by
+  position: the bottom face button is A on every controller (Cross, Nintendo's B), the right one B. Guide/PS/Home,
+  Capture and the touchpad click do nothing in Arcadia (Steam opens its own menu with Guide/PS). Only what SDL knows
+  as a gamepad counts: two Joy-Cons together are one pad; a single Joy-Con, wheels and flight sticks are ignored. No
+  gyro or touchpad yet (#111); the button symbols of the controller in use come with #215.
 - Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has
   no "Schließen" button besides (owner, 2026-10-20).

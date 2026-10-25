@@ -22,7 +22,7 @@ not the whole folder.
   outdated test case is ~~struck through~~ with a reason, not deleted.
 - **Every test case is marked:** `E2E: yes` (to become an automated acceptance test in the
   pipeline) or `E2E: no (reason)` (e.g. real Steam Controller, UAC, real launcher installation).
-  Files written before 2026-10-25 say `ja`/`nein`.
+  Files written before 2026-10-25 (Iteration 1) stay German and say `ja`/`nein`; new files are English.
 - **Every test run is its own row** in the issue's "History" table: date, who,
   build and environment, result, consequence. Tests during implementation (demo data, virtual
   display, mechanical only) go there too, with an honest environment.

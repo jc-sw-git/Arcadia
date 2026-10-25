@@ -33,8 +33,15 @@ internal sealed class ArcadiaWindow : IDisposable
     /// <summary>Nothing happened since the transitions last ran to their end.</summary>
     private bool _settled;
 
-    private ArcadiaWindow(ArcadiaDriver arcadia, MainWindow window)
+    private readonly bool _ownsArcadia;
+
+    /// <summary>The window handled the last key press, e.g. as an action.</summary>
+    private bool _keyHandled;
+
+    private ArcadiaWindow(ArcadiaDriver arcadia, MainWindow window, bool ownsArcadia = true)
     {
+        _ownsArcadia = ownsArcadia;
+        window.AddHandler(InputElement.KeyDownEvent, (_, e) => _keyHandled |= e.Handled, Avalonia.Interactivity.RoutingStrategies.Bubble, handledEventsToo: true);
         Arcadia = arcadia;
         Window = window;
     }
@@ -54,6 +61,20 @@ internal sealed class ArcadiaWindow : IDisposable
         window.SetRenderScaling(scaling);
         window.Show();
         var shown = new ArcadiaWindow(arcadia, window);
+        shown.Settle();
+        return shown;
+    }
+
+    /// <summary>Arcadia closed and started again on the same settings, its window shown anew; dispose both.</summary>
+    public async Task<ArcadiaWindow> RestartAsync()
+    {
+        Window.Close();
+        Dispatcher.UIThread.RunJobs();
+        var restarted = await Arcadia.RestartAsync();
+        Input.InputHints.UsesController = restarted.Main.UsesController;
+        var window = new MainWindow { DataContext = restarted.Main, Width = Window.Width, Height = Window.Height };
+        window.Show();
+        var shown = new ArcadiaWindow(restarted, window, ownsArcadia: false);
         shown.Settle();
         return shown;
     }
@@ -156,8 +177,11 @@ internal sealed class ArcadiaWindow : IDisposable
 
     public ArcadiaWindow KeyDown(Key key, KeyModifiers modifiers = KeyModifiers.None)
     {
+        _keyHandled = false;
         Window.KeyPress(key, (RawInputModifiers)modifiers, PhysicalKey.None, TextOf(key, modifiers));
-        if (TextOf(key, modifiers) is { } text)
+
+        // As on Windows, a key whose press was handled types nothing (Avalonia drops its WM_CHAR).
+        if (!_keyHandled && TextOf(key, modifiers) is { } text)
         {
             Window.KeyTextInput(text);
         }
@@ -187,6 +211,11 @@ internal sealed class ArcadiaWindow : IDisposable
     public T Named<T>(string name)
         where T : Control => Window.FindControl<T>(name) ?? throw new InvalidOperationException($"Kein {typeof(T).Name} namens {name} im Fenster.");
 
+    /// <summary>The visible button whose tooltip begins with <paramref name="tip"/>, e.g. "Nächste Seite".</summary>
+    public Button ButtonWithTip(string tip) => Assert.Single(
+        Window.GetVisualDescendants().OfType<Button>(),
+        button => button.IsEffectivelyVisible && ToolTip.GetTip(button) is string text && text.StartsWith(tip, StringComparison.Ordinal));
+
     /// <summary>The cover of <paramref name="tile"/> in the library's grid.</summary>
     public Button Tile(ViewModels.GameTileViewModel tile) =>
         (Named<ItemsControl>("GameGrid").ContainerFromItem(tile) as Control)?.GetVisualDescendants().OfType<Button>().FirstOrDefault()
@@ -205,19 +234,23 @@ internal sealed class ArcadiaWindow : IDisposable
         var bounds = Bounds(control);
         var reach = (outline.Spread + 1) * ScaleOf(control);
         using var frame = Capture();
-        foreach (var fraction in new[] { 0.25, 0.5, 0.75 })
-        {
-            var x = bounds.Left + (bounds.Width * fraction);
-            var y = bounds.Top + (bounds.Height * fraction);
-            foreach (var (side, step) in new[] { ("oben", new Vector(0, -1)), ("unten", new Vector(0, 1)), ("links", new Vector(-1, 0)), ("rechts", new Vector(1, 0)) })
+        // Rounded corners bend the ring inwards: the sides are looked at in their middle, top and bottom along their
+        // straight part too.
+        var along = bounds.Width > 2 * bounds.Height ? new[] { 0.3, 0.5, 0.7 } : [0.5];
+        var probes = along.SelectMany(fraction => new[]
             {
-                // From the control's edge outwards, as far as the ring reaches: somewhere there it must show.
-                var edge = step.X != 0 ? new Point(step.X < 0 ? bounds.Left : bounds.Right, y) : new Point(x, step.Y < 0 ? bounds.Top : bounds.Bottom);
-                var found = Enumerable.Range(0, (int)Math.Ceiling(reach * frame.Scaling) + 1)
-                    .Select(i => frame.At(edge + (step * i / frame.Scaling)))
-                    .Any(colour => Distance(colour, outline.Color) <= 40);
-                Assert.True(found, $"{where}: Fokusrahmen {side} bei {edge} fehlt oder ist abgeschnitten.");
-            }
+                ("oben", new Point(bounds.Left + (bounds.Width * fraction), bounds.Top), new Vector(0, -1)),
+                ("unten", new Point(bounds.Left + (bounds.Width * fraction), bounds.Bottom), new Vector(0, 1)),
+            })
+            .Append(("links", new Point(bounds.Left, bounds.Center.Y), new Vector(-1, 0)))
+            .Append(("rechts", new Point(bounds.Right, bounds.Center.Y), new Vector(1, 0)));
+        foreach (var (side, edge, step) in probes)
+        {
+            // From the control's edge outwards, as far as the ring reaches: somewhere there it must show.
+            var found = Enumerable.Range(0, (int)Math.Ceiling(reach * frame.Scaling) + 1)
+                .Select(i => frame.At(edge + (step * i / frame.Scaling)))
+                .Any(colour => Distance(colour, outline.Color) <= 40);
+            Assert.True(found, $"{where}: Fokusrahmen {side} bei {edge} fehlt oder ist abgeschnitten.");
         }
     }
 
@@ -296,7 +329,10 @@ internal sealed class ArcadiaWindow : IDisposable
     {
         Window.Close();
         Dispatcher.UIThread.RunJobs();
-        Arcadia.Dispose();
+        if (_ownsArcadia)
+        {
+            Arcadia.Dispose();
+        }
     }
 }
 

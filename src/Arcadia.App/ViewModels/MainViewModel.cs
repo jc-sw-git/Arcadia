@@ -368,8 +368,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
 
     private async Task ReportInstallResultsAsync(IReadOnlyList<InstallResult> results)
     {
-        string TitleOf(string key) =>
-            Tabs.SelectMany(t => t.Games).FirstOrDefault(g => g.Key == key)?.Title ?? "Spiel";
+        string? KnownTitleOf(string key) => Tabs.SelectMany(t => t.Games).FirstOrDefault(g => g.Key == key)?.Title;
+
+        // An uninstalled game leaves the tabs with the rescan below, a newly installed one only comes with it.
+        var (key, outcome) = results[^1];
+        var titleBefore = KnownTitleOf(key);
 
         if (results.Any(r => r.Outcome == InstallOutcome.Completed))
         {
@@ -386,14 +389,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
         }
 
         var completed = results.Count(r => r.Outcome == InstallOutcome.Completed);
-        var (key, outcome) = results[^1];
+        var title = titleBefore ?? KnownTitleOf(key) ?? "Spiel";
         Toast.Show(outcome switch
         {
-            InstallOutcome.Uninstalled => $"„{TitleOf(key)}“ wurde deinstalliert.",
+            InstallOutcome.Uninstalled => $"„{title}“ wurde deinstalliert.",
             InstallOutcome.Completed when completed > 1 => $"{completed} Spiele sind jetzt installiert.",
-            InstallOutcome.Completed => $"„{TitleOf(key)}“ ist jetzt installiert.",
-            InstallOutcome.Cancelled => $"Installation von „{TitleOf(key)}“ abgebrochen.",
-            _ => $"Installation von „{TitleOf(key)}“ ist fehlgeschlagen – bitte im Launcher nachsehen.",
+            InstallOutcome.Completed => $"„{title}“ ist jetzt installiert.",
+            InstallOutcome.Cancelled => $"Installation von „{title}“ abgebrochen.",
+            _ => $"Installation von „{title}“ ist fehlgeschlagen – bitte im Launcher nachsehen.",
         });
     }
 
@@ -1317,7 +1320,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     {
         try
         {
-            Toast.Show(GameLaunchService.Open(target) ? handedOver
+            Toast.Show(_launcher.Open(target) ? handedOver
                 : target is LaunchTarget.None ? demo
                 : $"{tile.LauncherName} bietet das für „{tile.Title}“ nicht an.");
         }
@@ -1707,7 +1710,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionHost, ILauncherSe
     {
         try
         {
-            if (GameLaunchService.Install(tile.Game))
+            if (_launcher.Install(tile.Game))
             {
                 tile.InstallState = _installs.Started(tile.Game);
                 Toast.Show($"Installation von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …");

@@ -51,6 +51,7 @@ und trägt sie hier ein; wer ein Issue testet, liest nur dessen Datei.
 | [143-steam-input-fuer-ganze-controllertypen.md](143-steam-input-fuer-ganze-controllertypen.md) | #143 | Steam Input für ganze Controllertypen legt den Steam Controller lahm | 6 |
 | [167-update-und-startanzeige-ueberlappen.md](167-update-und-startanzeige-ueberlappen.md) | #167 | Cover: Update- und Startanzeige überlappen, wenn der Launcher vor dem Start aktualisiert | 5 |
 | [184-abnahmetests-view-model-ebene.md](184-abnahmetests-view-model-ebene.md) | #184 | Abnahmetests auf View-Model-Ebene für die Kernabläufe | 0 |
+| [193-abnahmetests-launcher-fixtures.md](193-abnahmetests-launcher-fixtures.md) | #193 | Abnahmetests Launcher-Fixtures: Steam und Epic mit nachgestellten Dateien | 0 |
 
 ## Explorativer Test
 
@@ -91,6 +92,36 @@ Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184; Regeln im
 | G-31 | `SettingsTests.The_settings_are_worked_with_the_controller_alone_rows_categories_and_values` | teilweise: Scrollen ins Bild nicht |
 | T139-1 | `FirstRunTests.A_fresh_install_asks_first_with_the_launchers_found_switched_on`, `FirstRunTests.A_launcher_not_found_cannot_be_switched_on` | teilweise: ohne Spielzahl und Texte |
 | T139-3 | `FirstRunTests.Only_the_launchers_left_on_become_tabs_also_after_a_restart_and_the_question_does_not_come_again` | teilweise: „Fertig“ mit ≡, nicht Enter oder Klick |
+
+Launcher-Fixtures (#193): Die echten Integrationen von Steam und Epic lesen nachgestellte Dateien in einem Temp-Ordner
+(`Fixtures/SteamFolder`, `Fixtures/EpicFolder`, Formate nach `docs/launchers/`); was der Launcher selbst tut, zeigt nur
+der echte Launcher im Abschluss-Test.
+
+| Testfall | Test | Abdeckung |
+|---|---|---|
+| T1-1 | `SteamLibraryTests.The_Steam_tab_shows_the_games_of_all_libraries_with_demos_but_without_tools_redistributables_and_soundtracks` | ganz |
+| T1-2 | `SteamLibraryTests.Size_last_played_and_playtime_are_Steams_and_the_install_date_is_the_game_folders_creation` | teilweise: gegen die Dateien, nicht gegen Steams Anzeige; unter Linux ohne eigenes Erstelldatum |
+| T1-5 | `SteamLibraryTests.Without_Steam_there_is_no_Steam_tab_and_no_error` | ganz |
+| T1-6 | `SteamLibraryTests.With_demo_the_Steam_tab_shows_the_real_games_and_only_the_others_are_demo_libraries` | ganz |
+| T1-9 | `SteamLibraryTests.A_library_whose_drive_is_gone_leaves_out_its_games_without_an_error_and_they_come_back_with_the_drive` | teilweise: Ordner verschoben statt Laufwerk abgezogen |
+| T41-3 | `EpicInstallTests.An_install_from_Arcadia_waits_for_confirmation_then_queues_downloads_and_ends_installed_without_a_restart` | teilweise: Epics Dialog nur als geöffnete URI |
+| T41-4 | `EpicInstallTests.Pause_resume_and_cancel_in_Epic_show_in_Arcadia_and_install_is_locked_while_one_runs` | ganz |
+| T41-5 | `EpicInstallTests.An_install_started_in_Epic_itself_shows_in_Arcadia_with_its_state` | ganz |
+| T41-6 | `EpicLibraryTests.A_game_uninstalled_in_Epic_shows_as_not_installed_once_Arcadias_window_is_active_again`, `…once_it_is_selected` | teilweise: Aktivieren des Fensters wie `MainWindow.Activated`, nicht per Alt+Tab |
+| T41-8 | `EpicInstallTests.A_paused_install_that_is_cancelled_loses_its_progress` | ganz |
+| T41-10 | `EpicInstallTests.When_Epic_resumes_another_game_the_first_shows_as_paused_and_only_the_second_downloads` | ganz |
+| T42-1 | `EpicLibraryTests.The_Epic_tab_shows_every_game_of_the_library_installed_or_not_but_no_Unreal_Engine_or_editor` | teilweise: gegen eine kleine Bibliothek, nicht gegen Epics 333 |
+| T42-2 | `EpicLibraryTests.No_DLC_season_pass_beta_soundtrack_or_preorder_bonus_shows_as_a_game` | ganz |
+| T42-3 | `EpicLibraryTests.Without_the_catalog_cache_the_tab_shows_the_installed_games_and_no_error` | ganz |
+| T42-4 | `EpicLibraryTests.Titles_lose_the_question_marks_of_trademark_signs_and_umlauts_stay_broken` | ganz |
+| T81-1 | `EpicLibraryTests.The_update_icon_shows_while_Epic_reports_an_update_and_goes_once_the_update_is_installed` | ganz |
+| T81-2 | `EpicLibraryTests.Last_played_comes_from_Epics_log_and_stays_after_Epic_deleted_that_log` | ganz |
+| T81-3 | `SteamInstallTests.A_Steam_download_shows_queue_progress_and_pause_and_a_new_install_ends_installed_with_a_note_without_a_restart` | teilweise: Warteschlange, % und Pause am Update eines installierten Spiels; eine neue Installation hat bis zum Ende keine Kachel |
+| T81-4 | `SteamInstallTests.Of_two_Steam_downloads_only_the_one_Steam_works_on_downloads_and_the_other_waits` | ganz |
+| T81-5 | `SteamInstallTests.Cancelling_a_new_Steam_install_shows_a_note`, `…Uninstalling_in_Steam_shows_a_note_and_the_game_leaves_the_tab`, `…An_update_of_a_Steam_tool_gives_no_note` | teilweise: der Hinweis zum Abbruch einer neuen Installation nennt „Spiel“, weil Arcadia den Titel nicht kennt |
+| T81-6 | `SteamInstallTests.A_running_Steam_update_shows_as_updating_not_as_waiting_even_before_its_bytes_move`, `EpicInstallTests.An_Epic_update_shows_as_updating_without_a_percentage_and_not_as_almost_done` | ganz |
+| T85-15 | `SteamControllerSetupTests.With_one_Steam_account_the_marker_is_written_without_asking_and_SISR_starts`, `…Without_any_Steam_account_the_install_says_so_at_once_and_leaves_Steam_and_the_option_alone`, `…Without_any_Steam_account_a_running_Steam_is_not_closed` | teilweise: Windows, SISR und Steams Neustart nachgestellt; läuft Steam, kommt „Steam beenden?“ vor der Meldung |
+| T85-19 | `SteamControllerSetupTests.With_several_accounts_the_user_picks_with_the_D_pad_who_gets_the_marker_before_Steam_closes`, `…Without_a_tick_there_is_no_going_on_and_B_cancels_the_install`, `…With_only_another_account_chosen_SISR_does_not_start_and_the_settings_offer_to_add_the_entry`, `…With_one_account_listed_the_question_does_not_come_even_if_more_userdata_folders_exist` | teilweise: Windows und SISR nachgestellt, „Abbrechen“ nur per B |
 
 „Teilweise“ heißt: Der Rest des Testfalls bleibt im Abschluss-Test. „Einmal rot“ zeigt, dass der Test eine
 bestimmte Änderung erkennt, nicht dass er den Testfall ganz abdeckt.

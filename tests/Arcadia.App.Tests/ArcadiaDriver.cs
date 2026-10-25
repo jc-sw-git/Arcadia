@@ -14,8 +14,9 @@ namespace Arcadia.App.Tests;
 
 /// <summary>
 /// Arcadia as <c>App.axaml.cs</c> wires it, without a window: the user's controller is <see cref="Press"/>, the clock is
-/// fake, the launchers are <see cref="TestLauncher"/>s and the settings live in a folder of the test's own. The
-/// acceptance tests speak only through this class and <see cref="Main"/>, as the user sees it.
+/// fake, the launchers are <see cref="TestLauncher"/>s (or the real Steam and Epic over files of the test,
+/// <see cref="StartWithLaunchersAsync"/>) and the settings live in a folder of the test's own. The acceptance tests speak
+/// only through this class and <see cref="Main"/>, as the user sees it.
 /// </summary>
 internal sealed class ArcadiaDriver : IDisposable
 {
@@ -36,6 +37,8 @@ internal sealed class ArcadiaDriver : IDisposable
 
     private readonly HttpClient _http = new();
     private readonly bool _ownsFolder;
+    private readonly Fixtures.LauncherFiles? _files;
+    private readonly List<LaunchTarget> _opened;
 
     static ArcadiaDriver()
     {
@@ -46,25 +49,34 @@ internal sealed class ArcadiaDriver : IDisposable
         Velopack.VelopackApp.Build().Run();
     }
 
-    private ArcadiaDriver(string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts)
+    private ArcadiaDriver(
+        string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts,
+        Fixtures.LauncherFiles? files = null, List<LaunchTarget>? opened = null)
     {
         Folder = folder;
         _ownsFolder = ownsFolder;
+        _files = files;
+        _opened = opened ?? [];
         Specs = launchers;
         Time = time;
         Starts = starts;
         Launchers = launchers.Select(spec => new TestLauncher(spec, Now, starts)).ToList();
 
         Settings = new SettingsService(new SettingsStore(SettingsPath));
-        var firstRun = new FirstRunSetup(Settings, demo: false, forced: false);
-        var registry = new LauncherRegistry(Launchers, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
-        var controllerSupport = new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform());
+        var firstRun = new FirstRunSetup(Settings, demo: files?.Demo ?? false, forced: false);
+        IReadOnlyList<ILauncherIntegration> integrations = files is null
+            ? Launchers
+            : BuiltInLaunchers.Create(time, files.Demo, folders: files.Folders);
+        var registry = new LauncherRegistry(integrations, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
+        var controllerSupport = files?.ControllerSupport is { } steamPc
+            ? new ControllerSupportService(Settings, steamPc.Sisr, _http, time, steamPc)
+            : new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform());
         var launchedGames = new LaunchedGames();
         var installs = new InstallTracker(registry, time);
         var running = new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time);
         Main = new MainViewModel(
             new LibraryService(registry, time),
-            new GameLaunchService(registry),
+            new GameLaunchService(registry, Open),
             controllerSupport,
             new ArcadiaUpdateService(_http, time),
             installs,
@@ -88,6 +100,18 @@ internal sealed class ArcadiaDriver : IDisposable
 
     public IReadOnlyList<TestLauncher> Launchers { get; }
 
+    /// <summary>What Arcadia handed to a launcher (install, uninstall, a game start of a launcher without client), in order.</summary>
+    public IReadOnlyList<LaunchTarget> Opened
+    {
+        get
+        {
+            lock (_opened)
+            {
+                return [.. _opened];
+            }
+        }
+    }
+
     public SettingsService Settings { get; }
 
     public MainViewModel Main { get; }
@@ -110,10 +134,30 @@ internal sealed class ArcadiaDriver : IDisposable
         return driver;
     }
 
+    /// <summary>
+    /// Starts Arcadia with the real launchers of <see cref="BuiltInLaunchers"/>, Steam and Epic reading the files in
+    /// <paramref name="files"/> instead of the PC's, and waits until the library shows. Without <paramref name="settings"/>,
+    /// the launchers the test installed are already chosen.
+    /// </summary>
+    public static async Task<ArcadiaDriver> StartWithLaunchersAsync(Fixtures.LauncherFiles files, AppSettings? settings = null)
+    {
+        var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
+        new SettingsStore(Path.Combine(folder, "settings.json")).Save(settings ?? new AppSettings
+        {
+            ActiveLaunchers = new[] { (KnownLaunchers.Steam.Id, files.Folders.SteamRoot), (KnownLaunchers.Epic.Id, files.Folders.Epic.Data) }
+                .Where(launcher => Directory.Exists(launcher.Item2))
+                .Select(launcher => launcher.Item1)
+                .ToList(),
+        });
+        var driver = new ArcadiaDriver(folder, ownsFolder: true, [], new FakeTimeProvider(Now), new RecordedStarts(), files);
+        await driver.LoadAsync();
+        return driver;
+    }
+
     /// <summary>Arcadia closed and started again on the same settings, as the user does after a change.</summary>
     public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null)
     {
-        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts);
+        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, _files, _opened);
         await restarted.LoadAsync();
         return restarted;
     }
@@ -181,6 +225,28 @@ internal sealed class ArcadiaDriver : IDisposable
         }
     }
 
+    /// <summary>
+    /// The timer of <c>App.axaml.cs</c> that follows installations ticks (every 2 s): the launchers' install monitors are
+    /// read, the covers updated and a finished installation reported.
+    /// </summary>
+    public async Task<ArcadiaDriver> FollowInstallsAsync()
+    {
+        Wait(InstallProgressInterval);
+        await Main.PollInstallsAsync();
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
+    /// <summary>The user comes back to Arcadia's window, e.g. from a launcher: <c>MainWindow</c> rescans the library.</summary>
+    public async Task<ArcadiaDriver> ActivateWindowAsync()
+    {
+        // The rescan skips if the last one was only seconds ago; coming back from a launcher takes longer.
+        Wait(TimeSpan.FromSeconds(10));
+        await Main.RefreshLibraryAsync();
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
     public void Dispose()
     {
         _http.Dispose();
@@ -195,6 +261,18 @@ internal sealed class ArcadiaDriver : IDisposable
                 // A settings save still running; the temp folder is cleaned up by the system.
             }
         }
+    }
+
+    private static readonly TimeSpan InstallProgressInterval = TimeSpan.FromSeconds(2);
+
+    private bool Open(LaunchTarget target)
+    {
+        lock (_opened)
+        {
+            _opened.Add(target);
+        }
+
+        return true;
     }
 
     private async Task LoadAsync()

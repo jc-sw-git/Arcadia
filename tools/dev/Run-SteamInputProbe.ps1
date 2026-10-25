@@ -60,6 +60,8 @@ function Step([int] $number, [string] $title, [string] $todo) {
 }
 
 function Probe([string] $name, [string[]] $arguments) {
+    # Windows PowerShell 5.1 passes a double quote inside an argument to a program unescaped, which splits it.
+    if ($arguments -match '"') { throw "Probe argument with a double quote: $($arguments -match '"')" }
     & $probe @arguments --log (Join-Path $logs "$name.log")
 }
 
@@ -82,9 +84,10 @@ Near the end, look at Steam's friends list: does it show you "in game" / "SISR M
     $arguments = @('steam', '--marker', $markerId, '--seconds', '45',
         '--say', '2=Keep this window in front. Press A, B, X, Y, Back+Start, move both sticks, pull both triggers',
         '--say', '15=Now click ANOTHER window (Explorer) and keep pressing buttons and moving the sticks',
-        '--say', '30=Move the right trackpad and tilt the controller. Check Steam friends list: "in game"?')
+        '--say', '30=Move the right trackpad and tilt the controller. Check Steam friends list: in game?')
     Probe '2-steam-pad' $arguments
-    if (-not (Select-String -Path (Join-Path $logs '2-steam-pad.log') -Pattern 'CONNECTED' -Quiet)) {
+    $log2 = Join-Path $logs '2-steam-pad.log'
+    if ((Test-Path $log2) -and -not (Select-String -Path $log2 -Pattern 'CONNECTED' -Quiet)) {
         Write-Host 'No XInput pad in step 2. Same again, with a 1x1 window of the probe (does Steam need one?).' -ForegroundColor Yellow
         Read-Host 'Press Enter to start' | Out-Null
         Probe '2b-steam-pad-window' ($arguments + @('--window'))

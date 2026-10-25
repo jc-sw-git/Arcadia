@@ -11,5 +11,5 @@ Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
-| 37 neue Abnahmetests (Launcher-Einstellungen, Launcher-Seite, Ersteinrichtung) | 2026-10-25 | Claude | PR-Branch, Linux-Container (.NET 10), `dotnet test` | ❌ T137-5: leerer Name abgelehnt; sonst ✅ | Behoben, danach alle grün |
-| Alle neuen Tests, je einmal rot | 2026-10-25 | Claude | PR-Branch, Linux-Container, je eine gezielte Änderung im Produktcode | ✅ alle rot, danach wieder grün | Änderungen pro Test im PR |
+| 30 neue und 2 erweiterte Abnahmetests (Launcher-Einstellungen, Launcher-Seite, Ersteinrichtung) | 2026-10-25 | Claude | PR-Branch, Linux-Container (.NET 10), `dotnet test` | ❌ T137-5: leerer Name abgelehnt; sonst ✅ | Behoben, danach alle grün |
+| Alle 32, je einmal rot | 2026-10-25 | Claude | PR-Branch, Linux-Container, je eine gezielte Änderung im Produktcode | ✅ alle rot, danach wieder grün | Änderungen pro Test im PR |

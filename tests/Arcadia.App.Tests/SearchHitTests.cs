@@ -34,9 +34,13 @@ public sealed class SearchHitTests
         var search = arcadia.Main.Search!;
         Assert.Equal("River Crossing", search.FocusedResult?.Title);
 
+        // The start is requested synchronously (IsStarting); the launcher only hears of it later, on the thread pool.
+        var tile = search.FocusedResult!;
         arcadia.PressDown(UiAction.Settings).Wait(Tap);
+        Assert.False(tile.IsRunningOrStarting);
         Assert.Empty(arcadia.Starts.Keys);
         arcadia.LetGo(UiAction.Settings);
+        Assert.True(tile.IsStarting);
         await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count > 0, "der Launcher soll das Spiel starten");
         Assert.Equal([search.FocusedResult!.Game.Key], arcadia.Starts.Keys);
 

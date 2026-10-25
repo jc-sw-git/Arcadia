@@ -202,8 +202,13 @@ public sealed class OnScreenKeyboardTests
 
         ChooseLayout(arcadia, "FR");
         arcadia.TypeOnKeys("^");
-        arcadia.Hold(UiAction.PreviousTab, Tap).TypeOnKeys("¨");
+        arcadia.Hold(UiAction.PreviousTab, Tap).TypeOnKeys("¨").Hold(UiAction.PreviousTab, Tap);
         Assert.Equal("^´`^¨", search.Text);
+
+        ChooseLayout(arcadia, "ES");
+        arcadia.TypeOnKeys("`´");
+        arcadia.Hold(UiAction.PreviousTab, Tap).TypeOnKeys("^¨");
+        Assert.Equal("^´`^¨`´^¨", search.Text);
     }
 
     [AvaloniaFact]

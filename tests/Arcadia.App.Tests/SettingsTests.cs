@@ -13,7 +13,7 @@ public sealed class SettingsTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Press(UiAction.NextTab).Press(UiAction.NextPage).Press(UiAction.Right, times: 2).Press(UiAction.Down);
-        var focused = arcadia.Main.FocusedGame!.Game.Key;
+        var focused = arcadia.FocusedGame!.Game.Key;
 
         arcadia.Press(UiAction.Settings);
         var settings = Assert.IsType<Arcadia.App.Settings.SettingsPageViewModel>(arcadia.Main.Settings);
@@ -21,14 +21,14 @@ public sealed class SettingsTests
         // The controller drives the settings, not the library underneath.
         arcadia.Press(UiAction.Down).Press(UiAction.NextTab);
         Assert.Equal("Controller", settings.Selected.Name);
-        Assert.Equal(focused, arcadia.Main.FocusedGame?.Game.Key);
-        Assert.Equal("Xbox", arcadia.Main.SelectedTab?.Name);
+        Assert.Equal(focused, arcadia.FocusedGame?.Game.Key);
+        Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
 
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsSettingsOpen);
-        Assert.Equal("Xbox", arcadia.Main.SelectedTab?.Name);
-        Assert.Equal("2", arcadia.Main.PageButtons.Single(button => button.IsCurrent).Label);
-        Assert.Equal(focused, arcadia.Main.FocusedGame?.Game.Key);
+        Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
+        Assert.Equal("2", arcadia.CurrentPage);
+        Assert.Equal(focused, arcadia.FocusedGame?.Game.Key);
     }
 
     [AvaloniaFact]
@@ -64,6 +64,6 @@ public sealed class SettingsTests
         // B closes; the library shows the launcher switched off as gone.
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsSettingsOpen);
-        Assert.Equal(["GOG Galaxy", "Amazon Games"], arcadia.Main.Tabs.Select(tab => tab.Name));
+        Assert.Equal(["GOG Galaxy", "Amazon Games"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
     }
 }

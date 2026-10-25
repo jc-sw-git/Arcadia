@@ -154,12 +154,14 @@ public partial class MainWindow : Window
         if (_viewModel is not null)
         {
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel.LauncherTabs.PropertyChanged -= OnTabsPropertyChanged;
         }
 
         _viewModel = DataContext as MainViewModel;
         if (_viewModel is not null)
         {
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            _viewModel.LauncherTabs.PropertyChanged += OnTabsPropertyChanged;
         }
     }
 
@@ -451,6 +453,14 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnTabsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(LauncherTabsViewModel.SelectedTab))
+        {
+            Dispatcher.UIThread.Post(() => _tabs.Center(_viewModel?.LauncherTabs.SelectedTab), DispatcherPriority.Loaded);
+        }
+    }
+
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
@@ -463,9 +473,6 @@ public partial class MainWindow : Window
                 // Hidden until placed, so it doesn't flash at its default position.
                 GameMenuPanel.Opacity = 0;
                 Dispatcher.UIThread.Post(PlaceGameMenu, DispatcherPriority.Loaded);
-                break;
-            case nameof(MainViewModel.SelectedTab):
-                Dispatcher.UIThread.Post(() => _tabs.Center(_viewModel?.SelectedTab), DispatcherPriority.Loaded);
                 break;
             case nameof(MainViewModel.IsTabStripShown):
                 Dispatcher.UIThread.Post(_tabs.UpdateEdges, DispatcherPriority.Loaded);

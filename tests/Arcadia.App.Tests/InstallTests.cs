@@ -56,7 +56,7 @@ public sealed class InstallTests
         await arcadia.FollowInstallsAsync();
 
         // Cover and preview show the focused tile.
-        var tile = arcadia.Main.FocusedGame!;
+        var tile = arcadia.FocusedGame!;
         Assert.Equal("Bravo", tile.Title);
         Assert.True(tile.IsInstallQueued);
         Assert.False(tile.IsInstallSpinning);
@@ -66,7 +66,7 @@ public sealed class InstallTests
         // Its turn comes: the spinner replaces the hourglass.
         arcadia.Installs.Set(Bravo, new InstallProgress(InstallPhase.Downloading, 0.1));
         await arcadia.FollowInstallsAsync();
-        tile = arcadia.Main.FocusedGame!;
+        tile = arcadia.FocusedGame!;
         Assert.False(tile.IsInstallQueued);
         Assert.True(tile.IsInstallSpinning);
     }

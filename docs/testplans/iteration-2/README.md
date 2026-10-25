@@ -11,6 +11,7 @@ its file.
 | File | Issue | Title | Test cases |
 |---|---|---|---|
 | [072-support-every-controller-via-sdl3.md](072-support-every-controller-via-sdl3.md) | #72 | Support every common controller independently of Steam via SDL3 | 12 |
+| [155-split-main-view-model-game-actions.md](155-split-main-view-model-game-actions.md) | #155 | Split MainViewModel: extract GameActions | 0 (refactoring) |
 | [169-steam-settings-in-one-group.md](169-steam-settings-in-one-group.md) | #169 | Group the Steam settings under "Steam" | 8 |
 
 ## Exploratory test
@@ -23,3 +24,4 @@ Charter: –. Time box: –. Findings: –.
 |---|---|
 | T72-1 (mapping), T72-4, T72-6, T72-7, T72-9, T72-12 | `tests/Arcadia.App.Tests/ControllerTypesTests.cs` |
 | T169-1 to T169-8 | `tests/Arcadia.App.Tests/SteamSettingsGroupTests.cs` |
+| T155-1 to T155-12 | `tests/Arcadia.App.Tests/PageTransitionTests.cs` |

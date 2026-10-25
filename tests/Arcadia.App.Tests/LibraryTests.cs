@@ -31,8 +31,8 @@ public sealed class LibraryTests
 
         // Down from the last full row lands on the last tile of the page (25 per page: 3 rows of 8 and one tile).
         arcadia.Press(UiAction.Down, times: 5);
-        Assert.Equal(main.PageGames.Count - 1, FocusedIndex(arcadia));
-        Assert.Single(main.PageGames, tile => tile.IsFocused);
+        Assert.Equal(arcadia.PageGames.Count - 1, FocusedIndex(arcadia));
+        Assert.Single(arcadia.PageGames, tile => tile.IsFocused);
     }
 
     [AvaloniaFact]
@@ -51,7 +51,7 @@ public sealed class LibraryTests
 
         // Held long, down: row by row to the last tile of the page (25 per page: 3 rows of 8 and one tile), no further.
         arcadia.HoldPad(TimeSpan.FromSeconds(3), PadButtons.DPadDown);
-        Assert.Equal(arcadia.Main.PageGames.Count - 1, FocusedIndex(arcadia));
+        Assert.Equal(arcadia.PageGames.Count - 1, FocusedIndex(arcadia));
         Assert.Equal("1", CurrentPage(arcadia));
     }
 
@@ -95,7 +95,7 @@ public sealed class LibraryTests
         var never = TestGames.Installed(KnownLaunchers.Gog, "Bravo", installedAt: Day(2026, 2, 1)) with { InstallDirectory = folder };
         using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Gog, played, never)]);
 
-        var preview = arcadia.Main.FocusedGame!;
+        var preview = arcadia.FocusedGame!;
         Assert.Equal("Alpha", preview.Title);
         Assert.Equal("Gestern", preview.LastPlayedText);
         Assert.Equal("12 Std.", preview.PlaytimeText);
@@ -105,7 +105,7 @@ public sealed class LibraryTests
 
         // The preview follows the focus; what the launcher doesn't report shows as such.
         arcadia.Press(UiAction.Right);
-        preview = arcadia.Main.FocusedGame!;
+        preview = arcadia.FocusedGame!;
         Assert.Equal("Bravo", preview.Title);
         Assert.Equal("Nie gespielt", preview.LastPlayedText);
         Assert.Equal("–", preview.PlaytimeText);
@@ -119,13 +119,13 @@ public sealed class LibraryTests
         using var arcadia = await ArcadiaDriver.StartAsync();
 
         arcadia.Press(UiAction.NextTab);
-        Assert.Equal("Xbox", arcadia.Main.SelectedTab?.Name);
-        Assert.Contains(arcadia.Main.PageGames, tile => tile.Game.LauncherId == "xbox");
-        Assert.DoesNotContain(arcadia.Main.PageGames, tile => tile.Game.LauncherId != "xbox");
+        Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
+        Assert.Contains(arcadia.PageGames, tile => tile.Game.LauncherId == "xbox");
+        Assert.DoesNotContain(arcadia.PageGames, tile => tile.Game.LauncherId != "xbox");
 
         arcadia.Press(UiAction.PreviousTab, times: 2);
-        Assert.Equal("Amazon Games", arcadia.Main.SelectedTab?.Name);
-        Assert.Single(arcadia.Main.Tabs, tab => tab.IsSelected);
+        Assert.Equal("Amazon Games", arcadia.SelectedTab?.Name);
+        Assert.Single(arcadia.Main.LauncherTabs.Items, tab => tab.IsSelected);
     }
 
     [AvaloniaFact]
@@ -135,11 +135,11 @@ public sealed class LibraryTests
         // GOG has 31 games: 25 on page 1, 6 on page 2.
         using var arcadia = await ArcadiaDriver.StartAsync();
         var main = arcadia.Main;
-        Assert.Equal(25, main.PageGames.Count);
+        Assert.Equal(25, arcadia.PageGames.Count);
         Assert.Equal("1", CurrentPage(arcadia));
 
         arcadia.Press(UiAction.Right).Press(UiAction.NextPage);
-        Assert.Equal(6, main.PageGames.Count);
+        Assert.Equal(6, arcadia.PageGames.Count);
         Assert.Equal("2", CurrentPage(arcadia));
         Assert.Equal(0, FocusedIndex(arcadia));
 
@@ -148,7 +148,7 @@ public sealed class LibraryTests
         Assert.Equal("2", CurrentPage(arcadia));
 
         arcadia.Press(UiAction.PreviousPage);
-        Assert.Equal(25, main.PageGames.Count);
+        Assert.Equal(25, arcadia.PageGames.Count);
         Assert.Equal("1", CurrentPage(arcadia));
     }
 
@@ -171,16 +171,16 @@ public sealed class LibraryTests
         // From the selected sort (first row) down to the page sizes, onto 10, and choose it.
         arcadia.Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Accept);
         Assert.True(main.IsViewOptionsOpen);
-        Assert.Equal(10, main.PageGames.Count);
+        Assert.Equal(10, arcadia.PageGames.Count);
 
         arcadia.Press(UiAction.Back);
         Assert.False(main.IsViewOptionsOpen);
-        Assert.Equal(10, main.PageGames.Count);
+        Assert.Equal(10, arcadia.PageGames.Count);
 
         // A tab with few games offers only 10 and shows all of them.
         arcadia.Press(UiAction.PreviousTab).Press(UiAction.ViewOptions);
         Assert.Equal([true, false, false, false], main.ViewOptions!.PageSizeOptions.Select(o => o.IsEnabled));
-        Assert.Equal(6, main.PageGames.Count);
+        Assert.Equal(6, arcadia.PageGames.Count);
     }
 
     /// <summary>Five games whose order under every sort is written out by hand, so the expectation is not Arcadia's own sorter.</summary>
@@ -216,7 +216,7 @@ public sealed class LibraryTests
             .Press(UiAction.Down, times: row).Press(UiAction.Right, times: column)
             .Press(UiAction.Accept).Press(UiAction.Back);
 
-        Assert.True(expected.SequenceEqual(arcadia.Main.PageGames.Select(tile => tile.Title)), $"{sort}: {string.Join(", ", arcadia.Main.PageGames.Select(tile => tile.Title))}");
+        Assert.True(expected.SequenceEqual(arcadia.PageGames.Select(tile => tile.Title)), $"{sort}: {string.Join(", ", arcadia.PageGames.Select(tile => tile.Title))}");
     }
 
     [AvaloniaFact]
@@ -229,7 +229,7 @@ public sealed class LibraryTests
             .Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Accept) // 10 per page
             .Press(UiAction.Back)
             .Press(UiAction.NextTab);
-        var pageOne = first.Main.PageGames.Select(tile => tile.Title).ToList();
+        var pageOne = first.PageGames.Select(tile => tile.Title).ToList();
 
         // Arcadia is closed elsewhere than page one and its first game.
         first.Press(UiAction.NextPage).Press(UiAction.Right, times: 3);
@@ -239,12 +239,12 @@ public sealed class LibraryTests
         using var restarted = await first.RestartAsync();
         var main = restarted.Main;
 
-        Assert.Equal("Xbox", main.SelectedTab?.Name);
-        Assert.Equal(10, main.PageGames.Count);
+        Assert.Equal("Xbox", restarted.SelectedTab?.Name);
+        Assert.Equal(10, restarted.PageGames.Count);
         Assert.Equal("1", CurrentPage(restarted));
         Assert.Equal(0, FocusedIndex(restarted));
         Assert.Equal(new SortOrder(SortField.Name, SortDirection.Descending), restarted.Settings.Current.LibrarySort);
-        Assert.Equal(pageOne, main.PageGames.Select(tile => tile.Title));
+        Assert.Equal(pageOne, restarted.PageGames.Select(tile => tile.Title));
     }
 
     [AvaloniaFact]
@@ -260,26 +260,26 @@ public sealed class LibraryTests
         arcadia.Press(UiAction.Right).Press(UiAction.Accept)                                                            // Name Z → A
             .Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Right, times: 2).Press(UiAction.Accept) // 50
             .Press(UiAction.Back);
-        Assert.Equal(31, main.PageGames.Count);
+        Assert.Equal(31, arcadia.PageGames.Count);
         AssertNameZtoA(arcadia);
 
         arcadia.Press(UiAction.NextTab);
-        Assert.Equal("Xbox", main.SelectedTab?.Name);
-        Assert.Equal(50, main.PageGames.Count);
+        Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
+        Assert.Equal(50, arcadia.PageGames.Count);
         Assert.Equal("Name Z–A  ·  50 pro Seite", main.ViewSummary);
         AssertNameZtoA(arcadia);
 
         // Six games: 50 isn't offered there, so 10, the largest size it allows.
         arcadia.Press(UiAction.NextTab);
-        Assert.Equal("Amazon Games", main.SelectedTab?.Name);
-        Assert.Equal(6, main.PageGames.Count);
+        Assert.Equal("Amazon Games", arcadia.SelectedTab?.Name);
+        Assert.Equal(6, arcadia.PageGames.Count);
         Assert.Equal("Name Z–A  ·  10 pro Seite", main.ViewSummary);
         AssertNameZtoA(arcadia);
 
         // The choice itself is kept: the big tab shows 50 again.
         arcadia.Press(UiAction.PreviousTab);
-        Assert.Equal("Xbox", main.SelectedTab?.Name);
-        Assert.Equal(50, main.PageGames.Count);
+        Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
+        Assert.Equal(50, arcadia.PageGames.Count);
         Assert.Equal("Name Z–A  ·  50 pro Seite", main.ViewSummary);
     }
 
@@ -289,17 +289,17 @@ public sealed class LibraryTests
     {
         using var first = await ArcadiaDriver.StartAsync();
         first.Press(UiAction.NextTab);
-        Assert.Equal("Xbox", first.Main.SelectedTab?.Name);
+        Assert.Equal("Xbox", first.SelectedTab?.Name);
 
         // Xbox is gone from Arcadia, e.g. its integration was removed.
         using var withoutXbox = await first.RestartAsync([ArcadiaDriver.DefaultLaunchers[0], ArcadiaDriver.DefaultLaunchers[2]]);
-        Assert.Equal(["GOG Galaxy", "Amazon Games"], withoutXbox.Main.Tabs.Select(tab => tab.Name));
-        Assert.Equal("GOG Galaxy", withoutXbox.Main.SelectedTab?.Name);
-        Assert.Same(withoutXbox.Main.PageGames[0], withoutXbox.Main.FocusedGame);
+        Assert.Equal(["GOG Galaxy", "Amazon Games"], withoutXbox.Main.LauncherTabs.Items.Select(tab => tab.Name));
+        Assert.Equal("GOG Galaxy", withoutXbox.SelectedTab?.Name);
+        Assert.Same(withoutXbox.PageGames[0], withoutXbox.FocusedGame);
         Assert.False(withoutXbox.Main.Toast.IsVisible, withoutXbox.Main.Toast.Text);
 
         using var withXbox = await withoutXbox.RestartAsync(ArcadiaDriver.DefaultLaunchers);
-        Assert.Equal("Xbox", withXbox.Main.SelectedTab?.Name);
+        Assert.Equal("Xbox", withXbox.SelectedTab?.Name);
     }
 
     [AvaloniaFact]
@@ -331,7 +331,7 @@ public sealed class LibraryTests
             .Press(UiAction.Down, times: row).Press(UiAction.Right, times: column)
             .Press(UiAction.Accept).Press(UiAction.Back);
 
-    private static List<string> Titles(ArcadiaDriver arcadia) => arcadia.Main.PageGames.Select(tile => tile.Title).ToList();
+    private static List<string> Titles(ArcadiaDriver arcadia) => arcadia.PageGames.Select(tile => tile.Title).ToList();
 
     private static void AssertNameZtoA(ArcadiaDriver arcadia)
     {
@@ -341,7 +341,7 @@ public sealed class LibraryTests
     }
 
     private static int FocusedIndex(ArcadiaDriver arcadia) =>
-        arcadia.Main.FocusedGame is { } focused ? arcadia.Main.PageGames.IndexOf(focused) : -1;
+        arcadia.FocusedGame is { } focused ? arcadia.PageGames.ToList().IndexOf(focused) : -1;
 
     private static string? CurrentPage(ArcadiaDriver arcadia) =>
         arcadia.Main.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;

@@ -95,14 +95,14 @@ public sealed class EpicLibraryTests
         epic.Log(EpicFolder.InstalledApps((game, "1.0.0", HasUpdate: true)));
 
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
-        Assert.True(arcadia.Main.FocusedGame!.UpdateAvailable);
+        Assert.True(arcadia.FocusedGame!.UpdateAvailable);
 
         // Updated in Epic: the manifest has the new version; the launcher's report still names the old one.
         epic.WriteInstalled(game with { Version = "1.1.0" });
         await arcadia.ActivateWindowAsync();
 
-        Assert.Equal("Leuchtturm", arcadia.Main.FocusedGame!.Title);
-        Assert.False(arcadia.Main.FocusedGame.UpdateAvailable);
+        Assert.Equal("Leuchtturm", arcadia.FocusedGame!.Title);
+        Assert.False(arcadia.FocusedGame.UpdateAvailable);
     }
 
     [AvaloniaFact]
@@ -117,14 +117,14 @@ public sealed class EpicLibraryTests
         epic.Log(EpicFolder.PlaytimeStarted(game, played), EpicFolder.PlaytimeStopped(game, played.AddHours(2)));
 
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
-        Assert.Equal("Vor 3 Tagen", arcadia.Main.FocusedGame!.LastPlayedText);
+        Assert.Equal("Vor 3 Tagen", arcadia.FocusedGame!.LastPlayedText);
 
         // Two launcher starts later the log with the session is gone.
         epic.StartNewLog();
         epic.StartNewLog(deleteBackups: true);
         using var restarted = await arcadia.RestartAsync();
 
-        Assert.Equal("Vor 3 Tagen", restarted.Main.FocusedGame!.LastPlayedText);
+        Assert.Equal("Vor 3 Tagen", restarted.FocusedGame!.LastPlayedText);
     }
 
     [AvaloniaFact]
@@ -137,12 +137,12 @@ public sealed class EpicLibraryTests
         epic.WriteInstalled(game);
         epic.WriteCatalog((game, Game, null));
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
-        Assert.True(arcadia.Main.FocusedGame!.IsInstalled);
+        Assert.True(arcadia.FocusedGame!.IsInstalled);
 
         epic.Uninstall(game);
         await arcadia.ActivateWindowAsync();
 
-        var tile = arcadia.Main.FocusedGame!;
+        var tile = arcadia.FocusedGame!;
         Assert.Equal("Leuchtturm", tile.Title);
         Assert.False(tile.IsInstalled);
         Assert.Equal("Installieren", tile.PrimaryActionText);
@@ -160,18 +160,18 @@ public sealed class EpicLibraryTests
         epic.WriteInstalled(second);
         epic.WriteCatalog((first, Game, null), (second, Game, null));
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
-        var (gone, toward) = arcadia.Main.FocusedGame!.Title == first.Title ? (second, UiAction.Right) : (first, UiAction.Left);
+        var (gone, toward) = arcadia.FocusedGame!.Title == first.Title ? (second, UiAction.Right) : (first, UiAction.Left);
 
         // Arcadia stays in front, a while later the user moves to the game.
         epic.Uninstall(gone);
         arcadia.Wait(TimeSpan.FromSeconds(10)).Press(toward);
 
-        Assert.Equal(gone.Title, arcadia.Main.FocusedGame!.Title);
+        Assert.Equal(gone.Title, arcadia.FocusedGame!.Title);
         await arcadia.WaitUntilAsync(
-            () => arcadia.Main.PageGames.Single(tile => tile.Title == gone.Title).IsInstalled == false,
+            () => arcadia.PageGames.Single(tile => tile.Title == gone.Title).IsInstalled == false,
             "das deinstallierte Spiel soll als nicht installiert erscheinen");
     }
 
     private static Arcadia.App.ViewModels.LauncherTabViewModel EpicTab(ArcadiaDriver arcadia) =>
-        Assert.Single(arcadia.Main.Tabs, tab => tab.Name == "Epic Games");
+        Assert.Single(arcadia.Main.LauncherTabs.Items, tab => tab.Name == "Epic Games");
 }

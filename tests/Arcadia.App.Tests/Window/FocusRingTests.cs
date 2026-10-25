@@ -22,7 +22,7 @@ public sealed class FocusRingTests
         arcadia.Press(UiAction.Down, times: 2);
         AssertRing(arcadia, "untere Reihe, letzte Spalte", "FocusRingLifted");
         arcadia.Press(UiAction.Down);
-        Assert.Same(main.PageGames[^1], main.FocusedGame);
+        Assert.Same(arcadia.Arcadia.PageGames[^1], arcadia.Arcadia.FocusedGame);
         AssertRing(arcadia, "letztes Cover der Seite", "FocusRingLifted");
     }
 
@@ -87,7 +87,7 @@ public sealed class FocusRingTests
     }
 
     private static void AssertRing(ArcadiaWindow arcadia, string where, string ring) =>
-        arcadia.AssertRingAround(arcadia.Tile(arcadia.Arcadia.Main.FocusedGame!), where, ring);
+        arcadia.AssertRingAround(arcadia.Tile(arcadia.Arcadia.FocusedGame!), where, ring);
 
     private static Button Focused(ArcadiaWindow arcadia) => Assert.Single(
         arcadia.Window.GetVisualDescendants().OfType<Button>(),

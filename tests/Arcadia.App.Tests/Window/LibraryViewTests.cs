@@ -25,8 +25,8 @@ public sealed class LibraryViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync(
             [LauncherSpec.With(gog, TestGames.Installed(gog, "Alpha", ArcadiaDriver.Now.AddDays(-2)), TestGames.NotInstalled(gog, "Beta"))]);
         var main = arcadia.Arcadia.Main;
-        var installed = arcadia.Tile(main.PageGames[0]);
-        var missing = arcadia.Tile(main.PageGames[1]);
+        var installed = arcadia.Tile(arcadia.Arcadia.PageGames[0]);
+        var missing = arcadia.Tile(arcadia.Arcadia.PageGames[1]);
 
         Assert.False(Shade(installed).IsEffectivelyVisible);
         Assert.True(Shade(missing).IsEffectivelyVisible, "Nicht installiert: ausgegraut");

@@ -57,7 +57,7 @@ public sealed record SearchEmptyState(bool IsNoHits, string Title, string Text);
 /// X brings the keyboard back. Starting a hit, its details, its menu and the filter dialog are the
 /// window's business (<see cref="MainViewModel"/>).
 /// </summary>
-public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, IDisposable
+public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTarget, IDisposable
 {
     /// <summary>Hits per row, in both layouts.</summary>
     public const int ResultColumns = 7;
@@ -66,6 +66,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, ID
     public const int ResultRowsWithoutKeyboard = 2;
 
     private readonly Func<Game, Action<GameTileViewModel>, GameTileViewModel> _createTile;
+    private readonly LauncherTabsViewModel _tabs;
     private IReadOnlyList<LauncherLibrary> _libraries;
     private GameSearch _search;
     private IReadOnlyList<LauncherInfo> _launchers = [];
@@ -78,8 +79,9 @@ public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, ID
     private TextWithCaret _text = TextWithCaret.AtEnd(string.Empty);
     private readonly Func<LauncherInfo, LauncherBadge> _badgeOf;
 
+    /// <param name="tabs">The launcher tabs; the search covers the ones with games.</param>
     public SearchViewModel(
-        IReadOnlyList<LauncherLibrary> libraries,
+        LauncherTabsViewModel tabs,
         KeyboardLayout layout,
         Action<KeyboardLayout> layoutChosen,
         Func<Game, Action<GameTileViewModel>, GameTileViewModel> createTile,
@@ -88,8 +90,9 @@ public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, ID
         TimeProvider time,
         Action<Action> post)
     {
-        _libraries = libraries;
-        _search = new GameSearch(libraries.SelectMany(l => l.Games), Formatting.Culture);
+        _tabs = tabs;
+        _libraries = tabs.SearchedLibraries();
+        _search = new GameSearch(_libraries.SelectMany(l => l.Games), Formatting.Culture);
         _createTile = createTile;
         _badgeOf = badgeOf;
         Keyboard = new OnScreenKeyboardViewModel(layout, this, time, post);
@@ -240,7 +243,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, ID
     /// through the hits and X brings the keyboard back. The right stick or a real keyboard's arrows
     /// move through the hits, LT/RT or Page Up/Down turn them.
     /// </summary>
-    public void Handle(UiAction action)
+    public bool Handle(UiAction action)
     {
         if (Keyboard.LayoutMenu.IsOpen)
         {
@@ -249,7 +252,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, ID
                 Keyboard.ButtonDown(button);
             }
 
-            return;
+            return true;
         }
 
         switch (action)
@@ -295,6 +298,8 @@ public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, ID
 
                 break;
         }
+
+        return true;
     }
 
     /// <summary>B: closes the layout menu, else puts the keyboard away. False if there was neither, so B leaves the search.</summary>
@@ -326,6 +331,19 @@ public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, ID
 
     /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
     public void CancelHeldButtons() => Keyboard.CancelPresses();
+
+    /// <summary>The hits; also while a detail page opened from them covers the search.</summary>
+    public IEnumerable<GameTileViewModel> ShownTiles => _results;
+
+    /// <summary>The controller shows the button legend; a real keyboard puts the on-screen one away; the mouse leaves it.</summary>
+    public void InputKindChanged(InputKind kind)
+    {
+        UsesController = kind == InputKind.Gamepad;
+        if (kind == InputKind.Keyboard)
+        {
+            IsKeyboardOut = false;
+        }
+    }
 
     /// <summary>Y in the mouse mode with the search in front (#110): the keyboard comes out and takes the mouse mode's buttons.</summary>
     public void StartMouseModeTyping()
@@ -438,10 +456,10 @@ public sealed partial class SearchViewModel : ViewModelBase, IKeyboardTarget, ID
     }
 
     /// <summary>The library was rescanned: same input, fresh hits, the focus stays on its game where it can.</summary>
-    public void Update(IReadOnlyList<LauncherLibrary> libraries)
+    public void Update()
     {
-        _libraries = libraries;
-        _search = new GameSearch(libraries.SelectMany(l => l.Games), Formatting.Culture);
+        _libraries = _tabs.SearchedLibraries();
+        _search = new GameSearch(_libraries.SelectMany(l => l.Games), Formatting.Culture);
         BuildChips();
         Recompute(FocusedResult?.Game.Key);
     }

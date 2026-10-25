@@ -34,16 +34,16 @@
 
         <DockPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsTabStripShown}">
           <Button DockPanel.Dock="Left" Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Margin="0,0,12,0"
-                  Command="{Binding PreviousTabCommand}" ToolTip.Tip="Vorheriger Launcher (Umschalt+Q)">
+                  Command="{Binding LauncherTabs.PreviousCommand}" ToolTip.Tip="Vorheriger Launcher (Umschalt+Q)">
             <ctl:KeyText Pad="LB" Keys="⇧ Q" />
           </Button>
           <Button DockPanel.Dock="Right" Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Margin="12,0,0,0"
-                  Command="{Binding NextTabCommand}" ToolTip.Tip="Nächster Launcher (Umschalt+E)">
+                  Command="{Binding LauncherTabs.NextCommand}" ToolTip.Tip="Nächster Launcher (Umschalt+E)">
             <ctl:KeyText Pad="RB" Keys="⇧ E" />
           </Button>
           <Panel>
             <ScrollViewer Name="TabScroller" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
-              <ItemsControl Name="TabList" ItemsSource="{Binding Tabs}">
+              <ItemsControl Name="TabList" ItemsSource="{Binding LauncherTabs.Items}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,0" />
@@ -123,7 +123,7 @@
       <!-- Toolbar: current tab and view options -->
       <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto" IsVisible="{Binding IsLibraryShown}">
         <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-          <TextBlock Text="{Binding SelectedTab?.Name, TargetNullValue=''}" FontSize="34" FontWeight="ExtraBold" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding LauncherTabs.SelectedTab?.Name, TargetNullValue=''}" FontSize="34" FontWeight="ExtraBold" VerticalAlignment="Center" />
           <TextBlock Text="{Binding CountText}" FontSize="18" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,8,0,0" />
         </StackPanel>
         <Button Grid.Column="1" Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}" IsVisible="{Binding AreGamesShown}">

@@ -25,7 +25,7 @@ public sealed class DetailPageViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync();
         var main = arcadia.Arcadia.Main;
         arcadia.Press(UiAction.Right, times: 2);
-        var third = main.FocusedGame!.Title;
+        var third = arcadia.Arcadia.FocusedGame!.Title;
 
         OpenByHoldingA(arcadia);
         AssertDetailOf(arcadia, third);
@@ -56,7 +56,7 @@ public sealed class DetailPageViewTests
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
         var main = arcadia.Arcadia.Main;
-        var games = main.PageGames.Select(tile => tile.Title).ToList();
+        var games = arcadia.Arcadia.PageGames.Select(tile => tile.Title).ToList();
         OpenByHoldingA(arcadia);
 
         // LT/RT slide the track to its new place. Only that a slide is set up is checked: headless, the transform's
@@ -70,7 +70,7 @@ public sealed class DetailPageViewTests
 
         // Before the first stands the last, after the last the first.
         arcadia.Press(UiAction.PreviousPage);
-        Assert.Equal("31 von 31", main.Detail!.PositionText);
+        Assert.Equal("31 von 31", arcadia.Arcadia.Detail!.PositionText);
         arcadia.Press(UiAction.NextPage);
         AssertDetailOf(arcadia, games[0]);
 
@@ -114,14 +114,14 @@ public sealed class DetailPageViewTests
 
         // Before the first stands the last game, on page 2 of GOG's 31.
         arcadia.Press(UiAction.PreviousPage);
-        var last = main.Detail!.Current.Tile.Title;
+        var last = arcadia.Arcadia.Detail!.Current.Tile.Title;
         arcadia.Click(arcadia.OneWithText("Bibliothek"));
 
         Assert.False(main.IsDetailOpen);
-        Assert.Equal(last, main.FocusedGame?.Title);
-        Assert.Equal(6, main.PageGames.Count);
-        Assert.Equal(main.PageGames[^1], main.FocusedGame);
-        Assert.True(arcadia.Tile(main.FocusedGame!).Classes.Contains("focused"), "Die Kachel zeigt den Fokus.");
+        Assert.Equal(last, arcadia.Arcadia.FocusedGame?.Title);
+        Assert.Equal(6, arcadia.Arcadia.PageGames.Count);
+        Assert.Equal(arcadia.Arcadia.PageGames[^1], arcadia.Arcadia.FocusedGame);
+        Assert.True(arcadia.Tile(arcadia.Arcadia.FocusedGame!).Classes.Contains("focused"), "Die Kachel zeigt den Fokus.");
     }
 
     [AvaloniaFact]
@@ -233,7 +233,7 @@ public sealed class DetailPageViewTests
 
     private static void AssertDetailOf(ArcadiaWindow arcadia, string title)
     {
-        Assert.Equal(title, arcadia.Arcadia.Main.Detail?.Current.Tile.Title);
+        Assert.Equal(title, arcadia.Arcadia.Detail?.Current.Tile.Title);
         Assert.Contains(CentrePage(arcadia).GetVisualDescendants().OfType<TextBlock>(), text => text.Text == title && text.FontSize >= 60);
     }
 

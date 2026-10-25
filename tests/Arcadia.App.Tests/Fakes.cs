@@ -71,11 +71,12 @@ internal sealed class TestInstallMonitor(string launcherId, LauncherInstalls ins
     public InstallSnapshot Poll() => installs.Of(launcherId);
 }
 
+/// <summary>Reads <paramref name="games"/> as they are at each scan: a test may pass a list it changes later, as a launcher's library.</summary>
 internal sealed class FixedScanner(LauncherInfo launcher, IReadOnlyList<Game> games) : ILauncherScanner
 {
     public LauncherInfo Launcher => launcher;
 
-    public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default) => Task.FromResult(games);
+    public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Game>>([.. games]);
 }
 
 /// <summary>Games whose every title and date a test names, so its expectations don't come from Arcadia's own code.</summary>

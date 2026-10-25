@@ -45,7 +45,7 @@ public sealed class FirstRunViewTests
         using var restarted = await arcadia.RestartAsync();
         Assert.False(restarted.Arcadia.Main.IsFirstRunShown);
         Assert.False(View(restarted).IsEffectivelyVisible);
-        Assert.Equal(["GOG Galaxy"], restarted.Arcadia.Main.Tabs.Select(tab => tab.Name));
+        Assert.Equal(["GOG Galaxy"], restarted.Arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
     }
 
     [AvaloniaFact]
@@ -172,10 +172,10 @@ public sealed class FirstRunViewTests
 
     private static async Task AssertLibraryAsync(ArcadiaWindow arcadia, IReadOnlyList<string> tabs, string how)
     {
-        await arcadia.Arcadia.WaitUntilAsync(() => !arcadia.Arcadia.Main.IsFirstRunShown && arcadia.Arcadia.Main.Tabs.Count > 0, $"{how}: die Bibliothek soll nach \"Fertig\" erscheinen");
+        await arcadia.Arcadia.WaitUntilAsync(() => !arcadia.Arcadia.Main.IsFirstRunShown && arcadia.Arcadia.Main.LauncherTabs.Items.Count > 0, $"{how}: die Bibliothek soll nach \"Fertig\" erscheinen");
         arcadia.Settle();
         Assert.False(View(arcadia).IsEffectivelyVisible, how);
-        Assert.Equal(tabs, arcadia.Arcadia.Main.Tabs.Select(tab => tab.Name));
-        Assert.Contains("focused", arcadia.Tile(arcadia.Arcadia.Main.FocusedGame!).Classes);
+        Assert.Equal(tabs, arcadia.Arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
+        Assert.Contains("focused", arcadia.Tile(arcadia.Arcadia.FocusedGame!).Classes);
     }
 }

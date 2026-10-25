@@ -25,8 +25,8 @@ public sealed class SettingsViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync();
         var main = arcadia.Arcadia.Main;
         arcadia.Press(UiAction.NextTab).Press(UiAction.NextPage).Press(UiAction.Right, times: 2).Press(UiAction.Down);
-        var focused = main.FocusedGame!.Game.Key;
-        var cover = arcadia.CentreOf(arcadia.Tile(main.FocusedGame!));
+        var focused = arcadia.Arcadia.FocusedGame!.Game.Key;
+        var cover = arcadia.CentreOf(arcadia.Tile(arcadia.Arcadia.FocusedGame!));
 
         void AssertCovers(string how)
         {
@@ -44,10 +44,10 @@ public sealed class SettingsViewTests
         void AssertBack(string how)
         {
             Assert.False(main.IsSettingsOpen, how);
-            Assert.Equal("Xbox", main.SelectedTab?.Name);
-            Assert.Equal("2", main.PageButtons.Single(button => button.IsCurrent).Label);
-            Assert.Equal(focused, main.FocusedGame?.Game.Key);
-            Assert.Contains("focused", arcadia.Tile(main.FocusedGame!).Classes);
+            Assert.Equal("Xbox", arcadia.Arcadia.SelectedTab?.Name);
+            Assert.Equal("2", arcadia.Arcadia.CurrentPage);
+            Assert.Equal(focused, arcadia.Arcadia.FocusedGame?.Game.Key);
+            Assert.Contains("focused", arcadia.Tile(arcadia.Arcadia.FocusedGame!).Classes);
         }
 
         arcadia.Press(UiAction.Settings);
@@ -73,7 +73,7 @@ public sealed class SettingsViewTests
         AssertCovers("≡ auf der Detailseite");
         arcadia.Press(UiAction.Back);
         Assert.True(main.IsDetailOpen);
-        Assert.Equal(focused, main.Detail!.Current.Tile.Game.Key);
+        Assert.Equal(focused, arcadia.Arcadia.Detail!.Current.Tile.Game.Key);
     }
 
     [AvaloniaFact]

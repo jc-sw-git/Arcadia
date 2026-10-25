@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.App.Search;
 using Arcadia.Input;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
@@ -170,6 +171,25 @@ internal sealed class ArcadiaDriver : IDisposable
 
     public MainViewModel Main { get; }
 
+    // What the player sees, so the tests read it in one place however the view models are split up (#155).
+
+    /// <summary>The cover with the focus in the library.</summary>
+    public GameTileViewModel? FocusedGame => Main.FocusedGame;
+
+    /// <summary>The covers of the library's current page.</summary>
+    public IReadOnlyList<GameTileViewModel> PageGames => Main.PageGames;
+
+    /// <summary>The current page's number in the footer, as it reads ("2").</summary>
+    public string? CurrentPage => Main.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;
+
+    public LauncherTabViewModel? SelectedTab => Main.LauncherTabs.SelectedTab;
+
+    /// <summary>The detail page, from the library or from the search; null while none is open.</summary>
+    public GameDetailViewModel? Detail => Main.Detail;
+
+    /// <summary>The search, also while a detail page of its hits covers it; null while it is closed.</summary>
+    public SearchViewModel? Search => Main.Search;
+
     /// <summary>Windows, Steam and SISR of the test; null: a PC without them, as on Linux.</summary>
     public FakeSteam? Steam { get; }
 
@@ -244,6 +264,14 @@ internal sealed class ArcadiaDriver : IDisposable
             Dispatcher.UIThread.RunJobs();
         }
 
+        return this;
+    }
+
+    /// <summary>Arcadia's window loses the focus, e.g. to a launcher: held buttons are dropped, their release may never come.</summary>
+    public ArcadiaDriver LoseFocus()
+    {
+        Main.CancelHold();
+        Dispatcher.UIThread.RunJobs();
         return this;
     }
 
@@ -412,6 +440,17 @@ internal sealed class ArcadiaDriver : IDisposable
     {
         Wait(InstallProgressInterval);
         await Main.PollInstallsAsync();
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
+    /// <summary>
+    /// The library is read again at once, as after a game ended or an installation finished, without time passing on the
+    /// clock: a button held meanwhile stays held.
+    /// </summary>
+    public async Task<ArcadiaDriver> RescanAsync()
+    {
+        await Main.RefreshLibraryAsync(force: true);
         Dispatcher.UIThread.RunJobs();
         return this;
     }

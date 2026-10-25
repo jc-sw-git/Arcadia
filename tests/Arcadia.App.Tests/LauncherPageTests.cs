@@ -119,13 +119,13 @@ public sealed class LauncherPageTests
         Assert.Equal("Galaxis", settings.Rows.OfType<LauncherRowViewModel>().First().Title);
 
         arcadia.Press(UiAction.Back);
-        Assert.Equal("Galaxis", arcadia.Main.FocusedGame?.LauncherName);
+        Assert.Equal("Galaxis", arcadia.FocusedGame?.LauncherName);
         arcadia.Hold(UiAction.Accept, PastHoldTime);
-        Assert.Equal(("Galaxis", "Galaxis"), (arcadia.Main.Detail?.TabName, arcadia.Main.Detail?.Current.Tile.LauncherName));
+        Assert.Equal(("Galaxis", "Galaxis"), (arcadia.Detail?.TabName, arcadia.Detail?.Current.Tile.LauncherName));
         arcadia.Press(UiAction.Back);
 
         arcadia.Press(UiAction.Search);
-        Assert.Contains("Galaxis", arcadia.Main.Search!.Chips.Select(chip => chip.Name));
+        Assert.Contains("Galaxis", arcadia.Search!.Chips.Select(chip => chip.Name));
 
         using var restarted = await arcadia.RestartAsync();
         Assert.Equal(["Galaxis", "Xbox", "Amazon Games"], restarted.TabNames());
@@ -273,7 +273,7 @@ public sealed class LauncherPageTests
         Assert.Equal("gg2", row.ValueText);
 
         arcadia.Press(UiAction.Back).Press(UiAction.Back).Press(UiAction.Search);
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
         Assert.Contains("/gg2", search.Chips.Select(chip => chip.Keyword));
         arcadia.Main.TypeInSearch("/gg2 hollow");
         Assert.Equal(["Hollow Knight"], search.Hits.Select(game => game.Title));
@@ -366,5 +366,5 @@ internal static class LauncherPageDriving
 {
     /// <summary>The launcher as Arcadia shows it now, with the name and keyword the user gave it.</summary>
     public static Arcadia.Launchers.Abstractions.LauncherInfo TabsLauncher(this ArcadiaDriver arcadia, string id) =>
-        arcadia.Main.Tabs.Single(tab => tab.Launcher.Id == id).Launcher;
+        arcadia.Main.LauncherTabs.Items.Single(tab => tab.Launcher.Id == id).Launcher;
 }

@@ -12,7 +12,7 @@ reference for porting (binary VDF codec, scanner ideas, architecture notes).
   → tasks, all linked as GitHub sub-issues. Add new issues as a sub-issue of the matching epic
   (`gh api -X POST repos/jc-sw-git/Arcadia/issues/<epic>/sub_issues -F sub_issue_id=<issue id, not number>`).
   Features are `type:story` and start with a `> **Story:**` line. See `docs/roadmap.md`.
-- **Refinement first:** before implementing an issue (Iteration 1) or an epic (from Iteration 2), refine
+- **Refinement first:** before implementing an issue (own thread per issue unless the owner groups issues), refine
   it with the owner using the skill `.claude/skills/refinement`; rules in `docs/roadmap.md` → Refinement.
 - **Language:** everything on GitHub is English (public repo): code, docs, issues, PRs, commits, branches,
   labels, milestones, release notes, comments. Chat with the owner is German; UI texts too, for now.

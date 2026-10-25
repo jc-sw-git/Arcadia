@@ -8,14 +8,26 @@ Manual tests per iteration and the course of an iteration: `docs/testplans/`.
 
 Designs: `docs/designs/` (PNG + sources), canvas: https://claude.ai/artifact/8A9qxc67RcsuFmavaqCAuN
 
+## Iteration themes
+
+Iterations 2–4 each have a theme instead of a single epic (owner, 2026-10-25); the GitHub milestones
+carry the prefix `I2`, `I3`, `I4`. A theme can span several epics and tech-debt issues.
+
+- **I2:** reduce tech debt (slimmer code, more modularisation), polish SISR / Steam Controller support
+  and the general Steam integration.
+- **I3:** SteamGridDB integration and more, polished settings.
+- **I4:** new launchers, focusing on the new Epic launcher.
+
+Milestone descriptions on GitHub are the source for the exact scope.
+
 ## Refinement
 
 Before code is written, owner and Claude walk through the most likely scenarios together
 (skill `.claude/skills/refinement`). The result then lives in the issue (owner, 2026-10-14):
 
-- **Iteration 1 (rest):** every issue still being worked on is refined on its own first.
-- **From Iteration 2:** one refinement per epic that pins down its scope. The result is
-  cut into lean issues that hang on the epic as sub-issues.
+- **Per issue, in its own thread** (owner, 2026-10-25): every issue is refined on its own first. Issues that
+  refine and ship better together are grouped only when the owner says so. An epic is refined as a whole
+  (and sliced into issues) only on the owner's request.
 - Every issue is a self-contained increment that pays into the epic.
 - Guideline: the context an issue needs (code, docs, logs, discussion) stays below about
   150k tokens. More is a sign to split the issue further; not a hard limit.

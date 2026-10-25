@@ -60,7 +60,7 @@ internal static class OnScreenKeys
     /// The shortest walk of D-pad presses to <paramref name="target"/>, found with the same rules the keyboard moves by
     /// (<see cref="KeyGrid"/>) over the keys as they are now. Where a press really lands is checked by <see cref="GoTo(ArcadiaDriver, BoardKeyViewModel)"/>.
     /// </summary>
-    private static IReadOnlyList<UiAction> PathTo(OnScreenKeyboardViewModel keyboard, BoardKeyViewModel target)
+    internal static IReadOnlyList<UiAction> PathTo(OnScreenKeyboardViewModel keyboard, BoardKeyViewModel target)
     {
         var views = keyboard.Keys.ToDictionary(k => k.Key);
         var rows = FullKeyboard.For(keyboard.Layout).Rows;

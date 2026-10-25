@@ -56,6 +56,7 @@ und trägt sie hier ein; wer ein Issue testet, liest nur dessen Datei.
 | [189-abnahmetests-einstellungen-controller-updates.md](189-abnahmetests-einstellungen-controller-updates.md) | #189 | Abnahmetests View-Model: Einstellungen, Mausmodus, Controller-Support und Updates | 0 |
 | [190-abnahmetests-launcher-und-ersteinrichtung.md](190-abnahmetests-launcher-und-ersteinrichtung.md) | #190 | Abnahmetests View-Model: Launcher-Einstellungen und Ersteinrichtung | 0 |
 | [191-abnahmetests-headless-ui-bibliothek.md](191-abnahmetests-headless-ui-bibliothek.md) | #191 | Abnahmetests Headless-UI: Bibliothek, Detailseite, Header, Maus und Tastatur | 0 |
+| [192-abnahmetests-headless-ui-suche-einstellungen.md](192-abnahmetests-headless-ui-suche-einstellungen.md) | #192 | Abnahmetests Headless-UI: Suche, Tastatur, Einstellungen und Launcher-Seiten | 0 |
 | [193-abnahmetests-launcher-fixtures.md](193-abnahmetests-launcher-fixtures.md) | #193 | Abnahmetests Launcher-Fixtures: Steam und Epic mit nachgestellten Dateien | 0 |
 
 ## Explorativer Test
@@ -127,8 +128,8 @@ Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #187, #18
 | T41-7 | `LibraryTests.Sorted_by_install_date_games_not_installed_come_last_in_both_directions` | ganz |
 | T41-9 | `InstallTests.A_game_waiting_in_the_queue_shows_the_hourglass_instead_of_the_spinner_on_the_cover_and_in_the_preview` | teilweise: Zustand der Kachel, nicht das Symbol selbst; Warteschlange aus einem Fake-Monitor, nicht aus Epics Dateien |
 | T95-8 | `RunningGameTests.In_the_demo_data_one_game_per_launcher_runs_and_offers_Zurueck_ins_Spiel_but_no_uninstall` | teilweise: ohne Größe und Lage von „Zurück ins Spiel“ und „Optionen“, ohne Tastatur |
-| T15-1 | `SettingsTests.Menu_opens_the_settings_and_B_goes_back_to_the_same_tab_page_and_game` | teilweise: Controller, nicht Enter/Esc und Klick |
-| G-31 | `SettingsTests.The_settings_are_worked_with_the_controller_alone_rows_categories_and_values` | teilweise: Scrollen ins Bild nicht |
+| T15-1 | `SettingsTests.Menu_opens_the_settings_and_B_goes_back_to_the_same_tab_page_and_game` | teilweise: Controller, nicht Enter/Esc und Klick (prüft der Fenstertest, #192) |
+| G-31 | `SettingsTests.The_settings_are_worked_with_the_controller_alone_rows_categories_and_values` | teilweise: Scrollen ins Bild nicht (prüft der Fenstertest, #192) |
 | T15-5 | `SettingsRowTests.The_footer_names_only_the_buttons_of_the_focused_row` | teilweise: was der Footer nennt (◀▶, A mit Text, Kategorien), nicht der Wechsel zu Tasten und Maus nach Taste oder Klick |
 | T15-10 | `ControllerSupportTests.The_header_symbols_open_their_category_Controller_for_SISR_and_Ueber_Arcadia_for_Arcadias_update` | teilweise: Klick als Befehl des View Models, nicht auf das Symbol |
 | T15-11 | `SettingsRowTests.Choices_wrap_at_their_ends_and_switches_flip_with_either_arrow`, `…Steam_Controller_Kompatibilitaet_switches_with_either_arrow` | teilweise: ohne Schalter der Ersteinrichtung und ohne Taste A der Tastatur (die Tests drücken ◀) |
@@ -163,7 +164,7 @@ Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #187, #18
 | T137-7 | `LauncherPageTests.The_info_panel_previews_the_order_with_only_the_pages_launcher_framed_and_gives_an_example_for_the_keyword`, `…Read_again_on_the_page_reads_only_this_launcher_and_then_names_its_games_and_the_time`, `…Read_again_is_greyed_out_with_the_reason_for_a_launcher_inactive_or_not_found` | teilweise: ohne Log-Zeile, Erklärtexte nur vorhanden |
 | T139-1 | `FirstRunTests.A_fresh_install_asks_first_with_the_launchers_found_switched_on`, `FirstRunTests.A_launcher_not_found_cannot_be_switched_on` | teilweise: ohne Überschrift und Ausgrauen |
 | T139-2 | `FirstRunTests.The_preview_shows_the_launchers_switched_on_as_tabs_and_follows_every_switch` | teilweise: ohne Datum und Uhrzeit, „Später änderbar“, „Fertig“ und Text der leeren Vorschau |
-| T139-3 | `FirstRunTests.Only_the_launchers_left_on_become_tabs_also_after_a_restart_and_the_question_does_not_come_again` | teilweise: „Fertig“ mit ≡, nicht Enter oder Klick |
+| T139-3 | `FirstRunTests.Only_the_launchers_left_on_become_tabs_also_after_a_restart_and_the_question_does_not_come_again` | teilweise: „Fertig“ mit ≡, nicht Enter oder Klick (prüft der Fenstertest, #192) |
 | T139-4 | `FirstRunTests.Settings_of_a_version_without_a_choice_of_launchers_bring_the_question_and_keep_everything_else` | ganz |
 | T139-5 | `FirstRunTests.Demo_skips_the_question_with_every_launcher_active_and_saves_no_choice`, `…First_run_asks_again_also_with_a_saved_choice`, `…Demo_with_first_run_keeps_the_answer_only_until_Arcadia_closes` | teilweise: Schalter ohne Kommandozeile, Test-Launcher statt Demo-Bibliothek |
 | T139-7 | `FirstRunTests.Done_with_no_launcher_switched_on_shows_no_launcher_active`, `…Done_with_no_launcher_found_shows_no_launcher_active` | ganz |
@@ -198,7 +199,7 @@ der echte Launcher im Abschluss-Test.
 | T85-15 | `SteamControllerSetupTests.With_one_Steam_account_the_marker_is_written_without_asking_and_SISR_starts`, `…Without_any_Steam_account_the_install_says_so_at_once_and_leaves_Steam_and_the_option_alone`, `…Without_any_Steam_account_a_running_Steam_is_not_closed` | teilweise: Windows, SISR und Steams Neustart nachgestellt; läuft Steam, kommt „Steam beenden?“ vor der Meldung |
 | T85-19 | `SteamControllerSetupTests.With_several_accounts_the_user_picks_with_the_D_pad_who_gets_the_marker_before_Steam_closes`, `…Without_a_tick_there_is_no_going_on_and_B_cancels_the_install`, `…With_only_another_account_chosen_SISR_does_not_start_and_the_settings_offer_to_add_the_entry`, `…With_one_account_listed_the_question_does_not_come_even_if_more_userdata_folders_exist` | teilweise: Windows und SISR nachgestellt, „Abbrechen“ nur per B |
 
-Mit dem echten Fenster (Avalonia Headless mit Skia, `ArcadiaWindow`; #191): Klicks, echte Tasten, Lage und Pixel.
+Mit dem echten Fenster (Avalonia Headless mit Skia, `ArcadiaWindow`; #191, #192): Klicks, echte Tasten, Lage und Pixel.
 
 | Testfall | Test | Abdeckung |
 |---|---|---|
@@ -225,6 +226,35 @@ Mit dem echten Fenster (Avalonia Headless mit Skia, `ArcadiaWindow`; #191): Klic
 | G-32 | `FocusRingTests` (Cover an den Ecken des Rasters, „Ansicht“, Einstellungen) | teilweise: Einstellungen, die es unter Linux nicht gibt (Steam Controller), werden gedimmt gezeichnet und übersprungen |
 | G-33 | `GameMenuTests.View_R_and_a_click_on_Options_open_the_menu_over_the_Options_button_on_its_left_and_bottom_edges`, `…The_menu_stands_beside_its_cover…` | ganz |
 | T8-1 | `KeyboardAndMouseTests.A_tab_chosen_by_click_is_the_same_after_a_restart` | ganz (mit dem VM-Test) |
+| T12-1 | `SearchViewTests.X_opens_the_search_with_its_head_field_chips_empty_state_keyboard_and_controller_legend_F_and_the_lens_without_the_keyboard` | ganz (der Fokus startet auf „a“, nicht auf „q“) |
+| T12-4 | `SearchViewTests.A_typed_prefix_searches_only_its_launchers_the_chips_follow_and_an_unknown_one_is_named_in_orange` | ganz |
+| T12-5 | `SearchViewTests.Chips_and_the_L3_filter_switch_launchers_the_last_stays_on_and_Alle_Launcher_switches_all_on_a_typed_prefix_is_rewritten` | ganz |
+| T12-6 | `SearchViewTests.R3_opens_the_layout_menu_over_the_hits_A_picks_a_layout_B_and_R3_close_it_first_and_the_layout_stays_after_a_restart` | ganz |
+| T12-10 | `SearchViewTests.A_real_keyboard_types_erases_moves_through_the_hits_starts_holds_for_details_and_closes_but_never_reaches_the_on_screen_keys` | ganz |
+| T12-12 | `SearchViewTests.The_keyboard_rolls_out_and_in_with_its_tab_on_its_top_edge_by_X_B_a_click_on_the_tab_or_a_real_key_and_the_hits_follow` | teilweise: das Rollen als angelegter Übergang, nicht wie es aussieht |
+| T12-16 | `SearchViewTests.More_hits_than_fit_the_row_shows_faded_neighbours_and_turns_round_and_the_grid_scrolls_by_two_rows_and_stops_at_its_ends`, `…The_row_of_hits_fades_out_to_the_background_without_a_line_at_its_edges_also_at_a_scaled_size` (1745×1000, 1536×864 bei 125 %) | teilweise: das Gleiten nur als Ergebnis |
+| T12-18 | `SearchViewTests.The_first_click_on_a_key_or_the_tab_acts_and_switches_the_legend_to_the_mouse_a_button_brings_the_controller_back` | ganz |
+| T110-4 | `OnScreenKeyboardViewTests.In_the_mouse_mode_R3_opens_the_layout_menu_top_right_A_picks_B_closes_only_it_and_US_has_the_ANSI_keys_with_AltGr_greyed` | teilweise: Tastaturfenster des Mausmodus ohne `MouseModeHost`, „gilt auch in der Suche und umgekehrt“ nicht |
+| T110-10 | `SearchViewTests.The_searchs_keyboard_is_the_mouse_modes_without_tab_and_edge_key_its_enter_starts_the_hit_and_Ausblenden_puts_it_in` | ganz (linker Stick über nachgestellte Gamepad-Abfragen) |
+| T110-14 | `SearchViewTests.The_focus_ring_shows_whole_on_the_keys_at_the_keyboards_four_edges_in_the_search_and_in_the_mouse_mode` | ganz |
+| T129-7 | `OnScreenKeyboardViewTests.A_click_on_a_key_types_the_character_shown_and_clicks_on_shift_and_AltGr_switch_the_level` | ganz |
+| T15-1 | `SettingsViewTests.The_settings_cover_the_whole_page_and_Menu_B_Enter_Esc_the_chip_and_X_lead_back_to_the_same_tab_page_and_game_or_detail_page` | ganz |
+| T15-2 | `SettingsViewTests.LB_RB_shift_Q_E_and_a_click_switch_the_category_round_from_the_last_to_the_first_the_strip_in_the_middle` | teilweise: Kategorien seit #137 mit ⇧ Q/⇧ E statt Q/E; Ausfaden der Leiste mit drei Kategorien nicht prüfbar |
+| T15-4 | `SettingsViewTests.In_Controller_the_D_pad_walks_the_rows_with_their_headings_in_view_values_change_at_once_Aus_dims_and_all_stays_after_a_restart` | teilweise: „Beheben“, „Aktualisieren“, „SISR installieren“ nur in den VM-Tests zu #85 |
+| T15-6 | `SettingsViewTests.Mausmodus_explains_itself_with_a_box_the_info_panel_fades_where_it_scrolls_RS_shift_W_S_page_keys_and_the_wheel_scroll_it` | ganz |
+| T15-9 | `SettingsViewTests.Every_setting_is_reached_with_one_hand_on_the_keyboard_and_with_the_mouse_alone_which_focuses_a_row_without_changing_it` | ganz (Kategorien mit ⇧ Q/⇧ E) |
+| G-31 | `SettingsViewTests.The_focused_setting_scrolls_into_view_in_every_category_and_B_closes` | ganz (mit dem VM-Test) |
+| T64-11 | `SettingsViewTests.A_mouse_move_or_a_key_shows_the_X_at_the_top_right_of_each_dialog_which_closes_only_it_and_a_button_hides_it_again` | teilweise: von den SISR-Dialogen nur „Steam beenden?“; „So funktioniert's“ ist seit #15 eine Box im Infotext, kein Dialog |
+| T92-3 | `SettingsViewTests.A_click_on_the_mode_in_the_preview_switches_it_and_back_to_the_start_value_nothing_is_saved` | ganz |
+| T92-5 | `SettingsViewTests.The_settings_scroll_and_the_footer_stays_visible_at_the_bottom_also_scrolled_to_the_top_and_to_the_end` | ganz |
+| T127-9 | `SettingsViewTests.The_mouse_mode_settings_draw_LS_and_L3_as_symbols_in_their_text_and_So_funktioniert_es_LS_RS_and_the_D_pad` | ganz |
+| T136-2 | `LauncherViewTests.A_launcher_switched_off_goes_under_Nicht_aktiv_with_its_tab_and_hits_and_switched_on_again_comes_last_and_is_read` (◀, ▶, A, D, Klick) | ganz |
+| T136-8 | `LauncherViewTests.One_hand_on_the_keyboard_lifts_moves_puts_down_cancels_and_reads_all_again_with_the_toast_over_the_page`, `…The_mouse_alone_drags_a_launcher_to_another_place_or_under_Nicht_aktiv_and_reads_all_again`, `…The_buttons_of_a_tab_without_games_and_of_no_launcher_active_work_with_the_keyboard_and_the_mouse` | teilweise: Controller in den VM-Tests zu #136; Scrollen der Launcher-Details (⇧ W/S, Mausrad) nicht |
+| T137-1 | `LauncherPageViewTests.A_Space_or_a_click_opens_the_page_with_its_head_and_groups_and_B_Esc_or_Launcher_lead_back_to_it_in_the_list` (A, Leertaste, Klick) | ganz (der Zustand steht im Infopanel, nicht im Seitenkopf) |
+| T137-4 | `LauncherPageViewTests.Writing_the_name_opens_the_keyboard_below_without_Tab_and_Dock_with_the_caret_in_the_field_and_the_footer_naming_its_keys`, `…With_the_controller_the_D_pad_and_A_type_X_erases_Y_spaces_R3_opens_the_layouts_Menu_takes_and_B_drops`, `…With_a_real_keyboard_keys_type_the_arrows_Home_and_End_move_the_caret_Enter_takes_and_Esc_drops`, `…While_the_name_is_written_the_mouse_focuses_no_other_row_and_clicks_type_on_the_keyboard` | teilweise: LB/RB (⇧/AltGr) nur in den Tests der Suche (T129-2, T129-3) |
+| T137-8 | `LauncherPageViewTests.One_hand_on_the_keyboard_turns_the_launchers_switches_one_and_writes_a_keyword`, `…The_mouse_alone_turns_by_the_neighbours_with_their_whole_hover_ring_switches_and_points_at_rows` | teilweise: Controller in den VM-Tests zu #137; Infopanel und Logo nicht |
+| T139-3 | `FirstRunViewTests.A_launcher_switched_off_then_Fertig_by_Enter_or_a_click_leaves_only_the_others_as_tabs_also_after_a_restart` (Enter, Klick) | ganz (mit dem VM-Test für ≡) |
+| T139-6 | `FirstRunViewTests.B_does_nothing_and_the_controller_alone_switches_and_finishes`, `…Esc_does_nothing_and_one_hand_on_the_keyboard_switches_and_finishes`, `…The_mouse_alone_focuses_by_hovering_switches_with_a_click_on_the_switch_and_finishes_with_Fertig` | ganz |
 
 „Teilweise“ heißt: Der Rest des Testfalls bleibt im Abschluss-Test. „Einmal rot“ zeigt, dass der Test eine
 bestimmte Änderung erkennt, nicht dass er den Testfall ganz abdeckt.

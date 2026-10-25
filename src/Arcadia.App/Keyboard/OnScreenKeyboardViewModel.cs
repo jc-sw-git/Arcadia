@@ -336,13 +336,15 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
     private void SetLayout(KeyboardLayout layout)
     {
         var centre = FocusedKey.Key.CentreIn(_row);
-        _board = FullKeyboard.For(layout);
-        LayoutMenu.Selected = layout;
+
+        // Before the board changes: switching AltGr off redraws the keys, and the new board's aren't built yet.
         if (!layout.HasAltGr)
         {
             _levels.ResetAltGr();
         }
 
+        _board = FullKeyboard.For(layout);
+        LayoutMenu.Selected = layout;
         BuildKeys();
         FocusClosest(centre);
     }

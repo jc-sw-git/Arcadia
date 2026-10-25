@@ -19,6 +19,9 @@ Product rules (by position, extra buttons, what counts): `docs/product/controls.
   physical pad Arcadia reads anyway), every other Valve device and SDL's type `Steam` (the Steam Controller still
   comes as SISR's virtual Xbox 360 pad `045E:028E`), single Joy-Cons, and devices SDL types as wheel, flight stick and
   the like. Ignored devices are logged with the reason.
+  SISR's virtual pad looks to SDL exactly like a wired Xbox 360 pad (`045E:028E`, path `XInput#0`; #212 checks, P3), so
+  it is read like one: until #212 it is the only way the Steam Controller reaches Arcadia. Once Arcadia reads the
+  Steam Controller itself, that pad has to be told apart by the device tree (usbip's root hub) or SISR's API.
 - **Fresh look:** `SteamDesktopInputFilter` asks `IGamepadSource.AnyNow` when the last poll saw no controller in use;
   it calls `SDL_UpdateGamepads` under the source's lock and gives up after 2 ms, so the hook stays fast.
 - **Rumble:** `SDL_RumbleGamepad` for 150 ms on the pad whose Back + Start switched the mouse mode; SDL stops it.

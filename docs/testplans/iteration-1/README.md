@@ -51,6 +51,7 @@ und trägt sie hier ein; wer ein Issue testet, liest nur dessen Datei.
 | [143-steam-input-fuer-ganze-controllertypen.md](143-steam-input-fuer-ganze-controllertypen.md) | #143 | Steam Input für ganze Controllertypen legt den Steam Controller lahm | 6 |
 | [167-update-und-startanzeige-ueberlappen.md](167-update-und-startanzeige-ueberlappen.md) | #167 | Cover: Update- und Startanzeige überlappen, wenn der Launcher vor dem Start aktualisiert | 5 |
 | [184-abnahmetests-view-model-ebene.md](184-abnahmetests-view-model-ebene.md) | #184 | Abnahmetests auf View-Model-Ebene für die Kernabläufe | 0 |
+| [190-abnahmetests-launcher-und-ersteinrichtung.md](190-abnahmetests-launcher-und-ersteinrichtung.md) | #190 | Abnahmetests View-Model: Launcher-Einstellungen und Ersteinrichtung | 0 |
 
 ## Explorativer Test
 
@@ -70,7 +71,7 @@ Funde am 0.1.0-rc.1 (Juri, 2026-10-24, bei Testfällen und nebenbei):
 Wird beim Abschluss-Test aus allen Testfällen mit `E2E: ja` erstellt und in der Abnahme-Iteration
 umgesetzt.
 
-Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184; Regeln im [README](../README.md)):
+Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #190; Regeln im [README](../README.md)):
 
 | Testfall | Test | Abdeckung |
 |---|---|---|
@@ -89,8 +90,24 @@ Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184; Regeln im
 | T12-9 | `SearchTests.B_first_puts_the_keyboard_away_then_goes_back_to_the_library_as_it_was_without_erasing` | teilweise: ohne zweimal schnell B |
 | T15-1 | `SettingsTests.Menu_opens_the_settings_and_B_goes_back_to_the_same_tab_page_and_game` | teilweise: Controller, nicht Enter/Esc und Klick |
 | G-31 | `SettingsTests.The_settings_are_worked_with_the_controller_alone_rows_categories_and_values` | teilweise: Scrollen ins Bild nicht |
-| T139-1 | `FirstRunTests.A_fresh_install_asks_first_with_the_launchers_found_switched_on`, `FirstRunTests.A_launcher_not_found_cannot_be_switched_on` | teilweise: ohne Spielzahl und Texte |
+| T136-4 | `LauncherSettingsTests.Y_lifts_a_launcher_the_D_pad_moves_it_and_Y_puts_it_down_with_the_tabs_following_at_once`, `…B_while_a_launcher_is_lifted_puts_everything_back_as_it_was`, `…A_launcher_put_down_under_the_inactive_ones_is_off_and_its_tab_goes` | teilweise: ohne Maus (Ziehen), Rahmen und Footer nur als Zustand |
+| T136-5 | `LauncherSettingsTests.Beside_the_list_the_tab_strip_shows_the_tabs_in_order_and_the_details_explain_the_focused_launcher` | teilweise: ohne Logo, RS-Scrollen und Fade; Warnungen in T136-16 |
+| T136-6 | `LauncherSettingsTests.X_reads_all_active_launchers_again_and_a_toast_says_so` | teilweise: Toast als Text, nicht seine Lage |
+| T136-7 | `LauncherSettingsTests.A_tab_without_games_keeps_its_tab_and_its_buttons_read_again_or_open_its_launcher_settings`, `…A_tab_of_a_launcher_no_longer_found_keeps_its_tab_and_looks_for_it_again`, `…With_every_launcher_off_the_library_says_so_and_offers_only_the_launcher_settings` | teilweise: ohne Maus und Leertaste, ohne Bild der leeren Tabs |
+| T136-14 | `LauncherSettingsTests.The_row_read_all_again_is_reached_with_the_D_pad_and_A_reads_like_X`, `…Without_an_active_launcher_the_row_read_all_again_is_greyed_out_and_A_does_nothing` | teilweise: Glyphe nur als Wert, ohne Klick |
+| T136-15 | `LauncherSettingsTests.With_every_launcher_off_the_library_says_so_and_offers_only_the_launcher_settings` | teilweise: ohne Klick |
+| T136-16 | `LauncherSettingsTests.An_active_launcher_without_games_is_information_without_a_symbol_at_the_category`, `…An_active_launcher_no_longer_found_stays_a_warning_with_a_symbol_at_the_category` | teilweise: Farbe und Symbol nur als Stufe |
+| T137-2 | `LauncherPageTests.LT_and_RT_turn_to_the_launcher_before_and_after_in_the_order_of_the_list_and_wrap_around`, `…A_single_launcher_has_no_neighbours_to_turn_to` | teilweise: ohne Klick auf Nachbarn und Rahmen beim Überfahren |
+| T137-3 | `LauncherPageTests.Active_on_the_page_switches_like_the_list_and_the_head_shows_the_state`, `…A_launcher_not_found_cannot_be_switched_on_on_its_page` | ganz |
+| T137-5 | `LauncherPageTests.A_name_taken_shows_at_once_in_tab_list_search_preview_and_details_also_after_a_restart`, `…A_name_taken_empty_is_the_launchers_own_name_again` | teilweise: in der Suche nur der Chip, nicht die Treffer |
+| T137-6 | `LauncherPageTests.A_keyword_taken_by_another_launcher_or_against_the_rules_is_red_at_once_and_not_taken`, `…A_valid_keyword_holds_at_once_in_the_search_and_its_chip` | teilweise: rot nur als Zustand; Tasten der Bildschirmtastatur prüfen `KeyGridTests` |
+| T137-7 | `LauncherPageTests.The_info_panel_previews_the_order_with_only_the_pages_launcher_framed_and_gives_an_example_for_the_keyword`, `…Read_again_on_the_page_reads_only_this_launcher_and_then_names_its_games_and_the_time`, `…Read_again_is_greyed_out_with_the_reason_for_a_launcher_inactive_or_not_found` | teilweise: ohne Log-Zeile, Erklärtexte nur vorhanden |
+| T139-1 | `FirstRunTests.A_fresh_install_asks_first_with_the_launchers_found_switched_on`, `FirstRunTests.A_launcher_not_found_cannot_be_switched_on` | teilweise: ohne Überschrift und Ausgrauen |
+| T139-2 | `FirstRunTests.The_preview_shows_the_launchers_switched_on_as_tabs_and_follows_every_switch` | teilweise: ohne Datum und Uhrzeit, „Später änderbar“, „Fertig“ und Text der leeren Vorschau |
 | T139-3 | `FirstRunTests.Only_the_launchers_left_on_become_tabs_also_after_a_restart_and_the_question_does_not_come_again` | teilweise: „Fertig“ mit ≡, nicht Enter oder Klick |
+| T139-4 | `FirstRunTests.Settings_of_a_version_without_a_choice_of_launchers_bring_the_question_and_keep_everything_else` | ganz |
+| T139-5 | `FirstRunTests.Demo_skips_the_question_with_every_launcher_active_and_saves_no_choice`, `…First_run_asks_again_also_with_a_saved_choice`, `…Demo_with_first_run_keeps_the_answer_only_until_Arcadia_closes` | teilweise: Schalter ohne Kommandozeile, Test-Launcher statt Demo-Bibliothek |
+| T139-7 | `FirstRunTests.Done_with_no_launcher_switched_on_shows_no_launcher_active`, `…Done_with_no_launcher_found_shows_no_launcher_active` | ganz |
 
 „Teilweise“ heißt: Der Rest des Testfalls bleibt im Abschluss-Test. „Einmal rot“ zeigt, dass der Test eine
 bestimmte Änderung erkennt, nicht dass er den Testfall ganz abdeckt.

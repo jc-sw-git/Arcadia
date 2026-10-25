@@ -151,6 +151,41 @@ public sealed class SdlGamepadSourceTests : IDisposable
     }
 
     [Fact]
+    public void A_failing_poll_closes_SDL_raises_Lost_once_and_reports_the_error_last()
+    {
+        var order = new List<string>();
+        _source.Lost += () => order.Add($"lost, SDL quit: {_sdl.IsQuit}, reported: {_failures.Count}");
+        _source.Open();
+        var pad = _sdl.Plug(KnownPads.DualSense);
+        _sdl.Hold(pad, B.South);
+        Poll();
+        _sdl.ReadError = new InvalidOperationException("SDL broke");
+
+        Assert.False(_source.Poll(_now));
+        Assert.False(_source.Poll(_now + 8));
+
+        Assert.Equal(["lost, SDL quit: True, reported: 0"], order);
+        Assert.Equal("SDL broke", Assert.Single(_failures).Message);
+        Assert.Equal(["+A"], _events);
+    }
+
+    [Fact]
+    public void Every_handler_of_Lost_runs_even_if_one_throws()
+    {
+        var ran = new List<int>();
+        _source.Lost += () => throw new InvalidOperationException("handler broke");
+        _source.Lost += () => ran.Add(2);
+        _source.Open();
+        _sdl.Plug(KnownPads.Xbox360);
+        _sdl.ReadError = new InvalidOperationException("SDL broke");
+
+        _source.Poll(0);
+
+        Assert.Equal([2], ran);
+        Assert.Equal(["handler broke", "SDL broke"], _failures.Select(f => f.Message));
+    }
+
+    [Fact]
     public async Task The_poll_thread_reads_on_its_own_and_closes_everything_on_dispose()
     {
         var pad = _sdl.Plug(KnownPads.SwitchPro);

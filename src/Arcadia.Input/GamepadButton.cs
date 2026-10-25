@@ -46,6 +46,12 @@ public interface IGamepadSource : IDisposable
     /// </summary>
     event Action<IReadOnlyList<GamepadReading>>? Polled;
 
+    /// <summary>
+    /// Raised once, on the poll thread, when the controllers stop for good after an error: whatever is held is to be
+    /// dropped, not released (a released A would start a game), as no poll will let go of it.
+    /// </summary>
+    event Action? Lost;
+
     void Start();
 
     /// <summary>A short rumble on the controller <paramref name="padId"/>, if it has motors. Callable from any thread.</summary>
@@ -75,6 +81,12 @@ public sealed class NullGamepadSource : IGamepadSource
     }
 
     public event Action<IReadOnlyList<GamepadReading>>? Polled
+    {
+        add { }
+        remove { }
+    }
+
+    public event Action? Lost
     {
         add { }
         remove { }

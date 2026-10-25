@@ -139,5 +139,30 @@ public sealed class ControllerTypesTests
         Assert.NotNull(arcadia.Main.Search);
     }
 
+    /// <summary>
+    /// Codex review of #219: no poll lets go of a button held when SDL fails. A held A neither starts the game nor opens
+    /// the details later; it is dropped.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T72-9")]
+    public async Task Losing_SDL_while_A_is_held_drops_the_hold_without_starting_or_opening_anything()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var pad = arcadia.Sdl.Plug(KnownPads.Xbox360);
+        arcadia.StartControllers();
+        var tile = arcadia.Main.FocusedGame!;
+        arcadia.Sdl.Hold(pad, B.South);
+        arcadia.PollControllers().Wait(TimeSpan.FromMilliseconds(300));
+        Assert.True(tile.IsHolding);
+
+        arcadia.Sdl.ReadError = new InvalidOperationException("SDL broke");
+        arcadia.PollControllers().Wait(TimeSpan.FromSeconds(2));
+
+        Assert.False(tile.IsHolding);
+        Assert.False(arcadia.Main.IsDetailOpen);
+        Assert.Empty(arcadia.Starts.Keys);
+        Assert.Equal(ControllerInput.UnavailableText, arcadia.Main.Toast.Text);
+    }
+
     private static Arcadia.Input.PadDevice Pad(string name) => (Arcadia.Input.PadDevice)typeof(KnownPads).GetField(name)!.GetValue(null)!;
 }

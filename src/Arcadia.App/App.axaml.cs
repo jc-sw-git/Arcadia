@@ -171,6 +171,7 @@ public partial class App : Application
             _gamepad.Polled += _ => routing.Tick();
             _gamepad.ButtonPressed += routing.Press;
             _gamepad.ButtonReleased += routing.Release;
+            _gamepad.Lost += routing.Drop;
             _gamepad.Start();
 
             var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), "SISR-Überwachung"));

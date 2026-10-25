@@ -69,6 +69,7 @@ public sealed class SdlGamepadSource : IGamepadSource
     private readonly Lock _sdlLock = new();
     private readonly Dictionary<uint, (nint Handle, PadDevice Device)> _pads = [];
     private bool _open;
+    private volatile bool _lost;
     private Thread? _thread;
 
     /// <param name="log">Connects and disconnects, for <c>arcadia.log</c>; called on the poll thread.</param>
@@ -87,6 +88,8 @@ public sealed class SdlGamepadSource : IGamepadSource
     public event Action<GamepadButton>? ButtonReleased;
 
     public event Action<IReadOnlyList<GamepadReading>>? Polled;
+
+    public event Action? Lost;
 
     public void Start()
     {
@@ -160,9 +163,32 @@ public sealed class SdlGamepadSource : IGamepadSource
         }
     }
 
-    /// <summary>One poll: who came or went, what every controller reports, and their button events.</summary>
+    /// <summary>
+    /// One poll: who came or went, what every controller reports, and their button events. A failing native call or
+    /// handler of <see cref="Polled"/> must not end Arcadia: the controllers stop for good instead (<see cref="Lost"/>).
+    /// </summary>
     /// <param name="nowMs">A clock in milliseconds; only differences count.</param>
-    public void Poll(long nowMs)
+    /// <returns>False once the controllers are lost; there is nothing more to poll.</returns>
+    public bool Poll(long nowMs)
+    {
+        if (_lost)
+        {
+            return false;
+        }
+
+        try
+        {
+            ReadControllers(nowMs);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Lose(ex);
+            return false;
+        }
+    }
+
+    private void ReadControllers(long nowMs)
     {
         lock (_sdlLock)
         {
@@ -249,20 +275,57 @@ public sealed class SdlGamepadSource : IGamepadSource
         var clock = Stopwatch.StartNew();
         try
         {
-            while (!_stop.IsCancellationRequested)
+            while (!_stop.IsCancellationRequested && Poll(clock.ElapsedMilliseconds))
             {
-                Poll(clock.ElapsedMilliseconds);
                 Thread.Sleep(PollIntervalMs);
             }
-        }
-        catch (Exception ex)
-        {
-            // A failing native call or a handler of Polled must not end Arcadia; the controllers stop instead.
-            _failed(ex);
         }
         finally
         {
             Close();
+        }
+    }
+
+    /// <summary>
+    /// The controllers stop for good: SDL is closed, every handler of <see cref="Lost"/> drops what it holds (each
+    /// one, even if another throws), and the error is reported last.
+    /// </summary>
+    private void Lose(Exception error)
+    {
+        _lost = true;
+        try
+        {
+            Close();
+        }
+        catch (Exception closeError)
+        {
+            Report(closeError);
+        }
+
+        foreach (var handler in Lost?.GetInvocationList() ?? [])
+        {
+            try
+            {
+                ((Action)handler)();
+            }
+            catch (Exception handlerError)
+            {
+                Report(handlerError);
+            }
+        }
+
+        Report(error);
+    }
+
+    private void Report(Exception error)
+    {
+        try
+        {
+            _failed(error);
+        }
+        catch (Exception)
+        {
+            // Reporting must not end the poll thread in turn; the controllers are already stopped.
         }
     }
 

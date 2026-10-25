@@ -124,6 +124,7 @@ internal sealed class ArcadiaDriver : IDisposable
         _controllers.Polled += _ => _gamepad.Tick();
         _controllers.ButtonPressed += _gamepad.Press;
         _controllers.ButtonReleased += _gamepad.Release;
+        _controllers.Lost += _gamepad.Drop;
     }
 
     public string Folder { get; }

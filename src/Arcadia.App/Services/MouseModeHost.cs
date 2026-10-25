@@ -141,6 +141,7 @@ public sealed class MouseModeHost : IDisposable
         _returnWithView.HoldCancelled += () => Dispatcher.UIThread.Post(_overlay.CancelReturnHold);
         _returnWithView.Requested += () => Dispatcher.UIThread.Post(ReturnToArcadia);
         _gamepad.Polled += OnPolled;
+        _gamepad.Lost += OnControllersLost;
         _window.Activated += OnArcadiaActivated;
         _window.Deactivated += OnArcadiaDeactivated;
     }
@@ -179,6 +180,7 @@ public sealed class MouseModeHost : IDisposable
     public void Dispose()
     {
         _gamepad.Polled -= OnPolled;
+        _gamepad.Lost -= OnControllersLost;
         _foregroundCheck.Stop();
         _focusLossSettle.Stop();
         _desktopFilterCheck.Stop();
@@ -214,6 +216,29 @@ public sealed class MouseModeHost : IDisposable
             catch (Exception stopError)
             {
                 AppLog.Write($"Mausmodus ließ sich nach dem Fehler nicht sauber beenden: {stopError}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// No poll will come any more (SDL failed, #72): the mouse mode lets go of its mouse buttons and keys, View's hold
+    /// ends, and with no controller left the desktop filter goes at its next check. On the poll thread, like OnPolled.
+    /// </summary>
+    private void OnControllersLost()
+    {
+        try
+        {
+            _mode.Stop();
+        }
+        finally
+        {
+            try
+            {
+                _returnWithView.Update([]);
+            }
+            finally
+            {
+                _activity.Note([]);
             }
         }
     }

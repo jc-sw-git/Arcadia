@@ -28,5 +28,10 @@ Product rules (by position, extra buttons, what counts): `docs/product/controls.
 - **Errors:** a missing or broken `SDL3.dll` (`DllNotFoundException`, `EntryPointNotFoundException`, `SDL_Init`
   failing) or a native error later ends only the controller input: logged with stack trace, a toast
   (`ControllerInput.UnavailableText`), keyboard and mouse keep working.
-- Not seen yet on the owner's PC (start checks of #72, `/mnt/project-files/spikes/72/`): whether SDL still reads a pad
-  Steam Input has taken, and whether Steam's desktop layout makes mouse and keys of the DualSense and Switch Pro.
+- **Start checks** (owner's PC, 2026-10-25, raw SDL probe, Steam running, SISR not; only the 8BitDo Ultimate 2 by
+  cable or dongle, no Bluetooth adapter at hand): SDL read it as `"XInput Controller #1"` `2DC8:310B`, path `XInput#0`,
+  with Steam-Eingabe for Xbox pads off and on and with Steam closed; Steam gave no virtual pad (`28DE:11FF`) to the
+  probe and no mouse or keys from its desktop layout. Windows itself sends `VK_GAMEPAD_*` keys (`0xC3`–`0xDA`) as
+  simulated input to the window in front for an XInput pad, also with Steam closed (they switched tabs in Windows
+  Terminal). SDL also listed the Steam Controller (`28DE:1304`, HID), which Arcadia ignores.
+  Not seen yet: DualSense and Switch Pro (Steam Input on: still read? desktop layout?).

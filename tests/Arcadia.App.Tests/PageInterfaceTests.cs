@@ -86,4 +86,32 @@ public sealed class PageInterfaceTests
         arcadia.Main.NotePointer();
         Assert.False(keyboard.UsesController);
     }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T209-3")]
+    public async Task A_search_closed_after_its_filter_is_not_kept_alive_by_the_closed_dialog()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var closed = OpenFilterAndClose(arcadia);
+        for (var i = 0; i < 3 && closed.IsAlive; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        Assert.False(closed.IsAlive, "Die geschlossene Suche hängt noch am geschlossenen Filter-Dialog.");
+    }
+
+    // Its own method, so no local of the test keeps the search alive.
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static WeakReference OpenFilterAndClose(ArcadiaDriver arcadia)
+    {
+        arcadia.Press(UiAction.Search);
+        var search = new WeakReference(arcadia.Search);
+        arcadia.Press(UiAction.Filter).Press(UiAction.Back);
+        Assert.False(arcadia.Main.IsViewOptionsOpen);
+        arcadia.Press(UiAction.Back, times: 2);
+        Assert.Null(arcadia.Search);
+        return search;
+    }
 }

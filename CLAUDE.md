@@ -114,7 +114,7 @@ acceptance iteration (owner 2026-10-25; "Abnahme Iteration 1" was the last). Det
 | `tests/Arcadia.Core.Tests` | xUnit |
 | `tests/Arcadia.App.Tests` | Acceptance tests (xUnit v3, Avalonia headless): `ArcadiaDriver` presses buttons on `MainViewModel`, `ArcadiaWindow` clicks and looks at the real window; rules in `docs/testplans/README.md` |
 
-Which class does what: `docs/architecture.md` (read it, or grep, rather than guessing). Big Picture UI is laid out at
+Which class does what: `docs/architecture/` (read it, or grep, rather than guessing). Big Picture UI is laid out at
 1920×1080 inside a `Viewbox`. Focus/navigation is done in the view models (`MainViewModel.Handle(UiAction)`), not with
 Avalonia focus: buttons are `Focusable=False`, keys are handled in a tunnelling `KeyDown` handler.
 

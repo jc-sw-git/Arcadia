@@ -77,7 +77,7 @@ public sealed class GridFadeTests
         AssertFades(arcadia, top: true, bottom: false);
         arcadia.Wheel(arcadia.Named<ScrollViewer>("GridScroller"), notches: 20);
         AssertFades(arcadia, top: false, bottom: true);
-        Assert.NotNull(main.FocusedGame);
+        Assert.NotNull(arcadia.Arcadia.FocusedGame);
     }
 
     [AvaloniaTheory]
@@ -113,7 +113,7 @@ public sealed class GridFadeTests
     private static void AssertFocusClearOfFades(ArcadiaWindow arcadia, string when)
     {
         arcadia.WaitForTransitions();
-        var tile = arcadia.Tile(arcadia.Arcadia.Main.FocusedGame!);
+        var tile = arcadia.Tile(arcadia.Arcadia.FocusedGame!);
         var focused = arcadia.Bounds(tile);
         foreach (var name in new[] { "GridFadeTop", "GridFadeBottom" })
         {

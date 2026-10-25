@@ -176,6 +176,6 @@ public sealed class FirstRunViewTests
         arcadia.Settle();
         Assert.False(View(arcadia).IsEffectivelyVisible, how);
         Assert.Equal(tabs, arcadia.Arcadia.Main.Tabs.Select(tab => tab.Name));
-        Assert.Contains("focused", arcadia.Tile(arcadia.Arcadia.Main.FocusedGame!).Classes);
+        Assert.Contains("focused", arcadia.Tile(arcadia.Arcadia.FocusedGame!).Classes);
     }
 }

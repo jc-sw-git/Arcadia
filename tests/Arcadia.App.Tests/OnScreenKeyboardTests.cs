@@ -20,7 +20,7 @@ public sealed class OnScreenKeyboardTests
     public async Task The_D_pad_walks_the_keys_to_the_nearest_one_and_stops_at_the_edges_A_types_Y_a_space_X_erases()
     {
         using var arcadia = await OpenSearchAsync();
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
         Assert.Equal("a", arcadia.FocusedLabel());
 
         // Up to the nearest key: the row above starts a quarter key further left, so q is nearer to a than w is.
@@ -50,7 +50,7 @@ public sealed class OnScreenKeyboardTests
     public async Task X_held_or_A_held_on_the_erase_key_erases_one_then_after_a_pause_one_after_another()
     {
         using var arcadia = await OpenSearchAsync();
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
         arcadia.TypeOnKeys("hollowhollow");
 
         arcadia.PressDown(UiAction.Search);
@@ -80,7 +80,7 @@ public sealed class OnScreenKeyboardTests
     public async Task LB_tapped_latches_shift_until_tapped_again_and_held_it_counts_only_while_held()
     {
         using var arcadia = await OpenSearchAsync();
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
         var keyboard = arcadia.Keyboard();
         var shiftKeys = keyboard.Keys.Where(k => k.Key.Kind == BoardKeyKind.Shift).ToList();
 
@@ -121,7 +121,7 @@ public sealed class OnScreenKeyboardTests
     public async Task RB_tapped_latches_AltGr_whose_characters_alone_show_and_type_and_LB_and_RB_switch_each_other_off()
     {
         using var arcadia = await OpenSearchAsync();
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
         var keyboard = arcadia.Keyboard();
         var altGrKey = keyboard.Keys.Single(k => k.Key.Kind == BoardKeyKind.AltGr);
 
@@ -191,7 +191,7 @@ public sealed class OnScreenKeyboardTests
     public async Task The_dead_keys_type_their_character_at_once()
     {
         using var arcadia = await OpenSearchAsync();
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
 
         arcadia.TypeOnKeys("^");
         Assert.Equal("^", search.Text);
@@ -278,7 +278,7 @@ public sealed class OnScreenKeyboardTests
     public async Task The_keyboards_arrows_move_the_caret_where_typing_and_erasing_then_act_also_from_a_real_keyboard()
     {
         using var arcadia = await OpenSearchAsync();
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
         arcadia.TypeOnKeys("hollow");
 
         arcadia.GoTo("←").Press(UiAction.Accept, times: 3);
@@ -329,7 +329,7 @@ public sealed class OnScreenKeyboardTests
     {
         var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Press(UiAction.Search);
-        Assert.True(arcadia.Main.Search!.IsKeyboardOut);
+        Assert.True(arcadia.Search!.IsKeyboardOut);
         return arcadia;
     }
 

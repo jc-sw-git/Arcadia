@@ -42,7 +42,7 @@ public sealed class GameMenuTests
         arcadia.Press(UiAction.Options).Press(UiAction.Options);
         Assert.False(IsMenuShown(arcadia), "⧉ schließt das Menü.");
 
-        arcadia.Click(arcadia.Tile(main.PageGames[2]), MouseButton.Right);
+        arcadia.Click(arcadia.Tile(arcadia.Arcadia.PageGames[2]), MouseButton.Right);
         AssertMenuOpenFor(arcadia, "C Game");
         arcadia.Click(new Point(arcadia.Bounds(MenuPanel(arcadia)).Right + 100, 40));
         Assert.False(IsMenuShown(arcadia), "Ein Klick daneben schließt das Menü.");
@@ -81,8 +81,8 @@ public sealed class GameMenuTests
         var window = new Rect(0, 0, ArcadiaWindow.Width, ArcadiaWindow.Height);
 
         // A cover in the first column: the menu to its right, top edges level.
-        var first = arcadia.Bounds(arcadia.Tile(main.PageGames[0]));
-        arcadia.Click(arcadia.Tile(main.PageGames[0]), MouseButton.Right);
+        var first = arcadia.Bounds(arcadia.Tile(arcadia.Arcadia.PageGames[0]));
+        arcadia.Click(arcadia.Tile(arcadia.Arcadia.PageGames[0]), MouseButton.Right);
         var menu = arcadia.Bounds(MenuPanel(arcadia));
         Assert.True(menu.Left > first.Right && menu.Left - first.Right < 40, $"Menü {menu} rechts neben dem Cover {first}");
         Assert.Equal(first.Top, menu.Top, tolerance: 12);
@@ -90,15 +90,15 @@ public sealed class GameMenuTests
         arcadia.Press(UiAction.Back);
 
         // The last column: to the left of the cover.
-        var last = arcadia.Bounds(arcadia.Tile(main.PageGames[7]));
-        arcadia.Click(arcadia.Tile(main.PageGames[7]), MouseButton.Right);
+        var last = arcadia.Bounds(arcadia.Tile(arcadia.Arcadia.PageGames[7]));
+        arcadia.Click(arcadia.Tile(arcadia.Arcadia.PageGames[7]), MouseButton.Right);
         menu = arcadia.Bounds(MenuPanel(arcadia));
         Assert.True(menu.Right < last.Left && last.Left - menu.Right < 40, $"Menü {menu} links neben dem Cover {last}");
         Assert.True(window.Contains(menu), $"Menü {menu} ganz im Fenster");
         arcadia.Press(UiAction.Back);
 
         // The second row reaches far down; the menu still ends inside the window.
-        arcadia.Click(arcadia.Tile(main.PageGames[8]), MouseButton.Right);
+        arcadia.Click(arcadia.Tile(arcadia.Arcadia.PageGames[8]), MouseButton.Right);
         Assert.True(window.Contains(arcadia.Bounds(MenuPanel(arcadia))), "Menü der zweiten Reihe ganz im Fenster");
         arcadia.Press(UiAction.Back);
     }

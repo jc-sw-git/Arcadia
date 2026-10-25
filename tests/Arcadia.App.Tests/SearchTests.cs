@@ -32,7 +32,7 @@ public sealed class SearchTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync(HollowLibrary);
         arcadia.Press(UiAction.Search);
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
 
         arcadia.Main.TypeInSearch("hOLLow");
 
@@ -47,7 +47,7 @@ public sealed class SearchTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync(HollowLibrary);
         arcadia.Press(UiAction.Search);
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
 
         arcadia.Main.TypeInSearch("émber hollow");
         Assert.Equal(["Ember™ Hollow"], search.Hits.Select(game => game.Title));
@@ -81,7 +81,7 @@ public sealed class SearchTests
                 Installed(KnownLaunchers.Xbox, "Silent Tides", Installed)),
         ]);
         arcadia.Press(UiAction.Search);
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
 
         arcadia.Main.TypeInSearch("f1 24");
         Assert.Equal(["F1® 24"], search.Hits.Select(game => game.Title));
@@ -107,10 +107,10 @@ public sealed class SearchTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Press(UiAction.NextTab).Press(UiAction.NextPage).Press(UiAction.Right, times: 3);
-        var focused = arcadia.Main.FocusedGame!.Game.Key;
+        var focused = arcadia.FocusedGame!.Game.Key;
 
         arcadia.Press(UiAction.Search);
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
         Assert.True(arcadia.Main.IsSearchShown);
         Assert.True(search.IsKeyboardOut);
         arcadia.Main.TypeInSearch("iron");
@@ -122,9 +122,9 @@ public sealed class SearchTests
 
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsSearchShown);
-        Assert.Equal("Xbox", arcadia.Main.SelectedTab?.Name);
-        Assert.Equal("2", arcadia.Main.PageButtons.Single(button => button.IsCurrent).Label);
-        Assert.Equal(focused, arcadia.Main.FocusedGame?.Game.Key);
+        Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
+        Assert.Equal("2", arcadia.CurrentPage);
+        Assert.Equal(focused, arcadia.FocusedGame?.Game.Key);
     }
 
     [AvaloniaFact]
@@ -133,25 +133,25 @@ public sealed class SearchTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Press(UiAction.NextTab).Press(UiAction.NextPage).Press(UiAction.Right, times: 3);
-        var focused = arcadia.Main.FocusedGame!.Game.Key;
+        var focused = arcadia.FocusedGame!.Game.Key;
 
         arcadia.Press(UiAction.Search);
         arcadia.Main.TypeInSearch("iron");
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
 
         // As fast as the controller reports them: no time passes between the two presses.
         arcadia.Press(UiAction.Back, times: 2);
-        Assert.Null(arcadia.Main.Search);
+        Assert.Null(arcadia.Search);
         Assert.Equal("iron", search.Text);
-        Assert.Equal("Xbox", arcadia.Main.SelectedTab?.Name);
-        Assert.Equal("2", arcadia.Main.PageButtons.Single(button => button.IsCurrent).Label);
-        Assert.Equal(focused, arcadia.Main.FocusedGame?.Game.Key);
+        Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
+        Assert.Equal("2", arcadia.CurrentPage);
+        Assert.Equal(focused, arcadia.FocusedGame?.Game.Key);
     }
 
     /// <summary>Empties the search field, as the user would with the backspace key.</summary>
     private static void Erase(ArcadiaDriver arcadia)
     {
-        var search = arcadia.Main.Search!;
+        var search = arcadia.Search!;
         while (search.Text.Length > 0)
         {
             search.Erase();

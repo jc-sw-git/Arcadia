@@ -18,7 +18,7 @@ public sealed class OnScreenKeyboardViewTests
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
         arcadia.Press(UiAction.Search);
-        var search = arcadia.Arcadia.Main.Search!;
+        var search = arcadia.Arcadia.Search!;
         var keyboard = search.Keyboard;
         var q = keyboard.Keys.Single(key => key.IsCharacter && key.Key.Cap!.Normal == 'q');
         var shift = keyboard.Keys.Where(key => key.Key.Kind == BoardKeyKind.Shift).MinBy(key => key.Key.Left)!;

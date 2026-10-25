@@ -16,20 +16,20 @@ public sealed class DetailPageTests
     public async Task LT_and_RT_show_the_previous_and_next_game_across_page_borders_and_wrap_around()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        var lastOfPageOne = arcadia.Main.PageGames[^1].Game;
+        var lastOfPageOne = arcadia.PageGames[^1].Game;
         arcadia.Press(UiAction.NextPage);
-        var firstOfPageTwo = arcadia.Main.PageGames[0].Game;
-        var lastOfTab = arcadia.Main.PageGames[^1].Game;
+        var firstOfPageTwo = arcadia.PageGames[0].Game;
+        var lastOfTab = arcadia.PageGames[^1].Game;
         arcadia.Press(UiAction.PreviousPage).Press(UiAction.Right, times: 24);
-        Assert.Same(lastOfPageOne, arcadia.Main.FocusedGame!.Game);
+        Assert.Same(lastOfPageOne, arcadia.FocusedGame!.Game);
 
         arcadia.Hold(UiAction.Accept, PastHoldTime).Press(UiAction.NextPage);
-        Assert.Equal(firstOfPageTwo.Key, arcadia.Main.Detail!.Current.Tile.Game.Key);
-        Assert.Equal("26 von 31", arcadia.Main.Detail.PositionText);
+        Assert.Equal(firstOfPageTwo.Key, arcadia.Detail!.Current.Tile.Game.Key);
+        Assert.Equal("26 von 31", arcadia.Detail.PositionText);
 
         arcadia.Press(UiAction.PreviousPage, times: 26);
-        Assert.Equal(lastOfTab.Key, arcadia.Main.Detail.Current.Tile.Game.Key);
-        Assert.Equal("31 von 31", arcadia.Main.Detail.PositionText);
+        Assert.Equal(lastOfTab.Key, arcadia.Detail.Current.Tile.Game.Key);
+        Assert.Equal("31 von 31", arcadia.Detail.PositionText);
     }
 
     [AvaloniaFact]
@@ -38,15 +38,15 @@ public sealed class DetailPageTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Hold(UiAction.Accept, PastHoldTime).Press(UiAction.NextPage, times: 27);
-        var shownLast = arcadia.Main.Detail!.Current.Tile.Game;
-        Assert.Equal("28 von 31", arcadia.Main.Detail.PositionText);
+        var shownLast = arcadia.Detail!.Current.Tile.Game;
+        Assert.Equal("28 von 31", arcadia.Detail.PositionText);
 
         arcadia.Press(UiAction.Back);
 
         Assert.False(arcadia.Main.IsDetailOpen);
         Assert.True(arcadia.Main.AreGamesShown);
-        Assert.Equal("2", arcadia.Main.PageButtons.Single(button => button.IsCurrent).Label);
-        Assert.Equal(shownLast.Key, arcadia.Main.FocusedGame?.Game.Key);
+        Assert.Equal("2", arcadia.CurrentPage);
+        Assert.Equal(shownLast.Key, arcadia.FocusedGame?.Game.Key);
     }
 
     [AvaloniaFact]
@@ -55,7 +55,7 @@ public sealed class DetailPageTests
     {
         using var two = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Gog, Installed("Alpha"), Installed("Bravo"))]);
         two.Hold(UiAction.Accept, PastHoldTime);
-        var detail = two.Main.Detail!;
+        var detail = two.Detail!;
         Assert.True(detail.HasNeighbours);
         Assert.Equal("Alpha", detail.Current.Tile.Title);
         Assert.Equal("Bravo", Side(detail, -1));
@@ -68,7 +68,7 @@ public sealed class DetailPageTests
 
         using var one = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Gog, Installed("Solo"))]);
         one.Hold(UiAction.Accept, PastHoldTime);
-        detail = one.Main.Detail!;
+        detail = one.Detail!;
         Assert.False(detail.HasNeighbours);
         Assert.Equal(["Solo"], detail.Pages.Select(page => page.Tile.Title));
 
@@ -85,22 +85,22 @@ public sealed class DetailPageTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Press(UiAction.NextTab);
-        var firstOfXbox = arcadia.Main.PageGames[0].Game.Key;
+        var firstOfXbox = arcadia.PageGames[0].Game.Key;
         arcadia.Press(UiAction.PreviousTab).Press(UiAction.Right, times: 2).Hold(UiAction.Accept, PastHoldTime);
-        Assert.Equal("3 von 31", arcadia.Main.Detail!.PositionText);
+        Assert.Equal("3 von 31", arcadia.Detail!.PositionText);
 
         arcadia.Press(UiAction.NextTab);
-        var detail = Assert.IsType<GameDetailViewModel>(arcadia.Main.Detail);
+        var detail = Assert.IsType<GameDetailViewModel>(arcadia.Detail);
         Assert.Equal("Xbox", detail.TabName);
-        Assert.Equal("Xbox", arcadia.Main.SelectedTab?.Name);
+        Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
         Assert.Equal(firstOfXbox, detail.Current.Tile.Game.Key);
         Assert.Equal("1 von 62", detail.PositionText);
 
         // LB from the first tab wraps around to the last one.
         arcadia.Press(UiAction.PreviousTab, times: 2);
         Assert.True(arcadia.Main.IsDetailOpen);
-        Assert.Equal("Amazon Games", arcadia.Main.Detail!.TabName);
-        Assert.Equal("1 von 6", arcadia.Main.Detail.PositionText);
+        Assert.Equal("Amazon Games", arcadia.Detail!.TabName);
+        Assert.Equal("1 von 6", arcadia.Detail.PositionText);
     }
 
     [AvaloniaFact]
@@ -109,7 +109,7 @@ public sealed class DetailPageTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync([FiveGames]);
         arcadia.Press(UiAction.Right).Hold(UiAction.Accept, PastHoldTime);
-        var detail = arcadia.Main.Detail!;
+        var detail = arcadia.Detail!;
         Assert.Equal("bravo", detail.Current.Tile.Title);
         Assert.Equal("2 von 5", detail.PositionText);
 
@@ -120,7 +120,7 @@ public sealed class DetailPageTests
         // Name Z → A: Echo, Delta, Charlie, bravo, Alpha.
         arcadia.Press(UiAction.Right).Press(UiAction.Accept).Press(UiAction.Back);
         Assert.False(arcadia.Main.IsViewOptionsOpen);
-        Assert.Same(detail, arcadia.Main.Detail);
+        Assert.Same(detail, arcadia.Detail);
         Assert.Equal("bravo", detail.Current.Tile.Title);
         Assert.Equal("4 von 5", detail.PositionText);
         Assert.Equal("Charlie", Side(detail, -1));
@@ -136,7 +136,7 @@ public sealed class DetailPageTests
         var notInstalled = TestGames.NotInstalled(KnownLaunchers.Gog, "Bravo");
         using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Gog, withUpdate, notInstalled, Installed("Charlie"))]);
         arcadia.Hold(UiAction.Accept, PastHoldTime);
-        var page = arcadia.Main.Detail!.Current;
+        var page = arcadia.Detail!.Current;
 
         Assert.Equal("Alpha", page.Tile.Title);
         Assert.True(page.Tile.UpdateAvailable);
@@ -145,7 +145,7 @@ public sealed class DetailPageTests
         Assert.Equal("GOG Galaxy installiert das Update eventuell, bevor das Spiel startet.", page.UpdateNote);
 
         arcadia.Press(UiAction.NextPage);
-        page = arcadia.Main.Detail!.Current;
+        page = arcadia.Detail!.Current;
         Assert.Equal("Bravo", page.Tile.Title);
         Assert.False(page.Tile.IsInstalled);
         Assert.Equal((GameActionKind.Play, "Installieren", true), (page.TopRow[0].Kind, page.TopRow[0].ButtonLabel, page.TopRow[0].IsEnabled));
@@ -160,7 +160,7 @@ public sealed class DetailPageTests
         // The launcher installs it: the first button shows how far, and can't be pressed.
         arcadia.Installs.Set(notInstalled, new InstallProgress(InstallPhase.Downloading, 0.42));
         await arcadia.FollowInstallsAsync();
-        page = arcadia.Main.Detail!.Current;
+        page = arcadia.Detail!.Current;
         Assert.Equal("Bravo", page.Tile.Title);
         Assert.Equal((GameActionKind.Play, "Wird installiert · 42\u00A0%", false), (page.TopRow[0].Kind, page.TopRow[0].ButtonLabel, page.TopRow[0].IsEnabled));
     }
@@ -181,7 +181,7 @@ public sealed class DetailPageTests
         var withoutFigures = Installed("Bravo") with { InstalledAt = null };
         using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Gog, game, withoutFigures)]);
         arcadia.Hold(UiAction.Accept, PastHoldTime);
-        var page = arcadia.Main.Detail!.Current;
+        var page = arcadia.Detail!.Current;
 
         Assert.Equal("Gestern", page.Tile.LastPlayedText);
         Assert.Equal($"23.10.2026, {lastPlayed.ToLocalTime():HH:mm}", page.LastPlayedAt);
@@ -194,7 +194,7 @@ public sealed class DetailPageTests
 
         // What the launcher doesn't report is said so, not left blank.
         arcadia.Press(UiAction.NextPage);
-        page = arcadia.Main.Detail!.Current;
+        page = arcadia.Detail!.Current;
         Assert.Equal("Nie gespielt", page.Tile.LastPlayedText);
         Assert.Equal("–", page.LastPlayedAt);
         Assert.Equal("–", page.Tile.PlaytimeText);

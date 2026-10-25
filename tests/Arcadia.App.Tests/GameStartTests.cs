@@ -21,7 +21,7 @@ public sealed class GameStartTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Press(UiAction.Right, times: 2);
-        var tile = arcadia.Main.FocusedGame!;
+        var tile = arcadia.FocusedGame!;
         var game = tile.Game;
 
         arcadia.PressDown(UiAction.Accept).Wait(Tap);
@@ -46,7 +46,7 @@ public sealed class GameStartTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Press(UiAction.Right, times: 2);
-        var tile = arcadia.Main.FocusedGame!;
+        var tile = arcadia.FocusedGame!;
 
         arcadia.PressDown(UiAction.Accept).Wait(PastFeedback);
         Assert.True(tile.IsHolding);
@@ -56,13 +56,13 @@ public sealed class GameStartTests
         Assert.False(arcadia.Main.IsDetailOpen);
 
         arcadia.Wait(PastHoldTime - ShortOfHoldTime);
-        var detail = Assert.IsType<Arcadia.App.ViewModels.GameDetailViewModel>(arcadia.Main.Detail);
+        var detail = Assert.IsType<Arcadia.App.ViewModels.GameDetailViewModel>(arcadia.Detail);
         Assert.Equal(tile.Game.Key, detail.Current.Tile.Game.Key);
         Assert.Equal("GOG Galaxy", detail.TabName);
         Assert.Equal("3 von 31", detail.PositionText);
 
         arcadia.LetGo(UiAction.Accept);
-        Assert.Same(detail, arcadia.Main.Detail);
+        Assert.Same(detail, arcadia.Detail);
         Assert.False(tile.IsRunningOrStarting);
         Assert.Empty(arcadia.Starts.Keys);
     }
@@ -72,7 +72,7 @@ public sealed class GameStartTests
     public async Task A_let_go_between_the_frame_and_the_details_does_nothing_also_later()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        var tile = arcadia.Main.FocusedGame!;
+        var tile = arcadia.FocusedGame!;
 
         arcadia.PressDown(UiAction.Accept).Wait(PastFeedback);
         Assert.True(tile.IsHolding);
@@ -92,14 +92,14 @@ public sealed class GameStartTests
     public async Task A_start_that_fails_says_so_leaves_Arcadia_running_and_A_tries_again()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        var tile = arcadia.Main.FocusedGame!;
+        var tile = arcadia.FocusedGame!;
         arcadia.Starts.Failure = new IOException("Die Datei ist gesperrt.");
 
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text?.Contains("konnte nicht gestartet werden") == true, "ein Hinweis soll den Fehlstart nennen");
         Assert.Equal($"„{tile.Title}“ konnte nicht gestartet werden: Die Datei ist gesperrt.", arcadia.Main.Toast.Text);
-        Assert.False(arcadia.Main.FocusedGame!.IsRunningOrStarting);
-        Assert.Equal("Spielen", arcadia.Main.FocusedGame.PrimaryActionText);
+        Assert.False(arcadia.FocusedGame!.IsRunningOrStarting);
+        Assert.Equal("Spielen", arcadia.FocusedGame.PrimaryActionText);
 
         // The launcher works again; the second A starts the game.
         arcadia.Starts.Failure = null;
@@ -113,7 +113,7 @@ public sealed class GameStartTests
     public async Task An_unexpected_error_goes_with_its_stack_trace_into_the_log_a_hint_names_the_log_and_the_controller_still_works()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        var tile = arcadia.Main.FocusedGame!;
+        var tile = arcadia.FocusedGame!;
         var marker = $"Unerwartet {Guid.NewGuid():N}";
         arcadia.Starts.Failure = new NotSupportedException(marker);
 
@@ -132,9 +132,9 @@ public sealed class GameStartTests
         {
             arcadia.Press(UiAction.Right);
         }
-        while (!arcadia.Main.FocusedGame!.IsInstalled);
+        while (!arcadia.FocusedGame!.IsInstalled);
 
-        var next = arcadia.Main.FocusedGame;
+        var next = arcadia.FocusedGame;
         Assert.NotSame(tile, next);
         arcadia.Starts.Failure = null;
         arcadia.Press(UiAction.Accept);
@@ -149,13 +149,13 @@ public sealed class GameStartTests
         using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, 31, IsDemo: true)]);
 
         // One demo game runs; another one is started.
-        var index = arcadia.Main.PageGames.ToList().FindIndex(tile => tile.IsInstalled && !tile.IsRunningOrStarting);
+        var index = arcadia.PageGames.ToList().FindIndex(tile => tile.IsInstalled && !tile.IsRunningOrStarting);
         arcadia.Press(UiAction.Right, times: index);
-        var tile = arcadia.Main.FocusedGame!;
+        var tile = arcadia.FocusedGame!;
 
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text?.StartsWith("Demo-Spiel") == true, "der Demo-Hinweis soll erscheinen");
         Assert.Equal($"Demo-Spiel: Hier würde jetzt „{tile.Title}“ gestartet.", arcadia.Main.Toast.Text);
-        await arcadia.WaitUntilAsync(() => !arcadia.Main.FocusedGame!.IsRunningOrStarting, "die Kachel soll wieder „Spielen“ zeigen");
+        await arcadia.WaitUntilAsync(() => !arcadia.FocusedGame!.IsRunningOrStarting, "die Kachel soll wieder „Spielen“ zeigen");
     }
 }

@@ -68,8 +68,8 @@ public sealed class SearchViewTests
         AssertGlowWithoutRim(arcadia);
 
         // The keyboard is out, German, with the focus on its starting key, and the legend names the controller's buttons.
-        var keyboard = main.Search!.Keyboard;
-        Assert.True(main.Search.IsKeyboardOut);
+        var keyboard = arcadia.Arcadia.Search!.Keyboard;
+        Assert.True(arcadia.Arcadia.Search.IsKeyboardOut);
         Assert.Equal("DE", keyboard.Layout.Code);
         var focusedKey = KeyButton(arcadia, keyboard.FocusedKey);
         Assert.Contains("focused", focusedKey.Classes);
@@ -81,7 +81,7 @@ public sealed class SearchViewTests
         Assert.False(main.IsSearchShown);
         arcadia.Key(Key.F);
         Assert.True(main.IsSearchShown);
-        Assert.False(main.Search!.IsKeyboardOut);
+        Assert.False(arcadia.Arcadia.Search!.IsKeyboardOut);
         Assert.Equal(["↑ ↓ ← → Treffer wählen", "Bild ↑ ↓ / Mausrad Weitere Treffer", "Enter / Doppelklick Spielen", "Enter / Klick halten: Details", "Menütaste / Rechtsklick Optionen", "Esc Schließen"], Legend(arcadia));
 
         // So does the lens in the header.
@@ -89,7 +89,7 @@ public sealed class SearchViewTests
         Assert.False(main.IsSearchShown);
         arcadia.Click(arcadia.ButtonWithTip("Suchen"));
         Assert.True(main.IsSearchShown);
-        Assert.False(main.Search!.IsKeyboardOut);
+        Assert.False(arcadia.Arcadia.Search!.IsKeyboardOut);
         Assert.Equal("Esc Schließen", Legend(arcadia)[^1]);
     }
 
@@ -100,7 +100,7 @@ public sealed class SearchViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
         var main = arcadia.Arcadia.Main;
         arcadia.Key(Key.F).Type("/gog holl");
-        var search = main.Search!;
+        var search = arcadia.Arcadia.Search!;
         var page = Page(arcadia);
 
         Assert.All(search.Hits, hit => Assert.Equal("gog", hit.LauncherId));
@@ -125,7 +125,7 @@ public sealed class SearchViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
         var main = arcadia.Arcadia.Main;
         arcadia.Key(Key.F).Type("holl");
-        var search = main.Search!;
+        var search = arcadia.Arcadia.Search!;
         var page = Page(arcadia);
 
         // Clicks on the chips; without a prefix the text stays and the scope says what is searched.
@@ -167,7 +167,7 @@ public sealed class SearchViewTests
         first.Press(UiAction.Search);
         first.Arcadia.Main.TypeInSearch("holl");
         first.Settle();
-        var keyboard = first.Arcadia.Main.Search!.Keyboard;
+        var keyboard = first.Arcadia.Search!.Keyboard;
 
         first.Press(UiAction.KeyboardLayout).WaitForTransitions();
         var menu = LayoutMenu(first);
@@ -188,7 +188,7 @@ public sealed class SearchViewTests
         first.Press(UiAction.KeyboardLayout).Press(UiAction.Back);
         Assert.False(keyboard.LayoutMenu.IsOpen);
         Assert.True(first.Arcadia.Main.IsSearchShown);
-        Assert.True(first.Arcadia.Main.Search!.IsKeyboardOut);
+        Assert.True(first.Arcadia.Search!.IsKeyboardOut);
         first.Press(UiAction.KeyboardLayout).Press(UiAction.KeyboardLayout);
         Assert.False(keyboard.LayoutMenu.IsOpen);
 
@@ -199,7 +199,7 @@ public sealed class SearchViewTests
 
         using var restarted = await first.RestartAsync();
         restarted.Press(UiAction.Search);
-        Assert.Equal("US", restarted.Arcadia.Main.Search!.Keyboard.Layout.Code);
+        Assert.Equal("US", restarted.Arcadia.Search!.Keyboard.Layout.Code);
     }
 
     [AvaloniaFact]
@@ -209,7 +209,7 @@ public sealed class SearchViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
         var main = arcadia.Arcadia.Main;
         arcadia.Press(UiAction.Search);
-        var search = main.Search!;
+        var search = arcadia.Arcadia.Search!;
         var keyBefore = search.Keyboard.FocusedKey;
 
         // A key puts the on-screen keyboard away; umlauts, capitals and spaces type.
@@ -248,13 +248,13 @@ public sealed class SearchViewTests
         arcadia.Key(Key.Escape);
         Assert.False(main.IsSearchShown);
         arcadia.Key(Key.F).Type("Hollow").Key(Key.Right);
-        search = main.Search!;
+        search = arcadia.Arcadia.Search!;
         var other = search.FocusedResult!;
         arcadia.KeyDown(Key.Enter);
         arcadia.Arcadia.Wait(HoldForDetails);
         arcadia.Settle();
         Assert.True(main.IsDetailOpen, "Enter gehalten öffnet die Details schon vor dem Loslassen");
-        Assert.Equal(other.Game.Key, main.Detail!.Current.Tile.Game.Key);
+        Assert.Equal(other.Game.Key, arcadia.Arcadia.Detail!.Current.Tile.Game.Key);
         arcadia.KeyUp(Key.Enter);
         Assert.True(main.IsDetailOpen);
         Assert.False(other.IsRunningOrStarting, "Loslassen nach dem Halten startet nichts");
@@ -268,7 +268,7 @@ public sealed class SearchViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
         var main = arcadia.Arcadia.Main;
         arcadia.Key(Key.F).Type("Hollow");
-        var search = main.Search!;
+        var search = arcadia.Arcadia.Search!;
         var drawer = Drawer(arcadia);
 
         // It rolls: the drawer's height follows a transition, softly in and out.
@@ -291,10 +291,10 @@ public sealed class SearchViewTests
         arcadia.Press(UiAction.Left);
         arcadia.Arcadia.Hold(UiAction.Accept, HoldForDetails);
         Assert.True(main.IsDetailOpen);
-        Assert.Equal(search.Results[SearchViewModel.ResultColumns].Game.Key, main.Detail!.Current.Tile.Game.Key);
+        Assert.Equal(search.Results[SearchViewModel.ResultColumns].Game.Key, arcadia.Arcadia.Detail!.Current.Tile.Game.Key);
         arcadia.Press(UiAction.Search);
         Assert.True(main.IsSearchShown);
-        search = main.Search!;
+        search = arcadia.Arcadia.Search!;
         AssertDrawer(arcadia, isOut: false);
 
         // X brings it out: one row of hits above it, the tab on its top edge with B.
@@ -328,7 +328,7 @@ public sealed class SearchViewTests
         arcadia.Press(UiAction.Search);
         main.TypeInSearch("Hollow");
         arcadia.Settle();
-        var search = main.Search!;
+        var search = arcadia.Arcadia.Search!;
         var viewport = arcadia.Bounds(arcadia.Named<Control>("SearchViewport"));
 
         // The row: seven hits, the next ones peek in faded at the right, LT and RT beside them, RS named above them.
@@ -431,7 +431,7 @@ public sealed class SearchViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
         var main = arcadia.Arcadia.Main;
         arcadia.Press(UiAction.Search).WaitForTransitions();
-        var search = main.Search!;
+        var search = arcadia.Arcadia.Search!;
         var keyboard = search.Keyboard;
         var erase = keyboard.Keys.Single(key => key.Key.Kind == BoardKeyKind.Backspace);
         Assert.NotEmpty(GlyphTexts(KeyButton(arcadia, erase)));
@@ -467,7 +467,7 @@ public sealed class SearchViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
         var main = arcadia.Arcadia.Main;
         arcadia.Press(UiAction.Search);
-        var search = main.Search!;
+        var search = arcadia.Arcadia.Search!;
         var keyboard = search.Keyboard;
 
         // The same keys in the same places, only ↹ and the edge key are gone and nothing else takes their places.
@@ -516,7 +516,7 @@ public sealed class SearchViewTests
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
         arcadia.Press(UiAction.Search).WaitForTransitions();
-        var keyboard = arcadia.Arcadia.Main.Search!.Keyboard;
+        var keyboard = arcadia.Arcadia.Search!.Keyboard;
         foreach (var key in EdgeKeys(keyboard))
         {
             arcadia.Arcadia.GoTo(key);
@@ -535,7 +535,7 @@ public sealed class SearchViewTests
         Enumerable.Range(1, count).Select(n => Installed(launcher, $"{title} {n:00}", Installed));
 
     /// <summary>The search's page: everything inside it, nothing of the library underneath.</summary>
-    private static Control Page(ArcadiaWindow arcadia) => arcadia.Showing(arcadia.Arcadia.Main.Search!);
+    private static Control Page(ArcadiaWindow arcadia) => arcadia.Showing(arcadia.Arcadia.Search!);
 
     private static IEnumerable<string> Texts(Control within) => within.GetVisualDescendants().OfType<TextBlock>()
         .Where(text => text.IsEffectivelyVisible && !string.IsNullOrEmpty(text.Text))
@@ -559,7 +559,7 @@ public sealed class SearchViewTests
 
     private static ArcadiaWindow Erase(ArcadiaWindow arcadia)
     {
-        while (arcadia.Arcadia.Main.Search!.Text.Length > 0)
+        while (arcadia.Arcadia.Search!.Text.Length > 0)
         {
             arcadia.Key(Key.Back);
         }
@@ -582,7 +582,7 @@ public sealed class SearchViewTests
         arcadia.WaitForTransitions();
         var drawer = (Arcadia.App.Controls.RevealPanel)Drawer(arcadia);
         Assert.Equal(isOut ? 1 : 0, drawer.Reveal, 3);
-        Assert.Equal(isOut, arcadia.Arcadia.Main.Search!.IsKeyboardOut);
+        Assert.Equal(isOut, arcadia.Arcadia.Search!.IsKeyboardOut);
         var tab = Tab(arcadia);
         var top = arcadia.Bounds(drawer).Top;
         Assert.Equal(top, arcadia.Bounds(tab).Bottom, tolerance: 1);
@@ -614,7 +614,7 @@ public sealed class SearchViewTests
     /// <summary>At the left and right edge of the hits, the last device pixels are the background all along the row.</summary>
     private static void AssertRowFadesToBackground(ArcadiaWindow arcadia)
     {
-        var search = arcadia.Arcadia.Main.Search!;
+        var search = arcadia.Arcadia.Search!;
         var row = arcadia.Bounds(HitButton(arcadia, search.FocusedResult!));
         using var frame = arcadia.Capture();
         var viewport = arcadia.Bounds(arcadia.Named<Control>("SearchViewport"));

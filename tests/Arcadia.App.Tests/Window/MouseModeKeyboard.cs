@@ -38,6 +38,11 @@ internal sealed class MouseModeKeyboard : IDisposable
         var keyboard = new OnScreenKeyboardViewModel(layout, typed, new FakeTimeProvider(ArcadiaDriver.Now), action => Dispatcher.UIThread.Post(action));
         var window = new MouseModeKeyboardWindow { DataContext = keyboard };
         window.Open(lastAtTop: false);
+
+        // The size the keyboard takes on a 1920 × 1080 monitor. On Windows the window sizes itself with SetWindowPos,
+        // which the headless platform ignores; elsewhere Open sets this size already.
+        window.Width = 1646;
+        window.Height = 384;
         keyboard.Open(layout, atTop: false);
         Dispatcher.UIThread.RunJobs();
         return new MouseModeKeyboard(keyboard, window, typed);

@@ -19,5 +19,5 @@ checks ran and which Windows or hardware checks remain unverified.
 
 Use repository documentation and issues to share decisions between agents;
 do not assume access to another agent's chat history. Keep communication with
-the owner in German and repository prose, code and commit messages in English,
-following the existing conventions for German product documentation.
+the owner in German; everything on GitHub (code, docs, issues, PRs, commits,
+review comments) is English, see `CLAUDE.md` → Language.

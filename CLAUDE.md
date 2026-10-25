@@ -14,8 +14,8 @@ reference for porting (binary VDF codec, scanner ideas, architecture notes).
   Features are `type:story` and start with a `> **Story:**` line. See `docs/roadmap.md`.
 - **Refinement first:** before implementing an issue (Iteration 1) or an epic (from Iteration 2), refine
   it with the owner using the skill `.claude/skills/refinement`; rules in `docs/roadmap.md` → Refinement.
-- **Language:** the owner writes German; UI texts are German for now (localization is an issue).
-  Code, comments and commit messages are English.
+- **Language:** everything on GitHub is English (public repo): code, docs, issues, PRs, commits, branches,
+  labels, milestones, release notes, comments. Chat with the owner is German; UI texts too, for now.
 
 ## Build, test, run
 
@@ -188,7 +188,7 @@ Every step of a session resends its whole context, so keep it small (owner, 2026
   `test` (tests only), `doc` (docs only, agent skills included), `td` (any other product code change, i.e. tech
   debt). Rename generated names such as `claude/project-thread-…` before the first push.
 - **Never** end commit messages with a `Co-Authored-By` trailer.
-- Commit messages: English, imperative subject, body explains why.
+- Commit messages: imperative subject, body explains why.
 - At most two open UI PRs at a time (the owner tests them one after the other). After each merge to `main`, check
   yourself that your open PR is still mergeable and resolve conflicts before the owner finds them.
 - Code PRs get a review by Codex (`AGENTS.md`) as the standard; a second review by an independent Claude thread

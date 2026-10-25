@@ -31,7 +31,8 @@ Product rules (by position, extra buttons, what counts): `docs/product/controls.
   (`paddle1`–`4`), trackpad clicks (left `touchpad`, right `misc2` in SDL 3.4's mapping) and the capacitive touches
   (`misc3`–`6`, not even read) do nothing. Both trackpads (touch, position, click) ride on `GamepadReading`, gyro and
   accelerometer only after `SdlGamepadSource.UseMotionSensors(true)`; no consumer yet (#111). A touched trackpad
-  counts as use in `ControllerActivity`, so the desktop filter drops Steam's trackpad mouse. "Connected" for the
+  counts as use in `ControllerActivity`, so the desktop filter drops Steam's trackpad mouse, and for 1 s after the
+  finger leaves the pad: Steam's trackpad pointer glides on (owner's PC, 2026-10-25; 150 ms let it jump on release). "Connected" for the
   per-game mode comes from SDL (`SteamControllerPresence`); until SDL has seen one, what SISR saw counts.
   Started through Steam, Steam's hooks hide the controller from Arcadia; only logged.
 - **Fresh look:** `SteamDesktopInputFilter` asks `IGamepadSource.AnyNow` when the last poll saw no controller in use;

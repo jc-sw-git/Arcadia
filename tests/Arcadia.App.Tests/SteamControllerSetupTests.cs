@@ -76,24 +76,29 @@ public sealed class SteamControllerSetupTests
     [Trait("Testfall", "T85-19")]
     public async Task With_several_accounts_the_user_picks_with_the_D_pad_who_gets_the_marker_before_Steam_closes()
     {
-        // Anna logged in last; Carla has the marker already; Dora's folder is left from an account Steam no longer lists.
-        using var files = SteamWith((Anna, "Anna", 1_790_000_300, true), (Bert, "Bert", 1_790_000_200, false), (Carla, "Carla", 1_790_000_100, false));
+        // Written in neither order: Carla logged in last (MostRecent, though Bert has the newer timestamp), Anna has the
+        // marker already, Dora's folder is left from an account Steam no longer lists. The list puts the last login first,
+        // then goes by name.
+        using var files = SteamWith((Bert, "Bert", 1_790_000_300, false), (Carla, "Carla", 1_790_000_100, true), (Anna, "Anna", 1_790_000_200, false));
         const uint dora = 100_000_014;
         Directory.CreateDirectory(Path.Combine(files.Steam.UserData(dora), "config"));
         var sisr = files.ControllerSupport!.Sisr.ExecutablePath;
-        Arcadia.Launchers.Steam.SteamShortcuts.Add(Path.Combine(files.Steam.UserData(Carla), "config", "shortcuts.vdf"), "SISR Marker", sisr, "--marker");
+        Arcadia.Launchers.Steam.SteamShortcuts.Add(Path.Combine(files.Steam.UserData(Anna), "config", "shortcuts.vdf"), "SISR Marker", sisr, "--marker");
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
         var controller = OpenSisrRow(arcadia);
 
         arcadia.Press(UiAction.Accept);
         Assert.Equal(SettingsPrompt.ChooseMarkerAccounts, controller.Prompt);
-        Assert.Equal(["Anna", "Bert", "Carla"], controller.MarkerAccounts.Select(a => a.Name));
-        Assert.Equal([true, false, true], controller.MarkerAccounts.Select(a => a.IsChecked));
-        Assert.True(controller.MarkerAccounts.Single(a => a.Name == "Carla").HasMarker);
+        Assert.Equal(["Carla", "Anna", "Bert"], controller.MarkerAccounts.Select(a => a.Name));
+        Assert.Equal([true, true, false], controller.MarkerAccounts.Select(a => a.IsChecked));
+        Assert.True(controller.MarkerAccounts.Single(a => a.Name == "Anna").HasMarker);
+        Assert.True(controller.MarkerAccounts.Single(a => a.Name == "Carla").IsFocused);
         Assert.Equal(0, files.ControllerSupport.SteamStops);
 
-        // D-pad to Bert, A ticks him; on to "Weiter".
-        arcadia.Press(UiAction.Down).Press(UiAction.Accept);
+        // Anna, who has the marker, is skipped: the D-pad goes to Bert, A ticks him; on to "Weiter".
+        arcadia.Press(UiAction.Down);
+        Assert.True(controller.MarkerAccounts.Single(a => a.Name == "Bert").IsFocused);
+        arcadia.Press(UiAction.Accept);
         Assert.True(controller.MarkerAccounts.Single(a => a.Name == "Bert").IsChecked);
         arcadia.Press(UiAction.Down).Press(UiAction.Accept);
         Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);

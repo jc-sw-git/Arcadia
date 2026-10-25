@@ -59,7 +59,8 @@ internal sealed class ArcadiaDriver : IDisposable
 
     private ArcadiaDriver(
         string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts,
-        LauncherInstalls installs, FakeSteam? steam, FakeReleases? releases, Fixtures.LauncherFiles? files = null, List<LaunchTarget>? opened = null)
+        LauncherInstalls installs, FakeSteam? steam, FakeReleases? releases, StartArguments arguments,
+        Fixtures.LauncherFiles? files = null, List<LaunchTarget>? opened = null)
     {
         Folder = folder;
         Steam = steam;
@@ -80,10 +81,11 @@ internal sealed class ArcadiaDriver : IDisposable
         _pad.ButtonReleased += button => ReleaseButton(button);
 
         Settings = new SettingsService(new SettingsStore(SettingsPath));
-        var firstRun = new FirstRunSetup(Settings, demo: files?.Demo ?? false, forced: false);
+        var demo = arguments.Demo || files?.Demo == true;
+        var firstRun = new FirstRunSetup(Settings, demo, arguments.FirstRun);
         IReadOnlyList<ILauncherIntegration> integrations = files is null
             ? Launchers
-            : BuiltInLaunchers.Create(time, files.Demo, folders: files.Folders);
+            : BuiltInLaunchers.Create(time, demo, folders: files.Folders);
         var registry = new LauncherRegistry(integrations, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
         ControllerSupport = (steam, files?.ControllerSupport) switch
         {
@@ -176,9 +178,10 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>
     /// Starts Arcadia and waits until the library shows. Without <paramref name="settings"/>, the launchers are already
     /// chosen (as after the first start); pass settings without <see cref="AppSettings.ActiveLaunchers"/> for a fresh install.
+    /// <paramref name="arguments"/> are the command line's switches; the launchers stay those of the test also with --demo.
     /// </summary>
     public static async Task<ArcadiaDriver> StartAsync(
-        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, FakeSteam? steam = null, FakeReleases? releases = null)
+        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, FakeSteam? steam = null, FakeReleases? releases = null, StartArguments arguments = default)
     {
         launchers ??= DefaultLaunchers;
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
@@ -187,7 +190,7 @@ internal sealed class ArcadiaDriver : IDisposable
             ActiveLaunchers = launchers.Select(spec => spec.Launcher.Id).ToList(),
         });
         var time = new FakeTimeProvider(Now);
-        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls(), steam, releases);
+        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls(), steam, releases, arguments);
         await driver.LoadAsync();
         return driver;
     }
@@ -207,15 +210,15 @@ internal sealed class ArcadiaDriver : IDisposable
                 .Select(launcher => launcher.Item1)
                 .ToList(),
         });
-        var driver = new ArcadiaDriver(folder, ownsFolder: true, [], new FakeTimeProvider(Now), new RecordedStarts(), new LauncherInstalls(), steam: null, releases: null, files);
+        var driver = new ArcadiaDriver(folder, ownsFolder: true, [], new FakeTimeProvider(Now), new RecordedStarts(), new LauncherInstalls(), steam: null, releases: null, arguments: default, files);
         await driver.LoadAsync();
         return driver;
     }
 
     /// <summary>Arcadia closed and started again on the same settings, as the user does after a change.</summary>
-    public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null)
+    public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null, StartArguments arguments = default)
     {
-        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases, _files, _opened);
+        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases, arguments, _files, _opened);
         await restarted.LoadAsync();
         return restarted;
     }
@@ -428,6 +431,9 @@ internal sealed class ArcadiaDriver : IDisposable
         Dispatcher.UIThread.RunJobs();
     }
 }
+
+/// <summary>The command line's switches that change what Arcadia shows at the start: <c>--demo</c> and <c>--first-run</c>.</summary>
+internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false);
 
 /// <summary>
 /// A launcher of the test: <paramref name="Games"/> games of the demo library, or exactly <paramref name="Library"/> where

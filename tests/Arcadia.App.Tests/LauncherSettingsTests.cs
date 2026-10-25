@@ -280,18 +280,6 @@ internal static class LauncherSettingsDriving
         return Assert.IsType<LauncherSettingsViewModel>(arcadia.Main.Settings?.Selected);
     }
 
-    /// <summary>▲ or ▼ until the row <paramref name="key"/> has the focus.</summary>
-    public static SettingsRowViewModel FocusRow(this ArcadiaDriver arcadia, string key)
-    {
-        var category = arcadia.Main.Settings!.Selected;
-        var target = category.Rows.Select(row => row.Key).ToList().IndexOf(key);
-        var focus = category.FocusedRow is { } focused ? category.Rows.IndexOf(focused) : 0;
-        arcadia.Press(target < focus ? UiAction.Up : UiAction.Down, Math.Abs(target - focus));
-
-        Assert.Equal(key, category.FocusedRow?.Key);
-        return category.FocusedRow!;
-    }
-
     /// <summary>Text from a real keyboard into the text being written, as the window passes it on.</summary>
     public static ArcadiaDriver Type(this ArcadiaDriver arcadia, string text)
     {

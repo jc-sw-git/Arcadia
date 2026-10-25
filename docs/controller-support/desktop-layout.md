@@ -17,8 +17,12 @@
   of scope, the new one before the old one goes. The option is its own box and works with the mouse mode "Aus" too
   (owner, 2026-10-20): Steam's layout doubles Arcadia's own navigation as well. Not yet seen: whether the filter also drops the Windows on-screen
   keyboard (osk.exe), which sends its keys with `SendInput` too (T64-18).
-- The Steam Controller reaches Arcadia only through SISR. While SISR is paused for a game on "Steam Input", Arcadia
-  doesn't see it at all: no Back + Start, no View held (named under the Steam Controller Support's "Nachteile", owner 2026-10-20; a fix needs #112 or #72).
+- Since #212 Arcadia reads the Steam Controller raw, also while SISR is paused for a game on "Steam Input". Seen on
+  the owner's PC (2026-10-25): Steam's desktop trackpad pointer glides on for up to about a second after release, so
+  a trackpad touch counts as use for 1 s. Back + Start also switches the action set of Steam's desktop configuration
+  (Desktop ↔ Gamepad), inside Steam, with nothing to filter (#93). The active set is not observable: `controller.txt`
+  writes nothing on a switch; over CEF, `SteamClient.Input` has no getter, none of its `RegisterFor…` callbacks fires,
+  and `GetConfigForAppAndController(413080, n)` returns the same `desktop_neptune.vdf` in both sets.
 - "Arcadia in front" is decided by the foreground window (`ProcessWatch.ForegroundProcessId`), not by the window's
   Activated/Deactivated: on the owner's PC Arcadia sometimes took a game's controller input as its own after
   switching between the game and Arcadia, and View held didn't bring it back (2026-10-20, cause not found).

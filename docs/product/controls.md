@@ -25,7 +25,9 @@ Agreed with the owner; don't change without asking. Read this before changing th
   position: the bottom face button is A on every controller (Cross, Nintendo's B), the right one B. Guide/PS/Home,
   Capture and the touchpad click do nothing in Arcadia (Steam opens its own menu with Guide/PS). Only what SDL knows
   as a gamepad counts: two Joy-Cons together are one pad; a single Joy-Con, wheels and flight sticks are ignored. No
-  gyro or touchpad yet (#111); the button symbols of the controller in use come with #215.
+  gyro or touchpad yet (#111); the button symbols of the controller in use come with #215. The Steam Controller too,
+  read directly (#212, owner 2026-10-25): its Steam button and "…" belong to Steam, the back grips do nothing
+  (assignable later), each press counts once also while SISR runs.
 - Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has
   no "Schließen" button besides (owner, 2026-10-20).

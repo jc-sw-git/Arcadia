@@ -36,33 +36,80 @@ public enum StickDeviceType
 /// <summary>A device SDL offers as a gamepad, as far as Arcadia needs to know it. No serial number: it isn't logged.</summary>
 public readonly record struct PadDevice(string Name, ushort Vendor, ushort Product, PadType Type, StickDeviceType StickType)
 {
+    /// <summary>The prefix of SDL's path for a pad it reads through XInput, followed by the XInput slot.</summary>
+    public const string XInputPathPrefix = "XInput#";
+
     public const ushort ValveVendor = 0x28DE;
 
     /// <summary>The pad Steam Input creates for a game; it only mirrors a physical controller Arcadia reads anyway.</summary>
     public const ushort SteamVirtualProduct = 0x11FF;
+
+    /// <summary>
+    /// SDL's path of the device: <c>XInput#&lt;slot&gt;</c> for a pad read through XInput, a HID device path otherwise.
+    /// Not logged: a HID path holds the device's instance id.
+    /// </summary>
+    public string Path { get; init; } = string.Empty;
+
+    /// <summary>The XInput slot (0–3) of a pad SDL reads through XInput, otherwise null.</summary>
+    public int? XInputSlot =>
+        Path.StartsWith(XInputPathPrefix, StringComparison.Ordinal) && int.TryParse(Path.AsSpan(XInputPathPrefix.Length), out var slot)
+            ? slot
+            : null;
 
     /// <summary>For <c>arcadia.log</c>: name, SDL's type and the USB ids.</summary>
     public override string ToString() => $"\"{Name}\" ({Type}, {Vendor:X4}:{Product:X4})";
 }
 
 /// <summary>
-/// The one place that decides which devices Arcadia reads (#72): only physical gamepads, each once. Steam's virtual
-/// pads only repeat a physical controller, so a pad behaves the same with Steam Input on or off. The Steam Controller
-/// still arrives as SISR's virtual Xbox pad until Arcadia reads it itself (#212), so its physical device stays out too.
+/// Tells whether a pad is one a program emulates on a software USB host, such as SISR's virtual Xbox 360 pad (VIIPER
+/// over usbip-win2) or, later, the pad of #213's helper. It mirrors a controller Arcadia reads itself, so it must not
+/// count a second time. SDL alone can't tell it from a real wired Xbox 360 pad (same USB ids, path <c>XInput#n</c>;
+/// #212, P3), so this looks at where the device sits in Windows' device tree.
+/// </summary>
+public interface IEmulatedPads
+{
+    bool IsEmulated(PadDevice device);
+}
+
+/// <summary>Where nothing emulates pads (no Windows, the tests by default).</summary>
+public sealed class NoEmulatedPads : IEmulatedPads
+{
+    public static readonly NoEmulatedPads Instance = new();
+
+    public bool IsEmulated(PadDevice device) => false;
+}
+
+/// <summary>
+/// The one place that decides which devices Arcadia reads (#72, #212): only physical gamepads, each once. Steam's
+/// virtual pads only repeat a physical controller, so a pad behaves the same with Steam Input on or off. The Steam
+/// Controller is read raw, so the Xbox pad SISR emulates of it stays out.
 /// </summary>
 public static class GamepadDevices
 {
+    /// <param name="emulated">Asked only for pads SDL reads through XInput, as an emulated Xbox pad is one.</param>
     /// <returns>Null to read the device; otherwise why not, for <c>arcadia.log</c>.</returns>
-    public static string? WhyIgnored(PadDevice device)
+    public static string? WhyIgnored(PadDevice device, IEmulatedPads emulated)
     {
         if (device.Vendor == PadDevice.ValveVendor && device.Product == PadDevice.SteamVirtualProduct)
         {
             return "virtueller Controller von Steam";
         }
 
-        if (device.Vendor == PadDevice.ValveVendor || device.Type == PadType.Steam)
+        // SDL's type Steam covers both Steam Controllers (and Hori's licensed one). Other Valve devices, such as the
+        // Steam Deck's own controls, stay Steam's.
+        if (device.Type == PadType.Steam)
         {
-            return "Steam Controller, kommt über SISR";
+            return null;
+        }
+
+        if (device.Vendor == PadDevice.ValveVendor)
+        {
+            return "Gerät von Valve, kein Steam Controller";
+        }
+
+        if (device.XInputSlot is not null && emulated.IsEmulated(device))
+        {
+            return "virtueller Xbox Controller, z. B. von SISR";
         }
 
         if (device.Type is PadType.JoyConLeft or PadType.JoyConRight)

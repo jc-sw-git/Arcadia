@@ -29,8 +29,32 @@ public enum PadButtons : ushort
 /// <summary>A stick's position, each axis from -1 to 1; up and right are positive.</summary>
 public readonly record struct StickPosition(double X, double Y);
 
+/// <summary>
+/// A touchpad (the Steam Controller's trackpads, #212): touched and where, each axis from -1 to 1 with up and right
+/// positive like a stick, and whether it is clicked. Not touched: the position means nothing.
+/// </summary>
+public readonly record struct TouchpadReading(bool Touched, double X, double Y, bool Clicked);
+
+/// <summary>A motion sensor's three axes as SDL gives them (gyro in rad/s, accelerometer in m/s²).</summary>
+public readonly record struct SensorAxes(float X, float Y, float Z);
+
+/// <summary>Gyro and accelerometer; <see cref="IsOn"/> is false while they are off or the controller has none.</summary>
+public readonly record struct MotionReading(bool IsOn, SensorAxes Gyro, SensorAxes Accelerometer);
+
 /// <summary>What one controller reports in one poll. <see cref="PadId"/> tells the controllers apart; SDL gives a new one on every connect.</summary>
 public readonly record struct GamepadReading(int PadId, PadButtons Buttons, StickPosition LeftStick, StickPosition RightStick)
 {
+    /// <summary>The Steam Controller's left trackpad, or a PlayStation pad's touchpad. No consumer yet (#111).</summary>
+    public TouchpadReading LeftTouchpad { get; init; }
+
+    /// <summary>The Steam Controller's right trackpad. No consumer yet (#111).</summary>
+    public TouchpadReading RightTouchpad { get; init; }
+
+    /// <summary>Only while switched on (<see cref="SdlGamepadSource.UseMotionSensors"/>). No consumer yet (#111).</summary>
+    public MotionReading Motion { get; init; }
+
+    /// <summary>A Steam Controller, read raw (#212); "connected" for the per-game mode follows it.</summary>
+    public bool IsSteamController { get; init; }
+
     public bool IsDown(PadButtons buttons) => (Buttons & buttons) == buttons;
 }

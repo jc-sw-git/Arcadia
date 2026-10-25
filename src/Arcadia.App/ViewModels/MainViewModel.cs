@@ -104,6 +104,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, IPageHost
 
     public bool IsFirstRunShown => FirstRun is not null;
 
+    /// <summary>The per-game mode (SISR or Steam Input) shows only with a Steam Controller connected and SISR switched on.</summary>
     [ObservableProperty]
     public partial bool ShowControllerSupport { get; private set; }
 
@@ -1176,6 +1177,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, IPageHost
 
     private bool _shownDefaultMouseModeAllowed = true;
 
+    // Null until SDL has seen a Steam Controller.
+    private bool? _steamControllerSeenBySdl;
+
     private void UpdateGameMouseModeState()
     {
         var mouseMode = _settings.Current.MouseMode;
@@ -1206,14 +1210,26 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, IPageHost
         _controllerSupport.SetModeFor(game, !_controllerSupport.Settings.ControllerSupportFor(game));
     }
 
+    /// <summary>
+    /// SDL sees a Steam Controller or no longer does (#212). Once SDL has seen one, it alone says whether it is
+    /// connected, also while SISR is paused for a game. Until then what SISR saw counts: Arcadia started through
+    /// Steam doesn't see the controller in SDL, as Steam hides it.
+    /// </summary>
+    public void SetSteamControllerSeen(bool seen)
+    {
+        _steamControllerSeenBySdl = seen;
+        UpdateControllerSupportState();
+    }
+
     private void UpdateControllerSupportState()
     {
         var support = _controllerSupport;
 
         // The mode only matters with a Steam Controller; other pads never go through SISR (#72).
-        if (ShowControllerSupport != support.SteamControllerConnected)
+        var show = _steamControllerSeenBySdl is { } seen ? support.Enabled && seen : support.SteamControllerConnected;
+        if (ShowControllerSupport != show)
         {
-            ShowControllerSupport = support.SteamControllerConnected;
+            ShowControllerSupport = show;
             Detail?.RebuildActions();
         }
 

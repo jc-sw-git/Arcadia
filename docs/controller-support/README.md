@@ -37,7 +37,7 @@ More findings, one file per topic (read only the one you touch):
 | Starting and stopping SISR: Steam ready, marker, VIIPER, exit, usbip installer, first-run setup | [sisr-lifecycle.md](sisr-lifecycle.md) |
 | Steam's desktop layout and the mouse mode (#64) | [desktop-layout.md](desktop-layout.md) |
 | Steam Input without SISR: overlay helper, raw SDL3, VIIPER from C# (spike #112) | [steam-input-helper.md](steam-input-helper.md) |
-| Every other controller through SDL3: which devices, hints, rumble, errors (#72) | [sdl-gamepads.md](sdl-gamepads.md) |
+| Every controller through SDL3, the Steam Controller raw, SISR's virtual pad told apart (#72, #212) | [sdl-gamepads.md](sdl-gamepads.md) |
 
 ## Setup and naming (#85, #92, 2026-10-16)
 
@@ -57,7 +57,8 @@ More findings, one file per topic (read only the one you touch):
   file is all SISR's own "enable CEF" does is inferred. The settings ask both questions in a modal over the
   dialog ("Steam-Spiel läuft", "Steam beenden?") that re-reads the running game every second, because
   nothing else reports a game ending; `LastError` is cleared when the settings open or close.
-- A Steam Controller counts as connected (per-game mode in the preview) only while SISR emulates it
-  (`SisrState.Running`); `WatchAsync` (every 2 s) moves Running ↔ NoController as the controller is switched on or off.
+- A Steam Controller counts as connected (per-game mode in the preview) when SDL sees it (#212,
+  [sdl-gamepads.md](sdl-gamepads.md)); until SDL has seen one, while SISR emulates it (`SisrState.Running`).
+  `WatchAsync` (every 2 s) moves Running ↔ NoController as the controller is switched on or off.
   Windows' HID list is no use: the wireless dongle shows as a Valve device (`VID_28DE`) even with the
   controller off (owner's PC, 2026-10-16).

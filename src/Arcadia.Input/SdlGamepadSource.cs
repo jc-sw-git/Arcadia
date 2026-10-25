@@ -31,6 +31,10 @@ public interface ISdlGamepads
     /// <summary>Rumbles for <paramref name="durationMs"/>, then stops by itself; a pad without motors ignores it.</summary>
     void Rumble(nint pad, ushort strength, uint durationMs);
 
+    /// <summary>Switches gyro and accelerometer on or off.</summary>
+    /// <returns>False when the pad has no gyro.</returns>
+    bool SetMotionSensors(nint pad, bool on);
+
     void Close(nint pad);
 
     void Quit();
@@ -39,7 +43,9 @@ public interface ISdlGamepads
 /// <summary>
 /// Reads every controller through SDL3's gamepad API (#72), Xbox pads included, and merges them into one stream of
 /// button presses and releases. <see cref="GamepadReading.PadId"/> is SDL's id of the device, new on every connect.
-/// SDL keeps reading while another program is in front, so View held and Back + Start work beside a game.
+/// SDL keeps reading while another program is in front, so View held and Back + Start work beside a game. The Steam
+/// Controller is read raw too (#212), trackpads included; the Xbox pad SISR emulates of it is left out
+/// (<see cref="IEmulatedPads"/>).
 /// </summary>
 /// <remarks>
 /// Polled every <see cref="PollIntervalMs"/>, like XInput before: the repeat of held directions and the mouse mode's
@@ -60,6 +66,7 @@ public sealed class SdlGamepadSource : IGamepadSource
     private readonly ISdlGamepads _sdl;
     private readonly Action<string> _log;
     private readonly Action<Exception> _failed;
+    private readonly IEmulatedPads _emulated;
     private readonly CancellationTokenSource _stop = new();
     private readonly GamepadPolls _polls = new();
     private readonly List<GamepadReading> _readings = [];
@@ -70,15 +77,19 @@ public sealed class SdlGamepadSource : IGamepadSource
     private readonly Dictionary<uint, (nint Handle, PadDevice Device)> _pads = [];
     private bool _open;
     private volatile bool _lost;
+    private volatile bool _motionWanted;
+    private volatile bool _motionChanged;
     private Thread? _thread;
 
     /// <param name="log">Connects and disconnects, for <c>arcadia.log</c>; called on the poll thread.</param>
     /// <param name="failed">Called once if SDL can't be used, or fails later; the controllers are then off.</param>
-    public SdlGamepadSource(ISdlGamepads sdl, Action<string> log, Action<Exception> failed)
+    /// <param name="emulated">Tells emulated Xbox pads (SISR's) from real ones; none by default.</param>
+    public SdlGamepadSource(ISdlGamepads sdl, Action<string> log, Action<Exception> failed, IEmulatedPads? emulated = null)
     {
         _sdl = sdl;
         _log = log;
         _failed = failed;
+        _emulated = emulated ?? NoEmulatedPads.Instance;
         _polls.ButtonPressed += button => ButtonPressed?.Invoke(button);
         _polls.ButtonReleased += button => ButtonReleased?.Invoke(button);
     }
@@ -104,6 +115,16 @@ public sealed class SdlGamepadSource : IGamepadSource
 
     public void Rumble(int padId) => _rumbleRequests.Enqueue(padId);
 
+    /// <summary>
+    /// Switches the gyro and accelerometer of every controller that has them on or off, from the next poll on; off by
+    /// default. Only while a feature needs them (#111): they cost the controller's battery. Callable from any thread.
+    /// </summary>
+    public void UseMotionSensors(bool on)
+    {
+        _motionWanted = on;
+        _motionChanged = true;
+    }
+
     public bool AnyNow(Func<GamepadReading, bool> test)
     {
         if (!_sdlLock.TryEnter(FreshLookWait))
@@ -121,7 +142,7 @@ public sealed class SdlGamepadSource : IGamepadSource
             _sdl.Update();
             foreach (var (id, pad) in _pads)
             {
-                if (test(SdlPadMapping.ToReading((int)id, _sdl.Read(pad.Handle))))
+                if (test(Read(id, pad.Handle, pad.Device)))
                 {
                     return true;
                 }
@@ -204,10 +225,19 @@ public sealed class SdlGamepadSource : IGamepadSource
                 }
             }
 
+            if (_motionChanged)
+            {
+                _motionChanged = false;
+                foreach (var pad in _pads.Values)
+                {
+                    _sdl.SetMotionSensors(pad.Handle, _motionWanted);
+                }
+            }
+
             _readings.Clear();
             foreach (var (id, pad) in _pads)
             {
-                _readings.Add(SdlPadMapping.ToReading((int)id, _sdl.Read(pad.Handle)));
+                _readings.Add(Read(id, pad.Handle, pad.Device));
             }
 
             while (_rumbleRequests.TryDequeue(out var padId))
@@ -337,7 +367,7 @@ public sealed class SdlGamepadSource : IGamepadSource
         }
 
         var device = _sdl.Describe(id);
-        if (GamepadDevices.WhyIgnored(device) is { } reason)
+        if (GamepadDevices.WhyIgnored(device, _emulated) is { } reason)
         {
             _log($"Controller #{id} ignoriert ({reason}): {device}");
             return;
@@ -352,7 +382,14 @@ public sealed class SdlGamepadSource : IGamepadSource
 
         _pads[id] = (pad, device);
         _log($"Controller #{id} verbunden: {device}");
+        if (_motionWanted)
+        {
+            _sdl.SetMotionSensors(pad, true);
+        }
     }
+
+    private GamepadReading Read(uint id, nint handle, PadDevice device) =>
+        SdlPadMapping.ToReading((int)id, _sdl.Read(handle)) with { IsSteamController = device.Type == PadType.Steam };
 
     private void Disconnect(uint id)
     {

@@ -1,0 +1,83 @@
+using Arcadia.Input;
+using Arcadia.Tests.Sdl;
+
+namespace Arcadia.Core.Tests;
+
+/// <summary>
+/// SISR's virtual Xbox pad told from a real one by the device tree (#212, P3): its host controller is a software one,
+/// and the XInput slot ties it to SDL's <c>XInput#n</c>.
+/// </summary>
+public sealed class EmulatedXboxPadsTests
+{
+    private static readonly XusbDevice RealOn0 = new(OnSoftwareHost: false, Slot: 0);
+    private static readonly XusbDevice VirtualOn1 = new(OnSoftwareHost: true, Slot: 1);
+
+    [Fact]
+    public void The_device_holding_the_slot_decides()
+    {
+        Assert.False(DeviceTreeEmulatedPads.Decide(0, [RealOn0, VirtualOn1]));
+        Assert.True(DeviceTreeEmulatedPads.Decide(1, [RealOn0, VirtualOn1]));
+    }
+
+    [Fact]
+    public void A_slot_no_device_holds_is_not_emulated() =>
+        Assert.False(DeviceTreeEmulatedPads.Decide(2, [RealOn0, VirtualOn1]));
+
+    /// <summary>The LED says nothing: only virtual devices among the unknown ones make the pad virtual.</summary>
+    [Fact]
+    public void Without_slots_the_pad_is_emulated_only_if_every_device_without_one_is()
+    {
+        Assert.True(DeviceTreeEmulatedPads.Decide(0, [new XusbDevice(true, null)]));
+        Assert.True(DeviceTreeEmulatedPads.Decide(1, [RealOn0, new XusbDevice(true, null)]));
+        Assert.False(DeviceTreeEmulatedPads.Decide(0, [new XusbDevice(false, null)]));
+        Assert.Null(DeviceTreeEmulatedPads.Decide(0, [new XusbDevice(false, null), new XusbDevice(true, null)]));
+    }
+
+    [Fact]
+    public void An_unclear_pad_is_read_and_logged()
+    {
+        var log = new List<string>();
+        var pads = new DeviceTreeEmulatedPads(() => [new XusbDevice(false, null), new XusbDevice(true, null)], log.Add);
+
+        Assert.False(pads.IsEmulated(KnownPads.Xbox360));
+        Assert.Equal(["Controller: unklar, ob XInput#0 virtuell ist (echt auf ?, virtuell auf ?); wird gelesen"], log);
+    }
+
+    [Fact]
+    public void A_device_list_that_fails_reads_the_pad_as_real_instead_of_throwing()
+    {
+        var log = new List<string>();
+        var pads = new DeviceTreeEmulatedPads(() => throw new InvalidOperationException("SetupDiGetClassDevs: Fehler 5"), log.Add);
+
+        Assert.False(pads.IsEmulated(KnownPads.Xbox360));
+        Assert.Equal(["Controller: Geräteliste von Windows nicht lesbar, XInput#0 gilt als echter Controller: SetupDiGetClassDevs: Fehler 5"], log);
+    }
+
+    [Fact]
+    public void A_pad_SDL_doesn_t_read_through_XInput_is_never_looked_up()
+    {
+        var pads = new DeviceTreeEmulatedPads(() => throw new InvalidOperationException("must not be asked"), _ => { });
+
+        Assert.False(pads.IsEmulated(KnownPads.SteamController));
+    }
+
+    [Theory]
+    [InlineData(@"ROOT\USB\0000", true)]
+    [InlineData(@"root\system\0001", true)]
+    [InlineData(@"SWD\MSRRAS\MS_NDISWANIP", true)]
+    [InlineData(@"PCI\VEN_8086&DEV_7AE0&SUBSYS_7D251462&REV_11\3&11583659&0&A0", false)]
+    [InlineData(@"ACPI\PNP0A08\0", false)]
+    [InlineData("", false)]
+    public void A_root_enumerated_host_controller_is_a_software_one(string deviceId, bool software) =>
+        Assert.Equal(software, XusbDevices.IsSoftwareHost(deviceId));
+
+    [Theory]
+    [InlineData(0, null)]
+    [InlineData(1, null)]
+    [InlineData(2, 0)]
+    [InlineData(5, 3)]
+    [InlineData(6, 0)]
+    [InlineData(9, 3)]
+    [InlineData(10, null)]
+    public void The_player_LED_names_the_slot(byte led, int? slot) => Assert.Equal(slot, XusbDevices.SlotOfLed(led));
+}

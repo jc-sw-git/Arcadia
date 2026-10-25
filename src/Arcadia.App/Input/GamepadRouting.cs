@@ -19,6 +19,7 @@ public sealed class GamepadRouting
     private readonly Func<bool> _isArcadiaActive;
     private readonly Func<bool> _isMouseModeOn;
     private readonly SoloButtons _viewAndMenu;
+    private readonly SteamControllerPresence _steamController = new();
 
     public GamepadRouting(MainViewModel viewModel, Func<bool> isArcadiaActive, Func<bool> isMouseModeOn, TimeProvider time)
     {
@@ -36,10 +37,25 @@ public sealed class GamepadRouting
     {
         _viewAndMenu.Reset();
         Dispatcher.UIThread.Post(_viewModel.CancelHold);
+        if (_steamController.Drop())
+        {
+            Dispatcher.UIThread.Post(() => _viewModel.SetSteamControllerSeen(false));
+        }
     }
 
-    /// <summary>On every poll of the controllers: View or Menu held alone long enough act now.</summary>
+    /// <summary>View or Menu held alone long enough act now.</summary>
     public void Tick() => _viewAndMenu.Tick();
+
+    /// <summary>On every poll of the controllers: <see cref="Tick()"/>, and whether a Steam Controller came or went.</summary>
+    public void Tick(IReadOnlyList<GamepadReading> pads)
+    {
+        Tick();
+        if (_steamController.Note(pads))
+        {
+            var connected = _steamController.IsConnected;
+            Dispatcher.UIThread.Post(() => _viewModel.SetSteamControllerSeen(connected));
+        }
+    }
 
     public void Press(GamepadButton button)
     {

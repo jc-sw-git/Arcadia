@@ -31,8 +31,8 @@ starts, held A opens the details, B (right) goes back, X (left) search, Y (top) 
 - [ ] **T72-11** Budgets (Release build): idle CPU of Arcadia < 1 % over 60 s with a controller connected and
       untouched (Task Manager → Details, or `Get-Counter '\Process(Arcadia)\% Processor Time'`); D-pad press to visible
       focus move < 50 ms. · E2E: no (measurement on the owner's PC)
-- [ ] **T72-12** Steam's virtual pad (Steam-Eingabe on), the physical Steam Controller and a single Joy-Con add no
-      input of their own; `arcadia.log` says "ignoriert" with the reason. · E2E: yes
+- [ ] **T72-12** Steam's virtual pad (Steam-Eingabe on), ~~the physical Steam Controller~~ (read since #212, see
+      T212-2) and a single Joy-Con add no input of their own; `arcadia.log` says "ignoriert" with the reason. · E2E: yes
 
 History:
 

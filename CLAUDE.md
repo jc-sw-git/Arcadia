@@ -8,14 +8,14 @@ reference for porting (binary VDF codec, scanner ideas, architecture notes).
 - **Designs (source of truth for UI):** https://claude.ai/artifact/8A9qxc67RcsuFmavaqCAuN
   (artboards: library, detail page, search, artwork modal, Spotify, launcher settings,
   localization, appearance, Big Picture settings, desktop mode). Read it before building UI.
-- **Open work:** GitHub issues (label `roadmap`). Roadmap #26 → one epic per area (`type:epic`)
+- **Open work:** GitHub issues (label `roadmap`). One epic per area (`type:epic`)
   → tasks, all linked as GitHub sub-issues. Add new issues as a sub-issue of the matching epic
   (`gh api -X POST repos/jc-sw-git/Arcadia/issues/<epic>/sub_issues -F sub_issue_id=<issue id, not number>`).
   Features are `type:story` and start with a `> **Story:**` line. See `docs/roadmap.md`.
-- **Refinement first:** before implementing an issue (Iteration 1) or an epic (from Iteration 2), refine
+- **Refinement first:** before implementing an issue (own thread per issue unless the owner groups issues), refine
   it with the owner using the skill `.claude/skills/refinement`; rules in `docs/roadmap.md` → Refinement.
-- **Language:** the owner writes German; UI texts are German for now (localization is an issue).
-  Code, comments and commit messages are English.
+- **Language:** everything on GitHub is English (public repo): code, docs, issues, PRs, commits, branches,
+  labels, milestones, release notes, comments. Chat with the owner is German; UI texts too, for now.
 
 ## Build, test, run
 
@@ -28,21 +28,22 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
 - .NET 10 SDK. `Directory.Build.props` sets `TreatWarningsAsErrors` — keep the build warning-free.
 - A running Arcadia locks `bin/` → close it before building: `Get-Process Arcadia | % { $_.CloseMainWindow() }`
   (CloseMainWindow, not Stop-Process: Arcadia must shut SISR down cleanly).
-- Logs: `%LOCALAPPDATA%\Arcadia-Logs\arcadia.log` (keys, gamepad buttons, SISR start/stop),
+- Logs: `%APPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, SISR start/stop),
   `sisr.log` (SISR's own log, overwritten per start). Settings: `%APPDATA%\Arcadia\settings.json`.
 - Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log:
   `Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} | ? ProviderName -match '.NET Runtime'`.
 
 ## Releases
 
-Windows x64 only, installer and self-update with Velopack (`tools/release/Pack.ps1 -Version x.y.z`); push a tag
-`vX.Y.Z` to release. `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Versioning (owner's
+Windows x64 only, installer and self-update with Velopack (`tools/release/Pack.ps1 -Version x.y.z`); run the workflow
+"Tag release" on `main` to release (cloud sessions can't push tags). `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Versioning (owner's
 rule): SemVer, 0.x until 1.0; minor adds only non-breaking features, patch only fixes bugs (plugins are planned).
 Update flow, uninstall, CI artifacts: `docs/releases.md`.
 
 ## Verifying UI changes
 
-Tests cover Core/Launchers/ControllerSupport logic, not the UI. For UI changes, run the app and
+Tests cover Core/Launchers/ControllerSupport logic and, in `Arcadia.App.Tests`, the core flows through the view models
+(acceptance tests, no rendering). For UI changes, run the app and
 look at it — see the skill `.claude/skills/arcadia-verify/SKILL.md` and the scripts in
 `tools/dev/` (screenshot with key presses, foreground tracing, XInput probe, Steam shortcuts).
 The owner often tests manually at the same time — say before driving the app with keys.
@@ -53,8 +54,8 @@ For bugs that aren't obvious from the code, or a fix that didn't hold, use the s
 ## Definition of Done
 
 A change (PR) is done when all of this holds. Every feature iteration ends with a code review
-issue (e.g. #66) that checks the whole milestone again, then a manual test on the release
-candidate; this list keeps both small. Larger review findings become `type:tech-debt` issues at
+issue (e.g. #66) that checks the whole milestone again, then an acceptance review of the test plans
+(drift, deferred and end-only cases); this list keeps both small. Larger review findings become `type:tech-debt` issues at
 the start of the next feature iteration. Process and test plan format: `docs/testplans/README.md`.
 
 - **Builds and tests:** `dotnet build` without warnings, `dotnet test` green, CI green on all platforms.
@@ -77,10 +78,13 @@ the start of the next feature iteration. Process and test plan format: `docs/tes
   (`.claude/skills/arcadia-verify`); what was only checked mechanically is said so.
 - **Docs current:** `CLAUDE.md` / `docs/` updated when a fact, rule or workflow changed.
 - **Test plan:** a PR that closes an issue adds that issue's manual tests as its own file in
-  `docs/testplans/iteration-<n>/` (IDs `T<issue>-<n>`, each marked `E2E: ja/nein`) and records
+  `docs/testplans/iteration-<n>/` (IDs `T<issue>-<n>`, each marked `E2E: yes/no`) and records
   the test runs done during implementation with their real environment. If nothing new needs a
   manual test (e.g. a refactoring of features already covered by tests), the issue's section
   says so in one line with the reason. The `Testplan` CI check fails without the section.
+- **Tested before merge:** all of the issue's tests (unit, integration, an acceptance test per `E2E: yes` case) are in
+  the same PR before the owner tests; then the owner runs the issue's whole test plan file and Codex reviews; feedback
+  is fixed in one batch in the same thread (details: `docs/testplans/README.md` → Before the merge).
 - **Performant:** no blocking work on the UI thread; code on a hot path (start, scan, library,
   input, running in the background beside a game) stays within the budgets below, measured when touched.
 
@@ -93,10 +97,9 @@ safety, 3. controller first, 4. performance, 5. readability and maintainability,
 scalability. Performance beats readability only when a measurement breaks a budget. A conflict
 decided on purpose is named in the PR (and in the review issue).
 
-**Iterations:** feature iteration N (milestone "Iteration N": issues → code review → manual test →
-retrospective of the processes (own issue, keep, change or drop each) → release), then acceptance iteration N (milestone "Abnahme Iteration N": every `E2E: ja`
-test case of N becomes an automated acceptance test in CI). Feature iteration N+1 starts only
-when acceptance iteration N is closed, so a change in N+1 that breaks a feature of N shows at once.
+**Iterations:** milestone "Iteration N": issues, each with all its tests → code review → acceptance review →
+retrospective of the processes (own issue, keep, change or drop each) → release; then iteration N+1. There is no separate
+acceptance iteration (owner 2026-10-25; "Abnahme Iteration 1" was the last). Details: `docs/testplans/README.md`.
 
 ## Layout
 
@@ -109,6 +112,7 @@ when acceptance iteration N is closed, so a change in N+1 that breaks a feature 
 | `src/Arcadia.ControllerSupport` | Steam Controller Support (SISR, usbip-win2) |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM), `Theme/Theme.axaml`, `MainViewModel` (navigation) and its children |
 | `tests/Arcadia.Core.Tests` | xUnit |
+| `tests/Arcadia.App.Tests` | Acceptance tests (xUnit v3, Avalonia headless): `ArcadiaDriver` presses buttons on `MainViewModel`, `ArcadiaWindow` clicks and looks at the real window; rules in `docs/testplans/README.md` |
 
 Which class does what: `docs/architecture.md` (read it, or grep, rather than guessing). Big Picture UI is laid out at
 1920×1080 inside a `Viewbox`. Focus/navigation is done in the view models (`MainViewModel.Handle(UiAction)`), not with
@@ -130,6 +134,7 @@ area. Read the file of the area you touch before changing it, and add new decisi
 | Settings page, status messages | `docs/product/settings.md` |
 | Launchers: activate and order, launcher page, first start | `docs/product/launchers.md` |
 | Running games, Arcadia back to the front | `docs/product/running-games.md` |
+| UI texts: wording, length, listing new texts in the PR | `docs/product/ui-texts.md` |
 
 **Errors:** a game start goes through `GameLaunchService.TryStartAsync`, which never throws. Work nobody awaits
 (timer handlers, `Task`s started from sync code) runs through `AppErrors.Guard`/`.Forget(context)`: unexpected
@@ -182,7 +187,11 @@ Every step of a session resends its whole context, so keep it small (owner, 2026
   `test` (tests only), `doc` (docs only, agent skills included), `td` (any other product code change, i.e. tech
   debt). Rename generated names such as `claude/project-thread-…` before the first push.
 - **Never** end commit messages with a `Co-Authored-By` trailer.
-- Commit messages: English, imperative subject, body explains why.
+- Commit messages: imperative subject, body explains why.
+- At most two open UI PRs at a time (the owner tests them one after the other). After each merge to `main`, check
+  yourself that your open PR is still mergeable and resolve conflicts before the owner finds them.
+- Code PRs get a review by Codex (`AGENTS.md`) as the standard; a second review by an independent Claude thread
+  only on the owner's request, e.g. for large or often reworked PRs (retro Iteration 1).
 - Opening a PR needs no prior OK (tell the owner the link). Merging, tags/releases, closing issues and posting
   comments only on the owner's explicit word.
 - License: GPL-3.0-only. Third-party notes in `THIRD-PARTY-NOTICES.md`.

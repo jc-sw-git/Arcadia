@@ -4,7 +4,8 @@ using Arcadia.Launchers.Abstractions;
 namespace Arcadia.Launchers.Epic;
 
 /// <summary>The Epic Games Launcher: library, starts through the launcher, install progress, running games.</summary>
-public sealed class EpicIntegration(TimeProvider time) : ILauncherIntegration
+/// <param name="folders">Where Epic's files are; null: where Epic keeps them on this PC. The acceptance tests pass folders of their own.</param>
+public sealed class EpicIntegration(TimeProvider time, EpicFolders? folders = null) : ILauncherIntegration
 {
     /// <summary>
     /// Epic's logo (#138) from simple-icons (CC0), the shape Epic publishes; the name and the logo are Epic's trademarks
@@ -15,15 +16,34 @@ public sealed class EpicIntegration(TimeProvider time) : ILauncherIntegration
 
     public LauncherInfo Launcher { get; } = KnownLaunchers.Epic with { Logo = Logo };
 
-    public ILauncherScanner Scanner { get; } = new EpicScanner();
+    public ILauncherScanner Scanner { get; } = folders is null
+        ? new EpicScanner()
+        : new EpicScanner(folders.ManifestDirectory, folders.CatalogPath, folders.Logs, new EpicLastPlayedStore(folders.LastPlayedFile));
 
     public ILauncherClient? Client { get; } = new EpicLauncherClient(time);
 
-    public IInstallMonitor? InstallMonitor { get; } = new EpicInstallMonitor();
+    public IInstallMonitor? InstallMonitor { get; } = new EpicInstallMonitor(folders?.Data, folders?.CurrentLogPath);
 
-    public IRunningGamesMonitor? RunningGames { get; } = new EpicRunningGames();
+    public IRunningGamesMonitor? RunningGames { get; } = new EpicRunningGames(folders?.Logs);
 
     public IReadOnlyCollection<string> ProgramNames { get; } = ["EpicGamesLauncher.exe", "EpicWebHelper.exe"];
 
-    public string? Locate() => EpicLauncherClient.FindLauncherExecutable();
+    // Epic in folders of its own is found by its data folder: there is no launcher executable to look for.
+    public string? Locate() => folders is null ? EpicLauncherClient.FindLauncherExecutable()
+        : Directory.Exists(folders.Data) ? folders.Data
+        : null;
+}
+
+/// <summary>
+/// Where Epic keeps its files: <paramref name="Data"/> as <c>%PROGRAMDATA%\Epic\EpicGamesLauncher\Data</c> (manifests,
+/// catalog, download queue), <paramref name="Logs"/> as <c>%LOCALAPPDATA%\EpicGamesLauncher\Saved\Logs</c>, and the file in
+/// which Arcadia keeps the last start of each game (<see cref="EpicLastPlayedStore"/>).
+/// </summary>
+public sealed record EpicFolders(string Data, string Logs, string LastPlayedFile)
+{
+    public string ManifestDirectory => Path.Combine(Data, "Manifests");
+
+    public string CatalogPath => Path.Combine(Data, "Catalog", "catcache.bin");
+
+    public string CurrentLogPath => Path.Combine(Logs, "EpicGamesLauncher.log");
 }

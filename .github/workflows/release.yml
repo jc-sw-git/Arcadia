@@ -2,9 +2,12 @@ name: Release
 
 # Push a tag like v0.2.0 (or v0.2.0-beta.1 for a pre-release) to publish a release.
 # Versioning: SemVer; major may break, minor adds non-breaking features, patch only fixes bugs.
+# tag-release.yml sets the tag and starts this workflow via workflow_dispatch on that tag; run on a branch, the
+# version check below fails.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -43,10 +46,10 @@ jobs:
           # gh prints the notes line by line; join them back, or interpolation would put them on one line.
           $generated = (gh api "repos/${{ github.repository }}/releases/generate-notes" -f tag_name=$tag --jq .body) -join "`n"
           @"
-          **Installation:** ``Arcadia-win-Setup.exe`` herunterladen und starten. Installierte Versionen aktualisieren sich selbst.
-          Windows SmartScreen warnt, weil Arcadia noch nicht signiert ist: „Weitere Informationen“ → „Trotzdem ausführen“.
+          **Installation:** download and run ``Arcadia-win-Setup.exe``. Installed versions update themselves.
+          Windows SmartScreen warns because Arcadia isn't signed yet: "More info" → "Run anyway".
 
-          Arcadia ist freie Software (GPL-3.0). Quelltext dieser Version: $env:REPO_URL/tree/$tag
+          Arcadia is free software (GPL-3.0). Source code of this version: $env:REPO_URL/tree/$tag
 
           $generated
           "@ | Set-Content -Encoding utf8 release-notes.md

@@ -1,22 +1,23 @@
-# Testplan Iteration 2
+# Test plan Iteration 2
 
-Meilenstein „Iteration 2“. Format und Regeln: [README](../README.md). Die Häkchen setzt erst der
-Abschluss-Test am installierten Release-Kandidaten.
+Milestone "Iteration 2". Format and rules: [README](../README.md). The ticks are set by the owner's full test
+before the merge.
 
-**Abschluss-Test:** Release-Kandidat –, getestet von –, am –.
+**Acceptance review:** release candidate –, by –, on –.
 
-Eine Datei pro Issue. Ein PR, der ein Issue schließt, legt dessen Datei an und trägt sie hier ein; wer ein
-Issue testet, liest nur dessen Datei.
+One file per issue. A PR that closes an issue adds its file and lists it here; whoever tests an issue reads only
+its file.
 
-| Datei | Issue | Titel | Testfälle |
+| File | Issue | Title | Test cases |
 |---|---|---|---|
-| [169-steam-einstellungen-in-einer-gruppe.md](169-steam-einstellungen-in-einer-gruppe.md) | #169 | Steam-Einstellungen in einer Gruppe „Steam“ bündeln | 8 |
+| [169-steam-settings-in-one-group.md](169-steam-settings-in-one-group.md) | #169 | Group the Steam settings under "Steam" | 8 |
 
-## Explorativer Test
+## Exploratory test
 
-Auftrag: –. Zeitrahmen: –. Funde: –.
+Charter: –. Time box: –. Findings: –.
 
-## Abnahmetests (E2E)
+## Acceptance tests
 
-Wird beim Abschluss-Test aus allen Testfällen mit `E2E: ja` erstellt und in der Abnahme-Iteration
-umgesetzt.
+| Test cases | Tests |
+|---|---|
+| T169-1 to T169-8 | `tests/Arcadia.App.Tests/SteamSettingsGroupTests.cs` |

@@ -1,3 +1,4 @@
+using Arcadia.ControllerSupport;
 using Arcadia.Core.Updates;
 using System.Globalization;
 
@@ -53,8 +54,14 @@ public sealed record InfoRelease(string VersionText, string DateText, IReadOnlyL
         entry.Changes.Count > 0 ? entry.Changes : ["Keine Änderungen aufgeführt."]);
 }
 
-/// <summary>Something the user may want to act on, e.g. "Keine Spiele gefunden", in a box above the rest.</summary>
-public sealed record InfoNote(string Text) : InfoBlock;
+/// <summary>
+/// A status message in a box above the rest, with its level's symbol and colour: e.g. "Nicht gefunden" a warning,
+/// "Keine Spiele gefunden" information (owner, 2026-10-24).
+/// </summary>
+public sealed record InfoNote(string Text, HealthSeverity Severity = HealthSeverity.Warning) : InfoBlock
+{
+    public bool IsInfo => Severity == HealthSeverity.Info;
+}
 
 /// <summary>A fact in a line: what on the left, its value on the right, e.g. "Such-Kürzel  /epic".</summary>
 /// <param name="IsMuted">Something missing or off, e.g. "Aus" or "–".</param>

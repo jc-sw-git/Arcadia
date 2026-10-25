@@ -16,6 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The acceptance tests point the log at a folder of their own (AppLog.Directory). -->
+    <InternalsVisibleTo Include="Arcadia.App.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- GPL-3.0: the licence and third-party notices ship with every build and installer. -->
     <None Include="..\..\LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="..\..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

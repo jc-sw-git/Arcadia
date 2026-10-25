@@ -1,41 +1,53 @@
 # Roadmap
 
-Offene Aufgaben werden als **GitHub-Issues** geführt (Label `roadmap`, als Nächstes: `prio:next`).
-Roadmap: https://github.com/jc-sw-git/Arcadia/issues/26 – darunter je Bereich ein Epic (`type:epic`)
-als Sub-Issue, die Aufgaben hängen als Sub-Issues am jeweiligen Epic. Features sind `type:story`
-und beginnen mit einer Story-Zeile, Fehler `bug`, Technik `type:tech-debt`.
-Manuelle Tests je Iteration und der Ablauf Feature- → Abnahme-Iteration: `docs/testplans/`.
+Open work is tracked as **GitHub issues** (label `roadmap`, next up: `prio:next`).
+One epic per area (`type:epic`); the tasks hang as sub-issues on their epic. Features are `type:story`
+and start with a story line, bugs `bug`, technical work `type:tech-debt`.
+Manual tests per iteration and the course of an iteration: `docs/testplans/`.
 
-Designs: `docs/designs/` (PNG + Quellen), Canvas: https://claude.ai/artifact/8A9qxc67RcsuFmavaqCAuN
+Designs: `docs/designs/` (PNG + sources), canvas: https://claude.ai/artifact/8A9qxc67RcsuFmavaqCAuN
+
+## Iteration themes
+
+Iterations 2–4 each have a theme instead of a single epic (owner, 2026-10-25); the GitHub milestones
+carry the prefix `I2`, `I3`, `I4`. A theme can span several epics and tech-debt issues.
+
+- **I2:** reduce tech debt (slimmer code, more modularisation), polish SISR / Steam Controller support
+  and the general Steam integration.
+- **I3:** SteamGridDB integration and more, polished settings.
+- **I4:** new launchers, focusing on the new Epic launcher.
+
+Milestone descriptions on GitHub are the source for the exact scope.
 
 ## Refinement
 
-Bevor Code entsteht, gehen Owner und Claude die wahrscheinlichsten Szenarien gemeinsam durch
-(Skill `.claude/skills/refinement`). Das Ergebnis steht danach im Issue (Owner, 2026-10-14):
+Before code is written, owner and Claude walk through the most likely scenarios together
+(skill `.claude/skills/refinement`). The result then lives in the issue (owner, 2026-10-14):
 
-- **Iteration 1 (Rest):** jedes Issue, das noch bearbeitet wird, wird vorher einzeln refined.
-- **Ab Iteration 2:** ein Refinement pro Epic, das dessen Umfang konkret absteckt. Das Ergebnis wird
-  in schlanke Issues geschnitten, die als Sub-Issues am Epic hängen.
-- Jedes Issue ist ein in sich geschlossenes Inkrement, das in das Epic einzahlt.
-- Richtwert: Was ein Issue an Kontext braucht (Code, Doku, Logs, Diskussion), bleibt unter etwa
-  150k Tokens. Mehr ist ein Zeichen, das Issue weiter zu teilen; keine harte Grenze.
-- Ob Refinement pro Issue oder pro Epic besser klappt, ist Thema der Retrospektive (Issue „Retro Iteration 1“, #150).
+- **Per issue, in its own thread** (owner, 2026-10-25): every issue is refined on its own first. Issues that
+  refine and ship better together are grouped only when the owner says so. An epic is refined as a whole
+  (and sliced into issues) only on the owner's request.
+- Every issue is a self-contained increment that pays into the epic.
+- Guideline: the context an issue needs (code, docs, logs, discussion) stays below about
+  150k tokens. More is a sign to split the issue further; not a hard limit.
+- An issue cut this way is implemented without a new refinement; the thread settles open questions
+  briefly with the owner instead of starting a new round of questions (retro Iteration 1, #150).
 
-## Erledigt (Grundgerüst)
+## Done (groundwork)
 
-- Solution-Struktur: Core, Launchers, Input, ControllerSupport, App, Tests
-- Bibliothek im Big-Picture-Layout (1920×1080, skaliert auf das Fenster)
-- Launcher-Tabs, horizontal scrollbar mit Rand-Pfeilen, LB/RB
-- Paginiertes Raster (10/25/50/100) mit der Regel „größer nur, wenn die kleinere Größe nicht schon alles zeigt“
-- Sortierung nach Name, Installationsdatum, Zuletzt gespielt — jeweils auf-/absteigend
-- „Ansicht“-Modal (Y), per Controller bedienbar
-- Vorschau-Panel links (zuletzt gespielt, Spielzeit, Größe, Launcher, Speicherort)
-- Update-Kennzeichnung (Symbol und Hinweis; A startet das Spiel, der Launcher aktualisiert vorher)
-- Controller per XInput, Tastatur, Maus
-- Epic-Scanner (portiert aus SteamButler), Demo-Daten mit `--demo`
-- Epic-Spiele starten auch, wenn Epic nicht läuft (Epic wird mit `-silent` im Hintergrund gestartet)
-- Steam Controller Support über SISR: Installation, Start/Stopp mit Ladeanzeige, Pause bei Steam-Spielen,
-  Override pro Spiel, Überwachung samt Warnungen und „Beheben“, Update-Prüfung, Fokus-Handling
-- Einstellungsdialog (F2 / View-Taste) für den Steam Controller Support
-- Lesen/Schreiben von Steams `shortcuts.vdf` (byte-genau gegen die echte Datei geprüft)
-- Lizenz GPL-3.0-only, `CLAUDE.md`, Prüf-Skill und Dev-Skripte
+- Solution structure: Core, Launchers, Input, ControllerSupport, App, Tests
+- Library in the Big Picture layout (1920×1080, scaled to the window)
+- Launcher tabs, horizontally scrollable with edge arrows, LB/RB
+- Paged grid (10/25/50/100) with the rule "larger only if the smaller size doesn't already show everything"
+- Sorting by name, install date, last played, each ascending/descending
+- "View" modal (Y), operable by controller
+- Preview panel on the left (last played, playtime, size, launcher, location)
+- Update marker (icon and hint; A starts the game, the launcher updates first)
+- Controller via XInput, keyboard, mouse
+- Epic scanner (ported from SteamButler), demo data with `--demo`
+- Epic games also start when Epic isn't running (Epic is started in the background with `-silent`)
+- Steam Controller support via SISR: installation, start/stop with progress indicator, pause for Steam games,
+  override per game, monitoring with warnings and fix button, update check, focus handling
+- Settings dialog (F2 / View button) for Steam Controller support
+- Reading/writing Steam's `shortcuts.vdf` (checked byte for byte against the real file)
+- License GPL-3.0-only, `CLAUDE.md`, verification skill and dev scripts

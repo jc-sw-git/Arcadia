@@ -90,29 +90,34 @@ public interface IControllerSupportPlatform
 }
 
 /// <summary>The real Windows and Steam.</summary>
-public sealed class ControllerSupportPlatform : IControllerSupportPlatform
+/// <param name="locate">Finds Steam; defaults to <see cref="SteamInstallation.Find"/>. The acceptance tests point it at a Steam folder of their own.</param>
+/// <param name="isSteamRunning">Whether Steam runs; defaults to <see cref="SteamInstallation.IsRunning"/>.</param>
+public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate = null, Func<bool>? isSteamRunning = null) : IControllerSupportPlatform
 {
+    private readonly Func<SteamInstallation?> _locate = locate ?? SteamInstallation.Find;
+    private readonly Func<bool> _isSteamRunning = isSteamRunning ?? (() => SteamInstallation.IsRunning);
+
     public bool IsSupported => OperatingSystem.IsWindows();
 
     private static readonly TimeSpan SteamExitTimeout = TimeSpan.FromSeconds(30);
 
-    public bool IsSteamInstalled => SteamInstallation.Find() is not null;
+    public bool IsSteamInstalled => _locate() is not null;
 
-    public bool IsSteamRunning => SteamInstallation.IsRunning;
+    public bool IsSteamRunning => _isSteamRunning();
 
     public bool IsSteamReady =>
-        IsSteamUp && SteamInstallation.Find() is { } steam
+        IsSteamUp && _locate() is { } steam
         && SteamLoginLog.IsLatestLoginComplete(steam.LoginLogPath) is not false;
 
     public bool IsSteamUp =>
-        SteamInstallation.IsRunning && ProcessWatch.IsRunning("steamwebhelper")
-        && SteamInstallation.Find() is { ActiveUserId: not (null or 0) };
+        _isSteamRunning() && ProcessWatch.IsRunning("steamwebhelper")
+        && _locate() is { ActiveUserId: not (null or 0) };
 
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _lastMarkerAnswer = new(StringComparer.OrdinalIgnoreCase);
 
     public bool EnsureSisrMarker(string sisrExecutable, IReadOnlyCollection<uint>? accountIds = null)
     {
-        if (SteamInstallation.IsRunning || SteamInstallation.Find() is not { } steam)
+        if (_isSteamRunning() || _locate() is not { } steam)
         {
             return false;
         }
@@ -141,7 +146,7 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     public IReadOnlyList<MarkerAccount> SisrMarkerAccounts(string sisrExecutable)
     {
-        if (SteamInstallation.Find() is not { } steam)
+        if (_locate() is not { } steam)
         {
             return [];
         }
@@ -154,7 +159,7 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
     private static string ShortcutsPathIn(string userDataDirectory) => Path.Combine(userDataDirectory, "config", "shortcuts.vdf");
 
     public bool HasSisrMarker(string sisrExecutable) =>
-        SteamInstallation.Find()?.ShortcutsPath is { } shortcuts && HasMarkerIn(shortcuts, sisrExecutable);
+        _locate()?.ShortcutsPath is { } shortcuts && HasMarkerIn(shortcuts, sisrExecutable);
 
     private bool HasMarkerIn(string shortcuts, string sisrExecutable)
     {
@@ -178,11 +183,11 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
     public bool IsUsbipReady =>
         OperatingSystem.IsWindows() && UsbipDriver.InstalledVersion() is { } version && version >= UsbipDriver.MinimumVersion && UsbipDriver.IsRunning();
 
-    public bool IsCefDebuggingEnabled => SteamInstallation.Find() is { } steam && File.Exists(steam.CefDebuggingFlagPath);
+    public bool IsCefDebuggingEnabled => _locate() is { } steam && File.Exists(steam.CefDebuggingFlagPath);
 
     public void EnableCefDebugging()
     {
-        var steam = SteamInstallation.Find() ?? throw new InvalidOperationException("Steam wurde nicht gefunden.");
+        var steam = _locate() ?? throw new InvalidOperationException("Steam wurde nicht gefunden.");
         File.WriteAllBytes(steam.CefDebuggingFlagPath, []);
     }
 
@@ -192,7 +197,7 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     public SteamInputSetting? SteamInputFor(int appId)
     {
-        if (SteamInstallation.Find()?.LocalConfigPath is not { } path || !File.Exists(path))
+        if (_locate()?.LocalConfigPath is not { } path || !File.Exists(path))
         {
             return null;
         }
@@ -210,7 +215,7 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     public SteamInputSetting? SteamInputDefaults()
     {
-        if (SteamInstallation.Find()?.LocalConfigPath is not { } path || !File.Exists(path))
+        if (_locate()?.LocalConfigPath is not { } path || !File.Exists(path))
         {
             return null;
         }
@@ -242,7 +247,7 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
     public async Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken) =>
         await SteamInstallation.ShutdownAsync(SteamExitTimeout, time, cancellationToken);
 
-    public void StartSteam() => SteamInstallation.Find()?.StartSilently();
+    public void StartSteam() => _locate()?.StartSilently();
 
     public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken) =>
         OperatingSystem.IsWindows() ? UsbipDriver.InstallAsync(http, cancellationToken) : Task.FromResult(false);
@@ -278,11 +283,11 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
             issues.Add(new("reboot-pending", HealthSeverity.Warning, "Windows-Neustart ausstehend", "Der usbip-Treiber wurde aktualisiert. Bis zum Neustart kann der Controller aussetzen; dann hilft es, SISR neu zu starten.", HealthFix.RestartSisr, "SISR neu starten"));
         }
 
-        if (SteamInstallation.Find() is null)
+        if (_locate() is null)
         {
             issues.Add(new("steam-missing", HealthSeverity.Warning, "Steam wurde nicht gefunden", "SISR liest den Controller über Steam Input; Steam muss installiert sein."));
         }
-        else if (!SteamInstallation.IsRunning)
+        else if (!_isSteamRunning())
         {
             issues.Add(new("steam-stopped", HealthSeverity.Warning, "Steam läuft nicht", "Steam muss im Hintergrund laufen, damit SISR den Controller weiterreichen kann.", HealthFix.StartSteam, "Steam starten"));
         }

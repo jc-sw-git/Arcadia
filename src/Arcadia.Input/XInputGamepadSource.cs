@@ -14,9 +14,6 @@ namespace Arcadia.Input;
 public sealed partial class XInputGamepadSource : IGamepadSource
 {
     private const int PollIntervalMs = 8;
-    private const int RepeatDelayMs = 400;
-    private const int RepeatIntervalMs = 90;
-    private const short StickThreshold = 16000;
     private const byte TriggerThreshold = 128;
     private const int Slots = 4;
 
@@ -24,21 +21,20 @@ public sealed partial class XInputGamepadSource : IGamepadSource
     private const int RumbleMs = 150;
     private const ushort RumbleStrength = 30000;
 
-    private static readonly GamepadButton[] Repeating =
-    [
-        GamepadButton.DPadUp, GamepadButton.DPadDown, GamepadButton.DPadLeft, GamepadButton.DPadRight,
-        GamepadButton.RightStickUp, GamepadButton.RightStickDown, GamepadButton.RightStickLeft, GamepadButton.RightStickRight,
-    ];
-
     private readonly CancellationTokenSource _stop = new();
-    private readonly Dictionary<GamepadButton, long> _heldSince = [];
-    private readonly Dictionary<GamepadButton, long> _lastRepeat = [];
+    private readonly GamepadPolls _polls = new();
     private readonly List<GamepadReading> _readings = new(Slots);
     private readonly ConcurrentQueue<int> _rumbleRequests = new();
 
     // When each slot's rumble ends (poll clock, ms); 0 while it doesn't rumble. Only the poll thread touches it.
     private readonly long[] _rumbleEnds = new long[Slots];
     private Thread? _thread;
+
+    public XInputGamepadSource()
+    {
+        _polls.ButtonPressed += button => ButtonPressed?.Invoke(button);
+        _polls.ButtonReleased += button => ButtonReleased?.Invoke(button);
+    }
 
     public event Action<GamepadButton>? ButtonPressed;
 
@@ -75,40 +71,13 @@ public sealed partial class XInputGamepadSource : IGamepadSource
     private void Run()
     {
         var clock = Stopwatch.StartNew();
-        var previous = new HashSet<GamepadButton>();
 
         while (!_stop.IsCancellationRequested)
         {
-            var current = ReadAllControllers(_readings);
+            ReadAllControllers(_readings);
             var now = clock.ElapsedMilliseconds;
             Polled?.Invoke(_readings);
-
-            foreach (var button in current)
-            {
-                if (!previous.Contains(button))
-                {
-                    _heldSince[button] = now;
-                    _lastRepeat[button] = now;
-                    ButtonPressed?.Invoke(button);
-                }
-                else if (Array.IndexOf(Repeating, button) >= 0
-                         && now - _heldSince[button] >= RepeatDelayMs
-                         && now - _lastRepeat[button] >= RepeatIntervalMs)
-                {
-                    _lastRepeat[button] = now;
-                    ButtonPressed?.Invoke(button);
-                }
-            }
-
-            foreach (var button in previous)
-            {
-                if (!current.Contains(button))
-                {
-                    ButtonReleased?.Invoke(button);
-                }
-            }
-
-            previous = current;
+            _polls.Update(_readings, now);
             UpdateRumble(now);
             Thread.Sleep(PollIntervalMs);
         }
@@ -148,10 +117,9 @@ public sealed partial class XInputGamepadSource : IGamepadSource
         _ = XInputSetState(slot, ref vibration);
     }
 
-    private static HashSet<GamepadButton> ReadAllControllers(List<GamepadReading> readings)
+    private static void ReadAllControllers(List<GamepadReading> readings)
     {
         readings.Clear();
-        var pressed = new HashSet<GamepadButton>();
         for (uint index = 0; index < Slots; index++)
         {
             if (XInputGetState(index, out var state) != 0)
@@ -160,10 +128,7 @@ public sealed partial class XInputGamepadSource : IGamepadSource
             }
 
             readings.Add(ToReading((int)index, state.Gamepad));
-            Collect(state.Gamepad, pressed);
         }
-
-        return pressed;
     }
 
     /// <summary>A fresh look at the given controllers, between two polls: does one of them pass <paramref name="test"/> right now?</summary>
@@ -199,81 +164,6 @@ public sealed partial class XInputGamepadSource : IGamepadSource
     // short.MinValue reaches a little further than short.MaxValue; clamped so both ends are 1.
     private static StickPosition Stick(short x, short y) =>
         new(Math.Max(x / 32767.0, -1), Math.Max(y / 32767.0, -1));
-
-    private static void Collect(XInputGamepad pad, HashSet<GamepadButton> pressed)
-    {
-        var buttons = pad.Buttons;
-        void Map(ushort mask, GamepadButton button)
-        {
-            if ((buttons & mask) != 0)
-            {
-                pressed.Add(button);
-            }
-        }
-
-        Map(0x0001, GamepadButton.DPadUp);
-        Map(0x0002, GamepadButton.DPadDown);
-        Map(0x0004, GamepadButton.DPadLeft);
-        Map(0x0008, GamepadButton.DPadRight);
-        Map(0x0010, GamepadButton.Menu);
-        Map(0x0020, GamepadButton.View);
-        Map(0x0040, GamepadButton.LeftStickClick);
-        Map(0x0080, GamepadButton.RightStickClick);
-        Map(0x0100, GamepadButton.LeftShoulder);
-        Map(0x0200, GamepadButton.RightShoulder);
-        Map(0x1000, GamepadButton.A);
-        Map(0x2000, GamepadButton.B);
-        Map(0x4000, GamepadButton.X);
-        Map(0x8000, GamepadButton.Y);
-
-        if (pad.LeftTrigger >= TriggerThreshold)
-        {
-            pressed.Add(GamepadButton.LeftTrigger);
-        }
-
-        if (pad.RightTrigger >= TriggerThreshold)
-        {
-            pressed.Add(GamepadButton.RightTrigger);
-        }
-
-        // The left stick navigates like the D-pad.
-        if (pad.ThumbLY > StickThreshold)
-        {
-            pressed.Add(GamepadButton.DPadUp);
-        }
-        else if (pad.ThumbLY < -StickThreshold)
-        {
-            pressed.Add(GamepadButton.DPadDown);
-        }
-
-        if (pad.ThumbLX > StickThreshold)
-        {
-            pressed.Add(GamepadButton.DPadRight);
-        }
-        else if (pad.ThumbLX < -StickThreshold)
-        {
-            pressed.Add(GamepadButton.DPadLeft);
-        }
-
-        // The right stick moves a second focus, e.g. through the hits beside the on-screen keyboard.
-        if (pad.ThumbRY > StickThreshold)
-        {
-            pressed.Add(GamepadButton.RightStickUp);
-        }
-        else if (pad.ThumbRY < -StickThreshold)
-        {
-            pressed.Add(GamepadButton.RightStickDown);
-        }
-
-        if (pad.ThumbRX > StickThreshold)
-        {
-            pressed.Add(GamepadButton.RightStickRight);
-        }
-        else if (pad.ThumbRX < -StickThreshold)
-        {
-            pressed.Add(GamepadButton.RightStickLeft);
-        }
-    }
 
     [LibraryImport("xinput1_4.dll")]
     private static partial uint XInputGetState(uint userIndex, out XInputState state);

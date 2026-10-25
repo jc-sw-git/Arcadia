@@ -1,12 +1,12 @@
 ---
 name: refinement
-description: Joint refinement with the owner before work starts on an issue or epic — walk the likely scenarios, edge cases and open decisions in rounds of questions until nothing is left assumed. Use at the start of every issue (Iteration 1) or epic (from Iteration 2), or when the owner says "refinement" or "grill".
+description: Joint refinement with the owner before work starts on an issue or epic — walk the likely scenarios, edge cases and open decisions in rounds of questions until nothing is left assumed. Use at the start of every issue (own thread per issue unless the owner groups issues; an epic only on request), or when the owner says "refinement" or "grill".
 ---
 
 # Refinement
 
 Adapted from `grilling` and `to-tickets` in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT).
-When it applies (per issue or per epic) is set in `docs/roadmap.md` → "Refinement".
+When it applies (per issue; epics on request) is set in `docs/roadmap.md` → "Refinement".
 
 ## 1. Read before asking
 
@@ -24,11 +24,11 @@ Cover, where they apply: the most likely player scenarios (controller first, B g
 on errors and with missing launchers or data, what is explicitly out of scope, and which DoD criteria
 are tricky for this work. Skip what `CLAUDE.md`, `docs/product/` or an earlier decision already settles.
 
-Write in German, numbered, each with your recommendation, worded so "ja" accepts it:
+Ask in German (chat), numbered, each with your recommendation, worded so "ja" accepts it:
 
 ```
-**F1 – <Titel>:** <Frage, ggf. mit Optionen>
-➡️ Empfehlung: <Antwort>
+**F1 – <title>:** <question, with options if any>
+➡️ Empfehlung: <answer>
 ```
 
 Keep rounds short (about five questions). After each answer, recompute the frontier.
@@ -38,10 +38,10 @@ implementing before that.
 
 ## 3. Write the result into the issue
 
-Update the issue body (it is the source of truth, not the chat): scenarios, decisions with date,
+Update the issue body in English (it is the source of truth, not the chat): scenarios, decisions with date,
 out of scope, and acceptance criteria as checkboxes. These become the test plan cases later.
 
-## 4. Epic refinement: slice into issues
+## 4. Epic refinement (only on request): slice into issues
 
 For an epic, after step 3 cut the agreed scope into issues:
 

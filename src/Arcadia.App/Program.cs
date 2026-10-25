@@ -3,6 +3,7 @@ using System.Runtime.Versioning;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Diagnostics;
+using Arcadia.Launchers.Steam;
 using Avalonia;
 using Velopack;
 
@@ -25,7 +26,7 @@ sealed partial class Program
         }
 
         velopack.Run();
-        LogLocation.MoveOldLogs(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+        LogLocation.MoveOldLogs(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LogLocation.DataFolder);
 
         // Crashes used to show only in the Windows event log; now every one lands in arcadia.log.
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
@@ -49,18 +50,32 @@ sealed partial class Program
             .WithInterFont()
             .LogToTrace();
 
-    /// <summary>Velopack ends the uninstall hook after 30 s; the question leaves time for the removal.</summary>
-    private const uint QuestionTimeoutMs = 20_000;
+    /// <summary>
+    /// Velopack's Update.exe (1.2.161) ends the uninstall hook after 60 s; its API docs still say 30 s, so check
+    /// <c>commands/uninstall.rs</c> when Velopack is updated. Removing SISR usually takes a few seconds and at most
+    /// about 20 s (closing Steam for the marker, VIIPER's uninstaller), so the questions share 40 s and each says how
+    /// long it waits. If the removal runs long, Velopack ends it after the important steps
+    /// (<see cref="ControllerSupportRemoval.Remove"/>).
+    /// </summary>
+    private const uint QuestionsTimeoutMs = 40_000;
 
     /// <summary>
-    /// Asks whether SISR and what belongs to it should go too. SISR may be used without Arcadia,
-    /// so it stays when the user says no or doesn't answer in time.
+    /// Asks whether SISR and what belongs to it, and Arcadia's own files (settings, logos, logs) should go too.
+    /// Both stay when the user says no or doesn't answer in time: SISR may be used without Arcadia, and the files
+    /// bring the settings back with a new installation.
     /// </summary>
     [SupportedOSPlatform("windows")]
     private static void OnBeforeUninstall(SemanticVersion version)
     {
         var parts = ControllerSupportRemoval.FindInstalledParts();
-        if (parts.Count > 0 && AskToRemove(parts))
+        var hasData = Directory.Exists(LogLocation.DataFolder);
+        var questions = (parts.Count > 0 ? 1u : 0u) + (hasData ? 1u : 0u);
+        var timeoutMs = questions == 0 ? 0 : QuestionsTimeoutMs / questions;
+
+        var removeSisr = parts.Count > 0 && AskToRemoveSisr(parts, timeoutMs);
+        var removeData = hasData && AskToRemoveData(timeoutMs);
+
+        if (removeSisr)
         {
             ControllerSupportRemoval.Remove(AppLog.Write);
         }
@@ -69,27 +84,50 @@ sealed partial class Program
             QuitSisr();
         }
 
-        // Velopack removes only its install folder; the logs live beside it (LogLocation).
+        if (removeData)
+        {
+            RemoveData();
+        }
+    }
+
+    private static bool AskToRemoveSisr(IReadOnlyList<string> parts, uint timeoutMs)
+    {
+        var text = "Arcadia wird deinstalliert.\n\n"
+            + "Soll auch SISR für den Steam Controller mit allem, was dazugehört, entfernt werden?\n\n"
+            + string.Concat(parts.Select(p => $"•  {p}\n"))
+            + "\nAndere Programme, die SISR nutzen, funktionieren danach nicht mehr. "
+            + (SteamInstallation.IsRunning ? "Steam wird dafür kurz beendet und wieder gestartet. " : string.Empty)
+            + $"Ohne Antwort innerhalb von {timeoutMs / 1000} Sekunden bleibt SISR installiert; Arcadia wird trotzdem deinstalliert.";
+        return Ask(text, timeoutMs);
+    }
+
+    private static bool AskToRemoveData(uint timeoutMs)
+    {
+        var text = "Arcadia wird deinstalliert.\n\n"
+            + "Sollen auch Arcadias Einstellungen, eigene Logos und Logs gelöscht werden?\n\n"
+            + $"{LogLocation.DataFolder}\n\n"
+            + "Bleiben sie, sind die Einstellungen bei einer neuen Installation wieder da. "
+            + $"Ohne Antwort innerhalb von {timeoutMs / 1000} Sekunden bleiben sie erhalten.";
+        return Ask(text, timeoutMs);
+    }
+
+    private static bool Ask(string text, uint timeoutMs)
+    {
+        const uint YesNo = 0x4, IconQuestion = 0x20, DefaultNo = 0x100, SetForeground = 0x10000, TopMost = 0x40000;
+        const int Yes = 6;
+        return MessageBoxTimeout(IntPtr.Zero, text, "Arcadia deinstallieren", YesNo | IconQuestion | DefaultNo | SetForeground | TopMost, 0, timeoutMs) == Yes;
+    }
+
+    private static void RemoveData()
+    {
         try
         {
-            Directory.Delete(LogLocation.Directory, recursive: true);
+            Directory.Delete(LogLocation.DataFolder, recursive: true);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             // A SISR left running keeps sisr.log open; the rest is gone, and nothing else depends on it.
         }
-    }
-
-    private static bool AskToRemove(IReadOnlyList<string> parts)
-    {
-        const uint YesNo = 0x4, IconQuestion = 0x20, DefaultNo = 0x100, SetForeground = 0x10000, TopMost = 0x40000;
-        const int Yes = 6;
-        var text = "Arcadia wird deinstalliert.\n\n"
-            + "Soll auch SISR für den Steam Controller mit allem, was dazugehört, entfernt werden?\n\n"
-            + string.Concat(parts.Select(p => $"•  {p}\n"))
-            + "\nAndere Programme, die SISR nutzen, funktionieren danach nicht mehr. "
-            + $"Ohne Antwort innerhalb von {QuestionTimeoutMs / 1000} Sekunden bleibt alles installiert.";
-        return MessageBoxTimeout(IntPtr.Zero, text, "Arcadia deinstallieren", YesNo | IconQuestion | DefaultNo | SetForeground | TopMost, 0, QuestionTimeoutMs) == Yes;
     }
 
     // Undocumented but present in user32 since Windows XP; returns 32000 on timeout.

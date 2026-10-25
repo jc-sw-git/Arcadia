@@ -63,37 +63,11 @@ public static class ControllerSupportRemoval
     [SupportedOSPlatform("windows")]
     public static void Remove(Action<string> log)
     {
+        // Ordered by what matters most, because Velopack may end the uninstall hook before the slow steps are done.
         StopProcesses("SISR");
-
-        if (File.Exists(ViiperExecutable))
-        {
-            Step(log, "VIIPER", () =>
-            {
-                using var uninstall = Process.Start(new ProcessStartInfo(ViiperExecutable, "uninstall --quiet") { CreateNoWindow = true });
-                uninstall?.WaitForExit(TimeSpan.FromSeconds(5));
-            });
-            StopProcesses("viiper");
-            Step(log, "VIIPER-Ordner", () => Directory.Delete(Path.GetDirectoryName(ViiperExecutable)!, recursive: true));
-        }
-        else
-        {
-            // VIIPER bundled in SISR's folder.
-            StopProcesses("viiper");
-        }
+        StopProcesses("viiper");
 
         var sisrExe = Path.Combine(SisrDirectory, "SISR.exe");
-        if (SteamInstallation.Find() is { } steam)
-        {
-            // SISR asks Steam for this flag to read the controller layout; nothing else needs it.
-            Step(log, "Steam-CEF-Flag", () => File.Delete(steam.CefDebuggingFlagPath));
-
-            // Steam rewrites shortcuts.vdf on exit, so the marker can only go while Steam is closed.
-            if (!SteamInstallation.IsRunning && steam.ShortcutsPath is { } shortcuts)
-            {
-                Step(log, "Steam-Eintrag", () => SteamShortcuts.RemoveByExecutable(shortcuts, sisrExe));
-            }
-        }
-
         Step(log, "SISR-Ordner", () => DeleteDirectory(SisrDirectory));
         foreach (var data in DataDirectories)
         {
@@ -109,6 +83,24 @@ public static class ControllerSupportRemoval
         Step(log, "SISR-Deinstallationseintrag", () =>
             Registry.CurrentUser.DeleteSubKeyTree(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\SISR", throwOnMissingSubKey: false));
 
+        if (SteamInstallation.Find() is { } steam)
+        {
+            // SISR asks Steam for this flag to read the controller layout; nothing else needs it.
+            Step(log, "Steam-CEF-Flag", () => File.Delete(steam.CefDebuggingFlagPath));
+            RemoveMarkersWithSteamClosed(steam, sisrExe, log);
+        }
+
+        if (File.Exists(ViiperExecutable))
+        {
+            Step(log, "VIIPER", () =>
+            {
+                using var uninstall = Process.Start(new ProcessStartInfo(ViiperExecutable, "uninstall --quiet") { CreateNoWindow = true });
+                uninstall?.WaitForExit(TimeSpan.FromSeconds(5));
+            });
+            StopProcesses("viiper");
+            Step(log, "VIIPER-Ordner", () => Directory.Delete(Path.GetDirectoryName(ViiperExecutable)!, recursive: true));
+        }
+
         if (UsbipDriver.UninstallCommand() is { } usbip)
         {
             Step(log, "usbip-win2", () =>
@@ -118,6 +110,34 @@ public static class ControllerSupportRemoval
             });
         }
     }
+
+    /// <summary>How long the uninstall waits for Steam to close; it usually takes 2 to 5 s.</summary>
+    public static readonly TimeSpan SteamShutdownTimeout = TimeSpan.FromSeconds(8);
+
+    /// <summary>
+    /// Steam rewrites <c>shortcuts.vdf</c> from memory when it exits, so a marker removed while it runs comes back:
+    /// Steam is closed for the removal and started again afterwards (owner, 2026-10-24).
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private static void RemoveMarkersWithSteamClosed(SteamInstallation steam, string sisrExe, Action<string> log)
+    {
+        var wasRunning = SteamInstallation.IsRunning;
+        if (wasRunning && !SteamInstallation.ShutdownAsync(SteamShutdownTimeout, TimeProvider.System).GetAwaiter().GetResult())
+        {
+            log($"Steam-Eintrag „SISR Marker“ nicht entfernt: Steam war nach {SteamShutdownTimeout.TotalSeconds:0} s noch nicht beendet");
+            return;
+        }
+
+        Step(log, "Steam-Eintrag „SISR Marker“", () => RemoveMarkers(steam, sisrExe));
+        if (wasRunning)
+        {
+            steam.StartSilently();
+        }
+    }
+
+    /// <summary>Removes the marker from every account that has one; returns how many had it.</summary>
+    public static int RemoveMarkers(SteamInstallation steam, string sisrExe) =>
+        steam.AllShortcutsPaths().Count(shortcuts => SteamShortcuts.RemoveByExecutable(shortcuts, sisrExe) > 0);
 
     /// <summary>Splits an uninstall command like <c>"C:\x\uninstall.exe" /S</c> into file and arguments.</summary>
     public static (string File, string Arguments) SplitCommand(string command)
@@ -165,7 +185,7 @@ public static class ControllerSupportRemoval
             action();
             log($"Entfernt: {what}");
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException or FormatException)
         {
             log($"Nicht entfernt: {what} ({ex.Message})");
         }

@@ -34,12 +34,12 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
 
     /// <summary>Shown as a tab; off: not read, not watched, no tab.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ValueText), nameof(CanDecrease), nameof(CanIncrease), nameof(HasSwitch))]
+    [NotifyPropertyChangedFor(nameof(ValueText), nameof(HasSwitch))]
     public partial bool IsActive { get; private set; }
 
     /// <summary>Installed on this PC; one that isn't can't be switched on.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanIncrease), nameof(HasSwitch))]
+    [NotifyPropertyChangedFor(nameof(HasSwitch))]
     public partial bool IsFound { get; private set; }
 
     /// <summary>The key that selects its tab, "1" … "0"; empty for an inactive launcher or beyond the tenth tab.</summary>
@@ -62,9 +62,10 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
 
     public string ValueText => IsActive ? "Aktiv" : "Aus";
 
-    public bool CanDecrease => IsActive;
+    /// <summary>A choice of two wraps like every ◀ ▶ selector, so both arrows switch it (owner, 2026-10-24).</summary>
+    public bool CanDecrease => HasSwitch;
 
-    public bool CanIncrease => !IsActive && IsFound;
+    public bool CanIncrease => HasSwitch;
 
     /// <summary>Not a launcher that's missing and off: that one can't go anywhere.</summary>
     public bool CanMove => HasSwitch;
@@ -93,9 +94,9 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
 
     public override void Change(int delta)
     {
-        if (delta < 0 ? CanDecrease : CanIncrease)
+        if (HasSwitch)
         {
-            _switch(this, delta > 0);
+            _switch(this, !IsActive);
         }
     }
 
@@ -107,20 +108,23 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
     private void Toggle()
     {
         Point();
-        Change(IsActive ? -1 : 1);
+        Change(1);
     }
 
     /// <param name="tabNumber">Its place among the tabs from 1, or null while inactive.</param>
-    /// <param name="warning">Why the launcher needs a look (e.g. "Keine Spiele gefunden"), shown instead of the state.</param>
-    public void Show(bool isActive, bool isFound, int? tabNumber, string statusText, string? warning, IReadOnlyList<InfoBlock> preview, IReadOnlyList<InfoBlock> info)
+    /// <param name="notice">
+    /// A status message shown with its level's symbol instead of the state, e.g. "Nicht gefunden" (a warning) or "Keine
+    /// Spiele gefunden" (information).
+    /// </param>
+    public void Show(bool isActive, bool isFound, int? tabNumber, string statusText, (string Text, HealthSeverity Severity)? notice, IReadOnlyList<InfoBlock> preview, IReadOnlyList<InfoBlock> info)
     {
         var actionsChanged = IsActive != isActive || IsFound != isFound;
         IsActive = isActive;
         IsFound = isFound;
         TabKey = tabNumber is >= 1 and <= 10 ? (tabNumber.Value % 10).ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
-        StatusText = warning ?? statusText;
-        Severity = warning is null ? null : HealthSeverity.Warning;
-        IsHealthy = isActive && warning is null;
+        StatusText = notice?.Text ?? statusText;
+        Severity = notice?.Severity;
+        IsHealthy = isActive && notice is null;
         Preview = preview;
         Info = info;
         if (actionsChanged)

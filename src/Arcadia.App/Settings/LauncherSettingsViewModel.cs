@@ -13,7 +13,8 @@ namespace Arcadia.App.Settings;
 /// The category "Launcher" (#136): which launchers are active, i.e. read, watched and shown as tabs, and in which order.
 /// Above "Aktiv · erscheinen als Tabs" in tab order, below "Nicht aktiv", the installed ones first. ◀ ▶ switch a launcher
 /// on (it goes to the end of the active ones) or off (to the top of the inactive ones); Y lifts it, ▲ ▼ move it, Y puts it
-/// down and B cancels; put down among the inactive ones it is off. X reads every launcher again. A or a click open a
+/// down and B cancels; put down among the inactive ones it is off. X, or the row "Alle neu einlesen" below the launchers
+/// (for the mouse), reads every launcher again. A or a click open a
 /// launcher's page (#137): "Aktiv", its name, keyword and logo, its folder if Arcadia can't find it (#138), "Neu einlesen";
 /// LT/RT turn to the launcher before or after it in the list, B goes back to the list. Applies at once.
 /// </summary>
@@ -48,6 +49,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private readonly ActionRowViewModel _defaultLogoRow;
     private readonly ActionRowViewModel _folderRow;
     private readonly ActionRowViewModel _rescanRow;
+    private readonly ActionRowViewModel _rescanAllRow;
     private readonly List<(string LauncherId, ActionRowViewModel Row)> _linkRows = [];
 
     private LauncherRowViewModel? _lifted;
@@ -70,6 +72,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         _time = time;
         YActionText = ListYAction;
         XActionText = ListXAction;
+        FocusMoved += (_, _) => ShowYAction();
         foreach (var integration in host.Launchers.All)
         {
             var launcher = host.Launchers.Info(integration.Launcher.Id);
@@ -125,6 +128,18 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             Group = LibraryGroup,
             ActionText = "Jetzt einlesen",
         };
+        // X does the same; the row is there so that the mouse alone can do it too.
+        _rescanAllRow = new ActionRowViewModel("launchers-rescan-all", "Alle neu einlesen", RescanAll)
+        {
+            Group = LibraryGroup,
+            ActionText = "Jetzt einlesen",
+            ShortcutPad = "X",
+            ShortcutKeys = "F",
+            Info =
+            [
+                new InfoText("Liest die Spiele aller aktiven Launcher sofort neu ein, etwa nach einer Installation, die Arcadia nicht mitbekommen hat. Sonst liest Arcadia neu ein, wenn es wieder nach vorne kommt."),
+            ],
+        };
 
         Refresh();
         if (focus is not null && _rows.TryGetValue(focus, out var row))
@@ -166,7 +181,8 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             ShowState(_rows[id], tabs);
         }
 
-        Marker = _host.Launchers.ActiveIds.Any(id => _rows[id].HasSeverity) ? HealthSeverity.Warning : null;
+        // A launcher without games is information, which the category's tab doesn't show (owner, 2026-10-24).
+        Marker = _host.Launchers.ActiveIds.Any(id => _rows[id].Severity > HealthSeverity.Info) ? HealthSeverity.Warning : null;
         if (_page is { } page)
         {
             ShowPage(page, tabs);
@@ -183,7 +199,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             _rows[id].Group = _lifted is null ? InactiveGroup : DropGroup;
         }
 
-        SetRows([.. active.Select(id => _rows[id]), .. inactive.Select(id => _rows[id])]);
+        _rescanAllRow.IsEnabled = active.Count > 0;
+        _rescanAllRow.Subtitle = active.Count > 0 ? "Liest die Spiele aller aktiven Launcher neu ein" : "Kein Launcher aktiv";
+        SetRows([.. active.Select(id => _rows[id]), .. inactive.Select(id => _rows[id]), _rescanAllRow]);
     }
 
     /// <summary>A launcher's name, keyword or logo changed elsewhere: the rows show it.</summary>
@@ -248,10 +266,28 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
 
                 return true;
             case UiAction.Search:
-                _host.RescanLaunchers();
+                RescanAll();
                 return true;
             default:
                 return false;
+        }
+    }
+
+    /// <summary>Y lifts only a launcher, so the footer names it only there, not on "Alle neu einlesen".</summary>
+    private void ShowYAction()
+    {
+        if (_page is null)
+        {
+            YActionText = FocusedRow is LauncherRowViewModel ? ListYAction : null;
+        }
+    }
+
+    private void RescanAll()
+    {
+        // A click on the row while a launcher is lifted waits until it is put down, as X does.
+        if (_lifted is null)
+        {
+            _host.RescanLaunchers();
         }
     }
 
@@ -347,9 +383,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         Editor?.Drop();
         _page = null;
         Head = null;
-        YActionText = ListYAction;
         XActionText = ListXAction;
         Refresh();
+        ShowYAction();
     }
 
     /// <summary>LT/RT or a click on a neighbour: the page of the launcher before or after this one in the list; the focus stays on its row.</summary>
@@ -503,7 +539,8 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         TextEditorViewModel? editor = null;
         editor = new TextEditorViewModel(
             row.ValueText,
-            text => isName ? LauncherNames.NameProblem(text) : LauncherNames.KeywordProblem(text, id, _host.Launchers.Shown),
+            // An empty name is the launcher's own again (owner, 2026-10-23), so only a keyword must not be empty.
+            text => isName ? (text.Trim().Length == 0 ? null : LauncherNames.NameProblem(text)) : LauncherNames.KeywordProblem(text, id, _host.Launchers.Shown),
             text =>
             {
                 SaveText(id, isName, text);
@@ -534,7 +571,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     {
         var original = _host.Launchers.Registered(id)!.Launcher;
         var value = isName ? text.Trim() : text;
-        var own = value == (isName ? original.DisplayName : original.SearchKeyword) ? null : value;
+        var own = value.Length == 0 || value == (isName ? original.DisplayName : original.SearchKeyword) ? null : value;
         _changes.Apply(settings => settings.WithLauncherPreferences(id, p => isName ? p with { Name = own } : p with { Keyword = own }), isName ? "Launcher-Name" : "Such-Kürzel");
         AppLog.Write($"{(isName ? "Name" : "Such-Kürzel")} von {id} geändert");
         LooksChanged();
@@ -745,16 +782,18 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         var library = isActive ? _host.LibraryOf(id) : null;
         var keyword = $"{SearchQuery.PrefixMarker}{row.Launcher.SearchKeyword}";
 
-        string? warning = null;
+        // The status message: short in the row instead of the state, the whole text atop the info panel.
+        (string Text, HealthSeverity Severity)? notice = null;
         string? note = null;
         if (isActive && !isFound)
         {
-            warning = "Nicht gefunden";
+            notice = ("Nicht gefunden", HealthSeverity.Warning);
             note = $"Arcadia findet {name} auf diesem PC nicht mehr. Ist es deinstalliert, schalte den Launcher hier ab, dann verschwindet sein Tab.";
         }
         else if (library is { Games.Count: 0 })
         {
-            warning = "Keine Spiele gefunden";
+            // Nothing is broken and nothing needs doing: information, not a warning (owner, 2026-10-24).
+            notice = ("Keine Spiele gefunden", HealthSeverity.Info);
             note = $"{name} ist installiert, aber Arcadia hat dort keine Spiele gefunden. Sobald du dort ein Spiel kaufst oder installierst, erscheint es im Tab.";
         }
 
@@ -774,9 +813,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
 
         // Whether it is active, its tab, key and keyword are in the preview and the row already (owner, 2026-10-22).
         List<InfoBlock> info = [new InfoLauncher(name, row.Badge, isActive ? $"Aktiv · Tab {tabNumber}" : isFound ? "Nicht aktiv" : "Nicht installiert", isActive)];
-        if (note is not null)
+        if (notice is { } message && note is not null)
         {
-            info.Add(new InfoNote(note));
+            info.Add(new InfoNote(note, message.Severity));
         }
 
         var scannedAt = _host.ScannedAt(id);
@@ -804,7 +843,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             }, IsMuted: !isActive, IsGood: isActive),
         ]));
 
-        row.Show(isActive, isFound, tabNumber, status, warning, preview, info);
+        row.Show(isActive, isFound, tabNumber, status, notice, preview, info);
     }
 
     private static string GameCount(int count) => count == 1 ? "1 Spiel" : $"{count} Spiele";

@@ -25,16 +25,17 @@ public static class BuiltInLaunchers
     /// How many demo games in all, shared in the same proportions (<c>--demo-games 5000</c>), to measure Arcadia with a
     /// large library against the budgets in <c>CLAUDE.md</c>; null for the usual sizes.
     /// </param>
+    /// <param name="folders">Where Steam and Epic keep their files; null: where they keep them on this PC.</param>
     /// <returns>In the order of <see cref="KnownLaunchers.All"/>, which is the tab order.</returns>
-    public static IReadOnlyList<ILauncherIntegration> Create(TimeProvider time, bool demo, int? demoGames = null)
+    public static IReadOnlyList<ILauncherIntegration> Create(TimeProvider time, bool demo, int? demoGames = null, LauncherFolders? folders = null)
     {
         var total = DemoGameCounts.Values.Sum();
         int DemoCount(int usual) => demoGames is { } wanted ? Math.Max(1, (int)Math.Round((double)usual * wanted / total)) : usual;
 
         ILauncherIntegration[] integrations =
         [
-            new SteamIntegration(time),
-            new EpicIntegration(time),
+            new SteamIntegration(time, folders?.Steam),
+            new EpicIntegration(time, folders?.Epic),
         ];
 
         var ordered = new List<ILauncherIntegration>();
@@ -53,4 +54,16 @@ public static class BuiltInLaunchers
         ordered.AddRange(integrations.Where(i => !ordered.Contains(i)));
         return ordered;
     }
+}
+
+/// <summary>
+/// Steam and Epic in folders of their own instead of where they are installed on this PC: the acceptance tests put the
+/// launchers' files there, so the real integrations read them on every platform.
+/// </summary>
+/// <param name="SteamRoot">Steam's folder (with <c>steamapps</c>, <c>config</c>, <c>userdata</c>, <c>logs</c>); Steam counts as not
+/// installed while it doesn't exist. Nobody is logged in, as with Steam closed.</param>
+/// <param name="Epic">Epic's folders; Epic counts as not installed while its data folder doesn't exist.</param>
+public sealed record LauncherFolders(string SteamRoot, EpicFolders Epic)
+{
+    public Func<SteamInstallation?> Steam => () => Directory.Exists(SteamRoot) ? new SteamInstallation(SteamRoot, activeUserId: null) : null;
 }

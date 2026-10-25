@@ -1,61 +1,61 @@
 # #12 Suche über alle Launcher
 
-- [ ] **T12-1** X öffnet die Suche mit Bildschirmtastatur: Kopf „ARCADIA Suche“ mit „Schließen“, Suchfeld
+- [x] **T12-1** X öffnet die Suche mit Bildschirmtastatur: Kopf „ARCADIA Suche“ mit „Schließen“, Suchfeld
       mit Platzhalter „Spiele suchen …“ (ohne Kürzel-Hinweis), Zeile „Suche in allen Launchern“, in einer Zeile
       die Chips „Alle Launcher“ und je Launcher mit Kürzel sowie rechts „L3 Sortiert nach Relevanz“, mittig der
       leere Zustand „Tippe einen Suchbegriff ein“ mit Grafik in einem runden Schein ohne Kante, die Tastatur (Layout DE, Fokus auf „q“) und unten
       die Legende mit den Controller-Tasten. F oder die Lupe öffnen sie ohne Tastatur, die Legende zeigt dann Maus und Tastatur. · E2E: ja
-- [ ] **T12-2** Nur mit dem Controller: D-Pad und linker Stick bewegen den Fokus über die Tasten (hoch/runter
+- [x] **T12-2** Nur mit dem Controller: D-Pad und linker Stick bewegen den Fokus über die Tasten (hoch/runter
       zur nächstgelegenen Taste, an den Rändern bleibt er stehen), A tippt das Zeichen; Y tippt ein
       Leerzeichen. X löscht ein Zeichen, gehalten (oder A auf „Löschen“ gehalten) löscht es nach kurzer Pause
       eins nach dem anderen. · E2E: ja
-- [ ] **T12-3** Treffer kommen aus allen eingeschalteten Launchern, sortiert nach Relevanz: Titelanfang vor
+- [x] **T12-3** Treffer kommen aus allen eingeschalteten Launchern, sortiert nach Relevanz: Titelanfang vor
       Wortanfang vor Wortmitte, Akzente und Groß-/Kleinschreibung egal. Kopf „N Treffer in M Launchern“
       bzw. der leere Zustand „Keine Treffer“ mit Grafik; Cover mit Launcher-Logo oben links und Launchername
       darunter. ™, ® und © zählen nicht: „™“ allein findet nichts (kein Batman, kein Hitman), „F1 24“ findet
       „F1® 24“. · E2E: ja
-- [ ] **T12-4** Präfix (nur mit echter Tastatur): `/gog holl` sucht nur in GOG, `/gog-xbox holl` in beiden,
+- [x] **T12-4** Präfix (nur mit echter Tastatur): `/gog holl` sucht nur in GOG, `/gog-xbox holl` in beiden,
       die Chips folgen; Zeile „Per Kürzel gefiltert: …“. `/xyz holl` zeigt in Orange „· Unbekanntes
       Kürzel: /xyz“. · E2E: ja
-- [ ] **T12-5** Chips (Maus) und L3-Filter schalten Launcher aus oder ein (der letzte bleibt an), „Alle
+- [x] **T12-5** Chips (Maus) und L3-Filter schalten Launcher aus oder ein (der letzte bleibt an), „Alle
       Launcher“ schaltet alle ein. Ohne Präfix bleibt der Text unverändert und die Zeile zeigt „Suche in: …“;
       ein getipptes Präfix wird neu geschrieben, „Alle Launcher“ entfernt es. · E2E: ja
-- [ ] **T12-6** R3 (oder Klick auf die Globus-Taste) öffnet das Menü „TASTATURLAYOUT“ mit DE, US, UK, FR und
+- [x] **T12-6** R3 (oder Klick auf die Globus-Taste) öffnet das Menü „TASTATURLAYOUT“ mit DE, US, UK, FR und
       ES über den Treffern (nichts überlappt es), das aktive mit Haken; D-Pad und A wählen, die Tasten wechseln
       sofort. B oder R3 schließt erst das Menü. Das Layout gilt nach einem Neustart weiter. · E2E: ja
-- [ ] **T12-7** Auf dem fokussierten Treffer: ≡ startet das Spiel (beim Loslassen, nicht installiert:
+- [x] **T12-7** Auf dem fokussierten Treffer: ≡ startet das Spiel (beim Loslassen, nicht installiert:
       Installation), ≡ 1 s halten füllt einen Ring ums Cover und öffnet die Detailseite, ⧉ (Rechtsklick,
       Umschalt+F10) öffnet das Kontextmenü neben dem Cover. Mit der Maus wählt ein Klick den Treffer, ein
       Doppelklick startet ihn, die linke Taste 1 s gehalten füllt den Ring und öffnet die Detailseite. Die Legende
       nennt das. · E2E: ja
-- [ ] **T12-8** Detailseite aus der Suche: Pfadleiste „B Suche / <Titel>“, Position „2 von 3“, keine Tabs, kein
+- [x] **T12-8** Detailseite aus der Suche: Pfadleiste „B Suche / <Titel>“, Position „2 von 3“, keine Tabs, kein
       Y und keine LB/RB im Footer. LT/RT rotieren durch die Treffer in ihrer Reihenfolge; LB/RB und Y tun
       nichts. B führt zurück zur Suche mit unverändertem Text, der Fokus steht auf dem zuletzt gezeigten
       Spiel. · E2E: ja
-- [ ] **T12-9** B bei ausgefahrener Tastatur fährt sie ein, ein zweites B führt in die Bibliothek zurück
+- [x] **T12-9** B bei ausgefahrener Tastatur fährt sie ein, ein zweites B führt in die Bibliothek zurück
       (zweimal schnell B: direkt zurück), Tab, Seite und Fokus wie vorher; B löscht keine Zeichen. · E2E: ja
-- [ ] **T12-10** Echte Tastatur: Tippen schreibt ins Suchfeld (auch Umlaute, Großbuchstaben und Leerzeichen),
+- [x] **T12-10** Echte Tastatur: Tippen schreibt ins Suchfeld (auch Umlaute, Großbuchstaben und Leerzeichen),
       Rücktaste löscht (gehalten wiederholt), die Pfeiltasten bewegen den Fokus durch die Treffer, Enter startet,
       Enter halten öffnet die Details, Esc schließt. In die Bildschirmtastatur kommt man mit ihr nicht. · E2E: ja
-- [ ] **T12-11** Wird die Bibliothek bei offener Suche neu eingelesen (z. B. Spiel im Launcher installiert),
+- [x] **T12-11** Wird die Bibliothek bei offener Suche neu eingelesen (z. B. Spiel im Launcher installiert),
       bleiben Text und Fokus, die Treffer folgen. · E2E: nein
-- [ ] **T12-12** Bildschirmtastatur ein- und ausfahren: Sie rollt sichtbar (kurz) von unten herein und wieder
+- [x] **T12-12** Bildschirmtastatur ein- und ausfahren: Sie rollt sichtbar (kurz) von unten herein und wieder
       hinaus, die Lasche mittig an ihrer Oberkante fährt mit (X bzw. B, Tastatursymbol und Pfeil auf einer Linie). Ein Klick auf die Lasche fährt sie aus bzw. ein;
       jede Taste der echten Tastatur fährt sie ein; B fährt sie ein, X wieder aus.
       Eingefahren stehen die Treffer im Raster, D-Pad bewegt den Fokus durch sie, A startet, A gehalten öffnet
       die Details; die Legende passt sich an (ausgefahren bzw. eingefahren, Controller bzw. Maus und Tastatur). · E2E: ja
-- [ ] **T12-13** Groß/Klein: LB kurz tippen schaltet Großbuchstaben ein (Taste „⇧ Groß“ hervorgehoben, Tasten
+- [x] **T12-13** Groß/Klein: LB kurz tippen schaltet Großbuchstaben ein (Taste „⇧ Groß“ hervorgehoben, Tasten
       zeigen Großbuchstaben) und bleibt so, nochmal tippen schaltet aus. LB gehalten gilt nur, solange es
       gehalten wird: Buchstaben dabei groß, nach dem Loslassen wieder klein. · E2E: ja
 - [ ] ~~**T12-14** RB kurz tippen wechselt auf die Sonderzeichen-Seite (u. a. ! ? & + ( ) [ ] @ % : ; ' " € ½, ohne
       ™, ® und …; Taste zeigt „ABC“) und bleibt dort, nochmal tippen zurück. RB gehalten zeigt sie nur, solange
       es gehalten wird. Die Seite ist für alle Layouts gleich.~~
       Ersetzt durch T129-3 (RB schaltet auf AltGr, die Sonderzeichen-Seite entfällt). · E2E: ja
-- [ ] **T12-15** L3 (oder Klick auf „Sortiert nach …“, oder die Taste „Filter“) öffnet „Filter und Sortierung“:
+- [x] **T12-15** L3 (oder Klick auf „Sortiert nach …“, oder die Taste „Filter“) öffnet „Filter und Sortierung“:
       Launcher als Mehrfachauswahl, Sortierung nach Relevanz (Standard), Name, Installationsdatum und
       Zuletzt gespielt, je auf- und absteigend. Jede Wahl wirkt sofort, der Kopf zeigt „Sortiert nach …“;
       B oder L3 schließt. Eine neue Suche beginnt wieder mit Relevanz. · E2E: ja
-- [ ] **T12-16** Mehr Treffer als sichtbar, Tastatur ausgefahren: links und rechts stehen die Nachbarn angeschnitten
+- [x] **T12-16** Mehr Treffer als sichtbar, Tastatur ausgefahren: links und rechts stehen die Nachbarn angeschnitten
       und laufen weich aus (ohne harte Kante und ohne Streifen am Rand, auch bei krummen Fenstergrößen), daneben Schaltflächen „LT“/„RT“ (mit der Maus nur Pfeile), über den Treffern „RS Treffer
       wählen“, der Kopf zeigt „8–14 von 105“. Der rechte Stick bewegt den Fokus einzeln (die Reihe gleitet mit),
       LT/RT gleiten eine ganze Reihe weiter und vom Ende wieder zum Anfang (und umgekehrt). Eingefahren scrollt
@@ -63,14 +63,14 @@
       bleiben am Anfang und Ende stehen (kein Sprung ans andere Ende, wie Mausrad und Bibliothek); Mausrad und
       Klick auf einen angeschnittenen Treffer scrollen ebenso. Eine Scrollleiste zeigt, wo man steht: unter der
       Reihe waagrecht, neben dem Raster senkrecht; Ziehen oder ein Klick auf die Leiste scrollt. · E2E: ja
-- [ ] **T12-17** Viele Launcher (mit der Maus sichtbar): Passen die Chips nicht neben „Sortiert nach …“, fallen
+- [x] **T12-17** Viele Launcher (mit der Maus sichtbar): Passen die Chips nicht neben „Sortiert nach …“, fallen
       bei allen zugleich zuerst die Kürzel weg, dann werden die Namen gekürzt („Ubis…“), zuletzt bleibt nur das
       Logo; wird es eng vor der Sortierung, erscheint dort ein Trennstrich. · E2E: nein
-- [ ] **T12-18** Wechsel zwischen Controller und Maus: Bei ausgefahrener Tastatur und Controller-Legende wirkt
+- [x] **T12-18** Wechsel zwischen Controller und Maus: Bei ausgefahrener Tastatur und Controller-Legende wirkt
       schon der erste Klick auf eine Taste oder die Lasche; die Legende wechselt dabei auf Maus und Tastatur,
       die Controller-Zeichen auf den Tasten und neben „Schließen“ verschwinden, die Tastatur bleibt stehen.
       Ein Druck auf dem Controller holt die Controller-Legende zurück. · E2E: ja
-- [ ] **T12-19** Fenster mit anderem Seitenverhältnis als 16:9 (breit im Fenster- oder Vollbild-Fenstermodus, und
+- [x] **T12-19** Fenster mit anderem Seitenverhältnis als 16:9 (breit im Fenster- oder Vollbild-Fenstermodus, und
       hoch): Legende und Bildschirmtastatur der Suche reichen bis an die Fensterränder, ebenso die Linie über dem
       Footer der Bibliothek und die Abdunklung hinter Dialogen; neben der Suche schimmert nichts von der Bibliothek
       durch. · E2E: nein
@@ -92,3 +92,4 @@ Verlauf:
 | T12-1, T12-7, T12-12, T12-13, T12-14, T12-16, T12-18, G-11 | 2026-10-19 | Claude | Branch nach dem vierten Umbau, Linux, Xvfb 1920×1080 `--demo`, Fenster 1600×900 und 7 krumme Größen (1111×625 bis 1711×963) mit Skalierung 1, 1,25 und 1,5; Gamepad nachgestellt wie oben (nicht eingecheckt), Maus und Tastatur per xdotool | ✅ Mit Controller-Legende wirkt der erste Klick („ABC“, dann „e“), Legende wechselt auf Maus/Tastatur, Tastatur bleibt stehen, Zeichen auf den Tasten weg; RB schaltet die Sonderzeichen; Klick auf die Lasche fährt ein, Legende für das Raster; Bild ↓ blättert 15–28; Maustaste 1,4 s gehalten auf einem Treffer und einem Cover der Bibliothek öffnet die Details (Ring sichtbar), ein Klick wählt nur aus. Den Streifen am Rand konnte ich hier nicht nachstellen (Randspalte bei allen Größen gleich der Spalte daneben, vorher wie nachher) | Sichtprüfung am PC des Owners, Streifen bei seiner Fenstergröße |
 | T12-16, T12-19 | 2026-10-19 | Juri | PC des Owners, PR #104 (fünfter Rough-Test), Vollbild-Fenstermodus | ❌ Bild ↑/↓ springt im Raster ans andere Ende, das Mausrad nicht; keine Scrollleiste; Footer der Suche links und rechts abgeschnitten (nicht mit F11) | Raster ohne Umlauf, Scrollleiste, Bänder bis an den Fensterrand (T12-19 neu) |
 | T12-16, T12-19 | 2026-10-19 | Claude | Branch nach dem fünften Umbau, Linux, Xvfb 1920×1080 `--demo`, Fenster 1900×800 (breit) und 960×1000 (hoch); Gamepad nachgestellt wie oben (nicht eingecheckt); `HitWindowTests` für Raster-Enden und Scrollleiste | ✅ Legende, Tastatur, Footer-Linie und Abdunklung der Einstellungen reichen im breiten Fenster bis an den Rand, im hohen bis nach unten; neben der Suche keine Linie der Bibliothek; Scrollleiste unter der Reihe und neben dem Raster sichtbar (dünn, wie in der Bibliothek). Ziehen der Leiste nur mechanisch geprüft | Sichtprüfung am PC des Owners im Vollbild-Fenstermodus |
+| T12-1 bis T12-13, T12-15 bis T12-19 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

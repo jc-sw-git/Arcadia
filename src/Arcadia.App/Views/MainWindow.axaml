@@ -311,15 +311,16 @@
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Update verfügbar">
                         <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
                       </Border>
-                      <!-- A running game (#95), like the update symbol; while it starts, without animation, since Arcadia is then behind the game. -->
-                      <Border Classes="installBadge" IsVisible="{Binding IsRunning}" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                      <!-- A running game (#95), like the update symbol; while it starts, without animation, since Arcadia is then behind the game.
+                       Only one badge fits a cover (#167): an update the launcher runs first shows its progress instead. -->
+                      <Border Classes="installBadge" IsVisible="{Binding ShowRunningBadge}" Height="30" CornerRadius="15" Padding="9,0,11,0"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                           <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource Running}" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
                           <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource Running}" VerticalAlignment="Center" />
                         </StackPanel>
                       </Border>
-                      <Border Classes="installBadge" IsVisible="{Binding IsStarting}" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                      <Border Classes="installBadge" IsVisible="{Binding ShowStartingBadge}" Height="30" CornerRadius="15" Padding="9,0,11,0"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                           <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeJoin="Round" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
@@ -395,7 +396,7 @@
             <TextBlock Text="{Binding Text}" FontSize="19" LineHeight="28" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" TextAlignment="Center" />
             <StackPanel Orientation="Horizontal" Spacing="14" HorizontalAlignment="Center" Margin="0,12,0,0">
               <Button Classes="plain action primaryAction" Classes.focused="{Binding IsSettingsFocused}" Command="{Binding OpenSettingsCommand}" Content="Launcher-Einstellungen" />
-              <Button Classes="plain action" Classes.focused="{Binding IsRescanFocused}" Command="{Binding RescanCommand}" Content="{Binding RescanText}" />
+              <Button Classes="plain action" Classes.focused="{Binding IsRescanFocused}" Command="{Binding RescanCommand}" Content="{Binding RescanText}" IsVisible="{Binding CanRescan}" />
             </StackPanel>
           </StackPanel>
         </Panel>
@@ -416,7 +417,7 @@
           <ctl:KeyHint Pad="B" Keys="Esc" Text="Zurück" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsEmptyTabShown}">
-          <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Wechseln" />
+          <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Wechseln" IsVisible="{Binding EmptyTab?.CanRescan, TargetNullValue=False}" />
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="Auswählen" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" IsVisible="{Binding EmptyTab?.HasTab, TargetNullValue=False}" />
         </StackPanel>
@@ -460,14 +461,14 @@
                     <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
                   </Border>
                   <!-- A running game (#95), like the update symbol; while it starts, without animation, since Arcadia is then behind the game. -->
-                  <Border Classes="installBadge" IsVisible="{Binding IsRunning}" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                  <Border Classes="installBadge" IsVisible="{Binding ShowRunningBadge}" Height="30" CornerRadius="15" Padding="9,0,11,0"
                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource Running}" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
                       <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource Running}" VerticalAlignment="Center" />
                     </StackPanel>
                   </Border>
-                  <Border Classes="installBadge" IsVisible="{Binding IsStarting}" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                  <Border Classes="installBadge" IsVisible="{Binding ShowStartingBadge}" Height="30" CornerRadius="15" Padding="9,0,11,0"
                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeJoin="Round" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
@@ -1118,8 +1119,8 @@
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                       <!-- No local Fill or Data: they would override the styles. -->
                                       <Ellipse Classes="statusDot" Classes.active="{Binding IsHealthy}" Width="9" Height="9" VerticalAlignment="Center" IsVisible="{Binding !HasSeverity}" />
-                                      <Path Classes="statusIcon small" IsVisible="{Binding HasSeverity}" VerticalAlignment="Center" />
-                                      <TextBlock Classes="launcherStatus" Classes.warning="{Binding HasSeverity}" Text="{Binding StatusText}" />
+                                      <Path Classes="statusIcon small" Classes.info="{Binding IsInfo}" IsVisible="{Binding HasSeverity}" VerticalAlignment="Center" />
+                                      <TextBlock Classes="launcherStatus" Classes.warning="{Binding HasSeverity}" Classes.info="{Binding IsInfo}" Text="{Binding StatusText}" />
                                     </StackPanel>
                                   </StackPanel>
                                   <Panel Grid.Column="3" VerticalAlignment="Center">
@@ -1127,11 +1128,11 @@
                                       <Panel>
                                         <Button Classes="plain valueToggle" Command="{Binding ToggleCommand}" IsEnabled="{Binding CanChange}" />
                                         <Grid ColumnDefinitions="Auto,*,Auto">
-                                          <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanDecrease}" ToolTip.Tip="Abschalten">
+                                          <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanDecrease}" ToolTip.Tip="Umschalten">
                                             <Path Classes="chevronLeft" />
                                           </Button>
                                           <TextBlock Grid.Column="1" Classes="valueText" Classes.on="{Binding IsActive}" Text="{Binding ValueText}" IsHitTestVisible="False" />
-                                          <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding CanIncrease}" ToolTip.Tip="Einschalten">
+                                          <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding CanIncrease}" ToolTip.Tip="Umschalten">
                                             <Path Classes="chevronRight" />
                                           </Button>
                                         </Grid>
@@ -1178,11 +1179,11 @@
                                   <Panel>
                                     <Border Classes="valuePill" Classes.locked="{Binding IsLocked}" IsVisible="{Binding IsSwitch}">
                                       <Grid ColumnDefinitions="Auto,*,Auto">
-                                        <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding IsOn}">
+                                        <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanChange}">
                                           <Path Classes="chevronLeft" />
                                         </Button>
                                         <TextBlock Grid.Column="1" Classes="valueText" Classes.on="{Binding IsOn}" Text="{Binding ValueText}" />
-                                        <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding !IsOn}">
+                                        <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}" IsEnabled="{Binding CanChange}">
                                           <Path Classes="chevronRight" />
                                         </Button>
                                       </Grid>
@@ -1221,9 +1222,11 @@
                                 </DataTemplate>
                                 <DataTemplate x:DataType="settings:ActionRowViewModel">
                                   <Border Classes="rowGo" Classes.primary="{Binding IsPrimary}" Classes.disabled="{Binding !IsEnabled}" IsVisible="{Binding HasAction}">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                      <TextBlock Text="{Binding ActionText}" />
-                                      <Path Grid.Column="1" Classes="chevronRight" />
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                      <ctl:KeyHint Pad="{Binding ShortcutPad}" Keys="{Binding ShortcutKeys}" IsDark="{Binding IsFocused}" VerticalAlignment="Center"
+                                                   IsVisible="{Binding HasShortcut}" />
+                                      <TextBlock Grid.Column="1" Text="{Binding ActionText}" />
+                                      <Path Grid.Column="2" Classes="chevronRight" />
                                     </Grid>
                                   </Border>
                                 </DataTemplate>
@@ -1315,9 +1318,9 @@
                 </DataTemplate>
                 <!-- The launcher settings (#136): a note, the tab strip in miniature, the launcher's head, its facts. -->
                 <DataTemplate x:DataType="settings:InfoNote">
-                  <Border Classes="infoNote">
+                  <Border Classes="infoNote" Classes.info="{Binding IsInfo}">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                      <Path Classes="statusIcon" VerticalAlignment="Top" />
+                      <Path Classes="statusIcon" Classes.info="{Binding IsInfo}" VerticalAlignment="Top" />
                       <TextBlock Grid.Column="1" Text="{Binding Text}" />
                     </Grid>
                   </Border>

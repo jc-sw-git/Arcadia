@@ -4,77 +4,97 @@ namespace Arcadia.Core.Tests;
 
 public sealed class LogLocationTests : IDisposable
 {
-    private readonly string _localAppData = Path.Combine(Path.GetTempPath(), "arcadia-logs-" + Guid.NewGuid());
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "arcadia-logs-" + Guid.NewGuid());
 
-    private string InstallFolder => Path.Combine(_localAppData, "Arcadia");
+    private string LocalAppData => Path.Combine(_root, "Local");
 
-    private string OldLogs => Path.Combine(InstallFolder, "logs");
+    private string DataFolder => LogLocation.DataFolderIn(Path.Combine(_root, "Roaming"));
 
-    private string Logs => LogLocation.For(_localAppData);
+    private string InstallFolder => Path.Combine(LocalAppData, "Arcadia");
+
+    private string LogsOfRc1 => Path.Combine(InstallFolder, "logs");
+
+    private string LogsOfMain => Path.Combine(LocalAppData, "Arcadia-Logs");
+
+    private string Logs => LogLocation.For(DataFolder);
 
     public void Dispose()
     {
-        if (Directory.Exists(_localAppData))
+        if (Directory.Exists(_root))
         {
-            Directory.Delete(_localAppData, recursive: true);
+            Directory.Delete(_root, recursive: true);
         }
     }
 
     [Fact]
-    public void The_logs_live_beside_the_install_folder_not_in_it()
+    public void The_logs_live_beside_the_settings()
     {
-        Assert.Equal(Path.Combine(_localAppData, "Arcadia-Logs"), Logs);
+        Assert.Equal(Path.Combine(_root, "Roaming", "Arcadia", "logs"), Logs);
     }
 
     [Fact]
-    public void Old_logs_of_a_build_that_was_never_installed_move_and_leave_no_install_folder()
+    public void Logs_of_a_build_that_was_never_installed_move_and_leave_no_install_folder()
     {
-        WriteOldLog("arcadia.log", "alt");
+        WriteLog(LogsOfRc1, "alt");
 
-        LogLocation.MoveOldLogs(_localAppData);
+        LogLocation.MoveOldLogs(LocalAppData, DataFolder);
 
-        Assert.Equal("alt", File.ReadAllText(Path.Combine(Logs, "arcadia.log")));
+        Assert.Equal("alt", ReadLog(Logs));
         Assert.False(Directory.Exists(InstallFolder));
     }
 
     [Fact]
-    public void Old_logs_in_an_installation_move_and_the_installation_stays()
+    public void Logs_in_an_installation_move_and_the_installation_stays()
     {
-        WriteOldLog("arcadia.log", "alt");
+        WriteLog(LogsOfRc1, "alt");
         Directory.CreateDirectory(Path.Combine(InstallFolder, "current"));
 
-        LogLocation.MoveOldLogs(_localAppData);
+        LogLocation.MoveOldLogs(LocalAppData, DataFolder);
 
-        Assert.True(File.Exists(Path.Combine(Logs, "arcadia.log")));
-        Assert.False(Directory.Exists(OldLogs));
+        Assert.Equal("alt", ReadLog(Logs));
+        Assert.False(Directory.Exists(LogsOfRc1));
         Assert.True(Directory.Exists(Path.Combine(InstallFolder, "current")));
     }
 
     [Fact]
-    public void Old_logs_written_after_the_move_are_dropped_and_the_new_ones_kept()
+    public void Logs_of_the_short_lived_separate_folder_move_too()
     {
-        Directory.CreateDirectory(Logs);
-        File.WriteAllText(Path.Combine(Logs, "arcadia.log"), "neu");
-        WriteOldLog("arcadia.log", "alt");
+        WriteLog(LogsOfMain, "kurz");
 
-        LogLocation.MoveOldLogs(_localAppData);
+        LogLocation.MoveOldLogs(LocalAppData, DataFolder);
 
-        Assert.Equal("neu", File.ReadAllText(Path.Combine(Logs, "arcadia.log")));
+        Assert.Equal("kurz", ReadLog(Logs));
+        Assert.False(Directory.Exists(LogsOfMain));
+    }
+
+    [Fact]
+    public void Old_logs_are_dropped_when_current_ones_exist()
+    {
+        WriteLog(Logs, "neu");
+        WriteLog(LogsOfRc1, "alt");
+        WriteLog(LogsOfMain, "kurz");
+
+        LogLocation.MoveOldLogs(LocalAppData, DataFolder);
+
+        Assert.Equal("neu", ReadLog(Logs));
         Assert.False(Directory.Exists(InstallFolder));
+        Assert.False(Directory.Exists(LogsOfMain));
     }
 
     [Fact]
     public void Without_old_logs_nothing_happens()
     {
-        LogLocation.MoveOldLogs(_localAppData);
+        LogLocation.MoveOldLogs(LocalAppData, DataFolder);
 
         Assert.False(Directory.Exists(InstallFolder));
         Assert.False(Directory.Exists(Logs));
     }
 
-    private void WriteOldLog(string name, string text)
+    private static void WriteLog(string folder, string text)
     {
-        Directory.CreateDirectory(OldLogs);
-        File.WriteAllText(Path.Combine(OldLogs, name), text);
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "arcadia.log"), text);
     }
+
+    private static string ReadLog(string folder) => File.ReadAllText(Path.Combine(folder, "arcadia.log"));
 }

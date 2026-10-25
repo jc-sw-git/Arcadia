@@ -55,9 +55,6 @@ public partial class App : Application
     /// <summary>Hands a game started from Arcadia over to the Arcadia started after an update, so its end brings Arcadia back (#94).</summary>
     private const string StartedGameArgument = "--started-game";
 
-    /// <summary>View and Menu held alone this long act without waiting for the release, so ≡ held on a search hit still opens its details.</summary>
-    private static readonly TimeSpan SoloButtonDelay = TimeSpan.FromMilliseconds(200);
-
     private IGamepadSource? _gamepad;
 
     public override void Initialize()
@@ -110,7 +107,12 @@ public partial class App : Application
             }
 
             var launchedGames = new LaunchedGames();
-            var runningGames = new RunningGamesTracker(launchers, new ProcessGames(new SystemProcessTable(), launchedGames), time) { Log = AppLog.Write };
+            var installTracker = new InstallTracker(launchers, time);
+            var runningGames = new RunningGamesTracker(launchers, new ProcessGames(new SystemProcessTable(), launchedGames), time)
+            {
+                Log = AppLog.Write,
+                IsInstalling = key => installTracker.StateOf(key) is not null,
+            };
             for (var i = 0; i < args.Length - 1; i++)
             {
                 if (args[i] == StartedGameArgument)
@@ -125,7 +127,7 @@ public partial class App : Application
                 new GameLaunchService(launchers) { Log = AppLog.Write },
                 controllerSupport,
                 updates,
-                new InstallTracker(launchers, time),
+                installTracker,
                 runningGames,
                 launchedGames,
                 settings,
@@ -165,76 +167,11 @@ public partial class App : Application
             var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
             viewModel.Dialogs = new SystemDialogs(window, () => viewModel.UsesController, () => mouseMode);
 
-            void Press(GamepadButton button)
-            {
-                // Checked here, not only on the UI thread: View held in the background brings Arcadia to the
-                // front, and the same press must not open the context menu once it got there.
-                if (!mouseMode.IsArcadiaActive)
-                {
-                    return;
-                }
-
-                if (UiActionMap.FromGamepad(button) is { } action)
-                {
-                    AppLog.Write($"Gamepad: {button} → {action}");
-                    // Only react while Arcadia is the active window, so playing a game doesn't drive the library.
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        if (mouseMode.IsArcadiaActive)
-                        {
-                            viewModel.HandleGamepad(action);
-                        }
-                    });
-                }
-            }
-
-            // Releases go through even while another window is in front, so a held A can't get stuck.
-            void Release(GamepadButton button)
-            {
-                if (UiActionMap.FromGamepad(button) is { } action)
-                {
-                    Dispatcher.UIThread.Post(() => viewModel.Release(action));
-                }
-            }
-
-            // Back + Start switch the mouse mode, so View and Menu act alone only: on release, or held alone a moment.
-            var viewAndMenu = new SoloButtons(GamepadButton.View, GamepadButton.Menu, SoloButtonDelay, time);
-            viewAndMenu.Pressed += Press;
-            viewAndMenu.Released += Release;
-            viewAndMenu.Cancelled += _ => Dispatcher.UIThread.Post(viewModel.CancelHold);
-            _gamepad.Polled += _ => viewAndMenu.Tick();
-            _gamepad.ButtonPressed += button =>
-            {
-                // In the mouse mode the controller is a mouse, not Arcadia's navigation.
-                if (mouseMode.IsOn)
-                {
-                    return;
-                }
-
-                if (viewAndMenu.Handles(button))
-                {
-                    viewAndMenu.Press(button);
-                }
-                else
-                {
-                    Press(button);
-                }
-            };
-            _gamepad.ButtonReleased += button =>
-            {
-                if (viewAndMenu.Handles(button))
-                {
-                    viewAndMenu.Release(button);
-                }
-                else
-                {
-                    Release(button);
-                }
-            };
+            var routing = new GamepadRouting(viewModel, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, time);
+            _gamepad.Polled += _ => routing.Tick();
+            _gamepad.ButtonPressed += routing.Press;
+            _gamepad.ButtonReleased += routing.Release;
             _gamepad.Start();
-
-            var clock = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => viewModel.Status.UpdateClock());
-            clock.Start();
 
             var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), "SISR-Überwachung"));
             monitoring.Start();
@@ -292,7 +229,6 @@ public partial class App : Application
 
             desktop.ShutdownRequested += (_, _) =>
             {
-                clock.Stop();
                 monitoring.Stop();
                 sisrWatch.Stop();
                 installs.Stop();

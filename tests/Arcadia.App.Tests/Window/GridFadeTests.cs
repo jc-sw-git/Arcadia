@@ -134,7 +134,9 @@ public sealed class GridFadeTests
         using var frame = arcadia.Capture();
         var background = ArcadiaWindow.ThemeColour("BgColor");
         var edge = (int)Math.Round((top ? grid.Top : grid.Bottom) * frame.Scaling);
-        var rows = top ? new[] { edge, edge + 1 } : [edge - 1, edge - 2];
+        // The outermost row of device pixels: there the fade has reached the background (a few steps off where the
+        // gradient starts); a cover not covered by the fade stands out by twice that or more.
+        var rows = top ? new[] { edge } : [edge - 1];
         for (var x = (int)((grid.Left + 20) * frame.Scaling); x < (grid.Right - 80) * frame.Scaling; x++)
         {
             foreach (var y in rows)

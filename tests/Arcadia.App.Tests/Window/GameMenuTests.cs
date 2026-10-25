@@ -118,7 +118,7 @@ public sealed class GameMenuTests
         })
         {
             open();
-            var button = arcadia.Bounds(options);
+            var button = arcadia.LayoutBounds(options);
             var menu = arcadia.Bounds(MenuPanel(arcadia));
             Assert.True(Math.Abs(menu.Left - button.Left) < 1, $"{how}: linke Kante {menu.Left} statt {button.Left}");
             Assert.True(Math.Abs(menu.Bottom - button.Bottom) < 1, $"{how}: untere Kante {menu.Bottom} statt {button.Bottom}");

@@ -51,6 +51,7 @@ und trägt sie hier ein; wer ein Issue testet, liest nur dessen Datei.
 | [143-steam-input-fuer-ganze-controllertypen.md](143-steam-input-fuer-ganze-controllertypen.md) | #143 | Steam Input für ganze Controllertypen legt den Steam Controller lahm | 6 |
 | [167-update-und-startanzeige-ueberlappen.md](167-update-und-startanzeige-ueberlappen.md) | #167 | Cover: Update- und Startanzeige überlappen, wenn der Launcher vor dem Start aktualisiert | 5 |
 | [184-abnahmetests-view-model-ebene.md](184-abnahmetests-view-model-ebene.md) | #184 | Abnahmetests auf View-Model-Ebene für die Kernabläufe | 0 |
+| [191-abnahmetests-headless-ui-bibliothek.md](191-abnahmetests-headless-ui-bibliothek.md) | #191 | Abnahmetests Headless-UI: Bibliothek, Detailseite, Header, Maus und Tastatur | 0 |
 
 ## Explorativer Test
 
@@ -92,9 +93,37 @@ Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184; Regeln im
 | T139-1 | `FirstRunTests.A_fresh_install_asks_first_with_the_launchers_found_switched_on`, `FirstRunTests.A_launcher_not_found_cannot_be_switched_on` | teilweise: ohne Spielzahl und Texte |
 | T139-3 | `FirstRunTests.Only_the_launchers_left_on_become_tabs_also_after_a_restart_and_the_question_does_not_come_again` | teilweise: „Fertig“ mit ≡, nicht Enter oder Klick |
 
+Mit dem echten Fenster (Avalonia Headless mit Skia, `ArcadiaWindow`; #191): Klicks, echte Tasten, Lage und Pixel.
+
+| Testfall | Test | Abdeckung |
+|---|---|---|
+| T10-1 | `GameMenuTests.View_right_click_Options_and_the_menu_key_open_the_menu_B_View_and_a_click_beside_it_close_it`, `…The_menu_stands_beside_its_cover_left_of_it_in_the_last_column_and_always_inside_the_window` | ganz |
+| T10-2 | `GameMenuTests.An_installed_game_lists_its_actions_with_the_update_note_disabled_ones_greyed_and_uninstall_in_red_after_a_line` | ganz |
+| T10-4 | `KeyboardAndMouseTests.The_keyboard_plays_like_the_controller` (Leertaste), `…The_mouse_focuses_starts_holds_for_details_and_clicks_every_button_of_the_library` | teilweise: Ring sichtbar und blau, nicht wie er sich füllt (Animation läuft headless nicht); Leertaste statt Enter (Enter öffnet seit #127 die Einstellungen) |
+| T11-1 | `DetailPageViewTests.Holding_A_or_Details_in_the_menu_opens_the_page_with_its_path_position_neighbours_and_footer` | teilweise: ohne weiches Ausblenden zum Rand |
+| T11-2 | `DetailPageViewTests.LT_and_RT_slide_the_pages_and_clicks_wheel_and_keys_turn_the_carousel_too` | teilweise: dass ein Schieben angelegt ist, nicht Richtung und Ablauf (läuft headless nicht) |
+| T11-6 | `DetailPageViewTests.A_click_on_the_path_goes_back_to_the_library_on_the_page_of_the_game_shown_last_with_the_focus_on_it` | ganz (mit dem VM-Test für B) |
+| T11-7 | `DetailPageViewTests.The_buttons_stand_in_rows_inside_the_card_the_D_pad_skips_disabled_ones_and_shows_the_hint_below` | teilweise: ohne Steam-Controller- und Mausmodus-Reihe; Hinweis nur noch für „Spielen“, sonst Tooltip (Owner 2026-10-21) |
+| T41-1 | `LibraryViewTests.A_game_not_installed_is_greyed_with_the_install_symbol_and_the_preview_offers_to_install_it` | ganz |
+| T102-1 | `GridFadeTests.A_page_taller_than_the_grid_fades_only_towards_where_it_scrolls_and_the_end_rows_show_whole` | teilweise: „weich“ als angelegter Übergang, nicht wie er aussieht |
+| T102-2 | `GridFadeTests.A_page_that_fits_the_grid_has_no_fade` | ganz |
+| T102-3 | `GridFadeTests.The_focused_tile_never_lies_under_a_fade_and_the_wheel_switches_the_fades_too` | ganz |
+| T102-4 | `GridFadeTests.No_line_of_unfaded_covers_is_left_at_the_edge_of_a_fade_also_at_a_scaled_size` (1745×1000, 125 %) | ganz |
+| T127-1 | `DetailPageViewTests.The_focus_ring_touches_no_neighbour_and_the_key_figures_show_whole_also_with_an_update_note` | ganz |
+| T127-5 | `HeaderTests.Few_launchers_the_strip_stands_in_the_middle_as_wide_as_needed_with_LB_and_RB_beside_it_and_no_dividers` | ganz |
+| T127-6, G-7 | `HeaderTests.Many_launchers_the_strip_reaches_logo_and_status_turns_with_LB_RB_and_the_wheel_and_fades_where_tabs_follow` | teilweise: ohne Statusmeldung im Header |
+| T127-7 | `KeyboardAndMouseTests.The_hints_show_controller_buttons_after_a_button_and_keys_after_a_key_or_click_but_not_after_a_mouse_move` | ganz |
+| T127-8, G-10 | `KeyboardAndMouseTests.The_keyboard_plays_like_the_controller` | ganz |
+| T127-10 | `DetailPageViewTests.A_title_with_descenders_shows_whole_also_on_two_lines` | ganz |
+| T138-1 | `LibraryViewTests.Steam_and_Epic_show_their_logo_everywhere_a_launcher_is_named_and_others_keep_their_letter` | ganz |
+| G-11 | `KeyboardAndMouseTests.The_mouse_focuses_starts_holds_for_details_and_clicks_every_button_of_the_library` | ganz |
+| G-32 | `FocusRingTests` (Cover an den Ecken des Rasters, „Ansicht“, Einstellungen) | teilweise: Einstellungen, die es unter Linux nicht gibt (Steam Controller), werden gedimmt gezeichnet und übersprungen |
+| G-33 | `GameMenuTests.View_R_and_a_click_on_Options_open_the_menu_over_the_Options_button_on_its_left_and_bottom_edges`, `…The_menu_stands_beside_its_cover…` | ganz |
+| T8-1 | `KeyboardAndMouseTests.A_tab_chosen_by_click_is_the_same_after_a_restart` | ganz (mit dem VM-Test) |
+
 „Teilweise“ heißt: Der Rest des Testfalls bleibt im Abschluss-Test. „Einmal rot“ zeigt, dass der Test eine
 bestimmte Änderung erkennt, nicht dass er den Testfall ganz abdeckt.
 
-Was sie nicht prüfen, bleibt im Abschluss-Test: Aussehen und Animationen, Maus und echte Tastatur
-(Headless-Tests, #180), Tippen auf der Bildschirmtastatur mit dem Controller (die Tests tippen wie eine
+Was sie nicht prüfen, bleibt im Abschluss-Test: wie Animationen ablaufen (headless laufen Keyframe-Animationen
+und das Schieben der Detailseite nicht), Tippen auf der Bildschirmtastatur mit dem Controller (die Tests tippen wie eine
 echte Tastatur; das Raster prüfen `KeyGridTests`), echte Launcher und Windows.

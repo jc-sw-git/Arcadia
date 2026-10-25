@@ -306,6 +306,12 @@ internal sealed class ArcadiaWindow : IDisposable
             ? new Rect(control.Bounds.Size).TransformToAABB(transform)
             : throw new InvalidOperationException($"{control} steht nicht im Fenster.");
 
+    /// <summary>Where <paramref name="control"/> stands without its own render transform, e.g. a button at rest while pressed.</summary>
+    public Rect LayoutBounds(Control control) =>
+        control.GetVisualParent() is Visual parent && parent.TransformToVisual(Window) is { } transform
+            ? control.Bounds.TransformToAABB(transform)
+            : throw new InvalidOperationException($"{control} steht nicht im Fenster.");
+
     /// <summary>The middle of the part of <paramref name="control"/> inside the window, where a click reaches it.</summary>
     public Point CentreOf(Control control) => Bounds(control).Intersect(new Rect(Window.ClientSize)).Center;
 

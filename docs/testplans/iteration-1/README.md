@@ -51,6 +51,7 @@ und trägt sie hier ein; wer ein Issue testet, liest nur dessen Datei.
 | [143-steam-input-fuer-ganze-controllertypen.md](143-steam-input-fuer-ganze-controllertypen.md) | #143 | Steam Input für ganze Controllertypen legt den Steam Controller lahm | 6 |
 | [167-update-und-startanzeige-ueberlappen.md](167-update-und-startanzeige-ueberlappen.md) | #167 | Cover: Update- und Startanzeige überlappen, wenn der Launcher vor dem Start aktualisiert | 5 |
 | [184-abnahmetests-view-model-ebene.md](184-abnahmetests-view-model-ebene.md) | #184 | Abnahmetests auf View-Model-Ebene für die Kernabläufe | 0 |
+| [188-abnahmetests-suche-und-tastatur.md](188-abnahmetests-suche-und-tastatur.md) | #188 | Abnahmetests View-Model: Suche und Bildschirmtastatur | 0 |
 | [189-abnahmetests-einstellungen-controller-updates.md](189-abnahmetests-einstellungen-controller-updates.md) | #189 | Abnahmetests View-Model: Einstellungen, Mausmodus, Controller-Support und Updates | 0 |
 
 ## Explorativer Test
@@ -71,7 +72,7 @@ Funde am 0.1.0-rc.1 (Juri, 2026-10-24, bei Testfällen und nebenbei):
 Wird beim Abschluss-Test aus allen Testfällen mit `E2E: ja` erstellt und in der Abnahme-Iteration
 umgesetzt.
 
-Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #189; Regeln im [README](../README.md)):
+Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #188, #189; Regeln im [README](../README.md)):
 
 | Testfall | Test | Abdeckung |
 |---|---|---|
@@ -86,8 +87,23 @@ Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #189; Reg
 | T11-1 | `GameStartTests.A_held_shows_the_frame_then_opens_the_detail_page_after_a_second_while_still_held_and_starts_nothing` | teilweise: Halten und Position, ohne ⧉ → „Details anzeigen“, Pfadleiste, Nachbarn |
 | T11-2 | `DetailPageTests.LT_and_RT_show_the_previous_and_next_game_across_page_borders_and_wrap_around` | teilweise: ohne Animation |
 | T11-6 | `DetailPageTests.B_goes_back_to_the_library_on_the_page_of_the_game_shown_last_with_the_focus_on_it` | teilweise: B, nicht Klick auf die Pfadleiste |
-| T12-3 | `SearchTests.Hits_come_from_all_launchers_by_relevance_whatever_the_case_accents_and_trademark_signs`, `SearchTests.An_accent_or_trademark_sign_in_the_title_or_the_term_does_not_matter_and_no_hit_shows_the_empty_state` | teilweise: ohne ® und ©, ohne Text des leeren Zustands |
-| T12-9 | `SearchTests.B_first_puts_the_keyboard_away_then_goes_back_to_the_library_as_it_was_without_erasing` | teilweise: ohne zweimal schnell B |
+| T12-2 | `OnScreenKeyboardTests.The_D_pad_walks_the_keys_to_the_nearest_one_and_stops_at_the_edges_A_types_Y_a_space_X_erases`, `…X_held_or_A_held_on_the_erase_key_erases_one_then_after_a_pause_one_after_another` | teilweise: ohne linken Stick und gehaltenes D-Pad (die Wiederholung kommt aus der Eingabe, nicht aus dem View Model) |
+| T12-3 | `SearchTests.Hits_come_from_all_launchers_by_relevance_whatever_the_case_accents_and_trademark_signs`, `SearchTests.An_accent_or_trademark_sign_in_the_title_or_the_term_does_not_matter_and_no_hit_shows_the_empty_state`, `SearchTests.Trademark_registered_and_copyright_signs_count_for_nothing_and_each_hit_names_its_launcher` | teilweise: Launchername, nicht Logo und Grafik (Aussehen) |
+| T12-7 | `SearchHitTests.Start_tapped_on_a_hit_starts_it_on_the_release_or_installs_it_held_opens_its_details_and_View_its_menu` | teilweise: Ring als Zustand; ohne Maus, Rechtsklick, Umschalt+F10 und Legende |
+| T12-8 | `SearchHitTests.The_details_of_a_hit_turn_through_the_hits_in_their_order_without_tabs_and_LB_RB_and_Y_do_nothing` | teilweise: Pfadleiste und Footer nicht (Ansicht); B führt seit #127 in die Bibliothek, geprüft in T127-4 |
+| T12-9 | `SearchTests.B_first_puts_the_keyboard_away_then_goes_back_to_the_library_as_it_was_without_erasing`, `SearchTests.B_twice_in_a_row_goes_straight_back_to_the_library_as_it_was` | ganz |
+| T12-13 | `OnScreenKeyboardTests.LB_tapped_latches_shift_until_tapped_again_and_held_it_counts_only_while_held` | ganz |
+| T12-15 | `SearchHitTests.L3_opens_filter_and_sort_whose_every_choice_counts_at_once_and_a_new_search_starts_by_relevance` | teilweise: L3, nicht Klick auf „Sortiert nach …“ oder die Taste „Filter“ |
+| T110-11 | `OnScreenKeyboardTests.The_keyboards_arrows_move_the_caret_where_typing_and_erasing_then_act_also_from_a_real_keyboard` | teilweise: von der echten Tastatur nur Tippen, nicht ⌫ |
+| T110-13 | `OnScreenKeyboardTests.With_AltGr_on_left_of_the_first_key_with_a_character_leads_to_shift_and_left_of_the_tall_enter_to_the_tilde` | teilweise: nur in der Suche; die Tastatur des Mausmodus (mit ↹) startet `ArcadiaDriver` nicht |
+| T127-3 | `SearchHitTests.X_on_a_detail_page_of_the_library_opens_the_search_and_B_there_comes_back_to_the_same_page` | teilweise: X und B, nicht F, Esc und Klick auf den Such-Chip |
+| T127-4 | `SearchHitTests.From_the_details_of_a_hit_X_returns_to_the_search_as_it_was_and_B_goes_to_the_game_in_its_launchers_listing` | teilweise: B, nicht Esc |
+| T129-1 | `OnScreenKeyboardTests.X_opens_the_German_keyboard_with_the_real_rows_and_the_shift_and_AltGr_characters_small_on_the_keys` | teilweise: Reihen, Versatz und Zeichen, nicht Größe und Lage der Beschriftung |
+| T129-2 | `OnScreenKeyboardTests.LB_tapped_latches_shift_until_tapped_again_and_held_it_counts_only_while_held` | ganz |
+| T129-3 | `OnScreenKeyboardTests.RB_tapped_latches_AltGr_whose_characters_alone_show_and_type_and_LB_and_RB_switch_each_other_off` | ganz |
+| T129-4 | `OnScreenKeyboardTests.With_AltGr_on_the_D_pad_passes_over_empty_keys_and_rows_and_without_it_up_and_down_come_back` | ganz (hoch von e geht auf 4, nicht wie im Beispiel auf 3; wieder runter auf e) |
+| T129-5 | `OnScreenKeyboardTests.The_dead_keys_type_their_character_at_once` | ganz |
+| T129-6 | `OnScreenKeyboardTests.R3_switches_to_US_UK_FR_and_ES_each_with_its_real_keys` | teilweise: Tasten stichprobenhaft; Klick auf das graue AltGr nicht |
 | T15-1 | `SettingsTests.Menu_opens_the_settings_and_B_goes_back_to_the_same_tab_page_and_game` | teilweise: Controller, nicht Enter/Esc und Klick |
 | G-31 | `SettingsTests.The_settings_are_worked_with_the_controller_alone_rows_categories_and_values` | teilweise: Scrollen ins Bild nicht |
 | T15-5 | `SettingsRowTests.The_footer_names_only_the_buttons_of_the_focused_row` | teilweise: was der Footer nennt (◀▶, A mit Text, Kategorien), nicht der Wechsel zu Tasten und Maus nach Taste oder Klick |
@@ -117,5 +133,5 @@ Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #189; Reg
 bestimmte Änderung erkennt, nicht dass er den Testfall ganz abdeckt.
 
 Was sie nicht prüfen, bleibt im Abschluss-Test: Aussehen und Animationen, Maus und echte Tastatur
-(Headless-Tests, #180), Tippen auf der Bildschirmtastatur mit dem Controller (die Tests tippen wie eine
-echte Tastatur; das Raster prüfen `KeyGridTests`), echte Launcher und Windows.
+(Headless-Tests, #180), echte Launcher und Windows. Die Bildschirmtastatur bedienen die Tests seit #188 mit
+D-Pad und A wie der Nutzer; nur Tests, die etwas anderes als die Tastatur prüfen, tippen wie eine echte Tastatur.

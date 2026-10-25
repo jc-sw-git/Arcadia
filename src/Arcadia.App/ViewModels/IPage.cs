@@ -18,6 +18,11 @@ namespace Arcadia.App.ViewModels;
 public interface IPage
 {
     /// <summary>A button or key was pressed. False if the page didn't take it: then Main handles it, once.</summary>
+    /// <remarks>
+    /// Until navigation requests come (#209, #210), Main still routes each page in its own branch, and two pages use this
+    /// result in their own way: the settings return false for B at the top and ≡, which Main takes as "close the
+    /// settings"; search and detail page return true also for buttons they ignore, as Main only passes them the rest.
+    /// </remarks>
     bool Handle(UiAction action);
 
     /// <summary>A button or key was let go. Main passes it to every open page; one that didn't see the press ignores it.</summary>

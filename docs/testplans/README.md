@@ -70,7 +70,8 @@ ergänzt, liest nur dessen Datei, nicht den ganzen Ordner.
    in N+1 Brüche in Features aus N sofort zeigen.
    Regeln für die Abnahmetests (Owner 2026-10-24, #184):
    - Sie liegen in `tests/Arcadia.App.Tests` und sprechen nur über `ArcadiaDriver` (Tasten, Zeit, Neustart)
-     und was die View Models zeigen. Steam und Epic lesen dort nachgestellte Dateien mit erfundenen IDs
+     bzw. für das echte Fenster über `ArcadiaWindow` (Klick, echte Taste, Mausrad, Lage, Pixel, Fokusrahmen; #191)
+     und was View Models und Fenster zeigen. Steam und Epic lesen dort nachgestellte Dateien mit erfundenen IDs
      (`Fixtures/`, `ArcadiaDriver.StartWithLaunchersAsync`, #193); nichts öffnet einen echten Launcher. Jeder Test trägt die IDs seiner Testfälle als `[Trait("Testfall", "T15-1")]`;
      die Übersicht der Iteration listet sie unter „Abnahmetests“.
    - **Einmal rot:** Jeder neue Abnahmetest ist vor dem PR einmal fehlgeschlagen, weil das Feature gezielt kaputt

@@ -658,7 +658,10 @@ public partial class MainWindow : Window
     /// <summary>Covers the preview's "Optionen" button with the menu, left and bottom edges on the button's, kept inside the window.</summary>
     private bool PlaceOverOptionsButton()
     {
-        if (!PreviewOptionsButton.IsEffectivelyVisible || PreviewOptionsButton.TranslatePoint(default, GameMenuLayer) is not { } topLeft)
+        // Where the button stands at rest: a click leaves it shrinking back from Fluent's pressed scale for a moment.
+        if (!PreviewOptionsButton.IsEffectivelyVisible
+            || PreviewOptionsButton.GetVisualParent() is not { } parent
+            || parent.TranslatePoint(PreviewOptionsButton.Bounds.Position, GameMenuLayer) is not { } topLeft)
         {
             return false;
         }

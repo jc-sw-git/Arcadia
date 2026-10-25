@@ -518,7 +518,8 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         TextEditorViewModel? editor = null;
         editor = new TextEditorViewModel(
             row.ValueText,
-            text => isName ? LauncherNames.NameProblem(text) : LauncherNames.KeywordProblem(text, id, _host.Launchers.Shown),
+            // An empty name is the launcher's own again (owner, 2026-10-23), so only a keyword must not be empty.
+            text => isName ? (text.Trim().Length == 0 ? null : LauncherNames.NameProblem(text)) : LauncherNames.KeywordProblem(text, id, _host.Launchers.Shown),
             text =>
             {
                 SaveText(id, isName, text);
@@ -549,7 +550,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     {
         var original = _host.Launchers.Registered(id)!.Launcher;
         var value = isName ? text.Trim() : text;
-        var own = value == (isName ? original.DisplayName : original.SearchKeyword) ? null : value;
+        var own = value.Length == 0 || value == (isName ? original.DisplayName : original.SearchKeyword) ? null : value;
         _changes.Apply(settings => settings.WithLauncherPreferences(id, p => isName ? p with { Name = own } : p with { Keyword = own }), isName ? "Launcher-Name" : "Such-Kürzel");
         AppLog.Write($"{(isName ? "Name" : "Such-Kürzel")} von {id} geändert");
         LooksChanged();

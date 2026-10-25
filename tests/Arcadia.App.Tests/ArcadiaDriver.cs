@@ -54,7 +54,7 @@ internal sealed class ArcadiaDriver : IDisposable
 
     private readonly GamepadPolls _pad = new();
 
-    private ArcadiaDriver(string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts, LauncherInstalls installs, FakeSteam? steam, FakeReleases? releases)
+    private ArcadiaDriver(string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts, LauncherInstalls installs, FakeSteam? steam, FakeReleases? releases, StartArguments arguments)
     {
         Folder = folder;
         Steam = steam;
@@ -73,7 +73,7 @@ internal sealed class ArcadiaDriver : IDisposable
         _pad.ButtonReleased += button => ReleaseButton(button);
 
         Settings = new SettingsService(new SettingsStore(SettingsPath));
-        var firstRun = new FirstRunSetup(Settings, demo: false, forced: false);
+        var firstRun = new FirstRunSetup(Settings, arguments.Demo, arguments.FirstRun);
         var registry = new LauncherRegistry(Launchers, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
         ControllerSupport = steam is null
             ? new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform()) { Log = AppLog.Write }
@@ -151,9 +151,10 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>
     /// Starts Arcadia and waits until the library shows. Without <paramref name="settings"/>, the launchers are already
     /// chosen (as after the first start); pass settings without <see cref="AppSettings.ActiveLaunchers"/> for a fresh install.
+    /// <paramref name="arguments"/> are the command line's switches; the launchers stay those of the test also with --demo.
     /// </summary>
     public static async Task<ArcadiaDriver> StartAsync(
-        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, FakeSteam? steam = null, FakeReleases? releases = null)
+        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, FakeSteam? steam = null, FakeReleases? releases = null, StartArguments arguments = default)
     {
         launchers ??= DefaultLaunchers;
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
@@ -162,15 +163,15 @@ internal sealed class ArcadiaDriver : IDisposable
             ActiveLaunchers = launchers.Select(spec => spec.Launcher.Id).ToList(),
         });
         var time = new FakeTimeProvider(Now);
-        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls(), steam, releases);
+        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls(), steam, releases, arguments);
         await driver.LoadAsync();
         return driver;
     }
 
     /// <summary>Arcadia closed and started again on the same settings, as the user does after a change.</summary>
-    public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null)
+    public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null, StartArguments arguments = default)
     {
-        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases);
+        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases, arguments);
         await restarted.LoadAsync();
         return restarted;
     }
@@ -350,6 +351,9 @@ internal sealed class ArcadiaDriver : IDisposable
         Dispatcher.UIThread.RunJobs();
     }
 }
+
+/// <summary>The command line's switches that change what Arcadia shows at the start: <c>--demo</c> and <c>--first-run</c>.</summary>
+internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false);
 
 /// <summary>
 /// A launcher of the test: <paramref name="Games"/> games of the demo library, or exactly <paramref name="Library"/> where

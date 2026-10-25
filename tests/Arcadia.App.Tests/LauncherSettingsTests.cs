@@ -105,7 +105,7 @@ public sealed class LauncherSettingsTests
         Assert.Equal("3 Spiele · 2 installiert", gog.Fact("Spiele"));
         Assert.Equal("gerade eben", gog.Fact("Zuletzt eingelesen"));
         Assert.Equal("Test", gog.Fact("Gefunden unter"));
-        Assert.Equal("nur aus Arcadia gestartete", gog.Fact("Installationen"));
+        Assert.Equal("werden überwacht", gog.Fact("Installationen"));
         Assert.Equal("an ihren Prozessen erkannt", gog.Fact("Laufende Spiele"));
 
         // An inactive launcher is not in the tab strip.

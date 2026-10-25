@@ -61,6 +61,44 @@ public sealed class SearchTests
         Assert.Empty(search.Hits);
         Assert.False(search.HasHits);
         Assert.True(search.Empty?.IsNoHits);
+        Assert.Equal("Keine Treffer", search.Empty?.Title);
+        Assert.Equal("Kein Spiel passt zu „xyz“. Prüfe die Schreibweise oder nimm weitere Launcher dazu.", search.Empty?.Text);
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "T12-3")]
+    public async Task Trademark_registered_and_copyright_signs_count_for_nothing_and_each_hit_names_its_launcher()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(
+        [
+            LauncherSpec.With(
+                KnownLaunchers.Gog,
+                Installed(KnownLaunchers.Gog, "F1® 24", Installed),
+                Installed(KnownLaunchers.Gog, "Batman™ Arkham Knight", Installed)),
+            LauncherSpec.With(
+                KnownLaunchers.Xbox,
+                Installed(KnownLaunchers.Xbox, "Hitman© World of Assassination", Installed),
+                Installed(KnownLaunchers.Xbox, "Silent Tides", Installed)),
+        ]);
+        arcadia.Press(UiAction.Search);
+        var search = arcadia.Main.Search!;
+
+        arcadia.Main.TypeInSearch("f1 24");
+        Assert.Equal(["F1® 24"], search.Hits.Select(game => game.Title));
+        Assert.Equal("GOG Galaxy", search.FocusedResult?.LauncherName);
+
+        foreach (var sign in new[] { "™", "®", "©" })
+        {
+            Erase(arcadia);
+            arcadia.Main.TypeInSearch(sign);
+            Assert.Empty(search.Hits);
+        }
+
+        Erase(arcadia);
+        arcadia.Main.TypeInSearch("hitman world");
+        Assert.Equal(["Hitman© World of Assassination"], search.Hits.Select(game => game.Title));
+        Assert.Equal("Xbox", search.FocusedResult?.LauncherName);
+        Assert.Equal("1 Treffer in 1 Launcher", search.ResultsTitle);
     }
 
     [AvaloniaFact]
@@ -84,6 +122,27 @@ public sealed class SearchTests
 
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsSearchShown);
+        Assert.Equal("Xbox", arcadia.Main.SelectedTab?.Name);
+        Assert.Equal("2", arcadia.Main.PageButtons.Single(button => button.IsCurrent).Label);
+        Assert.Equal(focused, arcadia.Main.FocusedGame?.Game.Key);
+    }
+
+    [AvaloniaFact]
+    [Trait("Testfall", "T12-9")]
+    public async Task B_twice_in_a_row_goes_straight_back_to_the_library_as_it_was()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        arcadia.Press(UiAction.NextTab).Press(UiAction.NextPage).Press(UiAction.Right, times: 3);
+        var focused = arcadia.Main.FocusedGame!.Game.Key;
+
+        arcadia.Press(UiAction.Search);
+        arcadia.Main.TypeInSearch("iron");
+        var search = arcadia.Main.Search!;
+
+        // As fast as the controller reports them: no time passes between the two presses.
+        arcadia.Press(UiAction.Back, times: 2);
+        Assert.Null(arcadia.Main.Search);
+        Assert.Equal("iron", search.Text);
         Assert.Equal("Xbox", arcadia.Main.SelectedTab?.Name);
         Assert.Equal("2", arcadia.Main.PageButtons.Single(button => button.IsCurrent).Label);
         Assert.Equal(focused, arcadia.Main.FocusedGame?.Game.Key);

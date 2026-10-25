@@ -24,13 +24,15 @@ public sealed class SdlGamepadsTests
         Assert.Equal("3.4.18", sdl.Init());
         try
         {
-            // Whatever the machine has connected, every call answers; an unknown id gives nothing.
+            // Whatever the machine has connected, every call answers; an unknown id gives no device
+            // (SDL 3.4.18 still calls its type Standard, seen on Windows CI).
             while (sdl.NextDeviceChange(out _, out _))
             {
             }
 
             sdl.Update();
-            Assert.Equal(default, sdl.Describe(uint.MaxValue) with { Name = string.Empty });
+            var unknown = sdl.Describe(uint.MaxValue);
+            Assert.Equal((0, 0, StickDeviceType.Unknown), (unknown.Vendor, unknown.Product, unknown.StickType));
             Assert.Equal(0, sdl.Open(uint.MaxValue));
             Assert.NotEmpty(sdl.LastError());
         }

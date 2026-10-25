@@ -53,7 +53,7 @@ public sealed class FirstRunTests
 
         arcadia.Press(UiAction.Settings);
         await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown, "die Bibliothek soll nach \"Fertig\" erscheinen");
-        Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.Main.Tabs.Select(tab => tab.Name));
+        Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
     }
 
     [AvaloniaFact]
@@ -64,13 +64,13 @@ public sealed class FirstRunTests
 
         // Xbox (second row) off, then "Fertig" with ≡.
         arcadia.Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Settings);
-        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.Tabs.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
+        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.LauncherTabs.Items.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
 
-        Assert.Equal(["GOG Galaxy"], arcadia.Main.Tabs.Select(tab => tab.Name));
+        Assert.Equal(["GOG Galaxy"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
 
         using var restarted = await arcadia.RestartAsync();
         Assert.False(restarted.Main.IsFirstRunShown);
-        Assert.Equal(["GOG Galaxy"], restarted.Main.Tabs.Select(tab => tab.Name));
+        Assert.Equal(["GOG Galaxy"], restarted.Main.LauncherTabs.Items.Select(tab => tab.Name));
     }
 
     [AvaloniaFact]
@@ -121,7 +121,7 @@ public sealed class FirstRunTests
 
         Assert.True(arcadia.Main.IsFirstRunShown);
         arcadia.Press(UiAction.Settings);
-        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.Tabs.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
+        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.LauncherTabs.Items.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
 
         var saved = new SettingsStore(arcadia.SettingsPath).Load();
         Assert.Equal(["gog", "xbox", "amazon"], saved.ActiveLaunchers);
@@ -135,7 +135,7 @@ public sealed class FirstRunTests
         using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings(), arguments: new StartArguments(Demo: true));
 
         Assert.False(arcadia.Main.IsFirstRunShown);
-        Assert.Equal(["GOG Galaxy", "Xbox", "Amazon Games"], arcadia.Main.Tabs.Select(tab => tab.Name));
+        Assert.Equal(["GOG Galaxy", "Xbox", "Amazon Games"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
         Assert.Null(new SettingsStore(arcadia.SettingsPath).Load().ActiveLaunchers);
     }
 
@@ -157,12 +157,12 @@ public sealed class FirstRunTests
         Assert.True(arcadia.Main.IsFirstRunShown);
 
         arcadia.Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Settings);
-        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.Tabs.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
-        Assert.Equal(["GOG Galaxy", "Amazon Games"], arcadia.Main.Tabs.Select(tab => tab.Name));
+        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.LauncherTabs.Items.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
+        Assert.Equal(["GOG Galaxy", "Amazon Games"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
         Assert.Null(new SettingsStore(arcadia.SettingsPath).Load().ActiveLaunchers);
 
         using var restarted = await arcadia.RestartAsync(arguments: new StartArguments(Demo: true));
-        Assert.Equal(["GOG Galaxy", "Xbox", "Amazon Games"], restarted.Main.Tabs.Select(tab => tab.Name));
+        Assert.Equal(["GOG Galaxy", "Xbox", "Amazon Games"], restarted.Main.LauncherTabs.Items.Select(tab => tab.Name));
     }
 
     [AvaloniaFact]
@@ -174,7 +174,7 @@ public sealed class FirstRunTests
         arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Settings);
 
         Assert.False(arcadia.Main.IsFirstRunShown);
-        Assert.Empty(arcadia.Main.Tabs);
+        Assert.Empty(arcadia.Main.LauncherTabs.Items);
         Assert.Equal("Kein Launcher aktiv", arcadia.Main.EmptyTab?.Title);
     }
 

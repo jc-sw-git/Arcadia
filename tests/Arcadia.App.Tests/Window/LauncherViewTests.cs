@@ -226,7 +226,7 @@ public sealed class LauncherViewTests
     private static IReadOnlyList<string> DrawnTabs(ArcadiaWindow arcadia)
     {
         arcadia.WaitForTransitions();
-        return arcadia.Arcadia.Main.Tabs
+        return arcadia.Arcadia.Main.LauncherTabs.Items
             .Select(tab => (tab.Name, Control: arcadia.Showing(tab)))
             .Where(tab => tab.Control.IsEffectivelyVisible)
             .OrderBy(tab => arcadia.Bounds(tab.Control).Left)

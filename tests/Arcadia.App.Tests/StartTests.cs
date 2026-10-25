@@ -13,8 +13,8 @@ public sealed class StartTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
 
-        Assert.Equal(["GOG Galaxy", "Xbox", "Amazon Games"], arcadia.Main.Tabs.Select(tab => tab.Name));
-        Assert.Same(arcadia.Main.Tabs[0], arcadia.SelectedTab);
+        Assert.Equal(["GOG Galaxy", "Xbox", "Amazon Games"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
+        Assert.Same(arcadia.Main.LauncherTabs.Items[0], arcadia.SelectedTab);
         Assert.NotNull(arcadia.FocusedGame);
         Assert.Same(arcadia.PageGames[0], arcadia.FocusedGame);
         Assert.True(arcadia.Main.AreGamesShown);
@@ -35,7 +35,7 @@ public sealed class StartTests
         var empty = Assert.IsType<Arcadia.App.ViewModels.EmptyTabViewModel>(arcadia.Main.EmptyTab);
         Assert.True(empty.HasNoLauncher);
         Assert.Equal("Kein Launcher aktiv", empty.Title);
-        Assert.Empty(arcadia.Main.Tabs);
+        Assert.Empty(arcadia.Main.LauncherTabs.Items);
         Assert.False(arcadia.Main.Toast.IsVisible, arcadia.Main.Toast.Text);
     }
 
@@ -45,7 +45,7 @@ public sealed class StartTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync([new(KnownLaunchers.Gog, 0), new(KnownLaunchers.Xbox, 0)]);
 
-        Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.Main.Tabs.Select(tab => tab.Name));
+        Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
         Assert.Equal("Keine Spiele in GOG Galaxy", arcadia.Main.EmptyTab?.Title);
         Assert.Null(arcadia.FocusedGame);
         arcadia.Press(UiAction.NextTab);

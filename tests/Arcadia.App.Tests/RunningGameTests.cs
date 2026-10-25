@@ -17,7 +17,7 @@ public sealed class RunningGameTests
 
         // It runs since 25 minutes before Arcadia started.
         var since = $"Läuft seit {ArcadiaDriver.Now.AddMinutes(-25).ToLocalTime():HH:mm}";
-        foreach (var tab in arcadia.Main.Tabs.ToList())
+        foreach (var tab in arcadia.Main.LauncherTabs.Items.ToList())
         {
             var running = RunningTilesOf(arcadia).ToList();
             var tile = Assert.Single(running);

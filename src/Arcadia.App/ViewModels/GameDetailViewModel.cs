@@ -12,7 +12,7 @@ namespace Arcadia.App.ViewModels;
 /// through the hits of the search (#12), the shown game in the middle and its neighbours cut off
 /// at the sides. LT/RT turn it.
 /// </summary>
-public sealed partial class GameDetailViewModel : ViewModelBase
+public sealed partial class GameDetailViewModel : ViewModelBase, IPage
 {
     /// <summary>
     /// Pages kept on each side of the middle. One is seen; the second slides into view while
@@ -72,7 +72,27 @@ public sealed partial class GameDetailViewModel : ViewModelBase
     public IRelayCommand NextCommand { get; }
 
     /// <summary>D-pad and A act on the buttons of the shown game.</summary>
-    public void Handle(UiAction action) => Current.Handle(action);
+    public bool Handle(UiAction action)
+    {
+        Current.Handle(action);
+        return true;
+    }
+
+    /// <summary>Its buttons act on the press; a held A on them is not a hold.</summary>
+    public void Release(UiAction action)
+    {
+    }
+
+    public void CancelHeldButtons()
+    {
+    }
+
+    /// <summary>The games of the carousel, the ones at the sides included.</summary>
+    public IEnumerable<GameTileViewModel> ShownTiles => Pages.Select(p => p.Tile);
+
+    public void InputKindChanged(InputKind kind)
+    {
+    }
 
     /// <summary>
     /// Shows the next (1) or previous (-1) game. Only one page is built; the others move one place

@@ -102,6 +102,21 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     /// <summary>B on the rows: true if the category went a level up itself (later: a launcher's page back to the list).</summary>
     public virtual bool Back() => false;
 
+    /// <summary>
+    /// Rows this category offers on a launcher's page, each leading back to one of its own rows (#169), e.g. the
+    /// controller settings on Steam's page. The launcher category shows them without knowing what they are about.
+    /// </summary>
+    public virtual IReadOnlyList<SettingsLink> LauncherPageLinks => [];
+
+    /// <summary>Puts the focus on the row with this key, if the category shows it now (a link led here).</summary>
+    public void FocusRow(string key)
+    {
+        if (Rows.FirstOrDefault(r => r.Key == key) is { } row)
+        {
+            Focus(row);
+        }
+    }
+
     public virtual void Dispose()
     {
     }
@@ -181,3 +196,9 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
         FocusMoved?.Invoke(this, EventArgs.Empty);
     }
 }
+
+/// <summary>
+/// A row on the page of the launcher <paramref name="LauncherId"/> that opens the row <paramref name="TargetRowKey"/> of
+/// the category offering it (<see cref="SettingsCategoryViewModel.LauncherPageLinks"/>, #169).
+/// </summary>
+public sealed record SettingsLink(string LauncherId, string Title, string Subtitle, string TargetRowKey, IReadOnlyList<InfoBlock> Info);

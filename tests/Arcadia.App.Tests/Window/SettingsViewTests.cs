@@ -229,7 +229,7 @@ public sealed class SettingsViewTests
         var settings = main.Settings!;
         arcadia.Key(Key.E, KeyModifiers.Shift);
         Assert.Equal("Controller", settings.Selected.Name);
-        arcadia.Key(Key.S);
+        arcadia.Key(Key.S, times: 2);
         Assert.Equal("mouse-mode", settings.FocusedRow?.Key);
         arcadia.Key(Key.D);
         Assert.Equal(MouseModeActivation.Automatic, arcadia.Arcadia.Settings.Current.MouseMode.Activation);

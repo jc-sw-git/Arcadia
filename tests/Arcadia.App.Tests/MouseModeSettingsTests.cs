@@ -76,7 +76,7 @@ public sealed class MouseModeSettingsTests
         Assert.Equal("Linke Maustaste (gedrückt halten = ziehen)", keys["RT oder A"]);
         Assert.Equal("Rechte Maustaste", keys["LT oder X"]);
         Assert.Equal("Esc", keys["B"]);
-        Assert.Equal("Bildschirmtastatur (B blendet sie aus)", keys["Y"]);
+        Assert.Equal("Bildschirmtastatur ([B] blendet sie aus)", keys["Y"]);
         Assert.Contains(help.Blocks, block => block is InfoHeading { Text: "GRENZEN" });
         var limits = help.Blocks.OfType<InfoBullet>().Select(bullet => bullet.Text).ToList();
         Assert.Contains(limits, limit => limit.Contains("Administratorrechten (UAC)", StringComparison.Ordinal));

@@ -18,7 +18,7 @@ public enum GameActionKind
     Uninstall,
 }
 
-/// <summary>What the actions of a game do; implemented by the window's view model.</summary>
+/// <summary>What the actions of a game do; implemented by <see cref="GameActions"/>.</summary>
 public interface IGameActionHost
 {
     /// <summary>True when the Steam Controller mode matters (option on, Steam Controller connected).</summary>

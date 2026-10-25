@@ -3,8 +3,9 @@
 - With Steam running, holding Back + Start on the owner's PC opened Windows' Alt+Tab window: Steam's desktop
   layout turns the controller into keys and mouse itself, beside Arcadia's mouse mode.
 - `SteamDesktopInputFilter` drops simulated (`SendInput`) mouse and key input while a controller is in use (or was
-  less than 150 ms ago); Arcadia's own input carries a marker in `dwExtraInfo` and passes. Assumed, not yet seen on the
-  owner's PC: Steam sends its desktop layout with `SendInput`. `arcadia.log` names how many inputs were dropped.
+  less than 150 ms ago); Arcadia's own input carries a marker in `dwExtraInfo` and passes. Seen on the owner's
+  PC (2026-10-25, spike #112): Steam's desktop layout sends keys and mouse as injected input; a forced game layout's
+  trackpad mouse did not carry the flag ([steam-input-helper.md](steam-input-helper.md)). `arcadia.log` names how many inputs were dropped.
 - Beside a library game without the mouse mode it drops input only while ⧉ + ≡ are held (`DesktopFilterScope.ComboHeld`),
   so a game's own Steam layout (e.g. keys for a game without controller support) still reaches it. Seen on the
   owner's PC (2026-10-20): in a Steam game with an Xbox pad (Steam Input presumably off for it) Steam's desktop layout

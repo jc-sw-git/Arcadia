@@ -1,101 +1,104 @@
-# Testpläne
+# Test plans
 
-Ein Testplan pro Feature-Iteration, als Ordner (`iteration-1/`, `iteration-2/`, …): eine Datei pro
-Issue (`<Issue dreistellig>-<titel>.md`, z. B. `015-einstellungsseite.md`) und ein `README.md` als
-Übersicht mit der Liste der Dateien, der Testplan-Durchsicht, dem explorativen Test und den Abnahmetests.
-Er ist die einzige Quelle für alle manuellen Tests dieser Iteration: was getestet werden soll, wer
-wann was getestet hat, was dabei schiefging und was daraus wurde. Wer ein Issue testet oder
-ergänzt, liest nur dessen Datei, nicht den ganzen Ordner.
+One test plan per feature iteration, as a folder (`iteration-1/`, `iteration-2/`, …): one file per
+issue (`<issue, three digits>-<title>.md`, e.g. `015-settings-page.md`) and a `README.md` as the
+overview with the list of files, the test plan review, the exploratory test and the acceptance tests.
+It is the only source for all manual tests of that iteration: what is to be tested, who tested what
+and when, what went wrong and what came of it. Whoever tests or extends an issue reads only its file,
+not the whole folder.
 
-## Regeln
+## Rules
 
-- **Jeder PR, der ein Issue schließt, ergänzt den Testplan** um eine Datei mit den Testfällen dieses Issues
-  und eine Zeile in der Übersicht
-  (Definition of Done in `CLAUDE.md`; der CI-Check `Testplan` prüft das). Braucht ein Issue keine
-  neuen manuellen Tests (z. B. ein Refactoring von Features, die schon automatisiert oder durch
-  bestehende Testfälle abgedeckt sind), bekommt es trotzdem einen Abschnitt mit einer Zeile, warum,
-  und nennt die bestehenden Testfälle, die es berühren:
-  `# #67 MainViewModel aufteilen` → „Keine neuen Testfälle: reines Refactoring; berührt T41-3 bis T41-6.“
-  So bleibt die Historie vollständig, und die Testplan-Durchsicht weiß, was das Refactoring berührt hat.
-- **Testfall-IDs** heißen `T<Issue>-<laufende Nummer>`, z. B. `T15-2`. Was zu keinem Issue
-  gehört (das Grundgerüst in Iteration 1), steht in `grundgeruest.md` mit `G-<n>`. Sie ändern sich nie; ein
-  überholter Testfall wird ~~durchgestrichen~~ mit Grund, nicht gelöscht.
-- **Jeder Testfall ist markiert:** `E2E: ja` (soll als automatisierter Abnahmetest in die
-  Pipeline) oder `E2E: nein (Grund)` (z. B. echter Steam Controller, UAC, echte Launcher-Installation).
-- **Jeder Testlauf ist eine eigene Zeile** in der Tabelle „Verlauf“ des Issues: Datum, wer,
-  Build und Umgebung, Ergebnis, Folge. Auch Tests während der Umsetzung (Demo-Daten, virtuelles
-  Display, nur mechanisch) stehen dort, mit ehrlicher Umgebungsangabe.
-- **Fehlschläge** nennen Ursache und Folge: das neue Issue und wohin es ging (in dieser Iteration
-  behoben, nächste Iteration, Backlog).
-- **Die Häkchen** setzt der vollständige Test des Owners vor dem Merge (siehe „Vor dem Merge“). Findet die
-  Testplan-Durchsicht am Ende der Iteration, dass ein späteres Issue das Verhalten geändert hat, wird der
-  Testfall wieder offen und am Release-Kandidaten erneut getestet.
+- **Every PR that closes an issue extends the test plan** with a file holding that issue's test cases
+  and a line in the overview
+  (Definition of Done in `CLAUDE.md`; the CI check `Testplan` checks it). If an issue needs no
+  new manual tests (e.g. a refactoring of features already covered automatically or by
+  existing test cases), it still gets a section with one line saying why,
+  and names the existing test cases it touches:
+  `# #67 Split MainViewModel` → "No new test cases: pure refactoring; touches T41-3 to T41-6."
+  That keeps the history complete, and the test plan review knows what the refactoring touched.
+- **Test case IDs** are `T<issue>-<running number>`, e.g. `T15-2`. What belongs to no issue
+  (the groundwork in Iteration 1) is in `grundgeruest.md` with `G-<n>`. They never change; an
+  outdated test case is ~~struck through~~ with a reason, not deleted.
+- **Every test case is marked:** `E2E: yes` (to become an automated acceptance test in the
+  pipeline) or `E2E: no (reason)` (e.g. real Steam Controller, UAC, real launcher installation).
+  Files written before 2026-10-25 (Iteration 1) stay German and say `ja`/`nein`; new files are English.
+- **Every test run is its own row** in the issue's "History" table: date, who,
+  build and environment, result, consequence. Tests during implementation (demo data, virtual
+  display, mechanical only) go there too, with an honest environment.
+- **Failures** name cause and consequence: the new issue and where it went (fixed in this
+  iteration, next iteration, backlog).
+- **The ticks** are set by the owner's full test before the merge (see "Before the merge"). If the
+  test plan review at the end of the iteration finds that a later issue changed the behaviour, the
+  test case is open again and retested on the release candidate.
 
-## Vor dem Merge (Owner 2026-10-25)
+## Before the merge (owner 2026-10-25)
 
-1. **Abnahmetests zuerst:** Die Testfälle des Issues mit `E2E: ja` werden im Umsetzungs-PR als Abnahmetests
-   geschrieben (Regeln unter Abnahme-Iteration), bevor der Owner testet. Geht ein Fall noch nicht automatisch
-   (z. B. Headless-UI vor #191/#192), sagt der PR das pro Fall.
-2. **Codex-Review** kommt wie bisher als Kommentar im PR.
-3. **Manueller Test:** Der Owner führt die Testplan-Datei des Issues vollständig aus, am PR-Build, und gibt sein
-   Feedback in einem Schwung.
-4. **Nacharbeit:** Der Umsetzungs-Thread behebt das Feedback des Owners und die Codex-Kommentare zusammen in
-   einem Durchgang. Ein neuer Thread übernimmt den PR nur, wenn der Umsetzungs-Thread schon sehr lang ist; er
-   liest dann PR, Issue und Testplan-Datei statt des alten Threads.
-5. Der Owner testet nur noch, was die Nacharbeit geändert hat, und merged.
+1. **Acceptance tests first:** the issue's test cases with `E2E: yes` are written as acceptance tests in
+   the implementation PR (rules under acceptance iteration) before the owner tests. If a case can't be
+   automated yet (e.g. headless UI before #191/#192), the PR says so per case.
+2. **Codex review** comes as before as a comment in the PR.
+3. **Manual test:** the owner runs the issue's test plan file completely, on the PR build, and sends
+   feedback in one batch.
+4. **Rework:** the implementation thread fixes the owner's feedback and the Codex comments together in
+   one pass. A new thread takes over the PR only if the implementation thread is already very long; it
+   then reads PR, issue and test plan file instead of the old thread.
+5. The owner tests only what the rework changed, and merges.
 
-## Ablauf einer Iteration
+## Course of an iteration
 
-1. **Feature-Iteration N** (Meilenstein „Iteration N“): Issues umsetzen, jeder PR ergänzt den Testplan.
-2. **Abschluss-Review** (Code): Prüfliste im Review-Issue, Befunde beheben oder als Issue einplanen.
-   Die Prüfliste fragt auch, ob `CLAUDE.md`, `docs/` und Skills noch stimmen.
-3. **Testplan-Durchsicht** (Claude): alle Testplan-Dateien der Iteration gegen den Stand von `main`. Pro Datei:
-   Deckt sie noch ab, was spätere PRs geändert haben (Lücke), und beschreibt sie noch das aktuelle Verhalten
-   (Drift)? Ergebnis: Testfälle ergänzen oder anpassen und die Liste, was am Release-Kandidaten erneut manuell
-   getestet werden muss, mit Grund; „nichts“ ist ein gültiges Ergebnis. Am Release-Kandidaten testet der Owner
-   diese Liste, dann einen explorativen Test (Auftrag und Zeitrahmen stehen vorher in der Übersicht).
-   - **Messung:** die Budgets aus `CLAUDE.md` einmal am PC des Owners (Release-Build), als Zeile im Verlauf.
-   - **Update-Fälle** testet ein zweiter Release-Kandidat (z. B. rc.1 → rc.2 per Self-Update),
-     nicht erst das nächste Release.
-   - **Funde:** Vor dem Release wird nur behoben, was Daten, Sicherheit oder eine Kernfunktion bricht;
-     alles andere wird ein Issue für Iteration N+1. Neue Ideen aus dem Test werden nur als Issue angelegt.
-4. **Retrospektive** (eigenes Issue, erst nach Review und Testplan-Durchsicht): Für jeden Prozess
-   entscheidet der Owner, ob er bleibt, geändert wird oder wegfällt.
+1. **Feature iteration N** (milestone "Iteration N"): implement issues, every PR extends the test plan.
+2. **Final review** (code): checklist in the review issue, fix findings or plan them as issues.
+   The checklist also asks whether `CLAUDE.md`, `docs/` and skills are still right.
+3. **Test plan review** (Claude): all test plan files of the iteration against the state of `main`. Per file:
+   does it still cover what later PRs changed (gap), and does it still describe the current behaviour
+   (drift)? Result: test cases added or adjusted, and the list of what has to be retested manually on
+   the release candidate, with reason; "nothing" is a valid result. On the release candidate the owner
+   tests this list, then does an exploratory test (charter and time box are in the overview beforehand).
+   - **Measurement:** the budgets from `CLAUDE.md` once on the owner's PC (Release build), as a row in the history.
+   - **Update cases** are tested with a second release candidate (e.g. rc.1 → rc.2 by self-update),
+     not only with the next release.
+   - **Findings:** before the release only what breaks data, security or a core function is fixed;
+     everything else becomes an issue for iteration N+1. New ideas from the test are only filed as issues.
+4. **Retrospective** (own issue, only after review and test plan review): for each process
+   the owner decides whether it stays, changes or is dropped.
 5. **Release.**
-6. **Abnahme-Iteration N** (Meilenstein „Abnahme Iteration N“): die Kernabläufe (Start, Navigation,
-   Suche, Spielstart, Einstellungen und was N daran ändert) werden automatisierte Abnahmetests in der
-   Pipeline; Abnahme-Iteration 1 baut dafür zuerst die Infrastruktur. Die übrigen Testfälle mit
-   `E2E: ja` werden je ein Issue und laufen in Iteration N+1 mit (Retro Iteration 1, Owner 2026-10-24).
-   Feature-Iteration N+1 beginnt erst, wenn die Abnahme-Iteration abgeschlossen ist, damit Änderungen
-   in N+1 Brüche in Features aus N sofort zeigen.
-   Regeln für die Abnahmetests (Owner 2026-10-24, #184):
-   - Sie liegen in `tests/Arcadia.App.Tests` und sprechen nur über `ArcadiaDriver` (Tasten, Zeit, Neustart)
-     bzw. für das echte Fenster über `ArcadiaWindow` (Klick, echte Taste, Mausrad, Lage, Pixel, Fokusrahmen; #191)
-     und was View Models und Fenster zeigen. Steam und Epic lesen dort nachgestellte Dateien mit erfundenen IDs
-     (`Fixtures/`, `ArcadiaDriver.StartWithLaunchersAsync`, #193); nichts öffnet einen echten Launcher. Jeder Test trägt die IDs seiner Testfälle als `[Trait("Testfall", "T15-1")]`;
-     die Übersicht der Iteration listet sie unter „Abnahmetests“.
-   - **Einmal rot:** Jeder neue Abnahmetest ist vor dem PR einmal fehlgeschlagen, weil das Feature gezielt kaputt
-     gemacht wurde. Der PR nennt pro Test die Änderung, mit der er rot wurde.
-   - **Codex-Review** je PR: deckt jeder Test den Text seiner Testfall-IDs ab, wo sind Lücken?
-   - **Mutationstests** (Stryker.NET) einmal am Ende jeder Feature-Iteration; überlebende Mutanten werden Tests
-     oder `type:tech-debt`-Issues.
-7. **Feature-Iteration N+1** beginnt mit den großen `type:tech-debt`-Befunden aus dem Review,
-   jetzt abgesichert durch die Abnahmetests.
+6. **Acceptance iteration N** (milestone "Acceptance Iteration N"; Iteration 1's is still named
+   "Abnahme Iteration 1"): the core flows (start, navigation, search, game start, settings and what N
+   changes about them) become automated acceptance tests in the pipeline; acceptance iteration 1 first
+   builds the infrastructure for it. The other test cases with `E2E: yes` become one issue each and run
+   along in iteration N+1 (retro Iteration 1, owner 2026-10-24).
+   Feature iteration N+1 starts only when the acceptance iteration is closed, so that changes
+   in N+1 show breaks in features of N at once.
+   Rules for the acceptance tests (owner 2026-10-24, #184):
+   - They live in `tests/Arcadia.App.Tests` and talk only through `ArcadiaDriver` (keys, time, restart)
+     or, for the real window, through `ArcadiaWindow` (click, real key, mouse wheel, layout, pixels, focus ring; #191)
+     and what view models and window show. Steam and Epic read recreated files with made-up IDs there
+     (`Fixtures/`, `ArcadiaDriver.StartWithLaunchersAsync`, #193); nothing opens a real launcher. Every test carries
+     the IDs of its test cases as `[Trait("TestCase", "T15-1")]`;
+     the iteration's overview lists them under "Acceptance tests".
+   - **Red once:** every new acceptance test failed once before the PR because the feature was broken
+     on purpose. The PR names, per test, the change that made it red.
+   - **Codex review** per PR: does every test cover the text of its test case IDs, where are the gaps?
+   - **Mutation tests** (Stryker.NET) once at the end of every feature iteration; surviving mutants become tests
+     or `type:tech-debt` issues.
+7. **Feature iteration N+1** starts with the large `type:tech-debt` findings from the review,
+   now secured by the acceptance tests.
 
-## Vorlage für ein Issue
+## Template for an issue
 
-Datei `iteration-<n>/<Issue dreistellig>-<titel>.md`:
+File `iteration-<n>/<issue, three digits>-<title>.md`:
 
 ```markdown
-# #<Issue> <Titel>
+# #<issue> <title>
 
-- [ ] **T<Issue>-1** <Was tun, was muss passieren; nur Controller, B geht zurück> · E2E: ja
-- [ ] **T<Issue>-2** <…> · E2E: nein (<Grund>)
+- [ ] **T<issue>-1** <What to do, what must happen; controller only, B goes back> · E2E: yes
+- [ ] **T<issue>-2** <…> · E2E: no (<reason>)
 
-Verlauf:
+History:
 
-| Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
+| Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| T<Issue>-1 | JJJJ-MM-TT | Claude | PR #…, Demo-Daten | ✅ | – |
-| T<Issue>-2 | JJJJ-MM-TT | Juri | v0.x.y-rc1, echter PC | ❌ <Ursache> | #… (in dieser Iteration behoben / Iteration N+1 / Backlog) |
+| T<issue>-1 | YYYY-MM-DD | Claude | PR #…, demo data | ✅ | – |
+| T<issue>-2 | YYYY-MM-DD | Juri | v0.x.y-rc1, real PC | ❌ <cause> | #… (fixed in this iteration / iteration N+1 / backlog) |
 ```

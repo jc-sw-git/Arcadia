@@ -17,7 +17,7 @@ public sealed class LauncherPageTests
     private static readonly DateTimeOffset Installed = ArcadiaDriver.Now.AddDays(-30);
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-2")]
+    [Trait("TestCase", "T137-2")]
     public async Task LT_and_RT_turn_to_the_launcher_before_and_after_in_the_order_of_the_list_and_wrap_around()
     {
         // The list shows the active ones in tab order, then the inactive one: Amazon, GOG, Xbox.
@@ -45,7 +45,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-2")]
+    [Trait("TestCase", "T137-2")]
     public async Task A_single_launcher_has_no_neighbours_to_turn_to()
     {
         using var arcadia = await ArcadiaDriver.StartAsync([new(KnownLaunchers.Gog, 31)]);
@@ -61,7 +61,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-3")]
+    [Trait("TestCase", "T137-3")]
     public async Task Active_on_the_page_switches_like_the_list_and_the_head_shows_the_state()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -82,7 +82,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-3")]
+    [Trait("TestCase", "T137-3")]
     public async Task A_launcher_not_found_cannot_be_switched_on_on_its_page()
     {
         IReadOnlyList<LauncherSpec> launchers = [new(KnownLaunchers.Gog, 31), new(KnownLaunchers.Amazon, 6, IsInstalled: false)];
@@ -102,7 +102,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-5")]
+    [Trait("TestCase", "T137-5")]
     public async Task A_name_taken_shows_at_once_in_tab_list_search_preview_and_details_also_after_a_restart()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -132,7 +132,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-5")]
+    [Trait("TestCase", "T137-5")]
     public async Task A_name_taken_empty_is_the_launchers_own_name_again()
     {
         var renamed = new AppSettings { ActiveLaunchers = ["gog", "xbox", "amazon"] }.WithLauncherPreferences("gog", p => p with { Name = "Galaxis" });
@@ -149,7 +149,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-6")]
+    [Trait("TestCase", "T137-6")]
     public async Task A_keyword_taken_by_another_launcher_or_against_the_rules_is_red_at_once_and_not_taken()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -173,7 +173,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-6")]
+    [Trait("TestCase", "T137-6")]
     public async Task The_keywords_on_screen_keyboard_offers_only_keys_it_may_hold_and_the_D_pad_skips_the_others()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -217,7 +217,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-6")]
+    [Trait("TestCase", "T137-6")]
     public async Task On_a_French_keyboard_shift_stays_for_the_digits_and_offers_only_them()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings { ActiveLaunchers = ["gog", "xbox", "amazon"], KeyboardLayout = "fr" });
@@ -237,7 +237,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-6")]
+    [Trait("TestCase", "T137-6")]
     public async Task The_names_on_screen_keyboard_offers_every_key()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -254,7 +254,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-6")]
+    [Trait("TestCase", "T137-6")]
     public async Task A_valid_keyword_holds_at_once_in_the_search_and_its_chip()
     {
         IReadOnlyList<LauncherSpec> launchers =
@@ -280,7 +280,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-7")]
+    [Trait("TestCase", "T137-7")]
     public async Task The_info_panel_previews_the_order_with_only_the_pages_launcher_framed_and_gives_an_example_for_the_keyword()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -306,7 +306,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-7")]
+    [Trait("TestCase", "T137-7")]
     public async Task Read_again_on_the_page_reads_only_this_launcher_and_then_names_its_games_and_the_time()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(LauncherSettingsDriving.WithoutFolders);
@@ -329,7 +329,7 @@ public sealed class LauncherPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-7")]
+    [Trait("TestCase", "T137-7")]
     public async Task Read_again_is_greyed_out_with_the_reason_for_a_launcher_inactive_or_not_found()
     {
         IReadOnlyList<LauncherSpec> launchers =

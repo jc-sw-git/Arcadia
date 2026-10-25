@@ -16,7 +16,7 @@ public sealed class SteamControllerSetupTests
     private const uint Carla = 100_000_013;
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-15")]
+    [Trait("TestCase", "T85-15")]
     public async Task With_one_Steam_account_the_marker_is_written_without_asking_and_SISR_starts()
     {
         using var files = SteamWith((Anna, "Anna", 1_790_000_000, true));
@@ -34,7 +34,7 @@ public sealed class SteamControllerSetupTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-15")]
+    [Trait("TestCase", "T85-15")]
     public async Task Without_any_Steam_account_the_install_says_so_at_once_and_leaves_Steam_and_the_option_alone()
     {
         using var files = SteamWith();
@@ -52,7 +52,7 @@ public sealed class SteamControllerSetupTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-15")]
+    [Trait("TestCase", "T85-15")]
     public async Task Without_any_Steam_account_a_running_Steam_is_not_closed()
     {
         using var files = SteamWith();
@@ -73,7 +73,7 @@ public sealed class SteamControllerSetupTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-19")]
+    [Trait("TestCase", "T85-19")]
     public async Task With_several_accounts_the_user_picks_with_the_D_pad_who_gets_the_marker_before_Steam_closes()
     {
         // Written in neither order: Carla logged in last (MostRecent, though Bert has the newer timestamp), Anna has the
@@ -113,7 +113,7 @@ public sealed class SteamControllerSetupTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-19")]
+    [Trait("TestCase", "T85-19")]
     public async Task Without_a_tick_there_is_no_going_on_and_B_cancels_the_install()
     {
         using var files = SteamWith((Anna, "Anna", 1_790_000_300, true), (Bert, "Bert", 1_790_000_200, false));
@@ -137,7 +137,7 @@ public sealed class SteamControllerSetupTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-19")]
+    [Trait("TestCase", "T85-19")]
     public async Task With_only_another_account_chosen_SISR_does_not_start_and_the_settings_offer_to_add_the_entry()
     {
         using var files = SteamWith((Anna, "Anna", 1_790_000_300, true), (Bert, "Bert", 1_790_000_200, false));
@@ -159,7 +159,7 @@ public sealed class SteamControllerSetupTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T85-19")]
+    [Trait("TestCase", "T85-19")]
     public async Task With_one_account_listed_the_question_does_not_come_even_if_more_userdata_folders_exist()
     {
         using var files = SteamWith((Anna, "Anna", 1_790_000_300, true));

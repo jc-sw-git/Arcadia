@@ -11,7 +11,7 @@ namespace Arcadia.App.Tests;
 public sealed class LibraryTests
 {
     [AvaloniaFact]
-    [Trait("Testfall", "G-6")]
+    [Trait("TestCase", "G-6")]
     public async Task The_D_pad_moves_the_focus_through_the_grid_and_stops_at_its_edges()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -36,7 +36,7 @@ public sealed class LibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-6")]
+    [Trait("TestCase", "G-6")]
     public async Task The_D_pad_held_repeats_the_move_after_a_moment_and_stops_at_the_edge_of_the_page()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -56,7 +56,7 @@ public sealed class LibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-6")]
+    [Trait("TestCase", "G-6")]
     public async Task The_left_stick_moves_the_focus_like_the_D_pad_but_not_when_only_nudged()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -82,7 +82,7 @@ public sealed class LibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-15")]
+    [Trait("TestCase", "G-15")]
     public async Task The_preview_shows_last_played_playtime_size_launcher_and_location_of_the_focused_game()
     {
         var folder = Path.GetTempPath();
@@ -113,7 +113,7 @@ public sealed class LibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-7")]
+    [Trait("TestCase", "G-7")]
     public async Task LB_and_RB_switch_the_launcher_tab_and_wrap_around()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -129,7 +129,7 @@ public sealed class LibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-8")]
+    [Trait("TestCase", "G-8")]
     public async Task LT_and_RT_turn_the_pages_and_the_page_bar_shows_the_current_page()
     {
         // GOG has 31 games: 25 on page 1, 6 on page 2.
@@ -153,8 +153,8 @@ public sealed class LibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-12")]
-    [Trait("Testfall", "G-14")]
+    [Trait("TestCase", "G-12")]
+    [Trait("TestCase", "G-14")]
     public async Task View_options_change_the_page_size_at_once_and_offer_only_sizes_the_tab_can_fill()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -205,7 +205,7 @@ public sealed class LibraryTests
 
     [AvaloniaTheory]
     [MemberData(nameof(Sorts))]
-    [Trait("Testfall", "G-13")]
+    [Trait("TestCase", "G-13")]
     public async Task Each_sort_in_view_options_orders_the_tab_with_games_without_a_date_last(int row, int column, string sort, string[] expected)
     {
         using var arcadia = await ArcadiaDriver.StartAsync([SortLibrary]);
@@ -220,7 +220,7 @@ public sealed class LibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T8-1")]
+    [Trait("TestCase", "T8-1")]
     public async Task Sort_page_size_and_tab_are_the_same_after_a_restart_with_the_focus_on_page_one()
     {
         using var first = await ArcadiaDriver.StartAsync();
@@ -248,7 +248,7 @@ public sealed class LibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T8-2")]
+    [Trait("TestCase", "T8-2")]
     public async Task Sort_and_page_size_apply_to_every_tab_and_a_small_tab_shows_the_next_smaller_size_only_for_itself()
     {
         // GOG 31, Xbox 62, Amazon 6 games.
@@ -284,7 +284,7 @@ public sealed class LibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T8-3")]
+    [Trait("TestCase", "T8-3")]
     public async Task A_last_tab_whose_launcher_is_gone_starts_in_the_first_tab_and_in_its_own_again_once_it_is_back()
     {
         using var first = await ArcadiaDriver.StartAsync();
@@ -303,7 +303,7 @@ public sealed class LibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T41-7")]
+    [Trait("TestCase", "T41-7")]
     public async Task Sorted_by_install_date_games_not_installed_come_last_in_both_directions()
     {
         var library = LauncherSpec.With(

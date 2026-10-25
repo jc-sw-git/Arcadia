@@ -16,7 +16,7 @@ public sealed class GameStartTests
     private static readonly TimeSpan PastHoldTime = TimeSpan.FromMilliseconds(1100);
 
     [AvaloniaFact]
-    [Trait("Testfall", "T10-4")]
+    [Trait("TestCase", "T10-4")]
     public async Task A_tapped_starts_the_focused_game_through_its_launcher_on_the_release()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -40,8 +40,8 @@ public sealed class GameStartTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T10-4")]
-    [Trait("Testfall", "T11-1")]
+    [Trait("TestCase", "T10-4")]
+    [Trait("TestCase", "T11-1")]
     public async Task A_held_shows_the_frame_then_opens_the_detail_page_after_a_second_while_still_held_and_starts_nothing()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -68,7 +68,7 @@ public sealed class GameStartTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T10-4")]
+    [Trait("TestCase", "T10-4")]
     public async Task A_let_go_between_the_frame_and_the_details_does_nothing_also_later()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -88,7 +88,7 @@ public sealed class GameStartTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T27-1")]
+    [Trait("TestCase", "T27-1")]
     public async Task A_start_that_fails_says_so_leaves_Arcadia_running_and_A_tries_again()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -109,7 +109,7 @@ public sealed class GameStartTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T27-3")]
+    [Trait("TestCase", "T27-3")]
     public async Task An_unexpected_error_goes_with_its_stack_trace_into_the_log_a_hint_names_the_log_and_the_controller_still_works()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -143,7 +143,7 @@ public sealed class GameStartTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-20")]
+    [Trait("TestCase", "G-20")]
     public async Task A_demo_game_shows_the_demo_hint_instead_of_an_error()
     {
         using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, 31, IsDemo: true)]);

@@ -19,7 +19,7 @@ public sealed class SettingsViewTests
     private static readonly TimeSpan HoldForDetails = TimeSpan.FromSeconds(1.1);
 
     [AvaloniaFact]
-    [Trait("Testfall", "T15-1")]
+    [Trait("TestCase", "T15-1")]
     public async Task The_settings_cover_the_whole_page_and_Menu_B_Enter_Esc_the_chip_and_X_lead_back_to_the_same_tab_page_and_game_or_detail_page()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -77,7 +77,7 @@ public sealed class SettingsViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T15-2")]
+    [Trait("TestCase", "T15-2")]
     public async Task LB_RB_shift_Q_E_and_a_click_switch_the_category_round_from_the_last_to_the_first_the_strip_in_the_middle()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -111,7 +111,7 @@ public sealed class SettingsViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T15-4")]
+    [Trait("TestCase", "T15-4")]
     public async Task In_Controller_the_D_pad_walks_the_rows_with_their_headings_in_view_values_change_at_once_Aus_dims_and_all_stays_after_a_restart()
     {
         using var first = await ArcadiaWindow.ShowAsync(steam: new FakeSteam());
@@ -177,7 +177,7 @@ public sealed class SettingsViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T15-6")]
+    [Trait("TestCase", "T15-6")]
     public async Task Mausmodus_explains_itself_with_a_box_the_info_panel_fades_where_it_scrolls_RS_shift_W_S_page_keys_and_the_wheel_scroll_it()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -218,7 +218,7 @@ public sealed class SettingsViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T15-9")]
+    [Trait("TestCase", "T15-9")]
     public async Task Every_setting_is_reached_with_one_hand_on_the_keyboard_and_with_the_mouse_alone_which_focuses_a_row_without_changing_it()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -292,7 +292,7 @@ public sealed class SettingsViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "G-31")]
+    [Trait("TestCase", "G-31")]
     public async Task The_focused_setting_scrolls_into_view_in_every_category_and_B_closes()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(steam: new FakeSteam());
@@ -320,7 +320,7 @@ public sealed class SettingsViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T64-11")]
+    [Trait("TestCase", "T64-11")]
     public async Task A_mouse_move_or_a_key_shows_the_X_at_the_top_right_of_each_dialog_which_closes_only_it_and_a_button_hides_it_again()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
@@ -373,7 +373,7 @@ public sealed class SettingsViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T92-3")]
+    [Trait("TestCase", "T92-3")]
     public async Task A_click_on_the_mode_in_the_preview_switches_it_and_back_to_the_start_value_nothing_is_saved()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
@@ -400,7 +400,7 @@ public sealed class SettingsViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T92-5")]
+    [Trait("TestCase", "T92-5")]
     public async Task The_settings_scroll_and_the_footer_stays_visible_at_the_bottom_also_scrolled_to_the_top_and_to_the_end()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(steam: new FakeSteam());
@@ -417,7 +417,7 @@ public sealed class SettingsViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T127-9")]
+    [Trait("TestCase", "T127-9")]
     public async Task The_mouse_mode_settings_draw_LS_and_L3_as_symbols_in_their_text_and_So_funktioniert_es_LS_RS_and_the_D_pad()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();

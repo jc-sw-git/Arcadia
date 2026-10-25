@@ -10,7 +10,7 @@ public sealed class RunningGameTests
     private static readonly TimeSpan PastHoldTime = TimeSpan.FromMilliseconds(1100);
 
     [AvaloniaFact]
-    [Trait("Testfall", "T95-8")]
+    [Trait("TestCase", "T95-8")]
     public async Task In_the_demo_data_one_game_per_launcher_runs_and_offers_Zurueck_ins_Spiel_but_no_uninstall()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(ArcadiaDriver.DefaultLaunchers.Select(spec => spec with { IsDemo = true }).ToList());

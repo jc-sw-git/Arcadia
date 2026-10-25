@@ -13,7 +13,7 @@ namespace Arcadia.App.Tests;
 public sealed class OnScreenKeyboardViewTests
 {
     [AvaloniaFact]
-    [Trait("Testfall", "T129-7")]
+    [Trait("TestCase", "T129-7")]
     public async Task A_click_on_a_key_types_the_character_shown_and_clicks_on_shift_and_AltGr_switch_the_level()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -47,7 +47,7 @@ public sealed class OnScreenKeyboardViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T110-4")]
+    [Trait("TestCase", "T110-4")]
     public void In_the_mouse_mode_R3_opens_the_layout_menu_top_right_A_picks_B_closes_only_it_and_US_has_the_ANSI_keys_with_AltGr_greyed()
     {
         using var mouseMode = MouseModeKeyboard.Show();

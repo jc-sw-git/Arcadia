@@ -14,8 +14,8 @@ reference for porting (binary VDF codec, scanner ideas, architecture notes).
   Features are `type:story` and start with a `> **Story:**` line. See `docs/roadmap.md`.
 - **Refinement first:** before implementing an issue (Iteration 1) or an epic (from Iteration 2), refine
   it with the owner using the skill `.claude/skills/refinement`; rules in `docs/roadmap.md` → Refinement.
-- **Language:** the owner writes German; UI texts are German for now (localization is an issue).
-  Code, comments and commit messages are English.
+- **Language:** everything on GitHub is English (public repo): code, docs, issues, PRs, commits, branches,
+  labels, milestones, release notes, comments. Chat with the owner is German; UI texts too, for now.
 
 ## Build, test, run
 
@@ -78,13 +78,13 @@ the start of the next feature iteration. Process and test plan format: `docs/tes
   (`.claude/skills/arcadia-verify`); what was only checked mechanically is said so.
 - **Docs current:** `CLAUDE.md` / `docs/` updated when a fact, rule or workflow changed.
 - **Test plan:** a PR that closes an issue adds that issue's manual tests as its own file in
-  `docs/testplans/iteration-<n>/` (IDs `T<issue>-<n>`, each marked `E2E: ja/nein`) and records
+  `docs/testplans/iteration-<n>/` (IDs `T<issue>-<n>`, each marked `E2E: yes/no`) and records
   the test runs done during implementation with their real environment. If nothing new needs a
   manual test (e.g. a refactoring of features already covered by tests), the issue's section
   says so in one line with the reason. The `Testplan` CI check fails without the section.
-- **Tested before merge:** the issue's `E2E: ja` cases are acceptance tests in the same PR before the owner tests;
+- **Tested before merge:** the issue's `E2E: yes` cases are acceptance tests in the same PR before the owner tests;
   then the owner runs the issue's whole test plan file, sends feedback in one batch, and it is fixed together
-  with Codex's PR comments in the same thread (details: `docs/testplans/README.md` → Vor dem Merge).
+  with Codex's PR comments in the same thread (details: `docs/testplans/README.md` → Before the merge).
 - **Performant:** no blocking work on the UI thread; code on a hot path (start, scan, library,
   input, running in the background beside a game) stays within the budgets below, measured when touched.
 
@@ -98,8 +98,8 @@ scalability. Performance beats readability only when a measurement breaks a budg
 decided on purpose is named in the PR (and in the review issue).
 
 **Iterations:** feature iteration N (milestone "Iteration N": issues → code review → test plan review →
-retrospective of the processes (own issue, keep, change or drop each) → release), then acceptance iteration N (milestone "Abnahme Iteration N": the core
-flows of N become automated acceptance tests in CI; the other `E2E: ja` cases become issues of N+1, see `docs/testplans/README.md`). Feature iteration N+1 starts only
+retrospective of the processes (own issue, keep, change or drop each) → release), then acceptance iteration N (milestone "Acceptance Iteration N": the core
+flows of N become automated acceptance tests in CI; the other `E2E: yes` cases become issues of N+1, see `docs/testplans/README.md`). Feature iteration N+1 starts only
 when acceptance iteration N is closed, so a change in N+1 that breaks a feature of N shows at once.
 
 ## Layout
@@ -188,7 +188,7 @@ Every step of a session resends its whole context, so keep it small (owner, 2026
   `test` (tests only), `doc` (docs only, agent skills included), `td` (any other product code change, i.e. tech
   debt). Rename generated names such as `claude/project-thread-…` before the first push.
 - **Never** end commit messages with a `Co-Authored-By` trailer.
-- Commit messages: English, imperative subject, body explains why.
+- Commit messages: imperative subject, body explains why.
 - At most two open UI PRs at a time (the owner tests them one after the other). After each merge to `main`, check
   yourself that your open PR is still mergeable and resolve conflicts before the owner finds them.
 - Code PRs get a review by Codex (`AGENTS.md`) as the standard; a second review by an independent Claude thread

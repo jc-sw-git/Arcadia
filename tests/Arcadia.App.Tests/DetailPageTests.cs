@@ -12,7 +12,7 @@ public sealed class DetailPageTests
     private static readonly TimeSpan PastHoldTime = TimeSpan.FromMilliseconds(1100);
 
     [AvaloniaFact]
-    [Trait("Testfall", "T11-2")]
+    [Trait("TestCase", "T11-2")]
     public async Task LT_and_RT_show_the_previous_and_next_game_across_page_borders_and_wrap_around()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -33,7 +33,7 @@ public sealed class DetailPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T11-6")]
+    [Trait("TestCase", "T11-6")]
     public async Task B_goes_back_to_the_library_on_the_page_of_the_game_shown_last_with_the_focus_on_it()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -50,7 +50,7 @@ public sealed class DetailPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T11-3")]
+    [Trait("TestCase", "T11-3")]
     public async Task With_two_games_the_other_one_stands_on_both_sides_and_with_one_game_there_are_no_neighbours()
     {
         using var two = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Gog, Installed("Alpha"), Installed("Bravo"))]);
@@ -80,7 +80,7 @@ public sealed class DetailPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T11-4")]
+    [Trait("TestCase", "T11-4")]
     public async Task LB_and_RB_switch_the_launcher_and_the_detail_page_stays_open_on_the_first_game_of_the_tab()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -104,7 +104,7 @@ public sealed class DetailPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T11-5")]
+    [Trait("TestCase", "T11-5")]
     public async Task Y_on_the_detail_page_says_it_shows_one_game_and_another_sort_keeps_the_game_while_neighbours_and_position_follow()
     {
         using var arcadia = await ArcadiaDriver.StartAsync([FiveGames]);
@@ -129,7 +129,7 @@ public sealed class DetailPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T11-8")]
+    [Trait("TestCase", "T11-8")]
     public async Task An_update_keeps_Spielen_with_a_note_and_a_game_not_installed_offers_Installieren_and_its_progress()
     {
         var withUpdate = Installed("Alpha") with { UpdateAvailable = true };
@@ -166,7 +166,7 @@ public sealed class DetailPageTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T11-9")]
+    [Trait("TestCase", "T11-9")]
     public async Task The_figures_show_last_played_with_date_and_time_playtime_by_the_launcher_install_date_with_path_and_size_with_drive()
     {
         var lastPlayed = new DateTimeOffset(2026, 10, 23, 12, 30, 0, TimeSpan.Zero);

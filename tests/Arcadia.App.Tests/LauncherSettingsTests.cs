@@ -14,7 +14,7 @@ public sealed class LauncherSettingsTests
     private static readonly DateTimeOffset Installed = ArcadiaDriver.Now.AddDays(-30);
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-4")]
+    [Trait("TestCase", "T136-4")]
     public async Task Y_lifts_a_launcher_the_D_pad_moves_it_and_Y_puts_it_down_with_the_tabs_following_at_once()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -38,7 +38,7 @@ public sealed class LauncherSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-4")]
+    [Trait("TestCase", "T136-4")]
     public async Task B_while_a_launcher_is_lifted_puts_everything_back_as_it_was()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -60,7 +60,7 @@ public sealed class LauncherSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-4")]
+    [Trait("TestCase", "T136-4")]
     public async Task A_launcher_put_down_under_the_inactive_ones_is_off_and_its_tab_goes()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -78,7 +78,7 @@ public sealed class LauncherSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-5")]
+    [Trait("TestCase", "T136-5")]
     public async Task Beside_the_list_the_tab_strip_shows_the_tabs_in_order_and_the_details_explain_the_focused_launcher()
     {
         IReadOnlyList<LauncherSpec> launchers =
@@ -121,7 +121,7 @@ public sealed class LauncherSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-6")]
+    [Trait("TestCase", "T136-6")]
     public async Task X_reads_all_active_launchers_again_and_a_toast_says_so()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(LauncherSettingsDriving.WithoutFolders);
@@ -136,7 +136,7 @@ public sealed class LauncherSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-14")]
+    [Trait("TestCase", "T136-14")]
     public async Task The_row_read_all_again_is_reached_with_the_D_pad_and_A_reads_like_X()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(LauncherSettingsDriving.WithoutFolders);
@@ -156,7 +156,7 @@ public sealed class LauncherSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-14")]
+    [Trait("TestCase", "T136-14")]
     public async Task Without_an_active_launcher_the_row_read_all_again_is_greyed_out_and_A_does_nothing()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings { ActiveLaunchers = [] });
@@ -173,7 +173,7 @@ public sealed class LauncherSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-7")]
+    [Trait("TestCase", "T136-7")]
     public async Task A_tab_without_games_keeps_its_tab_and_its_buttons_read_again_or_open_its_launcher_settings()
     {
         IReadOnlyList<LauncherSpec> launchers = [new(KnownLaunchers.Gog, 31), new(KnownLaunchers.Xbox, 0)];
@@ -196,7 +196,7 @@ public sealed class LauncherSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-7")]
+    [Trait("TestCase", "T136-7")]
     public async Task A_tab_of_a_launcher_no_longer_found_keeps_its_tab_and_looks_for_it_again()
     {
         IReadOnlyList<LauncherSpec> launchers = [new(KnownLaunchers.Gog, 31), new(KnownLaunchers.Xbox, 62, IsInstalled: false)];
@@ -215,8 +215,8 @@ public sealed class LauncherSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-7")]
-    [Trait("Testfall", "T136-15")]
+    [Trait("TestCase", "T136-7")]
+    [Trait("TestCase", "T136-15")]
     public async Task With_every_launcher_off_the_library_says_so_and_offers_only_the_launcher_settings()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings { ActiveLaunchers = [] });
@@ -238,7 +238,7 @@ public sealed class LauncherSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-16")]
+    [Trait("TestCase", "T136-16")]
     public async Task An_active_launcher_without_games_is_information_without_a_symbol_at_the_category()
     {
         IReadOnlyList<LauncherSpec> launchers = [new(KnownLaunchers.Gog, 31), new(KnownLaunchers.Xbox, 0)];
@@ -254,7 +254,7 @@ public sealed class LauncherSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T136-16")]
+    [Trait("TestCase", "T136-16")]
     public async Task An_active_launcher_no_longer_found_stays_a_warning_with_a_symbol_at_the_category()
     {
         IReadOnlyList<LauncherSpec> launchers = [new(KnownLaunchers.Gog, 31), new(KnownLaunchers.Xbox, 62, IsInstalled: false)];

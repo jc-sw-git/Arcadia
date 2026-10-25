@@ -19,7 +19,7 @@ public sealed class LauncherPageViewTests
     [InlineData("A")]
     [InlineData("Leertaste")]
     [InlineData("Klick")]
-    [Trait("Testfall", "T137-1")]
+    [Trait("TestCase", "T137-1")]
     public async Task A_Space_or_a_click_opens_the_page_with_its_head_and_groups_and_B_Esc_or_Launcher_lead_back_to_it_in_the_list(string how)
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Launchers);
@@ -82,7 +82,7 @@ public sealed class LauncherPageViewTests
     [InlineData("A")]
     [InlineData("Leertaste")]
     [InlineData("Klick")]
-    [Trait("Testfall", "T137-4")]
+    [Trait("TestCase", "T137-4")]
     public async Task Writing_the_name_opens_the_keyboard_below_without_Tab_and_Dock_with_the_caret_in_the_field_and_the_footer_naming_its_keys(string how)
     {
         using var arcadia = await OpenGogPageAsync();
@@ -129,7 +129,7 @@ public sealed class LauncherPageViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-4")]
+    [Trait("TestCase", "T137-4")]
     public async Task With_the_controller_the_D_pad_and_A_type_X_erases_Y_spaces_R3_opens_the_layouts_Menu_takes_and_B_drops()
     {
         using var arcadia = await OpenGogPageAsync();
@@ -163,7 +163,7 @@ public sealed class LauncherPageViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-4")]
+    [Trait("TestCase", "T137-4")]
     public async Task With_a_real_keyboard_keys_type_the_arrows_Home_and_End_move_the_caret_Enter_takes_and_Esc_drops()
     {
         using var arcadia = await OpenGogPageAsync();
@@ -191,7 +191,7 @@ public sealed class LauncherPageViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-4")]
+    [Trait("TestCase", "T137-4")]
     public async Task While_the_name_is_written_the_mouse_focuses_no_other_row_and_clicks_type_on_the_keyboard()
     {
         using var arcadia = await OpenGogPageAsync();
@@ -217,7 +217,7 @@ public sealed class LauncherPageViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-8")]
+    [Trait("TestCase", "T137-8")]
     public async Task One_hand_on_the_keyboard_turns_the_launchers_switches_one_and_writes_a_keyword()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Launchers);
@@ -253,7 +253,7 @@ public sealed class LauncherPageViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T137-8")]
+    [Trait("TestCase", "T137-8")]
     public async Task The_mouse_alone_turns_by_the_neighbours_with_their_whole_hover_ring_switches_and_points_at_rows()
     {
         using var arcadia = await OpenGogPageAsync();

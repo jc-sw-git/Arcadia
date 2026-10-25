@@ -23,7 +23,7 @@ public sealed class FirstRunViewTests
     [AvaloniaTheory]
     [InlineData("Enter")]
     [InlineData("Klick")]
-    [Trait("Testfall", "T139-3")]
+    [Trait("TestCase", "T139-3")]
     public async Task A_launcher_switched_off_then_Fertig_by_Enter_or_a_click_leaves_only_the_others_as_tabs_also_after_a_restart(string how)
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(TwoFoundOneMissing, new AppSettings());
@@ -49,7 +49,7 @@ public sealed class FirstRunViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-6")]
+    [Trait("TestCase", "T139-6")]
     public async Task B_does_nothing_and_the_controller_alone_switches_and_finishes()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(TwoFoundOneMissing, new AppSettings());
@@ -75,7 +75,7 @@ public sealed class FirstRunViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-6")]
+    [Trait("TestCase", "T139-6")]
     public async Task Esc_does_nothing_and_one_hand_on_the_keyboard_switches_and_finishes()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(TwoFoundOneMissing, new AppSettings());
@@ -104,7 +104,7 @@ public sealed class FirstRunViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-6")]
+    [Trait("TestCase", "T139-6")]
     public async Task The_mouse_alone_focuses_by_hovering_switches_with_a_click_on_the_switch_and_finishes_with_Fertig()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(TwoFoundOneMissing, new AppSettings());

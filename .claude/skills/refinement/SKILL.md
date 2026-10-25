@@ -24,11 +24,11 @@ Cover, where they apply: the most likely player scenarios (controller first, B g
 on errors and with missing launchers or data, what is explicitly out of scope, and which DoD criteria
 are tricky for this work. Skip what `CLAUDE.md`, `docs/product/` or an earlier decision already settles.
 
-Write in German, numbered, each with your recommendation, worded so "ja" accepts it:
+Ask in German (chat), numbered, each with your recommendation, worded so "ja" accepts it:
 
 ```
-**F1 – <Titel>:** <Frage, ggf. mit Optionen>
-➡️ Empfehlung: <Antwort>
+**F1 – <title>:** <question, with options if any>
+➡️ Empfehlung: <answer>
 ```
 
 Keep rounds short (about five questions). After each answer, recompute the frontier.
@@ -38,7 +38,7 @@ implementing before that.
 
 ## 3. Write the result into the issue
 
-Update the issue body (it is the source of truth, not the chat): scenarios, decisions with date,
+Update the issue body in English (it is the source of truth, not the chat): scenarios, decisions with date,
 out of scope, and acceptance criteria as checkboxes. These become the test plan cases later.
 
 ## 4. Epic refinement: slice into issues

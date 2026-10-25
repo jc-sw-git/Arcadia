@@ -12,7 +12,7 @@ namespace Arcadia.App.Tests;
 public sealed class GridFadeTests
 {
     [AvaloniaFact]
-    [Trait("Testfall", "T102-1")]
+    [Trait("TestCase", "T102-1")]
     public async Task A_page_taller_than_the_grid_fades_only_towards_where_it_scrolls_and_the_end_rows_show_whole()
     {
         // GOG has 31 games: four rows at 50 per page, a little more than fits.
@@ -39,7 +39,7 @@ public sealed class GridFadeTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T102-2")]
+    [Trait("TestCase", "T102-2")]
     public async Task A_page_that_fits_the_grid_has_no_fade()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(settings: ArcadiaWindow.WithPageSize(10));
@@ -50,7 +50,7 @@ public sealed class GridFadeTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T102-3")]
+    [Trait("TestCase", "T102-3")]
     public async Task The_focused_tile_never_lies_under_a_fade_and_the_wheel_switches_the_fades_too()
     {
         // Xbox: seven rows on page 1 at 50 per page.
@@ -81,7 +81,7 @@ public sealed class GridFadeTests
     }
 
     [AvaloniaTheory]
-    [Trait("Testfall", "T102-4")]
+    [Trait("TestCase", "T102-4")]
     [InlineData(1745, 1000, 1.0)]
     [InlineData(1536, 864, 1.25)]
     public async Task No_line_of_unfaded_covers_is_left_at_the_edge_of_a_fade_also_at_a_scaled_size(int width, int height, double scaling)

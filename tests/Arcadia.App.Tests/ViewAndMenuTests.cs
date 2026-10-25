@@ -12,7 +12,7 @@ public sealed class ViewAndMenuTests
     private static readonly TimeSpan PastSoloDelay = TimeSpan.FromMilliseconds(300);
 
     [AvaloniaFact]
-    [Trait("Testfall", "T64-10")]
+    [Trait("TestCase", "T64-10")]
     public async Task View_and_Menu_act_when_let_go_or_held_alone_a_moment()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -42,7 +42,7 @@ public sealed class ViewAndMenuTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T64-10")]
+    [Trait("TestCase", "T64-10")]
     public async Task View_and_Menu_pressed_together_open_nothing()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -65,7 +65,7 @@ public sealed class ViewAndMenuTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T64-10")]
+    [Trait("TestCase", "T64-10")]
     public async Task Menu_held_a_second_on_a_search_hit_still_opens_its_details()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -83,7 +83,7 @@ public sealed class ViewAndMenuTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T64-10")]
+    [Trait("TestCase", "T64-10")]
     public async Task With_a_game_in_front_or_in_the_mouse_mode_the_buttons_leave_Arcadia_alone()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();

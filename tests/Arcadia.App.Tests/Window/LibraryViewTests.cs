@@ -18,7 +18,7 @@ namespace Arcadia.App.Tests;
 public sealed class LibraryViewTests
 {
     [AvaloniaFact]
-    [Trait("Testfall", "T41-1")]
+    [Trait("TestCase", "T41-1")]
     public async Task A_game_not_installed_is_greyed_with_the_install_symbol_and_the_preview_offers_to_install_it()
     {
         var gog = KnownLaunchers.Gog;
@@ -47,7 +47,7 @@ public sealed class LibraryViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T138-1")]
+    [Trait("TestCase", "T138-1")]
     public async Task Steam_and_Epic_show_their_logo_everywhere_a_launcher_is_named_and_others_keep_their_letter()
     {
         var steam = new SteamIntegration(TimeProvider.System).Launcher;

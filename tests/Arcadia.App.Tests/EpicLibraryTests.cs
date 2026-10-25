@@ -10,7 +10,7 @@ public sealed class EpicLibraryTests
     private static readonly string[] Game = ["games", "applications"];
 
     [AvaloniaFact]
-    [Trait("Testfall", "T42-1")]
+    [Trait("TestCase", "T42-1")]
     public async Task The_Epic_tab_shows_every_game_of_the_library_installed_or_not_but_no_Unreal_Engine_or_editor()
     {
         using var files = new LauncherFiles();
@@ -33,7 +33,7 @@ public sealed class EpicLibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T42-2")]
+    [Trait("TestCase", "T42-2")]
     public async Task No_DLC_season_pass_beta_soundtrack_or_preorder_bonus_shows_as_a_game()
     {
         using var files = new LauncherFiles();
@@ -56,7 +56,7 @@ public sealed class EpicLibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T42-3")]
+    [Trait("TestCase", "T42-3")]
     public async Task Without_the_catalog_cache_the_tab_shows_the_installed_games_and_no_error()
     {
         using var files = new LauncherFiles();
@@ -69,7 +69,7 @@ public sealed class EpicLibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T42-4")]
+    [Trait("TestCase", "T42-4")]
     public async Task Titles_lose_the_question_marks_of_trademark_signs_and_umlauts_stay_broken()
     {
         // The cache is ASCII only: every other character is a question mark.
@@ -85,7 +85,7 @@ public sealed class EpicLibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T81-1")]
+    [Trait("TestCase", "T81-1")]
     public async Task The_update_icon_shows_while_Epic_reports_an_update_and_goes_once_the_update_is_installed()
     {
         using var files = new LauncherFiles();
@@ -106,7 +106,7 @@ public sealed class EpicLibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T81-2")]
+    [Trait("TestCase", "T81-2")]
     public async Task Last_played_comes_from_Epics_log_and_stays_after_Epic_deleted_that_log()
     {
         var played = ArcadiaDriver.Now.AddDays(-3);
@@ -128,7 +128,7 @@ public sealed class EpicLibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T41-6")]
+    [Trait("TestCase", "T41-6")]
     public async Task A_game_uninstalled_in_Epic_shows_as_not_installed_once_Arcadias_window_is_active_again()
     {
         using var files = new LauncherFiles();
@@ -149,7 +149,7 @@ public sealed class EpicLibraryTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T41-6")]
+    [Trait("TestCase", "T41-6")]
     public async Task A_game_uninstalled_in_Epic_shows_as_not_installed_once_it_is_selected()
     {
         using var files = new LauncherFiles();

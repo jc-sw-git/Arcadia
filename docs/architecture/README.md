@@ -1,7 +1,7 @@
 # Architecture
 
 Where things live. `CLAUDE.md` has the short version; read this when you need to find a class or
-decide where new code goes.
+decide where new code goes. The App's classes are in [app.md](app.md).
 
 | Project | Content |
 |---|---|
@@ -10,7 +10,7 @@ decide where new code goes.
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), integrations (`SteamIntegration` with `SteamFolderChoice`, `EpicIntegration`, `DemoIntegration`), Epic scanner, catalog, log reader, client and install monitor, `DirectLauncherClient`, `GameLaunchService`, `ProcessWatch` (also `PathOf(pid)`, the foreground process and the process ids), `SystemProcessTable`, running games (`SteamRunningGames`, `EpicRunningGames`), Steam (`SteamScanner`, `SteamInstallMonitor`, `SteamContentLog`, `SteamLoginLog`, `TextVdf`, `BinaryVdf`, `SteamShortcuts`, `SteamInstallation`) |
 | `src/Arcadia.Input` | `SdlGamepadSource` (every controller via SDL3, #72; `GamepadDevices` picks the devices, `SdlPadMapping`), `GamepadPolls` (polls → presses and releases, left stick as D-pad, auto-repeat for D-pad and sticks; platform-free, so the acceptance tests use it too), `HoldGesture` (tap vs. hold), `RepeatGesture` (held erase), `LatchGesture` (shift: tap or hold), `SoloButtons` (View/Menu act alone, not together), `ButtonText` (the buttons in a text), `KeyboardButton` (the buttons while the mouse mode's keyboard is open); mouse mode (#64): `MouseMode` (Back + Start, `Polled` readings, also in the background), `MouseModeMapping` (buttons → mouse/keys), `MouseModeAutomation`, `StickCurve`, `SendInputOutput` (`IMouseKeyboardOutput`), `ReturnWithView` (View held brings Arcadia back), `ControllerActivity`/`InjectedInputGate`/`SteamDesktopInputFilter` (drop Steam's desktop layout) |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support: `SisrHost` (`ISisrHost`), `SisrApiClient`, `UsbipDriver`, `UsbipPorts`, `GitHubReleases`, `ControllerSupportService` (`SisrState`, `HealthIssues.WorstProblem`), `ControllerSupportPlatform` (Windows/Steam, replaced in tests), `ControllerSupportRemoval` (uninstall) |
-| `src/Arcadia.App` | Avalonia 12 UI (MVVM); its classes: `docs/architecture/app.md` |
+| `src/Arcadia.App` | Avalonia 12 UI (MVVM): which class does what is in [app.md](app.md) |
 | `tests/Arcadia.Core.Tests` | xUnit |
 | `tests/Arcadia.App.Tests` | Acceptance tests of the core flows (#184), xUnit v3 with `Avalonia.Headless.XUnit` only for the UI thread: `ArcadiaDriver` wires `MainViewModel` as `App.axaml.cs` does, with `TestLauncher`s (demo games, starts recorded), a fake clock, settings in a temp folder and the log out of the user's folder (`AppLog.Directory`); `Press`/`Hold` are the controller (`PressButton` through `GamepadRouting`), `HoldPad` holds D-pad or stick through `GamepadPolls`, `Installs`/`Starts.Failure` play the launcher, `FollowInstallsAsync`/`FollowRunningGamesAsync` are the App's timers, `IsDemo` uses the real demo data; `FakeSteam`/`FakeSisr`/`FakeNetwork` stand in for Windows, Steam and SISR, `FakeReleases` for GitHub and Velopack. `ArcadiaWindow` (#191) shows the real `MainWindow` headless with Skia (`TestApplication`): clicks, keys, wheel, pixels, focus rings. One test per test case ID (`Trait("TestCase", …)`) `StartWithLaunchersAsync` (#193) uses the real `BuiltInLaunchers` over Steam and Epic files built in a temp folder (`Fixtures/`, `LauncherFolders`); launcher URIs go to `GameLaunchService`'s `open` and are recorded, `SteamPc` pretends Windows for Steam Controller Support |
 

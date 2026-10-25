@@ -511,6 +511,21 @@ public sealed class SearchViewTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T209-2")]
+    public async Task A_click_on_Schliessen_leaves_a_search_opened_over_a_detail_page_for_that_page_as_B_does()
+    {
+        using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
+        arcadia.Arcadia.Hold(UiAction.Accept, HoldForDetails);
+        var detail = arcadia.Arcadia.Detail!;
+        arcadia.Press(UiAction.Search).WaitForTransitions();
+        Assert.True(arcadia.Arcadia.Main.IsSearchShown);
+
+        arcadia.Click(arcadia.Named<Button>("SearchCloseButton"));
+        Assert.Null(arcadia.Arcadia.Search);
+        Assert.Same(detail, arcadia.Arcadia.Detail);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T110-14")]
     public async Task The_focus_ring_shows_whole_on_the_keys_at_the_keyboards_four_edges_in_the_search_and_in_the_mouse_mode()
     {

@@ -91,17 +91,16 @@ public sealed class ControllerTypesTests
     /// <summary>Steam Input on: Steam's virtual pad mirrors the DualSense; only the DualSense counts, once.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T72-12")]
-    public async Task Steam_s_virtual_pad_and_the_Steam_Controller_add_no_input_of_their_own()
+    public async Task Steam_s_virtual_pad_and_a_single_Joy_Con_add_no_input_of_their_own()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         var dualSense = arcadia.Sdl.Plug(KnownPads.DualSense);
         var steamVirtual = arcadia.Sdl.Plug(KnownPads.SteamVirtual);
-        var steamController = arcadia.Sdl.Plug(KnownPads.SteamController);
         var joyCon = arcadia.Sdl.Plug(KnownPads.JoyConLeft);
         arcadia.StartControllers();
         var first = arcadia.Main.FocusedGame!.Game;
 
-        arcadia.PressOn(steamVirtual, B.DPadRight).PressOn(steamController, B.DPadRight).PressOn(joyCon, B.DPadRight);
+        arcadia.PressOn(steamVirtual, B.DPadRight).PressOn(joyCon, B.DPadRight);
         Assert.Same(first, arcadia.Main.FocusedGame!.Game);
 
         // The DualSense and the virtual pad Steam made of it, a moment apart: one step, not two.

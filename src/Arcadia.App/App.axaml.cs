@@ -168,7 +168,7 @@ public partial class App : Application
             viewModel.Dialogs = new SystemDialogs(window, () => viewModel.UsesController, () => mouseMode);
 
             var routing = new GamepadRouting(viewModel, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, time);
-            _gamepad.Polled += _ => routing.Tick();
+            _gamepad.Polled += routing.Tick;
             _gamepad.ButtonPressed += routing.Press;
             _gamepad.ButtonReleased += routing.Release;
             _gamepad.Lost += routing.Drop;

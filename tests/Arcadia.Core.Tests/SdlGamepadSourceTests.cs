@@ -41,11 +41,11 @@ public sealed class SdlGamepadSourceTests : IDisposable
     }
 
     [Fact]
-    public void Steam_s_virtual_pad_and_the_Steam_Controller_are_never_opened()
+    public void Steam_s_virtual_pad_and_the_Steam_Deck_are_never_opened()
     {
         _source.Open();
         var virtualPad = _sdl.Plug(KnownPads.SteamVirtual);
-        _sdl.Plug(KnownPads.SteamController);
+        _sdl.Plug(new PadDevice("Steam Deck", PadDevice.ValveVendor, 0x1205, PadType.Standard, StickDeviceType.Gamepad));
         _sdl.Hold(virtualPad, B.South);
         Poll();
 
@@ -53,7 +53,122 @@ public sealed class SdlGamepadSourceTests : IDisposable
         Assert.Empty(_events);
         Assert.Empty(_polls[^1]);
         Assert.Contains(_log, line => line.Contains("ignoriert (virtueller Controller von Steam)"));
-        Assert.Contains(_log, line => line.Contains("ignoriert (Steam Controller, kommt über SISR)"));
+        Assert.Contains(_log, line => line.Contains("ignoriert (Gerät von Valve, kein Steam Controller)"));
+    }
+
+    /// <summary>#212: the Steam Controller raw; its Steam button, "…" and back grips do nothing, the hands resting on it neither.</summary>
+    [Fact]
+    public void The_Steam_Controller_is_read_and_its_Steam_button_its_dots_button_and_back_grips_do_nothing()
+    {
+        _source.Open();
+        var pad = _sdl.Plug(KnownPads.SteamController);
+        Poll();
+        Assert.Equal([pad], _sdl.OpenPads);
+        Assert.Contains($"Controller #{pad} verbunden: \"Steam Controller\" (Steam, 28DE:1304)", _log);
+
+        foreach (var button in new[] { B.Guide, B.Misc1, B.RightPaddle1, B.LeftPaddle1, B.RightPaddle2, B.LeftPaddle2 })
+        {
+            _sdl.Hold(pad, button);
+            Poll();
+            Assert.False(ControllerActivity.IsInUse(_polls[^1][0]), $"{button} gilt nicht als Bedienung");
+        }
+
+        _sdl.Hold(pad, B.South, B.Back);
+        Poll();
+
+        Assert.Equal(["+A", "+View"], _events.Order());
+        Assert.True(_polls[^1][0].IsSteamController);
+    }
+
+    [Fact]
+    public void Only_the_Steam_Controller_s_reading_says_it_is_one()
+    {
+        _source.Open();
+        _sdl.Plug(KnownPads.DualSense);
+        _sdl.Plug(KnownPads.SteamController);
+        Poll();
+
+        Assert.Equal([false, true], _polls[^1].Select(reading => reading.IsSteamController));
+    }
+
+    /// <summary>#212: both trackpads come along (touch, position, click), without a function yet (#111).</summary>
+    [Fact]
+    public void The_readings_carry_both_trackpads_with_touch_position_and_click()
+    {
+        _source.Open();
+        var pad = _sdl.Plug(KnownPads.SteamController);
+        _sdl.Set(pad, new SdlPadState(SdlPadState.Bit(B.Misc2), 0, 0, 0, 0, 0, 0)
+        {
+            FirstTouchpad = new SdlTouch(true, 0.25f, 0.25f, 0.4f),
+            SecondTouchpad = new SdlTouch(true, 1, 0.5f, 1),
+        });
+        Poll();
+
+        var reading = Assert.Single(_polls[^1]);
+        Assert.Equal(new TouchpadReading(true, -0.5, 0.5, false), reading.LeftTouchpad);
+        Assert.Equal(new TouchpadReading(true, 1, 0, true), reading.RightTouchpad);
+        Assert.Empty(_events);
+    }
+
+    /// <summary>#212: the IMU only goes on when a feature asks (battery; Steam's own gyro untouched), also for pads connected later.</summary>
+    [Fact]
+    public void Gyro_and_accelerometer_are_off_until_asked_for_and_go_on_for_a_controller_connected_later()
+    {
+        _source.Open();
+        var first = _sdl.Plug(KnownPads.SteamController);
+        _sdl.Plug(KnownPads.Xbox360);
+        Poll();
+        Assert.Empty(_sdl.MotionOn);
+        Assert.All(_polls[^1], reading => Assert.False(reading.Motion.IsOn));
+
+        _source.UseMotionSensors(true);
+        Poll();
+        Assert.Equal([first], _sdl.MotionOn);
+        Assert.True(_polls[^1].Single(reading => reading.IsSteamController).Motion.IsOn);
+
+        _sdl.Unplug(first);
+        var second = _sdl.Plug(KnownPads.SteamController);
+        Poll();
+        Assert.Equal([second], _sdl.MotionOn);
+
+        _source.UseMotionSensors(false);
+        Poll();
+        Assert.Empty(_sdl.MotionOn);
+    }
+
+    /// <summary>#212, scenario 3: SISR's virtual Xbox pad mirrors the Steam Controller; every press counts once.</summary>
+    [Fact]
+    public void SISR_s_virtual_Xbox_pad_is_ignored_and_a_press_counts_once()
+    {
+        var log = new List<string>();
+        using var source = new SdlGamepadSource(_sdl, log.Add, _ => { }, new DeviceTreeEmulatedPads(() => [new XusbDevice(true, 0)], log.Add));
+        var events = new List<string>();
+        source.ButtonPressed += button => events.Add($"+{button}");
+        source.Open();
+        var steamController = _sdl.Plug(KnownPads.SteamController);
+        var sisrPad = _sdl.Plug(KnownPads.SisrXbox360);
+        source.Poll(0);
+
+        _sdl.Hold(steamController, B.South);
+        _sdl.Hold(sisrPad, B.South);
+        source.Poll(8);
+
+        Assert.Equal(["+A"], events);
+        Assert.Equal([steamController], _sdl.OpenPads);
+        Assert.Contains($"Controller #{sisrPad} ignoriert (virtueller Xbox Controller, z. B. von SISR): \"Xbox 360 Controller\" (Xbox360, 045E:028E)", log);
+    }
+
+    [Fact]
+    public void A_real_Xbox_360_pad_beside_SISR_s_is_read()
+    {
+        using var source = new SdlGamepadSource(_sdl, _ => { }, _ => { },
+            new DeviceTreeEmulatedPads(() => [new XusbDevice(false, 0), new XusbDevice(true, 1)], _ => { }));
+        source.Open();
+        var real = _sdl.Plug(KnownPads.Xbox360);
+        _sdl.Plug(KnownPads.SisrXbox360 with { Path = "XInput#1" });
+        source.Poll(0);
+
+        Assert.Equal([real], _sdl.OpenPads);
     }
 
     [Fact]

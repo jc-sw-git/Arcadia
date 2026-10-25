@@ -1,8 +1,9 @@
 namespace Arcadia.Input;
 
 /// <summary>
-/// Whether a controller is in use right now or was a moment ago: a button or trigger held, or a
-/// stick pushed. Written on the gamepad's poll thread, read from any thread.
+/// Whether a controller is in use right now or was a moment ago: a button or trigger held, a
+/// stick pushed or a trackpad touched (Steam's desktop layout moves the mouse with the Steam Controller's
+/// trackpads, #212). Written on the gamepad's poll thread, read from any thread.
 /// </summary>
 public sealed class ControllerActivity
 {
@@ -64,7 +65,7 @@ public sealed class ControllerActivity
     public bool IsComboHeld() => _comboHeld || WithinGrace(ref _lastCombo);
 
     public static bool IsInUse(GamepadReading pad) =>
-        pad.Buttons != PadButtons.None || Pushed(pad.LeftStick) || Pushed(pad.RightStick);
+        pad.Buttons != PadButtons.None || Pushed(pad.LeftStick) || Pushed(pad.RightStick) || Touched(pad.LeftTouchpad) || Touched(pad.RightTouchpad);
 
     public static bool IsComboHeld(GamepadReading pad) => pad.IsDown(Combo);
 
@@ -73,6 +74,8 @@ public sealed class ControllerActivity
         var last = Volatile.Read(ref timestamp);
         return last != long.MinValue && _time.GetElapsedTime(last) <= Grace;
     }
+
+    private static bool Touched(TouchpadReading touchpad) => touchpad.Touched || touchpad.Clicked;
 
     private static bool Pushed(StickPosition stick) => Math.Abs(stick.X) > StickDeadZone || Math.Abs(stick.Y) > StickDeadZone;
 }

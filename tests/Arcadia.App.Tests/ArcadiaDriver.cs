@@ -120,8 +120,8 @@ internal sealed class ArcadiaDriver : IDisposable
         _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time);
 
         // The controllers as the App reads them (#72), through SDL as the test sets it up.
-        _controllers = ControllerInput.Create(Sdl, Main);
-        _controllers.Polled += _ => _gamepad.Tick();
+        _controllers = ControllerInput.Create(Sdl, Main, new DeviceTreeEmulatedPads(() => [.. XusbDevices], AppLog.Write));
+        _controllers.Polled += _gamepad.Tick;
         _controllers.ButtonPressed += _gamepad.Press;
         _controllers.ButtonReleased += _gamepad.Release;
         _controllers.Lost += _gamepad.Drop;
@@ -131,6 +131,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>SDL3 with the controllers a test plugs in; read only after <see cref="StartControllers"/>.</summary>
     public FakeSdlGamepads Sdl { get; } = new();
+
+    /// <summary>The XInput devices in Windows' device tree, for telling SISR's virtual pad from a real one (#212).</summary>
+    public List<XusbDevice> XusbDevices { get; } = [];
 
     public string SettingsPath => Path.Combine(Folder, "settings.json");
 

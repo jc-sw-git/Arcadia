@@ -641,7 +641,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <summary>What "Steam Controller Kompatibilität" does, at the top of its info panel.</summary>
     private static readonly InfoBlock[] SisrDescription =
     [
-        new InfoText("Mit dieser Einstellung wird der Steam Controller als Xbox Controller erkannt. Das ist nützlich, wenn du den Steam Controller auch in Spielen außerhalb von Steam (oder in Arcadia) benutzen möchtest, da er dort sonst im „Desktop-Modus“ läuft. Dies ist eine Besonderheit des Steam Controllers."),
+        new InfoText("Mit dieser Einstellung wird der Steam Controller als Xbox Controller erkannt. Das ist nützlich, wenn du den Steam Controller auch in Spielen außerhalb von Steam benutzen möchtest, da er dort sonst im „Desktop-Modus“ läuft. Dies ist eine Besonderheit des Steam Controllers."),
         new InfoText("Dafür wird die Drittanbieter-Software SISR benötigt und bei Bedarf automatisch installiert. Arcadia startet SISR unsichtbar im Hintergrund."),
     ];
 
@@ -655,7 +655,6 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private static readonly InfoSection Drawbacks = new("NACHTEILE",
     [
         new InfoBullet("Steam muss im Hintergrund laufen."),
-        new InfoBullet("Arcadia erkennt den Steam Controller nur, solange er als Xbox Controller läuft. In Spielen auf „Steam Input“ wirken mit ihm deshalb weder ⧉ + ≡ für den Mausmodus noch ⧉ halten für „Zurück zu Arcadia“."),
     ]);
 
     private static readonly InfoFootnote SisrCredit = new("SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR");

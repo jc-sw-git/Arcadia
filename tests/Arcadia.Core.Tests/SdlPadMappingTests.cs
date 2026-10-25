@@ -32,18 +32,43 @@ public sealed class SdlPadMappingTests
         Assert.Equal(11, (int)B.DPadUp);
         Assert.Equal(15, (int)B.Misc1);
         Assert.Equal(20, (int)B.Touchpad);
+        Assert.Equal(21, (int)B.Misc2);
     }
 
     [Theory]
     [InlineData(B.Guide)]
     [InlineData(B.Misc1)]
     [InlineData(B.Touchpad)]
+    [InlineData(B.Misc2)]
     [InlineData(B.RightPaddle1)]
     [InlineData(B.LeftPaddle1)]
     [InlineData(B.RightPaddle2)]
     [InlineData(B.LeftPaddle2)]
-    public void Guide_capture_touchpad_click_and_paddles_do_nothing(B button) =>
+    public void Guide_capture_touchpad_clicks_and_paddles_do_nothing(B button) =>
         Assert.Equal(PadButtons.None, Map(Held(button)).Buttons);
+
+    /// <summary>SDL 3.4's Steam Controller mapping: the left trackpad clicks as "touchpad", the right one as "misc2" (#212).</summary>
+    [Fact]
+    public void The_trackpad_clicks_and_touches_come_along_with_up_and_right_positive()
+    {
+        var reading = Map(new SdlPadState(SdlPadState.Bit(B.Touchpad), 0, 0, 0, 0, 0, 0)
+        {
+            FirstTouchpad = new SdlTouch(true, 0, 0, 1),
+            SecondTouchpad = new SdlTouch(false, 0.5f, 1, 0),
+        });
+
+        Assert.Equal(new TouchpadReading(true, -1, 1, true), reading.LeftTouchpad);
+        Assert.Equal(new TouchpadReading(false, 0, -1, false), reading.RightTouchpad);
+        Assert.False(ControllerActivity.IsInUse(Map(Held(B.Misc2)) with { RightTouchpad = default }));
+    }
+
+    [Fact]
+    public void Motion_passes_through()
+    {
+        var motion = new MotionReading(true, new SensorAxes(0.1f, 0.2f, 0.3f), new SensorAxes(0, 9.81f, 0));
+
+        Assert.Equal(motion, Map(new SdlPadState(0, 0, 0, 0, 0, 0, 0) { Motion = motion }).Motion);
+    }
 
     [Fact]
     public void Triggers_count_as_held_from_half_way()

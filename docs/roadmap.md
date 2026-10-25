@@ -25,9 +25,9 @@ Milestone descriptions on GitHub are the source for the exact scope.
 Before code is written, owner and Claude walk through the most likely scenarios together
 (skill `.claude/skills/refinement`). The result then lives in the issue (owner, 2026-10-14):
 
-- **Iteration 1 (rest):** every issue still being worked on is refined on its own first.
-- **From Iteration 2:** one refinement per epic that pins down its scope. The result is
-  cut into lean issues that hang on the epic as sub-issues.
+- **Per issue, in its own thread** (owner, 2026-10-25): every issue is refined on its own first. Issues that
+  refine and ship better together are grouped only when the owner says so. An epic is refined as a whole
+  (and sliced into issues) only on the owner's request.
 - Every issue is a self-contained increment that pays into the epic.
 - Guideline: the context an issue needs (code, docs, logs, discussion) stays below about
   150k tokens. More is a sign to split the issue further; not a hard limit.

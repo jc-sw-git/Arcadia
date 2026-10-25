@@ -366,5 +366,5 @@ internal static class LauncherPageDriving
 {
     /// <summary>The launcher as Arcadia shows it now, with the name and keyword the user gave it.</summary>
     public static Arcadia.Launchers.Abstractions.LauncherInfo TabsLauncher(this ArcadiaDriver arcadia, string id) =>
-        arcadia.Main.Tabs.Single(tab => tab.Launcher.Id == id).Launcher;
+        arcadia.Main.LauncherTabs.Items.Single(tab => tab.Launcher.Id == id).Launcher;
 }

@@ -12,7 +12,7 @@ namespace Arcadia.App.Settings;
 /// the same place of the library. Its categories are tabs in the header (LB/RB, Q/E), each a column of rows with an
 /// info panel beside it (pattern "Leiste"). Every change applies at once.
 /// </summary>
-public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
+public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDisposable
 {
     public SettingsPageViewModel(IReadOnlyList<SettingsCategoryViewModel> categories, SettingsChanges changes, SettingsCategoryViewModel? first = null)
     {
@@ -64,7 +64,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
     /// <summary>RS (or Shift+W/S) scrolls the info panel: -1 up, 1 down.</summary>
     public event EventHandler<int>? InfoScrollRequested;
 
-    /// <returns>False if the action closes the page.</returns>
+    /// <returns>False if the action closes the page (B at the top, ≡): Main closes it.</returns>
     public bool Handle(UiAction action)
     {
         var category = Selected;
@@ -133,6 +133,18 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IDisposable
 
     /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
     public void CancelHeldButtons() => Selected.Editor?.CancelHeldButtons();
+
+    /// <summary>The settings show no covers.</summary>
+    public IEnumerable<GameTileViewModel> ShownTiles => [];
+
+    /// <summary>The keyboard of a text being written names the controller's buttons or the keys (#137).</summary>
+    public void InputKindChanged(InputKind kind)
+    {
+        if (Selected.Editor is { } editor)
+        {
+            editor.Keyboard.UsesController = kind == InputKind.Gamepad;
+        }
+    }
 
     public void Dispose()
     {

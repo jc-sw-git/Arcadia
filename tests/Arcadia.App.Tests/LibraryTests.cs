@@ -125,7 +125,7 @@ public sealed class LibraryTests
 
         arcadia.Press(UiAction.PreviousTab, times: 2);
         Assert.Equal("Amazon Games", arcadia.SelectedTab?.Name);
-        Assert.Single(arcadia.Main.Tabs, tab => tab.IsSelected);
+        Assert.Single(arcadia.Main.LauncherTabs.Items, tab => tab.IsSelected);
     }
 
     [AvaloniaFact]
@@ -293,7 +293,7 @@ public sealed class LibraryTests
 
         // Xbox is gone from Arcadia, e.g. its integration was removed.
         using var withoutXbox = await first.RestartAsync([ArcadiaDriver.DefaultLaunchers[0], ArcadiaDriver.DefaultLaunchers[2]]);
-        Assert.Equal(["GOG Galaxy", "Amazon Games"], withoutXbox.Main.Tabs.Select(tab => tab.Name));
+        Assert.Equal(["GOG Galaxy", "Amazon Games"], withoutXbox.Main.LauncherTabs.Items.Select(tab => tab.Name));
         Assert.Equal("GOG Galaxy", withoutXbox.SelectedTab?.Name);
         Assert.Same(withoutXbox.PageGames[0], withoutXbox.FocusedGame);
         Assert.False(withoutXbox.Main.Toast.IsVisible, withoutXbox.Main.Toast.Text);

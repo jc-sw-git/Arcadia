@@ -19,7 +19,7 @@ namespace Arcadia.App.Setup;
 /// end it; B does nothing, there is nothing to go back to. Only which launchers are active is chosen here; their order,
 /// names and logos are in the settings.
 /// </summary>
-public sealed partial class FirstRunViewModel : ViewModelBase
+public sealed partial class FirstRunViewModel : ViewModelBase, IPage
 {
     private readonly LauncherRegistry _launchers;
     private readonly Action<IReadOnlyList<string>> _done;
@@ -109,11 +109,12 @@ public sealed partial class FirstRunViewModel : ViewModelBase
         FocusAt(Math.Max(0, focused is null ? 0 : Rows().ToList().IndexOf(focused)));
     }
 
-    public void Handle(UiAction action)
+    /// <summary>Takes every button: nothing else in the window reacts until "Fertig".</summary>
+    public bool Handle(UiAction action)
     {
         if (IsSearching)
         {
-            return;
+            return true;
         }
 
         switch (action)
@@ -137,6 +138,23 @@ public sealed partial class FirstRunViewModel : ViewModelBase
                 Finish();
                 break;
         }
+
+        return true;
+    }
+
+    public void Release(UiAction action)
+    {
+    }
+
+    public void CancelHeldButtons()
+    {
+    }
+
+    /// <summary>The first start shows no covers.</summary>
+    public IEnumerable<GameTileViewModel> ShownTiles => [];
+
+    public void InputKindChanged(InputKind kind)
+    {
     }
 
     /// <summary>"Fertig", ≡ or Enter: the launchers switched on become the tabs.</summary>

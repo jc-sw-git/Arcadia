@@ -67,16 +67,18 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
         _settings = settings;
         _firstRun = firstRun;
         _time = time;
+        LauncherTabs = new LauncherTabsViewModel(logos.BadgeOf);
+        LauncherTabs.Chosen += OnTabChosen;
+        Status = new StatusBarViewModel(controllerSupport, updates, time);
+        Toast = new ToastViewModel(time);
+        _actions = new GameActions(this, launcher, controllerSupport, installs, running, launchedGames, settings, Toast, time);
+        _actions.ForegroundRequested += (_, e) => ForegroundRequested?.Invoke(this, e);
         if (firstRun.IsPending)
         {
             // Shown from the start, so the library never flashes up before it; its launchers follow once they are read.
             FirstRun = new FirstRunViewModel(library.Launchers, logos.BadgeOf, CompleteFirstRun);
         }
 
-        Status = new StatusBarViewModel(controllerSupport, updates, time);
-        Toast = new ToastViewModel(time);
-        _actions = new GameActions(this, launcher, controllerSupport, installs, running, launchedGames, settings, Toast, time);
-        _actions.ForegroundRequested += (_, e) => ForegroundRequested?.Invoke(this, e);
         AppErrors.Occurred += message => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(message));
         _controllerSupport.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateControllerSupportState);
         UpdateControllerSupportState();
@@ -113,16 +115,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     [ObservableProperty]
     public partial bool UsesController { get; private set; } = true;
 
-    partial void OnUsesControllerChanged(bool value)
-    {
-        InputHints.UsesController = value;
-
-        // The keyboard of a text being written in the settings names the controller's buttons or the keys (#137).
-        if (Settings?.Selected.Editor is { } editor)
-        {
-            editor.Keyboard.UsesController = value;
-        }
-    }
+    partial void OnUsesControllerChanged(bool value) => InputHints.UsesController = value;
 
     /// <summary>The Steam Controller mode of the focused game: "Xbox Controller (SISR)" or "Steam Input".</summary>
     [ObservableProperty]
@@ -154,14 +147,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     /// <summary>A game started from Arcadia ended, with its key: Arcadia may come back to the front (#94).</summary>
     public event EventHandler<string>? StartedGameEnded;
 
-    public ObservableCollection<LauncherTabViewModel> Tabs { get; } = [];
+    /// <summary>The launcher tabs, shared by the library, the detail page and the search.</summary>
+    public LauncherTabsViewModel LauncherTabs { get; }
 
     public ObservableCollection<GameTileViewModel> PageGames { get; } = [];
 
     public ObservableCollection<PageButtonViewModel> PageButtons { get; } = [];
-
-    [ObservableProperty]
-    public partial LauncherTabViewModel? SelectedTab { get; private set; }
 
     [ObservableProperty]
     public partial GameTileViewModel? FocusedGame { get; private set; }
@@ -338,13 +329,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
         }
     }
 
-    /// <summary>The covers of the page, the detail page's games and the search's hits.</summary>
-    private IEnumerable<GameTileViewModel> ShownTiles() =>
-        PageGames.Concat(Detail?.Pages.Select(p => p.Tile) ?? []).Concat(Search?.Results ?? []);
+    /// <summary>The covers of the library's page and of every open page, also one covered by another.</summary>
+    private IEnumerable<GameTileViewModel> ShownTiles() => PageGames.Concat(OpenPages().SelectMany(p => p.ShownTiles));
+
+    /// <summary>The pages open, on top first. The library underneath is not a page yet (#210).</summary>
+    private IEnumerable<IPage> OpenPages() => new IPage?[] { FirstRun, Settings, Detail, Search }.OfType<IPage>();
 
     private async Task ReportInstallResultsAsync(IReadOnlyList<InstallResult> results)
     {
-        string? KnownTitleOf(string key) => Tabs.SelectMany(t => t.Games).FirstOrDefault(g => g.Key == key)?.Title;
+        string? KnownTitleOf(string key) => LauncherTabs.Items.SelectMany(t => t.Games).FirstOrDefault(g => g.Key == key)?.Title;
 
         // An uninstalled game leaves the tabs with the rescan below, a newly installed one only comes with it.
         var (key, outcome) = results[^1];
@@ -414,10 +407,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
         RefreshLauncherSettings();
     }
 
-    private IReadOnlyList<LauncherLibrary> CurrentLibraries() => Tabs.Select(t => t.Library).ToList();
-
-    /// <summary>The libraries the search covers: a tab without games has nothing to find (#136).</summary>
-    private IReadOnlyList<LauncherLibrary> SearchedLibraries() => Tabs.Where(t => t.Count > 0).Select(t => t.Library).ToList();
+    private IReadOnlyList<LauncherLibrary> CurrentLibraries() => LauncherTabs.Libraries();
 
     /// <summary>
     /// "Neu einlesen" on an empty tab or a launcher's page reads <paramref name="launcher"/> again; X and "Alle neu einlesen"
@@ -436,12 +426,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
         AppLog.Write($"Neu eingelesen{(launcher is null ? string.Empty : $" für {launcher.Id}")}: {watch.ElapsedMilliseconds} ms");
         if (launcher is null)
         {
-            Toast.Show(Tabs.Count == 0 ? "Weiterhin ist kein Launcher aktiv." : "Alle Launcher sind neu eingelesen.");
+            Toast.Show(LauncherTabs.Items.Count == 0 ? "Weiterhin ist kein Launcher aktiv." : "Alle Launcher sind neu eingelesen.");
             return;
         }
 
         var name = launcher.DisplayName;
-        Toast.Show(Tabs.FirstOrDefault(t => t.Launcher.Id == launcher.Id) switch
+        Toast.Show(LauncherTabs.Find(launcher.Id) switch
         {
             null => $"{name} ist nicht aktiv.",
             { IsFound: false } => $"{name} ist weiterhin nicht zu finden.",
@@ -494,7 +484,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     LauncherRegistry ILauncherSettingsHost.Launchers => _library.Launchers;
 
 
-    LauncherLibrary? ILauncherSettingsHost.LibraryOf(string launcherId) => Tabs.FirstOrDefault(t => t.Launcher.Id == launcherId)?.Library;
+    LauncherLibrary? ILauncherSettingsHost.LibraryOf(string launcherId) => LauncherTabs.Find(launcherId)?.Library;
 
     DateTimeOffset? ILauncherSettingsHost.ScannedAt(string launcherId) => _library.ScannedAt(launcherId);
 
@@ -534,54 +524,22 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     /// </summary>
     private void ApplyLauncherLooks()
     {
-        foreach (var tab in Tabs)
-        {
-            var launcher = _library.Launchers.Info(tab.Launcher.Id);
-            tab.Launcher = launcher;
-            tab.Badge = _logos.BadgeOf(launcher);
-        }
-
+        LauncherTabs.Restyle(_library.Launchers.Info);
         EmptyTab = EmptyTab is { HasNoLauncher: true } shown ? shown : null;
         Refresh(FocusedGame is { } focused ? PageGames.IndexOf(focused) : 0, FocusedGame?.Game.Key);
         UpdateSearch();
     }
 
-    /// <summary>
-    /// Shows the scanned libraries: one tab per launcher in the scanned order, launchers that are
-    /// gone lose their tab. Keeps tab, page and focused game where they were.
-    /// </summary>
+    /// <summary>Shows the scanned libraries in the tabs. Keeps tab, page and focused game where they were.</summary>
     private void ApplyLibraries(IReadOnlyList<LauncherLibrary> libraries)
     {
         FirstRun?.Show(libraries);
         GameFolders = GameFolders.Of(libraries.SelectMany(l => l.Games));
         _running.SetLibrary(libraries.SelectMany(l => l.Games));
-        foreach (var gone in Tabs.Where(t => libraries.All(l => l.Launcher.Id != t.Launcher.Id)).ToList())
-        {
-            Tabs.Remove(gone);
-        }
-
-        for (var i = 0; i < libraries.Count; i++)
-        {
-            var library = libraries[i];
-            var index = IndexOfTab(library.Launcher.Id);
-            if (index < 0)
-            {
-                Tabs.Insert(i, new LauncherTabViewModel(library, _logos.BadgeOf(library.Launcher), ChooseTab));
-                continue;
-            }
-
-            Tabs[index].Games = library.Games;
-            Tabs[index].IsFound = library.IsFound;
-            if (index != i)
-            {
-                Tabs.Move(index, i);
-            }
-        }
-
+        LauncherTabs.Show(libraries);
         UpdateSearch();
-        if (SelectedTab is null || !Tabs.Contains(SelectedTab))
+        if (LauncherTabs.SelectedTab is null)
         {
-            SelectedTab = null;
             FocusedGame = null;
             ViewOptions = null;
             if (Detail?.IsFromLibrary == true)
@@ -591,12 +549,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
 
             PageGames.Clear();
             PageButtons.Clear();
-            EmptyTab = EmptyTab is { HasNoLauncher: true } shown && Tabs.Count == 0 ? shown : null;
+            var tabs = LauncherTabs.Items;
+            EmptyTab = EmptyTab is { HasNoLauncher: true } shown && tabs.Count == 0 ? shown : null;
             CountText = RangeText = ViewSummary = string.Empty;
-            if (Tabs.Count > 0)
+            if (tabs.Count > 0)
             {
-                // SelectTab, not ChooseTab: a launcher missing from this scan must not overwrite the user's choice.
-                SelectTab(Tabs.FirstOrDefault(t => t.Launcher.Id == _settings.Current.LastTabLauncherId) ?? Tabs[0]);
+                // Selected, not chosen: a launcher missing from this scan must not overwrite the user's choice.
+                SelectTab(LauncherTabs.Find(_settings.Current.LastTabLauncherId ?? string.Empty) ?? tabs[0]);
             }
             else
             {
@@ -613,55 +572,27 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
         RefreshLauncherSettings();
     }
 
-    private int IndexOfTab(string launcherId)
-    {
-        for (var i = 0; i < Tabs.Count; i++)
-        {
-            if (Tabs[i].Launcher.Id == launcherId)
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    /// <summary>A gamepad button was pressed: the search shows its button legend.</summary>
+    /// <summary>A gamepad button was pressed: the hints show the controller's buttons, the search its button legend.</summary>
     public void HandleGamepad(UiAction action)
     {
-        _input = InputKind.Gamepad;
-        ShowsCloseButtons = false;
-        UsesController = true;
-        if (Search is { } search)
-        {
-            search.UsesController = true;
-        }
-
+        NoteInput(InputKind.Gamepad);
         Handle(action);
     }
 
     /// <summary>A key went down on a real keyboard: the search puts its on-screen keyboard and legend away.</summary>
-    public void NoteKeyboard()
-    {
-        _input = InputKind.Keyboard;
-        ShowsCloseButtons = true;
-        UsesController = false;
-        if (Search is { } search)
-        {
-            search.UsesController = false;
-            search.IsKeyboardOut = false;
-        }
-    }
+    public void NoteKeyboard() => NoteInput(InputKind.Keyboard);
 
     /// <summary>The mouse was used: a search opened next shows no on-screen keyboard; an open one keeps it, without the legend.</summary>
-    public void NotePointer()
+    public void NotePointer() => NoteInput(InputKind.Pointer);
+
+    private void NoteInput(InputKind kind)
     {
-        _input = InputKind.Pointer;
-        ShowsCloseButtons = true;
-        UsesController = false;
-        if (Search is { } search)
+        _input = kind;
+        ShowsCloseButtons = kind != InputKind.Gamepad;
+        UsesController = kind == InputKind.Gamepad;
+        foreach (var page in OpenPages())
         {
-            search.UsesController = false;
+            page.InputKindChanged(kind);
         }
     }
 
@@ -763,10 +694,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
                 OpenMenu();
                 break;
             case UiAction.PreviousTab:
-                CycleTab(-1);
+                LauncherTabs.Cycle(-1);
                 break;
             case UiAction.NextTab:
-                CycleTab(1);
+                LauncherTabs.Cycle(1);
                 break;
             case UiAction.PreviousPage:
                 GoToPage(_requestedPage - 1);
@@ -803,10 +734,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
                 detail.Rotate(1);
                 break;
             case UiAction.PreviousTab:
-                CycleTab(-1);
+                LauncherTabs.Cycle(-1);
                 break;
             case UiAction.NextTab:
-                CycleTab(1);
+                LauncherTabs.Cycle(1);
                 break;
             case UiAction.ViewOptions:
                 OpenViewOptions();
@@ -836,7 +767,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
             return;
         }
 
-        if (SelectedTab is not { } tab)
+        if (LauncherTabs.SelectedTab is not { } tab)
         {
             return;
         }
@@ -862,7 +793,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
             return;
         }
 
-        if (Detail is not { } detail || SelectedTab is not { } tab)
+        if (Detail is not { } detail || LauncherTabs.SelectedTab is not { } tab)
         {
             Detail = null;
             return;
@@ -877,14 +808,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     /// <summary>The library on the tab of <paramref name="game"/>'s launcher, on its page and with the focus on it.</summary>
     private void ShowInLibrary(Game game)
     {
-        if (Tabs.FirstOrDefault(t => t.Launcher.Id == game.LauncherId) is not { } tab)
+        if (LauncherTabs.Find(game.LauncherId) is not { } tab)
         {
             return;
         }
 
-        if (tab != SelectedTab)
+        if (tab != LauncherTabs.SelectedTab)
         {
-            ChooseTab(tab);
+            LauncherTabs.Choose(tab);
         }
 
         var games = SortedGames(tab);
@@ -902,19 +833,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     /// <summary>The list changed (rescan, new sort): the detail page keeps its game in the middle.</summary>
     private void UpdateDetail()
     {
-        if (Detail is { IsFromLibrary: true } detail && SelectedTab is { } tab && !detail.Update(SortedGames(tab), Formatting.SortLabel(_settings.Current.LibrarySort)))
+        if (Detail is { IsFromLibrary: true } detail && LauncherTabs.SelectedTab is { } tab && !detail.Update(SortedGames(tab), Formatting.SortLabel(_settings.Current.LibrarySort)))
         {
             Detail = null;
         }
     }
 
     private GameTileViewModel CreateDetailTile(Game game) =>
-        new(game, LauncherOf(game), BadgeOf(game), _time.GetLocalNow(), _ => { }, _ => { }) { InstallState = _installs.StateOf(game.Key), RunState = _running.StateOf(game.Key) };
-
-    /// <summary>Every shown game comes from a tab, so its launcher has one.</summary>
-    private LauncherInfo LauncherOf(Game game) => Tabs.First(t => t.Launcher.Id == game.LauncherId).Launcher;
-
-    private LauncherBadge BadgeOf(Game game) => Tabs.First(t => t.Launcher.Id == game.LauncherId).Badge;
+        new(game, LauncherTabs.LauncherOf(game), LauncherTabs.BadgeOf(game), _time.GetLocalNow(), _ => { }, _ => { }) { InstallState = _installs.StateOf(game.Key), RunState = _running.StateOf(game.Key) };
 
     /// <summary>
     /// X: the search over all launchers, with the on-screen keyboard. From a detail page opened from the search, back to
@@ -923,7 +849,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     [RelayCommand]
     private void OpenSearch()
     {
-        if (Tabs.All(t => t.Count == 0))
+        if (!LauncherTabs.HasGames)
         {
             return;
         }
@@ -937,14 +863,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
 
         if (Detail is { } detail)
         {
-            _actions.CancelHold();
             _detailBehindSearch = detail;
             Detail = null;
         }
 
         // Opened with the gamepad, the search starts with the on-screen keyboard; by key or click without.
         var search = new SearchViewModel(
-            SearchedLibraries(),
+            LauncherTabs,
             KeyboardLayout.Find(_settings.Current.KeyboardLayout),
             layout => SaveView(settings => settings with { KeyboardLayout = layout.Id }),
             CreateSearchTile,
@@ -966,20 +891,18 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     [RelayCommand]
     private void CloseSearch()
     {
-        _actions.CancelHold();
         if (IsSearchFilterOpen)
         {
             ViewOptions = null;
         }
 
-        Search?.Dispose();
         Search = null;
 
         // Back to the detail page the search was opened from, if its game is still in the tab.
         if (_detailBehindSearch is { } detail)
         {
             _detailBehindSearch = null;
-            if (SelectedTab is { } tab && detail.Update(SortedGames(tab), Formatting.SortLabel(_settings.Current.LibrarySort)))
+            if (LauncherTabs.SelectedTab is { } tab && detail.Update(SortedGames(tab), Formatting.SortLabel(_settings.Current.LibrarySort)))
             {
                 Detail = detail;
             }
@@ -1088,7 +1011,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     }
 
     private GameTileViewModel CreateSearchTile(Game game, Action<GameTileViewModel> focus) =>
-        new(game, LauncherOf(game), BadgeOf(game), _time.GetLocalNow(), focus, tile =>
+        new(game, LauncherTabs.LauncherOf(game), LauncherTabs.BadgeOf(game), _time.GetLocalNow(), focus, tile =>
         {
             focus(tile);
             _actions.Start(tile);
@@ -1103,14 +1026,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
             return;
         }
 
-        if (Tabs.All(t => t.Count == 0))
+        if (!LauncherTabs.HasGames)
         {
             Detail = Detail?.IsFromSearch == true ? null : Detail;
             CloseSearch();
             return;
         }
 
-        search.Update(SearchedLibraries());
+        search.Update();
         RebuildViewOptions();
         KeepHoldOnRebuiltPage();
         if (Detail is { IsFromSearch: true } detail && !detail.Update(search.Hits, null))
@@ -1126,16 +1049,20 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     public void Release(UiAction action)
     {
         _actions.Release(action);
-        Search?.Release(action);
-        Settings?.Release(action);
+        foreach (var page in OpenPages())
+        {
+            page.Release(action);
+        }
     }
 
     /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
     public void CancelHold()
     {
         _actions.CancelHold();
-        Search?.CancelHeldButtons();
-        Settings?.CancelHeldButtons();
+        foreach (var page in OpenPages())
+        {
+            page.CancelHeldButtons();
+        }
     }
 
     /// <summary>
@@ -1254,8 +1181,39 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
 
     partial void OnSettingsChanged(SettingsPageViewModel? oldValue, SettingsPageViewModel? newValue)
     {
+        OnTopPageChanged();
         oldValue?.Dispose();
         UpdateGameMouseModeState();
+    }
+
+    partial void OnFirstRunChanged(FirstRunViewModel? value) => OnTopPageChanged();
+
+    partial void OnDetailChanged(GameDetailViewModel? value) => OnTopPageChanged();
+
+    partial void OnSearchChanged(SearchViewModel? oldValue, SearchViewModel? newValue)
+    {
+        OnTopPageChanged();
+        oldValue?.Dispose();
+    }
+
+    /// <summary>The page on top when the last page opened or closed; null for the library.</summary>
+    private IPage? _topPage;
+
+    /// <summary>
+    /// The page that was on top lost it: its held buttons and the hold of A or ≡ are dropped, so their release can't type,
+    /// start a game or open details on the page now shown (the contract on <see cref="IPage"/>).
+    /// </summary>
+    private void OnTopPageChanged()
+    {
+        var top = OpenPages().FirstOrDefault();
+        if (top == _topPage)
+        {
+            return;
+        }
+
+        _topPage?.CancelHeldButtons();
+        _actions.CancelHold();
+        _topPage = top;
     }
 
     /// <summary>Switches the focused game's "Individueller Mausmodus": Standard → Erlaubt → Deaktiviert.</summary>
@@ -1333,12 +1291,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     }
 
     [RelayCommand]
-    private void PreviousTab() => CycleTab(-1);
-
-    [RelayCommand]
-    private void NextTab() => CycleTab(1);
-
-    [RelayCommand]
     private void PreviousPage() => GoToPage(_requestedPage - 1);
 
     [RelayCommand]
@@ -1347,7 +1299,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     [RelayCommand]
     private void OpenViewOptions()
     {
-        if (SelectedTab is not null)
+        if (LauncherTabs.SelectedTab is not null)
         {
             ShowViewOptions(CreateViewOptions);
         }
@@ -1373,9 +1325,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     }
 
     /// <summary>The user picked <paramref name="tab"/>; Arcadia opens with it next time.</summary>
-    private void ChooseTab(LauncherTabViewModel tab)
+    private void OnTabChosen(LauncherTabViewModel tab)
     {
-        SelectTab(tab);
+        ShowTab();
         SaveView(settings => settings with { LastTabLauncherId = tab.Launcher.Id });
 
         // The detail page stays open and shows the tab's first game.
@@ -1394,13 +1346,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
 
     private void SelectTab(LauncherTabViewModel tab)
     {
-        if (SelectedTab is { } previous)
-        {
-            previous.IsSelected = false;
-        }
+        LauncherTabs.Select(tab);
+        ShowTab();
+    }
 
-        tab.IsSelected = true;
-        SelectedTab = tab;
+    /// <summary>The library shows the selected tab from its first page.</summary>
+    private void ShowTab()
+    {
         _requestedPage = 0;
         Refresh(focusIndex: 0);
     }
@@ -1408,34 +1360,24 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     /// <summary>1 … 0 on the keyboard: launcher tab 1 … 10, like LB/RB also on the detail page (#127).</summary>
     public void ChooseTabNumber(int index)
     {
-        if (IsDialogOpen || Detail?.IsFromSearch == true || index >= Tabs.Count || Tabs[index] == SelectedTab)
+        var tabs = LauncherTabs.Items;
+        if (IsDialogOpen || Detail?.IsFromSearch == true || index >= tabs.Count || tabs[index] == LauncherTabs.SelectedTab)
         {
             return;
         }
 
         _actions.CancelHold();
-        ChooseTab(Tabs[index]);
-    }
-
-    private void CycleTab(int delta)
-    {
-        if (Tabs.Count == 0 || SelectedTab is null)
-        {
-            return;
-        }
-
-        var index = (Tabs.IndexOf(SelectedTab) + delta + Tabs.Count) % Tabs.Count;
-        ChooseTab(Tabs[index]);
+        LauncherTabs.Choose(tabs[index]);
     }
 
     private void GoToPage(int page)
     {
-        if (SelectedTab is null)
+        if (LauncherTabs.SelectedTab is not { } tab)
         {
             return;
         }
 
-        var window = PageWindow.For(SelectedTab.Count, PageSizes.Effective(_settings.Current.PreferredPageSize, SelectedTab.Count), page);
+        var window = PageWindow.For(tab.Count, PageSizes.Effective(_settings.Current.PreferredPageSize, tab.Count), page);
         if (window.PageIndex == _requestedPage)
         {
             return;
@@ -1498,7 +1440,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
     /// </summary>
     private void Refresh(int focusIndex, string? focusKey = null)
     {
-        if (SelectedTab is not { } tab)
+        if (LauncherTabs.SelectedTab is not { } tab)
         {
             return;
         }
@@ -1543,9 +1485,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILauncher
         ViewSummary = $"{Formatting.SortLabel(view.LibrarySort)}  ·  {pageSize} pro Seite";
     }
 
-    private ViewOptionsViewModel? CreateViewOptions() => SelectedTab is null ? null : ViewOptionsViewModel.ForLibrary(
-        SelectedTab!.Name,
-        SelectedTab.Count,
+    private ViewOptionsViewModel? CreateViewOptions() => LauncherTabs.SelectedTab is not { } tab ? null : ViewOptionsViewModel.ForLibrary(
+        tab.Name,
+        tab.Count,
         _settings.Current.LibrarySort,
         _settings.Current.PreferredPageSize,
         sort => ChangeView(settings => settings with { LibrarySort = sort }),

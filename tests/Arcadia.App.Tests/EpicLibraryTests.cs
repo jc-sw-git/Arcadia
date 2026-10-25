@@ -173,5 +173,5 @@ public sealed class EpicLibraryTests
     }
 
     private static Arcadia.App.ViewModels.LauncherTabViewModel EpicTab(ArcadiaDriver arcadia) =>
-        Assert.Single(arcadia.Main.Tabs, tab => tab.Name == "Epic Games");
+        Assert.Single(arcadia.Main.LauncherTabs.Items, tab => tab.Name == "Epic Games");
 }

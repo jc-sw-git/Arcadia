@@ -171,7 +171,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>The current page's number in the footer, as it reads ("2").</summary>
     public string? CurrentPage => Main.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;
 
-    public LauncherTabViewModel? SelectedTab => Main.SelectedTab;
+    public LauncherTabViewModel? SelectedTab => Main.LauncherTabs.SelectedTab;
 
     /// <summary>The detail page, from the library or from the search; null while none is open.</summary>
     public GameDetailViewModel? Detail => Main.Detail;

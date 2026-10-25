@@ -221,7 +221,7 @@ public sealed class LauncherSettingsTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings { ActiveLaunchers = [] });
 
-        Assert.Empty(arcadia.Main.Tabs);
+        Assert.Empty(arcadia.Main.LauncherTabs.Items);
         var empty = arcadia.Main.EmptyTab!;
         Assert.True(empty.HasNoLauncher);
         Assert.Equal("Kein Launcher aktiv", empty.Title);
@@ -303,7 +303,7 @@ internal static class LauncherSettingsDriving
     private static Arcadia.Launchers.Abstractions.Game Game(Arcadia.Launchers.Abstractions.LauncherInfo launcher, string title) =>
         TestGames.Installed(launcher, title, ArcadiaDriver.Now.AddDays(-30));
 
-    public static IReadOnlyList<string> TabNames(this ArcadiaDriver arcadia) => [.. arcadia.Main.Tabs.Select(tab => tab.Name)];
+    public static IReadOnlyList<string> TabNames(this ArcadiaDriver arcadia) => [.. arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name)];
 
     public static IReadOnlyList<string> LauncherKeys(this LauncherSettingsViewModel settings) =>
         [.. settings.Rows.OfType<LauncherRowViewModel>().Select(row => row.Key)];

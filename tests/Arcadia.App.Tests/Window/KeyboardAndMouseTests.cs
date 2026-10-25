@@ -216,7 +216,7 @@ public sealed class KeyboardAndMouseTests
         Assert.Equal("1", CurrentPage(main));
         arcadia.Click(PageButton(arcadia, "2"));
         Assert.Equal("2", CurrentPage(main));
-        arcadia.Click(arcadia.Showing(main.Tabs[2]));
+        arcadia.Click(arcadia.Showing(main.LauncherTabs.Items[2]));
         Assert.Equal("Amazon Games", arcadia.Arcadia.SelectedTab?.Name);
         arcadia.Click(arcadia.Window.GetVisualDescendants().OfType<Button>().Single(button => button.IsEffectivelyVisible && button.Command == main.OpenViewOptionsCommand));
         Assert.True(main.IsViewOptionsOpen);
@@ -233,7 +233,7 @@ public sealed class KeyboardAndMouseTests
     public async Task A_tab_chosen_by_click_is_the_same_after_a_restart()
     {
         using var first = await ArcadiaWindow.ShowAsync();
-        first.Click(first.Showing(first.Arcadia.Main.Tabs[1])).Click(first.ButtonWithTip("Nächste Seite"));
+        first.Click(first.Showing(first.Arcadia.Main.LauncherTabs.Items[1])).Click(first.ButtonWithTip("Nächste Seite"));
 
         using var restarted = await first.RestartAsync();
         var main = restarted.Arcadia.Main;

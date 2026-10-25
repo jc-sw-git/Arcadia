@@ -66,7 +66,7 @@ public sealed class HeaderTests
         Assert.Equal((false, true), (header.FadesLeft, header.FadesRight));
 
         // A tab cut off at the faded edge is clickable.
-        var cutOff = main.Tabs.First(tab => arcadia.Bounds(arcadia.Showing(tab)).Right > header.Strip.Right - 12);
+        var cutOff = main.LauncherTabs.Items.First(tab => arcadia.Bounds(arcadia.Showing(tab)).Right > header.Strip.Right - 12);
         arcadia.Click(arcadia.Showing(cutOff));
         Assert.Same(cutOff, arcadia.Arcadia.SelectedTab);
     }

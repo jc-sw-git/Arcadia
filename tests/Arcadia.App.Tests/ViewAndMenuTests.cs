@@ -70,7 +70,7 @@ public sealed class ViewAndMenuTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Press(UiAction.Search);
-        var title = arcadia.Main.Tabs[0].Games[0].Title;
+        var title = arcadia.Main.LauncherTabs.Items[0].Games[0].Title;
         arcadia.Main.TypeInSearch(title);
         var hit = arcadia.Search!.FocusedResult;
         Assert.NotNull(hit);

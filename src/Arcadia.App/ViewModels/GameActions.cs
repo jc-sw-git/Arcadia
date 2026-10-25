@@ -40,6 +40,11 @@ public interface IGameActionsOwner
 /// over to its launcher, and the hold of A, ≡ or the mouse button on its cover (tapped starts, held opens the details).
 /// Pages pass the game; the window around it is reached only through <see cref="IGameActionsOwner"/>.
 /// </summary>
+/// <remarks>
+/// One per window, created and owned by <see cref="MainViewModel"/> and shared by every page: it holds the one press in
+/// progress and its timers, so pages never create their own. UI thread only; the hold's timers post back to it. Main
+/// drops the hold when the page on top changes or the window loses its focus (see <see cref="IPage"/>).
+/// </remarks>
 public sealed class GameActions : IGameActionHost
 {
     /// <summary>A shorter press of A starts the game; the ring around the preview fills from here on.</summary>

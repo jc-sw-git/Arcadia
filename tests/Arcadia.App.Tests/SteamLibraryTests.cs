@@ -31,7 +31,7 @@ public sealed class SteamLibraryTests
 
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
 
-        var tab = Assert.Single(arcadia.Main.Tabs, tab => tab.Name == "Steam");
+        var tab = Assert.Single(arcadia.Main.LauncherTabs.Items, tab => tab.Name == "Steam");
         Assert.Equal(["Kupferwald", "Nebelpfad Demo", "Sternenhafen"], tab.Games.Select(game => game.Title).Order(StringComparer.Ordinal));
         Assert.Equal(3, arcadia.PageGames.Count);
     }
@@ -85,9 +85,9 @@ public sealed class SteamLibraryTests
         Assert.Contains(firstRun.Missing, row => row.Name == "Steam" && !row.IsOn);
 
         arcadia.Press(UiAction.Settings);
-        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.Tabs.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
+        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.LauncherTabs.Items.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
 
-        Assert.Equal(["Epic Games"], arcadia.Main.Tabs.Select(tab => tab.Name));
+        Assert.Equal(["Epic Games"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
         Assert.Null(arcadia.Main.Toast.Text);
     }
 
@@ -100,9 +100,9 @@ public sealed class SteamLibraryTests
 
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files, new AppSettings());
 
-        Assert.Equal("Steam", arcadia.Main.Tabs[0].Name);
-        Assert.Equal(["Sternenhafen"], arcadia.Main.Tabs[0].Games.Select(game => game.Title));
-        Assert.Contains(arcadia.Main.Tabs, tab => tab.Name == "GOG Galaxy" && tab.Count == 31);
+        Assert.Equal("Steam", arcadia.Main.LauncherTabs.Items[0].Name);
+        Assert.Equal(["Sternenhafen"], arcadia.Main.LauncherTabs.Items[0].Games.Select(game => game.Title));
+        Assert.Contains(arcadia.Main.LauncherTabs.Items, tab => tab.Name == "GOG Galaxy" && tab.Count == 31);
     }
 
     [AvaloniaFact]
@@ -129,7 +129,7 @@ public sealed class SteamLibraryTests
     }
 
     private static IEnumerable<string> SteamTitles(ArcadiaDriver arcadia) =>
-        arcadia.Main.Tabs.Single(tab => tab.Name == "Steam").Games.Select(game => game.Title).Order(StringComparer.Ordinal);
+        arcadia.Main.LauncherTabs.Items.Single(tab => tab.Name == "Steam").Games.Select(game => game.Title).Order(StringComparer.Ordinal);
 
     private static string Local(DateTimeOffset value, string format) => value.ToLocalTime().ToString(format, CultureInfo.InvariantCulture);
 

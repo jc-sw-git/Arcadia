@@ -8,6 +8,18 @@ Manual tests per iteration and the course of an iteration: `docs/testplans/`.
 
 Designs: `docs/designs/` (PNG + sources), canvas: https://claude.ai/artifact/8A9qxc67RcsuFmavaqCAuN
 
+## Iteration themes
+
+Iterations 2–4 each have a theme instead of a single epic (owner, 2026-10-25); the GitHub milestones
+carry the prefix `I2`, `I3`, `I4`. A theme can span several epics and tech-debt issues.
+
+- **I2:** reduce tech debt (slimmer code, more modularisation), polish SISR / Steam Controller support
+  and the general Steam integration.
+- **I3:** SteamGridDB integration and more, polished settings.
+- **I4:** new launchers, focusing on the new Epic launcher.
+
+Milestone descriptions on GitHub are the source for the exact scope.
+
 ## Refinement
 
 Before code is written, owner and Claude walk through the most likely scenarios together

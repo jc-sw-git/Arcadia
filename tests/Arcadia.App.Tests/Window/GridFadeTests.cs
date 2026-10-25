@@ -94,10 +94,10 @@ public sealed class GridFadeTests
     }
 
     private static GameTileViewModel FirstRowTile(MainViewModel main) =>
-        main.PageGames.Take(MainViewModel.GridColumns).First(tile => !tile.IsFocused);
+        main.Library.PageGames.Take(LibraryViewModel.GridColumns).First(tile => !tile.IsFocused);
 
     private static GameTileViewModel LastRowTile(MainViewModel main) =>
-        main.PageGames.Skip((main.PageGames.Count - 1) / MainViewModel.GridColumns * MainViewModel.GridColumns).First(tile => !tile.IsFocused);
+        main.Library.PageGames.Skip((main.Library.PageGames.Count - 1) / LibraryViewModel.GridColumns * LibraryViewModel.GridColumns).First(tile => !tile.IsFocused);
 
     private static void AssertFades(ArcadiaWindow arcadia, bool top, bool bottom)
     {

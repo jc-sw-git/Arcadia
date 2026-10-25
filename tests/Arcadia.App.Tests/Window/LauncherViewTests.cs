@@ -135,7 +135,7 @@ public sealed class LauncherViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync(launchers);
         var main = arcadia.Arcadia.Main;
         arcadia.Key(Key.E, KeyModifiers.Shift);
-        var empty = main.EmptyTab!;
+        var empty = main.Library.EmptyTab!;
         Assert.Equal("Keine Spiele in Xbox", empty.Title);
         Assert.Contains("focused", EmptyButton(arcadia, empty.OpenSettingsCommand).Classes);
 
@@ -168,7 +168,7 @@ public sealed class LauncherViewTests
         arcadia.Key(Key.A);
         arcadia.Arcadia.FocusRow("gog");
         arcadia.Key(Key.A).Key(Key.Escape);
-        var none = main.EmptyTab!;
+        var none = main.Library.EmptyTab!;
         Assert.Equal("Kein Launcher aktiv", none.Title);
         Assert.False(EmptyButton(arcadia, none.RescanCommand).IsEffectivelyVisible);
         if (how == "Tastatur")

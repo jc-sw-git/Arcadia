@@ -61,7 +61,7 @@ public sealed class PageInterfaceTests
         arcadia.Installs.Set(hit.Game, new InstallProgress(InstallPhase.Downloading, 0.42));
         await arcadia.FollowInstallsAsync();
 
-        var cover = Assert.Single(arcadia.Main.PageGames, tile => tile.Game.Key == hit.Game.Key);
+        var cover = Assert.Single(arcadia.Main.Library.PageGames, tile => tile.Game.Key == hit.Game.Key);
         Assert.Equal(InstallPhase.Downloading, cover.InstallState?.Phase);
         Assert.Equal(InstallPhase.Downloading, Assert.Single(arcadia.Search!.Results, tile => tile.Game.Key == hit.Game.Key).InstallState?.Phase);
         Assert.Equal(InstallPhase.Downloading, detail.Current.Tile.InstallState?.Phase);

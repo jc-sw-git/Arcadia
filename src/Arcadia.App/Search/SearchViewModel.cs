@@ -283,7 +283,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
                 _actions.Press(hit, UiAction.Accept);
                 break;
             case UiAction.Options when FocusedResult is { } hit:
-                _host.ShowMenu(hit);
+                _host.ShowMenu(hit, atCover: true);
                 break;
             // Backspace repeats by itself; X repeats while held.
             case UiAction.Search when UsesController && !IsKeyboardOut:
@@ -544,7 +544,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         if (_results.Contains(tile))
         {
             tile.FocusCommand.Execute(null);
-            _host.ShowMenu(tile);
+            _host.ShowMenu(tile, atCover: true);
         }
     }
 

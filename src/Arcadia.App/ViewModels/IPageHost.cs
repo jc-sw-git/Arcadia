@@ -14,11 +14,11 @@ public interface IPageHost
     /// Shows the shared filter and sort dialog (<see cref="ViewOptionsViewModel"/>) with the page's options;
     /// <paramref name="create"/> builds them again after every choice.
     /// </summary>
-    void ShowViewOptions(IPage page, Func<ViewOptionsViewModel> create);
+    void ShowViewOptions(IPage page, Func<ViewOptionsViewModel?> create);
 
     /// <summary>A choice in the dialog changed the page's options: the open dialog shows them again, its focus kept.</summary>
     void ViewOptionsChanged();
 
-    /// <summary>The context menu of a game shown on the page, at its cover.</summary>
-    void ShowMenu(GameTileViewModel tile);
+    /// <summary>The context menu of a game shown on the page, at its cover or over the library's "Optionen" button.</summary>
+    void ShowMenu(GameTileViewModel tile, bool atCover);
 }

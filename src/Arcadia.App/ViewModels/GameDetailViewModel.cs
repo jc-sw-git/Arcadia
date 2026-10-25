@@ -10,7 +10,7 @@ namespace Arcadia.App.ViewModels;
 /// <summary>
 /// The detail page (#11): a carousel through the games of a tab in the library's sort order, or
 /// through the hits of the search (#12), the shown game in the middle and its neighbours cut off
-/// at the sides. LT/RT turn it.
+/// at the sides. LT/RT turn it. B asks <see cref="IPageHost"/> to close it; ≡ and X are left to the window (#210).
 /// </summary>
 public sealed partial class GameDetailViewModel : ViewModelBase, IPage
 {
@@ -21,14 +21,30 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     private const int Reach = 2;
 
     private readonly Func<Game, GameTileViewModel> _createTile;
-    private readonly IGameActionHost _host;
+    private readonly IGameActionHost _actions;
+    private readonly IPageHost _host;
+    private readonly LauncherTabsViewModel _tabs;
+    private readonly Func<ViewOptionsViewModel?>? _createViewOptions;
 
     /// <param name="tabName">Null when the page was opened from the search; then it has no sort order either.</param>
-    public GameDetailViewModel(string? tabName, IReadOnlyList<Game> games, int index, string? sortLabel, Func<Game, GameTileViewModel> createTile, IGameActionHost host)
+    /// <param name="createViewOptions">The library's "Ansicht" dialog for Y; null from the search, whose hits keep their order.</param>
+    public GameDetailViewModel(
+        string? tabName,
+        IReadOnlyList<Game> games,
+        int index,
+        string? sortLabel,
+        Func<Game, GameTileViewModel> createTile,
+        IGameActionHost actions,
+        IPageHost host,
+        LauncherTabsViewModel tabs,
+        Func<ViewOptionsViewModel?>? createViewOptions)
     {
         TabName = tabName;
         _createTile = createTile;
+        _actions = actions;
         _host = host;
+        _tabs = tabs;
+        _createViewOptions = createViewOptions;
         Games = games;
         Index = index;
         SortLabel = sortLabel;
@@ -71,11 +87,53 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
 
     public IRelayCommand NextCommand { get; }
 
-    /// <summary>D-pad and A act on the buttons of the shown game.</summary>
+    /// <summary>
+    /// D-pad and A act on the buttons of the shown game, LT/RT turn the carousel, B closes the page. From a tab LB/RB switch
+    /// it and Y changes the sort; the hits of the search belong to no tab and keep its order. False for ≡ and X.
+    /// </summary>
     public bool Handle(UiAction action)
     {
-        Current.Handle(action);
+        switch (action)
+        {
+            case UiAction.Back:
+                _host.Close(this);
+                break;
+            case UiAction.PreviousPage:
+                Rotate(-1);
+                break;
+            case UiAction.NextPage:
+                Rotate(1);
+                break;
+            case UiAction.PreviousTab when IsFromLibrary:
+                _tabs.Cycle(-1);
+                break;
+            case UiAction.NextTab when IsFromLibrary:
+                _tabs.Cycle(1);
+                break;
+            case UiAction.ViewOptions:
+                OpenViewOptions();
+                break;
+            case UiAction.PreviousTab or UiAction.NextTab or UiAction.Options:
+                // No context menu here: its actions are buttons on the page (owner, 2026-10-17).
+                break;
+            case UiAction.Settings or UiAction.Search:
+                return false;
+            default:
+                Current.Handle(action);
+                break;
+        }
+
         return true;
+    }
+
+    /// <summary>Y or the sort button beside the position: the library's "Ansicht" dialog, from a tab only.</summary>
+    [RelayCommand]
+    private void OpenViewOptions()
+    {
+        if (_createViewOptions is { } create)
+        {
+            _host.ShowViewOptions(this, create);
+        }
     }
 
     /// <summary>Its buttons act on the press; a held A on them is not a hold.</summary>
@@ -168,7 +226,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     }
 
     private GameDetailPageViewModel CreatePage(int offset) =>
-        new(_createTile(Games[Carousel.At(Index, offset, Games.Count)!.Value]), offset, _host, Rotate);
+        new(_createTile(Games[Carousel.At(Index, offset, Games.Count)!.Value]), offset, _actions, Rotate);
 
     private string Position() => $"{Index + 1} von {Games.Count}";
 }

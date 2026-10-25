@@ -12,6 +12,11 @@ public partial class StatusBarViewModel : ViewModelBase
     private readonly ArcadiaUpdateService _updates;
     private readonly TimeProvider _time;
 
+    // Kept so it isn't collected; it ticks for as long as Arcadia runs.
+    private readonly ITimer _clock;
+
+    private static readonly TimeSpan ClockInterval = TimeSpan.FromSeconds(1);
+
     public StatusBarViewModel(ControllerSupportService controllerSupport, ArcadiaUpdateService updates, TimeProvider time)
     {
         _controllerSupport = controllerSupport;
@@ -20,6 +25,7 @@ public partial class StatusBarViewModel : ViewModelBase
         _controllerSupport.Changed += (_, _) => Dispatcher.UIThread.Post(UpdateControllerSupportState);
         _updates.Changed += (_, _) => Dispatcher.UIThread.Post(UpdateArcadiaUpdateState);
         UpdateClock();
+        _clock = time.CreateTimer(_ => Dispatcher.UIThread.Post(UpdateClock, DispatcherPriority.Background), null, ClockInterval, ClockInterval);
         UpdateControllerSupportState();
         UpdateArcadiaUpdateState();
     }
@@ -66,7 +72,7 @@ public partial class StatusBarViewModel : ViewModelBase
     [ObservableProperty]
     public partial string Date { get; private set; } = string.Empty;
 
-    public void UpdateClock()
+    private void UpdateClock()
     {
         var now = _time.GetLocalNow();
         Clock = Formatting.Clock(now);

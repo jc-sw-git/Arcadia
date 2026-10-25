@@ -19,7 +19,7 @@ public sealed class DetailPageViewTests
     private static readonly LauncherInfo Gog = KnownLaunchers.Gog;
 
     [AvaloniaFact]
-    [Trait("Testfall", "T11-1")]
+    [Trait("TestCase", "T11-1")]
     public async Task Holding_A_or_Details_in_the_menu_opens_the_page_with_its_path_position_neighbours_and_footer()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -51,7 +51,7 @@ public sealed class DetailPageViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T11-2")]
+    [Trait("TestCase", "T11-2")]
     public async Task LT_and_RT_slide_the_pages_and_clicks_wheel_and_keys_turn_the_carousel_too()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -105,7 +105,7 @@ public sealed class DetailPageViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T11-6")]
+    [Trait("TestCase", "T11-6")]
     public async Task A_click_on_the_path_goes_back_to_the_library_on_the_page_of_the_game_shown_last_with_the_focus_on_it()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
@@ -125,7 +125,7 @@ public sealed class DetailPageViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T11-7")]
+    [Trait("TestCase", "T11-7")]
     public async Task The_buttons_stand_in_rows_inside_the_card_the_D_pad_skips_disabled_ones_and_shows_the_hint_below()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(
@@ -166,7 +166,7 @@ public sealed class DetailPageViewTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T127-1")]
+    [Trait("TestCase", "T127-1")]
     public async Task The_focus_ring_touches_no_neighbour_and_the_key_figures_show_whole_also_with_an_update_note()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(
@@ -204,7 +204,7 @@ public sealed class DetailPageViewTests
     }
 
     [AvaloniaTheory]
-    [Trait("Testfall", "T127-10")]
+    [Trait("TestCase", "T127-10")]
     [InlineData("Burning Kingdom")]
     [InlineData("Burning Kingdom of the Gloomy Jagged Pyramids")]
     public async Task A_title_with_descenders_shows_whole_also_on_two_lines(string title)

@@ -12,7 +12,7 @@ public sealed class MouseModeSettingsTests
     private static readonly string[] Seconds = ["1 Sekunde", .. Enumerable.Range(2, 8).Select(n => $"{n} Sekunden")];
 
     [AvaloniaFact]
-    [Trait("Testfall", "T64-7")]
+    [Trait("TestCase", "T64-7")]
     public async Task Mausmodus_hold_and_speed_change_with_the_controller_apply_at_once_and_stay_after_a_restart()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -63,8 +63,8 @@ public sealed class MouseModeSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T64-8")]
-    [Trait("Testfall", "T110-9")]
+    [Trait("TestCase", "T64-8")]
+    [Trait("TestCase", "T110-9")]
     public async Task So_funktioniert_es_shows_the_buttons_and_the_limits()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -89,7 +89,7 @@ public sealed class MouseModeSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T110-9")]
+    [Trait("TestCase", "T110-9")]
     public async Task Zurueck_zu_Arcadia_holds_from_1_to_9_seconds_without_Sofort()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -108,7 +108,7 @@ public sealed class MouseModeSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T64-12")]
+    [Trait("TestCase", "T64-12")]
     public async Task Mausmodus_Aus_dims_the_other_rows_which_keep_their_values_for_when_it_comes_back()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -135,7 +135,7 @@ public sealed class MouseModeSettingsTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T64-15")]
+    [Trait("TestCase", "T64-15")]
     public async Task The_mouse_mode_boxes_name_View_and_Menu_by_their_symbols_only()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();

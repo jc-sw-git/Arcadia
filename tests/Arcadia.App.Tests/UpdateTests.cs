@@ -8,7 +8,7 @@ namespace Arcadia.App.Tests;
 public sealed class UpdateTests
 {
     [AvaloniaFact]
-    [Trait("Testfall", "T23-2")]
+    [Trait("TestCase", "T23-2")]
     public async Task Without_a_newer_release_the_search_says_Arcadia_is_up_to_date_and_offers_no_update()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(releases: new FakeReleases("0.1.0", ("0.1.0", ["Erste Version"])));
@@ -27,7 +27,7 @@ public sealed class UpdateTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T23-4")]
+    [Trait("TestCase", "T23-4")]
     public async Task What_is_new_lists_the_changes_of_every_release_after_the_running_one_and_B_goes_back()
     {
         var releases = new FakeReleases(

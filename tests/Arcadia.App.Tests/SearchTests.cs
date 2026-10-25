@@ -27,7 +27,7 @@ public sealed class SearchTests
     ];
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-3")]
+    [Trait("TestCase", "T12-3")]
     public async Task Hits_come_from_all_launchers_by_relevance_whatever_the_case_accents_and_trademark_signs()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(HollowLibrary);
@@ -42,7 +42,7 @@ public sealed class SearchTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-3")]
+    [Trait("TestCase", "T12-3")]
     public async Task An_accent_or_trademark_sign_in_the_title_or_the_term_does_not_matter_and_no_hit_shows_the_empty_state()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(HollowLibrary);
@@ -66,7 +66,7 @@ public sealed class SearchTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-3")]
+    [Trait("TestCase", "T12-3")]
     public async Task Trademark_registered_and_copyright_signs_count_for_nothing_and_each_hit_names_its_launcher()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(
@@ -102,7 +102,7 @@ public sealed class SearchTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-9")]
+    [Trait("TestCase", "T12-9")]
     public async Task B_first_puts_the_keyboard_away_then_goes_back_to_the_library_as_it_was_without_erasing()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -128,7 +128,7 @@ public sealed class SearchTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T12-9")]
+    [Trait("TestCase", "T12-9")]
     public async Task B_twice_in_a_row_goes_straight_back_to_the_library_as_it_was()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();

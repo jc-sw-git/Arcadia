@@ -50,11 +50,14 @@ internal sealed class ArcadiaWindow : IDisposable
 
     public MainWindow Window { get; }
 
-    /// <summary>Arcadia started as in <see cref="ArcadiaDriver.StartAsync"/>, its window shown at <paramref name="width"/> × <paramref name="height"/>.</summary>
+    /// <summary>
+    /// Arcadia started as in <see cref="ArcadiaDriver.StartAsync"/>, its window shown at <paramref name="width"/> × <paramref name="height"/>;
+    /// <paramref name="steam"/> are Windows, Steam and SISR of the test, as there.
+    /// </summary>
     public static async Task<ArcadiaWindow> ShowAsync(
-        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, int width = Width, int height = Height, double scaling = 1)
+        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, int width = Width, int height = Height, double scaling = 1, FakeSteam? steam = null)
     {
-        var arcadia = await ArcadiaDriver.StartAsync(launchers, settings);
+        var arcadia = await ArcadiaDriver.StartAsync(launchers, settings, steam);
         // The glyphs follow one switch for the whole app; a test before may have left it on the keyboard.
         Input.InputHints.UsesController = arcadia.Main.UsesController;
         var window = new MainWindow { DataContext = arcadia.Main, Width = width, Height = height };
@@ -195,6 +198,39 @@ internal sealed class ArcadiaWindow : IDisposable
         return Settle();
     }
 
+    /// <summary>
+    /// <paramref name="text"/> typed on a real keyboard, character by character: the key goes down, its character arrives
+    /// unless the press was handled, the key goes up. Characters without a key of their own here (/, umlauts) come
+    /// with a key Arcadia doesn't map, as on a German keyboard.
+    /// </summary>
+    public ArcadiaWindow Type(string text)
+    {
+        foreach (var character in text)
+        {
+            var (key, modifiers) = KeyOf(character);
+            _keyHandled = false;
+            Window.KeyPress(key, (RawInputModifiers)modifiers, PhysicalKey.None, character.ToString());
+            if (!_keyHandled)
+            {
+                Window.KeyTextInput(character.ToString());
+            }
+
+            Window.KeyRelease(key, (RawInputModifiers)modifiers, PhysicalKey.None, character.ToString());
+            Settle();
+        }
+
+        return this;
+    }
+
+    private static (Key Key, KeyModifiers Modifiers) KeyOf(char character) => character switch
+    {
+        >= 'a' and <= 'z' => (Avalonia.Input.Key.A + (character - 'a'), KeyModifiers.None),
+        >= 'A' and <= 'Z' => (Avalonia.Input.Key.A + (character - 'A'), KeyModifiers.Shift),
+        >= '0' and <= '9' => (Avalonia.Input.Key.D0 + (character - '0'), KeyModifiers.None),
+        ' ' => (Avalonia.Input.Key.Space, KeyModifiers.None),
+        _ => (Avalonia.Input.Key.OemQuestion, KeyModifiers.None),
+    };
+
     private static string? TextOf(Key key, KeyModifiers modifiers) => modifiers is KeyModifiers.None or KeyModifiers.Shift
         ? key switch
         {
@@ -225,16 +261,22 @@ internal sealed class ArcadiaWindow : IDisposable
     /// Fails unless a focus ring of <paramref name="ring"/> (a <c>BoxShadows</c> key of <c>Theme.axaml</c>) is drawn
     /// along all four sides of <paramref name="control"/>, i.e. nothing clips or covers it.
     /// </summary>
-    public void AssertRingAround(Control control, string where, string ring = "FocusRing")
+    public void AssertRingAround(Control control, string where, string ring = "FocusRing") => AssertRingAround(Window, Capture, control, where, ring);
+
+    /// <summary>As <see cref="AssertRingAround(Control, string, string)"/>, in another window, e.g. the mouse mode's keyboard.</summary>
+    public static void AssertRingAround(Window window, Control control, string where, string ring = "FocusRing") =>
+        AssertRingAround(window, () => CaptureSettled(window), control, where, ring);
+
+    private static void AssertRingAround(Window window, Func<Frame> capture, Control control, string where, string ring)
     {
         var shadow = ThemeResource<BoxShadows>(ring);
         // The ring is the widest sharp outline; a narrower one painted over it (FocusRingGap) leaves a gap inside it.
         var outlines = Enumerable.Range(0, shadow.Count).Select(i => shadow[i]).Where(s => s.Blur == 0 && !s.IsInset).OrderBy(s => s.Spread).ToList();
         var outline = outlines[^1];
         // Captured first: the capture waits for transitions (the cover's lift), and the bounds must be those it shows.
-        using var frame = Capture();
-        var bounds = Bounds(control);
-        var reach = (outline.Spread + 1) * ScaleOf(control);
+        using var frame = capture();
+        var bounds = Bounds(window, control);
+        var reach = (outline.Spread + 1) * bounds.Width / control.Bounds.Width;
         // Rounded corners bend the ring inwards: the sides are looked at in their middle, top and bottom along their
         // straight part too.
         var along = bounds.Width > 2 * bounds.Height ? new[] { 0.3, 0.5, 0.7 } : [0.5];
@@ -252,6 +294,21 @@ internal sealed class ArcadiaWindow : IDisposable
                 .Select(i => frame.At(edge + (step * i / frame.Scaling)))
                 .Any(colour => Distance(colour, outline.Color) <= 40);
             Assert.True(found, $"{where}: Fokusrahmen {side} bei {edge} fehlt oder ist abgeschnitten.");
+        }
+    }
+
+    /// <summary>Nothing lies over <paramref name="control"/>: a click anywhere on it reaches it or something inside it.</summary>
+    public void AssertOnTop(Control control)
+    {
+        var bounds = Bounds(control).Deflate(4);
+        foreach (var x in new[] { 0.1, 0.5, 0.9 })
+        {
+            foreach (var y in new[] { 0.05, 0.5, 0.95 })
+            {
+                var point = new Point(bounds.Left + (bounds.Width * x), bounds.Top + (bounds.Height * y));
+                var hit = Window.InputHitTest(point) as Visual;
+                Assert.True(hit is not null && hit.GetSelfAndVisualAncestors().Contains(control), $"Bei {point} liegt {hit} über {control}");
+            }
         }
     }
 
@@ -302,8 +359,10 @@ internal sealed class ArcadiaWindow : IDisposable
     public Control OneWithText(string text) => Assert.Single(WithText(text));
 
     /// <summary>Where <paramref name="control"/> stands in the window, after render transforms (a slide, a lift).</summary>
-    public Rect Bounds(Control control) =>
-        control.TransformToVisual(Window) is { } transform
+    public Rect Bounds(Control control) => Bounds(Window, control);
+
+    public static Rect Bounds(Window window, Control control) =>
+        control.TransformToVisual(window) is { } transform
             ? new Rect(control.Bounds.Size).TransformToAABB(transform)
             : throw new InvalidOperationException($"{control} steht nicht im Fenster.");
 
@@ -328,6 +387,19 @@ internal sealed class ArcadiaWindow : IDisposable
             : throw new InvalidOperationException($"Kein {typeof(T).Name} {key} in Theme.axaml.");
 
     /// <summary>The window as it is drawn now.</summary>
+    /// <summary><paramref name="window"/> as drawn once its transitions have run to their end.</summary>
+    public static Frame CaptureSettled(Window window)
+    {
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Thread.Sleep(TransitionTime);
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+        var bitmap = window.CaptureRenderedFrame() ?? throw new InvalidOperationException("Das Fenster hat nichts gezeichnet.");
+        return new Frame(bitmap, window.RenderScaling);
+    }
+
     public Frame Capture()
     {
         WaitForTransitions();

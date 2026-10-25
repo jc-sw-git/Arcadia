@@ -17,7 +17,7 @@ public sealed class EpicInstallTests
     private static readonly EpicApp Salzwiesen = new("ba02", "Salzwiesen") { InstallSize = 1000 };
 
     [AvaloniaFact]
-    [Trait("Testfall", "T41-3")]
+    [Trait("TestCase", "T41-3")]
     public async Task An_install_from_Arcadia_waits_for_confirmation_then_queues_downloads_and_ends_installed_without_a_restart()
     {
         using var files = new LauncherFiles();
@@ -57,7 +57,7 @@ public sealed class EpicInstallTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T41-4")]
+    [Trait("TestCase", "T41-4")]
     public async Task Pause_resume_and_cancel_in_Epic_show_in_Arcadia_and_install_is_locked_while_one_runs()
     {
         using var files = new LauncherFiles();
@@ -92,7 +92,7 @@ public sealed class EpicInstallTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T41-5")]
+    [Trait("TestCase", "T41-5")]
     public async Task An_install_started_in_Epic_itself_shows_in_Arcadia_with_its_state()
     {
         using var files = new LauncherFiles();
@@ -109,7 +109,7 @@ public sealed class EpicInstallTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T41-8")]
+    [Trait("TestCase", "T41-8")]
     public async Task A_paused_install_that_is_cancelled_loses_its_progress()
     {
         using var files = new LauncherFiles();
@@ -133,7 +133,7 @@ public sealed class EpicInstallTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T41-10")]
+    [Trait("TestCase", "T41-10")]
     public async Task When_Epic_resumes_another_game_the_first_shows_as_paused_and_only_the_second_downloads()
     {
         using var files = new LauncherFiles();
@@ -160,7 +160,7 @@ public sealed class EpicInstallTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T81-6")]
+    [Trait("TestCase", "T81-6")]
     public async Task An_Epic_update_shows_as_updating_without_a_percentage_and_not_as_almost_done()
     {
         using var files = new LauncherFiles();

@@ -17,7 +17,7 @@ public sealed class FirstRunTests
     ];
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-1")]
+    [Trait("TestCase", "T139-1")]
     public async Task A_fresh_install_asks_first_with_the_launchers_found_switched_on()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(TwoFoundOneMissing, new AppSettings());
@@ -34,7 +34,7 @@ public sealed class FirstRunTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-1")]
+    [Trait("TestCase", "T139-1")]
     public async Task A_launcher_not_found_cannot_be_switched_on()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(TwoFoundOneMissing, new AppSettings());
@@ -57,7 +57,7 @@ public sealed class FirstRunTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-3")]
+    [Trait("TestCase", "T139-3")]
     public async Task Only_the_launchers_left_on_become_tabs_also_after_a_restart_and_the_question_does_not_come_again()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(TwoFoundOneMissing, new AppSettings());
@@ -74,7 +74,7 @@ public sealed class FirstRunTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-2")]
+    [Trait("TestCase", "T139-2")]
     public async Task The_preview_shows_the_launchers_switched_on_as_tabs_and_follows_every_switch()
     {
         IReadOnlyList<LauncherSpec> launchers =
@@ -113,7 +113,7 @@ public sealed class FirstRunTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-4")]
+    [Trait("TestCase", "T139-4")]
     public async Task Settings_of_a_version_without_a_choice_of_launchers_bring_the_question_and_keep_everything_else()
     {
         var beforeTheQuestion = new AppSettings { KeyboardLayout = "fr", PreferredPageSize = 50 };
@@ -129,7 +129,7 @@ public sealed class FirstRunTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-5")]
+    [Trait("TestCase", "T139-5")]
     public async Task Demo_skips_the_question_with_every_launcher_active_and_saves_no_choice()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings(), arguments: new StartArguments(Demo: true));
@@ -140,7 +140,7 @@ public sealed class FirstRunTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-5")]
+    [Trait("TestCase", "T139-5")]
     public async Task First_run_asks_again_also_with_a_saved_choice()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(arguments: new StartArguments(FirstRun: true));
@@ -150,7 +150,7 @@ public sealed class FirstRunTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-5")]
+    [Trait("TestCase", "T139-5")]
     public async Task Demo_with_first_run_keeps_the_answer_only_until_Arcadia_closes()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings(), arguments: new StartArguments(Demo: true, FirstRun: true));
@@ -166,7 +166,7 @@ public sealed class FirstRunTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-7")]
+    [Trait("TestCase", "T139-7")]
     public async Task Done_with_no_launcher_switched_on_shows_no_launcher_active()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(TwoFoundOneMissing, new AppSettings());
@@ -179,7 +179,7 @@ public sealed class FirstRunTests
     }
 
     [AvaloniaFact]
-    [Trait("Testfall", "T139-7")]
+    [Trait("TestCase", "T139-7")]
     public async Task Done_with_no_launcher_found_shows_no_launcher_active()
     {
         IReadOnlyList<LauncherSpec> noneFound = [new(KnownLaunchers.Gog, 31, IsInstalled: false), new(KnownLaunchers.Xbox, 62, IsInstalled: false)];

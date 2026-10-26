@@ -109,7 +109,8 @@ acceptance iteration (owner 2026-10-25; "Abnahme Iteration 1" was the last). Det
 | `src/Arcadia.Core` | Launcher registry and selection, library, search, settings, running games, keyboard layouts, paging |
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), Steam, Epic, Demo, game start |
 | `src/Arcadia.Input` | Controllers via SDL3, gestures, mouse mode, `SendInput`, Steam desktop input filter |
-| `src/Arcadia.ControllerSupport` | Steam Controller Support (SISR, usbip-win2) |
+| `src/Arcadia.ControllerSupport` | Steam Controller Support (SISR, usbip-win2), Pan's client |
+| `src/Arcadia.Pan*` | Pan, the guardian service (`Pan.exe`); `docs/controller-support/pan.md` |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM), `Theme/Theme.axaml`, `MainViewModel` (routing between pages) and the pages (`IPage`) |
 | `tests/Arcadia.Core.Tests` | xUnit |
 | `tests/Arcadia.App.Tests` | Acceptance tests (xUnit v3, Avalonia headless): `ArcadiaDriver` presses buttons on `MainViewModel`, `ArcadiaWindow` clicks and looks at the real window; rules in `docs/testplans/README.md` |

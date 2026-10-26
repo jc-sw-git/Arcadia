@@ -135,7 +135,7 @@ func (p *proxy) HandleTransfer(ctx context.Context, ep uint32, dir uint32, out [
 		}
 	}
 	pi := p.epOut[ep]
-	if pi == nil || len(out) == 0 || !p.allowed(pi, out, "interrupt OUT") {
+	if pi == nil || len(out) == 0 || !p.allowed(pi, out, "interrupt OUT", true) {
 		return nil
 	}
 	for _, c := range pi.collections {
@@ -183,7 +183,7 @@ func (p *proxy) HandleControl(bmRequestType, bRequest uint8, wValue, wIndex, wLe
 		return nil, true
 	}
 
-	if !p.allowed(pi, data, "SET_REPORT "+name) {
+	if !p.allowed(pi, data, "SET_REPORT "+name, kind == 2) {
 		return nil, true
 	}
 	for _, c := range pi.collections {
@@ -204,13 +204,14 @@ func (p *proxy) HandleControl(bmRequestType, bRequest uint8, wValue, wIndex, wLe
 }
 
 // allowed checks a report Steam sends to a Valve vendor interface against the message list. Only the message type
-// and length are logged, never the payload (it can hold serial numbers).
-func (p *proxy) allowed(pi *proxyInterface, data []byte, what string) bool {
+// and length are logged, never the payload (it can hold serial numbers). On the puck, messages go as feature report
+// 1 or 2 with the type in the next byte (as SDL sends them), and as output reports whose id is the type (0x80-0x89).
+func (p *proxy) allowed(pi *proxyInterface, data []byte, what string, output bool) bool {
 	if !pi.vendor {
 		return true
 	}
 	at := 0
-	if pi.sizes.UsesIDs {
+	if pi.sizes.UsesIDs && !output {
 		at = 1
 	}
 	if len(data) <= at {

@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"encoding/hex"
+	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/Alia5/VIIPER/usb"
@@ -56,4 +60,58 @@ func loadDescriptorFromBytes(cfg []byte) (*usb.Descriptor, map[uint8][]byte, err
 	reports := map[uint8][]byte{0: {0x06, 0x00, 0xFF, 0x09, 0x01, 0xA1, 0x01, 0xC0}}
 	d := &usb.Descriptor{}
 	return d, reports, parseConfiguration(d, cfg, reports)
+}
+
+// The real puck (owner's PC, spike #239): re-encoding the parsed configuration must give back the original bytes,
+// apart from the report descriptor lengths (hidapi's reconstruction is not byte-identical to the device's own).
+func TestPuckRoundTrip(t *testing.T) {
+	d, reports, err := loadDescriptor("testdata/puck.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile("testdata/puck.json")
+	var file descriptorFile
+	_ = json.Unmarshal(raw, &file)
+	original, _ := hex.DecodeString(file.Config)
+
+	var b bytes.Buffer
+	usb.ConfigHeader{WTotalLength: uint16(len(original)), BNumInterfaces: d.NumInterfaces(), BConfigurationValue: d.Configuration.BConfigurationValue,
+		IConfiguration: d.Configuration.IConfiguration, BMAttributes: d.Configuration.BMAttributes, BMaxPower: d.Configuration.BMaxPower}.Write(&b)
+	for _, iface := range d.Interfaces {
+		for _, iad := range d.Associations {
+			if iad.BFirstInterface == iface.Descriptor.BInterfaceNumber {
+				iad.Write(&b)
+			}
+		}
+		iface.Descriptor.Write(&b)
+		if iface.HID != nil {
+			hd, err := iface.HID.DescriptorBytes()
+			if err != nil {
+				t.Fatal(err)
+			}
+			b.Write(hd)
+		}
+		for _, cd := range iface.ClassDescriptors {
+			b.Write(cd.Bytes())
+		}
+		for _, ep := range iface.Endpoints {
+			ep.Write(&b)
+		}
+	}
+	rebuilt := b.Bytes()
+	if len(rebuilt) != len(original) {
+		t.Fatalf("length %d, want %d", len(rebuilt), len(original))
+	}
+	for i := range original {
+		if rebuilt[i] != original[i] && !(i >= 2 && original[i-2] == 0x01 && original[i-1] == 0x22) && !(i >= 3 && original[i-3] == 0x01 && original[i-2] == 0x22) {
+			t.Fatalf("byte %d: %02X, want %02X", i, rebuilt[i], original[i])
+		}
+	}
+	if d.Device.BcdUSB != 0x0200 || d.Device.IDProduct != 0x1304 || len(d.Interfaces) != 7 {
+		t.Fatalf("%+v", d.Device)
+	}
+	vendor := parseReportSizes(reports[2])
+	if !vendor.UsesIDs || vendor.Input[0x42] != 53 || vendor.Feature[1] != 63 || vendor.Output[0x87] != 63 || vendor.Input[0x40] == 0 {
+		t.Fatalf("interface 2: %+v", vendor)
+	}
 }

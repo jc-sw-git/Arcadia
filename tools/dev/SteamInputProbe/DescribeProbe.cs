@@ -15,7 +15,9 @@ internal sealed class DescribeProbe(ProbeLog log, string? jsonPath)
     private const string Puck = "VID_28DE&PID_1304";
 
     // hidapi's reconstructed report descriptors by interface number: the fallback if the device won't answer the hub.
-    private readonly Dictionary<int, List<byte[]>> _reconstructed = [];
+    // Windows splits an interface with several top-level collections into one HID device per collection (&ColNN);
+    // the interface's descriptor is their concatenation, in that order.
+    private readonly Dictionary<int, List<(int Collection, byte[] Bytes)>> _reconstructed = [];
     private Dictionary<string, object>? _puck;
 
     public int Run()
@@ -62,7 +64,8 @@ internal sealed class DescribeProbe(ProbeLog log, string? jsonPath)
             if (length > 0 && info.ProductId == 0x1304)
             {
                 if (!_reconstructed.TryGetValue(info.InterfaceNumber, out var found)) _reconstructed[info.InterfaceNumber] = found = [];
-                found.Add(buffer[..length]);
+                var collection = System.Text.RegularExpressions.Regex.Match(path, "&col([0-9a-f]{2})", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                found.Add((collection.Success ? Convert.ToInt32(collection.Groups[1].Value, 16) : 0, buffer[..length]));
             }
             SdlHid.SDL_hid_close(device);
         }
@@ -154,10 +157,11 @@ internal sealed class DescribeProbe(ProbeLog log, string? jsonPath)
             var report = hub.GetDescriptor(port, 0x2200, (ushort)interfaceNumber, length);
             log.Line($"  interface {interfaceNumber} report descriptor from device ({length} bytes expected): {Describe(report)}");
             if (report?.Length == length) reports[interfaceNumber.ToString()] = Hex(report, report.Length);
-            else if (_reconstructed.TryGetValue(interfaceNumber, out var list) && list.Count == 1)
+            else if (_reconstructed.TryGetValue(interfaceNumber, out var list))
             {
-                reports[interfaceNumber.ToString()] = Hex(list[0], list[0].Length);
-                log.Line($"  interface {interfaceNumber}: using hidapi's reconstruction instead");
+                var merged = list.OrderBy(c => c.Collection).SelectMany(c => c.Bytes).ToArray();
+                reports[interfaceNumber.ToString()] = Hex(merged, merged.Length);
+                log.Line($"  interface {interfaceNumber}: using hidapi's reconstruction of {list.Count} collection(s), {merged.Length} bytes");
             }
         }
         return reports;

@@ -82,6 +82,11 @@ func loadDescriptor(path string) (*usb.Descriptor, map[uint8][]byte, error) {
 		}
 		d.Strings[uint8(index)] = value
 	}
+	// The puck says USB 2.01, which makes Windows ask for a BOS descriptor VIIPER does not serve; nothing else
+	// changes between 2.00 and 2.01.
+	if d.Device.BcdUSB > 0x0200 {
+		d.Device.BcdUSB = 0x0200
+	}
 	if err := parseConfiguration(d, cfg, reports); err != nil {
 		return nil, nil, err
 	}

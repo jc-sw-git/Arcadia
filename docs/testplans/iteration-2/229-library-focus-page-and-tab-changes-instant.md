@@ -55,3 +55,4 @@ History:
 | T229-1, T229-2, all App and Core tests | 2026-10-26 | Claude | PR branch, Linux cloud container, Avalonia headless | ✅ (each also ❌ once with the code broken on purpose, see the PR) | – |
 | T229-1 looked at, measurement above | 2026-10-26 | Claude | PR branch, Release, Linux, Xvfb, `--demo` / `--demo-games 2400`/`5000` | ✅ | T229-3 on the owner's PC |
 | T229-2 with ⧉/≡ (Codex review), merged with main (#230), all App and Core tests | 2026-10-26 | Claude | PR branch, Linux cloud container, Avalonia headless | ✅ (the new case also ❌ once with the press time taken on acting) | – |
+| T229-3 (after only) | 2026-10-26 | Juri | PR branch 32613c0 (with #232), Windows 11, `--demo --demo-games 5000` | ✅ feels instant; tab change LB/RB 171× median 14.9 ms, mean 17.1, 95 % ≤ 28.1, max 93.3 (first press); number keys 53×, typically 11–20 ms, max 129 (first press, 72 ms waiting for the UI thread right after start) | – |

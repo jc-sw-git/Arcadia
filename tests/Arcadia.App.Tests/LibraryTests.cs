@@ -324,6 +324,66 @@ public sealed class LibraryTests
         Assert.Equal(["Aaron", "Zora"], Titles(arcadia).Skip(3).Order());
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T228-1")]
+    public async Task A_tab_is_sorted_once_and_again_only_after_a_new_sort_or_a_rescan_that_changed_it()
+    {
+        var games = Enumerable.Range(1, 30).Select(i => TestGames.Installed(KnownLaunchers.Gog, $"Spiel {i:00}", Day(2025, 1, i))).ToList();
+        using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, games.Count, Library: games)]);
+        var library = arcadia.Main.Library;
+        var tab = arcadia.SelectedTab!;
+        var sorted = library.SortedGames(tab);
+
+        // Pages turned and the detail page opened and left: the same sorted list, not a new sort of the whole tab.
+        arcadia.Press(UiAction.NextPage).Press(UiAction.PreviousPage)
+            .Hold(UiAction.Accept, TimeSpan.FromMilliseconds(1100)).Press(UiAction.Back);
+        Assert.Null(arcadia.Main.Detail);
+        Assert.Same(sorted, library.SortedGames(tab));
+        await arcadia.RescanAsync();
+        Assert.Same(sorted, library.SortedGames(tab));
+
+        ChooseSort(arcadia, row: 0, column: 1);
+        var byNameDescending = library.SortedGames(tab);
+        Assert.Equal("Spiel 30", byNameDescending[0].Title);
+        Assert.Equal(["Spiel 30", "Spiel 29"], Titles(arcadia).Take(2));
+
+        games.Add(TestGames.Installed(KnownLaunchers.Gog, "Spiel 99", Day(2025, 2, 1)));
+        await arcadia.RescanAsync();
+        Assert.Equal("Spiel 99", library.SortedGames(tab)[0].Title);
+        Assert.Equal(["Spiel 99", "Spiel 30"], Titles(arcadia).Take(2));
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T228-1")]
+    public async Task A_tab_switched_off_lets_go_of_its_sorted_games_while_another_tab_stays_selected()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var sortedXbox = SortXboxThenGoBack(arcadia);
+
+        arcadia.Settings.Update(settings => settings with { ActiveLaunchers = [KnownLaunchers.Gog.Id, KnownLaunchers.Amazon.Id] });
+        arcadia.Main.Session.ShowChosenLaunchers();
+        Assert.Null(arcadia.Main.LauncherTabs.Find(KnownLaunchers.Xbox.Id));
+        for (var i = 0; i < 3 && sortedXbox.IsAlive; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        Assert.False(sortedXbox.IsAlive, "Die sortierten Spiele des abgeschalteten Tabs werden noch gehalten.");
+    }
+
+    // Its own method, so no local of the test keeps the sorted list alive.
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static WeakReference SortXboxThenGoBack(ArcadiaDriver arcadia)
+    {
+        arcadia.Press(UiAction.NextTab);
+        Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
+        var sorted = new WeakReference(arcadia.Main.Library.SortedGames(arcadia.SelectedTab!));
+        arcadia.Press(UiAction.PreviousTab);
+        Assert.Equal(KnownLaunchers.Gog.Id, arcadia.SelectedTab?.Launcher.Id);
+        return sorted;
+    }
+
     /// <summary>"Ansicht", from wherever the focus starts up to "Name A → Z", then to the sort in that cell.</summary>
     private static void ChooseSort(ArcadiaDriver arcadia, int row, int column) =>
         arcadia.Press(UiAction.ViewOptions)

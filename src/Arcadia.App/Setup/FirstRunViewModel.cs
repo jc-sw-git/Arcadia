@@ -153,6 +153,9 @@ public sealed partial class FirstRunViewModel : ViewModelBase, IPage
     /// <summary>The first start shows no covers.</summary>
     public IEnumerable<GameTileViewModel> ShownTiles => [];
 
+    /// <summary>It covers the whole window, so a dialog of the page under it never takes a press first.</summary>
+    public bool CoversWindow => true;
+
     public void InputKindChanged(InputKind kind)
     {
     }

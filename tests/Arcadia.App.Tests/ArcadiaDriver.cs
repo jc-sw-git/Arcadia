@@ -485,6 +485,7 @@ internal sealed class ArcadiaDriver : IDisposable
 
     public void Dispose()
     {
+        Main.Dispose();
         _controllers.Dispose();
         _http.Dispose();
         if (_ownsFolder)

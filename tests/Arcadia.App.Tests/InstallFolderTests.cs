@@ -80,6 +80,48 @@ public sealed class InstallFolderTests
         Assert.Equal(scans, Scans(arcadia));
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T227-4")]
+    public async Task A_late_answer_after_the_focus_moved_to_an_uninstalled_game_starts_no_rescan()
+    {
+        var (games, spec) = Library("Alpha", "Bravo", "Charlie");
+        games[2] = NotInstalled(Gog, "Charlie");
+        using var arcadia = await ArcadiaDriver.StartAsync([spec]);
+        await arcadia.FolderChecksAnsweredAsync();
+        arcadia.Wait(TimeSpan.FromSeconds(10));
+        var scans = Scans(arcadia);
+
+        // Charlie has no folder to check, so Bravo's answer stays the last one asked for; it no longer has the focus.
+        arcadia.Folders.Hang();
+        arcadia.Folders.Remove(games[1].InstallDirectory!);
+        arcadia.Press(UiAction.Right).Press(UiAction.Right);
+        arcadia.Folders.Answer();
+        await arcadia.FolderChecksAnsweredAsync();
+
+        Assert.Equal("Charlie", arcadia.FocusedGame?.Title);
+        Assert.Equal(scans, Scans(arcadia));
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T227-5")]
+    public async Task A_check_that_fails_is_reported_and_the_check_waiting_behind_it_still_runs()
+    {
+        var (games, spec) = Library("Alpha", "Bravo", "Charlie");
+        using var arcadia = await ArcadiaDriver.StartAsync([spec]);
+        await arcadia.FolderChecksAnsweredAsync();
+        var checks = arcadia.Folders.Checks;
+
+        arcadia.Folders.Hang();
+        arcadia.Folders.Fail(games[1].InstallDirectory!);
+        arcadia.Press(UiAction.Right).Press(UiAction.Right);
+        arcadia.Folders.Answer();
+        await arcadia.FolderChecksAnsweredAsync();
+
+        Assert.Equal(checks + 2, arcadia.Folders.Checks);
+        var log = File.ReadAllText(Path.Combine(Arcadia.App.Services.AppLog.Directory, "arcadia.log"));
+        Assert.Contains($"Test: {games[1].InstallDirectory} can't be read.", log);
+    }
+
     /// <summary>Installed games, each in a folder of its own that exists.</summary>
     private static (List<Game> Games, LauncherSpec Spec) Library(params string[] titles)
     {

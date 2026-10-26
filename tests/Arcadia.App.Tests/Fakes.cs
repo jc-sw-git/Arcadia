@@ -262,6 +262,7 @@ internal sealed class NoSisr(HttpClient http) : ISisrHost
 internal sealed class FakeInstallFolders
 {
     private readonly HashSet<string> _removed = [];
+    private readonly HashSet<string> _failing = [];
     private readonly ManualResetEventSlim _answer = new(initialState: true);
     private int _checks;
 
@@ -274,7 +275,21 @@ internal sealed class FakeInstallFolders
         _answer.Wait(TimeSpan.FromSeconds(30));
         lock (_removed)
         {
+            if (_failing.Contains(folder))
+            {
+                throw new IOException($"Test: {folder} can't be read.");
+            }
+
             return !_removed.Contains(folder) && Directory.Exists(folder);
+        }
+    }
+
+    /// <summary>Asking for the folder throws, as a file system error would.</summary>
+    public void Fail(string folder)
+    {
+        lock (_removed)
+        {
+            _failing.Add(folder);
         }
     }
 

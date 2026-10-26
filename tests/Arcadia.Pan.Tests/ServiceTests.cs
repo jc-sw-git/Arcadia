@@ -101,12 +101,14 @@ public sealed class ServiceTests : IDisposable
         }
 
         // T243-8: a user can start and query it but never change it; the image path is quoted.
-        // sc prints the rights in its own order (LCRPLORC), so the ACE is compared as a set of rights.
+        // sc prints the rights in its own order (LCRPLORC), so the ACE is compared as a set of rights. Only the DACL
+        // (D:) counts: Windows adds an audit entry for Everyone to the SACL (S:) of every service.
         var sddl = Output("sc.exe", "sdshow", PanPaths.ServiceName);
-        Assert.Equal(["LC", "LO", "RC", "RP"], RightsOf(sddl, "IU"));
-        Assert.DoesNotContain(";;;WD)", sddl);
-        Assert.DoesNotContain(";;;BU)", sddl);
-        Assert.DoesNotContain(";;;AU)", sddl);
+        var dacl = sddl.IndexOf("S:", StringComparison.Ordinal) is var sacl and >= 0 ? sddl[..sacl] : sddl;
+        Assert.Equal(["LC", "LO", "RC", "RP"], RightsOf(dacl, "IU"));
+        Assert.DoesNotContain(";;;WD)", dacl);
+        Assert.DoesNotContain(";;;BU)", dacl);
+        Assert.DoesNotContain(";;;AU)", dacl);
         using (var key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{PanPaths.ServiceName}"))
         {
             Assert.Equal($"\"{PanPaths.InstalledExecutable}\"", key?.GetValue("ImagePath"));

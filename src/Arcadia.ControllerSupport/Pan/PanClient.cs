@@ -55,9 +55,10 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
     /// <summary>Pan couldn't read its journal and fell back or started empty (review point 8): worth a toast.</summary>
     public event Action? JournalProblem;
 
+    /// <summary>The pipe is open and Pan has answered hello; while hello is under way the client is not yet connected.</summary>
     public bool IsConnected
     {
-        get { lock (_lock) return _link is not null; }
+        get { lock (_lock) return _link is not null && _unavailable is null; }
     }
 
     /// <summary>Starts keeping the connection; the first attempt runs at once.</summary>

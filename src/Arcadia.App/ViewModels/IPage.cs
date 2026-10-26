@@ -12,8 +12,10 @@ namespace Arcadia.App.ViewModels;
 /// Lifetime and thread: Main calls a page on the UI thread only, and a page raises its events there. When a page stops
 /// being on top (closed, or covered by another page) Main first calls its <see cref="CancelHeldButtons"/> and drops the
 /// hold of the one <see cref="GameActions"/>, so a release that now goes elsewhere, or never comes, can't type, start a
-/// game or open details late. A covered page is kept as it is and updated by Main after a rescan; a closed page is
-/// disposed by Main if it is <see cref="IDisposable"/>, which stops its timers. The library is never closed.
+/// game or open details late. A covered page is kept as it is and updated by Main after a rescan. Only the pages with
+/// timers or subscriptions are <see cref="IDisposable"/> (search, settings): Main disposes each when it closes it, in its
+/// property's change handler. A new disposable page needs the same there; the detail page isn't one, as Main may keep a
+/// closed one behind the search to bring it back (#127). The library is never closed.
 /// </remarks>
 public interface IPage
 {

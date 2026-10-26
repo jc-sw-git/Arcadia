@@ -4,7 +4,8 @@ namespace Arcadia.Pan;
 /// <param name="Pid">The client's process id (<c>GetNamedPipeClientProcessId</c>).</param>
 /// <param name="StartTime">Its process start time (FILETIME ticks), journaled to tell it from a reused id.</param>
 /// <param name="InConsoleSession">The process runs in the active console session (review point 2).</param>
-public sealed record ClientIdentity(int Pid, long StartTime, bool InConsoleSession);
+/// <param name="ImagePath">Its image path in Windows' device form, the allow-list entry while Pan hides (part B); null if unreadable.</param>
+public sealed record ClientIdentity(int Pid, long StartTime, bool InConsoleSession, string? ImagePath = null);
 
 /// <summary>The hook for the crash report (#244): Pan saw an unplanned end or a hang, with the emulation state.</summary>
 public sealed record UnplannedEnd(PanReason Reason, uint Generation, int ClientPid, bool WasEmulating);
@@ -12,9 +13,10 @@ public sealed record UnplannedEnd(PanReason Reason, uint Generation, int ClientP
 /// <summary>
 /// Pan's decisions (#243), free of Windows: one client at a time, protocol version and generation checks, the hang
 /// watch on an unbiased clock, the journal written before each change, and the teardown when Arcadia hangs, ends
-/// unplanned or Pan is stopped. Thread-safe: the pipe reader, the watch timer and the process wait all call in.
+/// unplanned or Pan is stopped; hiding the real Steam Controller and showing it again in part B (Guardian.Hiding.cs).
+/// Thread-safe: the pipe reader, the watch timer, the process wait and device arrivals all call in.
 /// </summary>
-public sealed class Guardian
+public sealed partial class Guardian
 {
     /// <summary>Three seconds without a heartbeat while emulating count as a hang (owner, 2026-10-26).</summary>
     public static readonly TimeSpan DefaultHangTimeout = TimeSpan.FromSeconds(3);
@@ -31,6 +33,7 @@ public sealed class Guardian
     private readonly IEmulationCleanup _cleanup;
     private readonly Action<string> _log;
     private readonly long _hangMs;
+    private readonly SteamControllerHiding? _hiding;
 
     private JournalState _journal = new();
     private string? _journalProblem;
@@ -54,13 +57,19 @@ public sealed class Guardian
         TornDown,
     }
 
-    public Guardian(IPanClock clock, JournalFile journalFile, IEmulationCleanup cleanup, Action<string> log, TimeSpan? hangTimeout = null)
+    /// <param name="hiding">HidHide and the Steam Controller's devices; without it Pan answers hiding commands with <see cref="PanReply.Unsupported"/>.</param>
+    /// <param name="deviceStepTimeout">How long listing or restarting the devices may take (<see cref="DefaultDeviceStepTimeout"/>).</param>
+    public Guardian(
+        IPanClock clock, JournalFile journalFile, IEmulationCleanup cleanup, Action<string> log, TimeSpan? hangTimeout = null,
+        SteamControllerHiding? hiding = null, TimeSpan? deviceStepTimeout = null)
     {
+        _deviceStepTimeout = deviceStepTimeout ?? DefaultDeviceStepTimeout;
         _clock = clock;
         _journalFile = journalFile;
         _cleanup = cleanup;
         _log = log;
         _hangMs = (long)(hangTimeout ?? DefaultHangTimeout).TotalMilliseconds;
+        _hiding = hiding;
     }
 
     /// <summary>A message Pan sends on its own (a teardown), to the registered client.</summary>
@@ -165,8 +174,19 @@ public sealed class Guardian
         }
     }
 
-    /// <summary>A message from the registered client; the reply goes back on the pipe.</summary>
-    public PanMessage Handle(PanMessage message)
+    /// <summary>
+    /// A message from the registered client; the reply goes back on the pipe. Hiding commands change HidHide and
+    /// restart the controller, which takes a moment, so they complete later; everything else completes at once.
+    /// </summary>
+    public Task<PanMessage> HandleAsync(PanMessage message) => message.Command switch
+    {
+        PanCommand.Hide => HideAsync(message),
+        PanCommand.Unhide => UnhideAsync(message),
+        PanCommand.CheckHiding => CheckHidingAsync(message),
+        _ => Task.FromResult(Handle(message)),
+    };
+
+    private PanMessage Handle(PanMessage message)
     {
         lock (_lock)
         {
@@ -207,7 +227,6 @@ public sealed class Guardian
                 PanCommand.Heartbeat => WithGeneration(message, Heartbeat),
                 PanCommand.TeardownAcknowledged => Acknowledge(message.Generation),
                 PanCommand.PlannedExit => PlannedExit(),
-                PanCommand.Hide or PanCommand.Unhide => PanMessage.Of(PanReply.Unsupported, message.Generation),
                 _ => PanMessage.Of(PanReply.Rejected, message.Generation, PanReason.NotRegistered),
             };
         }
@@ -254,8 +273,9 @@ public sealed class Guardian
             }
 
             var silence = _clock.UnbiasedMilliseconds - _lastHeartbeatMs;
-            if (silence < _hangMs)
+            if (silence < _hangMs || _hidingBusy > 0)
             {
+                // While the client's hide or unhide runs, its heartbeats wait behind it on the pipe.
                 return;
             }
 
@@ -284,6 +304,12 @@ public sealed class Guardian
             {
                 _log($"Service stopping while emulating generation {_generation}: tearing down");
                 BeginTeardown(PanReason.ServiceStopping, notify: true, unplanned: false);
+            }
+            else if (_journal.HasWork && _teardown is not { IsCompleted: false })
+            {
+                // An earlier teardown left something (the controller hidden, a process that wouldn't end): try again.
+                _log("Service stopping with an incomplete teardown journaled: trying again");
+                BeginTeardown(PanReason.ServiceStopping, notify: false, unplanned: false);
             }
 
             teardown = _teardown;
@@ -377,6 +403,12 @@ public sealed class Guardian
 
     private PanMessage StopEmulation()
     {
+        if (_journal.HidingHasWork)
+        {
+            // Hiding belongs to the emulation: the client shows the controller first, or a teardown does.
+            return PanMessage.Of(PanReply.Rejected, _generation, PanReason.StillHidden);
+        }
+
         // Arcadia removed its emulation itself: let go of its processes, nothing to undo. What an earlier teardown
         // couldn't end is none of this emulation's and stays for the next one.
         foreach (var process in _journal.HeldProcesses.Where(process => !_leftovers.Contains(process)))
@@ -423,6 +455,18 @@ public sealed class Guardian
 
     private PanMessage PlannedExit()
     {
+        if (_journal.HidingHasWork)
+        {
+            if (_teardown is not { IsCompleted: false })
+            {
+                // Pan undoes what the client left hidden, after the forwarding is surely gone (part B).
+                _log($"Client {_client?.Pid} exits with the Steam Controller still hidden: tearing down");
+                BeginTeardown(PanReason.PlannedExit, notify: false, unplanned: false);
+            }
+
+            return PanMessage.Of(PanReply.Acknowledged, _generation);
+        }
+
         if (_phase == Phase.Emulating)
         {
             // Said goodbye without stopping first: treat it as a stop, the client cleaned up itself.
@@ -463,7 +507,8 @@ public sealed class Guardian
         }
 
         var plan = new TeardownPlan(_cleanup, held, ProcessEnded);
-        var results = await TeardownRunner.RunAsync(plan.Steps(), _log);
+        var results = (await TeardownRunner.RunAsync(plan.Steps(), _log)).ToList();
+        results.AddRange(await ShowAfterTeardownAsync(forwardingGone: results.All(r => r.Outcome == StepOutcome.Ok)));
         var complete = results.All(r => r.Outcome == StepOutcome.Ok);
         lock (_lock)
         {
@@ -508,15 +553,20 @@ public sealed class Guardian
     /// never hands out a number a client still remembers as torn down (review, bug 4). A journal that can't be written
     /// is logged; the state in memory stays right.
     /// </summary>
-    private void SaveJournal()
+    private void SaveJournal() => TrySaveJournal();
+
+    /// <summary>Under the lock; false when the journal couldn't be written (logged), for a change that must not happen unjournaled.</summary>
+    private bool TrySaveJournal()
     {
         try
         {
             _journalFile.Save(_journal);
+            return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _log($"Journal not written: {ex.Message}");
+            return false;
         }
     }
 }

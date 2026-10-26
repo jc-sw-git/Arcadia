@@ -8,7 +8,7 @@ public sealed record HeldProcess(int Pid, long StartTime, string ImageName);
 
 /// <summary>
 /// What Pan would have to undo right now, written before each change (#243, review point 8): the client it serves,
-/// the processes it holds, and (from part B on) exactly the HidHide entries it added. Entries the user had before
+/// the processes it holds, and exactly the HidHide entries it added (part B). Entries the user had before
 /// are never in here, so they are never touched.
 /// </summary>
 public sealed class JournalState
@@ -28,15 +28,24 @@ public sealed class JournalState
 
     public List<HeldProcess> HeldProcesses { get; set; } = [];
 
-    /// <summary>Part B: the HidHide device instances Pan hid, the allow-list entries it added, and whether cloaking was on before.</summary>
+    /// <summary>The HidHide device instances Pan added (part B); devices the user had hidden before are never listed.</summary>
     public List<string> HiddenDevices { get; set; } = [];
 
+    /// <summary>The allow-list entries Pan added: the client's image path, unless the user had listed it already.</summary>
     public List<string> AllowListed { get; set; } = [];
 
+    /// <summary>Whether cloaking was on before Pan hid; null while Pan hides nothing. Cloaking is turned off again only if it was off.</summary>
     public bool? CloakingWasOn { get; set; }
 
+    /// <summary>The Steam Controller still has to be restarted, so Windows announces it again (after a hide, unhide or arrival).</summary>
+    public bool PuckRestartPending { get; set; }
+
+    /// <summary>Pan hides, or has a HidHide change or a restart left to undo or finish.</summary>
     [JsonIgnore]
-    public bool HasWork => Emulating || HeldProcesses.Count > 0 || HiddenDevices.Count > 0 || AllowListed.Count > 0 || CloakingWasOn is not null;
+    public bool HidingHasWork => HiddenDevices.Count > 0 || AllowListed.Count > 0 || CloakingWasOn is not null || PuckRestartPending;
+
+    [JsonIgnore]
+    public bool HasWork => Emulating || HeldProcesses.Count > 0 || HidingHasWork;
 
     public JournalState Clone() => new()
     {
@@ -49,6 +58,7 @@ public sealed class JournalState
         HiddenDevices = [.. HiddenDevices],
         AllowListed = [.. AllowListed],
         CloakingWasOn = CloakingWasOn,
+        PuckRestartPending = PuckRestartPending,
     };
 }
 
@@ -184,9 +194,15 @@ public sealed class JournalFile(string path)
             return "a held process entry is incomplete";
         }
 
-        if (state.HiddenDevices.Any(device => device is null) || state.AllowListed.Any(entry => entry is null))
+        if (state.HiddenDevices.Any(string.IsNullOrEmpty) || state.AllowListed.Any(string.IsNullOrEmpty))
         {
             return "a HidHide entry is missing";
+        }
+
+        // Pan only ever hides listed devices; anything else would make an undo remove one of the user's entries.
+        if (state.HiddenDevices.Any(device => !HidingList.IsListedHid(device)))
+        {
+            return "a hidden device is not one Pan hides";
         }
 
         return null;

@@ -91,12 +91,14 @@ public static class ServiceHost
         log.TrustFolder();
 
         var cleanup = new WindowsCleanup(log.Write);
-        var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath), cleanup, log.Write);
+        var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath), cleanup, log.Write, hiding: WindowsHiding.Create());
         _guardian = guardian;
         guardian.UnplannedEnd += end => log.Write($"Unplanned end: {end.Reason}, generation {end.Generation}, client {end.ClientPid}, emulating {end.WasEmulating} (crash report: #244)");
         log.Write($"Pan {typeof(ServiceHost).Assembly.GetName().Version} starting (protocol {PanMessage.ProtocolVersion})");
         await guardian.RecoverAsync();
         Report(Native.ServiceRunning);
+        // A puck plugged in while Pan hides is hidden too (part B); without the watch, at the next hide.
+        using var arrivals = DeviceArrivalWatch.Start(guardian.DevicesArrivedAsync, log.Write);
 
         using var stop = consoleStop is { } console ? CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token, console) : CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token);
         using var serve = new CancellationTokenSource();

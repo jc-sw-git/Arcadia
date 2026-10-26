@@ -1,8 +1,8 @@
 # Pan, Arcadia's guardian service (#243, part A)
 
 Pan gives the real controllers back to every program when Arcadia ends unexpectedly or hangs. Part A (this file): the
-service, its setup and the VIIPER/usbip side of the teardown. Part B (HidHide, hide/unhide, #243 later PR) adds the
-commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview: [README](README.md); the pad itself:
+service, its setup and the VIIPER/usbip side of the teardown. Part B1 (HidHide: `Hide`, `Unhide`, `CheckHiding`, the
+teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](README.md); the pad itself:
 [xbox-pad.md](xbox-pad.md). Decisions came from the QE decision review on #243 (R1–R16).
 
 ## Pieces
@@ -22,8 +22,9 @@ commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview
 ## Protocol and identity
 
 - Named pipe `\\.\pipe\ArcadiaPan`, 12-byte messages: kind, protocol version (1), generation, value. Commands Hello,
-  EmulationStarted, EmulationStopped, Heartbeat, TeardownAcknowledged, PlannedExit (Hide/Unhide later); replies HelloOk,
-  Started, Stopped, HeartbeatOk, Acknowledged, Rejected(reason), TornDown(reason, notice), Unsupported, Refused(reason).
+  EmulationStarted, EmulationStopped, Heartbeat, TeardownAcknowledged, PlannedExit, Hide, Unhide, CheckHiding; replies
+  HelloOk, Started, Stopped, HeartbeatOk, Acknowledged, Hidden, Shown, HidingState, Rejected(reason), TornDown(reason,
+  notice), Unsupported, Refused(reason).
   Pan takes the first client of the active console session (`ProcessIdToSessionId` ==
   `WTSGetActiveConsoleSessionId`); connections are served side by side, so a second client or one from another session
   gets `Refused` at once. The pipe's DACL: SYSTEM full, Interactive read/write, nobody else;

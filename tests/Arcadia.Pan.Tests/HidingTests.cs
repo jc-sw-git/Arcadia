@@ -1,0 +1,513 @@
+using Arcadia.Pan;
+
+namespace Arcadia.Pan.Tests;
+
+/// <summary>
+/// Part B of #243: Pan hides the real Steam Controller through HidHide and shows it again in every teardown, touching
+/// only its own entries, journaled before each change, and only once nothing forwards to the controller any more.
+/// </summary>
+public sealed class HidingTests : IDisposable
+{
+    private const string ArcadiaImage = @"\Device\HarddiskVolume3\Program Files\Arcadia\Arcadia.exe";
+    private const string UsersPad = @"HID\VID_054C&PID_0CE6&MI_03\7&2B7F&0&0000";
+    private const string UsersApp = @"\Device\HarddiskVolume3\Tools\DS4Windows.exe";
+    private static readonly ClientIdentity Arcadia = new(Pid: 500, StartTime: 1000, InConsoleSession: true, ArcadiaImage);
+
+    private readonly TempJournal _journal = new();
+    private readonly FakeClock _clock = new();
+    private readonly FakeCleanup _cleanup = new();
+    private readonly FakeHidHide _hidHide = new();
+    private readonly FakeDevices _devices = new();
+    private readonly List<string> _log = [];
+    private readonly List<PanMessage> _notified = [];
+    private readonly Guardian _guardian;
+
+    public HidingTests()
+    {
+        _guardian = NewGuardian();
+        _guardian.Notify += message => { lock (_notified) _notified.Add(message); };
+        _cleanup.Children = [new HeldProcess(600, 1500, "viiper.exe")];
+        _cleanup.Ports = [3];
+    }
+
+    public void Dispose() => _journal.Dispose();
+
+    private Guardian NewGuardian() => new(
+        _clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
+        hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: TimeSpan.FromMilliseconds(300));
+
+    private string Log() { lock (_log) return string.Join("\n", _log); }
+
+    private JournalState Journal => _journal.File.Load().State;
+
+    private Task<PanMessage> Send(PanCommand command, uint generation = 0) => _guardian.HandleAsync(PanMessage.Of(command, generation));
+
+    private async Task<uint> EmulatingAsync(ClientIdentity? client = null)
+    {
+        Assert.Equal(PanReason.None, _guardian.Register(client ?? Arcadia));
+        Assert.Equal(PanReply.HelloOk, (await Send(PanCommand.Hello)).Reply);
+        var started = await Send(PanCommand.EmulationStarted);
+        Assert.Equal(PanReply.Started, started.Reply);
+        return started.Generation;
+    }
+
+    private async Task<uint> HiddenAsync()
+    {
+        var generation = await EmulatingAsync();
+        var hidden = await Send(PanCommand.Hide, generation);
+        Assert.Equal(PanReply.Hidden, hidden.Reply);
+        return generation;
+    }
+
+    private async Task TeardownDoneAsync()
+    {
+        if (_guardian.Teardown is { } teardown)
+        {
+            await teardown;
+        }
+    }
+
+    /// <summary>HidHide as it was before Pan hid, and nothing left in the journal to undo.</summary>
+    private void AssertRestored(List<string> hidden, List<string> allowed, bool cloaking)
+    {
+        Assert.Equal(hidden, _hidHide.Hidden);
+        Assert.Equal(allowed, _hidHide.Allowed);
+        Assert.Equal(cloaking, _hidHide.Cloaking);
+        Assert.False(Journal.HidingHasWork);
+    }
+
+    [Fact]
+    public async Task Hide_hides_the_connected_puck_allow_lists_the_client_turns_cloaking_on_and_restarts_it()
+    {
+        _devices.Present = [FakeDevices.Slot2, FakeDevices.Slot3, @"HID\VID_28DE&PID_1205&MI_02\9&0&0000", UsersPad];
+        var generation = await EmulatingAsync();
+
+        var hidden = await Send(PanCommand.Hide, generation);
+
+        Assert.Equal(PanReply.Hidden, hidden.Reply);
+        Assert.Equal(2u, hidden.Value);
+        // Only the listed puck: another Valve device and another pad stay visible even if the device list names them.
+        Assert.Equal([FakeDevices.Slot2, FakeDevices.Slot3], _hidHide.Hidden);
+        Assert.Equal([ArcadiaImage], _hidHide.Allowed);
+        Assert.True(_hidHide.Cloaking);
+        Assert.Equal(1, _devices.Restarts);
+        // The client is allow-listed before anything is hidden, so it never loses the controller it reads.
+        Assert.Equal(["SetAllowed", "SetHidden", "CloakingOn"], _hidHide.Calls.Where(call => call.StartsWith("Set") || call.StartsWith("Cloaking")));
+        var journal = Journal;
+        Assert.Equal([FakeDevices.Slot2, FakeDevices.Slot3], journal.HiddenDevices);
+        Assert.Equal([ArcadiaImage], journal.AllowListed);
+        Assert.False(journal.CloakingWasOn);
+        Assert.False(journal.PuckRestartPending);
+    }
+
+    [Fact]
+    public async Task Every_change_is_journaled_before_it_is_made()
+    {
+        var generation = await EmulatingAsync();
+        var seen = new List<string>();
+        _hidHide.BeforeChange = change =>
+        {
+            var journal = Journal;
+            if (change == "SetAllowed" && journal.AllowListed.Contains(ArcadiaImage)
+                || change == "SetHidden" && journal.HiddenDevices.Count == 2 && journal.PuckRestartPending
+                || change == "CloakingOn" && journal.CloakingWasOn == false)
+            {
+                seen.Add(change);
+            }
+        };
+
+        await Send(PanCommand.Hide, generation);
+
+        Assert.Equal(["SetAllowed", "SetHidden", "CloakingOn"], seen);
+    }
+
+    [Fact]
+    public async Task Unhide_removes_only_Pans_entries_and_leaves_the_users_entries_and_cloaking_as_they_were()
+    {
+        // The user hides a pad of their own and had already listed the puck's slot 3 and Arcadia (e.g. DS4Windows).
+        _hidHide.Hidden = [UsersPad, FakeDevices.Slot3];
+        _hidHide.Allowed = [UsersApp, ArcadiaImage];
+        _hidHide.Cloaking = true;
+        var generation = await HiddenAsync();
+        Assert.Equal([FakeDevices.Slot2], Journal.HiddenDevices);
+        Assert.Empty(Journal.AllowListed);
+        Assert.True(Journal.CloakingWasOn);
+
+        var shown = await Send(PanCommand.Unhide, generation);
+
+        Assert.Equal(PanReply.Shown, shown.Reply);
+        AssertRestored([UsersPad, FakeDevices.Slot3], [UsersApp, ArcadiaImage], cloaking: true);
+        Assert.Equal(2, _devices.Restarts);
+        Assert.True(_guardian.IsEmulating);
+        Assert.Equal(PanReply.Stopped, (await Send(PanCommand.EmulationStopped, generation)).Reply);
+    }
+
+    [Fact]
+    public async Task Cloaking_that_was_off_is_turned_off_again()
+    {
+        var generation = await HiddenAsync();
+
+        await Send(PanCommand.Unhide, generation);
+
+        AssertRestored([], [], cloaking: false);
+    }
+
+    [Fact]
+    public async Task A_second_hide_changes_nothing_and_keeps_what_cloaking_was_before_the_first()
+    {
+        var generation = await HiddenAsync();
+        _hidHide.Calls.Clear();
+
+        var again = await Send(PanCommand.Hide, generation);
+
+        Assert.Equal(PanReply.Hidden, again.Reply);
+        Assert.DoesNotContain(_hidHide.Calls, call => call.StartsWith("Set") || call.StartsWith("Cloaking"));
+        Assert.Equal(1, _devices.Restarts);
+        Assert.False(Journal.CloakingWasOn);
+    }
+
+    public static TheoryData<string, PanReason> RefusedStates => new()
+    {
+        { "missing", PanReason.HidHideMissing },
+        { "driver not running", PanReason.HidHideMissing },
+        { "1.1", PanReason.HidHideUnsupported },
+        { "2.0", PanReason.HidHideUnsupported },
+        { "unknown interface", PanReason.HidHideUnsupported },
+        { "inverse", PanReason.HidHideInverseMode },
+        { "cloaking off with the user's entries", PanReason.HidHideCloakingOffWithForeignEntries },
+        { "busy", PanReason.HidHideBusy },
+    };
+
+    [Theory]
+    [MemberData(nameof(RefusedStates))]
+    public async Task HidHide_in_a_state_Pan_cannot_use_means_nothing_is_hidden_and_the_reason_goes_to_the_client(string state, PanReason reason)
+    {
+        Arrange(state);
+        var generation = await EmulatingAsync();
+
+        var check = await Send(PanCommand.CheckHiding);
+        var hide = await Send(PanCommand.Hide, generation);
+
+        Assert.Equal((PanReply.HidingState, reason), (check.Reply, check.Reason));
+        Assert.Equal((PanReply.Rejected, reason), (hide.Reply, hide.Reason));
+        Assert.DoesNotContain(_hidHide.Calls, call => call.StartsWith("Set") || call.StartsWith("Cloaking"));
+        Assert.Equal(0, _devices.Restarts);
+        Assert.False(Journal.HidingHasWork);
+        Assert.True(_guardian.IsEmulating);
+    }
+
+    private void Arrange(string state)
+    {
+        switch (state)
+        {
+            case "missing": _hidHide.Version = null; break;
+            case "driver not running": _hidHide.DriverRunning = false; break;
+            case "1.1": _hidHide.Version = new Version(1, 1, 50); break;
+            case "2.0": _hidHide.Version = new Version(2, 0); break;
+            case "unknown interface": _hidHide.UnknownInterface = true; break;
+            case "inverse": _hidHide.Inverse = true; break;
+            case "cloaking off with the user's entries": _hidHide.Hidden = [UsersPad]; break;
+            case "busy": _hidHide.FailAll = PanReason.HidHideBusy; break;
+        }
+    }
+
+    public static TheoryData<string> UsableStates => new() { "cloaking on with the user's entries", "cloaking off with only the puck listed", "nothing listed" };
+
+    [Theory]
+    [MemberData(nameof(UsableStates))]
+    public async Task HidHide_states_Pan_can_hide_in_and_undo_exactly(string state)
+    {
+        (_hidHide.Hidden, _hidHide.Cloaking) = state switch
+        {
+            "cloaking on with the user's entries" => ([UsersPad], true),
+            "cloaking off with only the puck listed" => ([FakeDevices.Slot2], false),
+            _ => (new List<string>(), false),
+        };
+        var before = (Hidden: _hidHide.Hidden.ToList(), Allowed: _hidHide.Allowed.ToList(), _hidHide.Cloaking);
+        var generation = await EmulatingAsync();
+
+        Assert.Equal(PanReason.None, (await Send(PanCommand.CheckHiding)).Reason);
+        Assert.Equal(PanReply.Hidden, (await Send(PanCommand.Hide, generation)).Reply);
+        Assert.True(_hidHide.Cloaking);
+        Assert.Equal(PanReply.Shown, (await Send(PanCommand.Unhide, generation)).Reply);
+
+        AssertRestored(before.Hidden, before.Allowed, before.Cloaking);
+    }
+
+    [Fact]
+    public async Task Hiding_belongs_to_the_current_emulation()
+    {
+        Assert.Equal(PanReason.None, _guardian.Register(Arcadia));
+        Assert.Equal(PanReason.NotRegistered, (await Send(PanCommand.Hide)).Reason);
+        await Send(PanCommand.Hello);
+        Assert.Equal(PanReason.NotEmulating, (await Send(PanCommand.Hide)).Reason);
+        Assert.Equal(PanReply.HidingState, (await Send(PanCommand.CheckHiding)).Reply);
+
+        var generation = (await Send(PanCommand.EmulationStarted)).Generation;
+        Assert.Equal(PanReason.WrongGeneration, (await Send(PanCommand.Hide, generation + 1)).Reason);
+        Assert.Empty(_hidHide.Hidden);
+    }
+
+    [Fact]
+    public async Task A_client_whose_image_path_is_unknown_is_not_hidden_for()
+    {
+        var generation = await EmulatingAsync(Arcadia with { ImagePath = null });
+
+        var hide = await Send(PanCommand.Hide, generation);
+
+        Assert.Equal(PanReason.HidingFailed, hide.Reason);
+        Assert.Empty(_hidHide.Hidden);
+    }
+
+    [Fact]
+    public async Task The_emulation_cannot_stop_while_hidden_but_a_planned_exit_tears_it_down()
+    {
+        var generation = await HiddenAsync();
+
+        Assert.Equal(PanReason.StillHidden, (await Send(PanCommand.EmulationStopped, generation)).Reason);
+        Assert.Equal(PanReply.Acknowledged, (await Send(PanCommand.PlannedExit, generation)).Reply);
+        await TeardownDoneAsync();
+        _guardian.ClientGone();
+
+        Assert.Single(_cleanup.Ended);
+        AssertRestored([], [], cloaking: false);
+        Assert.False(Journal.HasWork);
+        Assert.Contains("exits with the Steam Controller still hidden", Log());
+    }
+
+    [Fact]
+    public async Task A_killed_client_gets_the_puck_shown_and_restarted_only_after_the_forwarding_ended()
+    {
+        _hidHide.Hidden = [UsersPad];
+        _hidHide.Cloaking = true;
+        await HiddenAsync();
+        _hidHide.BeforeChange = change =>
+        {
+            // Step 3 waits for steps 1 and 2: the port is detached and viiper.exe ended before the puck is shown.
+            Assert.Equal([3], _cleanup.Detached);
+            Assert.Single(_cleanup.Ended);
+        };
+
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+
+        AssertRestored([UsersPad], [], cloaking: true);
+        Assert.Equal(2, _devices.Restarts);
+        Assert.False(Journal.HasWork);
+        Assert.Contains("Teardown: show the Steam Controller: ok", Log());
+        Assert.Contains("Teardown: restart the Steam Controller: ok", Log());
+    }
+
+    [Fact]
+    public async Task A_hang_shows_the_puck_before_the_client_hears_of_the_teardown_and_it_hides_again_under_the_next_generation()
+    {
+        var generation = await HiddenAsync();
+
+        _clock.Advance(TimeSpan.FromSeconds(3));
+        _guardian.Tick();
+        await TeardownDoneAsync();
+
+        AssertRestored([], [], cloaking: false);
+        Assert.Equal((PanReply.TornDown, PanReason.Hang), (Assert.Single(_notified).Reply, _notified[0].Reason));
+        Assert.Equal(PanReason.WrongGeneration, (await Send(PanCommand.Hide, generation - 1)).Reason);
+        Assert.Equal(PanReason.TeardownNotAcknowledged, (await Send(PanCommand.Hide, generation)).Reason);
+
+        Assert.Equal(PanReply.Acknowledged, (await Send(PanCommand.TeardownAcknowledged, generation)).Reply);
+        var next = (await Send(PanCommand.EmulationStarted)).Generation;
+        Assert.Equal(PanReply.Hidden, (await Send(PanCommand.Hide, next)).Reply);
+        Assert.Equal(2, _hidHide.Hidden.Count);
+    }
+
+    [Fact]
+    public async Task A_forwarding_process_that_will_not_end_keeps_the_puck_hidden_until_a_later_teardown_ends_it()
+    {
+        await HiddenAsync();
+        _cleanup.EndFails = true;
+
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+
+        Assert.Equal(2, _hidHide.Hidden.Count);
+        Assert.True(Journal.HidingHasWork);
+        Assert.Contains("skipped: the forwarding may still run", Log());
+
+        // Pan idles out with the leftovers journaled: its stop tries again.
+        _cleanup.EndFails = false;
+        await _guardian.StopAsync();
+
+        AssertRestored([], [], cloaking: false);
+        Assert.False(Journal.HasWork);
+    }
+
+    [Fact]
+    public async Task A_HidHide_change_that_fails_in_a_teardown_stays_journaled_and_a_restarted_Pan_undoes_it()
+    {
+        await HiddenAsync();
+        _hidHide.FailOn = "SetHidden";
+
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+
+        Assert.Contains("show the Steam Controller: Failed", Log());
+        Assert.Equal(2, Journal.HiddenDevices.Count);
+
+        _hidHide.FailOn = null;
+        var restarted = NewGuardian();
+        Assert.True(await restarted.RecoverAsync());
+
+        AssertRestored([], [], cloaking: false);
+    }
+
+    [Fact]
+    public async Task After_a_power_loss_the_restarted_Pan_shows_the_puck_from_its_journal()
+    {
+        await HiddenAsync();
+        var restarts = _devices.Restarts;
+
+        // The machine went down with the puck hidden: no teardown ran; Pan starts with the journal it left.
+        var booted = NewGuardian();
+        Assert.True(await booted.RecoverAsync());
+
+        AssertRestored([], [], cloaking: false);
+        Assert.Equal(restarts + 1, _devices.Restarts);
+    }
+
+    [Fact]
+    public async Task A_restart_that_fails_or_hangs_is_journaled_as_pending_and_retried()
+    {
+        var generation = await EmulatingAsync();
+        _devices.RestartHangs = true;
+
+        var hide = await Send(PanCommand.Hide, generation);
+
+        Assert.Equal(PanReason.HidingFailed, hide.Reason);
+        Assert.True(Journal.PuckRestartPending);
+        Assert.Contains("not restarted: no answer within", Log());
+
+        _devices.RestartHangs = false;
+        _devices.RestartFails = true;
+        Assert.Equal(PanReason.HidingFailed, (await Send(PanCommand.Unhide, generation)).Reason);
+        Assert.True(Journal.PuckRestartPending);
+        Assert.Empty(Journal.HiddenDevices);
+
+        _devices.RestartFails = false;
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+
+        Assert.False(Journal.HasWork);
+        Assert.Equal(1, _devices.Restarts);
+    }
+
+    [Fact]
+    public async Task A_device_list_that_hangs_fails_the_hide_without_changing_HidHide()
+    {
+        var generation = await EmulatingAsync();
+        _devices.ListHangs = true;
+
+        var hide = await Send(PanCommand.Hide, generation);
+
+        Assert.Equal(PanReason.HidingFailed, hide.Reason);
+        Assert.Empty(_hidHide.Hidden);
+        Assert.False(Journal.HidingHasWork);
+    }
+
+    [Fact]
+    public async Task A_hide_that_cannot_be_journaled_changes_nothing()
+    {
+        var generation = await EmulatingAsync();
+        File.Delete(_journal.File.Path);
+        Directory.CreateDirectory(_journal.File.Path);
+
+        var hide = await Send(PanCommand.Hide, generation);
+
+        Assert.Equal(PanReason.HidingFailed, hide.Reason);
+        Assert.Empty(_hidHide.Hidden);
+        Assert.Empty(_hidHide.Allowed);
+        Assert.False(_hidHide.Cloaking);
+    }
+
+    [Fact]
+    public async Task A_HidHide_change_that_fails_during_the_hide_is_undone_by_the_teardown()
+    {
+        var generation = await EmulatingAsync();
+        _hidHide.FailOn = "CloakingOn";
+
+        var hide = await Send(PanCommand.Hide, generation);
+
+        Assert.Equal(PanReason.HidingFailed, hide.Reason);
+        Assert.Equal(2, _hidHide.Hidden.Count);
+
+        _hidHide.FailOn = null;
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+
+        AssertRestored([], [], cloaking: false);
+    }
+
+    [Fact]
+    public async Task A_puck_that_arrives_while_hiding_is_hidden_too_and_nothing_happens_while_not_hiding()
+    {
+        _devices.Present = [];
+        await _guardian.DevicesArrivedAsync();
+        Assert.Empty(_hidHide.Calls);
+
+        var generation = await EmulatingAsync();
+        var hidden = await Send(PanCommand.Hide, generation);
+        Assert.Equal(0u, hidden.Value);
+        Assert.True(_hidHide.Cloaking);
+        var restarts = _devices.Restarts;
+
+        _devices.Present = [FakeDevices.Slot2, FakeDevices.Dongle];
+        await _guardian.DevicesArrivedAsync();
+
+        Assert.Equal([FakeDevices.Slot2, FakeDevices.Dongle], _hidHide.Hidden);
+        Assert.Equal([FakeDevices.Slot2, FakeDevices.Dongle], Journal.HiddenDevices);
+        Assert.Equal(restarts + 1, _devices.Restarts);
+
+        // Its own restart announces the puck again: nothing new, no second restart.
+        await _guardian.DevicesArrivedAsync();
+        Assert.Equal(restarts + 1, _devices.Restarts);
+    }
+
+    [Fact]
+    public async Task The_hang_watch_waits_while_the_clients_hide_runs()
+    {
+        var generation = await EmulatingAsync();
+        _devices.RestartHangs = true;
+        var hide = Send(PanCommand.Hide, generation);
+
+        _clock.Advance(TimeSpan.FromSeconds(5));
+        _guardian.Tick();
+        await hide;
+        _guardian.Tick();
+
+        Assert.True(_guardian.IsEmulating);
+        Assert.Null(_guardian.Teardown);
+    }
+
+    [Fact]
+    public async Task A_journal_that_names_a_device_Pan_never_hides_is_unreadable()
+    {
+        await HiddenAsync();
+        var tampered = Journal;
+        tampered.HiddenDevices = [UsersPad];
+        _journal.File.Save(tampered);
+
+        var load = _journal.File.Load();
+
+        Assert.Contains("not one Pan hides", load.Problem);
+        Assert.True(load.FromPrevious);
+    }
+
+    [Fact]
+    public async Task Without_access_to_HidHide_hiding_is_unsupported()
+    {
+        var guardian = new Guardian(_clock, _journal.File, _cleanup, _log.Add);
+        guardian.Register(Arcadia);
+        await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello));
+        var generation = (await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted))).Generation;
+
+        Assert.Equal(PanReply.Unsupported, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation))).Reply);
+        Assert.Equal(PanReply.Unsupported, (await guardian.HandleAsync(PanMessage.Of(PanCommand.CheckHiding))).Reply);
+    }
+}

@@ -22,3 +22,17 @@ one names the countermeasure that would close it, so a later story can pick it u
   from then on known by its handle; nothing is ever ended by a name lookup alone.
 - **`TerminateProcess`** ends a held forwarding process without a graceful shutdown (as SISR did): VIIPER keeps no
   state worth saving, and the usbip ports are detached before it goes.
+
+## Hiding (part B1)
+
+- **HidHide has no atomic add or remove:** Pan reads a list and writes it back. A change the user makes in HidHide's
+  configuration client in the same moment can be lost (HidHide lets one program open it at a time, which narrows
+  the window to Pan's read-to-write gap). Pan only ever removes its journaled entries.
+- **HidHide's IOCTLs have no timeout:** they run inline, because a step left behind could write a stale list after the
+  undo. They don't wait on Windows' PnP lock; listing and restarting the devices do and are bounded.
+- **`Unhide` is trusted:** the client says it removed its copy before it unhides (#242's order); Pan can't check that a
+  forwarding inside Arcadia stopped. Every unplanned path goes through the teardown, which does check.
+- **A puck restart that needs a replug** (`DI_NEEDRESTART`) leaves it pending: the puck is visible to programs that
+  open it anew, but one that kept a handle may not see it until a replug; retried at every trigger.
+- **Hiding cloaks for every allow-listed program:** with cloaking off before, the user's allow list (e.g. DS4Windows)
+  was meaningless; while Pan hides, those programs see the puck too. They are the user's choice.

@@ -44,8 +44,8 @@ Update flow, uninstall, CI artifacts: `docs/releases.md`.
 
 Tests cover Core/Launchers/ControllerSupport logic and, in `Arcadia.App.Tests`, the core flows through the view models
 (acceptance tests, no rendering). For UI changes, run the app and
-look at it — see the skill `.claude/skills/arcadia-verify/SKILL.md` and the scripts in
-`tools/dev/` (screenshot with key presses, foreground tracing, XInput probe, Steam shortcuts).
+look at it — see the skill `.claude/skills/arcadia-verify/SKILL.md` (Windows and Linux; its pre-push checklist is a must) and
+the scripts in `tools/dev/` (screenshot with key presses, foreground tracing, XInput probe, Steam shortcuts).
 The owner often tests manually at the same time — say before driving the app with keys.
 
 For bugs that aren't obvious from the code, or a fix that didn't hold, use the skill

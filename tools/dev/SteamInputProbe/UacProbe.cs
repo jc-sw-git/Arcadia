@@ -93,6 +93,7 @@ internal sealed class UacProbe(ProbeOptions options, ProbeLog log) : IAsyncDispo
 
     private async Task PlayTokenAsync(string token, long atMs, CancellationToken cancel)
     {
+        if (token == "wait") { log.Line($"{atMs,6} ms into prompt: wait (no input, lets the Secure Desktop settle)"); return; }
         if (token == "click") { log.Line($"{atMs,6} ms into prompt: mouse LEFT click"); await _hid!.ClickAsync(1, cancel); return; }
         if (token == "rclick") { log.Line($"{atMs,6} ms into prompt: mouse RIGHT click"); await _hid!.ClickAsync(2, cancel); return; }
         if (token.StartsWith("m") && token[1..].TrimStart(':').Split(',') is [var sx, var sy]

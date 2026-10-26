@@ -100,6 +100,7 @@ internal sealed class ArcadiaDriver : IDisposable
         };
         Updates = releases is null ? new ArcadiaUpdateService(_http, time) : new ArcadiaUpdateService(_http, time, releases.Manager(folder));
         Updates.Log = AppLog.Write;
+        FolderCheck = new InstallFolderCheck(Folders.Exists, action => Dispatcher.UIThread.Post(action));
         var launchedGames = new LaunchedGames();
         var installTracker = new InstallTracker(registry, time);
         var running = new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time)
@@ -118,8 +119,13 @@ internal sealed class ArcadiaDriver : IDisposable
             Settings,
             new LauncherLogos(Settings, Path.Combine(folder, "logos")),
             firstRun,
-            time);
-        _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time);
+            time,
+            FolderCheck);
+        _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time, new InputLatency(shown => shown(), line =>
+        {
+            AppLog.Write(line);
+            LatencyLines.Add(line);
+        }));
 
         // The controllers as the App reads them (#72), through SDL as the test sets it up.
         _controllers = ControllerInput.Create(Sdl, Main, new DeviceTreeEmulatedPads(() => [.. XusbDevices], AppLog.Write));
@@ -159,18 +165,22 @@ internal sealed class ArcadiaDriver : IDisposable
         Dispatcher.UIThread.RunJobs();
     }
 
-    /// <summary>Asks the launchers which games run, as the App's 2 s timer does.</summary>
-    public async Task PollRunningGamesAsync()
-    {
-        await Main.PollRunningGamesAsync();
-        Dispatcher.UIThread.RunJobs();
-    }
+    /// <summary>The lines the controller's presses logged with their time to the frame (#229); the test's frame comes at once.</summary>
+    public List<string> LatencyLines { get; } = [];
 
     /// <summary>SDL3 with the controllers a test plugs in; read only after <see cref="StartControllers"/>.</summary>
     public FakeSdlGamepads Sdl { get; } = new();
 
     /// <summary>The XInput devices in Windows' device tree, for telling SISR's virtual pad from a real one (#212).</summary>
     public List<XusbDevice> XusbDevices { get; } = [];
+
+    /// <summary>The disk as the focused game's install folder check sees it.</summary>
+    public FakeInstallFolders Folders { get; } = new();
+
+    private InstallFolderCheck FolderCheck { get; }
+
+    /// <summary>Waits until the focused game's install folder check has answered.</summary>
+    public Task FolderChecksAnsweredAsync() => WaitUntilAsync(() => !FolderCheck.IsChecking, "Installordner geprüft");
 
     public string SettingsPath => Path.Combine(Folder, "settings.json");
 
@@ -215,13 +225,13 @@ internal sealed class ArcadiaDriver : IDisposable
     // What the player sees, so the tests read it in one place however the view models are split up (#155).
 
     /// <summary>The cover with the focus in the library.</summary>
-    public GameTileViewModel? FocusedGame => Main.FocusedGame;
+    public GameTileViewModel? FocusedGame => Main.Library.FocusedGame;
 
     /// <summary>The covers of the library's current page.</summary>
-    public IReadOnlyList<GameTileViewModel> PageGames => Main.PageGames;
+    public IReadOnlyList<GameTileViewModel> PageGames => Main.Library.PageGames;
 
     /// <summary>The current page's number in the footer, as it reads ("2").</summary>
-    public string? CurrentPage => Main.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;
+    public string? CurrentPage => Main.Library.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;
 
     public LauncherTabViewModel? SelectedTab => Main.LauncherTabs.SelectedTab;
 
@@ -438,7 +448,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>What the App's timer does every few seconds: asks the launchers which games run.</summary>
     public async Task FollowRunningGamesAsync()
     {
-        await Main.PollRunningGamesAsync();
+        await Main.Session.PollRunningGamesAsync();
         Dispatcher.UIThread.RunJobs();
     }
 
@@ -482,7 +492,7 @@ internal sealed class ArcadiaDriver : IDisposable
     public async Task<ArcadiaDriver> FollowInstallsAsync()
     {
         Wait(InstallProgressInterval);
-        await Main.PollInstallsAsync();
+        await Main.Session.PollInstallsAsync();
         Dispatcher.UIThread.RunJobs();
         return this;
     }
@@ -493,7 +503,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// </summary>
     public async Task<ArcadiaDriver> RescanAsync()
     {
-        await Main.RefreshLibraryAsync(force: true);
+        await Main.Session.RefreshLibraryAsync(force: true);
         Dispatcher.UIThread.RunJobs();
         return this;
     }
@@ -503,13 +513,14 @@ internal sealed class ArcadiaDriver : IDisposable
     {
         // The rescan skips if the last one was only seconds ago; coming back from a launcher takes longer.
         Wait(TimeSpan.FromSeconds(10));
-        await Main.RefreshLibraryAsync();
+        await Main.Session.RefreshLibraryAsync();
         Dispatcher.UIThread.RunJobs();
         return this;
     }
 
     public void Dispose()
     {
+        Main.Dispose();
         _controllers.Dispose();
         _http.Dispose();
         if (_ownsFolder)
@@ -546,8 +557,8 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>As the App starts: the library, and which games already run.</summary>
     private async Task LoadAsync()
     {
-        await Main.LoadAsync();
-        await Main.PollRunningGamesAsync();
+        await Main.Session.LoadAsync();
+        await Main.Session.PollRunningGamesAsync();
         Dispatcher.UIThread.RunJobs();
     }
 }

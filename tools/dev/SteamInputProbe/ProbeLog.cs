@@ -21,7 +21,8 @@ internal sealed class ProbeLog : IDisposable
 
     public void Line(string text)
     {
-        var line = $"{_clock.ElapsedMilliseconds,7} ms  {text}";
+        // The QPC ticks (Stopwatch.GetTimestamp) let spike #239 line up this log with steamproxy239's, which reads the same clock.
+        var line = $"{_clock.ElapsedMilliseconds,7} ms  q{Stopwatch.GetTimestamp()}  {text}";
         lock (_lock)
         {
             Console.WriteLine(line);

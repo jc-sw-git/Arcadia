@@ -26,12 +26,12 @@ public sealed class ControllerTypesTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         var pad = arcadia.Sdl.Plug(Pad(type));
         arcadia.StartControllers();
-        var first = arcadia.Main.FocusedGame!.Game;
+        var first = arcadia.Main.Library.FocusedGame!.Game;
 
         arcadia.PressOn(pad, B.DPadRight);
-        Assert.NotSame(first, arcadia.Main.FocusedGame!.Game);
+        Assert.NotSame(first, arcadia.Main.Library.FocusedGame!.Game);
         arcadia.PressOn(pad, B.DPadLeft);
-        Assert.Same(first, arcadia.Main.FocusedGame!.Game);
+        Assert.Same(first, arcadia.Main.Library.FocusedGame!.Game);
 
         arcadia.PressOn(pad, B.West);
         var search = arcadia.Main.Search!;
@@ -54,12 +54,12 @@ public sealed class ControllerTypesTests
         var dualSense = arcadia.Sdl.Plug(KnownPads.DualSense);
         var switchPro = arcadia.Sdl.Plug(KnownPads.SwitchPro);
         arcadia.StartControllers();
-        var focused = arcadia.Main.FocusedGame;
+        var focused = arcadia.Main.Library.FocusedGame;
 
         arcadia.PressOn(dualSense, B.Guide).PressOn(dualSense, B.Touchpad).PressOn(dualSense, B.Misc1);
         arcadia.PressOn(switchPro, B.Guide).PressOn(switchPro, B.Misc1).Wait(TimeSpan.FromSeconds(1));
 
-        Assert.Same(focused, arcadia.Main.FocusedGame);
+        Assert.Same(focused, arcadia.Main.Library.FocusedGame);
         Assert.False(arcadia.Main.IsDialogOpen);
         Assert.Null(arcadia.Main.Search);
         Assert.Empty(arcadia.Starts.Keys);
@@ -72,16 +72,16 @@ public sealed class ControllerTypesTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         var dualSense = arcadia.Sdl.Plug(KnownPads.DualSense);
         arcadia.StartControllers();
-        var first = arcadia.Main.FocusedGame!.Game;
+        var first = arcadia.Main.Library.FocusedGame!.Game;
 
         var switchPro = arcadia.Sdl.Plug(KnownPads.SwitchPro);
         arcadia.PressOn(switchPro, B.DPadRight).PressOn(dualSense, B.DPadRight);
-        var third = arcadia.Main.FocusedGame!.Game;
+        var third = arcadia.Main.Library.FocusedGame!.Game;
         Assert.NotSame(first, third);
 
         arcadia.Sdl.Unplug(switchPro);
         arcadia.PressOn(dualSense, B.DPadLeft).PressOn(dualSense, B.DPadLeft);
-        Assert.Same(first, arcadia.Main.FocusedGame!.Game);
+        Assert.Same(first, arcadia.Main.Library.FocusedGame!.Game);
 
         var log = await File.ReadAllTextAsync(Path.Combine(Services.AppLog.Directory!, "arcadia.log"), TestContext.Current.CancellationToken);
         Assert.Contains($"Controller #{switchPro} verbunden: \"Nintendo Switch Pro Controller\" (SwitchPro, 057E:2009)", log);
@@ -98,10 +98,10 @@ public sealed class ControllerTypesTests
         var steamVirtual = arcadia.Sdl.Plug(KnownPads.SteamVirtual);
         var joyCon = arcadia.Sdl.Plug(KnownPads.JoyConLeft);
         arcadia.StartControllers();
-        var first = arcadia.Main.FocusedGame!.Game;
+        var first = arcadia.Main.Library.FocusedGame!.Game;
 
         arcadia.PressOn(steamVirtual, B.DPadRight).PressOn(joyCon, B.DPadRight);
-        Assert.Same(first, arcadia.Main.FocusedGame!.Game);
+        Assert.Same(first, arcadia.Main.Library.FocusedGame!.Game);
 
         // The DualSense and the virtual pad Steam made of it, a moment apart: one step, not two.
         arcadia.Sdl.Hold(dualSense, B.DPadRight);
@@ -113,7 +113,7 @@ public sealed class ControllerTypesTests
         arcadia.Sdl.Hold(steamVirtual);
         arcadia.PollControllers();
         arcadia.Press(UiAction.Left);
-        Assert.Same(first, arcadia.Main.FocusedGame!.Game);
+        Assert.Same(first, arcadia.Main.Library.FocusedGame!.Game);
         Assert.Equal([dualSense], arcadia.Sdl.OpenPads);
     }
 
@@ -131,9 +131,9 @@ public sealed class ControllerTypesTests
         var log = await File.ReadAllTextAsync(Path.Combine(Services.AppLog.Directory!, "arcadia.log"), TestContext.Current.CancellationToken);
         Assert.Contains("Controller-Eingabe nicht verfügbar (SDL3): System.DllNotFoundException", log);
 
-        var first = arcadia.Main.FocusedGame!.Game;
+        var first = arcadia.Main.Library.FocusedGame!.Game;
         window.Key(Key.D);
-        Assert.NotSame(first, arcadia.Main.FocusedGame!.Game);
+        Assert.NotSame(first, arcadia.Main.Library.FocusedGame!.Game);
         window.Key(Key.F);
         Assert.NotNull(arcadia.Main.Search);
     }
@@ -149,7 +149,7 @@ public sealed class ControllerTypesTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         var pad = arcadia.Sdl.Plug(KnownPads.Xbox360);
         arcadia.StartControllers();
-        var tile = arcadia.Main.FocusedGame!;
+        var tile = arcadia.Main.Library.FocusedGame!;
         arcadia.Sdl.Hold(pad, B.South);
         arcadia.PollControllers().Wait(TimeSpan.FromMilliseconds(300));
         Assert.True(tile.IsHolding);

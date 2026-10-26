@@ -46,7 +46,7 @@ internal sealed class RawProbe(ProbeOptions options, ProbeLog log)
         var nextReport = 1000L;
         try
         {
-            while (!cancel.IsCancellationRequested && log.ElapsedMs < options.Seconds * 1000)
+            while (!cancel.IsCancellationRequested && !options.ShouldStop(log))
             {
                 while (nextPrompt < prompts.Count && log.ElapsedMs >= prompts[nextPrompt].At * 1000)
                     log.Line($"PROMPT >>> {prompts[nextPrompt++].Text}");

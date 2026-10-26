@@ -61,7 +61,7 @@ public sealed class PageInterfaceTests
         arcadia.Installs.Set(hit.Game, new InstallProgress(InstallPhase.Downloading, 0.42));
         await arcadia.FollowInstallsAsync();
 
-        var cover = Assert.Single(arcadia.Main.PageGames, tile => tile.Game.Key == hit.Game.Key);
+        var cover = Assert.Single(arcadia.Main.Library.PageGames, tile => tile.Game.Key == hit.Game.Key);
         Assert.Equal(InstallPhase.Downloading, cover.InstallState?.Phase);
         Assert.Equal(InstallPhase.Downloading, Assert.Single(arcadia.Search!.Results, tile => tile.Game.Key == hit.Game.Key).InstallState?.Phase);
         Assert.Equal(InstallPhase.Downloading, detail.Current.Tile.InstallState?.Phase);
@@ -100,6 +100,35 @@ public sealed class PageInterfaceTests
         }
 
         Assert.False(closed.IsAlive, "Die geschlossene Suche hängt noch am geschlossenen Filter-Dialog.");
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T228-4")]
+    public async Task Closed_settings_are_disposed_and_so_are_the_pages_still_open_when_Arcadia_closes()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+
+        // Open, the settings watch SISR's setup; disposed, they stop.
+        arcadia.Press(UiAction.Settings);
+        Assert.True(arcadia.ControllerSupport.WatchSetup);
+        arcadia.Press(UiAction.Settings);
+        Assert.False(arcadia.Main.IsSettingsOpen);
+        Assert.False(arcadia.ControllerSupport.WatchSetup);
+
+        // Arcadia closes over the settings, and over a search with its keyboard out.
+        arcadia.Press(UiAction.Search);
+        Assert.True(arcadia.Search!.IsKeyboardOut);
+        var keyboardClosed = 0;
+        arcadia.Search.KeyboardClosed += () => keyboardClosed++;
+        arcadia.Click(arcadia.Main.OpenSettingsCommand);
+        Assert.True(arcadia.ControllerSupport.WatchSetup);
+
+        arcadia.Main.Dispose();
+        Assert.False(arcadia.ControllerSupport.WatchSetup);
+        Assert.Equal(1, keyboardClosed);
+
+        arcadia.Main.Dispose();
+        Assert.Equal(1, keyboardClosed);
     }
 
     // Its own method, so no local of the test keeps the search alive.

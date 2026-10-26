@@ -22,12 +22,12 @@ public sealed class SteamControllerTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         var pad = arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.StartControllers();
-        var first = arcadia.Main.FocusedGame!.Game;
+        var first = arcadia.Main.Library.FocusedGame!.Game;
 
         arcadia.PressOn(pad, B.DPadRight);
-        Assert.NotSame(first, arcadia.Main.FocusedGame!.Game);
+        Assert.NotSame(first, arcadia.Main.Library.FocusedGame!.Game);
         arcadia.PressOn(pad, B.DPadLeft);
-        Assert.Same(first, arcadia.Main.FocusedGame!.Game);
+        Assert.Same(first, arcadia.Main.Library.FocusedGame!.Game);
 
         arcadia.PressOn(pad, B.West);
         Assert.NotNull(arcadia.Main.Search);
@@ -49,7 +49,7 @@ public sealed class SteamControllerTests
         var steamController = arcadia.Sdl.Plug(KnownPads.SteamController);
         var sisrPad = arcadia.Sdl.Plug(KnownPads.SisrXbox360);
         arcadia.StartControllers();
-        var first = arcadia.Main.FocusedGame!.Game;
+        var first = arcadia.Main.Library.FocusedGame!.Game;
 
         // The press on the controller, then the same press on SISR's pad a poll later: one step, not two.
         arcadia.Sdl.Hold(steamController, B.DPadRight);
@@ -62,7 +62,7 @@ public sealed class SteamControllerTests
         arcadia.PollControllers();
         arcadia.Press(UiAction.Left);
 
-        Assert.Same(first, arcadia.Main.FocusedGame!.Game);
+        Assert.Same(first, arcadia.Main.Library.FocusedGame!.Game);
         Assert.Equal([steamController], arcadia.Sdl.OpenPads);
         var log = await File.ReadAllTextAsync(Path.Combine(Services.AppLog.Directory!, "arcadia.log"), TestContext.Current.CancellationToken);
         Assert.Contains($"Controller #{sisrPad} ignoriert (virtueller Xbox Controller, z. B. von SISR)", log);
@@ -80,13 +80,13 @@ public sealed class SteamControllerTests
         var sisrPad = arcadia.Sdl.Plug(KnownPads.SisrXbox360 with { Path = "XInput#2" });
         var steamVirtual = arcadia.Sdl.Plug(KnownPads.SteamVirtual);
         arcadia.StartControllers();
-        var first = arcadia.Main.FocusedGame!.Game;
+        var first = arcadia.Main.Library.FocusedGame!.Game;
 
         arcadia.PressOn(xbox, B.DPadRight).PressOn(steamController, B.DPadRight);
         arcadia.PressOn(sisrPad, B.DPadRight).PressOn(steamVirtual, B.DPadRight);
         arcadia.Press(UiAction.Left).Press(UiAction.Left);
 
-        Assert.Same(first, arcadia.Main.FocusedGame!.Game);
+        Assert.Same(first, arcadia.Main.Library.FocusedGame!.Game);
         Assert.Equal([steamController, xbox], arcadia.Sdl.OpenPads.Order());
     }
 
@@ -97,7 +97,7 @@ public sealed class SteamControllerTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         var pad = arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.StartControllers();
-        var focused = arcadia.Main.FocusedGame;
+        var focused = arcadia.Main.Library.FocusedGame;
 
         foreach (var button in new[] { B.Guide, B.Misc1, B.LeftPaddle1, B.LeftPaddle2, B.RightPaddle1, B.RightPaddle2, B.Touchpad, B.Misc2 })
         {
@@ -105,7 +105,7 @@ public sealed class SteamControllerTests
         }
 
         arcadia.Wait(TimeSpan.FromSeconds(1));
-        Assert.Same(focused, arcadia.Main.FocusedGame);
+        Assert.Same(focused, arcadia.Main.Library.FocusedGame);
         Assert.False(arcadia.Main.IsDialogOpen);
         Assert.Null(arcadia.Main.Search);
         Assert.Null(arcadia.Main.Settings);
@@ -139,9 +139,9 @@ public sealed class SteamControllerTests
         var again = arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.PollControllers();
         Assert.True(arcadia.Main.ShowControllerSupport);
-        var first = arcadia.Main.FocusedGame!.Game;
+        var first = arcadia.Main.Library.FocusedGame!.Game;
         arcadia.PressOn(again, B.DPadRight);
-        Assert.NotSame(first, arcadia.Main.FocusedGame!.Game);
+        Assert.NotSame(first, arcadia.Main.Library.FocusedGame!.Game);
     }
 
     [AvaloniaFact]

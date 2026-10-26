@@ -28,7 +28,7 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
 - .NET 10 SDK. `Directory.Build.props` sets `TreatWarningsAsErrors` — keep the build warning-free.
 - A running Arcadia locks `bin/` → close it before building: `Get-Process Arcadia | % { $_.CloseMainWindow() }`
   (CloseMainWindow, not Stop-Process: Arcadia must shut SISR down cleanly).
-- Logs: `%APPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, SISR start/stop),
+- Logs: `%APPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, `Bild:` press to frame, SISR start/stop),
   `sisr.log` (SISR's own log, overwritten per start). Settings: `%APPDATA%\Arcadia\settings.json`.
 - Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log:
   `Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} | ? ProviderName -match '.NET Runtime'`.
@@ -83,7 +83,7 @@ the start of the next feature iteration. Process and test plan format: `docs/tes
   manual test (e.g. a refactoring of features already covered by tests), the issue's section
   says so in one line with the reason. The `Testplan` CI check fails without the section.
 - **Tested before merge:** all of the issue's tests (unit, integration, an acceptance test per `E2E: yes` case) are in
-  the same PR before the owner tests; then the owner runs the issue's whole test plan file and Codex reviews; feedback
+  the same PR before the owner tests; then the owner runs the issue's whole test plan file; feedback
   is fixed in one batch in the same thread (details: `docs/testplans/README.md` → Before the merge).
 - **Performant:** no blocking work on the UI thread; code on a hot path (start, scan, library,
   input, running in the background beside a game) stays within the budgets below, measured when touched.
@@ -110,12 +110,12 @@ acceptance iteration (owner 2026-10-25; "Abnahme Iteration 1" was the last). Det
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), Steam, Epic, Demo, game start |
 | `src/Arcadia.Input` | Controllers via SDL3, gestures, mouse mode, `SendInput`, Steam desktop input filter |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support (SISR, usbip-win2) |
-| `src/Arcadia.App` | Avalonia 12 UI (MVVM), `Theme/Theme.axaml`, `MainViewModel` (navigation) and its children |
+| `src/Arcadia.App` | Avalonia 12 UI (MVVM), `Theme/Theme.axaml`, `MainViewModel` (routing between pages) and the pages (`IPage`) |
 | `tests/Arcadia.Core.Tests` | xUnit |
 | `tests/Arcadia.App.Tests` | Acceptance tests (xUnit v3, Avalonia headless): `ArcadiaDriver` presses buttons on `MainViewModel`, `ArcadiaWindow` clicks and looks at the real window; rules in `docs/testplans/README.md` |
 
 Which class does what: `docs/architecture/` (read it, or grep, rather than guessing). Big Picture UI is laid out at
-1920×1080 inside a `Viewbox`. Focus/navigation is done in the view models (`MainViewModel.Handle(UiAction)`), not with
+1920×1080 inside a `Viewbox`. Focus/navigation is done in the view models (`MainViewModel.Handle(UiAction)` routes to the page on top), not with
 Avalonia focus: buttons are `Focusable=False`, keys are handled in a tunnelling `KeyDown` handler.
 
 ## Rules that are easy to get wrong
@@ -190,8 +190,8 @@ Every step of a session resends its whole context, so keep it small (owner, 2026
 - Commit messages: imperative subject, body explains why.
 - At most two open UI PRs at a time (the owner tests them one after the other). After each merge to `main`, check
   yourself that your open PR is still mergeable and resolve conflicts before the owner finds them.
-- Code PRs get a review by Codex (`AGENTS.md`) as the standard; a second review by an independent Claude thread
-  only on the owner's request, e.g. for large or often reworked PRs (retro Iteration 1).
+- Threads work as personas (`docs/personas/`): a fresh quality engineer thread reviews and adds the acceptance
+  tests to every code PR; Codex (`AGENTS.md`) reviews only the whole iteration.
 - Opening a PR needs no prior OK (tell the owner the link). Merging, tags/releases, closing issues and posting
   comments only on the owner's explicit word.
 - License: GPL-3.0-only. Third-party notes in `THIRD-PARTY-NOTICES.md`.

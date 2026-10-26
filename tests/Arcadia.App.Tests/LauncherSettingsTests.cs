@@ -181,7 +181,7 @@ public sealed class LauncherSettingsTests
 
         arcadia.Press(UiAction.NextTab);
         Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.TabNames());
-        var empty = arcadia.Main.EmptyTab!;
+        var empty = arcadia.Main.Library.EmptyTab!;
         Assert.Equal(("Keine Spiele in Xbox", "Neu einlesen"), (empty.Title, empty.RescanText));
         Assert.True(empty.IsSettingsFocused);
 
@@ -204,7 +204,7 @@ public sealed class LauncherSettingsTests
 
         arcadia.Press(UiAction.NextTab);
         Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.TabNames());
-        var empty = arcadia.Main.EmptyTab!;
+        var empty = arcadia.Main.Library.EmptyTab!;
         Assert.Equal(("Xbox nicht gefunden", "Erneut suchen"), (empty.Title, empty.RescanText));
 
         arcadia.Press(UiAction.Right).Press(UiAction.Accept);
@@ -222,7 +222,7 @@ public sealed class LauncherSettingsTests
         using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings { ActiveLaunchers = [] });
 
         Assert.Empty(arcadia.Main.LauncherTabs.Items);
-        var empty = arcadia.Main.EmptyTab!;
+        var empty = arcadia.Main.Library.EmptyTab!;
         Assert.True(empty.HasNoLauncher);
         Assert.Equal("Kein Launcher aktiv", empty.Title);
         Assert.False(empty.CanRescan);

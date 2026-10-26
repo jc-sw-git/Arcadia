@@ -20,22 +20,34 @@ public sealed class GamepadRouting
     private readonly Func<bool> _isMouseModeOn;
     private readonly SoloButtons _viewAndMenu;
     private readonly SteamControllerPresence _steamController = new();
+    private readonly InputLatency _latency;
 
-    public GamepadRouting(MainViewModel viewModel, Func<bool> isArcadiaActive, Func<bool> isMouseModeOn, TimeProvider time)
+    // When View or Menu went down: they act only later (on release or after the solo delay), and their time to the frame
+    // counts from the press, like every other button's. Poll thread only.
+    private readonly Dictionary<GamepadButton, long> _soloPressedAt = [];
+
+    /// <param name="latency">Measures each press from the poll thread, where it arrives, to the frame that shows it.</param>
+    public GamepadRouting(MainViewModel viewModel, Func<bool> isArcadiaActive, Func<bool> isMouseModeOn, TimeProvider time, InputLatency latency)
     {
         _viewModel = viewModel;
+        _latency = latency;
         _isArcadiaActive = isArcadiaActive;
         _isMouseModeOn = isMouseModeOn;
         _viewAndMenu = new SoloButtons(GamepadButton.View, GamepadButton.Menu, SoloButtonDelay, time);
         _viewAndMenu.Pressed += Act;
         _viewAndMenu.Released += LetGo;
-        _viewAndMenu.Cancelled += _ => Dispatcher.UIThread.Post(viewModel.CancelHold);
+        _viewAndMenu.Cancelled += button =>
+        {
+            _soloPressedAt.Remove(button);
+            Dispatcher.UIThread.Post(viewModel.CancelHold);
+        };
     }
 
     /// <summary>The controllers are gone for good (<see cref="IGamepadSource.Lost"/>): held buttons are forgotten without acting.</summary>
     public void Drop()
     {
         _viewAndMenu.Reset();
+        _soloPressedAt.Clear();
         Dispatcher.UIThread.Post(_viewModel.CancelHold);
         if (_steamController.Drop())
         {
@@ -66,6 +78,7 @@ public sealed class GamepadRouting
 
         if (_viewAndMenu.Handles(button))
         {
+            _soloPressedAt[button] = InputLatency.Now();
             _viewAndMenu.Press(button);
         }
         else
@@ -88,6 +101,8 @@ public sealed class GamepadRouting
 
     private void Act(GamepadButton button)
     {
+        var pressedAt = _soloPressedAt.Remove(button, out var soloPressedAt) ? soloPressedAt : InputLatency.Now();
+
         // Checked here, not only on the UI thread: View held in the background brings Arcadia to the
         // front, and the same press must not open the context menu once it got there.
         if (!_isArcadiaActive())
@@ -102,7 +117,7 @@ public sealed class GamepadRouting
             {
                 if (_isArcadiaActive())
                 {
-                    _viewModel.HandleGamepad(action);
+                    _latency.Measure(action.ToString(), pressedAt, () => _viewModel.HandleGamepad(action));
                 }
             });
         }

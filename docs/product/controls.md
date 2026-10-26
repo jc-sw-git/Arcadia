@@ -34,6 +34,10 @@ Agreed with the owner; don't change without asking. Read this before changing th
   while the mouse mode is not "Aus", ⧉ and ≡ reach the game a little later: let go within 100 ms, as a 50 ms tap;
   held alone longer, as held from then on, ⧉ also while it brings Arcadia back. While Arcadia is in front or the mouse
   mode is on, the game gets a pad at rest. Own hold times and a pause key per game: separate issue.
+  Per game the Steam Controller is on "Arcadia" (Arcadia's pad) or "Steam-Eingabe" (no pad of Arcadia's, the game's own
+  Steam configuration); Steam games start on Steam-Eingabe, all others on Arcadia. It shows in preview, detail page and
+  context menu whenever a Steam Controller is connected; there is no global switch. Without the usbip driver and VIIPER
+  it is greyed out at "Steam-Eingabe" and says why (#213, owner 2026-10-25/26).
 - Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has
   no "Schließen" button besides (owner, 2026-10-20).

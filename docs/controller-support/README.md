@@ -3,6 +3,9 @@
 All verified on the owner's PC, 2026-10-09. Read before touching `src/Arcadia.ControllerSupport`,
 focus handling or anything SISR/usbip related.
 
+Since #213 part B (branch `feat/replace-sisr`) Arcadia no longer starts SISR: its own Xbox pad and the per-game mode
+"Arcadia" / "Steam-Eingabe" replace it ([xbox-pad.md](xbox-pad.md)). What follows about SISR stays until #214 removes it.
+
 - Steam gives the Steam Controller to processes it didn't start only as mouse/keyboard
   (desktop layout). `steam://forceinputappid/<appid>` only switches the layout; it does not
   deliver XInput to a foreign process. Restarting Arcadia through Steam was tried and dropped:

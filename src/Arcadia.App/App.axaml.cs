@@ -94,9 +94,11 @@ public partial class App : Application
             }
 
             var sisrHost = SisrHost.CreateDefault(http);
+            // SISR is replaced by Arcadia's own Xbox pad (#213); it stays only for what its install brings until #214.
             var controllerSupport = new ControllerSupportService(settings, sisrHost, http, time)
             {
                 Log = AppLog.Write,
+                StartsSisr = false,
             };
             // After an update restart: SISR kept running, and pauses for running games carry over.
             for (var i = 0; i < args.Length - 1; i++)
@@ -171,9 +173,15 @@ public partial class App : Application
             var routing = new GamepadRouting(viewModel, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, time);
             _gamepad.Polled += routing.Tick;
 
-            // The Steam Controller as an Xbox pad for games (#213); VIIPER from SISR's folder until #214.
+            // The Steam Controller as an Xbox pad for games, in the mode of the running games (#213); VIIPER from SISR's
+            // folder until #214. Steam games started directly in Steam count too (#119).
             var viiper = new ViiperXboxPads(Path.Combine(sisrHost.InstallDirectory, "viiper.exe"), Core.Diagnostics.LogLocation.Directory, sisrHost.CleanUpViiperAsync, AppLog.Write);
-            var xboxPad = SteamControllerForGames.Create(viiper, settings, controllerSupport, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, viewModel.Toast, time);
+            var steamPlatform = new ControllerSupportPlatform();
+            var forGames = SteamControllerForGames.Create(
+                viiper, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, viewModel.Toast, time);
+            var xboxPad = forGames.Pad;
+            viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;
+            forGames.Routing.DriverChanged += () => Dispatcher.UIThread.Post(() => viewModel.SetSteamControllerDriverReady(forGames.Routing.DriverReady));
             _gamepad.Polled += xboxPad.Feed;
             _gamepad.Lost += xboxPad.Drop;
             _gamepad.ButtonPressed += routing.Press;
@@ -190,8 +198,7 @@ public partial class App : Application
             // events are posted to the UI thread by their handlers.
             var sisrWatch = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.WatchAsync()), "SISR-Überwachung"));
             sisrWatch.Start();
-            var xboxPadTick = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => xboxPad.TickAsync()), "Xbox-Pad für Spiele"));
-            xboxPadTick.Start();
+            var xboxPadTick = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(forGames.TickAsync), "Xbox-Pad für Spiele"));
 
             // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
             // watch, rescan until the games it handed over are installed.
@@ -234,7 +241,18 @@ public partial class App : Application
             Task.Run(async () =>
             {
                 SisrHost.RemoveLegacyCopy();
+
+                // Before Arcadia's pad starts VIIPER: stopping SISR cleans up the VIIPER in SISR's folder.
+                await controllerSupport.StopReplacedSisrAsync();
                 await controllerSupport.TickAsync();
+                var route = forGames.Routing.Update();
+                Dispatcher.UIThread.Post(() =>
+                {
+                    viewModel.SetSteamControllerDriverReady(forGames.Routing.DriverReady);
+                    xboxPadTick.Start();
+                });
+                await xboxPad.TickAsync();
+                AppLog.Write($"Steam Controller in Spielen bereit ({route.Why})");
             }).Forget("SISR-Überwachung");
 
             desktop.ShutdownRequested += (_, _) =>

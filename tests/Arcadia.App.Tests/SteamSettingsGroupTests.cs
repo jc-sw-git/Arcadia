@@ -10,6 +10,9 @@ namespace Arcadia.App.Tests;
 /// <summary>The group "Steam" in the category "Controller" and the link to it from Steam's launcher page (#169).</summary>
 public sealed class SteamSettingsGroupTests
 {
+    /// <summary>SISR as before #213 part B: these tests cover its switch and setup until #214 removes them.</summary>
+    private static readonly StartArguments WithSisr = new(Sisr: true);
+
     private static readonly LauncherSpec[] WithSteam =
     [
         new(KnownLaunchers.Steam, 3),
@@ -21,7 +24,7 @@ public sealed class SteamSettingsGroupTests
     [Trait("TestCase", "T169-3")]
     public async Task The_group_Steam_comes_first_and_the_controller_alone_reaches_every_row_in_its_order()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: new FakeSteam());
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: new FakeSteam(), arguments: WithSisr);
         var controller = OpenController(arcadia);
 
         var keys = controller.Rows.Select(row => row.Key).ToList();
@@ -47,7 +50,7 @@ public sealed class SteamSettingsGroupTests
     public async Task Steams_desktop_layout_is_no_dependent_and_switches_with_SISR_off_and_the_mouse_mode_off()
     {
         var settings = SwitchedOn() with { SteamControllerSupport = false, MouseMode = new MouseModeSettings { Activation = MouseModeActivation.Off } };
-        using var arcadia = await ArcadiaDriver.StartAsync(settings: settings, steam: new FakeSteam());
+        using var arcadia = await ArcadiaDriver.StartAsync(settings: settings, steam: new FakeSteam(), arguments: WithSisr);
         var controller = OpenController(arcadia);
         var layout = controller.Rows.Single(row => row.Key == "steam-desktop-layout");
 
@@ -65,7 +68,7 @@ public sealed class SteamSettingsGroupTests
     [Trait("TestCase", "T169-5")]
     public async Task Steams_page_links_to_the_group_and_B_comes_back_to_the_link()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(WithSteam, steam: new FakeSteam());
+        using var arcadia = await ArcadiaDriver.StartAsync(WithSteam, steam: new FakeSteam(), arguments: WithSisr);
         var launchers = arcadia.OpenLauncherSettings();
         OpenPageOf(arcadia, launchers, "steam");
 
@@ -98,7 +101,7 @@ public sealed class SteamSettingsGroupTests
     [Trait("TestCase", "T169-5")]
     public async Task After_another_category_was_chosen_B_on_the_link_target_closes_the_settings_as_usual()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(WithSteam, steam: new FakeSteam());
+        using var arcadia = await ArcadiaDriver.StartAsync(WithSteam, steam: new FakeSteam(), arguments: WithSisr);
         var launchers = arcadia.OpenLauncherSettings();
         OpenPageOf(arcadia, launchers, "steam");
         arcadia.Press(UiAction.Down, times: launchers.Rows.Count).Press(UiAction.Accept);
@@ -116,7 +119,7 @@ public sealed class SteamSettingsGroupTests
     public async Task Switched_on_the_row_shows_its_status_and_its_lamp_green_while_SISR_runs()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
-        using (var off = await ArcadiaDriver.StartAsync(steam: steam))
+        using (var off = await ArcadiaDriver.StartAsync(steam: steam, arguments: WithSisr))
         {
             var sisr = Sisr(OpenController(off));
             Assert.Equal("Erlaubt es, den Steam Controller auch in Spielen außerhalb von Steam zu verwenden", sisr.Subtitle);
@@ -124,7 +127,7 @@ public sealed class SteamSettingsGroupTests
         }
 
         steam = new FakeSteam { IsSteamRunning = true };
-        using var arcadia = await ArcadiaDriver.StartAsync(settings: SwitchedOn(), steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync(settings: SwitchedOn(), steam: steam, arguments: WithSisr);
         var on = Sisr(OpenController(arcadia));
         Assert.Equal(RowLamp.Resting, on.Lamp);
 
@@ -139,7 +142,7 @@ public sealed class SteamSettingsGroupTests
     public async Task A_warning_turns_the_lamp_yellow_and_its_row_stands_indented_right_below()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
-        using var arcadia = await ArcadiaDriver.StartAsync(settings: SwitchedOn(), steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync(settings: SwitchedOn(), steam: steam, arguments: WithSisr);
         await StartSisrAsync(arcadia);
         var controller = OpenController(arcadia);
 
@@ -161,7 +164,7 @@ public sealed class SteamSettingsGroupTests
     public async Task SISR_crashing_again_and_again_turns_the_lamp_red()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
-        using var arcadia = await ArcadiaDriver.StartAsync(settings: SwitchedOn(), steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync(settings: SwitchedOn(), steam: steam, arguments: WithSisr);
         await StartSisrAsync(arcadia);
         var controller = OpenController(arcadia);
 

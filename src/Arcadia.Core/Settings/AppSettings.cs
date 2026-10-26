@@ -102,9 +102,15 @@ public sealed record AppSettings
     /// every game except those from the Steam launcher, which use Steam Input natively — running
     /// SISR there would double every input.
     /// </summary>
-    public bool ControllerSupportFor(Game game) =>
-        SteamControllerSupport
-        && (ControllerSupportOverrides.TryGetValue(game.Key, out var enabled) ? enabled : DefaultControllerSupportFor(game));
+    public bool ControllerSupportFor(Game game) => SteamControllerSupport && UsesArcadiaPad(game.Key);
+
+    /// <summary>
+    /// The Steam Controller mode of the game with this key (#213): true = "Arcadia" (Arcadia's Xbox pad), false =
+    /// "Steam-Eingabe". Without an override, Steam games use Steam-Eingabe and all others Arcadia. Takes a key, not a
+    /// game, so a Steam game started directly in Steam counts too when it isn't in the library (#119).
+    /// </summary>
+    public bool UsesArcadiaPad(string gameKey) =>
+        ControllerSupportOverrides.TryGetValue(gameKey, out var arcadia) ? arcadia : Game.LauncherIdOf(gameKey) != KnownLaunchers.Steam.Id;
 
     /// <summary>The mode a game starts with: "Steam Input" for Steam games, "Xbox Controller (SISR)" for all others.</summary>
     public static bool DefaultControllerSupportFor(Game game) => game.LauncherId != KnownLaunchers.Steam.Id;

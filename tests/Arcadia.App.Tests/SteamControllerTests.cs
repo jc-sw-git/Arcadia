@@ -113,28 +113,24 @@ public sealed class SteamControllerTests
     }
 
     /// <summary>
-    /// T212-5 and T212-10: with SISR switched on, the per-game mode shows as soon as SDL sees the Steam Controller, before
-    /// SISR runs, and goes as soon as it is switched off, even while SISR still reports it.
+    /// T212-5, T212-10 and T213-8: the per-game mode shows as soon as SDL sees the Steam Controller, with no switch to turn
+    /// on (#213), and goes as soon as it is switched off.
     /// </summary>
     [AvaloniaFact]
     [Trait("TestCase", "T212-5")]
     [Trait("TestCase", "T212-10")]
+    [Trait("TestCase", "T213-8")]
     public async Task The_per_game_mode_follows_the_Steam_Controller_as_SDL_sees_it()
     {
-        var steam = new FakeSteam { IsSteamRunning = true };
-        using var arcadia = await ArcadiaDriver.StartAsync(settings: SwitchedOn(), steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.StartControllers();
         Assert.False(arcadia.Main.ShowControllerSupport);
 
         var pad = arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.PollControllers();
-        Assert.True(arcadia.Main.ShowControllerSupport, "SDL sees the Steam Controller; SISR doesn't run yet");
+        Assert.True(arcadia.Main.ShowControllerSupport, "SDL sees the Steam Controller");
 
-        await arcadia.TickControllerSupportAsync();
-        await arcadia.WaitOnClockUntilAsync(() => arcadia.ControllerSupport.State == SisrState.Running, "SISR läuft", TimeSpan.FromSeconds(10));
-        Assert.True(arcadia.ControllerSupport.SteamControllerConnected);
-
-        // Switched off (or the puck pulled): SDL reports it gone at once, SISR only at its next look.
+        // Switched off (or the puck pulled): SDL reports it gone at once.
         arcadia.Sdl.Unplug(pad);
         arcadia.PollControllers();
         Assert.False(arcadia.Main.ShowControllerSupport, "SDL no longer sees it");
@@ -150,10 +146,10 @@ public sealed class SteamControllerTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T212-10")]
-    public async Task Without_SISR_switched_on_the_Steam_Controller_shows_no_per_game_mode()
+    public async Task Another_pad_alone_shows_no_per_game_mode()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.Sdl.Plug(KnownPads.XboxSeries);
         arcadia.StartControllers();
 
         Assert.False(arcadia.Main.ShowControllerSupport);

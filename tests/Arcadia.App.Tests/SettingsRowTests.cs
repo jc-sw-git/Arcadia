@@ -9,12 +9,15 @@ namespace Arcadia.App.Tests;
 /// <summary>What the rows of the settings page offer and how their values step (#15).</summary>
 public sealed class SettingsRowTests
 {
+    /// <summary>SISR as before #213 part B: these tests cover its switch and setup until #214 removes them.</summary>
+    private static readonly StartArguments Sisr = new(Sisr: true);
+
     [AvaloniaFact]
     [Trait("TestCase", "T15-5")]
     public async Task The_footer_names_only_the_buttons_of_the_focused_row()
     {
         var steam = new FakeSteam { IsSteamRunning = true, HasMarker = false };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: new AppSettings
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr, settings: new AppSettings
         {
             ActiveLaunchers = [.. ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id)],
             SteamControllerSupport = true,
@@ -106,7 +109,7 @@ public sealed class SettingsRowTests
     public async Task Steam_Controller_Kompatibilitaet_switches_with_either_arrow()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr);
         arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
         var sisr = Assert.IsType<SisrRowViewModel>(arcadia.Main.Settings!.FocusedRow);
 

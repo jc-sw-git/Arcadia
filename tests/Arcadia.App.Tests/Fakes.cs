@@ -122,8 +122,12 @@ internal sealed class RecordedStarts
         }
     }
 
+    /// <summary>Called as the launcher gets the start, before it returns: what a test sees at that moment.</summary>
+    public Action<string>? OnStart { get; set; }
+
     public void Add(string gameKey)
     {
+        OnStart?.Invoke(gameKey);
         lock (_keys)
         {
             _keys.Add(gameKey);

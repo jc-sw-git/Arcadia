@@ -104,9 +104,23 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, IPageHost
 
     public bool IsFirstRunShown => FirstRun is not null;
 
-    /// <summary>The per-game mode (SISR or Steam Input) shows only with a Steam Controller connected and SISR switched on.</summary>
+    /// <summary>The per-game mode ("Arcadia" or "Steam-Eingabe") shows only with a Steam Controller connected (#213).</summary>
     [ObservableProperty]
     public partial bool ShowControllerSupport { get; private set; }
+
+    /// <summary>usbip and VIIPER are there, so "Arcadia" can be chosen; without them the mode is greyed out (#213).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ControllerModeUnavailableReason))]
+    public partial bool SteamControllerDriverReady { get; private set; }
+
+    /// <summary>The preview's tooltip while the mode can't be chosen for want of the driver, else null.</summary>
+    public string? ControllerModeUnavailableReason => SteamControllerDriverReady ? null : ControllerModes.NeedsDriver;
+
+    /// <summary>
+    /// Right before a game starts: the App unplugs Arcadia's pad for a game on "Steam-Eingabe" (#213). Set once by the
+    /// App (and the tests); without it nothing happens.
+    /// </summary>
+    public Func<CancellationToken, Task>? BeforeGameStarts { get; set; }
 
     /// <summary>Dialogs show an ✕ in their corner while mouse or keyboard is in use; with the controller B closes them.</summary>
     [ObservableProperty]
@@ -121,7 +135,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, IPageHost
 
     partial void OnUsesControllerChanged(bool value) => InputHints.UsesController = value;
 
-    /// <summary>The Steam Controller mode of the focused game: "Xbox Controller (SISR)" or "Steam Input".</summary>
+    /// <summary>The Steam Controller mode of the focused game: "Arcadia" or "Steam-Eingabe".</summary>
     [ObservableProperty]
     public partial string FocusedControllerSupportText { get; private set; } = string.Empty;
 
@@ -1059,6 +1073,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, IPageHost
 
     bool IGameActionsOwner.ShowControllerMode => ShowControllerSupport;
 
+    bool IGameActionsOwner.SteamControllerDriverReady => SteamControllerDriverReady;
+
+    Task IGameActionsOwner.BeforeGameStartsAsync(CancellationToken cancellationToken) =>
+        BeforeGameStarts?.Invoke(cancellationToken) ?? Task.CompletedTask;
+
     bool IGameActionsOwner.ShowGameMouseMode => ShowGameMouseMode;
 
     void IGameActionsOwner.ShowDetails(GameTileViewModel tile) => OpenDetail(tile.Game.Key);
@@ -1177,8 +1196,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, IPageHost
 
     private bool _shownDefaultMouseModeAllowed = true;
 
-    // Null until SDL has seen a Steam Controller.
-    private bool? _steamControllerSeenBySdl;
+    private bool _steamControllerSeenBySdl;
 
     private void UpdateGameMouseModeState()
     {
@@ -1198,23 +1216,27 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, IPageHost
         }
     }
 
-    /// <summary>Switches the focused game between "Xbox Controller (SISR)" and "Steam Input"; not while it runs (#95).</summary>
+    /// <summary>Switches the focused game between "Arcadia" and "Steam-Eingabe"; not while it runs (#95), nor without the driver.</summary>
     [RelayCommand]
     private void CycleControllerSupport()
     {
-        if (FocusedGame is not { IsRunningOrStarting: false, Game: var game })
+        if (!SteamControllerDriverReady || FocusedGame is not { IsRunningOrStarting: false, Game: var game })
         {
             return;
         }
 
-        _controllerSupport.SetModeFor(game, !_controllerSupport.Settings.ControllerSupportFor(game));
+        _controllerSupport.SetModeFor(game, !_settings.Current.UsesArcadiaPad(game.Key));
     }
 
-    /// <summary>
-    /// SDL sees a Steam Controller or no longer does (#212). Once SDL has seen one, it alone says whether it is
-    /// connected, also while SISR is paused for a game. Until then what SISR saw counts: Arcadia started through
-    /// Steam doesn't see the controller in SDL, as Steam hides it.
-    /// </summary>
+    /// <summary>The driver for Arcadia's pad (usbip, VIIPER) came or went; UI thread.</summary>
+    public void SetSteamControllerDriverReady(bool ready)
+    {
+        SteamControllerDriverReady = ready;
+        Detail?.RebuildActions();
+        UpdateControllerSupportState();
+    }
+
+    /// <summary>SDL sees a Steam Controller or no longer does (#212); the per-game mode shows only while it does (#213).</summary>
     public void SetSteamControllerSeen(bool seen)
     {
         _steamControllerSeenBySdl = seen;
@@ -1223,10 +1245,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, IPageHost
 
     private void UpdateControllerSupportState()
     {
-        var support = _controllerSupport;
-
-        // The mode only matters with a Steam Controller; other pads never go through SISR (#72).
-        var show = _steamControllerSeenBySdl is { } seen ? support.Enabled && seen : support.SteamControllerConnected;
+        // The mode only matters with a Steam Controller; other pads are never emulated (#72, #213).
+        var show = _steamControllerSeenBySdl;
         if (ShowControllerSupport != show)
         {
             ShowControllerSupport = show;

@@ -226,7 +226,17 @@ public sealed class ControllerSupportService(
 
     public AppSettings Settings => sharedSettings.Current;
 
-    public bool Enabled => Settings.SteamControllerSupport;
+    /// <summary>
+    /// "Steam Controller Kompatibilität" is on and SISR may run. Never while <see cref="StartsSisr"/> is off: then all of
+    /// SISR's running, pausing and health stays idle, and only the setup is left for what SISR brings (VIIPER, usbip).
+    /// </summary>
+    public bool Enabled => StartsSisr && Settings.SteamControllerSupport;
+
+    /// <summary>
+    /// False since #213 part B: Arcadia's own Xbox pad replaces SISR, which is no longer started (SISR's code goes with
+    /// #214). The service's own tests keep SISR's behaviour until then.
+    /// </summary>
+    public bool StartsSisr { get; init; } = true;
 
     public bool IsSupportedPlatform => _platform.IsSupported;
 
@@ -608,7 +618,42 @@ public sealed class ControllerSupportService(
         }
     }
 
-    /// <summary>Per game: true = "Xbox Controller (SISR)", false = "Steam Input".</summary>
+    /// <summary>
+    /// With <see cref="StartsSisr"/> off: a SISR still running, from an Arcadia before the update or started by hand,
+    /// goes, so it never runs beside Arcadia's pad. Called once at start; never throws.
+    /// </summary>
+    public async Task StopReplacedSisrAsync(CancellationToken cancellationToken = default)
+    {
+        if (StartsSisr || !IsSupportedPlatform)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!await Task.Run(() => sisr.IsRunning, cancellationToken))
+            {
+                return;
+            }
+
+            Log?.Invoke("SISR läuft noch, wird aber nicht mehr gebraucht: SISR wird beendet");
+            await _gate.WaitAsync(cancellationToken);
+            try
+            {
+                await StopSisrAndReleaseControllerAsync(cancellationToken);
+            }
+            finally
+            {
+                _gate.Release();
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Log?.Invoke($"SISR ließ sich nicht beenden: {ex}");
+        }
+    }
+
+    /// <summary>Per game: true = "Arcadia" (formerly "Xbox Controller (SISR)"), false = "Steam-Eingabe".</summary>
     public void SetModeFor(Game game, bool useSisr) => UpdateSettings(settings => settings.WithControllerSupportChoice(game, useSisr));
 
     /// <summary>

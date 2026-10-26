@@ -11,6 +11,9 @@ namespace Arcadia.App.Tests;
 /// </summary>
 public sealed class SteamControllerSetupTests
 {
+    /// <summary>SISR as before #213 part B: these tests cover its switch and setup until #214 removes them.</summary>
+    private static readonly StartArguments Sisr = new(Sisr: true);
+
     private const uint Anna = 100_000_011;
     private const uint Bert = 100_000_012;
     private const uint Carla = 100_000_013;
@@ -20,7 +23,7 @@ public sealed class SteamControllerSetupTests
     public async Task With_one_Steam_account_the_marker_is_written_without_asking_and_SISR_starts()
     {
         using var files = SteamWith((Anna, "Anna", 1_790_000_000, true));
-        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files, arguments: Sisr);
         var controller = OpenSisrRow(arcadia);
 
         arcadia.Press(UiAction.Accept);
@@ -39,7 +42,7 @@ public sealed class SteamControllerSetupTests
     {
         using var files = SteamWith();
         files.ControllerSupport!.CloseSteam();
-        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files, arguments: Sisr);
         var controller = OpenSisrRow(arcadia);
 
         arcadia.Press(UiAction.Accept);
@@ -56,7 +59,7 @@ public sealed class SteamControllerSetupTests
     public async Task Without_any_Steam_account_a_running_Steam_is_not_closed()
     {
         using var files = SteamWith();
-        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files, arguments: Sisr);
         var controller = OpenSisrRow(arcadia);
 
         // Arcadia asks first whether it may close Steam; the check comes before Steam closes.
@@ -84,7 +87,7 @@ public sealed class SteamControllerSetupTests
         Directory.CreateDirectory(Path.Combine(files.Steam.UserData(dora), "config"));
         var sisr = files.ControllerSupport!.Sisr.ExecutablePath;
         Arcadia.Launchers.Steam.SteamShortcuts.Add(Path.Combine(files.Steam.UserData(Anna), "config", "shortcuts.vdf"), "SISR Marker", sisr, "--marker");
-        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files, arguments: Sisr);
         var controller = OpenSisrRow(arcadia);
 
         arcadia.Press(UiAction.Accept);
@@ -117,7 +120,7 @@ public sealed class SteamControllerSetupTests
     public async Task Without_a_tick_there_is_no_going_on_and_B_cancels_the_install()
     {
         using var files = SteamWith((Anna, "Anna", 1_790_000_300, true), (Bert, "Bert", 1_790_000_200, false));
-        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files, arguments: Sisr);
         var controller = OpenSisrRow(arcadia);
         arcadia.Press(UiAction.Accept);
 
@@ -141,7 +144,7 @@ public sealed class SteamControllerSetupTests
     public async Task With_only_another_account_chosen_SISR_does_not_start_and_the_settings_offer_to_add_the_entry()
     {
         using var files = SteamWith((Anna, "Anna", 1_790_000_300, true), (Bert, "Bert", 1_790_000_200, false));
-        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files, arguments: Sisr);
         var controller = OpenSisrRow(arcadia);
         arcadia.Press(UiAction.Accept);
 
@@ -164,7 +167,7 @@ public sealed class SteamControllerSetupTests
     {
         using var files = SteamWith((Anna, "Anna", 1_790_000_300, true));
         Directory.CreateDirectory(Path.Combine(files.Steam.UserData(Bert), "config"));
-        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files, arguments: Sisr);
         var controller = OpenSisrRow(arcadia);
 
         arcadia.Press(UiAction.Accept);

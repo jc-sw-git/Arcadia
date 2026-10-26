@@ -83,6 +83,29 @@ public class JournalTests
         Assert.Null(journal.File.Load().Problem);
     }
 
+    [Fact]
+    public void A_fallback_that_cannot_be_written_back_is_still_found_by_the_next_load()
+    {
+        // Review follow-up 1 (reproduced there): the write-back failed, the torn journal was already moved aside, and
+        // the next load found no journal and nothing to undo although the previous version listed work.
+        using var journal = new TempJournal();
+        journal.File.Save(Sample());
+        journal.File.Save(Sample());
+        File.WriteAllText(journal.File.Path, "{ torn");
+        Directory.CreateDirectory(journal.File.Path + ".tmp");   // the save's temp file can't be created
+
+        var first = journal.File.Load();
+        Assert.True(first.State.HasWork);
+        Assert.Contains("could not be written back", first.Problem);
+        Assert.False(journal.Exists);
+
+        var second = journal.File.Load();
+        Assert.True(second.FromPrevious);
+        Assert.Contains("missing; using the previous version", second.Problem);
+        Assert.True(second.State.HasWork);
+        Assert.Equal(5u, second.State.Generation);
+    }
+
     [Theory]
     [InlineData("{\"Version\":1,\"Generation\":7,\"HeldProcesses\":null}", "a list is missing")]
     [InlineData("{\"Version\":1,\"Generation\":7,\"HiddenDevices\":null}", "a list is missing")]

@@ -14,8 +14,7 @@ public static class Restore
     {
         var journal = new JournalFile(PanPaths.JournalPath);
         var guardian = new Guardian(new UnbiasedClock(), journal, new WindowsCleanup(log), log);
-        // Recovery loads the journal itself; a fallback it had to use is the journal from then on, so this look doesn't
-        // cost the recovery its state (review point 3).
+        // One load for the look and the recovery, so a fallback the load had to use can't get lost in between (review point 3).
         var before = journal.Load();
         if (!before.State.HasWork && before.Problem is null)
         {
@@ -23,7 +22,7 @@ public static class Restore
             return true;
         }
 
-        var complete = await guardian.RecoverAsync();
+        var complete = await guardian.RecoverAsync(before);
         log(complete ? "Restore complete" : $"Restore incomplete; see the lines above. What is left stays in {journal.Path} for the next run");
         return complete;
     }

@@ -88,11 +88,12 @@ public sealed class Guardian
     /// <summary>
     /// At start: reads the journal and undoes what it still lists (a blue screen or power loss left it, or Pan was
     /// restarted). A journal that can't be read is reported, never fatal. Returns whether nothing is left to undo;
-    /// what a failed step left stays in the journal for the next attempt (review point 8).
+    /// what a failed step left stays in the journal for the next attempt (review point 8). A caller that already
+    /// loaded the journal hands its <paramref name="snapshot"/> in, so both work from the same state.
     /// </summary>
-    public async Task<bool> RecoverAsync()
+    public async Task<bool> RecoverAsync(JournalLoad? snapshot = null)
     {
-        var load = _journalFile.Load();
+        var load = snapshot ?? _journalFile.Load();
         lock (_lock)
         {
             _journal = load.State;

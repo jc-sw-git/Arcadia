@@ -53,8 +53,8 @@ commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview
   write-through + `File.Replace`, `.previous` kept, a broken one moved to `.broken` and reported as
   `JournalUnreadable` → toast) written before `Started` is answered. A journal that parses but makes no sense (a
   null list, an entry without a process, an unknown version) counts as unreadable too. The fallback a load had to
-  use is written back as the journal at once, so a second load (the `--restore` check, then the recovery) sees the
-  same state. The journal is never deleted: with nothing to undo it still keeps the generation, so a restarted Pan
+  use is written back as the journal at once, and a missing journal beside a readable `.previous` counts as that one,
+  so a second load sees the same state; `--restore` hands its load to the recovery anyway. The journal is never deleted: with nothing to undo it still keeps the generation, so a restarted Pan
   counts on and never repeats a number a client remembers.
 - Steps, each with a 10 s timeout on a worker, never throwing: detach usbip ports attached from VIIPER (`usbip.exe port`
   / `detach -p`, from `%ProgramFiles%\USBip`), then end the held forwarding processes. Each ended process leaves the

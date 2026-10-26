@@ -99,8 +99,15 @@ public sealed class JournalFile(string path)
     /// </summary>
     public JournalLoad Load()
     {
+        var name = System.IO.Path.GetFileName(Path);
         if (!File.Exists(Path))
         {
+            // Only a failed write-back (below) or a hand leaves the previous version without a journal: it still counts.
+            if (File.Exists(PreviousPath) && TryRead(PreviousPath, out var kept, out _))
+            {
+                return new(kept, $"{name} missing; using the previous version{Promote(kept)}", FromPrevious: true);
+            }
+
             return new(new JournalState(), null, FromPrevious: false);
         }
 
@@ -110,7 +117,6 @@ public sealed class JournalFile(string path)
         }
 
         MoveAside(Path, BrokenPath);
-        var name = System.IO.Path.GetFileName(Path);
         if (File.Exists(PreviousPath) && TryRead(PreviousPath, out var previous, out _))
         {
             return new(previous, $"{name} unreadable ({problem}); using the previous version{Promote(previous)}", FromPrevious: true);

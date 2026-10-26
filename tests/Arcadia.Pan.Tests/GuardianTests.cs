@@ -279,6 +279,22 @@ public sealed class GuardianTests : IDisposable
     }
 
     [Fact]
+    public async Task Recovery_works_from_the_snapshot_it_is_handed()
+    {
+        // `--restore` looks first and recovers from the same load, whatever the file looks like by then (review follow-up 1).
+        var open = new JournalState { Generation = 4, ClientPid = 500, ClientStartTime = 1000, Emulating = true, HeldProcesses = [new(600, 1500, "viiper.exe")] };
+        _journal.File.Save(open);
+        var before = _journal.File.Load();
+        _journal.File.Save(new JournalState { Generation = 4 });   // on disk nothing is open any more
+        _cleanup.StartTimes[600] = 1500;
+
+        Assert.True(await _guardian.RecoverAsync(before));
+
+        Assert.Equal(600, Assert.Single(_cleanup.Ended).Pid);
+        AssertNothingToUndo(4);
+    }
+
+    [Fact]
     public async Task Recovery_never_ends_a_process_whose_id_was_reused_and_tells_a_live_client_from_a_gone_one()
     {
         _journal.File.Save(new JournalState

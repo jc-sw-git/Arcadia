@@ -21,8 +21,9 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   secured or checked the folder (`TrustFolder`); lines from before follow then, or reach only a console.
 - Update: at start, when the bundled Pan is newer than the installed one (file versions), one dialog "Pan
   aktualisieren" (A updates with one UAC prompt, B later; asked again at the next start). Pan's `--install` stages the
-  new exe as `Pan.exe.new` and verifies it first, then stops (= full teardown) and replaces the old service; if the new
-  Pan can't be created or started, the old `Pan.exe` comes back as the service. A rejected update changes nothing.
+  new exe as `Pan.exe.new` and verifies it first, then stops (= full teardown) and replaces the old service; if the file
+  swap fails or the new Pan can't be created, configured or started, a half-made service goes and the old `Pan.exe`
+  comes back as the service. A rejected update changes nothing.
 - Uninstall (Velopack hook, `Program.OnBeforeUninstall`): after the SISR and data questions, `Pan.exe --uninstall`
   elevated, one UAC prompt (only when the service or its Program Files folder exists), no question (Pan exists for
   Arcadia alone): stop (= teardown), delete the service, undo the journal, delete both folders and the empty

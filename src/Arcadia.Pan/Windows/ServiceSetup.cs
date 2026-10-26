@@ -37,51 +37,101 @@ public static class ServiceSetup
         var runsFromTarget = string.Equals(Path.GetFullPath(source), Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase);
         var staged = runsFromTarget ? null : Stage(source, target, expectedHash, log);
 
-        using var manager = OpenManager(Native.ScManagerConnect | Native.ScManagerCreateService);
-        if (TryOpenService(manager, Native.ServiceStop | Native.ServiceQueryStatus | Native.Delete) is { } existing)
-        {
-            using (existing)
-            {
-                // An update: the old Pan stops (its teardown runs if it was emulating) and goes.
-                Stop(existing, log);
-                if (!Native.DeleteService(existing.Handle))
-                {
-                    throw new Win32Exception();
-                }
-
-                log("Previous service removed");
-            }
-        }
-
         var backup = target + ".old";
-        if (staged is not null)
-        {
-            File.Delete(backup);
-            if (File.Exists(target))
-            {
-                File.Move(target, backup);
-            }
-
-            File.Move(staged, target);
-            log($"Installed {target}");
-        }
+        using var manager = OpenManager(Native.ScManagerConnect | Native.ScManagerCreateService);
+        // An update: the old Pan stops (its teardown runs if it was emulating) and goes.
+        var hadService = RemoveService(manager, log);
 
         try
         {
+            if (staged is not null)
+            {
+                File.Delete(backup);
+                if (File.Exists(target))
+                {
+                    File.Move(target, backup);
+                }
+
+                File.Move(staged, target);
+                log($"Installed {target}");
+            }
+
             CreateAndStart(manager, target, log);
+            File.Delete(backup);
         }
-        catch (Exception ex) when (staged is not null && File.Exists(backup) && ex is Win32Exception or IOException)
+        catch (Exception ex) when (ex is Win32Exception or IOException or UnauthorizedAccessException)
         {
-            // The new Pan didn't make it as a service: the one that worked before comes back, in file and service.
-            log($"Starting the new Pan failed ({ex.Message}); restoring the previous one");
-            File.Move(target, staged, overwrite: true);
-            File.Move(backup, target);
-            CreateAndStart(manager, target, log);
-            File.Delete(staged);
-            throw new InvalidOperationException($"the new Pan could not be started ({ex.Message}); the previous version is running again", ex);
+            // Everything after the old service went is undone together: a half-made service, the file swap, and the
+            // old service comes back from its backup (review follow-up 3).
+            log($"Installing the new Pan failed ({ex.Message}); restoring the previous one");
+            var restored = RollBack(manager, target, staged, backup, hadService, log);
+            throw new InvalidOperationException(
+                restored
+                    ? $"the new Pan could not be installed ({ex.Message}); the previous version is running again"
+                    : $"the new Pan could not be installed ({ex.Message}) and the previous one could not be restored; run the install again",
+                ex);
+        }
+    }
+
+    /// <summary>Stops and deletes the installed service, if any; true when there was one.</summary>
+    private static bool RemoveService(ServiceHandle manager, Action<string> log)
+    {
+        if (TryOpenService(manager, Native.ServiceStop | Native.ServiceQueryStatus | Native.Delete) is not { } existing)
+        {
+            return false;
         }
 
-        File.Delete(backup);
+        using (existing)
+        {
+            Stop(existing, log);
+            if (!Native.DeleteService(existing.Handle))
+            {
+                throw new Win32Exception();
+            }
+        }
+
+        log("Previous service removed");
+        return true;
+    }
+
+    /// <summary>
+    /// Puts back what <see cref="Install"/> changed after the old service went: a service it half made goes, the old
+    /// <c>Pan.exe</c> returns from <paramref name="backup"/> and, if there was a service before, runs again. The new
+    /// exe is removed. False when that failed too; the log says what is left.
+    /// </summary>
+    private static bool RollBack(ServiceHandle manager, string target, string? staged, string backup, bool hadService, Action<string> log)
+    {
+        try
+        {
+            RemoveService(manager, log);
+            if (staged is not null && File.Exists(backup))
+            {
+                if (File.Exists(target))
+                {
+                    File.Move(target, staged, overwrite: true);
+                }
+
+                File.Move(backup, target);
+                log($"Previous {target} restored");
+            }
+
+            if (hadService && File.Exists(target))
+            {
+                CreateAndStart(manager, target, log);
+            }
+
+            if (staged is not null)
+            {
+                File.Delete(staged);
+            }
+
+            return true;
+        }
+        catch (Exception ex) when (ex is Win32Exception or IOException or UnauthorizedAccessException)
+        {
+            log($"Rollback failed: {ex.Message}");
+            return false;
+        }
     }
 
     /// <summary>
@@ -132,18 +182,24 @@ public static class ServiceSetup
         }
 
         using var created = new ServiceHandle(service);
-        Describe(created, ServiceDescriptions.ForSystem());
-        SetRecovery(created);
-        SetPreshutdown(created, (uint)StopWait.TotalMilliseconds);
-        SetSecurity(created, ServiceSddl);
-        log($"Service {PanPaths.ServiceName} created ({imagePath})");
-
-        if (!Native.StartServiceW(created.Handle, 0, 0))
+        try
         {
-            var error = new Win32Exception();
+            Describe(created, ServiceDescriptions.ForSystem());
+            SetRecovery(created);
+            SetPreshutdown(created, (uint)StopWait.TotalMilliseconds);
+            SetSecurity(created, ServiceSddl);
+            log($"Service {PanPaths.ServiceName} created ({imagePath})");
+
+            if (!Native.StartServiceW(created.Handle, 0, 0))
+            {
+                throw new Win32Exception();
+            }
+        }
+        catch
+        {
             // Half a service is worse than none: without it the rollback (or the next install) starts clean.
             Native.DeleteService(created.Handle);
-            throw error;
+            throw;
         }
 
         log("Service started");

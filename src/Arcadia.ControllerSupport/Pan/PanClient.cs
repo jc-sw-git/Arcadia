@@ -378,17 +378,10 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
                     read += n;
                 }
 
-                lock (_lock)
+                if (!Dispatch(PanMessage.Read(buffer), link))
                 {
-                    if (!ReferenceEquals(_link, link))
-                    {
-                        // A dropped link can still complete a read that was in flight (an anonymous pipe on Windows reads
-                        // synchronously): what it carries belongs to a connection that is over.
-                        return;
-                    }
+                    return;
                 }
-
-                Dispatch(PanMessage.Read(buffer));
             }
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException)
@@ -397,11 +390,23 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
         }
     }
 
-    private void Dispatch(PanMessage message)
+    /// <summary>
+    /// Hands a message read on <paramref name="link"/> to its waiting request or raises the notice. A dropped link can
+    /// still complete a read that was in flight (an anonymous pipe on Windows reads synchronously), so the link is
+    /// checked in the same lock that picks the request or changes the state: what it carries belongs to a connection
+    /// that is over and is dropped. Returns false then, and the reader of that link ends.
+    /// </summary>
+    private bool Dispatch(PanMessage message, PanLink link)
     {
-        if (message.Reply == PanReply.TornDown)
+        TaskCompletionSource<PanMessage>? pending = null;
+        lock (_lock)
         {
-            lock (_lock)
+            if (!ReferenceEquals(_link, link))
+            {
+                return false;
+            }
+
+            if (message.Reply == PanReply.TornDown)
             {
                 _tornDownGeneration = message.Generation;
                 _teardownPending = false;
@@ -410,22 +415,23 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
                     _emulating = false;
                 }
             }
+            else
+            {
+                pending = _pending;
+            }
+        }
 
+        if (message.Reply == PanReply.TornDown)
+        {
             _log($"Pan: Emulation {message.Generation} von Pan beendet ({message.Reason})");
             TornDown?.Invoke(message.Generation, message.Reason);
-            return;
         }
-
-        TaskCompletionSource<PanMessage>? pending;
-        lock (_lock)
-        {
-            pending = _pending;
-        }
-
-        if (pending is null || !pending.TrySetResult(message))
+        else if (pending is null || !pending.TrySetResult(message))
         {
             _log($"Pan: unerwartete Antwort {message}");
         }
+
+        return true;
     }
 
     /// <summary>Closes the connection; a reason is logged and raised as <see cref="Lost"/>. Idempotent per link.</summary>

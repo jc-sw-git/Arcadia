@@ -76,7 +76,16 @@ internal sealed class FixedScanner(LauncherInfo launcher, IReadOnlyList<Game> ga
 {
     public LauncherInfo Launcher => launcher;
 
-    public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Game>>([.. games]);
+    private int _scans;
+
+    /// <summary>How often the launcher was read.</summary>
+    public int Scans => Volatile.Read(ref _scans);
+
+    public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default)
+    {
+        Interlocked.Increment(ref _scans);
+        return Task.FromResult<IReadOnlyList<Game>>([.. games]);
+    }
 }
 
 /// <summary>Games whose every title and date a test names, so its expectations don't come from Arcadia's own code.</summary>
@@ -244,4 +253,57 @@ internal sealed class NoSisr(HttpClient http) : ISisrHost
     }
 
     public Task<int> CleanUpViiperAsync(CancellationToken cancellationToken = default) => Task.FromResult(0);
+}
+
+/// <summary>
+/// The disk as Arcadia's install folder check sees it: the real one, except for folders a test removed or made hang (a
+/// network share that doesn't answer). Counts the checks, as they run off the UI thread.
+/// </summary>
+internal sealed class FakeInstallFolders
+{
+    private readonly HashSet<string> _removed = [];
+    private readonly HashSet<string> _failing = [];
+    private readonly ManualResetEventSlim _answer = new(initialState: true);
+    private int _checks;
+
+    /// <summary>How many checks were asked of the disk.</summary>
+    public int Checks => Volatile.Read(ref _checks);
+
+    public bool Exists(string folder)
+    {
+        Interlocked.Increment(ref _checks);
+        _answer.Wait(TimeSpan.FromSeconds(30));
+        lock (_removed)
+        {
+            if (_failing.Contains(folder))
+            {
+                throw new IOException($"Test: {Path.GetFileName(folder)} can't be read.");
+            }
+
+            return !_removed.Contains(folder) && Directory.Exists(folder);
+        }
+    }
+
+    /// <summary>Asking for the folder throws, as a file system error would.</summary>
+    public void Fail(string folder)
+    {
+        lock (_removed)
+        {
+            _failing.Add(folder);
+        }
+    }
+
+    /// <summary>The game was uninstalled in its launcher: the folder is gone.</summary>
+    public void Remove(string folder)
+    {
+        lock (_removed)
+        {
+            _removed.Add(folder);
+        }
+    }
+
+    /// <summary>From now on the disk doesn't answer until <see cref="Answer"/>.</summary>
+    public void Hang() => _answer.Reset();
+
+    public void Answer() => _answer.Set();
 }

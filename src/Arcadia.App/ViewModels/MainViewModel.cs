@@ -55,7 +55,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         SettingsService settings,
         LauncherLogos logos,
         FirstRunSetup firstRun,
-        TimeProvider time)
+        TimeProvider time,
+        InstallFolderCheck installFolders)
     {
         _logos = logos;
         _controllerSupport = controllerSupport;
@@ -69,7 +70,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         Session = new LibrarySession(this, library, installs, running, launchedGames, LauncherTabs, Toast, time);
         _actions = new GameActions(this, launcher, controllerSupport, installs, running, launchedGames, settings, Toast, time);
         _actions.ForegroundRequested += (_, e) => ForegroundRequested?.Invoke(this, e);
-        Library = new LibraryViewModel(LauncherTabs, settings, SaveView, _actions, Session.ShowStates, this, time);
+        Library = new LibraryViewModel(LauncherTabs, settings, SaveView, _actions, Session.ShowStates, this, time, installFolders);
         Library.PropertyChanged += OnLibraryChanged;
         LauncherTabs.Chosen += OnTabChosen;
         if (firstRun.IsPending)

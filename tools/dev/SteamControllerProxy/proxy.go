@@ -273,13 +273,16 @@ type stats struct {
 	mu        sync.Mutex
 	counts    map[string]int
 	delaysUs  []float64
+	hopUs     []float64
+	sent      map[string]int64 // vendor reports from the real device, by content, until they show up emulated
+	sentOrder []string
 	lastState map[uint8]string
 	log       *slog.Logger
 	buttons   *slog.Logger
 }
 
 func newStats(log, buttons *slog.Logger) *stats {
-	return &stats{counts: map[string]int{}, lastState: map[uint8]string{}, log: log, buttons: buttons}
+	return &stats{counts: map[string]int{}, sent: map[string]int64{}, lastState: map[uint8]string{}, log: log, buttons: buttons}
 }
 
 func (s *stats) count(key string) {
@@ -294,6 +297,19 @@ func (s *stats) dropped(iface uint8) { s.count(fmt.Sprintf("IN iface %d dropped"
 // reports (0x42, 0x45, 0x47) carry a sequence byte, then the 32-bit button mask (SDL's controller_structs.h).
 func (s *stats) input(iface uint8, data []byte, at int64, vendor bool) {
 	s.count(fmt.Sprintf("IN iface %d", iface))
+	if vendor {
+		key := string(data)
+		s.mu.Lock()
+		if _, seen := s.sent[key]; !seen {
+			s.sent[key] = at
+			s.sentOrder = append(s.sentOrder, key)
+			if len(s.sentOrder) > 4096 {
+				delete(s.sent, s.sentOrder[0])
+				s.sentOrder = s.sentOrder[1:]
+			}
+		}
+		s.mu.Unlock()
+	}
 	if !vendor || len(data) < 6 || (data[0] != 0x42 && data[0] != 0x45 && data[0] != 0x47) {
 		return
 	}
@@ -307,6 +323,18 @@ func (s *stats) input(iface uint8, data []byte, at int64, vendor bool) {
 	}
 }
 
+// arrived takes a report read back from the emulated device, trimmed like the real one.
+func (s *stats) arrived(data []byte, at int64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if sentAt, ok := s.sent[string(data)]; ok {
+		s.hopUs = append(s.hopUs, float64(at-sentAt)*1e6/float64(qpcFrequency))
+		delete(s.sent, string(data))
+		return
+	}
+	s.counts["hop: emulated report not matched"]++
+}
+
 func (s *stats) delivered(iface uint8, at int64) {
 	delay := float64(qpcNow()-at) * 1e6 / float64(qpcFrequency)
 	s.mu.Lock()
@@ -316,8 +344,8 @@ func (s *stats) delivered(iface uint8, at int64) {
 
 func (s *stats) report() {
 	s.mu.Lock()
-	counts, delays := s.counts, s.delaysUs
-	s.counts, s.delaysUs = map[string]int{}, nil
+	counts, delays, hops := s.counts, s.delaysUs, s.hopUs
+	s.counts, s.delaysUs, s.hopUs = map[string]int{}, nil, nil
 	s.mu.Unlock()
 	keys := make([]string, 0, len(counts))
 	for k := range counts {
@@ -329,6 +357,11 @@ func (s *stats) report() {
 		fmt.Fprintf(&b, "%s=%d; ", k, counts[k])
 	}
 	s.log.Info("last 10 s", "counts", b.String())
+	if len(hops) > 0 {
+		sort.Float64s(hops)
+		s.log.Info("hop real->emulated read (us)", "n", len(hops), "p50", hops[len(hops)/2],
+			"p95", hops[len(hops)*95/100], "p99", hops[len(hops)*99/100], "max", hops[len(hops)-1])
+	}
 	if len(delays) > 0 {
 		sort.Float64s(delays)
 		s.log.Info("proxy delay read->usbip (us)", "n", len(delays), "p50", delays[len(delays)/2],

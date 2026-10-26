@@ -6,9 +6,13 @@
 // VIIPER's internal USB server); not part of Arcadia.
 //
 //	steamproxy239 -descriptors descriptors.json -log proxy.log [-seconds 900] [-stopfile stop.txt] [-watch]
+//	              [-parent pid -restore Restore-HidHide-239.ps1] [-allow A3,DC]
 //
-// -watch only reads the real device beside Steam and logs when its buttons change (the latency baseline of step 3).
-// Button changes always go to <log>.buttons with their QPC time.
+// -watch only reads the real device beside Steam and logs when its buttons change. Button changes always go to
+// <log>.buttons with their QPC time. With -parent the proxy ends when that process (the check script) is gone and
+// then runs the -restore script, so a closed window never leaves the puck hidden from Steam. -allow adds message
+// types (hex) to the ones forwarded. The extra hop is measured all the time: the proxy reads its own emulated device
+// like Steam does and logs how long each real report took to arrive there.
 package main
 
 import (
@@ -17,7 +21,10 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
 	"os/signal"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 	"unsafe"
@@ -50,6 +57,9 @@ func main() {
 	stopFile := flag.String("stopfile", "", "stop as soon as this file exists")
 	vidPid := flag.String("device", "vid_28de&pid_1304", "vendor and product id of the real device, as in its HID path")
 	watch := flag.Bool("watch", false, "only read the real device and log its button changes, emulate nothing")
+	parent := flag.Int("parent", 0, "end when this process is gone")
+	restore := flag.String("restore", "", "PowerShell script to run when the parent process is gone")
+	allow := flag.String("allow", "A3", "extra message types (hex, comma-separated) to forward")
 	flag.Parse()
 
 	file, err := os.Create(*logPath)
@@ -62,20 +72,46 @@ func main() {
 	procQPF.Call(uintptr(unsafe.Pointer(&qpcFrequency)))
 	log.Info("start", "qpcFrequency", qpcFrequency)
 
-	stop := stopWhen{duration: time.Duration(*seconds) * time.Second, file: *stopFile}
-	if err := run(log, *logPath+".buttons", *descriptors, *vidPid, *watch, stop); err != nil {
+	for _, text := range strings.Split(*allow, ",") {
+		if value, err := strconv.ParseUint(strings.TrimSpace(text), 16, 8); err == nil {
+			allowedMessages[byte(value)] = "allowed by -allow"
+		}
+	}
+	stop := stopWhen{duration: time.Duration(*seconds) * time.Second, file: *stopFile, parent: openParent(*parent)}
+	err = run(log, *logPath+".buttons", *descriptors, *vidPid, *watch, &stop)
+	if err != nil {
 		log.Error("stopped", "error", err)
+	}
+	// Only now, with the emulated device gone, may the real one come back to Steam.
+	if stop.parentGone && *restore != "" {
+		out, restoreErr := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", *restore, "-Quiet").CombinedOutput()
+		log.Info("restore after the check script was closed", "error", restoreErr, "output", string(out))
+	}
+	if err != nil {
 		os.Exit(1)
 	}
 	log.Info("done")
 }
 
 type stopWhen struct {
-	duration time.Duration
-	file     string
+	duration   time.Duration
+	file       string
+	parent     windows.Handle
+	parentGone bool
 }
 
-func run(log *slog.Logger, buttonsPath, descriptorPath, vidPid string, watch bool, stop stopWhen) error {
+func openParent(pid int) windows.Handle {
+	if pid == 0 {
+		return 0
+	}
+	handle, err := windows.OpenProcess(windows.SYNCHRONIZE, false, uint32(pid))
+	if err != nil {
+		return 0
+	}
+	return handle
+}
+
+func run(log *slog.Logger, buttonsPath, descriptorPath, vidPid string, watch bool, stop *stopWhen) error {
 	desc, reports, err := loadDescriptor(descriptorPath)
 	if err != nil {
 		return err
@@ -155,10 +191,54 @@ func run(log *slog.Logger, buttonsPath, descriptorPath, vidPid string, watch boo
 		return fmt.Errorf("attach through usbip-win2: %w", err)
 	}
 	log.Info("emulated device attached", "bus", meta.BusID, "device", meta.DevID)
+	go measureHop(ctx, log, vidPid, collections, p.ifaces, stats)
 	return wait(ctx, log, stop, served)
 }
 
-func wait(ctx context.Context, log *slog.Logger, stop stopWhen, served <-chan error) error {
+// measureHop reads the emulated device's vendor collections, as Steam does, and matches every report with the moment
+// the real device delivered it: that is the whole extra hop (proxy, usbip-win2, Windows' HID stack once more).
+func measureHop(ctx context.Context, log *slog.Logger, vidPid string, real map[uint8][]*collection, ifaces map[uint8]*proxyInterface, stats *stats) {
+	time.Sleep(3 * time.Second)
+	known := map[string]bool{}
+	for _, list := range real {
+		for _, c := range list {
+			known[strings.ToLower(c.Path)] = true
+		}
+	}
+	all, err := findCollections(vidPid)
+	if err != nil {
+		log.Warn("hop measurement: list failed", "error", err)
+		return
+	}
+	for _, list := range all {
+		for _, c := range list {
+			if known[strings.ToLower(c.Path)] {
+				continue
+			}
+			pi := ifaces[c.Interface]
+			if err := c.open(); err != nil || pi == nil || c.Caps.UsagePage < 0xFF00 || c.Caps.InputLength == 0 {
+				c.close()
+				continue
+			}
+			log.Info("hop measurement reads", "path", c.Path)
+			go func(c *collection, sizes reportSizes) {
+				defer c.close()
+				buffer := make([]byte, c.Caps.InputLength)
+				for ctx.Err() == nil {
+					n, err := c.read(buffer)
+					if err != nil {
+						log.Warn("hop measurement read stopped", "path", c.Path, "error", err)
+						return
+					}
+					at := qpcNow()
+					stats.arrived(fromWindows(buffer[:n], sizes.UsesIDs, sizes.Input), at)
+				}
+			}(c, pi.sizes)
+		}
+	}
+}
+
+func wait(ctx context.Context, log *slog.Logger, stop *stopWhen, served <-chan error) error {
 	deadline := time.After(stop.duration)
 	ticker := time.NewTicker(200 * time.Millisecond)
 	defer ticker.Stop()
@@ -173,6 +253,13 @@ func wait(ctx context.Context, log *slog.Logger, stop stopWhen, served <-chan er
 		case err := <-served:
 			return fmt.Errorf("usbip server ended: %w", err)
 		case <-ticker.C:
+			if stop.parent != 0 {
+				if event, _ := windows.WaitForSingleObject(stop.parent, 0); event == windows.WAIT_OBJECT_0 {
+					log.Warn("the check script is gone")
+					stop.parentGone = true
+					return nil
+				}
+			}
 			if stop.file != "" {
 				if _, err := os.Stat(stop.file); err == nil {
 					log.Info("stop file found")

@@ -1111,6 +1111,9 @@ public sealed class ControllerSupportService(
         Log?.Invoke("Treiber eingerichtet (usbip-win2 und Pan)");
     }
 
+    /// <summary>This Arcadia bundles a newer Pan than the installed one (#243); looks at files and the service, so off the UI thread.</summary>
+    public bool IsPanUpdateAvailable => IsSupportedPlatform && _platform.IsPanUpdateAvailable;
+
     /// <summary>Arcadia brought a newer Pan and the user said yes at start (#243): installs it, and the driver if that is missing too.</summary>
     public Task UpdatePanAsync(CancellationToken cancellationToken = default) =>
         RunBusyAsync(DriversBusyText, InstallDriversAsync, cancellationToken);

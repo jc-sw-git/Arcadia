@@ -89,7 +89,10 @@ public sealed class ServiceTests : IDisposable
         var pan = await PublishPanAsync();
         var hash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(pan)));
 
-        // T243-7: install with the hash Arcadia computed; the copy lands in Program Files, the service runs.
+        // T243-7: a hash that isn't the file's (a swapped Pan.exe) installs nothing; with the hash Arcadia computed the
+        // copy lands in Program Files and the service runs.
+        Assert.Equal(3, Run(pan, "--install", "--expect-hash", new string('0', 64)));
+        Assert.False(File.Exists(PanPaths.InstalledExecutable), "nothing installed with a wrong hash");
         Assert.Equal(0, Run(pan, "--install", "--expect-hash", hash));
         Assert.True(File.Exists(PanPaths.InstalledExecutable), "Pan.exe is in Program Files");
         using (var service = new ServiceController(PanPaths.ServiceName))

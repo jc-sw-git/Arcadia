@@ -25,9 +25,11 @@ commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview
   EmulationStarted, EmulationStopped, Heartbeat, TeardownAcknowledged, PlannedExit (Hide/Unhide later); replies HelloOk,
   Started, Stopped, HeartbeatOk, Acknowledged, Rejected(reason), TornDown(reason, notice), Unsupported, Refused(reason).
   Pan takes the first client of the active console session (`ProcessIdToSessionId` ==
-  `WTSGetActiveConsoleSessionId`); a second client or one from another session gets `Refused`. The pipe's DACL: SYSTEM
-  full, Interactive read/write, nobody else; `FILE_FLAG_FIRST_PIPE_INSTANCE`, so nobody can squat the name first.
-  Arcadia checks that the server's PID is the service's (`QueryServiceStatusEx`) before it says hello.
+  `WTSGetActiveConsoleSessionId`); connections are served side by side, so a second client or one from another session
+  gets `Refused` at once. The pipe's DACL: SYSTEM full, Interactive read/write, nobody else;
+  `FILE_FLAG_FIRST_PIPE_INSTANCE`, so nobody can squat the name first (a taken name is retried every 5 s, logged).
+  Arcadia checks that the server's PID is the service's (`OpenService` with `SERVICE_QUERY_STATUS` only, so without
+  elevation; `QueryServiceStatusEx`) before it says hello.
 - Every emulation has a generation: `EmulationStarted` returns the next number; Pan replies `WrongGeneration` to
   anything about another one. After a teardown the client must `TeardownAcknowledged` before the next emulation
   (`TeardownNotAcknowledged`); `PanClient` does that itself.
@@ -36,8 +38,10 @@ commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview
   the pad comes back on the next tick as a new generation (counts as a pad loss for the 3-in-5-minutes rule).
   `PlannedExit` (Arcadia's normal shutdown) unregisters without a teardown.
 - Client gone (pipe broke or process ended: Pan holds the client's process handle) → teardown `ClientGone`. Service
-  stop or pre-shutdown while emulating → teardown too (`ServiceStopping`); the client learns of it with the `TornDown`
-  notice and, if the service went, with `Lost`. Power resume only restarts the hang clock: sleep is no hang.
+  stop or pre-shutdown while emulating → teardown too (`ServiceStopping`), run while the pipe is still open and its
+  `TornDown` notice given 2 s to go out before the pipe closes; then the client sees `Lost` with the service gone. Power
+  resume only restarts the hang clock: sleep is no hang. A torn-down generation is remembered per connection only: a
+  Pan that counts anew (reinstalled, journal gone) may hand it out again as a live one.
 
 ## Teardown and journal
 
@@ -45,10 +49,13 @@ commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview
   is a few ms); Pan takes every child of the client named `viiper.exe` (Toolhelp32, parent PID + start time) and holds
   its handle, so a PID can't be reused under it. Journal `%ProgramData%\Arcadia\Pan\journal.json` (temp +
   write-through + `File.Replace`, `.previous` kept, a broken one moved to `.broken` and reported as
-  `JournalUnreadable` → toast) written before `Started` is answered.
+  `JournalUnreadable` → toast) written before `Started` is answered. The journal is never deleted: with nothing to
+  undo it still keeps the generation, so a restarted Pan counts on and never repeats a number a client remembers.
 - Steps, each with a 10 s timeout on a worker, never throwing: detach usbip ports attached from VIIPER (`usbip.exe port`
-  / `detach -p`, from `%ProgramFiles%\USBip`), then end the held forwarding processes. Ended processes leave the
-  journal at once; what failed stays for the next try.
+  / `detach -p`, from `%ProgramFiles%\USBip`), then end the held forwarding processes. Each ended process leaves the
+  journal at once (under the guardian's lock, so a step left behind after its timeout can't corrupt it); what failed
+  stays listed and goes into the next emulation's teardown. With no `viiper.exe` of the client (another program's
+  VIIPER) a teardown only detaches the ports, logged at start.
 - A restarted Pan (crash, reboot, `--restore`) always undoes its journal first: held processes are re-verified by PID +
   start time, the client itself is never killed, "client N still running/gone" is only logged (#244 adds the crash
   report hook).
@@ -62,12 +69,17 @@ commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview
   `ControllerSupportPlatform.InstallDriversAsync` downloads the usbip-win2 installer only when the driver is missing or
   too old (`VerifiedDownload`, GitHub's SHA-256), then runs the bundled `Pan.exe --install --expect-hash <sha256 of the
   bundled exe> [--usbip-installer <path>]` elevated: one UAC prompt for both. Pan (elevated) checks the installer's
-  Authenticode signature against `UsbipRelease.Publisher` itself, runs it `/S` (5 min), copies itself to
-  `%ProgramFiles%\Arcadia\Pan\Pan.exe` and compares the copy's SHA-256 with the source and the expected hash, protects
-  `%ProgramData%\Arcadia\Pan` (SYSTEM and Administrators only), creates the service with a quoted image path, auto
+  Authenticode signature against `UsbipRelease.Publisher` on a copy in Pan's data folder (the user can't swap it
+  after the check), runs that `/S` (5 min), copies itself to
+  `%ProgramFiles%\Arcadia\Pan\Pan.exe` and compares the copy's SHA-256 with the source and the expected hash, creates the service with a quoted image path, auto
   start, the description in the system language (de, en, fr, es, it; else en), recovery, 40 s pre-shutdown, and the
   DACL `D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;RPLCLORC;;;IU)` (users start and query,
   never change). A declined prompt is a failed action ("… abgelehnt"); Pan's exit code 3 points to `pan.log`.
+- Data folder: `%ProgramData%` lets any user create `Arcadia\Pan` first and keep its ownership, so `--install`
+  secures both folders before its first log line (`ServiceSetup.SecureDataDirectory`): a reparse point is deleted, a
+  folder not owned by SYSTEM/Administrators is renamed to `<name>.untrusted-<time>`, the folder is created with a
+  protected DACL (SYSTEM and Administrators full, no inheritance) and Administrators as owner. The service and
+  `--restore` refuse to run when the folder doesn't look like that (`CheckDataDirectory`; exit 3 / service failure).
 - Update: at start, when the bundled Pan is newer than the installed one (file versions), one dialog "Pan
   aktualisieren" (A updates with one UAC prompt, B later; asked again at the next start). Pan's `--install` stops and
   replaces the old service; its stop is a full teardown.

@@ -5,7 +5,8 @@ namespace Arcadia.Pan;
 
 /// <summary>
 /// Pan's log in <see cref="PanPaths.LogPath"/>: one line per event, rotated at 1 MB so it never grows. A log that can't
-/// be written never stops Pan. Lines also go to the console when Pan runs there.
+/// be written never stops Pan. Lines also go to the console when Pan runs there. The folder is never created here: the
+/// install secures it (review, bug 1), and a missing one only loses the line.
 /// </summary>
 public sealed class PanLog(string path, bool console)
 {
@@ -24,7 +25,6 @@ public sealed class PanLog(string path, bool console)
         {
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 if (File.Exists(path) && new FileInfo(path).Length > MaxBytes)
                 {
                     File.Move(path, path + ".old", overwrite: true);

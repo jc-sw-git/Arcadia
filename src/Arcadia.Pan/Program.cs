@@ -54,6 +54,8 @@ internal static class Program
 
                     return 0;
                 case "--install":
+                    // The log lives in the data folder: secured before anything is written there (review, bug 1).
+                    ServiceSetup.SecureDataDirectory();
                     if (Option(args, "--usbip-installer") is { } usbipInstaller)
                     {
                         UsbipInstall.RunAsync(usbipInstaller, log.Write).GetAwaiter().GetResult();
@@ -65,6 +67,12 @@ internal static class Program
                     ServiceSetup.UninstallAsync(log.Write).GetAwaiter().GetResult();
                     return 0;
                 case "--restore":
+                    if (ServiceSetup.CheckDataDirectory() is { } problem)
+                    {
+                        Console.Error.WriteLine($"Not restoring: {problem}; run Pan.exe --install again.");
+                        return 3;
+                    }
+
                     Restore.RunAsync(log.Write).GetAwaiter().GetResult();
                     return 0;
                 default:
@@ -75,6 +83,7 @@ internal static class Program
         catch (Exception ex)
         {
             log.Write($"{command} failed: {ex.Message}");
+            Console.Error.WriteLine($"{command} failed: {ex.Message}");
             return 3;
         }
     }

@@ -77,19 +77,6 @@ public class JournalTests
     }
 
     [Fact]
-    public void Clearing_keeps_the_last_journal_as_the_previous_one()
-    {
-        using var journal = new TempJournal();
-        journal.File.Save(Sample());
-        journal.File.Clear();
-        journal.File.Clear();
-
-        Assert.False(journal.Exists);
-        Assert.True(File.Exists(journal.File.PreviousPath));
-        Assert.False(journal.File.Load().State.HasWork);
-    }
-
-    [Fact]
     public void The_journal_with_nothing_open_has_no_work()
     {
         var state = new JournalState { Generation = 3 };

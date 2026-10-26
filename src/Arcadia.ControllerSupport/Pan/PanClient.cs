@@ -262,9 +262,12 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
         {
             _link = link;
             _pending = null;
+            // A generation torn down on an earlier connection means nothing to this Pan (it may have restarted and
+            // count differently); what it still wants acknowledged, hello says (review, bug 4).
+            _tornDownGeneration = 0;
         }
 
-        _ = Task.Run(() => ReadAsync(link), CancellationToken.None);
+        _ = Task.Run(() => ReadGuardedAsync(link), CancellationToken.None);
         var hello = await RequestAsync(PanMessage.Of(PanCommand.Hello), cancellationToken);
         if (hello.Reply != PanReply.HelloOk)
         {
@@ -293,6 +296,20 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
 
         _log($"Pan: verbunden ({link.Description}, Protokoll {PanMessage.ProtocolVersion}, Generation {hello.Generation})");
         Connected?.Invoke();
+    }
+
+    /// <summary>The reader never ends silently: a throwing subscriber is logged with its stack and costs the link (DoD: robust).</summary>
+    private async Task ReadGuardedAsync(PanLink link)
+    {
+        try
+        {
+            await ReadAsync(link);
+        }
+        catch (Exception ex)
+        {
+            _log($"Pan: Fehler beim Lesen der Verbindung: {ex}");
+            Drop("Verbindung zu Pan nach einem Fehler geschlossen", link);
+        }
     }
 
     private async Task ReadAsync(PanLink link)

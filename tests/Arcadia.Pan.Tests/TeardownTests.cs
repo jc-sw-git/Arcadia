@@ -42,9 +42,9 @@ public class TeardownTests
         var cleanup = new FakeCleanup { Ports = [2, 5] };
         var journal = new JournalState { Emulating = true, HeldProcesses = [new(10, 1, "viiper.exe")] };
         var order = new List<string>();
-        var saves = 0;
+        var ended = 0;
         cleanup.Children = [];
-        var plan = new TeardownPlan(cleanup, journal, _ => saves++);
+        var plan = new TeardownPlan(cleanup, journal.HeldProcesses.ToList(), process => { journal.HeldProcesses.Remove(process); ended++; });
 
         foreach (var step in plan.Steps())
         {
@@ -56,7 +56,7 @@ public class TeardownTests
         Assert.Equal([2, 5], cleanup.Detached);
         Assert.Equal(10, Assert.Single(cleanup.Ended).Pid);
         Assert.Empty(journal.HeldProcesses);
-        Assert.Equal(1, saves);
+        Assert.Equal(1, ended);
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class TeardownTests
     {
         var cleanup = new FakeCleanup { EndFails = true };
         var journal = new JournalState { Emulating = true, HeldProcesses = [new(10, 1, "viiper.exe"), new(11, 2, "viiper.exe")] };
-        var plan = new TeardownPlan(cleanup, journal, _ => { });
+        var plan = new TeardownPlan(cleanup, journal.HeldProcesses.ToList(), process => journal.HeldProcesses.Remove(process));
 
         var results = await TeardownRunner.RunAsync(plan.Steps(), _log.Add);
 
@@ -78,7 +78,7 @@ public class TeardownTests
     {
         var cleanup = new FakeCleanup { Ports = [1], DetachFails = true };
         var journal = new JournalState { Emulating = true, HeldProcesses = [new(10, 1, "viiper.exe")] };
-        var plan = new TeardownPlan(cleanup, journal, _ => { });
+        var plan = new TeardownPlan(cleanup, journal.HeldProcesses.ToList(), process => journal.HeldProcesses.Remove(process));
 
         var results = await TeardownRunner.RunAsync(plan.Steps(), _log.Add);
 

@@ -64,15 +64,28 @@ public static class ServiceHost
         }
         catch (Exception ex)
         {
+            // A failure is reported as one, so the recovery actions restart Pan (review, should-fix 6).
             log.Write($"Service failed: {ex}");
+            _status.Win32ExitCode = ErrorServiceSpecificError;
+            _status.ServiceSpecificExitCode = 1;
         }
 
         Report(Native.ServiceStopped);
     }
 
+    private const uint ErrorServiceSpecificError = 1066;
+    private static readonly TimeSpan NoticeGrace = TimeSpan.FromSeconds(2);
+
     /// <summary>Also used by <c>--console</c>, where the console's Ctrl+C is the stop.</summary>
     public static async Task RunAsync(PanLog log, CancellationToken? consoleStop = null)
     {
+        if (ServiceSetup.CheckDataDirectory() is { } problem)
+        {
+            // The journal and log live there; a folder somebody else owns could point them anywhere (review, bug 1).
+            log.Write($"Refusing to run: {problem}; run Pan.exe --install again");
+            throw new InvalidOperationException(problem);
+        }
+
         var cleanup = new WindowsCleanup(log.Write);
         var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath), cleanup, log.Write);
         _guardian = guardian;
@@ -82,24 +95,36 @@ public static class ServiceHost
         Report(Native.ServiceRunning);
 
         using var stop = consoleStop is { } console ? CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token, console) : CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token);
+        using var serve = new CancellationTokenSource();
         var server = new PipeServer(guardian, log.Write);
         var idle = new IdleStop(stop, log.Write);
         server.ClientPresent += idle.ClientPresent;
         idle.ClientPresent(false);
-        var serving = server.RunAsync(stop.Token);
-        var watch = WatchAsync(guardian, stop.Token);
+        var serving = server.RunAsync(serve.Token);
+        var watch = WatchAsync(guardian, serve.Token);
+        var stopRequested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using (stop.Token.Register(() => stopRequested.TrySetResult()))
+        {
+            await Task.WhenAny(serving, stopRequested.Task);
+        }
+
+        // The stop's teardown runs while the client's pipe is still open, so its notice (TornDown, ServiceStopping)
+        // reaches Arcadia before the pipe goes (review, bug 3); only then the server is cancelled.
+        await guardian.StopAsync();
+        await server.FlushNoticesAsync(NoticeGrace);
+        serve.Cancel();
         try
         {
-            await serving;
+            await watch;
         }
         catch (OperationCanceledException)
         {
         }
 
-        await guardian.StopAsync();
         try
         {
-            await watch;
+            // A server that ended on its own (the pipe's name taken) rethrows here: the service fails visibly.
+            await serving;
         }
         catch (OperationCanceledException)
         {

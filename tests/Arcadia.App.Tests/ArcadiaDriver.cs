@@ -162,6 +162,18 @@ internal sealed class ArcadiaDriver : IDisposable
     public int? RunningSteamAppId { get; set; }
 
     /// <summary>The App's 2 s tick of the Steam Controller for games: the mode of the running games, then the pad.</summary>
+    /// <summary>The start's Pan update question (#243), as the App asks it after the controller support's first tick.</summary>
+    public ArcadiaDriver OfferPanUpdate()
+    {
+        var offer = new PanUpdateOffer(ControllerSupport, Main);
+        if (offer.IsDue())
+        {
+            offer.Ask();
+        }
+
+        return this;
+    }
+
     public async Task TickSteamControllerAsync()
     {
         await ForGames.TickAsync();

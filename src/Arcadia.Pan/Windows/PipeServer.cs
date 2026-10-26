@@ -11,13 +11,17 @@ namespace Arcadia.Pan.Windows;
 /// that squatted the name makes Pan fail loudly instead of serving beside it; one instance is always open, so the
 /// name is never free while Pan runs; ACL for SYSTEM and the interactive user. The client is known from the pipe
 /// and its process (id, start time, session), never from a message, and Pan waits on its process handle to learn
-/// of its end without polling.
+/// of its end without polling. Connections are served side by side, so a second client is refused at once instead of
+/// waiting behind the first (review, should-fix 10).
 /// </summary>
 [SupportedOSPlatform("windows")]
 public sealed class PipeServer(Guardian guardian, Action<string> log)
 {
     private static readonly TimeSpan SquatRetry = TimeSpan.FromSeconds(5);
+    private const int MaxInstances = 4;
     private readonly SemaphoreSlim _writes = new(1, 1);
+    private readonly List<Task> _notices = [];
+    private readonly List<Task> _connections = [];
 
     /// <summary>A client connected or left; the host uses it to stop Pan when nobody needs it.</summary>
     public event Action<bool>? ClientPresent;
@@ -33,9 +37,9 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
                 listening ??= Create(first);
                 first = false;
             }
-            catch (IOException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                // Another process holds the name: don't serve beside it.
+                // Another process holds the name (FirstPipeInstance then fails with access denied): don't serve beside it.
                 log($"Pipe not created ({ex.Message}); is another program squatting \\\\.\\pipe\\{PanPaths.PipeName}? Retrying in {SquatRetry.TotalSeconds:0} s");
                 await Task.Delay(SquatRetry, cancellationToken);
                 continue;
@@ -64,15 +68,67 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
             {
                 listening = Create(first: false);
             }
-            catch (IOException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 log($"Next pipe instance not created: {ex.Message}");
             }
 
-            await ServeAsync(pipe, cancellationToken);
+            lock (_connections)
+            {
+                _connections.RemoveAll(c => c.IsCompleted);
+                _connections.Add(ServeGuardedAsync(pipe, cancellationToken));
+            }
         }
 
         listening?.Dispose();
+        Task[] open;
+        lock (_connections)
+        {
+            open = [.. _connections];
+        }
+
+        await Task.WhenAll(open);
+    }
+
+    /// <summary>Notices started so far have been written, or the grace period is over; for the stop.</summary>
+    public async Task FlushNoticesAsync(TimeSpan grace)
+    {
+        Task[] pending;
+        lock (_notices)
+        {
+            _notices.RemoveAll(n => n.IsCompleted);
+            pending = [.. _notices];
+        }
+
+        if (pending.Length == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.WhenAll(pending).WaitAsync(grace);
+        }
+        catch (Exception ex) when (ex is TimeoutException or IOException or OperationCanceledException or ObjectDisposedException)
+        {
+            log($"Notice not delivered before the stop: {ex.Message}");
+        }
+    }
+
+    private async Task ServeGuardedAsync(NamedPipeServerStream pipe, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await ServeAsync(pipe, cancellationToken);
+        }
+        catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException)
+        {
+            log($"Connection ended: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            log($"Connection failed: {ex}");
+        }
     }
 
     private static NamedPipeServerStream Create(bool first)
@@ -81,7 +137,7 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
         security.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), PipeAccessRights.FullControl, AccessControlType.Allow));
         security.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.InteractiveSid, null), PipeAccessRights.ReadWrite, AccessControlType.Allow));
         var options = PipeOptions.Asynchronous | PipeOptions.WriteThrough | (first ? PipeOptions.FirstPipeInstance : PipeOptions.None);
-        return NamedPipeServerStreamAcl.Create(PanPaths.PipeName, PipeDirection.InOut, 2, PipeTransmissionMode.Byte, options, PanMessage.Size * 16, PanMessage.Size * 16, security);
+        return NamedPipeServerStreamAcl.Create(PanPaths.PipeName, PipeDirection.InOut, MaxInstances, PipeTransmissionMode.Byte, options, PanMessage.Size * 16, PanMessage.Size * 16, security);
     }
 
     private async Task ServeAsync(NamedPipeServerStream pipe, CancellationToken cancellationToken)
@@ -115,7 +171,18 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
             using var gone = new CancellationTokenSource();
             using var processWait = new ProcessWaitHandle(processHandle);
             var registration = ThreadPool.RegisterWaitForSingleObject(processWait, (_, _) => gone.Cancel(), null, -1, executeOnlyOnce: true);
-            void Notify(PanMessage message) => WriteAsync(pipe, message, cancellationToken).ContinueWith(t => log($"Notice not sent: {t.Exception?.GetBaseException().Message}"), TaskContinuationOptions.OnlyOnFaulted);
+            void Notify(PanMessage message)
+            {
+                var write = WriteAsync(pipe, message, cancellationToken);
+                lock (_notices)
+                {
+                    _notices.RemoveAll(n => n.IsCompleted);
+                    _notices.Add(write);
+                }
+
+                write.ContinueWith(t => log($"Notice not sent: {t.Exception?.GetBaseException().Message}"), TaskContinuationOptions.OnlyOnFaulted);
+            }
+
             guardian.Notify += Notify;
             try
             {

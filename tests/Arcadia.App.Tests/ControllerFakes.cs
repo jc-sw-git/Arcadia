@@ -104,12 +104,20 @@ internal sealed class FakeSteam : IControllerSupportPlatform
 
     public bool IsPanReady { get; set; } = true;
 
-    public bool IsPanUpdateAvailable => false;
+    /// <summary>This Arcadia bundles a newer Pan than the installed one (#243).</summary>
+    public bool IsPanUpdateAvailable { get; set; }
+
+    /// <summary>How often "Treiber installieren" or the Pan update ran, i.e. asked Windows for administrator rights.</summary>
+    public int DriverInstalls => Volatile.Read(ref _driverInstalls);
+
+    private int _driverInstalls;
 
     public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
     {
+        Interlocked.Increment(ref _driverInstalls);
         IsUsbipReady = true;
         IsPanReady = true;
+        IsPanUpdateAvailable = false;
         return Task.FromResult(true);
     }
 

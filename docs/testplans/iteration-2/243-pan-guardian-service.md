@@ -31,8 +31,7 @@ the player's side runs in the acceptance tests with a faked Pan (`PanGuardianTes
 - [ ] **T243-6** Arcadia closed normally: `viiper.exe` and the controller are gone, `pan.log` logs the planned exit, no
       teardown runs, Pan stops itself after 30 s without a client. · E2E: yes
 - [ ] **T243-7** `Pan.exe --install --expect-hash <sha256>` (CI): exit 0, the copy in Program Files, the service running;
-      a wrong hash installs nothing and exits 3. · E2E: yes (Windows CI, `ServiceTests`; the wrong hash: unit test of
-      `ServiceSetup` deferred, checked by reading)
+      a wrong hash installs nothing and exits 3. · E2E: yes (Windows CI, `ServiceTests`, both)
 - [ ] **T243-8** The service's DACL gives users start, query and interrogate only (`sc sdshow`: the IU entry has only LC RP LO RC, no
       `WD`/`BU`/`AU` entry); `ImagePath` in the registry is quoted; the description is the system language's. · E2E: yes (CI)
 - [ ] **T243-9** The pipe `ArcadiaPan` takes SYSTEM and the interactive user, not Everyone or Users; hello answers
@@ -81,3 +80,5 @@ History:
 | T243-2 … T243-6, T243-13, T243-14 | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, acceptance tests with a faked Pan (`PanGuardianTests`), mechanical only | pass | – |
 | T243-7 … T243-12 | 2026-10-26 | Claude (thread) | skipped on Linux (needs the Windows CI runner with administrator rights); first run on the PR's CI | open | read the CI run |
 | Pan core, client, journal, teardown (`Arcadia.Pan.Tests`, `PanClientTests`, `GuardedXboxPadsTests`, service driver warnings) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, unit tests | pass | – |
+| T243-4, T243-14 (rewritten after the QE review: the service stop's toast; the update question through the driver), T243-2 … T243-6, T243-13 | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, acceptance tests with a faked Pan, each new case seen red once | pass | – |
+| T243-7 … T243-12 | 2026-10-26 | Claude (thread) | Windows CI runner (elevated): the DACL check compared as a set, wrong-hash step added | open | read the second CI run |

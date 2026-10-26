@@ -61,7 +61,7 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
             await pipe.ConnectAsync(timeout.Token);
             pipe.ReadMode = PipeTransmissionMode.Byte;
 
-            var servicePid = ProcessIdOf(service);
+            var servicePid = ProcessIdOf();
             if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle.DangerousGetHandle(), out var serverPid) || serverPid != servicePid)
             {
                 var message = $"{PipePath} gehört nicht dem Dienst {PanPaths.ServiceName} (Prozess {serverPid} statt {servicePid})";
@@ -122,16 +122,60 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
         }
     }
 
-    private static unsafe uint ProcessIdOf(ServiceController service)
+    private const uint ScManagerConnect = 0x0001;
+    private const uint ServiceQueryStatus = 0x0004;
+    private const uint ScStatusProcessInfo = 0;
+
+    /// <summary>
+    /// The service's process id, opened with <c>SERVICE_QUERY_STATUS</c> only: that is what Pan's DACL gives users, and
+    /// <c>ServiceController.ServiceHandle</c> asks for all access, which an unelevated Arcadia never gets (review, bug 2).
+    /// </summary>
+    private static unsafe uint ProcessIdOf()
     {
-        var info = new ServiceStatusProcess();
-        if (!QueryServiceStatusEx(service.ServiceHandle.DangerousGetHandle(), 0, &info, (uint)sizeof(ServiceStatusProcess), out _))
+        var manager = OpenSCManagerW(null, null, ScManagerConnect);
+        if (manager == 0)
         {
             throw new Win32Exception();
         }
 
-        return info.ProcessId;
+        try
+        {
+            var service = OpenServiceW(manager, PanPaths.ServiceName, ServiceQueryStatus);
+            if (service == 0)
+            {
+                throw new Win32Exception();
+            }
+
+            try
+            {
+                var info = new ServiceStatusProcess();
+                if (!QueryServiceStatusEx(service, ScStatusProcessInfo, &info, (uint)sizeof(ServiceStatusProcess), out _))
+                {
+                    throw new Win32Exception();
+                }
+
+                return info.ProcessId;
+            }
+            finally
+            {
+                CloseServiceHandle(service);
+            }
+        }
+        finally
+        {
+            CloseServiceHandle(manager);
+        }
     }
+
+    [LibraryImport("advapi32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    private static partial nint OpenSCManagerW(string? machine, string? database, uint access);
+
+    [LibraryImport("advapi32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    private static partial nint OpenServiceW(nint manager, string name, uint access);
+
+    [LibraryImport("advapi32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool CloseServiceHandle(nint handle);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct ServiceStatusProcess

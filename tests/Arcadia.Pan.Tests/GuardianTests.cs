@@ -52,6 +52,14 @@ public sealed class GuardianTests : IDisposable
         }
     }
 
+    /// <summary>The journal stays after a teardown, with nothing to undo and the generation it reached (review, bug 4).</summary>
+    private void AssertNothingToUndo(uint generation)
+    {
+        var state = _journal.File.Load().State;
+        Assert.False(state.HasWork);
+        Assert.Equal(generation, state.Generation);
+    }
+
     [Fact]
     public void Nothing_is_accepted_before_hello_and_a_wrong_protocol_version_is_rejected()
     {
@@ -102,7 +110,7 @@ public sealed class GuardianTests : IDisposable
         Assert.False(_guardian.IsEmulating);
         Assert.Single(_cleanup.Released);
         Assert.Empty(_cleanup.Ended);
-        Assert.False(_journal.Exists);
+        AssertNothingToUndo(generation);
         Assert.Equal(2u, StartEmulation());
     }
 
@@ -143,7 +151,7 @@ public sealed class GuardianTests : IDisposable
         Assert.Equal(generation, notice.Generation);
         Assert.Equal(PanReason.Hang, notice.Reason);
         Assert.Equal(PanReason.Hang, Assert.Single(_unplanned).Reason);
-        Assert.False(_journal.Exists);
+        AssertNothingToUndo(generation);
 
         // The old generation is dead, and nothing new starts before the acknowledgement.
         Assert.Equal(PanReason.TeardownNotAcknowledged, Send(PanCommand.Heartbeat, generation).Reason);
@@ -227,7 +235,7 @@ public sealed class GuardianTests : IDisposable
         await restarted.RecoverAsync();
 
         Assert.Equal(600, Assert.Single(_cleanup.Ended).Pid);
-        Assert.False(_journal.Exists);
+        AssertNothingToUndo(1);
     }
 
     [Fact]
@@ -251,7 +259,7 @@ public sealed class GuardianTests : IDisposable
         Assert.Equal([3], _cleanup.Detached);
         Assert.Contains("client 500 (still running)", Log());
         Assert.Empty(_unplanned);
-        Assert.False(_journal.Exists);
+        AssertNothingToUndo(4);
 
         // The generation goes on from the journal, so a stale client can't match a new one by accident.
         Connect();
@@ -329,5 +337,47 @@ public sealed class GuardianTests : IDisposable
         Assert.Equal(PanReason.None, hello.Reason);
         Assert.Equal(generation, hello.Generation);
         Assert.Equal(generation + 1, StartEmulation());
+    }
+
+    [Fact]
+    public async Task A_restarted_Pan_counts_on_from_the_generation_its_journal_reached()
+    {
+        Connect();
+        var generation = StartEmulation();
+        Assert.Equal(PanReply.Stopped, Send(PanCommand.EmulationStopped, generation).Reply);
+
+        // Pan restarted idle (crash, update, sc stop): a client that remembers generation 1 as torn down must never
+        // get it again (review, bug 4).
+        var restarted = new Guardian(_clock, _journal.File, _cleanup, _log.Add);
+        await restarted.RecoverAsync();
+        Assert.Equal(PanReason.None, restarted.Register(Arcadia));
+        Assert.Equal(PanReply.HelloOk, restarted.Handle(PanMessage.Of(PanCommand.Hello)).Reply);
+
+        Assert.Equal(generation + 1, restarted.Handle(PanMessage.Of(PanCommand.EmulationStarted)).Generation);
+    }
+
+    [Fact]
+    public async Task What_an_incomplete_teardown_left_is_ended_with_the_next_emulation()
+    {
+        Connect();
+        StartEmulation();
+        _cleanup.EndFails = true;
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+        Assert.Single(_journal.File.Load().State.HeldProcesses);
+
+        // The next client's emulation keeps the leftover listed beside its own process (review, bug 5) …
+        _cleanup.EndFails = false;
+        _cleanup.Children = [new HeldProcess(610, 1610, "viiper.exe")];
+        Connect(Arcadia with { Pid = 501 });
+        var generation = StartEmulation();
+        Assert.Equal([600, 610], _journal.File.Load().State.HeldProcesses.Select(p => p.Pid));
+        Assert.Contains("1 process(es) of the last emulation still to end", Log());
+
+        // … and its teardown ends both.
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+        Assert.Equal([600, 610], _cleanup.Ended.Select(p => p.Pid).Order());
+        AssertNothingToUndo(generation);
     }
 }

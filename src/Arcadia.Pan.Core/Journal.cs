@@ -114,15 +114,6 @@ public sealed class JournalFile(string path)
         return new(new JournalState(), $"{System.IO.Path.GetFileName(Path)} unreadable ({problem}) and no previous version; nothing to undo is known", FromPrevious: false);
     }
 
-    /// <summary>Nothing left to undo: the journal goes, its previous version stays for a look.</summary>
-    public void Clear()
-    {
-        if (File.Exists(Path))
-        {
-            File.Move(Path, PreviousPath, overwrite: true);
-        }
-    }
-
     private static bool TryRead(string file, out JournalState state, out string? problem)
     {
         try

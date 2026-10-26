@@ -91,10 +91,11 @@ public static class TeardownRunner
 /// <summary>
 /// The teardown order (#243): 1. detach the usbip ports VIIPER attached, so the game loses the pad first and keeps no
 /// last state (review point 14); 2. end the forwarding processes Pan holds; 3. and 4. (part B) unhide the real
-/// controller only once nothing forwards to it, then restart it. Each step updates the journal as it succeeds, so a
-/// failed step stays listed and is retried at the next trigger.
+/// controller only once nothing forwards to it, then restart it. Each ended process is reported at once
+/// (<paramref name="ended"/>, which the guardian journals under its lock), so a failed step stays listed and is retried at
+/// the next trigger, and a step left behind after its timeout never touches the journal itself (review, should-fix 9).
 /// </summary>
-public sealed class TeardownPlan(IEmulationCleanup cleanup, JournalState journal, Action<JournalState> save)
+public sealed class TeardownPlan(IEmulationCleanup cleanup, IReadOnlyList<HeldProcess> held, Action<HeldProcess> ended)
 {
     public static readonly TimeSpan StepTimeout = TimeSpan.FromSeconds(10);
 
@@ -134,13 +135,13 @@ public sealed class TeardownPlan(IEmulationCleanup cleanup, JournalState journal
     private async Task EndProcessesAsync(CancellationToken cancellationToken)
     {
         var errors = new List<string>();
-        foreach (var process in journal.HeldProcesses.ToList())
+        foreach (var process in held)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 await cleanup.EndAsync(process, cancellationToken);
-                journal.HeldProcesses.Remove(process);
-                save(journal);
+                ended(process);
             }
             catch (OperationCanceledException)
             {

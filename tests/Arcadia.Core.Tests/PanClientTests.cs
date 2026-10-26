@@ -203,6 +203,32 @@ public sealed class PanClientTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task A_generation_torn_down_on_an_earlier_connection_is_current_again_on_a_Pan_that_counts_anew()
+    {
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        _server.Clock.Advance(Guardian.DefaultHangTimeout);
+        _server.Guardian.Tick();
+        await WaitUntil(() => _tornDown.Count == 1, "TornDown");
+        await _client.AcknowledgeTeardownAsync(generation, CancellationToken.None);
+        Assert.True(_client.WasTornDown(generation));
+
+        // Pan's journal went with a reinstall, so the restarted Pan hands out generation 1 again: for this connection
+        // it is a live one, not the torn-down one of before (review, bug 4).
+        _server.Die();
+        await WaitUntil(() => !_client.IsConnected, "Verbindung weg");
+        _server.RestartWithoutJournal();
+        _time.Advance(PanClient.Retry);
+        await ConnectedAsync();
+
+        Assert.Equal(generation, await _client.EmulationStartedAsync(CancellationToken.None));
+        Assert.False(_client.WasTornDown(generation));
+        Assert.True(_client.IsCurrent(generation));
+        await _client.EmulationStoppedAsync(generation, CancellationToken.None);
+        Assert.False(_server.Guardian.IsEmulating);
+    }
+
+    [Fact]
     public async Task An_unreadable_journal_is_passed_on_for_a_toast()
     {
         var problems = 0;
@@ -273,6 +299,13 @@ public sealed class PanClientTests : IAsyncDisposable
         public void RestartFromJournal()
         {
             Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log);
+            Guardian.RecoverAsync().GetAwaiter().GetResult();
+        }
+
+        /// <summary>A reinstalled Pan with an empty data folder: it counts the generations from 0 again.</summary>
+        public void RestartWithoutJournal()
+        {
+            Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "reinstalled", "journal.json")), _cleanup, _log);
             Guardian.RecoverAsync().GetAwaiter().GetResult();
         }
 

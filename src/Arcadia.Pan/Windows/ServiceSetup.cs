@@ -79,8 +79,6 @@ public static class ServiceSetup
             log($"Copied to {target} (SHA-256 {targetHash})");
         }
 
-        ProtectDataDirectory();
-
         var imagePath = $"\"{target}\"";
         var service = Native.CreateServiceW(
             manager.Handle, PanPaths.ServiceName, PanPaths.DisplayName, Native.ServiceAllAccess,
@@ -233,16 +231,140 @@ public static class ServiceSetup
         }
     }
 
-    /// <summary><c>%ProgramData%\Arcadia\Pan</c> for administrators and SYSTEM only: the journal and log are nobody else's to read or plant.</summary>
-    private static void ProtectDataDirectory()
+    private static readonly SecurityIdentifier LocalSystem = new(WellKnownSidType.LocalSystemSid, null);
+    private static readonly SecurityIdentifier Administrators = new(WellKnownSidType.BuiltinAdministratorsSid, null);
+
+    /// <summary>
+    /// <c>%ProgramData%\Arcadia</c> and its <c>Pan</c>, for administrators and SYSTEM only (review, bug 1): everyone may
+    /// create folders in <c>%ProgramData%</c> and keep them, so one that exists but isn't ours (a user's, or a junction to
+    /// anywhere) is moved aside and made anew: owner Administrators, nothing inherited. Before the first log line of
+    /// <c>--install</c>, because the log lives there too.
+    /// </summary>
+    public static void SecureDataDirectory()
     {
-        var directory = Directory.CreateDirectory(PanPaths.DataDirectory);
-        var security = new DirectorySecurity();
-        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
-        var inherit = InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit;
-        security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
-        security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null), FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
-        directory.SetAccessControl(security);
+        foreach (var directory in DataDirectories())
+        {
+            if (Exists(directory) && !IsOurs(directory, out _))
+            {
+                MoveAside(directory);
+            }
+
+            var info = Directory.CreateDirectory(directory);
+            var security = new DirectorySecurity();
+            security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+            security.SetOwner(Administrators);
+            var inherit = InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit;
+            security.AddAccessRule(new FileSystemAccessRule(LocalSystem, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
+            security.AddAccessRule(new FileSystemAccessRule(Administrators, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
+            info.SetAccessControl(security);
+            if (!IsOurs(directory, out var problem))
+            {
+                throw new InvalidOperationException($"{directory} could not be secured: {problem}");
+            }
+        }
+    }
+
+    /// <summary>Why the data folders can't be trusted (the service and --restore refuse to run then), or null.</summary>
+    public static string? CheckDataDirectory()
+    {
+        foreach (var directory in DataDirectories())
+        {
+            if (!Exists(directory))
+            {
+                return $"{directory} is missing";
+            }
+
+            if (!IsOurs(directory, out var problem))
+            {
+                return $"{directory} {problem}";
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> DataDirectories() => [Path.GetDirectoryName(PanPaths.DataDirectory)!, PanPaths.DataDirectory];
+
+    private static bool Exists(string path) => Directory.Exists(path) || File.Exists(path);
+
+    /// <summary>A real folder, owned by Administrators or SYSTEM, with no access rule for anyone else.</summary>
+    private static bool IsOurs(string directory, out string problem)
+    {
+        try
+        {
+            var info = new DirectoryInfo(directory);
+            if (!info.Exists)
+            {
+                problem = "is not a folder";
+                return false;
+            }
+
+            if (info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+            {
+                problem = "is a junction or symbolic link";
+                return false;
+            }
+
+            var security = info.GetAccessControl(AccessControlSections.Owner | AccessControlSections.Access);
+            var owner = security.GetOwner(typeof(SecurityIdentifier));
+            if (owner is not SecurityIdentifier sid || (sid != LocalSystem && sid != Administrators))
+            {
+                problem = $"is owned by {owner}";
+                return false;
+            }
+
+            if (!security.AreAccessRulesProtected)
+            {
+                problem = "inherits access rules";
+                return false;
+            }
+
+            foreach (FileSystemAccessRule rule in security.GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier)))
+            {
+                if (rule.AccessControlType == AccessControlType.Allow && rule.IdentityReference is SecurityIdentifier who && who != LocalSystem && who != Administrators)
+                {
+                    problem = $"gives access to {who}";
+                    return false;
+                }
+            }
+
+            problem = string.Empty;
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            problem = $"can't be checked: {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>A link goes as the link alone; a folder is renamed, which the parent's rights allow whatever its own say.</summary>
+    private static void MoveAside(string directory)
+    {
+        var attributes = File.GetAttributes(directory);
+        if (attributes.HasFlag(FileAttributes.ReparsePoint))
+        {
+            if (attributes.HasFlag(FileAttributes.Directory))
+            {
+                Directory.Delete(directory, recursive: false);
+            }
+            else
+            {
+                File.Delete(directory);
+            }
+
+            return;
+        }
+
+        var aside = $"{directory}.untrusted-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        if (attributes.HasFlag(FileAttributes.Directory))
+        {
+            Directory.Move(directory, aside);
+        }
+        else
+        {
+            File.Move(directory, aside);
+        }
     }
 
     private static void DeleteTree(string directory, Action<string> log)

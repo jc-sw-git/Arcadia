@@ -300,12 +300,19 @@ public sealed class Guardian
 
         var client = _client!;
         var held = _cleanup.TakeChildrenOf(client.Pid, client.StartTime, ForwardingImageName);
+        // What an incomplete teardown left (a process that wouldn't end) stays listed and is retried with this one.
+        var leftovers = _journal.HeldProcesses.ToList();
+        if (leftovers.Count > 0)
+        {
+            _log($"{leftovers.Count} process(es) of the last emulation still to end; kept for the next teardown");
+        }
+
         _generation++;
         _journal.Generation = _generation;
         _journal.ClientPid = client.Pid;
         _journal.ClientStartTime = client.StartTime;
         _journal.Emulating = true;
-        _journal.HeldProcesses = [.. held];
+        _journal.HeldProcesses = [.. leftovers, .. held];
         try
         {
             // Written before the reply: once Arcadia emulates, the journal already says what to undo.
@@ -320,12 +327,19 @@ public sealed class Guardian
             }
 
             _journal.Emulating = false;
-            _journal.HeldProcesses = [];
+            _journal.HeldProcesses = leftovers;
             return PanMessage.Of(PanReply.Rejected, _generation, PanReason.JournalUnreadable);
         }
 
         _phase = Phase.Emulating;
         _lastHeartbeatMs = _clock.UnbiasedMilliseconds;
+        if (held.Count == 0)
+        {
+            // Another program's VIIPER ("Arcadia nutzt ihn mit"): nothing of the client's to end; a teardown detaches
+            // every local VIIPER port, that program's too (review, should-fix 11).
+            _log($"Emulation generation {_generation}: no {ForwardingImageName} of client {client.Pid} found; a teardown will only detach the usbip ports");
+        }
+
         _log($"Emulation generation {_generation} started by client {client.Pid}, holding {held.Count} process(es)");
         return PanMessage.Of(PanReply.Started, _generation);
     }
@@ -428,7 +442,7 @@ public sealed class Guardian
             UnplannedEnd?.Invoke(new UnplannedEnd(reason, generation, clientPid, journal.Emulating));
         }
 
-        var plan = new TeardownPlan(_cleanup, journal, SaveJournalFrom);
+        var plan = new TeardownPlan(_cleanup, journal.HeldProcesses.ToList(), ProcessEnded);
         var results = await TeardownRunner.RunAsync(plan.Steps(), _log);
         var complete = results.All(r => r.Outcome == StepOutcome.Ok);
         lock (_lock)
@@ -458,29 +472,26 @@ public sealed class Guardian
         }
     }
 
-    private void SaveJournalFrom(JournalState state)
+    /// <summary>A teardown step ended one of the held processes: off the journal at once, so a retry skips it.</summary>
+    private void ProcessEnded(HeldProcess process)
     {
         lock (_lock)
         {
+            _journal.HeldProcesses.Remove(process);
             SaveJournal();
         }
     }
 
-    /// <summary>Under the lock. A journal that can't be written is logged; the state in memory stays right.</summary>
+    /// <summary>
+    /// Under the lock. The journal is written also with nothing to undo: it keeps the generation, so a restarted Pan
+    /// never hands out a number a client still remembers as torn down (review, bug 4). A journal that can't be written
+    /// is logged; the state in memory stays right.
+    /// </summary>
     private void SaveJournal()
     {
         try
         {
-            if (_journal.HasWork)
-            {
-                _journalFile.Save(_journal);
-            }
-            else
-            {
-                _journalFile.Clear();
-                // The generation lives on in memory; a restart with an empty journal starts from 0 again, which a
-                // client can't confuse with an old one (it learns the generation from Pan's reply).
-            }
+            _journalFile.Save(_journal);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

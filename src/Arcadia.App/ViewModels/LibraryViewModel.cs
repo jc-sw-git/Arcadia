@@ -193,6 +193,12 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
     /// </summary>
     public void ShowTabs()
     {
+        // A tab whose launcher went (switched off, gone from the scan) lets go of its sorted games, also when none is left.
+        foreach (var gone in _sorted.Keys.Where(t => !_tabs.Items.Contains(t)).ToList())
+        {
+            _sorted.Remove(gone);
+        }
+
         if (_tabs.SelectedTab is not null)
         {
             Refresh(FocusedGame is { } focused ? PageGames.IndexOf(focused) : 0, FocusedGame?.Game.Key);
@@ -278,12 +284,6 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         if (_sorted.TryGetValue(tab, out var sorted) && ReferenceEquals(sorted.Source, tab.Games) && sorted.Sort == sort)
         {
             return sorted;
-        }
-
-        // A tab whose launcher went (switched off, gone from the scan) won't be asked again.
-        foreach (var gone in _sorted.Keys.Where(t => !_tabs.Items.Contains(t)).ToList())
-        {
-            _sorted.Remove(gone);
         }
 
         sorted = new SortedTab(tab.Games, sort, GameSorter.Sort(tab.Games, sort, Formatting.Culture), tab.Games.Count(g => g.IsInstalled));

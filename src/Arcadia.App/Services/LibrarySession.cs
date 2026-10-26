@@ -288,11 +288,20 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     private async Task RefreshLibraryAfterAsync(TimeSpan delay, CancellationToken cancellationToken)
     {
         await Task.Delay(delay, _time, cancellationToken);
+
+        // The delay may have run out just before the session ended, with its continuation still queued.
+        cancellationToken.ThrowIfCancellationRequested();
         await RefreshLibraryAsync(force: true);
     }
 
     private void Show(IReadOnlyList<LauncherLibrary> libraries)
     {
+        // A scan still running when the session ended shows nothing: the window is closing.
+        if (_shutdown.IsCancellationRequested)
+        {
+            return;
+        }
+
         Libraries = libraries;
         GameFolders = GameFolders.Of(libraries.SelectMany(l => l.Games));
         _running.SetLibrary(libraries.SelectMany(l => l.Games));

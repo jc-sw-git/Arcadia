@@ -31,7 +31,8 @@ the player's side runs in the acceptance tests with a faked Pan (`PanGuardianTes
 - [ ] **T243-6** Arcadia closed normally: `viiper.exe` and the controller are gone, `pan.log` logs the planned exit, no
       teardown runs, Pan stops itself after 30 s without a client. · E2E: yes
 - [ ] **T243-7** `Pan.exe --install --expect-hash <sha256>` (CI): exit 0, the copy in Program Files, the service running;
-      a wrong hash installs nothing and exits 3. · E2E: yes (Windows CI, `ServiceTests`, both)
+      a wrong hash installs nothing and exits 3; a wrong hash on an installed Pan leaves it running and unchanged, no
+      `Pan.exe.new` left. · E2E: yes (Windows CI, `ServiceTests`, all three)
 - [ ] **T243-8** The service's DACL gives users start, query and interrogate only (`sc sdshow`: the IU entry has only LC RP LO RC, no
       `WD`/`BU`/`AU` entry); `ImagePath` in the registry is quoted; the description is the system language's. · E2E: yes (CI)
 - [ ] **T243-9** The pipe `ArcadiaPan` takes SYSTEM and the interactive user, not Everyone or Users; hello answers
@@ -85,3 +86,5 @@ History:
 | T243-7 … T243-12 | 2026-10-26 | Claude (thread) | Windows CI runner (elevated), run 40380137687 on 24b6b32: the whole `ServiceTests` case passed | pass | – |
 | Pan core after the QE re-check (`GuardianTests`: reused leftover listed once, planned stop keeps leftovers; `PanLogTests`) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once | pass | – |
 | After the code review comment on the PR (`PanClientTests`: a running teardown is "Pan räumt noch auf"; `SteamControllerXboxPadTests`: no loss counted for it) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once | pass | – |
+| After the third review (`JournalTests`: fallback written back, nonsense journals unreadable; `GuardianTests`: recovery result, restore after a torn journal; `PanClientTests`: cancelled request drops the link) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once | pass | – |
+| T243-7 (update step: a rejected update keeps the installed Pan running) | 2026-10-26 | Claude (thread) | added to `ServiceTests`; red only by reasoning (the old code deleted the service before the check), runs on the PR's CI | open | read the CI run |

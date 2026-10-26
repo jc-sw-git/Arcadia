@@ -166,6 +166,29 @@ public sealed class PanClientTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task A_request_the_caller_gives_up_on_cannot_answer_the_next_one()
+    {
+        // Review point 5 (reproduced there): the reply to a cancelled request arrived while the next one waited and
+        // passed for its reply, so a plug took a stale start confirmation.
+        await ConnectedAsync();
+        _server.Pause();
+        using var giveUp = new CancellationTokenSource();
+        var first = _client.EmulationStartedAsync(giveUp.Token);
+        await AdvanceUntil(() => _server.Cleanup.ChildrenTaken == 1, "Anfrage bei Pan");
+        giveUp.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first);
+
+        // The link that still owes a reply is gone; the reply then goes nowhere.
+        Assert.False(_client.IsConnected);
+        _server.Resume();
+        await AdvanceUntil(() => _client.IsConnected, "neu verbunden");
+
+        var next = await _client.EmulationStartedAsync(CancellationToken.None);
+        Assert.Equal(2u, next);
+        Assert.DoesNotContain("unerwartete Antwort", LogText());
+    }
+
+    [Fact]
     public async Task A_Pan_of_another_protocol_version_is_reported_and_not_used()
     {
         _server.HelloReply = PanMessage.Of(PanReply.Rejected, 0, PanReason.WrongProtocolVersion);
@@ -447,7 +470,16 @@ public sealed class PanClientTests : IAsyncDisposable
 
         public Task DetachPortAsync(int port, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public IReadOnlyList<HeldProcess> TakeChildrenOf(int clientPid, long clientStartTime, string imageName) => [];
+        /// <summary>How many emulations Pan registered: one per <c>EmulationStarted</c> it handled.</summary>
+        public int ChildrenTaken => Volatile.Read(ref _childrenTaken);
+
+        private int _childrenTaken;
+
+        public IReadOnlyList<HeldProcess> TakeChildrenOf(int clientPid, long clientStartTime, string imageName)
+        {
+            Interlocked.Increment(ref _childrenTaken);
+            return [];
+        }
 
         public bool TryHold(HeldProcess process) => false;
 

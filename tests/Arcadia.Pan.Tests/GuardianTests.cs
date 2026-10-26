@@ -239,6 +239,46 @@ public sealed class GuardianTests : IDisposable
     }
 
     [Fact]
+    public async Task Recovery_says_whether_everything_was_undone_and_keeps_what_was_not()
+    {
+        // Review point 8: `--restore` and `--uninstall` exit with 5 on false, and the journal keeps the rest.
+        _journal.File.Save(new JournalState { Generation = 3, ClientPid = 500, ClientStartTime = 1000, Emulating = true, HeldProcesses = [new(600, 1500, "viiper.exe")] });
+        _cleanup.StartTimes[600] = 1500;
+        _cleanup.EndFails = true;
+
+        Assert.False(await _guardian.RecoverAsync());
+        var left = _journal.File.Load().State;
+        Assert.True(left.HasWork);
+        Assert.Single(left.HeldProcesses);
+
+        _cleanup.EndFails = false;
+        var again = new Guardian(_clock, _journal.File, _cleanup, _log.Add);
+        Assert.True(await again.RecoverAsync());
+        Assert.Equal(600, Assert.Single(_cleanup.Ended).Pid);
+        AssertNothingToUndo(3);
+    }
+
+    [Fact]
+    public async Task A_restore_that_looks_at_a_torn_journal_first_still_undoes_what_the_previous_version_lists()
+    {
+        // Review point 3 (reproduced there): `Pan.exe --restore` loads the journal to see whether there is work, then
+        // the recovery loads again. The first load moved the torn journal aside, so the second found nothing.
+        var open = new JournalState { Generation = 4, ClientPid = 500, ClientStartTime = 1000, Emulating = true, HeldProcesses = [new(600, 1500, "viiper.exe")] };
+        _journal.File.Save(open);
+        _journal.File.Save(open);   // the previous version lists the open emulation too
+        File.WriteAllText(_journal.File.Path, "{ torn");
+        _cleanup.StartTimes[600] = 1500;
+
+        var before = _journal.File.Load();
+        Assert.True(before.State.HasWork);
+        Assert.True(await _guardian.RecoverAsync());
+
+        Assert.Equal(600, Assert.Single(_cleanup.Ended).Pid);
+        Assert.Equal([3], _cleanup.Detached);
+        AssertNothingToUndo(4);
+    }
+
+    [Fact]
     public async Task Recovery_never_ends_a_process_whose_id_was_reused_and_tells_a_live_client_from_a_gone_one()
     {
         _journal.File.Save(new JournalState

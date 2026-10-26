@@ -26,6 +26,9 @@ public static class PanSetup
     /// <summary>Pan's exit code when <c>--install</c> couldn't secure the data folder (<c>Program.DataFolderExitCode</c> in Pan).</summary>
     private const int DataFolderExitCode = 4;
 
+    /// <summary>Pan's exit code when <c>--restore</c> or <c>--uninstall</c> could not undo everything (<c>Program.RestoreIncompleteExitCode</c> in Pan).</summary>
+    private const int RestoreIncompleteExitCode = 5;
+
     public static Version? BundledVersion => FileVersion(BundledExecutable);
 
     public static Version? InstalledVersion => FileVersion(PanPaths.InstalledExecutable);
@@ -107,6 +110,11 @@ public static class PanSetup
             {
                 // Pan could not log this: nothing of it may be written into a folder it doesn't own.
                 throw new InvalidOperationException($"Pan konnte seinen Datenordner {PanPaths.DataDirectory} nicht sichern – bitte den Ordner prüfen oder entfernen und es noch einmal versuchen.");
+            }
+
+            if (process.ExitCode == RestoreIncompleteExitCode)
+            {
+                throw new InvalidOperationException($"Pan konnte nicht alles aufräumen – das Journal bleibt erhalten; Details stehen in {PanPaths.LogPath}. Ein Neustart von Pan oder \"Pan.exe --restore\" versucht es noch einmal.");
             }
 
             if (process.ExitCode != 0)

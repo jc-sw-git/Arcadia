@@ -25,14 +25,17 @@ public static class ServiceSetup
     private static readonly TimeSpan StopWait = TimeSpan.FromSeconds(40);
 
     /// <summary>
-    /// Copies <paramref name="source"/> to Program Files (unless it already runs from there), verifies the copy's
-    /// SHA-256 against the source's (and <paramref name="expectedHash"/> when Arcadia passed the hash it computed),
-    /// replaces the service and starts it.
+    /// Installs or updates Pan: stages <paramref name="source"/> as <c>Pan.exe.new</c> in Program Files (unless it
+    /// already runs from there) and verifies the copy's SHA-256 against the source's (and <paramref name="expectedHash"/>
+    /// when Arcadia passed the hash it computed) before the installed Pan is touched. Only then the old service goes,
+    /// the file is swapped and the new service starts; if that fails the old Pan.exe comes back as the service
+    /// (review point 7). A rejected or failed update leaves the installed Pan working.
     /// </summary>
     public static void Install(string source, string? expectedHash, Action<string> log)
     {
         var target = PanPaths.InstalledExecutable;
         var runsFromTarget = string.Equals(Path.GetFullPath(source), Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase);
+        var staged = runsFromTarget ? null : Stage(source, target, expectedHash, log);
 
         using var manager = OpenManager(Native.ScManagerConnect | Native.ScManagerCreateService);
         if (TryOpenService(manager, Native.ServiceStop | Native.ServiceQueryStatus | Native.Delete) is { } existing)
@@ -50,35 +53,74 @@ public static class ServiceSetup
             }
         }
 
-        if (!runsFromTarget)
+        var backup = target + ".old";
+        if (staged is not null)
         {
-            Directory.CreateDirectory(PanPaths.InstallDirectory);
-            string sourceHash;
-            // The source stays open without write access from the hash to the end of the copy, so it can't be swapped in between.
-            using (var from = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read))
+            File.Delete(backup);
+            if (File.Exists(target))
             {
-                sourceHash = Convert.ToHexString(SHA256.HashData(from));
-                from.Position = 0;
-                using var to = new FileStream(target, FileMode.Create, FileAccess.Write, FileShare.None);
-                from.CopyTo(to);
+                File.Move(target, backup);
             }
 
-            string targetHash;
-            using (var copied = File.OpenRead(target))
-            {
-                targetHash = Convert.ToHexString(SHA256.HashData(copied));
-            }
-
-            if (!string.Equals(sourceHash, targetHash, StringComparison.OrdinalIgnoreCase)
-                || (expectedHash is not null && !string.Equals(expectedHash, targetHash, StringComparison.OrdinalIgnoreCase)))
-            {
-                File.Delete(target);
-                throw new InvalidOperationException($"the copy in Program Files doesn't match (expected {expectedHash ?? sourceHash}, got {targetHash}); nothing installed");
-            }
-
-            log($"Copied to {target} (SHA-256 {targetHash})");
+            File.Move(staged, target);
+            log($"Installed {target}");
         }
 
+        try
+        {
+            CreateAndStart(manager, target, log);
+        }
+        catch (Exception ex) when (staged is not null && File.Exists(backup) && ex is Win32Exception or IOException)
+        {
+            // The new Pan didn't make it as a service: the one that worked before comes back, in file and service.
+            log($"Starting the new Pan failed ({ex.Message}); restoring the previous one");
+            File.Move(target, staged, overwrite: true);
+            File.Move(backup, target);
+            CreateAndStart(manager, target, log);
+            File.Delete(staged);
+            throw new InvalidOperationException($"the new Pan could not be started ({ex.Message}); the previous version is running again", ex);
+        }
+
+        File.Delete(backup);
+    }
+
+    /// <summary>
+    /// Copies the source next to the installed Pan.exe (so the swap later is a rename on one volume) and verifies the
+    /// copy; a mismatch removes the copy and leaves everything installed as it was.
+    /// </summary>
+    private static string Stage(string source, string target, string? expectedHash, Action<string> log)
+    {
+        var staged = target + ".new";
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        string sourceHash;
+        // The source stays open without write access from the hash to the end of the copy, so it can't be swapped in between.
+        using (var from = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            sourceHash = Convert.ToHexString(SHA256.HashData(from));
+            from.Position = 0;
+            using var to = new FileStream(staged, FileMode.Create, FileAccess.Write, FileShare.None);
+            from.CopyTo(to);
+        }
+
+        string stagedHash;
+        using (var copied = File.OpenRead(staged))
+        {
+            stagedHash = Convert.ToHexString(SHA256.HashData(copied));
+        }
+
+        if (!string.Equals(sourceHash, stagedHash, StringComparison.OrdinalIgnoreCase)
+            || (expectedHash is not null && !string.Equals(expectedHash, stagedHash, StringComparison.OrdinalIgnoreCase)))
+        {
+            File.Delete(staged);
+            throw new InvalidOperationException($"the copy in Program Files doesn't match (expected {expectedHash ?? sourceHash}, got {stagedHash}); nothing changed");
+        }
+
+        log($"Staged {staged} (SHA-256 {stagedHash})");
+        return staged;
+    }
+
+    private static void CreateAndStart(ServiceHandle manager, string target, Action<string> log)
+    {
         var imagePath = $"\"{target}\"";
         var service = Native.CreateServiceW(
             manager.Handle, PanPaths.ServiceName, PanPaths.DisplayName, Native.ServiceAllAccess,
@@ -98,7 +140,10 @@ public static class ServiceSetup
 
         if (!Native.StartServiceW(created.Handle, 0, 0))
         {
-            throw new Win32Exception();
+            var error = new Win32Exception();
+            // Half a service is worse than none: without it the rollback (or the next install) starts clean.
+            Native.DeleteService(created.Handle);
+            throw error;
         }
 
         log("Service started");
@@ -107,9 +152,10 @@ public static class ServiceSetup
     /// <summary>
     /// Stops the service (its stop is the full teardown), removes it, undoes what the journal still lists, and deletes
     /// Pan's files; with <paramref name="removeData"/> false (the data folder isn't ours) the journal and the data folder
-    /// are left alone.
+    /// are left alone. Returns false when something could not be undone: then the journal and Pan.exe stay too, so
+    /// <c>Pan.exe --restore</c> (or the next install) can finish it (review point 8).
     /// </summary>
-    public static async Task UninstallAsync(bool removeData, Action<string> log)
+    public static async Task<bool> UninstallAsync(bool removeData, Action<string> log)
     {
         using (var manager = OpenManager(Native.ScManagerConnect))
         {
@@ -134,12 +180,18 @@ public static class ServiceSetup
 
         if (removeData)
         {
-            await Restore.RunAsync(log);
+            if (!await Restore.RunAsync(log))
+            {
+                log($"Uninstall incomplete: {PanPaths.JournalPath} and {PanPaths.InstalledExecutable} stay for a later `Pan.exe --restore`");
+                return false;
+            }
+
             DeleteTree(PanPaths.DataDirectory, log);
             DeleteIfEmpty(Path.GetDirectoryName(PanPaths.DataDirectory)!, log);
         }
 
         DeleteTree(PanPaths.InstallDirectory, log);
+        return true;
     }
 
     private static void Stop(ServiceHandle service, Action<string> log)

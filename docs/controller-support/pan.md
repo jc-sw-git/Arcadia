@@ -51,8 +51,11 @@ commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview
   is a few ms); Pan takes every child of the client named `viiper.exe` (Toolhelp32, parent PID + start time) and holds
   its handle, so a PID can't be reused under it. Journal `%ProgramData%\Arcadia\Pan\journal.json` (temp +
   write-through + `File.Replace`, `.previous` kept, a broken one moved to `.broken` and reported as
-  `JournalUnreadable` → toast) written before `Started` is answered. The journal is never deleted: with nothing to
-  undo it still keeps the generation, so a restarted Pan counts on and never repeats a number a client remembers.
+  `JournalUnreadable` → toast) written before `Started` is answered. A journal that parses but makes no sense (a
+  null list, an entry without a process, an unknown version) counts as unreadable too. The fallback a load had to
+  use is written back as the journal at once, so a second load (the `--restore` check, then the recovery) sees the
+  same state. The journal is never deleted: with nothing to undo it still keeps the generation, so a restarted Pan
+  counts on and never repeats a number a client remembers.
 - Steps, each with a 10 s timeout on a worker, never throwing: detach usbip ports attached from VIIPER (`usbip.exe port`
   / `detach -p`, from `%ProgramFiles%\USBip`), then end the held forwarding processes. Each ended process leaves the
   journal at once (under the guardian's lock, so a step left behind after its timeout can't corrupt it); what failed

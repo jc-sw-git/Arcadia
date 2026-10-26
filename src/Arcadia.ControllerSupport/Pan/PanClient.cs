@@ -248,6 +248,13 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
                 Drop(ex is OperationCanceledException ? $"Pan antwortet nicht innerhalb von {RequestTimeout.TotalSeconds:0} s" : $"Verbindung zu Pan verloren: {ex.Message}");
                 throw new InvalidOperationException("Pan antwortet nicht", ex);
             }
+            catch (OperationCanceledException) when (!_disposed.IsCancellationRequested)
+            {
+                // The caller gave up after the request may have reached Pan. Its reply would still come and would pass
+                // for the next request's (review point 5), so this link goes; the keeper connects anew.
+                Drop("Anfrage an Pan abgebrochen", link);
+                throw;
+            }
             finally
             {
                 lock (_lock)

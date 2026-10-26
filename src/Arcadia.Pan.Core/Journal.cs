@@ -93,6 +93,10 @@ public sealed class JournalFile(string path)
         }
     }
 
+    /// <summary>
+    /// Reads the journal. A fallback (the previous version, or nothing) is written back as the journal at once, so the
+    /// next load sees the same state and the generation it reached: nothing is undone twice or counted from 1 again.
+    /// </summary>
     public JournalLoad Load()
     {
         if (!File.Exists(Path))
@@ -106,12 +110,28 @@ public sealed class JournalFile(string path)
         }
 
         MoveAside(Path, BrokenPath);
+        var name = System.IO.Path.GetFileName(Path);
         if (File.Exists(PreviousPath) && TryRead(PreviousPath, out var previous, out _))
         {
-            return new(previous, $"{System.IO.Path.GetFileName(Path)} unreadable ({problem}); using the previous version", FromPrevious: true);
+            return new(previous, $"{name} unreadable ({problem}); using the previous version{Promote(previous)}", FromPrevious: true);
         }
 
-        return new(new JournalState(), $"{System.IO.Path.GetFileName(Path)} unreadable ({problem}) and no previous version; nothing to undo is known", FromPrevious: false);
+        var empty = new JournalState();
+        return new(empty, $"{name} unreadable ({problem}) and no previous version; nothing to undo is known{Promote(empty)}", FromPrevious: false);
+    }
+
+    /// <summary>Makes the fallback the journal; a failure is reported, never thrown.</summary>
+    private string Promote(JournalState fallback)
+    {
+        try
+        {
+            Save(fallback);
+            return string.Empty;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return $"; it could not be written back ({ex.Message})";
+        }
     }
 
     private static bool TryRead(string file, out JournalState state, out string? problem)
@@ -120,6 +140,11 @@ public sealed class JournalFile(string path)
         {
             using var stream = File.OpenRead(file);
             state = JsonSerializer.Deserialize(stream, JournalJson.Default.JournalState) ?? throw new JsonException("empty");
+            if (Validate(state) is { } invalid)
+            {
+                throw new JsonException(invalid);
+            }
+
             problem = null;
             return true;
         }
@@ -129,6 +154,36 @@ public sealed class JournalFile(string path)
             problem = ex.Message;
             return false;
         }
+    }
+
+    /// <summary>
+    /// What deserializing alone lets through: a null where a list belongs, an entry without a process, an unknown
+    /// version. Such a journal counts as unreadable (review point 4), so the previous version is used instead of Pan
+    /// failing at every start on the same file.
+    /// </summary>
+    private static string? Validate(JournalState state)
+    {
+        if (state.Version != 1)
+        {
+            return $"unknown journal version {state.Version}";
+        }
+
+        if (state.HeldProcesses is null || state.HiddenDevices is null || state.AllowListed is null)
+        {
+            return "a list is missing";
+        }
+
+        if (state.HeldProcesses.Any(process => process is null || process.Pid <= 0 || process.ImageName is null))
+        {
+            return "a held process entry is incomplete";
+        }
+
+        if (state.HiddenDevices.Any(device => device is null) || state.AllowListed.Any(entry => entry is null))
+        {
+            return "a HidHide entry is missing";
+        }
+
+        return null;
     }
 
     private static void MoveAside(string file, string aside)

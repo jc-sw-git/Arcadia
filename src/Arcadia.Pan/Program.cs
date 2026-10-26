@@ -87,8 +87,9 @@ internal static class Program
                         Console.Error.WriteLine($"Leaving the data folder alone: {dataProblem}.");
                     }
 
-                    ServiceSetup.UninstallAsync(removeData: dataProblem is null, log.Write).GetAwaiter().GetResult();
-                    return 0;
+                    return ServiceSetup.UninstallAsync(removeData: dataProblem is null, log.Write).GetAwaiter().GetResult()
+                        ? 0
+                        : RestoreIncompleteExitCode;
                 case "--restore":
                     if (ServiceSetup.CheckDataDirectory() is { } problem)
                     {
@@ -97,8 +98,7 @@ internal static class Program
                     }
 
                     log.TrustFolder();
-                    Restore.RunAsync(log.Write).GetAwaiter().GetResult();
-                    return 0;
+                    return Restore.RunAsync(log.Write).GetAwaiter().GetResult() ? 0 : RestoreIncompleteExitCode;
                 default:
                     Console.Error.WriteLine($"Unknown command {args[0]}. Commands: --install, --uninstall, --restore, --console, --version.");
                     return 1;
@@ -114,6 +114,12 @@ internal static class Program
 
     /// <summary>Exit code of <c>--install</c> when the data folder can't be secured; Arcadia names the folder then.</summary>
     public const int DataFolderExitCode = 4;
+
+    /// <summary>
+    /// Exit code of <c>--restore</c> and <c>--uninstall</c> when something listed in the journal could not be undone;
+    /// the journal and Pan.exe stay for another <c>--restore</c>, and Arcadia says so.
+    /// </summary>
+    public const int RestoreIncompleteExitCode = 5;
 
     private static string? Option(string[] args, string name)
     {

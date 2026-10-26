@@ -87,9 +87,10 @@ public sealed class Guardian
 
     /// <summary>
     /// At start: reads the journal and undoes what it still lists (a blue screen or power loss left it, or Pan was
-    /// restarted). A journal that can't be read is reported, never fatal.
+    /// restarted). A journal that can't be read is reported, never fatal. Returns whether nothing is left to undo;
+    /// what a failed step left stays in the journal for the next attempt (review point 8).
     /// </summary>
-    public async Task RecoverAsync()
+    public async Task<bool> RecoverAsync()
     {
         var load = _journalFile.Load();
         lock (_lock)
@@ -106,7 +107,7 @@ public sealed class Guardian
 
         if (!load.State.HasWork)
         {
-            return;
+            return true;
         }
 
         var clientAlive = _cleanup.StartTimeOf(load.State.ClientPid) == load.State.ClientStartTime;
@@ -127,6 +128,10 @@ public sealed class Guardian
 
         _log($"Journal: {held} forwarding process(es) still ours");
         await TearDownAsync(PanReason.ClientGone, notify: false, unplanned: !clientAlive);
+        lock (_lock)
+        {
+            return !_journal.HasWork;
+        }
     }
 
     /// <summary>A connection on the pipe: accepted, or refused with the reason the client gets before the pipe closes.</summary>

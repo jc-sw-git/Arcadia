@@ -100,6 +100,15 @@ public sealed class ServiceTests : IDisposable
             service.WaitForStatus(ServiceControllerStatus.Running, ReplyTimeout);
         }
 
+        // T243-7, update: a rejected update leaves the installed Pan running and unchanged (review point 7).
+        Assert.Equal(3, Run(pan, "--install", "--expect-hash", new string('0', 64)));
+        Assert.Equal(hash, Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(PanPaths.InstalledExecutable))));
+        Assert.False(File.Exists(PanPaths.InstalledExecutable + ".new"), "no staged copy left");
+        using (var service = new ServiceController(PanPaths.ServiceName))
+        {
+            Assert.Equal(ServiceControllerStatus.Running, service.Status);
+        }
+
         // T243-8: a user can start and query it but never change it; the image path is quoted.
         // sc prints the rights in its own order (LCRPLORC), so the ACE is compared as a set of rights. Only the DACL
         // (D:) counts: Windows adds an audit entry for Everyone to the SACL (S:) of every service.

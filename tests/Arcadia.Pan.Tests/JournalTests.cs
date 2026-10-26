@@ -58,7 +58,52 @@ public class JournalTests
         Assert.Contains("unreadable", load.Problem);
         Assert.Equal(5u, load.State.Generation);
         Assert.True(load.State.HasWork);
-        Assert.False(journal.Exists);
+        Assert.True(File.Exists(journal.File.BrokenPath));
+
+        // The fallback is the journal now (review point 3): whoever loads next, e.g. the recovery after a look at the
+        // journal, sees the same work and the same generation, not an empty journal.
+        Assert.True(journal.Exists);
+        var again = journal.File.Load();
+        Assert.Null(again.Problem);
+        Assert.False(again.FromPrevious);
+        Assert.Equal(5u, again.State.Generation);
+        Assert.True(again.State.HasWork);
+    }
+
+    [Fact]
+    public void A_torn_journal_without_a_previous_version_leaves_an_empty_journal_behind()
+    {
+        using var journal = new TempJournal();
+        Directory.CreateDirectory(journal.Folder);
+        File.WriteAllText(journal.File.Path, "{ \"Generation\": ");
+
+        journal.File.Load();
+
+        Assert.True(journal.Exists);
+        Assert.Null(journal.File.Load().Problem);
+    }
+
+    [Theory]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"HeldProcesses\":null}", "a list is missing")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"HiddenDevices\":null}", "a list is missing")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"HeldProcesses\":[{\"Pid\":0,\"StartTime\":1,\"ImageName\":\"viiper.exe\"}]}", "incomplete")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"HeldProcesses\":[{\"Pid\":5,\"StartTime\":1}]}", "incomplete")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"AllowListed\":[null]}", "HidHide entry is missing")]
+    [InlineData("{\"Version\":2,\"Generation\":7}", "unknown journal version")]
+    public void A_journal_that_parses_but_makes_no_sense_counts_as_unreadable(string json, string problem)
+    {
+        // Review point 4: `{"HeldProcesses":null}` deserializes, and HasWork then threw at every start of Pan.
+        using var journal = new TempJournal();
+        journal.File.Save(Sample());
+        journal.File.Save(Sample());
+        File.WriteAllText(journal.File.Path, json);
+
+        var load = journal.File.Load();
+
+        Assert.True(load.FromPrevious);
+        Assert.Contains(problem, load.Problem);
+        Assert.Equal(5u, load.State.Generation);
+        Assert.True(load.State.HasWork);
         Assert.True(File.Exists(journal.File.BrokenPath));
     }
 

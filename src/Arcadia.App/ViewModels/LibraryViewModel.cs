@@ -47,11 +47,13 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
     private readonly Action<GameTileViewModel> _showStates;
     private readonly ILibraryHost _host;
     private readonly TimeProvider _time;
+    private readonly InstallFolderCheck _installFolders;
     private readonly Dictionary<LauncherTabViewModel, SortedTab> _sorted = [];
     private int _requestedPage;
 
     /// <param name="saveView">Saves a changed view, and says so if it can't.</param>
     /// <param name="showStates">Gives a new cover its game's install and run state.</param>
+    /// <param name="installFolders">Notices off the UI thread that a focused game's install folder is gone.</param>
     public LibraryViewModel(
         LauncherTabsViewModel tabs,
         SettingsService settings,
@@ -59,7 +61,8 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         GameActions actions,
         Action<GameTileViewModel> showStates,
         ILibraryHost host,
-        TimeProvider time)
+        TimeProvider time,
+        InstallFolderCheck installFolders)
     {
         _tabs = tabs;
         _settings = settings;
@@ -68,6 +71,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         _showStates = showStates;
         _host = host;
         _time = time;
+        _installFolders = installFolders;
     }
 
     public ObservableCollection<GameTileViewModel> PageGames { get; } = [];
@@ -387,10 +391,17 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         tile.IsFocused = true;
         FocusedGame = tile;
 
-        // Uninstalled in the launcher while Arcadia wasn't looking: the directory is gone.
-        if (tile.Game is { IsInstalled: true, InstallDirectory: { } directory } && !Directory.Exists(directory))
+        // Uninstalled in the launcher while Arcadia wasn't looking: the directory is gone. Asked off the UI thread, as a
+        // network share or a sleeping drive can take seconds to answer (#227); the answer counts while the cover has the focus.
+        if (tile.Game is { IsInstalled: true, InstallDirectory: { } directory })
         {
-            _host.LibraryOutdated();
+            _installFolders.Check(directory, () =>
+            {
+                if (FocusedGame == tile)
+                {
+                    _host.LibraryOutdated();
+                }
+            });
         }
     }
 

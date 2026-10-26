@@ -83,7 +83,7 @@ the start of the next feature iteration. Process and test plan format: `docs/tes
   manual test (e.g. a refactoring of features already covered by tests), the issue's section
   says so in one line with the reason. The `Testplan` CI check fails without the section.
 - **Tested before merge:** all of the issue's tests (unit, integration, an acceptance test per `E2E: yes` case) are in
-  the same PR before the owner tests; then the owner runs the issue's whole test plan file and Codex reviews; feedback
+  the same PR before the owner tests; then the owner runs the issue's whole test plan file; feedback
   is fixed in one batch in the same thread (details: `docs/testplans/README.md` → Before the merge).
 - **Performant:** no blocking work on the UI thread; code on a hot path (start, scan, library,
   input, running in the background beside a game) stays within the budgets below, measured when touched.
@@ -190,8 +190,8 @@ Every step of a session resends its whole context, so keep it small (owner, 2026
 - Commit messages: imperative subject, body explains why.
 - At most two open UI PRs at a time (the owner tests them one after the other). After each merge to `main`, check
   yourself that your open PR is still mergeable and resolve conflicts before the owner finds them.
-- Code PRs get a review by Codex (`AGENTS.md`) as the standard; a second review by an independent Claude thread
-  only on the owner's request, e.g. for large or often reworked PRs (retro Iteration 1).
+- Threads work as personas (`docs/personas/`): a fresh quality engineer thread reviews and adds the acceptance
+  tests to every code PR; Codex (`AGENTS.md`) reviews only the whole iteration.
 - Opening a PR needs no prior OK (tell the owner the link). Merging, tags/releases, closing issues and posting
   comments only on the owner's explicit word.
 - License: GPL-3.0-only. Third-party notes in `THIRD-PARTY-NOTICES.md`.

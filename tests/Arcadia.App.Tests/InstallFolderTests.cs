@@ -119,7 +119,8 @@ public sealed class InstallFolderTests
 
         Assert.Equal(checks + 2, arcadia.Folders.Checks);
         var log = File.ReadAllText(Path.Combine(Arcadia.App.Services.AppLog.Directory, "arcadia.log"));
-        Assert.Contains($"Test: {games[1].InstallDirectory} can't be read.", log);
+        // By the folder's name: the log writes the user profile of a full path as %USERPROFILE%.
+        Assert.Contains($"Test: {Path.GetFileName(games[1].InstallDirectory)} can't be read.", log);
     }
 
     /// <summary>Installed games, each in a folder of its own that exists.</summary>

@@ -277,7 +277,7 @@ internal sealed class FakeInstallFolders
         {
             if (_failing.Contains(folder))
             {
-                throw new IOException($"Test: {folder} can't be read.");
+                throw new IOException($"Test: {Path.GetFileName(folder)} can't be read.");
             }
 
             return !_removed.Contains(folder) && Directory.Exists(folder);

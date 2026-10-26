@@ -175,7 +175,7 @@ public sealed class FirstRunTests
 
         Assert.False(arcadia.Main.IsFirstRunShown);
         Assert.Empty(arcadia.Main.LauncherTabs.Items);
-        Assert.Equal("Kein Launcher aktiv", arcadia.Main.EmptyTab?.Title);
+        Assert.Equal("Kein Launcher aktiv", arcadia.Main.Library.EmptyTab?.Title);
     }
 
     [AvaloniaFact]
@@ -189,6 +189,6 @@ public sealed class FirstRunTests
         arcadia.Press(UiAction.Settings);
 
         Assert.False(arcadia.Main.IsFirstRunShown);
-        Assert.Equal("Kein Launcher aktiv", arcadia.Main.EmptyTab?.Title);
+        Assert.Equal("Kein Launcher aktiv", arcadia.Main.Library.EmptyTab?.Title);
     }
 }

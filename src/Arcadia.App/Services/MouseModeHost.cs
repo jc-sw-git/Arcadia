@@ -334,7 +334,7 @@ public sealed class MouseModeHost : IDisposable
 
         Dispatcher.UIThread.Post(() =>
         {
-            var gameInFront = ForegroundGame.IsInFront(_viewModel.GameFolders, _viewModel.LaunchedGames);
+            var gameInFront = ForegroundGame.IsInFront(_viewModel.Session.GameFolders, _viewModel.Session.LaunchedGames);
             AppLog.Write($"Mausmodus {(change.IsOn ? "an" : "aus")} ({(change.PadId is { } s ? $"Back + Start an Controller #{s}" : "automatisch")}{(gameInFront ? ", Spiel vorne" : string.Empty)})");
             if (change.IsOn)
             {
@@ -537,13 +537,13 @@ public sealed class MouseModeHost : IDisposable
         _focusLossSettle.Stop();
         if (!OwnsForeground())
         {
-            _automation.ArcadiaDeactivated(ForegroundGame.IsInFront(_viewModel.GameFolders, _viewModel.LaunchedGames));
+            _automation.ArcadiaDeactivated(ForegroundGame.IsInFront(_viewModel.Session.GameFolders, _viewModel.Session.LaunchedGames));
         }
     }
 
     private void CheckForeground()
     {
-        _automation.ForegroundChecked(ForegroundGame.IsInFront(_viewModel.GameFolders, _viewModel.LaunchedGames));
+        _automation.ForegroundChecked(ForegroundGame.IsInFront(_viewModel.Session.GameFolders, _viewModel.Session.LaunchedGames));
         UpdateForegroundCheck();
     }
 
@@ -579,12 +579,12 @@ public sealed class MouseModeHost : IDisposable
     private string? ForegroundGameKey()
     {
         var id = ProcessWatch.ForegroundProcessId();
-        var folders = _viewModel.GameFolders;
+        var folders = _viewModel.Session.GameFolders;
         if (id != _lastForegroundId || !ReferenceEquals(folders, _lastForegroundFolders))
         {
             _lastForegroundId = id;
             _lastForegroundFolders = folders;
-            _lastForegroundGame = ForegroundGame.InFront(folders, _viewModel.LaunchedGames);
+            _lastForegroundGame = ForegroundGame.InFront(folders, _viewModel.Session.LaunchedGames);
         }
 
         return _lastForegroundGame;

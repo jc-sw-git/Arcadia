@@ -186,9 +186,9 @@ public partial class App : Application
 
             // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
             // watch, rescan until the games it handed over are installed.
-            var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.PollInstallsAsync, "Installationen verfolgen"));
+            var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.PollInstallsAsync, "Installationen verfolgen"));
             installProgress.Start();
-            var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.CheckPendingInstallsAsync, "Installationen prüfen"));
+            var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.CheckPendingInstallsAsync, "Installationen prüfen"));
             installs.Start();
             var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, "Update-Prüfung"));
             updateCheck.Start();
@@ -196,10 +196,10 @@ public partial class App : Application
             // Which games run (#95): asked off the UI thread, also in the background (Arcadia may be seen on a second
             // screen); the end of a game Arcadia started brings it back (#94). Coming to the front asks at once.
             var running = new DispatcherTimer(RunningGamesInterval, DispatcherPriority.Background, async (_, _) =>
-                await AppErrors.Guard(viewModel.PollRunningGamesAsync, "Laufende Spiele"));
+                await AppErrors.Guard(viewModel.Session.PollRunningGamesAsync, "Laufende Spiele"));
             running.Start();
-            window.Activated += (_, _) => viewModel.PollRunningGamesAsync().Forget("Laufende Spiele");
-            viewModel.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey).Forget("Nach dem Spiel zurück zu Arcadia");
+            window.Activated += (_, _) => viewModel.Session.PollRunningGamesAsync().Forget("Laufende Spiele");
+            viewModel.Session.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey).Forget("Nach dem Spiel zurück zu Arcadia");
 
             async Task ReturnAfterGameAsync(string gameKey)
             {
@@ -211,7 +211,7 @@ public partial class App : Application
 
                 // The user switched to another program meanwhile: it keeps the front (owner, 2026-10-20).
                 var launcherPrograms = launchers.Find(Game.LauncherIdOf(gameKey))?.ProgramNames ?? [];
-                if (ForegroundGame.InFrontAfter(gameKey, viewModel.GameFolders, launchedGames, launcherPrograms) is var front and not ForegroundAfterGame.Other)
+                if (ForegroundGame.InFrontAfter(gameKey, viewModel.Session.GameFolders, launchedGames, launcherPrograms) is var front and not ForegroundAfterGame.Other)
                 {
                     AppLog.Write($"{gameKey} beendet, vorne: {front} – Arcadia kommt nach vorne");
                     ForegroundGuard.BringBack(window);
@@ -258,8 +258,8 @@ public partial class App : Application
             // Version and Windows build first: a bug report with only the log must say what it is about.
             AppLog.Write($"Arcadia {updates.CurrentVersion} gestartet ({System.Runtime.InteropServices.RuntimeInformation.OSDescription}, "
                 + $"{(updates.IsInstalled ? "installiert" : "nicht installiert")}): {string.Join(' ', args)}");
-            viewModel.LoadAsync().Forget("Bibliothek laden");
-            viewModel.PollRunningGamesAsync().Forget("Laufende Spiele");
+            viewModel.Session.LoadAsync().Forget("Bibliothek laden");
+            viewModel.Session.PollRunningGamesAsync().Forget("Laufende Spiele");
             updates.CheckIfDueAsync().Forget("Update-Prüfung");
         }
 

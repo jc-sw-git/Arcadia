@@ -32,7 +32,7 @@ public sealed class StartTests
         arcadia.Press(UiAction.Settings);
         await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown, "die Bibliothek soll nach \"Fertig\" erscheinen");
 
-        var empty = Assert.IsType<Arcadia.App.ViewModels.EmptyTabViewModel>(arcadia.Main.EmptyTab);
+        var empty = Assert.IsType<Arcadia.App.ViewModels.EmptyTabViewModel>(arcadia.Main.Library.EmptyTab);
         Assert.True(empty.HasNoLauncher);
         Assert.Equal("Kein Launcher aktiv", empty.Title);
         Assert.Empty(arcadia.Main.LauncherTabs.Items);
@@ -46,10 +46,10 @@ public sealed class StartTests
         using var arcadia = await ArcadiaDriver.StartAsync([new(KnownLaunchers.Gog, 0), new(KnownLaunchers.Xbox, 0)]);
 
         Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
-        Assert.Equal("Keine Spiele in GOG Galaxy", arcadia.Main.EmptyTab?.Title);
+        Assert.Equal("Keine Spiele in GOG Galaxy", arcadia.Main.Library.EmptyTab?.Title);
         Assert.Null(arcadia.FocusedGame);
         arcadia.Press(UiAction.NextTab);
-        Assert.Equal("Keine Spiele in Xbox", arcadia.Main.EmptyTab?.Title);
+        Assert.Equal("Keine Spiele in Xbox", arcadia.Main.Library.EmptyTab?.Title);
         Assert.False(arcadia.Main.Toast.IsVisible, arcadia.Main.Toast.Text);
     }
 

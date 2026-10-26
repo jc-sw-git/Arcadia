@@ -110,12 +110,12 @@ acceptance iteration (owner 2026-10-25; "Abnahme Iteration 1" was the last). Det
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), Steam, Epic, Demo, game start |
 | `src/Arcadia.Input` | Controllers via SDL3, gestures, mouse mode, `SendInput`, Steam desktop input filter |
 | `src/Arcadia.ControllerSupport` | Steam Controller Support (SISR, usbip-win2) |
-| `src/Arcadia.App` | Avalonia 12 UI (MVVM), `Theme/Theme.axaml`, `MainViewModel` (navigation) and its children |
+| `src/Arcadia.App` | Avalonia 12 UI (MVVM), `Theme/Theme.axaml`, `MainViewModel` (routing between pages) and the pages (`IPage`) |
 | `tests/Arcadia.Core.Tests` | xUnit |
 | `tests/Arcadia.App.Tests` | Acceptance tests (xUnit v3, Avalonia headless): `ArcadiaDriver` presses buttons on `MainViewModel`, `ArcadiaWindow` clicks and looks at the real window; rules in `docs/testplans/README.md` |
 
 Which class does what: `docs/architecture/` (read it, or grep, rather than guessing). Big Picture UI is laid out at
-1920×1080 inside a `Viewbox`. Focus/navigation is done in the view models (`MainViewModel.Handle(UiAction)`), not with
+1920×1080 inside a `Viewbox`. Focus/navigation is done in the view models (`MainViewModel.Handle(UiAction)` routes to the page on top), not with
 Avalonia focus: buttons are `Focusable=False`, keys are handled in a tunnelling `KeyDown` handler.
 
 ## Rules that are easy to get wrong

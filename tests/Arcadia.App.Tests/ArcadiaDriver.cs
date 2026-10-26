@@ -175,13 +175,13 @@ internal sealed class ArcadiaDriver : IDisposable
     // What the player sees, so the tests read it in one place however the view models are split up (#155).
 
     /// <summary>The cover with the focus in the library.</summary>
-    public GameTileViewModel? FocusedGame => Main.FocusedGame;
+    public GameTileViewModel? FocusedGame => Main.Library.FocusedGame;
 
     /// <summary>The covers of the library's current page.</summary>
-    public IReadOnlyList<GameTileViewModel> PageGames => Main.PageGames;
+    public IReadOnlyList<GameTileViewModel> PageGames => Main.Library.PageGames;
 
     /// <summary>The current page's number in the footer, as it reads ("2").</summary>
-    public string? CurrentPage => Main.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;
+    public string? CurrentPage => Main.Library.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;
 
     public LauncherTabViewModel? SelectedTab => Main.LauncherTabs.SelectedTab;
 
@@ -396,7 +396,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>What the App's timer does every few seconds: asks the launchers which games run.</summary>
     public async Task FollowRunningGamesAsync()
     {
-        await Main.PollRunningGamesAsync();
+        await Main.Session.PollRunningGamesAsync();
         Dispatcher.UIThread.RunJobs();
     }
 
@@ -440,7 +440,7 @@ internal sealed class ArcadiaDriver : IDisposable
     public async Task<ArcadiaDriver> FollowInstallsAsync()
     {
         Wait(InstallProgressInterval);
-        await Main.PollInstallsAsync();
+        await Main.Session.PollInstallsAsync();
         Dispatcher.UIThread.RunJobs();
         return this;
     }
@@ -451,7 +451,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// </summary>
     public async Task<ArcadiaDriver> RescanAsync()
     {
-        await Main.RefreshLibraryAsync(force: true);
+        await Main.Session.RefreshLibraryAsync(force: true);
         Dispatcher.UIThread.RunJobs();
         return this;
     }
@@ -461,7 +461,7 @@ internal sealed class ArcadiaDriver : IDisposable
     {
         // The rescan skips if the last one was only seconds ago; coming back from a launcher takes longer.
         Wait(TimeSpan.FromSeconds(10));
-        await Main.RefreshLibraryAsync();
+        await Main.Session.RefreshLibraryAsync();
         Dispatcher.UIThread.RunJobs();
         return this;
     }
@@ -504,8 +504,8 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>As the App starts: the library, and which games already run.</summary>
     private async Task LoadAsync()
     {
-        await Main.LoadAsync();
-        await Main.PollRunningGamesAsync();
+        await Main.Session.LoadAsync();
+        await Main.Session.PollRunningGamesAsync();
         Dispatcher.UIThread.RunJobs();
     }
 }

@@ -69,7 +69,7 @@ public sealed class KeyboardAndMouseTests
 
         // WASD and the arrows move.
         arcadia.Key(Key.D).Key(Key.S);
-        Assert.Equal(1 + MainViewModel.GridColumns, FocusedIndex(main));
+        Assert.Equal(1 + LibraryViewModel.GridColumns, FocusedIndex(main));
         arcadia.Key(Key.W).Key(Key.A);
         Assert.Equal(0, FocusedIndex(main));
         arcadia.Key(Key.Right).Key(Key.Down).Key(Key.Up).Key(Key.Left);
@@ -218,7 +218,7 @@ public sealed class KeyboardAndMouseTests
         Assert.Equal("2", CurrentPage(main));
         arcadia.Click(arcadia.Showing(main.LauncherTabs.Items[2]));
         Assert.Equal("Amazon Games", arcadia.Arcadia.SelectedTab?.Name);
-        arcadia.Click(arcadia.Window.GetVisualDescendants().OfType<Button>().Single(button => button.IsEffectivelyVisible && button.Command == main.OpenViewOptionsCommand));
+        arcadia.Click(arcadia.Window.GetVisualDescendants().OfType<Button>().Single(button => button.IsEffectivelyVisible && button.Command == main.Library.OpenViewOptionsCommand));
         Assert.True(main.IsViewOptionsOpen);
         arcadia.Key(Key.Escape);
         arcadia.Click(arcadia.ButtonWithTip("Suchen"));
@@ -262,7 +262,7 @@ public sealed class KeyboardAndMouseTests
     private static Button PageButton(ArcadiaWindow arcadia, string label) => arcadia.Window.GetVisualDescendants().OfType<Button>()
         .Single(button => button.Classes.Contains("page") && button.IsEffectivelyVisible && Equals(button.Content, label));
 
-    private static int FocusedIndex(MainViewModel main) => main.FocusedGame is { } focused ? main.PageGames.IndexOf(focused) : -1;
+    private static int FocusedIndex(MainViewModel main) => main.Library.FocusedGame is { } focused ? main.Library.PageGames.IndexOf(focused) : -1;
 
-    private static string? CurrentPage(MainViewModel main) => main.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;
+    private static string? CurrentPage(MainViewModel main) => main.Library.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;
 }

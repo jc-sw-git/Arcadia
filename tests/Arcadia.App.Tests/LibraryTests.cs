@@ -24,7 +24,7 @@ public sealed class LibraryTests
         Assert.Equal(1, FocusedIndex(arcadia));
 
         arcadia.Press(UiAction.Down);
-        Assert.Equal(1 + Arcadia.App.ViewModels.MainViewModel.GridColumns, FocusedIndex(arcadia));
+        Assert.Equal(1 + Arcadia.App.ViewModels.LibraryViewModel.GridColumns, FocusedIndex(arcadia));
 
         arcadia.Press(UiAction.Up);
         Assert.Equal(1, FocusedIndex(arcadia));
@@ -67,7 +67,7 @@ public sealed class LibraryTests
 
         // Up on the stick is positive.
         arcadia.HoldPad(tap, leftStick: new StickPosition(0, -0.9));
-        Assert.Equal(1 + Arcadia.App.ViewModels.MainViewModel.GridColumns, FocusedIndex(arcadia));
+        Assert.Equal(1 + Arcadia.App.ViewModels.LibraryViewModel.GridColumns, FocusedIndex(arcadia));
 
         arcadia.HoldPad(tap, leftStick: new StickPosition(0, 0.9)).HoldPad(tap, leftStick: new StickPosition(-0.9, 0));
         Assert.Equal(0, FocusedIndex(arcadia));
@@ -266,21 +266,21 @@ public sealed class LibraryTests
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
         Assert.Equal(50, arcadia.PageGames.Count);
-        Assert.Equal("Name Z–A  ·  50 pro Seite", main.ViewSummary);
+        Assert.Equal("Name Z–A  ·  50 pro Seite", main.Library.ViewSummary);
         AssertNameZtoA(arcadia);
 
         // Six games: 50 isn't offered there, so 10, the largest size it allows.
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("Amazon Games", arcadia.SelectedTab?.Name);
         Assert.Equal(6, arcadia.PageGames.Count);
-        Assert.Equal("Name Z–A  ·  10 pro Seite", main.ViewSummary);
+        Assert.Equal("Name Z–A  ·  10 pro Seite", main.Library.ViewSummary);
         AssertNameZtoA(arcadia);
 
         // The choice itself is kept: the big tab shows 50 again.
         arcadia.Press(UiAction.PreviousTab);
         Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
         Assert.Equal(50, arcadia.PageGames.Count);
-        Assert.Equal("Name Z–A  ·  50 pro Seite", main.ViewSummary);
+        Assert.Equal("Name Z–A  ·  50 pro Seite", main.Library.ViewSummary);
     }
 
     [AvaloniaFact]
@@ -344,7 +344,7 @@ public sealed class LibraryTests
         arcadia.FocusedGame is { } focused ? arcadia.PageGames.ToList().IndexOf(focused) : -1;
 
     private static string? CurrentPage(ArcadiaDriver arcadia) =>
-        arcadia.Main.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;
+        arcadia.Main.Library.PageButtons.SingleOrDefault(button => button.IsCurrent)?.Label;
 
     private static DateTimeOffset Day(int year, int month, int day) => new(year, month, day, 18, 0, 0, TimeSpan.Zero);
 }

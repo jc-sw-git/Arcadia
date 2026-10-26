@@ -14,8 +14,11 @@ namespace Arcadia.App.Settings;
 /// </summary>
 public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDisposable
 {
-    public SettingsPageViewModel(IReadOnlyList<SettingsCategoryViewModel> categories, SettingsChanges changes, SettingsCategoryViewModel? first = null)
+    private readonly IPageHost _host;
+
+    public SettingsPageViewModel(IReadOnlyList<SettingsCategoryViewModel> categories, SettingsChanges changes, IPageHost host, SettingsCategoryViewModel? first = null)
     {
+        _host = host;
         Categories = categories;
         Changes = changes;
         foreach (var category in categories)
@@ -64,7 +67,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
     /// <summary>RS (or Shift+W/S) scrolls the info panel: -1 up, 1 down.</summary>
     public event EventHandler<int>? InfoScrollRequested;
 
-    /// <returns>False if the action closes the page (B at the top, ≡): Main closes it.</returns>
+    /// <summary>Takes every button; B at the top and ≡ ask the window to close the page.</summary>
     public bool Handle(UiAction action)
     {
         var category = Selected;
@@ -119,10 +122,9 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
             case UiAction.Back when _linkedFrom is { } from:
                 Select(from);
                 break;
-            case UiAction.Back:
-                return false;
-            case UiAction.Settings:
-                return false;
+            case UiAction.Back or UiAction.Settings:
+                _host.Close(this);
+                break;
         }
 
         return true;

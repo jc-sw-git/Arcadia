@@ -33,24 +33,24 @@ Kompatibilität" doesn't matter for these cases. Keeping Steam away from the con
 beside a game on "Arcadia", Back + Start not switching Steam's action set, #93) is story #242 (decided after spike #239)
 and its cases are there; until then, with Steam running, a game on "Arcadia" may still get mouse and keys from Steam.
 
-- [ ] **T213-8** No switch to turn on: with the Steam Controller on, the preview, the detail page and the context menu
+- [x] **T213-8** No switch to turn on: with the Steam Controller on, the preview, the detail page and the context menu
       show "Steam Controller: Arcadia" on a game of another launcher and "Steam-Eingabe" on a Steam game; the Steam
       Controller off, the row goes. With only an Xbox pad, no row. · E2E: yes
-- [ ] **T213-9** A Steam game (Steam-Eingabe) started from Arcadia: "Game controllers" no longer lists Arcadia's Xbox
+- [x] **T213-9** A Steam game (Steam-Eingabe) started from Arcadia: "Game controllers" no longer lists Arcadia's Xbox
       controller before the game is up, the game uses its own Steam configuration; after the game ended, Arcadia's
       controller is back within about 2 s. `arcadia.log`: "Steam Controller in Spielen: kein Xbox-Pad … auf Steam-Eingabe".
       · E2E: yes
-- [ ] **T213-10** A game of another launcher on "Arcadia" keeps Arcadia's controller while it runs; set to "Steam-Eingabe"
+- [x] **T213-10** A game of another launcher on "Arcadia" keeps Arcadia's controller while it runs; set to "Steam-Eingabe"
       in its preview (A on the value, or ⧉ → context menu), the next start runs without it. While a game runs, its mode
       can't be changed ("Gilt erst beim nächsten Start …"). · E2E: yes
-- [ ] **T213-11** (#119) A Steam game started directly in Steam (not from Arcadia), also one not in Arcadia's library:
+- [x] **T213-11** (#119) A Steam game started directly in Steam (not from Arcadia), also one not in Arcadia's library:
       Arcadia's controller goes within about 2 s; set that game to "Arcadia" in Arcadia first and start it in Steam
       again: the controller stays. · E2E: yes
-- [ ] **T213-12** Without the driver (usbip-win2 uninstalled, or `viiper.exe` renamed in `%LOCALAPPDATA%\SISR`): the
+- [x] **T213-12** Without the driver (usbip-win2 uninstalled, or `viiper.exe` renamed in `%LOCALAPPDATA%\SISR`): the
       mode shows "Steam-Eingabe" greyed out with the line "„Arcadia“ braucht den usbip-Treiber und VIIPER – …", A and
       a click do nothing, no Xbox controller of Arcadia's appears; the driver back, the mode and the controller come
       back by themselves. · E2E: yes
-- [ ] **T213-13** SISR no longer starts: with "Steam Controller Kompatibilität" on from before, Task Manager shows no
+- [x] **T213-13** SISR no longer starts: with "Steam Controller Kompatibilität" on from before, Task Manager shows no
       `SISR.exe` after Arcadia's start; a SISR started by hand before Arcadia is ended by it. The setting's row shows
       "Nicht mehr nötig – …" once SISR is set up. · E2E: yes
 
@@ -65,3 +65,4 @@ History:
 | T213-1 to T213-7 | 2026-10-26 | Juri | PR #231 at `a22e208`, Windows, owner's PC with Steam Controller, VIIPER and usbip-win2 | ✅ looked fine | Ready to merge into `feat/replace-sisr` |
 | T213-8 to T213-13 | 2026-10-26 | Claude | Branch `feat/steam-controller-mode-per-game-213`, Linux, `SteamControllerModeTests` and the rewritten mode tests (headless, SDL, VIIPER, Steam's `RunningAppID` faked), unit tests | ✅ green; each new acceptance test was red once with its feature broken on purpose (named in the PR) | Owner's manual test |
 | T213-8 to T213-13 | 2026-10-26 | Claude | – | ➖ not run on Windows (no VIIPER, no controller, no Steam in the cloud) | Owner's PC |
+| T213-8 to T213-13 | 2026-10-26 | Juri | PR #240 at `390ce66`, Windows, owner's PC with Steam Controller, VIIPER and usbip-win2 | ✅ looked fine; beside a game on "Arcadia" Steam's desktop layout still moves the mouse (right stick, trackpad, RT click), as expected until #242 | Ready to merge into `feat/replace-sisr`; Steam's input stays as it is until #242 (owner) |

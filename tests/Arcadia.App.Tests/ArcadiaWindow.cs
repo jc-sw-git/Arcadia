@@ -271,8 +271,11 @@ internal sealed class ArcadiaWindow : IDisposable
     {
         var shadow = ThemeResource<BoxShadows>(ring);
         // The ring is the widest sharp outline; a narrower one painted over it (FocusRingGap) leaves a gap inside it.
-        var outlines = Enumerable.Range(0, shadow.Count).Select(i => shadow[i]).Where(s => s.Blur == 0 && !s.IsInset).OrderBy(s => s.Spread).ToList();
-        var outline = outlines[^1];
+        // A ring drawn only inside the edge (FocusRingInset, the game menu's items) is looked for inside it.
+        var shadows = Enumerable.Range(0, shadow.Count).Select(i => shadow[i]).Where(s => s.Blur == 0 && s.Spread > 0).ToList();
+        var outlines = shadows.Where(s => !s.IsInset).OrderBy(s => s.Spread).ToList();
+        var outline = outlines.Count > 0 ? outlines[^1] : shadows.Single(s => s.IsInset);
+        var inwards = outline.IsInset ? -1 : 1;
         // Captured first: the capture waits for transitions (the cover's lift), and the bounds must be those it shows.
         using var frame = capture();
         var bounds = Bounds(window, control);
@@ -289,11 +292,34 @@ internal sealed class ArcadiaWindow : IDisposable
             .Append(("rechts", new Point(bounds.Right, bounds.Center.Y), new Vector(1, 0)));
         foreach (var (side, edge, step) in probes)
         {
-            // From the control's edge outwards, as far as the ring reaches: somewhere there it must show.
+            // From the control's edge outwards (inwards for an inset ring), as far as the ring reaches: somewhere there it must show.
             var found = Enumerable.Range(0, (int)Math.Ceiling(reach * frame.Scaling) + 1)
-                .Select(i => frame.At(edge + (step * i / frame.Scaling)))
+                .Select(i => frame.At(edge + (step * inwards * i / frame.Scaling)))
                 .Any(colour => Distance(colour, outline.Color) <= 40);
             Assert.True(found, $"{where}: Fokusrahmen {side} bei {edge} fehlt oder ist abgeschnitten.");
+        }
+    }
+
+    /// <summary>
+    /// Fails unless <paramref name="control"/>'s own background, <paramref name="colour"/> (a brush of <c>Theme.axaml</c>),
+    /// is drawn right up to its four sides, e.g. the selected tab's pill: nothing clips or covers its edges.
+    /// </summary>
+    public void AssertDrawnWhole(Control control, string where, string colour)
+    {
+        var fill = ThemeResource<ISolidColorBrush>(colour).Color;
+        using var frame = Capture();
+        var bounds = Bounds(control);
+        // Two pixels inside each side, in its middle: the pill's round ends reach their sides only there.
+        var probes = new[]
+        {
+            ("oben", new Point(bounds.Center.X, bounds.Top + 2)),
+            ("unten", new Point(bounds.Center.X, bounds.Bottom - 2)),
+            ("links", new Point(bounds.Left + 2, bounds.Center.Y)),
+            ("rechts", new Point(bounds.Right - 2, bounds.Center.Y)),
+        };
+        foreach (var (side, point) in probes)
+        {
+            Assert.True(Distance(frame.At(point), fill) <= 40, $"{where}: Rand {side} bei {point} ist {frame.At(point)} statt {fill}, abgeschnitten oder verdeckt.");
         }
     }
 

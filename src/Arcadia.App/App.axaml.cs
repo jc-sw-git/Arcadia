@@ -239,6 +239,9 @@ public partial class App : Application
                 running.Stop();
                 _gamepad.Dispose();
 
+                // After the polling stopped: closes the open pages and stops the library's delayed rescans.
+                viewModel.Dispose();
+
                 // After the polling stopped: lets go of a mouse button or key the mouse mode still holds.
                 mouseMode.Dispose();
 

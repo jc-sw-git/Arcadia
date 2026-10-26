@@ -9,13 +9,16 @@ namespace Arcadia.App.ViewModels;
 /// menu, the shared filter dialog) through <see cref="IPageHost"/> (#209, #210).
 /// </summary>
 /// <remarks>
-/// Lifetime and thread: Main calls a page on the UI thread only, and a page raises its events there. When a page stops
-/// being on top (closed, or covered by another page) Main first calls its <see cref="CancelHeldButtons"/> and drops the
-/// hold of the one <see cref="GameActions"/>, so a release that now goes elsewhere, or never comes, can't type, start a
-/// game or open details late. A covered page is kept as it is and updated by Main after a rescan. Only the pages with
-/// timers or subscriptions are <see cref="IDisposable"/> (search, settings): Main disposes each when it closes it, in its
-/// property's change handler. A new disposable page needs the same there; the detail page isn't one, as Main may keep a
-/// closed one behind the search to bring it back (#127). The library is never closed.
+/// Lifetime and thread (#228): Main calls a page on the UI thread only, and a page raises its events there. Every page goes
+/// through one lifecycle, Main's <c>OnPagesChanged</c>: a page is open while Main holds it in its property, covered while
+/// another page lies over it, kept while Main holds it closed but brings it back (the detail page behind the search, #127),
+/// and closed when Main lets go of it. When a page stops being on top (closed or covered) Main first calls its
+/// <see cref="CancelHeldButtons"/> and drops the hold of the one <see cref="GameActions"/>, so a release that now goes
+/// elsewhere, or never comes, can't type, start a game or open details late. A covered or kept page stays as it is and is
+/// updated by Main after a rescan. A closed page that is <see cref="IDisposable"/> (timers, subscriptions: search,
+/// settings) is disposed there, in one place, and every live one when Arcadia closes. The library is never closed.
+/// A new page is a property of Main, listed in its <c>OpenPages</c> in the order the pages cover each other, and closed
+/// through <see cref="IPageHost.Close"/>.
 /// </remarks>
 public interface IPage
 {
@@ -36,4 +39,10 @@ public interface IPage
 
     /// <summary>The player switched between controller, keyboard and mouse; the page shows the hints and keyboard for it.</summary>
     void InputKindChanged(InputKind kind);
+
+    /// <summary>
+    /// The page covers the whole window, dialogs included (the first start, the settings): it takes every press before an
+    /// open dialog does. Other pages leave a dialog over them the press first.
+    /// </summary>
+    bool CoversWindow => false;
 }

@@ -139,6 +139,9 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
     /// <summary>The settings show no covers.</summary>
     public IEnumerable<GameTileViewModel> ShownTiles => [];
 
+    /// <summary>It covers the whole window, so a dialog of the page under it never takes a press first.</summary>
+    public bool CoversWindow => true;
+
     /// <summary>The keyboard of a text being written names the controller's buttons or the keys (#137).</summary>
     public void InputKindChanged(InputKind kind)
     {

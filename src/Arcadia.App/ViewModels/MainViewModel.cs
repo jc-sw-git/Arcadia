@@ -21,7 +21,7 @@ namespace Arcadia.App.ViewModels;
 /// detail page, search, settings, first start), holds the dialogs over them and wires the parts. The pages handle their
 /// own input (<see cref="IPage"/>); the library's loading, installs and running games are <see cref="LibrarySession"/>'s.
 /// </summary>
-public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryHost, ILibrarySessionOwner, ILauncherSettingsHost
+public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryHost, ILauncherSettingsHost, IDisposable
 {
     private readonly ControllerSupportService _controllerSupport;
     private readonly ArcadiaUpdateService _updates;
@@ -36,11 +36,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private IPage? _viewOptionsPage;
     private InputKind _input = InputKind.Gamepad;
 
-    /// <summary>A detail page from the library that X left for the search; B in the search brings it back (#127).</summary>
-    private GameDetailViewModel? _detailBehindSearch;
-
     /// <summary>The page on top when the last page opened or closed.</summary>
     private IPage? _topPage;
+
+    /// <summary>The pages open or kept behind another when the last page opened or closed: every one Main hasn't let go of.</summary>
+    private IReadOnlyList<IPage> _livePages = [];
 
     private bool _shownDefaultMouseModeAllowed = true;
 
@@ -67,10 +67,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         LauncherTabs = new LauncherTabsViewModel(logos.BadgeOf);
         Status = new StatusBarViewModel(controllerSupport, updates, time);
         Toast = new ToastViewModel(time);
-        Session = new LibrarySession(this, library, installs, running, launchedGames, LauncherTabs, Toast, time);
+        Session = new LibrarySession(library, installs, running, launchedGames, time);
+        Session.LibrariesChanged += (_, _) => ApplyLibraries(Session.Libraries);
+        Session.LaunchersRead += (_, _) => RefreshLauncherSettings();
+        Session.InstallStatesChanged += (_, _) => UpdateInstallStates();
+        Session.RunStatesChanged += (_, _) => UpdateRunStates();
+        Session.Noticed += (_, notice) => ShowNotice(notice);
         _actions = new GameActions(this, launcher, controllerSupport, installs, running, launchedGames, settings, Toast, time);
         _actions.ForegroundRequested += (_, e) => ForegroundRequested?.Invoke(this, e);
-        Library = new LibraryViewModel(LauncherTabs, settings, SaveView, _actions, Session.ShowStates, this, time, installFolders);
+        Library = new LibraryViewModel(LauncherTabs, settings, SaveView, _actions, ShowStates, this, time, installFolders);
         Library.PropertyChanged += OnLibraryChanged;
         LauncherTabs.Chosen += OnTabChosen;
         if (firstRun.IsPending)
@@ -88,7 +93,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     public ToastViewModel Toast { get; }
 
-    /// <summary>Loading and rescanning the launchers, installs and running games.</summary>
+    /// <summary>Loading and rescanning the launchers, installs and running games; Main shows what it reads and notices.</summary>
     public LibrarySession Session { get; }
 
     /// <summary>The launcher tabs, shared by the library, the detail page and the search.</summary>
@@ -188,6 +193,20 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>A detail page opened from the search belongs to no tab, so the tabs are hidden there.</summary>
     public bool IsTabStripShown => Detail?.IsFromSearch != true;
 
+    /// <summary>
+    /// A detail page from the library that X left for the search; B in the search brings it back (#127). It is covered, not
+    /// closed, so it stays among the live pages while kept here.
+    /// </summary>
+    private GameDetailViewModel? DetailBehindSearch
+    {
+        get;
+        set
+        {
+            field = value;
+            OnPagesChanged();
+        }
+    }
+
     /// <summary>The file and folder dialogs over the window (#138); set once the window is there.</summary>
     public ISystemDialogs? Dialogs { get; set; }
 
@@ -230,7 +249,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     {
         _actions.Pressed(action);
         var page = OpenPages().First();
-        if (page is not (FirstRunViewModel or SettingsPageViewModel) && HandleDialog(action))
+        if (!page.CoversWindow && HandleDialog(action))
         {
             return;
         }
@@ -476,7 +495,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (Detail is { IsFromSearch: true } fromSearch)
         {
             Detail = null;
-            _detailBehindSearch = null;
+            DetailBehindSearch = null;
             CloseSearch();
             Library.Show(fromSearch.Current.Tile.Game);
             return;
@@ -504,8 +523,41 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private GameTileViewModel CreateTile(Game game, Action<GameTileViewModel> focus, Action<GameTileViewModel> activate)
     {
         var tile = new GameTileViewModel(game, LauncherTabs.LauncherOf(game), LauncherTabs.BadgeOf(game), _time.GetLocalNow(), focus, activate);
-        Session.ShowStates(tile);
+        ShowStates(tile);
         return tile;
+    }
+
+    /// <summary>A new cover takes its game's install and run state.</summary>
+    private void ShowStates(GameTileViewModel tile)
+    {
+        tile.InstallState = Session.InstallStateOf(tile.Game.Key);
+        tile.RunState = Session.RunStateOf(tile.Game.Key);
+    }
+
+    /// <summary>The covers of every open page, also of one covered by another.</summary>
+    private IEnumerable<GameTileViewModel> ShownTiles() => OpenPages().SelectMany(p => p.ShownTiles);
+
+    private void UpdateInstallStates()
+    {
+        foreach (var tile in ShownTiles())
+        {
+            tile.InstallState = Session.InstallStateOf(tile.Game.Key);
+        }
+    }
+
+    /// <summary>A game is starting, its start failed, it runs or ended: every shown cover takes its run state again.</summary>
+    private void UpdateRunStates()
+    {
+        foreach (var tile in ShownTiles())
+        {
+            tile.RunState = Session.RunStateOf(tile.Game.Key);
+        }
+    }
+
+    private void ShowNotice(LibraryNotice notice)
+    {
+        var (text, sticky) = LibraryToasts.For(notice, LauncherTabs);
+        Toast.Show(text, sticky);
     }
 
     /// <summary>
@@ -529,7 +581,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
         if (Detail is { } detail)
         {
-            _detailBehindSearch = detail;
+            DetailBehindSearch = detail;
             Detail = null;
         }
 
@@ -558,9 +610,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         Search = null;
 
         // Back to the detail page the search was opened from, if its game is still in the tab.
-        if (_detailBehindSearch is { } detail)
+        if (DetailBehindSearch is { } detail)
         {
-            _detailBehindSearch = null;
+            DetailBehindSearch = null;
             if (LauncherTabs.SelectedTab is { } tab && detail.Update(Library.SortedGames(tab), Library.SortLabel))
             {
                 Detail = detail;
@@ -648,38 +700,55 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     [RelayCommand]
     private void CloseSettings() => Settings = null;
 
-    partial void OnSettingsChanged(SettingsPageViewModel? oldValue, SettingsPageViewModel? newValue)
+    partial void OnSettingsChanged(SettingsPageViewModel? value)
     {
-        OnTopPageChanged();
-        oldValue?.Dispose();
+        OnPagesChanged();
         UpdateGameMouseModeState();
     }
 
-    partial void OnFirstRunChanged(FirstRunViewModel? value) => OnTopPageChanged();
+    partial void OnFirstRunChanged(FirstRunViewModel? value) => OnPagesChanged();
 
-    partial void OnDetailChanged(GameDetailViewModel? value) => OnTopPageChanged();
+    partial void OnDetailChanged(GameDetailViewModel? value) => OnPagesChanged();
 
-    partial void OnSearchChanged(SearchViewModel? oldValue, SearchViewModel? newValue)
-    {
-        OnTopPageChanged();
-        oldValue?.Dispose();
-    }
+    partial void OnSearchChanged(SearchViewModel? value) => OnPagesChanged();
 
     /// <summary>
-    /// The page that was on top lost it: its held buttons and the hold of A or ≡ are dropped, so their release can't type,
-    /// start a game or open details on the page now shown (the contract on <see cref="IPage"/>).
+    /// The one lifecycle of every page (#228, the contract on <see cref="IPage"/>), run after each page opens, closes or is
+    /// kept behind another. The page that lost the top has its held buttons and the hold of A or ≡ dropped, so their
+    /// release can't type, start a game or open details on the page now shown. A page neither open nor kept is closed:
+    /// Main lets go of it and disposes it if it is disposable.
     /// </summary>
-    private void OnTopPageChanged()
+    private void OnPagesChanged()
     {
-        var top = OpenPages().First();
-        if (top == _topPage)
+        var open = OpenPages().ToList();
+        var top = open[0];
+        if (top != _topPage)
         {
-            return;
+            _topPage?.CancelHeldButtons();
+            _actions.CancelHold();
+            _topPage = top;
         }
 
-        _topPage?.CancelHeldButtons();
-        _actions.CancelHold();
-        _topPage = top;
+        IReadOnlyList<IPage> live = DetailBehindSearch is { } kept ? [.. open, kept] : open;
+        var closed = _livePages.Except(live).ToList();
+        _livePages = live;
+        foreach (var page in closed.OfType<IDisposable>())
+        {
+            page.Dispose();
+        }
+    }
+
+    /// <summary>Arcadia is closing: every page still open is disposed, and the library's delayed rescans stop.</summary>
+    public void Dispose()
+    {
+        foreach (var page in _livePages.OfType<IDisposable>())
+        {
+            page.Dispose();
+        }
+
+        _livePages = [];
+        Session.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private void OnLibraryChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -828,7 +897,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     void IGameActionsOwner.CycleGameMouseMode(Game game) => CycleGameMouseModeOf(game);
 
-    void IGameActionsOwner.RunStatesChanged() => Session.UpdateRunStates();
+    void IGameActionsOwner.RunStatesChanged() => UpdateRunStates();
 
     void IPageHost.Close(IPage page)
     {
@@ -866,12 +935,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         UpdateDetail();
         RebuildViewOptions();
     }
-
-    void ILibrarySessionOwner.Show(IReadOnlyList<LauncherLibrary> libraries) => ApplyLibraries(libraries);
-
-    IEnumerable<GameTileViewModel> ILibrarySessionOwner.ShownTiles => OpenPages().SelectMany(p => p.ShownTiles);
-
-    void ILibrarySessionOwner.LaunchersRead() => RefreshLauncherSettings();
 
     LauncherRegistry ILauncherSettingsHost.Launchers => Session.Launchers;
 

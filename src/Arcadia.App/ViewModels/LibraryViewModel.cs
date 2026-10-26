@@ -48,6 +48,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
     private readonly ILibraryHost _host;
     private readonly TimeProvider _time;
     private readonly InstallFolderCheck _installFolders;
+    private readonly Dictionary<LauncherTabViewModel, SortedTab> _sorted = [];
     private int _requestedPage;
 
     /// <param name="saveView">Saves a changed view, and says so if it can't.</param>
@@ -196,6 +197,12 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
     /// </summary>
     public void ShowTabs()
     {
+        // A tab whose launcher went (switched off, gone from the scan) lets go of its sorted games, also when none is left.
+        foreach (var gone in _sorted.Keys.Where(t => !_tabs.Items.Contains(t)).ToList())
+        {
+            _sorted.Remove(gone);
+        }
+
         if (_tabs.SelectedTab is not null)
         {
             Refresh(FocusedGame is { } focused ? PageGames.IndexOf(focused) : 0, FocusedGame?.Game.Key);
@@ -267,9 +274,26 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         }
     }
 
-    /// <summary>The tab's games in the library's sort order, as the detail page turns through them.</summary>
-    public IReadOnlyList<Game> SortedGames(LauncherTabViewModel tab) =>
-        GameSorter.Sort(tab.Games, _settings.Current.LibrarySort, Formatting.Culture);
+    /// <summary>
+    /// The tab's games in the library's sort order, as the detail page turns through them. Each tab is sorted once and kept
+    /// while its games and the sort stay the same (#228): a page change or the detail page's way in and out would otherwise
+    /// sort the whole tab again. A rescan hands a tab a new list (also for a changed playtime or "Zuletzt gespielt"), so
+    /// comparing the list itself is enough.
+    /// </summary>
+    public IReadOnlyList<Game> SortedGames(LauncherTabViewModel tab) => Sorted(tab).Games;
+
+    private SortedTab Sorted(LauncherTabViewModel tab)
+    {
+        var sort = _settings.Current.LibrarySort;
+        if (_sorted.TryGetValue(tab, out var sorted) && ReferenceEquals(sorted.Source, tab.Games) && sorted.Sort == sort)
+        {
+            return sorted;
+        }
+
+        sorted = new SortedTab(tab.Games, sort, GameSorter.Sort(tab.Games, sort, Formatting.Culture), tab.Games.Count(g => g.IsInstalled));
+        _sorted[tab] = sorted;
+        return sorted;
+    }
 
     /// <summary>The "Ansicht" dialog of the selected tab; <paramref name="forDetailPage"/> adds what it means there.</summary>
     public ViewOptionsViewModel? CreateViewOptions(bool forDetailPage) => _tabs.SelectedTab is not { } tab ? null : ViewOptionsViewModel.ForLibrary(
@@ -400,7 +424,8 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
 
         var view = _settings.Current;
         var pageSize = PageSizes.Effective(view.PreferredPageSize, tab.Count);
-        var sorted = SortedGames(tab);
+        var snapshot = Sorted(tab);
+        var sorted = snapshot.Games;
         var window = PageWindow.For(sorted.Count, pageSize, _requestedPage);
         _requestedPage = window.PageIndex;
 
@@ -433,10 +458,13 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         EmptyTab = tab.Count > 0 ? null
             : EmptyTab is { } shown && shown.Tab == tab && shown.IsMissing == !tab.IsFound ? shown
             : new EmptyTabViewModel(tab, () => _host.OpenLauncherSettings(tab.Launcher.Id), () => _host.Rescan(tab.Launcher));
-        var installed = tab.Games.Count(g => g.IsInstalled);
+        var installed = snapshot.InstalledCount;
         var installedText = installed == tab.Count ? string.Empty : $" · {installed} installiert";
         CountText = EmptyTab is { } emptyTab ? emptyTab.Summary : $"{tab.Count} Spiele{installedText} · Seite {window.PageIndex + 1} von {window.PageCount}";
         RangeText = window.Length == 0 ? string.Empty : $"{window.Start + 1}–{window.Start + window.Length} von {sorted.Count}";
         ViewSummary = $"{Formatting.SortLabel(view.LibrarySort)}  ·  {pageSize} pro Seite";
     }
+
+    /// <summary>A tab's games sorted, what they were sorted from, and how many of them are installed.</summary>
+    private sealed record SortedTab(IReadOnlyList<Game> Source, SortOrder Sort, IReadOnlyList<Game> Games, int InstalledCount);
 }

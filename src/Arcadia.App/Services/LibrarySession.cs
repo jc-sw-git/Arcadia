@@ -1,35 +1,21 @@
-using Arcadia.App.Services;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
-using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Arcadia.App.ViewModels;
-
-/// <summary>What <see cref="LibrarySession"/> hands to the window: the libraries read, and the covers whose states it keeps up to date.</summary>
-public interface ILibrarySessionOwner
-{
-    /// <summary>Shows freshly read libraries on every page; tab, page and focused game stay where they were.</summary>
-    void Show(IReadOnlyList<LauncherLibrary> libraries);
-
-    /// <summary>The covers of every open page, also of one covered by another.</summary>
-    IEnumerable<GameTileViewModel> ShownTiles { get; }
-
-    /// <summary>A launcher was read again, maybe with nothing changed: its "Zuletzt eingelesen" changed anyway.</summary>
-    void LaunchersRead();
-}
+namespace Arcadia.App.Services;
 
 /// <summary>
-/// The library while Arcadia runs (#155): loading and rescanning the launchers, installs and running games. It hands what
-/// it read to the window and keeps the covers' install and run states, but knows nothing of the pages or their navigation.
+/// The library while Arcadia runs (#155): loading and rescanning the launchers, installs and running games. It holds what
+/// it read and the games' install and run states, and says when they changed; it knows no pages, covers, tabs or toasts
+/// (#228), so another view could follow it the same way.
 /// </summary>
 /// <remarks>
-/// One per window, created and owned by <see cref="MainViewModel"/>; UI thread only. Its delayed rescans (after an
-/// uninstall, after a game ended) run on the UI thread through <see cref="AppErrors"/> and need no cancelling: a rescan
-/// at any time is safe.
+/// One per window, created and owned by <c>MainViewModel</c>; UI thread only, and its events are raised there. Its delayed
+/// rescans (after an uninstall, after a game ended) run on the UI thread through <see cref="AppErrors"/>; disposing the
+/// session cancels them.
 /// </remarks>
-public sealed partial class LibrarySession : ObservableObject
+public sealed partial class LibrarySession : ObservableObject, IDisposable
 {
     private static readonly TimeSpan UninstallSettleTime = TimeSpan.FromSeconds(5);
 
@@ -40,34 +26,24 @@ public sealed partial class LibrarySession : ObservableObject
     private readonly LibraryRefresher _refresher;
     private readonly InstallTracker _installs;
     private readonly RunningGamesTracker _running;
-    private readonly LauncherTabsViewModel _tabs;
-    private readonly ToastViewModel _toast;
     private readonly TimeProvider _time;
-    private readonly ILibrarySessionOwner _owner;
+    private readonly CancellationTokenSource _shutdown = new();
 
-    public LibrarySession(
-        ILibrarySessionOwner owner,
-        LibraryService library,
-        InstallTracker installs,
-        RunningGamesTracker running,
-        LaunchedGames launchedGames,
-        LauncherTabsViewModel tabs,
-        ToastViewModel toast,
-        TimeProvider time)
+    public LibrarySession(LibraryService library, InstallTracker installs, RunningGamesTracker running, LaunchedGames launchedGames, TimeProvider time)
     {
-        _owner = owner;
         _library = library;
         _refresher = new LibraryRefresher(library, time);
         _installs = installs;
         _running = running;
         LaunchedGames = launchedGames;
-        _tabs = tabs;
-        _toast = toast;
         _time = time;
     }
 
     [ObservableProperty]
     public partial bool IsLoading { get; private set; } = true;
+
+    /// <summary>The libraries read last, one per active launcher in the user's order.</summary>
+    public IReadOnlyList<LauncherLibrary> Libraries { get; private set; } = [];
 
     /// <summary>The install folders of the library's games: a process from one of them is a game in front.</summary>
     public GameFolders GameFolders { get; private set; } = GameFolders.Empty;
@@ -78,26 +54,32 @@ public sealed partial class LibrarySession : ObservableObject
     /// <summary>The launchers Arcadia knows and which of them are switched on.</summary>
     public LauncherRegistry Launchers => _library.Launchers;
 
+    /// <summary>Freshly read <see cref="Libraries"/>, maybe with nothing changed in a launcher's games.</summary>
+    public event EventHandler? LibrariesChanged;
+
+    /// <summary>A launcher was read again, maybe with nothing changed: its "Zuletzt eingelesen" changed anyway.</summary>
+    public event EventHandler? LaunchersRead;
+
+    /// <summary>A game's install state changed (<see cref="InstallStateOf"/>).</summary>
+    public event EventHandler? InstallStatesChanged;
+
+    /// <summary>A game started, runs or ended (<see cref="RunStateOf"/>).</summary>
+    public event EventHandler? RunStatesChanged;
+
+    /// <summary>Something the player should hear of: a rescan started or ended, an install finished, a game was uninstalled.</summary>
+    public event EventHandler<LibraryNotice>? Noticed;
+
     /// <summary>A game started from Arcadia ended, with its key: Arcadia may come back to the front (#94).</summary>
     public event EventHandler<string>? StartedGameEnded;
 
     public DateTimeOffset? ScannedAt(string launcherId) => _library.ScannedAt(launcherId);
 
-    /// <summary>A new cover takes its game's install and run state.</summary>
-    public void ShowStates(GameTileViewModel tile)
-    {
-        tile.InstallState = _installs.StateOf(tile.Game.Key);
-        tile.RunState = _running.StateOf(tile.Game.Key);
-    }
+    public InstallProgress? InstallStateOf(string gameKey) => _installs.StateOf(gameKey);
 
-    /// <summary>A game is starting or its start failed: every shown cover takes its run state again.</summary>
-    public void UpdateRunStates()
-    {
-        foreach (var tile in _owner.ShownTiles)
-        {
-            tile.RunState = _running.StateOf(tile.Game.Key);
-        }
-    }
+    public RunState? RunStateOf(string gameKey) => _running.StateOf(gameKey);
+
+    /// <summary>The library read last of <paramref name="launcherId"/>; null if the launcher isn't active.</summary>
+    public LauncherLibrary? LibraryOf(string launcherId) => Libraries.FirstOrDefault(l => l.Launcher.Id == launcherId);
 
     public async Task LoadAsync()
     {
@@ -135,12 +117,12 @@ public sealed partial class LibrarySession : ObservableObject
         }
 
         Show(libraries);
-        _toast.Show(finished.Count == 1 ? $"„{finished[0].Title}“ ist jetzt installiert." : $"{finished.Count} Spiele sind jetzt installiert.");
+        Noticed?.Invoke(this, new LibraryNotice.PendingInstallsFinished(finished));
     }
 
     /// <summary>
     /// Asks the watched launchers what their installations are doing — also the ones started in
-    /// the launcher itself — and updates the covers. Rescans the library when one completed.
+    /// the launcher itself — and says so. Rescans the library when one completed.
     /// </summary>
     public async Task PollInstallsAsync()
     {
@@ -149,11 +131,7 @@ public sealed partial class LibrarySession : ObservableObject
             return;
         }
 
-        foreach (var tile in _owner.ShownTiles)
-        {
-            tile.InstallState = _installs.StateOf(tile.Game.Key);
-        }
-
+        InstallStatesChanged?.Invoke(this, EventArgs.Empty);
         if (results.Count > 0)
         {
             await ReportInstallResultsAsync(results);
@@ -161,8 +139,8 @@ public sealed partial class LibrarySession : ObservableObject
     }
 
     /// <summary>
-    /// Asks the launchers which games run (#95) and updates the covers. Called periodically, also in the background, and
-    /// when Arcadia comes to the front; the end of a game started from Arcadia may bring it back (#94).
+    /// Asks the launchers which games run (#95) and says so. Called periodically, also in the background, and when Arcadia
+    /// comes to the front; the end of a game started from Arcadia may bring it back (#94).
     /// </summary>
     public async Task PollRunningGamesAsync()
     {
@@ -173,7 +151,7 @@ public sealed partial class LibrarySession : ObservableObject
 
         if (changes.StatesChanged)
         {
-            UpdateRunStates();
+            RunStatesChanged?.Invoke(this, EventArgs.Empty);
         }
 
         if (changes.Ended.Count == 0)
@@ -208,18 +186,18 @@ public sealed partial class LibrarySession : ObservableObject
             return;
         }
 
-        if (await _refresher.RefreshAsync(_tabs.Libraries, force) is { } libraries)
+        if (await _refresher.RefreshAsync(() => Libraries, force) is { } libraries)
         {
             Show(libraries);
         }
 
         // "Zuletzt eingelesen" changed even if nothing else did.
-        _owner.LaunchersRead();
+        LaunchersRead?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
     /// "Neu einlesen" on an empty tab or a launcher's page reads <paramref name="launcher"/> again; X and "Alle neu einlesen"
-    /// in the launcher settings read all (null). Says what came of it.
+    /// in the launcher settings read all (null). Says when it starts and what came of it.
     /// </summary>
     public async Task RescanAsync(LauncherInfo? launcher)
     {
@@ -228,29 +206,16 @@ public sealed partial class LibrarySession : ObservableObject
             return;
         }
 
-        _toast.Show(launcher is null ? "Alle Launcher werden neu eingelesen …" : $"{launcher.DisplayName} wird neu eingelesen …", sticky: true);
+        Noticed?.Invoke(this, new LibraryNotice.RescanStarted(launcher));
         var watch = System.Diagnostics.Stopwatch.StartNew();
         await (launcher is null ? RefreshLibraryAsync(force: true) : RefreshLauncherAsync(launcher.Id));
         AppLog.Write($"Neu eingelesen{(launcher is null ? string.Empty : $" für {launcher.Id}")}: {watch.ElapsedMilliseconds} ms");
-        if (launcher is null)
-        {
-            _toast.Show(_tabs.Items.Count == 0 ? "Weiterhin ist kein Launcher aktiv." : "Alle Launcher sind neu eingelesen.");
-            return;
-        }
-
-        var name = launcher.DisplayName;
-        _toast.Show(_tabs.Find(launcher.Id) switch
-        {
-            null => $"{name} ist nicht aktiv.",
-            { IsFound: false } => $"{name} ist weiterhin nicht zu finden.",
-            { Count: 0 } => $"Weiterhin keine Spiele in {name}.",
-            { Count: var count } => count == 1 ? $"1 Spiel in {name} gefunden." : $"{count} Spiele in {name} gefunden.",
-        });
+        Noticed?.Invoke(this, new LibraryNotice.RescanFinished(launcher));
     }
 
     /// <summary>
-    /// The user switched launchers on or off or moved them (#136): tabs follow at once from what is already read; a
-    /// launcher switched on is read now.
+    /// The user switched launchers on or off or moved them (#136): the libraries follow at once from what is already read;
+    /// a launcher switched on is read now.
     /// </summary>
     public void ShowChosenLaunchers()
     {
@@ -260,8 +225,7 @@ public sealed partial class LibrarySession : ObservableObject
         }
 
         var active = _library.Launchers.ActiveIds;
-        var shown = _tabs.Libraries();
-        var kept = active.Select(id => shown.FirstOrDefault(l => l.Launcher.Id == id)).OfType<LauncherLibrary>().ToList();
+        var kept = active.Select(LibraryOf).OfType<LauncherLibrary>().ToList();
         Show(kept);
         if (kept.Count < active.Count)
         {
@@ -269,7 +233,16 @@ public sealed partial class LibrarySession : ObservableObject
         }
     }
 
-    /// <summary>Reads one launcher again ("Neu einlesen", #137); the other tabs keep their games.</summary>
+    /// <summary>Cancels the delayed rescans; Arcadia is closing. Once is enough, more calls do nothing.</summary>
+    public void Dispose()
+    {
+        if (!_shutdown.IsCancellationRequested)
+        {
+            _shutdown.Cancel();
+        }
+    }
+
+    /// <summary>Reads one launcher again ("Neu einlesen", #137); the other launchers keep their games.</summary>
     private async Task RefreshLauncherAsync(string launcherId)
     {
         if (IsLoading)
@@ -277,19 +250,19 @@ public sealed partial class LibrarySession : ObservableObject
             return;
         }
 
-        if (await _refresher.RefreshAsync(_tabs.Libraries, launcherId) is { } libraries)
+        if (await _refresher.RefreshAsync(() => Libraries, launcherId) is { } libraries)
         {
             Show(libraries);
         }
 
-        _owner.LaunchersRead();
+        LaunchersRead?.Invoke(this, EventArgs.Empty);
     }
 
     private async Task ReportInstallResultsAsync(IReadOnlyList<InstallResult> results)
     {
-        string? KnownTitleOf(string key) => _tabs.Items.SelectMany(t => t.Games).FirstOrDefault(g => g.Key == key)?.Title;
+        string? KnownTitleOf(string key) => Libraries.SelectMany(l => l.Games).FirstOrDefault(g => g.Key == key)?.Title;
 
-        // An uninstalled game leaves the tabs with the rescan below, a newly installed one only comes with it.
+        // An uninstalled game leaves the library with the rescan below, a newly installed one only comes with it.
         var (key, outcome) = results[^1];
         var titleBefore = KnownTitleOf(key);
 
@@ -306,26 +279,55 @@ public sealed partial class LibrarySession : ObservableObject
         }
 
         var completed = results.Count(r => r.Outcome == InstallOutcome.Completed);
-        var title = titleBefore ?? KnownTitleOf(key) ?? "Spiel";
-        _toast.Show(outcome switch
-        {
-            InstallOutcome.Uninstalled => $"„{title}“ wurde deinstalliert.",
-            InstallOutcome.Completed when completed > 1 => $"{completed} Spiele sind jetzt installiert.",
-            InstallOutcome.Completed => $"„{title}“ ist jetzt installiert.",
-            InstallOutcome.Cancelled => $"Installation von „{title}“ abgebrochen.",
-            _ => $"Installation von „{title}“ ist fehlgeschlagen – bitte im Launcher nachsehen.",
-        });
+        Noticed?.Invoke(this, new LibraryNotice.InstallEnded(outcome, titleBefore ?? KnownTitleOf(key), completed));
     }
 
-    private void RefreshLibraryLater(TimeSpan delay) =>
-        Task.Delay(delay, _time).ContinueWith(
-            _ => RefreshLibraryAsync(force: true),
-            TaskScheduler.FromCurrentSynchronizationContext()).Unwrap().Forget("Bibliothek aktualisieren");
+    private void RefreshLibraryLater(TimeSpan delay) => RefreshLibraryAfterAsync(delay, _shutdown.Token).Forget("Bibliothek aktualisieren");
+
+    // Continues on the UI thread it was started on; a cancelled delay ends quietly (AppErrors ignores the cancellation).
+    private async Task RefreshLibraryAfterAsync(TimeSpan delay, CancellationToken cancellationToken)
+    {
+        await Task.Delay(delay, _time, cancellationToken);
+
+        // The delay may have run out just before the session ended, with its continuation still queued.
+        cancellationToken.ThrowIfCancellationRequested();
+        await RefreshLibraryAsync(force: true);
+    }
 
     private void Show(IReadOnlyList<LauncherLibrary> libraries)
     {
+        // A scan still running when the session ended shows nothing: the window is closing.
+        if (_shutdown.IsCancellationRequested)
+        {
+            return;
+        }
+
+        Libraries = libraries;
         GameFolders = GameFolders.Of(libraries.SelectMany(l => l.Games));
         _running.SetLibrary(libraries.SelectMany(l => l.Games));
-        _owner.Show(libraries);
+        LibrariesChanged?.Invoke(this, EventArgs.Empty);
     }
+}
+
+/// <summary>What <see cref="LibrarySession"/> tells the player through the window, which words it (#228).</summary>
+public abstract record LibraryNotice
+{
+    private LibraryNotice()
+    {
+    }
+
+    /// <summary>Games handed to a launcher Arcadia can't watch are installed now.</summary>
+    public sealed record PendingInstallsFinished(IReadOnlyList<Game> Games) : LibraryNotice;
+
+    /// <summary>
+    /// The launchers' install monitors reported the end of an install or uninstall: <paramref name="Outcome"/> and
+    /// <paramref name="Title"/> (null if unknown) are the last one's, <paramref name="Completed"/> counts the completed installs.
+    /// </summary>
+    public sealed record InstallEnded(InstallOutcome Outcome, string? Title, int Completed) : LibraryNotice;
+
+    /// <summary>"Neu einlesen" started for <paramref name="Launcher"/>, or for all launchers (null).</summary>
+    public sealed record RescanStarted(LauncherInfo? Launcher) : LibraryNotice;
+
+    /// <summary>"Neu einlesen" of <paramref name="Launcher"/>, or of all launchers (null), is done: <see cref="LibrarySession.Libraries"/> hold the result.</summary>
+    public sealed record RescanFinished(LauncherInfo? Launcher) : LibraryNotice;
 }

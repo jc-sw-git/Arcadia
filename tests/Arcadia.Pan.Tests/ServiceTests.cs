@@ -131,6 +131,12 @@ public sealed class ServiceTests : IDisposable
             using (var service = new ServiceController(PanPaths.ServiceName))
             {
                 service.Stop();
+
+                // The client hears why before the pipe closes, so Arcadia can say "Pan wurde beendet" (T243-4).
+                var notice = await ReadAsync(pipe, TeardownTimeout);
+                Assert.Equal(PanReply.TornDown, notice.Reply);
+                Assert.Equal(PanReason.ServiceStopping, notice.Reason);
+                Assert.Equal(started.Generation, notice.Generation);
                 service.WaitForStatus(ServiceControllerStatus.Stopped, TeardownTimeout);
             }
 

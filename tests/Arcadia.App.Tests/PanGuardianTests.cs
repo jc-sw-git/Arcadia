@@ -70,8 +70,10 @@ public sealed class PanGuardianTests
     {
         using var arcadia = await StartInBackgroundAsync();
 
-        arcadia.Pan.TearDown(PanReason.Hang);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == SteamControllerForGames.TornDownText(PanReason.Hang), "der Toast soll erscheinen");
+        // T243-4 is a service stop (`sc stop ArcadiaPan`); the hang (T243-16) only differs in the toast's text.
+        arcadia.Pan.TearDown(PanReason.ServiceStopping);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == SteamControllerForGames.TornDownText(PanReason.ServiceStopping), "der Toast soll erscheinen");
+        Assert.Contains("Pan wurde beendet", arcadia.Main.Toast.Text);
         await arcadia.TickSteamControllerAsync();
 
         Assert.Equal([1u], arcadia.Pan.Acknowledged);

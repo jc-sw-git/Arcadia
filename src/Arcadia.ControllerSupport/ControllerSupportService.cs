@@ -25,7 +25,7 @@ public enum HealthFix
 {
     None,
     InstallSisr,
-    InstallUsbip,
+    InstallDrivers,
     StartSteam,
     EnableCefDebugging,
     RestartSteam,
@@ -150,7 +150,8 @@ public sealed class ControllerSupportService(
     private static readonly TimeSpan ReleaseLookupTimeout = TimeSpan.FromSeconds(20);
 
     /// <summary>Downloading and unpacking SISR or the usbip driver.</summary>
-    private static readonly TimeSpan InstallTimeout = TimeSpan.FromMinutes(5);
+    // The usbip installer may take 5 min, Pan waits for it; see UsbipInstall and PanSetup.
+    private static readonly TimeSpan InstallTimeout = TimeSpan.FromMinutes(7);
 
     /// <summary>
     /// On exit, how long the polite way (wait for the running action, SISR's own quit) may take before SISR
@@ -457,15 +458,9 @@ public sealed class ControllerSupportService(
                     await InstallLatestSisrAsync(token);
                 }
 
-                if (!_platform.IsUsbipReady)
+                if (!_platform.IsUsbipReady || !_platform.IsPanReady)
                 {
-                    SetBusyText("usbip-Treiber wird installiert – bitte die Windows-Abfrage bestätigen …");
-                    if (!await WithTimeoutAsync(token => _platform.InstallUsbipAsync(http, token), InstallTimeout, "Der Treiber-Download", token))
-                    {
-                        throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt.");
-                    }
-
-                    UpdateSettings(settings => settings with { UsbipInstalledAt = time.GetUtcNow() });
+                    await InstallDriversAsync(token);
                 }
 
                 // What SISR's own first-run setup would do, so SISR never shows a window. Steam is
@@ -690,9 +685,11 @@ public sealed class ControllerSupportService(
                 UpdateSetup();
             }
 
-            if (Issues.Count > 0 || Setup != setup)
+            // With SISR replaced, the drivers matter without the switch: a missing Pan shows as a warning (#243).
+            var issues = WatchSetup && !StartsSisr ? _platform.CheckDrivers(Settings, time.GetUtcNow()) : [];
+            if (!issues.SequenceEqual(Issues) || Setup != setup)
             {
-                Issues = [];
+                Issues = issues;
                 OnChanged();
             }
 
@@ -1091,6 +1088,45 @@ public sealed class ControllerSupportService(
             StartSisr();
         }, cancellationToken);
 
+    private const string DriversBusyText = "Treiber werden installiert – bitte die Windows-Abfrage bestätigen …";
+
+    /// <summary>
+    /// What is missing of the usbip driver and Pan, in one Windows prompt (#243). Inside a busy action; throws when
+    /// the prompt was declined, so the action fails visibly.
+    /// </summary>
+    private async Task InstallDriversAsync(CancellationToken cancellationToken)
+    {
+        SetBusyText(DriversBusyText);
+        var usbipWasReady = _platform.IsUsbipReady;
+        if (!await WithTimeoutAsync(token => _platform.InstallDriversAsync(http, token), InstallTimeout, "Die Treiber-Installation", cancellationToken))
+        {
+            throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt.");
+        }
+
+        if (!usbipWasReady)
+        {
+            UpdateSettings(settings => settings with { UsbipInstalledAt = time.GetUtcNow() });
+        }
+
+        Log?.Invoke("Treiber eingerichtet (usbip-win2 und Pan)");
+    }
+
+    /// <summary>Arcadia brought a newer Pan and the user said yes at start (#243): installs it, and the driver if that is missing too.</summary>
+    public Task UpdatePanAsync(CancellationToken cancellationToken = default) =>
+        RunBusyAsync(DriversBusyText, InstallDriversAsync, cancellationToken);
+
+    /// <summary>"Controller wiederherstellen": Pan's <c>--restore</c>, elevated, for when the service itself hangs (#243).</summary>
+    public Task RestoreControllersAsync(CancellationToken cancellationToken = default) =>
+        RunBusyAsync("Controller werden wiederhergestellt – bitte die Windows-Abfrage bestätigen …", async token =>
+        {
+            if (!await _platform.RestoreControllersAsync(token))
+            {
+                throw new InvalidOperationException("Die Wiederherstellung wurde in der Windows-Abfrage abgelehnt.");
+            }
+
+            Log?.Invoke("Controller über Pan wiederhergestellt");
+        }, cancellationToken);
+
     public Task ApplyFixAsync(HealthFix fix, CancellationToken cancellationToken = default) => fix switch
     {
         HealthFix.InstallSisr => RunBusyAsync("SISR wird installiert …", async token =>
@@ -1098,16 +1134,11 @@ public sealed class ControllerSupportService(
             await InstallLatestSisrAsync(token);
             StartSisr();
         }, cancellationToken),
-        HealthFix.InstallUsbip => RunBusyAsync("usbip-Treiber wird installiert – bitte die Windows-Abfrage bestätigen …", async token =>
+        HealthFix.InstallDrivers => RunBusyAsync(DriversBusyText, async token =>
         {
-            if (!await WithTimeoutAsync(token => _platform.InstallUsbipAsync(http, token), InstallTimeout, "Der Treiber-Download", token))
-            {
-                throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt.");
-            }
-
+            await InstallDriversAsync(token);
             // The update replaces the emulated USB host controller under VIIPER; SISR (and with it
             // VIIPER) must reconnect, otherwise the virtual controller stays attached to the old one.
-            UpdateSettings(settings => settings with { UsbipInstalledAt = time.GetUtcNow() });
             await StopSisrAsync(token);
             _restarts.Clear();
             StartSisr();
@@ -1303,20 +1334,24 @@ public sealed class ControllerSupportService(
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        Issues = Enabled ? await CheckHealthAsync(cancellationToken) : [];
+        Issues = Enabled ? await CheckHealthAsync(cancellationToken) : !StartsSisr && IsSupportedPlatform ? _platform.CheckDrivers(Settings, time.GetUtcNow()) : [];
         UpdateSetup();
         OnChanged();
     }
 
     private void UpdateSetup()
     {
+        PanInstalled = IsSupportedPlatform && _platform.IsPanReady;
         _setup = CheckSetup();
     }
+
+    /// <summary>Pan, the guardian service, is installed (#243); as of the last <see cref="UpdateSetup"/>. "Controller wiederherstellen" needs it.</summary>
+    public bool PanInstalled { get; private set; }
 
     private ControllerSupportSetup CheckSetup() =>
         !IsSupportedPlatform ? ControllerSupportSetup.UnsupportedPlatform
         : !_platform.IsSteamInstalled ? ControllerSupportSetup.SteamMissing
-        : sisr.IsInstalled && _platform.IsUsbipReady && _platform.IsCefDebuggingEnabled && _platform.HasSisrMarker(sisr.ExecutablePath) ? ControllerSupportSetup.Ready
+        : sisr.IsInstalled && _platform.IsUsbipReady && _platform.IsPanReady && _platform.IsCefDebuggingEnabled && _platform.HasSisrMarker(sisr.ExecutablePath) ? ControllerSupportSetup.Ready
         : ControllerSupportSetup.NeedsInstall;
 
     private async Task<IReadOnlyList<HealthIssue>> CheckHealthAsync(CancellationToken cancellationToken)

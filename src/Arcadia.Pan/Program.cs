@@ -6,7 +6,7 @@ namespace Arcadia.Pan;
 /// <summary>
 /// <c>Pan.exe</c> (#243). Without arguments it runs as the service (or, started from a console, says how to use
 /// it). Commands, all started elevated by Arcadia or by hand:
-/// <c>--install [--expect-hash sha256]</c>, <c>--uninstall</c>, <c>--restore</c>, <c>--console</c> (the service in a
+/// <c>--install [--expect-hash sha256] [--usbip-installer path]</c>, <c>--uninstall</c>, <c>--restore</c>, <c>--console</c> (the service in a
 /// console, for development), <c>--version</c>.
 /// </summary>
 internal static class Program
@@ -54,8 +54,12 @@ internal static class Program
 
                     return 0;
                 case "--install":
-                    var expected = args.Length >= 3 && args[1].Equals("--expect-hash", StringComparison.OrdinalIgnoreCase) ? args[2] : null;
-                    ServiceSetup.Install(Environment.ProcessPath ?? throw new InvalidOperationException("own path unknown"), expected, log.Write);
+                    if (Option(args, "--usbip-installer") is { } usbipInstaller)
+                    {
+                        UsbipInstall.RunAsync(usbipInstaller, log.Write).GetAwaiter().GetResult();
+                    }
+
+                    ServiceSetup.Install(Environment.ProcessPath ?? throw new InvalidOperationException("own path unknown"), Option(args, "--expect-hash"), log.Write);
                     return 0;
                 case "--uninstall":
                     ServiceSetup.UninstallAsync(log.Write).GetAwaiter().GetResult();
@@ -73,6 +77,19 @@ internal static class Program
             log.Write($"{command} failed: {ex.Message}");
             return 3;
         }
+    }
+
+    private static string? Option(string[] args, string name)
+    {
+        for (var i = 1; i + 1 < args.Length; i++)
+        {
+            if (args[i].Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
+                return args[i + 1];
+            }
+        }
+
+        return null;
     }
 
     private static string Version() => (typeof(Program).Assembly.GetName().Version ?? new Version(0, 0)).ToString(3);

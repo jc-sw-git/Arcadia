@@ -59,6 +59,10 @@ public partial class App : Application
     private IGamepadSource? _gamepad;
 
     /// <summary>Pan fell back to its previous journal or started empty (#243); its log says what was wrong.</summary>
+    public const string PanUpdateTitle = "Pan aktualisieren";
+    public const string PanUpdateText = "Diese Arcadia-Version bringt eine neue Version von Pan mit, dem Wächterdienst für den Steam Controller. Die Aktualisierung fragt einmal nach Administratorrechten.";
+    public const string PanUpdateConfirm = "Aktualisieren";
+
     private const string PanJournalText = "Pan konnte sein Journal nicht lesen – Details stehen in pan.log unter %ProgramData%\\Arcadia\\Pan";
 
     public override void Initialize()
@@ -255,10 +259,17 @@ public partial class App : Application
                 await controllerSupport.StopReplacedSisrAsync();
                 await controllerSupport.TickAsync();
                 var route = forGames.Routing.Update();
+                var panUpdate = steamPlatform.IsPanUpdateAvailable;
                 Dispatcher.UIThread.Post(() =>
                 {
                     viewModel.SetSteamControllerDriverReady(forGames.Routing.DriverReady);
                     xboxPadTick.Start();
+                    if (panUpdate)
+                    {
+                        // Once per start (#243): a declined update is offered again at the next start.
+                        viewModel.Ask(new ConfirmationViewModel(PanUpdateTitle, PanUpdateText, PanUpdateConfirm,
+                            () => controllerSupport.UpdatePanAsync().Forget("Pan aktualisieren")));
+                    }
                 });
                 await xboxPad.TickAsync();
                 AppLog.Write($"Steam Controller in Spielen bereit ({route.Why})");

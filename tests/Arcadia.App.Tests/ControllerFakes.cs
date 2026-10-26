@@ -102,11 +102,21 @@ internal sealed class FakeSteam : IControllerSupportPlatform
         }
     }
 
-    public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken)
+    public bool IsPanReady { get; set; } = true;
+
+    public bool IsPanUpdateAvailable => false;
+
+    public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
     {
         IsUsbipReady = true;
+        IsPanReady = true;
         return Task.FromResult(true);
     }
+
+    public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(true);
+
+    public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) =>
+        IsPanReady ? [] : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Ohne Pan kein Xbox Controller.", HealthFix.InstallDrivers, "Installieren")];
 
     public void ResetSteamInputLayout()
     {

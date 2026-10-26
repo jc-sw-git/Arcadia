@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Steam;
@@ -53,6 +54,12 @@ public interface IControllerSupportPlatform
     /// <summary>usbip-win2 is installed in at least <see cref="UsbipDriver.MinimumVersion"/> and loaded.</summary>
     bool IsUsbipReady { get; }
 
+    /// <summary>Pan, the guardian service, is installed (#243); without it Arcadia plugs no pad in.</summary>
+    bool IsPanReady { get; }
+
+    /// <summary>Arcadia ships a newer Pan than the installed one.</summary>
+    bool IsPanUpdateAvailable { get; }
+
     /// <summary>Steam's CEF debug flag file exists (it takes effect on Steam's next start).</summary>
     bool IsCefDebuggingEnabled { get; }
 
@@ -76,8 +83,14 @@ public interface IControllerSupportPlatform
     /// <summary>Starts Steam minimized to the tray.</summary>
     void StartSteam();
 
-    /// <summary>Installs or updates usbip-win2; false if the user declined the Windows prompt.</summary>
-    Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken);
+    /// <summary>
+    /// Installs or updates what is missing of usbip-win2 and Pan, with one Windows prompt (#243); false if the user
+    /// declined it.
+    /// </summary>
+    Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken);
+
+    /// <summary>Pan's <c>--restore</c>: gives the real controllers back by hand; false if the user declined the Windows prompt.</summary>
+    Task<bool> RestoreControllersAsync(CancellationToken cancellationToken);
 
     /// <summary>Tells Steam to drop SISR's forced controller layout (applied on the next focus change).</summary>
     void ResetSteamInputLayout();
@@ -85,8 +98,11 @@ public interface IControllerSupportPlatform
     /// <summary>True while a process from <paramref name="directory"/> runs, e.g. the game SISR is paused for.</summary>
     bool AnyRunningFrom(string directory);
 
-    /// <summary>Problems with what SISR depends on: the usbip driver and Steam.</summary>
+    /// <summary>Problems with what SISR depends on: the drivers and Steam.</summary>
     IReadOnlyList<HealthIssue> CheckDependencies(AppSettings settings, DateTimeOffset now);
+
+    /// <summary>Problems with what Arcadia's own pad depends on: the usbip driver and Pan (#243).</summary>
+    IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now);
 }
 
 /// <summary>The real Windows and Steam.</summary>
@@ -183,6 +199,10 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
     public bool IsUsbipReady =>
         OperatingSystem.IsWindows() && UsbipDriver.InstalledVersion() is { } version && version >= UsbipDriver.MinimumVersion && UsbipDriver.IsRunning();
 
+    public bool IsPanReady => OperatingSystem.IsWindows() && PanSetup.IsInstalled;
+
+    public bool IsPanUpdateAvailable => OperatingSystem.IsWindows() && PanSetup.UpdateAvailable;
+
     public bool IsCefDebuggingEnabled => _locate() is { } steam && File.Exists(steam.CefDebuggingFlagPath);
 
     public void EnableCefDebugging()
@@ -249,8 +269,31 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
 
     public void StartSteam() => _locate()?.StartSilently();
 
-    public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken) =>
-        OperatingSystem.IsWindows() ? UsbipDriver.InstallAsync(http, cancellationToken) : Task.FromResult(false);
+    public async Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return false;
+        }
+
+        // The driver only when it is missing or too old: its installer replaces the emulated host controller and
+        // then wants a reboot.
+        var installer = IsUsbipReady ? null : await UsbipDriver.DownloadInstallerAsync(http, cancellationToken);
+        try
+        {
+            return await PanSetup.InstallAsync(installer, cancellationToken);
+        }
+        finally
+        {
+            if (installer is not null)
+            {
+                File.Delete(installer);
+            }
+        }
+    }
+
+    public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) =>
+        OperatingSystem.IsWindows() ? PanSetup.RestoreAsync(cancellationToken) : Task.FromResult(false);
 
     public void ResetSteamInputLayout() =>
         Process.Start(new ProcessStartInfo("steam://forceinputappid/0") { UseShellExecute = true })?.Dispose();
@@ -258,6 +301,26 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
     public bool AnyRunningFrom(string directory) => ProcessWatch.AnyRunningFrom(directory);
 
     public IReadOnlyList<HealthIssue> CheckDependencies(AppSettings settings, DateTimeOffset now)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return [];
+        }
+
+        var issues = new List<HealthIssue>(CheckDrivers(settings, now));
+        if (_locate() is null)
+        {
+            issues.Add(new("steam-missing", HealthSeverity.Warning, "Steam wurde nicht gefunden", "SISR liest den Controller über Steam Input; Steam muss installiert sein."));
+        }
+        else if (!_isSteamRunning())
+        {
+            issues.Add(new("steam-stopped", HealthSeverity.Warning, "Steam läuft nicht", "Steam muss im Hintergrund laufen, damit SISR den Controller weiterreichen kann.", HealthFix.StartSteam, "Steam starten"));
+        }
+
+        return issues;
+    }
+
+    public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now)
     {
         var issues = new List<HealthIssue>();
         if (!OperatingSystem.IsWindows())
@@ -268,28 +331,24 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
         var usbip = UsbipDriver.InstalledVersion();
         if (usbip is null)
         {
-            issues.Add(new("usbip-missing", HealthSeverity.Warning, "usbip-Treiber fehlt", "SISR erzeugt den virtuellen Controller über diesen Treiber. Die Installation fragt einmalig nach Administratorrechten.", HealthFix.InstallUsbip, "Installieren"));
+            issues.Add(new("usbip-missing", HealthSeverity.Warning, "usbip-Treiber fehlt", "Arcadia erzeugt den virtuellen Controller über diesen Treiber. Die Installation fragt einmalig nach Administratorrechten.", HealthFix.InstallDrivers, "Installieren"));
         }
         else if (usbip < UsbipDriver.MinimumVersion)
         {
-            issues.Add(new("usbip-outdated", HealthSeverity.Warning, "usbip-Treiber ist veraltet", $"Installiert ist {usbip}, benötigt wird mindestens {UsbipDriver.MinimumVersion}.", HealthFix.InstallUsbip, "Aktualisieren"));
+            issues.Add(new("usbip-outdated", HealthSeverity.Warning, "usbip-Treiber ist veraltet", $"Installiert ist {usbip}, benötigt wird mindestens {UsbipDriver.MinimumVersion}.", HealthFix.InstallDrivers, "Aktualisieren"));
         }
         else if (!UsbipDriver.IsRunning())
         {
-            issues.Add(new("usbip-stopped", HealthSeverity.Warning, "usbip-Treiber ist nicht aktiv", "Der Treiber ist installiert, aber nicht geladen. Meist hilft ein Neustart des PCs, sonst eine Neuinstallation.", HealthFix.InstallUsbip, "Neu installieren"));
+            issues.Add(new("usbip-stopped", HealthSeverity.Warning, "usbip-Treiber ist nicht aktiv", "Der Treiber ist installiert, aber nicht geladen. Meist hilft ein Neustart des PCs, sonst eine Neuinstallation.", HealthFix.InstallDrivers, "Neu installieren"));
         }
         else if (settings.UsbipInstalledAt is { } installedAt && installedAt > LastBootTime(now))
         {
             issues.Add(new("reboot-pending", HealthSeverity.Warning, "Windows-Neustart ausstehend", "Der usbip-Treiber wurde aktualisiert. Bis zum Neustart kann der Controller aussetzen; dann hilft es, SISR neu zu starten.", HealthFix.RestartSisr, "SISR neu starten"));
         }
 
-        if (_locate() is null)
+        if (!PanSetup.IsInstalled)
         {
-            issues.Add(new("steam-missing", HealthSeverity.Warning, "Steam wurde nicht gefunden", "SISR liest den Controller über Steam Input; Steam muss installiert sein."));
-        }
-        else if (!_isSteamRunning())
-        {
-            issues.Add(new("steam-stopped", HealthSeverity.Warning, "Steam läuft nicht", "Steam muss im Hintergrund laufen, damit SISR den Controller weiterreichen kann.", HealthFix.StartSteam, "Steam starten"));
+            issues.Add(new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Pan gibt die echten Controller zurück, wenn Arcadia abstürzt oder hängt. Ohne Pan bringt Arcadia den Steam Controller nicht als Xbox Controller in Spiele. Die Installation fragt einmalig nach Administratorrechten.", HealthFix.InstallDrivers, "Installieren"));
         }
 
         return issues;

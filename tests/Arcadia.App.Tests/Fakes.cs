@@ -209,7 +209,15 @@ internal sealed class NoControllerSupportPlatform : IControllerSupportPlatform
     {
     }
 
-    public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(false);
+    public bool IsPanReady => false;
+
+    public bool IsPanUpdateAvailable => false;
+
+    public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(false);
+
+    public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(false);
+
+    public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) => [];
 
     public void ResetSteamInputLayout()
     {

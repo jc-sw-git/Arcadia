@@ -1,4 +1,7 @@
 using Arcadia.App.Input;
+using Arcadia.App.Settings;
+using Arcadia.App.ViewModels;
+using Arcadia.ControllerSupport;
 using Arcadia.Pan;
 using Arcadia.Tests.Sdl;
 using Avalonia.Headless.XUnit;
@@ -111,5 +114,54 @@ public sealed class PanGuardianTests
 
         Assert.Equal([1u], arcadia.Pan.Stopped);
         Assert.True(arcadia.Pan.PlannedExit);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T243-13")]
+    public async Task Without_Pan_the_settings_warn_and_one_install_brings_the_drivers()
+    {
+        var steam = new FakeSteam { IsPanReady = false };
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Wächterdienst Pan fehlt“");
+        var warning = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-missing"));
+        Assert.Equal(HealthSeverity.Warning, warning.Severity);
+        Assert.Equal("Installieren", warning.ActionText);
+        Assert.Equal(HealthSeverity.Warning, controller.Marker);
+        Assert.DoesNotContain(controller.Rows, row => row.Key == "pan-restore");
+
+        warning.Activate();
+        await arcadia.WaitUntilAsync(() => steam.IsPanReady, "Treiber installiert");
+        await arcadia.WaitUntilAsync(() => controller.Rows.All(row => row.Key != "issue:pan-missing"), "die Meldung verschwindet");
+        Assert.Null(controller.Marker);
+        Assert.Contains(controller.Rows, row => row.Key == "pan-restore");
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T243-14")]
+    public async Task The_Pan_update_question_is_a_dialog_B_declines_and_A_confirms()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var updates = 0;
+        ConfirmationViewModel Question() => new(App.PanUpdateTitle, App.PanUpdateText, App.PanUpdateConfirm, () => updates++);
+
+        arcadia.Main.Ask(Question());
+        Assert.True(arcadia.Main.IsConfirmationOpen);
+        Assert.Equal(App.PanUpdateTitle, arcadia.Main.Confirmation!.Title);
+        arcadia.Press(UiAction.Back);
+        Assert.False(arcadia.Main.IsConfirmationOpen);
+        Assert.Equal(0, updates);
+
+        arcadia.Main.Ask(Question());
+        arcadia.Press(UiAction.Left).Press(UiAction.Accept);
+        Assert.False(arcadia.Main.IsConfirmationOpen);
+        Assert.Equal(1, updates);
+
+        // Over another dialog the question is dropped: it comes again at the next start.
+        arcadia.Press(UiAction.Settings);
+        arcadia.Main.Ask(Question());
+        Assert.False(arcadia.Main.IsConfirmationOpen);
     }
 }

@@ -7,6 +7,7 @@
   -->
   <PropertyGroup>
     <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Arcadia.Pan</RootNamespace>
   </PropertyGroup>
 

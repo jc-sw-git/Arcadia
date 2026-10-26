@@ -931,6 +931,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     void IGameActionsOwner.Confirm(ConfirmationViewModel confirmation) => Confirmation = confirmation;
 
+    /// <summary>A question from outside the pages, e.g. "Pan aktualisieren" at start (#243); dropped while another dialog is open.</summary>
+    public void Ask(ConfirmationViewModel confirmation)
+    {
+        if (!IsDialogOpen)
+        {
+            Confirmation = confirmation;
+        }
+    }
+
     void IGameActionsOwner.CycleGameMouseMode(Game game) => CycleGameMouseModeOf(game);
 
     void IGameActionsOwner.RunStatesChanged() => UpdateRunStates();

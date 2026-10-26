@@ -54,7 +54,7 @@ public sealed class ControllerSupportTests
 
         Assert.True(sisr.IsInstall);
         Assert.False(sisr.IsSwitch);
-        Assert.Equal("SISR installieren", sisr.ActivateText);
+        Assert.Equal("Treiber installieren", sisr.ActivateText);
     }
 
     [AvaloniaFact]

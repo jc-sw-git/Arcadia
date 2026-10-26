@@ -77,6 +77,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     private readonly ControllerSupportService _support;
     private readonly SisrRowViewModel _sisr;
+    private readonly ActionRowViewModel _restore;
     private readonly ActionRowViewModel _update;
     private readonly MouseModeRows _mouseMode;
     private readonly ReturnWithViewRows _returnWithView;
@@ -113,6 +114,18 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             Indent = 1,
             ActionText = "Aktualisieren",
             IsPrimary = true,
+        };
+        _restore = new ActionRowViewModel("pan-restore", "Controller wiederherstellen", () => _support.RestoreControllersAsync().Forget("Controller wiederherstellen"))
+        {
+            Group = SteamGroup,
+            Indent = 1,
+            Subtitle = "Gibt die echten Controller zurück, falls Arcadias Wächterdienst Pan hängt",
+            ActionText = "Wiederherstellen",
+            Info =
+            [
+                new InfoText("Pan, Arcadias Wächterdienst, nimmt den Xbox Controller von Arcadia zurück, wenn Arcadia abstürzt oder hängt. Bleibt trotzdem ein Xbox Controller übrig, den kein Programm mehr sieht, räumt diese Aktion mit Pans Journal auf – mit einer Windows-Abfrage nach Administratorrechten."),
+                new InfoText("Im Normalfall ist das nie nötig."),
+            ],
         };
         _mouseMode = new MouseModeRows(changes);
         _returnWithView = new ReturnWithViewRows(changes);
@@ -560,7 +573,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
         var statusText = (enabled, state == SisrState.Paused, hasProblems) switch
         {
-            (false, _, _) when showInstall => "Nicht eingerichtet – „SISR installieren“ richtet alles Nötige ein und schaltet die Option ein.",
+            (false, _, _) when showInstall => "Nicht eingerichtet – „Treiber installieren“ richtet alles Nötige ein und schaltet die Option ein.",
             (false, _, _) => "Aus – außerhalb von Steam läuft der Steam Controller im Desktop-Modus (Maus und Tastatur).",
             (true, true, true) => "Pausiert – die Meldungen unter der Einstellung sagen, warum.",
             (true, true, _) => "Pausiert – ein Spiel mit „Steam Input“ läuft.",
@@ -606,12 +619,14 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         }
 
         _update.IsEnabled = !IsBusy && !IsSettling;
+        _restore.IsEnabled = !IsBusy && !IsSettling;
 
         SetRows(
         [
             _sisr,
             .. IssueRows(),
             .. hasUpdate ? [_update] : Array.Empty<SettingsRowViewModel>(),
+            .. _support.PanInstalled ? [_restore] : Array.Empty<SettingsRowViewModel>(),
             _steamDesktopLayout,
             .. _mouseMode.Rows,
             .. _returnWithView.Rows,
@@ -766,7 +781,7 @@ public sealed partial class SisrRowViewModel(Action<bool?> activate)
 
     public override bool CanActivate => Mode != SisrRowMode.Unavailable && !IsLocked;
 
-    public override string ActivateText => IsInstall ? "SISR installieren" : "Umschalten";
+    public override string ActivateText => IsInstall ? "Treiber installieren" : "Umschalten";
 
     /// <summary>◀ switches off, ▶ on (or installs first).</summary>
     /// <summary>◀ and ▶ both switch it, like every ◀ ▶ selector (owner, 2026-10-24).</summary>

@@ -2,7 +2,22 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 
-namespace Arcadia.ControllerSupport;
+namespace Arcadia.Pan;
+
+/// <summary>Where the usbip-win2 installer comes from and who must have signed it (#29).</summary>
+public static class UsbipRelease
+{
+    /// <summary>
+    /// Checked 2026-10-21 on the 0.9.8.1 installer (GlobalSign EV code signing certificate, valid until 2027-05-03).
+    /// A new publisher needs a look and a change here.
+    /// </summary>
+    public static PublisherPin Publisher { get; } = new("Cloudyne Systems (Scheibling Consulting AB)", "SE", "559171-6567");
+
+    public const string ManualInstallUrl = "https://github.com/vadimgrn/usbip-win2/releases/latest";
+
+    /// <summary>The minimum version VIIPER's own installer requires.</summary>
+    public static Version MinimumVersion { get; } = new(0, 9, 8, 1);
+}
 
 /// <summary>
 /// Who an installer must be signed by. The certificate's subject is matched by organization, country and
@@ -88,7 +103,7 @@ public static class InstallerSignature
 
 /// <summary><c>WinVerifyTrust</c>, the check Windows itself does for a signed file.</summary>
 [SupportedOSPlatform("windows")]
-public sealed partial class WinTrustAuthenticode : IAuthenticode
+public sealed unsafe partial class WinTrustAuthenticode : IAuthenticode
 {
     private const uint UiNone = 2;
     private const uint RevokeWholeChain = 1;
@@ -101,30 +116,23 @@ public sealed partial class WinTrustAuthenticode : IAuthenticode
 
     public SignatureCheck Verify(string file)
     {
-        var fileInfo = new WinTrustFileInfo { Size = (uint)Marshal.SizeOf<WinTrustFileInfo>(), FilePath = Marshal.StringToHGlobalUni(file) };
-        var fileInfoPointer = Marshal.AllocHGlobal(Marshal.SizeOf<WinTrustFileInfo>());
-        Marshal.StructureToPtr(fileInfo, fileInfoPointer, fDeleteOld: false);
-        var data = new WinTrustData
+        fixed (char* path = file)
         {
-            Size = (uint)Marshal.SizeOf<WinTrustData>(),
-            UiChoice = UiNone,
-            RevocationChecks = RevokeWholeChain,
-            UnionChoice = ChoiceFile,
-            File = fileInfoPointer,
-            StateAction = StateActionVerify,
-        };
-        var action = GenericVerifyV2;
-        try
-        {
-            var status = WinVerifyTrust(IntPtr.Zero, ref action, ref data);
+            var fileInfo = new WinTrustFileInfo { Size = (uint)sizeof(WinTrustFileInfo), FilePath = path };
+            var data = new WinTrustData
+            {
+                Size = (uint)sizeof(WinTrustData),
+                UiChoice = UiNone,
+                RevocationChecks = RevokeWholeChain,
+                UnionChoice = ChoiceFile,
+                File = &fileInfo,
+                StateAction = StateActionVerify,
+            };
+            var action = GenericVerifyV2;
+            var status = WinVerifyTrust(0, &action, &data);
             data.StateAction = StateActionClose;
-            WinVerifyTrust(IntPtr.Zero, ref action, ref data);
+            WinVerifyTrust(0, &action, &data);
             return status == 0 ? new SignatureCheck(0, SignerOf(file)) : new SignatureCheck(status, null);
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(fileInfo.FilePath);
-            Marshal.FreeHGlobal(fileInfoPointer);
         }
     }
 
@@ -147,29 +155,29 @@ public sealed partial class WinTrustAuthenticode : IAuthenticode
     private struct WinTrustFileInfo
     {
         public uint Size;
-        public IntPtr FilePath;
-        public IntPtr FileHandle;
-        public IntPtr KnownSubject;
+        public char* FilePath;
+        public nint FileHandle;
+        public nint KnownSubject;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct WinTrustData
     {
         public uint Size;
-        public IntPtr PolicyCallbackData;
-        public IntPtr SipClientData;
+        public nint PolicyCallbackData;
+        public nint SipClientData;
         public uint UiChoice;
         public uint RevocationChecks;
         public uint UnionChoice;
-        public IntPtr File;
+        public WinTrustFileInfo* File;
         public uint StateAction;
-        public IntPtr StateData;
-        public IntPtr UrlReference;
+        public nint StateData;
+        public nint UrlReference;
         public uint ProviderFlags;
         public uint UiContext;
-        public IntPtr SignatureSettings;
+        public nint SignatureSettings;
     }
 
     [LibraryImport("wintrust.dll")]
-    private static partial int WinVerifyTrust(IntPtr window, ref Guid action, ref WinTrustData data);
+    private static partial int WinVerifyTrust(nint window, Guid* action, WinTrustData* data);
 }

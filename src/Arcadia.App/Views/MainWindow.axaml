@@ -1207,7 +1207,7 @@
                                     </Border>
                                     <!-- Not a button of its own: the whole row is the button, so A on the row installs. -->
                                     <Border Classes="rowAction" Classes.locked="{Binding IsLocked}" IsVisible="{Binding IsInstall}">
-                                      <TextBlock Text="SISR installieren" />
+                                      <TextBlock Text="Treiber installieren" />
                                     </Border>
                                   </Panel>
                                 </DataTemplate>

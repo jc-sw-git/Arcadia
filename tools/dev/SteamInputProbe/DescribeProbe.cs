@@ -6,17 +6,31 @@ namespace SteamInputProbe;
 /// <summary>
 /// Spike #239: dumps what an emulated copy of a Valve device would have to look like to Steam: the USB device and
 /// configuration descriptors (read from the hub, as USBView does), the string descriptors and every HID interface's
-/// report descriptor. Serial numbers are never written, only their length.
+/// report descriptor. Serial numbers are never written, only their length. With a JSON path it also writes the
+/// puck's descriptors in the form the spike's proxy (steamproxy239) reads.
 /// </summary>
-internal sealed class DescribeProbe(ProbeLog log)
+internal sealed class DescribeProbe(ProbeLog log, string? jsonPath)
 {
     private const ushort ValveVendor = 0x28DE;
+    private const string Puck = "VID_28DE&PID_1304";
+
+    // hidapi's reconstructed report descriptors by interface number: the fallback if the device won't answer the hub.
+    private readonly Dictionary<int, List<byte[]>> _reconstructed = [];
+    private Dictionary<string, object>? _puck;
 
     public int Run()
     {
         DumpHidInterfaces();
         foreach (var instanceId in UsbDevices.ValveDevices())
             DumpUsbDevice(instanceId);
+        if (jsonPath is null) return 0;
+        if (_puck is null)
+        {
+            log.Line($"no {Puck} found, {jsonPath} not written");
+            return 1;
+        }
+        File.WriteAllText(jsonPath, System.Text.Json.JsonSerializer.Serialize(_puck));
+        log.Line($"descriptors written to {jsonPath}");
         return 0;
     }
 
@@ -45,6 +59,11 @@ internal sealed class DescribeProbe(ProbeLog log)
             var length = SdlHid.SDL_hid_get_report_descriptor(device, buffer, (nuint)buffer.Length);
             log.Line(length > 0 ? $"  report descriptor (reconstructed by hidapi) {length} bytes: {Hex(buffer, length)}"
                                 : $"  report descriptor FAILED: {Sdl.Text(Sdl.SDL_GetError())}");
+            if (length > 0 && info.ProductId == 0x1304)
+            {
+                if (!_reconstructed.TryGetValue(info.InterfaceNumber, out var found)) _reconstructed[info.InterfaceNumber] = found = [];
+                found.Add(buffer[..length]);
+            }
             SdlHid.SDL_hid_close(device);
         }
         SdlHid.SDL_hid_free_enumeration(list);
@@ -61,13 +80,15 @@ internal sealed class DescribeProbe(ProbeLog log)
             return;
         }
         var (hubPath, port) = location;
-        log.Line($"USB {shown} on hub port {port}");
         using var hub = UsbHub.Open(hubPath);
         if (hub is null)
         {
-            log.Line($"  hub open FAILED: error {Marshal.GetLastPInvokeError()}");
+            log.Line($"USB {shown}: hub open FAILED: error {Marshal.GetLastPInvokeError()}");
             return;
         }
+        // USB_DEVICE_SPEED: 0 low, 1 full, 2 high, 3 super.
+        var speed = hub.GetSpeed(port);
+        log.Line($"USB {shown} on hub port {port}, speed {speed?.ToString() ?? "?"}");
         var device = hub.GetDescriptor(port, 0x0100, 0, 18);
         log.Line($"  device descriptor: {Describe(device)}");
         if (device is not { Length: 18 }) return;
@@ -77,23 +98,52 @@ internal sealed class DescribeProbe(ProbeLog log)
         var config = hub.GetDescriptor(port, 0x0200, 0, BitConverter.ToUInt16(head, 2));
         log.Line($"  configuration descriptor: {Describe(config)}");
 
-        foreach (var (index, name) in new[] { (14, "manufacturer"), (15, "product"), (16, "serial") })
+        var strings = new Dictionary<string, string>();
+        foreach (var index in StringIndices(device, config))
         {
-            if (device[index] == 0) continue;
-            var text = hub.GetDescriptor(port, (ushort)(0x0300 | device[index]), 0x0409, 255) is { Length: > 2 } s
+            var text = hub.GetDescriptor(port, (ushort)(0x0300 | index), 0x0409, 255) is { Length: > 2 } s
                 ? Encoding.Unicode.GetString(s, 2, s.Length - 2) : null;
-            log.Line(name == "serial" ? $"  string {device[index]} (serial): length {text?.Length ?? 0}"
-                                      : $"  string {device[index]} ({name}): \"{text}\"");
+            if (index == device[16])
+            {
+                log.Line($"  string {index} (serial): length {text?.Length ?? 0}");
+                continue;
+            }
+            log.Line($"  string {index}: \"{text}\"");
+            if (text is not null) strings[index.ToString()] = text;
         }
-        if (config is not null) DumpReportDescriptors(hub, port, config);
+        if (config is null) return;
+        var reports = DumpReportDescriptors(hub, port, config);
+        if (!instanceId.Contains(Puck, StringComparison.OrdinalIgnoreCase)) return;
+        _puck = new Dictionary<string, object>
+        {
+            ["device"] = Hex(device, device.Length),
+            ["config"] = Hex(config, config.Length),
+            ["strings"] = strings,
+            ["reports"] = reports,
+            ["speed"] = (speed ?? 1) + 1, // VIIPER counts 1 low, 2 full, 3 high
+        };
+    }
+
+    /// <summary>Manufacturer, product, serial, and the configuration's and interfaces' own strings.</summary>
+    private static IEnumerable<byte> StringIndices(byte[] device, byte[]? config)
+    {
+        var indices = new SortedSet<byte> { device[14], device[15], device[16] };
+        for (var at = 0; config is not null && at + 1 < config.Length && config[at] > 0; at += config[at])
+        {
+            if (config[at + 1] == 0x02 && at + 6 < config.Length) indices.Add(config[at + 6]);
+            if (config[at + 1] == 0x04 && at + 8 < config.Length) indices.Add(config[at + 8]);
+        }
+        indices.Remove(0);
+        return indices;
     }
 
     /// <summary>
     /// The hub IOCTL always sends a device-recipient request; most devices answer a report descriptor request anyway.
     /// hidapi's reconstruction above is the fallback.
     /// </summary>
-    private void DumpReportDescriptors(UsbHub hub, uint port, byte[] config)
+    private Dictionary<string, string> DumpReportDescriptors(UsbHub hub, uint port, byte[] config)
     {
+        var reports = new Dictionary<string, string>();
         var interfaceNumber = -1;
         for (var at = 0; at + 1 < config.Length && config[at] > 0; at += config[at])
         {
@@ -103,7 +153,14 @@ internal sealed class DescribeProbe(ProbeLog log)
             var length = BitConverter.ToUInt16(config, at + 7);
             var report = hub.GetDescriptor(port, 0x2200, (ushort)interfaceNumber, length);
             log.Line($"  interface {interfaceNumber} report descriptor from device ({length} bytes expected): {Describe(report)}");
+            if (report?.Length == length) reports[interfaceNumber.ToString()] = Hex(report, report.Length);
+            else if (_reconstructed.TryGetValue(interfaceNumber, out var list) && list.Count == 1)
+            {
+                reports[interfaceNumber.ToString()] = Hex(list[0], list[0].Length);
+                log.Line($"  interface {interfaceNumber}: using hidapi's reconstruction instead");
+            }
         }
+        return reports;
     }
 
     private static string Describe(byte[]? data) =>
@@ -229,6 +286,16 @@ internal sealed class UsbHub : IDisposable
         if (!handle.IsInvalid) return new UsbHub(handle);
         handle.Dispose();
         return null;
+    }
+
+    /// <summary>USB_NODE_CONNECTION_INFORMATION_EX (packed): port, device descriptor, configuration value, then speed.</summary>
+    public int? GetSpeed(uint port)
+    {
+        const uint getConnectionInformationEx = 0x220448; // IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX
+        var buffer = new byte[512];
+        BitConverter.TryWriteBytes(buffer.AsSpan(0), port);
+        return DeviceIoControl(_handle, getConnectionInformationEx, buffer, buffer.Length, buffer, buffer.Length, out var returned, IntPtr.Zero)
+               && returned > 23 ? buffer[23] : null;
     }
 
     /// <summary>USB_DESCRIPTOR_REQUEST: the port, an 8-byte setup packet, then the data the device answered.</summary>

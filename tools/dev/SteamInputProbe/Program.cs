@@ -2,10 +2,11 @@ using SteamInputProbe;
 
 // Spike #112: can Arcadia read the Steam Controller through Steam Input itself, instead of running SISR?
 // Usage:
+// Every mode also takes --stopfile <file>: it ends as soon as that file exists (spike #239's runner uses it).
 //   SteamInputProbe steam --marker <appid> [--seconds 60] [--no-overlay] [--no-force] [--force-at 1]
 //                         [--release-at s] [--reforce-at s] [--window] [--viiper] [--say "s=text"]... [--log file]
 //   SteamInputProbe raw [--seconds 60] [--no-sensors] [--say "s=text"]... [--log file]
-//   SteamInputProbe describe [--log file]     (spike #239: USB and HID descriptors of Valve devices)
+//   SteamInputProbe describe [--json file] [--log file]   (spike #239: USB and HID descriptors of Valve devices)
 if (args.Length == 0 || ProbeOptions.Parse(args) is not { } options)
 {
     Console.WriteLine("usage: SteamInputProbe steam --marker <appid> [options] | raw [options] | describe  (see Program.cs)");
@@ -25,7 +26,7 @@ try
     return options.Mode switch
     {
         "steam" => await new SteamPadProbe(options, log).RunAsync(cancel.Token),
-        "describe" => new DescribeProbe(log).Run(),
+        "describe" => new DescribeProbe(log, options.JsonPath).Run(),
         _ => new RawProbe(options, log).Run(cancel.Token),
     };
 }
@@ -47,6 +48,8 @@ internal sealed record ProbeOptions(string Mode, string LogPath)
     public bool Window { get; private init; }
     public bool Viiper { get; private init; }
     public bool Sensors { get; private init; } = true;
+    public string? JsonPath { get; private init; }
+    public string? StopFile { get; private init; }
     public List<(double At, string Text)> Prompts { get; } = [];
 
     public static ProbeOptions? Parse(string[] args)
@@ -70,12 +73,16 @@ internal sealed record ProbeOptions(string Mode, string LogPath)
                 "--viiper" => options with { Viiper = true },
                 "--no-sensors" => options with { Sensors = false },
                 "--log" => options with { LogPath = Path.GetFullPath(Next()) },
+                "--json" => options with { JsonPath = Path.GetFullPath(Next()) },
+                "--stopfile" => options with { StopFile = Path.GetFullPath(Next()) },
                 "--say" => options.WithPrompt(Next()),
                 _ => throw new ArgumentException($"unknown option {args[i]}"),
             };
         }
         return mode == "steam" && options.MarkerAppId == 0 ? null : options;
     }
+
+    public bool ShouldStop(ProbeLog log) => log.ElapsedMs >= Seconds * 1000 || (StopFile is not null && File.Exists(StopFile));
 
     private ProbeOptions WithPrompt(string value)
     {

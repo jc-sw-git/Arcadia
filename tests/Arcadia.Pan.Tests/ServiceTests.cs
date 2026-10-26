@@ -98,10 +98,12 @@ public sealed class ServiceTests : IDisposable
         }
 
         // T243-8: a user can start and query it but never change it; the image path is quoted.
+        // sc prints the rights in its own order (LCRPLORC), so the ACE is compared as a set of rights.
         var sddl = Output("sc.exe", "sdshow", PanPaths.ServiceName);
-        Assert.Contains("(A;;RPLCLORC;;;IU)", sddl);
+        Assert.Equal(["LC", "LO", "RC", "RP"], RightsOf(sddl, "IU"));
         Assert.DoesNotContain(";;;WD)", sddl);
         Assert.DoesNotContain(";;;BU)", sddl);
+        Assert.DoesNotContain(";;;AU)", sddl);
         using (var key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{PanPaths.ServiceName}"))
         {
             Assert.Equal($"\"{PanPaths.InstalledExecutable}\"", key?.GetValue("ImagePath"));
@@ -164,6 +166,15 @@ public sealed class ServiceTests : IDisposable
         Assert.Equal(0, Run(pan, "--uninstall"));
         Assert.Contains("1060", Output("sc.exe", "query", PanPaths.ServiceName));
         Assert.False(Directory.Exists(PanPaths.InstallDirectory), "Program Files\\Arcadia\\Pan is gone");
+    }
+
+    /// <summary>The two-letter rights of the allow ACE for <paramref name="sid"/> in an SDDL string, sorted.</summary>
+    private static string[] RightsOf(string sddl, string sid)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(sddl, $@"\(A;;([A-Z]+);;;{sid}\)");
+        Assert.True(match.Success, $"no allow ACE for {sid} in {sddl.Trim()}");
+        var rights = match.Groups[1].Value;
+        return Enumerable.Range(0, rights.Length / 2).Select(i => rights.Substring(i * 2, 2)).Order().ToArray();
     }
 
     /// <summary>

@@ -23,7 +23,8 @@ public sealed class PanClientTests : IAsyncDisposable
     public PanClientTests()
     {
         _server = new FakePanServer(line => Log($"[Pan] {line}"));
-        _client = new PanClient(_server, _time, Log);
+        // Real time, so wider than Arcadia's 2 s: a loaded CI runner must not count as a hanging Pan.
+        _client = new PanClient(_server, _time, Log) { RequestTimeout = TimeSpan.FromSeconds(10) };
         _client.TornDown += (generation, reason) => { lock (_tornDown) _tornDown.Add((generation, reason)); };
         _client.Lost += reason => { lock (_lost) _lost.Add(reason); };
     }
@@ -172,7 +173,7 @@ public sealed class PanClientTests : IAsyncDisposable
         Assert.Contains("antwortet nicht", ex.Message);
         Assert.False(_client.IsConnected);
         Assert.False(_client.IsCurrent(generation));
-        Assert.Contains("antwortet nicht innerhalb von 2 s", Assert.Single(_lost));
+        Assert.Contains("antwortet nicht innerhalb von 10 s", Assert.Single(_lost));
         Assert.Contains("die Emulation wird entfernt", LogText());
 
         // Pan is back (restarted by the service manager): the keeper reconnects.

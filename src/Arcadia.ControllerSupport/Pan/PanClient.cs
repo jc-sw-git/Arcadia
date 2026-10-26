@@ -11,8 +11,10 @@ namespace Arcadia.ControllerSupport.Pan;
 /// </summary>
 public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
 {
-    /// <summary>A request to Pan (write and reply) that takes longer than this means Pan hangs.</summary>
-    public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(2);
+    public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(2);
+
+    /// <summary>A request to Pan (write and reply) that takes longer than this means Pan hangs. Real time; tests widen it.</summary>
+    public TimeSpan RequestTimeout { get; init; } = DefaultRequestTimeout;
 
     /// <summary>Reconnecting after a loss; a permanent reason (not set up, wrong protocol) waits <see cref="SlowRetry"/>.</summary>
     public static readonly TimeSpan Retry = TimeSpan.FromSeconds(2);
@@ -177,7 +179,16 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposed.Token);
         timeout.CancelAfter(RequestTimeout);
-        await _requests.WaitAsync(timeout.Token);
+        try
+        {
+            await _requests.WaitAsync(timeout.Token);
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested && !_disposed.IsCancellationRequested)
+        {
+            // The request before this one is still waiting for its reply; it drops the link itself when its time is up.
+            throw new InvalidOperationException("Pan antwortet nicht", ex);
+        }
+
         try
         {
             PanLink link;

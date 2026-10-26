@@ -12,7 +12,7 @@ the player's side runs in the acceptance tests with a faked Pan (`PanGuardianTes
 - [ ] **T243-1** Setup on a PC without usbip-win2 and without Pan: Einstellungen → Controller → "Treiber installieren"
       (or the row "Wächterdienst Pan fehlt" → "Installieren") asks for administrator rights exactly once; afterwards
       `services.msc` lists "Pan - Arcadias Guardian" (running, automatic, description in German on a German Windows),
-      `%ProgramFiles%\Arcadia\Pan\Pan.exe` exists, `sc sdshow ArcadiaPan` ends with `(A;;RPLCLORC;;;IU)`, the warning
+      `%ProgramFiles%\Arcadia\Pan\Pan.exe` exists, `sc sdshow ArcadiaPan` gives users (IU) only LC RP LO RC, the warning
       row is gone and "Controller wiederherstellen" appears. `pan.log`: "Copied to … (SHA-256 …)", "Service started".
       · E2E: no (UAC and the real driver; the service's install: T243-7)
 - [ ] **T243-2** Without Pan (service uninstalled by hand: `Pan.exe --uninstall` elevated): no Xbox controller of
@@ -33,8 +33,8 @@ the player's side runs in the acceptance tests with a faked Pan (`PanGuardianTes
 - [ ] **T243-7** `Pan.exe --install --expect-hash <sha256>` (CI): exit 0, the copy in Program Files, the service running;
       a wrong hash installs nothing and exits 3. · E2E: yes (Windows CI, `ServiceTests`; the wrong hash: unit test of
       `ServiceSetup` deferred, checked by reading)
-- [ ] **T243-8** The service's DACL gives users start, query and interrogate only (`sc sdshow`: `(A;;RPLCLORC;;;IU)`, no
-      `WD`/`BU` entry); `ImagePath` in the registry is quoted; the description is the system language's. · E2E: yes (CI)
+- [ ] **T243-8** The service's DACL gives users start, query and interrogate only (`sc sdshow`: the IU entry has only LC RP LO RC, no
+      `WD`/`BU`/`AU` entry); `ImagePath` in the registry is quoted; the description is the system language's. · E2E: yes (CI)
 - [ ] **T243-9** The pipe `ArcadiaPan` takes SYSTEM and the interactive user, not Everyone or Users; hello answers
       `HelloOk` with the generation. · E2E: yes (CI)
 - [ ] **T243-10** Service stop while a child `viiper.exe` of the client is registered: the child is ended before the

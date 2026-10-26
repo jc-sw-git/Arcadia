@@ -1341,12 +1341,16 @@ public sealed class ControllerSupportService(
 
     private void UpdateSetup()
     {
-        PanInstalled = IsSupportedPlatform && _platform.IsPanReady;
+        _panInstalled = CheckPanInstalled();
         _setup = CheckSetup();
     }
 
-    /// <summary>Pan, the guardian service, is installed (#243); as of the last <see cref="UpdateSetup"/>. "Controller wiederherstellen" needs it.</summary>
-    public bool PanInstalled { get; private set; }
+    /// <summary>Pan, the guardian service, is installed (#243); rechecked with <see cref="Setup"/>. "Controller wiederherstellen" needs it.</summary>
+    public bool PanInstalled => _panInstalled ??= CheckPanInstalled();
+
+    private bool? _panInstalled;
+
+    private bool CheckPanInstalled() => IsSupportedPlatform && _platform.IsPanReady;
 
     private ControllerSupportSetup CheckSetup() =>
         !IsSupportedPlatform ? ControllerSupportSetup.UnsupportedPlatform

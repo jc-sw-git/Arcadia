@@ -98,6 +98,7 @@ internal sealed class ArcadiaDriver : IDisposable
         };
         Updates = releases is null ? new ArcadiaUpdateService(_http, time) : new ArcadiaUpdateService(_http, time, releases.Manager(folder));
         Updates.Log = AppLog.Write;
+        FolderCheck = new InstallFolderCheck(Folders.Exists, action => Dispatcher.UIThread.Post(action));
         var launchedGames = new LaunchedGames();
         var installTracker = new InstallTracker(registry, time);
         var running = new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time)
@@ -116,7 +117,8 @@ internal sealed class ArcadiaDriver : IDisposable
             Settings,
             new LauncherLogos(Settings, Path.Combine(folder, "logos")),
             firstRun,
-            time);
+            time,
+            FolderCheck);
         _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time, new InputLatency(shown => shown(), line =>
         {
             AppLog.Write(line);
@@ -138,6 +140,14 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>SDL3 with the controllers a test plugs in; read only after <see cref="StartControllers"/>.</summary>
     public FakeSdlGamepads Sdl { get; } = new();
+
+    /// <summary>The disk as the focused game's install folder check sees it.</summary>
+    public FakeInstallFolders Folders { get; } = new();
+
+    private InstallFolderCheck FolderCheck { get; }
+
+    /// <summary>Waits until the focused game's install folder check has answered.</summary>
+    public Task FolderChecksAnsweredAsync() => WaitUntilAsync(() => !FolderCheck.IsChecking, "Installordner geprüft");
 
     public string SettingsPath => Path.Combine(Folder, "settings.json");
 

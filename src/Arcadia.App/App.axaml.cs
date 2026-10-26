@@ -133,7 +133,8 @@ public partial class App : Application
                 settings,
                 new LauncherLogos(settings, LauncherLogos.DefaultFolder),
                 firstRun,
-                time);
+                time,
+                new InstallFolderCheck(Directory.Exists, action => Dispatcher.UIThread.Post(action)));
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
             if (args.Contains("--fullscreen", StringComparer.OrdinalIgnoreCase))

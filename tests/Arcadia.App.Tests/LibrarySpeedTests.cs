@@ -60,6 +60,40 @@ public sealed partial class LibrarySpeedTests
         Assert.Equal("Right", FrameLine().Match(arcadia.LatencyLines[0]).Groups["what"].Value);
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T229-2")]
+    public async Task View_and_Menu_count_their_time_from_the_press_not_from_when_they_act()
+    {
+        // ⧉ and ≡ act only on release or after the solo delay (#64); the user waited from the press. The fake clock runs
+        // the solo delay, the sleeps are the real time held.
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var lines = arcadia.LatencyLines;
+
+        arcadia.PressButton(GamepadButton.Menu);
+        Thread.Sleep(50);
+        arcadia.Wait(TimeSpan.FromMilliseconds(100)).ReleaseButton(GamepadButton.Menu);
+        Assert.True(arcadia.Main.IsSettingsOpen);
+        Assert.InRange(TotalOf(Assert.Single(lines)), 50, 10_000);
+        arcadia.Press(UiAction.Back);
+
+        arcadia.PressButton(GamepadButton.View);
+        Thread.Sleep(50);
+        arcadia.Wait(TimeSpan.FromMilliseconds(300));
+        Assert.True(arcadia.Main.IsGameMenuOpen);
+        Assert.Equal(2, lines.Count);
+        Assert.InRange(TotalOf(lines[^1]), 50, 10_000);
+        arcadia.ReleaseButton(GamepadButton.View).Press(UiAction.Back);
+
+        // Together they act not at all, and leave no time behind for the next press.
+        arcadia.PressButton(GamepadButton.View).PressButton(GamepadButton.Menu);
+        Thread.Sleep(300);
+        arcadia.Wait(TimeSpan.FromSeconds(1)).ReleaseButton(GamepadButton.Menu).ReleaseButton(GamepadButton.View).Wait(TimeSpan.FromMilliseconds(300));
+        Assert.Equal(2, lines.Count);
+        arcadia.PressButton(GamepadButton.Menu).ReleaseButton(GamepadButton.Menu);
+        Assert.Equal(3, lines.Count);
+        Assert.InRange(TotalOf(lines[^1]), 0, 299);
+    }
+
     [Fact]
     public void A_press_is_logged_only_after_its_frame_with_its_wait_and_handling()
     {
@@ -81,6 +115,9 @@ public sealed partial class LibrarySpeedTests
         Assert.InRange(double.Parse(match.Groups["wait"].Value, System.Globalization.CultureInfo.InvariantCulture), 30, 10_000);
         Assert.InRange(double.Parse(match.Groups["total"].Value, System.Globalization.CultureInfo.InvariantCulture), 30, 10_000);
     }
+
+    private static double TotalOf(string line) =>
+        double.Parse(FrameLine().Match(line).Groups["total"].Value, System.Globalization.CultureInfo.InvariantCulture);
 
     private static List<Button> Covers(ArcadiaWindow window) =>
         window.Named<ItemsControl>("GameGrid").GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("tile")).ToList();

@@ -21,6 +21,10 @@ public sealed class GamepadRouting
     private readonly SoloButtons _viewAndMenu;
     private readonly InputLatency _latency;
 
+    // When View or Menu went down: they act only later (on release or after the solo delay), and their time to the frame
+    // counts from the press, like every other button's. Poll thread only.
+    private readonly Dictionary<GamepadButton, long> _soloPressedAt = [];
+
     /// <param name="latency">Measures each press from the poll thread, where it arrives, to the frame that shows it.</param>
     public GamepadRouting(MainViewModel viewModel, Func<bool> isArcadiaActive, Func<bool> isMouseModeOn, TimeProvider time, InputLatency latency)
     {
@@ -31,13 +35,18 @@ public sealed class GamepadRouting
         _viewAndMenu = new SoloButtons(GamepadButton.View, GamepadButton.Menu, SoloButtonDelay, time);
         _viewAndMenu.Pressed += Act;
         _viewAndMenu.Released += LetGo;
-        _viewAndMenu.Cancelled += _ => Dispatcher.UIThread.Post(viewModel.CancelHold);
+        _viewAndMenu.Cancelled += button =>
+        {
+            _soloPressedAt.Remove(button);
+            Dispatcher.UIThread.Post(viewModel.CancelHold);
+        };
     }
 
     /// <summary>The controllers are gone for good (<see cref="IGamepadSource.Lost"/>): held buttons are forgotten without acting.</summary>
     public void Drop()
     {
         _viewAndMenu.Reset();
+        _soloPressedAt.Clear();
         Dispatcher.UIThread.Post(_viewModel.CancelHold);
     }
 
@@ -53,6 +62,7 @@ public sealed class GamepadRouting
 
         if (_viewAndMenu.Handles(button))
         {
+            _soloPressedAt[button] = InputLatency.Now();
             _viewAndMenu.Press(button);
         }
         else
@@ -75,6 +85,8 @@ public sealed class GamepadRouting
 
     private void Act(GamepadButton button)
     {
+        var pressedAt = _soloPressedAt.Remove(button, out var soloPressedAt) ? soloPressedAt : InputLatency.Now();
+
         // Checked here, not only on the UI thread: View held in the background brings Arcadia to the
         // front, and the same press must not open the context menu once it got there.
         if (!_isArcadiaActive())
@@ -84,7 +96,6 @@ public sealed class GamepadRouting
 
         if (UiActionMap.FromGamepad(button) is { } action)
         {
-            var pressedAt = InputLatency.Now();
             AppLog.Write($"Gamepad: {button} → {action}");
             Dispatcher.UIThread.Post(() =>
             {

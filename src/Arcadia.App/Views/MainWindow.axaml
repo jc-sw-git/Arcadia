@@ -262,12 +262,18 @@
                   </Grid>
                   <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowControllerSupport, TargetNullValue=False}">
                     <TextBlock Classes="label" Text="STEAM CONTROLLER" />
-                    <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10. -->
-                    <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
-                            IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
-                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Xbox Controller (SISR)“ und „Steam Input“'}">
-                      <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
-                    </Button>
+                    <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10.
+                         Without the driver it is greyed out, and the line below says why (#213). -->
+                    <Panel IsEnabled="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.SteamControllerDriverReady, TargetNullValue=False}">
+                      <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
+                              IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
+                              ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Arcadia“ und „Steam-Eingabe“'}">
+                        <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
+                      </Button>
+                    </Panel>
+                    <TextBlock Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeUnavailableReason}" FontSize="13"
+                               Foreground="{StaticResource TextSoft}" TextWrapping="Wrap"
+                               IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeUnavailableReason, Converter={x:Static ObjectConverters.IsNotNull}}" />
                   </StackPanel>
                   <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowGameMouseMode, TargetNullValue=False}">
                     <TextBlock Classes="label" Text="INDIVIDUELLER MAUSMODUS" />

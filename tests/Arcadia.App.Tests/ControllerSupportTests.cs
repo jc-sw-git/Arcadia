@@ -5,6 +5,7 @@ using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Tests.Sdl;
 using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;
@@ -12,6 +13,9 @@ namespace Arcadia.App.Tests;
 /// <summary>"Steam Controller Kompatibilität" in the category "Controller" (#85, #92), with Windows, Steam and SISR faked.</summary>
 public sealed class ControllerSupportTests
 {
+    /// <summary>SISR as before #213 part B: these tests cover its switch and setup until #214 removes them.</summary>
+    private static readonly StartArguments Sisr = new(Sisr: true);
+
     private static readonly TimeSpan PastSteamStartTimeout = TimeSpan.FromSeconds(65);
 
     [AvaloniaTheory]
@@ -23,7 +27,7 @@ public sealed class ControllerSupportTests
     public async Task Without_SISR_or_what_it_needs_the_setting_offers_SISR_installieren_instead_of_the_switch(string missing)
     {
         var steam = new FakeSteam();
-        using (var ready = await ArcadiaDriver.StartAsync(steam: steam))
+        using (var ready = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr))
         {
             Assert.True(OpenController(ready).Sisr.IsSwitch, "Mit allem, was SISR braucht, ist die Einstellung ein Schalter.");
         }
@@ -45,7 +49,7 @@ public sealed class ControllerSupportTests
                 break;
         }
 
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr);
         var sisr = OpenController(arcadia).Sisr;
 
         Assert.True(sisr.IsInstall);
@@ -59,7 +63,7 @@ public sealed class ControllerSupportTests
     {
         var steam = new FakeSteam { IsSteamRunning = true };
         steam.Sisr.IsInstalled = false;
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr);
         var (controller, _) = OpenController(arcadia);
 
         arcadia.Press(UiAction.Accept);
@@ -99,7 +103,7 @@ public sealed class ControllerSupportTests
     public async Task Without_Windows_or_Steam_the_setting_is_greyed_out_says_why_and_A_does_nothing(bool windows, bool steamInstalled, string why)
     {
         var steam = new FakeSteam { IsWindows = windows, IsSteamInstalled = steamInstalled };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr);
         var (controller, sisr) = OpenController(arcadia);
 
         Assert.Equal(SisrRowMode.Unavailable, sisr.Mode);
@@ -120,7 +124,7 @@ public sealed class ControllerSupportTests
     public async Task Steam_not_starting_within_a_minute_shows_Steam_startet_nicht_with_cancel_and_retry()
     {
         var steam = new FakeSteam { StartsWhenAsked = false };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr);
         var (controller, sisr) = OpenController(arcadia);
 
         var switchedOnAt = arcadia.Time.GetUtcNow();
@@ -155,7 +159,7 @@ public sealed class ControllerSupportTests
     public async Task Steam_hanging_at_its_login_when_switching_on_shows_the_prompt_and_SISR_does_not_start()
     {
         var steam = new FakeSteam { IsSteamRunning = true, IsLoggedIn = false };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr);
         var (controller, _) = OpenController(arcadia);
 
         arcadia.Press(UiAction.Accept);
@@ -172,7 +176,7 @@ public sealed class ControllerSupportTests
     public async Task While_Steam_or_SISR_start_the_switch_is_locked_and_other_buttons_do_nothing()
     {
         var steam = new FakeSteam { StartsWhenAsked = false };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr);
         var (controller, sisr) = OpenController(arcadia);
 
         // Steam starting.
@@ -205,7 +209,7 @@ public sealed class ControllerSupportTests
     public async Task While_Steam_or_SISR_start_B_leaves_the_settings_at_once(string starting)
     {
         var steam = new FakeSteam { StartsWhenAsked = false };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr);
         var (_, sisr) = OpenController(arcadia);
         arcadia.Press(UiAction.Accept).Wait(TimeSpan.FromSeconds(5));
         if (starting == "SISR startet")
@@ -224,7 +228,7 @@ public sealed class ControllerSupportTests
     public async Task With_Steam_hanging_at_its_login_the_switch_stays_usable()
     {
         var steam = new FakeSteam { IsSteamRunning = true, IsLoggedIn = false };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: SwitchedOn());
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: SwitchedOn(), arguments: Sisr);
         await arcadia.TickControllerSupportAsync();
         var (_, sisr) = OpenController(arcadia);
         Assert.True(sisr.IsOn);
@@ -240,7 +244,7 @@ public sealed class ControllerSupportTests
     public async Task Steam_hanging_at_its_login_for_over_30_seconds_shows_a_message_with_Steam_neu_starten_and_SISR_keeps_running()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: SwitchedOn());
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: SwitchedOn(), arguments: Sisr);
         await StartSisrAsync(arcadia);
         var (controller, _) = OpenController(arcadia);
 
@@ -265,7 +269,7 @@ public sealed class ControllerSupportTests
     {
         var steam = new FakeSteam { IsSteamRunning = true, HasMarker = false };
         steam.Sisr.LatestRelease = new Release("v1.1.0", new Version(1, 1, 0), []);
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: SwitchedOn(), releases: new FakeReleases("0.1.0", ("0.2.0", ["Neu"])));
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: SwitchedOn(), releases: new FakeReleases("0.1.0", ("0.2.0", ["Neu"])), arguments: Sisr);
         await arcadia.TickControllerSupportAsync();
         await arcadia.Updates.CheckIfDueAsync();
         await arcadia.WaitUntilAsync(() => arcadia.Main.Status is { HasControllerStatus: true, HasSisrUpdate: true, HasArcadiaUpdate: true }, "alle drei Symbole im Header");
@@ -286,7 +290,7 @@ public sealed class ControllerSupportTests
     public async Task The_setting_is_called_Steam_Controller_Kompatibilitaet_with_both_modes_and_no_text_says_Steam_Controller_Support()
     {
         var steam = new FakeSteam { IsSteamRunning = true, HasMarker = false };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: SwitchedOn());
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: SwitchedOn(), arguments: Sisr);
         await arcadia.TickControllerSupportAsync();
         var (controller, sisr) = OpenController(arcadia);
 
@@ -294,7 +298,7 @@ public sealed class ControllerSupportTests
         Assert.StartsWith("Mit dieser Einstellung wird der Steam Controller als Xbox Controller erkannt.", Assert.IsType<InfoText>(sisr.Info[0]).Text);
         Assert.Contains(sisr.Info.OfType<InfoText>(), text => text.Text.Contains("SISR", StringComparison.Ordinal));
         var modes = ShownText.Blocks(sisr.Info).OfType<InfoCard>().ToList();
-        Assert.Equal([ControllerModes.Sisr, ControllerModes.Steam], modes.Select(card => card.Title));
+        Assert.Equal([ControllerModes.Arcadia, ControllerModes.Steam], modes.Select(card => card.Title));
 
         var texts = controller.Rows.SelectMany(ShownText.Of).Append(arcadia.Main.Status.ControllerStatusText).ToList();
         Assert.True(arcadia.Main.Status.HasControllerStatus);
@@ -303,35 +307,37 @@ public sealed class ControllerSupportTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T92-2")]
-    public async Task The_preview_shows_Steam_Input_for_Steam_games_and_Xbox_Controller_SISR_for_all_others()
+    public async Task The_preview_shows_Steam_Eingabe_for_Steam_games_and_Arcadia_for_all_others()
     {
-        var steam = new FakeSteam { IsSteamRunning = true };
         using var arcadia = await ArcadiaDriver.StartAsync(
-            [new LauncherSpec(KnownLaunchers.Steam, 3), new LauncherSpec(KnownLaunchers.Gog, 3)], SwitchedOn(KnownLaunchers.Steam, KnownLaunchers.Gog), steam);
+            [new LauncherSpec(KnownLaunchers.Steam, 3), new LauncherSpec(KnownLaunchers.Gog, 3)], Launchers(KnownLaunchers.Steam, KnownLaunchers.Gog));
+        arcadia.StartControllers();
         Assert.False(arcadia.Main.ShowControllerSupport, "Ohne Steam Controller zeigt die Vorschau keinen Modus.");
 
-        await StartSisrAsync(arcadia);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.ShowControllerSupport, "der Steam Controller ist erkannt");
+        // No switch any more (#213): the Steam Controller alone brings the mode.
+        arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.PollControllers();
+        Assert.True(arcadia.Main.ShowControllerSupport);
         Assert.Equal("Steam", arcadia.SelectedTab?.Name);
         Assert.Equal(ControllerModes.Steam, arcadia.Main.FocusedControllerSupportText);
 
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("GOG Galaxy", arcadia.SelectedTab?.Name);
-        Assert.Equal(ControllerModes.Sisr, arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal(ControllerModes.Arcadia, arcadia.Main.FocusedControllerSupportText);
     }
 
     [AvaloniaFact]
     [Trait("TestCase", "T127-2")]
     public async Task On_the_detail_page_the_game_settings_show_no_note_below_the_buttons_and_the_context_menu_says_what_they_switch_to()
     {
-        var steam = new FakeSteam { IsSteamRunning = true };
-        var settings = SwitchedOn(KnownLaunchers.Gog) with
+        var settings = Launchers(KnownLaunchers.Gog) with
         {
             MouseMode = new MouseModeSettings { Activation = MouseModeActivation.Manual, InGames = MouseModeInGames.PerGame },
         };
-        using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, 3)], settings, steam);
-        await StartSisrAsync(arcadia);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.ShowControllerSupport, "der Steam Controller ist erkannt");
+        using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, 3)], settings);
+        arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.StartControllers();
+        Assert.True(arcadia.Main.ShowControllerSupport, "der Steam Controller ist erkannt");
 
         // The context menu names what each choice switches to.
         arcadia.Press(UiAction.Options);
@@ -352,6 +358,12 @@ public sealed class ControllerSupportTests
         Assert.Equal(GameActionKind.MouseMode, page.FocusedKind);
         Assert.False(page.HasNotes);
     }
+
+    /// <summary>Only these launchers; the old switch stays off, as it means nothing since #213.</summary>
+    private static AppSettings Launchers(params LauncherInfo[] launchers) => new()
+    {
+        ActiveLaunchers = [.. launchers.Select(launcher => launcher.Id)],
+    };
 
     /// <summary>"Steam Controller Kompatibilität" on, as after a start with the option on.</summary>
     private static AppSettings SwitchedOn(params LauncherInfo[] launchers) => new()

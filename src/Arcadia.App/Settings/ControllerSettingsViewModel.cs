@@ -539,14 +539,17 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
         // Once on, the switch stays even if something breaks later; the problem shows below it.
         var needsMarker = _support.Issues.Any(i => i.Fix == HealthFix.CreateMarker);
-        var unavailable = !enabled && setup is ControllerSupportSetup.UnsupportedPlatform or ControllerSupportSetup.SteamMissing;
+        // Since #213 part B SISR no longer runs: once set up there is nothing to switch, only its install still brings
+        // VIIPER and the usbip driver for Arcadia's own pad (until #214 rebuilds this row).
+        var replaced = !_support.StartsSisr && setup == ControllerSupportSetup.Ready;
+        var unavailable = replaced || (!enabled && setup is ControllerSupportSetup.UnsupportedPlatform or ControllerSupportSetup.SteamMissing);
         var showInstall = !enabled && setup == ControllerSupportSetup.NeedsInstall;
         var state = _support.State;
         _sisr.Update(
             unavailable ? SisrRowMode.Unavailable : showInstall ? SisrRowMode.Install : SisrRowMode.Switch,
             enabled,
             IsSettling,
-            setup == ControllerSupportSetup.SteamMissing ? "Benötigt Steam." : "Momentan nur unter Windows verfügbar.",
+            replaced ? SisrReplacedText : setup == ControllerSupportSetup.SteamMissing ? "Benötigt Steam." : "Momentan nur unter Windows verfügbar.",
             enabled ? ShortStatus(state, hasProblems) : null);
         if (IsInstallPrompt && ((!showInstall && !needsMarker) || IsBusy))
         {
@@ -638,6 +641,9 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         },
     };
 
+    /// <summary>The row's line once SISR is replaced by Arcadia's own pad (#213).</summary>
+    private const string SisrReplacedText = "Nicht mehr nötig – Arcadia bringt den Steam Controller selbst in Spiele.";
+
     /// <summary>What "Steam Controller Kompatibilität" does, at the top of its info panel.</summary>
     private static readonly InfoBlock[] SisrDescription =
     [
@@ -648,7 +654,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private static readonly InfoSection HowItWorks = new("SO FUNKTIONIERT ES",
     [
         new InfoText("Ist diese Option aktiv (und ein Steam Controller verbunden), kann in Arcadia pro Spiel zwischen zwei Modi für den Steam Controller gewechselt werden:"),
-        new InfoCard(ViewModels.ControllerModes.Sisr, "Arcadia lässt den Steam Controller in diesem Spiel als Xbox Controller erkennen.", "Vorauswahl für Spiele außerhalb von Steam"),
+        new InfoCard(ViewModels.ControllerModes.Arcadia, "Arcadia lässt den Steam Controller in diesem Spiel als Xbox Controller erkennen.", "Vorauswahl für Spiele außerhalb von Steam"),
         new InfoCard(ViewModels.ControllerModes.Steam, "Das Standardverhalten des Steam Controllers. Empfohlen für Steam-Spiele oder wenn du außerhalb von Steam den Desktop-Modus nutzen möchtest; der Controller simuliert dann Maus und Tastatur.", "Vorauswahl für Spiele aus Steam"),
     ]);
 

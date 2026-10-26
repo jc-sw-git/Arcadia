@@ -48,7 +48,7 @@ public sealed class SteamControllerXboxPad
         _withholding = new ComboWithholding(time);
     }
 
-    /// <summary>Whether a pad is wanted at all now (read in <see cref="TickAsync"/>); until #213's per-game mode: SISR is off.</summary>
+    /// <summary>Whether a pad is wanted at all now (read in <see cref="TickAsync"/>): <see cref="SteamControllerRoute.PadWanted"/>.</summary>
     public Func<bool> Wanted { get; init; } = () => true;
 
     /// <summary>
@@ -109,11 +109,25 @@ public sealed class SteamControllerXboxPad
     /// <summary>Plugs the pad in or out as needed, and again after it was lost. Called every 2 s; never throws.</summary>
     public async Task TickAsync(CancellationToken cancellationToken = default)
     {
-        if (!await _gate.WaitAsync(0, cancellationToken))
+        if (await _gate.WaitAsync(0, cancellationToken))
         {
-            return;
+            await TickUnderGateAsync(cancellationToken);
         }
+    }
 
+    /// <summary>
+    /// As <see cref="TickAsync"/>, but waits for a tick that runs: right before a game on "Steam-Eingabe" starts, the pad
+    /// must be gone before the game looks for controllers. Never throws.
+    /// </summary>
+    public async Task TickNowAsync(CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        await TickUnderGateAsync(cancellationToken);
+    }
+
+    /// <summary>Releases the gate when done.</summary>
+    private async Task TickUnderGateAsync(CancellationToken cancellationToken)
+    {
         try
         {
             if (_pad is { IsConnected: false } lost)

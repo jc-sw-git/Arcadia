@@ -55,9 +55,10 @@ internal sealed class ArcadiaWindow : IDisposable
     /// <paramref name="steam"/> are Windows, Steam and SISR of the test, as there.
     /// </summary>
     public static async Task<ArcadiaWindow> ShowAsync(
-        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, int width = Width, int height = Height, double scaling = 1, FakeSteam? steam = null)
+        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, int width = Width, int height = Height, double scaling = 1, FakeSteam? steam = null,
+        StartArguments arguments = default)
     {
-        var arcadia = await ArcadiaDriver.StartAsync(launchers, settings, steam);
+        var arcadia = await ArcadiaDriver.StartAsync(launchers, settings, steam, arguments: arguments);
         // The glyphs follow one switch for the whole app; a test before may have left it on the keyboard.
         Input.InputHints.UsesController = arcadia.Main.UsesController;
         var window = new MainWindow { DataContext = arcadia.Main, Width = width, Height = height };

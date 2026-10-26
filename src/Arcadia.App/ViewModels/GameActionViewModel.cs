@@ -24,6 +24,9 @@ public interface IGameActionHost
     /// <summary>True when the Steam Controller mode matters (option on, Steam Controller connected).</summary>
     bool ShowControllerMode { get; }
 
+    /// <summary>False without the driver: the mode stays "Steam-Eingabe" (#213).</summary>
+    bool CanChooseControllerMode { get; }
+
     /// <summary>"Xbox Controller (SISR)" or "Steam Input".</summary>
     string ControllerModeOf(Game game);
 
@@ -182,13 +185,17 @@ public sealed partial class GameActionViewModel : ViewModelBase
         if (host.ShowControllerMode)
         {
             GameActionViewModel? mode = null;
-            mode = new(GameActionKind.ControllerMode, string.Empty, null, !tile.IsRunningOrStarting, () =>
+            mode = new(GameActionKind.ControllerMode, string.Empty, null, !tile.IsRunningOrStarting && host.CanChooseControllerMode, () =>
             {
                 host.ToggleControllerMode(tile);
                 mode!.ShowControllerMode(host.ControllerModeOf(game));
             });
             mode.ShowControllerMode(host.ControllerModeOf(game));
-            if (tile.IsRunningOrStarting)
+            if (!host.CanChooseControllerMode)
+            {
+                mode.Note = ControllerModes.NeedsDriver;
+            }
+            else if (tile.IsRunningOrStarting)
             {
                 mode.Note = NextStartOnly;
             }
@@ -233,13 +240,19 @@ public sealed partial class GameActionViewModel : ViewModelBase
     {
         Label = $"Steam Controller: {mode}";
         ButtonLabel = mode;
-        Note = $"Wechselt zu „{(mode == ControllerModes.Steam ? ControllerModes.Sisr : ControllerModes.Steam)}“";
+        Note = $"Wechselt zu „{(mode == ControllerModes.Steam ? ControllerModes.Arcadia : ControllerModes.Steam)}“";
     }
 }
 
-/// <summary>The names of the two Steam Controller modes (#92).</summary>
+/// <summary>The names of the two Steam Controller modes (#92, renamed with #213).</summary>
 public static class ControllerModes
 {
-    public const string Sisr = "Xbox Controller (SISR)";
-    public const string Steam = "Steam Input";
+    /// <summary>Arcadia's Xbox pad; Steam gets nothing from the Steam Controller.</summary>
+    public const string Arcadia = "Arcadia";
+
+    /// <summary>No pad of Arcadia's; the game's own Steam configuration applies.</summary>
+    public const string Steam = "Steam-Eingabe";
+
+    /// <summary>Why "Arcadia" can't be chosen; until #214 brings its own setup, SISR's install brings both.</summary>
+    public const string NeedsDriver = "„Arcadia“ braucht den usbip-Treiber und VIIPER – „SISR installieren“ richtet beide ein";
 }

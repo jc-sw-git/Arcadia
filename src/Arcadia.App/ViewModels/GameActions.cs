@@ -14,8 +14,14 @@ namespace Arcadia.App.ViewModels;
 /// <summary>What <see cref="GameActions"/> needs from the window around it; it knows no pages (#155).</summary>
 public interface IGameActionsOwner
 {
-    /// <summary>True when the Steam Controller mode matters (option on, Steam Controller connected).</summary>
+    /// <summary>True when the Steam Controller mode matters: a Steam Controller is connected.</summary>
     bool ShowControllerMode { get; }
+
+    /// <summary>usbip and VIIPER are there; without them a game can't get Arcadia's pad, so the mode is "Steam-Eingabe" (#213).</summary>
+    bool SteamControllerDriverReady { get; }
+
+    /// <summary>Right before a game starts (it is already starting): the Steam Controller takes the game's mode (#213).</summary>
+    Task BeforeGameStartsAsync(CancellationToken cancellationToken);
 
     /// <summary>True when games show their "Individueller Mausmodus".</summary>
     bool ShowGameMouseMode { get; }
@@ -213,11 +219,11 @@ public sealed class GameActions : IGameActionHost
         _owner.RunStatesChanged();
         var progress = new Progress<LaunchStage>(stage => OnLaunchStage(tile, stage));
 
-        // Games that use Steam Input themselves would get every input twice while SISR runs.
+        // A game on "Steam-Eingabe" must find neither Arcadia's pad nor Steam kept from the Steam Controller.
         var result = await _launcher.TryStartAsync(tile.Game, async token =>
         {
             _launchedGames.Starting(tile.Game.Key, await Task.Run(ProcessWatch.RunningProcessIds, token));
-            await _controllerSupport.BeginGameAsync(tile.Game, token);
+            await _owner.BeforeGameStartsAsync(token);
         }, progress);
         if (result.Outcome != LaunchOutcome.Requested)
         {
@@ -338,10 +344,13 @@ public sealed class GameActions : IGameActionHost
         }
     }
 
+    /// <summary>"Arcadia" or "Steam-Eingabe"; without the driver always "Steam-Eingabe", as that is what the game gets.</summary>
     public string ControllerModeOf(Game game) =>
-        _controllerSupport.Settings.ControllerSupportFor(game) ? ControllerModes.Sisr : ControllerModes.Steam;
+        _owner.SteamControllerDriverReady && _settings.Current.UsesArcadiaPad(game.Key) ? ControllerModes.Arcadia : ControllerModes.Steam;
 
     bool IGameActionHost.ShowControllerMode => _owner.ShowControllerMode;
+
+    bool IGameActionHost.CanChooseControllerMode => _owner.SteamControllerDriverReady;
 
     void IGameActionHost.Play(GameTileViewModel tile) => Start(tile);
 
@@ -351,7 +360,7 @@ public sealed class GameActions : IGameActionHost
         HandOver(tile, tile.Game.OpenInLauncher, $"{tile.LauncherName} wird geöffnet …", $"Demo-Spiel: Hier würde jetzt {tile.LauncherName} geöffnet.");
 
     void IGameActionHost.ToggleControllerMode(GameTileViewModel tile) =>
-        _controllerSupport.SetModeFor(tile.Game, !_controllerSupport.Settings.ControllerSupportFor(tile.Game));
+        _controllerSupport.SetModeFor(tile.Game, !_settings.Current.UsesArcadiaPad(tile.Game.Key));
 
     void IGameActionHost.Uninstall(GameTileViewModel tile)
     {

@@ -44,6 +44,9 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
 
     private Dictionary<string, Running> _running = new(StringComparer.Ordinal);
 
+    // A copy for other threads, renewed with every change of the two above.
+    private volatile IReadOnlyCollection<string> _active = [];
+
     // Set on the UI thread, taken over by the next poll on the thread pool, where ProcessGames is used.
     private volatile GameFolders? _newFolders;
     private bool _polling;
@@ -60,6 +63,12 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         : _starting.TryGetValue(gameKey, out var start) ? new RunState(RunPhase.Starting, start.AskedAt)
         : null;
 
+    /// <summary>
+    /// The keys of the games that run or are being started, from any thread: which Steam Controller mode applies (#213)
+    /// is decided off the UI thread.
+    /// </summary>
+    public IReadOnlyCollection<string> ActiveGames => _active;
+
     /// <summary>The games started from Arcadia that haven't ended; an update restart hands them to the next Arcadia.</summary>
     public IReadOnlyCollection<string> StartedFromArcadia => [.. _starting.Keys.Union(_startedFromArcadia)];
 
@@ -75,10 +84,15 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
     {
         var now = time.GetUtcNow();
         _starting[gameKey] = new Start(now, now);
+        UpdateActive();
     }
 
     /// <summary>The start failed or was refused; the game shows "Spielen" again.</summary>
-    public void StartFailed(string gameKey) => _starting.Remove(gameKey);
+    public void StartFailed(string gameKey)
+    {
+        _starting.Remove(gameKey);
+        UpdateActive();
+    }
 
     /// <summary>
     /// After an update restart: the Arcadia before started <paramref name="gameKey"/>. It counts as started from Arcadia
@@ -191,8 +205,11 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         // A game whose launcher was switched off would be awaited for ever.
         _startedFromArcadia.RemoveWhere(key => !enabled.Contains(LauncherIdOf(key)));
         _running = running;
+        UpdateActive();
         return new RunningChanges(changed, ended);
     }
+
+    private void UpdateActive() => _active = _running.Keys.Union(_starting.Keys, StringComparer.Ordinal).ToList();
 
     private HashSet<string> FallbackLaunchers(IEnumerable<ILauncherIntegration>? enabled = null) =>
         (enabled ?? launchers.Enabled).Where(i => i.RunningGames is null).Select(i => i.Launcher.Id).ToHashSet(StringComparer.Ordinal);

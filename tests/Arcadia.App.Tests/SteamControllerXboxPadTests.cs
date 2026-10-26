@@ -23,7 +23,7 @@ public sealed class SteamControllerXboxPadTests
         var steamController = arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.StartControllers();
         arcadia.IsArcadiaInFront = false;
-        await arcadia.XboxPad.TickAsync();
+        await arcadia.TickSteamControllerAsync();
         return (arcadia, steamController);
     }
 
@@ -115,12 +115,12 @@ public sealed class SteamControllerXboxPadTests
         var xbox = arcadia.Sdl.Plug(KnownPads.XboxSeries);
         arcadia.StartControllers();
         arcadia.IsArcadiaInFront = false;
-        await arcadia.XboxPad.TickAsync();
+        await arcadia.TickSteamControllerAsync();
         Assert.Equal(0, arcadia.XboxPads.Plugged);
 
         var steamController = arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.PollControllers();
-        await arcadia.XboxPad.TickAsync();
+        await arcadia.TickSteamControllerAsync();
         arcadia.Sdl.Hold(xbox, B.South);
         arcadia.PollControllers();
         arcadia.Sdl.Hold(steamController, B.North);
@@ -140,12 +140,12 @@ public sealed class SteamControllerXboxPadTests
 
         arcadia.Sdl.Unplug(steamController);
         arcadia.PollControllers();
-        await arcadia.XboxPad.TickAsync();
+        await arcadia.TickSteamControllerAsync();
         Assert.False(arcadia.XboxPad.IsPlugged);
 
         arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.PollControllers();
-        await arcadia.XboxPad.TickAsync();
+        await arcadia.TickSteamControllerAsync();
         Assert.True(arcadia.XboxPad.IsPlugged);
         Assert.Equal(2, arcadia.XboxPads.Plugged);
         Assert.Equal(SisrState.Off, arcadia.ControllerSupport.State);
@@ -162,7 +162,7 @@ public sealed class SteamControllerXboxPadTests
         for (var i = 0; i <= SteamControllerXboxPad.MaxReplugsPerWindow; i++)
         {
             arcadia.XboxPads.Current!.Lose();
-            await arcadia.XboxPad.TickAsync();
+            await arcadia.TickSteamControllerAsync();
         }
 
         Assert.Equal(SteamControllerXboxPad.MaxReplugsPerWindow + 1, arcadia.XboxPads.Plugged);
@@ -220,7 +220,7 @@ public sealed class SteamControllerXboxPadTests
         arcadia.PollControllers();
 
         await pad.WaitForAsync(state => state == XboxPadState.Neutral);
-        await arcadia.XboxPad.TickAsync();
+        await arcadia.TickSteamControllerAsync();
         Assert.False(arcadia.XboxPad.IsPlugged);
     }
 }

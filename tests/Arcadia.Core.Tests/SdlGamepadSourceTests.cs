@@ -257,8 +257,10 @@ public sealed class SdlGamepadSourceTests : IDisposable
         _sdl.ReadError = new InvalidOperationException("SDL broke");
 
         _source.Start();
-        await WaitUntil(() => _sdl.IsQuit);
+        // The error is reported last, after SDL is closed: waiting for IsQuit alone can look before the report.
+        await WaitUntil(() => { lock (_failures) { return _failures.Count > 0; } });
 
+        Assert.True(_sdl.IsQuit);
         lock (_failures)
         {
             Assert.Equal("SDL broke", Assert.Single(_failures).Message);

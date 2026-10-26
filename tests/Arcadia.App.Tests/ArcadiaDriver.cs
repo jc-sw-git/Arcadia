@@ -49,6 +49,7 @@ internal sealed class ArcadiaDriver : IDisposable
     private readonly List<LaunchTarget> _opened;
     private readonly GamepadRouting _gamepad;
     private readonly SdlGamepadSource _controllers;
+    private readonly RunningGamesTracker _running;
 
     static ArcadiaDriver()
     {
@@ -93,9 +94,9 @@ internal sealed class ArcadiaDriver : IDisposable
         var registry = new LauncherRegistry(integrations, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
         ControllerSupport = (steam, files?.ControllerSupport) switch
         {
-            ({ } fake, _) => new ControllerSupportService(Settings, fake.Sisr, _http, time, fake) { Log = AppLog.Write },
-            (_, { } steamPc) => new ControllerSupportService(Settings, steamPc.Sisr, _http, time, steamPc) { Log = AppLog.Write },
-            _ => new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform()) { Log = AppLog.Write },
+            ({ } fake, _) => new ControllerSupportService(Settings, fake.Sisr, _http, time, fake) { Log = AppLog.Write, StartsSisr = arguments.Sisr },
+            (_, { } steamPc) => new ControllerSupportService(Settings, steamPc.Sisr, _http, time, steamPc) { Log = AppLog.Write, StartsSisr = arguments.Sisr },
+            _ => new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform()) { Log = AppLog.Write, StartsSisr = arguments.Sisr },
         };
         Updates = releases is null ? new ArcadiaUpdateService(_http, time) : new ArcadiaUpdateService(_http, time, releases.Manager(folder));
         Updates.Log = AppLog.Write;
@@ -123,7 +124,13 @@ internal sealed class ArcadiaDriver : IDisposable
         // The controllers as the App reads them (#72), through SDL as the test sets it up.
         _controllers = ControllerInput.Create(Sdl, Main, new DeviceTreeEmulatedPads(() => [.. XusbDevices], AppLog.Write));
         _controllers.Polled += _gamepad.Tick;
-        XboxPad = SteamControllerForGames.Create(XboxPads, Settings, ControllerSupport, () => IsArcadiaInFront, () => IsMouseModeOn, Main.Toast, time);
+        _running = running;
+        ForGames = SteamControllerForGames.Create(XboxPads, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, Main.Toast, time);
+        XboxPad = ForGames.Pad;
+        Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
+        ForGames.Routing.DriverChanged += () => Dispatcher.UIThread.Post(() => Main.SetSteamControllerDriverReady(ForGames.Routing.DriverReady));
+        ForGames.Routing.Update();
+        Main.SetSteamControllerDriverReady(ForGames.Routing.DriverReady);
         _controllers.Polled += XboxPad.Feed;
         _controllers.Lost += XboxPad.Drop;
         _controllers.ButtonPressed += _gamepad.Press;
@@ -136,8 +143,28 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>The virtual Xbox pads VIIPER would plug in for games (#213).</summary>
     public FakeVirtualXboxPads XboxPads { get; } = new();
 
-    /// <summary>The Steam Controller as an Xbox pad for games; the App ticks it every 2 s, a test with <see cref="SteamControllerXboxPad.TickAsync"/>.</summary>
+    /// <summary>The Steam Controller as an Xbox pad for games; the App ticks it every 2 s, a test with <see cref="TickSteamControllerAsync"/>.</summary>
     public SteamControllerXboxPad XboxPad { get; }
+
+    /// <summary>The pad and where the Steam Controller goes in games (#213).</summary>
+    public SteamControllerForGames ForGames { get; }
+
+    /// <summary>Steam's <c>RunningAppID</c>: a Steam game started directly in Steam (#119).</summary>
+    public int? RunningSteamAppId { get; set; }
+
+    /// <summary>The App's 2 s tick of the Steam Controller for games: the mode of the running games, then the pad.</summary>
+    public async Task TickSteamControllerAsync()
+    {
+        await ForGames.TickAsync();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>Asks the launchers which games run, as the App's 2 s timer does.</summary>
+    public async Task PollRunningGamesAsync()
+    {
+        await Main.PollRunningGamesAsync();
+        Dispatcher.UIThread.RunJobs();
+    }
 
     /// <summary>SDL3 with the controllers a test plugs in; read only after <see cref="StartControllers"/>.</summary>
     public FakeSdlGamepads Sdl { get; } = new();
@@ -245,7 +272,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <paramref name="files"/> instead of the PC's, and waits until the library shows. Without <paramref name="settings"/>,
     /// the launchers the test installed are already chosen.
     /// </summary>
-    public static async Task<ArcadiaDriver> StartWithLaunchersAsync(Fixtures.LauncherFiles files, AppSettings? settings = null)
+    public static async Task<ArcadiaDriver> StartWithLaunchersAsync(Fixtures.LauncherFiles files, AppSettings? settings = null, StartArguments arguments = default)
     {
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
         new SettingsStore(Path.Combine(folder, "settings.json")).Save(settings ?? new AppSettings
@@ -255,7 +282,7 @@ internal sealed class ArcadiaDriver : IDisposable
                 .Select(launcher => launcher.Item1)
                 .ToList(),
         });
-        var driver = new ArcadiaDriver(folder, ownsFolder: true, [], new FakeTimeProvider(Now), new RecordedStarts(), new LauncherInstalls(), steam: null, releases: null, arguments: default, files);
+        var driver = new ArcadiaDriver(folder, ownsFolder: true, [], new FakeTimeProvider(Now), new RecordedStarts(), new LauncherInstalls(), steam: null, releases: null, arguments, files);
         await driver.LoadAsync();
         return driver;
     }
@@ -263,6 +290,8 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>Arcadia closed and started again on the same settings, as the user does after a change.</summary>
     public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null, StartArguments arguments = default)
     {
+        // A test of SISR keeps it across the restart.
+        arguments = arguments with { Sisr = arguments.Sisr || ControllerSupport.StartsSisr };
         var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases, arguments, _files, _opened);
         await restarted.LoadAsync();
         return restarted;
@@ -524,7 +553,8 @@ internal sealed class ArcadiaDriver : IDisposable
 }
 
 /// <summary>The command line's switches that change what Arcadia shows at the start: <c>--demo</c> and <c>--first-run</c>.</summary>
-internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false);
+/// <param name="Sisr">SISR started as before #213 part B, for its tests until #214 removes it; the App no longer starts it.</param>
+internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false, bool Sisr = false);
 
 /// <summary>
 /// A launcher of the test: <paramref name="Games"/> games of the demo library, or exactly <paramref name="Library"/> where

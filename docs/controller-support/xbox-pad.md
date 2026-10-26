@@ -1,8 +1,10 @@
 # The Steam Controller as an Xbox pad for games (#213)
 
-Part A of #213 (owner, 2026-10-26: split in two PRs into `feat/replace-sisr`): the pad itself. Part B adds Steam's layout
-(forcing an empty one on Arcadia's marker, releasing it) and the per-game mode "Arcadia" / "Steam-Eingabe". Overview and
-the other files: [README](README.md); what the spike saw: [steam-input-helper.md](steam-input-helper.md).
+Part A of #213 (owner, 2026-10-26: split in two PRs into `feat/replace-sisr`): the pad itself. Part B: the per-game mode
+"Arcadia" / "Steam-Eingabe" and SISR no longer started; keeping Steam away from the controller is story #242 (owner, 2026-10-26,
+after spike #239): HidHide hides the real controller from Steam and an emulated copy goes silent while Arcadia serves it;
+no empty layout forced on a marker, no focus bounce. Overview and the other files:
+[README](README.md); what the spike saw: [steam-input-helper.md](steam-input-helper.md).
 
 ## How it works
 
@@ -16,8 +18,7 @@ the other files: [README](README.md); what the spike saw: [steam-input-helper.md
 - While Arcadia is in front or the mouse mode is on, the pad reports rest (`ForwardingAllowed`); the combo filter keeps
   running, so a combo begun in Arcadia stays Arcadia's.
 - `TickAsync` (every 2 s, `App`) plugs the pad in while a Steam Controller is connected and `Wanted` holds, and out
-  otherwise: a game never sees an idle extra pad. Until part B, `Wanted` = SISR is off (`SisrState.Off`), so the two
-  never run together.
+  otherwise: a game never sees an idle extra pad. `Wanted` comes from `SteamControllerRouting` (below).
 - `ViiperXboxPads` runs `viiper.exe server --no-tray` from SISR's folder (`%LOCALAPPDATA%\SISR`, until #214 brings its
   own) as its own process, log `viiper.log` beside `arcadia.log`, API `localhost:3242`, and drives it with VIIPER's MIT
   client `Viiper.Client` 0.9.0: one bus, one `xbox360` device per plug. A VIIPER that already answers on the port (another
@@ -34,7 +35,27 @@ the other files: [README](README.md); what the spike saw: [steam-input-helper.md
 - Unplugging logs the delay from an SDL poll to the state being with VIIPER (mean and maximum). The SDL poll itself adds
   up to 8 ms before that.
 
+## Per-game mode (part B)
+
+- `SteamControllerRouting.Decide` (ControllerSupport) takes the running games: `RunningGamesTracker.ActiveGames` (started
+  from Arcadia, also while "Wird gestartet …", or seen in their launcher) plus Steam's `RunningAppID` as `steam:<id>`, so
+  a Steam game started directly in Steam counts even when it isn't in the library (#119). The mode is
+  `AppSettings.UsesArcadiaPad(key)`: the stored choice, else Steam-Eingabe for Steam games and Arcadia for all others.
+- Any running game on Steam-Eingabe: no pad, Steam may use the controller. Without the driver (`IVirtualXboxPads.Unavailable`:
+  VIIPER or usbip missing) no game gets the pad, and Steam may use it while any game runs. Otherwise the pad is in and
+  Steam is kept away (`ISteamControllerHold`, a no-op until #242: `Apply(false)` = the copy reports
+  only rest, `Apply(true)` = it forwards again, without Arcadia's combos).
+- Right before a game starts (`GameActions`, after "Wird gestartet …" is set) the App decides again and unplugs at once
+  (`TickNowAsync`, 3 s at most), so a game on Steam-Eingabe never finds Arcadia's pad. Its end brings the pad back at
+  the next 2 s tick.
+- SISR is no longer started (`ControllerSupportService.StartsSisr = false` in the App): its switch, pauses and health
+  stay idle, a SISR left running is stopped at the start (before Arcadia's own VIIPER, as stopping it cleans up SISR's
+  VIIPER). Its install still brings `viiper.exe` and usbip until #214.
+
 ## Not seen yet (owner's PC)
 
+- Where Steam keeps the layout of a non-Steam shortcut such as SISR's marker: not in
+  `steamapps\common\Steam Controller Configs\<account>\config\configset_controller_triton.vdf` (empty on the owner's
+  PC, 2026-10-26); `controller_base\empty.vdf` is Steam's empty template ("Empty Bindings - Use as Base").
 - Everything with the real VIIPER: plug-in time, the delay figures, a game seeing exactly one Xbox controller, rumble
   (not forwarded yet; VIIPER reports it as `Xbox360Output`).

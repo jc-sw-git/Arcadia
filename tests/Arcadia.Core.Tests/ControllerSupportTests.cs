@@ -24,6 +24,19 @@ public class ControllerSupportTests
     }
 
     [Fact]
+    public void The_mode_per_game_needs_no_switch_and_is_read_by_key_also_for_games_outside_the_library()
+    {
+        var settings = new AppSettings { SteamControllerSupport = false };
+
+        Assert.True(settings.UsesArcadiaPad("epic:x"));
+        Assert.False(settings.UsesArcadiaPad("steam:570"));
+
+        settings = settings.WithControllerSupportChoice(G("steam"), useSisr: true);
+        Assert.True(settings.UsesArcadiaPad("steam:x"));
+        Assert.False(settings.UsesArcadiaPad("steam:570"));
+    }
+
+    [Fact]
     public void By_default_SISR_runs_for_everything_but_steam_games()
     {
         var settings = new AppSettings { SteamControllerSupport = true };

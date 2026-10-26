@@ -114,7 +114,7 @@ public sealed class SettingsViewTests
     [Trait("TestCase", "T15-4")]
     public async Task In_Controller_the_D_pad_walks_the_rows_with_their_headings_in_view_values_change_at_once_Aus_dims_and_all_stays_after_a_restart()
     {
-        using var first = await ArcadiaWindow.ShowAsync(steam: new FakeSteam());
+        using var first = await ArcadiaWindow.ShowAsync(steam: new FakeSteam(), arguments: new StartArguments(Sisr: true));
         var main = first.Arcadia.Main;
         first.Press(UiAction.Settings).Press(UiAction.NextTab);
         var settings = main.Settings!;
@@ -376,22 +376,19 @@ public sealed class SettingsViewTests
     [Trait("TestCase", "T92-3")]
     public async Task A_click_on_the_mode_in_the_preview_switches_it_and_back_to_the_start_value_nothing_is_saved()
     {
-        var steam = new FakeSteam { IsSteamRunning = true };
         using var arcadia = await ArcadiaWindow.ShowAsync(
             [new LauncherSpec(KnownLaunchers.Steam, 3), new LauncherSpec(KnownLaunchers.Gog, 3)],
-            new AppSettings { ActiveLaunchers = ["steam", "gog"], SteamControllerSupport = true },
-            steam: steam);
-        await arcadia.Arcadia.TickControllerSupportAsync();
-        await arcadia.Arcadia.WaitOnClockUntilAsync(() => arcadia.Arcadia.ControllerSupport.State == SisrState.Running, "SISR läuft", TimeSpan.FromSeconds(10));
-        await arcadia.Arcadia.TickControllerSupportAsync();
-        await arcadia.Arcadia.WaitUntilAsync(() => arcadia.Arcadia.Main.ShowControllerSupport, "der Steam Controller ist erkannt");
+            new AppSettings { ActiveLaunchers = ["steam", "gog"] });
+        arcadia.Arcadia.Sdl.Plug(Arcadia.Tests.Sdl.KnownPads.SteamController);
+        arcadia.Arcadia.StartControllers();
+        Assert.True(arcadia.Arcadia.Main.ShowControllerSupport, "der Steam Controller ist erkannt");
         arcadia.Settle();
 
         var mode = Assert.Single(arcadia.Window.GetVisualDescendants().OfType<Button>(), button => button.Classes.Contains("modeValue") && button.IsEffectivelyVisible
             && button.Command == arcadia.Arcadia.Main.CycleControllerSupportCommand);
         Assert.Equal(ControllerModes.Steam, Text(mode));
         arcadia.Click(mode);
-        Assert.Equal(ControllerModes.Sisr, Text(mode));
+        Assert.Equal(ControllerModes.Arcadia, Text(mode));
         Assert.Single(arcadia.Arcadia.Settings.Current.ControllerSupportOverrides);
         arcadia.Click(mode);
         Assert.Equal(ControllerModes.Steam, Text(mode));

@@ -254,5 +254,5 @@ public static class ControllerModes
     public const string Steam = "Steam-Eingabe";
 
     /// <summary>Why "Arcadia" can't be chosen; until #214 brings its own setup, SISR's install brings both.</summary>
-    public const string NeedsDriver = "„Arcadia“ braucht den usbip-Treiber und VIIPER – „SISR installieren“ richtet beide ein";
+    public const string NeedsDriver = "„Arcadia“ braucht den usbip-Treiber, VIIPER und den Wächterdienst Pan – „Treiber installieren“ in den Controller-Einstellungen richtet alles ein";
 }

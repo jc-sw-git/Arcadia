@@ -94,9 +94,9 @@ public sealed class SteamControllerXboxPadTests
         var pad = arcadia.XboxPads.Current!;
 
         arcadia.IsArcadiaInFront = true;
-        var first = arcadia.Main.FocusedGame!.Game;
+        var first = arcadia.Main.Library.FocusedGame!.Game;
         arcadia.PressOn(steamController, B.DPadRight);
-        Assert.NotSame(first, arcadia.Main.FocusedGame!.Game);
+        Assert.NotSame(first, arcadia.Main.Library.FocusedGame!.Game);
 
         arcadia.IsArcadiaInFront = false;
         arcadia.IsMouseModeOn = true;

@@ -3,6 +3,7 @@ using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.App.Views;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
@@ -56,6 +57,10 @@ public partial class App : Application
     private const string StartedGameArgument = "--started-game";
 
     private IGamepadSource? _gamepad;
+
+    /// <summary>Pan fell back to its previous journal or started empty (#243); its log says what was wrong.</summary>
+
+    private const string PanJournalText = "Pan konnte sein Journal nicht lesen – Details stehen in pan.log unter %ProgramData%\\Arcadia\\Pan";
 
     public override void Initialize()
     {
@@ -136,7 +141,8 @@ public partial class App : Application
                 settings,
                 new LauncherLogos(settings, LauncherLogos.DefaultFolder),
                 firstRun,
-                time);
+                time,
+                new InstallFolderCheck(Directory.Exists, action => Dispatcher.UIThread.Post(action)));
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
             if (args.Contains("--fullscreen", StringComparer.OrdinalIgnoreCase))
@@ -170,15 +176,19 @@ public partial class App : Application
             var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
             viewModel.Dialogs = new SystemDialogs(window, () => viewModel.UsesController, () => mouseMode);
 
-            var routing = new GamepadRouting(viewModel, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, time);
+            var routing = new GamepadRouting(viewModel, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, time, window.Latency);
             _gamepad.Polled += routing.Tick;
 
             // The Steam Controller as an Xbox pad for games, in the mode of the running games (#213); VIIPER from SISR's
             // folder until #214. Steam games started directly in Steam count too (#119).
             var viiper = new ViiperXboxPads(Path.Combine(sisrHost.InstallDirectory, "viiper.exe"), Core.Diagnostics.LogLocation.Directory, sisrHost.CleanUpViiperAsync, AppLog.Write);
+            // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
+            var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write) : new NoPanTransport(), time, AppLog.Write);
+            pan.JournalProblem += () => Dispatcher.UIThread.Post(() => viewModel.Toast.Show(PanJournalText));
             var steamPlatform = new ControllerSupportPlatform();
             var forGames = SteamControllerForGames.Create(
-                viiper, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, viewModel.Toast, time);
+                viiper, pan, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, viewModel.Toast, time);
+            pan.Start();
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;
             forGames.Routing.DriverChanged += () => Dispatcher.UIThread.Post(() => viewModel.SetSteamControllerDriverReady(forGames.Routing.DriverReady));
@@ -202,9 +212,9 @@ public partial class App : Application
 
             // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
             // watch, rescan until the games it handed over are installed.
-            var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.PollInstallsAsync, "Installationen verfolgen"));
+            var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.PollInstallsAsync, "Installationen verfolgen"));
             installProgress.Start();
-            var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.CheckPendingInstallsAsync, "Installationen prüfen"));
+            var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.CheckPendingInstallsAsync, "Installationen prüfen"));
             installs.Start();
             var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, "Update-Prüfung"));
             updateCheck.Start();
@@ -212,10 +222,10 @@ public partial class App : Application
             // Which games run (#95): asked off the UI thread, also in the background (Arcadia may be seen on a second
             // screen); the end of a game Arcadia started brings it back (#94). Coming to the front asks at once.
             var running = new DispatcherTimer(RunningGamesInterval, DispatcherPriority.Background, async (_, _) =>
-                await AppErrors.Guard(viewModel.PollRunningGamesAsync, "Laufende Spiele"));
+                await AppErrors.Guard(viewModel.Session.PollRunningGamesAsync, "Laufende Spiele"));
             running.Start();
-            window.Activated += (_, _) => viewModel.PollRunningGamesAsync().Forget("Laufende Spiele");
-            viewModel.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey).Forget("Nach dem Spiel zurück zu Arcadia");
+            window.Activated += (_, _) => viewModel.Session.PollRunningGamesAsync().Forget("Laufende Spiele");
+            viewModel.Session.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey).Forget("Nach dem Spiel zurück zu Arcadia");
 
             async Task ReturnAfterGameAsync(string gameKey)
             {
@@ -227,7 +237,7 @@ public partial class App : Application
 
                 // The user switched to another program meanwhile: it keeps the front (owner, 2026-10-20).
                 var launcherPrograms = launchers.Find(Game.LauncherIdOf(gameKey))?.ProgramNames ?? [];
-                if (ForegroundGame.InFrontAfter(gameKey, viewModel.GameFolders, launchedGames, launcherPrograms) is var front and not ForegroundAfterGame.Other)
+                if (ForegroundGame.InFrontAfter(gameKey, viewModel.Session.GameFolders, launchedGames, launcherPrograms) is var front and not ForegroundAfterGame.Other)
                 {
                     AppLog.Write($"{gameKey} beendet, vorne: {front} – Arcadia kommt nach vorne");
                     ForegroundGuard.BringBack(window);
@@ -246,10 +256,16 @@ public partial class App : Application
                 await controllerSupport.StopReplacedSisrAsync();
                 await controllerSupport.TickAsync();
                 var route = forGames.Routing.Update();
+                var panUpdate = new PanUpdateOffer(controllerSupport, viewModel);
+                var panUpdateDue = panUpdate.IsDue();
                 Dispatcher.UIThread.Post(() =>
                 {
                     viewModel.SetSteamControllerDriverReady(forGames.Routing.DriverReady);
                     xboxPadTick.Start();
+                    if (panUpdateDue)
+                    {
+                        panUpdate.Ask();
+                    }
                 });
                 await xboxPad.TickAsync();
                 AppLog.Write($"Steam Controller in Spielen bereit ({route.Why})");
@@ -266,11 +282,16 @@ public partial class App : Application
                 running.Stop();
                 _gamepad.Dispose();
 
+                // After the polling stopped: closes the open pages and stops the library's delayed rescans.
+                viewModel.Dispose();
+
                 // After the polling stopped: lets go of a mouse button or key the mouse mode still holds.
                 mouseMode.Dispose();
 
                 // The Xbox pad goes also for an update: nothing feeds it while Arcadia restarts, and it comes back then.
+                // Pan hears the planned exit with it, so it has nothing to undo.
                 Task.Run(xboxPad.ShutdownAsync).Wait(TimeSpan.FromSeconds(5));
+                Task.Run(() => pan.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(2));
 
                 // SISR belongs to Arcadia: it goes when Arcadia goes. Run off the UI thread to avoid a deadlock.
                 // Except for an update: Arcadia is back in seconds, and a game keeps its controller meanwhile.
@@ -289,8 +310,8 @@ public partial class App : Application
             // Version and Windows build first: a bug report with only the log must say what it is about.
             AppLog.Write($"Arcadia {updates.CurrentVersion} gestartet ({System.Runtime.InteropServices.RuntimeInformation.OSDescription}, "
                 + $"{(updates.IsInstalled ? "installiert" : "nicht installiert")}): {string.Join(' ', args)}");
-            viewModel.LoadAsync().Forget("Bibliothek laden");
-            viewModel.PollRunningGamesAsync().Forget("Laufende Spiele");
+            viewModel.Session.LoadAsync().Forget("Bibliothek laden");
+            viewModel.Session.PollRunningGamesAsync().Forget("Laufende Spiele");
             updates.CheckIfDueAsync().Forget("Update-Prüfung");
         }
 

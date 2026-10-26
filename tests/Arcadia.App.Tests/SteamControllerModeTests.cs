@@ -49,7 +49,7 @@ public sealed class SteamControllerModeTests
 
         // The game is over (here: never seen running within the start's 2 minutes): the pad comes back.
         arcadia.Time.Advance(RunningGamesTracker.StartTimeout + TimeSpan.FromSeconds(1));
-        await arcadia.PollRunningGamesAsync();
+        await arcadia.FollowRunningGamesAsync();
         await arcadia.TickSteamControllerAsync();
         Assert.Equal(2, arcadia.XboxPads.Plugged);
     }
@@ -101,7 +101,7 @@ public sealed class SteamControllerModeTests
         Assert.True(arcadia.XboxPad.IsPlugged);
 
         // A Steam game of the library, set to "Arcadia" in Arcadia, then started in Steam.
-        Assert.Equal("Dota 2", arcadia.Main.FocusedGame!.Title);
+        Assert.Equal("Dota 2", arcadia.Main.Library.FocusedGame!.Title);
         arcadia.Click(arcadia.Main.CycleControllerSupportCommand);
         Assert.Equal(ControllerModes.Arcadia, arcadia.Main.FocusedControllerSupportText);
         arcadia.RunningSteamAppId = 570;

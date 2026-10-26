@@ -42,6 +42,10 @@ More findings, one file per topic (read only the one you touch):
 | Steam Input without SISR: overlay helper, raw SDL3, VIIPER from C# (spike #112) | [steam-input-helper.md](steam-input-helper.md) |
 | Every controller through SDL3, the Steam Controller raw, SISR's virtual pad told apart (#72, #212) | [sdl-gamepads.md](sdl-gamepads.md) |
 | The Steam Controller as an Xbox pad for games, without SISR: VIIPER, combos, plugging in and out (#213) | [xbox-pad.md](xbox-pad.md) |
+| Hiding the real Steam Controller from Steam and showing it a 1:1 copy: HidHide, puck descriptors, latency (spike #239) | [emulated-steam-controller.md](emulated-steam-controller.md) |
+| Pan, the guardian service: protocol, journal, teardown, setup with one UAC prompt, update, uninstall, `--restore` (#243) | [pan.md](pan.md) |
+| Pan: setup with one UAC prompt, update dialog, uninstall hook, `--restore`, securing the data folder | [pan-setup.md](pan-setup.md) |
+| Pan: known limits and accepted risks (foreign VIIPER ports, late usbip step, unsigned `Pan.exe`) | [pan-risks.md](pan-risks.md) |
 
 ## Setup and naming (#85, #92, 2026-10-16)
 

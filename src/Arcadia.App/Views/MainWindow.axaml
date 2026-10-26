@@ -124,12 +124,12 @@
       <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto" IsVisible="{Binding IsLibraryShown}">
         <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
           <TextBlock Text="{Binding LauncherTabs.SelectedTab?.Name, TargetNullValue=''}" FontSize="34" FontWeight="ExtraBold" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding CountText}" FontSize="18" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,8,0,0" />
+          <TextBlock Text="{Binding Library.CountText}" FontSize="18" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,8,0,0" />
         </StackPanel>
-        <Button Grid.Column="1" Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}" IsVisible="{Binding AreGamesShown}">
+        <Button Grid.Column="1" Classes="plain toolbar" Command="{Binding Library.OpenViewOptionsCommand}" IsVisible="{Binding AreGamesShown}">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <ctl:KeyHint Pad="Y" Keys="V" />
-            <TextBlock Text="{Binding ViewSummary}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Library.ViewSummary}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
       </Grid>
@@ -149,7 +149,7 @@
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="20">
           <TextBlock Text="{Binding Detail?.PositionText, TargetNullValue=''}" FontSize="17" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
-          <Button Classes="plain toolbar" Command="{Binding OpenViewOptionsCommand}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}">
+          <Button Classes="plain toolbar" Command="{Binding Detail?.OpenViewOptionsCommand}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <ctl:KeyHint Pad="Y" Keys="V" />
               <TextBlock Text="{Binding Detail?.SortLabel, TargetNullValue=''}" VerticalAlignment="Center" />
@@ -165,10 +165,10 @@
       <!-- Body: preview panel and cover grid -->
       <Grid Grid.Row="2" ColumnDefinitions="400,*" Margin="80,0,0,0" ColumnSpacing="40" IsVisible="{Binding IsLibraryShown}">
 
-        <Border Classes="preview" Classes.holding="{Binding FocusedGame?.IsHolding, TargetNullValue=False}" Background="{StaticResource Surface}" CornerRadius="16" ClipToBounds="True" Margin="0,18,0,16"
-                IsVisible="{Binding FocusedGame, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <Border Classes="preview" Classes.holding="{Binding Library.FocusedGame?.IsHolding, TargetNullValue=False}" Background="{StaticResource Surface}" CornerRadius="16" ClipToBounds="True" Margin="0,18,0,16"
+                IsVisible="{Binding Library.FocusedGame, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Panel>
-            <Grid RowDefinitions="180,*" DataContext="{Binding FocusedGame}" x:DataType="vm:GameTileViewModel">
+            <Grid RowDefinitions="180,*" DataContext="{Binding Library.FocusedGame}" x:DataType="vm:GameTileViewModel">
               <Panel Background="{Binding CoverBrush}">
                 <TextBlock Text="{Binding Monogram}" FontSize="140" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Opacity="0.55"
                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,20,0" />
@@ -192,7 +192,7 @@
                       </StackPanel>
                     </Viewbox>
                   </Button>
-                  <Button Name="PreviewOptionsButton" Classes="plain secondary" HorizontalAlignment="Stretch" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.OpenMenuCommand}"
+                  <Button Name="PreviewOptionsButton" Classes="plain secondary" HorizontalAlignment="Stretch" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Library.OpenMenuCommand}"
                           ToolTip.Tip="Weitere Aktionen (R oder Rechtsklick auf ein Cover)">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                       <ctl:KeyHint Pad="⧉" Keys="R" />
@@ -292,14 +292,20 @@
 
         <Grid Grid.Column="1" RowDefinitions="*,64" IsVisible="{Binding !IsEmptyTabShown}">
           <ScrollViewer Name="GridScroller" VerticalScrollBarVisibility="Auto" Padding="6,8,70,8">
-            <ItemsControl Name="GameGrid" ItemsSource="{Binding PageGames}" VerticalAlignment="Top">
+            <ItemsControl Name="GameGrid" ItemsSource="{Binding Library.Slots}" VerticalAlignment="Top">
+              <!-- A slot keeps its cover's controls when it shows another game (LibraryViewModel.Slots, #229). -->
+              <ItemsControl.Styles>
+                <Style Selector="ItemsControl#GameGrid > ContentPresenter" x:DataType="vm:TileSlotViewModel">
+                  <Setter Property="IsVisible" Value="{Binding IsShown}" />
+                </Style>
+              </ItemsControl.Styles>
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                   <UniformGrid Columns="8" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:GameTileViewModel">
+              <ItemsControl.Resources>
+                <DataTemplate x:Key="LibraryCover" x:DataType="vm:GameTileViewModel">
                   <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Command="{Binding FocusCommand}"
                           Background="{Binding CoverBrush}" Height="215" ToolTip.Tip="{Binding Title}">
                     <Panel>
@@ -348,6 +354,11 @@
                     </Panel>
                   </Button>
                 </DataTemplate>
+              </ItemsControl.Resources>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:TileSlotViewModel">
+                  <ContentControl Content="{Binding Tile}" ContentTemplate="{StaticResource LibraryCover}" ClipToBounds="False" />
+                </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </ScrollViewer>
@@ -361,10 +372,10 @@
 
           <Panel Grid.Row="1" Margin="0,0,80,0">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Command="{Binding PreviousPageCommand}" ToolTip.Tip="Vorherige Seite (Q, Bild ↑ oder Umschalt+←)">
+              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Command="{Binding Library.PreviousPageCommand}" ToolTip.Tip="Vorherige Seite (Q, Bild ↑ oder Umschalt+←)">
                 <ctl:KeyText Pad="LT" Keys="Q" />
               </Button>
-              <ItemsControl ItemsSource="{Binding PageButtons}" Margin="10,0">
+              <ItemsControl ItemsSource="{Binding Library.PageButtons}" Margin="10,0">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal" Spacing="4" />
@@ -381,22 +392,22 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Command="{Binding NextPageCommand}" ToolTip.Tip="Nächste Seite (E, Bild ↓ oder Umschalt+→)">
+              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Command="{Binding Library.NextPageCommand}" ToolTip.Tip="Nächste Seite (E, Bild ↓ oder Umschalt+→)">
                 <ctl:KeyText Pad="RT" Keys="E" />
               </Button>
             </StackPanel>
-            <TextBlock Text="{Binding RangeText}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="16" Foreground="{StaticResource TextMuted}" />
+            <TextBlock Text="{Binding Library.RangeText}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="16" Foreground="{StaticResource TextMuted}" />
           </Panel>
         </Grid>
 
         <!-- Loading / empty states -->
-        <TextBlock Grid.ColumnSpan="2" IsVisible="{Binding IsLoading}" Text="Bibliothek wird geladen …" FontSize="22"
+        <TextBlock Grid.ColumnSpan="2" IsVisible="{Binding Session.IsLoading}" Text="Bibliothek wird geladen …" FontSize="22"
                    Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" VerticalAlignment="Center" />
         <!-- An active launcher without games, or no longer found, or no launcher active at all (#136): the library says so,
              with the way to the launcher settings. -->
         <Panel Grid.ColumnSpan="2" IsVisible="{Binding IsEmptyTabShown}" Margin="0,0,80,0">
           <Ellipse Width="900" Height="560" Fill="{StaticResource EmptyStateGlow}" IsHitTestVisible="False" />
-          <StackPanel DataContext="{Binding EmptyTab}" x:DataType="vm:EmptyTabViewModel" Spacing="22" MaxWidth="760" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <StackPanel DataContext="{Binding Library.EmptyTab}" x:DataType="vm:EmptyTabViewModel" Spacing="22" MaxWidth="760" HorizontalAlignment="Center" VerticalAlignment="Center">
             <ContentControl Classes="tabEmpty" Content="{Binding}" HorizontalAlignment="Center" />
             <TextBlock Text="{Binding Title}" FontSize="34" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
             <TextBlock Text="{Binding Text}" FontSize="19" LineHeight="28" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" TextAlignment="Center" />
@@ -423,12 +434,12 @@
           <ctl:KeyHint Pad="B" Keys="Esc" Text="Zurück" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsEmptyTabShown}">
-          <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Wechseln" IsVisible="{Binding EmptyTab?.CanRescan, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Wechseln" IsVisible="{Binding Library.EmptyTab?.CanRescan, TargetNullValue=False}" />
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="Auswählen" />
-          <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" IsVisible="{Binding EmptyTab?.HasTab, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" IsVisible="{Binding Library.EmptyTab?.HasTab, TargetNullValue=False}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding AreGamesShown}">
-          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Doppelklick" Text="{Binding FocusedGame?.PrimaryActionText, TargetNullValue='Spielen'}" />
+          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Doppelklick" Text="{Binding Library.FocusedGame?.PrimaryActionText, TargetNullValue='Spielen'}" />
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="halten: Details" />
           <ctl:KeyHint Pad="⧉" Keys="R" Alt="Rechtsklick" Text="Optionen" />
           <ctl:KeyHint Pad="Y" Keys="V" Text="Ansicht" />
@@ -766,12 +777,12 @@
                 <ItemsControl Name="SearchResults" Classes="hits" Classes.grid="{Binding !IsKeyboardOut}" ItemsSource="{Binding Slots}">
                   <!-- A slot keeps its tile's controls when it shows another hit (SearchViewModel.Slots). -->
                   <ItemsControl.Styles>
-                    <Style Selector="ItemsControl#SearchResults > ContentPresenter" x:DataType="search:HitSlotViewModel">
+                    <Style Selector="ItemsControl#SearchResults > ContentPresenter" x:DataType="vm:TileSlotViewModel">
                       <Setter Property="IsVisible" Value="{Binding IsShown}" />
                     </Style>
                   </ItemsControl.Styles>
                   <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="search:HitSlotViewModel">
+                    <DataTemplate x:DataType="vm:TileSlotViewModel">
                       <ContentControl Content="{Binding Tile}" ContentTemplate="{StaticResource SearchHitTile}" ClipToBounds="False" />
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
@@ -1196,7 +1207,7 @@
                                     </Border>
                                     <!-- Not a button of its own: the whole row is the button, so A on the row installs. -->
                                     <Border Classes="rowAction" Classes.locked="{Binding IsLocked}" IsVisible="{Binding IsInstall}">
-                                      <TextBlock Text="SISR installieren" />
+                                      <TextBlock Text="Treiber installieren" />
                                     </Border>
                                   </Panel>
                                 </DataTemplate>

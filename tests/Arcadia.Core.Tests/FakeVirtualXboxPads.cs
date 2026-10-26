@@ -10,6 +10,9 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
     public int Unplugged;
     public bool FailPlug;
     public string? Missing;
+
+    /// <summary>A failed plug leaves the pads unavailable for this reason, as Pan does while its teardown runs.</summary>
+    public string? MissingAfterFailedPlug;
     public bool ShutDown;
 
     /// <summary>Unplugging throws, as removing the device from a VIIPER that doesn't answer would.</summary>
@@ -25,7 +28,8 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
     {
         if (FailPlug)
         {
-            throw new InvalidOperationException("kaputt");
+            Missing ??= MissingAfterFailedPlug;
+            throw new InvalidOperationException(MissingAfterFailedPlug ?? "kaputt");
         }
 
         Plugged++;

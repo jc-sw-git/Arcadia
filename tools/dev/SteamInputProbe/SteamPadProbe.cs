@@ -40,7 +40,7 @@ internal sealed class SteamPadProbe(ProbeOptions options, ProbeLog log)
         var schedule = Task.Run(() => RunScheduleAsync(cancel), cancel);
         try
         {
-            await Task.Delay(TimeSpan.FromSeconds(options.Seconds), cancel);
+            while (!options.ShouldStop(log)) await Task.Delay(100, cancel);
         }
         catch (OperationCanceledException)
         {

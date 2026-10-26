@@ -28,8 +28,9 @@ public sealed class SteamSettingsGroupTests
         var controller = OpenController(arcadia);
 
         var keys = controller.Rows.Select(row => row.Key).ToList();
-        Assert.Equal(["sisr", "steam-desktop-layout", "mouse-mode"], keys.Take(3));
-        Assert.All(controller.Rows.Take(2), row => Assert.Equal("STEAM", row.Group));
+        // "Controller wiederherstellen" (#243) stands below the switch, indented like its problems, while Pan is installed.
+        Assert.Equal(["sisr", "pan-restore", "steam-desktop-layout", "mouse-mode"], keys.Take(4));
+        Assert.All(controller.Rows.Take(3), row => Assert.Equal("STEAM", row.Group));
         Assert.DoesNotContain(controller.Rows, row => row.Group == "STEAM CONTROLLER");
 
         // ▼ walks the rows in this order, ▲ back; B leaves the settings.
@@ -57,7 +58,7 @@ public sealed class SteamSettingsGroupTests
         Assert.Equal(0, layout.Indent);
         Assert.False(layout.IsDimmed);
         var before = arcadia.Settings.Current.IgnoreSteamDesktopLayout;
-        arcadia.Press(UiAction.Down);
+        arcadia.Press(UiAction.Down, times: 2);
         Assert.Same(layout, arcadia.Main.Settings!.FocusedRow);
         arcadia.Press(before ? UiAction.Left : UiAction.Right);
         Assert.NotEqual(before, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
@@ -154,9 +155,10 @@ public sealed class SteamSettingsGroupTests
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:steam-login"), "die Meldung „Steam meldet sich noch an“");
 
         Assert.Equal(RowLamp.Problem, Sisr(controller).Lamp);
-        Assert.Equal(["sisr", "issue:steam-login", "steam-desktop-layout"], controller.Rows.Take(3).Select(row => row.Key));
+        Assert.Equal(["sisr", "issue:steam-login", "pan-restore", "steam-desktop-layout"], controller.Rows.Take(4).Select(row => row.Key));
         Assert.Equal(1, controller.Rows[1].Indent);
-        Assert.Equal(0, controller.Rows[2].Indent);
+        Assert.Equal(1, controller.Rows[2].Indent);
+        Assert.Equal(0, controller.Rows[3].Indent);
     }
 
     [AvaloniaFact]

@@ -2,7 +2,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Diagnostics;
+using Arcadia.Pan;
 using Arcadia.Launchers.Steam;
 using Avalonia;
 using Velopack;
@@ -87,6 +89,35 @@ sealed partial class Program
         if (removeData)
         {
             RemoveData();
+        }
+
+        RemovePan();
+    }
+
+    /// <summary>
+    /// Pan goes with Arcadia, always (#243): it exists for Arcadia alone. One UAC prompt, and only when Pan is there
+    /// (admin rights only where unavoidable); declined, the service stays (harmless: it idles and stops itself) and
+    /// <c>Pan.exe --uninstall</c> removes it by hand. Capped so Velopack's hook limit holds.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private static void RemovePan()
+    {
+        if (!PanSetup.IsBundled || (!PanSetup.IsInstalled && !Directory.Exists(PanPaths.InstallDirectory)))
+        {
+            return;
+        }
+
+        try
+        {
+            using var limit = new CancellationTokenSource(TimeSpan.FromMilliseconds(QuestionsTimeoutMs));
+            if (!PanSetup.UninstallAsync(limit.Token).GetAwaiter().GetResult())
+            {
+                AppLog.Write("Pan bleibt installiert: die Windows-Abfrage wurde abgelehnt");
+            }
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or TimeoutException or OperationCanceledException)
+        {
+            AppLog.Write($"Pan konnte nicht entfernt werden: {ex.Message}");
         }
     }
 

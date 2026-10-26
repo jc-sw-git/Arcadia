@@ -7,9 +7,16 @@
   "overwrite" or repair. Arcadia's own files (settings, logos, Epic play times, logs) are all in `%APPDATA%\Arcadia`
   (`LogLocation`; logs of 0.1.0-rc.1 in `%LOCALAPPDATA%\Arcadia\logs` move there at the next start).
   The `Velopack` package and the `vpk` tool (`.config/dotnet-tools.json`) share one version.
+- `Pack.ps1` also publishes Pan, the guardian service (#243), as Native AOT into `Pan\Pan.exe` beside `Arcadia.exe`
+  (needs Visual Studio's C++ build tools; the CI's Windows runner has them). Pan installs itself to
+  `%ProgramFiles%\Arcadia\Pan` with one UAC prompt ("Treiber installieren"); when an update brings a newer Pan, Arcadia
+  asks once at start ("Pan aktualisieren", one UAC prompt, B asks again next start). `Pan.exe --restore` (settings:
+  "Controller wiederherstellen") gives the controllers back if the service itself hangs. Details:
+  `docs/controller-support/pan.md`.
 - `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Uninstalling asks whether SISR, VIIPER and
   usbip-win2 go too (`ControllerSupportRemoval`) and whether `%APPDATA%\Arcadia` goes too (owner, 2026-10-24); both
-  default to no. Velopack's Update.exe kills the uninstall hook after 60 s (`commands/uninstall.rs` in 1.2.161; its C#
+  default to no. Pan goes without a question, with one UAC prompt (`Pan.exe --uninstall`: stop = teardown, service and
+  folders removed); declined, it stays idle and `Pan.exe --uninstall` by hand removes it. Velopack's Update.exe kills the uninstall hook after 60 s (`commands/uninstall.rs` in 1.2.161; its C#
   docs say 30 s, recheck on updates), so the questions share 40 s and say how long they wait;
   the removal runs the important steps first. The "SISR Marker" goes from every account's `shortcuts.vdf`, with Steam
   closed (up to 8 s) and started again, because Steam rewrites that file from memory on exit (owner, 2026-10-24).

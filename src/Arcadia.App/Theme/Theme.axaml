@@ -350,7 +350,7 @@
   </Style>
 
   <!-- Holding A: a ring along the inner edge of the preview panel fills while the hold runs
-       (MainViewModel.HoldTime - HoldFeedbackDelay = 0.8 s). It fills a little faster, so it is seen
+       (GameActions.HoldTime - HoldFeedbackDelay = 0.8 s). It fills a little faster, so it is seen
        full before the detail page opens. -->
   <Style Selector="ctl|HoldRing">
     <Setter Property="IsVisible" Value="False" />

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Net;
 using Arcadia.ControllerSupport;
+using Arcadia.Pan;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Steam;
@@ -1547,6 +1548,126 @@ public sealed class ControllerSupportServiceTests : IDisposable
         }
     }
 
+    // --- Pan, the guardian service (#243) ---
+
+    [Fact]
+    public async Task A_missing_Pan_keeps_the_setup_from_being_ready_and_the_install_brings_it()
+    {
+        var service = Create(enabled: false);
+        _platform.IsPanReady = false;
+        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
+
+        await service.InstallAsync();
+
+        Assert.Null(service.LastError);
+        Assert.Equal(1, _platform.UsbipInstalls);
+        Assert.True(_platform.IsPanReady);
+        Assert.Equal(ControllerSupportSetup.Ready, service.Setup);
+        Assert.True(service.PanInstalled);
+    }
+
+    [Fact]
+    public async Task With_SISR_replaced_a_missing_Pan_is_a_warning_and_its_fix_installs_the_drivers()
+    {
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        var service = new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, StartsSisr = false };
+        _platform.IsPanReady = false;
+
+        await service.RefreshAsync();
+
+        var issue = Assert.Single(service.Issues);
+        Assert.Equal("pan-missing", issue.Id);
+        Assert.Equal(HealthSeverity.Warning, issue.Severity);
+        Assert.Equal(HealthFix.InstallDrivers, issue.Fix);
+        Assert.False(service.PanInstalled);
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+        await service.RefreshAsync();
+
+        Assert.Null(service.LastError);
+        Assert.Equal(1, _platform.UsbipInstalls);
+        Assert.Empty(service.Issues);
+        Assert.True(service.PanInstalled);
+        Assert.Equal(0, _sisr.Starts);
+    }
+
+    [Fact]
+    public async Task With_SISR_replaced_the_tick_shows_the_driver_warning_while_the_settings_watch()
+    {
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        var service = new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, StartsSisr = false };
+        _platform.IsPanReady = false;
+
+        // The first tick looks once, for the header; closed settings don't look again (registry, service list).
+        await service.TickAsync();
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+
+        _platform.IsPanReady = true;
+        await service.TickAsync();
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+
+        service.WatchSetup = true;
+        await service.TickAsync();
+        Assert.Empty(service.Issues);
+
+        _platform.IsPanReady = false;
+        await service.TickAsync();
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+    }
+
+    [Fact]
+    public async Task A_missing_Pan_is_a_warning_while_the_option_is_off_also_with_SISR_in_place()
+    {
+        // Owner's test 2026-10-26: the header showed nothing while the switch was off, the settings did.
+        var service = Create(enabled: false);
+        _platform.IsPanReady = false;
+
+        await service.RefreshAsync();
+
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+    }
+
+    [Fact]
+    public async Task A_declined_driver_prompt_fails_the_fix_visibly()
+    {
+        var service = Create(enabled: false);
+        _platform.IsPanReady = false;
+        _platform.UsbipInstallDeclined = true;
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Contains("abgelehnt", service.LastError);
+        Assert.Equal(HealthFix.InstallDrivers, service.FailedFix);
+        Assert.False(_platform.IsPanReady);
+
+        service.ClearError();
+        Assert.Null(service.FailedFix);
+    }
+
+    [Fact]
+    public async Task Restoring_the_controllers_runs_Pans_restore()
+    {
+        var service = Create(enabled: false);
+
+        await service.RestoreControllersAsync();
+
+        Assert.Null(service.LastError);
+        Assert.Equal(1, _platform.Restores);
+    }
+
+    [Fact]
+    public async Task A_declined_restore_prompt_is_reported()
+    {
+        var service = Create(enabled: false);
+        _platform.RestoreDeclined = true;
+
+        await service.RestoreControllersAsync();
+
+        Assert.Contains("abgelehnt", service.LastError);
+    }
+
     private sealed class FakePlatform : IControllerSupportPlatform
     {
         public HashSet<string> RunningDirectories { get; } = [];
@@ -1632,7 +1753,13 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public Exception? UsbipInstallError { get; set; }
 
-        public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken)
+        public bool IsPanReady { get; set; } = true;
+
+        public bool IsPanUpdateAvailable { get; set; }
+
+        public int Restores { get; private set; }
+
+        public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
         {
             UsbipInstalls++;
             if (UsbipInstallError is { } error)
@@ -1641,8 +1768,20 @@ public sealed class ControllerSupportServiceTests : IDisposable
             }
 
             IsUsbipReady = !UsbipInstallDeclined;
+            IsPanReady = !UsbipInstallDeclined;
             return Task.FromResult(!UsbipInstallDeclined);
         }
+
+        public bool RestoreDeclined { get; set; }
+
+        public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken)
+        {
+            Restores++;
+            return Task.FromResult(!RestoreDeclined);
+        }
+
+        public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) =>
+            IsPanReady ? [] : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Test", HealthFix.InstallDrivers, "Installieren")];
 
         public void ResetSteamInputLayout() => LayoutResets++;
 

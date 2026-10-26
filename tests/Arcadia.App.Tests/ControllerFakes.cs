@@ -102,11 +102,37 @@ internal sealed class FakeSteam : IControllerSupportPlatform
         }
     }
 
-    public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken)
+    public bool IsPanReady { get; set; } = true;
+
+    /// <summary>This Arcadia bundles a newer Pan than the installed one (#243).</summary>
+    public bool IsPanUpdateAvailable { get; set; }
+
+    /// <summary>How often "Treiber installieren" or the Pan update ran, i.e. asked Windows for administrator rights.</summary>
+    public int DriverInstalls => Volatile.Read(ref _driverInstalls);
+
+    private int _driverInstalls;
+
+    /// <summary>Set, "Installieren" fails with this message (e.g. the bundled Pan.exe is missing).</summary>
+    public string? InstallError { get; set; }
+
+    public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
     {
+        Interlocked.Increment(ref _driverInstalls);
+        if (InstallError is { } error)
+        {
+            throw new InvalidOperationException(error);
+        }
+
         IsUsbipReady = true;
+        IsPanReady = true;
+        IsPanUpdateAvailable = false;
         return Task.FromResult(true);
     }
+
+    public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(true);
+
+    public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) =>
+        IsPanReady ? [] : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Ohne Pan kein Xbox Controller.", HealthFix.InstallDrivers, "Installieren")];
 
     public void ResetSteamInputLayout()
     {

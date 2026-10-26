@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Arcadia.ControllerSupport;
+using Arcadia.Pan;
 
 namespace Arcadia.Core.Tests;
 

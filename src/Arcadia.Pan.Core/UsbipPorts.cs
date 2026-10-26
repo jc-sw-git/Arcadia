@@ -1,11 +1,12 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace Arcadia.ControllerSupport;
+namespace Arcadia.Pan;
 
 /// <summary>
 /// Reads the output of usbip-win2's <c>usbip port</c>, which lists each imported device as a
 /// <c>Port NN:</c> line followed by indented lines, one of them <c>-&gt; usbip://host:port/busid</c>.
+/// Used by Arcadia (SISR's leftovers) and by Pan (the teardown, #243).
 /// </summary>
 public static partial class UsbipPorts
 {

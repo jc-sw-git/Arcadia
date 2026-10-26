@@ -297,6 +297,9 @@ public partial class ActionRowViewModel(string key, string title, Action run) : 
 
     public bool HasAction => ActionText.Length > 0;
 
+    /// <summary>Why the action failed, in place of the subtitle until the next try; null shows the subtitle again.</summary>
+    public void ShowProblem(string? problem) => Problem = problem;
+
     /// <summary>Shown, but not now, e.g. while a search for updates runs.</summary>
     [ObservableProperty]
     public partial bool IsEnabled { get; set; } = true;

@@ -34,6 +34,10 @@ internal sealed class SteamPc : IControllerSupportPlatform
 
     public bool IsUsbipReady => true;
 
+    public bool IsPanReady => true;
+
+    public bool IsPanUpdateAvailable => false;
+
     public bool IsCefDebuggingEnabled => _files.IsCefDebuggingEnabled;
 
     /// <summary>How often Steam was closed for SISR's setup.</summary>
@@ -67,7 +71,11 @@ internal sealed class SteamPc : IControllerSupportPlatform
     /// <summary>The user closed Steam.</summary>
     public void CloseSteam() => IsSteamRunning = false;
 
-    public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(true);
+    public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(true);
+
+    public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(true);
+
+    public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) => [];
 
     public void ResetSteamInputLayout()
     {

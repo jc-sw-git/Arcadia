@@ -1,3 +1,4 @@
+using Arcadia.Pan;
 using Arcadia.ControllerSupport;
 
 namespace Arcadia.Core.Tests;

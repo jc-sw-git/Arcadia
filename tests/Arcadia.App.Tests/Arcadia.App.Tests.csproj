@@ -26,6 +26,7 @@
     <!-- SDL3 as a test sets it up, shared with the unit tests of the gamepad source. -->
     <Compile Include="..\Arcadia.Core.Tests\FakeSdlGamepads.cs" Link="FakeSdlGamepads.cs" />
     <Compile Include="..\Arcadia.Core.Tests\FakeVirtualXboxPads.cs" Link="FakeVirtualXboxPads.cs" />
+    <Compile Include="..\Arcadia.Core.Tests\FakeEmulationGuardian.cs" Link="FakeEmulationGuardian.cs" />
   </ItemGroup>
 
   <ItemGroup>

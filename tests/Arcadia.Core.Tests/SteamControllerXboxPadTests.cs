@@ -133,6 +133,34 @@ public class SteamControllerXboxPadTests
     }
 
     [Fact]
+    public async Task A_plug_in_that_fails_because_the_pads_went_unavailable_is_no_loss()
+    {
+        var gaveUp = new List<string>();
+        _pad.GaveUp += gaveUp.Add;
+        _pads.FailPlug = true;
+        _pads.MissingAfterFailedPlug = "Pan räumt noch auf";
+        _pad.Feed([SteamController]);
+        // Several teardowns in a row, each one failing the plug and leaving Pan "still cleaning up": none is a loss.
+        for (var i = 0; i <= SteamControllerXboxPad.MaxReplugsPerWindow + 1; i++)
+        {
+            _pads.Missing = null;
+            await _pad.TickAsync();
+            Assert.Equal("Pan räumt noch auf", _pads.Missing);
+        }
+
+        Assert.False(_pad.IsPlugged);
+        Assert.Empty(gaveUp);
+        Assert.Contains("Anstecken fehlgeschlagen: Pan räumt noch auf", Log());
+
+        // Pan is done: the pad comes back without a word about losses.
+        _pads.FailPlug = false;
+        _pads.Missing = null;
+        await _pad.TickAsync();
+        Assert.True(_pad.IsPlugged);
+        Assert.Empty(gaveUp);
+    }
+
+    [Fact]
     public async Task Without_VIIPER_or_the_driver_it_says_why_once()
     {
         _pads.Missing = "Treiber usbip nicht geladen";

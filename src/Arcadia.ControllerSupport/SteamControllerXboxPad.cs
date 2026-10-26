@@ -60,6 +60,9 @@ public sealed class SteamControllerXboxPad
     /// <summary>Read on every poll: which of Arcadia's combos are on.</summary>
     public Func<ComboWithholdingOptions> Combos { get; init; } = () => new ComboWithholdingOptions(BackAndStart: true);
 
+    /// <summary>Called on every poll: the thread that feeds the pad is alive (Pan's heartbeat, #243). Must not block.</summary>
+    public Action? FeedAlive { get; init; }
+
     /// <summary>Raised once when the pad was lost too often and Arcadia stops plugging it in (shown as a toast).</summary>
     public event Action<string>? GaveUp;
 
@@ -71,6 +74,7 @@ public sealed class SteamControllerXboxPad
     /// <summary>Every poll of the gamepad source, on its thread. Never throws.</summary>
     public void Feed(IReadOnlyList<GamepadReading> pads)
     {
+        FeedAlive?.Invoke();
         GamepadReading? steamController = null;
         for (var i = 0; i < pads.Count; i++)
         {
@@ -225,6 +229,13 @@ public sealed class SteamControllerXboxPad
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _log($"Xbox-Pad: Anstecken fehlgeschlagen: {ex.Message}");
+            if (_pads.Unavailable() is { } why)
+            {
+                // The pads went unavailable meanwhile (Pan still cleaning up): not VIIPER failing, no loss counted.
+                _lastUnavailable = why;
+                return;
+            }
+
             NoteLoss();
             return;
         }

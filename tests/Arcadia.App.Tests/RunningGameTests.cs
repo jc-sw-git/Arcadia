@@ -57,7 +57,7 @@ public sealed class RunningGameTests
     /// <summary>The running games of the selected tab, page by page; ends on the page it started on.</summary>
     private static IEnumerable<GameTileViewModel> RunningTilesOf(ArcadiaDriver arcadia)
     {
-        var pages = arcadia.Main.PageButtons.Count(button => button.IsPage);
+        var pages = arcadia.Main.Library.PageButtons.Count(button => button.IsPage);
         var running = new List<GameTileViewModel>();
         for (var page = 0; page < Math.Max(pages, 1); page++)
         {

@@ -1,0 +1,15 @@
+diff --git a/internal/server/usb/server.go b/internal/server/usb/server.go
+index b815a2d..54785c7 100644
+--- a/internal/server/usb/server.go
++++ b/internal/server/usb/server.go
+@@ -744,6 +744,10 @@ func (s *Server) handleUrbStream(conn net.Conn, dev usb.Device) error {
+ 			pending[seq] = urbCancel
+ 			pendingMu.Unlock()
+ 			interval := endpointInterval(dev.GetDescriptor(), ep)
++			// Spike #239: a pass-through device sends the real device's reports and must not have the last one repeated.
++			if nr, ok := dev.(interface{ NoInRepeat() bool }); ok && nr.NoInRepeat() {
++				interval = 0
++			}
+ 
+ 			go func(seq, ep, dir uint32) {
+ 				defer urbCancel()

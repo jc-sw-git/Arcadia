@@ -255,7 +255,7 @@ internal sealed class ArcadiaWindow : IDisposable
 
     /// <summary>The cover of <paramref name="tile"/> in the library's grid.</summary>
     public Button Tile(ViewModels.GameTileViewModel tile) =>
-        (Named<ItemsControl>("GameGrid").ContainerFromItem(tile) as Control)?.GetVisualDescendants().OfType<Button>().FirstOrDefault()
+        (Named<ItemsControl>("GameGrid").ContainerFromIndex(((ViewModels.MainViewModel)Window.DataContext!).Library.PageGames.IndexOf(tile)) as Control)?.GetVisualDescendants().OfType<Button>().FirstOrDefault()
         ?? throw new InvalidOperationException($"{tile.Title} steht nicht im Raster.");
 
     /// <summary>

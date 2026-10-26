@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Arcadia.App.Input;
 using Arcadia.App.Search;
+using Arcadia.App.Services;
 using Arcadia.App.Settings;
 using Arcadia.App.ViewModels;
 using Avalonia;
@@ -72,6 +73,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Latency = InputLatency.For(this);
 
         // Tunnel so arrow keys and Enter reach us before Avalonia's own focus navigation.
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
@@ -121,7 +123,7 @@ public partial class MainWindow : Window
         {
             if (_viewModel is not null)
             {
-                await _viewModel.RefreshLibraryAsync();
+                await _viewModel.Session.RefreshLibraryAsync();
             }
         };
     }
@@ -155,6 +157,7 @@ public partial class MainWindow : Window
         {
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             _viewModel.LauncherTabs.PropertyChanged -= OnTabsPropertyChanged;
+            _viewModel.Library.PropertyChanged -= OnLibraryPropertyChanged;
         }
 
         _viewModel = DataContext as MainViewModel;
@@ -162,11 +165,16 @@ public partial class MainWindow : Window
         {
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             _viewModel.LauncherTabs.PropertyChanged += OnTabsPropertyChanged;
+            _viewModel.Library.PropertyChanged += OnLibraryPropertyChanged;
         }
     }
 
+    /// <summary>Measures every press in this window, key or button, to the frame that shows it (#229).</summary>
+    public InputLatency Latency { get; }
+
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
+        var pressedAt = InputLatency.Now();
         _viewModel?.NoteKeyboard();
         if (e.Key == Key.F11)
         {
@@ -190,7 +198,7 @@ public partial class MainWindow : Window
         if (_viewModel is { IsSearchShown: false } && UiActionMap.TabNumber(e.Key, e.KeyModifiers) is { } tab)
         {
             Services.AppLog.Write($"Taste: {e.Key} → Launcher {tab + 1}");
-            _viewModel.ChooseTabNumber(tab);
+            Latency.Measure($"Launcher {tab + 1}", pressedAt, () => _viewModel.ChooseTabNumber(tab));
             e.Handled = true;
             return;
         }
@@ -206,7 +214,8 @@ public partial class MainWindow : Window
             }
 
             Services.AppLog.Write($"Taste: {e.Key} → {action}");
-            _viewModel.Handle(action);
+            var viewModel = _viewModel;
+            Latency.Measure(action.ToString(), pressedAt, () => viewModel.Handle(action));
             e.Handled = true;
         }
     }
@@ -461,14 +470,19 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnLibraryPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(LibraryViewModel.FocusedGame))
+        {
+            // Wait for the grid to realize the new page before scrolling to the tile.
+            Dispatcher.UIThread.Post(BringFocusedTileIntoView, DispatcherPriority.Loaded);
+        }
+    }
+
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
         {
-            case nameof(MainViewModel.FocusedGame):
-                // Wait for the grid to realize the new page before scrolling to the tile.
-                Dispatcher.UIThread.Post(BringFocusedTileIntoView, DispatcherPriority.Loaded);
-                break;
             case nameof(MainViewModel.GameMenu) when _viewModel?.GameMenu is not null:
                 // Hidden until placed, so it doesn't flash at its default position.
                 GameMenuPanel.Opacity = 0;
@@ -550,12 +564,12 @@ public partial class MainWindow : Window
 
     private void BringFocusedTileIntoView()
     {
-        if (_viewModel?.FocusedGame is not { } tile)
+        if (_viewModel?.Library.FocusedGame is not { } tile)
         {
             return;
         }
 
-        var index = _viewModel.PageGames.IndexOf(tile);
+        var index = _viewModel.Library.PageGames.IndexOf(tile);
         if (index == 0)
         {
             GridScroller.Offset = default;
@@ -687,6 +701,6 @@ public partial class MainWindow : Window
             return SearchResults.ContainerFromIndex(searching.Search!.SlotOf(hit));
         }
 
-        return _viewModel?.FocusedGame is { } tile ? GameGrid.ContainerFromIndex(_viewModel.PageGames.IndexOf(tile)) : null;
+        return _viewModel?.Library.FocusedGame is { } tile ? GameGrid.ContainerFromIndex(_viewModel.Library.PageGames.IndexOf(tile)) : null;
     }
 }

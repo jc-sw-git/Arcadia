@@ -77,6 +77,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     private readonly ControllerSupportService _support;
     private readonly SisrRowViewModel _sisr;
+    private readonly ActionRowViewModel _restore;
     private readonly ActionRowViewModel _update;
     private readonly MouseModeRows _mouseMode;
     private readonly ReturnWithViewRows _returnWithView;
@@ -113,6 +114,18 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             Indent = 1,
             ActionText = "Aktualisieren",
             IsPrimary = true,
+        };
+        _restore = new ActionRowViewModel("pan-restore", "Controller wiederherstellen", () => _support.RestoreControllersAsync().Forget("Controller wiederherstellen"))
+        {
+            Group = SteamGroup,
+            Indent = 1,
+            Subtitle = "Gibt die echten Controller zurück, falls Arcadias Wächterdienst Pan hängt",
+            ActionText = "Wiederherstellen",
+            Info =
+            [
+                new InfoText("Pan, Arcadias Wächterdienst, nimmt den Xbox Controller von Arcadia zurück, wenn Arcadia abstürzt oder hängt. Bleibt trotzdem ein Xbox Controller übrig, den kein Programm mehr sieht, räumt diese Aktion mit Pans Journal auf – mit einer Windows-Abfrage nach Administratorrechten."),
+                new InfoText("Im Normalfall ist das nie nötig."),
+            ],
         };
         _mouseMode = new MouseModeRows(changes);
         _returnWithView = new ReturnWithViewRows(changes);
@@ -543,7 +556,10 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         // VIIPER and the usbip driver for Arcadia's own pad (until #214 rebuilds this row).
         var replaced = !_support.StartsSisr && setup == ControllerSupportSetup.Ready;
         var unavailable = replaced || (!enabled && setup is ControllerSupportSetup.UnsupportedPlatform or ControllerSupportSetup.SteamMissing);
-        var showInstall = !enabled && setup == ControllerSupportSetup.NeedsInstall;
+        // A missing driver or Pan has its own row with "Installieren" below; the switch then stays a switch, so there
+        // is one install button, not two that do the same (owner's test, 2026-10-26).
+        var installsBelow = _support.Issues.Any(i => i.Fix == HealthFix.InstallDrivers);
+        var showInstall = !enabled && setup == ControllerSupportSetup.NeedsInstall && !installsBelow;
         var state = _support.State;
         _sisr.Update(
             unavailable ? SisrRowMode.Unavailable : showInstall ? SisrRowMode.Install : SisrRowMode.Switch,
@@ -560,7 +576,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
         var statusText = (enabled, state == SisrState.Paused, hasProblems) switch
         {
-            (false, _, _) when showInstall => "Nicht eingerichtet – „SISR installieren“ richtet alles Nötige ein und schaltet die Option ein.",
+            (false, _, _) when installsBelow => "Nicht eingerichtet – „Installieren“ bei der Meldung unter der Einstellung richtet die Treiber ein.",
+            (false, _, _) when showInstall => "Nicht eingerichtet – „Treiber installieren“ richtet alles Nötige ein und schaltet die Option ein.",
             (false, _, _) => "Aus – außerhalb von Steam läuft der Steam Controller im Desktop-Modus (Maus und Tastatur).",
             (true, true, true) => "Pausiert – die Meldungen unter der Einstellung sagen, warum.",
             (true, true, _) => "Pausiert – ein Spiel mit „Steam Input“ läuft.",
@@ -586,7 +603,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         [
             new InfoStatus(statusText, healthy, settlingNow),
             .. _support.BusyText is { } busy ? [new InfoText(busy)] : Array.Empty<InfoBlock>(),
-            .. _support.LastError is { } error ? [new InfoError(error)] : Array.Empty<InfoBlock>(),
+            .. _support.LastError is { } error && _support.FailedFix is null ? [new InfoError(error)] : Array.Empty<InfoBlock>(),
         ]);
         var version = new InfoSection("SISR-VERSION",
         [
@@ -606,12 +623,14 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         }
 
         _update.IsEnabled = !IsBusy && !IsSettling;
+        _restore.IsEnabled = !IsBusy && !IsSettling;
 
         SetRows(
         [
             _sisr,
             .. IssueRows(),
             .. hasUpdate ? [_update] : Array.Empty<SettingsRowViewModel>(),
+            .. _support.PanInstalled ? [_restore] : Array.Empty<SettingsRowViewModel>(),
             _steamDesktopLayout,
             .. _mouseMode.Rows,
             .. _returnWithView.Rows,
@@ -680,12 +699,15 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
                 _issueRows[issue.Id] = row;
             }
 
+            // A fix that failed shows its error at the row it belongs to, with the error icon, and how to go on.
+            var failed = _support.FailedFix == issue.Fix ? _support.LastError : null;
             row.Title = issue.Title;
             row.Subtitle = issue.ShortText;
-            row.Severity = issue.Severity;
+            row.ShowProblem(failed);
+            row.Severity = failed is null ? issue.Severity : HealthSeverity.Error;
             row.ActionText = issue.Fix == HealthFix.None ? string.Empty : issue.FixLabel ?? "Beheben";
             row.IsEnabled = !IsBusy && !IsSettling;
-            row.Info = [new InfoText(issue.Detail)];
+            row.Info = failed is null ? [new InfoText(issue.Detail)] : [new InfoText(issue.Detail), new InfoError(failed)];
             rows.Add(row);
         }
 
@@ -766,7 +788,7 @@ public sealed partial class SisrRowViewModel(Action<bool?> activate)
 
     public override bool CanActivate => Mode != SisrRowMode.Unavailable && !IsLocked;
 
-    public override string ActivateText => IsInstall ? "SISR installieren" : "Umschalten";
+    public override string ActivateText => IsInstall ? "Treiber installieren" : "Umschalten";
 
     /// <summary>◀ switches off, ▶ on (or installs first).</summary>
     /// <summary>◀ and ▶ both switch it, like every ◀ ▶ selector (owner, 2026-10-24).</summary>

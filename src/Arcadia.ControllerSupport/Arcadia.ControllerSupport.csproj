@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Arcadia.Core\Arcadia.Core.csproj" />
     <ProjectReference Include="..\Arcadia.Launchers\Arcadia.Launchers.csproj" />
     <ProjectReference Include="..\Arcadia.Input\Arcadia.Input.csproj" />
+    <ProjectReference Include="..\Arcadia.Pan.Core\Arcadia.Pan.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

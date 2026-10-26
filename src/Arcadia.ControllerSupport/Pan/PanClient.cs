@@ -378,6 +378,16 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
                     read += n;
                 }
 
+                lock (_lock)
+                {
+                    if (!ReferenceEquals(_link, link))
+                    {
+                        // A dropped link can still complete a read that was in flight (an anonymous pipe on Windows reads
+                        // synchronously): what it carries belongs to a connection that is over.
+                        return;
+                    }
+                }
+
                 Dispatch(PanMessage.Read(buffer));
             }
         }

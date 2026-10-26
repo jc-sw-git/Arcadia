@@ -38,6 +38,7 @@ More findings, one file per topic (read only the one you touch):
 | Steam's desktop layout and the mouse mode (#64) | [desktop-layout.md](desktop-layout.md) |
 | Steam Input without SISR: overlay helper, raw SDL3, VIIPER from C# (spike #112) | [steam-input-helper.md](steam-input-helper.md) |
 | Every controller through SDL3, the Steam Controller raw, SISR's virtual pad told apart (#72, #212) | [sdl-gamepads.md](sdl-gamepads.md) |
+| The Steam Controller as an Xbox pad for games, without SISR: VIIPER, combos, plugging in and out (#213) | [xbox-pad.md](xbox-pad.md) |
 
 ## Setup and naming (#85, #92, 2026-10-16)
 

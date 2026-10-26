@@ -102,12 +102,15 @@ public static class SdlPadMapping
 
         return new GamepadReading(padId, buttons, Stick(state.LeftX, state.LeftY), Stick(state.RightX, state.RightY))
         {
+            Triggers = new TriggerPosition(Trigger(state.LeftTrigger), Trigger(state.RightTrigger)),
             // SDL's Steam Controller mapping (3.4) clicks the left trackpad as "touchpad" and the right one as "misc2".
             LeftTouchpad = Touch(state.FirstTouchpad, (state.Buttons & SdlPadState.Bit(SdlPadState.Button.Touchpad)) != 0),
             RightTouchpad = Touch(state.SecondTouchpad, (state.Buttons & SdlPadState.Bit(SdlPadState.Button.Misc2)) != 0),
             Motion = state.Motion,
         };
     }
+
+    private static double Trigger(short value) => Math.Clamp(value / 32767.0, 0, 1);
 
     // Arcadia's up is positive, as for the sticks; the touchpad's centre is 0.
     private static TouchpadReading Touch(SdlTouch touch, bool clicked) =>

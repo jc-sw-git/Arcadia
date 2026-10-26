@@ -93,7 +93,8 @@ public partial class App : Application
                 AppLog.Write(problem);
             }
 
-            var controllerSupport = new ControllerSupportService(settings, SisrHost.CreateDefault(http), http, time)
+            var sisrHost = SisrHost.CreateDefault(http);
+            var controllerSupport = new ControllerSupportService(settings, sisrHost, http, time)
             {
                 Log = AppLog.Write,
             };
@@ -169,6 +170,11 @@ public partial class App : Application
 
             var routing = new GamepadRouting(viewModel, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, time);
             _gamepad.Polled += routing.Tick;
+
+            // The Steam Controller as an Xbox pad for games (#213); VIIPER from SISR's folder until #214.
+            var viiper = new ViiperXboxPads(Path.Combine(sisrHost.InstallDirectory, "viiper.exe"), Core.Diagnostics.LogLocation.Directory, sisrHost.CleanUpViiperAsync, AppLog.Write);
+            var xboxPad = SteamControllerForGames.Create(viiper, settings, controllerSupport, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, viewModel.Toast, time);
+            _gamepad.Polled += xboxPad.Feed;
             _gamepad.ButtonPressed += routing.Press;
             _gamepad.ButtonReleased += routing.Release;
             _gamepad.Lost += routing.Drop;
@@ -183,6 +189,8 @@ public partial class App : Application
             // events are posted to the UI thread by their handlers.
             var sisrWatch = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.WatchAsync()), "SISR-Überwachung"));
             sisrWatch.Start();
+            var xboxPadTick = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => xboxPad.TickAsync()), "Xbox-Pad für Spiele"));
+            xboxPadTick.Start();
 
             // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
             // watch, rescan until the games it handed over are installed.
@@ -232,6 +240,7 @@ public partial class App : Application
             {
                 monitoring.Stop();
                 sisrWatch.Stop();
+                xboxPadTick.Stop();
                 installs.Stop();
                 installProgress.Stop();
                 updateCheck.Stop();
@@ -240,6 +249,9 @@ public partial class App : Application
 
                 // After the polling stopped: lets go of a mouse button or key the mouse mode still holds.
                 mouseMode.Dispose();
+
+                // The Xbox pad goes also for an update: nothing feeds it while Arcadia restarts, and it comes back then.
+                Task.Run(xboxPad.ShutdownAsync).Wait(TimeSpan.FromSeconds(5));
 
                 // SISR belongs to Arcadia: it goes when Arcadia goes. Run off the UI thread to avoid a deadlock.
                 // Except for an update: Arcadia is back in seconds, and a game keeps its controller meanwhile.

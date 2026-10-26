@@ -10,6 +10,7 @@ using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Demo;
+using Arcadia.Tests.Pads;
 using Arcadia.Tests.Sdl;
 using Avalonia.Threading;
 using Microsoft.Extensions.Time.Testing;
@@ -122,12 +123,20 @@ internal sealed class ArcadiaDriver : IDisposable
         // The controllers as the App reads them (#72), through SDL as the test sets it up.
         _controllers = ControllerInput.Create(Sdl, Main, new DeviceTreeEmulatedPads(() => [.. XusbDevices], AppLog.Write));
         _controllers.Polled += _gamepad.Tick;
+        XboxPad = SteamControllerForGames.Create(XboxPads, Settings, ControllerSupport, () => IsArcadiaInFront, () => IsMouseModeOn, Main.Toast, time);
+        _controllers.Polled += XboxPad.Feed;
         _controllers.ButtonPressed += _gamepad.Press;
         _controllers.ButtonReleased += _gamepad.Release;
         _controllers.Lost += _gamepad.Drop;
     }
 
     public string Folder { get; }
+
+    /// <summary>The virtual Xbox pads VIIPER would plug in for games (#213).</summary>
+    public FakeVirtualXboxPads XboxPads { get; } = new();
+
+    /// <summary>The Steam Controller as an Xbox pad for games; the App ticks it every 2 s, a test with <see cref="SteamControllerXboxPad.TickAsync"/>.</summary>
+    public SteamControllerXboxPad XboxPad { get; }
 
     /// <summary>SDL3 with the controllers a test plugs in; read only after <see cref="StartControllers"/>.</summary>
     public FakeSdlGamepads Sdl { get; } = new();

@@ -6,6 +6,7 @@
     <Project Path="src/Arcadia.Input/Arcadia.Input.csproj" />
     <Project Path="src/Arcadia.Launchers/Arcadia.Launchers.csproj" />
     <Project Path="src/Arcadia.Launchers.Abstractions/Arcadia.Launchers.Abstractions.csproj" />
+    <Project Path="src/Arcadia.Pan/Arcadia.Pan.csproj" />
     <Project Path="src/Arcadia.Pan.Core/Arcadia.Pan.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">

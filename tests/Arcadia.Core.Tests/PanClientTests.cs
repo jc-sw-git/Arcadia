@@ -11,7 +11,8 @@ namespace Arcadia.Core.Tests;
 /// </summary>
 public sealed class PanClientTests : IAsyncDisposable
 {
-    private static readonly TimeSpan Soon = TimeSpan.FromSeconds(5);
+    // Real time, generous: on the CI runner these tests share the machine with Pan.Tests' `dotnet publish`.
+    private static readonly TimeSpan Soon = TimeSpan.FromSeconds(30);
 
     private readonly FakeTimeProvider _time = new();
     private readonly List<string> _log = [];
@@ -42,7 +43,8 @@ public sealed class PanClientTests : IAsyncDisposable
     private async Task ConnectedAsync()
     {
         _client.Start();
-        await WaitUntil(() => _client.IsConnected, "verbunden");
+        // The clock runs, so a hello that timed out on a loaded runner is retried instead of waiting forever.
+        await AdvanceUntil(() => _client.IsConnected, "verbunden");
     }
 
     /// <summary>Lets the client's clock run in small steps until the condition holds: the sender wakes at its next delay.</summary>

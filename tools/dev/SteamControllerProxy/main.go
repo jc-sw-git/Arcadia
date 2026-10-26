@@ -197,45 +197,61 @@ func run(log *slog.Logger, buttonsPath, descriptorPath, vidPid string, watch boo
 
 // measureHop reads the emulated device's vendor collections, as Steam does, and matches every report with the moment
 // the real device delivered it: that is the whole extra hop (proxy, usbip-win2, Windows' HID stack once more).
+// Windows needs a while to enumerate the emulated device, so it looks again every second for up to a minute.
 func measureHop(ctx context.Context, log *slog.Logger, vidPid string, real map[uint8][]*collection, ifaces map[uint8]*proxyInterface, stats *stats) {
-	time.Sleep(3 * time.Second)
 	known := map[string]bool{}
 	for _, list := range real {
 		for _, c := range list {
 			known[strings.ToLower(c.Path)] = true
 		}
 	}
-	all, err := findCollections(vidPid)
-	if err != nil {
-		log.Warn("hop measurement: list failed", "error", err)
-		return
-	}
-	for _, list := range all {
-		for _, c := range list {
-			if known[strings.ToLower(c.Path)] {
-				continue
-			}
-			pi := ifaces[c.Interface]
-			if err := c.open(); err != nil || pi == nil || c.Caps.UsagePage < 0xFF00 || c.Caps.InputLength == 0 {
-				c.close()
-				continue
-			}
-			log.Info("hop measurement reads", "path", c.Path)
-			go func(c *collection, sizes reportSizes) {
-				defer c.close()
-				buffer := make([]byte, c.Caps.InputLength)
-				for ctx.Err() == nil {
-					n, err := c.read(buffer)
-					if err != nil {
-						log.Warn("hop measurement read stopped", "path", c.Path, "error", err)
-						return
-					}
-					at := qpcNow()
-					stats.arrived(fromWindows(buffer[:n], sizes.UsesIDs, sizes.Input), at)
+	tried := map[string]bool{}
+	reading := 0
+	for attempt := 0; attempt < 60 && ctx.Err() == nil; attempt++ {
+		time.Sleep(time.Second)
+		all, err := findCollections(vidPid)
+		if err != nil {
+			log.Warn("hop measurement: list failed", "error", err)
+			continue
+		}
+		for _, list := range all {
+			for _, c := range list {
+				path := strings.ToLower(c.Path)
+				if known[path] || tried[path] {
+					continue
 				}
-			}(c, pi.sizes)
+				tried[path] = true
+				pi := ifaces[c.Interface]
+				if err := c.open(); err != nil {
+					log.Info("hop measurement: emulated collection not opened", "path", c.Path, "error", err)
+					continue
+				}
+				if pi == nil || c.Caps.UsagePage < 0xFF00 || c.Caps.InputLength == 0 {
+					c.close()
+					continue
+				}
+				log.Info("hop measurement reads", "path", c.Path)
+				reading++
+				go func(c *collection, sizes reportSizes) {
+					defer c.close()
+					buffer := make([]byte, c.Caps.InputLength)
+					for ctx.Err() == nil {
+						n, err := c.read(buffer)
+						if err != nil {
+							log.Warn("hop measurement read stopped", "path", c.Path, "error", err)
+							return
+						}
+						at := qpcNow()
+						stats.arrived(fromWindows(buffer[:n], sizes.UsesIDs, sizes.Input), at)
+					}
+				}(c, pi.sizes)
+			}
+		}
+		if reading >= 4 {
+			return
 		}
 	}
+	log.Warn("hop measurement: emulated vendor collections found", "count", reading, "seen", len(tried))
 }
 
 func wait(ctx context.Context, log *slog.Logger, stop *stopWhen, served <-chan error) error {

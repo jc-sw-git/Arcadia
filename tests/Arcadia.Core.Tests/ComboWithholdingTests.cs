@@ -29,7 +29,7 @@ public class ComboWithholdingTests
     public void Back_and_Start_pressed_together_never_reach_the_game(PadButtons first, PadButtons second)
     {
         Assert.Equal(PadButtons.None, Poll(first));
-        Assert.Equal(PadButtons.A, Poll(first | second | PadButtons.A, afterMs: 150));
+        Assert.Equal(PadButtons.A, Poll(first | second | PadButtons.A, afterMs: 60));
         Assert.Equal(PadButtons.None, Poll(first | second, afterMs: 3000));
         Assert.Equal(PadButtons.None, Poll(second));
         Assert.Equal(PadButtons.None, Poll(PadButtons.None));
@@ -49,7 +49,7 @@ public class ComboWithholdingTests
     public void A_short_press_reaches_the_game_as_a_tap_on_release(PadButtons button)
     {
         Assert.Equal(PadButtons.None, Poll(button));
-        Assert.Equal(PadButtons.None, Poll(button, afterMs: 100));
+        Assert.Equal(PadButtons.None, Poll(button, afterMs: 50));
         Assert.Equal(button, Poll(PadButtons.None));
         Assert.Equal(button, Poll(PadButtons.None, afterMs: 40));
         Assert.Equal(PadButtons.None, Poll(PadButtons.None, afterMs: 20));
@@ -62,7 +62,7 @@ public class ComboWithholdingTests
     public void Held_alone_past_the_combo_window_it_goes_through_as_held(PadButtons button)
     {
         Assert.Equal(PadButtons.None, Poll(button));
-        Assert.Equal(PadButtons.None, Poll(button, afterMs: 200));
+        Assert.Equal(PadButtons.None, Poll(button, afterMs: 100));
         Assert.Equal(button, Poll(button, afterMs: 10));
         Assert.Equal(button, Poll(button, afterMs: 3000));
         Assert.Equal(PadButtons.None, Poll(PadButtons.None));

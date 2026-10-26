@@ -10,7 +10,7 @@ the other files: [README](README.md); what the spike saw: [steam-input-helper.md
   Controller (`GamepadReading.IsSteamController`) and hands the newest state to a sender task through a one-slot channel
   (drop oldest), so a slow VIIPER never holds up Arcadia's input. Only changes are sent; VIIPER keeps the last state.
   Other controllers are never emulated.
-- Back + Start never reaches the game (`ComboWithholding`, Input): ⧉ and ≡ are held back for the 200 ms in which the
+- Back + Start never reaches the game (`ComboWithholding`, Input): ⧉ and ≡ are held back for the 100 ms in which the
   other may still join (`MouseMode.ComboWindow`, the same rule the mouse mode switches on by). The rules are a product
   decision: `docs/product/controls.md`.
 - While Arcadia is in front or the mouse mode is on, the pad reports rest (`ForwardingAllowed`); the combo filter keeps

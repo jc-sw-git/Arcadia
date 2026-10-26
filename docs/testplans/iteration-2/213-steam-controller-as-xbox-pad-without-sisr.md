@@ -35,5 +35,5 @@ History:
 |---|---|---|---|---|---|
 | T213-1 to T213-6 | 2026-10-26 | Claude | Branch `feat/steam-controller-xbox-pad-without-sisr-213`, Linux, `SteamControllerXboxPadTests` (headless, SDL and VIIPER faked), unit tests | ✅ green; each acceptance test was red once with its feature broken on purpose (named in the PR) | Owner's manual test |
 | Codex review | 2026-10-26 | Codex | PR #231 at `af0bda3` | ❌ held state kept after SDL is lost; ≡ held alone reached the game although ⧉ added later still made the combo; a failed unplug skipped the server's end | Fixed: `Drop` on `Lost`, ⧉/≡ held back until let go, shutdown steps on their own; also send timeout and bus rollback. New tests red once (named in the PR) |
-| Owner's decision | 2026-10-26 | Juri | – | ⧉/≡ held alone must reach the game; ⧉ + ≡ only within 200 ms | `ComboWithholding` and `MouseMode.ComboWindow` changed, T213-2 rewritten |
+| Owner's decision | 2026-10-26 | Juri | – | ⧉/≡ held alone must reach the game; ⧉ + ≡ only within 200 ms, then 100 ms (less delay for ⧉ and ≡) | `ComboWithholding` and `MouseMode.ComboWindow` changed, T213-2 rewritten |
 | T213-1 to T213-7 | 2026-10-26 | Claude | – | ➖ not runnable in the cloud (no Windows, no VIIPER, no controllers); `ViiperXboxPads` and the job object are only built, not run | Owner's PC |

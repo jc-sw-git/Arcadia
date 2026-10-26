@@ -38,11 +38,11 @@ public sealed class MouseMode
     public static readonly TimeSpan FeedbackDelay = TimeSpan.FromMilliseconds(200);
 
     /// <summary>
-    /// Back + Start counts only when the second button joins this soon after the first (owner, 2026-10-26, #213): a
+    /// Back + Start counts only when the second button joins this soon after the first (owner, 2026-10-26, #213; 100 ms halves the delay ⧉ and ≡ get in games): a
     /// button held alone longer goes to a game as held, so it must not become half of Arcadia's combo later. Only for
     /// switching on: while the mode is on, a game gets nothing from the controller, and a late ⧉ may still end it.
     /// </summary>
-    public static readonly TimeSpan ComboWindow = ReturnWithView.SoloDelay;
+    public static readonly TimeSpan ComboWindow = TimeSpan.FromMilliseconds(100);
 
     private const PadButtons Combo = PadButtons.View | PadButtons.Menu;
 

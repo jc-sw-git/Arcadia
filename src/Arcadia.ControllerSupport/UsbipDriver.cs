@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.ServiceProcess;
+using Arcadia.Pan;
 using Microsoft.Win32;
 
 namespace Arcadia.ControllerSupport;

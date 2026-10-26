@@ -19,7 +19,6 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
 {
     private static readonly TimeSpan SquatRetry = TimeSpan.FromSeconds(5);
     private const int MaxInstances = 4;
-    private readonly SemaphoreSlim _writes = new(1, 1);
     private readonly List<Task> _notices = [];
     private readonly List<Task> _connections = [];
 
@@ -160,10 +159,12 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
             using var processHandle = new SafeProcessHandle(process, ownsHandle: true);
             var startTime = WindowsCleanup.StartTimeOf(process) ?? 0;
             var inConsole = Native.ProcessIdToSessionId(pid, out var session) && session == Native.WTSGetActiveConsoleSessionId();
+            // Per connection: a notice stuck on a client that doesn't read must not hold up another one's reply.
+            var writes = new SemaphoreSlim(1, 1);
             var refused = guardian.Register(new ClientIdentity((int)pid, startTime, inConsole));
             if (refused != PanReason.None)
             {
-                await WriteAsync(pipe, PanMessage.Of(PanReply.Refused, reason: refused), cancellationToken);
+                await WriteAsync(pipe, writes, PanMessage.Of(PanReply.Refused, reason: refused), cancellationToken);
                 return;
             }
 
@@ -173,7 +174,7 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
             var registration = ThreadPool.RegisterWaitForSingleObject(processWait, (_, _) => gone.Cancel(), null, -1, executeOnlyOnce: true);
             void Notify(PanMessage message)
             {
-                var write = WriteAsync(pipe, message, cancellationToken);
+                var write = WriteAsync(pipe, writes, message, cancellationToken);
                 lock (_notices)
                 {
                     _notices.RemoveAll(n => n.IsCompleted);
@@ -187,7 +188,7 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
             try
             {
                 using var either = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, gone.Token);
-                await ReadLoopAsync(pipe, either.Token);
+                await ReadLoopAsync(pipe, writes, either.Token);
             }
             finally
             {
@@ -199,7 +200,7 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
         }
     }
 
-    private async Task ReadLoopAsync(NamedPipeServerStream pipe, CancellationToken cancellationToken)
+    private async Task ReadLoopAsync(NamedPipeServerStream pipe, SemaphoreSlim writes, CancellationToken cancellationToken)
     {
         var buffer = new byte[PanMessage.Size];
         while (!cancellationToken.IsCancellationRequested)
@@ -226,7 +227,7 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
             var reply = guardian.Handle(PanMessage.Read(buffer));
             try
             {
-                await WriteAsync(pipe, reply, cancellationToken);
+                await WriteAsync(pipe, writes, reply, cancellationToken);
             }
             catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException)
             {
@@ -235,9 +236,9 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
         }
     }
 
-    private async Task WriteAsync(NamedPipeServerStream pipe, PanMessage message, CancellationToken cancellationToken)
+    private static async Task WriteAsync(NamedPipeServerStream pipe, SemaphoreSlim writes, PanMessage message, CancellationToken cancellationToken)
     {
-        await _writes.WaitAsync(cancellationToken);
+        await writes.WaitAsync(cancellationToken);
         try
         {
             await pipe.WriteAsync(message.ToBytes(), cancellationToken);
@@ -245,7 +246,7 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
         }
         finally
         {
-            _writes.Release();
+            writes.Release();
         }
     }
 

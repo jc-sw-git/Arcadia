@@ -104,8 +104,12 @@ public static class ServiceSetup
         log("Service started");
     }
 
-    /// <summary>Stops the service (its stop is the full teardown), removes it, undoes what the journal still lists, and deletes Pan's files.</summary>
-    public static async Task UninstallAsync(Action<string> log)
+    /// <summary>
+    /// Stops the service (its stop is the full teardown), removes it, undoes what the journal still lists, and deletes
+    /// Pan's files; with <paramref name="removeData"/> false (the data folder isn't ours) the journal and the data folder
+    /// are left alone.
+    /// </summary>
+    public static async Task UninstallAsync(bool removeData, Action<string> log)
     {
         using (var manager = OpenManager(Native.ScManagerConnect))
         {
@@ -128,8 +132,12 @@ public static class ServiceSetup
             }
         }
 
-        await Restore.RunAsync(log);
-        DeleteTree(PanPaths.DataDirectory, log);
+        if (removeData)
+        {
+            await Restore.RunAsync(log);
+            DeleteTree(PanPaths.DataDirectory, log);
+        }
+
         DeleteTree(PanPaths.InstallDirectory, log);
     }
 

@@ -82,9 +82,12 @@ public static class ServiceHost
         if (ServiceSetup.CheckDataDirectory() is { } problem)
         {
             // The journal and log live there; a folder somebody else owns could point them anywhere (review, bug 1).
+            // The log file stays untouched: the line reaches only a console, the SCM sees the exit code.
             log.Write($"Refusing to run: {problem}; run Pan.exe --install again");
             throw new InvalidOperationException(problem);
         }
+
+        log.TrustFolder();
 
         var cleanup = new WindowsCleanup(log.Write);
         var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath), cleanup, log.Write);

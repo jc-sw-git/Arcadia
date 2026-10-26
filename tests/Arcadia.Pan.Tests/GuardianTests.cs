@@ -380,4 +380,54 @@ public sealed class GuardianTests : IDisposable
         Assert.Equal([600, 610], _cleanup.Ended.Select(p => p.Pid).Order());
         AssertNothingToUndo(generation);
     }
+
+    [Fact]
+    public async Task A_leftover_the_client_takes_up_again_is_listed_once_and_ended_once()
+    {
+        Connect();
+        StartEmulation();
+        _cleanup.EndFails = true;
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+
+        // Arcadia reuses the surviving viiper.exe (pid 600): it is this emulation's process now, not a leftover too.
+        _cleanup.EndFails = false;
+        _cleanup.Children = [new HeldProcess(600, 1500, "viiper.exe")];
+        Connect(Arcadia with { Pid = 501 });
+        var generation = StartEmulation();
+        Assert.Equal([600], _journal.File.Load().State.HeldProcesses.Select(p => p.Pid));
+        Assert.DoesNotContain("still to end", Log());
+
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+        Assert.Equal([600], _cleanup.Ended.Select(p => p.Pid));
+        AssertNothingToUndo(generation);
+    }
+
+    [Fact]
+    public async Task A_planned_stop_lets_only_this_emulations_processes_go_and_keeps_the_leftovers()
+    {
+        Connect();
+        StartEmulation();
+        _cleanup.EndFails = true;
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+
+        _cleanup.EndFails = false;
+        _cleanup.Children = [new HeldProcess(610, 1610, "viiper.exe")];
+        Connect(Arcadia with { Pid = 501 });
+        var generation = StartEmulation();
+        Assert.Equal(PanReply.Stopped, Send(PanCommand.EmulationStopped, generation).Reply);
+
+        // 610 was Arcadia's and is let go; 600 of the earlier emulation is still to end, so it stays journaled …
+        Assert.Equal([610], _cleanup.Released.Select(p => p.Pid));
+        Assert.Equal([600], _journal.File.Load().State.HeldProcesses.Select(p => p.Pid));
+        Assert.Contains("still to end at the next teardown", Log());
+
+        // … and a restarted Pan ends it.
+        _cleanup.StartTimes[600] = 1500;
+        var restarted = new Guardian(_clock, _journal.File, _cleanup, _log.Add);
+        await restarted.RecoverAsync();
+        Assert.Equal([600], _cleanup.Ended.Select(p => p.Pid));
+    }
 }

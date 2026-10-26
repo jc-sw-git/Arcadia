@@ -56,6 +56,7 @@ internal static class Program
                 case "--install":
                     // The log lives in the data folder: secured before anything is written there (review, bug 1).
                     ServiceSetup.SecureDataDirectory();
+                    log.TrustFolder();
                     if (Option(args, "--usbip-installer") is { } usbipInstaller)
                     {
                         UsbipInstall.RunAsync(usbipInstaller, log.Write).GetAwaiter().GetResult();
@@ -64,7 +65,19 @@ internal static class Program
                     ServiceSetup.Install(Environment.ProcessPath ?? throw new InvalidOperationException("own path unknown"), Option(args, "--expect-hash"), log.Write);
                     return 0;
                 case "--uninstall":
-                    ServiceSetup.UninstallAsync(log.Write).GetAwaiter().GetResult();
+                    // Runs at every Arcadia uninstall, also where Pan never was: a data folder that isn't ours is
+                    // neither written nor deleted elevated (review, bug 1); the service and Program Files go anyway.
+                    var dataProblem = ServiceSetup.CheckDataDirectory();
+                    if (dataProblem is null)
+                    {
+                        log.TrustFolder();
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine($"Leaving the data folder alone: {dataProblem}.");
+                    }
+
+                    ServiceSetup.UninstallAsync(removeData: dataProblem is null, log.Write).GetAwaiter().GetResult();
                     return 0;
                 case "--restore":
                     if (ServiceSetup.CheckDataDirectory() is { } problem)
@@ -73,6 +86,7 @@ internal static class Program
                         return 3;
                     }
 
+                    log.TrustFolder();
                     Restore.RunAsync(log.Write).GetAwaiter().GetResult();
                     return 0;
                 default:

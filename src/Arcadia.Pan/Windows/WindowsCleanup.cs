@@ -72,7 +72,11 @@ public sealed class WindowsCleanup(Action<string> log) : IEmulationCleanup
                     var process = new HeldProcess((int)entry.ProcessId, start, imageName);
                     lock (_lock)
                     {
-                        _handles[process] = handle;
+                        // Held since an earlier emulation (the client took it up again): the first handle stays.
+                        if (!_handles.TryAdd(process, handle))
+                        {
+                            Native.CloseHandle(handle);
+                        }
                     }
 
                     taken.Add(process);

@@ -81,4 +81,5 @@ History:
 | T243-7 … T243-12 | 2026-10-26 | Claude (thread) | skipped on Linux (needs the Windows CI runner with administrator rights); first run on the PR's CI | open | read the CI run |
 | Pan core, client, journal, teardown (`Arcadia.Pan.Tests`, `PanClientTests`, `GuardedXboxPadsTests`, service driver warnings) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, unit tests | pass | – |
 | T243-4, T243-14 (rewritten after the QE review: the service stop's toast; the update question through the driver), T243-2 … T243-6, T243-13 | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, acceptance tests with a faked Pan, each new case seen red once | pass | – |
-| T243-7 … T243-12 | 2026-10-26 | Claude (thread) | Windows CI runner (elevated): the DACL check compared as a set, wrong-hash step added | open | read the second CI run |
+| T243-7 … T243-12 | 2026-10-26 | Claude (thread) | Windows CI runner (elevated): the DACL check compared as a set, wrong-hash step added | fail (SACL audit entry in the DACL check, `IsConnected` race in `PanClientTests`) | fixed in 24b6b32, third CI run |
+| Pan core after the QE re-check (`GuardianTests`: reused leftover listed once, planned stop keeps leftovers; `PanLogTests`) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once | pass | – |

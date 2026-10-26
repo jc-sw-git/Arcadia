@@ -42,6 +42,9 @@ public sealed class Guardian
     private Task? _teardown;
     private bool _stopping;
 
+    /// <summary>Processes of an earlier emulation still to end; a planned stop lets only the current ones go.</summary>
+    private HashSet<HeldProcess> _leftovers = [];
+
     private enum Phase
     {
         Idle,
@@ -300,8 +303,9 @@ public sealed class Guardian
 
         var client = _client!;
         var held = _cleanup.TakeChildrenOf(client.Pid, client.StartTime, ForwardingImageName);
-        // What an incomplete teardown left (a process that wouldn't end) stays listed and is retried with this one.
-        var leftovers = _journal.HeldProcesses.ToList();
+        // What an incomplete teardown left (a process that wouldn't end) stays listed and is retried with this one. A
+        // process the client took up again is this emulation's now, listed once.
+        var leftovers = _journal.HeldProcesses.Where(process => !held.Contains(process)).ToList();
         if (leftovers.Count > 0)
         {
             _log($"{leftovers.Count} process(es) of the last emulation still to end; kept for the next teardown");
@@ -332,6 +336,7 @@ public sealed class Guardian
         }
 
         _phase = Phase.Emulating;
+        _leftovers = [.. leftovers];
         _lastHeartbeatMs = _clock.UnbiasedMilliseconds;
         if (held.Count == 0)
         {
@@ -366,14 +371,20 @@ public sealed class Guardian
 
     private PanMessage StopEmulation()
     {
-        // Arcadia removed its emulation itself: let go of its processes, nothing to undo.
-        foreach (var process in _journal.HeldProcesses)
+        // Arcadia removed its emulation itself: let go of its processes, nothing to undo. What an earlier teardown
+        // couldn't end is none of this emulation's and stays for the next one.
+        foreach (var process in _journal.HeldProcesses.Where(process => !_leftovers.Contains(process)))
         {
             _cleanup.Release(process);
         }
 
         _journal.Emulating = false;
-        _journal.HeldProcesses = [];
+        _journal.HeldProcesses = _journal.HeldProcesses.Where(_leftovers.Contains).ToList();
+        if (_journal.HeldProcesses.Count > 0)
+        {
+            _log($"{_journal.HeldProcesses.Count} process(es) of an earlier emulation still to end at the next teardown");
+        }
+
         SaveJournal();
         _phase = Phase.Idle;
         _log($"Emulation generation {_generation} stopped by the client");
@@ -430,11 +441,14 @@ public sealed class Guardian
         uint generation;
         JournalState journal;
         int clientPid;
+        List<HeldProcess> held;
         lock (_lock)
         {
             generation = _generation;
             journal = _journal;
             clientPid = journal.ClientPid;
+            // Under the lock: a step left behind after its timeout may still remove from the list.
+            held = journal.HeldProcesses.ToList();
         }
 
         if (unplanned)
@@ -442,7 +456,7 @@ public sealed class Guardian
             UnplannedEnd?.Invoke(new UnplannedEnd(reason, generation, clientPid, journal.Emulating));
         }
 
-        var plan = new TeardownPlan(_cleanup, journal.HeldProcesses.ToList(), ProcessEnded);
+        var plan = new TeardownPlan(_cleanup, held, ProcessEnded);
         var results = await TeardownRunner.RunAsync(plan.Steps(), _log);
         var complete = results.All(r => r.Outcome == StepOutcome.Ok);
         lock (_lock)
@@ -450,6 +464,7 @@ public sealed class Guardian
             if (complete)
             {
                 _journal.Emulating = false;
+                _leftovers = [];
                 SaveJournal();
                 _log($"Teardown of generation {generation} complete ({reason})");
             }

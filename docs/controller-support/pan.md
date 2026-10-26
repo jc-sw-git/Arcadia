@@ -54,8 +54,9 @@ commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview
 - Steps, each with a 10 s timeout on a worker, never throwing: detach usbip ports attached from VIIPER (`usbip.exe port`
   / `detach -p`, from `%ProgramFiles%\USBip`), then end the held forwarding processes. Each ended process leaves the
   journal at once (under the guardian's lock, so a step left behind after its timeout can't corrupt it); what failed
-  stays listed and goes into the next emulation's teardown. With no `viiper.exe` of the client (another program's
-  VIIPER) a teardown only detaches the ports, logged at start.
+  stays listed and goes into the next emulation's teardown (a process the client takes up again is listed once); a
+  planned stop lets only the current emulation's processes go and keeps such leftovers. With no `viiper.exe` of the
+  client (another program's VIIPER) a teardown only detaches the ports, logged at start.
 - A restarted Pan (crash, reboot, `--restore`) always undoes its journal first: held processes are re-verified by PID +
   start time, the client itself is never killed, "client N still running/gone" is only logged (#244 adds the crash
   report hook).
@@ -79,7 +80,9 @@ commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview
   secures both folders before its first log line (`ServiceSetup.SecureDataDirectory`): a reparse point is deleted, a
   folder not owned by SYSTEM/Administrators is renamed to `<name>.untrusted-<time>`, the folder is created with a
   protected DACL (SYSTEM and Administrators full, no inheritance) and Administrators as owner. The service and
-  `--restore` refuse to run when the folder doesn't look like that (`CheckDataDirectory`; exit 3 / service failure).
+  `--restore` refuse to run when the folder doesn't look like that (`CheckDataDirectory`; exit 3 / service failure);
+  `--uninstall` then removes only the service and Program Files. `PanLog` writes its file only after the process
+  secured or checked the folder (`TrustFolder`); lines from before follow then, or reach only a console.
 - Update: at start, when the bundled Pan is newer than the installed one (file versions), one dialog "Pan
   aktualisieren" (A updates with one UAC prompt, B later; asked again at the next start). Pan's `--install` stops and
   replaces the old service; its stop is a full teardown.

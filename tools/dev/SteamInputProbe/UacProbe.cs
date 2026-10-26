@@ -35,18 +35,26 @@ internal sealed class UacProbe(ProbeOptions options, ProbeLog log) : IAsyncDispo
             while (!cancel.IsCancellationRequested && !options.ShouldStop(log))
             {
                 if (File.Exists(Path.Combine(_armDir, "stop"))) { log.Line("UAC probe: stop file seen"); break; }
-
-                // armed-now.txt: play at once, on whatever desktop — step 1 checks the devices on the normal desktop.
-                if (File.Exists(Path.Combine(_armDir, "armed-now.txt")))
-                    await PlayFileAsync("armed-now.txt", "now (current desktop)", requireUac: false, cancel);
-
-                var (cls, detail) = Classify();
-                if (cls != _state)
+                try
                 {
-                    log.Line($"DESKTOP: {cls}{(detail is null ? "" : " — " + detail)}");
-                    _state = cls;
-                    // armed.txt: play only when a real UAC prompt appears (one-shot).
-                    if (cls == "uac") await PlayFileAsync("armed.txt", detail ?? "UAC", requireUac: true, cancel);
+                    // armed-now.txt: play at once, on whatever desktop — step 1 checks the devices on the normal desktop.
+                    if (File.Exists(Path.Combine(_armDir, "armed-now.txt")))
+                        await PlayFileAsync("armed-now.txt", "now (current desktop)", requireUac: false, cancel);
+
+                    var (cls, detail) = Classify();
+                    if (cls != _state)
+                    {
+                        log.Line($"DESKTOP: {cls}{(detail is null ? "" : " — " + detail)}");
+                        _state = cls;
+                        // armed.txt: play only when a real UAC prompt appears (one-shot).
+                        if (cls == "uac") await PlayFileAsync("armed.txt", detail ?? "UAC", requireUac: true, cancel);
+                    }
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    // A single bad poll (e.g. a protected process, a locked file) must never end the probe mid-test.
+                    log.Line($"UAC probe: poll error (continuing): {ex.GetType().Name}: {ex.Message}");
                 }
                 await Task.Delay(options.PollMs, cancel);
             }
@@ -87,7 +95,7 @@ internal sealed class UacProbe(ProbeOptions options, ProbeLog log) : IAsyncDispo
     {
         if (token == "click") { log.Line($"{atMs,6} ms into prompt: mouse LEFT click"); await _hid!.ClickAsync(1, cancel); return; }
         if (token == "rclick") { log.Line($"{atMs,6} ms into prompt: mouse RIGHT click"); await _hid!.ClickAsync(2, cancel); return; }
-        if (token.StartsWith("m") && token[1..].Split(',') is [var sx, var sy]
+        if (token.StartsWith("m") && token[1..].TrimStart(':').Split(',') is [var sx, var sy]
             && short.TryParse(sx, out var dx) && short.TryParse(sy, out var dy))
         {
             log.Line($"{atMs,6} ms into prompt: mouse move ({dx},{dy})");
@@ -124,15 +132,13 @@ internal sealed class UacProbe(ProbeOptions options, ProbeLog log) : IAsyncDispo
         var secure = !TryReadInputDesktop(out var name);
         if (!secure) return ("interactive", $"input desktop '{name}'");
 
+        // Enumerating by name is allowed even for the protected consent.exe; do NOT touch any of its other
+        // properties (StartTime, handle, …) — consent.exe runs protected and that throws Access Denied.
         var consent = Process.GetProcessesByName("consent");
         var logon = Process.GetProcessesByName("LogonUI");
         try
         {
-            if (consent.Length > 0)
-            {
-                var since = DateTime.Now - consent[0].StartTime;
-                return ("uac", $"consent.exe pid {consent[0].Id}, running {since.TotalMilliseconds:0} ms");
-            }
+            if (consent.Length > 0) return ("uac", $"consent.exe pid {consent[0].Id}");
             if (logon.Length > 0) return ("lock/signin", $"LogonUI.exe pid {logon[0].Id}, no consent.exe");
             return ("secure (unknown)", name is null ? "input desktop not accessible" : $"input desktop '{name}'");
         }

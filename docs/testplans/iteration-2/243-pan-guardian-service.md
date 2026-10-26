@@ -60,9 +60,9 @@ the player's side runs in the acceptance tests with a faked Pan (`PanGuardianTes
       (`pan.log` has no "hang"), the controller still works. Shutdown with a game running: Pan's pre-shutdown tears the
       emulation down (log after the next boot). · E2E: no
 - [ ] **T243-18** Uninstalling Arcadia (Windows → Apps): after the SISR and data questions one UAC prompt for Pan; the
-      service, `%ProgramFiles%\Arcadia\Pan` and `%ProgramData%\Arcadia\Pan` are gone. Declined: Arcadia is removed, Pan
+      service, `%ProgramFiles%\Arcadia\Pan` and `%ProgramData%\Arcadia` are gone. Declined: Arcadia is removed, Pan
       stays idle and `Pan.exe --uninstall` (an elevated prompt, exe from the old install folder or the repo) removes it.
-      · E2E: no (uninstall hook and UAC)
+      With Pan never installed, no UAC prompt at all. · E2E: no (uninstall hook and UAC)
 - [ ] **T243-19** "Controller wiederherstellen" with nothing to restore: one UAC prompt, no error, `pan.log`: "Nothing to
       restore". With the service stopped by hand (`sc stop`, elevated) after `viiper.exe` was left running from a killed
       Arcadia: the action ends `viiper.exe` and detaches the port, "Restore complete". · E2E: no (UAC)
@@ -84,3 +84,4 @@ History:
 | T243-7 … T243-12 | 2026-10-26 | Claude (thread) | Windows CI runner (elevated): the DACL check compared as a set, wrong-hash step added | fail (SACL audit entry in the DACL check, `IsConnected` race in `PanClientTests`) | fixed in 24b6b32 |
 | T243-7 … T243-12 | 2026-10-26 | Claude (thread) | Windows CI runner (elevated), run 40380137687 on 24b6b32: the whole `ServiceTests` case passed | pass | – |
 | Pan core after the QE re-check (`GuardianTests`: reused leftover listed once, planned stop keeps leftovers; `PanLogTests`) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once | pass | – |
+| After the code review comment on the PR (`PanClientTests`: a running teardown is "Pan räumt noch auf"; `SteamControllerXboxPadTests`: no loss counted for it) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once | pass | – |

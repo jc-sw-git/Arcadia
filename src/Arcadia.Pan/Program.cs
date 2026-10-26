@@ -54,8 +54,18 @@ internal static class Program
 
                     return 0;
                 case "--install":
-                    // The log lives in the data folder: secured before anything is written there (review, bug 1).
-                    ServiceSetup.SecureDataDirectory();
+                    // The log lives in the data folder: secured before anything is written there (review, bug 1). A
+                    // failure here can't be logged, so its own exit code tells Arcadia what to say.
+                    try
+                    {
+                        ServiceSetup.SecureDataDirectory();
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+                    {
+                        Console.Error.WriteLine($"The data folder could not be secured: {ex.Message}");
+                        return DataFolderExitCode;
+                    }
+
                     log.TrustFolder();
                     if (Option(args, "--usbip-installer") is { } usbipInstaller)
                     {
@@ -101,6 +111,9 @@ internal static class Program
             return 3;
         }
     }
+
+    /// <summary>Exit code of <c>--install</c> when the data folder can't be secured; Arcadia names the folder then.</summary>
+    public const int DataFolderExitCode = 4;
 
     private static string? Option(string[] args, string name)
     {

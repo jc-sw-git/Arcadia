@@ -57,7 +57,8 @@ public static class ServiceHost
         }
 
         _status = new Native.ServiceStatus { ServiceType = Native.ServiceWin32OwnProcess };
-        Report(Native.ServiceStartPending, waitHintMs: 5000);
+        // The recovery of a journal may take a while (each teardown step up to 10 s) before Running is reported.
+        Report(Native.ServiceStartPending, waitHintMs: 30_000);
         try
         {
             RunAsync(log).GetAwaiter().GetResult();
@@ -100,7 +101,7 @@ public static class ServiceHost
         using var stop = consoleStop is { } console ? CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token, console) : CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token);
         using var serve = new CancellationTokenSource();
         var server = new PipeServer(guardian, log.Write);
-        var idle = new IdleStop(stop, log.Write);
+        using var idle = new IdleStop(stop, log.Write);
         server.ClientPresent += idle.ClientPresent;
         idle.ClientPresent(false);
         var serving = server.RunAsync(serve.Token);
@@ -190,7 +191,7 @@ public static class ServiceHost
     }
 
     /// <summary>Stops Pan after <see cref="IdleTimeout"/> without a client; a client that comes meanwhile cancels it.</summary>
-    private sealed class IdleStop(CancellationTokenSource stop, Action<string> log)
+    private sealed class IdleStop(CancellationTokenSource stop, Action<string> log) : IDisposable
     {
         private CancellationTokenSource? _countdown;
 
@@ -198,9 +199,7 @@ public static class ServiceHost
         {
             lock (this)
             {
-                _countdown?.Cancel();
-                _countdown?.Dispose();
-                _countdown = null;
+                Dispose();
                 if (present)
                 {
                     return;
@@ -213,6 +212,17 @@ public static class ServiceHost
                     log($"No client for {IdleTimeout.TotalSeconds:0} s: stopping");
                     stop.Cancel();
                 }, TaskContinuationOptions.OnlyOnRanToCompletion);
+            }
+        }
+
+        /// <summary>No countdown runs on: a late one would cancel a stop token that is disposed with the run.</summary>
+        public void Dispose()
+        {
+            lock (this)
+            {
+                _countdown?.Cancel();
+                _countdown?.Dispose();
+                _countdown = null;
             }
         }
     }

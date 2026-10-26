@@ -32,6 +32,7 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
     private string? _unavailable = "Pan ist noch nicht verbunden";
     private uint _currentGeneration;
     private uint _tornDownGeneration;
+    private bool _teardownPending;
     private bool _emulating;
     private long _pulses;
     private long _sentPulses;
@@ -71,9 +72,12 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
         }
     }
 
+    /// <summary>What Arcadia says while Pan's teardown still runs: no pad until Pan is done, and no loss counted for it.</summary>
+    public const string CleaningUp = "Pan räumt noch auf";
+
     public string? Unavailable()
     {
-        lock (_lock) return _unavailable;
+        lock (_lock) return _unavailable ?? (_teardownPending ? CleaningUp : null);
     }
 
     public bool IsCurrent(uint generation)
@@ -94,7 +98,12 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
         if (reply.Reply == PanReply.Rejected && reply.Reason == PanReason.TeardownNotAcknowledged)
         {
             // A teardown from before this connection (Arcadia was restarted, or reconnected): nothing of ours is left.
-            await RequestAsync(PanMessage.Of(PanCommand.TeardownAcknowledged, reply.Generation), cancellationToken);
+            // One that still runs can't be acknowledged yet: no pad until its notice comes (review, point 3).
+            if (!await AcknowledgeAsync(reply.Generation, cancellationToken))
+            {
+                throw new InvalidOperationException(CleaningUp);
+            }
+
             reply = await RequestAsync(PanMessage.Of(PanCommand.EmulationStarted), cancellationToken);
         }
 
@@ -127,8 +136,35 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
         await QuietRequestAsync(PanMessage.Of(PanCommand.EmulationStopped, generation), cancellationToken);
     }
 
-    public Task AcknowledgeTeardownAsync(uint generation, CancellationToken cancellationToken) =>
-        QuietRequestAsync(PanMessage.Of(PanCommand.TeardownAcknowledged, generation), cancellationToken);
+    public async Task AcknowledgeTeardownAsync(uint generation, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await AcknowledgeAsync(generation, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            _log($"Pan: TeardownAcknowledged nicht gesendet: {ex.Message}");
+        }
+    }
+
+    /// <summary>False while Pan's teardown of that generation still runs; Arcadia asks again when the notice has come.</summary>
+    private async Task<bool> AcknowledgeAsync(uint generation, CancellationToken cancellationToken)
+    {
+        var reply = await RequestAsync(PanMessage.Of(PanCommand.TeardownAcknowledged, generation), cancellationToken);
+        var stillRunning = reply.Reply == PanReply.Rejected && reply.Reason == PanReason.TeardownNotAcknowledged;
+        lock (_lock)
+        {
+            _teardownPending = stillRunning;
+        }
+
+        if (reply.Reply == PanReply.Rejected && !stillRunning)
+        {
+            _log($"Pan: TeardownAcknowledged abgelehnt ({reply.Reason})");
+        }
+
+        return !stillRunning;
+    }
 
     public async Task PlannedExitAsync()
     {
@@ -266,6 +302,7 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
             // A generation torn down on an earlier connection means nothing to this Pan (it may have restarted and
             // count differently); what it still wants acknowledged, hello says (review, bug 4).
             _tornDownGeneration = 0;
+            _teardownPending = false;
         }
 
         _ = Task.Run(() => ReadGuardedAsync(link), CancellationToken.None);
@@ -274,9 +311,10 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
         {
             var reason = hello.Reason == PanReason.WrongProtocolVersion
                 ? $"Pan spricht ein anderes Protokoll (Arcadia: {PanMessage.ProtocolVersion}); ein Update von Pan ist nötig"
-                : $"Pan weist Arcadia ab ({hello})";
+                : $"Pan weist Arcadia ab ({hello.Reason})";
             Drop(null);
-            throw new PanUnavailableException(reason, permanent: true);
+            // Another client may be on its way out: that is retried soon; a wrong protocol or session is not.
+            throw new PanUnavailableException(reason, permanent: hello.Reason != PanReason.OtherClient);
         }
 
         if (hello.Reason == PanReason.JournalUnreadable)
@@ -349,6 +387,7 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
             lock (_lock)
             {
                 _tornDownGeneration = message.Generation;
+                _teardownPending = false;
                 if (_currentGeneration == message.Generation)
                 {
                     _emulating = false;
@@ -357,12 +396,6 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
 
             _log($"Pan: Emulation {message.Generation} von Pan beendet ({message.Reason})");
             TornDown?.Invoke(message.Generation, message.Reason);
-            return;
-        }
-
-        if (message.Reply == PanReply.Refused)
-        {
-            Drop($"Pan weist Arcadia ab ({message.Reason})");
             return;
         }
 
@@ -396,6 +429,7 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
             _emulating = false;
             _pending?.TrySetException(new IOException(reason ?? "Verbindung geschlossen"));
             _pending = null;
+            _teardownPending = false;
             _unavailable = reason ?? "Pan ist nicht verbunden";
         }
 
@@ -464,6 +498,9 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
                         {
                             _emulating = false;
                         }
+
+                        // Pan is tearing this generation down: the pad is lost once, and no new one until the notice.
+                        _teardownPending |= reply.Reason == PanReason.TeardownNotAcknowledged;
                     }
                 }
             }

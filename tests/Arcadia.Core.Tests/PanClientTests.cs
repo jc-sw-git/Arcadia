@@ -135,6 +135,37 @@ public sealed class PanClientTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task While_Pan_still_tears_down_no_pad_is_possible_and_nothing_counts_as_a_loss()
+    {
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        _client.Pulse();
+        await AdvanceUntil(() => _server.Heartbeats == 1, "Heartbeat 1");
+
+        // Pan sees a hang and starts a teardown whose usbip step takes its time (review, point 3).
+        var gate = new SemaphoreSlim(0);
+        _server.Cleanup.TeardownGate = gate;
+        _server.Clock.Advance(Guardian.DefaultHangTimeout);
+        _server.Guardian.Tick();
+
+        // The next heartbeat is rejected: the pad is lost once, and until Pan's notice Arcadia is told to wait.
+        _client.Pulse();
+        await AdvanceUntil(() => !_client.IsCurrent(generation), "Heartbeat abgelehnt");
+        Assert.Equal(PanClient.CleaningUp, _client.Unavailable());
+        Assert.Empty(_tornDown);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _client.EmulationStartedAsync(CancellationToken.None));
+        Assert.Equal(PanClient.CleaningUp, ex.Message);
+        Assert.Equal(PanClient.CleaningUp, _client.Unavailable());
+
+        // The teardown ends: the notice comes, the next pad gets the next generation.
+        gate.Release();
+        await WaitUntil(() => _tornDown.Count == 1, "TornDown");
+        Assert.Null(_client.Unavailable());
+        await _client.AcknowledgeTeardownAsync(generation, CancellationToken.None);
+        Assert.Equal(generation + 1, await _client.EmulationStartedAsync(CancellationToken.None));
+    }
+
+    [Fact]
     public async Task A_Pan_of_another_protocol_version_is_reported_and_not_used()
     {
         _server.HelloReply = PanMessage.Of(PanReply.Rejected, 0, PanReason.WrongProtocolVersion);
@@ -262,6 +293,9 @@ public sealed class PanClientTests : IAsyncDisposable
         }
 
         public Guardian Guardian { get; private set; }
+
+        /// <summary>The fake machine the guardian cleans up; a test can hold its teardown.</summary>
+        public FakeCleanupForClient Cleanup => _cleanup;
 
         public FakeClockForClient Clock { get; } = new();
 
@@ -398,7 +432,18 @@ public sealed class PanClientTests : IAsyncDisposable
     /// <summary>Nothing to clean up: the client tests look at the protocol, not at processes.</summary>
     private sealed class FakeCleanupForClient : IEmulationCleanup
     {
-        public Task<IReadOnlyList<int>> ListLocalViiperPortsAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<int>>([]);
+        /// <summary>Set, the teardown's first step waits here: a usbip step that takes its time.</summary>
+        public SemaphoreSlim? TeardownGate { get; set; }
+
+        public async Task<IReadOnlyList<int>> ListLocalViiperPortsAsync(CancellationToken cancellationToken)
+        {
+            if (TeardownGate is { } gate)
+            {
+                await gate.WaitAsync(cancellationToken);
+            }
+
+            return [];
+        }
 
         public Task DetachPortAsync(int port, CancellationToken cancellationToken) => Task.CompletedTask;
 

@@ -75,6 +75,8 @@ public static class TeardownRunner
         }
         catch (TimeoutException)
         {
+            // The step is left behind; its token must fire even when WaitAsync won the race against the timer.
+            timeout.Cancel();
             return new(step.Name, StepOutcome.TimedOut, $"after {step.Timeout.TotalSeconds:0} s");
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)

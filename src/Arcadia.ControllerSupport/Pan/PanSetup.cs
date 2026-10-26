@@ -23,6 +23,9 @@ public static class PanSetup
 
     public static bool IsBundled => File.Exists(BundledExecutable);
 
+    /// <summary>Pan's exit code when <c>--install</c> couldn't secure the data folder (<c>Program.DataFolderExitCode</c> in Pan).</summary>
+    private const int DataFolderExitCode = 4;
+
     public static Version? BundledVersion => FileVersion(BundledExecutable);
 
     public static Version? InstalledVersion => FileVersion(PanPaths.InstalledExecutable);
@@ -98,6 +101,12 @@ public static class PanSetup
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
                 throw new System.TimeoutException($"Pan {arguments[0]} hat nach {CommandWait.TotalMinutes:0} Minuten nicht geantwortet.");
+            }
+
+            if (process.ExitCode == DataFolderExitCode)
+            {
+                // Pan could not log this: nothing of it may be written into a folder it doesn't own.
+                throw new InvalidOperationException($"Pan konnte seinen Datenordner {PanPaths.DataDirectory} nicht sichern – bitte den Ordner prüfen oder entfernen und es noch einmal versuchen.");
             }
 
             if (process.ExitCode != 0)

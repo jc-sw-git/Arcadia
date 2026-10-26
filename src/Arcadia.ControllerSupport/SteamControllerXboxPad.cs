@@ -229,6 +229,13 @@ public sealed class SteamControllerXboxPad
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _log($"Xbox-Pad: Anstecken fehlgeschlagen: {ex.Message}");
+            if (_pads.Unavailable() is { } why)
+            {
+                // The pads went unavailable meanwhile (Pan still cleaning up): not VIIPER failing, no loss counted.
+                _lastUnavailable = why;
+                return;
+            }
+
             NoteLoss();
             return;
         }

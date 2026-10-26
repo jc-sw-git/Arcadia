@@ -39,7 +39,9 @@ commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview
   `PlannedExit` (Arcadia's normal shutdown) unregisters without a teardown.
 - Client gone (pipe broke or process ended: Pan holds the client's process handle) → teardown `ClientGone`. Service
   stop or pre-shutdown while emulating → teardown too (`ServiceStopping`), run while the pipe is still open and its
-  `TornDown` notice given 2 s to go out before the pipe closes; then the client sees `Lost` with the service gone. Power
+  `TornDown` notice given 2 s to go out before the pipe closes; then the client sees `Lost` with the service gone.
+  While a teardown runs, heartbeats and a new `EmulationStarted` get `TeardownNotAcknowledged`: the client then reports
+  "Pan räumt noch auf" as unavailable, so the pad counts as lost once, not once per tick, until the notice comes. Power
   resume only restarts the hang clock: sleep is no hang. A torn-down generation is remembered per connection only: a
   Pan that counts anew (reinstalled, journal gone) may hand it out again as a live one.
 
@@ -66,35 +68,8 @@ commands `Hide`/`Unhide`, which Pan answers with `Unsupported` for now. Overview
 
 ## Setup, update, uninstall
 
-- "Treiber installieren" (settings, or the fix row "Wächterdienst Pan fehlt" / "usbip-Treiber fehlt"):
-  `ControllerSupportPlatform.InstallDriversAsync` downloads the usbip-win2 installer only when the driver is missing or
-  too old (`VerifiedDownload`, GitHub's SHA-256), then runs the bundled `Pan.exe --install --expect-hash <sha256 of the
-  bundled exe> [--usbip-installer <path>]` elevated: one UAC prompt for both. Pan (elevated) checks the installer's
-  Authenticode signature against `UsbipRelease.Publisher` on a copy in Pan's data folder (the user can't swap it
-  after the check), runs that `/S` (5 min), copies itself to
-  `%ProgramFiles%\Arcadia\Pan\Pan.exe` and compares the copy's SHA-256 with the source and the expected hash, creates the service with a quoted image path, auto
-  start, the description in the system language (de, en, fr, es, it; else en), recovery, 40 s pre-shutdown, and the
-  DACL `D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;RPLCLORC;;;IU)` (users start and query,
-  never change). A declined prompt is a failed action ("… abgelehnt"); Pan's exit code 3 points to `pan.log`.
-- Data folder: `%ProgramData%` lets any user create `Arcadia\Pan` first and keep its ownership, so `--install`
-  secures both folders before its first log line (`ServiceSetup.SecureDataDirectory`): a reparse point is deleted, a
-  folder not owned by SYSTEM/Administrators is renamed to `<name>.untrusted-<time>`, the folder is created with a
-  protected DACL (SYSTEM and Administrators full, no inheritance) and Administrators as owner. The service and
-  `--restore` refuse to run when the folder doesn't look like that (`CheckDataDirectory`; exit 3 / service failure);
-  `--uninstall` then removes only the service and Program Files. `PanLog` writes its file only after the process
-  secured or checked the folder (`TrustFolder`); lines from before follow then, or reach only a console.
-- Update: at start, when the bundled Pan is newer than the installed one (file versions), one dialog "Pan
-  aktualisieren" (A updates with one UAC prompt, B later; asked again at the next start). Pan's `--install` stops and
-  replaces the old service; its stop is a full teardown.
-- Uninstall (Velopack hook, `Program.OnBeforeUninstall`): after the SISR and data questions, `Pan.exe --uninstall`
-  elevated, one UAC prompt, no question (Pan exists for Arcadia alone): stop (= teardown), delete the service, undo the
-  journal, delete both folders (a file in use goes at the next boot, `MoveFileEx`). Declined: the service stays, idles
-  and stops itself; `Pan.exe --uninstall` by hand removes it.
-- "Controller wiederherstellen" (settings, shown while Pan is installed): `Pan.exe --restore` elevated, for the case
-  the service itself hangs: undoes the journal without the service.
-- Without Pan: no pad is plugged in (`GuardedXboxPads.Unavailable`), the per-game mode is greyed out, the Controller
-  category shows the warning "Wächterdienst Pan fehlt" also while "Steam Controller Kompatibilität" is off
-  (`ControllerSupportService` → `IControllerSupportPlatform.CheckDrivers`, only while the settings watch).
+One UAC prompt for drivers and service, the "Pan aktualisieren" dialog, the uninstall hook, `--restore` and how the data
+folder is secured: [pan-setup.md](pan-setup.md). Known limits and accepted risks: [pan-risks.md](pan-risks.md).
 
 ## Tests
 

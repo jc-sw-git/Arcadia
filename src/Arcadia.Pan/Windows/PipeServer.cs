@@ -171,7 +171,18 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
             ClientPresent?.Invoke(true);
             using var gone = new CancellationTokenSource();
             using var processWait = new ProcessWaitHandle(processHandle);
-            var registration = ThreadPool.RegisterWaitForSingleObject(processWait, (_, _) => gone.Cancel(), null, -1, executeOnlyOnce: true);
+            // When Arcadia dies, its pipe breaks before its process object is signalled, so this callback can run
+            // after the connection ended and `gone` is disposed; a throw here would end Pan (review, point 1).
+            var registration = ThreadPool.RegisterWaitForSingleObject(processWait, (_, _) =>
+            {
+                try
+                {
+                    gone.Cancel();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+            }, null, -1, executeOnlyOnce: true);
             void Notify(PanMessage message)
             {
                 var write = WriteAsync(pipe, writes, message, cancellationToken);

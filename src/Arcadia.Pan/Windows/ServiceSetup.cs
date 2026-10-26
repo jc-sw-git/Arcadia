@@ -136,6 +136,7 @@ public static class ServiceSetup
         {
             await Restore.RunAsync(log);
             DeleteTree(PanPaths.DataDirectory, log);
+            DeleteIfEmpty(Path.GetDirectoryName(PanPaths.DataDirectory)!, log);
         }
 
         DeleteTree(PanPaths.InstallDirectory, log);
@@ -257,14 +258,16 @@ public static class ServiceSetup
                 MoveAside(directory);
             }
 
-            var info = Directory.CreateDirectory(directory);
             var security = new DirectorySecurity();
             security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
             security.SetOwner(Administrators);
             var inherit = InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit;
             security.AddAccessRule(new FileSystemAccessRule(LocalSystem, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
             security.AddAccessRule(new FileSystemAccessRule(Administrators, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
-            info.SetAccessControl(security);
+            // Created with its descriptor in one step and never re-secured by path: a junction somebody plants between
+            // the move-aside and the create leaves this a no-op, and the check below fails instead of the elevated
+            // process putting an admin-only DACL on the junction's target (review, point 4).
+            new DirectoryInfo(directory).Create(security);
             if (!IsOurs(directory, out var problem))
             {
                 throw new InvalidOperationException($"{directory} could not be secured: {problem}");
@@ -372,6 +375,23 @@ public static class ServiceSetup
         else
         {
             File.Move(directory, aside);
+        }
+    }
+
+    /// <summary>The parent folder Pan created for itself goes when nothing else is in it; never anything inside.</summary>
+    private static void DeleteIfEmpty(string directory, Action<string> log)
+    {
+        try
+        {
+            if (Directory.Exists(directory) && !Directory.EnumerateFileSystemEntries(directory).Any())
+            {
+                Directory.Delete(directory, recursive: false);
+                log($"Deleted {directory}");
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            log($"{directory} not deleted: {ex.Message}");
         }
     }
 

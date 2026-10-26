@@ -4,6 +4,7 @@ using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Diagnostics;
+using Arcadia.Pan;
 using Arcadia.Launchers.Steam;
 using Avalonia;
 using Velopack;
@@ -94,14 +95,14 @@ sealed partial class Program
     }
 
     /// <summary>
-    /// Pan goes with Arcadia, always (#243): it exists for Arcadia alone. One UAC prompt; declined, the service stays
-    /// (harmless: it idles and stops itself) and <c>Pan.exe --uninstall</c> removes it by hand. Capped so Velopack's
-    /// hook limit holds.
+    /// Pan goes with Arcadia, always (#243): it exists for Arcadia alone. One UAC prompt, and only when Pan is there
+    /// (admin rights only where unavoidable); declined, the service stays (harmless: it idles and stops itself) and
+    /// <c>Pan.exe --uninstall</c> removes it by hand. Capped so Velopack's hook limit holds.
     /// </summary>
     [SupportedOSPlatform("windows")]
     private static void RemovePan()
     {
-        if (!PanSetup.IsBundled)
+        if (!PanSetup.IsBundled || (!PanSetup.IsInstalled && !Directory.Exists(PanPaths.InstallDirectory)))
         {
             return;
         }

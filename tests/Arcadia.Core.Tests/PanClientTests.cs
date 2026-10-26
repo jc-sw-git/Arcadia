@@ -249,6 +249,8 @@ public sealed class PanClientTests : IAsyncDisposable
         private readonly string _folder = Path.Combine(Path.GetTempPath(), "arcadia-pan-client-tests", Guid.NewGuid().ToString("N"));
         private readonly SemaphoreSlim _paused = new(1, 1);
         private DuplexStream? _serverSide;
+        private Task _serving = Task.CompletedTask;
+        private volatile bool _dead;
         private int _heartbeats;
 
         public FakePanServer(Action<string> log)
@@ -270,7 +272,7 @@ public sealed class PanClientTests : IAsyncDisposable
 
         public int Heartbeats => Volatile.Read(ref _heartbeats);
 
-        public Task<PanLink> ConnectAsync(CancellationToken cancellationToken)
+        public async Task<PanLink> ConnectAsync(CancellationToken cancellationToken)
         {
             Connections++;
             if (Refuse is { } refuse)
@@ -278,13 +280,17 @@ public sealed class PanClientTests : IAsyncDisposable
                 throw refuse;
             }
 
+            // As with the real pipe: the last connection has ended (its client unregistered) before the next one is served.
+            await _serving.WaitAsync(cancellationToken);
             var toServer = new AnonymousPipeServerStream(PipeDirection.Out);
             var toClient = new AnonymousPipeServerStream(PipeDirection.Out);
             var clientSide = new DuplexStream(new AnonymousPipeClientStream(PipeDirection.In, toClient.ClientSafePipeHandle), toServer);
             _serverSide = new DuplexStream(new AnonymousPipeClientStream(PipeDirection.In, toServer.ClientSafePipeHandle), toClient);
-            Guardian.Register(new ClientIdentity(Environment.ProcessId, 1, InConsoleSession: true));
-            _ = Task.Run(() => ServeAsync(_serverSide));
-            return Task.FromResult(new PanLink(clientSide, "Testserver"));
+            var guardian = Guardian;
+            guardian.Register(new ClientIdentity(Environment.ProcessId, 1, InConsoleSession: true));
+            var serverSide = _serverSide;
+            _serving = Task.Run(() => ServeAsync(guardian, serverSide));
+            return new PanLink(clientSide, "Testserver");
         }
 
         /// <summary>Pan hangs: nothing is answered until <see cref="Resume"/>.</summary>
@@ -293,11 +299,16 @@ public sealed class PanClientTests : IAsyncDisposable
         public void Resume() => _paused.Release();
 
         /// <summary>Pan died: its end of the pipe closes and nothing of it runs on.</summary>
-        public void Die() => _serverSide?.Dispose();
+        public void Die()
+        {
+            _dead = true;
+            _serverSide?.Dispose();
+        }
 
         /// <summary>A restarted Pan: it undoes what its journal lists, then serves again.</summary>
         public void RestartFromJournal()
         {
+            _dead = false;
             Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log);
             Guardian.RecoverAsync().GetAwaiter().GetResult();
         }
@@ -305,15 +316,16 @@ public sealed class PanClientTests : IAsyncDisposable
         /// <summary>A reinstalled Pan with an empty data folder: it counts the generations from 0 again.</summary>
         public void RestartWithoutJournal()
         {
+            _dead = false;
             Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "reinstalled", "journal.json")), _cleanup, _log);
             Guardian.RecoverAsync().GetAwaiter().GetResult();
         }
 
-        private async Task ServeAsync(DuplexStream stream)
+        private async Task ServeAsync(Guardian guardian, DuplexStream stream)
         {
             var buffer = new byte[PanMessage.Size];
             void Notify(PanMessage message) => stream.WriteAsync(message.ToBytes()).AsTask().ContinueWith(_ => { }, TaskContinuationOptions.OnlyOnFaulted);
-            Guardian.Notify += Notify;
+            guardian.Notify += Notify;
             try
             {
                 while (true)
@@ -336,7 +348,7 @@ public sealed class PanClientTests : IAsyncDisposable
                         Interlocked.Increment(ref _heartbeats);
                     }
 
-                    var reply = Guardian.Handle(message);
+                    var reply = guardian.Handle(message);
                     if (message.Command == PanCommand.Hello && HelloReply is { } forced)
                     {
                         reply = forced;
@@ -352,7 +364,12 @@ public sealed class PanClientTests : IAsyncDisposable
             }
             finally
             {
-                Guardian.Notify -= Notify;
+                guardian.Notify -= Notify;
+                if (!_dead)
+                {
+                    // A dead Pan notices nothing; a living one sees the client go, as the pipe server does.
+                    guardian.ClientGone();
+                }
             }
         }
 

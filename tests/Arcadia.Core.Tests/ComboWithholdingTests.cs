@@ -52,12 +52,26 @@ public class ComboWithholdingTests
     }
 
     [Fact]
-    public void Menu_held_alone_goes_through_as_held_once_it_is_no_combo_start()
+    public void Menu_held_alone_a_long_time_still_reaches_the_game_only_as_a_tap_on_release()
     {
         Assert.Equal(PadButtons.None, Poll(PadButtons.Menu));
-        Assert.Equal(PadButtons.Menu, Poll(PadButtons.Menu, afterMs: 200));
-        Assert.Equal(PadButtons.Menu, Poll(PadButtons.Menu, afterMs: 2000));
-        Assert.Equal(PadButtons.None, Poll(PadButtons.None));
+        Assert.Equal(PadButtons.None, Poll(PadButtons.Menu, afterMs: 2000));
+        Assert.Equal(PadButtons.Menu, Poll(PadButtons.None));
+    }
+
+    /// <summary>Codex review of #231: the mouse mode counts Back + Start however late the second button joins.</summary>
+    [Theory]
+    [InlineData(PadButtons.Menu, PadButtons.View, true)]
+    [InlineData(PadButtons.View, PadButtons.Menu, false)]
+    public void A_second_button_joining_late_still_makes_it_a_combo_the_game_never_sees(PadButtons first, PadButtons second, bool returnOn)
+    {
+        var options = new ComboWithholdingOptions(BackAndStart: true, ReturnHold: returnOn ? TimeSpan.FromSeconds(5) : null);
+        Assert.Equal(PadButtons.None, Poll(first, options));
+        Assert.Equal(PadButtons.None, Poll(first, options, afterMs: 250));
+        Assert.Equal(PadButtons.None, Poll(first | second, options, afterMs: 250));
+        Assert.Equal(PadButtons.None, Poll(first | second, options, afterMs: 1500));
+        Assert.Equal(PadButtons.None, Poll(PadButtons.None, options));
+        Assert.Equal(PadButtons.None, Poll(PadButtons.None, options, afterMs: 100));
     }
 
     [Fact]
@@ -86,11 +100,12 @@ public class ComboWithholdingTests
     }
 
     [Fact]
-    public void Without_the_way_back_View_held_alone_goes_through_like_Menu()
+    public void Without_the_way_back_View_held_alone_reaches_the_game_as_a_tap_on_release()
     {
         var backAndStartOnly = new ComboWithholdingOptions(BackAndStart: true, ReturnHold: null);
         Assert.Equal(PadButtons.None, Poll(PadButtons.View, backAndStartOnly));
-        Assert.Equal(PadButtons.View, Poll(PadButtons.View, backAndStartOnly, afterMs: 200));
+        Assert.Equal(PadButtons.None, Poll(PadButtons.View, backAndStartOnly, afterMs: 3000));
+        Assert.Equal(PadButtons.View, Poll(PadButtons.None, backAndStartOnly));
     }
 
     [Fact]

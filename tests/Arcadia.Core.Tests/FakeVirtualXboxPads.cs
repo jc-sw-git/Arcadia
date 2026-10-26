@@ -11,6 +11,12 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
     public bool FailPlug;
     public string? Missing;
     public bool ShutDown;
+
+    /// <summary>Unplugging throws, as removing the device from a VIIPER that doesn't answer would.</summary>
+    public bool FailUnplug;
+
+    /// <summary>A send never ends until cancelled, as a write to a stuck VIIPER would.</summary>
+    public bool StallSends;
     public FakePad? Current;
 
     public string? Unavailable() => Missing;
@@ -53,8 +59,26 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
 
         public Task SendAsync(XboxPadState state, CancellationToken cancellationToken)
         {
+            if (owner.StallSends)
+            {
+                return StallAsync(cancellationToken);
+            }
+
             lock (_sent) _sent.Add(state);
             return Task.CompletedTask;
+        }
+
+        // Like VIIPER's pad: a write cut off by its timeout leaves the pad broken.
+        private async Task StallAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+            finally
+            {
+                _lost = true;
+            }
         }
 
         public async Task<XboxPadState> WaitForAsync(Func<XboxPadState, bool> test)
@@ -78,7 +102,7 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
         public ValueTask DisposeAsync()
         {
             owner.Unplugged++;
-            return ValueTask.CompletedTask;
+            return owner.FailUnplug ? ValueTask.FromException(new IOException("VIIPER antwortet nicht")) : ValueTask.CompletedTask;
         }
     }
 }

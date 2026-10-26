@@ -125,6 +125,7 @@ internal sealed class ArcadiaDriver : IDisposable
         _controllers.Polled += _gamepad.Tick;
         XboxPad = SteamControllerForGames.Create(XboxPads, Settings, ControllerSupport, () => IsArcadiaInFront, () => IsMouseModeOn, Main.Toast, time);
         _controllers.Polled += XboxPad.Feed;
+        _controllers.Lost += XboxPad.Drop;
         _controllers.ButtonPressed += _gamepad.Press;
         _controllers.ButtonReleased += _gamepad.Release;
         _controllers.Lost += _gamepad.Drop;

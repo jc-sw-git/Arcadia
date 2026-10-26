@@ -30,10 +30,10 @@ Agreed with the owner; don't change without asking. Read this before changing th
   (assignable later), each press counts once also while SISR runs.
 - In games the Steam Controller is an Xbox 360 pad from Arcadia (#213, owner 2026-10-25/26); the game never sees
   Arcadia's combos. So while they are on, ⧉ and ≡ reach the game a little later (decided in the #213 implementation,
-  to be confirmed by the owner): pressed alone and let go, as a 50 ms tap on release; ≡ held alone past 200 ms as held
-  from then on, and ⧉ too when "Zurück zu Arcadia" is off. ⧉ held for "Zurück zu Arcadia" and ⧉ + ≡ together never
-  reach the game. Both combos off: ⧉ and ≡ go through at once. While Arcadia is in front or the mouse mode is on, the
-  game gets a pad at rest.
+  to be confirmed by the owner): only as a 50 ms tap when let go, however long they were held alone, because the mouse
+  mode counts ⧉ + ≡ whenever both are down. ⧉ held for "Zurück zu Arcadia" and ⧉ + ≡ together never reach the game.
+  Both combos off: ⧉ and ≡ go through at once. While Arcadia is in front or the mouse mode is on, the game gets a pad
+  at rest.
 - Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has
   no "Schließen" button besides (owner, 2026-10-20).

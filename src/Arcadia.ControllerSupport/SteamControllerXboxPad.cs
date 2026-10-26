@@ -19,6 +19,9 @@ public sealed class SteamControllerXboxPad
     public const int MaxReplugsPerWindow = 3;
     public static readonly TimeSpan CrashWindow = TimeSpan.FromMinutes(5);
 
+    /// <summary>VIIPER takes a state in well under a millisecond; a write this slow means it is stuck.</summary>
+    private static readonly TimeSpan SendTimeout = TimeSpan.FromSeconds(1);
+
     private readonly IVirtualXboxPads _pads;
     private readonly TimeProvider _time;
     private readonly Action<string> _log;
@@ -146,21 +149,43 @@ public sealed class SteamControllerXboxPad
         await _gate.WaitAsync();
         try
         {
+            // Each step on its own: a pad that can't be unplugged must not keep VIIPER's server running.
             if (_pad is { } pad)
             {
-                await UnplugAsync(pad);
+                await Guarded(async () => await UnplugAsync(pad), "Abstecken");
             }
 
             _states.Writer.TryComplete();
-            await _pads.ShutdownAsync();
-        }
-        catch (Exception ex)
-        {
-            _log($"Xbox-Pad: Fehler beim Beenden: {ex}");
+            await Guarded(_pads.ShutdownAsync, "VIIPER beenden");
         }
         finally
         {
             _gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// The gamepad source stopped for good after an error (<see cref="IGamepadSource.Lost"/>): no poll lets go of what
+    /// the Steam Controller held, so the game gets a pad at rest now, and the next tick unplugs it. Poll thread.
+    /// </summary>
+    public void Drop()
+    {
+        _steamControllerConnected = false;
+        _steamControllerId = null;
+        _withholding.Reset();
+        _lastFed = XboxPadState.Neutral;
+        _states.Writer.TryWrite((XboxPadState.Neutral, _time.GetTimestamp()));
+    }
+
+    private async Task Guarded(Func<Task> step, string what)
+    {
+        try
+        {
+            await step();
+        }
+        catch (Exception ex)
+        {
+            _log($"Xbox-Pad: {what} beim Beenden fehlgeschlagen: {ex}");
         }
     }
 
@@ -230,7 +255,9 @@ public sealed class SteamControllerXboxPad
 
             try
             {
-                await pad.SendAsync(state, CancellationToken.None);
+                // A write that hangs counts as a lost pad, like one that fails.
+                using var timeout = new CancellationTokenSource(SendTimeout);
+                await pad.SendAsync(state, timeout.Token);
                 _delays.Add(_time.GetElapsedTime(polledAt));
             }
             catch (Exception ex)

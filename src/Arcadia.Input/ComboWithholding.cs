@@ -10,10 +10,10 @@ public sealed record ComboWithholdingOptions(bool BackAndStart, TimeSpan? Return
 /// never sees them. Feed it every poll of the one controller it guards; it returns the buttons the game may see.
 /// </summary>
 /// <remarks>
-/// A guarded button (View, Menu) is held back when it goes down, because nobody knows yet whether it starts a combo:
-/// let go soon, the game gets it as a tap of <see cref="TapLength"/>; held alone past <see cref="ReturnWithView.SoloDelay"/>
-/// it is no combo start any more and goes through as held, except View while "Zurück zu Arcadia" is on (held long enough,
-/// it is Arcadia's). Once both are down, neither reaches the game until both are let go.
+/// A guarded button (View, Menu) is held back as long as it is down, because until it is let go the other one may join
+/// and make it Arcadia's combo (<see cref="MouseMode"/> counts Back + Start whenever both are down, however late the
+/// second came). Let go alone, the game gets it as a tap of <see cref="TapLength"/>. View held for "Zurück zu Arcadia",
+/// and both down together, never reach the game; after a combo nothing guarded does until both are let go.
 /// </remarks>
 public sealed class ComboWithholding(TimeProvider time)
 {
@@ -23,7 +23,6 @@ public sealed class ComboWithholding(TimeProvider time)
     private const PadButtons Guardable = PadButtons.View | PadButtons.Menu;
 
     private readonly Dictionary<PadButtons, long> _pendingSince = [];
-    private PadButtons _passing;
     private PadButtons _tapping;
     private long _tapUntil;
 
@@ -51,7 +50,6 @@ public sealed class ComboWithholding(TimeProvider time)
         {
             _spent = true;
             _pendingSince.Clear();
-            _passing = PadButtons.None;
             return shown;
         }
 
@@ -60,7 +58,6 @@ public sealed class ComboWithholding(TimeProvider time)
             if ((guarded & button) == 0)
             {
                 _pendingSince.Remove(button);
-                _passing &= ~button;
             }
             else if ((down & button) == 0)
             {
@@ -69,31 +66,16 @@ public sealed class ComboWithholding(TimeProvider time)
                     Tap(button, now);
                     shown |= button;
                 }
-
-                _passing &= ~button;
-            }
-            else if ((_passing & button) != 0)
-            {
-                shown |= button;
             }
             else if (!_pendingSince.TryGetValue(button, out var since))
             {
                 _pendingSince[button] = now;
             }
-            else if (button == PadButtons.View && options.ReturnHold is { } hold)
+            else if (button == PadButtons.View && options.ReturnHold is { } hold && time.GetElapsedTime(since, now) >= hold)
             {
-                if (time.GetElapsedTime(since, now) >= hold)
-                {
-                    // "Zurück zu Arcadia" fires now: the game never gets this View.
-                    _pendingSince.Clear();
-                    _spent = true;
-                }
-            }
-            else if (time.GetElapsedTime(since, now) >= ReturnWithView.SoloDelay)
-            {
-                _pendingSince.Remove(button);
-                _passing |= button;
-                shown |= button;
+                // "Zurück zu Arcadia" fires now: the game never gets this View.
+                _pendingSince.Clear();
+                _spent = true;
             }
         }
 
@@ -104,7 +86,6 @@ public sealed class ComboWithholding(TimeProvider time)
     public void Reset()
     {
         _pendingSince.Clear();
-        _passing = PadButtons.None;
         _tapping = PadButtons.None;
         _spent = false;
     }

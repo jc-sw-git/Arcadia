@@ -47,18 +47,25 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
     public async Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken)
     {
         var client = new ViiperClient("localhost", ApiPort);
+        uint? bus = null;
         try
         {
             await EnsureServerAsync(client, cancellationToken);
             using var timeout = Timeout(cancellationToken);
-            var bus = (await client.BusCreateAsync(null, timeout.Token)).BusID;
-            var device = await client.BusDeviceAddAsync(bus, new DeviceCreateRequest { Type = "xbox360" }, timeout.Token);
-            var stream = await client.ConnectDeviceAsync(bus, device.DevID, timeout.Token);
+            bus = (await client.BusCreateAsync(null, timeout.Token)).BusID;
+            var device = await client.BusDeviceAddAsync(bus.Value, new DeviceCreateRequest { Type = "xbox360" }, timeout.Token);
+            var stream = await client.ConnectDeviceAsync(bus.Value, device.DevID, timeout.Token);
             log($"Xbox-Pad: VIIPER-Controller {device.Vid}:{device.Pid} angesteckt (Bus {bus}, Gerät {device.DevID})");
-            return new ViiperXboxPad(client, bus, device.DevID, stream, () => _server is { HasExited: true });
+            return new ViiperXboxPad(client, bus.Value, device.DevID, stream, () => _server is { HasExited: true });
         }
         catch
         {
+            // Half plugged in: removing the bus removes its device too, so no pad without a stream is left behind.
+            if (bus is { } created)
+            {
+                await RemoveBusAsync(client, created);
+            }
+
             client.Dispose();
             throw;
         }
@@ -173,6 +180,19 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
         }
     }
 
+    private async Task RemoveBusAsync(ViiperClient client, uint bus)
+    {
+        try
+        {
+            using var timeout = new CancellationTokenSource(ApiTimeout);
+            await client.BusRemoveAsync(bus, timeout.Token);
+        }
+        catch (Exception ex)
+        {
+            log($"Xbox-Pad: Bus {bus} nicht entfernt: {ex.Message}");
+        }
+    }
+
     private static async Task<bool> AnswersAsync(ViiperClient client, CancellationToken cancellationToken)
     {
         try
@@ -231,8 +251,9 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
                     Ry = state.RightY,
                 }, cancellationToken);
             }
-            catch (Exception) when (!cancellationToken.IsCancellationRequested)
+            catch (Exception)
             {
+                // Failed or timed out (the caller's token): either way the pad no longer follows the controller.
                 _broken = true;
                 throw;
             }

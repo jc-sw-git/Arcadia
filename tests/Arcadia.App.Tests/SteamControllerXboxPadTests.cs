@@ -187,4 +187,24 @@ public sealed class SteamControllerXboxPadTests
         arcadia.PollControllers();
         await arcadia.XboxPads.Current!.WaitForAsync(state => state.Buttons == (Back | Start));
     }
+
+    /// <summary>T213-6, Codex review of #231: SDL failing for good while A is held lets go of A in the game and unplugs the pad.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T213-6")]
+    public async Task Losing_SDL_while_a_button_is_held_lets_go_of_it_in_the_game()
+    {
+        var (arcadia, steamController) = await StartInBackgroundAsync();
+        using var _ = arcadia;
+        arcadia.Sdl.Hold(steamController, B.South);
+        arcadia.PollControllers();
+        var pad = arcadia.XboxPads.Current!;
+        await pad.WaitForAsync(state => state.Buttons == A);
+
+        arcadia.Sdl.ReadError = new InvalidOperationException("SDL broke");
+        arcadia.PollControllers();
+
+        await pad.WaitForAsync(state => state == XboxPadState.Neutral);
+        await arcadia.XboxPad.TickAsync();
+        Assert.False(arcadia.XboxPad.IsPlugged);
+    }
 }

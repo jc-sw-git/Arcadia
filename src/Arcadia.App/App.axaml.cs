@@ -175,6 +175,7 @@ public partial class App : Application
             var viiper = new ViiperXboxPads(Path.Combine(sisrHost.InstallDirectory, "viiper.exe"), Core.Diagnostics.LogLocation.Directory, sisrHost.CleanUpViiperAsync, AppLog.Write);
             var xboxPad = SteamControllerForGames.Create(viiper, settings, controllerSupport, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, viewModel.Toast, time);
             _gamepad.Polled += xboxPad.Feed;
+            _gamepad.Lost += xboxPad.Drop;
             _gamepad.ButtonPressed += routing.Press;
             _gamepad.ButtonReleased += routing.Release;
             _gamepad.Lost += routing.Drop;

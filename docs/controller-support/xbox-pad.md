@@ -20,12 +20,15 @@ the other files: [README](README.md); what the spike saw: [steam-input-helper.md
 - `ViiperXboxPads` runs `viiper.exe server --no-tray` from SISR's folder (`%LOCALAPPDATA%\SISR`, until #214 brings its
   own) as its own process, log `viiper.log` beside `arcadia.log`, API `localhost:3242`, and drives it with VIIPER's MIT
   client `Viiper.Client` 0.9.0: one bus, one `xbox360` device per plug. A VIIPER that already answers on the port (another
-  program's) is used, not replaced. Before Arcadia's first server it runs SISR's clean-up once
+  program's) is used, not replaced. A plug-in that fails after the bus was created removes the bus again. Before Arcadia's first server it runs SISR's clean-up once
   (`SisrHost.CleanUpViiperAsync`: a VIIPER from SISR's folder left over from a crash, and its usbip ports).
 - `viiper.exe` is in a job object with kill-on-close, so it ends with Arcadia also after a crash; the usbip port it held
   is cleaned up at the next start.
-- A pad lost (server ended, stream closed, send failed) is plugged in again at the next tick; more than 3 losses in
-  5 minutes and Arcadia stops until its next start, with a toast. On exit, also for an update, the pad and the server go;
+- `IGamepadSource.Lost` (SDL failed for good) calls `Drop`: the game gets a pad at rest at once, and the next tick
+  unplugs it.
+- A pad lost (server ended, stream closed, send failed or hung for 1 s) is plugged in again at the next tick; more than 3 losses in
+  5 minutes and Arcadia stops until its next start, with a toast. On exit, also for an update, the pad and the server go
+  (each step on its own, so a failed unplug still ends the server);
   after the restart the pad comes back by itself.
 - Unplugging logs the delay from an SDL poll to the state being with VIIPER (mean and maximum). The SDL poll itself adds
   up to 8 ms before that.

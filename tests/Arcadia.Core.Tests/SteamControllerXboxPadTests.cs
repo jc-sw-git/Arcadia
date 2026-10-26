@@ -160,4 +160,53 @@ public class SteamControllerXboxPadTests
         await _pad.TickAsync();
         await _pads.Current!.WaitForAsync(state => state.Buttons == 0x1000);
     }
+
+    /// <summary>Codex review of #231: a failed unplug must not leave VIIPER's server running.</summary>
+    [Fact]
+    public async Task Shutdown_ends_the_server_even_when_unplugging_fails()
+    {
+        _pad.Feed([SteamController]);
+        await _pad.TickAsync();
+        _pads.FailUnplug = true;
+
+        await _pad.ShutdownAsync();
+
+        Assert.True(_pads.ShutDown);
+        Assert.Contains("Abstecken beim Beenden fehlgeschlagen", Log());
+    }
+
+    /// <summary>Codex review of #231: a send that hangs counts as a lost pad, and the next tick plugs in a new one.</summary>
+    [Fact]
+    public async Task A_send_that_hangs_counts_as_a_lost_pad()
+    {
+        _pad.Feed([SteamController]);
+        await _pad.TickAsync();
+        _pads.StallSends = true;
+        _pad.Feed([SteamController with { Buttons = PadButtons.A }]);
+
+        for (var i = 0; i < 300 && _pads.Current!.IsConnected; i++)
+        {
+            await Task.Delay(10);
+        }
+
+        Assert.False(_pads.Current!.IsConnected);
+        _pads.StallSends = false;
+        await _pad.TickAsync();
+        Assert.Equal(2, _pads.Plugged);
+    }
+
+    /// <summary>Codex review of #231: SDL gone for good lets go of everything the game got, without another poll.</summary>
+    [Fact]
+    public async Task Losing_the_gamepad_source_lets_go_of_what_was_held_and_unplugs_the_pad()
+    {
+        _pad.Feed([SteamController with { Buttons = PadButtons.A }]);
+        await _pad.TickAsync();
+        await _pads.Current!.WaitForAsync(state => state.Buttons == 0x1000);
+
+        _pad.Drop();
+
+        await _pads.Current.WaitForAsync(state => state == XboxPadState.Neutral);
+        await _pad.TickAsync();
+        Assert.False(_pad.IsPlugged);
+    }
 }

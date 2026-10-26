@@ -30,8 +30,8 @@ Needed: the Steam Controller with its puck, an Xbox pad or the 8BitDo, usbip-win
 
 Part B (per-game mode, #119, no driver, SISR no longer started). Arcadia no longer starts SISR, so "Steam Controller
 Kompatibilität" doesn't matter for these cases. Keeping Steam away from the controller (Steam's desktop layout silent
-beside a game on "Arcadia", Back + Start not switching Steam's action set, #93) comes with spike #239's decision and
-adds its cases then; until then, with Steam running, a game on "Arcadia" may still get mouse and keys from Steam.
+beside a game on "Arcadia", Back + Start not switching Steam's action set, #93) is story #242 (decided after spike #239)
+and its cases are there; until then, with Steam running, a game on "Arcadia" may still get mouse and keys from Steam.
 
 - [ ] **T213-8** No switch to turn on: with the Steam Controller on, the preview, the detail page and the context menu
       show "Steam Controller: Arcadia" on a game of another launcher and "Steam-Eingabe" on a Steam game; the Steam

@@ -15,9 +15,9 @@ namespace Arcadia.ControllerSupport;
 public sealed record SteamControllerRoute(bool PadWanted, bool SteamUsesController, string Why);
 
 /// <summary>
-/// Keeps Steam from acting on the Steam Controller while Arcadia serves it, and lets Steam have it again. How is not
-/// decided yet (#239: an empty layout forced on Arcadia's marker, or an emulated Steam Controller that stays silent), so
-/// this is all <see cref="SteamControllerRouting"/> knows of it.
+/// Keeps Steam from acting on the Steam Controller while Arcadia serves it, and lets Steam have it again. #242 does it
+/// with an emulated copy of the controller that Steam sees instead of the real one (spike #239): false = the copy reports
+/// only rest, true = it forwards again. This is all <see cref="SteamControllerRouting"/> knows of it.
 /// </summary>
 public interface ISteamControllerHold
 {
@@ -43,7 +43,7 @@ public sealed class SteamControllerRouting(
     private bool _decided;
     private volatile bool _driverReady;
 
-    /// <summary>What keeps Steam from the controller; until #239 decides how, nothing does.</summary>
+    /// <summary>What keeps Steam from the controller; until #242, nothing does.</summary>
     public ISteamControllerHold Hold { get; init; } = new NoHold();
 
     public SteamControllerRoute Current => _current;

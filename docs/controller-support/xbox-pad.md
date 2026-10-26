@@ -1,8 +1,9 @@
 # The Steam Controller as an Xbox pad for games (#213)
 
 Part A of #213 (owner, 2026-10-26: split in two PRs into `feat/replace-sisr`): the pad itself. Part B: the per-game mode
-"Arcadia" / "Steam-Eingabe" and SISR no longer started; keeping Steam away from the controller waits for spike #239 (an
-empty layout forced on a marker, or an emulated Steam Controller that stays silent). Overview and the other files:
+"Arcadia" / "Steam-Eingabe" and SISR no longer started; keeping Steam away from the controller is story #242 (owner, 2026-10-26,
+after spike #239): HidHide hides the real controller from Steam and an emulated copy goes silent while Arcadia serves it;
+no empty layout forced on a marker, no focus bounce. Overview and the other files:
 [README](README.md); what the spike saw: [steam-input-helper.md](steam-input-helper.md).
 
 ## How it works
@@ -42,7 +43,8 @@ empty layout forced on a marker, or an emulated Steam Controller that stays sile
   `AppSettings.UsesArcadiaPad(key)`: the stored choice, else Steam-Eingabe for Steam games and Arcadia for all others.
 - Any running game on Steam-Eingabe: no pad, Steam may use the controller. Without the driver (`IVirtualXboxPads.Unavailable`:
   VIIPER or usbip missing) no game gets the pad, and Steam may use it while any game runs. Otherwise the pad is in and
-  Steam is kept away (`ISteamControllerHold`, a no-op until #239 decides how).
+  Steam is kept away (`ISteamControllerHold`, a no-op until #242: `Apply(false)` = the copy reports
+  only rest, `Apply(true)` = it forwards again, without Arcadia's combos).
 - Right before a game starts (`GameActions`, after "Wird gestartet …" is set) the App decides again and unplugs at once
   (`TickNowAsync`, 3 s at most), so a game on Steam-Eingabe never finds Arcadia's pad. Its end brings the pad back at
   the next 2 s tick.

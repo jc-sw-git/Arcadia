@@ -23,7 +23,7 @@ public class SteamControllerXboxPadTests
         {
             Wanted = () => _wanted,
             ForwardingAllowed = () => _forwarding,
-            Combos = () => new ComboWithholdingOptions(true, TimeSpan.FromSeconds(1)),
+            Combos = () => new ComboWithholdingOptions(BackAndStart: true),
         };
     }
 

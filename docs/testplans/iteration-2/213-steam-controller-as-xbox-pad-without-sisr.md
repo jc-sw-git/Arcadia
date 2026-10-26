@@ -10,9 +10,10 @@ Needed: the Steam Controller with its puck, an Xbox pad or the 8BitDo, usbip-win
 - [ ] **T213-1** Steam closed, Arcadia in the background, a game from another launcher in front (or `joy.cpl` →
       Properties): it sees exactly one Xbox controller; every button, both sticks, D-pad and both triggers (analog,
       not only on/off) arrive as on the Steam Controller. · E2E: yes (what reaches the pad; the real game is manual)
-- [ ] **T213-2** In that game: ⧉ + ≡ held switches the mouse mode and the game reacts to neither; ⧉ held brings Arcadia
-      back and the game shows nothing for ⧉; ⧉ or ≡ pressed alone act in the game (e.g. map, pause) only when let go,
-      also after holding them a while; ≡ held, then ⧉ added: the mouse mode switches and the game reacts to neither. With mouse mode "Aus" and "Zurück zu Arcadia" off, ⧉ and ≡ act at once. · E2E: yes
+- [ ] **T213-2** In that game: ⧉ + ≡ pressed together and held switches the mouse mode and the game reacts to
+      neither; a short ⧉ and a short ≡ act in the game (e.g. map, pause) when let go; ≡ held alone acts as held in the
+      game (e.g. "hold to skip"); ⧉ held brings Arcadia back, and the game may see ⧉ held too. ≡ held, ⧉ added after
+      a second: no mouse mode, the game gets both. Mouse mode "Aus": ⧉ and ≡ act at once. · E2E: yes
 - [ ] **T213-3** Arcadia in front while the game runs, and the mouse mode on in the game: the game gets no input from
       the Steam Controller; back in the game it gets it again. · E2E: yes
 - [ ] **T213-4** The Xbox pad (or 8BitDo) connected too: "Game controllers" lists it and one more Xbox controller
@@ -34,4 +35,5 @@ History:
 |---|---|---|---|---|---|
 | T213-1 to T213-6 | 2026-10-26 | Claude | Branch `feat/steam-controller-xbox-pad-without-sisr-213`, Linux, `SteamControllerXboxPadTests` (headless, SDL and VIIPER faked), unit tests | ✅ green; each acceptance test was red once with its feature broken on purpose (named in the PR) | Owner's manual test |
 | Codex review | 2026-10-26 | Codex | PR #231 at `af0bda3` | ❌ held state kept after SDL is lost; ≡ held alone reached the game although ⧉ added later still made the combo; a failed unplug skipped the server's end | Fixed: `Drop` on `Lost`, ⧉/≡ held back until let go, shutdown steps on their own; also send timeout and bus rollback. New tests red once (named in the PR) |
+| Owner's decision | 2026-10-26 | Juri | – | ⧉/≡ held alone must reach the game; ⧉ + ≡ only within 200 ms | `ComboWithholding` and `MouseMode.ComboWindow` changed, T213-2 rewritten |
 | T213-1 to T213-7 | 2026-10-26 | Claude | – | ➖ not runnable in the cloud (no Windows, no VIIPER, no controllers); `ViiperXboxPads` and the job object are only built, not run | Owner's PC |

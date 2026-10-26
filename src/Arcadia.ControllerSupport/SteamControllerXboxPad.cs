@@ -58,7 +58,7 @@ public sealed class SteamControllerXboxPad
     public Func<bool> ForwardingAllowed { get; init; } = () => true;
 
     /// <summary>Read on every poll: which of Arcadia's combos are on.</summary>
-    public Func<ComboWithholdingOptions> Combos { get; init; } = () => new ComboWithholdingOptions(true, TimeSpan.FromSeconds(1));
+    public Func<ComboWithholdingOptions> Combos { get; init; } = () => new ComboWithholdingOptions(BackAndStart: true);
 
     /// <summary>Raised once when the pad was lost too often and Arcadia stops plugging it in (shown as a toast).</summary>
     public event Action<string>? GaveUp;

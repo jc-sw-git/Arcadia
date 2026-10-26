@@ -44,10 +44,10 @@ public sealed class SteamControllerXboxPadTests
         await arcadia.XboxPads.Current.WaitForAsync(state => state.Buttons == 0);
     }
 
-    /// <summary>T213-2: Back + Start (the mouse mode) and View held (back to Arcadia) never reach the game; a tap of View does.</summary>
+    /// <summary>T213-2: Back + Start (the mouse mode) never reaches the game; a tap of View does.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T213-2")]
-    public async Task Back_and_Start_and_View_held_never_reach_the_game_but_a_tap_of_View_does()
+    public async Task Back_and_Start_never_reach_the_game_but_a_tap_of_View_does()
     {
         var (arcadia, steamController) = await StartInBackgroundAsync();
         using var _ = arcadia;
@@ -170,17 +170,33 @@ public sealed class SteamControllerXboxPadTests
         Assert.False(arcadia.XboxPad.IsPlugged);
     }
 
-    /// <summary>T213-2 with the mouse mode "Aus" and "Zurück zu Arcadia" off: View and Menu are the game's at once.</summary>
+    /// <summary>T213-2, owner 2026-10-26: View held alone reaches the game as held, also while it brings Arcadia back.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T213-2")]
-    public async Task With_both_combos_off_Back_and_Start_reach_the_game_at_once()
+    public async Task View_held_alone_reaches_the_game_as_held()
+    {
+        var (arcadia, steamController) = await StartInBackgroundAsync();
+        using var _ = arcadia;
+
+        arcadia.Sdl.Hold(steamController, B.Back);
+        for (var i = 0; i < 40; i++)
+        {
+            arcadia.PollControllers();
+        }
+
+        await arcadia.XboxPads.Current!.WaitForAsync(state => state.Buttons == Back);
+    }
+
+    /// <summary>T213-2 with the mouse mode "Aus": View and Menu are the game's at once.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T213-2")]
+    public async Task With_the_mouse_mode_off_Back_and_Start_reach_the_game_at_once()
     {
         var (arcadia, steamController) = await StartInBackgroundAsync();
         using var _ = arcadia;
         arcadia.Settings.Update(settings => settings with
         {
             MouseMode = settings.MouseMode with { Activation = MouseModeActivation.Off },
-            ReturnWithView = settings.ReturnWithView with { Enabled = false },
         });
 
         arcadia.Sdl.Hold(steamController, B.Back, B.Start);

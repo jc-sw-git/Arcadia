@@ -9,7 +9,7 @@ namespace Arcadia.App.Input;
 /// <summary>
 /// Wires the Steam Controller's virtual Xbox pad for games (#213) to Arcadia's state: it is wanted while SISR is off
 /// (until the per-game mode replaces SISR), a game gets nothing while Arcadia is in front or the mouse mode is on, and
-/// the combos it withholds follow the settings.
+/// Back + Start is withheld while the mouse mode is not "Aus".
 /// </summary>
 public static class SteamControllerForGames
 {
@@ -37,7 +37,7 @@ public static class SteamControllerForGames
     private sealed class CombosFromSettings(SettingsService settings)
     {
         private AppSettings? _from;
-        private ComboWithholdingOptions _options = new(false, null);
+        private ComboWithholdingOptions _options = new(false);
 
         public ComboWithholdingOptions Current()
         {
@@ -45,9 +45,7 @@ public static class SteamControllerForGames
             if (!ReferenceEquals(current, _from))
             {
                 _from = current;
-                _options = new ComboWithholdingOptions(
-                    current.MouseMode.Activation != MouseModeActivation.Off,
-                    current.ReturnWithView.Enabled ? TimeSpan.FromSeconds(current.ReturnWithView.HoldSeconds) : null);
+                _options = new ComboWithholdingOptions(current.MouseMode.Activation != MouseModeActivation.Off);
             }
 
             return _options;

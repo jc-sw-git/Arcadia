@@ -7,8 +7,9 @@ Read the relevant product decisions, architecture, technical findings and test
 plans linked from that file for each task. Use the repository's
 `.claude/skills/` instructions when the corresponding workflow applies.
 
-Claude is the primary developer. Codex primarily reviews code and may implement
-changes when the user requests them. A review request alone does not authorize
+Claude is the primary developer and reviews each PR itself (`docs/personas/`). Codex
+reviews the whole iteration in its acceptance review and may implement changes
+when the user requests them. A review request alone does not authorize
 fixing the reviewed code.
 
 Before reviewing, establish the exact revision and scope and read the relevant

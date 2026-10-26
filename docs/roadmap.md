@@ -27,6 +27,8 @@ Before code is written, owner and Claude walk through the most likely scenarios 
 - **Per issue, in its own thread** (owner, 2026-10-25): every issue is refined on its own first. Issues that
   refine and ship better together are grouped only when the owner says so. An epic is refined as a whole
   (and sliced into issues) only on the owner's request.
+- **Who leads** (owner, 2026-10-26): the product manager for stories, the architect for tech debt, spikes and
+  CI (`docs/personas/`).
 - Every issue is a self-contained increment that pays into the epic.
 - Guideline: the context an issue needs (code, docs, logs, discussion) stays below about
   150k tokens. More is a sign to split the issue further; not a hard limit.

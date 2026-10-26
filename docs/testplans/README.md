@@ -41,8 +41,9 @@ not the whole folder.
    within the issue is marked deferred (see Rules) and named in the PR with its reason.
 2. **Manual test:** the owner runs the issue's test plan file completely, on the PR build, and sends
    feedback in one batch.
-3. **Codex review** comes as a comment in the PR.
-4. **Rework:** the implementation thread fixes the owner's feedback and the Codex comments together in
+3. **Review:** the quality engineer thread reviews and adds the acceptance tests before the owner tests
+   (`docs/personas/quality-engineer.md`); its findings are in the PR description, section **Review**.
+4. **Rework:** the implementation thread fixes the owner's feedback and open review findings together in
    one pass. A new thread takes over the PR only if the implementation thread is already very long; it
    then reads PR, issue and test plan file instead of the old thread.
 5. The owner tests only what the rework changed, and merges.
@@ -50,7 +51,7 @@ not the whole folder.
 ## Course of an iteration
 
 1. **Feature iteration N** (milestone "Iteration N"): implement issues, every PR extends the test plan.
-2. **Final review** (code): checklist in the review issue, fix findings or plan them as issues.
+2. **Final review** (code, by Codex across the whole iteration): checklist in the review issue, fix findings or plan them as issues.
    The checklist also asks whether `CLAUDE.md`, `docs/` and skills are still right.
 3. **Acceptance review** (Claude, owner 2026-10-25): all test plan files of the iteration against `main`:
    - **Drift and gaps:** does each file still cover what later PRs changed, and still describe the current
@@ -88,7 +89,7 @@ not the whole folder.
   the iteration's overview lists them under "Acceptance tests".
 - **Red once:** every new acceptance test failed once before the PR because the feature was broken
   on purpose. The PR names, per test, the change that made it red.
-- **Codex review** per PR: does every test cover the text of its test case IDs, where are the gaps?
+- **Review** per PR (quality engineer): does every test cover the text of its test case IDs, where are the gaps?
 
 ## Template for an issue
 

@@ -34,22 +34,7 @@ public static class PanSetup
     public static Version? InstalledVersion => FileVersion(PanPaths.InstalledExecutable);
 
     /// <summary>The service exists and its exe is in place.</summary>
-    public static bool IsInstalled
-    {
-        get
-        {
-            try
-            {
-                using var service = new ServiceController(PanPaths.ServiceName);
-                _ = service.Status;
-                return File.Exists(PanPaths.InstalledExecutable);
-            }
-            catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
-            {
-                return false;
-            }
-        }
-    }
+    public static bool IsInstalled => PanPipeTransport.ServiceExists() && File.Exists(PanPaths.InstalledExecutable);
 
     /// <summary>Arcadia brings a newer Pan than the one installed (an Arcadia update): the dialog at start offers it.</summary>
     public static bool UpdateAvailable =>
@@ -62,6 +47,11 @@ public static class PanSetup
     /// <exception cref="InvalidOperationException">Pan reported an error; its log says which (<see cref="PanPaths.LogPath"/>).</exception>
     public static async Task<bool> InstallAsync(string? usbipInstaller, CancellationToken cancellationToken)
     {
+        if (!IsBundled)
+        {
+            throw new InvalidOperationException(MissingBundle);
+        }
+
         var arguments = new List<string> { "--install", "--expect-hash", HashOf(BundledExecutable) };
         if (usbipInstaller is not null)
         {
@@ -83,7 +73,7 @@ public static class PanSetup
         var exe = BundledExecutable;
         if (!File.Exists(exe))
         {
-            throw new InvalidOperationException($"Pan fehlt in Arcadias Programmordner ({exe}).");
+            throw new InvalidOperationException(MissingBundle);
         }
 
         var info = new ProcessStartInfo(exe) { UseShellExecute = true, Verb = "runas", CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden };
@@ -129,6 +119,10 @@ public static class PanSetup
             return false;
         }
     }
+
+    /// <summary>A Debug build gets its Pan.exe from the App project's build (see Arcadia.App.csproj); the installer always has it.</summary>
+    private static string MissingBundle =>
+        $"Pan fehlt in Arcadias Programmordner ({BundledExecutable}) – Arcadia neu installieren behebt das.";
 
     private static string HashOf(string file)
     {

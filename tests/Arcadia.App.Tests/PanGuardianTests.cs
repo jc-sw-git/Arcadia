@@ -124,6 +124,15 @@ public sealed class PanGuardianTests
     {
         var steam = new FakeSteam { IsPanReady = false };
         using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+
+        // The library's header carries the triangle before the option was ever switched on (owner's test, 2026-10-26):
+        // the App's first check at start finds the missing Pan.
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Status.HasControllerStatus, "das Dreieck im Header");
+        Assert.False(arcadia.Main.Status.IsControllerStatusInfo);
+        Assert.False(arcadia.Main.Status.IsControllerStatusError);
+        Assert.Equal("Steam Controller: Wächterdienst Pan fehlt", arcadia.Main.Status.ControllerStatusText);
+
         arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
 
@@ -133,12 +142,42 @@ public sealed class PanGuardianTests
         Assert.Equal("Installieren", warning.ActionText);
         Assert.Equal(HealthSeverity.Warning, controller.Marker);
         Assert.DoesNotContain(controller.Rows, row => row.Key == "pan-restore");
+        // One install button: the switch above stays a switch and points down.
+        var sisr = Assert.IsType<SisrRowViewModel>(controller.Rows.Single(row => row.Key == "sisr"));
+        Assert.True(sisr.IsSwitch);
+        Assert.Contains(sisr.Info.OfType<InfoSection>().SelectMany(section => section.Blocks).OfType<InfoStatus>(), status => status.Text.Contains("„Installieren“ bei der Meldung"));
 
         warning.Activate();
         await arcadia.WaitUntilAsync(() => steam.IsPanReady, "Treiber installiert");
         await arcadia.WaitUntilAsync(() => controller.Rows.All(row => row.Key != "issue:pan-missing"), "die Meldung verschwindet");
         Assert.Null(controller.Marker);
         Assert.Contains(controller.Rows, row => row.Key == "pan-restore");
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => !arcadia.Main.Status.HasControllerStatus, "der Header ist wieder leer");
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T243-13")]
+    public async Task A_failed_install_shows_its_error_at_the_Pan_row()
+    {
+        // Owner's test 2026-10-26: the error stood in the panel of "Steam Controller Kompatibilität", the Pan row showed nothing.
+        const string error = "Pan fehlt in Arcadias Programmordner – Arcadia neu installieren behebt das.";
+        var steam = new FakeSteam { IsPanReady = false, InstallError = error };
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Wächterdienst Pan fehlt“");
+        var pan = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-missing"));
+
+        pan.Activate();
+        await arcadia.WaitUntilAsync(() => pan.HasProblem, "der Fehler an der Pan-Zeile");
+
+        Assert.Equal(error, pan.Problem);
+        Assert.Equal(HealthSeverity.Error, pan.Severity);
+        Assert.Contains(pan.Info.OfType<InfoError>(), block => block.Text == error);
+        var sisr = Assert.IsType<SisrRowViewModel>(controller.Rows.Single(row => row.Key == "sisr"));
+        Assert.DoesNotContain(sisr.Info.OfType<InfoSection>().SelectMany(section => section.Blocks), block => block is InfoError);
+        Assert.Equal(HealthSeverity.Warning, controller.Marker);
     }
 
     [AvaloniaFact]

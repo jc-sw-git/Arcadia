@@ -39,8 +39,18 @@ public static class ServiceSetup
 
         var backup = target + ".old";
         using var manager = OpenManager(Native.ScManagerConnect | Native.ScManagerCreateService);
-        // An update: the old Pan stops (its teardown runs if it was emulating) and goes.
-        var hadService = RemoveService(manager, log);
+        bool hadService;
+        try
+        {
+            // An update: the old Pan stops (its teardown runs if it was emulating) and goes.
+            hadService = RemoveService(manager, log);
+        }
+        catch (Win32Exception) when (staged is not null)
+        {
+            // A hung old Pan that won't stop: nothing changed, so the staged copy goes again.
+            File.Delete(staged);
+            throw;
+        }
 
         try
         {
@@ -57,7 +67,6 @@ public static class ServiceSetup
             }
 
             CreateAndStart(manager, target, log);
-            File.Delete(backup);
         }
         catch (Exception ex) when (ex is Win32Exception or IOException or UnauthorizedAccessException)
         {
@@ -70,6 +79,17 @@ public static class ServiceSetup
                     ? $"the new Pan could not be installed ({ex.Message}); the previous version is running again"
                     : $"the new Pan could not be installed ({ex.Message}) and the previous one could not be restored; run the install again",
                 ex);
+        }
+
+        // The new Pan runs: the install is done. The backup is cleanup only (final review, P3): a scanner holding it
+        // must not undo a working installation.
+        try
+        {
+            File.Delete(backup);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            log($"{backup} could not be removed ({ex.Message}); the next install replaces it");
         }
     }
 

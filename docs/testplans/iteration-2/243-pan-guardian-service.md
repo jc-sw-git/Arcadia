@@ -43,8 +43,12 @@ the player's side runs in the acceptance tests with a faked Pan (`PanGuardianTes
       sends `TornDown(Hang)` with the generation; the client acknowledges. · E2E: yes (CI)
 - [ ] **T243-12** `Pan.exe --uninstall`: service gone (`sc query` → 1060), `%ProgramFiles%\Arcadia\Pan` gone. · E2E: yes (CI)
 - [ ] **T243-13** Einstellungen → Controller with Pan missing and the switch off: the category shows the warning
-      triangle, the row "Wächterdienst Pan fehlt" (warning, "Installieren") stands below "Steam Controller
-      Kompatibilität"; after the install the row goes and "Controller wiederherstellen" appears. · E2E: yes
+      triangle, the library's header too (tooltip "Steam Controller: Wächterdienst Pan fehlt"); the row "Wächterdienst
+      Pan fehlt" offers "Installieren", while "Steam Controller Kompatibilität" stays a switch whose status points to
+      that row (no second install button). "Installieren" asks for UAC once; afterwards the row, the triangle and the
+      header mark are gone and "Controller wiederherstellen" appears. A failed install (e.g. the prompt declined)
+      shows its message in place of the row's subtitle with the error icon and how to go on, and in the row's panel;
+      the switch's panel shows no error. · E2E: yes (acceptance tests; the real UAC by hand)
 - [ ] **T243-14** An Arcadia update that brings a newer Pan: at start one dialog "Pan aktualisieren"; B closes it and
       the next start asks again; A asks for administrator rights once, `services.msc` shows the new version afterwards
       (`Pan.exe --version`). While the first-run dialog or the settings are open, no question. · E2E: yes (the dialog;
@@ -89,3 +93,5 @@ History:
 | After the third review (`JournalTests`: fallback written back, nonsense journals unreadable; `GuardianTests`: recovery result, restore after a torn journal; `PanClientTests`: cancelled request drops the link) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once | pass | – |
 | T243-7 (update step: a rejected update keeps the installed Pan running) | 2026-10-26 | Claude (thread) | added to `ServiceTests`; red only by reasoning (the old code deleted the service before the check); Windows CI run 40403971802 on 6776613 passed | pass | – |
 | After the fourth review (`JournalTests`: a fallback that can't be written back is found by the next load; `GuardianTests`: recovery from the handed snapshot) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once; the dispatch lock and the install rollback are verified by reading only | pass | – |
+| T243-1 … T243-21 (owner's first run on his PC, Debug build) | 2026-10-26 | Juri | Windows 11, Debug from the IDE: no `Pan\Pan.exe` in the output, so "Installieren" failed with a path error shown at the wrong row; no triangle in the header; two install buttons; exceptions in the debugger at every retry | fail | fixed in this PR (next row) |
+| T243-13 (rewritten: header mark, one install button, the error at the Pan row), `ControllerSupportServiceTests` (drivers checked while off), `PanClientTests` (no connect attempt without the service) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once; `PublishPanForDebug` and the exception-free service check are Windows-only and verified by reading | pass | Juri's second run |

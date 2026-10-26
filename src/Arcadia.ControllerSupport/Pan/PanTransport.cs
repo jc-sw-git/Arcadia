@@ -23,6 +23,12 @@ public sealed class PanUnavailableException(string message, bool permanent = fal
 /// <summary>Opens the connection to Pan; replaced in tests by a stream pair.</summary>
 public interface IPanTransport
 {
+    /// <summary>
+    /// Why a connection is pointless right now (Pan not set up), without trying: the keeper then waits instead of
+    /// throwing and catching at every retry. Null means try.
+    /// </summary>
+    (string Reason, bool Permanent)? Unavailable() => null;
+
     /// <exception cref="PanUnavailableException">Pan can't be reached and the message says why.</exception>
     Task<PanLink> ConnectAsync(CancellationToken cancellationToken);
 }
@@ -40,12 +46,16 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
 
     public static string PipePath => $@"\\.\pipe\{PanPaths.PipeName}";
 
+    private const string NotInstalled = "Pan ist nicht eingerichtet";
+
+    public (string Reason, bool Permanent)? Unavailable() => ServiceExists() ? null : (NotInstalled, true);
+
     public async Task<PanLink> ConnectAsync(CancellationToken cancellationToken)
     {
         using var service = OpenService();
         if (service is null)
         {
-            throw new PanUnavailableException("Pan ist nicht eingerichtet", permanent: true);
+            throw new PanUnavailableException(NotInstalled, permanent: true);
         }
 
         if (service.Status != ServiceControllerStatus.Running)
@@ -107,8 +117,39 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
         }
     }
 
+    /// <summary>Whether the service is registered, asked without an exception (the debugger showed one per retry).</summary>
+    public static bool ServiceExists()
+    {
+        var manager = OpenSCManagerW(null, null, ScManagerConnect);
+        if (manager == 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            var service = OpenServiceW(manager, PanPaths.ServiceName, ServiceQueryStatus);
+            if (service == 0)
+            {
+                return false;
+            }
+
+            CloseServiceHandle(service);
+            return true;
+        }
+        finally
+        {
+            CloseServiceHandle(manager);
+        }
+    }
+
     private static ServiceController? OpenService()
     {
+        if (!ServiceExists())
+        {
+            return null;
+        }
+
         var service = new ServiceController(PanPaths.ServiceName);
         try
         {

@@ -199,7 +199,7 @@ public static class ServiceHost
         {
             lock (this)
             {
-                Dispose();
+                CancelCountdown();
                 if (present)
                 {
                     return;
@@ -220,10 +220,15 @@ public static class ServiceHost
         {
             lock (this)
             {
-                _countdown?.Cancel();
-                _countdown?.Dispose();
-                _countdown = null;
+                CancelCountdown();
             }
+        }
+
+        private void CancelCountdown()
+        {
+            _countdown?.Cancel();
+            _countdown?.Dispose();
+            _countdown = null;
         }
     }
 }

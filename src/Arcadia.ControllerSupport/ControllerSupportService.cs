@@ -396,6 +396,7 @@ public sealed class ControllerSupportService(
         }
 
         LastError = null;
+        FailedFix = null;
         OnChanged();
     }
 
@@ -685,8 +686,11 @@ public sealed class ControllerSupportService(
                 UpdateSetup();
             }
 
-            // With SISR replaced, the drivers matter without the switch: a missing Pan shows as a warning (#243).
-            var issues = WatchSetup && !StartsSisr ? _platform.CheckDrivers(Settings, time.GetUtcNow()) : [];
+            // The drivers matter without the switch: a missing Pan shows as a warning, in the header too (#243). Checked
+            // once at start and after every action, then only while the settings show it (registry, service list);
+            // otherwise what the last check found stands.
+            var issues = WatchSetup || !_driversChecked ? _platform.CheckDrivers(Settings, time.GetUtcNow()) : Issues;
+            _driversChecked = true;
             if (!issues.SequenceEqual(Issues) || Setup != setup)
             {
                 Issues = issues;
@@ -1100,7 +1104,7 @@ public sealed class ControllerSupportService(
         var usbipWasReady = _platform.IsUsbipReady;
         if (!await WithTimeoutAsync(token => _platform.InstallDriversAsync(http, token), InstallTimeout, "Die Treiber-Installation", cancellationToken))
         {
-            throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt.");
+            throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Installieren“ wählen und die Abfrage bestätigen.");
         }
 
         if (!usbipWasReady)
@@ -1130,7 +1134,28 @@ public sealed class ControllerSupportService(
             Log?.Invoke("Controller über Pan wiederhergestellt");
         }, cancellationToken);
 
-    public Task ApplyFixAsync(HealthFix fix, CancellationToken cancellationToken = default) => fix switch
+    /// <summary>The fix whose last run failed with <see cref="LastError"/>, so the settings show the error at its row (owner's test, 2026-10-26).</summary>
+    public HealthFix? FailedFix { get; private set; }
+
+    private HealthFix? _applyingFix;
+
+    /// <summary>False until the next tick while off looks at the drivers (at start, and after an action may have installed them).</summary>
+    private bool _driversChecked;
+
+    public async Task ApplyFixAsync(HealthFix fix, CancellationToken cancellationToken = default)
+    {
+        _applyingFix = fix;
+        try
+        {
+            await RunFixAsync(fix, cancellationToken);
+        }
+        finally
+        {
+            _applyingFix = null;
+        }
+    }
+
+    private Task RunFixAsync(HealthFix fix, CancellationToken cancellationToken) => fix switch
     {
         HealthFix.InstallSisr => RunBusyAsync("SISR wird installiert …", async token =>
         {
@@ -1337,7 +1362,7 @@ public sealed class ControllerSupportService(
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        Issues = Enabled ? await CheckHealthAsync(cancellationToken) : !StartsSisr && IsSupportedPlatform ? _platform.CheckDrivers(Settings, time.GetUtcNow()) : [];
+        Issues = Enabled ? await CheckHealthAsync(cancellationToken) : IsSupportedPlatform ? _platform.CheckDrivers(Settings, time.GetUtcNow()) : [];
         UpdateSetup();
         OnChanged();
     }
@@ -1768,6 +1793,7 @@ public sealed class ControllerSupportService(
 
         BusyText = text;
         LastError = null;
+        FailedFix = null;
         OnChanged();
         try
         {
@@ -1782,11 +1808,13 @@ public sealed class ControllerSupportService(
         {
             Log?.Invoke($"{text} fehlgeschlagen: {ex.Message}");
             LastError = ex.Message;
+            FailedFix = _applyingFix;
         }
         finally
         {
             SettleRestingState();
             BusyText = null;
+            _driversChecked = false;
             _gate.Release();
             if (!_shuttingDown)
             {

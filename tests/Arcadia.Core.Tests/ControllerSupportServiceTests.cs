@@ -1600,16 +1600,33 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var service = new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, StartsSisr = false };
         _platform.IsPanReady = false;
 
-        await service.TickAsync();
-        Assert.Empty(service.Issues);
-
-        service.WatchSetup = true;
+        // The first tick looks once, for the header; closed settings don't look again (registry, service list).
         await service.TickAsync();
         Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
 
         _platform.IsPanReady = true;
         await service.TickAsync();
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+
+        service.WatchSetup = true;
+        await service.TickAsync();
         Assert.Empty(service.Issues);
+
+        _platform.IsPanReady = false;
+        await service.TickAsync();
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+    }
+
+    [Fact]
+    public async Task A_missing_Pan_is_a_warning_while_the_option_is_off_also_with_SISR_in_place()
+    {
+        // Owner's test 2026-10-26: the header showed nothing while the switch was off, the settings did.
+        var service = Create(enabled: false);
+        _platform.IsPanReady = false;
+
+        await service.RefreshAsync();
+
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
     }
 
     [Fact]
@@ -1622,7 +1639,11 @@ public sealed class ControllerSupportServiceTests : IDisposable
         await service.ApplyFixAsync(HealthFix.InstallDrivers);
 
         Assert.Contains("abgelehnt", service.LastError);
+        Assert.Equal(HealthFix.InstallDrivers, service.FailedFix);
         Assert.False(_platform.IsPanReady);
+
+        service.ClearError();
+        Assert.Null(service.FailedFix);
     }
 
     [Fact]

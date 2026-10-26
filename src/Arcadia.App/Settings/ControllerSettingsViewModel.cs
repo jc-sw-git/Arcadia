@@ -556,7 +556,10 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         // VIIPER and the usbip driver for Arcadia's own pad (until #214 rebuilds this row).
         var replaced = !_support.StartsSisr && setup == ControllerSupportSetup.Ready;
         var unavailable = replaced || (!enabled && setup is ControllerSupportSetup.UnsupportedPlatform or ControllerSupportSetup.SteamMissing);
-        var showInstall = !enabled && setup == ControllerSupportSetup.NeedsInstall;
+        // A missing driver or Pan has its own row with "Installieren" below; the switch then stays a switch, so there
+        // is one install button, not two that do the same (owner's test, 2026-10-26).
+        var installsBelow = _support.Issues.Any(i => i.Fix == HealthFix.InstallDrivers);
+        var showInstall = !enabled && setup == ControllerSupportSetup.NeedsInstall && !installsBelow;
         var state = _support.State;
         _sisr.Update(
             unavailable ? SisrRowMode.Unavailable : showInstall ? SisrRowMode.Install : SisrRowMode.Switch,
@@ -573,6 +576,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
         var statusText = (enabled, state == SisrState.Paused, hasProblems) switch
         {
+            (false, _, _) when installsBelow => "Nicht eingerichtet – „Installieren“ bei der Meldung unter der Einstellung richtet die Treiber ein.",
             (false, _, _) when showInstall => "Nicht eingerichtet – „Treiber installieren“ richtet alles Nötige ein und schaltet die Option ein.",
             (false, _, _) => "Aus – außerhalb von Steam läuft der Steam Controller im Desktop-Modus (Maus und Tastatur).",
             (true, true, true) => "Pausiert – die Meldungen unter der Einstellung sagen, warum.",
@@ -599,7 +603,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         [
             new InfoStatus(statusText, healthy, settlingNow),
             .. _support.BusyText is { } busy ? [new InfoText(busy)] : Array.Empty<InfoBlock>(),
-            .. _support.LastError is { } error ? [new InfoError(error)] : Array.Empty<InfoBlock>(),
+            .. _support.LastError is { } error && _support.FailedFix is null ? [new InfoError(error)] : Array.Empty<InfoBlock>(),
         ]);
         var version = new InfoSection("SISR-VERSION",
         [
@@ -695,12 +699,15 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
                 _issueRows[issue.Id] = row;
             }
 
+            // A fix that failed shows its error at the row it belongs to, with the error icon, and how to go on.
+            var failed = _support.FailedFix == issue.Fix ? _support.LastError : null;
             row.Title = issue.Title;
             row.Subtitle = issue.ShortText;
-            row.Severity = issue.Severity;
+            row.ShowProblem(failed);
+            row.Severity = failed is null ? issue.Severity : HealthSeverity.Error;
             row.ActionText = issue.Fix == HealthFix.None ? string.Empty : issue.FixLabel ?? "Beheben";
             row.IsEnabled = !IsBusy && !IsSettling;
-            row.Info = [new InfoText(issue.Detail)];
+            row.Info = failed is null ? [new InfoText(issue.Detail)] : [new InfoText(issue.Detail), new InfoError(failed)];
             rows.Add(row);
         }
 

@@ -31,6 +31,10 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   and stops itself; `Pan.exe --uninstall` by hand removes it. Known limits and accepted risks: [pan-risks.md](pan-risks.md).
 - "Controller wiederherstellen" (settings, shown while Pan is installed): `Pan.exe --restore` elevated, for the case
   the service itself hangs: undoes the journal without the service.
+- A Debug build on Windows publishes `Pan\Pan.exe` beside `Arcadia.dll` (target `PublishPanForDebug` in
+  `Arcadia.App.csproj`: single-file, framework-dependent, not AOT; skipped when nothing of Pan changed,
+  `-p:ArcadiaSkipPan=true` skips it), so "Installieren" works from the IDE; without it Arcadia says "Pan fehlt in
+  Arcadias Programmordner …". The `.old` backup of an update is removed best-effort after the new service runs.
 - Exit codes of `Pan.exe`: 0 done, 3 failed (`pan.log`), 4 data folder not securable (`--install`), 5 restore
   incomplete (`--restore`, `--uninstall`: what failed stays in the journal, `Pan.exe` stays in Program Files for the
   next `--restore` or install; Arcadia shows "Pan konnte nicht alles aufräumen …").

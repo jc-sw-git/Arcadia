@@ -201,6 +201,23 @@ public sealed class PanClientTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task A_transport_that_knows_Pan_is_missing_is_not_asked_to_connect()
+    {
+        // Owner's test 2026-10-26: the debugger showed "Service 'ArcadiaPan' was not found" and "Pan ist nicht
+        // eingerichtet" thrown at every retry; the keeper now asks first and waits without an exception.
+        _server.NotThere = ("Pan ist nicht eingerichtet", true);
+        _client.Start();
+
+        await AdvanceUntil(() => _client.Unavailable() == "Pan ist nicht eingerichtet", "der Grund");
+        _time.Advance(TimeSpan.FromMinutes(2));
+        await Task.Delay(50);
+        Assert.Equal(0, _server.Connections);
+
+        _server.NotThere = null;
+        await AdvanceUntil(() => _client.IsConnected, "verbunden, sobald Pan da ist");
+    }
+
+    [Fact]
     public async Task Without_the_service_the_reason_is_shown_and_the_client_keeps_trying_slowly()
     {
         _server.Refuse = new PanUnavailableException("Pan ist nicht eingerichtet", permanent: true);
@@ -323,6 +340,11 @@ public sealed class PanClientTests : IAsyncDisposable
         public FakeClockForClient Clock { get; } = new();
 
         public PanUnavailableException? Refuse { get; set; }
+
+        /// <summary>Set, the transport says so before any connection is tried, as the real one does without the service.</summary>
+        public (string Reason, bool Permanent)? NotThere { get; set; }
+
+        public (string Reason, bool Permanent)? Unavailable() => NotThere;
 
         /// <summary>Overrides the guardian's answer to hello.</summary>
         public PanMessage? HelloReply { get; set; }

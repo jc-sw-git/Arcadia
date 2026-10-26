@@ -112,9 +112,17 @@ internal sealed class FakeSteam : IControllerSupportPlatform
 
     private int _driverInstalls;
 
+    /// <summary>Set, "Installieren" fails with this message (e.g. the bundled Pan.exe is missing).</summary>
+    public string? InstallError { get; set; }
+
     public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _driverInstalls);
+        if (InstallError is { } error)
+        {
+            throw new InvalidOperationException(error);
+        }
+
         IsUsbipReady = true;
         IsPanReady = true;
         IsPanUpdateAvailable = false;

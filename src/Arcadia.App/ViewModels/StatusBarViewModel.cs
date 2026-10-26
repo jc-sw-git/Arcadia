@@ -92,14 +92,15 @@ public partial class StatusBarViewModel : ViewModelBase
         IsControllerStarting = support.Enabled && support.State == SisrState.Starting;
         var issues = support.Issues;
         var worst = issues.Count > 0 ? issues.Max(i => i.Severity) : HealthSeverity.Info;
-        HasControllerStatus = support.Enabled && issues.Count > 0;
+        // Also while the option is off: a missing driver or Pan is worth the triangle before the first switch-on (#243).
+        HasControllerStatus = issues.Count > 0;
         IsControllerStatusInfo = worst == HealthSeverity.Info;
         IsControllerStatusError = worst == HealthSeverity.Error;
         ControllerStatusText = issues.Count switch
         {
             0 => string.Empty,
-            1 => $"Steam Controller (SISR): {issues[0].Title}",
-            var n => $"Steam Controller (SISR): {n} Meldungen",
+            1 => $"{(support.Enabled ? "Steam Controller (SISR)" : "Steam Controller")}: {issues[0].Title}",
+            var n => $"{(support.Enabled ? "Steam Controller (SISR)" : "Steam Controller")}: {n} Meldungen",
         };
     }
 }

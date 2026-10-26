@@ -281,6 +281,13 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
             }
 
             var wait = Retry;
+            if (_transport.Unavailable() is { } why)
+            {
+                SetUnavailable(why.Reason);
+                await Task.Delay(why.Permanent ? SlowRetry : Retry, _time, token);
+                continue;
+            }
+
             try
             {
                 await ConnectAsync(token);

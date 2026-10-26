@@ -15,9 +15,13 @@ Agreed with the owner; don't change without asking. Read this before changing th
   Its lamp is green when SISR runs and nothing is wrong, grey when on but resting (paused, starting, no Steam
   Controller), yellow when a warning below needs the user, red with an error below. Its problems and "SISR aktualisieren"
   stand right below it, indented.
-  Since #243 (Pan): the install action reads "Treiber installieren" (it brings the usbip driver, VIIPER and Pan with
-  one Windows prompt); a missing Pan or usbip driver shows as a warning row with "Installieren" in the Steam group
-  also while the switch is off, and the category carries the triangle; "Controller wiederherstellen" (Pan's
+  Since #243 (Pan): a missing Pan or usbip driver shows as a warning row with "Installieren" in the Steam group also
+  while the switch is off; the category and the library's header carry the triangle (checked once at start, then
+  while the settings are open). While such a row offers the install, the switch stays a switch and its status points
+  down to it, so there is one install button, not two (owner, 2026-10-26); "Treiber installieren" on the switch only
+  when nothing below offers it (SISR itself missing, until #214). A failed fix shows its error at its own row (the
+  error icon, the message in place of the subtitle with how to go on, the detail panel), not at the switch.
+  "Controller wiederherstellen" (Pan's
   `--restore`) stands below the problems, indented like them, while Pan is installed. A newer Pan after an Arcadia update is one question
   at start, "Pan aktualisieren" (A updates, B asks again at the next start).
   Steam's launcher page links there (owner 2026-10-24): group "Controller", row "Controller-Einstellungen für Steam",

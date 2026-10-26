@@ -39,6 +39,7 @@ More findings, one file per topic (read only the one you touch):
 | Steam Input without SISR: overlay helper, raw SDL3, VIIPER from C# (spike #112) | [steam-input-helper.md](steam-input-helper.md) |
 | Every other controller through SDL3: which devices, hints, rumble, errors (#72) | [sdl-gamepads.md](sdl-gamepads.md) |
 | Hiding the real Steam Controller from Steam and showing it a 1:1 copy: HidHide, puck descriptors, latency (spike #239) | [emulated-steam-controller.md](emulated-steam-controller.md) |
+| Answering the UAC consent prompt by controller through a VIIPER virtual keyboard/mouse (spike #118) | [uac.md](uac.md) |
 
 ## Setup and naming (#85, #92, 2026-10-16)
 

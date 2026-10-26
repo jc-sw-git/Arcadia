@@ -19,10 +19,13 @@ public sealed class GamepadRouting
     private readonly Func<bool> _isArcadiaActive;
     private readonly Func<bool> _isMouseModeOn;
     private readonly SoloButtons _viewAndMenu;
+    private readonly InputLatency _latency;
 
-    public GamepadRouting(MainViewModel viewModel, Func<bool> isArcadiaActive, Func<bool> isMouseModeOn, TimeProvider time)
+    /// <param name="latency">Measures each press from the poll thread, where it arrives, to the frame that shows it.</param>
+    public GamepadRouting(MainViewModel viewModel, Func<bool> isArcadiaActive, Func<bool> isMouseModeOn, TimeProvider time, InputLatency latency)
     {
         _viewModel = viewModel;
+        _latency = latency;
         _isArcadiaActive = isArcadiaActive;
         _isMouseModeOn = isMouseModeOn;
         _viewAndMenu = new SoloButtons(GamepadButton.View, GamepadButton.Menu, SoloButtonDelay, time);
@@ -81,12 +84,13 @@ public sealed class GamepadRouting
 
         if (UiActionMap.FromGamepad(button) is { } action)
         {
+            var pressedAt = InputLatency.Now();
             AppLog.Write($"Gamepad: {button} → {action}");
             Dispatcher.UIThread.Post(() =>
             {
                 if (_isArcadiaActive())
                 {
-                    _viewModel.HandleGamepad(action);
+                    _latency.Measure(action.ToString(), pressedAt, () => _viewModel.HandleGamepad(action));
                 }
             });
         }

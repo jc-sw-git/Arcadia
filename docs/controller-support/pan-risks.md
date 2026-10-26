@@ -7,7 +7,8 @@ one names the countermeasure that would close it, so a later story can pick it u
   mapping from a port to the process that attached it, so with "Arcadia nutzt ihn mit" (another program's VIIPER)
   Pan can't tell its ports from the other's. Any process of the console session can trigger a teardown (connect,
   `EmulationStarted`, drop the pipe): a nuisance for that program, no privilege gain. Pan logs an emulation without a
-  held `viiper.exe`. Closes with an own port bookkeeping once Arcadia manages its pads itself.
+  held `viiper.exe`. Accepted as a residual risk (owner, 2026-10-26); it closes with #214: Arcadia then uses only
+  its own `viiper.exe`, never another program's running one, ideally on own ports so Pan knows its ports by number.
 - **A usbip step left behind after its 10 s timeout** keeps running with a cancelled token; usbip.exe itself is killed
   after 5 s. In theory a late `detach -p N` could hit a port the next emulation got under the same number. Ending
   processes is handle-bound and can't hit anything new.

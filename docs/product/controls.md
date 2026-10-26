@@ -28,6 +28,12 @@ Agreed with the owner; don't change without asking. Read this before changing th
   gyro or touchpad yet (#111); the button symbols of the controller in use come with #215. The Steam Controller too,
   read directly (#212, owner 2026-10-25): its Steam button and "…" belong to Steam, the back grips do nothing
   (assignable later), each press counts once also while SISR runs.
+- In games the Steam Controller is an Xbox 360 pad from Arcadia (#213, owner 2026-10-25/26); the game never sees
+  Arcadia's combo Back + Start (owner, 2026-10-26). ⧉ + ≡ counts for switching the mouse mode on only when the second
+  button comes within 100 ms of the first, everywhere in Arcadia (ending the mode still takes them in any order). So
+  while the mouse mode is not "Aus", ⧉ and ≡ reach the game a little later: let go within 100 ms, as a 50 ms tap;
+  held alone longer, as held from then on, ⧉ also while it brings Arcadia back. While Arcadia is in front or the mouse
+  mode is on, the game gets a pad at rest. Own hold times and a pause key per game: separate issue.
 - Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has
   no "Schließen" button besides (owner, 2026-10-20).

@@ -26,6 +26,9 @@ public enum PadButtons : ushort
     Y = 0x8000,
 }
 
+/// <summary>How far each trigger is pulled, from 0 (let go) to 1 (fully).</summary>
+public readonly record struct TriggerPosition(double Left, double Right);
+
 /// <summary>A stick's position, each axis from -1 to 1; up and right are positive.</summary>
 public readonly record struct StickPosition(double X, double Y);
 
@@ -44,6 +47,9 @@ public readonly record struct MotionReading(bool IsOn, SensorAxes Gyro, SensorAx
 /// <summary>What one controller reports in one poll. <see cref="PadId"/> tells the controllers apart; SDL gives a new one on every connect.</summary>
 public readonly record struct GamepadReading(int PadId, PadButtons Buttons, StickPosition LeftStick, StickPosition RightStick)
 {
+    /// <summary>The triggers as analog values; <see cref="Buttons"/> has them only as pressed past half way.</summary>
+    public TriggerPosition Triggers { get; init; }
+
     /// <summary>The Steam Controller's left trackpad, or a PlayStation pad's touchpad. No consumer yet (#111).</summary>
     public TouchpadReading LeftTouchpad { get; init; }
 

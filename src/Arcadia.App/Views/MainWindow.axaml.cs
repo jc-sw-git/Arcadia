@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Arcadia.App.Input;
 using Arcadia.App.Search;
+using Arcadia.App.Services;
 using Arcadia.App.Settings;
 using Arcadia.App.ViewModels;
 using Avalonia;
@@ -72,6 +73,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Latency = InputLatency.For(this);
 
         // Tunnel so arrow keys and Enter reach us before Avalonia's own focus navigation.
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
@@ -167,8 +169,12 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Measures every press in this window, key or button, to the frame that shows it (#229).</summary>
+    public InputLatency Latency { get; }
+
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
+        var pressedAt = InputLatency.Now();
         _viewModel?.NoteKeyboard();
         if (e.Key == Key.F11)
         {
@@ -192,7 +198,7 @@ public partial class MainWindow : Window
         if (_viewModel is { IsSearchShown: false } && UiActionMap.TabNumber(e.Key, e.KeyModifiers) is { } tab)
         {
             Services.AppLog.Write($"Taste: {e.Key} → Launcher {tab + 1}");
-            _viewModel.ChooseTabNumber(tab);
+            Latency.Measure($"Launcher {tab + 1}", pressedAt, () => _viewModel.ChooseTabNumber(tab));
             e.Handled = true;
             return;
         }
@@ -208,7 +214,8 @@ public partial class MainWindow : Window
             }
 
             Services.AppLog.Write($"Taste: {e.Key} → {action}");
-            _viewModel.Handle(action);
+            var viewModel = _viewModel;
+            Latency.Measure(action.ToString(), pressedAt, () => viewModel.Handle(action));
             e.Handled = true;
         }
     }

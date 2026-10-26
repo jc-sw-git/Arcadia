@@ -119,7 +119,11 @@ internal sealed class ArcadiaDriver : IDisposable
             firstRun,
             time,
             FolderCheck);
-        _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time);
+        _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time, new InputLatency(shown => shown(), line =>
+        {
+            AppLog.Write(line);
+            LatencyLines.Add(line);
+        }));
 
         // The controllers as the App reads them (#72), through SDL as the test sets it up.
         _controllers = ControllerInput.Create(Sdl, Main);
@@ -130,6 +134,9 @@ internal sealed class ArcadiaDriver : IDisposable
     }
 
     public string Folder { get; }
+
+    /// <summary>The lines the controller's presses logged with their time to the frame (#229); the test's frame comes at once.</summary>
+    public List<string> LatencyLines { get; } = [];
 
     /// <summary>SDL3 with the controllers a test plugs in; read only after <see cref="StartControllers"/>.</summary>
     public FakeSdlGamepads Sdl { get; } = new();

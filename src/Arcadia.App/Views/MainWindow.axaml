@@ -286,14 +286,20 @@
 
         <Grid Grid.Column="1" RowDefinitions="*,64" IsVisible="{Binding !IsEmptyTabShown}">
           <ScrollViewer Name="GridScroller" VerticalScrollBarVisibility="Auto" Padding="6,8,70,8">
-            <ItemsControl Name="GameGrid" ItemsSource="{Binding Library.PageGames}" VerticalAlignment="Top">
+            <ItemsControl Name="GameGrid" ItemsSource="{Binding Library.Slots}" VerticalAlignment="Top">
+              <!-- A slot keeps its cover's controls when it shows another game (LibraryViewModel.Slots, #229). -->
+              <ItemsControl.Styles>
+                <Style Selector="ItemsControl#GameGrid > ContentPresenter" x:DataType="vm:TileSlotViewModel">
+                  <Setter Property="IsVisible" Value="{Binding IsShown}" />
+                </Style>
+              </ItemsControl.Styles>
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                   <UniformGrid Columns="8" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:GameTileViewModel">
+              <ItemsControl.Resources>
+                <DataTemplate x:Key="LibraryCover" x:DataType="vm:GameTileViewModel">
                   <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Command="{Binding FocusCommand}"
                           Background="{Binding CoverBrush}" Height="215" ToolTip.Tip="{Binding Title}">
                     <Panel>
@@ -341,6 +347,11 @@
                                    VerticalAlignment="Bottom" Margin="0" />
                     </Panel>
                   </Button>
+                </DataTemplate>
+              </ItemsControl.Resources>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:TileSlotViewModel">
+                  <ContentControl Content="{Binding Tile}" ContentTemplate="{StaticResource LibraryCover}" ClipToBounds="False" />
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -760,12 +771,12 @@
                 <ItemsControl Name="SearchResults" Classes="hits" Classes.grid="{Binding !IsKeyboardOut}" ItemsSource="{Binding Slots}">
                   <!-- A slot keeps its tile's controls when it shows another hit (SearchViewModel.Slots). -->
                   <ItemsControl.Styles>
-                    <Style Selector="ItemsControl#SearchResults > ContentPresenter" x:DataType="search:HitSlotViewModel">
+                    <Style Selector="ItemsControl#SearchResults > ContentPresenter" x:DataType="vm:TileSlotViewModel">
                       <Setter Property="IsVisible" Value="{Binding IsShown}" />
                     </Style>
                   </ItemsControl.Styles>
                   <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="search:HitSlotViewModel">
+                    <DataTemplate x:DataType="vm:TileSlotViewModel">
                       <ContentControl Content="{Binding Tile}" ContentTemplate="{StaticResource SearchHitTile}" ClipToBounds="False" />
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>

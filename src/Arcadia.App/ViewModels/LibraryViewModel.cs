@@ -76,6 +76,12 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
 
     public ObservableCollection<GameTileViewModel> PageGames { get; } = [];
 
+    /// <summary>
+    /// The places the grid draws <see cref="PageGames"/> in, one per tile at the same index. They stay when the page or tab
+    /// changes and only take the new tiles, so the covers' controls are bound again instead of built again (#229).
+    /// </summary>
+    public ObservableCollection<TileSlotViewModel> Slots { get; } = [];
+
     public ObservableCollection<PageButtonViewModel> PageButtons { get; } = [];
 
     [ObservableProperty]
@@ -211,6 +217,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
 
         FocusedGame = null;
         PageGames.Clear();
+        TileSlotViewModel.Fill(Slots, PageGames);
         PageButtons.Clear();
         var tabs = _tabs.Items;
         EmptyTab = EmptyTab is { HasNoLauncher: true } shown && tabs.Count == 0 ? shown : null;
@@ -438,6 +445,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
             PageGames.Add(tile);
         }
 
+        TileSlotViewModel.Fill(Slots, PageGames);
         _host.PageRebuilt();
         if (PageGames.Count == 0)
         {

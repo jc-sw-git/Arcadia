@@ -189,7 +189,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
     /// A place keeps its controls when it gets another tile: building a tile's controls takes milliseconds,
     /// and building them for every key press or step at the window's edge broke the budget for a focus move.
     /// </summary>
-    public ObservableCollection<HitSlotViewModel> Slots { get; } = [];
+    public ObservableCollection<TileSlotViewModel> Slots { get; } = [];
 
     /// <summary>The index in <see cref="Hits"/> of the first of <see cref="Results"/>.</summary>
     public int SliceStart { get; private set; }
@@ -792,7 +792,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
             _results = Hits.Take(sliceEnd).Skip(sliceStart)
                 .Select(game => shown.TryGetValue(game.Key, out var tile) && tile.Game == game ? tile : _createTile(game, FocusByPointer, StartByPointer))
                 .ToList();
-            FillSlots();
+            TileSlotViewModel.Fill(Slots, Results);
 
             SliceStart = sliceStart;
             _hitsChanged = false;
@@ -809,26 +809,6 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
 
     /// <summary>The place of <paramref name="tile"/> in <see cref="Results"/> and <see cref="Slots"/>; -1 if it isn't shown.</summary>
     public int SlotOf(GameTileViewModel tile) => _results.IndexOf(tile);
-
-    private void FillSlots()
-    {
-        for (var i = 0; i < Math.Max(Slots.Count, Results.Count); i++)
-        {
-            if (i >= Slots.Count)
-            {
-                Slots.Add(new HitSlotViewModel(Results[i]));
-            }
-            else if (i < Results.Count)
-            {
-                Slots[i].Tile = Results[i];
-                Slots[i].IsShown = true;
-            }
-            else
-            {
-                Slots[i].IsShown = false;
-            }
-        }
-    }
 
     private void ShowFocus()
     {

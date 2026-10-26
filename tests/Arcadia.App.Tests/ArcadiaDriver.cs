@@ -131,7 +131,7 @@ internal sealed class ArcadiaDriver : IDisposable
         _controllers = ControllerInput.Create(Sdl, Main, new DeviceTreeEmulatedPads(() => [.. XusbDevices], AppLog.Write));
         _controllers.Polled += _gamepad.Tick;
         _running = running;
-        ForGames = SteamControllerForGames.Create(XboxPads, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, Main.Toast, time);
+        ForGames = SteamControllerForGames.Create(XboxPads, Pan, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, Main.Toast, time);
         XboxPad = ForGames.Pad;
         Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
         ForGames.Routing.DriverChanged += () => Dispatcher.UIThread.Post(() => Main.SetSteamControllerDriverReady(ForGames.Routing.DriverReady));
@@ -148,6 +148,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>The virtual Xbox pads VIIPER would plug in for games (#213).</summary>
     public FakeVirtualXboxPads XboxPads { get; } = new();
+
+    /// <summary>Pan, the guardian the pads stand under (#243); available unless a test takes it away.</summary>
+    public FakeEmulationGuardian Pan { get; } = new();
 
     /// <summary>The Steam Controller as an Xbox pad for games; the App ticks it every 2 s, a test with <see cref="TickSteamControllerAsync"/>.</summary>
     public SteamControllerXboxPad XboxPad { get; }

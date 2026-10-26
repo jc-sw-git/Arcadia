@@ -3,6 +3,7 @@ using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.App.Views;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
@@ -56,6 +57,9 @@ public partial class App : Application
     private const string StartedGameArgument = "--started-game";
 
     private IGamepadSource? _gamepad;
+
+    /// <summary>Pan fell back to its previous journal or started empty (#243); its log says what was wrong.</summary>
+    private const string PanJournalText = "Pan konnte sein Journal nicht lesen – Details stehen in pan.log unter %ProgramData%\\Arcadia\\Pan";
 
     public override void Initialize()
     {
@@ -177,9 +181,13 @@ public partial class App : Application
             // The Steam Controller as an Xbox pad for games, in the mode of the running games (#213); VIIPER from SISR's
             // folder until #214. Steam games started directly in Steam count too (#119).
             var viiper = new ViiperXboxPads(Path.Combine(sisrHost.InstallDirectory, "viiper.exe"), Core.Diagnostics.LogLocation.Directory, sisrHost.CleanUpViiperAsync, AppLog.Write);
+            // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
+            var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write) : new NoPanTransport(), time, AppLog.Write);
+            pan.JournalProblem += () => Dispatcher.UIThread.Post(() => viewModel.Toast.Show(PanJournalText));
             var steamPlatform = new ControllerSupportPlatform();
             var forGames = SteamControllerForGames.Create(
-                viiper, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, viewModel.Toast, time);
+                viiper, pan, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, viewModel.Toast, time);
+            pan.Start();
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;
             forGames.Routing.DriverChanged += () => Dispatcher.UIThread.Post(() => viewModel.SetSteamControllerDriverReady(forGames.Routing.DriverReady));
@@ -274,7 +282,9 @@ public partial class App : Application
                 mouseMode.Dispose();
 
                 // The Xbox pad goes also for an update: nothing feeds it while Arcadia restarts, and it comes back then.
+                // Pan hears the planned exit with it, so it has nothing to undo.
                 Task.Run(xboxPad.ShutdownAsync).Wait(TimeSpan.FromSeconds(5));
+                Task.Run(() => pan.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(2));
 
                 // SISR belongs to Arcadia: it goes when Arcadia goes. Run off the UI thread to avoid a deadlock.
                 // Except for an update: Arcadia is back in seconds, and a game keeps its controller meanwhile.

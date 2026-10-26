@@ -374,7 +374,10 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
         if (reason is not null)
         {
             _log($"Pan: {reason}{(wasEmulating ? " – die Emulation wird entfernt" : string.Empty)}");
-            Lost?.Invoke(reason);
+            if (wasEmulating)
+            {
+                Lost?.Invoke(reason);
+            }
         }
     }
 

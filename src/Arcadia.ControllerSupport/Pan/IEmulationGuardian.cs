@@ -35,6 +35,6 @@ public interface IEmulationGuardian
     /// <summary>Pan tore an emulation down: the generation and why. Off the UI thread.</summary>
     event Action<uint, Arcadia.Pan.PanReason>? TornDown;
 
-    /// <summary>The connection to Pan broke or Pan stopped answering: the reason for the log and a toast. Off the UI thread.</summary>
+    /// <summary>Pan broke off or stopped answering while an emulation ran: the reason, for a toast. Off the UI thread.</summary>
     event Action<string>? Lost;
 }

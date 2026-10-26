@@ -155,3 +155,10 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool GetNamedPipeServerProcessId(nint pipe, out uint serverProcessId);
 }
+
+/// <summary>Where there is no Pan (not Windows): says so, and the client tries only slowly.</summary>
+public sealed class NoPanTransport : IPanTransport
+{
+    public Task<PanLink> ConnectAsync(CancellationToken cancellationToken) =>
+        throw new PanUnavailableException("Pan gibt es nur unter Windows", permanent: true);
+}

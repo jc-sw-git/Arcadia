@@ -1,5 +1,7 @@
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Settings;
+using Arcadia.Pan;
 using Arcadia.App.ViewModels;
 using Arcadia.Input;
 using Avalonia.Threading;
@@ -10,6 +12,8 @@ namespace Arcadia.App.Input;
 /// Wires the Steam Controller's virtual Xbox pad for games (#213) to Arcadia's state: the running games and their mode
 /// ("Arcadia" or "Steam-Eingabe") decide whether it is plugged in (<see cref="SteamControllerRouting"/>), a game gets
 /// nothing while Arcadia is in front or the mouse mode is on, and Back + Start is withheld while the mouse mode is not "Aus".
+/// The pad stands under Pan's watch (#243): no pad without Pan, every poll pulses the heartbeat, and a teardown by Pan
+/// (Arcadia hung) or a lost Pan shows as a toast while the pad comes back by itself.
 /// </summary>
 public sealed class SteamControllerForGames
 {
@@ -23,10 +27,12 @@ public sealed class SteamControllerForGames
 
     public SteamControllerRouting Routing { get; }
 
+    /// <param name="pads">The virtual pads; they are put under <paramref name="guardian"/>'s watch here.</param>
     /// <param name="activeGames">The keys of the games that run or are being started (<c>RunningGamesTracker.ActiveGames</c>).</param>
     /// <param name="runningSteamAppId">The Steam game running right now, also one started directly in Steam (#119).</param>
     public static SteamControllerForGames Create(
         IVirtualXboxPads pads,
+        IEmulationGuardian guardian,
         SettingsService settings,
         Func<IReadOnlyCollection<string>> activeGames,
         Func<int?> runningSteamAppId,
@@ -35,20 +41,24 @@ public sealed class SteamControllerForGames
         ToastViewModel toast,
         TimeProvider time)
     {
+        var guarded = new GuardedXboxPads(pads, guardian);
         var routing = new SteamControllerRouting(
             activeGames,
             key => settings.Current.UsesArcadiaPad(key),
             runningSteamAppId,
-            () => pads.Unavailable() is null,
+            () => guarded.Unavailable() is null,
             Services.AppLog.Write);
         var combos = new CombosFromSettings(settings);
-        var pad = new SteamControllerXboxPad(pads, time, Services.AppLog.Write)
+        var pad = new SteamControllerXboxPad(guarded, time, Services.AppLog.Write)
         {
             Wanted = () => routing.Current.PadWanted,
             ForwardingAllowed = () => !isMouseModeOn() && !isArcadiaActive(),
             Combos = combos.Current,
+            FeedAlive = guardian.Pulse,
         };
         pad.GaveUp += message => Dispatcher.UIThread.Post(() => toast.Show(message));
+        guardian.TornDown += (_, reason) => Dispatcher.UIThread.Post(() => toast.Show(TornDownText(reason)));
+        guardian.Lost += _ => Dispatcher.UIThread.Post(() => toast.Show(PanLostText));
         return new SteamControllerForGames(pad, routing);
     }
 
@@ -80,6 +90,17 @@ public sealed class SteamControllerForGames
     }
 
     private static readonly TimeSpan BeforeStartLimit = TimeSpan.FromSeconds(3);
+
+    /// <summary>Pan broke off while a pad was in; the pad comes back by itself once Pan is back.</summary>
+    public const string PanLostText = "Steam Controller: Verbindung zu Pan verloren – Arcadia entfernt den Xbox Controller und verbindet sich neu";
+
+    /// <summary>Pan tore the emulation down; the next tick plugs the pad in again.</summary>
+    public static string TornDownText(PanReason reason) => reason switch
+    {
+        PanReason.Hang => "Steam Controller: Arcadia hat 3 Sekunden nicht reagiert, Pan hat den Xbox Controller entfernt – er kommt gleich zurück",
+        PanReason.ServiceStopping => "Steam Controller: Pan wurde beendet und hat den Xbox Controller entfernt – er kommt zurück, sobald Pan wieder läuft",
+        _ => $"Steam Controller: Pan hat den Xbox Controller entfernt ({reason}) – er kommt gleich zurück",
+    };
 
     /// <summary>Read on every poll; rebuilt only when the settings changed.</summary>
     private sealed class CombosFromSettings(SettingsService settings)

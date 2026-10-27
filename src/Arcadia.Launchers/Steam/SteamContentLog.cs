@@ -121,6 +121,9 @@ public sealed partial class SteamContentLog(string path)
         }
     }
 
+    // A download that ended forgets its bytes, so the next update of the app doesn't show them.
+    private static readonly SteamContentState Over = new(SteamDownloadPhase.Done);
+
     // Null when the line says nothing about the download (prefetch, scheduler, preallocated files …).
     private static SteamContentState? Next(SteamContentState current, string kind, string rest)
     {
@@ -138,12 +141,12 @@ public sealed partial class SteamContentLog(string path)
             case "update canceled":
                 // "Priority (Suspended)": another download took over. "Disabled (Suspended)": paused by the user, also on a
                 // logoff. "Uninstall (Canceled)": the download is dropped for good.
-                return rest.Contains("(Canceled)", StringComparison.Ordinal) ? live with { Phase = SteamDownloadPhase.Done, Started = false }
+                return rest.Contains("(Canceled)", StringComparison.Ordinal) ? Over
                     : rest.StartsWith("Priority", StringComparison.Ordinal) ? live with { Phase = SteamDownloadPhase.Queued }
                     : live with { Phase = SteamDownloadPhase.Paused };
 
             case "finished update":
-                return live with { Phase = SteamDownloadPhase.Done, Started = false };
+                return Over;
 
             case "App update changed":
                 // "…,Stopping," follows every "update canceled", whose reason already said what comes next.
@@ -169,7 +172,7 @@ public sealed partial class SteamContentLog(string path)
         if (!flags.Contains("Update Required"))
         {
             // Committed (or never needed an update): whatever follows is bookkeeping.
-            return state with { Phase = SteamDownloadPhase.Done, Started = false };
+            return Over;
         }
 
         if (flags.Contains("Update Running"))
@@ -179,9 +182,9 @@ public sealed partial class SteamContentLog(string path)
 
         // Not running: after an "update canceled" the reason has already set Paused or Queued; otherwise it waits.
         // A new session lists every download it will resume as queued, the ones paused before included.
-        return !afterRestart && state.Phase is SteamDownloadPhase.Paused or SteamDownloadPhase.Queued
-            ? state with { Started = started }
-            : state with { Phase = flags.Contains("Update Queued") ? SteamDownloadPhase.Queued : SteamDownloadPhase.Done, Started = started };
+        return !afterRestart && state.Phase is SteamDownloadPhase.Paused or SteamDownloadPhase.Queued ? state with { Started = started }
+            : flags.Contains("Update Queued") ? state with { Phase = SteamDownloadPhase.Queued, Started = started }
+            : Over;
     }
 
     // "Update Required,Update Queued,Update Started, (Suspended)": the part in brackets is a note, no flag.

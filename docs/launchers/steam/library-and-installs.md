@@ -58,6 +58,11 @@ An account switch writes no login line; the running download gets `Disabled (Sus
 session starts that doesn't mention the other account's downloads, so Arcadia shows them as paused. Arcadia shows a
 percentage only when it is exact (owner's decision): paused or queued, the larger of the manifest's and the last
 `update started` download bytes; running, none.
+**`steamapps/downloading/<id>` is no live source** (check script on the owner's PC, 2026-10-27, a 6.5 GB new install):
+Steam preallocates every file there before downloading (`preallocated 493 files (7510 MB)`), so the folder holds the
+whole staging size (7,875,211,774 of 7,888,336,863 bytes) from the first second, and the size on disk is the same; in
+4 minutes it grew by 1.6 MB while Steam went from 0 to 4 %. A pause rewrote the manifest at once
+(`BytesDownloaded` 139,259,776 = the next `update started`; Steam showed 2 %); while running it stayed unchanged.
 Steam has no update-only URI: `steam://install/<id>` is ignored for installed games, `steam://validate/<id>` updates
 but first verifies every file (and resets modified ones).
 

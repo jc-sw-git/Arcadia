@@ -343,6 +343,45 @@ public sealed class SteamInstallMonitorTests : IDisposable
     }
 
     [Fact]
+    public void The_check_run_pause_matches_steam_and_the_uninstall_ends_it()
+    {
+        // The #278 check run (owner's PC, 2026-10-27): Steam showed 2 % while paused; the manifest got the bytes at the pause.
+        const string App = "1097150";
+        Write(App, flags: 1026, toDownload: 6972784416, toStage: 7888336863);
+        AppendContentLog(
+            "[2026-10-27 23:30:20] AppID 1097150 App update changed : Running Update,Preallocating,",
+            "[2026-10-27 23:30:20] AppID 1097150 update started : download 0/6972784416, store 0/0, reuse 0/0, delta 0/0, stage 0/7888336863 ",
+            "[2026-10-27 23:30:20] AppID 1097150 App update changed : Running Update,Downloading,Staging,",
+            "[2026-10-27 23:32:16] AppID 1097150 update canceled : Disabled (Suspended)",
+            "[2026-10-27 23:32:16] AppID 1097150 App update changed : Running Update,Downloading,Staging,Stopping,",
+            "[2026-10-27 23:32:16] AppID 1097150 App update changed : None",
+            "[2026-10-27 23:32:16] AppID 1097150 state changed : Update Required,Update Queued,Update Started, (Suspended)");
+        Write(App, flags: 1026, downloaded: 139259776, staged: 183162788, toDownload: 6972784416, toStage: 7888336863);
+        var paused = Poll().Active[App];
+        Assert.Equal(InstallPhase.Paused, paused.Phase);
+        Assert.Equal(0.02, paused.Fraction!.Value, 2);
+
+        AppendContentLog(
+            "[2026-10-27 23:34:39] AppID 1097150 state changed : Update Required,Update Queued,Uninstalling,",
+            "[2026-10-27 23:34:39] AppID 1097150 state changed : Uninstalled,",
+            "[2026-10-27 23:34:39] AppID 1097150 finished uninstall (No Error)");
+        Delete(App);
+        Assert.Equal(InstallOutcome.Cancelled, Poll().Finished[App]);
+    }
+
+    [Fact]
+    public void The_next_update_does_not_show_the_bytes_of_the_last_one()
+    {
+        var log = new SteamContentLog(ContentLogPath);
+        log.Apply([
+            "[2026-10-27 21:00:42] AppID 792100 update started : download 141347840/228935584, store 0/0, reuse 0/0, delta 0/0, stage 147613394/237717350 ",
+            "[2026-10-27 21:00:49] AppID 792100 finished update, 2 mounted depots (BuildID 8016557) : 792101 (5052600457178655633),",
+            "[2026-10-28 18:00:00] AppID 792100 state changed : Update Required,Fully Installed,Update Queued,Update Started,"]);
+
+        Assert.Equal(new SteamContentState(SteamDownloadPhase.Queued, Started: true), log.StateOf(792100));
+    }
+
+    [Fact]
     public void A_scheduled_update_nobody_started_is_no_installation()
     {
         Write("960090", flags: 6, buildId: 24829026);

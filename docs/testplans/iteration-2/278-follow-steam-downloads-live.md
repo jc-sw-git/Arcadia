@@ -28,4 +28,6 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| Unit tests above, all Core tests | 2026-10-27 | Claude | PR branch, Linux cloud container | ✅ | – |
+| Unit tests above, all Core (958) and App (337) tests; the owner's whole `content_log.txt` of 2026-10-27 replayed through `SteamContentLog` | 2026-10-27 | Claude | PR branch, Linux cloud container | ✅ every pause, takeover, restart and finish of that day read as in Steam | the ended update kept its bytes for the next one: fixed and tested |
+| Decision 7: does `steamapps/downloading/<id>` follow Steam's %? Check script (`Run-Check-278.ps1`), 4 readings running, 1 paused | 2026-10-27 | owner, Claude | owner's PC, real Steam, new install of a 6.5 GB game on F: | ❌ the folder is preallocated to the full staging size at the start and barely grows (also on disk); the paused manifest matched Steam (2 %) | no live number: a running download stays indeterminate (decision 2) |
+| T81-3 acceptance test changed: a running download shows no number | 2026-10-27 | Claude | PR branch, Linux cloud container | ✅ all App and Core tests | – |

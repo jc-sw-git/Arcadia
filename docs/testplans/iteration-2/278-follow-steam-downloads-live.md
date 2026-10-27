@@ -5,7 +5,7 @@ the moment anything changes: start, preallocating, pause (`Disabled (Suspended)`
 (`Priority (Suspended)`), committing, finished, and a new session after a restart or an account switch. A percentage is
 shown only when it is exact (download bytes only, as Steam's download page counts them): while a download is paused or
 queued; while it runs the bar is indeterminate without a number. The manifests still decide which games take part and
-how an installation ended. Polling stays at 2 s. Lines and findings: `docs/launchers/steam.md`.
+how an installation ended. Polling stays at 2 s. Lines and findings: `docs/launchers/steam/library-and-installs.md`.
 
 - [ ] **T278-1** Install a game in Steam: Arcadia shows it within 5 s as "Wird installiert …" with an indeterminate bar
   (also while Steam preallocates), never a number that stands still; at the end "Wird abgeschlossen …", then installed ·

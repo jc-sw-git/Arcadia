@@ -45,7 +45,7 @@ public sealed record SteamContentState(
 
 /// <summary>
 /// Follows <c>logs/content_log.txt</c>, where Steam writes every state change of its downloads the moment it happens
-/// (owner's PC, 2026-10-12 and 2026-10-27; lines in <c>docs/launchers/steam.md</c>). The app manifests flag a waiting
+/// (owner's PC, 2026-10-12 and 2026-10-27; lines in <c>docs/launchers/steam/library-and-installs.md</c>). The app manifests flag a waiting
 /// and a running download alike and get their byte counters only now and then; the log tells them apart, names pauses
 /// and their reason, and gives the exact download bytes at every start and resume. It has no per-app progress while a
 /// download runs. Steam moves the file to <c>content_log.previous.txt</c> at about 4 MB and starts a new one.

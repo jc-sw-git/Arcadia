@@ -46,7 +46,7 @@ public sealed class IdleStopTests : IDisposable
 
         idle.ClientPresent(false);
 
-        // Past the timeout twice and still running: the retry's later attempts (30 s, 2 min) aren't cut off.
+        // Past the timeout twice and still running: the retry's later attempts (every 10 s) aren't cut off.
         Assert.True(asked.Wait(Ample));
         Assert.True(asked.Wait(Ample));
         Assert.False(_stopped.IsSet);

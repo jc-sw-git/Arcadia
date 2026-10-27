@@ -592,7 +592,7 @@ public sealed partial class Guardian
     /// after the forwarding was gone, Pan tries again after these pauses (the last one repeating) while nothing emulates,
     /// instead of leaving the puck hidden until the next trigger, which after a crash may be hours away.
     /// </summary>
-    public IReadOnlyList<TimeSpan> ShowRetryDelays { get; init; } = [TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(2)];
+    public IReadOnlyList<TimeSpan> ShowRetryDelays { get; init; } = [TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10)];
 
     /// <summary>The retry running, under the lock; cancelled by a stop, which tears down itself.</summary>
     private CancellationTokenSource? _showRetry;

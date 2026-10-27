@@ -27,6 +27,9 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   timeout drops the link mid-hide; a hide takes ~2.4 s on the owner's PC). A heartbeat waiting behind one is no loss;
   don't queue more than the pipe buffer holds (192 bytes, 16 messages). A timeout still means the link is gone: the
   protocol has no correlation, so a late reply would answer the next request.
+- A hide or show takes ~2.5 s (up to ~4 s): the puck restart takes it away from every program, Arcadia too, like
+  unplugging it. #242 shows a spinner meanwhile and doesn't let the user switch again until it is done (owner
+  2026-10-27). It happens only when the emulation starts or ends; a replug while hidden needs no restart.
 - `EmulationStarted` → `Rejected(SteamControllerBeingShown)` while the teardown after such a stop or a retry (below)
   shows the controller: start again in a moment.
 
@@ -62,7 +65,8 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   inline (no PnP lock), device listing and restart have a 10 s timeout and may be left behind (they change nothing
   journaled).
 - A partial show (HidHide busy, its driver restarting, a failed restart) after the forwarding was gone is retried by
-  itself after 5 s, 30 s, then every 2 min while nothing emulates; a restart that only a replug does stops after those.
+  itself after 5 s, then every 10 s while nothing emulates (an attempt only opens HidHide: the puck is back at most 10 s
+  after the configuration client closes, owner 2026-10-27); a restart that only a replug does stops after two.
   Pan doesn't idle-stop while that retry runs, and a new emulation waits for a retry that is changing HidHide.
 - Triggers: crash/kill (`ClientGone`), hang, service stop or pre-shutdown, a stop with an incomplete teardown journaled,
   planned exit while hidden, Pan's start after a crash or power loss (`RecoverAsync`), `--restore`, uninstall. The undo

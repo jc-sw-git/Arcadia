@@ -118,7 +118,9 @@ public sealed class EntryTypeViewTests
         foreach (var (index, where) in new[] { (0, "erstes Cover"), (7, "letzte Spalte"), (24, "letztes Cover der Seite") })
         {
             var tile = driver.FocusTile(driver.PageGames[index].Title);
-            arcadia.WaitForTransitions();
+
+            // The driver's presses don't tell the window its frame is stale: Settle does, so the scroll and the lift run.
+            arcadia.Settle().WaitForTransitions();
             var cover = Cover(arcadia, tile.Title);
             Assert.NotNull(cover.Badge);
             Assert.NotEmpty(cover.States);

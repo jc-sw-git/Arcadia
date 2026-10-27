@@ -49,6 +49,9 @@ internal sealed class FakeSteamWeb : HttpMessageHandler
     /// <summary>The app ids Steam's store lists as owned, besides <see cref="OwnedGames"/>: soundtracks, tools, DLC.</summary>
     public List<uint> StoreApps { get; } = [];
 
+    /// <summary>The package ids (licenses) Steam's store lists as owned.</summary>
+    public List<uint> StorePackages { get; } = [];
+
     /// <summary>The store's list fails as if the store didn't take the sign-in.</summary>
     public bool StoreFails { get; set; }
 
@@ -224,7 +227,8 @@ internal sealed class FakeSteamWeb : HttpMessageHandler
         var signedIn = !StoreFails && LastAccessToken is { } token
             && cookie == $"steamLoginSecure={Uri.EscapeDataString($"{AccountSteamId}||{token}")}";
         var apps = signedIn ? OwnedGames.Select(g => g.AppId).Concat(StoreApps).ToArray() : [];
-        return Json(JsonSerializer.Serialize(new { rgWishlist = Array.Empty<uint>(), rgOwnedPackages = Array.Empty<uint>(), rgOwnedApps = apps }));
+        var packages = signedIn ? StorePackages.ToArray() : [];
+        return Json(JsonSerializer.Serialize(new { rgWishlist = Array.Empty<uint>(), rgOwnedPackages = packages, rgOwnedApps = apps }));
     }
 
     private static HttpResponseMessage Proto(ProtoWriter message)

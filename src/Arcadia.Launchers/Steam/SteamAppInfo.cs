@@ -181,8 +181,9 @@ public static class SteamAppInfo
         }
     }
 
-    /// <summary>A bounds-checked cursor over one entry's binary VDF; every overrun becomes a <see cref="FormatException"/>.</summary>
-    private ref struct Reader(ReadOnlySpan<byte> data, string[]? strings)
+    /// <summary>A bounds-checked cursor over binary VDF; every overrun becomes a <see cref="FormatException"/>.</summary>
+    /// <param name="strings">appinfo.vdf v29's string table, which the keys index; null: keys are strings.</param>
+    internal ref struct Reader(ReadOnlySpan<byte> data, string[]? strings)
     {
         private const byte TypeMap = 0x00;
         private const byte TypeString = 0x01;
@@ -199,6 +200,10 @@ public static class SteamAppInfo
 
         private readonly ReadOnlySpan<byte> _data = data;
         private int _position;
+
+        /// <summary>How far the reader got; packageinfo.vdf's entries have no size, so the next one starts here.</summary>
+        public readonly int Position => _position;
+
 
         public VdfMap Map(int depth = 0)
         {
@@ -254,7 +259,7 @@ public static class SteamAppInfo
             return value;
         }
 
-        private ReadOnlySpan<byte> Take(int count)
+        public ReadOnlySpan<byte> Take(int count)
         {
             if (_position + count > _data.Length)
             {

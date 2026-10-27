@@ -76,6 +76,55 @@ public sealed class SteamOwnedGamesScanTests : IDisposable
     }
 
     [Fact]
+    public async Task Apps_only_a_package_holds_join_and_of_package_0_only_the_tools()
+    {
+        WriteSteam();
+        _web.OwnedGames.Add((10, "Counter-Strike", 0, 0));
+        _web.StorePackages.Add(500);
+        WriteFile(Path.Combine(SteamRoot, "appcache", "packageinfo.vdf"), PackageInfoFile.Build(PackageInfoFile.V40,
+        [
+            (0, [205, 1840, 1070560]),
+            (500, [10, 1143852]),
+            (600, [3132990]),
+        ]));
+        WriteFile(Path.Combine(SteamRoot, "appcache", "appinfo.vdf"), AppInfoFile.Build(AppInfoFile.V29,
+        [
+            (10, "Counter-Strike", "Game"),
+            (205, "Source SDK Base 2006 Dedicated Server", "Tool"),
+            (1840, "Source Filmmaker", "Application"),
+            (1070560, "Steam Linux Runtime 1.0 (scout)", "Tool"),
+            (1143852, "Blasphemous - OST", "Music"),
+            (3132990, "Black Myth: Wukong Benchmark Tool", "Tool"),
+        ]));
+        await SignInAsync();
+
+        var games = (await new SteamScanner(() => new SteamInstallation(SteamRoot, Account), _account).ScanAsync()).OrderBy(g => uint.Parse(g.Id, System.Globalization.CultureInfo.InvariantCulture)).ToList();
+
+        // Package 600 isn't the account's; of package 0 Steam shows no application, and a runtime never appears.
+        Assert.Equal(["10", "205", "1143852"], games.Select(g => g.Id));
+        Assert.Equal(GameType.Tool, games[1].Type);
+        Assert.False(games[1].IsInstalled);
+        Assert.Equal(GameType.Soundtrack, games[2].Type);
+        Assert.Equal("Blasphemous - OST", games[2].Title);
+    }
+
+    [Fact]
+    public void An_unreadable_packageinfo_is_logged_once_and_adds_nothing()
+    {
+        var warnings = new List<string>();
+        var cache = new SteamScanner.PackageAppsCache(warnings.Add);
+        var path = Path.Combine(_root, "packageinfo.vdf");
+        File.WriteAllBytes(path, [1, 2, 3]);
+
+        Assert.Empty(cache.Read(path, [0]));
+        Assert.Empty(cache.Read(path, [0]));
+        Assert.Single(warnings);
+
+        File.WriteAllBytes(path, PackageInfoFile.Build(PackageInfoFile.V40, [(0, [205])]));
+        Assert.Equal([205u], cache.Read(path, [0])[0]);
+    }
+
+    [Fact]
     public async Task Another_account_in_the_running_Steam_keeps_the_games_but_blocks_installs_and_says_so()
     {
         WriteSteam();

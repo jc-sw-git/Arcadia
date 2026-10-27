@@ -74,11 +74,17 @@ public sealed class SteamOnlineAccountTests : IDisposable
         _web.StoreApps.Add(40);
         var account = await SignedInAsync();
 
+        _web.StorePackages.Add(500);
+        account.RefreshNow();
+        await account.WhenIdleAsync();
+        Assert.Equal([500u], account.OwnedGamesFor(Account)!.Packages);
+
         _web.StoreFails = true;
         account.RefreshNow();
         await account.WhenIdleAsync();
 
         Assert.Equal([10u, 20u, 40u], account.OwnedGamesFor(Account)!.Owned.Select(g => g.AppId));
+        Assert.Equal([500u], account.OwnedGamesFor(Account)!.Packages);
         Assert.Null(account.State.Problem);
     }
 

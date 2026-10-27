@@ -20,6 +20,12 @@ internal sealed record SteamPollResult(ulong? NewClientId, string? NewChallengeU
 internal sealed record SteamOwnedGame(uint AppId, string? Name, long PlaytimeMinutes, long LastPlayedUnix);
 
 /// <summary>
+/// What the store says the account owns: its apps, and its packages (licenses). Free tools (dedicated servers, SDKs) and
+/// soundtracks from free packages are in no app list, only in a package (owner's account, 2026-10-27).
+/// </summary>
+internal sealed record SteamStoreOwnership(IReadOnlyList<uint> Apps, IReadOnlyList<uint> Packages);
+
+/// <summary>
 /// Why Steam gave no answer: not reachable (<see cref="IsNetwork"/>), cancelled, or an error answer with
 /// <see cref="EResult"/> from its <c>x-eresult</c> header or an HTTP status. Errors are values, not exceptions: Steam being
 /// away is normal, and a debugger shouldn't stop at it.
@@ -164,7 +170,7 @@ internal sealed class SteamWebApi(HttpClient http)
     /// DLC. The phone app's access token is the store's session cookie. An empty list means the store didn't take the
     /// sign-in, so it is an error.
     /// </summary>
-    public async Task<SteamApiResult<IReadOnlyList<uint>>> GetOwnedAppsAsync(string accessToken, ulong steamId, CancellationToken cancellationToken)
+    public async Task<SteamApiResult<SteamStoreOwnership>> GetOwnedAppsAsync(string accessToken, ulong steamId, CancellationToken cancellationToken)
     {
         var cookie = $"steamLoginSecure={Uri.EscapeDataString($"{steamId}||{accessToken}")}";
         using var answer = await GetJsonAsync("dynamicstore/userdata", StoreUserData, cookie, cancellationToken).ConfigureAwait(false);
@@ -173,20 +179,27 @@ internal sealed class SteamWebApi(HttpClient http)
             return answer.Error!;
         }
 
-        var apps = new List<uint>();
-        if (json.RootElement.ValueKind == JsonValueKind.Object
-            && json.RootElement.TryGetProperty("rgOwnedApps", out var list) && list.ValueKind == JsonValueKind.Array)
+        var apps = Ids(json.RootElement, "rgOwnedApps");
+        return apps.Count > 0
+            ? SteamApiResult<SteamStoreOwnership>.Ok(new SteamStoreOwnership(apps, Ids(json.RootElement, "rgOwnedPackages")))
+            : new SteamApiError("dynamicstore/userdata: keine Apps");
+    }
+
+    private static List<uint> Ids(JsonElement root, string property)
+    {
+        var ids = new List<uint>();
+        if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty(property, out var list) && list.ValueKind == JsonValueKind.Array)
         {
-            foreach (var app in list.EnumerateArray())
+            foreach (var item in list.EnumerateArray())
             {
-                if (app.TryGetUInt32(out var appId))
+                if (item.TryGetUInt32(out var id))
                 {
-                    apps.Add(appId);
+                    ids.Add(id);
                 }
             }
         }
 
-        return apps.Count > 0 ? SteamApiResult<IReadOnlyList<uint>>.Ok(apps) : new SteamApiError("dynamicstore/userdata: keine Apps");
+        return ids;
     }
 
     /// <summary>The profile name; null if Steam doesn't tell. <c>ISteamUser</c> wants a web API key, this one the access token.</summary>

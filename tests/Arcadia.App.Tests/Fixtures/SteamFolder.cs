@@ -129,6 +129,14 @@ internal sealed class SteamFolder(string root)
             apps.Select(app => (uint.Parse(app.App.AppId, CultureInfo.InvariantCulture), app.App.Name, app.Type))));
     }
 
+    /// <summary>Steam's package cache <c>appcache/packageinfo.vdf</c> (#83, format v40): which apps each package holds.</summary>
+    public void WritePackageInfo(params (uint PackageId, uint[] AppIds)[] packages)
+    {
+        var path = Path.Combine(root, "appcache", "packageinfo.vdf");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, Arcadia.Core.Tests.PackageInfoFile.Build(Arcadia.Core.Tests.PackageInfoFile.V40, packages));
+    }
+
     /// <summary>Steam deletes the manifest when a new install is cancelled or a game uninstalled.</summary>
     public void Remove(string appId, string? library = null)
     {

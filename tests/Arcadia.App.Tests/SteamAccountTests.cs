@@ -159,6 +159,35 @@ public sealed class SteamAccountTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T83-3")]
+    public async Task Free_tools_and_soundtracks_only_a_package_holds_join_like_in_Steams_library()
+    {
+        using var files = SteamWithOwnedGames();
+        var freeTool = new SteamApp("930011", "Leuchtturm SDK");
+        var freeApplication = new SteamApp("930012", "Leuchtturm Filmstudio");
+        var soundtrack = new SteamApp("930013", "Leuchtturm OST");
+        var notMine = new SteamApp("930014", "Fremdes Benchmark-Werkzeug");
+        files.SteamWeb.StorePackages.Add(7001);
+        files.Steam.WritePackageInfo((0, [930011u, 930012u]), (7001, [930013u]), (7002, [930014u]));
+        files.Steam.WriteAppInfo((Installed, "Game"), (freeTool, "Tool"), (freeApplication, "Application"), (soundtrack, "Music"), (notMine, "Tool"));
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files, new AppSettings
+        {
+            ActiveLaunchers = [KnownLaunchers.Steam.Id],
+            Launchers = new Dictionary<string, LauncherPreferences> { [KnownLaunchers.Steam.Id] = new(LibraryOptions: ["soundtracks", "tools", "software"]) },
+        });
+
+        await SignInAsync(arcadia, files);
+        await arcadia.WaitOnClockUntilAsync(() => TitlesOf(arcadia).Count == 5, "Werkzeug und Soundtrack aus Paketen im Steam-Tab", SignInLimit);
+
+        // Package 0's application isn't in Steam's library either; package 7002 isn't the account's.
+        Assert.Equal(["Leuchtturm", "Leuchtturm OST", "Leuchtturm SDK", "Salzwiesen", "Tidenhub"], TitlesOf(arcadia));
+        var games = TabOf(arcadia).Games;
+        Assert.Equal(GameType.Tool, games.Single(game => game.Title == freeTool.Name).Type);
+        Assert.Equal(GameType.Soundtrack, games.Single(game => game.Title == soundtrack.Name).Type);
+        Assert.All(games.Where(game => game.Title.StartsWith("Leuchtturm ", StringComparison.Ordinal)), game => Assert.False(game.IsInstalled));
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T83-5")]
     public async Task Another_account_in_the_running_Steam_keeps_the_games_blocks_installing_and_says_so_on_preview_detail_and_page()
     {

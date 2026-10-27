@@ -77,7 +77,10 @@ Owned games: `IPlayerService/GetOwnedGames` with `access_token`, `include_appinf
 `include_free_sub`. Owner's account (T83-3, 2026-10-27): 413 apps, games and software only, no soundtracks or tools,
 and fewer games than Steam's "Spiele" count. So Arcadia also reads the store's `dynamicstore/userdata` (`rgOwnedApps`,
 every owned app incl. DLC; the phone app's access token is the store cookie `steamLoginSecure=<id>||<token>`) and
-names and types those apps from `appinfo.vdf`; one `appinfo.vdf` doesn't know is left out. `ISteamUser/GetPlayerSummaries`
+names and types those apps from `appinfo.vdf`; one `appinfo.vdf` doesn't know is left out. Still missing (2026-10-27):
+free tools and soundtracks only a package holds (169 tools in Steam, 120 from package 0). So the store's
+`rgOwnedPackages` plus package 0 are resolved to apps via `appcache/packageinfo.vdf` (`SteamPackageInfo`, v39/v40, no
+entry size); of package 0 only tools count (Steam hides its applications, e.g. Source Filmmaker). `ISteamUser/GetPlayerSummaries`
 answers HTTP 400 to an access token (it wants a web API key); the profile name comes from
 `IPlayerService/GetPlayerLinkDetails` (`public_data.persona_name`).
 Games hidden in Steam: `userdata/<id>/config/cloudstorage/cloud-storage-namespace-1.json`, a JSON list of

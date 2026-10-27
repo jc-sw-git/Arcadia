@@ -188,7 +188,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
             noticeChanged = notice != _notice;
             _notice = notice;
             _lastClient = activeClient;
-            apps = IsSignedIn ? new SteamOwnedApps(_owned?.Games ?? [], other) : null;
+            apps = IsSignedIn ? new SteamOwnedApps(_owned?.Games ?? [], other, _owned?.Packages ?? []) : null;
         }
 
         if (noticeChanged)
@@ -511,9 +511,11 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 
         var apps = await _api.GetOwnedAppsAsync(accessToken.Value!, signIn.SteamId, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<SteamOwnedGame> owned;
+        IReadOnlyList<uint> packages;
         lock (_lock)
         {
-            owned = WithStoreApps(games, apps.Value ?? StoreOnly(_owned));
+            owned = WithStoreApps(games, apps.Value?.Apps ?? StoreOnly(_owned));
+            packages = apps.Value?.Packages ?? _owned?.Packages ?? [];
         }
 
         if (apps.Error is { IsCancelled: false } storeError)
@@ -529,8 +531,8 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
                 return;
             }
 
-            changed = _owned is null || !_owned.Games.SequenceEqual(owned);
-            _owned = new SteamOwnedList(_time.GetUtcNow(), owned);
+            changed = _owned is null || !_owned.Games.SequenceEqual(owned) || !(_owned.Packages ?? []).SequenceEqual(packages);
+            _owned = new SteamOwnedList(_time.GetUtcNow(), owned, packages);
             _problem = null;
             _store.SaveOwned(_owned);
         }
@@ -674,4 +676,5 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 /// <summary>What the account adds to Steam's library (#83).</summary>
 /// <param name="Owned">The owned apps; nameless ones are named and typed by <c>appinfo.vdf</c>.</param>
 /// <param name="SteamHasOtherAccount">The running Steam is signed in with another account than Arcadia.</param>
-internal sealed record SteamOwnedApps(IReadOnlyList<SteamOwnedGame> Owned, bool SteamHasOtherAccount);
+/// <param name="Packages">The account's packages; their apps come from Steam's <c>packageinfo.vdf</c>.</param>
+internal sealed record SteamOwnedApps(IReadOnlyList<SteamOwnedGame> Owned, bool SteamHasOtherAccount, IReadOnlyList<uint> Packages);

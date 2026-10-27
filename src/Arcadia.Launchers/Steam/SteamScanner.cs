@@ -58,6 +58,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
 
     private readonly Func<SteamInstallation?> _locate = locate ?? SteamInstallation.Find;
     private readonly AppTypeCache _appTypes = new();
+    private readonly PackageAppsCache _packageApps = new();
 
     public LauncherInfo Launcher => KnownLaunchers.Steam;
 
@@ -84,11 +85,21 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
         // Only a running Steam's account counts: a closed Steam starts with whichever account the user picks (owner, 2026-10-27).
         var apps = account?.OwnedGamesFor(steam.ActiveUserId);
         var owned = apps?.Owned ?? [];
+        var licensed = apps is null
+            ? null
+            : _packageApps.Read(Path.Combine(steam.RootPath, "appcache", "packageinfo.vdf"), [.. apps.Packages, FreePackage]);
 
         // The manifest's file name carries the app id, so the types are read before the manifests, in one pass.
         var appTypes = _appTypes.Read(
             Path.Combine(steam.RootPath, "appcache", "appinfo.vdf"),
-            manifests.Select(m => AppIdOfManifestFile(m.File)).OfType<uint>().Concat(owned.Select(game => game.AppId)).ToHashSet());
+            manifests.Select(m => AppIdOfManifestFile(m.File)).OfType<uint>()
+                .Concat(owned.Select(game => game.AppId))
+                .Concat(licensed?.Values.SelectMany(appIds => appIds) ?? [])
+                .ToHashSet());
+        if (licensed is not null)
+        {
+            owned = WithPackageApps(owned, licensed, appTypes);
+        }
 
         var games = new List<Game>();
         var installed = new HashSet<uint>();
@@ -113,6 +124,26 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
         }
 
         return apps is { SteamHasOtherAccount: true } ? [.. games.Select(WithOtherAccount)] : games;
+    }
+
+    /// <summary>Package 0, which every account has; Steam's library shows only its tools (owner's account, 2026-10-27).</summary>
+    internal const uint FreePackage = 0;
+
+    /// <summary>
+    /// The owned apps plus those only a package lists (#83): free tools and soundtracks, which Steam's library counts but
+    /// no owned-app list holds. Of package 0 only the tools count: its applications (Source Filmmaker …) Steam doesn't show.
+    /// </summary>
+    internal static IReadOnlyList<SteamOwnedGame> WithPackageApps(
+        IReadOnlyList<SteamOwnedGame> owned, IReadOnlyDictionary<uint, IReadOnlyList<uint>> packageApps, IReadOnlyDictionary<uint, string>? appTypes)
+    {
+        var listed = owned.Select(game => game.AppId).ToHashSet();
+        var added = packageApps
+            .SelectMany(package => package.Value.Where(appId => package.Key != FreePackage
+                || string.Equals(appTypes?.GetValueOrDefault(appId), "tool", StringComparison.OrdinalIgnoreCase)))
+            .Where(listed.Add)
+            .Order()
+            .Select(appId => new SteamOwnedGame(appId, null, 0, 0));
+        return [.. owned, .. added];
     }
 
     /// <summary>
@@ -523,6 +554,73 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
                 System.Diagnostics.Trace.TraceWarning($"Steam: appinfo.vdf: {e.Message}");
                 return null;
             }
+        }
+    }
+
+    /// <summary>
+    /// The apps of the account's packages read last from <c>packageinfo.vdf</c>, kept while the file and the packages stay
+    /// the same. A file that can't be read is said once in the log and adds no apps: the owned-app lists still apply.
+    /// </summary>
+    internal sealed class PackageAppsCache(Action<string>? warn = null)
+    {
+        private static readonly IReadOnlyDictionary<uint, IReadOnlyList<uint>> None = new Dictionary<uint, IReadOnlyList<uint>>();
+
+        private readonly Action<string> _warn = warn ?? (message => System.Diagnostics.Trace.TraceWarning(message));
+        private readonly Lock _lock = new();
+        private (long Length, DateTime Written, HashSet<uint> Packages)? _stamp;
+        private IReadOnlyDictionary<uint, IReadOnlyList<uint>> _apps = None;
+        private bool _isUnreadable;
+
+        public IReadOnlyDictionary<uint, IReadOnlyList<uint>> Read(string path, HashSet<uint> packageIds)
+        {
+            lock (_lock)
+            {
+                FileInfo file;
+                try
+                {
+                    file = new FileInfo(path);
+                    if (!file.Exists)
+                    {
+                        return Unreadable("Steam: packageinfo.vdf fehlt, kostenlose Werkzeuge fehlen in der Bibliothek");
+                    }
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+                {
+                    return Unreadable($"Steam: packageinfo.vdf: {e.Message}");
+                }
+
+                if (_stamp is { } stamp && stamp.Length == file.Length && stamp.Written == file.LastWriteTimeUtc && stamp.Packages.SetEquals(packageIds))
+                {
+                    return _apps;
+                }
+
+                try
+                {
+                    var watch = System.Diagnostics.Stopwatch.StartNew();
+                    _apps = SteamPackageInfo.ReadApps(path, packageIds);
+                    System.Diagnostics.Trace.TraceInformation($"Steam: Apps von {_apps.Count} der {packageIds.Count} Pakete aus packageinfo.vdf in {watch.ElapsedMilliseconds} ms gelesen");
+                    _stamp = (file.Length, file.LastWriteTimeUtc, packageIds);
+                    _isUnreadable = false;
+                    return _apps;
+                }
+                catch (Exception e) when (e is FormatException or IOException or UnauthorizedAccessException)
+                {
+                    return Unreadable($"Steam: packageinfo.vdf: {e.Message}");
+                }
+            }
+        }
+
+        private IReadOnlyDictionary<uint, IReadOnlyList<uint>> Unreadable(string message)
+        {
+            if (!_isUnreadable)
+            {
+                _warn(message);
+            }
+
+            _isUnreadable = true;
+            _stamp = null;
+            _apps = None;
+            return None;
         }
     }
 }

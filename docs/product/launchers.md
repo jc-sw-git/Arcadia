@@ -57,7 +57,8 @@ Agreed with the owner; don't change without asking. Read this before changing th
   counts as no account. A failed fetch or an expired sign-in is a warning on the row, never a toast; the cached list
   applies offline. Uninstalled entries count in the count line's total, not in the installed bracket; their playtime
   and last start come from Steam's web API, installed ones keep `localconfig.vdf`. All types: uninstalled software,
-  tools and soundtracks appear under #141's switches like installed ones.
+  tools and soundtracks appear under #141's switches like installed ones, free ones from packages too, as Steam counts
+  them (except Proton and runtimes, which Arcadia never shows).
 - First start (#139, owner 2026-10-11, 2026-10-12 and 2026-10-22): Arcadia never takes a launcher on just because it is
   installed. While `settings.json` has no `ActiveLaunchers` (also after an update from a version without it), a page
   "Welche Launcher soll Arcadia nutzen?" stands in place of the library, pattern "Leiste": "Gefunden" switched on with

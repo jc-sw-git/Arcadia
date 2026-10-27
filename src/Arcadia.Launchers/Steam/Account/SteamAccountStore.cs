@@ -11,7 +11,8 @@ namespace Arcadia.Launchers.Steam.Account;
 internal sealed record SteamSignIn(string? RefreshToken, string? AccessToken, ulong SteamId, string Name, bool Expired = false);
 
 /// <summary>The owned games as fetched last, for a start offline or before the next fetch.</summary>
-internal sealed record SteamOwnedList(DateTimeOffset ListedAt, IReadOnlyList<SteamOwnedGame> Games);
+/// <param name="Packages">The account's packages from the store; null in a list cached before they were kept.</param>
+internal sealed record SteamOwnedList(DateTimeOffset ListedAt, IReadOnlyList<SteamOwnedGame> Games, IReadOnlyList<uint>? Packages = null);
 
 /// <summary>
 /// Keeps the Steam sign-in (#83) in <c>steam-account.dat</c>, encrypted for the current Windows user (DPAPI), and the

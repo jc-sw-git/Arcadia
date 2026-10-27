@@ -7,27 +7,28 @@
 #>
 $ErrorActionPreference = 'Stop'
 
-$headers = @{ 'User-Agent' = 'arcadia-ci' }
-if ($env:GH_TOKEN) { $headers.Authorization = "Bearer $env:GH_TOKEN" }
 # Pinned to the owner's version: a new HidHide (e.g. 2.x, which Pan refuses) must not turn unrelated PRs red.
-$pinned = '1.5.230'
-$releases = Invoke-RestMethod -Headers $headers -Uri 'https://api.github.com/repos/nefarius/HidHide/releases?per_page=50'
-$release = $releases | Where-Object { $_.tag_name -match [regex]::Escape($pinned) } | Select-Object -First 1
-if (-not $release) { throw "HidHide $pinned not found among its releases" }
-$asset = $release.assets | Where-Object { $_.name -match 'x64.*\.(exe|msi)$' } | Select-Object -First 1
-if (-not $asset) { throw "No x64 installer in HidHide release $($release.tag_name)" }
+# Hash from winget's manifest of Nefarius.HidHide 1.5.230.
+$url = 'https://github.com/nefarius/HidHide/releases/download/v1.5.230.0/HidHide_1.5.230_x64.exe'
+$sha256 = 'F4BBBCB82E6258641B887C74BC81C4C5F66E4AA811808DFC304347687B7605F6'
 
-$installer = Join-Path $env:RUNNER_TEMP $asset.name
-Invoke-WebRequest -Headers $headers -Uri $asset.browser_download_url -OutFile $installer
+$installer = Join-Path $env:RUNNER_TEMP 'HidHide_1.5.230_x64.exe'
+Invoke-WebRequest -Uri $url -OutFile $installer -TimeoutSec 120
+$actual = (Get-FileHash $installer -Algorithm SHA256).Hash
+if ($actual -ne $sha256) { throw "HidHide installer hash $actual, expected $sha256" }
 $signature = Get-AuthenticodeSignature $installer
 if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Nefarius') {
     throw "HidHide installer not signed by Nefarius: $($signature.Status) $($signature.SignerCertificate.Subject)"
 }
 
-Write-Host "Installing HidHide $($release.tag_name) ($($asset.name))"
-$arguments = if ($installer.EndsWith('.msi')) { @('/i', "`"$installer`"", '/qn', '/norestart') } else { @('/install', '/quiet', '/norestart') }
-$exe = if ($installer.EndsWith('.msi')) { 'msiexec.exe' } else { $installer }
-$setup = Start-Process -FilePath $exe -ArgumentList $arguments -Wait -PassThru
+Write-Host 'Installing HidHide 1.5.230'
+# An Advanced Installer bootstrapper: /exenoui /qn is its silent mode. Burn's "/install /quiet" opened its UI and
+# waited on the runner for six hours, so the setup gets a deadline of its own as well.
+$setup = Start-Process -FilePath $installer -ArgumentList @('/exenoui', '/qn', '/norestart') -PassThru
+if (-not $setup.WaitForExit(300000)) {
+    Stop-Process -Id $setup.Id -Force -ErrorAction SilentlyContinue
+    throw 'HidHide setup did not finish within 5 minutes'
+}
 if ($setup.ExitCode -notin 0, 3010) { throw "HidHide setup exited with $($setup.ExitCode)" }
 
 function Test-ControlDevice {
@@ -44,7 +45,8 @@ function Test-ControlDevice {
 if (-not (Test-ControlDevice)) {
     # The filter attaches when a HID stack starts; restart the runner's HID devices instead of rebooting.
     Get-PnpDevice -Class HIDClass -PresentOnly -ErrorAction SilentlyContinue | ForEach-Object {
-        & pnputil /restart-device "$($_.InstanceId)" | Out-Null
+        $restart = Start-Process pnputil -ArgumentList @('/restart-device', "`"$($_.InstanceId)`"") -WindowStyle Hidden -PassThru
+        if (-not $restart.WaitForExit(30000)) { Stop-Process -Id $restart.Id -Force -ErrorAction SilentlyContinue }
     }
     Start-Sleep -Seconds 2
 }

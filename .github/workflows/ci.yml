@@ -23,9 +23,8 @@ jobs:
       - name: Install HidHide
         if: runner.os == 'Windows'
         continue-on-error: true
+        timeout-minutes: 10
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: ./tools/ci/Install-HidHide.ps1
       - name: Test
         run: dotnet test Arcadia.slnx --configuration Release --no-build

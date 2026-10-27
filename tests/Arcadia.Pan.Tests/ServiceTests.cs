@@ -49,6 +49,7 @@ public sealed class ServiceFactAttribute : FactAttribute
 /// the same, and <c>--uninstall</c>. One test, because the steps build on each other on one machine.
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+[Collection(MachineStateCollection.Name)]
 public sealed class ServiceTests : IDisposable
 {
     private static readonly TimeSpan ReplyTimeout = TimeSpan.FromSeconds(10);

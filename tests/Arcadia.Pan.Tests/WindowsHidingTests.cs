@@ -35,7 +35,18 @@ public sealed class WindowsFactAttribute : FactAttribute
     }
 }
 
+/// <summary>
+/// Tests that change this machine (the Pan service, the real HidHide) run alone: they share that state, and while they
+/// wait on it they block threads the timing-sensitive tests running beside them would need.
+/// </summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class MachineStateCollection
+{
+    public const string Name = "Machine state";
+}
+
 [SupportedOSPlatform("windows")]
+[Collection(MachineStateCollection.Name)]
 public sealed class HidHideTests
 {
     public static bool Enabled => Environment.GetEnvironmentVariable("ARCADIA_HIDHIDE_TESTS") == "1";

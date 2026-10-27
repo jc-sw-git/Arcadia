@@ -46,7 +46,7 @@ one names the countermeasure that would close it, so a later story can pick it u
   registering `nefarius_HidHide_Updater.exe`, never returned after the driver was in place; killing it risks a rollback.
   Pan waits 2 min, then counts a driver in place as installed and leaves the setup running (B2). Not seen on a real PC
   yet; if it happens there, Windows Installer refuses other installs (1618) while it hangs and probably rolls HidHide
-  back at the next restart. The CI starts a no-op in the updater's place instead (`tools/ci/Install-HidHide.ps1`).
+  back at the next restart. The CI starts a no-op in the updater's place instead (`tools/ci/Install-HidHide.ps1`). Cause and a clean fix: #274.
 - **HidHide's Configuration Client competes with Pan:** while it is open it holds HidHide (`HidHideBusy`: a hide is
   refused, a show retried until it closes; B2 should tell the user to close it). What the user changes there during
   an emulation applies at once: unticking the puck or turning hiding off shows Steam both controllers (double input),

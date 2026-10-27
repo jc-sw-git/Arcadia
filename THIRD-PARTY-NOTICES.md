@@ -78,6 +78,8 @@ MIT licence (text below).
 | MicroCom.Runtime | Nikita Tsukanov | https://github.com/kekekeks/MicroCom |
 | Tmds.DBus.Protocol | Tom Deseyn | https://github.com/tmds/Tmds.DBus |
 | ExCSS | Tyler Brinks | https://github.com/TylerBrinks/ExCSS |
+| QRCoder | Raffael Herrmann and contributors | https://github.com/Shane32/QRCoder |
+| System.Security.Cryptography.ProtectedData | .NET Foundation and Contributors | https://github.com/dotnet/runtime |
 
 Native parts with their own licences:
 

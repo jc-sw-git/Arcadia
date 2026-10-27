@@ -7,6 +7,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Navigation;
 using Arcadia.Core.Search;
 using Arcadia.Core.Settings;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.App.Settings;
 
@@ -26,6 +27,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private const string DropGroup = "NICHT AKTIV · HIERHER VERSCHIEBEN SCHALTET IHN AB";
     private const string GeneralGroup = "ALLGEMEIN";
     private const string LibraryGroup = "BIBLIOTHEK";
+    private const string AccountGroup = "KONTO";
     private const string ListYAction = "Verschieben";
 
     /// <summary>The box with the tabs in miniature beside the list and the page (owner, 2026-10-23).</summary>
@@ -51,6 +53,12 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private readonly ActionRowViewModel _folderRow;
     private readonly ActionRowViewModel _rescanRow;
     private readonly ActionRowViewModel _rescanAllRow;
+    private readonly ActionRowViewModel _accountRow;
+    private readonly List<(ILauncherAccount Account, EventHandler Handler)> _accounts = [];
+
+    // Ticks while a QR code is shown, so "erneuert vor … s" counts up (owner, 2026-10-27).
+    private ITimer? _codeClock;
+    private (string Text, Avalonia.Media.Geometry Modules)? _drawnCode;
     private readonly List<(string LauncherId, ActionRowViewModel Row)> _linkRows = [];
 
     // A launcher's switches for software, tools and soundtracks (#141), made when its page first shows them.
@@ -144,6 +152,25 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
                 new InfoText("Liest die Spiele aller aktiven Launcher sofort neu ein, etwa nach einer Installation, die Arcadia nicht mitbekommen hat. Sonst liest Arcadia neu ein, wenn es wieder nach vorne kommt."),
             ],
         };
+
+        _accountRow = new ActionRowViewModel("launcher-account", string.Empty, ActivateAccount) { Group = AccountGroup };
+        foreach (var integration in host.Launchers.All)
+        {
+            if (integration.Account is { } account)
+            {
+                var launcherId = integration.Launcher.Id;
+                // The account changes off the UI thread (a code renewed, approved, the games fetched).
+                EventHandler handler = (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    if (_page == launcherId)
+                    {
+                        Refresh();
+                    }
+                });
+                account.StateChanged += handler;
+                _accounts.Add((account, handler));
+            }
+        }
 
         Refresh();
         if (focus is not null && _rows.TryGetValue(focus, out var row))
@@ -303,6 +330,13 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             return false;
         }
 
+        // B drops a sign-in under way and stays on the page (owner, 2026-10-26).
+        if (PageAccount is { State.IsSigningIn: true } account)
+        {
+            account.CancelSignIn();
+            return true;
+        }
+
         ClosePage();
         Focus(_rows[id]);
         return true;
@@ -312,6 +346,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     public override void Leave()
     {
         Editor?.Drop();
+        PageAccount?.CancelSignIn();
         if (_lifted is { } lifted)
         {
             lifted.IsLifted = false;
@@ -385,6 +420,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private void ClosePage()
     {
         Editor?.Drop();
+        PageAccount?.CancelSignIn();
         _page = null;
         Head = null;
         XActionText = ListXAction;
@@ -404,6 +440,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         var next = order[ListFocus.Cycle(order.ToList().IndexOf(id), delta, order.Count)];
         if (next != id)
         {
+            PageAccount?.CancelSignIn();
             _page = next;
             Refresh();
         }
@@ -534,7 +571,221 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         ];
 
         var optionRows = launchers.LibraryOptions(id).Select(option => OptionRow(id, option)).ToList();
-        SetRows([_activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), .. optionRows, _rescanRow, .. _linkRows.Where(l => l.LauncherId == id).Select(l => l.Row)]);
+
+        // First on the page, as the setting that makes the most of the library; only usable while the launcher is active and
+        // found, since without it nothing can be installed. A sign-in stays stored meanwhile (owner, 2026-10-26/27).
+        var account = launchers.Registered(id)?.Account;
+        if (account is not null)
+        {
+            ShowAccount(account, name, isActive, isFound);
+        }
+        else
+        {
+            StopCodeClock();
+        }
+
+        SetRows([.. account is null ? Array.Empty<SettingsRowViewModel>() : [_accountRow], _activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), .. optionRows, _rescanRow, .. _linkRows.Where(l => l.LauncherId == id).Select(l => l.Row)]);
+    }
+
+    /// <summary>The account of the launcher whose page is shown, while its group "Konto" is there (#83).</summary>
+    private ILauncherAccount? PageAccount =>
+        _page is { } id && _host.Launchers.ActiveIds.Contains(id) && _host.Launchers.IsFound(id) ? _host.Launchers.Registered(id)?.Account : null;
+
+    /// <summary>
+    /// The row of the launcher's account (#83): signed out "Anmelden"; A shows a QR code in the info panel, renewed until it
+    /// is approved on the phone, B drops it; a rejected code says so and A gets a new one; signed in it shows the account's
+    /// name and "Abmelden", which asks first. Disabled while the launcher is inactive or missing.
+    /// </summary>
+    private void ShowAccount(ILauncherAccount account, string launcherName, bool isActive, bool isFound)
+    {
+        var state = account.State;
+        var row = _accountRow;
+        row.Title = account.Title;
+        if (!isActive || !isFound)
+        {
+            StopCodeClock();
+            row.IsEnabled = false;
+            row.ActionText = state.Step == AccountStep.SignedIn ? "Abmelden" : "Anmelden";
+            row.Subtitle = (isActive, state.AccountName) switch
+            {
+                (false, { } accountName) => $"{accountName} · nur bei aktivem {launcherName}",
+                (false, null) => $"Nur bei aktivem {launcherName}",
+                (true, { } accountName) => $"{accountName} · {launcherName} nicht gefunden",
+                (true, null) => $"{launcherName} nicht gefunden",
+            };
+            row.Severity = null;
+            row.Info =
+            [
+                new InfoText(account.About),
+                new InfoNote(isActive
+                    ? $"Anmelden und Abmelden geht erst, wenn Arcadia {launcherName} findet: Ohne {launcherName} lässt sich nichts installieren."
+                    : $"Anmelden und Abmelden geht erst, wenn {launcherName} aktiv ist. Eine gespeicherte Anmeldung bleibt erhalten.", HealthSeverity.Info),
+            ];
+            return;
+        }
+
+        row.IsEnabled = state.Step != AccountStep.Starting;
+        (row.ActionText, row.Subtitle) = state.Step switch
+        {
+            AccountStep.Starting => ("Abbrechen", "QR-Code wird geholt …"),
+            AccountStep.ShowingCode => ("Abbrechen", state.CodeRenewedAt is { } renewed
+                ? $"Warte auf Bestätigung · Code erneuert {SecondsAgo(renewed)}"
+                : "Warte auf die Bestätigung auf dem Handy …"),
+            AccountStep.CodeRejected => ("Neuer Code", "Abgelehnt – [A] für neuen Code"),
+            AccountStep.Unreachable => ("Erneut versuchen", $"{launcherName} nicht erreichbar – [A] erneut versuchen"),
+            AccountStep.SignedIn => ("Abmelden", state.Problem is not null || state.Notice is not null
+                ? $"{state.AccountName} · {state.Notice ?? FirstSentence(state.Problem!)}"
+                : state.AccountName),
+            _ => ("Anmelden", state.Problem is not null ? FirstSentence(state.Problem) : account.Purpose),
+        };
+        row.Severity = state.Problem is not null ? HealthSeverity.Warning : state.Notice is not null ? HealthSeverity.Info : null;
+        if (state.Step == AccountStep.ShowingCode)
+        {
+            StartCodeClock(account);
+        }
+        else
+        {
+            StopCodeClock();
+        }
+
+        List<InfoBlock> info = [];
+        if (state.Problem is { } problem)
+        {
+            info.Add(new InfoNote(problem));
+        }
+
+        if (state.Notice is not null)
+        {
+            info.Add(new InfoNote($"{launcherName} ist momentan mit einem anderen Konto angemeldet als in Arcadia. Arcadia wird so lange keine Installationen starten können. Installierte Spiele könnten ggf. nicht starten oder falsche Spielstände verwenden.", HealthSeverity.Info));
+        }
+
+        switch (state.Step)
+        {
+            case AccountStep.ShowingCode when state.Code is { } code:
+                info.Add(new InfoQrCode(QrCode(code)));
+                info.Add(new InfoText(account.CodeInstruction));
+                info.Add(new InfoText("[B] bricht die Anmeldung ab."));
+                info.Add(new InfoFootnote($"{launcherName} erneuert den Code von Zeit zu Zeit, Arcadia zeigt dann gleich den neuen. Der angezeigte Code gilt also immer."));
+                break;
+            case AccountStep.Starting or AccountStep.ShowingCode:
+                info.Add(new InfoText(account.CodeInstruction));
+                info.Add(new InfoText("[B] bricht die Anmeldung ab."));
+                break;
+            case AccountStep.CodeRejected:
+                info.Add(new InfoText("Die Anmeldung wurde auf dem Handy abgelehnt. [A] holt einen neuen Code."));
+                break;
+            case AccountStep.Unreachable:
+                info.Add(new InfoText($"Arcadia erreicht die Anmeldung von {launcherName} gerade nicht. Prüfe die Internetverbindung; [A] versucht es erneut."));
+                break;
+            case AccountStep.SignedIn:
+                info.Add(new InfoText($"Angemeldet als {state.AccountName}. Arcadia zeigt neben deinen installierten Spielen auch die Spiele, die im Besitz von {state.AccountName} sind."));
+                info.Add(new InfoFacts("KONTO",
+                [
+                    new InfoFact("Spiele im Konto", state.OwnedGames is { } count ? count.ToString(System.Globalization.CultureInfo.CurrentCulture) : "Noch nicht geladen", IsMuted: state.OwnedGames is null),
+                    new InfoFact("Stand", state.ListedAt is { } at ? Ago(at) : "–", IsMuted: state.ListedAt is null),
+                ]));
+                info.Add(new InfoFootnote("Meldest du dich ab, werden nur noch die installierten Spiele gelistet."));
+                break;
+            default:
+                info.Add(new InfoText(account.About));
+                info.Add(new InfoText(account.SignInMethod));
+                break;
+        }
+
+        row.Info = info;
+    }
+
+    /// <summary>The code's modules, drawn once per code: the clock refreshes the row every second.</summary>
+    private Avalonia.Media.Geometry QrCode(string code)
+    {
+        if (_drawnCode is not { } drawn || drawn.Text != code)
+        {
+            drawn = (code, QrCodes.Draw(code));
+            _drawnCode = drawn;
+        }
+
+        return drawn.Modules;
+    }
+
+    /// <summary>Counts "erneuert vor … s" up while the code is shown; only the subtitle changes.</summary>
+    private void StartCodeClock(ILauncherAccount account)
+    {
+        _codeClock ??= _time.CreateTimer(_ => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (PageAccount == account && account.State is { Step: AccountStep.ShowingCode, CodeRenewedAt: { } renewed })
+            {
+                _accountRow.Subtitle = $"Warte auf Bestätigung · Code erneuert {SecondsAgo(renewed)}";
+            }
+            else
+            {
+                StopCodeClock();
+            }
+        }), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    private void StopCodeClock()
+    {
+        _codeClock?.Dispose();
+        _codeClock = null;
+    }
+
+    private string SecondsAgo(DateTimeOffset at)
+    {
+        var age = _time.GetUtcNow() - at;
+        return age < TimeSpan.FromSeconds(1) ? "gerade eben"
+            : age < TimeSpan.FromMinutes(1) ? $"vor {(int)age.TotalSeconds} s"
+            : $"vor {(int)age.TotalMinutes} min";
+    }
+
+    private static string FirstSentence(string text) => text.IndexOf(". ", StringComparison.Ordinal) is var end and > 0 ? text[..end] : text.TrimEnd('.');
+
+    /// <summary>A on the account's row: sign in, a new code, drop the code shown, or sign out after asking.</summary>
+    private void ActivateAccount()
+    {
+        if (PageAccount is not { } account)
+        {
+            return;
+        }
+
+        switch (account.State.Step)
+        {
+            case AccountStep.SignedIn:
+                Dialog = new ConfirmationViewModel(
+                    $"Vom {account.Title} abmelden?",
+                    $"Willst du {account.State.AccountName} wirklich in Arcadia abmelden? Arcadia kann dir dann nur noch die Spiele auflisten, die auf diesem PC installiert sind. "
+                        + $"Ob du sie auch starten kannst, hängt von den Lizenzen des Benutzers ab, der in {PageInfo.DisplayName} angemeldet ist.",
+                    "Abmelden",
+                    account.SignOut,
+                    () => Dialog = null);
+                break;
+            case AccountStep.Starting or AccountStep.ShowingCode:
+                account.CancelSignIn();
+                break;
+            default:
+                account.BeginSignIn();
+                break;
+        }
+    }
+
+    /// <summary>The question before signing out: ◀ ▶ choose, A answers, B keeps the sign-in.</summary>
+    public override void HandleDialog(UiAction action)
+    {
+        if (Dialog is ConfirmationViewModel confirmation && !confirmation.Handle(action))
+        {
+            Dialog = null;
+        }
+    }
+
+    public override void Dispose()
+    {
+        StopCodeClock();
+        foreach (var (account, handler) in _accounts)
+        {
+            account.StateChanged -= handler;
+        }
+
+        _accounts.Clear();
+        base.Dispose();
     }
 
     /// <summary>

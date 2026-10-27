@@ -290,6 +290,12 @@ public sealed class GameActions : IGameActionHost
 
     private void Install(GameTileViewModel tile)
     {
+        if (tile.Game.InstallBlockedReason is { } blocked)
+        {
+            _toast.Show($"„{tile.Title}“ lässt sich gerade nicht installieren: {blocked}.");
+            return;
+        }
+
         try
         {
             if (_launcher.Install(tile.Game))

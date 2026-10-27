@@ -27,6 +27,9 @@
     <Compile Include="..\Arcadia.Core.Tests\FakeSdlGamepads.cs" Link="FakeSdlGamepads.cs" />
     <!-- Steam's appinfo.vdf as the Steam fixture writes it (#141). -->
     <Compile Include="..\Arcadia.Core.Tests\AppInfoFile.cs" Link="Fixtures\AppInfoFile.cs" />
+    <Compile Include="..\Arcadia.Core.Tests\PackageInfoFile.cs" Link="Fixtures\PackageInfoFile.cs" />
+    <!-- Steam's web API for the Steam account (#83). -->
+    <Compile Include="..\Arcadia.Core.Tests\FakeSteamWeb.cs" Link="Fixtures\FakeSteamWeb.cs" />
   </ItemGroup>
 
   <ItemGroup>

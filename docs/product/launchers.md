@@ -44,6 +44,21 @@ Agreed with the owner; don't change without asking. Read this before changing th
   versions as one entry that starts the newest, and launchable add-ons such as Unreal Editor for Fortnite), counted as
   Werkzeug; Epic's soundtracks (`digitaldownloads`) stay out. "Neu einlesen" and "Launcher-Details" ("Einträge") show
   the library's count line (`docs/product/library.md`).
+- Steam account (#83, owner 2026-10-26, changed after the test 2026-10-27): Steam's page starts with the group "Konto",
+  the row "Steam-Konto"; while Steam is inactive or missing it stays there, disabled, and says why (a sign-in stays
+  stored). Sign-in only by QR code approved in the Steam app on the phone, no password. Signed out: pill "Anmelden",
+  subtitle "Melde dich an, um vollen Zugriff auf deine Spielebibliothek zu haben"; A shows the code in the info panel. It renews
+  itself as long as the page shows it (no time limit), the row counts "Code erneuert vor … s"; B drops it and stays on
+  the page. Rejected: "Abgelehnt – [A] für neuen Code"; Steam unreachable or silent: "Steam nicht erreichbar – [A]
+  erneut versuchen". Signed in: the Steam profile name and "Abmelden", which asks first and then deletes sign-in and
+  cached list; the uninstalled games leave tab and search at once. No hint elsewhere while signed out. Another account
+  in the running Steam: the games stay, "Installieren" is disabled with the reason, preview and detail page note it
+  (uninstalled: no installs from Arcadia meanwhile; installed: may not start or use the wrong saves), and the row has an info (blue i); a closed Steam
+  counts as no account. A failed fetch or an expired sign-in is a warning on the row, never a toast; the cached list
+  applies offline. Uninstalled entries count in the count line's total, not in the installed bracket; their playtime
+  and last start come from Steam's web API, installed ones keep `localconfig.vdf`. All types: uninstalled software,
+  tools and soundtracks appear under #141's switches like installed ones, free ones from packages too, as Steam counts
+  them (except Proton and runtimes, which Arcadia never shows).
 - First start (#139, owner 2026-10-11, 2026-10-12 and 2026-10-22): Arcadia never takes a launcher on just because it is
   installed. While `settings.json` has no `ActiveLaunchers` (also after an update from a version without it), a page
   "Welche Launcher soll Arcadia nutzen?" stands in place of the library, pattern "Leiste": "Gefunden" switched on with

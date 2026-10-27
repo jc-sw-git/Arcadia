@@ -1,6 +1,7 @@
 using System.Globalization;
 using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Steam.Account;
 
 namespace Arcadia.Launchers.Steam;
 
@@ -16,7 +17,8 @@ public sealed record SteamPlayStats(DateTimeOffset? LastPlayedAt, TimeSpan? Play
 /// refunded games.
 /// </summary>
 /// <param name="locate">Finds Steam; defaults to <see cref="SteamInstallation.Find"/>.</param>
-public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILauncherScanner
+/// <param name="account">The Steam account signed in to Arcadia, whose games are added as not installed (#83); null for none.</param>
+public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamOnlineAccount? account = null) : ILauncherScanner
 {
     // EAppState bits in the manifest's StateFlags (verified on the owner's PC, 2026-10-12:
     // 4 = installed, 6 = installed with a pending update). Bit 64 (68/70) was only seen on
@@ -56,6 +58,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
 
     private readonly Func<SteamInstallation?> _locate = locate ?? SteamInstallation.Find;
     private readonly AppTypeCache _appTypes = new();
+    private readonly PackageAppsCache _packageApps = new();
 
     public LauncherInfo Launcher => KnownLaunchers.Steam;
 
@@ -77,10 +80,26 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             .SelectMany(library => ManifestFiles(library).Select(file => (Library: library, File: file)))
             .ToList();
 
+        // Every scan asks for a fresh list; the account fetches it in the background and asks for a rescan when it changed.
+        account?.FetchSoon();
+        // Only a running Steam's account counts: a closed Steam starts with whichever account the user picks (owner, 2026-10-27).
+        var apps = account?.OwnedGamesFor(steam.ActiveUserId);
+        var owned = apps?.Owned ?? [];
+        var licensed = apps is null
+            ? null
+            : _packageApps.Read(Path.Combine(steam.RootPath, "appcache", "packageinfo.vdf"), [.. apps.Packages, FreePackage]);
+
         // The manifest's file name carries the app id, so the types are read before the manifests, in one pass.
         var appTypes = _appTypes.Read(
             Path.Combine(steam.RootPath, "appcache", "appinfo.vdf"),
-            manifests.Select(m => AppIdOfManifestFile(m.File)).OfType<uint>().ToHashSet());
+            manifests.Select(m => AppIdOfManifestFile(m.File)).OfType<uint>()
+                .Concat(owned.Select(game => game.AppId))
+                .Concat(licensed?.Values.SelectMany(appIds => appIds) ?? [])
+                .ToHashSet());
+        if (licensed is not null)
+        {
+            owned = WithPackageApps(owned, licensed, appTypes);
+        }
 
         var games = new List<Game>();
         var installed = new HashSet<uint>();
@@ -94,8 +113,85 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             }
         }
 
-        return games;
+        if (owned.Count > 0)
+        {
+            var hidden = SteamHiddenGames.Read(steam.UserDataDirectory);
+            var names = _appTypes.Names;
+            games.AddRange(owned
+                .Where(game => !installed.Contains(game.AppId) && !hidden.Contains(game.AppId))
+                .Select(game => Uninstalled(game, appTypes, names))
+                .OfType<Game>());
+        }
+
+        return apps is { SteamHasOtherAccount: true } ? [.. games.Select(WithOtherAccount)] : games;
     }
+
+    /// <summary>Package 0, which every account has; Steam's library shows only its tools (owner's account, 2026-10-27).</summary>
+    internal const uint FreePackage = 0;
+
+    /// <summary>
+    /// The owned apps plus those only a package lists (#83): free tools and soundtracks, which Steam's library counts but
+    /// no owned-app list holds. Of package 0 only the tools count: its applications (Source Filmmaker …) Steam doesn't show.
+    /// </summary>
+    internal static IReadOnlyList<SteamOwnedGame> WithPackageApps(
+        IReadOnlyList<SteamOwnedGame> owned, IReadOnlyDictionary<uint, IReadOnlyList<uint>> packageApps, IReadOnlyDictionary<uint, string>? appTypes)
+    {
+        var listed = owned.Select(game => game.AppId).ToHashSet();
+        var added = packageApps
+            .SelectMany(package => package.Value.Where(appId => package.Key != FreePackage
+                || string.Equals(appTypes?.GetValueOrDefault(appId), "tool", StringComparison.OrdinalIgnoreCase)))
+            .Where(listed.Add)
+            .Order()
+            .Select(appId => new SteamOwnedGame(appId, null, 0, 0));
+        return [.. owned, .. added];
+    }
+
+    /// <summary>
+    /// An owned game that isn't installed (#83): A installs it through <c>steam://install</c>, which opens Steam's install
+    /// dialog; playtime and last start come from Steam's web API. Null for a type that never appears (runtimes, DLC).
+    /// </summary>
+    internal static Game? Uninstalled(SteamOwnedGame owned, IReadOnlyDictionary<uint, string>? appTypes, IReadOnlyDictionary<uint, string>? names = null)
+    {
+        // An app only the store lists (a soundtrack, a tool, DLC) needs appinfo.vdf for its name and type; without, it would
+        // pass for a game.
+        var steamType = appTypes?.GetValueOrDefault(owned.AppId);
+        if ((owned.Name ?? names?.GetValueOrDefault(owned.AppId)) is not { } title
+            || (owned.Name is null && steamType is null)
+            || TypeOf(owned.AppId, title, steamType) is not { } type)
+        {
+            return null;
+        }
+
+        return new Game
+        {
+            Id = owned.AppId.ToString(CultureInfo.InvariantCulture),
+            LauncherId = KnownLaunchers.Steam.Id,
+            Title = title,
+            Type = type,
+            IsInstalled = false,
+            Launch = new LaunchTarget.ProtocolUri(RunUri(owned.AppId)),
+            Install = new LaunchTarget.ProtocolUri(InstallUri(owned.AppId)),
+            OpenInLauncher = new LaunchTarget.ProtocolUri(DetailsUri(owned.AppId)),
+            Playtime = owned.PlaytimeMinutes > 0 ? TimeSpan.FromMinutes(owned.PlaytimeMinutes) : null,
+            LastPlayedAt = owned.LastPlayedUnix > 0 ? DateTimeOffset.FromUnixTimeSeconds(owned.LastPlayedUnix) : null,
+        };
+    }
+
+    /// <summary>
+    /// The running Steam is signed in with another account than Arcadia (#83, owner 2026-10-27): the games stay, but an
+    /// install would go to that account, so it is blocked, and every game says that a start may fail or use other saves.
+    /// </summary>
+    internal static Game WithOtherAccount(Game game) => game with
+    {
+        InstallBlockedReason = game.IsInstalled ? null : OtherAccountInstall,
+        Notice = game.IsInstalled ? OtherAccountInstalledNotice : OtherAccountUninstalledNotice,
+    };
+
+    internal const string OtherAccountInstall = "In Steam ist ein anderes Konto angemeldet";
+
+    internal const string OtherAccountUninstalledNotice = "In Steam ist derzeit ein anderes Konto angemeldet als in Arcadia. Installationen aus Arcadia heraus sind so lange nicht möglich.";
+
+    internal const string OtherAccountInstalledNotice = "In Steam ist derzeit ein anderes Konto angemeldet als in Arcadia. Das Spiel könnte daher entweder nicht starten oder falsche Spielstände verwenden.";
 
     /// <summary>The app id in <c>appmanifest_&lt;appid&gt;.acf</c>; null for another name.</summary>
     internal static uint? AppIdOfManifestFile(string path)
@@ -257,6 +353,9 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
     /// <summary>The game's page in the Steam library.</summary>
     public static string DetailsUri(uint appId) => $"steam://nav/games/details/{appId.ToString(CultureInfo.InvariantCulture)}";
 
+    /// <summary>Opens Steam's install dialog; ignored for an installed game (docs/launchers/steam.md).</summary>
+    public static string InstallUri(uint appId) => $"steam://install/{appId.ToString(CultureInfo.InvariantCulture)}";
+
     /// <summary>Steam asks for confirmation itself before it deletes anything.</summary>
     public static string UninstallUri(uint appId) => $"steam://uninstall/{appId.ToString(CultureInfo.InvariantCulture)}";
 
@@ -388,6 +487,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
         private (string Path, long Length, DateTime Written)? _stamp;
         private IReadOnlySet<uint> _asked = new HashSet<uint>();
         private IReadOnlyDictionary<uint, string>? _types;
+        private IReadOnlyDictionary<uint, string>? _names = new Dictionary<uint, string>();
 
         // Whether the last read failed, so a file that stays missing or broken is logged once, not on every rescan.
         private bool _isUnreadable;
@@ -414,7 +514,9 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
 
                 _stamp = stamp;
                 _asked = appIds;
-                _types = stamp is null ? null : TryRead(path, appIds);
+                var apps = stamp is null ? null : TryRead(path, appIds);
+                _types = apps?.ToDictionary(app => app.Key, app => app.Value.Type);
+                _names = apps?.Where(app => app.Value.Name is not null).ToDictionary(app => app.Key, app => app.Value.Name!);
                 if (_types is null && !_isUnreadable)
                 {
                     _warn("Steam: appinfo.vdf nicht lesbar, Werkzeuge und Soundtracks werden am Namen erkannt, Software als Spiel");
@@ -426,13 +528,25 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             }
         }
 
-        private static IReadOnlyDictionary<uint, string>? TryRead(string path, IReadOnlySet<uint> appIds)
+        /// <summary>The names of the apps read last, for owned apps that have no manifest; null if the file is unreadable.</summary>
+        public IReadOnlyDictionary<uint, string>? Names
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _names;
+                }
+            }
+        }
+
+        private static IReadOnlyDictionary<uint, SteamAppEntry>? TryRead(string path, IReadOnlySet<uint> appIds)
         {
             try
             {
                 var watch = System.Diagnostics.Stopwatch.StartNew();
-                var types = SteamAppInfo.ReadTypes(path, appIds);
-                System.Diagnostics.Trace.TraceInformation($"Steam: Typen von {types.Count} der {appIds.Count} installierten Apps aus appinfo.vdf in {watch.ElapsedMilliseconds} ms gelesen");
+                var types = SteamAppInfo.ReadApps(path, appIds);
+                System.Diagnostics.Trace.TraceInformation($"Steam: Typen von {types.Count} der {appIds.Count} installierten und eigenen Apps aus appinfo.vdf in {watch.ElapsedMilliseconds} ms gelesen");
                 return types;
             }
             catch (Exception e) when (e is FormatException or IOException or UnauthorizedAccessException)
@@ -440,6 +554,73 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
                 System.Diagnostics.Trace.TraceWarning($"Steam: appinfo.vdf: {e.Message}");
                 return null;
             }
+        }
+    }
+
+    /// <summary>
+    /// The apps of the account's packages read last from <c>packageinfo.vdf</c>, kept while the file and the packages stay
+    /// the same. A file that can't be read is said once in the log and adds no apps: the owned-app lists still apply.
+    /// </summary>
+    internal sealed class PackageAppsCache(Action<string>? warn = null)
+    {
+        private static readonly IReadOnlyDictionary<uint, IReadOnlyList<uint>> None = new Dictionary<uint, IReadOnlyList<uint>>();
+
+        private readonly Action<string> _warn = warn ?? (message => System.Diagnostics.Trace.TraceWarning(message));
+        private readonly Lock _lock = new();
+        private (long Length, DateTime Written, HashSet<uint> Packages)? _stamp;
+        private IReadOnlyDictionary<uint, IReadOnlyList<uint>> _apps = None;
+        private bool _isUnreadable;
+
+        public IReadOnlyDictionary<uint, IReadOnlyList<uint>> Read(string path, HashSet<uint> packageIds)
+        {
+            lock (_lock)
+            {
+                FileInfo file;
+                try
+                {
+                    file = new FileInfo(path);
+                    if (!file.Exists)
+                    {
+                        return Unreadable("Steam: packageinfo.vdf fehlt, kostenlose Werkzeuge fehlen in der Bibliothek");
+                    }
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+                {
+                    return Unreadable($"Steam: packageinfo.vdf: {e.Message}");
+                }
+
+                if (_stamp is { } stamp && stamp.Length == file.Length && stamp.Written == file.LastWriteTimeUtc && stamp.Packages.SetEquals(packageIds))
+                {
+                    return _apps;
+                }
+
+                try
+                {
+                    var watch = System.Diagnostics.Stopwatch.StartNew();
+                    _apps = SteamPackageInfo.ReadApps(path, packageIds);
+                    System.Diagnostics.Trace.TraceInformation($"Steam: Apps von {_apps.Count} der {packageIds.Count} Pakete aus packageinfo.vdf in {watch.ElapsedMilliseconds} ms gelesen");
+                    _stamp = (file.Length, file.LastWriteTimeUtc, packageIds);
+                    _isUnreadable = false;
+                    return _apps;
+                }
+                catch (Exception e) when (e is FormatException or IOException or UnauthorizedAccessException)
+                {
+                    return Unreadable($"Steam: packageinfo.vdf: {e.Message}");
+                }
+            }
+        }
+
+        private IReadOnlyDictionary<uint, IReadOnlyList<uint>> Unreadable(string message)
+        {
+            if (!_isUnreadable)
+            {
+                _warn(message);
+            }
+
+            _isUnreadable = true;
+            _stamp = null;
+            _apps = None;
+            return None;
         }
     }
 }

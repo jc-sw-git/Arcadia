@@ -31,6 +31,18 @@ public sealed record Game
     /// </summary>
     public bool InstallStartsInLauncher { get; init; }
 
+    /// <summary>
+    /// Why <see cref="Install"/> can't be used right now, e.g. the launcher is signed in with another account than the
+    /// one the game belongs to (#83); null if it can. "Installieren" is then disabled and says why.
+    /// </summary>
+    public string? InstallBlockedReason { get; init; }
+
+    /// <summary>
+    /// A hint the preview and the detail page show with the game, e.g. that the launcher is signed in with another
+    /// account than Arcadia (#83); null for none.
+    /// </summary>
+    public string? Notice { get; init; }
+
     /// <summary>Shows the game in its launcher; null if Arcadia can't open the launcher at all.</summary>
     public LaunchTarget? OpenInLauncher { get; init; }
 

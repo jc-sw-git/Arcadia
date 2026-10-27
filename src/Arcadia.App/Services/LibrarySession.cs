@@ -29,6 +29,10 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     private readonly TimeProvider _time;
     private readonly CancellationTokenSource _shutdown = new();
 
+    // Launchers whose account changed their games while the library was loading: read again once it is loaded (#83).
+    private readonly HashSet<string> _changedWhileLoading = new(StringComparer.Ordinal);
+    private readonly List<(ILauncherAccount Account, EventHandler Changed, EventHandler<Exception> Failed)> _accounts = [];
+
     public LibrarySession(LibraryService library, InstallTracker installs, RunningGamesTracker running, LaunchedGames launchedGames, TimeProvider time)
     {
         _library = library;
@@ -37,6 +41,18 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         _running = running;
         LaunchedGames = launchedGames;
         _time = time;
+        foreach (var integration in library.Launchers.All)
+        {
+            if (integration.Account is { } account)
+            {
+                var launcherId = integration.Launcher.Id;
+                EventHandler changed = (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnAccountLibraryChanged(launcherId));
+                EventHandler<Exception> failed = (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, $"Konto von {integration.Launcher.DisplayName}"));
+                account.LibraryChanged += changed;
+                account.Failed += failed;
+                _accounts.Add((account, changed, failed));
+            }
+        }
     }
 
     [ObservableProperty]
@@ -95,6 +111,12 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         var scanned = watch.ElapsedMilliseconds;
         IsLoading = false;
         Show(libraries);
+        foreach (var launcherId in _changedWhileLoading)
+        {
+            RefreshLauncherAsync(launcherId).Forget("Bibliothek aktualisieren");
+        }
+
+        _changedWhileLoading.Clear();
 
         // The scan runs off the UI thread; only showing it blocks the UI (#136 measures both). Time since the process
         // started and memory are what the budgets in CLAUDE.md name (start < 2 s with 1,000 games, < 400 MB with 5,000).
@@ -213,6 +235,13 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         }
 
         Noticed?.Invoke(this, new LibraryNotice.RescanStarted(launcher));
+
+        // Asked for by the user: an account fetches its games now (a game just bought, back online, #83).
+        foreach (var integration in launcher is null ? _library.Launchers.Enabled : _library.Launchers.Enabled.Where(i => i.Launcher.Id == launcher.Id))
+        {
+            integration.Account?.RefreshNow();
+        }
+
         var watch = System.Diagnostics.Stopwatch.StartNew();
         await (launcher is null ? RefreshLibraryAsync(force: true) : RefreshLauncherAsync(launcher.Id));
         AppLog.Write($"Neu eingelesen{(launcher is null ? string.Empty : $" für {launcher.Id}")}: {watch.ElapsedMilliseconds} ms");
@@ -258,6 +287,34 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         {
             _shutdown.Cancel();
         }
+
+        foreach (var (account, changed, failed) in _accounts)
+        {
+            account.LibraryChanged -= changed;
+            account.Failed -= failed;
+        }
+
+        _accounts.Clear();
+    }
+
+    /// <summary>
+    /// A launcher's account fetched other games, or was signed in or out (#83): the launcher is read again, so its tab and
+    /// the search show the change at once.
+    /// </summary>
+    private void OnAccountLibraryChanged(string launcherId)
+    {
+        if (_shutdown.IsCancellationRequested || !_library.Launchers.ActiveIds.Contains(launcherId))
+        {
+            return;
+        }
+
+        if (IsLoading)
+        {
+            _changedWhileLoading.Add(launcherId);
+            return;
+        }
+
+        RefreshLauncherAsync(launcherId).Forget("Bibliothek aktualisieren");
     }
 
     /// <summary>Reads one launcher again ("Neu einlesen", #137); the other launchers keep their games.</summary>

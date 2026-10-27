@@ -104,6 +104,7 @@ public partial class GameTileViewModel : ViewModelBase
     /// <summary>The running installation of this game, or null.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsInstallActive), nameof(UpdateAvailable), nameof(ShowInstallBadge), nameof(CanActivate), nameof(PrimaryActionText),
+        nameof(IsInstallBlocked), nameof(ShowInstallHint), nameof(ShowInstallBlockedHint),
         nameof(InstallPercent), nameof(IsInstallIndeterminate), nameof(IsInstallPaused), nameof(IsInstallQueued), nameof(IsInstallSpinning),
         nameof(InstallStatusText), nameof(InstallShortText), nameof(ShowLauncherControlsHint), nameof(ShowRunningBadge), nameof(ShowStartingBadge))]
     public partial InstallProgress? InstallState { get; set; }
@@ -116,8 +117,22 @@ public partial class GameTileViewModel : ViewModelBase
     /// <summary>The "can be installed" badge; replaced by the progress while an installation runs.</summary>
     public bool ShowInstallBadge => !Game.IsInstalled && InstallState is null;
 
-    /// <summary>False while an installation runs, so it can't be requested twice.</summary>
-    public bool CanActivate => InstallState is null;
+    /// <summary>False while an installation runs, so it can't be requested twice, and while it can't be installed now.</summary>
+    public bool CanActivate => InstallState is null && !IsInstallBlocked;
+
+    /// <summary>Not installed, and the launcher can't install it right now (#83: Steam runs with another account).</summary>
+    public bool IsInstallBlocked => !Game.IsInstalled && InstallState is null && Game.InstallBlockedReason is not null;
+
+    /// <summary>"Die Installation wird in … geöffnet" below "Installieren", unless that is blocked.</summary>
+    public bool ShowInstallHint => ShowInstallBadge && !IsInstallBlocked;
+
+    /// <summary>Why it can't be installed, below "Installieren", unless <see cref="Notice"/> already says so.</summary>
+    public bool ShowInstallBlockedHint => IsInstallBlocked && !HasNotice;
+
+    /// <summary>A hint about the game on the preview and the detail page, e.g. another account in the launcher (#83).</summary>
+    public string? Notice => Game.Notice;
+
+    public bool HasNotice => Notice is not null;
 
     public double InstallPercent => (InstallState?.Fraction ?? 0) * 100;
 

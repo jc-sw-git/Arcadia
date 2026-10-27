@@ -87,14 +87,15 @@ public sealed class LibraryRefresher(LibraryService library, TimeProvider time)
 
     /// <summary>
     /// True if launchers or games differ in anything a tab or cover shows, or in what the library sorts by: after a game
-    /// ended, its playtime and last start come with the next rescan (#95). Launchers count in their tab order (#136).
+    /// ended, its playtime and last start come with the next rescan (#95); after an account switch in the launcher, its hint
+    /// (#83). Launchers count in their tab order (#136).
     /// </summary>
     public static bool HasChanged(IReadOnlyList<LauncherLibrary> current, IReadOnlyList<LauncherLibrary> scanned)
     {
         static string Tabs(IEnumerable<LauncherLibrary> libraries) => string.Join('|', libraries.Select(l => $"{l.Launcher.Id}:{l.IsFound}"));
 
         static string Signature(IEnumerable<LauncherLibrary> libraries) => string.Join('|', libraries
-            .SelectMany(l => l.Games.Select(g => $"{l.Launcher.Id}/{g.Key}:{g.IsInstalled}:{g.UpdateAvailable}:{g.InstallDirectory}:{g.LastPlayedAt?.UtcTicks}:{g.Playtime?.Ticks}"))
+            .SelectMany(l => l.Games.Select(g => $"{l.Launcher.Id}/{g.Key}:{g.IsInstalled}:{g.UpdateAvailable}:{g.InstallDirectory}:{g.LastPlayedAt?.UtcTicks}:{g.Playtime?.Ticks}:{g.InstallBlockedReason}:{g.Notice}"))
             .Order(StringComparer.Ordinal));
 
         return Tabs(current) != Tabs(scanned) || Signature(current) != Signature(scanned);

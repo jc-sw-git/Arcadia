@@ -302,6 +302,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     {
         // "Spielen" explains itself through the update note; a disabled "Spielen" is the running installation.
         var play = TopRow.FirstOrDefault(a => a.Kind == GameActionKind.Play);
-        PlayNote = Tile.UpdateAvailable ? null : play?.Note;
+        // A blocked install whose reason the game's notice already gives (#83) needs no second line.
+        PlayNote = Tile.UpdateAvailable || (Tile.IsInstallBlocked && Tile.HasNotice) ? null : play?.Note;
     }
 }

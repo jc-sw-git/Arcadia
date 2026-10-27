@@ -83,7 +83,7 @@ public sealed class PanGuardianTests
         Assert.Equal(1, arcadia.XboxPads.Unplugged);
         Assert.Equal(2, arcadia.XboxPads.Plugged);
         Assert.Equal([1u, 2u], arcadia.Pan.Started);
-        Assert.Contains("Verbindung zu VIIPER verloren", ArcadiaDriver.Log);
+        Assert.Contains("Xbox-Pad: von Pan entfernt", ArcadiaDriver.Log);
     }
 
     [AvaloniaFact]

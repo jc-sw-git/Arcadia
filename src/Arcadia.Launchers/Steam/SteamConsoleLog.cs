@@ -7,7 +7,7 @@ namespace Arcadia.Launchers.Steam;
 
 /// <summary>
 /// Follows <c>logs/console_log.txt</c>, where Steam logs every step of a game start (owner's PC, 2026-10-27, #277). A start
-/// Steam aborts ends with <c>[2026-10-27 18:01:02] GameAction [AppID 214490, ActionID 1] : LaunchApp failed with
+/// Steam aborts ends with <c>[2026-10-27 17:27:35] GameAction [AppID 214490, ActionID 1] : LaunchApp failed with
 /// AppError_5 with ""</c> within a second of <c>steam://rungameid</c>; Steam waiting for the player (launch option, EULA,
 /// cloud conflict) is logged as <c>waiting for user response</c> and is no failure. Only what Steam writes after the first
 /// read counts: the history before Arcadia looked holds no start of Arcadia's.

@@ -18,11 +18,12 @@ and Arcadia rescans right after a game ended and 30 s later.
 
 ## Starts Steam aborts (#277, 2026-10-27)
 
-Steam logs every step of a game start to `logs/console_log.txt` (local time, English, appended), e.g.
-`[2026-10-27 18:01:02] GameAction [AppID 214490, ActionID 1] : LaunchApp failed with AppError_5 with ""` within a
+Steam logs every step of a game start to `logs/console_log.txt` (local time, English, appended, CRLF; checked in the
+owner's file 2026-10-27), e.g.
+`[2026-10-27 17:27:35] GameAction [AppID 214490, ActionID 1] : LaunchApp failed with AppError_5 with ""` within a
 second of `steam://rungameid/<id>`, after `changed task to RequestingLicense` and before `changed task to Failed`.
 Codes seen on the owner's PC: `AppError_5` = no license (Steam's dialog "Keine Lizenzen"; 214490 and 1098080),
-`AppError_28` with the exe path (Left 4 Dead, presumably missing executable), `AppError_18` (1740720, Steam downloaded an
+`AppError_28` with the exe path (Left 4 Dead, 500, presumably missing executable), `AppError_18` (1740720, Steam downloaded an
 update right after, presumably update required); only 5 is confirmed. Steam waiting for the player is no failure:
 `LaunchApp waiting for user response to ShowLaunchOption` / `ShowEula` / `ShowInterstitials` / `CreatingProcess`, then
 `continues with user response …`; a start that works ends with `changed task to Completed`. `SteamConsoleLog` reads only

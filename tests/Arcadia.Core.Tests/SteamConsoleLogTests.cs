@@ -3,7 +3,7 @@ using Arcadia.Launchers.Steam;
 
 namespace Arcadia.Core.Tests;
 
-/// <summary>Steam's console log (#277), with lines as Steam wrote them on the owner's PC on 2026-10-27.</summary>
+/// <summary>Steam's console log (#277), with lines copied from the owner's <c>console_log.txt</c> (2026-10-24 to 2026-10-27).</summary>
 public sealed class SteamConsoleLogTests : IDisposable
 {
     // Steam writes local time; the tests run in a zone of their own, so the result doesn't depend on the machine's.
@@ -11,9 +11,9 @@ public sealed class SteamConsoleLogTests : IDisposable
 
     private const string NoLicense =
         """
-        [2026-10-27 18:01:01] GameAction [AppID 214490, ActionID 1] : LaunchApp changed task to RequestingLicense with ""
-        [2026-10-27 18:01:02] GameAction [AppID 214490, ActionID 1] : LaunchApp failed with AppError_5 with ""
-        [2026-10-27 18:01:02] GameAction [AppID 214490, ActionID 1] : LaunchApp changed task to Failed with ""
+        [2026-10-27 17:27:35] GameAction [AppID 214490, ActionID 1] : LaunchApp changed task to RequestingLicense with ""
+        [2026-10-27 17:27:35] GameAction [AppID 214490, ActionID 1] : LaunchApp failed with AppError_5 with ""
+        [2026-10-27 17:27:35] GameAction [AppID 214490, ActionID 1] : LaunchApp changed task to Failed with ""
         """;
 
     private readonly string _folder = Directory.CreateTempSubdirectory("arcadia-console-log-").FullName;
@@ -33,7 +33,7 @@ public sealed class SteamConsoleLogTests : IDisposable
         var refusal = Assert.Single(Parse(NoLicense));
 
         Assert.Equal(
-            new RefusedStart("214490", new DateTimeOffset(2026, 10, 27, 18, 1, 2, TimeSpan.FromHours(1)), "Das angemeldete Steam-Konto besitzt dieses Spiel nicht.", "AppError_5"),
+            new RefusedStart("214490", new DateTimeOffset(2026, 10, 27, 17, 27, 35, TimeSpan.FromHours(1)), "Das angemeldete Steam-Konto besitzt dieses Spiel nicht.", "AppError_5"),
             refusal);
     }
 
@@ -42,9 +42,10 @@ public sealed class SteamConsoleLogTests : IDisposable
     public void An_unknown_code_has_no_reason_and_its_detail_leaves_out_the_path_steam_names()
     {
         var refusal = Assert.Single(Parse(
-            """[2026-10-26 21:14:09] GameAction [AppID 550, ActionID 3] : LaunchApp failed with AppError_28 with "F:\SteamLibrary\steamapps\common\Left 4 Dead 2\left4dead2.exe" """));
+            // Left 4 Dead; the path is made up, Steam's names the game's folder in the player's library.
+            """[2026-10-26 10:50:08] GameAction [AppID 500, ActionID 2] : LaunchApp failed with AppError_28 with "D:\Games\Steam\steamapps\common\left 4 dead\left4dead.exe" """));
 
-        Assert.Equal("550", refusal.GameId);
+        Assert.Equal("500", refusal.GameId);
         Assert.Null(refusal.Reason);
         Assert.Equal("AppError_28", refusal.Detail);
     }
@@ -55,12 +56,14 @@ public sealed class SteamConsoleLogTests : IDisposable
     {
         Assert.Empty(Parse(
             """
-            [2026-10-27 18:05:10] GameAction [AppID 4231820, ActionID 2] : LaunchApp changed task to ShowLaunchOption with ""
-            [2026-10-27 18:05:10] GameAction [AppID 4231820, ActionID 2] : LaunchApp waiting for user response to ShowLaunchOption ""
-            [2026-10-27 18:05:16] GameAction [AppID 4231820, ActionID 2] : LaunchApp continues with user response "1"
-            [2026-10-27 18:05:16] GameAction [AppID 4231820, ActionID 2] : LaunchApp waiting for user response to ShowEula ""
-            [2026-10-27 18:05:20] GameAction [AppID 4231820, ActionID 2] : LaunchApp waiting for user response to CreatingProcess ""
-            [2026-10-27 18:05:21] GameAction [AppID 4231820, ActionID 2] : LaunchApp changed task to Completed with ""
+            [2026-10-24 11:18:46] GameAction [AppID 292030, ActionID 1] : LaunchApp waiting for user response to ShowEula ""
+            [2026-10-24 19:35:52] GameAction [AppID 4231820, ActionID 1] : LaunchApp waiting for user response to ShowLaunchOption ""
+            [2026-10-24 19:36:02] GameAction [AppID 4231820, ActionID 1] : LaunchApp continues with user response "0"
+            [2026-10-24 19:36:03] GameAction [AppID 4231820, ActionID 1] : LaunchApp waiting for user response to ShowInterstitials ""
+            [2026-10-24 19:36:08] GameAction [AppID 4231820, ActionID 1] : LaunchApp continues with user response "ShowInterstitials"
+            [2026-10-24 19:36:09] GameAction [AppID 4231820, ActionID 1] : LaunchApp waiting for user response to CreatingProcess ""
+            [2026-10-24 19:36:09] GameAction [AppID 4231820, ActionID 1] : LaunchApp continues with user response "CreatingProcess"
+            [2026-10-24 19:36:09] GameAction [AppID 4231820, ActionID 1] : LaunchApp changed task to Completed with ""
             """));
     }
 

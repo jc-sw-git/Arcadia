@@ -21,4 +21,4 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| T277-1, T277-3 to T277-5 (acceptance tests), Steam log parser and tracker unit tests, all App and Core tests | 2026-10-27 | Claude | PR branch, Linux cloud container, Avalonia headless; log lines as in the issue | ✅ (each acceptance test also ❌ once with the code broken on purpose, see the PR) | real Steam by hand still open |
+| T277-1, T277-3 to T277-5 (acceptance tests), Steam log parser and tracker unit tests, all App and Core tests | 2026-10-27 | Claude | PR branch, Linux cloud container, Avalonia headless; log lines copied from the owner's `console_log.txt` (2026-10-27) | ✅ (each acceptance test also ❌ once with the code broken on purpose, see the PR) | real Steam by hand still open |

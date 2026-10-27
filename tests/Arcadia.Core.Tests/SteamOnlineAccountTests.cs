@@ -49,6 +49,44 @@ public sealed class SteamOnlineAccountTests : IDisposable
     }
 
     [Fact]
+    public async Task Sign_in_keeps_the_profiles_avatar_and_sign_out_deletes_it()
+    {
+        var account = await SignedInAsync();
+
+        var avatar = account.State.AvatarPath;
+        Assert.NotNull(avatar);
+        Assert.Equal(FakeSteamWeb.AvatarPicture, File.ReadAllBytes(avatar));
+        Assert.Equal(avatar, Create().State.AvatarPath);
+
+        account.SignOut();
+
+        Assert.Null(account.State.AvatarPath);
+        Assert.False(File.Exists(avatar));
+    }
+
+    [Fact]
+    public async Task An_avatar_answer_that_is_no_image_is_not_kept_and_the_sign_in_holds()
+    {
+        _web.AvatarAnswer = "<html>Fehler</html>"u8.ToArray();
+
+        var account = await SignedInAsync();
+
+        Assert.Equal(1, _web.AvatarRequests);
+        Assert.Null(account.State.AvatarPath);
+        Assert.Equal(FakeSteamWeb.ProfileName, account.State.AccountName);
+    }
+
+    [Fact]
+    public async Task An_avatar_too_large_is_not_kept()
+    {
+        _web.AvatarAnswer = [0xFF, 0xD8, 0xFF, .. new byte[SteamWebApi.MaxAvatarBytes]];
+
+        var account = await SignedInAsync();
+
+        Assert.Null(account.State.AvatarPath);
+    }
+
+    [Fact]
     public async Task Profile_name_that_cannot_be_loaded_falls_back_to_Steam()
     {
         _web.ProfileFails = true;
@@ -396,7 +434,7 @@ public sealed class SteamOnlineAccountTests : IDisposable
         }
 
         Assert.Contains(lineCopy, line => line.Contains("Steam-Konto: angemeldet", StringComparison.Ordinal));
-        string[] secrets = [_web.LastAccessToken!, FakeSteamWeb.SteamId.ToString(System.Globalization.CultureInfo.InvariantCulture), Account.ToString(System.Globalization.CultureInfo.InvariantCulture), FakeSteamWeb.ProfileName];
+        string[] secrets = [_web.LastAccessToken!, FakeSteamWeb.SteamId.ToString(System.Globalization.CultureInfo.InvariantCulture), Account.ToString(System.Globalization.CultureInfo.InvariantCulture), FakeSteamWeb.ProfileName, FakeSteamWeb.AvatarHash];
         foreach (var secret in secrets)
         {
             Assert.DoesNotContain(lineCopy, line => line.Contains(secret, StringComparison.Ordinal));

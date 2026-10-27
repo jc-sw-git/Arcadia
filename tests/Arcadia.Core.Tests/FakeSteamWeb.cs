@@ -18,6 +18,12 @@ internal sealed class FakeSteamWeb : HttpMessageHandler, IWebPages
 
     public const string ProfileName = "Spieler Eins";
 
+    /// <summary>The avatar's SHA-1 as Steam's image server names the file.</summary>
+    public const string AvatarHash = "0123456789abcdef0123456789abcdef01234567";
+
+    /// <summary>A 1 × 1 PNG: the avatar Steam's image server returns.</summary>
+    public static readonly byte[] AvatarPicture = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==");
+
     private readonly Lock _lock = new();
     private bool _browserSignedIn;
     private int _tokens;
@@ -46,6 +52,11 @@ internal sealed class FakeSteamWeb : HttpMessageHandler, IWebPages
 
     /// <summary>The profile name can't be loaded.</summary>
     public bool ProfileFails { get; set; }
+
+    /// <summary>The image server answers with this instead of the avatar, e.g. an HTML error page.</summary>
+    public byte[]? AvatarAnswer { get; set; }
+
+    public int AvatarRequests { get; private set; }
 
     /// <summary>The owned games come back as <c>{"response":{}}</c>.</summary>
     public bool ListsNoGames { get; set; }
@@ -171,6 +182,7 @@ internal sealed class FakeSteamWeb : HttpMessageHandler, IWebPages
             {
                 ("api.steampowered.com", "/IPlayerService/GetOwnedGames/v1/") => Owned(query["access_token"]),
                 ("api.steampowered.com", "/IPlayerService/GetPlayerLinkDetails/v1/") => Profile(query["access_token"], query["steamids[0]"]),
+                ("avatars.steamstatic.com", $"/{AvatarHash}_full.jpg") => Avatar(),
                 _ => new HttpResponseMessage(HttpStatusCode.NotFound),
             };
         }
@@ -236,7 +248,13 @@ internal sealed class FakeSteamWeb : HttpMessageHandler, IWebPages
             return new HttpResponseMessage(HttpStatusCode.BadRequest);
         }
 
-        return Json(JsonSerializer.Serialize(new { response = new { accounts = new[] { new { public_data = new { steamid = steamId, persona_name = ProfileName } } } } }));
+        return Json(JsonSerializer.Serialize(new { response = new { accounts = new[] { new { public_data = new { steamid = steamId, persona_name = ProfileName, sha_digest_avatar = Convert.ToBase64String(Convert.FromHexString(AvatarHash)) } } } } }));
+    }
+
+    private HttpResponseMessage Avatar()
+    {
+        AvatarRequests++;
+        return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(AvatarAnswer ?? AvatarPicture) };
     }
 
     private static HttpResponseMessage Json(string json) => new(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };

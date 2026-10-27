@@ -19,8 +19,9 @@ internal sealed record SteamSignIn(string? AccessToken, ulong SteamId, string Na
 internal sealed record SteamOwnedList(DateTimeOffset ListedAt, IReadOnlyList<SteamOwnedGame> Games, IReadOnlyList<uint>? Packages = null);
 
 /// <summary>
-/// Keeps the Steam sign-in (#83) in <c>steam-account.dat</c>, encrypted for the current Windows user (DPAPI), and the
-/// owned games in <c>steam-owned-games.json</c>, both in Arcadia's data folder. Without DPAPI (not Windows) the sign-in
+/// Keeps the Steam sign-in (#83) in <c>steam-account.dat</c>, encrypted for the current Windows user (DPAPI), the
+/// owned games in <c>steam-owned-games.json</c> and the profile's avatar in <c>steam-avatar.jpg</c>, all in Arcadia's
+/// data folder. Without DPAPI (not Windows) the sign-in
 /// lasts only until Arcadia closes. A file that can't be read counts as missing; reading and writing never throw.
 /// </summary>
 /// <param name="protect">Encrypts the sign-in; null keeps it in memory only.</param>
@@ -38,6 +39,36 @@ internal sealed class SteamAccountStore(string folder, Func<byte[], byte[]>? pro
     private string SignInPath => Path.Combine(folder, "steam-account.dat");
 
     private string OwnedPath => Path.Combine(folder, "steam-owned-games.json");
+
+    private string AvatarPath => Path.Combine(folder, "steam-avatar.jpg");
+
+    /// <summary>The stored avatar's file, null if there is none.</summary>
+    public string? AvatarFile
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return File.Exists(AvatarPath) ? AvatarPath : null;
+            }
+        }
+    }
+
+    /// <summary>Keeps <paramref name="picture"/> as the account's avatar; null deletes it. Returns the file, if one is kept.</summary>
+    public string? SaveAvatar(byte[]? picture)
+    {
+        lock (_lock)
+        {
+            if (picture is null)
+            {
+                Delete(AvatarPath);
+                return null;
+            }
+
+            Write(AvatarPath, picture);
+            return File.Exists(AvatarPath) ? AvatarPath : null;
+        }
+    }
 
     public SteamSignIn? LoadSignIn()
     {
@@ -108,6 +139,7 @@ internal sealed class SteamAccountStore(string folder, Func<byte[], byte[]>? pro
             {
                 _inMemory = null;
                 Delete(SignInPath);
+                Delete(AvatarPath);
             }
             else
             {

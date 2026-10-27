@@ -69,6 +69,9 @@ public sealed record LauncherAccountState(AccountStep Step)
     /// <summary>The name the account goes by, e.g. the Steam profile name; null while signed out.</summary>
     public string? AccountName { get; init; }
 
+    /// <summary>The account's picture as a local image file (JPEG or PNG), e.g. the Steam avatar; null if none.</summary>
+    public string? AvatarPath { get; init; }
+
     /// <summary>
     /// A status message (warning) about the account, e.g. the owned games couldn't be fetched or the sign-in expired;
     /// null if all is well.

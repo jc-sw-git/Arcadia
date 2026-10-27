@@ -70,7 +70,8 @@ WebView2 / WebKitGTK, profile in `%APPDATA%\Arcadia\WebView`), the way Playnite 
 `#application_config` with `data-userinfo` (`logged_in`, `steamid`) and `data-store_user_config` (`webapi_token`, a JWT:
 `sub` = SteamID64, `exp`, about a day); `SteamStorePage` reads both. A new token: reload `store.steampowered.com/explore/`
 unseen (Steam renews its own cookies there); a page signed out or in with another account means the sign-in is gone.
-Sign-out deletes the cookies of `steampowered.com`/`steamcommunity.com`. **Never pose as another app:** the first #83
+Sign-out deletes the cookies of `steampowered.com`/`steamcommunity.com` and the avatar (`GetPlayerLinkDetails`
+`sha_digest_avatar`, Base64 SHA-1 → `avatars.steamstatic.com/<hex>_full.jpg`, kept as `steam-avatar.jpg`). **Never pose as another app:** the first #83
 build signed in by QR as Steam's phone app (`MobileApp`, refresh token, token as `steamLoginSecure` cookie), and Steam
 restricted the owner's account as possibly stolen the same day (2026-10-27); such a stored sign-in is deleted at start.
 Owned games: `IPlayerService/GetOwnedGames` with `access_token`, `include_appinfo`, `include_played_free_games`,

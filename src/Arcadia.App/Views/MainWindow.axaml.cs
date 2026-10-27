@@ -70,6 +70,27 @@ public partial class MainWindow : Window
     private readonly TabStrip _tabs;
     private readonly TabStrip _categories;
 
+    /// <summary>
+    /// Puts the web page (#280) on its place in the scaled layout, in window pixels: a native view keeps its own size
+    /// inside a Viewbox. While the page is hidden its place has no position, and the view keeps the last one.
+    /// </summary>
+    private void PlaceWebPage()
+    {
+        if (WebPageArea.TransformToVisual(this) is not { } toWindow)
+        {
+            return;
+        }
+
+        var place = new Rect(WebPageArea.Bounds.Size).TransformToAABB(toWindow);
+        var margin = new Thickness(place.X, place.Y, 0, 0);
+        if (WebPageView.Margin != margin || WebPageView.Width != place.Width || WebPageView.Height != place.Height)
+        {
+            WebPageView.Margin = margin;
+            WebPageView.Width = place.Width;
+            WebPageView.Height = place.Height;
+        }
+    }
+
     public MainWindow()
     {
         InitializeComponent();
@@ -89,6 +110,7 @@ public partial class MainWindow : Window
         SearchChips.SizeChanged += (_, _) => UpdateSortDivider();
         SearchChipRow.SizeChanged += (_, _) => UpdateSortDivider();
         SearchSortButton.SizeChanged += (_, _) => UpdateSortDivider();
+        LayoutUpdated += (_, _) => PlaceWebPage();
 
         // Typing on a real keyboard while the search is open. Nothing has Avalonia focus, so the text arrives at the window.
         AddHandler(TextInputEvent, OnTextInput, RoutingStrategies.Tunnel);

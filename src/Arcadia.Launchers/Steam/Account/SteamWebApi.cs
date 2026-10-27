@@ -17,6 +17,9 @@ internal sealed record SteamOwnedGame(uint AppId, string? Name, long PlaytimeMin
 /// </summary>
 internal sealed record SteamStoreOwnership(IReadOnlyList<uint> Apps, IReadOnlyList<uint> Packages);
 
+/// <summary>The profile's name and its avatar's hash (hex, as Steam's image server names the file); either may be missing.</summary>
+internal sealed record SteamProfile(string? Name, string? AvatarHash);
+
 /// <summary>
 /// Why Steam gave no answer: not reachable (<see cref="IsNetwork"/>), cancelled, or an error answer with
 /// <see cref="EResult"/> from its <c>x-eresult</c> header or an HTTP status. Errors are values, not exceptions: Steam being
@@ -61,6 +64,11 @@ internal sealed class SteamWebApi(HttpClient http)
 
     private const string Base = "https://api.steampowered.com/";
 
+    private const string AvatarBase = "https://avatars.steamstatic.com/";
+
+    /// <summary>A full avatar is some 10 KB; far more is no avatar.</summary>
+    public const int MaxAvatarBytes = 512 * 1024;
+
     private const int EResultOk = 1;
 
     /// <summary>
@@ -98,8 +106,11 @@ internal sealed class SteamWebApi(HttpClient http)
         return SteamApiResult<IReadOnlyList<SteamOwnedGame>>.Ok(games);
     }
 
-    /// <summary>The profile name; null if Steam doesn't tell. <c>ISteamUser</c> wants a web API key, this one the access token.</summary>
-    public async Task<SteamApiResult<string?>> GetProfileNameAsync(string accessToken, ulong steamId, CancellationToken cancellationToken)
+    /// <summary>
+    /// The profile name and the hash of the avatar; either null if Steam doesn't tell. <c>ISteamUser</c> wants a web API
+    /// key, this one the access token.
+    /// </summary>
+    public async Task<SteamApiResult<SteamProfile>> GetProfileAsync(string accessToken, ulong steamId, CancellationToken cancellationToken)
     {
         using var answer = await GetJsonAsync(
             "GetPlayerLinkDetails",
@@ -110,15 +121,86 @@ internal sealed class SteamWebApi(HttpClient http)
             return answer.Error!;
         }
 
-        return SteamApiResult<string?>.Ok(
-            json.RootElement.TryGetProperty("response", out var response)
+        if (!(json.RootElement.TryGetProperty("response", out var response)
             && response.TryGetProperty("accounts", out var accounts) && accounts.ValueKind == JsonValueKind.Array
             && accounts.EnumerateArray().FirstOrDefault() is { ValueKind: JsonValueKind.Object } account
-            && account.TryGetProperty("public_data", out var data) && data.ValueKind == JsonValueKind.Object
-            && data.TryGetProperty("persona_name", out var name) && name.ValueKind == JsonValueKind.String && name.GetString() is { Length: > 0 } text
-                ? text
-                : null);
+            && account.TryGetProperty("public_data", out var data) && data.ValueKind == JsonValueKind.Object))
+        {
+            return SteamApiResult<SteamProfile>.Ok(new SteamProfile(null, null));
+        }
+
+        return SteamApiResult<SteamProfile>.Ok(new SteamProfile(Text(data, "persona_name"), AvatarHash(Text(data, "sha_digest_avatar"))));
     }
+
+    /// <summary>
+    /// The avatar with the hash <paramref name="avatarHash"/> (184 × 184) from Steam's image server; a JPEG or PNG of at
+    /// most <see cref="MaxAvatarBytes"/>, anything else is refused.
+    /// </summary>
+    public async Task<SteamApiResult<byte[]>> GetAvatarAsync(string avatarHash, CancellationToken cancellationToken)
+    {
+        if (avatarHash.Length != 40 || !avatarHash.All(char.IsAsciiHexDigitLower))
+        {
+            return new SteamApiError("Avatar: ungültiger Hash");
+        }
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(Timeout);
+        using var message = new HttpRequestMessage(HttpMethod.Get, $"{AvatarBase}{avatarHash}_full.jpg");
+        try
+        {
+            using var response = await http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return new SteamApiError($"Avatar: HTTP {(int)response.StatusCode}", Status: response.StatusCode);
+            }
+
+            if (response.Content.Headers.ContentLength > MaxAvatarBytes)
+            {
+                return new SteamApiError("Avatar: zu groß");
+            }
+
+            await using var body = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
+            using var picture = new MemoryStream();
+            var buffer = new byte[16 * 1024];
+            int read;
+            while ((read = await body.ReadAsync(buffer, timeout.Token).ConfigureAwait(false)) > 0)
+            {
+                if (picture.Length + read > MaxAvatarBytes)
+                {
+                    return new SteamApiError("Avatar: zu groß");
+                }
+
+                picture.Write(buffer, 0, read);
+            }
+
+            var bytes = picture.ToArray();
+            return IsJpegOrPng(bytes) ? SteamApiResult<byte[]>.Ok(bytes) : new SteamApiError("Avatar: kein Bild");
+        }
+        catch (Exception e) when (Failure("Avatar", e, cancellationToken) is { } error)
+        {
+            return error;
+        }
+    }
+
+    private static string? Text(JsonElement data, string property) =>
+        data.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String && value.GetString() is { Length: > 0 } text ? text : null;
+
+    /// <summary>Steam gives the avatar's SHA-1 in Base64; its image server names the file by it in hex.</summary>
+    private static string? AvatarHash(string? base64)
+    {
+        if (base64 is null)
+        {
+            return null;
+        }
+
+        var hash = new byte[20];
+        return Convert.TryFromBase64String(base64, hash, out var length) && length == hash.Length && hash.Any(b => b != 0)
+            ? Convert.ToHexStringLower(hash)
+            : null;
+    }
+
+    private static bool IsJpegOrPng(byte[] bytes) =>
+        bytes is [0xFF, 0xD8, 0xFF, ..] or [0x89, (byte)'P', (byte)'N', (byte)'G', ..];
 
     /// <param name="method">What the error names: the URL holds the token.</param>
     private async Task<JsonAnswer> GetJsonAsync(string method, string url, CancellationToken cancellationToken)

@@ -66,6 +66,9 @@ internal sealed class MouseModeMapping
     // Set here when Y opens the keyboard, cleared from the UI thread when it closes.
     private volatile bool _keyboardOpen;
 
+    // Arcadia asked for the keyboard (a web page opened by controller, #280); applied on the next poll.
+    private int _keyboardRequest;
+
     // Whether the buttons went to the keyboard at the last poll; a change hands them over.
     private bool _buttonsOnKeyboard;
     private long _viewPressedAt;
@@ -103,6 +106,9 @@ internal sealed class MouseModeMapping
     /// <summary>The keyboard was closed (B, or Arcadia closed it); the buttons are the mouse's again from the next poll.</summary>
     public void CloseKeyboard() => _keyboardOpen = false;
 
+    /// <summary>Opens the keyboard on the next poll as Y would. Callable from any thread.</summary>
+    public void RequestKeyboard() => Interlocked.Exchange(ref _keyboardRequest, 1);
+
     public void Begin(PadButtons held)
     {
         _ignored = held;
@@ -122,6 +128,7 @@ internal sealed class MouseModeMapping
         SetButton(MouseButton.Right, ref _rightDown, false);
         ReleaseKeys();
         _keyboardOpen = false;
+        Interlocked.Exchange(ref _keyboardRequest, 0);
         _buttonsOnKeyboard = false;
         _slow.Reset();
         _solo.Reset();
@@ -149,7 +156,8 @@ internal sealed class MouseModeMapping
 
         _ignored &= merged;
         var current = merged & ~_ignored;
-        if (!_keyboardOpen && (current & ~_previous & PadButtons.Y) != 0)
+        var requested = Interlocked.Exchange(ref _keyboardRequest, 0) == 1;
+        if (!_keyboardOpen && (requested || (current & ~_previous & PadButtons.Y) != 0))
         {
             _keyboardOpen = true;
             KeyboardOpened?.Invoke();

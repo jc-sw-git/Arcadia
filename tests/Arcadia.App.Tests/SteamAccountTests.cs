@@ -62,6 +62,11 @@ public sealed class SteamAccountTests
         Assert.Equal(["Leuchtturm", "Salzwiesen", "Tidenhub"], TitlesOf(arcadia));
         Assert.False(TabOf(arcadia).Games.Single(game => game.Title == "Leuchtturm").IsInstalled);
 
+        // The profile's avatar heads the info panel (owner, 2026-10-27).
+        var avatar = Assert.IsType<InfoAvatar>(row.Info[0]);
+        Assert.Equal(FakeSteamWeb.ProfileName, avatar.Name);
+        Assert.Equal(1, avatar.Picture.PixelSize.Width);
+
         arcadia.CloseSettings();
         arcadia.FocusTile("Leuchtturm");
         arcadia.Press(UiAction.Accept);

@@ -54,6 +54,10 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private readonly ActionRowViewModel _rescanRow;
     private readonly ActionRowViewModel _rescanAllRow;
     private readonly ActionRowViewModel _accountRow;
+
+    // The account picture shown last, by its file (AvatarOf).
+    private string? _avatarPath;
+    private Avalonia.Media.Imaging.Bitmap? _avatar;
     private readonly List<(ILauncherAccount Account, EventHandler Handler)> _accounts = [];
 
     // Ticks while a QR code is shown, so "erneuert vor … s" counts up (owner, 2026-10-27).
@@ -586,6 +590,32 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         _page is { } id && _host.Launchers.ActiveIds.Contains(id) && _host.Launchers.IsFound(id) ? _host.Launchers.Registered(id)?.Account : null;
 
     /// <summary>
+    /// The account's picture, decoded once per file: the info panel is built anew with every change of the account. A file
+    /// that can't be read or isn't an image shows no picture.
+    /// </summary>
+    private Avalonia.Media.Imaging.Bitmap? AvatarOf(string? path)
+    {
+        if (path != _avatarPath)
+        {
+            _avatarPath = path;
+            _avatar = null;
+            if (path is not null)
+            {
+                try
+                {
+                    _avatar = new Avalonia.Media.Imaging.Bitmap(path);
+                }
+                catch (Exception e)
+                {
+                    AppLog.Write($"Avatar nicht lesbar ({e.GetType().Name})");
+                }
+            }
+        }
+
+        return _avatar;
+    }
+
+    /// <summary>
     /// The row of the launcher's account (#83): signed out "Anmelden"; A opens the launcher's sign-in page over the window,
     /// B there goes back; signed in it shows the account's name and "Abmelden", which asks first. Disabled while the
     /// launcher is inactive or missing.
@@ -650,6 +680,11 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
                 info.Add(new InfoText($"Arcadia konnte die Anmeldeseite von {launcherName} nicht laden. Prüfe die Internetverbindung; [A] versucht es erneut."));
                 break;
             case AccountStep.SignedIn:
+                if (AvatarOf(state.AvatarPath) is { } avatar)
+                {
+                    info.Add(new InfoAvatar(state.AccountName ?? launcherName, avatar));
+                }
+
                 info.Add(new InfoText($"Angemeldet als {state.AccountName}. Arcadia zeigt neben deinen installierten Spielen auch die Spiele, die im Besitz von {state.AccountName} sind."));
                 info.Add(new InfoFacts("KONTO",
                 [

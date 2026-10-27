@@ -13,6 +13,9 @@ public abstract record InfoBlock;
 /// <summary>A paragraph.</summary>
 public sealed record InfoText(string Text) : InfoBlock;
 
+/// <summary>An account's picture and name, e.g. the Steam avatar after the sign-in (#280).</summary>
+public sealed record InfoAvatar(string Name, Avalonia.Media.Imaging.Bitmap Picture) : InfoBlock;
+
 /// <summary>A small heading in capitals, e.g. "NACHTEILE".</summary>
 public sealed record InfoHeading(string Text) : InfoBlock;
 

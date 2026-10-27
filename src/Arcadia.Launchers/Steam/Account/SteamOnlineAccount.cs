@@ -43,6 +43,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 
     private SteamSignIn? _signIn;
     private SteamOwnedList? _owned;
+    private string? _avatar;
     private string? _problem;
     private string? _notice;
     private LauncherAccountState _state;
@@ -76,6 +77,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         }
 
         _owned = IsSignedIn ? store.LoadOwned() : null;
+        _avatar = IsSignedIn ? store.AvatarFile : null;
         _state = Compose(IsSignedIn ? AccountStep.SignedIn : AccountStep.SignedOut);
     }
 
@@ -164,6 +166,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
             _signInRun = null;
             _signIn = null;
             _owned = null;
+            _avatar = null;
             _problem = null;
             _notice = null;
             _fetchedAt = null;
@@ -339,11 +342,17 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
             return;
         }
 
-        var profile = await _api.GetProfileNameAsync(signIn.WebApiToken, signIn.SteamId, cancellationToken).ConfigureAwait(false);
+        var profile = await _api.GetProfileAsync(signIn.WebApiToken, signIn.SteamId, cancellationToken).ConfigureAwait(false);
         if (profile.Error is { IsCancelled: false } error)
         {
             // The sign-in holds; the row shows "Steam" until a later sign-in gets the name.
             Trace.TraceWarning($"Steam-Konto: Profilname nicht geladen ({error.Message})");
+        }
+
+        var avatar = profile.Value?.AvatarHash is { } avatarHash ? await _api.GetAvatarAsync(avatarHash, cancellationToken).ConfigureAwait(false) : null;
+        if (avatar?.Error is { IsCancelled: false } avatarError)
+        {
+            Trace.TraceWarning($"Steam-Konto: Avatar nicht geladen ({avatarError.Message})");
         }
 
         lock (_lock)
@@ -354,11 +363,12 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
             }
 
             _signInRun = null;
-            _signIn = new SteamSignIn(signIn.WebApiToken, signIn.SteamId, Clip(profile.Value ?? "Steam"));
+            _signIn = new SteamSignIn(signIn.WebApiToken, signIn.SteamId, Clip(profile.Value?.Name ?? "Steam"));
             _owned = null;
             _problem = null;
             _fetchedAt = null;
             _store.Clear(_signIn);
+            _avatar = _store.SaveAvatar(avatar?.Value);
         }
 
         Trace.TraceInformation("Steam-Konto: angemeldet");
@@ -560,6 +570,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
     private LauncherAccountState Compose(AccountStep step) => new(step)
     {
         AccountName = IsSignedIn ? _signIn!.Name : null,
+        AvatarPath = IsSignedIn ? _avatar : null,
         Problem = IsSignedIn ? _problem : _signIn is { Expired: true } && step == AccountStep.SignedOut ? ExpiredProblem : null,
         Notice = IsSignedIn ? _notice : null,
         OwnedGames = IsSignedIn ? _owned?.Games.Count(game => game.Name is not null) : null,

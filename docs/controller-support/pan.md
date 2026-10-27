@@ -24,7 +24,9 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
 - Named pipe `\\.\pipe\ArcadiaPan`, 12-byte messages: kind, protocol version (1), generation, value. Commands Hello,
   EmulationStarted, EmulationStopped, Heartbeat, TeardownAcknowledged, PlannedExit, Hide, Unhide, CheckHiding; replies
   HelloOk, Started, Stopped, HeartbeatOk, Acknowledged, Hidden, Shown, HidingState, Rejected(reason), TornDown(reason,
-  notice), Unsupported, Refused(reason).
+  notice), Unsupported, Refused(reason). A command a Pan doesn't know gets `Rejected(NotRegistered)` (a part A Pan:
+  `Unsupported` for Hide, Unhide, CheckHiding); the client reads any reply but the expected one as "not supported", on
+  purpose: so new commands stay within version 1.
   Pan takes the first client of the active console session (`ProcessIdToSessionId` ==
   `WTSGetActiveConsoleSessionId`); connections are served side by side, so a second client or one from another session
   gets `Refused` at once. The pipe's DACL: SYSTEM full, Interactive read/write, nobody else;
@@ -33,7 +35,9 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
   elevation; `QueryServiceStatusEx`) before it says hello.
 - Every emulation has a generation: `EmulationStarted` returns the next number; Pan replies `WrongGeneration` to
   anything about another one. After a teardown the client must `TeardownAcknowledged` before the next emulation
-  (`TeardownNotAcknowledged`); `PanClient` does that itself.
+  (`TeardownNotAcknowledged`); `PanClient` does that itself. While Pan shows the real puck again (a teardown or its
+  retry) it answers `Rejected(SteamControllerBeingShown)`; the client then says "Pan räumt noch auf" for 10 s, so the pad
+  waits without counting a loss.
 - Heartbeat every 500 ms, but only when the pad's `Feed` moved (`Pulse` counter): a stuck poll thread counts as a hang.
   No heartbeat for 3 s (`QueryUnbiasedInterruptTime`, sleep excluded) → teardown with reason `Hang`, the toast says so;
   the pad comes back on the next tick as a new generation (counts as a pad loss for the 3-in-5-minutes rule).

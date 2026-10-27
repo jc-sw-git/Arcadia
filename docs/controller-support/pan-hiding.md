@@ -25,7 +25,8 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   watch pauses and restarts its clock afterwards.
 - For #242's client: `Hide`, `Unhide` and `CheckHiding` need their own reply timeout of ~25 s (the 2 s request
   timeout drops the link mid-hide; a hide takes ~2.4 s on the owner's PC). A heartbeat waiting behind one is no loss;
-  don't queue more than the pipe buffer holds (192 bytes, 16 messages). A timeout still means the link is gone: the
+  don't queue more than the pipe buffer holds (192 bytes, 16 messages). Arcadia's `CheckHiding` (settings open) holds the
+  client's request lock meanwhile: an `EmulationStarted` then waits or fails; test that with #242. A timeout still means the link is gone: the
   protocol has no correlation, so a late reply would answer the next request.
 - A hide or show takes ~2.5 s (up to ~4 s): the puck restart takes it away from every program, Arcadia too, like
   unplugging it. #242 shows a spinner meanwhile and doesn't let the user switch again until it is done (owner

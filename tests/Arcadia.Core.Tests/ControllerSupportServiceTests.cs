@@ -1691,6 +1691,24 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
     [Fact]
     [Trait("TestCase", "T243-35")]
+    public async Task Pan_s_answer_about_hiding_goes_with_the_settings_as_nobody_asks_again()
+    {
+        var service = CreateReplaced();
+        var pan = new Arcadia.Tests.Pads.FakeEmulationGuardian { Hiding = Arcadia.Pan.PanReason.HidHideBusy };
+        service.HidingCheck = pan;
+        service.WatchSetup = true;
+        await service.TickAsync();
+        Assert.Equal(["hidhide-busy"], service.Issues.Select(i => i.Id));
+
+        // The user closes the settings and later HidHide's configuration: the header must not keep "Bitte schließe sie".
+        service.WatchSetup = false;
+        await service.TickAsync();
+
+        Assert.Empty(service.Issues);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-35")]
     public async Task Pan_is_not_asked_about_hiding_while_HidHide_or_Pan_is_missing()
     {
         var service = CreateReplaced();
@@ -1744,6 +1762,24 @@ public sealed class ControllerSupportServiceTests : IDisposable
         await service.RefreshAsync();
 
         Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-32")]
+    public async Task A_usbip_install_whose_HidHide_step_failed_still_records_the_restart_it_wants()
+    {
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        var settings = new SettingsService(store);
+        var service = new ControllerSupportService(settings, _sisr, _http, _time, _platform) { Log = Log, StartsSisr = false };
+        _platform.IsUsbipReady = false;
+        _platform.HidHideVersion = null;
+        _platform.HidHideInstallError = new InvalidOperationException("Pan ist eingerichtet, HidHide aber nicht");
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Contains("HidHide aber nicht", service.LastError);
+        Assert.Equal(_time.GetUtcNow(), settings.Current.UsbipInstalledAt);
     }
 
     [Fact]
@@ -1870,6 +1906,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public Exception? UsbipInstallError { get; set; }
 
+        /// <summary>Set, the install sets up usbip-win2 and Pan, then fails as Pan's exit code 6 does (HidHide not installed).</summary>
+        public Exception? HidHideInstallError { get; set; }
+
         public bool IsPanReady { get; set; } = true;
 
         public bool IsPanUpdateAvailable { get; set; }
@@ -1889,6 +1928,11 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
             IsUsbipReady = !UsbipInstallDeclined;
             IsPanReady = !UsbipInstallDeclined;
+            if (HidHideInstallError is { } hidHideError)
+            {
+                throw hidHideError;
+            }
+
             if (!UsbipInstallDeclined && ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion))
             {
                 HidHideVersion = Arcadia.Pan.HidHideRelease.Version;

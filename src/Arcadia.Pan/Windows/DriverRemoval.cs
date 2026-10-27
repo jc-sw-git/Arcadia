@@ -24,7 +24,7 @@ public static class DriverRemoval
     /// <returns>False if a driver that is installed could not be removed.</returns>
     public static async Task<bool> RunAsync(Action<string> log)
     {
-        var entries = Entries();
+        var entries = InstalledEntries();
         var complete = true;
         // HidHide first: once its filter is gone, nothing can stay hidden, whatever the journal still lists.
         foreach (var (what, listedAs, command) in new[]
@@ -83,7 +83,8 @@ public static class DriverRemoval
         }
     }
 
-    private static List<UninstallEntry> Entries()
+    /// <summary>Windows' list of installed programs, both registry views.</summary>
+    public static List<UninstallEntry> InstalledEntries()
     {
         var entries = new List<UninstallEntry>();
         foreach (var root in UninstallRoots)

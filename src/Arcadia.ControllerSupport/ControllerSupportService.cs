@@ -151,9 +151,14 @@ public sealed class ControllerSupportService(
     /// <summary>Asking GitHub for the latest release; a hanging request must not hold up the periodic check.</summary>
     private static readonly TimeSpan ReleaseLookupTimeout = TimeSpan.FromSeconds(20);
 
-    /// <summary>Downloading and unpacking SISR or the usbip driver.</summary>
-    // The usbip installer may take 5 min, Pan waits for it; see UsbipInstall and PanSetup.
+    /// <summary>Downloading and unpacking SISR.</summary>
     private static readonly TimeSpan InstallTimeout = TimeSpan.FromMinutes(7);
+
+    /// <summary>
+    /// The drivers' downloads, then Pan's elevated <c>--install</c>, which <see cref="PanSetup"/> already bounds by Pan's
+    /// step budgets: this outer limit must never fire first (QE review of PR #264).
+    /// </summary>
+    private static readonly TimeSpan DriversInstallTimeout = PanTimeouts.Install + TimeSpan.FromMinutes(3);
 
     /// <summary>
     /// On exit, how long the polite way (wait for the running action, SISR's own quit) may take before SISR
@@ -697,7 +702,11 @@ public sealed class ControllerSupportService(
             // The drivers matter without the switch: a missing Pan shows as a warning, in the header too (#243). Checked
             // once at start and after every action, then only while the settings show it (registry, service list);
             // otherwise what the last check found stands.
-            var issues = WatchSetup || !_driversChecked ? await CheckEmulationPartsAsync(cancellationToken) : Issues;
+            // Pan's HidHide states are asked only while the settings are open, so they go with them: "Bitte schließe
+            // sie" must not stay in the header after the user closed HidHide's configuration (QE review of PR #264).
+            var issues = WatchSetup || !_driversChecked
+                ? await CheckEmulationPartsAsync(cancellationToken)
+                : Issues.Where(issue => !EmulationParts.IsHidingState(issue)).ToList();
             _driversChecked = true;
             if (!issues.SequenceEqual(Issues) || Setup != setup)
             {
@@ -1125,14 +1134,20 @@ public sealed class ControllerSupportService(
 
         SetBusyText(DriversBusyText);
         var usbipWasReady = _platform.IsUsbipReady;
-        if (!await WithTimeoutAsync(token => _platform.InstallDriversAsync(http, token), InstallTimeout, "Die Treiber-Installation", cancellationToken))
+        try
         {
-            throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Installieren“ wählen und die Abfrage bestätigen.");
+            if (!await WithTimeoutAsync(token => _platform.InstallDriversAsync(http, token), DriversInstallTimeout, "Die Treiber-Installation", cancellationToken))
+            {
+                throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Installieren“ wählen und die Abfrage bestätigen.");
+            }
         }
-
-        if (!usbipWasReady)
+        finally
         {
-            UpdateSettings(settings => settings with { UsbipInstalledAt = time.GetUtcNow() });
+            // Also when a later step failed (e.g. HidHide, Pan's exit code 6): the driver came, and with it the restart it wants.
+            if (!usbipWasReady && _platform.IsUsbipReady)
+            {
+                UpdateSettings(settings => settings with { UsbipInstalledAt = time.GetUtcNow() });
+            }
         }
 
         Log?.Invoke("Treiber eingerichtet (usbip-win2, HidHide und Pan)");
@@ -1410,27 +1425,16 @@ public sealed class ControllerSupportService(
             issues.Add(EmulationParts.ViiperMissing);
         }
 
+        // Only while the settings are open: asking Pan costs a pipe round trip and HidHide's lock.
         if (WatchSetup && HidingCheck is { } check && _platform.IsPanReady
-            && _platform.HidHideVersion is { } hidHide && HidHideRelease.IsSupported(hidHide))
-        {
-            _hidingIssue = EmulationParts.FromHidingCheck(await check.CheckHidingAsync(cancellationToken));
-        }
-        else if (WatchSetup)
-        {
-            _hidingIssue = null;
-        }
-
-        // Outside the settings the last answer stands: asking Pan costs a pipe round trip and HidHide's lock.
-        if (_hidingIssue is { } hiding)
+            && _platform.HidHideVersion is { } hidHide && HidHideRelease.IsSupported(hidHide)
+            && EmulationParts.FromHidingCheck(await check.CheckHidingAsync(cancellationToken)) is { } hiding)
         {
             issues.Add(hiding);
         }
 
         return EmulationParts.InRowOrder(issues);
     }
-
-    /// <summary>Why Pan couldn't hide at the last check while the settings were open, or null.</summary>
-    private HealthIssue? _hidingIssue;
 
     /// <summary>Pan, the guardian service, is installed (#243); rechecked with <see cref="Setup"/>. "Controller wiederherstellen" needs it.</summary>
     public bool PanInstalled => _panInstalled ??= CheckPanInstalled();

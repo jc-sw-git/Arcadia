@@ -26,6 +26,12 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     public static readonly TimeSpan Retry = TimeSpan.FromSeconds(2);
     public static readonly TimeSpan SlowRetry = TimeSpan.FromSeconds(15);
 
+    /// <summary>
+    /// Pan shows the real Steam Controller again (a teardown or its retry, every 10 s while HidHide is busy): no pad is
+    /// tried meanwhile, and no loss counted for it (overall review of #243, point 1).
+    /// </summary>
+    public static readonly TimeSpan BeingShownWait = TimeSpan.FromSeconds(10);
+
     private readonly IPanTransport _transport;
     private readonly TimeProvider _time;
     private readonly Action<string> _log;
@@ -39,6 +45,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     private uint _currentGeneration;
     private uint _tornDownGeneration;
     private bool _teardownPending;
+    private DateTimeOffset _beingShownUntil;
     private bool _emulating;
     private long _pulses;
     private long _sentPulses;
@@ -83,7 +90,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
 
     public string? Unavailable()
     {
-        lock (_lock) return _unavailable ?? (_teardownPending ? CleaningUp : null);
+        lock (_lock) return _unavailable ?? (_teardownPending || _time.GetUtcNow() < _beingShownUntil ? CleaningUp : null);
     }
 
     public bool IsCurrent(uint generation)
@@ -111,6 +118,13 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             }
 
             reply = await RequestAsync(PanMessage.Of(PanCommand.EmulationStarted), cancellationToken);
+        }
+
+        if (reply.Reply == PanReply.Rejected && reply.Reason == PanReason.SteamControllerBeingShown)
+        {
+            // Pan undoes an emulation of before; there is no notice when it is done, so try again after a while.
+            lock (_lock) _beingShownUntil = _time.GetUtcNow() + BeingShownWait;
+            throw new InvalidOperationException(CleaningUp);
         }
 
         if (reply.Reply != PanReply.Started)

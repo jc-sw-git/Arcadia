@@ -264,7 +264,8 @@ public sealed class PanClientTests : IAsyncDisposable
         // Pan dies: its pipe breaks without a goodbye; the service manager restarts it, and its journal says the
         // emulation was open, so it undoes it before serving anyone.
         _server.Die();
-        await WaitUntil(() => !_client.IsConnected, "Verbindung weg");
+        // The loss is reported after the link is marked gone, so wait for the report itself (flaky before, QE review of PR #264).
+        await WaitUntil(() => !_client.IsConnected && _lost.Count > 0, "Verbindung weg");
         Assert.Contains("Verbindung", Assert.Single(_lost));
         Assert.False(_client.IsCurrent(generation));
 
@@ -273,6 +274,25 @@ public sealed class PanClientTests : IAsyncDisposable
         await ConnectedAsync();
 
         Assert.Equal(generation + 1, await _client.EmulationStartedAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task While_Pan_shows_the_Steam_Controller_again_no_pad_is_tried_and_no_loss_counted_then_it_goes_on()
+    {
+        await ConnectedAsync();
+        _server.StartReply = PanMessage.Of(PanReply.Rejected, 1, PanReason.SteamControllerBeingShown);
+
+        var refused = await Assert.ThrowsAsync<InvalidOperationException>(() => _client.EmulationStartedAsync(CancellationToken.None));
+
+        // "Pan räumt noch auf" is what keeps the pad from counting a loss (SteamControllerXboxPad.PlugAsync).
+        Assert.Equal(PanClient.CleaningUp, refused.Message);
+        Assert.Equal(PanClient.CleaningUp, _client.Unavailable());
+        Assert.Empty(_lost);
+
+        _server.StartReply = null;
+        _time.Advance(PanClient.BeingShownWait);
+        Assert.Null(_client.Unavailable());
+        Assert.True(_client.IsCurrent(await _client.EmulationStartedAsync(CancellationToken.None)));
     }
 
     [Fact]
@@ -412,6 +432,9 @@ public sealed class PanClientTests : IAsyncDisposable
         /// <summary>Overrides the guardian's answer to hello.</summary>
         public PanMessage? HelloReply { get; set; }
 
+        /// <summary>Overrides the guardian's answer to "emulation started".</summary>
+        public PanMessage? StartReply { get; set; }
+
         public int Connections { get; private set; }
 
         public int Heartbeats => Volatile.Read(ref _heartbeats);
@@ -496,7 +519,10 @@ public sealed class PanClientTests : IAsyncDisposable
                         Interlocked.Increment(ref _heartbeats);
                     }
 
-                    var reply = await guardian.HandleAsync(message);
+                    // A forced start reply leaves the guardian alone, as a Pan that refused would be.
+                    var reply = message.Command == PanCommand.EmulationStarted && StartReply is { } forcedStart
+                        ? forcedStart
+                        : await guardian.HandleAsync(message);
                     if (message.Command == PanCommand.Hello && HelloReply is { } forced)
                     {
                         reply = forced;

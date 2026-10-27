@@ -42,6 +42,11 @@ public static class EmulationParts
     public static IReadOnlyList<HealthIssue> InRowOrder(IEnumerable<HealthIssue> issues) =>
         issues.OrderBy(i => Array.FindIndex(Parts, p => i.Id.StartsWith(p.Prefix, StringComparison.Ordinal)) is var rank and >= 0 ? rank : Parts.Length).ToList();
 
+    private static readonly string[] HidingStateIds = ["hidhide-inactive", "hidhide-interface", "hidhide-inverse", "hidhide-cloaking-off", "hidhide-busy"];
+
+    /// <summary>A row from <see cref="FromHidingCheck"/>: asked while the settings are open, and only valid then.</summary>
+    public static bool IsHidingState(HealthIssue issue) => HidingStateIds.Contains(issue.Id);
+
     /// <summary>
     /// The row for Pan's answer whether it could hide the Steam Controller now; null when it could or didn't answer.
     /// Only asked while HidHide is installed in a supported version, so "missing" here means its driver doesn't run.

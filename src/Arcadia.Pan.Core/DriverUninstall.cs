@@ -16,14 +16,16 @@ public static class DriverUninstall
     private static readonly string[] InnoSilent = ["/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"];
 
     /// <summary>
-    /// HidHide comes as an MSI inside an Advanced Installer bootstrapper; its MSI entry is keyed by the product code.
-    /// Null when no such entry exists (then Windows' "Apps" removes it by hand).
+    /// HidHide comes as an MSI inside an Advanced Installer bootstrapper; its MSI entry is keyed by the product code and
+    /// names Nefarius as publisher, so another program called "HidHide…" is never removed. Null when no such entry
+    /// exists (then Windows' "Apps" removes it by hand).
     /// </summary>
     public static UninstallCommand? ForHidHide(IEnumerable<UninstallEntry> entries, string systemDirectory)
     {
         var entry = entries.FirstOrDefault(e => e.WindowsInstaller
                                                 && Guid.TryParseExact(e.KeyName, "B", out _)
-                                                && e.DisplayName?.StartsWith("HidHide", StringComparison.OrdinalIgnoreCase) == true);
+                                                && e.DisplayName?.StartsWith("HidHide", StringComparison.OrdinalIgnoreCase) == true
+                                                && e.Publisher?.StartsWith("Nefarius", StringComparison.OrdinalIgnoreCase) == true);
         return entry is null
             ? null
             : new UninstallCommand("HidHide", Path.Combine(systemDirectory, "msiexec.exe"), ["/x", entry.KeyName, "/qn", "/norestart"]);

@@ -43,6 +43,9 @@ public partial class MouseModeOverlay : Window
     private bool _holding;
     private bool _returnHolding;
 
+    // Counts the label's texts, so the timer of a notice shown beside a hold hides only that notice.
+    private int _noticeGeneration;
+
     public MouseModeOverlay()
     {
         InitializeComponent();
@@ -107,10 +110,20 @@ public partial class MouseModeOverlay : Window
 
     /// <summary>
     /// A notice while Arcadia is in the background (#243 part B2: Pan's, where a toast would go unseen), at the top
-    /// centre for a few seconds; it ends a hold, as the label does.
+    /// centre for a few seconds. A hold the player is watching goes on (its fill shows how long is left): the notice
+    /// shows beside it and goes by itself (QE review of PR #264).
     /// </summary>
     public void ShowNotice(string text)
     {
+        if (_holding || _returnHolding)
+        {
+            // Below "Zurück zu Arcadia", which stands where the label would.
+            ShowLabel(text, notice: true, belowReturnBox: _returnHolding);
+            var notice = _noticeGeneration;
+            DispatcherTimer.RunOnce(() => HideNoticeIfStill(notice), NoticeTime);
+            return;
+        }
+
         _holding = false;
         var generation = ++_generation;
         HideReturnBox();
@@ -121,10 +134,21 @@ public partial class MouseModeOverlay : Window
         DispatcherTimer.RunOnce(() => DisappearIfStill(generation), NoticeTime);
     }
 
-    private void ShowLabel(string text, bool notice)
+    private void HideNoticeIfStill(int notice)
     {
+        // Only this notice: a newer one, or the label of a switch since, stays.
+        if (notice == _noticeGeneration && Label.Classes.Contains("notice"))
+        {
+            Label.IsVisible = false;
+        }
+    }
+
+    private void ShowLabel(string text, bool notice, bool belowReturnBox = false)
+    {
+        _noticeGeneration++;
         LabelText.Text = text;
         Label.Classes.Set("notice", notice);
+        Label.Classes.Set("belowReturnBox", belowReturnBox);
         Label.IsVisible = true;
         Appear();
     }

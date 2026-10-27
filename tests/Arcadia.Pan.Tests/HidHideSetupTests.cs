@@ -95,6 +95,7 @@ public sealed class HidHideSetupTests
             new("HidHide", "HidHide", "Nefarius Software Solutions e.U.", @"C:\x\HidHide_x64.exe /x", WindowsInstaller: false),
             new("{not-a-guid}", "HidHide", null, "MsiExec.exe /X{not-a-guid}", WindowsInstaller: true),
             new(HidHideCode, "Something else", null, $"MsiExec.exe /X{HidHideCode}", WindowsInstaller: true),
+            new("{11111111-2222-3333-4444-555555555555}", "HidHide Companion", "Someone else", "MsiExec.exe /X{11111111-2222-3333-4444-555555555555}", WindowsInstaller: true),
         ];
 
         Assert.Null(DriverUninstall.ForHidHide(entries, @"C:\Windows\System32"));

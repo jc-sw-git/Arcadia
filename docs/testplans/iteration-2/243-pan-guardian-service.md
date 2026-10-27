@@ -124,8 +124,8 @@ Part B2 (third PR into `feat/replace-sisr`): Arcadia without SISR (the App), Ste
 part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it works: `docs/controller-support/pan-setup.md`.
 
 - [ ] **T243-32** HidHide missing: "Steam Controller Kompatibilität" greyed out, "Aus – es fehlt: HidHide", row "HidHide
-      fehlt" with "Installieren"; A → one UAC prompt; then HidHide 1.5.230 in Windows' Apps, the row and the grey are
-      gone, `pan.log` names the Nefarius signature, "HidHide 1.5.230 installed" (or "setup still runs … left running"
+      fehlt" with "Installieren"; A → one UAC prompt; then HidHide 1.5.230 in Windows' Apps, the row is gone and
+      the switch, still greyed out until #214, reads "Nicht mehr nötig – …"; `pan.log` names the Nefarius signature, "HidHide 1.5.230 installed" (or "setup still runs … left running"
       after 2 min on a PC where its last step hangs) and the puck restart. · E2E: yes (`EmulationSetupTests`; the
       foreign-signed installer refused with exit 6: `ServiceTests` on the Windows runner)
 - [ ] **T243-33** Every part missing (usbip-win2, HidHide, Pan uninstalled, SISR's folder removed): no part rows, the
@@ -140,7 +140,8 @@ part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it w
       (then closed) → "HidHide: Liste ist umgekehrt"; unticked → gone. · E2E: yes (`EmulationSetupTests`, `PanClientTests`)
 - [ ] **T243-36** Pan's notices: `sc stop ArcadiaPan` (elevated) while Arcadia is in front → a toast; again while a game
       is in front (Arcadia in the background) → the overlay notice over the game, readable, gone after ~6 s; no toast
-      waiting when Arcadia comes back. · E2E: yes for which of the two (`EmulationSetupTests`, `PanGuardianTests`); no
+      waiting when Arcadia comes back. A notice during a View hold over the game stands below "Zurück zu Arcadia", whose
+      frame keeps filling. · E2E: yes for which of the two (`EmulationSetupTests`, `PanGuardianTests`); no
       for the overlay over a real game
 - [ ] **T243-37** Uninstall Arcadia (Windows' Apps): the question "Treiber für die Controller-Emulation auch entfernen?"
       lists usbip-win2 and HidHide, No is the default. No → Pan gone, both drivers stay. Reinstalled, Yes → one UAC
@@ -183,3 +184,6 @@ History:
 | T243-32 (`ServiceTests`: a signed installer that isn't HidHide's refused, exit 6, Pan still installed), T243-7 … T243-12, T243-23 after B2 | 2026-10-27 | Claude (thread) | Windows CI runner (Server 2025, HidHide 1.5.230), run 40498651454 on 50b49e3: Pan 138/138 none skipped, Core 969, App 334 | pass | – |
 | After the overall review of #243 on PR #264 (`UninstallOrderTests`: no driver removal after an incomplete undo, order undo → drivers → stop file log → delete; `PanLogTests`: no line into a recreated folder) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; both guards seen red by mutation (early return removed, stop of the file log removed); Pan 141, Core 969 | pass | – |
 | QE review of PR #264: `EmulationSetupTests` T243-32 (HidHide fails inside Pan's install, exit 6: Pan set up, the error at the HidHide row) and T243-34 (one prompt) added | 2026-10-27 | Claude (QE thread) | Debug, Linux cloud container, `EmulationSetupTests` 7/7, whole suite before (Pan 133, Core 964, App 334); both seen red by mutation (error shown at no row; a second install call) | pass | – |
+| After the QE review of PR #264 (`ControllerSupportServiceTests`: a usbip install whose HidHide step failed records the pending restart; the drivers' outer timeout derived from Pan's budgets) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; the new case seen red before the fix | pass | – |
+| QE review's optional points on PR #264 (`ControllerSupportServiceTests`: Pan's HidHide state goes with the settings; `MouseModeOverlayTests`: a notice leaves a running hold; `HidHideSetupTests`: another publisher's "HidHide…" MSI is never removed; `DriverRemovalTests`: the real HidHide entry, Windows runner only; `PanClientTests`: waits for the loss report) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; each new guard seen red once (old code or the check removed); the overlay only headless, not over a real game | pass | `DriverRemovalTests` on the Windows runner |
+| Second overall review (Claude) on PR #264, point 1 (`PanClientTests`: `SteamControllerBeingShown` is "Pan räumt noch auf" for 10 s, no loss, then the pad goes on) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; seen red with the new branch disabled; whole suite: Pan 141, Core 970, App 337 | pass | – |

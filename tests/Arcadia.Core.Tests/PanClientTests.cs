@@ -63,6 +63,19 @@ public sealed class PanClientTests : IAsyncDisposable
         }
     }
 
+    /// <summary>A failure on a loaded CI runner says what the client and Pan logged.</summary>
+    private async Task<T> LoggedAsync<T>(Func<Task<T>> request)
+    {
+        try
+        {
+            return await request();
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new Xunit.Sdk.XunitException($"{ex.Message}\n{LogText()}", ex);
+        }
+    }
+
     private static async Task WaitUntil(Func<bool> condition, string what)
     {
         var until = DateTime.UtcNow + Soon;
@@ -273,7 +286,7 @@ public sealed class PanClientTests : IAsyncDisposable
         _time.Advance(PanClient.Retry);
         await ConnectedAsync();
 
-        Assert.Equal(generation + 1, await _client.EmulationStartedAsync(CancellationToken.None));
+        Assert.Equal(generation + 1, await LoggedAsync(() => _client.EmulationStartedAsync(CancellationToken.None)));
     }
 
     [Fact]
@@ -406,7 +419,8 @@ public sealed class PanClientTests : IAsyncDisposable
         private readonly SemaphoreSlim _paused = new(1, 1);
         private DuplexStream? _serverSide;
         private Task _serving = Task.CompletedTask;
-        private volatile bool _dead;
+        // The guardian of a Pan that died: its pipe can close only after the restart.
+        private volatile Guardian? _deadGuardian;
         private int _heartbeats;
 
         public FakePanServer(Action<string> log)
@@ -468,7 +482,7 @@ public sealed class PanClientTests : IAsyncDisposable
         /// <summary>Pan died: its end of the pipe closes and nothing of it runs on.</summary>
         public void Die()
         {
-            _dead = true;
+            _deadGuardian = Guardian;
             _serverSide?.Dispose();
         }
 
@@ -479,7 +493,6 @@ public sealed class PanClientTests : IAsyncDisposable
                 /// <summary>A restarted Pan: it undoes what its journal lists, then serves again.</summary>
         public void RestartFromJournal()
         {
-            _dead = false;
             Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log);
             Guardian.RecoverAsync().GetAwaiter().GetResult();
         }
@@ -487,7 +500,6 @@ public sealed class PanClientTests : IAsyncDisposable
         /// <summary>A reinstalled Pan with an empty data folder: it counts the generations from 0 again.</summary>
         public void RestartWithoutJournal()
         {
-            _dead = false;
             Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "reinstalled", "journal.json")), _cleanup, _log);
             Guardian.RecoverAsync().GetAwaiter().GetResult();
         }
@@ -539,9 +551,10 @@ public sealed class PanClientTests : IAsyncDisposable
             finally
             {
                 guardian.Notify -= Notify;
-                if (!_dead)
+                if (!ReferenceEquals(guardian, _deadGuardian))
                 {
-                    // A dead Pan notices nothing; a living one sees the client go, as the pipe server does.
+                    // A dead Pan notices nothing, even when its pipe closes only after the restart (it would tear down
+                    // into the restarted Pan's journal); a living one sees the client go, as the pipe server does.
                     guardian.ClientGone();
                 }
             }

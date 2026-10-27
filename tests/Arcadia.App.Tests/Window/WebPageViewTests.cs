@@ -17,6 +17,7 @@ public sealed class WebPageViewTests
     public async Task The_page_fills_its_place_in_the_scaled_layout_at_any_window_size(int width, int height)
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(width: width, height: height);
+        arcadia.Named<WebPageHost>("WebPageView").OpensBrowser = false;
         ((IWebPageHost)arcadia.Arcadia.Main).Open(WebPageViewModel.SignIn("Bei Steam anmelden", new Uri("https://store.steampowered.com/login/"), "", _ => false));
         arcadia.Settle();
 

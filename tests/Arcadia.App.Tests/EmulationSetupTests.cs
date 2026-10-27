@@ -140,7 +140,8 @@ public sealed class EmulationSetupTests
     [Trait("TestCase", "T243-34")]
     public async Task An_old_HidHide_gets_its_row_with_Aktualisieren()
     {
-        var steam = new FakeSteam { HidHideVersion = new Version(1, 1, 0, 0) };
+        // The owner's B2 test had 1.2.93 (owner, 2026-10-27: only the tested 1.5.230 and newer 1.x count).
+        var steam = new FakeSteam { HidHideVersion = new Version(1, 2, 93, 0) };
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
 
@@ -148,7 +149,7 @@ public sealed class EmulationSetupTests
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-unsupported"));
         Assert.Equal("HidHide-Version wird nicht unterstützt", row.Title);
         Assert.Equal("Aktualisieren", row.ActionText);
-        Assert.Contains("Installiert ist HidHide 1.1.0", row.Info.OfType<InfoText>().Single().Text);
+        Assert.Contains("Installiert ist HidHide 1.2.93, Arcadia braucht mindestens 1.5.230.", row.Info.OfType<InfoText>().Single().Text);
 
         row.Activate();
         await arcadia.WaitUntilAsync(() => controller.Rows.All(r => r.Key != "issue:hidhide-unsupported"), "die Meldung verschwindet");

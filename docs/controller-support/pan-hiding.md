@@ -39,8 +39,8 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
 - Driver interface, not the CLI (`HidHideWire`, `HidHideDriver`): `\\.\HidHide`, IOCTLs `CTL_CODE(32769, 2048…2054,
   METHOD_BUFFERED, FILE_READ_DATA)` (get/set allow list, hidden list, cloaking, read inverse), lists as REG_MULTI_SZ.
   The control device is opened per call and closed at once; "in use" is retried 5 × 200 ms.
-- Version: `HidHide.sys` from the service's `ImagePath`, file version; accepted `1.2` ≤ v < `2.0` (inverse mode came with
-  1.2; another major may change the interface). An IOCTL answered with "invalid function" counts as unsupported.
+- Version: `HidHide.sys` from the service's `ImagePath`, file version; accepted `1.5.230` ≤ v < `2.0` (the tested version;
+  older ones get "Aktualisieren", owner 2026-10-27; another major may change the interface). An IOCTL answered with "invalid function" counts as unsupported.
 - Checks before every hide (R13): installed, version, inverse off, and with cloaking off no device of the user's in
   the hidden list (listed puck entries don't count): turning cloaking on would hide those too.
 - What: only `HidingList` — the puck `HID\VID_28DE&PID_1304&…`, every instance Pan finds present itself

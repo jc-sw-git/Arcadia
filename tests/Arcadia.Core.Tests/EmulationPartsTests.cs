@@ -57,7 +57,7 @@ public sealed class EmulationPartsTests
     [InlineData(null, "hidhide-missing", "Installieren")]
     [InlineData("1.1.0.0", "hidhide-unsupported", "Aktualisieren")]
     [InlineData("2.0.0.0", "hidhide-unsupported", null)]
-    [InlineData("1.2.0.0", null, null)]
+    [InlineData("1.2.93.0", "hidhide-unsupported", "Aktualisieren")]
     [InlineData("1.5.230.0", null, null)]
     public void HidHide_s_row_follows_its_version(string? version, string? id, string? fixLabel)
     {

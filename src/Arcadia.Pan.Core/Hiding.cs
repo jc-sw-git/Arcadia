@@ -83,10 +83,12 @@ public sealed record HidHideState(IReadOnlyList<string> Hidden, IReadOnlyList<st
 public sealed class SteamControllerHiding(IHidHideDriver hidHide, ISteamControllerDevices devices)
 {
     /// <summary>
-    /// The oldest HidHide with the inverse-mode IOCTL Pan reads first; the owner's PC runs 1.5.230 (spike #239). A
-    /// new major version may change the driver interface and is refused until verified.
+    /// The oldest HidHide Pan works with: the one verified on the owner's PC (spike #239) and the CI runner. Older ones
+    /// may have the IOCTLs but were never tested, and "Aktualisieren" brings 1.5.230 keeping their lists (owner,
+    /// 2026-10-27, after 1.2.93 passed unnoticed). A new major version may change the driver interface and is refused
+    /// until verified.
     /// </summary>
-    public static readonly Version MinimumVersion = new(1, 2);
+    public static readonly Version MinimumVersion = new(1, 5, 230);
 
     public const int SupportedMajorVersion = 1;
 

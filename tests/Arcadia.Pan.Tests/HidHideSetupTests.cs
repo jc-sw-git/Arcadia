@@ -25,13 +25,15 @@ public sealed class HidHideSetupTests
     }
 
     [Theory]
-    [InlineData("1.2", true)]
+    [InlineData("1.5.230", true)]
     [InlineData("1.5.230.0", true)]
     [InlineData("1.99", true)]
+    [InlineData("1.5.229", false)]
+    [InlineData("1.2.93", false)]
     [InlineData("1.1.999", false)]
     [InlineData("2.0", false)]
     [InlineData("0.9", false)]
-    public void Pan_supports_HidHide_from_1_2_up_to_the_next_major(string version, bool supported)
+    public void Pan_supports_HidHide_from_the_tested_1_5_230_up_to_the_next_major(string version, bool supported)
     {
         Assert.Equal(supported, HidHideRelease.IsSupported(Version.Parse(version)));
     }

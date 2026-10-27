@@ -24,6 +24,13 @@ public sealed partial class Guardian
     /// <summary>Arcadia sends a heartbeat this often while emulating; Pan's watch ticks at the same pace.</summary>
     public static readonly TimeSpan HeartbeatInterval = TimeSpan.FromMilliseconds(500);
 
+    /// <summary>
+    /// After the PC wakes, Arcadia's silence counts only after this long: Arcadia and the Steam Controller need more
+    /// than the 3 s of a hang to run again (owner's PC, 2026-10-27: Pan tore down 3.4 s after waking, Arcadia's 2 s
+    /// tick came back after about 13 s).
+    /// </summary>
+    public static readonly TimeSpan ResumeGrace = TimeSpan.FromSeconds(30);
+
     /// <summary>What Arcadia starts to forward to the pad; only children of the client with this name are taken.</summary>
     public const string ForwardingImageName = "viiper.exe";
 
@@ -42,6 +49,7 @@ public sealed partial class Guardian
     private Phase _phase = Phase.Idle;
     private uint _generation;
     private long _lastHeartbeatMs;
+    private long _resumeGraceEndsMs;
     private Task? _teardown;
     private bool _stopping;
 
@@ -272,8 +280,9 @@ public sealed partial class Guardian
                 return;
             }
 
-            var silence = _clock.UnbiasedMilliseconds - _lastHeartbeatMs;
-            if (silence < _hangMs || _hidingBusy > 0)
+            var now = _clock.UnbiasedMilliseconds;
+            var silence = now - _lastHeartbeatMs;
+            if (silence < _hangMs || _hidingBusy > 0 || now < _resumeGraceEndsMs)
             {
                 // While the client's hide or unhide runs, its heartbeats wait behind it on the pipe.
                 return;
@@ -284,12 +293,14 @@ public sealed partial class Guardian
         }
     }
 
-    /// <summary>The PC resumed from sleep: the silence so far doesn't count (review point 6).</summary>
+    /// <summary>The PC resumed from sleep: the silence so far doesn't count (review point 6), and the next <see cref="ResumeGrace"/> neither.</summary>
     public void PowerResumed()
     {
         lock (_lock)
         {
             _lastHeartbeatMs = _clock.UnbiasedMilliseconds;
+            _resumeGraceEndsMs = _lastHeartbeatMs + (long)ResumeGrace.TotalMilliseconds;
+            _log($"The PC woke from sleep: Arcadia's silence counts as a hang again in {ResumeGrace.TotalSeconds:0} s");
         }
     }
 

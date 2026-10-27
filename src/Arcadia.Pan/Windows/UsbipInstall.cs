@@ -13,10 +13,11 @@ namespace Arcadia.Pan.Windows;
 [SupportedOSPlatform("windows")]
 public static class UsbipInstall
 {
-    private static readonly TimeSpan InstallerWait = TimeSpan.FromMinutes(5);
+    private static TimeSpan InstallerWait => PanTimeouts.UsbipInstaller;
 
     /// <exception cref="UntrustedInstallerException">Not signed by usbip-win2's publisher; nothing was started.</exception>
-    public static async Task RunAsync(string installer, Action<string> log)
+    /// <exception cref="TimeoutException">The setup still runs after the wait; it is left running, as killing an installer mid-driver-install could leave it half set up.</exception>
+    public static async Task RunAsync(string installer, string expectedSha256, Action<string> log)
     {
         if (!File.Exists(installer))
         {
@@ -25,24 +26,39 @@ public static class UsbipInstall
 
         var copy = Path.Combine(PanPaths.DataDirectory, "usbip-installer.exe");
         File.Copy(installer, copy, overwrite: true);
+        var stillRunning = false;
         try
         {
-            await RunCopyAsync(copy, log);
+            await RunCopyAsync(copy, expectedSha256, log);
+        }
+        catch (TimeoutException)
+        {
+            stillRunning = true;
+            throw;
         }
         finally
         {
-            File.Delete(copy);
+            // A setup that still runs has the file open; it is overwritten at the next install.
+            if (!stillRunning)
+            {
+                File.Delete(copy);
+            }
         }
     }
 
-    private static async Task RunCopyAsync(string installer, Action<string> log)
+    private static async Task RunCopyAsync(string installer, string expectedSha256, Action<string> log)
     {
         await InstallerSignature.RunIfTrustedAsync(installer, "Der usbip-win2-Installer", UsbipRelease.Publisher, UsbipRelease.ManualInstallUrl,
             new WinTrustAuthenticode(), async () =>
             {
-                log($"usbip-win2 installer signed by {UsbipRelease.Publisher.Organization}; running {installer} /S");
-                using var process = Process.Start(new ProcessStartInfo(installer, "/S") { UseShellExecute = false })
-                    ?? throw new InvalidOperationException("the usbip-win2 installer couldn't be started");
+                log($"usbip-win2 installer signed by {UsbipRelease.Publisher.Organization}, SHA-256 as downloaded; running {installer} {string.Join(' ', UsbipRelease.SilentArguments)}");
+                var start = new ProcessStartInfo(installer) { UseShellExecute = false };
+                foreach (var argument in UsbipRelease.SilentArguments)
+                {
+                    start.ArgumentList.Add(argument);
+                }
+
+                using var process = Process.Start(start) ?? throw new InvalidOperationException("the usbip-win2 installer couldn't be started");
                 using var timeout = new CancellationTokenSource(InstallerWait);
                 try
                 {
@@ -50,17 +66,22 @@ public static class UsbipInstall
                 }
                 catch (OperationCanceledException)
                 {
-                    process.Kill();
-                    throw new TimeoutException($"the usbip-win2 installer didn't finish within {InstallerWait.TotalMinutes:0} min");
+                    throw new TimeoutException($"the usbip-win2 installer didn't finish within {InstallerWait.TotalMinutes:0} min; it was left running");
                 }
 
-                if (process.ExitCode != 0)
+                switch (process.ExitCode)
                 {
-                    throw new Win32Exception(process.ExitCode, $"the usbip-win2 installer reported error {process.ExitCode}");
+                    case 0:
+                        log("usbip-win2 installed");
+                        break;
+                    case UsbipRelease.RestartNeededExitCode:
+                        log("usbip-win2 installed; Windows wants a restart");
+                        break;
+                    default:
+                        throw new Win32Exception(process.ExitCode, $"the usbip-win2 installer reported error {process.ExitCode}");
                 }
 
-                log("usbip-win2 installed");
                 return true;
-            });
+            }, expectedSha256);
     }
 }

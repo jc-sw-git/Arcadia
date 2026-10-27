@@ -131,7 +131,9 @@ internal sealed class ArcadiaDriver : IDisposable
         _controllers = ControllerInput.Create(Sdl, Main, new DeviceTreeEmulatedPads(() => [.. XusbDevices], AppLog.Write));
         _controllers.Polled += _gamepad.Tick;
         _running = running;
-        ForGames = SteamControllerForGames.Create(XboxPads, Pan, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, Main.Toast, time);
+        PanNotices = new PanNotices(Main.Toast, () => IsArcadiaInFront, OverlayNotices.Add);
+        ControllerSupport.HidingCheck = Pan;
+        ForGames = SteamControllerForGames.Create(XboxPads, Pan, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, PanNotices, time);
         XboxPad = ForGames.Pad;
         Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
         ForGames.Routing.DriverChanged += () => Dispatcher.UIThread.Post(() => Main.SetSteamControllerDriverReady(ForGames.Routing.DriverReady));
@@ -151,6 +153,12 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>Pan, the guardian the pads stand under (#243); available unless a test takes it away.</summary>
     public FakeEmulationGuardian Pan { get; } = new();
+
+    /// <summary>Notices about Pan and the emulated controller (#243 B2): a toast in front, else the overlay.</summary>
+    public PanNotices PanNotices { get; }
+
+    /// <summary>What the overlay notice showed while Arcadia was in the background (the mouse mode's overlay in the App).</summary>
+    public List<string> OverlayNotices { get; } = [];
 
     /// <summary>The Steam Controller as an Xbox pad for games; the App ticks it every 2 s, a test with <see cref="TickSteamControllerAsync"/>.</summary>
     public SteamControllerXboxPad XboxPad { get; }

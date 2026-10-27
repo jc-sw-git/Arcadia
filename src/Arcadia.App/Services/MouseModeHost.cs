@@ -149,6 +149,9 @@ public sealed class MouseModeHost : IDisposable
     /// <summary>Gamepad input is the mouse's now, not Arcadia's navigation. Readable from any thread.</summary>
     public bool IsOn => _mode.IsOn;
 
+    /// <summary>A notice over the screen while Arcadia is in the background (#243, <see cref="Input.PanNotices"/>); UI thread.</summary>
+    public void ShowNotice(string text) => _overlay.ShowNotice(text);
+
     /// <summary>
     /// Arcadia is in front and can be seen: its controller input and View's way back depend on it.
     /// Readable from any thread, unlike <c>Window.IsActive</c>. On Windows the foreground window

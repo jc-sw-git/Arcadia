@@ -104,6 +104,58 @@ public class SteamControllerXboxPadTests
     }
 
     [Fact]
+    [Trait("TestCase", "T243-39")]
+    public async Task A_pad_Pan_took_away_comes_back_and_never_counts_towards_giving_up()
+    {
+        var gaveUp = new List<string>();
+        _pad.GaveUp += gaveUp.Add;
+        _pad.Feed([SteamController]);
+        for (var i = 0; i <= SteamControllerXboxPad.MaxReplugsPerWindow + 1; i++)
+        {
+            await _pad.TickAsync();
+            _pads.Current!.TakeAway();
+        }
+
+        await _pad.TickAsync();
+        Assert.True(_pad.IsPlugged);
+        Assert.Empty(gaveUp);
+        Assert.Contains("Xbox-Pad: von Pan entfernt", Log());
+        Assert.DoesNotContain("Verbindung zu VIIPER verloren", Log());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-40")]
+    public async Task Restoring_the_controllers_lets_Arcadia_try_again_after_it_gave_up()
+    {
+        var gaveUp = new List<string>();
+        _pad.GaveUp += gaveUp.Add;
+        _pad.Feed([SteamController]);
+        for (var i = 0; i <= SteamControllerXboxPad.MaxReplugsPerWindow; i++)
+        {
+            await _pad.TickAsync();
+            _pads.Current!.Lose();
+        }
+
+        await _pad.TickAsync();
+        Assert.False(_pad.IsPlugged);
+        Assert.Contains("Controller wiederherstellen", Assert.Single(gaveUp));
+
+        _pad.ForgetLosses();
+        await _pad.TickAsync();
+        Assert.True(_pad.IsPlugged);
+
+        // The count starts afresh: the losses before the restore don't bring the next give-up closer.
+        for (var i = 0; i < SteamControllerXboxPad.MaxReplugsPerWindow; i++)
+        {
+            _pads.Current!.Lose();
+            await _pad.TickAsync();
+        }
+
+        Assert.True(_pad.IsPlugged);
+        Assert.Single(gaveUp);
+    }
+
+    [Fact]
     public async Task Losses_further_apart_than_the_window_never_give_up()
     {
         _pad.Feed([SteamController]);

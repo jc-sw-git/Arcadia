@@ -37,6 +37,11 @@ public class GuardedXboxPadsTests
         await pad.SendAsync(XboxPadState.Neutral with { Buttons = 1 }, CancellationToken.None);
         Assert.Single(_inner.Current!.Sent);
 
+        // VIIPER's side broke: lost, and not on Pan's account.
+        _inner.Current.Lose();
+        Assert.False(pad.IsConnected);
+        Assert.False(pad.TakenAway);
+
         await pad.DisposeAsync();
         Assert.Equal(1, _inner.Unplugged);
         Assert.Equal([1u], _pan.Stopped);
@@ -62,6 +67,7 @@ public class GuardedXboxPadsTests
         _pan.TearDown();
 
         Assert.False(pad.IsConnected);
+        Assert.True(pad.TakenAway);
         await pad.DisposeAsync();
 
         Assert.Equal([1u], _pan.Acknowledged);
@@ -78,6 +84,7 @@ public class GuardedXboxPadsTests
         _pan.Lose("Pan antwortet nicht");
 
         Assert.False(pad.IsConnected);
+        Assert.True(pad.TakenAway);
         Assert.Equal("Pan antwortet nicht", _pads.Unavailable());
 
         await _pads.ShutdownAsync();

@@ -1,6 +1,10 @@
+using Arcadia.App.Input;
+using Arcadia.App.Settings;
+using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Settings;
 using Arcadia.Input;
+using Arcadia.Pan;
 using Arcadia.Tests.Sdl;
 using Avalonia.Headless.XUnit;
 using B = Arcadia.Input.SdlPadState.Button;
@@ -154,7 +158,7 @@ public sealed class SteamControllerXboxPadTests
     /// <summary>T213-6 (automated part): VIIPER lost is plugged in again; lost too often, a toast says so and Arcadia stops trying.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T213-6")]
-    public async Task A_lost_VIIPER_comes_back_and_too_many_losses_show_a_toast()
+    public async Task A_lost_VIIPER_comes_back_and_too_many_losses_show_a_notice()
     {
         var (arcadia, _) = await StartInBackgroundAsync();
         using var __ = arcadia;
@@ -166,8 +170,59 @@ public sealed class SteamControllerXboxPadTests
         }
 
         Assert.Equal(SteamControllerXboxPad.MaxReplugsPerWindow + 1, arcadia.XboxPads.Plugged);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text?.Contains("VIIPER fiel") == true, "the toast about VIIPER");
+        // A game is in front: the overlay's notice, not a toast (#243 B2).
+        await arcadia.WaitUntilAsync(() => arcadia.OverlayNotices.Any(notice => notice.Contains("VIIPER fiel")), "the notice about VIIPER");
         Assert.False(arcadia.XboxPad.IsPlugged);
+    }
+
+    /// <summary>T243-39 (automated part): Pan taking the pad away, e.g. after the PC woke, never makes Arcadia give up.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T243-39")]
+    public async Task Pan_taking_the_pad_away_again_and_again_never_makes_Arcadia_give_up()
+    {
+        var (arcadia, _) = await StartInBackgroundAsync();
+        using var __ = arcadia;
+
+        for (var i = 0; i <= SteamControllerXboxPad.MaxReplugsPerWindow + 1; i++)
+        {
+            arcadia.Pan.TearDown(PanReason.Hang);
+            await arcadia.TickSteamControllerAsync();
+            Assert.True(arcadia.XboxPad.IsPlugged);
+        }
+
+        Assert.DoesNotContain(arcadia.OverlayNotices, notice => notice.Contains("VIIPER fiel"));
+    }
+
+    /// <summary>T243-40 (automated part): after Arcadia gave up on VIIPER, "Controller wiederherstellen" brings the pad back without a restart.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T243-40")]
+    public async Task Restoring_the_controllers_brings_the_pad_back_after_Arcadia_gave_up()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: new FakeSteam());
+        arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.StartControllers();
+        arcadia.IsArcadiaInFront = false;
+        await arcadia.TickSteamControllerAsync();
+        for (var i = 0; i <= SteamControllerXboxPad.MaxReplugsPerWindow; i++)
+        {
+            arcadia.XboxPads.Current!.Lose();
+            await arcadia.TickSteamControllerAsync();
+        }
+
+        await arcadia.WaitUntilAsync(() => arcadia.OverlayNotices.Any(notice => notice.Contains("Controller wiederherstellen")), "the notice about VIIPER");
+        Assert.False(arcadia.XboxPad.IsPlugged);
+
+        arcadia.IsArcadiaInFront = true;
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "pan-restore"), "the row „Controller wiederherstellen“");
+        var restored = false;
+        arcadia.ControllerSupport.ControllersRestored += (_, _) => restored = true;
+        Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "pan-restore")).Activate();
+        await arcadia.WaitUntilAsync(() => restored, "the restore");
+
+        await arcadia.TickSteamControllerAsync();
+        Assert.True(arcadia.XboxPad.IsPlugged);
     }
 
     /// <summary>T213-2, owner 2026-10-26: View held alone reaches the game as held, also while it brings Arcadia back.</summary>

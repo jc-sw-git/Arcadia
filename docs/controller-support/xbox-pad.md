@@ -29,7 +29,9 @@ no empty layout forced on a marker, no focus bounce. Overview and the other file
 - `IGamepadSource.Lost` (SDL failed for good) calls `Drop`: the game gets a pad at rest at once, and the next tick
   unplugs it.
 - A pad lost (server ended, stream closed, send failed or hung for 1 s) is plugged in again at the next tick; more than 3 losses in
-  5 minutes and Arcadia stops until its next start, with a toast. On exit, also for an update, the pad and the server go
+  5 minutes and Arcadia stops until its next start or "Controller wiederherstellen", with a toast. A pad Pan took away
+  (`IVirtualXboxPad.TakenAway`: its teardown, or Pan gone) is plugged in again but is no loss; "Controller
+  wiederherstellen" ends VIIPER on purpose and clears the count (`ForgetLosses`). On exit, also for an update, the pad and the server go
   (each step on its own, so a failed unplug still ends the server);
   after the restart the pad comes back by itself.
 - Unplugging logs the delay from an SDL poll to the state being with VIIPER (mean and maximum). The SDL poll itself adds

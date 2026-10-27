@@ -38,3 +38,16 @@ public interface IEmulationGuardian
     /// <summary>Pan broke off or stopped answering while an emulation ran: the reason, for a toast. Off the UI thread.</summary>
     event Action<string>? Lost;
 }
+
+/// <summary>
+/// Asks Pan whether it could hide the Steam Controller now (#243 part B2), so the settings can say why not: HidHide's
+/// driver not running, inverse mode, cloaking off with the user's own entries, or its configuration client open.
+/// </summary>
+public interface IHidingCheck
+{
+    /// <summary>
+    /// Pan's answer (<see cref="Arcadia.Pan.PanReason.None"/>: it could hide), or null while Pan isn't connected or
+    /// can't hide at all (a Pan before part B). Never throws but for cancellation.
+    /// </summary>
+    Task<Arcadia.Pan.PanReason?> CheckHidingAsync(CancellationToken cancellationToken);
+}

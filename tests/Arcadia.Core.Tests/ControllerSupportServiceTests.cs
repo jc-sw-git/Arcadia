@@ -1592,6 +1592,141 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Equal(0, _sisr.Starts);
     }
 
+    private ControllerSupportService CreateReplaced()
+    {
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        return new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, StartsSisr = false };
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-33")]
+    public async Task With_SISR_replaced_a_missing_VIIPER_is_a_part_row_and_its_fix_brings_it_without_a_Windows_prompt()
+    {
+        var service = CreateReplaced();
+        _sisr.Installed = false;
+
+        await service.RefreshAsync();
+
+        var issue = Assert.Single(service.Issues);
+        Assert.Equal("viiper-missing", issue.Id);
+        Assert.Equal(HealthFix.InstallDrivers, issue.Fix);
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+        await service.RefreshAsync();
+
+        Assert.Null(service.LastError);
+        Assert.True(_sisr.Installed);
+        Assert.Equal(0, _platform.UsbipInstalls);
+        Assert.Empty(service.Issues);
+        Assert.Equal(0, _sisr.Starts);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-32")]
+    public async Task With_SISR_replaced_a_missing_HidHide_is_a_part_row_and_the_one_install_brings_it()
+    {
+        var service = CreateReplaced();
+        _platform.HidHideVersion = null;
+
+        await service.RefreshAsync();
+
+        var issue = Assert.Single(service.Issues);
+        Assert.Equal("hidhide-missing", issue.Id);
+        Assert.Equal(HealthFix.InstallDrivers, issue.Fix);
+        Assert.Equal("Installieren", issue.FixLabel);
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+        await service.RefreshAsync();
+
+        Assert.Null(service.LastError);
+        Assert.Equal(1, _platform.UsbipInstalls);
+        Assert.Equal(Arcadia.Pan.HidHideRelease.Version, _platform.HidHideVersion);
+        Assert.Empty(service.Issues);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T243-34")]
+    [InlineData("1.1.0", "Aktualisieren")]
+    [InlineData("2.0.1", null)]
+    public async Task An_unsupported_HidHide_is_updated_only_when_it_is_older_than_Pan_supports(string version, string? fixLabel)
+    {
+        var service = CreateReplaced();
+        _platform.HidHideVersion = Version.Parse(version);
+
+        await service.RefreshAsync();
+
+        var issue = Assert.Single(service.Issues);
+        Assert.Equal("hidhide-unsupported", issue.Id);
+        Assert.Equal("HidHide-Version wird nicht unterstützt", issue.Title);
+        Assert.Equal(fixLabel, issue.FixLabel);
+        Assert.Equal(fixLabel is null ? HealthFix.None : HealthFix.InstallDrivers, issue.Fix);
+        Assert.Equal(fixLabel is not null, ControllerSupportPlatform.HidHideNeedsInstaller(_platform.HidHideVersion));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-35")]
+    public async Task While_the_settings_watch_Pan_s_answer_about_hiding_becomes_a_row_and_goes_again()
+    {
+        var service = CreateReplaced();
+        var pan = new Arcadia.Tests.Pads.FakeEmulationGuardian { Hiding = Arcadia.Pan.PanReason.HidHideBusy };
+        service.HidingCheck = pan;
+
+        // Closed settings don't ask Pan: a pipe round trip and HidHide's lock for nothing.
+        await service.TickAsync();
+        Assert.Empty(service.Issues);
+        Assert.Equal(0, pan.HidingChecks);
+
+        service.WatchSetup = true;
+        await service.TickAsync();
+        var busy = Assert.Single(service.Issues);
+        Assert.Equal("hidhide-busy", busy.Id);
+        Assert.Equal("HidHide-Konfiguration ist geöffnet", busy.Title);
+        Assert.Contains("Bitte schließe sie", busy.Detail);
+
+        pan.Hiding = Arcadia.Pan.PanReason.None;
+        await service.TickAsync();
+        Assert.Empty(service.Issues);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-35")]
+    public async Task Pan_s_answer_about_hiding_goes_with_the_settings_as_nobody_asks_again()
+    {
+        var service = CreateReplaced();
+        var pan = new Arcadia.Tests.Pads.FakeEmulationGuardian { Hiding = Arcadia.Pan.PanReason.HidHideBusy };
+        service.HidingCheck = pan;
+        service.WatchSetup = true;
+        await service.TickAsync();
+        Assert.Equal(["hidhide-busy"], service.Issues.Select(i => i.Id));
+
+        // The user closes the settings and later HidHide's configuration: the header must not keep "Bitte schließe sie".
+        service.WatchSetup = false;
+        await service.TickAsync();
+
+        Assert.Empty(service.Issues);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-35")]
+    public async Task Pan_is_not_asked_about_hiding_while_HidHide_or_Pan_is_missing()
+    {
+        var service = CreateReplaced();
+        var pan = new Arcadia.Tests.Pads.FakeEmulationGuardian { Hiding = Arcadia.Pan.PanReason.HidHideBusy };
+        service.HidingCheck = pan;
+        service.WatchSetup = true;
+        _platform.HidHideVersion = null;
+
+        await service.TickAsync();
+        Assert.Equal("hidhide-missing", Assert.Single(service.Issues).Id);
+
+        _platform.HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
+        _platform.IsPanReady = false;
+        await service.TickAsync();
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+        Assert.Equal(0, pan.HidingChecks);
+    }
+
     [Fact]
     public async Task With_SISR_replaced_the_tick_shows_the_driver_warning_while_the_settings_watch()
     {
@@ -1630,6 +1765,24 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T243-32")]
+    public async Task A_usbip_install_whose_HidHide_step_failed_still_records_the_restart_it_wants()
+    {
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        var settings = new SettingsService(store);
+        var service = new ControllerSupportService(settings, _sisr, _http, _time, _platform) { Log = Log, StartsSisr = false };
+        _platform.IsUsbipReady = false;
+        _platform.HidHideVersion = null;
+        _platform.HidHideInstallError = new InvalidOperationException("Pan ist eingerichtet, HidHide aber nicht");
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Contains("HidHide aber nicht", service.LastError);
+        Assert.Equal(_time.GetUtcNow(), settings.Current.UsbipInstalledAt);
+    }
+
+    [Fact]
     public async Task A_declined_driver_prompt_fails_the_fix_visibly()
     {
         var service = Create(enabled: false);
@@ -1650,11 +1803,15 @@ public sealed class ControllerSupportServiceTests : IDisposable
     public async Task Restoring_the_controllers_runs_Pans_restore()
     {
         var service = Create(enabled: false);
+        var restored = 0;
+        service.ControllersRestored += (_, _) => restored++;
 
         await service.RestoreControllersAsync();
 
         Assert.Null(service.LastError);
         Assert.Equal(1, _platform.Restores);
+        // The pad may count afresh (T243-40).
+        Assert.Equal(1, restored);
     }
 
     [Fact]
@@ -1662,10 +1819,13 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var service = Create(enabled: false);
         _platform.RestoreDeclined = true;
+        var restored = 0;
+        service.ControllersRestored += (_, _) => restored++;
 
         await service.RestoreControllersAsync();
 
         Assert.Contains("abgelehnt", service.LastError);
+        Assert.Equal(0, restored);
     }
 
     private sealed class FakePlatform : IControllerSupportPlatform
@@ -1753,9 +1913,15 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public Exception? UsbipInstallError { get; set; }
 
+        /// <summary>Set, the install sets up usbip-win2 and Pan, then fails as Pan's exit code 6 does (HidHide not installed).</summary>
+        public Exception? HidHideInstallError { get; set; }
+
         public bool IsPanReady { get; set; } = true;
 
         public bool IsPanUpdateAvailable { get; set; }
+
+        /// <summary>HidHide's version (#243 B2); a supported one unless a test takes it away.</summary>
+        public Version? HidHideVersion { get; set; } = Arcadia.Pan.HidHideRelease.Version;
 
         public int Restores { get; private set; }
 
@@ -1769,6 +1935,16 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
             IsUsbipReady = !UsbipInstallDeclined;
             IsPanReady = !UsbipInstallDeclined;
+            if (HidHideInstallError is { } hidHideError)
+            {
+                throw hidHideError;
+            }
+
+            if (!UsbipInstallDeclined && ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion))
+            {
+                HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
+            }
+
             return Task.FromResult(!UsbipInstallDeclined);
         }
 
@@ -1781,7 +1957,10 @@ public sealed class ControllerSupportServiceTests : IDisposable
         }
 
         public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) =>
-            IsPanReady ? [] : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Test", HealthFix.InstallDrivers, "Installieren")];
+        [
+            .. IsPanReady ? Array.Empty<HealthIssue>() : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Test", HealthFix.InstallDrivers, "Installieren")],
+            .. ControllerSupportPlatform.CheckHidHide(HidHideVersion) is { } hidHide ? [hidHide] : Array.Empty<HealthIssue>(),
+        ];
 
         public void ResetSteamInputLayout() => LayoutResets++;
 

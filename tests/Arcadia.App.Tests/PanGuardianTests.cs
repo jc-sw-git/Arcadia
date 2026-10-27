@@ -66,14 +66,16 @@ public sealed class PanGuardianTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T243-4")]
-    public async Task A_teardown_by_Pan_shows_a_toast_and_the_pad_comes_back_with_the_next_generation()
+    public async Task A_teardown_by_Pan_shows_a_notice_and_the_pad_comes_back_with_the_next_generation()
     {
         using var arcadia = await StartInBackgroundAsync();
 
-        // T243-4 is a service stop (`sc stop ArcadiaPan`); the hang (T243-16) only differs in the toast's text.
+        // T243-4 is a service stop (`sc stop ArcadiaPan`); the hang (T243-16) only differs in the text. A game is in
+        // front, so the notice is the overlay's, not a toast nobody sees (#243 B2, T243-36).
         arcadia.Pan.TearDown(PanReason.ServiceStopping);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == SteamControllerForGames.TornDownText(PanReason.ServiceStopping), "der Toast soll erscheinen");
-        Assert.Contains("Pan wurde beendet", arcadia.Main.Toast.Text);
+        await arcadia.WaitUntilAsync(() => arcadia.OverlayNotices.Contains(SteamControllerForGames.TornDownText(PanReason.ServiceStopping)), "der Hinweis über dem Spiel");
+        Assert.Contains("Pan wurde beendet", arcadia.OverlayNotices.Single());
+        Assert.Null(arcadia.Main.Toast.Text);
         await arcadia.TickSteamControllerAsync();
 
         Assert.Equal([1u], arcadia.Pan.Acknowledged);
@@ -81,17 +83,17 @@ public sealed class PanGuardianTests
         Assert.Equal(1, arcadia.XboxPads.Unplugged);
         Assert.Equal(2, arcadia.XboxPads.Plugged);
         Assert.Equal([1u, 2u], arcadia.Pan.Started);
-        Assert.Contains("Verbindung zu VIIPER verloren", ArcadiaDriver.Log);
+        Assert.Contains("Xbox-Pad: von Pan entfernt", ArcadiaDriver.Log);
     }
 
     [AvaloniaFact]
     [Trait("TestCase", "T243-5")]
-    public async Task A_lost_Pan_removes_the_pad_with_a_toast_and_it_returns_once_Pan_is_back()
+    public async Task A_lost_Pan_removes_the_pad_with_a_notice_and_it_returns_once_Pan_is_back()
     {
         using var arcadia = await StartInBackgroundAsync();
 
         arcadia.Pan.Lose("Pan antwortet nicht");
-        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == SteamControllerForGames.PanLostText, "der Toast soll erscheinen");
+        await arcadia.WaitUntilAsync(() => arcadia.OverlayNotices.Contains(SteamControllerForGames.PanLostText), "der Hinweis über dem Spiel");
         await arcadia.TickSteamControllerAsync();
 
         Assert.Equal(1, arcadia.XboxPads.Unplugged);
@@ -142,9 +144,11 @@ public sealed class PanGuardianTests
         Assert.Equal("Installieren", warning.ActionText);
         Assert.Equal(HealthSeverity.Warning, controller.Marker);
         Assert.DoesNotContain(controller.Rows, row => row.Key == "pan-restore");
-        // One install button: the switch above stays a switch and points down.
+        // One install button: the switch above is greyed out while a part is missing (#243 B2) and points down.
         var sisr = Assert.IsType<SisrRowViewModel>(controller.Rows.Single(row => row.Key == "sisr"));
-        Assert.True(sisr.IsSwitch);
+        Assert.False(sisr.IsSwitch);
+        Assert.True(sisr.IsDimmed);
+        Assert.Equal("Aus – es fehlt: Wächterdienst Pan", sisr.Subtitle);
         Assert.Contains(sisr.Info.OfType<InfoSection>().SelectMany(section => section.Blocks).OfType<InfoStatus>(), status => status.Text.Contains("„Installieren“ bei der Meldung"));
 
         warning.Activate();

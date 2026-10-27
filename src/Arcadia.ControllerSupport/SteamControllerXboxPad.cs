@@ -36,7 +36,7 @@ public sealed class SteamControllerXboxPad
     private int? _steamControllerId;
     private XboxPadState _lastFed;
     private Task? _sender;
-    private bool _gaveUp;
+    private volatile bool _gaveUp;
     private string? _lastUnavailable;
     private DelayStats _delays;
 
@@ -136,9 +136,14 @@ public sealed class SteamControllerXboxPad
         {
             if (_pad is { IsConnected: false } lost)
             {
-                _log("Xbox-Pad: Verbindung zu VIIPER verloren");
+                // Pan's teardown (e.g. after the PC woke) is no crash of VIIPER's and doesn't count towards giving up.
+                var takenAway = lost.TakenAway;
+                _log(takenAway ? "Xbox-Pad: von Pan entfernt" : "Xbox-Pad: Verbindung zu VIIPER verloren");
                 await UnplugAsync(lost);
-                NoteLoss();
+                if (!takenAway)
+                {
+                    NoteLoss();
+                }
             }
 
             var wanted = _steamControllerConnected && !_gaveUp && Wanted();
@@ -255,18 +260,40 @@ public sealed class SteamControllerXboxPad
         _log($"Xbox-Pad: abgesteckt; {_delays}");
     }
 
+    /// <summary>
+    /// "Controller wiederherstellen" (#243): Pan ended VIIPER on purpose, so the losses so far no longer count, and
+    /// Arcadia tries again if it had given up.
+    /// </summary>
+    public void ForgetLosses()
+    {
+        lock (_losses)
+        {
+            _losses.Clear();
+            _gaveUp = false;
+        }
+
+        _log("Xbox-Pad: Controller wiederhergestellt, bisherige Ausfälle zählen nicht mehr");
+    }
+
     private void NoteLoss()
     {
-        var now = _time.GetUtcNow();
-        _losses.RemoveAll(at => now - at > CrashWindow);
-        _losses.Add(now);
-        if (_losses.Count > MaxReplugsPerWindow)
+        string message;
+        lock (_losses)
         {
+            var now = _time.GetUtcNow();
+            _losses.RemoveAll(at => now - at > CrashWindow);
+            _losses.Add(now);
+            if (_losses.Count <= MaxReplugsPerWindow)
+            {
+                return;
+            }
+
             _gaveUp = true;
-            var message = $"Steam Controller für Spiele: VIIPER fiel {_losses.Count}-mal in {CrashWindow.TotalMinutes:0} Minuten aus, Arcadia versucht es bis zum nächsten Start nicht mehr";
-            _log($"Xbox-Pad: {message}");
-            GaveUp?.Invoke(message);
+            message = $"Steam Controller für Spiele: VIIPER fiel {_losses.Count}-mal in {CrashWindow.TotalMinutes:0} Minuten aus, Arcadia versucht es erst nach einem Neustart oder „Controller wiederherstellen“ wieder";
         }
+
+        _log($"Xbox-Pad: {message}");
+        GaveUp?.Invoke(message);
     }
 
     private async Task SendLoopAsync()

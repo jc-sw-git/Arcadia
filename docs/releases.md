@@ -13,10 +13,13 @@
   asks once at start ("Pan aktualisieren", one UAC prompt, B asks again next start). `Pan.exe --restore` (settings:
   "Controller wiederherstellen") gives the controllers back if the service itself hangs. Details:
   `docs/controller-support/pan.md`.
-- `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Uninstalling asks whether SISR, VIIPER and
-  usbip-win2 go too (`ControllerSupportRemoval`) and whether `%APPDATA%\Arcadia` goes too (owner, 2026-10-24); both
-  default to no. Pan goes without a question, with one UAC prompt (`Pan.exe --uninstall`: stop = teardown, service and
-  folders removed); declined, it stays idle and `Pan.exe --uninstall` by hand removes it. Velopack's Update.exe kills the uninstall hook after 60 s (`commands/uninstall.rs` in 1.2.161; its C#
+- `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Uninstalling asks "Treiber für die Controller-Emulation auch
+  entfernen?" (usbip-win2, HidHide, SISR/VIIPER until #214; `ControllerSupportRemoval`, #243 B2) and whether
+  `%APPDATA%\Arcadia` goes too (owner, 2026-10-24); both default to no. Pan goes without a question, with one UAC prompt
+  (`Pan.exe --uninstall [--remove-drivers]`: stop = teardown, service and folders removed, then the drivers, after Pan
+  undid its HidHide entries); declined, it stays idle and `Pan.exe --uninstall` by hand removes it. If Pan can't give the
+  Steam Controller back, HidHide's Configuration Client (Start menu, admin) is the user's emergency exit: untick the
+  puck and turn hiding off ([pan-hiding.md](controller-support/pan-hiding.md)). Velopack's Update.exe kills the uninstall hook after 60 s (`commands/uninstall.rs` in 1.2.161; its C#
   docs say 30 s, recheck on updates), so the questions share 40 s and say how long they wait;
   the removal runs the important steps first. The "SISR Marker" goes from every account's `shortcuts.vdf`, with Steam
   closed (up to 8 s) and started again, because Steam rewrites that file from memory on exit (owner, 2026-10-24).

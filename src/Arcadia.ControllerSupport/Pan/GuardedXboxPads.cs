@@ -39,6 +39,8 @@ public sealed class GuardedXboxPads(IVirtualXboxPads pads, IEmulationGuardian gu
     {
         public bool IsConnected => pad.IsConnected && guardian.IsCurrent(generation);
 
+        public bool TakenAway => !guardian.IsCurrent(generation);
+
         public Task SendAsync(XboxPadState state, CancellationToken cancellationToken) => pad.SendAsync(state, cancellationToken);
 
         public async ValueTask DisposeAsync()

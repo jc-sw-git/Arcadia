@@ -419,6 +419,15 @@
     <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="TextAlignment" Value="Center" />
   </Style>
+  <!-- A notice during a View hold: below the "Zurück zu Arcadia" box, inside the overlay's label area. -->
+  <Style Selector="Border.mouseModeLabel.belowReturnBox">
+    <Setter Property="Margin" Value="0,148,0,0" />
+  </Style>
+  <!-- A notice over a game (#243, Pan): a sentence or two, smaller than "Mausmodus an". -->
+  <Style Selector="Border.mouseModeLabel.notice > TextBlock">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
   <Style Selector="Border.preview.holding ctl|HoldRing">
     <Setter Property="IsVisible" Value="True" />
     <Style.Animations>

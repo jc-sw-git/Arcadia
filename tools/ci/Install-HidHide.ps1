@@ -23,17 +23,26 @@ if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notm
 
 Write-Host 'Installing HidHide 1.5.230'
 # An Advanced Installer bootstrapper: /exenoui /qn is its silent mode (Burn's "/install /quiet" opened its UI and waited
-# six hours). It takes seconds, but on about half the runners its last action, registering HidHide's updater, never
-# returns (MSI log, run 40465187797). Killing it would roll the driver back at some point during the tests, so such a
-# runner skips the real-driver tests instead.
+# six hours). It takes seconds, but on about half the runners its last action, registering HidHide's updater
+# (nefarius_HidHide_Updater.exe --install, a synchronous deferred custom action), never returns (MSI logs of runs
+# 40465187797 and 40505756489). Killing the updater fails that action and rolls the driver back, so on the runner
+# Windows starts a no-op in its place (Image File Execution Options): the tests need the driver, not the updater.
+$ifeo = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\nefarius_HidHide_Updater.exe'
+New-Item -Path $ifeo -Force | Out-Null
+# Windows appends the updater's command line; "rem" ignores it and exits with 0.
+Set-ItemProperty -Path $ifeo -Name Debugger -Value "$env:SystemRoot\System32\cmd.exe /c rem"
 $msiLog = Join-Path $env:RUNNER_TEMP 'hidhide-msi.log'
 $setup = Start-Process -FilePath $installer -ArgumentList @('/exenoui', '/qn', '/norestart', '/L*V', "`"$msiLog`"") -PassThru
-if (-not $setup.WaitForExit(90000)) {
+$finished = $setup.WaitForExit(90000)
+Remove-Item -Path $ifeo -Recurse -Force
+if (-not $finished) {
     if (Test-Path $msiLog) { Get-Content $msiLog -Tail 5 | ForEach-Object { Write-Host $_ } }
-    Write-Host '::warning::HidHide setup still running after 90 s (its updater registration hangs on some runners): its tests skip'
+    Write-Host '::warning::HidHide setup still running after 90 s: its tests skip'
     exit 0
 }
 if ($setup.ExitCode -notin 0, 3010) { throw "HidHide setup exited with $($setup.ExitCode)" }
+Select-String -Path $msiLog -Pattern 'RegisterUpdater' -SimpleMatch -ErrorAction SilentlyContinue |
+    Select-Object -Last 2 | ForEach-Object { Write-Host $_.Line }
 
 function Test-ControlDevice {
     try {

@@ -24,7 +24,9 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
 - Named pipe `\\.\pipe\ArcadiaPan`, 12-byte messages: kind, protocol version (1), generation, value. Commands Hello,
   EmulationStarted, EmulationStopped, Heartbeat, TeardownAcknowledged, PlannedExit, Hide, Unhide, CheckHiding; replies
   HelloOk, Started, Stopped, HeartbeatOk, Acknowledged, Hidden, Shown, HidingState, Rejected(reason), TornDown(reason,
-  notice), Unsupported, Refused(reason).
+  notice), Unsupported, Refused(reason). A command a Pan doesn't know gets `Rejected(NotRegistered)` (a part A Pan:
+  `Unsupported` for Hide, Unhide, CheckHiding); the client reads any reply but the expected one as "not supported", on
+  purpose: so new commands stay within version 1.
   Pan takes the first client of the active console session (`ProcessIdToSessionId` ==
   `WTSGetActiveConsoleSessionId`); connections are served side by side, so a second client or one from another session
   gets `Refused` at once. The pipe's DACL: SYSTEM full, Interactive read/write, nobody else;
@@ -33,7 +35,9 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
   elevation; `QueryServiceStatusEx`) before it says hello.
 - Every emulation has a generation: `EmulationStarted` returns the next number; Pan replies `WrongGeneration` to
   anything about another one. After a teardown the client must `TeardownAcknowledged` before the next emulation
-  (`TeardownNotAcknowledged`); `PanClient` does that itself.
+  (`TeardownNotAcknowledged`); `PanClient` does that itself. While Pan shows the real puck again (a teardown or its
+  retry) it answers `Rejected(SteamControllerBeingShown)`; the client then says "Pan räumt noch auf" for 10 s, so the pad
+  waits without counting a loss.
 - Heartbeat every 500 ms, but only when the pad's `Feed` moved (`Pulse` counter): a stuck poll thread counts as a hang.
   No heartbeat for 3 s (`QueryUnbiasedInterruptTime`, sleep excluded) → teardown with reason `Hang`, the toast says so;
   the pad comes back on the next tick as a new generation (counts as a pad loss for the 3-in-5-minutes rule).
@@ -43,7 +47,8 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
   `TornDown` notice given 2 s to go out before the pipe closes; then the client sees `Lost` with the service gone.
   While a teardown runs, heartbeats and a new `EmulationStarted` get `TeardownNotAcknowledged`: the client then reports
   "Pan räumt noch auf" as unavailable, so the pad counts as lost once, not once per tick, until the notice comes. Power
-  resume only restarts the hang clock: sleep is no hang. A torn-down generation is remembered per connection only: a
+  resume restarts the hang clock and gives Arcadia 30 s (`Guardian.ResumeGrace`, logged) before silence counts: sleep
+  is no hang, and Arcadia and the puck took longer than 3 s to run again on the owner's PC (2026-10-27). A torn-down generation is remembered per connection only: a
   Pan that counts anew (reinstalled, journal gone) may hand it out again as a live one.
 
 ## Teardown and journal
@@ -69,7 +74,11 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
   report hook).
 - Pan stops itself after 30 s without a client (nothing idles in the background), unless a retry still has to show
   the Steam Controller ([pan-hiding.md](pan-hiding.md)); Arcadia starts it with
-  `ServiceController.Start` on connect (users have `SERVICE_START` by the DACL). Recovery: 3 restarts, 1 s, reset daily,
+  `ServiceController.Start` on connect (users have `SERVICE_START` by the DACL); a Pan still stopping itself is waited
+  for and then started (`PanServiceStart`; before, Arcadia gave up with "Pan startet nicht (Stopped)"). One that ends
+  at once after Arcadia's start counts as permanent (15 s retry), and a service stopped with a Win32 exit code (Pan
+  refused its data folder, or crashed) gives the row "Wächterdienst Pan startet nicht" with "Neu einrichten" (Pan's
+  install) instead of being started every 2 s (owner's B2 test, 2026-10-27). Recovery: 3 restarts, 1 s, reset daily,
   also on non-zero exit.
 
 ## Setup, update, uninstall

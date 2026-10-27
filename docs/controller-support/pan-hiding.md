@@ -1,7 +1,7 @@
 # Pan hides the real Steam Controller (#243, part B1)
 
 How Pan ([pan.md](pan.md)) hides the real puck from every program but Arcadia with HidHide, and shows it again in
-every teardown. B2 adds HidHide's setup, the settings rows and the notices; #242 is the first caller in Arcadia. Until
+every teardown. B2 (HidHide's setup, the settings rows, the notices): [pan-setup.md](pan-setup.md); #242 is the first caller in Arcadia. Until
 then `tools/dev/PanDevClient` stands in for Arcadia. What HidHide does to Steam: [emulated-steam-controller.md](emulated-steam-controller.md).
 
 ## Protocol
@@ -25,7 +25,8 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   watch pauses and restarts its clock afterwards.
 - For #242's client: `Hide`, `Unhide` and `CheckHiding` need their own reply timeout of ~25 s (the 2 s request
   timeout drops the link mid-hide; a hide takes ~2.4 s on the owner's PC). A heartbeat waiting behind one is no loss;
-  don't queue more than the pipe buffer holds (192 bytes, 16 messages). A timeout still means the link is gone: the
+  don't queue more than the pipe buffer holds (192 bytes, 16 messages). Arcadia's `CheckHiding` (settings open) holds the
+  client's request lock meanwhile: an `EmulationStarted` then waits or fails; test that with #242. A timeout still means the link is gone: the
   protocol has no correlation, so a late reply would answer the next request.
 - A hide or show takes ~2.5 s (up to ~4 s): the puck restart takes it away from every program, Arcadia too, like
   unplugging it. #242 shows a spinner meanwhile and doesn't let the user switch again until it is done (owner
@@ -38,8 +39,8 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
 - Driver interface, not the CLI (`HidHideWire`, `HidHideDriver`): `\\.\HidHide`, IOCTLs `CTL_CODE(32769, 2048…2054,
   METHOD_BUFFERED, FILE_READ_DATA)` (get/set allow list, hidden list, cloaking, read inverse), lists as REG_MULTI_SZ.
   The control device is opened per call and closed at once; "in use" is retried 5 × 200 ms.
-- Version: `HidHide.sys` from the service's `ImagePath`, file version; accepted `1.2` ≤ v < `2.0` (inverse mode came with
-  1.2; another major may change the interface). An IOCTL answered with "invalid function" counts as unsupported.
+- Version: `HidHide.sys` from the service's `ImagePath`, file version; accepted `1.4.181` ≤ v < `2.0` (the driver of the tested
+  HidHide 1.5.230, which numbers its driver on its own; older ones get "Aktualisieren", owner 2026-10-27; another major may change the interface). An IOCTL answered with "invalid function" counts as unsupported.
 - Checks before every hide (R13): installed, version, inverse off, and with cloaking off no device of the user's in
   the hidden list (listed puck entries don't count): turning cloaking on would hide those too.
 - What: only `HidingList` — the puck `HID\VID_28DE&PID_1304&…`, every instance Pan finds present itself
@@ -72,7 +73,8 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   planned exit while hidden, Pan's start after a crash or power loss (`RecoverAsync`), `--restore`, uninstall. The undo
   goes through the driver whatever its version reads as; only with HidHide's service gone and its control device too
   (uninstalled with its lists) the journal drops the entries.
-- Last resort for the user, if Pan can't undo: HidHide's Configuration Client (admin) unticks the puck, removes
+- Last resort for the user (the emergency exit, also in `docs/releases.md`), if Pan can't undo: HidHide's
+  Configuration Client (Start menu, admin) unticks the puck, removes
   Arcadia from the application list and turns hiding off; uninstalling HidHide empties its lists. Pan's later undo
   removes only what is still there.
 - Journal: `HiddenDevices`, `AllowListed`, `CloakingWasOn`, `PuckRestartPending`; a journal naming a hidden device that

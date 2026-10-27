@@ -6,11 +6,20 @@ using Microsoft.Win32;
 
 namespace Arcadia.ControllerSupport;
 
+/// <summary>What of the controller emulation is installed; <see cref="Drivers"/> need Pan's elevated uninstall.</summary>
+public sealed record InstalledParts(bool Sisr, bool Viiper, bool Usbip, bool HidHide)
+{
+    public bool Any => Sisr || Viiper || Usbip || HidHide;
+
+    public bool Drivers => Usbip || HidHide;
+}
+
 /// <summary>
-/// Removes SISR and everything that belongs to it, when Arcadia is uninstalled and the user
-/// agrees. Does what SISR's own <c>uninstall.ps1</c> does (install and data folders, shortcuts,
-/// uninstall entry, VIIPER, usbip-win2) and also removes SISR's Steam marker shortcut and
-/// Steam's CEF remote-debugging flag, which exist only for SISR.
+/// Removes the controller emulation's drivers and SISR, when Arcadia is uninstalled and the user agrees to the one
+/// question "Treiber für die Controller-Emulation auch entfernen?" (#243 part B2). SISR and VIIPER go here, as SISR's
+/// own <c>uninstall.ps1</c> would (install and data folders, shortcuts, uninstall entry), with SISR's Steam marker and
+/// Steam's CEF flag, which exist only for SISR; until #214 removes SISR. usbip-win2 and HidHide go in Pan's
+/// <c>--uninstall --remove-drivers</c>, inside its one UAC prompt and after Pan undid its own HidHide entries.
 /// </summary>
 public static class ControllerSupportRemoval
 {
@@ -32,33 +41,48 @@ public static class ControllerSupportRemoval
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VIIPER"),
     ];
 
-    /// <summary>The installed parts, worded for the question to the user; empty if there is nothing to remove.</summary>
+    /// <summary>What is installed of the controller emulation, for the question at Arcadia's uninstall.</summary>
     [SupportedOSPlatform("windows")]
-    public static IReadOnlyList<string> FindInstalledParts()
+    public static InstalledParts FindInstalledParts() => new(
+        Sisr: Directory.Exists(SisrDirectory),
+        Viiper: File.Exists(ViiperExecutable),
+        Usbip: UsbipDriver.UninstallCommand() is not null,
+        HidHide: HidHideInstallation.InstalledVersion() is not null);
+
+    /// <summary>
+    /// The one question at Arcadia's uninstall (#243 part B2). A Windows message box can't offer a checklist, so it lists
+    /// what is there and asks once; no answer or "Nein" keeps everything (other programs may use the drivers).
+    /// </summary>
+    public static string Question(InstalledParts parts, bool steamRunning, uint timeoutSeconds)
     {
-        var parts = new List<string>();
-        if (Directory.Exists(SisrDirectory))
+        var lines = new List<string>();
+        if (parts.Usbip)
         {
-            parts.Add("SISR");
+            lines.Add("usbip-win2 (Treiber)");
         }
 
-        if (File.Exists(ViiperExecutable))
+        if (parts.HidHide)
         {
-            parts.Add("VIIPER");
+            lines.Add("HidHide (Treiber)");
         }
 
-        if (UsbipDriver.UninstallCommand() is not null)
+        if (parts.Sisr || parts.Viiper)
         {
-            parts.Add("usbip-win2 (Treiber; Windows fragt nach Administratorrechten)");
+            lines.Add(parts.Sisr && parts.Viiper ? "SISR und VIIPER" : parts.Sisr ? "SISR" : "VIIPER");
         }
 
-        return parts;
+        return "Arcadia wird deinstalliert.\n\n"
+            + "Treiber für die Controller-Emulation auch entfernen?\n\n"
+            + string.Concat(lines.Select(l => $"•  {l}\n"))
+            + "\nAndere Programme, die sie nutzen (etwa DS4Windows mit HidHide), funktionieren danach nicht mehr. "
+            + (parts.Drivers ? "Windows fragt dafür einmal nach Administratorrechten. " : string.Empty)
+            + (parts.Sisr && steamRunning ? "Steam wird dafür kurz beendet und wieder gestartet. " : string.Empty)
+            + $"Ohne Antwort innerhalb von {timeoutSeconds} Sekunden bleibt alles installiert; Arcadia wird trotzdem deinstalliert.";
     }
 
     /// <summary>
-    /// Removes what <see cref="FindInstalledParts"/> found. Best effort: a step that fails is
-    /// logged and skipped. Returns within a few seconds; usbip-win2's uninstaller keeps running
-    /// on its own.
+    /// Removes SISR and VIIPER (<see cref="FindInstalledParts"/>); the drivers go with Pan's uninstall. Best effort: a
+    /// step that fails is logged and skipped. Returns within a few seconds.
     /// </summary>
     [SupportedOSPlatform("windows")]
     public static void Remove(Action<string> log)
@@ -100,15 +124,6 @@ public static class ControllerSupportRemoval
             StopProcesses("viiper");
             Step(log, "VIIPER-Ordner", () => Directory.Delete(Path.GetDirectoryName(ViiperExecutable)!, recursive: true));
         }
-
-        if (UsbipDriver.UninstallCommand() is { } usbip)
-        {
-            Step(log, "usbip-win2", () =>
-            {
-                var (file, arguments) = SplitCommand(usbip);
-                using var _ = Process.Start(new ProcessStartInfo(file, arguments) { UseShellExecute = true, Verb = "runas" });
-            });
-        }
     }
 
     /// <summary>How long the uninstall waits for Steam to close; it usually takes 2 to 5 s.</summary>
@@ -138,18 +153,6 @@ public static class ControllerSupportRemoval
     /// <summary>Removes the marker from every account that has one; returns how many had it.</summary>
     public static int RemoveMarkers(SteamInstallation steam, string sisrExe) =>
         steam.AllShortcutsPaths().Count(shortcuts => SteamShortcuts.RemoveByExecutable(shortcuts, sisrExe) > 0);
-
-    /// <summary>Splits an uninstall command like <c>"C:\x\uninstall.exe" /S</c> into file and arguments.</summary>
-    public static (string File, string Arguments) SplitCommand(string command)
-    {
-        command = command.Trim();
-        if (command.StartsWith('"') && command.IndexOf('"', 1) is var end and > 0)
-        {
-            return (command[1..end], command[(end + 1)..].Trim());
-        }
-
-        return (command, string.Empty);
-    }
 
     private static void DeleteDirectory(string path)
     {

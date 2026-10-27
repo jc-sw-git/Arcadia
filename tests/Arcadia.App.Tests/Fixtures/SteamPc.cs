@@ -38,6 +38,8 @@ internal sealed class SteamPc : IControllerSupportPlatform
 
     public bool IsPanUpdateAvailable => false;
 
+    public Version? HidHideVersion => Arcadia.Pan.HidHideRelease.Version;
+
     public bool IsCefDebuggingEnabled => _files.IsCefDebuggingEnabled;
 
     /// <summary>How often Steam was closed for SISR's setup.</summary>

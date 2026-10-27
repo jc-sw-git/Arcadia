@@ -21,6 +21,9 @@ public interface IVirtualXboxPad : IAsyncDisposable
     /// <summary>False once the pad is gone without being unplugged (VIIPER ended, its connection broke).</summary>
     bool IsConnected { get; }
 
+    /// <summary>The pad is gone because Pan took it away on purpose (its teardown, or Pan itself gone): no failure of VIIPER's.</summary>
+    bool TakenAway => false;
+
     /// <summary>What the pad reports from now on; throws when the pad is gone.</summary>
     Task SendAsync(XboxPadState state, CancellationToken cancellationToken);
 }

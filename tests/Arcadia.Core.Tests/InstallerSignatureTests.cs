@@ -42,7 +42,7 @@ public sealed class InstallerSignatureTests : IDisposable
         }
     }
 
-    private async Task<(bool Started, UntrustedInstallerException? Rejected)> Run(SignatureCheck check, PublisherPin? pin = null)
+    private async Task<(bool Started, UntrustedInstallerException? Rejected)> Run(SignatureCheck check, PublisherPin? pin = null, string? expectedSha256 = null)
     {
         var started = false;
         try
@@ -51,7 +51,7 @@ public sealed class InstallerSignatureTests : IDisposable
             {
                 started = true;
                 return Task.FromResult(true);
-            });
+            }, expectedSha256);
             return (started, null);
         }
         catch (UntrustedInstallerException ex)
@@ -69,6 +69,40 @@ public sealed class InstallerSignatureTests : IDisposable
 
         Assert.True(started);
         Assert.Null(rejected);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-32")]
+    public async Task A_signed_installer_that_is_not_the_file_Arcadia_checked_does_not_start()
+    {
+        using var signer = Certificate(RealSubject);
+        var other = Convert.ToHexString(SHA256.HashData([9, 9, 9]));
+
+        var (started, rejected) = await Run(new SignatureCheck(0, signer), expectedSha256: other);
+
+        Assert.False(started);
+        Assert.Contains("SHA-256 weicht ab", rejected?.Message);
+        Assert.Contains(ManualUrl, rejected?.Message);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-32")]
+    public async Task A_signed_installer_with_the_hash_Arcadia_checked_starts_whatever_the_hash_s_case()
+    {
+        using var signer = Certificate(RealSubject);
+        var same = Convert.ToHexString(SHA256.HashData([1, 2, 3])).ToLowerInvariant();
+
+        var (started, rejected) = await Run(new SignatureCheck(0, signer), expectedSha256: same);
+
+        Assert.True(started);
+        Assert.Null(rejected);
+    }
+
+    [Fact]
+    public void The_usbip_installer_is_run_with_Inno_Setup_s_silent_switches()
+    {
+        // Inno Setup doesn't know NSIS's "/S" and would show its wizard inside Pan's elevated, windowless step.
+        Assert.Equal(["/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/RESTARTEXITCODE=3010"], UsbipRelease.SilentArguments);
     }
 
     [Fact]

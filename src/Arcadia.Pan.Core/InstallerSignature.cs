@@ -17,6 +17,15 @@ public static class UsbipRelease
 
     /// <summary>The minimum version VIIPER's own installer requires.</summary>
     public static Version MinimumVersion { get; } = new(0, 9, 8, 1);
+
+    /// <summary>
+    /// The installer is Inno Setup (checked on 0.9.8.1), which doesn't know NSIS's <c>/S</c>: without these switches it
+    /// shows its wizard. A needed restart is reported as 3010 instead of being done.
+    /// </summary>
+    public static IReadOnlyList<string> SilentArguments { get; } = ["/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/RESTARTEXITCODE=3010"];
+
+    /// <summary>The exit code <see cref="SilentArguments"/> asks for when Windows must restart to finish.</summary>
+    public const int RestartNeededExitCode = 3010;
 }
 
 /// <summary>
@@ -75,16 +84,21 @@ public static class InstallerSignature
 
     /// <summary>
     /// Runs <paramref name="start"/> only if <paramref name="file"/> is validly signed (chain, expiry, revocation,
-    /// checked by Windows) by <paramref name="publisher"/>. The file stays open without write access meanwhile, so
-    /// it can't be swapped between the check and the start of the process.
+    /// checked by Windows) by <paramref name="publisher"/> and, when given, has the SHA-256 Arcadia checked at the
+    /// download: a signature alone also lets through any other (e.g. older) installer of the same publisher. The file
+    /// stays open without write access meanwhile, so it can't be swapped between the checks and the start of the process.
     /// </summary>
-    /// <exception cref="UntrustedInstallerException">The file is unsigned, its signature is invalid or it is signed by someone else; nothing was started.</exception>
-    public static async Task<T> RunIfTrustedAsync<T>(string file, string name, PublisherPin publisher, string manualInstallUrl, IAuthenticode authenticode, Func<Task<T>> start)
+    /// <exception cref="UntrustedInstallerException">The file is unsigned, its signature is invalid, it is signed by someone else or isn't the file expected; nothing was started.</exception>
+    public static async Task<T> RunIfTrustedAsync<T>(
+        string file, string name, PublisherPin publisher, string manualInstallUrl, IAuthenticode authenticode, Func<Task<T>> start, string? expectedSha256 = null)
     {
         await using var held = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var hashMatches = expectedSha256 is null
+            || string.Equals(Convert.ToHexString(await System.Security.Cryptography.SHA256.HashDataAsync(held)), expectedSha256, StringComparison.OrdinalIgnoreCase);
         var check = authenticode.Verify(file);
         var problem = check switch
         {
+            _ when !hashMatches => "Er ist nicht die Datei, die Arcadia heruntergeladen und geprüft hat (SHA-256 weicht ab).",
             { Status: NoSignature } => "Er ist nicht signiert.",
             { Status: not 0 } => $"Seine Signatur ist ungültig (Windows-Code 0x{check.Status:X8}).",
             { Signer: null } => "Sein Herausgeber ließ sich nicht lesen.",

@@ -78,4 +78,34 @@ public static class HidHideWire
 
         return path.Length > 3 && char.IsAsciiLetter(path[0]) && path[1] == ':' && path[2] == '\\' ? path : null;
     }
+
+    /// <summary>
+    /// HidHide was uninstalled and Windows removes it only at the next restart (owner's B2 test, 2026-10-27): until then
+    /// its service key and driver file stay, so its version still reads as installed. Windows marks such a service with
+    /// <c>DeleteFlag</c> = 1, and a driver file in use is listed in <c>PendingFileRenameOperations</c> as a source with
+    /// an empty target (pairs of <c>\??\path</c> and target).
+    /// </summary>
+    public static bool RemovalPending(int? deleteFlag, IReadOnlyList<string>? pendingFileOperations, string? driverFile)
+    {
+        if (deleteFlag is { } flag && flag != 0)
+        {
+            return true;
+        }
+
+        if (pendingFileOperations is null || driverFile is null)
+        {
+            return false;
+        }
+
+        for (var i = 0; i + 1 < pendingFileOperations.Count; i += 2)
+        {
+            var source = pendingFileOperations[i].StartsWith(@"\??\", StringComparison.Ordinal) ? pendingFileOperations[i][4..] : pendingFileOperations[i];
+            if (pendingFileOperations[i + 1].Length == 0 && string.Equals(source, driverFile, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

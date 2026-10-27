@@ -213,6 +213,8 @@ internal sealed class NoControllerSupportPlatform : IControllerSupportPlatform
 
     public bool IsPanUpdateAvailable => false;
 
+    public Version? HidHideVersion => null;
+
     public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(false);
 
     public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(false);

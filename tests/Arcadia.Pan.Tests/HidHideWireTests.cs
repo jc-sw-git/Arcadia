@@ -78,4 +78,21 @@ public sealed class HidHideWireTests
     {
         Assert.Equal(listed, HidingList.IsListedUsbParent(instanceId));
     }
+
+    private const string Driver = @"C:\Windows\System32\drivers\HidHide.sys";
+
+    [Fact]
+    [Trait("TestCase", "T243-41")]
+    public void An_uninstalled_HidHide_waits_for_the_restart_by_its_delete_flag_or_its_driver_file_s_pending_deletion()
+    {
+        Assert.True(HidHideWire.RemovalPending(1, null, Driver));
+        Assert.True(HidHideWire.RemovalPending(null, [@"\??\C:\other.tmp", @"\??\C:\other.dll", @"\??\c:\windows\system32\DRIVERS\HidHide.sys", ""], Driver));
+
+        Assert.False(HidHideWire.RemovalPending(0, null, Driver));
+        Assert.False(HidHideWire.RemovalPending(null, [], Driver));
+        // Replaced by an update (a target), not deleted; another file deleted; no driver file known.
+        Assert.False(HidHideWire.RemovalPending(null, [@"\??\" + Driver, @"\??\C:\new\HidHide.sys"], Driver));
+        Assert.False(HidHideWire.RemovalPending(null, [@"\??\C:\other.tmp", ""], Driver));
+        Assert.False(HidHideWire.RemovalPending(null, [@"\??\" + Driver, ""], null));
+    }
 }

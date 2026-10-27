@@ -9,9 +9,15 @@ namespace Arcadia.ControllerSupport.Pan;
 /// hung Pan can never stall the input (review point 5). A Pan that doesn't answer for a few seconds counts as lost:
 /// Arcadia removes its own emulation (review point 15).
 /// </summary>
-public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
+public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposable
 {
     public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// <see cref="PanCommand.CheckHiding"/> waits behind a hide or show in Pan (a puck restart, up to ~20 s if a device
+    /// step hangs), so it has its own reply timeout (<c>docs/controller-support/pan-hiding.md</c>).
+    /// </summary>
+    public static readonly TimeSpan HidingRequestTimeout = TimeSpan.FromSeconds(25);
 
     /// <summary>A request to Pan (write and reply) that takes longer than this means Pan hangs. Real time; tests widen it.</summary>
     public TimeSpan RequestTimeout { get; init; } = DefaultRequestTimeout;
@@ -19,6 +25,12 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
     /// <summary>Reconnecting after a loss; a permanent reason (not set up, wrong protocol) waits <see cref="SlowRetry"/>.</summary>
     public static readonly TimeSpan Retry = TimeSpan.FromSeconds(2);
     public static readonly TimeSpan SlowRetry = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// Pan shows the real Steam Controller again (a teardown or its retry, every 10 s while HidHide is busy): no pad is
+    /// tried meanwhile, and no loss counted for it (overall review of #243, point 1).
+    /// </summary>
+    public static readonly TimeSpan BeingShownWait = TimeSpan.FromSeconds(10);
 
     private readonly IPanTransport _transport;
     private readonly TimeProvider _time;
@@ -33,6 +45,7 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
     private uint _currentGeneration;
     private uint _tornDownGeneration;
     private bool _teardownPending;
+    private DateTimeOffset _beingShownUntil;
     private bool _emulating;
     private long _pulses;
     private long _sentPulses;
@@ -77,7 +90,7 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
 
     public string? Unavailable()
     {
-        lock (_lock) return _unavailable ?? (_teardownPending ? CleaningUp : null);
+        lock (_lock) return _unavailable ?? (_teardownPending || _time.GetUtcNow() < _beingShownUntil ? CleaningUp : null);
     }
 
     public bool IsCurrent(uint generation)
@@ -105,6 +118,13 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
             }
 
             reply = await RequestAsync(PanMessage.Of(PanCommand.EmulationStarted), cancellationToken);
+        }
+
+        if (reply.Reply == PanReply.Rejected && reply.Reason == PanReason.SteamControllerBeingShown)
+        {
+            // Pan undoes an emulation of before; there is no notice when it is done, so try again after a while.
+            lock (_lock) _beingShownUntil = _time.GetUtcNow() + BeingShownWait;
+            throw new InvalidOperationException(CleaningUp);
         }
 
         if (reply.Reply != PanReply.Started)
@@ -166,6 +186,42 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
         return !stillRunning;
     }
 
+    public async Task<PanReason?> CheckHidingAsync(CancellationToken cancellationToken)
+    {
+        if (!IsConnected)
+        {
+            return null;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            // Not cancelled by the caller: a request given up after it reached Pan costs the link (its late reply would
+            // pass for the next request's), and with it a running emulation. Bounded by its own timeout instead.
+            var reply = await RequestAsync(PanMessage.Of(PanCommand.CheckHiding), HidingRequestTimeout, CancellationToken.None);
+            if (reply.Reply == PanReply.HidingState)
+            {
+                return reply.Reason;
+            }
+
+            if (reply.Reply != PanReply.Unsupported)
+            {
+                _log($"Pan: CheckHiding beantwortet mit {reply}");
+            }
+
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            // Already logged and dropped by RequestAsync, or not connected any more.
+            return null;
+        }
+        catch (OperationCanceledException) when (_disposed.IsCancellationRequested)
+        {
+            return null;
+        }
+    }
+
     public async Task PlannedExitAsync()
     {
         lock (_lock)
@@ -211,11 +267,14 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
         }
     }
 
+    private Task<PanMessage> RequestAsync(PanMessage message, CancellationToken cancellationToken) =>
+        RequestAsync(message, RequestTimeout, cancellationToken);
+
     /// <summary>One request at a time; the reply is the next non-notice message. Slow Pan = lost Pan.</summary>
-    private async Task<PanMessage> RequestAsync(PanMessage message, CancellationToken cancellationToken)
+    private async Task<PanMessage> RequestAsync(PanMessage message, TimeSpan replyTimeout, CancellationToken cancellationToken)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposed.Token);
-        timeout.CancelAfter(RequestTimeout);
+        timeout.CancelAfter(replyTimeout);
         try
         {
             await _requests.WaitAsync(timeout.Token);
@@ -245,7 +304,7 @@ public sealed class PanClient : IEmulationGuardian, IAsyncDisposable
             catch (Exception ex) when (!cancellationToken.IsCancellationRequested && !_disposed.IsCancellationRequested)
             {
                 // Timed out or the pipe broke: Pan hangs or is gone; the keeper reconnects.
-                Drop(ex is OperationCanceledException ? $"Pan antwortet nicht innerhalb von {RequestTimeout.TotalSeconds:0} s" : $"Verbindung zu Pan verloren: {ex.Message}");
+                Drop(ex is OperationCanceledException ? $"Pan antwortet nicht innerhalb von {replyTimeout.TotalSeconds:0} s" : $"Verbindung zu Pan verloren: {ex.Message}");
                 throw new InvalidOperationException("Pan antwortet nicht", ex);
             }
             catch (OperationCanceledException) when (!_disposed.IsCancellationRequested)

@@ -15,7 +15,7 @@ one names the countermeasure that would close it, so a later story can pick it u
 - **`Pan.exe` runs elevated from the user's folder** (install, update, uninstall, restore): whoever can write to
   `%LOCALAPPDATA%\Arcadia` gets SYSTEM code at the next confirmed UAC prompt. `--expect-hash` only closes the window
   between Arcadia's hash and Pan's copy. The countermeasure is code signing of `Pan.exe` (the UAC dialog then names
-  the publisher); a release topic, see `docs/releases.md`.
+  the publisher); a release topic (#271), see `docs/releases.md`.
 - **`%ProgramFiles%\Arcadia\Pan`** is trusted as Program Files is: only administrators can write there. A junction
   planted by an administrator is not defended against (administrators are trusted anyway).
 - **Process name as a hint only:** `viiper.exe` is taken as the client's child by parent id, start time and name, and
@@ -42,9 +42,11 @@ one names the countermeasure that would close it, so a later story can pick it u
   open it anew, but one that kept a handle may not see it until a replug; retried at every trigger.
 - **Hiding cloaks for every allow-listed program:** with cloaking off before, the user's allow list (e.g. DS4Windows)
   was meaningless; while Pan hides, those programs see the puck too. They are the user's choice.
-- **HidHide's silent setup can hang (for B2):** on about half the CI runners (Windows Server 2025) its last MSI action,
+- **HidHide's silent setup can hang:** on about half the CI runners (Windows Server 2025) its last MSI action,
   registering `nefarius_HidHide_Updater.exe`, never returned after the driver was in place; killing it risks a rollback.
-  B2's install must bound the wait and tell the user, never block Arcadia on it.
+  Pan waits 2 min, then counts a driver in place as installed and leaves the setup running (B2). Not seen on a real PC
+  yet; if it happens there, Windows Installer refuses other installs (1618) while it hangs and probably rolls HidHide
+  back at the next restart. The CI starts a no-op in the updater's place instead (`tools/ci/Install-HidHide.ps1`). Cause and a clean fix: #274.
 - **HidHide's Configuration Client competes with Pan:** while it is open it holds HidHide (`HidHideBusy`: a hide is
   refused, a show retried until it closes; B2 should tell the user to close it). What the user changes there during
   an emulation applies at once: unticking the puck or turning hiding off shows Steam both controllers (double input),

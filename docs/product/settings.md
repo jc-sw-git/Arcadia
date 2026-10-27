@@ -21,6 +21,15 @@ Agreed with the owner; don't change without asking. Read this before changing th
   down to it, so there is one install button, not two (owner, 2026-10-26); "Treiber installieren" on the switch only
   when nothing below offers it (SISR itself missing, until #214). A failed fix shows its error at its own row (the
   error icon, the message in place of the subtitle with how to go on, the detail panel), not at the switch.
+  Since #243 B2 (refined with the owner): without SISR the switch stands for the controller emulation's parts
+  (usbip-win2, VIIPER, Pan, HidHide). One missing part greys the switch out ("Aus – es fehlt: …"), with one warning row
+  per part below and the reason in the info panel; with every part missing the setting itself offers "Treiber
+  installieren" (one UAC prompt for all) and no part rows. An old HidHide: "HidHide-Version wird nicht unterstützt"
+  with "Aktualisieren". Pan's HidHide states (e.g. "HidHide-Konfiguration ist geöffnet … Bitte schließe sie") are rows
+  too, asked only while the settings are open and gone with them.
+- Pan's notices (#243 B2): a toast while Arcadia is in front, the overlay notice (where the mouse mode shows its
+  label) while a game is in front, so the player sees them in the game too. All Pan notices go this way. A hold the
+  player is watching goes on: during the View hold the notice stands below "Zurück zu Arcadia".
   "Controller wiederherstellen" (Pan's
   `--restore`) stands below the problems, indented like them, while Pan is installed. A newer Pan after an Arcadia update is one question
   at start, "Pan aktualisieren" (A updates, B asks again at the next start).

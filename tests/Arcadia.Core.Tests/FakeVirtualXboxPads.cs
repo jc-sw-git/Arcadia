@@ -48,9 +48,20 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
         private readonly List<XboxPadState> _sent = [];
         private volatile bool _lost;
 
+        private volatile bool _takenAway;
+
         public bool IsConnected => !_lost;
 
+        public bool TakenAway => _takenAway;
+
         public void Lose() => _lost = true;
+
+        /// <summary>Pan tore the emulation down (or is gone): the pad is lost, but on purpose.</summary>
+        public void TakeAway()
+        {
+            _takenAway = true;
+            _lost = true;
+        }
 
         /// <summary>Every state the pad got, in order.</summary>
         public IReadOnlyList<XboxPadState> Sent

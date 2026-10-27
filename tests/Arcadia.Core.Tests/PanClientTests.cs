@@ -63,6 +63,19 @@ public sealed class PanClientTests : IAsyncDisposable
         }
     }
 
+    /// <summary>A failure on a loaded CI runner says what the client and Pan logged.</summary>
+    private async Task<T> LoggedAsync<T>(Func<Task<T>> request)
+    {
+        try
+        {
+            return await request();
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new Xunit.Sdk.XunitException($"{ex.Message}\n{LogText()}", ex);
+        }
+    }
+
     private static async Task WaitUntil(Func<bool> condition, string what)
     {
         var until = DateTime.UtcNow + Soon;
@@ -264,7 +277,8 @@ public sealed class PanClientTests : IAsyncDisposable
         // Pan dies: its pipe breaks without a goodbye; the service manager restarts it, and its journal says the
         // emulation was open, so it undoes it before serving anyone.
         _server.Die();
-        await WaitUntil(() => !_client.IsConnected, "Verbindung weg");
+        // The loss is reported after the link is marked gone, so wait for the report itself (flaky before, QE review of PR #264).
+        await WaitUntil(() => !_client.IsConnected && _lost.Count > 0, "Verbindung weg");
         Assert.Contains("Verbindung", Assert.Single(_lost));
         Assert.False(_client.IsCurrent(generation));
 
@@ -272,7 +286,26 @@ public sealed class PanClientTests : IAsyncDisposable
         _time.Advance(PanClient.Retry);
         await ConnectedAsync();
 
-        Assert.Equal(generation + 1, await _client.EmulationStartedAsync(CancellationToken.None));
+        Assert.Equal(generation + 1, await LoggedAsync(() => _client.EmulationStartedAsync(CancellationToken.None)));
+    }
+
+    [Fact]
+    public async Task While_Pan_shows_the_Steam_Controller_again_no_pad_is_tried_and_no_loss_counted_then_it_goes_on()
+    {
+        await ConnectedAsync();
+        _server.StartReply = PanMessage.Of(PanReply.Rejected, 1, PanReason.SteamControllerBeingShown);
+
+        var refused = await Assert.ThrowsAsync<InvalidOperationException>(() => _client.EmulationStartedAsync(CancellationToken.None));
+
+        // "Pan räumt noch auf" is what keeps the pad from counting a loss (SteamControllerXboxPad.PlugAsync).
+        Assert.Equal(PanClient.CleaningUp, refused.Message);
+        Assert.Equal(PanClient.CleaningUp, _client.Unavailable());
+        Assert.Empty(_lost);
+
+        _server.StartReply = null;
+        _time.Advance(PanClient.BeingShownWait);
+        Assert.Null(_client.Unavailable());
+        Assert.True(_client.IsCurrent(await _client.EmulationStartedAsync(CancellationToken.None)));
     }
 
     [Fact]
@@ -315,6 +348,69 @@ public sealed class PanClientTests : IAsyncDisposable
     }
 
     /// <summary>Pan's guardian served over anonymous pipes, as <c>PipeServer</c> would serve it over the named pipe.</summary>
+    [Fact]
+    [Trait("TestCase", "T243-35")]
+    public async Task Arcadia_learns_from_Pan_why_it_could_not_hide_now()
+    {
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide);
+        await ConnectedAsync();
+
+        Assert.Equal(PanReason.None, await _client.CheckHidingAsync(CancellationToken.None));
+        hidHide.Busy = true;
+        Assert.Equal(PanReason.HidHideBusy, await _client.CheckHidingAsync(CancellationToken.None));
+        hidHide.Busy = false;
+        hidHide.Inverse = true;
+        Assert.Equal(PanReason.HidHideInverseMode, await _client.CheckHidingAsync(CancellationToken.None));
+        Assert.True(_client.IsConnected);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-35")]
+    public async Task A_Pan_without_hiding_or_without_a_connection_gives_no_answer()
+    {
+        Assert.Null(await _client.CheckHidingAsync(CancellationToken.None));
+
+        await ConnectedAsync();
+        Assert.Null(await _client.CheckHidingAsync(CancellationToken.None));
+        Assert.True(_client.IsConnected);
+    }
+
+    /// <summary>HidHide 1.5.230 whose state a test sets; "busy" is its configuration client holding it.</summary>
+    private sealed class SettableHidHide : IHidHideDriver
+    {
+        public volatile bool Busy;
+        public volatile bool Inverse;
+
+        public Version? InstalledVersion() => HidHideRelease.Version;
+
+        public bool IsServiceRegistered() => true;
+
+        public IReadOnlyList<string> GetHiddenDevices() => Reach<IReadOnlyList<string>>([]);
+
+        public void SetHiddenDevices(IReadOnlyList<string> instanceIds) => Reach(instanceIds);
+
+        public IReadOnlyList<string> GetAllowedApplications() => Reach<IReadOnlyList<string>>([]);
+
+        public void SetAllowedApplications(IReadOnlyList<string> imagePaths) => Reach(imagePaths);
+
+        public bool GetCloaking() => Reach(false);
+
+        public void SetCloaking(bool on) => Reach(on);
+
+        public bool GetInverse() => Reach(Inverse);
+
+        private T Reach<T>(T value) => Busy ? throw new HidHideException(PanReason.HidHideBusy, "HidHide is open in another program") : value;
+    }
+
+    /// <summary>No Steam Controller connected: checking needs none.</summary>
+    private sealed class NoPuck : ISteamControllerDevices
+    {
+        public IReadOnlyList<string> PresentHidInstances() => [];
+
+        public Task RestartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
     private sealed class FakePanServer : IPanTransport, IDisposable
     {
         private readonly Action<string> _log;
@@ -323,7 +419,8 @@ public sealed class PanClientTests : IAsyncDisposable
         private readonly SemaphoreSlim _paused = new(1, 1);
         private DuplexStream? _serverSide;
         private Task _serving = Task.CompletedTask;
-        private volatile bool _dead;
+        // The guardian of a Pan that died: its pipe can close only after the restart.
+        private volatile Guardian? _deadGuardian;
         private int _heartbeats;
 
         public FakePanServer(Action<string> log)
@@ -348,6 +445,9 @@ public sealed class PanClientTests : IAsyncDisposable
 
         /// <summary>Overrides the guardian's answer to hello.</summary>
         public PanMessage? HelloReply { get; set; }
+
+        /// <summary>Overrides the guardian's answer to "emulation started".</summary>
+        public PanMessage? StartReply { get; set; }
 
         public int Connections { get; private set; }
 
@@ -382,14 +482,17 @@ public sealed class PanClientTests : IAsyncDisposable
         /// <summary>Pan died: its end of the pipe closes and nothing of it runs on.</summary>
         public void Die()
         {
-            _dead = true;
+            _deadGuardian = Guardian;
             _serverSide?.Dispose();
         }
 
-        /// <summary>A restarted Pan: it undoes what its journal lists, then serves again.</summary>
+        /// <summary>A Pan with part B's hiding (#243 B2), on HidHide as the test sets it; before the client connects.</summary>
+        public void UseHiding(IHidHideDriver hidHide) =>
+            Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log, hiding: new SteamControllerHiding(hidHide, new NoPuck()));
+
+                /// <summary>A restarted Pan: it undoes what its journal lists, then serves again.</summary>
         public void RestartFromJournal()
         {
-            _dead = false;
             Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log);
             Guardian.RecoverAsync().GetAwaiter().GetResult();
         }
@@ -397,7 +500,6 @@ public sealed class PanClientTests : IAsyncDisposable
         /// <summary>A reinstalled Pan with an empty data folder: it counts the generations from 0 again.</summary>
         public void RestartWithoutJournal()
         {
-            _dead = false;
             Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "reinstalled", "journal.json")), _cleanup, _log);
             Guardian.RecoverAsync().GetAwaiter().GetResult();
         }
@@ -429,7 +531,10 @@ public sealed class PanClientTests : IAsyncDisposable
                         Interlocked.Increment(ref _heartbeats);
                     }
 
-                    var reply = await guardian.HandleAsync(message);
+                    // A forced start reply leaves the guardian alone, as a Pan that refused would be.
+                    var reply = message.Command == PanCommand.EmulationStarted && StartReply is { } forcedStart
+                        ? forcedStart
+                        : await guardian.HandleAsync(message);
                     if (message.Command == PanCommand.Hello && HelloReply is { } forced)
                     {
                         reply = forced;
@@ -446,9 +551,10 @@ public sealed class PanClientTests : IAsyncDisposable
             finally
             {
                 guardian.Notify -= Notify;
-                if (!_dead)
+                if (!ReferenceEquals(guardian, _deadGuardian))
                 {
-                    // A dead Pan notices nothing; a living one sees the client go, as the pipe server does.
+                    // A dead Pan notices nothing, even when its pipe closes only after the restart (it would tear down
+                    // into the restarted Pan's journal); a living one sees the client go, as the pipe server does.
                     guardian.ClientGone();
                 }
             }

@@ -2,9 +2,7 @@ using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Settings;
 using Arcadia.Pan;
-using Arcadia.App.ViewModels;
 using Arcadia.Input;
-using Avalonia.Threading;
 
 namespace Arcadia.App.Input;
 
@@ -13,7 +11,8 @@ namespace Arcadia.App.Input;
 /// ("Arcadia" or "Steam-Eingabe") decide whether it is plugged in (<see cref="SteamControllerRouting"/>), a game gets
 /// nothing while Arcadia is in front or the mouse mode is on, and Back + Start is withheld while the mouse mode is not "Aus".
 /// The pad stands under Pan's watch (#243): no pad without Pan, every poll pulses the heartbeat, and a teardown by Pan
-/// (Arcadia hung) or a lost Pan shows as a toast while the pad comes back by itself.
+/// (Arcadia hung) or a lost Pan shows as a notice (<see cref="PanNotices"/>) while the pad comes back by itself.
+/// "Controller wiederherstellen" lets the pad count its losses afresh.
 /// </summary>
 public sealed class SteamControllerForGames
 {
@@ -28,17 +27,19 @@ public sealed class SteamControllerForGames
     public SteamControllerRouting Routing { get; }
 
     /// <param name="pads">The virtual pads; they are put under <paramref name="guardian"/>'s watch here.</param>
+    /// <param name="controllerSupport">Its "Controller wiederherstellen" ends the pad on purpose (#243).</param>
     /// <param name="activeGames">The keys of the games that run or are being started (<c>RunningGamesTracker.ActiveGames</c>).</param>
     /// <param name="runningSteamAppId">The Steam game running right now, also one started directly in Steam (#119).</param>
     public static SteamControllerForGames Create(
         IVirtualXboxPads pads,
         IEmulationGuardian guardian,
+        ControllerSupportService controllerSupport,
         SettingsService settings,
         Func<IReadOnlyCollection<string>> activeGames,
         Func<int?> runningSteamAppId,
         Func<bool> isArcadiaActive,
         Func<bool> isMouseModeOn,
-        ToastViewModel toast,
+        PanNotices notices,
         TimeProvider time)
     {
         var guarded = new GuardedXboxPads(pads, guardian);
@@ -56,9 +57,10 @@ public sealed class SteamControllerForGames
             Combos = combos.Current,
             FeedAlive = guardian.Pulse,
         };
-        pad.GaveUp += message => Dispatcher.UIThread.Post(() => toast.Show(message));
-        guardian.TornDown += (_, reason) => Dispatcher.UIThread.Post(() => toast.Show(TornDownText(reason)));
-        guardian.Lost += _ => Dispatcher.UIThread.Post(() => toast.Show(PanLostText));
+        pad.GaveUp += notices.Show;
+        controllerSupport.ControllersRestored += (_, _) => pad.ForgetLosses();
+        guardian.TornDown += (_, reason) => notices.Show(TornDownText(reason));
+        guardian.Lost += _ => notices.Show(PanLostText);
         return new SteamControllerForGames(pad, routing);
     }
 

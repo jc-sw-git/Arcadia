@@ -20,7 +20,11 @@ The owner's catalog (2026-10-27): every engine item has namespace `ue` and categ
 `engines/ue4`, `engines/preview`, `engines/unstable`), 13 items from `UE_4.x` (one item with 28 app ids) to `UE_5.8`;
 UEFN is `Fortnite_Studio` with `addons/launchable`, `software`, `addons`, `applications` and a `mainGameItem`. With
 both the Epic tab holds 333 entries, as Epic's library. UEFN's cached title is "Unreal Editor f?r Fortnite" (umlauts:
-#43). An installed engine's manifest was not seen (none installed; T141-2). Epic's
+#43). An installed engine's manifest (2026-10-27): `AppName` `UE_5.8`, `DisplayName` "Unreal Engine", categories
+`engines/ue5`, `engines`. Installing an engine queues its plugins (`QuixelBridge_<v>`, `FabPlugin_<v>`, categories
+`plugins/engine`) as followers with their own manifests in the engine's folder. `…?action=install` for an engine
+logged "dispatching install" but showed no dialog (Epic was started by that link; the owner then installed from the
+Unreal Engine tab), so Arcadia opens `com.epicgames.launcher://ue/library` for an engine. Epic's
 umlauts stay broken until metadata providers (#43) supply titles. Install: `…?action=install`.
 `EpicInstallMonitor` (verified 2026-10-10 with real installs): queue order from
 `Data\DownloadManager\DownloadState_<account>.json` (incl. paused, `[]` when idle); per-app events

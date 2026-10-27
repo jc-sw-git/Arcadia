@@ -49,4 +49,10 @@ public static class GameTypeTexts
         GameType.Soundtrack => "Abrocken",
         _ => "Tüfteln",
     };
+
+    /// <summary>
+    /// What A does while the entry runs: its window comes back to the front. A tool is no game (owner, 2026-10-27); a
+    /// soundtrack never runs in Arcadia, its launcher plays it.
+    /// </summary>
+    public static string ReturnAction(GameType type) => type == GameType.Game ? "Zurück ins Spiel" : "Weiter tüfteln";
 }

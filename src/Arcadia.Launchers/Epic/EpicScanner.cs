@@ -135,7 +135,7 @@ public sealed class EpicScanner(
                 Type = item.Type,
                 Launch = new LaunchTarget.ProtocolUri(LaunchUri(item.Namespace, item.CatalogItemId, item.AppName)),
                 IsInstalled = false,
-                Install = new LaunchTarget.ProtocolUri(InstallUri(item.Namespace, item.CatalogItemId, item.AppName)),
+                Install = new LaunchTarget.ProtocolUri(item.IsEngine ? EngineLibraryUri : InstallUri(item.Namespace, item.CatalogItemId, item.AppName)),
                 OpenInLauncher = new LaunchTarget.ProtocolUri(LibraryUri),
             });
         }
@@ -327,6 +327,13 @@ public sealed class EpicScanner(
     /// no uninstall link either; games are uninstalled there.
     /// </summary>
     public const string LibraryUri = "com.epicgames.launcher://store/library";
+
+    /// <summary>
+    /// The Unreal Engine tab's library, where Epic installs engine versions and the user picks one. The engine's own
+    /// install link showed no dialog on the owner's PC (2026-10-27: Epic logged "dispatching install", nothing appeared;
+    /// the owner then installed it from this tab).
+    /// </summary>
+    public const string EngineLibraryUri = "com.epicgames.launcher://ue/library";
 
     /// <summary>Opens the launcher's install dialog for the game.</summary>
     public static string InstallUri(string catalogNamespace, string catalogItemId, string appName) =>

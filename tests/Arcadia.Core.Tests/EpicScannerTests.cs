@@ -204,6 +204,13 @@ public class EpicScannerTests
         Assert.Equal(2, games.Count);
         Assert.All(games, g => Assert.Equal(GameType.Tool, g.Type));
         Assert.All(games, g => Assert.False(g.IsInstalled));
-        Assert.Equal("UE_5.5", Assert.Single(games, g => g.Title == "Unreal Engine").Id);
+        var engine = Assert.Single(games, g => g.Title == "Unreal Engine");
+        Assert.Equal("UE_5.5", engine.Id);
+
+        // Epic installs engines from its Unreal Engine library; other entries keep their own install dialog.
+        Assert.Equal(new LaunchTarget.ProtocolUri(EpicScanner.EngineLibraryUri), engine.Install);
+        Assert.Equal(
+            new LaunchTarget.ProtocolUri(EpicScanner.InstallUri("fn", "uefn", "Fortnite_Studio")),
+            Assert.Single(games, g => g.Id == "Fortnite_Studio").Install);
     }
 }

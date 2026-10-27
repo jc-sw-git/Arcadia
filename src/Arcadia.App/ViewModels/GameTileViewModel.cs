@@ -50,7 +50,7 @@ public partial class GameTileViewModel : ViewModelBase
     /// <summary>"WERKZEUG" on the detail page's chip.</summary>
     public string TypeNameUpper => TypeName.ToUpper(Formatting.Culture);
 
-    /// <summary>A soundtrack is handed to its launcher, which plays it; Arcadia doesn't wait for it to run (#141).</summary>
+    /// <summary>A soundtrack is handed to its launcher, which opens it; Arcadia doesn't wait for it to run (#141).</summary>
     public bool IsSoundtrack => Game.Type == GameType.Soundtrack;
 
     /// <summary>The update icon; a running game shows that it runs instead, its update comes with the next start.</summary>
@@ -60,7 +60,7 @@ public partial class GameTileViewModel : ViewModelBase
         : InstallState is not null ? $"{InstallVerb} …"
         : !Game.IsInstalled ? "Installieren"
         : IsStarting ? "Wird gestartet …"
-        : IsRunning ? "Zurück ins Spiel"
+        : IsRunning ? GameTypeTexts.ReturnAction(Game.Type)
         : GameTypeTexts.PrimaryAction(Game.Type);
 
     /// <summary>Whether the game runs, or was handed to its launcher and doesn't run yet (#95); null if neither.</summary>

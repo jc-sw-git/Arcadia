@@ -178,6 +178,18 @@ public sealed class SteamScannerTests : IDisposable
     }
 
     [Fact]
+    public void A_soundtrack_opens_on_its_page_in_Steam_and_a_game_starts()
+    {
+        var types = new Dictionary<uint, string> { [1145350] = "Music", [1145360] = "Game" };
+
+        var soundtrack = SteamScanner.ParseManifest(Manifest("1145350", "Hades II Original Soundtrack"), _root, appTypes: types);
+        var game = SteamScanner.ParseManifest(Manifest("1145360", "Hades II"), _root, appTypes: types);
+
+        Assert.Equal(new LaunchTarget.ProtocolUri("steam://nav/games/details/1145350"), soundtrack?.Launch);
+        Assert.Equal(new LaunchTarget.ProtocolUri("steam://rungameid/1145360"), game?.Launch);
+    }
+
+    [Fact]
     public void A_soundtrack_never_takes_its_games_folder_of_the_same_name()
     {
         // Real: RuneScape: Dragonwilds' soundtrack is installed as music/RSDragonwilds, its game as common/RSDragonwilds.

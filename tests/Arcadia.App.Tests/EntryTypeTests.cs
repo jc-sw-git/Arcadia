@@ -182,7 +182,59 @@ public sealed class EntryTypeTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T141-5")]
-    public async Task A_on_an_installed_Steam_soundtrack_hands_it_to_Steam_with_a_toast_and_its_page_says_Steam_plays_it()
+    public async Task While_software_or_a_tool_runs_A_says_Weiter_tueftln_and_on_a_game_still_Zurueck_ins_Spiel()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(
+            KnownLaunchers.Gog,
+            Installed(KnownLaunchers.Gog, "Hollow Knight", Installed),
+            Installed(KnownLaunchers.Gog, "Pixel Forge", Installed) with { Type = GameType.Software },
+            Installed(KnownLaunchers.Gog, "Mapping Kit", Installed) with { Type = GameType.Tool }) with
+        {
+            Running = ["Hollow Knight", "Pixel Forge", "Mapping Kit"],
+        }]);
+
+        foreach (var (title, action) in new[] { ("Hollow Knight", "Zurück ins Spiel"), ("Pixel Forge", "Weiter tüfteln"), ("Mapping Kit", "Weiter tüfteln") })
+        {
+            var tile = arcadia.FocusTile(title);
+            Assert.True(tile.IsRunning, $"{title} läuft");
+            Assert.Equal(action, tile.PrimaryActionText);
+
+            arcadia.Press(UiAction.Options);
+            Assert.Equal(action, arcadia.Main.GameMenu!.Actions.Single(entry => entry.Kind == GameActionKind.Play).Label);
+            arcadia.Press(UiAction.Back);
+
+            arcadia.Hold(UiAction.Accept, PastHoldTime);
+            Assert.Equal(action, arcadia.Detail!.Current.TopRow[0].ButtonLabel);
+            arcadia.Press(UiAction.Back);
+        }
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T141-13")]
+    public async Task Installieren_on_a_not_installed_Unreal_Engine_opens_the_Unreal_Engine_library_in_Epic()
+    {
+        using var files = new LauncherFiles();
+        var epic = files.Epic.Install();
+        var engine = new EpicApp("UE_5.8", "Unreal Engine 5.8") { Namespace = "ue", Categories = ["engines"] };
+        epic.WriteCatalog((engine, ["engines", "engines/ue5"], null));
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files, new AppSettings
+        {
+            ActiveLaunchers = [KnownLaunchers.Epic.Id],
+            Launchers = new Dictionary<string, LauncherPreferences> { [KnownLaunchers.Epic.Id] = new(LibraryOptions: ["software"]) },
+        });
+
+        var tile = arcadia.FocusTile("Unreal Engine");
+        Assert.Equal("Installieren", tile.PrimaryActionText);
+        arcadia.Press(UiAction.Accept);
+
+        // Epic's install link for an engine opened no dialog on the owner's PC; its Unreal Engine library does.
+        Assert.Equal([new LaunchTarget.ProtocolUri("com.epicgames.launcher://ue/library")], arcadia.Opened);
+        Assert.Equal("Installation von „Unreal Engine“ wird in Epic Games geöffnet …", arcadia.Main.Toast.Text);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T141-5")]
+    public async Task A_on_an_installed_Steam_soundtrack_opens_its_page_in_Steam_with_a_toast_and_its_page_says_where_it_plays()
     {
         using var files = new LauncherFiles();
         var steam = files.Steam.Install();
@@ -199,12 +251,13 @@ public sealed class EntryTypeTests
         arcadia.Hold(UiAction.Accept, PastHoldTime);
         var page = arcadia.Detail!.Current;
         Assert.Equal("Abrocken", page.TopRow[0].ButtonLabel);
-        Assert.Equal("Steam spielt den Soundtrack ab.", page.SoundtrackNote);
+        Assert.Equal("Steam öffnet den Soundtrack, dort spielst du ihn ab.", page.SoundtrackNote);
 
         arcadia.Press(UiAction.Accept);
 
         Assert.Equal("„Salzwiesen Klänge“ wird in Steam geöffnet …", arcadia.Main.Toast.Text);
-        Assert.Equal([new LaunchTarget.ProtocolUri("steam://rungameid/910101")], arcadia.Opened);
+        // Its page in Steam, as "In Steam öffnen" (owner, 2026-10-27).
+        Assert.Equal([new LaunchTarget.ProtocolUri("steam://nav/games/details/910101")], arcadia.Opened);
         Assert.False(page.Tile.IsRunningOrStarting, "Kein „Startet“ oder „Läuft“");
     }
 

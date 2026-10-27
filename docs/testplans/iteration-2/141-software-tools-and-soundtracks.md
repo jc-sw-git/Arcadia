@@ -16,9 +16,11 @@ tried without Steam or Epic.
   none on games; on a tile it never overlaps the install, update, running or starting badge or the progress bar; a long
   three-line title still ends in an ellipsis · E2E: yes
 - [ ] **T141-5** A says "Spielen" / "Tüfteln" / "Abrocken" by type on the preview and detail page button, in the context
-  menu and in the button hint; not installed it says "Installieren" · E2E: yes
-- [ ] **T141-6** A real Steam soundtrack: "Abrocken" opens it in Steam, which plays it; Arcadia shows a toast, no
-  "Startet"/"Läuft"; its detail page notes "Steam spielt den Soundtrack ab." · E2E: no (real Steam)
+  menu and in the button hint; not installed it says "Installieren"; while software or a tool runs it says "Weiter
+  tüfteln", a game "Zurück ins Spiel" · E2E: yes
+- [ ] **T141-6** A real Steam soundtrack: "Abrocken" brings Steam to the front on the soundtrack's page (as "In Steam
+  öffnen"), where it can be played; Arcadia shows a toast, no "Startet"/"Läuft"; its detail page notes "Steam öffnet den
+  Soundtrack, dort spielst du ihn ab." · E2E: no (real Steam)
 - [ ] **T141-7** Count line beside the tab's name: parts in the order Spiele, Software, Werkzeuge, Soundtracks; a type
   without entries left out; the bracket left out when all of a type are installed; parts split by a divider; the tooltip
   spells it out; four-digit counts with a dot ("1.234"); no page number; an empty tab keeps its text; the tab's number
@@ -33,6 +35,8 @@ tried without Steam or Epic.
 - [ ] **T141-11** Start to usable library with all switches on, Release build, real Steam and Epic, and
   `--demo --demo-games 1000`: within 2 s; arcadia.log's line `Steam: Typen von … aus appinfo.vdf in … ms gelesen` gives the read time ·
   E2E: no (owner's PC)
+- [ ] **T141-13** Unreal Engine not installed: "Installieren" opens Epic on its Unreal Engine library, where a version
+  can be installed; with Epic closed before, too · E2E: yes (the link; Epic's page by hand)
 - [ ] **T141-12** The whole flow (switch on, see the entry, open its detail page, start it, switch off) with the controller
   only, with the keyboard only and with the mouse only (the count line's tooltip with the mouse) · E2E: no
 
@@ -62,3 +66,5 @@ History:
 | Visual check: launcher page switches, count line in header, "Neu einlesen" and "Launcher-Details", covers with type icon | 2026-10-27 | Claude (QE) | PR branch, Debug, Linux, Xvfb, `--demo`, GOG's three switches on | ✅ (gap before ")" in the bracket, see review) | 200 % scaling not looked at |
 | QE findings fixed: warning once while `appinfo.vdf` stays unreadable (`SteamScannerTests.An_unreadable_appinfo_is_logged_once_until_it_was_readable_again`, red once with the old check), summaries in `LauncherRegistry`, settings subtitle wraps again, ")" pulled in; all App (324) and Core (901) tests | 2026-10-27 | Claude | PR branch, Linux cloud container, Xvfb `--demo` for the count line and "Neu einlesen" | ✅ | – |
 | Real files read by the PR code (owner's PC reachable): `appinfo.vdf`, all 81 Steam manifests, Epic catalog and manifest | 2026-10-27 | Claude | PR branch, Linux cloud container, files copied from the owner's PC | ✅ `appinfo.vdf` v29 3.9 MB: 81 of 81 typed in 13 ms, 7 demos as games, the soundtrack (`music/RSDragonwilds`) as Soundtrack, Source SDK as Tool, redistributables hidden; Epic: 331 games + Unreal Engine + UEFN = 333 as in Epic | soundtrack folder: `music` now wins over a game folder of the same name; UEFN title shows "f?r" (#43); an installed engine and `steam://rungameid` for a soundtrack stay for T141-2/T141-6 |
+| Owner's test: T141-1 to 6 and the switches | 2026-10-27 | owner | PR build, Debug, owner's PC, `--demo` with real Steam and Epic | ❌ 1. a running Steam tool said "Zurück ins Spiel"; 2. a soundtrack should open its page in Steam; 3. "Installieren" on Unreal Engine installed nothing (Epic logged the link, showed no dialog; installed by hand from the Unreal Engine tab); 4. Unreal Editor for Fortnite queued Fortnite first, which showed no progress in Arcadia; 5. the engine's plugins (Quixel Bridge, Fab) are listed nowhere but toast "installiert"; 6. a second engine version shows nothing | 1–3 fixed below; 4 under investigation; 5, 6 and controlling the music from Arcadia become own issues (5 and 6 judged after the new Epic launcher) |
+| Fixes 1–3: `EntryTypeTests` (running tool and software, engine install link, soundtrack page), `EpicScannerTests`, `SteamScannerTests`, `TypeCountLineTests`, each red once with the old code; all App and Core tests | 2026-10-27 | Claude | PR branch, Linux cloud container | ✅ | T141-6 and T141-13 on the owner's PC |

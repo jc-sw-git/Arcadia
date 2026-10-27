@@ -174,7 +174,8 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             LauncherId = KnownLaunchers.Steam.Id,
             Title = name,
             Type = type,
-            Launch = new LaunchTarget.ProtocolUri(RunUri(appId)),
+            // A soundtrack opens on its page in Steam and is played there, as "In Steam öffnen" does (owner, 2026-10-27).
+            Launch = new LaunchTarget.ProtocolUri(type == GameType.Soundtrack ? DetailsUri(appId) : RunUri(appId)),
             OpenInLauncher = new LaunchTarget.ProtocolUri(DetailsUri(appId)),
             Uninstall = new LaunchTarget.ProtocolUri(UninstallUri(appId)),
             InstallDirectory = installDirectory,

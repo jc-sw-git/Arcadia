@@ -128,6 +128,20 @@ public sealed class EpicInstallMonitorTests : IDisposable
         Assert.Equal(0.25, progress.Fraction!.Value, precision: 3);
     }
 
+    [Theory]
+    [InlineData(App)]
+    [InlineData("")]
+    public void A_game_naming_itself_or_nothing_as_main_game_has_a_fraction(string mainGame)
+    {
+        // Both seen in real manifests: older ones name the game itself, the owner's of 2026-10-27 nothing.
+        SetQueue(App);
+        WritePending(App, installSize: 1000, mainGame);
+        WriteGameBytes(250);
+        AppendLog(Queued, Started);
+
+        Assert.Equal(0.25, Monitor().Poll().Active[App].Fraction!.Value, precision: 3);
+    }
+
     [Fact]
     public void Reports_paused_and_queued_installations()
     {
@@ -314,9 +328,9 @@ public sealed class EpicInstallMonitorTests : IDisposable
         Path.Combine(_data, "DownloadManager", "DownloadState_account.json"),
         "[" + string.Join(",", apps.Select(a => $$"""{ "AppId": { "NamespaceId": "ns", "ItemId": "id", "AppName": "{{a}}" } }""")) + "]");
 
-    private void WritePending(string app, long installSize, string mainGame = "") => File.WriteAllText(
+    private void WritePending(string app, long installSize, string? mainGame = null) => File.WriteAllText(
         Path.Combine(_data, "Manifests", "Pending", app + ".item"),
-        $$"""{ "AppName": "{{app}}", "InstallLocation": {{System.Text.Json.JsonSerializer.Serialize(_installDir)}}, "InstallSize": {{installSize}}, "bIsIncompleteInstall": true, "MainGameAppName": "{{mainGame}}" }""");
+        $$"""{ "AppName": "{{app}}", "InstallLocation": {{System.Text.Json.JsonSerializer.Serialize(_installDir)}}, "InstallSize": {{installSize}}, "bIsIncompleteInstall": true, "MainGameAppName": "{{mainGame ?? app}}" }""");
 
     private void WriteGameBytes(int count)
     {

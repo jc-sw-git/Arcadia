@@ -300,7 +300,7 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
     }
 
     /// <param name="HasOwnFolder">
-    /// False for an add-on (<c>MainGameAppName</c> set): it installs into its main app's folder, whose size says nothing
+    /// False for an add-on (<c>MainGameAppName</c> names another app): it installs into its main app's folder, whose size says nothing
     /// about the add-on's download (the Fortnite editor showed "Fast fertig" at once, owner 2026-10-27).
     /// </param>
     private sealed record PendingManifest(string InstallLocation, long InstallSize, bool HasOwnFolder);
@@ -327,7 +327,9 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
                         && root.TryGetProperty("InstallLocation", out var location) && location.GetString() is { Length: > 0 } installLocation
                         && root.TryGetProperty("InstallSize", out var size) && size.TryGetInt64(out var installSize) && installSize > 0)
                     {
-                        var isAddOn = root.TryGetProperty("MainGameAppName", out var main) && main.ValueKind == JsonValueKind.String && main.GetString() is { Length: > 0 };
+                        // A game names nothing or itself (both seen); an add-on names its game.
+                        var isAddOn = root.TryGetProperty("MainGameAppName", out var main) && main.ValueKind == JsonValueKind.String
+                            && main.GetString() is { Length: > 0 } mainGame && mainGame != appName;
                         result[appName] = new PendingManifest(installLocation, installSize, HasOwnFolder: !isAddOn);
                     }
                 }

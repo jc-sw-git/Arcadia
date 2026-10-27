@@ -219,8 +219,12 @@ public sealed class FakeDevices : ISteamControllerDevices
     public bool ListHangs;
     public List<string> Calls = [];
 
+    /// <summary>Runs while the devices are listed, e.g. a change the user makes in HidHide meanwhile.</summary>
+    public Action? WhileListing;
+
     public IReadOnlyList<string> PresentHidInstances()
     {
+        WhileListing?.Invoke();
         if (ListHangs)
         {
             Thread.Sleep(TimeSpan.FromSeconds(30));

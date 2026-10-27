@@ -382,6 +382,23 @@ public sealed class SteamInstallMonitorTests : IDisposable
     }
 
     [Fact]
+    public void A_paused_update_removed_from_steams_queue_is_no_installation_any_more()
+    {
+        Write(AgeOfEmpires, flags: 1030, buildId: 3062235);
+        AppendContentLog(
+            "[2026-10-27 17:44:44] AppID 221380 update started : download 100/2571409488, store 0/0, reuse 0/0, delta 0/0, stage 100/4956889523 ",
+            "[2026-10-27 17:44:52] AppID 221380 update canceled : Disabled (Suspended)",
+            "[2026-10-27 17:44:52] AppID 221380 state changed : Update Required,Fully Installed,Update Queued,Update Started, (Suspended)");
+        Assert.Equal(InstallPhase.Paused, Poll().Active[AgeOfEmpires].Phase);
+
+        Write(AgeOfEmpires, flags: 6, buildId: 3062235);
+        AppendContentLog("[2026-10-27 17:45:10] AppID 221380 state changed : Update Required,Fully Installed,");
+        var snapshot = Poll();
+        Assert.Empty(snapshot.Active);
+        Assert.Equal(InstallOutcome.Cancelled, snapshot.Finished[AgeOfEmpires]);
+    }
+
+    [Fact]
     public void A_scheduled_update_nobody_started_is_no_installation()
     {
         Write("960090", flags: 6, buildId: 24829026);

@@ -180,11 +180,17 @@ public sealed partial class SteamContentLog(string path)
             return state.IsRunning ? state with { Started = started } : state with { Phase = SteamDownloadPhase.Preparing, Started = started };
         }
 
+        // Out of the queue (the user removed it, or it is being uninstalled): nothing to show.
+        if (!flags.Contains("Update Queued"))
+        {
+            return flags.Contains("Update Paused") ? state with { Phase = SteamDownloadPhase.Paused, Started = started } : Over;
+        }
+
         // Not running: after an "update canceled" the reason has already set Paused or Queued; otherwise it waits.
         // A new session lists every download it will resume as queued, the ones paused before included.
-        return !afterRestart && state.Phase is SteamDownloadPhase.Paused or SteamDownloadPhase.Queued ? state with { Started = started }
-            : flags.Contains("Update Queued") ? state with { Phase = SteamDownloadPhase.Queued, Started = started }
-            : Over;
+        return !afterRestart && state.Phase is SteamDownloadPhase.Paused or SteamDownloadPhase.Queued
+            ? state with { Started = started }
+            : state with { Phase = SteamDownloadPhase.Queued, Started = started };
     }
 
     // "Update Required,Update Queued,Update Started, (Suspended)": the part in brackets is a note, no flag.

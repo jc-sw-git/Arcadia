@@ -180,12 +180,12 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
     /// <summary>
     /// True while Steam works on the app, and for a new install Steam has accepted but not started
     /// (<c>StateFlags</c> 2 without a build). A pending update Steam hasn't started is no installation.
-    /// The content log knows of a start or resume before the manifest shows it.
+    /// The content log knows of a start or resume before the manifest shows it; a stopped download is busy in its manifest.
     /// </summary>
     public static bool IsActive(SteamManifestState manifest, SteamContentState? logged = null) =>
         (manifest.Flags & Busy) != 0
         || ((manifest.Flags & UpdateRequired) != 0 && (manifest.Flags & FullyInstalled) == 0 && manifest.BuildId == 0)
-        || logged is { IsRunning: true } or { Started: true, FromEarlierSession: false, Phase: not SteamDownloadPhase.Done };
+        || logged is { IsRunning: true };
 
     /// <summary>Parses the fields of an <c>appmanifest_*.acf</c> the monitor needs; null for a broken file.</summary>
     public static SteamManifestState? ParseState(string? acf)

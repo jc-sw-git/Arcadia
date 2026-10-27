@@ -65,13 +65,15 @@ public sealed class SteamInstallMonitorTests : IDisposable
         Write(AgeOfEmpires, flags: 1026);
         Assert.Equal(InstallPhase.Queued, Poll().Active[AgeOfEmpires].Phase);
 
+        // Steam writes the counters only on a state change, so a running download shows no (stale) number.
         Write(AgeOfEmpires, flags: 1026, downloaded: 418549120, staged: 672606034);
-        var downloading = Poll().Active[AgeOfEmpires];
-        Assert.Equal(InstallPhase.Downloading, downloading.Phase);
-        Assert.Equal((418549120d + 672606034) / (2571409488d + 4956889523), downloading.Fraction!.Value, 6);
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading), Poll().Active[AgeOfEmpires]);
 
+        // Paused: the counters are fresh; download bytes only, as Steam's download page counts them.
         Write(AgeOfEmpires, flags: 1538, downloaded: 989891104, staged: 1482440292);
-        Assert.Equal(InstallPhase.Paused, Poll().Active[AgeOfEmpires].Phase);
+        var paused = Poll().Active[AgeOfEmpires];
+        Assert.Equal(InstallPhase.Paused, paused.Phase);
+        Assert.Equal(989891104d / 2571409488, paused.Fraction!.Value, 6);
 
         Write(AgeOfEmpires, flags: 1026, downloaded: 2571409488, staged: 4956889523);
         Assert.Equal(InstallPhase.Finishing, Poll().Active[AgeOfEmpires].Phase);
@@ -189,12 +191,178 @@ public sealed class SteamInstallMonitorTests : IDisposable
         var log = new SteamContentLog(ContentLogPath);
         AppendContentLog("[2026-10-12 20:43:01] AppID 960090 state changed : Update Required,Fully Installed,Update Queued,Update Running,");
         Assert.True(log.Update());
-        Assert.Equal(new SteamContentState(true, false), log.StateOf(960090));
+        Assert.Equal(new SteamContentState(SteamDownloadPhase.Preparing), log.StateOf(960090));
 
         File.WriteAllText(ContentLogPath, "[2026-10-12 20:50:00] AppID 1 state changed : Fully Installed,\n");
         Assert.True(log.Update());
         Assert.True(log.StateOf(960090)!.IsRunning);
         Assert.Null(log.StateOf(2));
+
+        AppendContentLog("[2026-10-12 20:50:01] AppID 960090 update canceled : Disabled (Suspended)");
+        Assert.True(log.Update());
+        Assert.Equal(SteamDownloadPhase.Paused, log.StateOf(960090)!.Phase);
+    }
+
+    // #278: the owner's content log of 2026-10-27, three new installs (253230, 792100, 1098080) and an account switch.
+    private const string Big = "253230";
+    private const string Small = "792100";
+    private const long BigDownload = 5899237456;
+    private const long BigStage = 7846833278;
+
+    private void WriteBig(int flags = 1026, long downloaded = 0) =>
+        Write(Big, flags, downloaded, toDownload: BigDownload, toStage: BigStage);
+
+    private void WriteSmall(int flags = 1026, long downloaded = 0) =>
+        Write(Small, flags, downloaded, toDownload: 228935584, toStage: 237717350);
+
+    [Fact]
+    public void A_start_shows_at_once_as_downloading_without_a_number_while_steam_preallocates()
+    {
+        Write(AgeOfEmpires, flags: 6, buildId: 3062235);
+        Poll();
+        AppendContentLog(
+            "[2026-10-27 17:38:53] AppID 221380 state changed : Update Required,Fully Installed,Update Queued,Update Running,",
+            "[2026-10-27 17:38:53] AppID 221380 App update changed : Running Update,Preallocating,");
+
+        // The manifest still says "update pending"; the log already knows Steam works on it.
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading), Poll().Active[AgeOfEmpires]);
+
+        AppendContentLog(
+            "[2026-10-27 17:38:53] AppID 221380 update started : download 0/2571409488, store 0/0, reuse 0/0, delta 0/0, stage 0/4956889523 ",
+            "[2026-10-27 17:38:53] AppID 221380 state changed : Update Required,Fully Installed,Update Queued,Update Running,Update Started,",
+            "[2026-10-27 17:38:53] AppID 221380 App update changed : Running Update,Downloading,Staging,");
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading), Poll().Active[AgeOfEmpires]);
+    }
+
+    [Fact]
+    public void A_pause_in_steam_shows_as_paused_with_steams_number_and_a_resume_as_running()
+    {
+        WriteBig();
+        AppendContentLog(
+            "[2026-10-27 17:44:44] AppID 253230 update started : download 107329968/5899237456, store 0/0, reuse 0/0, delta 0/0, stage 198841577/7846833278 ",
+            "[2026-10-27 17:44:44] AppID 253230 App update changed : Running Update,Downloading,Staging,");
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading), Poll().Active[Big]);
+
+        AppendContentLog(
+            "[2026-10-27 17:44:52] AppID 253230 update canceled : Disabled (Suspended)",
+            "[2026-10-27 17:44:52] AppID 253230 App update changed : Running Update,Downloading,Staging,Stopping,",
+            "[2026-10-27 17:44:52] AppID 253230 App update changed : None",
+            "[2026-10-27 17:44:52] AppID 253230 state changed : Update Required,Update Queued,Update Started, (Suspended)");
+        var paused = Poll().Active[Big];
+        Assert.Equal(InstallPhase.Paused, paused.Phase);
+        Assert.Equal(107329968d / BigDownload, paused.Fraction!.Value, 6);
+
+        // Steam's pause also rewrites the manifest: its counters are newer than the log's start.
+        WriteBig(downloaded: 277958000);
+        Assert.Equal(277958000d / BigDownload, Poll().Active[Big].Fraction!.Value, 6);
+
+        AppendContentLog(
+            "[2026-10-27 17:47:00] AppID 253230 state changed : Update Required,Update Queued,Update Running,Update Started,",
+            "[2026-10-27 17:47:00] AppID 253230 App update changed : Running Update,Preallocating,");
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading), Poll().Active[Big]);
+    }
+
+    [Fact]
+    public void A_download_another_one_took_over_waits_in_the_queue()
+    {
+        WriteBig();
+        WriteSmall();
+        AppendContentLog(
+            "[2026-10-27 17:38:53] AppID 253230 update started : download 0/5899237456, store 0/0, reuse 0/0, delta 0/0, stage 0/7846833278 ",
+            "[2026-10-27 17:38:53] AppID 253230 state changed : Update Required,Update Queued,Update Running,Update Started,",
+            "[2026-10-27 17:39:00] AppID 792100 state changed : Update Required,Update Queued,",
+            "[2026-10-27 17:39:00] AppID 253230 update canceled : Priority (Suspended)",
+            "[2026-10-27 17:39:00] AppID 253230 state changed : Update Required,Update Queued,Update Started, (Suspended)",
+            "[2026-10-27 17:39:00] AppID 792100 state changed : Update Required,Update Queued,Update Running,",
+            "[2026-10-27 17:39:03] AppID 792100 App update changed : Running Update,Preallocating,");
+        WriteBig(downloaded: 105898736);
+        var active = Poll().Active;
+        Assert.Equal(InstallPhase.Queued, active[Big].Phase);
+        Assert.Equal(105898736d / BigDownload, active[Big].Fraction!.Value, 6);
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading), active[Small]);
+
+        AppendContentLog(
+            "[2026-10-27 17:39:11] AppID 792100 update canceled : Priority (Suspended)",
+            "[2026-10-27 17:39:11] AppID 792100 state changed : Update Required,Update Queued,Update Started, (Suspended)",
+            "[2026-10-27 17:39:11] AppID 253230 state changed : Update Required,Update Queued,Update Running,Update Started,",
+            "[2026-10-27 17:39:11] AppID 253230 update started : download 105898736/5899237456, store 0/0, reuse 0/0, delta 0/0, stage 196124119/7846833278 ");
+        active = Poll().Active;
+        Assert.Equal(InstallPhase.Queued, active[Small].Phase);
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading), active[Big]);
+    }
+
+    [Fact]
+    public void After_an_account_switch_the_downloads_of_the_previous_account_are_paused()
+    {
+        WriteBig();
+        WriteSmall();
+        AppendContentLog(
+            "[2026-10-27 17:44:39] AppID 792100 state changed : Update Required,Update Queued,Update Started,",
+            "[2026-10-27 17:44:44] AppID 253230 update started : download 107329968/5899237456, store 0/0, reuse 0/0, delta 0/0, stage 198841577/7846833278 ",
+            "[2026-10-27 17:44:44] AppID 253230 App update changed : Running Update,Downloading,Staging,");
+        Poll();
+
+        // The logoff suspends the running download in the same second; the other account's session then says nothing about them.
+        AppendContentLog(
+            "[2026-10-27 17:44:52] AppID 253230 update canceled : Disabled (Suspended)",
+            "[2026-10-27 17:44:52] AppID 253230 state changed : Update Required,Update Queued,Update Started, (Suspended)",
+            "[2026-10-27 17:44:54] Client version: 1793056502",
+            "[2026-10-27 17:44:54] Loaded 18 apps from install folder \"G:\\SteamLibrary\\steamapps\\appmanifest_*.acf\".");
+        var active = Poll().Active;
+        Assert.Equal(InstallPhase.Paused, active[Big].Phase);
+        Assert.Equal(InstallPhase.Paused, active[Small].Phase);
+
+        // Back on the owner's account Steam resumes them.
+        AppendContentLog(
+            "[2026-10-27 17:46:59] Client version: 1793056502",
+            "[2026-10-27 17:47:00] AppID 792100 state changed : Update Required,Update Queued,Update Started,",
+            "[2026-10-27 17:47:00] AppID 253230 state changed : Update Required,Update Queued,Update Running,Update Started,",
+            "[2026-10-27 17:47:00] AppID 253230 App update changed : Running Update,Preallocating,");
+        active = Poll().Active;
+        Assert.Equal(InstallPhase.Downloading, active[Big].Phase);
+        Assert.Equal(InstallPhase.Queued, active[Small].Phase);
+    }
+
+    [Fact]
+    public void Committing_shows_as_finishing_and_the_written_manifest_as_completed()
+    {
+        WriteSmall();
+        AppendContentLog(
+            "[2026-10-27 21:00:42] AppID 792100 update started : download 141347840/228935584, store 0/0, reuse 0/0, delta 0/0, stage 147613394/237717350 ",
+            "[2026-10-27 21:00:49] AppID 792100 App update changed : Running Update,Committing,",
+            "[2026-10-27 21:00:49] AppID 792100 state changed : Fully Installed,Update Queued,Update Running,");
+        Assert.Equal(InstallPhase.Finishing, Poll().Active[Small].Phase);
+
+        AppendContentLog(
+            "[2026-10-27 21:00:49] AppID 792100 finished update, 2 mounted depots (BuildID 8016557) : 792101 (5052600457178655633),",
+            "[2026-10-27 21:00:49] AppID 792100 state changed : Fully Installed,Update Queued,");
+        Assert.Equal(InstallPhase.Finishing, Poll().Active[Small].Phase);
+
+        Write(Small, flags: 4, buildId: 8016557);
+        Assert.Equal(InstallOutcome.Completed, Poll().Finished[Small]);
+    }
+
+    [Fact]
+    public void A_scheduled_update_nobody_started_is_no_installation()
+    {
+        Write("960090", flags: 6, buildId: 24829026);
+        AppendContentLog(
+            "[2026-10-12 20:43:01] AppID 960090 state changed : Update Required,Fully Installed,Update Queued, (Update delayed for 639109 secs)",
+            "[2026-10-27 17:42:50] AppID 960090 update prefetch finished : 0 bytes to download, 0 bytes to stage");
+
+        Assert.Empty(Poll().Active);
+    }
+
+    [Fact]
+    public void A_dropped_download_is_over_even_before_steam_deletes_the_manifest()
+    {
+        Write(AgeOfEmpires, flags: 6, buildId: 3062235);
+        Poll();
+        AppendContentLog(
+            "[2026-10-27 17:39:11] AppID 221380 update started : download 0/2571409488, store 0/0, reuse 0/0, delta 0/0, stage 0/4956889523 ",
+            "[2026-10-27 17:39:12] AppID 221380 update canceled : Uninstall (Canceled)");
+
+        Assert.Empty(Poll().Active);
     }
 
     [Fact]

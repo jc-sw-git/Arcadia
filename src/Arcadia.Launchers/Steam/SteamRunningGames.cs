@@ -25,7 +25,7 @@ public interface ISteamAppsRegistry
 
 /// <summary>
 /// Steam's running games, from the registry: Steam sets <c>HKCU\Software\Valve\Steam\Apps\&lt;id&gt;\Running</c> to 1
-/// while a game runs and <c>RunningAppID</c> to the game it started last (see docs/launchers/steam.md). Reading every
+/// while a game runs and <c>RunningAppID</c> to the game it started last (see docs/launchers/steam/running-games.md). Reading every
 /// app's key is too much for each poll, so only a poll after a pause reads them all; the others read RunningAppID and
 /// the games already running. A game that starts meanwhile becomes RunningAppID.
 /// </summary>

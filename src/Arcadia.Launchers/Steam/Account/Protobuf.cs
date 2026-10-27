@@ -4,7 +4,7 @@ namespace Arcadia.Launchers.Steam.Account;
 
 /// <summary>
 /// Just enough of Protocol Buffers for Steam's sign-in service (<c>IAuthenticationService</c>), which takes and returns
-/// its messages as protobuf (<c>docs/launchers/steam.md</c> → Account). Field numbers are in
+/// its messages as protobuf (<c>docs/launchers/steam/account.md</c>). Field numbers are in
 /// <c>steammessages_auth.steamclient.proto</c>.
 /// </summary>
 internal sealed class ProtoWriter

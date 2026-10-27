@@ -118,12 +118,23 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     /// <summary>Set, "Installieren" fails with this message (e.g. the bundled Pan.exe is missing).</summary>
     public string? InstallError { get; set; }
 
+    /// <summary>Set, the install sets up usbip-win2 and Pan but not HidHide and fails with this text (Pan's exit code 6, #243 B2).</summary>
+    public string? HidHideInstallError { get; set; }
+
     public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _driverInstalls);
         if (InstallError is { } error)
         {
             throw new InvalidOperationException(error);
+        }
+
+        if (HidHideInstallError is { } hidHideError)
+        {
+            // Pan's exit code 6: Pan and the usbip driver are set up, HidHide is not (PanSetup throws after them).
+            IsUsbipReady = true;
+            IsPanReady = true;
+            throw new InvalidOperationException(hidHideError);
         }
 
         IsUsbipReady = true;

@@ -32,12 +32,13 @@ public static class LibraryToasts
 
     private static string GameNotStarted(LibraryNotice.GameNotStarted notStarted)
     {
-        var title = notStarted.Title ?? "Spiel";
+        // A game that left the library meanwhile has no title to quote.
+        var name = notStarted.Title is { } title ? $"„{title}“" : "Das Spiel";
         return notStarted.Refusal switch
         {
-            null => $"„{title}“ wurde nicht gestartet.",
-            { Reason: { } reason } => $"„{title}“: {reason}",
-            _ => $"„{title}“: {notStarted.Launcher.DisplayName} hat den Start abgebrochen.",
+            null => $"{name} wurde nicht gestartet.",
+            { Reason: { } reason } => $"{name}: {reason}",
+            _ => $"{name}: {notStarted.Launcher.DisplayName} hat den Start abgebrochen.",
         };
     }
 

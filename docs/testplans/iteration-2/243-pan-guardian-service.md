@@ -130,7 +130,8 @@ part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it w
       foreign-signed installer refused with exit 6: `ServiceTests` on the Windows runner)
 - [ ] **T243-33** Every part missing (usbip-win2, HidHide, Pan uninstalled, SISR's folder removed): no part rows, the
       setting itself offers "Treiber installieren", the info panel names all four parts; A → VIIPER downloads without a
-      prompt, then one UAC prompt for the rest; afterwards all four are there. UAC declined: the error stands at the
+      prompt, then one UAC prompt for the rest and no installer window (usbip-win2's Inno wizard stays hidden); afterwards
+      all four are there, `pan.log` names the SHA-256 and signature checks of both installers. UAC declined: the error stands at the
       first part left ("usbip-Treiber fehlt"), VIIPER stays. · E2E: yes (`EmulationSetupTests`)
 - [ ] **T243-34** An old HidHide (e.g. 1.1.x from HidHide's releases) installed: row "HidHide-Version wird nicht
       unterstützt" with "Aktualisieren"; A → one UAC prompt, HidHide 1.5.230 afterwards. · E2E: yes (`EmulationSetupTests`)
@@ -178,3 +179,4 @@ History:
 | Full test plan run (T243-22 … T243-31) | 2026-10-27 | owner | Windows 11, Steam running, HidHide 1.5.230, Pan and PanDevClient from the check package built from bfa4040 | pass | – |
 | After the security/robustness reviews of PR #252 (`IdleStopTests`: Pan stays without a client while a show retry runs; `HidingTests`: a new emulation waits while a retry changes HidHide, the pending retry is reported) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; both new guards seen red by mutation (removed), Pan tests green 3 runs in a row | pass | – |
 | Part B2 (`EmulationSetupTests` T243-32 … T243-36, `EmulationPartsTests`, `ControllerSupportServiceTests`, `PanClientTests` T243-35, `ControllerSupportRemovalTests` T243-37, `HidHideSetupTests` T243-38) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container, whole suite (Pan 133, Core 964, App 334); each new acceptance test seen red once by mutation (missing HidHide not a part, all-missing not offered on the switch, HidHide row without its fix, busy row dropped, notice always a toast); UAC, the real installers and the overlay over a game only on Windows | pass | T243-32's `ServiceTests` step on the Windows runner |
+| usbip-win2 silent switches and hash check (`InstallerSignatureTests`: a signed installer with another SHA-256 is refused, the Inno switches) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; the installer of 0.9.8.1 inspected (Inno Setup 6.5, so `/S` showed the wizard); the hash check seen red by mutation (removed); the real silent install only on Windows (T243-33) | pass | – |

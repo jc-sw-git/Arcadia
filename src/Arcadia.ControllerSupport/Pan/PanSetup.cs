@@ -61,8 +61,11 @@ public static class PanSetup
         var arguments = new List<string> { "--install", "--expect-hash", HashOf(BundledExecutable) };
         if (usbipInstaller is not null)
         {
+            // The hash of the file Arcadia verified at the download: Pan runs only that file, not any signed one.
             arguments.Add("--usbip-installer");
             arguments.Add(usbipInstaller);
+            arguments.Add("--usbip-sha256");
+            arguments.Add(HashOf(usbipInstaller));
         }
 
         if (hidHideInstaller is not null)

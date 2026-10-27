@@ -13,7 +13,7 @@ public static class HidHideInstall
 {
     private static readonly TimeSpan PuckRestartWait = TimeSpan.FromSeconds(10);
 
-    /// <exception cref="UntrustedInstallerException">Not signed by HidHide's publisher; nothing was started.</exception>
+    /// <exception cref="UntrustedInstallerException">Not the pinned installer or not signed by HidHide's publisher; nothing was started.</exception>
     /// <exception cref="InvalidOperationException">The setup failed; the message says how.</exception>
     public static async Task RunAsync(string installer, Action<string> log)
     {
@@ -46,7 +46,7 @@ public static class HidHideInstall
         InstallerSignature.RunIfTrustedAsync(installer, "Der HidHide-Installer", HidHideRelease.Publisher, HidHideRelease.ManualInstallUrl,
             new WinTrustAuthenticode(), async () =>
             {
-                log($"HidHide installer signed by {HidHideRelease.Publisher.Organization}; running {installer} {string.Join(' ', HidHideRelease.SilentArguments)}");
+                log($"HidHide installer signed by {HidHideRelease.Publisher.Organization}, SHA-256 as pinned; running {installer} {string.Join(' ', HidHideRelease.SilentArguments)}");
                 var start = new ProcessStartInfo(installer) { UseShellExecute = false };
                 foreach (var argument in HidHideRelease.SilentArguments)
                 {
@@ -85,7 +85,7 @@ public static class HidHideInstall
                             ? $"the HidHide installer reported error {code} (HidHide now: {version?.ToString() ?? "missing"})"
                             : $"the HidHide installer didn't finish within {HidHideSetup.Wait.TotalMinutes:0} min and HidHide isn't in place; it was left running");
                 }
-            });
+            }, HidHideRelease.Sha256);
 
     /// <summary>
     /// HidHide filters a HID device from its next start on: restarting a connected Steam Controller loads the filter

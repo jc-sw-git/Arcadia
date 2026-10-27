@@ -6,7 +6,7 @@ namespace Arcadia.Pan;
 /// <summary>
 /// <c>Pan.exe</c> (#243). Without arguments it runs as the service (or, started from a console, says how to use
 /// it). Commands, all started elevated by Arcadia or by hand:
-/// <c>--install [--expect-hash sha256] [--usbip-installer path] [--hidhide-installer path]</c>,
+/// <c>--install [--expect-hash sha256] [--usbip-installer path --usbip-sha256 sha256] [--hidhide-installer path]</c>,
 /// <c>--uninstall [--remove-drivers]</c>, <c>--restore</c>, <c>--console</c> (the service in a console, for development),
 /// <c>--version</c>.
 /// </summary>
@@ -70,7 +70,9 @@ internal static class Program
                     log.TrustFolder();
                     if (Option(args, "--usbip-installer") is { } usbipInstaller)
                     {
-                        UsbipInstall.RunAsync(usbipInstaller, log.Write).GetAwaiter().GetResult();
+                        var usbipHash = Option(args, "--usbip-sha256")
+                            ?? throw new InvalidOperationException("--usbip-installer needs --usbip-sha256 (the hash Arcadia checked at the download)");
+                        UsbipInstall.RunAsync(usbipInstaller, usbipHash, log.Write).GetAwaiter().GetResult();
                     }
 
                     // HidHide matters only for showing Steam a copy of the puck (#242); a failed HidHide must not cost

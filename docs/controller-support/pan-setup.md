@@ -6,16 +6,19 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   `ControllerSupportPlatform.InstallDriversAsync` downloads the usbip-win2 installer only when the driver is missing or
   too old (`VerifiedDownload`, GitHub's SHA-256), and HidHide's when it is missing or older than supported (pinned in
   `HidHideRelease`: 1.5.230, URL, SHA-256, size), then runs the bundled `Pan.exe --install --expect-hash <sha256 of the
-  bundled exe> [--usbip-installer <path>] [--hidhide-installer <path>]` elevated: one UAC prompt for all. Pan (elevated) checks the installer's
+  bundled exe> [--usbip-installer <path> --usbip-sha256 <hash>] [--hidhide-installer <path>]` elevated: one UAC prompt for all. Pan (elevated) checks the installer's
   Authenticode signature against `UsbipRelease.Publisher` on a copy in Pan's data folder (the user can't swap it
-  after the check), runs that `/S` (5 min), copies itself to
+  after the check) and its SHA-256 against the hash Arcadia checked at the download (a signature alone lets any older
+  installer of the publisher through), runs it with Inno Setup's `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+  /RESTARTEXITCODE=3010` (0 or 3010 = installed; up to 5 min, then left running, never killed), copies itself to
   `%ProgramFiles%\Arcadia\Pan\Pan.exe` and compares the copy's SHA-256 with the source and the expected hash, creates the service with a quoted image path, auto
   start, the description in the system language (de, en, fr, es, it; else en), recovery, 90 s pre-shutdown, and the
   DACL `D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;RPLCLORC;;;IU)` (users start and query,
   never change). A declined prompt is a failed action ("… abgelehnt"); Pan's exit code 3 points to `pan.log`.
-- HidHide (#243 B2, `HidHideInstall`): after usbip-win2 and before Pan's own copy, the same signature check on a copy
+- HidHide (#243 B2, `HidHideInstall`): after usbip-win2 and before Pan's own copy, the same checks on a copy (the
+  pinned SHA-256, then the signature
   (`HidHideRelease.Publisher`: Nefarius Software Solutions e.U., AT; its EV certificate expired 2025, the signature is
-  timestamped), run with `/exenoui /qn /norestart`, judged by exit code and the installed driver version
+  timestamped)), run with `/exenoui /qn /norestart`, judged by exit code and the installed driver version
   (`HidHideSetup.Judge`): 0 or 3010 with a supported version is installed. Its setup hangs at the last step (updater
   registration) on some PCs: Pan waits 2 min, accepts a supported driver in place and leaves the setup running, never
   kills it. Then a connected puck is restarted (10 s, best effort) so HidHide filters it without a reboot. A HidHide

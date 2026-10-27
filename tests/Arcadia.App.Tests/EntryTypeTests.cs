@@ -260,10 +260,12 @@ public sealed class EntryTypeTests
         arcadia.Press(UiAction.Accept);
 
         Assert.Equal("„Salzwiesen Klänge“ wird in Steam geöffnet …", arcadia.Main.Toast.Text);
-        // Steam plays it and shows its page, as "In Steam öffnen" does (owner, 2026-10-27).
-        Assert.Equal(
-            [new LaunchTarget.ProtocolUri("steam://rungameid/910101"), new LaunchTarget.ProtocolUri("steam://nav/games/details/910101")],
-            arcadia.Opened);
+        // Steam plays it and shows its page, as "In Steam öffnen" does (owner, 2026-10-27); the page only after a gap,
+        // because Steam lost the first of two links opened at once.
+        var play = new LaunchTarget.ProtocolUri("steam://rungameid/910101");
+        Assert.Equal([play], arcadia.Opened);
+        await arcadia.WaitOnClockUntilAsync(() => arcadia.Opened.Count == 2, "Seite in Steam geöffnet", TimeSpan.FromSeconds(5));
+        Assert.Equal([play, new LaunchTarget.ProtocolUri("steam://nav/games/details/910101")], arcadia.Opened);
         Assert.False(page.Tile.IsRunningOrStarting, "Kein „Startet“ oder „Läuft“");
     }
 

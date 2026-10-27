@@ -53,6 +53,10 @@ public sealed class GameActions : IGameActionHost
     /// <summary>Holding A this long opens the detail page. The ring's animation in Theme.axaml lasts the difference.</summary>
     private static readonly TimeSpan HoldTime = TimeSpan.FromSeconds(1);
 
+    // A launcher link starts a second copy of the launcher that hands it to the running one; Steam lost the first of two
+    // links opened at once (owner's PC, 2026-10-27: the soundtrack's page opened, its music didn't play).
+    private static readonly TimeSpan LinkGap = TimeSpan.FromSeconds(2);
+
     private readonly IGameActionsOwner _owner;
     private readonly GameLaunchService _launcher;
     private readonly ControllerSupportService _controllerSupport;
@@ -210,8 +214,12 @@ public sealed class GameActions : IGameActionHost
         // wait for or switch to.
         if (tile.IsSoundtrack)
         {
-            HandOver(tile, tile.Game.Launch, $"„{tile.Title}“ wird in {tile.LauncherName} geöffnet …", $"Demo: Hier würde jetzt „{tile.Title}“ abgespielt.");
-            ShowInLauncher(tile);
+            if (HandOver(tile, tile.Game.Launch, $"„{tile.Title}“ wird in {tile.LauncherName} geöffnet …", $"Demo: Hier würde jetzt „{tile.Title}“ abgespielt."))
+            {
+                Task.Delay(LinkGap, _time).ContinueWith(_ => ShowInLauncher(tile), TaskScheduler.FromCurrentSynchronizationContext())
+                    .Forget("Soundtrack im Launcher zeigen");
+            }
+
             return;
         }
 
@@ -350,17 +358,21 @@ public sealed class GameActions : IGameActionHost
     }
 
     /// <summary>Hands one of the game's launcher actions to its launcher and says so.</summary>
-    private void HandOver(GameTileViewModel tile, LaunchTarget? target, string handedOver, string demo)
+    /// <returns>True if the launcher got the action.</returns>
+    private bool HandOver(GameTileViewModel tile, LaunchTarget? target, string handedOver, string demo)
     {
         try
         {
-            _toast.Show(_launcher.Open(target) ? handedOver
+            var opened = _launcher.Open(target);
+            _toast.Show(opened ? handedOver
                 : target is LaunchTarget.None ? demo
                 : $"{tile.LauncherName} bietet das für „{tile.Title}“ nicht an.");
+            return opened;
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
             _toast.Show($"{tile.LauncherName} konnte nicht geöffnet werden: {ex.Message}");
+            return false;
         }
     }
 

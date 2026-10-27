@@ -18,6 +18,9 @@ public interface ISisrHost
 
     Version? InstalledVersion { get; }
 
+    /// <summary>VIIPER's <c>viiper.exe</c>, which comes with SISR's files until #214; Arcadia's pad needs it.</summary>
+    bool HasViiper => IsInstalled;
+
     /// <summary>True if Arcadia's SISR process runs.</summary>
     bool IsRunning { get; }
 
@@ -69,6 +72,8 @@ public sealed class SisrHost(HttpClient http, string installDirectory, string lo
     public string InstallDirectory { get; } = installDirectory;
 
     public string ExecutablePath => Path.Combine(InstallDirectory, "SISR.exe");
+
+    public bool HasViiper => File.Exists(Path.Combine(InstallDirectory, "viiper.exe"));
 
     public static SisrHost CreateDefault(HttpClient http) => new(
         http,

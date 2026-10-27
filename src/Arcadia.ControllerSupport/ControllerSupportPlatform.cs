@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Arcadia.ControllerSupport.Pan;
+using Arcadia.Pan;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Steam;
@@ -60,6 +61,9 @@ public interface IControllerSupportPlatform
     /// <summary>Arcadia ships a newer Pan than the installed one.</summary>
     bool IsPanUpdateAvailable { get; }
 
+    /// <summary>HidHide's driver version, or null if HidHide isn't installed (#243 part B2).</summary>
+    Version? HidHideVersion { get; }
+
     /// <summary>Steam's CEF debug flag file exists (it takes effect on Steam's next start).</summary>
     bool IsCefDebuggingEnabled { get; }
 
@@ -84,8 +88,8 @@ public interface IControllerSupportPlatform
     void StartSteam();
 
     /// <summary>
-    /// Installs or updates what is missing of usbip-win2 and Pan, with one Windows prompt (#243); false if the user
-    /// declined it.
+    /// Installs or updates what is missing of usbip-win2, HidHide and Pan, with one Windows prompt (#243); false if the
+    /// user declined it.
     /// </summary>
     Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken);
 
@@ -203,6 +207,8 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
 
     public bool IsPanUpdateAvailable => OperatingSystem.IsWindows() && PanSetup.UpdateAvailable;
 
+    public Version? HidHideVersion => OperatingSystem.IsWindows() ? HidHideInstallation.InstalledVersion() : null;
+
     public bool IsCefDebuggingEnabled => _locate() is { } steam && File.Exists(steam.CefDebuggingFlagPath);
 
     public void EnableCefDebugging()
@@ -277,20 +283,33 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
         }
 
         // The driver only when it is missing or too old: its installer replaces the emulated host controller and
-        // then wants a reboot.
-        var installer = IsUsbipReady ? null : await UsbipDriver.DownloadInstallerAsync(http, cancellationToken);
+        // then wants a reboot. HidHide likewise: one of a supported version stays (e.g. DS4Windows's), with its lists.
+        string? usbipInstaller = null;
+        string? hidHideInstaller = null;
         try
         {
-            return await PanSetup.InstallAsync(installer, cancellationToken);
+            usbipInstaller = IsUsbipReady ? null : await UsbipDriver.DownloadInstallerAsync(http, cancellationToken);
+            hidHideInstaller = HidHideNeedsInstaller(HidHideVersion) ? await HidHideInstallation.DownloadInstallerAsync(http, cancellationToken) : null;
+            return await PanSetup.InstallAsync(usbipInstaller, hidHideInstaller, cancellationToken);
         }
         finally
         {
-            if (installer is not null)
+            foreach (var installer in new[] { usbipInstaller, hidHideInstaller })
             {
-                File.Delete(installer);
+                if (installer is not null)
+                {
+                    File.Delete(installer);
+                }
             }
         }
     }
+
+    /// <summary>
+    /// Missing or older than Pan supports. A newer major one is left alone: its installer would be a downgrade, and
+    /// only an Arcadia update can bring support for it.
+    /// </summary>
+    public static bool HidHideNeedsInstaller(Version? installed) =>
+        installed is null || (installed.Major <= SteamControllerHiding.SupportedMajorVersion && !HidHideRelease.IsSupported(installed));
 
     public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) =>
         OperatingSystem.IsWindows() ? PanSetup.RestoreAsync(cancellationToken) : Task.FromResult(false);
@@ -346,6 +365,11 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
             issues.Add(new("reboot-pending", HealthSeverity.Warning, "Windows-Neustart ausstehend", "Der usbip-Treiber wurde aktualisiert. Bis zum Neustart kann der Controller aussetzen; dann hilft es, SISR neu zu starten.", HealthFix.RestartSisr, "SISR neu starten"));
         }
 
+        if (CheckHidHide(HidHideVersion) is { } hidHide)
+        {
+            issues.Add(hidHide);
+        }
+
         if (!PanSetup.IsInstalled)
         {
             issues.Add(new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Pan gibt die echten Controller zurück, wenn Arcadia abstürzt oder hängt. Ohne Pan bringt Arcadia den Steam Controller nicht als Xbox Controller in Spiele. Die Installation fragt einmalig nach Administratorrechten.", HealthFix.InstallDrivers, "Installieren"));
@@ -353,6 +377,21 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
 
         return issues;
     }
+
+    /// <summary>The row for HidHide's installation (#243 part B2), or null when a supported version is installed.</summary>
+    public static HealthIssue? CheckHidHide(Version? installed) => installed switch
+    {
+        null => new("hidhide-missing", HealthSeverity.Warning, "HidHide fehlt", HidHideMissingText, HealthFix.InstallDrivers, "Installieren"),
+        _ when HidHideRelease.IsSupported(installed) => null,
+        _ when HidHideNeedsInstaller(installed) => new("hidhide-unsupported", HealthSeverity.Warning, "HidHide-Version wird nicht unterstützt",
+            $"Installiert ist HidHide {installed.ToString(3)}, Arcadia braucht mindestens {SteamControllerHiding.MinimumVersion}. „Aktualisieren“ installiert HidHide {HidHideRelease.Version}; was in HidHide eingestellt ist, bleibt erhalten. Die Installation fragt einmalig nach Administratorrechten.",
+            HealthFix.InstallDrivers, "Aktualisieren"),
+        _ => new("hidhide-unsupported", HealthSeverity.Warning, "HidHide-Version wird nicht unterstützt",
+            $"Installiert ist HidHide {installed.ToString(3)}, Arcadia kennt bisher nur HidHide {SteamControllerHiding.SupportedMajorVersion}.x. Ein Arcadia-Update bringt die Unterstützung."),
+    };
+
+    private const string HidHideMissingText =
+        "Mit HidHide versteckt Arcadia den echten Steam Controller vor Steam und anderen Programmen, solange es ihn selbst weiterreicht. Die Installation fragt einmalig nach Administratorrechten.";
 
     private static DateTimeOffset LastBootTime(DateTimeOffset now) => now - TimeSpan.FromMilliseconds(Environment.TickCount64);
 }

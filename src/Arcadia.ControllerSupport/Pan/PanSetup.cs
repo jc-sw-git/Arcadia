@@ -11,7 +11,7 @@ namespace Arcadia.ControllerSupport.Pan;
 /// Installs, updates, removes and restores with Pan.exe (#243). Arcadia ships Pan in <c>Pan\Pan.exe</c> beside its
 /// own exe (the user's folder, writable by anyone who can write there); every command runs the bundled exe elevated,
 /// with one UAC prompt, and <c>--install</c> gets the SHA-256 Arcadia computed so the copy in Program Files is checked
-/// against it after the copy. The usbip-win2 installer rides along in the same prompt.
+/// against it after the copy. The usbip-win2 and HidHide installers ride along in the same prompt.
 /// </summary>
 [SupportedOSPlatform("windows")]
 public static class PanSetup
@@ -29,6 +29,12 @@ public static class PanSetup
     /// <summary>Pan's exit code when <c>--restore</c> or <c>--uninstall</c> could not undo everything (<c>Program.RestoreIncompleteExitCode</c> in Pan).</summary>
     private const int RestoreIncompleteExitCode = 5;
 
+    /// <summary>Pan's exit code when <c>--install</c> set Pan up but not HidHide (<c>Program.HidHideFailedExitCode</c> in Pan).</summary>
+    private const int HidHideFailedExitCode = 6;
+
+    /// <summary>Pan's exit code when <c>--uninstall --remove-drivers</c> left a driver (<c>Program.DriversNotRemovedExitCode</c> in Pan).</summary>
+    private const int DriversNotRemovedExitCode = 7;
+
     public static Version? BundledVersion => FileVersion(BundledExecutable);
 
     public static Version? InstalledVersion => FileVersion(PanPaths.InstalledExecutable);
@@ -41,11 +47,11 @@ public static class PanSetup
         IsInstalled && BundledVersion is { } bundled && (InstalledVersion is not { } installed || bundled > installed);
 
     /// <summary>
-    /// <c>Pan.exe --install</c> elevated: the usbip-win2 installer first when one is given, then Pan itself.
+    /// <c>Pan.exe --install</c> elevated: the usbip-win2 and HidHide installers first when given, then Pan itself.
     /// </summary>
     /// <returns>False if the user declined the UAC prompt.</returns>
     /// <exception cref="InvalidOperationException">Pan reported an error; its log says which (<see cref="PanPaths.LogPath"/>).</exception>
-    public static async Task<bool> InstallAsync(string? usbipInstaller, CancellationToken cancellationToken)
+    public static async Task<bool> InstallAsync(string? usbipInstaller, string? hidHideInstaller, CancellationToken cancellationToken)
     {
         if (!IsBundled)
         {
@@ -59,11 +65,21 @@ public static class PanSetup
             arguments.Add(usbipInstaller);
         }
 
+        if (hidHideInstaller is not null)
+        {
+            arguments.Add("--hidhide-installer");
+            arguments.Add(hidHideInstaller);
+        }
+
         return await RunElevatedAsync(arguments, cancellationToken);
     }
 
-    /// <summary><c>Pan.exe --uninstall</c> elevated: stops the service (its stop tears every emulation down), removes it and Pan's files.</summary>
-    public static Task<bool> UninstallAsync(CancellationToken cancellationToken) => RunElevatedAsync(["--uninstall"], cancellationToken);
+    /// <summary>
+    /// <c>Pan.exe --uninstall</c> elevated: stops the service (its stop tears every emulation down), removes it and Pan's
+    /// files; with <paramref name="removeDrivers"/> HidHide and usbip-win2 too, after Pan undid its own entries.
+    /// </summary>
+    public static Task<bool> UninstallAsync(bool removeDrivers, CancellationToken cancellationToken) =>
+        RunElevatedAsync(removeDrivers ? ["--uninstall", "--remove-drivers"] : ["--uninstall"], cancellationToken);
 
     /// <summary><c>Pan.exe --restore</c> elevated: the manual way out when the service hangs; undoes what its journal lists.</summary>
     public static Task<bool> RestoreAsync(CancellationToken cancellationToken) => RunElevatedAsync(["--restore"], cancellationToken);
@@ -105,6 +121,16 @@ public static class PanSetup
             if (process.ExitCode == RestoreIncompleteExitCode)
             {
                 throw new InvalidOperationException($"Pan konnte nicht alles aufräumen – das Journal bleibt erhalten; Details stehen in {PanPaths.LogPath}. Ein Neustart von Pan oder \"Pan.exe --restore\" versucht es noch einmal.");
+            }
+
+            if (process.ExitCode == HidHideFailedExitCode)
+            {
+                throw new InvalidOperationException($"Pan ist eingerichtet, HidHide aber nicht – Details stehen in {PanPaths.LogPath}. HidHide lässt sich auch selbst installieren: {HidHideRelease.ManualInstallUrl}");
+            }
+
+            if (process.ExitCode == DriversNotRemovedExitCode)
+            {
+                throw new InvalidOperationException($"Pan ist entfernt, aber nicht jeder Treiber – Details stehen in {PanPaths.LogPath}; der Rest lässt sich unter Windows-Einstellungen → Apps entfernen.");
             }
 
             if (process.ExitCode != 0)

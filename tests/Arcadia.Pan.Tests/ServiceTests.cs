@@ -110,6 +110,25 @@ public sealed class ServiceTests : IDisposable
             Assert.Equal(ServiceControllerStatus.Running, service.Status);
         }
 
+        // T243-32: a HidHide installer not signed by HidHide's publisher (here a copy of Windows' signed ping.exe) is
+        // never run; Pan is set up anyway, as HidHide matters only for hiding, and its exit code says so (#243 B2).
+        var notHidHide = Path.Combine(Path.GetTempPath(), $"arcadia-not-hidhide-{Guid.NewGuid():N}.exe");
+        File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), notHidHide);
+        try
+        {
+            Assert.Equal(6, Run(pan, "--install", "--expect-hash", hash, "--hidhide-installer", notHidHide));
+        }
+        finally
+        {
+            File.Delete(notHidHide);
+        }
+
+        Assert.False(File.Exists(Path.Combine(PanPaths.DataDirectory, "hidhide-installer.exe")), "the refused copy is gone");
+        using (var service = new ServiceController(PanPaths.ServiceName))
+        {
+            service.WaitForStatus(ServiceControllerStatus.Running, ReplyTimeout);
+        }
+
         // T243-8: a user can start and query it but never change it; the image path is quoted.
         // sc prints the rights in its own order (LCRPLORC), so the ACE is compared as a set of rights. Only the DACL
         // (D:) counts: Windows adds an audit entry for Everyone to the SACL (S:) of every service.

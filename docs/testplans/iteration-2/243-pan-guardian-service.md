@@ -118,6 +118,37 @@ puck: while hidden the trackpad still moves the pointer by the controller's own 
       takes 2.4–3.9 s, owner 2026-10-27); Pan idle stays at 0 %
       CPU with the arrival watch (Task Manager), also while hidden. · E2E: no (measurement)
 
+## Part B2: HidHide's setup, the settings rows, the notices, the uninstall
+
+Part B2 (third PR into `feat/replace-sisr`): Arcadia without SISR (the App), Steam running. To make HidHide or every
+part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it works: `docs/controller-support/pan-setup.md`.
+
+- [ ] **T243-32** HidHide missing: "Steam Controller Kompatibilität" greyed out, "Aus – es fehlt: HidHide", row "HidHide
+      fehlt" with "Installieren"; A → one UAC prompt; then HidHide 1.5.230 in Windows' Apps, the row and the grey are
+      gone, `pan.log` names the Nefarius signature, "HidHide 1.5.230 installed" (or "setup still runs … left running"
+      after 2 min on a PC where its last step hangs) and the puck restart. · E2E: yes (`EmulationSetupTests`; the
+      foreign-signed installer refused with exit 6: `ServiceTests` on the Windows runner)
+- [ ] **T243-33** Every part missing (usbip-win2, HidHide, Pan uninstalled, SISR's folder removed): no part rows, the
+      setting itself offers "Treiber installieren", the info panel names all four parts; A → VIIPER downloads without a
+      prompt, then one UAC prompt for the rest; afterwards all four are there. UAC declined: the error stands at the
+      first part left ("usbip-Treiber fehlt"), VIIPER stays. · E2E: yes (`EmulationSetupTests`)
+- [ ] **T243-34** An old HidHide (e.g. 1.1.x from HidHide's releases) installed: row "HidHide-Version wird nicht
+      unterstützt" with "Aktualisieren"; A → one UAC prompt, HidHide 1.5.230 afterwards. · E2E: yes (`EmulationSetupTests`)
+- [ ] **T243-35** With the settings open: HidHide's Configuration Client opened → within 10 s the row
+      "HidHide-Konfiguration ist geöffnet" ("… Bitte schließe sie."); closed → gone within 10 s. "Inverse" ticked in it
+      (then closed) → "HidHide: Liste ist umgekehrt"; unticked → gone. · E2E: yes (`EmulationSetupTests`, `PanClientTests`)
+- [ ] **T243-36** Pan's notices: `sc stop ArcadiaPan` (elevated) while Arcadia is in front → a toast; again while a game
+      is in front (Arcadia in the background) → the overlay notice over the game, readable, gone after ~6 s; no toast
+      waiting when Arcadia comes back. · E2E: yes for which of the two (`EmulationSetupTests`, `PanGuardianTests`); no
+      for the overlay over a real game
+- [ ] **T243-37** Uninstall Arcadia (Windows' Apps): the question "Treiber für die Controller-Emulation auch entfernen?"
+      lists usbip-win2 and HidHide, No is the default. No → Pan gone, both drivers stay. Reinstalled, Yes → one UAC
+      prompt, Pan gone, then HidHide and usbip-win2 gone from Windows' Apps; the Steam Controller works in Steam.
+      · E2E: no (Velopack's uninstall, UAC; the question's text: `ControllerSupportRemovalTests`)
+- [ ] **T243-38** Pan removes the drivers only through their own uninstallers: HidHide by its MSI product code through
+      `msiexec`, usbip-win2 by its `unins*.exe` under Program Files; anything else runs nothing. · E2E: no (unit:
+      `HidHideSetupTests`; the real removal is T243-37)
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
@@ -146,3 +177,4 @@ History:
 | B1 check script (`Run-Check-243-B1.ps1`, steps 1–6; step 7, the hard power-off, declined) | 2026-10-27 | owner | Windows 11, Steam running, HidHide 1.5.230, Pan and PanDevClient from the check package (Pan before the review fixes of 05147a5) | pass | T243-23, -24, -25 (inverse, cloaking off with a foreign device, configuration client open → `HidHideBusy`), -29, -30 pass; Steam button checked hidden and shown. T243-29: the puck keeps its 13 instance ids on another port (serial number), so nothing new to hide and no arrival line; the case's text was wrong, fixed. T243-31: hide 2.4–3.9 s, unhide ~2.5 s (puck restart), over the 2 s budget, within the 5 s the owner set then; Pan CPU 0.03 % hidden, 0.003 % shown. T243-28 still open |
 | Full test plan run (T243-22 … T243-31) | 2026-10-27 | owner | Windows 11, Steam running, HidHide 1.5.230, Pan and PanDevClient from the check package built from bfa4040 | pass | – |
 | After the security/robustness reviews of PR #252 (`IdleStopTests`: Pan stays without a client while a show retry runs; `HidingTests`: a new emulation waits while a retry changes HidHide, the pending retry is reported) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; both new guards seen red by mutation (removed), Pan tests green 3 runs in a row | pass | – |
+| Part B2 (`EmulationSetupTests` T243-32 … T243-36, `EmulationPartsTests`, `ControllerSupportServiceTests`, `PanClientTests` T243-35, `ControllerSupportRemovalTests` T243-37, `HidHideSetupTests` T243-38) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container, whole suite (Pan 133, Core 964, App 334); each new acceptance test seen red once by mutation (missing HidHide not a part, all-missing not offered on the switch, HidHide row without its fix, busy row dropped, notice always a toast); UAC, the real installers and the overlay over a game only on Windows | pass | T243-32's `ServiceTests` step on the Windows runner |

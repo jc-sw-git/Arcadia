@@ -116,7 +116,7 @@ public sealed class SteamControllerHiding(IHidHideDriver hidHide, ISteamControll
             return (PanReason.HidHideMissing, null, "HidHide is not installed");
         }
 
-        if (version.Major != SupportedMajorVersion || version < MinimumVersion)
+        if (!HidHideRelease.IsSupported(version))
         {
             return (PanReason.HidHideUnsupported, null, $"HidHide {version} is not supported (needs {MinimumVersion} up to {SupportedMajorVersion}.x)");
         }

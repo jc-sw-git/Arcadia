@@ -6,8 +6,9 @@ namespace Arcadia.Pan;
 /// <summary>
 /// <c>Pan.exe</c> (#243). Without arguments it runs as the service (or, started from a console, says how to use
 /// it). Commands, all started elevated by Arcadia or by hand:
-/// <c>--install [--expect-hash sha256] [--usbip-installer path]</c>, <c>--uninstall</c>, <c>--restore</c>, <c>--console</c> (the service in a
-/// console, for development), <c>--version</c>.
+/// <c>--install [--expect-hash sha256] [--usbip-installer path] [--hidhide-installer path]</c>,
+/// <c>--uninstall [--remove-drivers]</c>, <c>--restore</c>, <c>--console</c> (the service in a console, for development),
+/// <c>--version</c>.
 /// </summary>
 internal static class Program
 {
@@ -72,8 +73,25 @@ internal static class Program
                         UsbipInstall.RunAsync(usbipInstaller, log.Write).GetAwaiter().GetResult();
                     }
 
+                    // HidHide matters only for showing Steam a copy of the puck (#242); a failed HidHide must not cost
+                    // the player Pan and with it the Xbox pad, so Pan is set up anyway and the exit code says so.
+                    var hidHideFailed = false;
+                    if (Option(args, "--hidhide-installer") is { } hidHideInstaller)
+                    {
+                        try
+                        {
+                            HidHideInstall.RunAsync(hidHideInstaller, log.Write).GetAwaiter().GetResult();
+                        }
+                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception)
+                        {
+                            log.Write($"HidHide not installed: {ex.Message}");
+                            Console.Error.WriteLine(ex.Message);
+                            hidHideFailed = true;
+                        }
+                    }
+
                     ServiceSetup.Install(Environment.ProcessPath ?? throw new InvalidOperationException("own path unknown"), Option(args, "--expect-hash"), log.Write);
-                    return 0;
+                    return hidHideFailed ? HidHideFailedExitCode : 0;
                 case "--uninstall":
                     // Runs at every Arcadia uninstall, also where Pan never was: a data folder that isn't ours is
                     // neither written nor deleted elevated (review, bug 1); the service and Program Files go anyway.
@@ -87,9 +105,10 @@ internal static class Program
                         Console.Error.WriteLine($"Leaving the data folder alone: {dataProblem}.");
                     }
 
-                    return ServiceSetup.UninstallAsync(removeData: dataProblem is null, log.Write).GetAwaiter().GetResult()
-                        ? 0
-                        : RestoreIncompleteExitCode;
+                    var undone = ServiceSetup.UninstallAsync(removeData: dataProblem is null, log.Write).GetAwaiter().GetResult();
+                    // After Pan undid its HidHide entries (#243 part B2); the user said yes at Arcadia's uninstall.
+                    var driversRemoved = !Flag(args, "--remove-drivers") || DriverRemoval.RunAsync(log.Write).GetAwaiter().GetResult();
+                    return !undone ? RestoreIncompleteExitCode : driversRemoved ? 0 : DriversNotRemovedExitCode;
                 case "--restore":
                     if (ServiceSetup.CheckDataDirectory() is { } problem)
                     {
@@ -120,6 +139,17 @@ internal static class Program
     /// the journal and Pan.exe stay for another <c>--restore</c>, and Arcadia says so.
     /// </summary>
     public const int RestoreIncompleteExitCode = 5;
+
+    /// <summary>
+    /// Exit code of <c>--install</c> when Pan was set up but HidHide was not (signature, setup error): Arcadia says so
+    /// and keeps the HidHide row; <c>pan.log</c> says why.
+    /// </summary>
+    public const int HidHideFailedExitCode = 6;
+
+    /// <summary>Exit code of <c>--uninstall --remove-drivers</c> when Pan went but a driver stayed; <c>pan.log</c> says which.</summary>
+    public const int DriversNotRemovedExitCode = 7;
+
+    private static bool Flag(string[] args, string name) => args.Skip(1).Contains(name, StringComparer.OrdinalIgnoreCase);
 
     private static string? Option(string[] args, string name)
     {

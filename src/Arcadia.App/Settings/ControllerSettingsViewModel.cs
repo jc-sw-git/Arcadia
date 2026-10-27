@@ -320,6 +320,11 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         {
             SwitchOn();
         }
+        else if (_sisr.Mode == SisrRowMode.Install && on != false && !_support.StartsSisr)
+        {
+            // Every part of the emulation is missing (#243 part B2): one install for all of them, no Steam involved.
+            ApplyFix(HealthFix.InstallDrivers);
+        }
         else if (_sisr.Mode == SisrRowMode.Install && on != false)
         {
             BeginInstall();
@@ -552,21 +557,29 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
         // Once on, the switch stays even if something breaks later; the problem shows below it.
         var needsMarker = _support.Issues.Any(i => i.Fix == HealthFix.CreateMarker);
-        // Since #213 part B SISR no longer runs: once set up there is nothing to switch, only its install still brings
-        // VIIPER and the usbip driver for Arcadia's own pad (until #214 rebuilds this row).
-        var replaced = !_support.StartsSisr && setup == ControllerSupportSetup.Ready;
-        var unavailable = replaced || (!enabled && setup is ControllerSupportSetup.UnsupportedPlatform or ControllerSupportSetup.SteamMissing);
+        var notHere = !enabled && setup is ControllerSupportSetup.UnsupportedPlatform or ControllerSupportSetup.SteamMissing;
+        // Since #213 part B SISR no longer runs: the row stands for the controller emulation's parts (#243 part B2).
+        // A missing part greys it out with one row per part below; with every part missing the row itself offers
+        // "Treiber installieren" instead of those rows. Set up, there is nothing to switch until #214 rebuilds it.
+        var emulation = !_support.StartsSisr && !notHere;
+        var missingParts = emulation ? EmulationParts.MissingNames(_support.Issues) : [];
+        var installsAll = emulation && EmulationParts.AllMissing(_support.Issues);
+        var replaced = emulation && !installsAll;
+        var unavailable = notHere || replaced;
         // A missing driver or Pan has its own row with "Installieren" below; the switch then stays a switch, so there
         // is one install button, not two that do the same (owner's test, 2026-10-26).
         var installsBelow = _support.Issues.Any(i => i.Fix == HealthFix.InstallDrivers);
-        var showInstall = !enabled && setup == ControllerSupportSetup.NeedsInstall && !installsBelow;
+        var showInstall = installsAll || (!emulation && !enabled && setup == ControllerSupportSetup.NeedsInstall && !installsBelow);
         var state = _support.State;
         _sisr.Update(
             unavailable ? SisrRowMode.Unavailable : showInstall ? SisrRowMode.Install : SisrRowMode.Switch,
             enabled,
             IsSettling,
-            replaced ? SisrReplacedText : setup == ControllerSupportSetup.SteamMissing ? "Benötigt Steam." : "Momentan nur unter Windows verfügbar.",
+            replaced ? missingParts.Count > 0 ? PartsMissingText(missingParts) : SisrReplacedText
+                : setup == ControllerSupportSetup.SteamMissing ? "Benötigt Steam." : "Momentan nur unter Windows verfügbar.",
             enabled ? ShortStatus(state, hasProblems) : null);
+        // "Treiber installieren" on the row itself: a failure shows there, as there is no part row to carry it.
+        _sisr.ShowProblem(installsAll && _support.FailedFix == HealthFix.InstallDrivers ? _support.LastError : null);
         if (IsInstallPrompt && ((!showInstall && !needsMarker) || IsBusy))
         {
             // Installed some other way, or something else started: the question is moot.
@@ -576,6 +589,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
         var statusText = (enabled, state == SisrState.Paused, hasProblems) switch
         {
+            (false, _, _) when installsAll => $"Nicht eingerichtet – „Treiber installieren“ richtet alles Nötige ein ({string.Join(", ", missingParts)}), mit einer Windows-Abfrage nach Administratorrechten.",
+            (false, _, _) when missingParts.Count > 0 => $"Nicht eingerichtet, es fehlt: {string.Join(", ", missingParts)}. Solange etwas fehlt, ist die Controller-Emulation aus; „Installieren“ bei der Meldung darunter richtet es ein.",
             (false, _, _) when installsBelow => "Nicht eingerichtet – „Installieren“ bei der Meldung unter der Einstellung richtet die Treiber ein.",
             (false, _, _) when showInstall => "Nicht eingerichtet – „Treiber installieren“ richtet alles Nötige ein und schaltet die Option ein.",
             (false, _, _) => "Aus – außerhalb von Steam läuft der Steam Controller im Desktop-Modus (Maus und Tastatur).",
@@ -611,9 +626,11 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             .. _support.AvailableUpdate is { } available ? [new InfoText($"Neue Version verfügbar: {available.Tag}")] : Array.Empty<InfoBlock>(),
             SisrCredit,
         ]);
-        _sisr.Info = unavailable
+        _sisr.Info = unavailable && missingParts.Count == 0
             ? [.. SisrDescription, HowItWorks, Drawbacks]
-            : [.. SisrDescription, status, HowItWorks, Drawbacks, version];
+            : emulation
+                ? [.. SisrDescription, status, HowItWorks, Drawbacks]
+                : [.. SisrDescription, status, HowItWorks, Drawbacks, version];
 
         var hasUpdate = !unavailable && _support.AvailableUpdate is not null;
         if (_support.AvailableUpdate is { } update)
@@ -628,7 +645,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         SetRows(
         [
             _sisr,
-            .. IssueRows(),
+            .. IssueRows(hideMissingParts: installsAll),
             .. hasUpdate ? [_update] : Array.Empty<SettingsRowViewModel>(),
             .. _support.PanInstalled ? [_restore] : Array.Empty<SettingsRowViewModel>(),
             _steamDesktopLayout,
@@ -684,12 +701,21 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     private static readonly InfoFootnote SisrCredit = new("SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR");
 
-    /// <summary>One row per problem, with its fix as the row's action; a row stays the same while its problem lasts.</summary>
-    private List<SettingsRowViewModel> IssueRows()
+    /// <summary>The greyed-out row's line while some parts of the emulation are missing (#243 part B2).</summary>
+    private static string PartsMissingText(IReadOnlyList<string> missing) =>
+        $"Aus – es fehlt: {string.Join(", ", missing)}";
+
+    /// <summary>
+    /// One row per problem, with its fix as the row's action; a row stays the same while its problem lasts. With
+    /// <paramref name="hideMissingParts"/> the missing parts have no rows: the switch offers "Treiber installieren".
+    /// </summary>
+    private List<SettingsRowViewModel> IssueRows(bool hideMissingParts)
     {
         var rows = new List<SettingsRowViewModel>();
         var ids = new HashSet<string>();
-        foreach (var issue in _support.Issues)
+        // Several parts share "Installieren": its error shows once, at the first of them.
+        var errorShown = false;
+        foreach (var issue in _support.Issues.Where(i => !hideMissingParts || !EmulationParts.IsMissingPart(i)))
         {
             ids.Add(issue.Id);
             if (!_issueRows.TryGetValue(issue.Id, out var row))
@@ -700,7 +726,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             }
 
             // A fix that failed shows its error at the row it belongs to, with the error icon, and how to go on.
-            var failed = _support.FailedFix == issue.Fix ? _support.LastError : null;
+            var failed = !errorShown && _support.FailedFix == issue.Fix ? _support.LastError : null;
+            errorShown |= failed is not null;
             row.Title = issue.Title;
             row.Subtitle = issue.ShortText;
             row.ShowProblem(failed);
@@ -798,6 +825,13 @@ public sealed partial class SisrRowViewModel(Action<bool?> activate)
 
     /// <summary>Whether SISR really works: null while the option is off, the switch says so.</summary>
     public void ShowLamp(RowLamp? lamp) => Lamp = lamp;
+
+    /// <summary>"Treiber installieren" on this row failed (#243 part B2): the error in place of the subtitle, with the error icon.</summary>
+    public void ShowProblem(string? problem)
+    {
+        Problem = problem;
+        Severity = problem is null ? null : HealthSeverity.Error;
+    }
 
     /// <param name="status">How the option is doing while it is on, shown in place of what it is for; null while off.</param>
     public void Update(SisrRowMode mode, bool isOn, bool isLocked, string unavailableText, string? status)

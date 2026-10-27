@@ -184,10 +184,12 @@ public partial class App : Application
             var viiper = new ViiperXboxPads(Path.Combine(sisrHost.InstallDirectory, "viiper.exe"), Core.Diagnostics.LogLocation.Directory, sisrHost.CleanUpViiperAsync, AppLog.Write);
             // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
             var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write) : new NoPanTransport(), time, AppLog.Write);
-            pan.JournalProblem += () => Dispatcher.UIThread.Post(() => viewModel.Toast.Show(PanJournalText));
+            var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
+            pan.JournalProblem += () => panNotices.Show(PanJournalText);
+            controllerSupport.HidingCheck = pan;
             var steamPlatform = new ControllerSupportPlatform();
             var forGames = SteamControllerForGames.Create(
-                viiper, pan, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, viewModel.Toast, time);
+                viiper, pan, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, panNotices, time);
             pan.Start();
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;

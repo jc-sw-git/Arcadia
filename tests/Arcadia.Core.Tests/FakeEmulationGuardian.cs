@@ -4,7 +4,7 @@ using Arcadia.Pan;
 namespace Arcadia.Tests.Pads;
 
 /// <summary>Pan as the tests see it (#243): records registrations, can refuse, tear down or be gone; shared by unit and acceptance tests.</summary>
-public sealed class FakeEmulationGuardian : IEmulationGuardian
+public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
 {
     private readonly Lock _lock = new();
     private uint _generation;
@@ -24,11 +24,23 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian
     public int Pulses;
     public bool PlannedExit;
 
+    /// <summary>What Pan says about hiding now (#243 B2): None = it could hide; null = no answer (a Pan before part B).</summary>
+    public PanReason? Hiding = PanReason.None;
+
+    /// <summary>How often Arcadia asked whether Pan could hide.</summary>
+    public int HidingChecks;
+
     public event Action<uint, PanReason>? TornDown;
 
     public event Action<string>? Lost;
 
     public string? Unavailable() => Missing;
+
+    public Task<PanReason?> CheckHidingAsync(CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref HidingChecks);
+        return Task.FromResult(Missing is null ? Hiding : null);
+    }
 
     public Task<uint> EmulationStartedAsync(CancellationToken cancellationToken)
     {

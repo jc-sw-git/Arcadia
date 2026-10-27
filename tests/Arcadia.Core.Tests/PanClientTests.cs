@@ -315,6 +315,69 @@ public sealed class PanClientTests : IAsyncDisposable
     }
 
     /// <summary>Pan's guardian served over anonymous pipes, as <c>PipeServer</c> would serve it over the named pipe.</summary>
+    [Fact]
+    [Trait("TestCase", "T243-35")]
+    public async Task Arcadia_learns_from_Pan_why_it_could_not_hide_now()
+    {
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide);
+        await ConnectedAsync();
+
+        Assert.Equal(PanReason.None, await _client.CheckHidingAsync(CancellationToken.None));
+        hidHide.Busy = true;
+        Assert.Equal(PanReason.HidHideBusy, await _client.CheckHidingAsync(CancellationToken.None));
+        hidHide.Busy = false;
+        hidHide.Inverse = true;
+        Assert.Equal(PanReason.HidHideInverseMode, await _client.CheckHidingAsync(CancellationToken.None));
+        Assert.True(_client.IsConnected);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-35")]
+    public async Task A_Pan_without_hiding_or_without_a_connection_gives_no_answer()
+    {
+        Assert.Null(await _client.CheckHidingAsync(CancellationToken.None));
+
+        await ConnectedAsync();
+        Assert.Null(await _client.CheckHidingAsync(CancellationToken.None));
+        Assert.True(_client.IsConnected);
+    }
+
+    /// <summary>HidHide 1.5.230 whose state a test sets; "busy" is its configuration client holding it.</summary>
+    private sealed class SettableHidHide : IHidHideDriver
+    {
+        public volatile bool Busy;
+        public volatile bool Inverse;
+
+        public Version? InstalledVersion() => HidHideRelease.Version;
+
+        public bool IsServiceRegistered() => true;
+
+        public IReadOnlyList<string> GetHiddenDevices() => Reach<IReadOnlyList<string>>([]);
+
+        public void SetHiddenDevices(IReadOnlyList<string> instanceIds) => Reach(instanceIds);
+
+        public IReadOnlyList<string> GetAllowedApplications() => Reach<IReadOnlyList<string>>([]);
+
+        public void SetAllowedApplications(IReadOnlyList<string> imagePaths) => Reach(imagePaths);
+
+        public bool GetCloaking() => Reach(false);
+
+        public void SetCloaking(bool on) => Reach(on);
+
+        public bool GetInverse() => Reach(Inverse);
+
+        private T Reach<T>(T value) => Busy ? throw new HidHideException(PanReason.HidHideBusy, "HidHide is open in another program") : value;
+    }
+
+    /// <summary>No Steam Controller connected: checking needs none.</summary>
+    private sealed class NoPuck : ISteamControllerDevices
+    {
+        public IReadOnlyList<string> PresentHidInstances() => [];
+
+        public Task RestartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
     private sealed class FakePanServer : IPanTransport, IDisposable
     {
         private readonly Action<string> _log;
@@ -386,7 +449,11 @@ public sealed class PanClientTests : IAsyncDisposable
             _serverSide?.Dispose();
         }
 
-        /// <summary>A restarted Pan: it undoes what its journal lists, then serves again.</summary>
+        /// <summary>A Pan with part B's hiding (#243 B2), on HidHide as the test sets it; before the client connects.</summary>
+        public void UseHiding(IHidHideDriver hidHide) =>
+            Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log, hiding: new SteamControllerHiding(hidHide, new NoPuck()));
+
+                /// <summary>A restarted Pan: it undoes what its journal lists, then serves again.</summary>
         public void RestartFromJournal()
         {
             _dead = false;

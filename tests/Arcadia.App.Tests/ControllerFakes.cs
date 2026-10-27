@@ -107,6 +107,9 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     /// <summary>This Arcadia bundles a newer Pan than the installed one (#243).</summary>
     public bool IsPanUpdateAvailable { get; set; }
 
+    /// <summary>HidHide's driver version (#243 B2): a supported one unless a test sets another or null (missing).</summary>
+    public Version? HidHideVersion { get; set; } = Arcadia.Pan.HidHideRelease.Version;
+
     /// <summary>How often "Treiber installieren" or the Pan update ran, i.e. asked Windows for administrator rights.</summary>
     public int DriverInstalls => Volatile.Read(ref _driverInstalls);
 
@@ -126,13 +129,29 @@ internal sealed class FakeSteam : IControllerSupportPlatform
         IsUsbipReady = true;
         IsPanReady = true;
         IsPanUpdateAvailable = false;
+        if (ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion))
+        {
+            HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
+        }
+
         return Task.FromResult(true);
     }
 
     public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(true);
 
+    /// <summary>
+    /// A missing usbip driver gets its row, as on the real platform (#243 B2). Off by default for SISR's own setup
+    /// tests from before #213 part B, which model SISR's install bringing the driver.
+    /// </summary>
+    public bool ReportsUsbip { get; set; }
+
+    /// <summary>The rows the real platform shows for usbip-win2, Pan and HidHide, as far as this fake sets them.</summary>
     public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) =>
-        IsPanReady ? [] : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Ohne Pan kein Xbox Controller.", HealthFix.InstallDrivers, "Installieren")];
+    [
+        .. IsUsbipReady || !ReportsUsbip ? Array.Empty<HealthIssue>() : [new("usbip-missing", HealthSeverity.Warning, "usbip-Treiber fehlt", "Arcadia erzeugt den virtuellen Controller über diesen Treiber.", HealthFix.InstallDrivers, "Installieren")],
+        .. IsPanReady ? Array.Empty<HealthIssue>() : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Ohne Pan kein Xbox Controller.", HealthFix.InstallDrivers, "Installieren")],
+        .. ControllerSupportPlatform.CheckHidHide(HidHideVersion) is { } hidHide ? [hidHide] : Array.Empty<HealthIssue>(),
+    ];
 
     public void ResetSteamInputLayout()
     {

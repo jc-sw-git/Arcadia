@@ -325,7 +325,8 @@ public sealed class SettingsViewTests
     {
         var steam = new FakeSteam { IsSteamRunning = true };
         steam.Sisr.IsInstalled = false;
-        using var arcadia = await ArcadiaWindow.ShowAsync(steam: steam);
+        // SISR's own setup (Steam stop question) is the dialog over the settings; the App without SISR (#243 B2) has none.
+        using var arcadia = await ArcadiaWindow.ShowAsync(steam: steam, arguments: new StartArguments(Sisr: true));
         var main = arcadia.Arcadia.Main;
 
         // "Ansicht": no ✕ with the controller; the mouse shows it, a click closes the dialog only.

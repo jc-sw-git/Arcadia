@@ -1,8 +1,10 @@
+using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Steam;
+using Arcadia.Pan;
 using System.ComponentModel;
 
 namespace Arcadia.ControllerSupport;
@@ -243,6 +245,12 @@ public sealed class ControllerSupportService(
 
     /// <summary>The settings are open; while off, the tick rechecks <see cref="Setup"/> only then.</summary>
     public bool WatchSetup { get; set; }
+
+    /// <summary>
+    /// Pan's answer to "could you hide the Steam Controller now?" (#243 part B2), asked while the settings show the
+    /// drivers; null without Pan (tests, other platforms).
+    /// </summary>
+    public IHidingCheck? HidingCheck { get; set; }
 
     /// <summary>What the settings offer; rechecked on every <see cref="RefreshAsync"/>, and by the tick while on or while the settings are open.</summary>
     public ControllerSupportSetup Setup => _setup ??= CheckSetup();
@@ -689,7 +697,7 @@ public sealed class ControllerSupportService(
             // The drivers matter without the switch: a missing Pan shows as a warning, in the header too (#243). Checked
             // once at start and after every action, then only while the settings show it (registry, service list);
             // otherwise what the last check found stands.
-            var issues = WatchSetup || !_driversChecked ? _platform.CheckDrivers(Settings, time.GetUtcNow()) : Issues;
+            var issues = WatchSetup || !_driversChecked ? await CheckEmulationPartsAsync(cancellationToken) : Issues;
             _driversChecked = true;
             if (!issues.SequenceEqual(Issues) || Setup != setup)
             {
@@ -1095,11 +1103,26 @@ public sealed class ControllerSupportService(
     private const string DriversBusyText = "Treiber werden installiert – bitte die Windows-Abfrage bestätigen …";
 
     /// <summary>
-    /// What is missing of the usbip driver and Pan, in one Windows prompt (#243). Inside a busy action; throws when
-    /// the prompt was declined, so the action fails visibly.
+    /// What is missing of the controller emulation (#243): VIIPER (with SISR's files until #214, no prompt), then the
+    /// usbip driver, HidHide and Pan in one Windows prompt, only if one of them is missing or Pan is to be updated.
+    /// Inside a busy action; throws when the prompt was declined, so the action fails visibly.
     /// </summary>
-    private async Task InstallDriversAsync(CancellationToken cancellationToken)
+    private async Task InstallDriversAsync(CancellationToken cancellationToken) => await InstallDriversAsync(updatePan: false, cancellationToken);
+
+    private async Task InstallDriversAsync(bool updatePan, CancellationToken cancellationToken)
     {
+        if (!sisr.HasViiper)
+        {
+            SetBusyText("VIIPER wird installiert …");
+            await InstallLatestSisrAsync(cancellationToken);
+            Log?.Invoke("VIIPER eingerichtet (mit SISR)");
+        }
+
+        if (!updatePan && _platform.IsUsbipReady && _platform.IsPanReady && !ControllerSupportPlatform.HidHideNeedsInstaller(_platform.HidHideVersion))
+        {
+            return;
+        }
+
         SetBusyText(DriversBusyText);
         var usbipWasReady = _platform.IsUsbipReady;
         if (!await WithTimeoutAsync(token => _platform.InstallDriversAsync(http, token), InstallTimeout, "Die Treiber-Installation", cancellationToken))
@@ -1112,7 +1135,7 @@ public sealed class ControllerSupportService(
             UpdateSettings(settings => settings with { UsbipInstalledAt = time.GetUtcNow() });
         }
 
-        Log?.Invoke("Treiber eingerichtet (usbip-win2 und Pan)");
+        Log?.Invoke("Treiber eingerichtet (usbip-win2, HidHide und Pan)");
     }
 
     /// <summary>This Arcadia bundles a newer Pan than the installed one (#243); looks at files and the service, so off the UI thread.</summary>
@@ -1120,7 +1143,7 @@ public sealed class ControllerSupportService(
 
     /// <summary>Arcadia brought a newer Pan and the user said yes at start (#243): installs it, and the driver if that is missing too.</summary>
     public Task UpdatePanAsync(CancellationToken cancellationToken = default) =>
-        RunBusyAsync(DriversBusyText, InstallDriversAsync, cancellationToken);
+        RunBusyAsync(DriversBusyText, token => InstallDriversAsync(updatePan: true, token), cancellationToken);
 
     /// <summary>"Controller wiederherstellen": Pan's <c>--restore</c>, elevated, for when the service itself hangs (#243).</summary>
     public Task RestoreControllersAsync(CancellationToken cancellationToken = default) =>
@@ -1362,7 +1385,7 @@ public sealed class ControllerSupportService(
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        Issues = Enabled ? await CheckHealthAsync(cancellationToken) : IsSupportedPlatform ? _platform.CheckDrivers(Settings, time.GetUtcNow()) : [];
+        Issues = Enabled ? await CheckHealthAsync(cancellationToken) : IsSupportedPlatform ? await CheckEmulationPartsAsync(cancellationToken) : [];
         UpdateSetup();
         OnChanged();
     }
@@ -1372,6 +1395,42 @@ public sealed class ControllerSupportService(
         _panInstalled = CheckPanInstalled();
         _setup = CheckSetup();
     }
+
+    /// <summary>
+    /// The rows of the controller emulation's parts (#243 part B2), in the order usbip-win2, VIIPER, Pan, HidHide: the
+    /// platform's driver checks, VIIPER (from SISR's folder until #214), and while the settings show them, why Pan
+    /// couldn't hide the Steam Controller now (HidHide's driver not running, inverse mode, ..., its configuration open).
+    /// </summary>
+    private async Task<IReadOnlyList<HealthIssue>> CheckEmulationPartsAsync(CancellationToken cancellationToken)
+    {
+        var issues = new List<HealthIssue>(_platform.CheckDrivers(Settings, time.GetUtcNow()));
+        // While SISR runs (before #213 part B) VIIPER is a part of SISR, set up with it.
+        if (!StartsSisr && !sisr.HasViiper)
+        {
+            issues.Add(EmulationParts.ViiperMissing);
+        }
+
+        if (WatchSetup && HidingCheck is { } check && _platform.IsPanReady
+            && _platform.HidHideVersion is { } hidHide && HidHideRelease.IsSupported(hidHide))
+        {
+            _hidingIssue = EmulationParts.FromHidingCheck(await check.CheckHidingAsync(cancellationToken));
+        }
+        else if (WatchSetup)
+        {
+            _hidingIssue = null;
+        }
+
+        // Outside the settings the last answer stands: asking Pan costs a pipe round trip and HidHide's lock.
+        if (_hidingIssue is { } hiding)
+        {
+            issues.Add(hiding);
+        }
+
+        return EmulationParts.InRowOrder(issues);
+    }
+
+    /// <summary>Why Pan couldn't hide at the last check while the settings were open, or null.</summary>
+    private HealthIssue? _hidingIssue;
 
     /// <summary>Pan, the guardian service, is installed (#243); rechecked with <see cref="Setup"/>. "Controller wiederherstellen" needs it.</summary>
     public bool PanInstalled => _panInstalled ??= CheckPanInstalled();

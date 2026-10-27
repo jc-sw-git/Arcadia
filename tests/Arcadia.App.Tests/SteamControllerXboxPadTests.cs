@@ -154,7 +154,7 @@ public sealed class SteamControllerXboxPadTests
     /// <summary>T213-6 (automated part): VIIPER lost is plugged in again; lost too often, a toast says so and Arcadia stops trying.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T213-6")]
-    public async Task A_lost_VIIPER_comes_back_and_too_many_losses_show_a_toast()
+    public async Task A_lost_VIIPER_comes_back_and_too_many_losses_show_a_notice()
     {
         var (arcadia, _) = await StartInBackgroundAsync();
         using var __ = arcadia;
@@ -166,7 +166,8 @@ public sealed class SteamControllerXboxPadTests
         }
 
         Assert.Equal(SteamControllerXboxPad.MaxReplugsPerWindow + 1, arcadia.XboxPads.Plugged);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text?.Contains("VIIPER fiel") == true, "the toast about VIIPER");
+        // A game is in front: the overlay's notice, not a toast (#243 B2).
+        await arcadia.WaitUntilAsync(() => arcadia.OverlayNotices.Any(notice => notice.Contains("VIIPER fiel")), "the notice about VIIPER");
         Assert.False(arcadia.XboxPad.IsPlugged);
     }
 

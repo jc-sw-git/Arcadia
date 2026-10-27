@@ -17,11 +17,11 @@ public interface ILauncherAccount
     /// <summary>The row's line below its name while signed out: what the sign-in is good for.</summary>
     string Purpose { get; }
 
-    /// <summary>The info panel's text while signed out.</summary>
+    /// <summary>The info panel's first paragraph while signed out: what the sign-in is good for.</summary>
     string About { get; }
 
-    /// <summary>What the sign-in needs, e.g. "Benötigt die Steam-App auf dem Handy".</summary>
-    string Requirement { get; }
+    /// <summary>The info panel's second paragraph while signed out: how the sign-in works and what it needs.</summary>
+    string SignInMethod { get; }
 
     /// <summary>The info panel's text beside the QR code: where in the phone app to scan it.</summary>
     string CodeInstruction { get; }

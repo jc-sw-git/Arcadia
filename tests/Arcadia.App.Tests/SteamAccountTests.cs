@@ -24,7 +24,8 @@ public sealed class SteamAccountTests
 
     private static readonly TimeSpan SignInLimit = TimeSpan.FromSeconds(30);
 
-    private const string OtherAccountNotice = "In Steam ist ein anderes Konto angemeldet als in Arcadia. Spielstart und Installation können fehlschlagen, Spielstände können andere sein.";
+    private const string OtherAccountUninstalledNotice = "In Steam ist derzeit ein anderes Konto angemeldet als in Arcadia. Installationen aus Arcadia heraus sind so lange nicht möglich.";
+    private const string OtherAccountInstalledNotice = "In Steam ist derzeit ein anderes Konto angemeldet als in Arcadia. Das Spiel könnte daher entweder nicht starten oder falsche Spielstände verwenden.";
 
     [AvaloniaFact]
     [Trait("TestCase", "T83-1")]
@@ -38,7 +39,10 @@ public sealed class SteamAccountTests
         Assert.Equal("KONTO", row.Group);
         Assert.Equal("Steam-Konto", row.Title);
         Assert.Equal("Anmelden", row.ActionText);
-        Assert.Equal("Melde dich an, um auch nicht installierte Spiele zu sehen", row.Subtitle);
+        Assert.Equal("Melde dich an, um vollen Zugriff auf deine Spielebibliothek zu haben", row.Subtitle);
+        Assert.Equal(2, row.Info.OfType<InfoText>().Count());
+        Assert.StartsWith("Die Anmeldung erfolgt über einen QR-Code.", row.Info.OfType<InfoText>().Last().Text, StringComparison.Ordinal);
+        Assert.Empty(row.Info.OfType<InfoFootnote>());
 
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitOnClockUntilAsync(() => row.Info.OfType<InfoQrCode>().Any(), "der QR-Code im Infobereich", SignInLimit);
@@ -50,6 +54,8 @@ public sealed class SteamAccountTests
         Assert.Equal(FakeSteamWeb.ProfileName, row.Subtitle);
         Assert.Equal("Abmelden", row.ActionText);
         Assert.Empty(row.Info.OfType<InfoQrCode>());
+        Assert.Equal($"Angemeldet als {FakeSteamWeb.ProfileName}. Arcadia zeigt neben deinen installierten Spielen auch die Spiele, die im Besitz von {FakeSteamWeb.ProfileName} sind.", row.Info.OfType<InfoText>().First().Text);
+        Assert.Equal("Meldest du dich ab, werden nur noch die installierten Spiele gelistet.", Assert.Single(row.Info.OfType<InfoFootnote>()).Text);
         Assert.Equal(["Leuchtturm", "Salzwiesen", "Tidenhub"], TitlesOf(arcadia));
         Assert.False(TabOf(arcadia).Games.Single(game => game.Title == "Leuchtturm").IsInstalled);
 
@@ -166,15 +172,15 @@ public sealed class SteamAccountTests
         Assert.Equal($"{FakeSteamWeb.ProfileName} · Steam ist mit einem anderen Konto angemeldet", row.Subtitle);
         var note = Assert.Single(row.Info.OfType<InfoNote>());
         Assert.True(note.IsInfo);
-        Assert.StartsWith("Steam ist mit einem anderen Konto angemeldet. Arcadia zeigt deine Spiele trotzdem", note.Text, StringComparison.Ordinal);
+        Assert.Equal("Steam ist momentan mit einem anderen Konto angemeldet als in Arcadia. Arcadia wird so lange keine Installationen starten können. Installierte Spiele könnten ggf. nicht starten oder falsche Spielstände verwenden.", note.Text);
 
         arcadia.CloseSettings();
         arcadia.FocusTile("Leuchtturm");
         var tile = arcadia.Main.Library.FocusedGame!;
-        Assert.Equal(OtherAccountNotice, tile.Notice);
+        Assert.Equal(OtherAccountUninstalledNotice, tile.Notice);
         Assert.False(tile.CanActivate);
         Assert.True(tile.IsInstallBlocked);
-        Assert.Equal(OtherAccountNotice, TabOf(arcadia).Games.Single(game => game.Title == Installed.Name).Notice);
+        Assert.Equal(OtherAccountInstalledNotice, TabOf(arcadia).Games.Single(game => game.Title == Installed.Name).Notice);
 
         // A on the cover says why instead of opening Steam's install dialog.
         arcadia.Press(UiAction.Accept);
@@ -187,7 +193,7 @@ public sealed class SteamAccountTests
         Assert.Equal("Installieren", install.ButtonLabel);
         Assert.False(install.IsEnabled);
         Assert.Equal("In Steam ist ein anderes Konto angemeldet", install.DisabledReason);
-        Assert.Equal(OtherAccountNotice, page.Tile.Notice);
+        Assert.Equal(OtherAccountUninstalledNotice, page.Tile.Notice);
     }
 
     [AvaloniaFact]
@@ -203,7 +209,7 @@ public sealed class SteamAccountTests
         Assert.All(TabOf(arcadia).Games, game => Assert.Null(game.Notice));
 
         files.Steam.ActiveUser = SteamFolder.Account + 7;
-        await arcadia.WaitOnClockUntilAsync(() => TabOf(arcadia).Games.All(game => game.Notice == OtherAccountNotice), "der Hinweis nach dem Kontowechsel", TimeSpan.FromSeconds(5));
+        await arcadia.WaitOnClockUntilAsync(() => TabOf(arcadia).Games.All(game => game.Notice is OtherAccountInstalledNotice or OtherAccountUninstalledNotice), "der Hinweis nach dem Kontowechsel", TimeSpan.FromSeconds(5));
 
         // Back to Arcadia's account, and Steam closed: no hint either way.
         files.Steam.ActiveUser = null;
@@ -276,6 +282,7 @@ public sealed class SteamAccountTests
         arcadia.Press(UiAction.Accept);
         var question = Assert.IsType<ConfirmationViewModel>(settings.Dialog);
         Assert.Equal("Vom Steam-Konto abmelden?", question.Title);
+        Assert.StartsWith($"Willst du {FakeSteamWeb.ProfileName} wirklich in Arcadia abmelden?", question.Message, StringComparison.Ordinal);
         Assert.True(question.IsCancelFocused);
         arcadia.Press(UiAction.Back);
         Assert.Null(settings.Dialog);

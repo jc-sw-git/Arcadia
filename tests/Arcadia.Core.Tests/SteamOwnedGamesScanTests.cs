@@ -85,7 +85,8 @@ public sealed class SteamOwnedGamesScanTests : IDisposable
         var games = (await new SteamScanner(() => new SteamInstallation(SteamRoot, Account + 1), _account).ScanAsync()).OrderBy(g => g.Id).ToList();
 
         Assert.Equal(["10", "20"], games.Select(g => g.Id));
-        Assert.All(games, game => Assert.Equal(SteamScanner.OtherAccountNotice, game.Notice));
+        Assert.Equal(SteamScanner.OtherAccountInstalledNotice, games[0].Notice);
+        Assert.Equal(SteamScanner.OtherAccountUninstalledNotice, games[1].Notice);
         Assert.Null(games[0].InstallBlockedReason);
         Assert.Equal(SteamScanner.OtherAccountInstall, games[1].InstallBlockedReason);
         Assert.Equal(SteamOnlineAccount.OtherAccountNotice, _account.State.Notice);

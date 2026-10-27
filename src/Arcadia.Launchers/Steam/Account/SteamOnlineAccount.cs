@@ -78,12 +78,13 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 
     public string Title => "Steam-Konto";
 
-    public string Purpose => "Melde dich an, um auch nicht installierte Spiele zu sehen";
+    public string Purpose => "Melde dich an, um vollen Zugriff auf deine Spielebibliothek zu haben";
 
-    public string About => "Mit deinem Steam-Konto zeigt Arcadia auch die Spiele, die du besitzt, aber nicht installiert hast; [A] installiert sie über Steam. "
-        + "Angemeldet wird wie beim Steam Deck mit einem QR-Code, den du in der Steam-App auf dem Handy bestätigst. Arcadia sieht dein Passwort nie.";
+    public string About => "Hinterlegst du in Arcadia dein Steam-Konto, erhältst du auch in Arcadia vollen Zugriff auf deine Spielebibliothek. "
+        + "Ohne Anmeldung kann Arcadia nur die Spiele auflisten, die auf diesem PC installiert sind. "
+        + "Ob du sie auch erfolgreich aus Arcadia starten kannst, hängt davon ab, ob das Konto, das aktuell in Steam angemeldet ist, die Berechtigung dafür hat.";
 
-    public string Requirement => "Benötigt die Steam-App auf dem Handy";
+    public string SignInMethod => "Die Anmeldung erfolgt über einen QR-Code. Sie erfordert die Steam Mobile App. Arcadia sieht deine Anmelde-Informationen nie.";
 
     public string CodeInstruction => "Öffne die Steam-App auf dem Handy, tippe unten auf das Schild (Steam Guard) und dann auf „QR-Code scannen“. Bestätige danach die Anmeldung.";
 

@@ -8,7 +8,8 @@ and fetched again in the background at every scan, at most every 30 s.
 
 Changed after the owner's first test (2026-10-27): the code has no time limit, the group comes first and stays
 (disabled) while Steam is off, another account keeps the games, uninstalled soundtracks and tools appear, no exceptions
-in the debugger's output for expected cases.
+in the debugger's output for expected cases. Texts reworded by the owner the same day (signed out, signed in, sign-out
+question, other account).
 
 - [ ] **T83-1** Sign in with the controller and the phone only: ≡ → Launcher → Steam → "Steam-Konto" (first row) → A
   shows the QR code in the info panel; scanned and approved in the Steam app the row shows the Steam profile name (not
@@ -27,8 +28,8 @@ in the debugger's output for expected cases.
 - [ ] **T83-4** A on an uninstalled Steam game: Steam's install dialog opens; once confirmed, the cover shows the
   install progress and ends installed without a restart (live progress is #278) · E2E: no (real Steam install)
 - [ ] **T83-5** Switch Steam to another account than Arcadia's while Arcadia shows the Steam tab: within a few
-  seconds, without a press, every Steam game's preview and detail page note "In Steam ist ein anderes Konto angemeldet
-  als in Arcadia …"; the uninstalled games stay, "Installieren" is disabled with that reason (A on the cover: a toast,
+  seconds, without a press, every Steam game's preview and detail page note "In Steam ist derzeit ein anderes Konto
+  angemeldet als in Arcadia …" (uninstalled: installs not possible; installed: may not start or use wrong saves); the uninstalled games stay, "Installieren" is disabled with that reason (A on the cover: a toast,
   no install dialog); the row has a blue i; switch back or close Steam: the notes go · E2E: yes
 - [ ] **T83-6** Offline (network cable out) Arcadia starts with the last cached list, within the start budget; the row
   shows the warning "Steam ist nicht erreichbar", no toast; back online, "Neu einlesen" clears it · E2E: yes (faked

@@ -654,9 +654,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             info.Add(new InfoNote(problem));
         }
 
-        if (state.Notice is { } notice)
+        if (state.Notice is not null)
         {
-            info.Add(new InfoNote($"{notice}. Arcadia zeigt deine Spiele trotzdem, aber Installieren geht erst, wenn du in {launcherName} dasselbe Konto nutzt, denn {launcherName} installiert in sein eigenes Konto.", HealthSeverity.Info));
+            info.Add(new InfoNote($"{launcherName} ist momentan mit einem anderen Konto angemeldet als in Arcadia. Arcadia wird so lange keine Installationen starten können. Installierte Spiele könnten ggf. nicht starten oder falsche Spielstände verwenden.", HealthSeverity.Info));
         }
 
         switch (state.Step)
@@ -678,17 +678,17 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
                 info.Add(new InfoText($"Arcadia erreicht die Anmeldung von {launcherName} gerade nicht. Prüfe die Internetverbindung; [A] versucht es erneut."));
                 break;
             case AccountStep.SignedIn:
-                info.Add(new InfoText($"Angemeldet als {state.AccountName}. Arcadia zeigt auch die Spiele, die du besitzt, aber nicht installiert hast; [A] auf einem davon installiert es über {launcherName}."));
+                info.Add(new InfoText($"Angemeldet als {state.AccountName}. Arcadia zeigt neben deinen installierten Spielen auch die Spiele, die im Besitz von {state.AccountName} sind."));
                 info.Add(new InfoFacts("KONTO",
                 [
                     new InfoFact("Spiele im Konto", state.OwnedGames is { } count ? count.ToString(System.Globalization.CultureInfo.CurrentCulture) : "Noch nicht geladen", IsMuted: state.OwnedGames is null),
                     new InfoFact("Stand", state.ListedAt is { } at ? Ago(at) : "–", IsMuted: state.ListedAt is null),
                 ]));
-                info.Add(new InfoFootnote("Abmelden löscht die gespeicherte Anmeldung und die Liste deiner Spiele."));
+                info.Add(new InfoFootnote("Meldest du dich ab, werden nur noch die installierten Spiele gelistet."));
                 break;
             default:
                 info.Add(new InfoText(account.About));
-                info.Add(new InfoFootnote($"{account.Requirement}."));
+                info.Add(new InfoText(account.SignInMethod));
                 break;
         }
 
@@ -752,7 +752,8 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             case AccountStep.SignedIn:
                 Dialog = new ConfirmationViewModel(
                     $"Vom {account.Title} abmelden?",
-                    $"Arcadia löscht die gespeicherte Anmeldung und die Liste deiner Spiele. Nicht installierte Spiele von {PageInfo.DisplayName} verschwinden aus der Bibliothek.",
+                    $"Willst du {account.State.AccountName} wirklich in Arcadia abmelden? Arcadia kann dir dann nur noch die Spiele auflisten, die auf diesem PC installiert sind. "
+                        + $"Ob du sie auch starten kannst, hängt von den Lizenzen des Benutzers ab, der in {PageInfo.DisplayName} angemeldet ist.",
                     "Abmelden",
                     account.SignOut,
                     () => Dialog = null);

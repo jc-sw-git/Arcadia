@@ -153,12 +153,14 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
     internal static Game WithOtherAccount(Game game) => game with
     {
         InstallBlockedReason = game.IsInstalled ? null : OtherAccountInstall,
-        Notice = OtherAccountNotice,
+        Notice = game.IsInstalled ? OtherAccountInstalledNotice : OtherAccountUninstalledNotice,
     };
 
     internal const string OtherAccountInstall = "In Steam ist ein anderes Konto angemeldet";
 
-    internal const string OtherAccountNotice = "In Steam ist ein anderes Konto angemeldet als in Arcadia. Spielstart und Installation können fehlschlagen, Spielstände können andere sein.";
+    internal const string OtherAccountUninstalledNotice = "In Steam ist derzeit ein anderes Konto angemeldet als in Arcadia. Installationen aus Arcadia heraus sind so lange nicht möglich.";
+
+    internal const string OtherAccountInstalledNotice = "In Steam ist derzeit ein anderes Konto angemeldet als in Arcadia. Das Spiel könnte daher entweder nicht starten oder falsche Spielstände verwenden.";
 
     /// <summary>The app id in <c>appmanifest_&lt;appid&gt;.acf</c>; null for another name.</summary>
     internal static uint? AppIdOfManifestFile(string path)

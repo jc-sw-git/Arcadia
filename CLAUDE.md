@@ -27,7 +27,7 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
 
 - .NET 10 SDK. `Directory.Build.props` sets `TreatWarningsAsErrors` — keep the build warning-free.
 - A running Arcadia locks `bin/` → close it before building: `Get-Process Arcadia | % { $_.CloseMainWindow() }`
-  (CloseMainWindow, not Stop-Process: Arcadia must shut SISR down cleanly).
+  (CloseMainWindow, not Stop-Process: SISR must shut down cleanly).
 - Logs: `%APPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, `Bild:` press to frame, SISR start/stop),
   `sisr.log` (SISR's own log, overwritten per start). Settings: `%APPDATA%\Arcadia\settings.json`.
 - Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log:
@@ -38,7 +38,7 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
 Windows x64 only, installer and self-update with Velopack (`tools/release/Pack.ps1 -Version x.y.z`); run the workflow
 "Tag release" on `main` to release (cloud sessions can't push tags). `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Versioning (owner's
 rule): SemVer, 0.x until 1.0; minor adds only non-breaking features, patch only fixes bugs (plugins are planned).
-Update flow, uninstall, CI artifacts: `docs/releases.md`.
+Update flow, uninstall, CI: `docs/releases.md`.
 
 ## Verifying UI changes
 
@@ -109,8 +109,8 @@ acceptance iteration (owner 2026-10-25; "Abnahme Iteration 1" was the last). Det
 | `src/Arcadia.Core` | Launcher registry and selection, library, search, settings, running games, keyboard layouts, paging |
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), Steam, Epic, Demo, game start |
 | `src/Arcadia.Input` | Controllers via SDL3, gestures, mouse mode, `SendInput`, Steam desktop input filter |
-| `src/Arcadia.ControllerSupport` | Steam Controller Support (SISR, usbip-win2), Pan's client |
-| `src/Arcadia.Pan*` | Pan, the guardian service (`Pan.exe`); `docs/controller-support/pan.md` |
+| `src/Arcadia.ControllerSupport` | Steam Controller Support (SISR, usbip-win2), Pan client |
+| `src/Arcadia.Pan*` | Pan guardian service; `docs/controller-support/pan.md` |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM), `Theme/Theme.axaml`, `MainViewModel` (routing between pages) and the pages (`IPage`) |
 | `tests/Arcadia.Core.Tests` | xUnit |
 | `tests/Arcadia.App.Tests` | Acceptance tests (xUnit v3, Avalonia headless): `ArcadiaDriver` presses buttons on `MainViewModel`, `ArcadiaWindow` clicks and looks at the real window; rules in `docs/testplans/README.md` |

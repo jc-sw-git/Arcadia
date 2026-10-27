@@ -202,7 +202,12 @@ internal sealed class DevClient(string? logFile, string? statusFile, bool quiet)
         catch (Exception ex) when (ex is IOException or EndOfStreamException or OperationCanceledException or ObjectDisposedException)
         {
             Write($"pipe closed: {ex.Message}");
-            Status("disconnected");
+            // Closed by our own exit or quit: keep that state, the check script waits for it.
+            if (!_stop.IsCancellationRequested)
+            {
+                Status("disconnected");
+            }
+
             _reply?.TrySetException(ex);
         }
     }

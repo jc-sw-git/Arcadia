@@ -21,3 +21,7 @@ Agreed with the owner; don't change without asking. Read this before changing th
   first. The update shows as an icon, and the detail page says below the button that the launcher may update
   first (owner, 2026-10-12). Launchers have no update-only command: Steam ignores `steam://install` for
   installed games and `steam://validate` verifies every file first; Playnite offers no update action either.
+- What A says depends on the entry's type (#141, owner 2026-10-26): "Spielen" for a game, "Tüfteln" for software and
+  tools, "Abrocken" for a soundtrack; the same text on the button, in the context menu and in the button hint. Not
+  installed it says "Installieren". A soundtrack is handed to its launcher (Steam plays it), so it gets no "Startet" or
+  "Läuft" state; its detail page notes "Steam spielt den Soundtrack ab." under the actions.

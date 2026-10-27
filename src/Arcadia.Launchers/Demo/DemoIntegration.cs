@@ -8,13 +8,24 @@ namespace Arcadia.Launchers.Demo;
 /// </summary>
 public sealed class DemoIntegration : ILauncherIntegration
 {
-    public DemoIntegration(LauncherInfo launcher, int gameCount, DateTimeOffset now)
+    /// <param name="withOtherTypes">Software, tools and soundtracks besides the games, with a switch for each (#141).</param>
+    public DemoIntegration(LauncherInfo launcher, int gameCount, DateTimeOffset now, bool withOtherTypes = false)
     {
         Launcher = launcher;
-        var scanner = new DemoScanner(launcher, gameCount, now);
+        var scanner = new DemoScanner(launcher, gameCount, now, withOtherTypes);
         Scanner = scanner;
         RunningGames = new DemoRunningGames(scanner, now);
+        LibraryOptions = withOtherTypes ? OtherTypeOptions : [];
     }
+
+    private static readonly IReadOnlyList<LibraryTypeOption> OtherTypeOptions =
+    [
+        new("tools", "Werkzeuge einbeziehen", "Demo-Werkzeuge", "Zeigt die Werkzeuge der Demo-Bibliothek.", [], [GameType.Tool]),
+        new("software", "Software einbeziehen", "Demo-Software", "Zeigt die Software der Demo-Bibliothek.", [], [GameType.Software]),
+        new("soundtracks", "Soundtracks einbeziehen", "Demo-Soundtracks", "Zeigt die Soundtracks der Demo-Bibliothek.", [], [GameType.Soundtrack]),
+    ];
+
+    public IReadOnlyList<LibraryTypeOption> LibraryOptions { get; }
 
     public LauncherInfo Launcher { get; }
 

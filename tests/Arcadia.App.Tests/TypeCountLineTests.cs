@@ -15,7 +15,7 @@ public sealed class TypeCountLineTests
         (installed ? Installed(Launcher, title, ArcadiaDriver.Now) : NotInstalled(Launcher, title)) with { Type = type };
 
     [Fact]
-    [Trait("TestCase", "T141-5")]
+    [Trait("TestCase", "T141-7")]
     public void One_part_per_type_in_order_with_the_installed_ones_in_brackets_unless_all_are()
     {
         var line = TypeCountLine.Of(
@@ -39,7 +39,7 @@ public sealed class TypeCountLineTests
     }
 
     [Fact]
-    [Trait("TestCase", "T141-5")]
+    [Trait("TestCase", "T141-7")]
     public void Large_numbers_get_a_thousands_separator_and_an_empty_library_has_no_parts()
     {
         var games = Enumerable.Range(0, 1234).Select(i => Entry($"Spiel {i}", GameType.Game, installed: i == 0)).ToList();
@@ -52,6 +52,7 @@ public sealed class TypeCountLineTests
     }
 
     [Theory]
+    [Trait("TestCase", "T141-5")]
     [InlineData(GameType.Game, 1, "1 Spiel", "Spiel", "Spielen")]
     [InlineData(GameType.Game, 2, "2 Spiele", "Spiel", "Spielen")]
     [InlineData(GameType.Software, 1, "1 Software", "Software", "Tüfteln")]

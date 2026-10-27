@@ -12,6 +12,11 @@ launcher, no login needed). Games = category `games` without `addons`/`digitaldo
 an empty `mainGameItem.id` (DLC/season passes name their game there): 331 on the owner's PC vs.
 333 in the Epic library — the difference is Unreal Engine (one tile for all `engines` versions) and Unreal Editor for Fortnite (`addons/launchable`), which Epic shows but which are no games. Epic's own library list is cached in `webcache_*/IndexedDB/https_launcher.store.epicgames.com_0.indexeddb.blob` (V8-serialized, 431 apps incl. DLC). The cache is **ASCII-only** — every other
 character is `?` ("Batman? Arkham", "K?ln"); `EpicCatalog.RepairTitle` drops trademark `?`s,
+Since #141 both come as tools when the launcher's switch is on: engines by category `engines`, namespace `ue` with a
+title starting "Unreal Engine", or an app name `UE_<version>`; every installed version is one entry "Unreal Engine" whose
+A starts the newest (by `UE_5.4`, else the leading numbers of `AppVersionString`), not installed the newest catalog
+version; launchable add-ons by `addons/launchable` even though their `mainGameItem`/`MainGameAppName` names a game.
+The manifests' `AppCategories` for these were not yet checked on the owner's PC (T141-1, T141-2). Epic's
 umlauts stay broken until metadata providers (#43) supply titles. Install: `…?action=install`.
 `EpicInstallMonitor` (verified 2026-10-10 with real installs): queue order from
 `Data\DownloadManager\DownloadState_<account>.json` (incl. paused, `[]` when idle); per-app events

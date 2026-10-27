@@ -32,6 +32,15 @@ Steam stores no install date (the game folder's creation time is used). Owned bu
 readable locally: `appcache/packageinfo.vdf` keeps packages after a refund (owner's 007 First Light), and the real
 license list (`userdata/<id>/config/licensecache`) is encrypted — they come with a Steam login (#83). Libraries are re-read on every scan,
 so added or missing drives need no handling of their own.
+**Types** (#141, built 2026-10-27, not yet checked against the owner's files): app manifests hold no type; it is
+`appinfo/common/type` in the binary `appcache/appinfo.vdf` (`SteamAppInfo`; versions 0x07564427/28/29, v29 with a
+string table for the keys). Only the installed app ids are parsed, every other entry is skipped by its size; cached by
+the file's length and write time (synthetic 100,000 entries: 36 ms in the cloud container). `Game`/`Demo` → Spiel,
+`Application` → Software, `Tool` → Werkzeug, `Music` → Soundtrack, anything else is left out, as are runtimes and
+redistributables by id and name (Proton, Steam Linux Runtime, Steamworks Common). Without a readable file the types
+come from ids and names (tools as before, a name ending in "Soundtrack"), software counts as a game, and one warning
+goes to arcadia.log. Unverified: whether soundtracks always have their own manifest and live in `steamapps/music`
+(Arcadia looks in `common` first) and that `steam://rungameid/<id>` plays one (T141-6, T141-10).
 `SteamInstallMonitor` (verified 2026-10-12 with real installs): a new install's manifest appears with `StateFlags` 2
 and `buildid` 0, then 1026 (+1024 started) while downloading *or* waiting, 1538 (+512) when paused, 4 when done;
 an update of an installed game is 1030. Steam downloads one app at a time but flags all waiting ones alike, so the

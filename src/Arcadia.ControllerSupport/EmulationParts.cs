@@ -12,7 +12,7 @@ public static class EmulationParts
     /// <summary>The ids of the rows that mean "this part is missing or too old"; "Installieren" sets each one up.</summary>
     private static readonly HashSet<string> MissingIds =
     [
-        "usbip-missing", "usbip-outdated", "usbip-stopped", "viiper-missing", "pan-missing", "hidhide-missing", "hidhide-unsupported", "hidhide-removal-pending",
+        "usbip-missing", "usbip-outdated", "usbip-stopped", "viiper-missing", "pan-missing", "pan-failing", "hidhide-missing", "hidhide-unsupported", "hidhide-removal-pending",
     ];
 
     /// <summary>The parts as the user knows them, by the rows that say one is missing.</summary>
@@ -24,6 +24,15 @@ public static class EmulationParts
     public static HealthIssue ViiperMissing { get; } = new("viiper-missing", HealthSeverity.Warning, "VIIPER fehlt",
         "Arcadia erzeugt mit VIIPER den virtuellen Controller. Bis auf Weiteres kommt VIIPER mit den Dateien von SISR; „Installieren“ lädt sie herunter, ohne Administratorrechte.",
         HealthFix.InstallDrivers, "Installieren");
+
+    /// <summary>
+    /// Pan is installed but its last run ended with an error, mostly because it refuses a data folder whose rights were
+    /// changed (owner's B2 test, 2026-10-27: Explorer's "Fortsetzen" gives the user rights on it). Its install makes the
+    /// folder anew, so the fix is the same as for a missing Pan.
+    /// </summary>
+    public static HealthIssue PanFailing { get; } = new("pan-failing", HealthSeverity.Warning, "Wächterdienst Pan startet nicht",
+        $"Pan beendet sich gleich nach dem Start, meist weil die Rechte an seinem Ordner {PanPaths.DataDirectory} geändert wurden (etwa mit „Fortsetzen“ im Explorer). „Neu einrichten“ legt den Ordner neu an. Die Installation fragt einmalig nach Administratorrechten.",
+        HealthFix.InstallDrivers, "Neu einrichten", Summary: "„Neu einrichten“ behebt das meist.");
 
     /// <summary>
     /// HidHide was uninstalled and is still there until Windows restarts (owner's B2 test, 2026-10-27). No "Installieren":

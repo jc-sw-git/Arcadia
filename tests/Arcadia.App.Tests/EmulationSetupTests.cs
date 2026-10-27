@@ -203,6 +203,29 @@ public sealed class EmulationSetupTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T243-44")]
+    public async Task A_Pan_that_ends_at_once_gets_a_row_whose_reinstall_repairs_it()
+    {
+        // Owner's B2 test (2026-10-27): Pan refused its data folder after Explorer's "Fortsetzen" and nothing said so.
+        var steam = new FakeSteam { PanFailing = true };
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-failing"), "die Meldung „Wächterdienst Pan startet nicht“");
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-failing"));
+        Assert.Equal("Wächterdienst Pan startet nicht", row.Title);
+        Assert.Equal("Neu einrichten", row.ActionText);
+        Assert.Contains(PanPaths.DataDirectory, row.Info.OfType<InfoText>().Single().Text);
+        Assert.Equal("Aus – es fehlt: Wächterdienst Pan", Switch(controller).Subtitle);
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Status.ControllerStatusText.Contains("Wächterdienst Pan startet nicht"), "das Dreieck im Header");
+
+        row.Activate();
+        await arcadia.WaitUntilAsync(() => controller.Rows.All(r => r.Key != "issue:pan-failing"), "die Meldung verschwindet");
+        Assert.Equal(1, steam.DriverInstalls);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T243-35")]
     public async Task While_HidHide_s_configuration_is_open_the_settings_ask_to_close_it()
     {

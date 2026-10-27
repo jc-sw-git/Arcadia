@@ -75,7 +75,10 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
 - Pan stops itself after 30 s without a client (nothing idles in the background), unless a retry still has to show
   the Steam Controller ([pan-hiding.md](pan-hiding.md)); Arcadia starts it with
   `ServiceController.Start` on connect (users have `SERVICE_START` by the DACL); a Pan still stopping itself is waited
-  for and then started (`PanServiceStart`; before, Arcadia gave up with "Pan startet nicht (Stopped)"). Recovery: 3 restarts, 1 s, reset daily,
+  for and then started (`PanServiceStart`; before, Arcadia gave up with "Pan startet nicht (Stopped)"). One that ends
+  at once after Arcadia's start counts as permanent (15 s retry), and a service stopped with a Win32 exit code (Pan
+  refused its data folder, or crashed) gives the row "Wächterdienst Pan startet nicht" with "Neu einrichten" (Pan's
+  install) instead of being started every 2 s (owner's B2 test, 2026-10-27). Recovery: 3 restarts, 1 s, reset daily,
   also on non-zero exit.
 
 ## Setup, update, uninstall

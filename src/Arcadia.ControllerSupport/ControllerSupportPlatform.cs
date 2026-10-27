@@ -203,7 +203,8 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
     public bool IsUsbipReady =>
         OperatingSystem.IsWindows() && UsbipDriver.InstalledVersion() is { } version && version >= UsbipDriver.MinimumVersion && UsbipDriver.IsRunning();
 
-    public bool IsPanReady => OperatingSystem.IsWindows() && PanSetup.IsInstalled;
+    /// <summary>Installed, and its last run didn't end with an error (then its install repairs it).</summary>
+    public bool IsPanReady => OperatingSystem.IsWindows() && PanSetup.IsInstalled && !PanPipeTransport.LastRunFailed();
 
     public bool IsPanUpdateAvailable => OperatingSystem.IsWindows() && PanSetup.UpdateAvailable;
 
@@ -373,7 +374,14 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
             issues.Add(hidHide);
         }
 
-        if (!PanSetup.IsInstalled)
+        if (PanSetup.IsInstalled)
+        {
+            if (PanPipeTransport.LastRunFailed())
+            {
+                issues.Add(EmulationParts.PanFailing);
+            }
+        }
+        else
         {
             issues.Add(new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Pan gibt die echten Controller zurück, wenn Arcadia abstürzt oder hängt. Ohne Pan bringt Arcadia den Steam Controller nicht als Xbox Controller in Spiele. Die Installation fragt einmalig nach Administratorrechten.", HealthFix.InstallDrivers, "Installieren"));
         }

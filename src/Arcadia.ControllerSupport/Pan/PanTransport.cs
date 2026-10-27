@@ -25,6 +25,9 @@ public enum PanServiceStartStep
     Wait,
     Start,
     Running,
+
+    /// <summary>Started by Arcadia and stopped again: Pan ends at once, and starting it again every 2 s doesn't help.</summary>
+    EndedAtOnce,
 }
 
 /// <summary>
@@ -38,8 +41,11 @@ public static class PanServiceStart
     /// <param name="stopped">The service is stopped (not pending either way).</param>
     public static PanServiceStartStep Next(bool running, bool stopped, bool startRequested) =>
         running ? PanServiceStartStep.Running
-        : stopped && !startRequested ? PanServiceStartStep.Start
+        : stopped ? startRequested ? PanServiceStartStep.EndedAtOnce : PanServiceStartStep.Start
         : PanServiceStartStep.Wait;
+
+    /// <summary>Stopped with a Win32 exit code: Pan reports a failure as 1066 (service-specific), a crash shows as 1067.</summary>
+    public static bool Failed(bool stopped, uint win32ExitCode) => stopped && win32ExitCode != 0;
 }
 
 /// <summary>Opens the connection to Pan; replaced in tests by a stream pair.</summary>
@@ -69,6 +75,8 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
     public static string PipePath => $@"\\.\pipe\{PanPaths.PipeName}";
 
     private const string NotInstalled = "Pan ist nicht eingerichtet";
+
+    public const string EndsAtOnce = "Pan beendet sich gleich nach dem Start";
 
     public (string Reason, bool Permanent)? Unavailable() => ServiceExists() ? null : (NotInstalled, true);
 
@@ -128,6 +136,8 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
                         service.Start();
                         startRequested = true;
                         break;
+                    case PanServiceStartStep.EndedAtOnce:
+                        throw new PanUnavailableException(EndsAtOnce, permanent: true);
                 }
 
                 if (DateTime.UtcNow > until)
@@ -199,12 +209,23 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
     /// The service's process id, opened with <c>SERVICE_QUERY_STATUS</c> only: that is what Pan's DACL gives users, and
     /// <c>ServiceController.ServiceHandle</c> asks for all access, which an unelevated Arcadia never gets (review, bug 2).
     /// </summary>
-    private static unsafe uint ProcessIdOf()
+    private static uint ProcessIdOf() => QueryStatus() is { } status ? status.ProcessId : throw new Win32Exception();
+
+    /// <summary>
+    /// Pan's service is stopped with an error from its last run: it refused to start (its data folder not trusted,
+    /// owner's B2 test 2026-10-27) or crashed. An idle stop ends without one. Read with <c>SERVICE_QUERY_STATUS</c>.
+    /// </summary>
+    public static bool LastRunFailed() =>
+        QueryStatus() is { } status && PanServiceStart.Failed(status.CurrentState == ServiceStopped, status.Win32ExitCode);
+
+    private const uint ServiceStopped = 1;
+
+    private static unsafe ServiceStatusProcess? QueryStatus()
     {
         var manager = OpenSCManagerW(null, null, ScManagerConnect);
         if (manager == 0)
         {
-            throw new Win32Exception();
+            return null;
         }
 
         try
@@ -212,18 +233,13 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
             var service = OpenServiceW(manager, PanPaths.ServiceName, ServiceQueryStatus);
             if (service == 0)
             {
-                throw new Win32Exception();
+                return null;
             }
 
             try
             {
                 var info = new ServiceStatusProcess();
-                if (!QueryServiceStatusEx(service, ScStatusProcessInfo, &info, (uint)sizeof(ServiceStatusProcess), out _))
-                {
-                    throw new Win32Exception();
-                }
-
-                return info.ProcessId;
+                return QueryServiceStatusEx(service, ScStatusProcessInfo, &info, (uint)sizeof(ServiceStatusProcess), out _) ? info : null;
             }
             finally
             {

@@ -15,7 +15,17 @@ public sealed class PanServiceStartTests
         Assert.Equal(PanServiceStartStep.Wait, PanServiceStart.Next(running: false, stopped: false, startRequested: true));
         Assert.Equal(PanServiceStartStep.Running, PanServiceStart.Next(running: true, stopped: false, startRequested: true));
 
-        // Started and stopped again (Pan failed): not started in a loop; the timeout reports it.
-        Assert.Equal(PanServiceStartStep.Wait, PanServiceStart.Next(running: false, stopped: true, startRequested: true));
+        // Started and stopped again (Pan refused to run): reported at once, the client then retries only slowly.
+        Assert.Equal(PanServiceStartStep.EndedAtOnce, PanServiceStart.Next(running: false, stopped: true, startRequested: true));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-44")]
+    public void A_Pan_stopped_with_an_error_counts_as_failing_an_idle_stop_does_not()
+    {
+        Assert.True(PanServiceStart.Failed(stopped: true, win32ExitCode: 1066));
+        Assert.True(PanServiceStart.Failed(stopped: true, win32ExitCode: 1067));
+        Assert.False(PanServiceStart.Failed(stopped: true, win32ExitCode: 0));
+        Assert.False(PanServiceStart.Failed(stopped: false, win32ExitCode: 1066));
     }
 }

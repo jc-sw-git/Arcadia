@@ -72,7 +72,7 @@ public sealed partial class SteamContentLog(string path)
             stream.Seek(_offset, SeekOrigin.Begin);
             using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
             var text = _partialLine + reader.ReadToEnd();
-            _offset = stream.Length;
+            _offset = stream.Position; // not Length: Steam may have appended after ReadToEnd
 
             var end = text.LastIndexOf('\n');
             _partialLine = end < 0 ? text : text[(end + 1)..];

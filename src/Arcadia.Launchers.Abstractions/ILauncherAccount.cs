@@ -2,8 +2,8 @@ namespace Arcadia.Launchers.Abstractions;
 
 /// <summary>
 /// A sign-in to the launcher's online account (#83), so that its library also holds the games the user owns but hasn't
-/// installed. Shown on the launcher's page as a group "Konto" while the launcher is active and found. The sign-in is a QR
-/// code the user approves in the launcher's phone app; Arcadia never sees a password.
+/// installed. Shown on the launcher's page as a group "Konto" while the launcher is active and found. The user signs in on
+/// the launcher's own web page in Arcadia's browser (<see cref="IWebPages"/>), e.g. with its QR code and the phone app.
 /// </summary>
 /// <remarks>
 /// Events may come from any thread. A change of the owned games raises <see cref="LibraryChanged"/>; the launcher's
@@ -23,9 +23,6 @@ public interface ILauncherAccount
     /// <summary>The info panel's second paragraph while signed out: how the sign-in works and what it needs.</summary>
     string SignInMethod { get; }
 
-    /// <summary>The info panel's text beside the QR code: where in the phone app to scan it.</summary>
-    string CodeInstruction { get; }
-
     LauncherAccountState State { get; }
 
     /// <summary><see cref="State"/> changed.</summary>
@@ -37,10 +34,7 @@ public interface ILauncherAccount
     /// <summary>Background work failed unexpectedly (a bug, not Steam being unreachable); Arcadia logs and shows it.</summary>
     event EventHandler<Exception>? Failed;
 
-    /// <summary>
-    /// Starts a sign-in: a QR code to approve, renewed by itself until it is approved, rejected or cancelled, or the
-    /// launcher's sign-in service stops answering.
-    /// </summary>
+    /// <summary>Starts a sign-in: the launcher's sign-in page, until the user signed in there or went back.</summary>
     void BeginSignIn();
 
     /// <summary>Drops a sign-in that is under way; the account stays as it was.</summary>
@@ -58,16 +52,10 @@ public enum AccountStep
 {
     SignedOut,
 
-    /// <summary>The QR code is being fetched.</summary>
-    Starting,
+    /// <summary>The launcher's sign-in page is shown.</summary>
+    SigningIn,
 
-    /// <summary><see cref="LauncherAccountState.Code"/> waits for approval on the phone.</summary>
-    ShowingCode,
-
-    /// <summary>The code was rejected on the phone.</summary>
-    CodeRejected,
-
-    /// <summary>The launcher's sign-in service couldn't be reached, or stopped answering.</summary>
+    /// <summary>The sign-in page couldn't be shown or loaded (no browser, offline).</summary>
     Unreachable,
 
     SignedIn,
@@ -80,12 +68,6 @@ public sealed record LauncherAccountState(AccountStep Step)
 
     /// <summary>The name the account goes by, e.g. the Steam profile name; null while signed out.</summary>
     public string? AccountName { get; init; }
-
-    /// <summary>The text of the QR code while <see cref="AccountStep.ShowingCode"/>.</summary>
-    public string? Code { get; init; }
-
-    /// <summary>When <see cref="Code"/> was shown or last renewed; the launcher's service doesn't say how long it holds.</summary>
-    public DateTimeOffset? CodeRenewedAt { get; init; }
 
     /// <summary>
     /// A status message (warning) about the account, e.g. the owned games couldn't be fetched or the sign-in expired;
@@ -103,5 +85,5 @@ public sealed record LauncherAccountState(AccountStep Step)
     public DateTimeOffset? ListedAt { get; init; }
 
     /// <summary>A sign-in is under way or ended without success: B drops it.</summary>
-    public bool IsSigningIn => Step is AccountStep.Starting or AccountStep.ShowingCode or AccountStep.CodeRejected or AccountStep.Unreachable;
+    public bool IsSigningIn => Step is AccountStep.SigningIn or AccountStep.Unreachable;
 }

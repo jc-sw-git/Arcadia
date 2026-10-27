@@ -1368,14 +1368,6 @@
                     </Grid>
                   </Border>
                 </DataTemplate>
-                <!-- A launcher account's sign-in (#83): the code a phone scans, on light ground with its quiet zone. -->
-                <DataTemplate x:DataType="settings:InfoQrCode">
-                  <Border Width="260" Height="260" HorizontalAlignment="Left" Background="{StaticResource QrCodeBackground}" CornerRadius="12">
-                    <Viewbox Stretch="Uniform">
-                      <Path Data="{Binding Modules}" Fill="{StaticResource QrCodeModules}" Width="100" Height="100" />
-                    </Viewbox>
-                  </Border>
-                </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoTabBar">
                   <Border Classes="miniTabs">
                     <Panel>
@@ -1676,6 +1668,30 @@
       <!-- The first start's question which launchers Arcadia uses (#139): over everything but the toast until "Fertig". -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsFirstRunShown}">
         <views:FirstRunView DataContext="{Binding FirstRun}" />
+      </Panel>
+
+      <!-- A launcher's web page (#83), e.g. Steam's sign-in: shown over everything, or hidden while Arcadia reads a page
+           unseen (the web view is made either way). Nothing can be drawn over the web view itself, so the bars stay free. -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsWebSignInOpen}">
+        <Border Classes="bleedAll" Background="{StaticResource Bg}" />
+        <Grid RowDefinitions="104,*,72">
+          <Grid Margin="80,0" ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="24" VerticalAlignment="Center">
+              <TextBlock Text="{Binding WebPage?.Title}" FontSize="26" FontWeight="ExtraBold" VerticalAlignment="Center" />
+              <!-- Like a browser's address bar: the user sees the page is the launcher's own site. -->
+              <Border Background="{StaticResource SurfaceRaised}" CornerRadius="10" Padding="16,8" VerticalAlignment="Center">
+                <TextBlock Text="{Binding WebPage?.Address}" FontSize="17" Foreground="{StaticResource TextMuted}" />
+              </Border>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="plain dialogClose" VerticalAlignment="Center" ToolTip.Tip="Abbrechen (B)" Command="{Binding CloseWebPageCommand}">
+              <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+            </Button>
+          </Grid>
+          <views:WebPageHost Grid.Row="1" Margin="80,0" Page="{Binding WebPage}" />
+          <StackPanel Grid.Row="2" Margin="80,0" Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <ctl:KeyHint Pad="B" Keys="Esc" Text="Abbrechen" />
+          </StackPanel>
+        </Grid>
       </Panel>
 
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->

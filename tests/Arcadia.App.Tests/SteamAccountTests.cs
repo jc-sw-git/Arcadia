@@ -12,9 +12,9 @@ using Avalonia.Headless.XUnit;
 namespace Arcadia.App.Tests;
 
 /// <summary>
-/// The Steam account on Steam's launcher page (#83): a QR sign-in approved on the phone, the owned games that aren't
-/// installed in the Steam tab and the search, another account in Steam, offline with the cached list, and signing out.
-/// Steam's web API is <see cref="FakeSteamWeb"/>; the phone is the test approving or rejecting the code.
+/// The Steam account on Steam's launcher page (#83): a sign-in on Steam's own login page in Arcadia's browser, the owned
+/// games that aren't installed in the Steam tab and the search, another account in Steam, offline with the cached list,
+/// and signing out. Steam's web API and pages are <see cref="FakeSteamWeb"/>; the user signing in there is the test.
 /// </summary>
 public sealed class SteamAccountTests
 {
@@ -29,7 +29,7 @@ public sealed class SteamAccountTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T83-1")]
-    public async Task Sign_in_by_controller_shows_a_code_and_once_approved_the_name_and_the_uninstalled_games_which_A_installs()
+    public async Task Sign_in_by_controller_opens_Steams_login_page_and_once_signed_in_there_shows_the_name_and_the_uninstalled_games_which_A_installs()
     {
         using var files = SteamWithOwnedGames();
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
@@ -41,19 +41,22 @@ public sealed class SteamAccountTests
         Assert.Equal("Anmelden", row.ActionText);
         Assert.Equal("Melde dich an, um vollen Zugriff auf deine Spielebibliothek zu haben", row.Subtitle);
         Assert.Equal(2, row.Info.OfType<InfoText>().Count());
-        Assert.StartsWith("Die Anmeldung erfolgt über einen QR-Code.", row.Info.OfType<InfoText>().Last().Text, StringComparison.Ordinal);
+        Assert.StartsWith("Die Anmeldung erfolgt auf der Anmeldeseite von Steam", row.Info.OfType<InfoText>().Last().Text, StringComparison.Ordinal);
         Assert.Empty(row.Info.OfType<InfoFootnote>());
 
+        // Steam's own page over the whole window, its address shown like in a browser.
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitOnClockUntilAsync(() => row.Info.OfType<InfoQrCode>().Any(), "der QR-Code im Infobereich", SignInLimit);
-        Assert.Contains(row.Info.OfType<InfoText>(), text => text.Text.Contains("QR-Code scannen", StringComparison.Ordinal));
+        await arcadia.WaitOnClockUntilAsync(() => arcadia.Main.IsWebSignInOpen && files.SteamWeb.IsSignInPageShown, "Steams Anmeldeseite", SignInLimit);
+        Assert.Equal("Bei Steam anmelden", arcadia.Main.WebPage!.Title);
+        Assert.Equal("https://store.steampowered.com", arcadia.Main.WebPage.Address);
+        Assert.Equal("Anmeldung auf der Seite von Steam …", row.Subtitle);
 
         files.SteamWeb.IsApproved = true;
         await arcadia.WaitOnClockUntilAsync(() => TitlesOf(arcadia).Count == 3, "die nicht installierten Spiele im Steam-Tab", SignInLimit);
 
+        Assert.False(arcadia.Main.IsWebSignInOpen);
         Assert.Equal(FakeSteamWeb.ProfileName, row.Subtitle);
         Assert.Equal("Abmelden", row.ActionText);
-        Assert.Empty(row.Info.OfType<InfoQrCode>());
         Assert.Equal($"Angemeldet als {FakeSteamWeb.ProfileName}. Arcadia zeigt neben deinen installierten Spielen auch die Spiele, die im Besitz von {FakeSteamWeb.ProfileName} sind.", row.Info.OfType<InfoText>().First().Text);
         Assert.Equal("Meldest du dich ab, werden nur noch die installierten Spiele gelistet.", Assert.Single(row.Info.OfType<InfoFootnote>()).Text);
         Assert.Equal(["Leuchtturm", "Salzwiesen", "Tidenhub"], TitlesOf(arcadia));
@@ -71,22 +74,30 @@ public sealed class SteamAccountTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T83-1")]
-    public async Task B_drops_the_code_and_stays_on_the_page()
+    public async Task B_closes_the_login_page_and_stays_on_the_launcher_page()
     {
         using var files = SteamWithOwnedGames();
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
         var row = OpenAccountRow(arcadia);
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitOnClockUntilAsync(() => row.Info.OfType<InfoQrCode>().Any(), "der QR-Code", SignInLimit);
+        await arcadia.WaitOnClockUntilAsync(() => arcadia.Main.IsWebSignInOpen && files.SteamWeb.IsSignInPageShown, "Steams Anmeldeseite", SignInLimit);
 
-        arcadia.Press(UiAction.Back);
+        // The page takes every press: A or the D-pad don't reach the row under it ("Abbrechen" there)…
+        arcadia.Press(UiAction.Accept);
+        arcadia.Press(UiAction.Down);
         Dispatcher();
+        Assert.True(arcadia.Main.IsWebSignInOpen);
+        Assert.Equal("Abbrechen", row.ActionText);
+        Assert.True(row.IsFocused);
 
+        // …B closes it and nothing else, so the settings stay open.
+        arcadia.Press(UiAction.Back);
+        await arcadia.WaitOnClockUntilAsync(() => !files.SteamWeb.IsSignInPageShown && row.ActionText == "Anmelden", "die Seite ist zu", SignInLimit);
+
+        Assert.False(arcadia.Main.IsWebSignInOpen);
         Assert.Equal(KnownLaunchers.Steam.Id, ((LauncherSettingsViewModel)arcadia.Main.Settings!.Selected).PageLauncherId);
-        Assert.Equal("Anmelden", row.ActionText);
-        Assert.Empty(row.Info.OfType<InfoQrCode>());
 
-        // Approved on the phone too late: Arcadia stays signed out.
+        // Signed in on Steam's page too late: Arcadia stays signed out.
         files.SteamWeb.IsApproved = true;
         arcadia.Wait(TimeSpan.FromSeconds(15));
         await arcadia.SteamAccount!.WhenIdleAsync();
@@ -97,39 +108,23 @@ public sealed class SteamAccountTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T83-2")]
-    public async Task A_code_nobody_approves_stays_and_counts_since_its_renewal_and_a_rejected_one_says_so()
+    public async Task A_login_page_that_does_not_load_says_Steam_is_unreachable_and_A_opens_it_again()
     {
         using var files = SteamWithOwnedGames();
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
         var row = OpenAccountRow(arcadia);
+        files.SteamWeb.IsOffline = true;
+
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitOnClockUntilAsync(() => row.Info.OfType<InfoQrCode>().Any(), "der QR-Code", SignInLimit);
+        await arcadia.WaitOnClockUntilAsync(() => row.Subtitle == "Steam nicht erreichbar – [A] erneut versuchen", "„nicht erreichbar“", SignInLimit);
+        Assert.False(arcadia.Main.IsWebSignInOpen);
+        Assert.Equal("Erneut versuchen", row.ActionText);
+        Assert.Contains(row.Info.OfType<InfoText>(), text => text.Text.StartsWith("Arcadia konnte die Anmeldeseite von Steam nicht laden.", StringComparison.Ordinal));
 
-        // The row counts up since the code was shown (owner, 2026-10-27).
-        await arcadia.WaitOnClockUntilAsync(() => row.Subtitle == "Warte auf Bestätigung · Code erneuert vor 10 s", "„erneuert vor 10 s“", SignInLimit);
-
-        // Steam renews the code: the new one shows, and the count starts again.
-        files.SteamWeb.RenewCode();
-        await arcadia.WaitOnClockUntilAsync(() => row.Subtitle is "Warte auf Bestätigung · Code erneuert gerade eben" or "Warte auf Bestätigung · Code erneuert vor 1 s", "die Zählung beginnt neu", SignInLimit);
-
-        // Longer than the two minutes the code used to last, and Steam ends the session nobody scanned: a new code, no press.
-        arcadia.Wait(TimeSpan.FromMinutes(3));
-        Assert.Single(row.Info.OfType<InfoQrCode>());
-        files.SteamWeb.EndSession();
-        await arcadia.WaitOnClockUntilAsync(() => files.SteamWeb.CodesIssued == 3, "ein neuer Code ohne Tastendruck", SignInLimit);
-        Dispatcher();
-        Assert.Single(row.Info.OfType<InfoQrCode>());
-        Assert.Equal("Abbrechen", row.ActionText);
-
-        files.SteamWeb.IsRejected = true;
-        await arcadia.WaitOnClockUntilAsync(() => row.Subtitle == "Abgelehnt – [A] für neuen Code", "„Abgelehnt“", SignInLimit);
-        Assert.Empty(row.Info.OfType<InfoQrCode>());
-        Assert.Equal("Neuer Code", row.ActionText);
-
-        files.SteamWeb.IsRejected = false;
+        files.SteamWeb.IsOffline = false;
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitOnClockUntilAsync(() => row.Info.OfType<InfoQrCode>().Any(), "noch ein QR-Code", SignInLimit);
-        Assert.Equal(4, files.SteamWeb.CodesIssued);
+        await arcadia.WaitOnClockUntilAsync(() => arcadia.Main.IsWebSignInOpen && files.SteamWeb.IsSignInPageShown, "Steams Anmeldeseite", SignInLimit);
+        Assert.Equal(2, files.SteamWeb.SignInPagesShown);
     }
 
     [AvaloniaFact]
@@ -326,6 +321,10 @@ public sealed class SteamAccountTests
         Assert.Equal([Installed.Name], TitlesOf(arcadia));
         Assert.Equal("Anmelden", row.ActionText);
         Assert.Empty(Directory.GetFiles(files.AccountFolder));
+
+        // Steam's cookies in Arcadia's browser go too, unseen: the next sign-in asks Steam's page again.
+        await arcadia.WaitOnClockUntilAsync(() => files.SteamWeb.CookiesForgotten == 1, "Steams Cookies gelöscht", SignInLimit);
+        Assert.False(arcadia.Main.IsWebSignInOpen);
         arcadia.CloseSettings();
         arcadia.Press(UiAction.Search);
         arcadia.Main.TypeInSearch("tiden");
@@ -379,7 +378,7 @@ public sealed class SteamAccountTests
         return Assert.IsType<ActionRowViewModel>(arcadia.FocusRow(AccountRow));
     }
 
-    /// <summary>A on "Anmelden", the code approved on the phone; the account's games are fetched.</summary>
+    /// <summary>A on "Anmelden", signed in on Steam's page; the account's games are fetched.</summary>
     private static async Task<ActionRowViewModel> SignInAsync(ArcadiaDriver arcadia, LauncherFiles files)
     {
         var row = OpenAccountRow(arcadia);

@@ -65,18 +65,18 @@ so Arcadia offers no "Controller-Layout" action for now (owner's decision).
 
 ## Account (#83, 2026-10-27, partly checked against the real Steam)
 
-`Steam/Account/`: a QR sign-in over Steam's web API, as Steam's phone app and `node-steam-session` (MIT, reference only)
-do it. `IAuthenticationService/BeginAuthSessionViaQR`, `PollAuthSessionStatus` and `GenerateAccessTokenForApp` take
-`input_protobuf_encoded` (base64 protobuf, POST) and answer protobuf; the result is the `x-eresult` header (1 = OK).
-Arcadia signs in as platform `MobileApp` (device name "Arcadia"): only such a refresh token may get new access tokens
-over the web API (WebBrowser gets AccessDenied since 2025-04-30). The code renews itself (`new_challenge_url`,
-`new_client_id`; the owner saw it change about every 30 s); the old one is then invalid. A poll error after
-`had_remote_interaction` counts as rejected on the phone; without a scan, as a session Steam ended, and a new one starts.
-Tokens are JWTs (`sub` = SteamID64, `exp`); the access token lives about a day, the refresh token about 200 days.
+`Steam/Account/`: sign-in on Steam's own store login page in Arcadia's browser (`IWebPages`, a system web view:
+WebView2 / WebKitGTK, profile in `%APPDATA%\Arcadia\WebView`), the way Playnite does it. Every store page then holds
+`#application_config` with `data-userinfo` (`logged_in`, `steamid`) and `data-store_user_config` (`webapi_token`, a JWT:
+`sub` = SteamID64, `exp`, about a day); `SteamStorePage` reads both. A new token: reload `store.steampowered.com/explore/`
+unseen (Steam renews its own cookies there); a page signed out or in with another account means the sign-in is gone.
+Sign-out deletes the cookies of `steampowered.com`/`steamcommunity.com`. **Never pose as another app:** the first #83
+build signed in by QR as Steam's phone app (`MobileApp`, refresh token, token as `steamLoginSecure` cookie), and Steam
+restricted the owner's account as possibly stolen the same day (2026-10-27); such a stored sign-in is deleted at start.
 Owned games: `IPlayerService/GetOwnedGames` with `access_token`, `include_appinfo`, `include_played_free_games`,
 `include_free_sub`. Owner's account (T83-3, 2026-10-27): 413 apps, games and software only, no soundtracks or tools,
 and fewer games than Steam's "Spiele" count. So Arcadia also reads the store's `dynamicstore/userdata` (`rgOwnedApps`,
-every owned app incl. DLC; the phone app's access token is the store cookie `steamLoginSecure=<id>||<token>`) and
+every owned app incl. DLC; read unseen in the browser, so the store's own cookies count) and
 names and types those apps from `appinfo.vdf`; one `appinfo.vdf` doesn't know is left out. Still missing (2026-10-27):
 free tools and soundtracks only a package holds (169 tools in Steam, 120 from package 0). So the store's
 `rgOwnedPackages` plus package 0 are resolved to apps via `appcache/packageinfo.vdf` (`SteamPackageInfo`, v39/v40, no

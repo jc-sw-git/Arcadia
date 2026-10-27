@@ -6,9 +6,13 @@ using Arcadia.Core.Diagnostics;
 
 namespace Arcadia.Launchers.Steam.Account;
 
-/// <summary>The stored sign-in: tokens and the account they belong to. Never logged.</summary>
-/// <param name="Expired">Steam no longer took the refresh token: signed out, with a status message until a new sign-in.</param>
-internal sealed record SteamSignIn(string? RefreshToken, string? AccessToken, ulong SteamId, string Name, bool Expired = false);
+/// <summary>The stored sign-in: the account, its name and the last web API token. Never logged.</summary>
+/// <param name="AccessToken">The store page's web API token as read last; it lives about a day.</param>
+/// <param name="Expired">The store page was no longer signed in: signed out, with a status message until a new sign-in.</param>
+/// <param name="RefreshToken">
+/// Only in a sign-in of the first #83 build, which posed as Steam's phone app; such a sign-in is deleted, not used.
+/// </param>
+internal sealed record SteamSignIn(string? AccessToken, ulong SteamId, string Name, bool Expired = false, string? RefreshToken = null);
 
 /// <summary>The owned games as fetched last, for a start offline or before the next fetch.</summary>
 /// <param name="Packages">The account's packages from the store; null in a list cached before they were kept.</param>

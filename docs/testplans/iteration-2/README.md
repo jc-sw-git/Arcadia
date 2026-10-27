@@ -34,3 +34,5 @@ Charter: –. Time box: –. Findings: –.
 | T208-1 to T208-3, T209-3 | `tests/Arcadia.App.Tests/PageInterfaceTests.cs` |
 | T209-1, T209-2 | `tests/Arcadia.App.Tests/PageTransitionTests.cs`, `Window/SearchViewTests.cs` |
 | T210-1 to T210-3 | `tests/Arcadia.App.Tests/RoutingTests.cs` |
+| T141-1, T141-3, T141-5, T141-7, T141-8, T141-9 | `tests/Arcadia.App.Tests/EntryTypeTests.cs` |
+| T141-4, T141-7 (drawn) | `tests/Arcadia.App.Tests/Window/EntryTypeViewTests.cs` |

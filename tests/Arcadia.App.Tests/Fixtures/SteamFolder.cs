@@ -113,6 +113,19 @@ internal sealed class SteamFolder(string root)
         }
     }
 
+    /// <summary>
+    /// Steam's app cache <c>appcache/appinfo.vdf</c> (#141, format v29) with each app's type as Steam writes it, e.g.
+    /// <c>Tool</c>; the manifests hold none.
+    /// </summary>
+    public void WriteAppInfo(params (SteamApp App, string Type)[] apps)
+    {
+        var path = Path.Combine(root, "appcache", "appinfo.vdf");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, Arcadia.Core.Tests.AppInfoFile.Build(
+            Arcadia.Core.Tests.AppInfoFile.V29,
+            apps.Select(app => (uint.Parse(app.App.AppId, CultureInfo.InvariantCulture), app.App.Name, app.Type))));
+    }
+
     /// <summary>Steam deletes the manifest when a new install is cancelled or a game uninstalled.</summary>
     public void Remove(string appId, string? library = null)
     {

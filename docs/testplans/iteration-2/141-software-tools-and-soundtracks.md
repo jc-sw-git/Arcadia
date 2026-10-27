@@ -46,7 +46,9 @@ Unit and integration tests: `SteamAppInfoTests` (v27/v28/v29, broken files), `St
 the fallback, runtimes left out, the music folder, a new install read again), `EpicCatalogTests`/`EpicScannerTests`
 (engine and add-ons as tools, versions to one entry starting the newest), `LibraryTypesTests` (filter, counts, switches
 saved), `LibrarySessionTests` (a switch acts at once without a rescan), `TypeCountLineTests` (parts, tooltip, texts per
-type). The acceptance tests per `E2E: yes` case come from the quality engineer's thread.
+type). Acceptance tests: `EntryTypeTests` (T141-1 with Epic's files, T141-3 with Steam's files and `appinfo.vdf`,
+T141-5, T141-7, T141-8, T141-9) and `Window/EntryTypeViewTests` (T141-4 on cover, search hit, preview, detail page and the
+focus ring; T141-7 as drawn beside "Ubisoft Connect").
 
 History:
 
@@ -56,3 +58,5 @@ History:
 | T141-4, T141-5, T141-7, T141-8 and the switches looked at | 2026-10-27 | Claude | PR branch, Debug, Linux, Xvfb, `--demo` with all GOG switches on, then tools off | ✅ count line, cover badge, preview line, detail chip, "Abrocken" and its toast in demo, search hits, launcher page, switch off acting at once | – |
 | `SteamAppInfo` speed | 2026-10-27 | Claude | Linux cloud container, synthetic v29 file with 100,000 entries, 500 ids near its end | 36 ms (file cached) | T141-11 on the owner's PC |
 | T141-2, T141-6, T141-10, real `appinfo.vdf` and Epic manifests | – | – | owner's PC was offline | not run | owner's test |
+| Acceptance tests T141-1, 3, 4, 5, 7, 8, 9 (12 tests), each made red once by breaking the feature | 2026-10-27 | Claude (QE) | PR branch, Linux cloud container, Avalonia headless | ✅ | – |
+| Visual check: launcher page switches, count line in header, "Neu einlesen" and "Launcher-Details", covers with type icon | 2026-10-27 | Claude (QE) | PR branch, Debug, Linux, Xvfb, `--demo`, GOG's three switches on | ✅ (gap before ")" in the bracket, see review) | 200 % scaling not looked at |

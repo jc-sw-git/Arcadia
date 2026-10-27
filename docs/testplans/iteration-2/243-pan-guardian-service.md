@@ -83,15 +83,15 @@ the player's side runs in the acceptance tests with a faked Pan (`PanGuardianTes
 Part B1 (second PR into `feat/replace-sisr`): `Hide`, `Unhide`, `CheckHiding`, the teardown's show and restart, boot
 clean-up, arrivals. No caller in Arcadia yet (#242): `tools/dev/PanDevClient` plays Arcadia (close Arcadia first).
 Needed besides the above: HidHide (1.5.230 on the owner's PC), `HidHideCLI.exe --dev-list / --app-list / --cloak-state`
-(elevated) to look at HidHide, Steam with its desktop layout (right trackpad = mouse) as the sign whether Steam has the
-puck. How it works: `docs/controller-support/pan-hiding.md`.
+(elevated) to look at HidHide, Steam's button (opens Steam's menu or Big Picture) as the sign whether Steam has the
+puck: while hidden the trackpad still moves the pointer by the controller's own mouse mode (R12b). How it works: `docs/controller-support/pan-hiding.md`.
 
 - [ ] **T243-22** R12: `Run-Check-243-R12.ps1` (project files `spikes/243/`) on the owner's PC: Steam loses the puck at
       a hide and gets it back after an unhide without and with restart, after a killed and a frozen client and after a
       planned exit; the script notes "sofort" or "nach Fokuswechsel" per case, and HidHide is as before at the end.
       The result goes into `pan-hiding.md` → R12. · E2E: no (Steam and the real puck)
 - [ ] **T243-23** `PanDevClient` → `hide`: status `hidden 5` (or the number of the puck's HID instances); `--dev-list` lists
-      them, `--app-list` the client's path, cloaking on; Steam's trackpad mouse stops; `journal.json` lists exactly
+      them, `--app-list` the client's path, cloaking on; the Steam button no longer opens Steam's menu; `journal.json` lists exactly
       those entries and `CloakingWasOn`. `unhide`: `shown`, HidHide as before, Steam has the puck again. · E2E: yes (CI:
       `HidHideTests` with the real driver, the service test's hide)
 - [ ] **T243-24** The user's own entries: a second pad hidden in HidHide by hand, cloaking on, `PanDevClient.exe` already
@@ -100,8 +100,8 @@ puck. How it works: `docs/controller-support/pan-hiding.md`.
 - [ ] **T243-25** States Pan refuses, each with `check` and `hide`: HidHide's "Inverse" ticked → `HidHideInverseMode`;
       cloaking off with a pad of the user's listed → `HidHideCloakingOffWithForeignEntries`; HidHide's configuration
       client open → `HidHideBusy`; nothing changes in HidHide. · E2E: yes (`HidingTests`, the state matrix)
-- [ ] **T243-26** `hide`, then the client ended in the Task Manager: without any input Steam's mouse works again (or after
-      a focus change, per T243-22); `pan.log`: "show the Steam Controller: ok", "restart the Steam Controller: ok";
+- [ ] **T243-26** `hide`, then the client ended in the Task Manager: the Steam button opens Steam's menu again without any
+      other input (R12b); `pan.log`: "show the Steam Controller: ok", "restart the Steam Controller: ok";
       HidHide as before. · E2E: no (a real kill; the guardian's side: `HidingTests`)
 - [ ] **T243-27** `hide`, `freeze`: after 3 s status `torn down Hang`, Steam has the puck; `resume`, `hide`: hidden again
       under the next generation. · E2E: no (a real hang; the guardian's side: `HidingTests`)
@@ -140,3 +140,4 @@ History:
 | T243-23 (real HidHide), Windows adapters (`HidHideTests`, device list, arrival registration, the service test's hide) | 2026-10-27 | Claude (thread) | Windows CI runner (Server 2025, HidHide 1.5.230 installed by `Install-HidHide.ps1`), run 40458024167 on 96f33aa: all real-driver tests ran, none skipped | pass | one fake test (`Cloaking_that_was_off_is_turned_off_again`) failed on the loaded runner: its 300 ms device timeout ran out on an instant fake; seen red locally with a 500 ms fake restart, fixed (10 s, short only where devices hang) |
 | T243-7 … T243-12, T243-23 and the Windows adapters after the CI fixes | 2026-10-27 | Claude (thread) | Windows CI runner (Server 2025, HidHide 1.5.230), run 40461544152 on ed9e096: Pan 109/109 with the real driver, none skipped; Core 944, App 319 | pass | – |
 | R12 (check script, first run) | 2026-10-27 | owner | Windows 11, Steam running, HidHide 1.5.230, Pan and PanDevClient from the PR package | partly | Pan's paths clean (journal empty, HidHide as before); showing again needs a focus change; pointer moved while hidden (likely the controller's own mouse mode): R12b with the Steam button pending; step 6 failed only on PanDevClient's status (`exited` overwritten by `disconnected`, fixed) |
+| R12b (check script, Steam button) | 2026-10-27 | owner | as R12 | pass | Steam loses the puck at once at a hide and gets it back at once after an unhide and after a killed client; the pointer moving while hidden is the controller's own mouse mode; HidHide as before |

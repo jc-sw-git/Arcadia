@@ -72,12 +72,15 @@ Spike #239 saw Steam pick up a hidden or shown puck only after a focus change. P
 one. The check script (project files `spikes/243/`, `Run-Check-243-R12.ps1`) asks on the owner's PC: hide, unhide
 without and with a puck restart, kill and freeze of the client, planned exit.
 
-First run (owner's PC, 2026-10-27, `spikes/243/`): every path of Pan's was clean: hide (13 instances, ~2.4 s with the
-puck restart), unhide, kill (`ClientGone`), hang (3 s), planned exit; HidHide as before and the journal empty each
-time. After Pan showed the puck again with a restart (unhide, kill, hang), the trackpad pointer came back only after
-a focus change; without a restart at once. While hidden the pointer still moved, also after a focus change: likely
-the controller's own mouse mode without Steam (in #239 SDL3 read the puck, which switches that off), not Steam.
-R12b (Steam button, which only Steam answers) decides; until then open.
+Result (owner's PC, 2026-10-27, R12 and the Steam-button check R12b, `spikes/243/`): **no focus change needed.**
+- Steam loses the puck at once when Pan hides it, and gets it back at once when Pan shows it with a restart (unhide,
+  killed client): the Steam button stops and works again without any click. Only Steam's desktop layout (trackpad
+  pointer) came back after a focus change in R12; any click or Arcadia's own window change gives one.
+- While hidden the trackpad still moves the pointer: the controller's own mouse mode, which it switches on when no
+  program drives it (Steam doesn't see it then). In #239 SDL3 read the puck and switched it off; #242 must open the
+  puck with SDL3 right when it hides, or the pointer moves during the game.
+- Every path of Pan's was clean: hide (13 instances, ~2.4 s with the puck restart), unhide, kill, hang (3 s), planned
+  exit; HidHide as before and the journal empty each time.
 
 ## Tests
 

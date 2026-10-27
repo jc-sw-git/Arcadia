@@ -88,6 +88,8 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 
     public event EventHandler? LibraryChanged;
 
+    public event EventHandler<Exception>? Failed;
+
     private bool IsSignedIn => _signIn is { RefreshToken: not null };
 
     public void BeginSignIn()
@@ -108,7 +110,13 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         SetStep(AccountStep.Starting);
         lock (_lock)
         {
-            _signInTask = Run(() => SignInAsync(run), "Anmeldung");
+            _signInTask = Run(async () =>
+            {
+                using (run)
+                {
+                    await SignInAsync(run).ConfigureAwait(false);
+                }
+            }, "Anmeldung");
         }
     }
 
@@ -181,12 +189,16 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
     /// Fetches the owned games in the background, unless that happened in the last <see cref="FetchPause"/> or is under
     /// way. A changed list raises <see cref="LibraryChanged"/>; a failed fetch keeps the cached list and is a status message.
     /// </summary>
-    internal void FetchSoon()
+    internal void FetchSoon() => Fetch(force: false);
+
+    public void RefreshNow() => Fetch(force: true);
+
+    private void Fetch(bool force)
     {
         lock (_lock)
         {
             var now = _time.GetUtcNow();
-            if (!IsSignedIn || !_fetchTask.IsCompleted || (_fetchedAt is { } last && now - last < FetchPause))
+            if (!IsSignedIn || !_fetchTask.IsCompleted || (!force && _fetchedAt is { } last && now - last < FetchPause))
             {
                 return;
             }
@@ -247,9 +259,9 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
             {
                 poll = await _api.PollAsync(clientId, session.RequestId, cancellationToken).ConfigureAwait(false);
             }
-            catch (SteamApiException e) when (e.EResult is not null)
+            catch (SteamApiException e) when (!e.IsTemporary)
             {
-                // Steam ends the session when the phone rejects it.
+                // Steam ends the session when the phone rejects it; busy or unavailable is only a poll lost.
                 Trace.TraceInformation($"Steam-Konto: Anmeldung abgelehnt (EResult {e.EResult})");
                 SetStepFor(run, AccountStep.CodeRejected);
                 return;
@@ -420,6 +432,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
     /// <summary>A step of the sign-in <paramref name="run"/>, unless a newer one or a cancel replaced it.</summary>
     private void SetStepFor(CancellationTokenSource run, AccountStep step, string? code = null)
     {
+        // Checked and set under one lock, so a run cancelled meanwhile can't overwrite a newer one's step.
         lock (_lock)
         {
             if (_signInRun != run)
@@ -431,9 +444,11 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
             {
                 _signInRun = null;
             }
+
+            _state = Compose(step, code);
         }
 
-        SetStep(step, code);
+        StateChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void SetStep(AccountStep step, string? code = null)
@@ -456,8 +471,8 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         ListedAt = IsSignedIn ? _owned?.ListedAt : null,
     };
 
-    /// <summary>Work nobody awaits: an unexpected error is logged, never thrown.</summary>
-    private static Task Run(Func<Task> work, string what) => Task.Run(async () =>
+    /// <summary>Work nobody awaits: an unexpected error is logged and reported through <see cref="Failed"/>, never thrown.</summary>
+    private Task Run(Func<Task> work, string what) => Task.Run(async () =>
     {
         try
         {
@@ -469,7 +484,15 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         }
         catch (Exception e)
         {
-            Trace.TraceError($"Steam-Konto: {what}: {e}");
+            // Whoever listens logs it with its stack trace; else at least the log has it.
+            if (Failed is { } failed)
+            {
+                failed(this, e);
+            }
+            else
+            {
+                Trace.TraceError($"Steam-Konto: {what}: {e}");
+            }
         }
     });
 

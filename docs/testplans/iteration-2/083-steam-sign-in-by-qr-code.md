@@ -14,7 +14,8 @@ games (`IPlayerService/GetOwnedGames`), which the Steam tab and the search show 
   rejected on the phone: the same with "Abgelehnt" · E2E: yes (faked Steam); rejecting on a real phone: by hand
 - [ ] **T83-3** Signed in: the Steam tab shows all owned games, refunded ones (007 First Light, Alchemy Factory) don't
   appear; games hidden in Steam don't appear; compare the count with Steam's "Alle" under games and note any
-  difference here; uninstalled games show playtime and last played from Steam · E2E: no (real account)
+  difference here (hidden games are left out only among the uninstalled ones; installed hidden games stay, as
+  before #83); uninstalled games show playtime and last played from Steam · E2E: no (real account)
 - [ ] **T83-4** A on an uninstalled Steam game: Steam's install dialog opens; once confirmed, the cover shows the
   install progress and ends installed without a restart · E2E: no (real Steam install)
 - [ ] **T83-5** Steam signed in with another account than Arcadia: no uninstalled games; the row has a blue i and says

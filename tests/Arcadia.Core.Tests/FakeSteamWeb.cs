@@ -39,6 +39,15 @@ internal sealed class FakeSteamWeb : HttpMessageHandler
     /// <summary>The next poll fails as Steam does when the phone rejects the sign-in.</summary>
     public bool IsRejected { get; set; }
 
+    /// <summary>Polls fail with this EResult, e.g. 10 (busy), as Steam does when it has a hiccup.</summary>
+    public int? PollEResult { get; set; }
+
+    /// <summary>The owned games come back as <c>{"response":{}}</c>.</summary>
+    public bool ListsNoGames { get; set; }
+
+    /// <summary>The owned games' request throws something no transport would: a bug in Arcadia's own code.</summary>
+    public bool FailsUnexpectedly { get; set; }
+
     /// <summary>Steam no longer takes the refresh token.</summary>
     public bool IsSignInRevoked { get; set; }
 
@@ -102,6 +111,11 @@ internal sealed class FakeSteamWeb : HttpMessageHandler
     private HttpResponseMessage Poll()
     {
         Polls++;
+        if (PollEResult is { } result)
+        {
+            return EResult(result);
+        }
+
         if (IsRejected)
         {
             return EResult(9);
@@ -139,6 +153,16 @@ internal sealed class FakeSteamWeb : HttpMessageHandler
     private HttpResponseMessage Owned(string? accessToken)
     {
         OwnedGamesRequests++;
+        if (FailsUnexpectedly)
+        {
+            throw new InvalidOperationException("kaputt");
+        }
+
+        if (ListsNoGames)
+        {
+            return Json("""{"response":{}}""");
+        }
+
         if (accessToken is null || accessToken != LastAccessToken)
         {
             return new HttpResponseMessage(HttpStatusCode.Unauthorized);

@@ -22,9 +22,16 @@ internal sealed class SteamApiException(string message, int? eResult, HttpStatus
     // EResult values (Steam's enum): 15 AccessDenied, 26 Revoked, 27 Expired.
     private static readonly HashSet<int> SignInGone = [15, 26, 27];
 
+    // 3 NoConnection, 10 Busy, 16 Timeout, 20 ServiceUnavailable, 84 RateLimitExceeded.
+    private static readonly HashSet<int> Temporary = [3, 10, 16, 20, 84];
+
     public int? EResult { get; } = eResult;
 
     public HttpStatusCode? Status { get; } = status;
+
+    /// <summary>A hiccup on Steam's side (busy, unavailable, too many requests, an HTTP error): trying again may work.</summary>
+    public bool IsTemporary => Status is { } status && (int)status is 429 or >= 500
+        || EResult is not { } result || Temporary.Contains(result);
 
     /// <summary>The stored sign-in no longer counts (expired or revoked): only signing in again helps.</summary>
     public bool IsSignInGone => EResult is { } result && SignInGone.Contains(result)
@@ -111,9 +118,10 @@ internal sealed class SteamWebApi(HttpClient http)
                 }
             }
         }
-        else if (!json.RootElement.TryGetProperty("response", out _))
+        else
         {
-            throw new SteamApiException("GetOwnedGames: Antwort ohne response", null, null);
+            // Steam answers {"response":{}} also when it doesn't list the games right now: the cached list stays.
+            throw new SteamApiException("GetOwnedGames: Antwort ohne Spiele", null, null);
         }
 
         return games;

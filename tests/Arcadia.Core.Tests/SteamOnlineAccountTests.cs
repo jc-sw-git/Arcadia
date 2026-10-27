@@ -92,6 +92,26 @@ public sealed class SteamOnlineAccountTests : IDisposable
         Assert.Null(account.State.AccountName);
     }
 
+    [Theory]
+    [InlineData(10)]
+    [InlineData(20)]
+    [InlineData(84)]
+    public async Task Steam_busy_or_unavailable_during_the_poll_keeps_the_code(int eResult)
+    {
+        var account = Create();
+        account.BeginSignIn();
+        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
+
+        _web.PollEResult = eResult;
+        var polls = _web.Polls;
+        await AdvanceUntilAsync(() => _web.Polls >= polls + 2);
+        Assert.Equal(AccountStep.ShowingCode, account.State.Step);
+
+        _web.PollEResult = null;
+        _web.IsApproved = true;
+        await AdvanceUntilAsync(() => account.State.Step == AccountStep.SignedIn);
+    }
+
     [Fact]
     public async Task Sign_in_without_network_says_Steam_is_unreachable()
     {
@@ -158,6 +178,46 @@ public sealed class SteamOnlineAccountTests : IDisposable
         await account.WhenIdleAsync();
         Assert.Equal(1, libraryChanges);
         Assert.Equal(3, account.State.OwnedGames);
+    }
+
+    [Fact]
+    public async Task Refresh_asked_for_by_the_user_fetches_within_the_pause()
+    {
+        var account = await SignedInAsync();
+        var requests = _web.OwnedGamesRequests;
+
+        account.RefreshNow();
+        await account.WhenIdleAsync();
+
+        Assert.Equal(requests + 1, _web.OwnedGamesRequests);
+    }
+
+    [Fact]
+    public async Task An_answer_without_games_keeps_the_cached_list_with_a_status_message()
+    {
+        var account = await SignedInAsync();
+
+        _web.ListsNoGames = true;
+        account.RefreshNow();
+        await account.WhenIdleAsync();
+
+        Assert.Equal(2, account.OwnedGamesFor(Account)?.Count);
+        Assert.Equal(SteamOnlineAccount.UnreachableWithList, account.State.Problem);
+    }
+
+    [Fact]
+    public async Task An_unexpected_error_in_the_background_is_reported_not_thrown()
+    {
+        var account = await SignedInAsync();
+        Exception? reported = null;
+        account.Failed += (_, e) => reported = e;
+
+        _web.FailsUnexpectedly = true;
+        account.RefreshNow();
+        await account.WhenIdleAsync();
+
+        Assert.IsType<InvalidOperationException>(reported);
+        Assert.Equal(AccountStep.SignedIn, account.State.Step);
     }
 
     [Fact]

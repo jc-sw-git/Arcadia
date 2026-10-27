@@ -31,7 +31,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
 
     // Launchers whose account changed their games while the library was loading: read again once it is loaded (#83).
     private readonly HashSet<string> _changedWhileLoading = new(StringComparer.Ordinal);
-    private readonly List<(ILauncherAccount Account, EventHandler Handler)> _accounts = [];
+    private readonly List<(ILauncherAccount Account, EventHandler Changed, EventHandler<Exception> Failed)> _accounts = [];
 
     public LibrarySession(LibraryService library, InstallTracker installs, RunningGamesTracker running, LaunchedGames launchedGames, TimeProvider time)
     {
@@ -46,9 +46,11 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             if (integration.Account is { } account)
             {
                 var launcherId = integration.Launcher.Id;
-                EventHandler handler = (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnAccountLibraryChanged(launcherId));
-                account.LibraryChanged += handler;
-                _accounts.Add((account, handler));
+                EventHandler changed = (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnAccountLibraryChanged(launcherId));
+                EventHandler<Exception> failed = (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, $"Konto von {integration.Launcher.DisplayName}"));
+                account.LibraryChanged += changed;
+                account.Failed += failed;
+                _accounts.Add((account, changed, failed));
             }
         }
     }
@@ -233,6 +235,13 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         }
 
         Noticed?.Invoke(this, new LibraryNotice.RescanStarted(launcher));
+
+        // Asked for by the user: an account fetches its games now (a game just bought, back online, #83).
+        foreach (var integration in launcher is null ? _library.Launchers.Enabled : _library.Launchers.Enabled.Where(i => i.Launcher.Id == launcher.Id))
+        {
+            integration.Account?.RefreshNow();
+        }
+
         var watch = System.Diagnostics.Stopwatch.StartNew();
         await (launcher is null ? RefreshLibraryAsync(force: true) : RefreshLauncherAsync(launcher.Id));
         AppLog.Write($"Neu eingelesen{(launcher is null ? string.Empty : $" für {launcher.Id}")}: {watch.ElapsedMilliseconds} ms");
@@ -279,9 +288,10 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             _shutdown.Cancel();
         }
 
-        foreach (var (account, handler) in _accounts)
+        foreach (var (account, changed, failed) in _accounts)
         {
-            account.LibraryChanged -= handler;
+            account.LibraryChanged -= changed;
+            account.Failed -= failed;
         }
 
         _accounts.Clear();

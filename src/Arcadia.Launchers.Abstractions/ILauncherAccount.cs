@@ -34,6 +34,9 @@ public interface ILauncherAccount
     /// <summary>The owned games changed (fetched, signed in or out): the launcher's library should be read again.</summary>
     event EventHandler? LibraryChanged;
 
+    /// <summary>Background work failed unexpectedly (a bug, not Steam being unreachable); Arcadia logs and shows it.</summary>
+    event EventHandler<Exception>? Failed;
+
     /// <summary>Starts a sign-in: a QR code to approve, renewed by itself until it is approved, rejected or expires.</summary>
     void BeginSignIn();
 
@@ -42,6 +45,9 @@ public interface ILauncherAccount
 
     /// <summary>Forgets the sign-in and the owned games.</summary>
     void SignOut();
+
+    /// <summary>The user asked to read the launcher again ("Neu einlesen"): fetch the owned games now, not when due.</summary>
+    void RefreshNow();
 }
 
 /// <summary>Where a sign-in stands.</summary>

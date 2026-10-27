@@ -160,6 +160,30 @@ public sealed class SteamAccountTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T83-6")]
+    public async Task Back_online_Neu_einlesen_clears_the_status_message()
+    {
+        using var files = SteamWithOwnedGames();
+        using (var first = await ArcadiaDriver.StartWithLaunchersAsync(files))
+        {
+            await SignInAsync(first, files);
+        }
+
+        files.SteamWeb.IsOffline = true;
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
+        var row = OpenAccountRow(arcadia);
+        await arcadia.WaitOnClockUntilAsync(() => row.Severity == HealthSeverity.Warning, "die Statusmeldung", SignInLimit);
+
+        // The cable is back in; "Neu einlesen" right away.
+        files.SteamWeb.IsOffline = false;
+        arcadia.FocusRow("launcher-rescan");
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitOnClockUntilAsync(() => row.Severity is null, "die Statusmeldung verschwindet nach „Neu einlesen“", TimeSpan.FromSeconds(10));
+
+        Assert.Equal(FakeSteamWeb.ProfileName, row.Subtitle);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T83-7")]
     public async Task Sign_out_asks_first_then_removes_the_uninstalled_games_and_the_cache_at_once()
     {

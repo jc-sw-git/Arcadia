@@ -13,7 +13,7 @@ public static class Restore
     public static async Task<bool> RunAsync(Action<string> log)
     {
         var journal = new JournalFile(PanPaths.JournalPath);
-        var guardian = new Guardian(new UnbiasedClock(), journal, new WindowsCleanup(log), log);
+        var guardian = new Guardian(new UnbiasedClock(), journal, new WindowsCleanup(log), log, hiding: WindowsHiding.Create());
         // One load for the look and the recovery, so a fallback the load had to use can't get lost in between (review point 3).
         var before = journal.Load();
         if (!before.State.HasWork && before.Problem is null)

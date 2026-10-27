@@ -14,6 +14,12 @@ public static class ServiceHost
     /// <summary>With no client this long after the last one left (or after start), Pan stops: no footprint without Arcadia.</summary>
     public static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// What a teardown may take at most, so Windows waits for it at start (a journal's recovery) and stop: its step
+    /// budgets add up to 70 s (ports 10, processes 10, show 30, restart 20) when the PnP lock hangs.
+    /// </summary>
+    public static readonly TimeSpan TeardownWait = TimeSpan.FromSeconds(80);
+
     private static nint _statusHandle;
     private static Native.ServiceStatus _status;
     private static readonly CancellationTokenSource Stopping = new();
@@ -57,8 +63,8 @@ public static class ServiceHost
         }
 
         _status = new Native.ServiceStatus { ServiceType = Native.ServiceWin32OwnProcess };
-        // The recovery of a journal may take a while (each teardown step up to 10 s) before Running is reported.
-        Report(Native.ServiceStartPending, waitHintMs: 30_000);
+        // The recovery of a journal runs a teardown before Running is reported.
+        Report(Native.ServiceStartPending, waitHintMs: (uint)TeardownWait.TotalMilliseconds);
         try
         {
             RunAsync(log).GetAwaiter().GetResult();
@@ -91,17 +97,19 @@ public static class ServiceHost
         log.TrustFolder();
 
         var cleanup = new WindowsCleanup(log.Write);
-        var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath), cleanup, log.Write);
+        var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath), cleanup, log.Write, hiding: WindowsHiding.Create());
         _guardian = guardian;
         guardian.UnplannedEnd += end => log.Write($"Unplanned end: {end.Reason}, generation {end.Generation}, client {end.ClientPid}, emulating {end.WasEmulating} (crash report: #244)");
         log.Write($"Pan {typeof(ServiceHost).Assembly.GetName().Version} starting (protocol {PanMessage.ProtocolVersion})");
         await guardian.RecoverAsync();
         Report(Native.ServiceRunning);
+        // A puck plugged in while Pan hides is hidden too (part B); without the watch, at the next hide.
+        using var arrivals = DeviceArrivalWatch.Start(guardian.DevicesArrivedAsync, log.Write);
 
         using var stop = consoleStop is { } console ? CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token, console) : CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token);
         using var serve = new CancellationTokenSource();
         var server = new PipeServer(guardian, log.Write);
-        using var idle = new IdleStop(stop, log.Write);
+        using var idle = new IdleStop(IdleTimeout, () => guardian.ShowRetryPending, stop.Cancel, log.Write);
         server.ClientPresent += idle.ClientPresent;
         idle.ClientPresent(false);
         var serving = server.RunAsync(serve.Token);
@@ -156,7 +164,7 @@ public static class ServiceHost
             case Native.ServiceControlShutdown:
             case Native.ServiceControlPreshutdown:
                 _log?.Write($"Service control {control}: stopping");
-                Report(Native.ServiceStopPending, waitHintMs: 30_000);
+                Report(Native.ServiceStopPending, waitHintMs: (uint)TeardownWait.TotalMilliseconds);
                 Stopping.Cancel();
                 return Native.NoError;
             case Native.ServiceControlInterrogate:
@@ -188,47 +196,5 @@ public static class ServiceHost
             : Native.ServiceAcceptStop | Native.ServiceAcceptShutdown | Native.ServiceAcceptPreshutdown | Native.ServiceAcceptPowerEvent;
         _status.CheckPoint = state is Native.ServiceStartPending or Native.ServiceStopPending ? ++_status.CheckPoint : 0;
         Native.SetServiceStatus(_statusHandle, ref _status);
-    }
-
-    /// <summary>Stops Pan after <see cref="IdleTimeout"/> without a client; a client that comes meanwhile cancels it.</summary>
-    private sealed class IdleStop(CancellationTokenSource stop, Action<string> log) : IDisposable
-    {
-        private CancellationTokenSource? _countdown;
-
-        public void ClientPresent(bool present)
-        {
-            lock (this)
-            {
-                CancelCountdown();
-                if (present)
-                {
-                    return;
-                }
-
-                var countdown = new CancellationTokenSource();
-                _countdown = countdown;
-                Task.Delay(IdleTimeout, countdown.Token).ContinueWith(_ =>
-                {
-                    log($"No client for {IdleTimeout.TotalSeconds:0} s: stopping");
-                    stop.Cancel();
-                }, TaskContinuationOptions.OnlyOnRanToCompletion);
-            }
-        }
-
-        /// <summary>No countdown runs on: a late one would cancel a stop token that is disposed with the run.</summary>
-        public void Dispose()
-        {
-            lock (this)
-            {
-                CancelCountdown();
-            }
-        }
-
-        private void CancelCountdown()
-        {
-            _countdown?.Cancel();
-            _countdown?.Dispose();
-            _countdown = null;
-        }
     }
 }

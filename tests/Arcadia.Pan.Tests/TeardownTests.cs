@@ -8,6 +8,9 @@ public class TeardownTests
 
     private static readonly TimeSpan Short = TimeSpan.FromMilliseconds(200);
 
+    /// <summary>For steps that end at once: a loaded CI runner may take longer than <see cref="Short"/> to start them.</summary>
+    private static readonly TimeSpan Ample = TimeSpan.FromSeconds(10);
+
     [Fact]
     public async Task Every_step_runs_with_its_own_timeout_and_a_stuck_or_failing_step_never_stops_the_next()
     {
@@ -15,8 +18,8 @@ public class TeardownTests
         var results = await TeardownRunner.RunAsync(
         [
             new("hangs", async token => { await Task.Delay(Timeout.Infinite, token); }, Short),
-            new("fails", _ => throw new InvalidOperationException("nope"), Short),
-            new("runs", _ => { ran.Add("runs"); return Task.CompletedTask; }, Short),
+            new("fails", _ => throw new InvalidOperationException("nope"), Ample),
+            new("runs", _ => { ran.Add("runs"); return Task.CompletedTask; }, Ample),
         ], _log.Add);
 
         Assert.Equal([StepOutcome.TimedOut, StepOutcome.Failed, StepOutcome.Ok], results.Select(r => r.Outcome));

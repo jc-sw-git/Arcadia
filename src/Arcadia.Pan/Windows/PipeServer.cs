@@ -159,9 +159,11 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
             using var processHandle = new SafeProcessHandle(process, ownsHandle: true);
             var startTime = WindowsCleanup.StartTimeOf(process) ?? 0;
             var inConsole = Native.ProcessIdToSessionId(pid, out var session) && session == Native.WTSGetActiveConsoleSessionId();
+            // The allow-list entry while Pan hides the Steam Controller: from the client's process, never from a message.
+            var imagePath = NativeImagePathOf(process);
             // Per connection: a notice stuck on a client that doesn't read must not hold up another one's reply.
             var writes = new SemaphoreSlim(1, 1);
-            var refused = guardian.Register(new ClientIdentity((int)pid, startTime, inConsole));
+            var refused = guardian.Register(new ClientIdentity((int)pid, startTime, inConsole, imagePath));
             if (refused != PanReason.None)
             {
                 await WriteAsync(pipe, writes, PanMessage.Of(PanReply.Refused, reason: refused), cancellationToken);
@@ -235,7 +237,7 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
                 return;
             }
 
-            var reply = guardian.Handle(PanMessage.Read(buffer));
+            var reply = await guardian.HandleAsync(PanMessage.Read(buffer));
             try
             {
                 await WriteAsync(pipe, writes, reply, cancellationToken);
@@ -259,6 +261,14 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
         {
             writes.Release();
         }
+    }
+
+    /// <summary>The image path in Windows' device form (<c>\Device\HarddiskVolume3\…</c>), as HidHide's allow list holds it.</summary>
+    private static unsafe string? NativeImagePathOf(nint process)
+    {
+        var buffer = stackalloc char[1024];
+        var size = 1024u;
+        return Native.QueryFullProcessImageNameW(process, Native.ProcessNameNative, buffer, ref size) ? new string(buffer, 0, (int)size) : null;
     }
 
     private sealed class ProcessWaitHandle : WaitHandle

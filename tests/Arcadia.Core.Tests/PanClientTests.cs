@@ -429,7 +429,7 @@ public sealed class PanClientTests : IAsyncDisposable
                         Interlocked.Increment(ref _heartbeats);
                     }
 
-                    var reply = guardian.Handle(message);
+                    var reply = await guardian.HandleAsync(message);
                     if (message.Command == PanCommand.Hello && HelloReply is { } forced)
                     {
                         reply = forced;

@@ -27,12 +27,12 @@ public sealed class GuardianTests : IDisposable
 
     private string Log() { lock (_log) return string.Join("\n", _log); }
 
-    private PanMessage Send(PanCommand command, uint generation = 0) => _guardian.Handle(PanMessage.Of(command, generation));
+    private PanMessage Send(PanCommand command, uint generation = 0) => _guardian.HandleNow(PanMessage.Of(command, generation));
 
     private uint Connect(ClientIdentity? client = null)
     {
         Assert.Equal(PanReason.None, _guardian.Register(client ?? Arcadia));
-        var hello = _guardian.Handle(PanMessage.Of(PanCommand.Hello));
+        var hello = _guardian.HandleNow(PanMessage.Of(PanCommand.Hello));
         Assert.Equal(PanReply.HelloOk, hello.Reply);
         return hello.Generation;
     }
@@ -66,7 +66,7 @@ public sealed class GuardianTests : IDisposable
         Assert.Equal(PanReason.None, _guardian.Register(Arcadia));
         Assert.Equal(PanReason.NotRegistered, Send(PanCommand.EmulationStarted).Reason);
 
-        var hello = _guardian.Handle(new PanMessage((byte)PanCommand.Hello, Version: 99, 0, 0));
+        var hello = _guardian.HandleNow(new PanMessage((byte)PanCommand.Hello, Version: 99, 0, 0));
         Assert.Equal(PanReply.Rejected, hello.Reply);
         Assert.Equal(PanReason.WrongProtocolVersion, hello.Reason);
         Assert.Equal(PanReason.NotRegistered, Send(PanCommand.Heartbeat).Reason);
@@ -341,7 +341,7 @@ public sealed class GuardianTests : IDisposable
 
         await _guardian.RecoverAsync();
         Assert.Equal(PanReason.None, _guardian.Register(Arcadia));
-        var hello = _guardian.Handle(PanMessage.Of(PanCommand.Hello));
+        var hello = _guardian.HandleNow(PanMessage.Of(PanCommand.Hello));
 
         Assert.Equal(PanReply.HelloOk, hello.Reply);
         Assert.Equal(PanReason.JournalUnreadable, hello.Reason);
@@ -388,7 +388,7 @@ public sealed class GuardianTests : IDisposable
         // Arcadia reconnects (its pipe broke, or it was restarted by Pan's notice).
         _guardian.ClientGone();
         Assert.Equal(PanReason.None, _guardian.Register(Arcadia));
-        var hello = _guardian.Handle(PanMessage.Of(PanCommand.Hello));
+        var hello = _guardian.HandleNow(PanMessage.Of(PanCommand.Hello));
 
         Assert.Equal(PanReason.None, hello.Reason);
         Assert.Equal(generation, hello.Generation);
@@ -407,9 +407,9 @@ public sealed class GuardianTests : IDisposable
         var restarted = new Guardian(_clock, _journal.File, _cleanup, _log.Add);
         await restarted.RecoverAsync();
         Assert.Equal(PanReason.None, restarted.Register(Arcadia));
-        Assert.Equal(PanReply.HelloOk, restarted.Handle(PanMessage.Of(PanCommand.Hello)).Reply);
+        Assert.Equal(PanReply.HelloOk, restarted.HandleNow(PanMessage.Of(PanCommand.Hello)).Reply);
 
-        Assert.Equal(generation + 1, restarted.Handle(PanMessage.Of(PanCommand.EmulationStarted)).Generation);
+        Assert.Equal(generation + 1, restarted.HandleNow(PanMessage.Of(PanCommand.EmulationStarted)).Generation);
     }
 
     [Fact]

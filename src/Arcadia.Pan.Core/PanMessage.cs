@@ -29,11 +29,17 @@ public enum PanCommand : byte
     /// <summary>Arcadia exits on purpose and has cleaned up itself; Pan has nothing to do.</summary>
     PlannedExit = 6,
 
-    /// <summary>Hide the real Steam Controller from every other program (part B of #243, #242).</summary>
+    /// <summary>
+    /// Hide the real Steam Controller from every other program, the client excepted (part B of #243, for #242). Only
+    /// within the current generation's emulation, so every teardown undoes it. Pan finds the devices itself.
+    /// </summary>
     Hide = 7,
 
-    /// <summary>Show the real Steam Controller again (part B).</summary>
+    /// <summary>Show the real Steam Controller again; Arcadia sends it before <see cref="EmulationStopped"/>.</summary>
     Unhide = 8,
+
+    /// <summary>Whether Pan could hide now (HidHide installed, supported, in a usable state); needs no emulation.</summary>
+    CheckHiding = 9,
 }
 
 /// <summary>Pan's answers; the high bit tells them from commands.</summary>
@@ -57,6 +63,15 @@ public enum PanReply : byte
 
     /// <summary>The connection is refused as a whole: another client is registered, or the client isn't in the console session.</summary>
     Refused = 0x93,
+
+    /// <summary>The Steam Controller is hidden; <see cref="PanMessage.Value"/> is how many device instances Pan hides (0: none connected yet).</summary>
+    Hidden = 0x86,
+
+    /// <summary>The Steam Controller is shown again.</summary>
+    Shown = 0x87,
+
+    /// <summary>The answer to <see cref="PanCommand.CheckHiding"/>; <see cref="PanMessage.Value"/> is why Pan can't hide, or <see cref="PanReason.None"/>.</summary>
+    HidingState = 0x88,
 }
 
 /// <summary>Why a command was rejected or an emulation torn down.</summary>
@@ -75,6 +90,36 @@ public enum PanReason : uint
     JournalUnreadable = 10,
     OtherClient = 11,
     ForeignSession = 12,
+
+    /// <summary>HidHide isn't installed, or its driver isn't loaded (a restart pending after its setup).</summary>
+    HidHideMissing = 13,
+
+    /// <summary>HidHide's version or driver interface isn't one Pan knows.</summary>
+    HidHideUnsupported = 14,
+
+    /// <summary>HidHide's application list is inverted: allow-listing Arcadia would hide the controller from it.</summary>
+    HidHideInverseMode = 15,
+
+    /// <summary>Cloaking is off while the user has other devices listed: turning it on would hide those too.</summary>
+    HidHideCloakingOffWithForeignEntries = 16,
+
+    /// <summary>Another program (e.g. HidHide's configuration client) has HidHide open; it allows one at a time.</summary>
+    HidHideBusy = 17,
+
+    /// <summary>Changing HidHide or restarting the controller failed; Pan's log says why. What Pan changed stays journaled.</summary>
+    HidingFailed = 18,
+
+    /// <summary>A teardown after <see cref="PanCommand.EmulationStopped"/> while the Steam Controller was still hidden.</summary>
+    EmulationStoppedWhileHidden = 19,
+
+    /// <summary>A teardown at the client's planned exit, because it left the Steam Controller hidden.</summary>
+    PlannedExit = 20,
+
+    /// <summary>
+    /// <see cref="PanCommand.EmulationStarted"/> while Pan shows the Steam Controller after an earlier emulation (a
+    /// retry, or the teardown after a stop while hidden; usually milliseconds, a puck restart ~2.5 s): start again in a moment.
+    /// </summary>
+    SteamControllerBeingShown = 21,
 }
 
 /// <summary>
@@ -123,6 +168,6 @@ public readonly record struct PanMessage(byte Kind, ushort Version, uint Generat
     }
 
     public override string ToString() => Kind >= 0x80
-        ? $"{Reply}(gen {Generation}{(Value != 0 ? $", {Reason}" : string.Empty)})"
+        ? $"{Reply}(gen {Generation}{(Value == 0 ? string.Empty : Reply == PanReply.Hidden ? $", {Value} device(s)" : $", {Reason}")})"
         : $"{Command}(gen {Generation}{(Command == PanCommand.Hello ? $", v{Version}" : string.Empty)})";
 }

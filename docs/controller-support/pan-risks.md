@@ -22,3 +22,30 @@ one names the countermeasure that would close it, so a later story can pick it u
   from then on known by its handle; nothing is ever ended by a name lookup alone.
 - **`TerminateProcess`** ends a held forwarding process without a graceful shutdown (as SISR did): VIIPER keeps no
   state worth saving, and the usbip ports are detached before it goes.
+
+## Hiding (part B1)
+
+- **HidHide has no atomic add or remove:** Pan reads a list and writes it back right after (the device listing comes
+  before the read). A change the user makes in HidHide's configuration client in that gap can be lost (HidHide lets one
+  program open it at a time, which narrows it further). Pan only ever removes its journaled entries.
+- **A console-session program gains a little:** `Hide` lets the first client of the console session, without
+  administrator rights, have Pan allow-list its own image and turn cloaking on; it then sees every device the user
+  hid with HidHide (whose configuration is admin-only). Part A's "no privilege gain" no longer holds for this. The
+  countermeasure: accept `Hide` only from Arcadia's installed and signed exe (with code signing, `docs/releases.md`).
+- **HidHide's IOCTLs have no timeout:** they run inline, because a step left behind could write a stale list after the
+  undo. They don't wait on Windows' PnP lock; listing and restarting the devices do and are bounded. If one did hang,
+  it would hold the HidHide gate: every later show times out and the puck stays hidden until the service restarts
+  (Pan doesn't die, so Windows' recovery doesn't help, nor does `Pan.exe --restore` while the service runs).
+- **`Unhide` is trusted:** the client says it removed its copy before it unhides (#242's order); Pan can't check that a
+  forwarding inside Arcadia stopped. Every unplanned path goes through the teardown, which does check.
+- **A puck restart that needs a replug** (`DI_NEEDRESTART`) leaves it pending: the puck is visible to programs that
+  open it anew, but one that kept a handle may not see it until a replug; retried at every trigger.
+- **Hiding cloaks for every allow-listed program:** with cloaking off before, the user's allow list (e.g. DS4Windows)
+  was meaningless; while Pan hides, those programs see the puck too. They are the user's choice.
+- **HidHide's silent setup can hang (for B2):** on about half the CI runners (Windows Server 2025) its last MSI action,
+  registering `nefarius_HidHide_Updater.exe`, never returned after the driver was in place; killing it risks a rollback.
+  B2's install must bound the wait and tell the user, never block Arcadia on it.
+- **HidHide's Configuration Client competes with Pan:** while it is open it holds HidHide (`HidHideBusy`: a hide is
+  refused, a show retried until it closes; B2 should tell the user to close it). What the user changes there during
+  an emulation applies at once: unticking the puck or turning hiding off shows Steam both controllers (double input),
+  removing Arcadia from the list cuts the emulation off from the real controller, inverse mode refuses the next hide.

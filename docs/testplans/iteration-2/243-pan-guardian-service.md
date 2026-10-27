@@ -78,6 +78,46 @@ the player's side runs in the acceptance tests with a faked Pan (`PanGuardianTes
       the pad, Pan stays under 1 % CPU; `arcadia.log`'s latency line ("Verzögerung im Mittel …") is as without Pan.
       · E2E: no (measurement)
 
+## Part B1: Pan hides the Steam Controller (HidHide)
+
+Part B1 (second PR into `feat/replace-sisr`): `Hide`, `Unhide`, `CheckHiding`, the teardown's show and restart, boot
+clean-up, arrivals. No caller in Arcadia yet (#242): `tools/dev/PanDevClient` plays Arcadia (close Arcadia first).
+Needed besides the above: HidHide (1.5.230 on the owner's PC), `HidHideCLI.exe --dev-list / --app-list / --cloak-state`
+(elevated) to look at HidHide, Steam's button (opens Steam's menu or Big Picture) as the sign whether Steam has the
+puck: while hidden the trackpad still moves the pointer by the controller's own mouse mode (R12b). How it works: `docs/controller-support/pan-hiding.md`.
+
+- [ ] **T243-22** R12: `Run-Check-243-R12.ps1` (project files `spikes/243/`) on the owner's PC: Steam loses the puck at
+      a hide and gets it back after an unhide without and with restart, after a killed and a frozen client and after a
+      planned exit; the script notes "sofort" or "nach Fokuswechsel" per case, and HidHide is as before at the end.
+      The result goes into `pan-hiding.md` → R12. · E2E: no (Steam and the real puck)
+- [ ] **T243-23** `PanDevClient` → `hide`: status `hidden 5` (or the number of the puck's HID instances); `--dev-list` lists
+      them, `--app-list` the client's path, cloaking on; the Steam button no longer opens Steam's menu; `journal.json` lists exactly
+      those entries and `CloakingWasOn`. `unhide`: `shown`, HidHide as before, Steam has the puck again. · E2E: yes (CI:
+      `HidHideTests` with the real driver, the service test's hide)
+- [ ] **T243-24** The user's own entries: a second pad hidden in HidHide by hand, cloaking on, `PanDevClient.exe` already
+      allow-listed: `hide` and `unhide` leave the pad's entry, the allow-list entry and cloaking as they were (compare
+      the three lists before and after). · E2E: yes (`HidingTests`, fake HidHide)
+- [ ] **T243-25** States Pan refuses, each with `check` and `hide`: HidHide's "Inverse" ticked → `HidHideInverseMode`;
+      cloaking off with a pad of the user's listed → `HidHideCloakingOffWithForeignEntries`; HidHide's configuration
+      client open → `HidHideBusy`; nothing changes in HidHide. · E2E: yes (`HidingTests`, the state matrix)
+- [ ] **T243-26** `hide`, then the client ended in the Task Manager: the Steam button opens Steam's menu again without any
+      other input (R12b); `pan.log`: "show the Steam Controller: ok", "restart the Steam Controller: ok";
+      HidHide as before. · E2E: no (a real kill; the guardian's side: `HidingTests`)
+- [ ] **T243-27** `hide`, `freeze`: after 3 s status `torn down Hang`, Steam has the puck; `resume`, `hide`: hidden again
+      under the next generation. · E2E: no (a real hang; the guardian's side: `HidingTests`)
+- [ ] **T243-28** `hide`, then the PC switched off hard (power button held) or reset: after the boot, before Steam is
+      opened, `--dev-list` and cloaking are as before the hide; `pan.log`: "Journal: emulation … left open", the show
+      and restart steps ok. · E2E: no (power loss)
+- [ ] **T243-29** `hide`, then the puck unplugged and plugged into another USB port: every present instance is hidden
+      (`--dev-list`; a puck with a serial number keeps its instance ids on any port, so `pan.log` names newly hidden
+      ones only for one without), Steam doesn't get the puck; `unhide` shows all. · E2E: no (USB)
+- [ ] **T243-30** `quit` (goodbye without unhide): `pan.log` "exits with the Steam Controller still hidden", HidHide as
+      before. `sc stop ArcadiaPan` (elevated) while hidden: shown before the service reports stopped. · E2E: no (the
+      guardian's side: `HidingTests`)
+- [ ] **T243-31** Budget: `hide` and `unhide` each answer within 5 s (`devclient.log` times; Windows' puck restart alone
+      takes 2.4–3.9 s, owner 2026-10-27); Pan idle stays at 0 %
+      CPU with the arrival watch (Task Manager), also while hidden. · E2E: no (measurement)
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
@@ -93,6 +133,16 @@ History:
 | After the third review (`JournalTests`: fallback written back, nonsense journals unreadable; `GuardianTests`: recovery result, restore after a torn journal; `PanClientTests`: cancelled request drops the link) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once | pass | – |
 | T243-7 (update step: a rejected update keeps the installed Pan running) | 2026-10-26 | Claude (thread) | added to `ServiceTests`; red only by reasoning (the old code deleted the service before the check); Windows CI run 40403971802 on 6776613 passed | pass | – |
 | After the fourth review (`JournalTests`: a fallback that can't be written back is found by the next load; `GuardianTests`: recovery from the handed snapshot) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once; the dispatch lock and the install rollback are verified by reading only | pass | – |
-| T243-1 … T243-21 (owner's first run on his PC, Debug build) | 2026-10-26 | owner | Windows 11, Debug from the IDE: no `Pan\Pan.exe` in the output, so "Installieren" failed with a path error shown at the wrong row; no triangle in the header; two install buttons; exceptions in the debugger at every retry | fail | fixed in this PR (next row) |
-| T243-13 (rewritten: header mark, one install button, the error at the Pan row), `ControllerSupportServiceTests` (drivers checked while off), `PanClientTests` (no connect attempt without the service) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once; `PublishPanForDebug` and the exception-free service check are Windows-only and verified by reading | pass | owner's second run |
+| T243-1 … T243-21 (owner's first run on their PC, Debug build) | 2026-10-26 | owner | Windows 11, Debug from the IDE: no `Pan\Pan.exe` in the output, so "Installieren" failed with a path error shown at the wrong row; no triangle in the header; two install buttons; exceptions in the debugger at every retry | fail | fixed in this PR (next row) |
+| T243-13 (rewritten: header mark, one install button, the error at the Pan row), `ControllerSupportServiceTests` (drivers checked while off), `PanClientTests` (no connect attempt without the service) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, each new case seen red once; `PublishPanForDebug` and the exception-free service check are Windows-only and verified by reading | pass | the owner's second run |
 | T243-1 … T243-21 (owner's second run, whole test plan) | 2026-10-26 | owner | Windows 11, Debug build from the IDE with `Pan\Pan.exe` published by the build, commit 94128e1 | pass | ready to merge into `feat/replace-sisr` |
+| Pan core part B1 (`HidingTests`, `HidHideWireTests`; T243-24, T243-25 at the guardian) | 2026-10-26 | Claude (thread) | Debug, Linux cloud container, unit tests; mutations seen red: show without the forwarding check, hang watch during a hide | pass | – |
+| T243-23 (real HidHide), Windows adapters (`HidHideTests`, device list, arrival registration, the service test's hide) | 2026-10-26 | Claude (thread) | Windows CI runner, first run on the PR | open | read the CI run |
+| After the QE review of PR #252 (`HidingReviewTests`: stop while hidden, check during the hang watch, uninstalled HidHide, listing before the check; `HidingTests`: retry after a passing failure, retry leaves a new emulation alone) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container, QE's cases red before the fix; retry scheduling and its emulation guard seen red by mutation | pass | – |
+| T243-23 (real HidHide), Windows adapters (`HidHideTests`, device list, arrival registration, the service test's hide) | 2026-10-27 | Claude (thread) | Windows CI runner (Server 2025, HidHide 1.5.230 installed by `Install-HidHide.ps1`), run 40458024167 on 96f33aa: all real-driver tests ran, none skipped | pass | one fake test (`Cloaking_that_was_off_is_turned_off_again`) failed on the loaded runner: its 300 ms device timeout ran out on an instant fake; seen red locally with a 500 ms fake restart, fixed (10 s, short only where devices hang) |
+| T243-7 … T243-12, T243-23 and the Windows adapters after the CI fixes | 2026-10-27 | Claude (thread) | Windows CI runner (Server 2025, HidHide 1.5.230), run 40461544152 on ed9e096: Pan 109/109 with the real driver, none skipped; Core 944, App 319 | pass | – |
+| R12 (check script, first run) | 2026-10-27 | owner | Windows 11, Steam running, HidHide 1.5.230, Pan and PanDevClient from the PR package | partly | Pan's paths clean (journal empty, HidHide as before); showing again needs a focus change; pointer moved while hidden (likely the controller's own mouse mode): R12b with the Steam button pending; step 6 failed only on PanDevClient's status (`exited` overwritten by `disconnected`, fixed) |
+| R12b (check script, Steam button) | 2026-10-27 | owner | as R12 | pass | Steam loses the puck at once at a hide and gets it back at once after an unhide and after a killed client; the pointer moving while hidden is the controller's own mouse mode; HidHide as before |
+| B1 check script (`Run-Check-243-B1.ps1`, steps 1–6; step 7, the hard power-off, declined) | 2026-10-27 | owner | Windows 11, Steam running, HidHide 1.5.230, Pan and PanDevClient from the check package (Pan before the review fixes of 05147a5) | pass | T243-23, -24, -25 (inverse, cloaking off with a foreign device, configuration client open → `HidHideBusy`), -29, -30 pass; Steam button checked hidden and shown. T243-29: the puck keeps its 13 instance ids on another port (serial number), so nothing new to hide and no arrival line; the case's text was wrong, fixed. T243-31: hide 2.4–3.9 s, unhide ~2.5 s (puck restart), over the 2 s budget, within the 5 s the owner set then; Pan CPU 0.03 % hidden, 0.003 % shown. T243-28 still open |
+| Full test plan run (T243-22 … T243-31) | 2026-10-27 | owner | Windows 11, Steam running, HidHide 1.5.230, Pan and PanDevClient from the check package built from bfa4040 | pass | – |
+| After the security/robustness reviews of PR #252 (`IdleStopTests`: Pan stays without a client while a show retry runs; `HidingTests`: a new emulation waits while a retry changes HidHide, the pending retry is reported) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; both new guards seen red by mutation (removed), Pan tests green 3 runs in a row | pass | – |

@@ -133,7 +133,7 @@ internal sealed class ArcadiaDriver : IDisposable
         _running = running;
         PanNotices = new PanNotices(Main.Toast, () => IsArcadiaInFront, OverlayNotices.Add);
         ControllerSupport.HidingCheck = Pan;
-        ForGames = SteamControllerForGames.Create(XboxPads, Pan, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, PanNotices, time);
+        ForGames = SteamControllerForGames.Create(XboxPads, Pan, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, PanNotices, time);
         XboxPad = ForGames.Pad;
         Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
         ForGames.Routing.DriverChanged += () => Dispatcher.UIThread.Post(() => Main.SetSteamControllerDriverReady(ForGames.Routing.DriverReady));

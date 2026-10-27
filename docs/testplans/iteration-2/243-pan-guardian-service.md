@@ -150,6 +150,15 @@ part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it w
 - [ ] **T243-38** Pan removes the drivers only through their own uninstallers: HidHide by its MSI product code through
       `msiexec`, usbip-win2 by its `unins*.exe` under Program Files; anything else runs nothing. · E2E: no (unit:
       `HidHideSetupTests`; the real removal is T243-37)
+- [ ] **T243-39** Sleep with the Xbox pad in (a game on "Arcadia" or Steam's Big Picture without a game, Arcadia
+      behind): Windows' sleep, wake after ~10 s → the pad works again within ~30 s, no toast "VIIPER fiel …";
+      `pan.log` says "The PC woke from sleep" and no "hang". Found in the owner's B2 test (2026-10-27): Pan tore the
+      pad down 3.4 s after waking. · E2E: yes for "Pan's teardowns never make Arcadia give up"
+      (`SteamControllerXboxPadTests`; the grace: `GuardianTests`); no for the real sleep
+- [ ] **T243-40** "Controller wiederherstellen" three times within 5 minutes with the Xbox pad in → no toast "VIIPER
+      fiel …", the pad comes back each time. After Arcadia gave up (e.g. viiper.exe ended in Task Manager four times,
+      toast "… erst nach einem Neustart oder „Controller wiederherstellen“ wieder") → "Controller wiederherstellen"
+      brings the pad back without restarting Arcadia. · E2E: yes (`SteamControllerXboxPadTests`)
 
 History:
 
@@ -188,3 +197,4 @@ History:
 | QE review's optional points on PR #264 (`ControllerSupportServiceTests`: Pan's HidHide state goes with the settings; `MouseModeOverlayTests`: a notice leaves a running hold; `HidHideSetupTests`: another publisher's "HidHide…" MSI is never removed; `DriverRemovalTests`: the real HidHide entry, Windows runner only; `PanClientTests`: waits for the loss report) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; each new guard seen red once (old code or the check removed); the overlay only headless, not over a real game | pass | `DriverRemovalTests` on the Windows runner |
 | Second overall review (Claude) on PR #264, point 1 (`PanClientTests`: `SteamControllerBeingShown` is "Pan räumt noch auf" for 10 s, no loss, then the pad goes on) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; seen red with the new branch disabled; whole suite: Pan 141, Core 970, App 337 | pass | – |
 | Real-HidHide tests after the reviews (`DriverRemovalTests` T243-38: the real HidHide entry gives an msiexec `/x` by product code; `HidHideTests`; CI no longer hangs in HidHide's updater registration) | 2026-10-27 | Claude (thread) | Windows CI runner (Server 2025, HidHide 1.5.230), run 40507889490 on 818605a: Pan 147/147, Core 972, App 337, none skipped | pass | – |
+| T243-39, T243-40 after the owner's B2 test (sleep: `GuardianTests` resume grace; `SteamControllerXboxPadTests` Pan's teardowns no loss, restore clears the count and a give-up; `GuardedXboxPadsTests` `TakenAway`; `ControllerSupportServiceTests` the restore event) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; each new check seen red once by mutation (grace removed, loss always counted, restore not clearing the count or the give-up, `TakenAway` false, the event not raised or not wired); Pan 142, Core 972, App 339 | pass | owner's manual run of T243-39/40 open |

@@ -1803,11 +1803,15 @@ public sealed class ControllerSupportServiceTests : IDisposable
     public async Task Restoring_the_controllers_runs_Pans_restore()
     {
         var service = Create(enabled: false);
+        var restored = 0;
+        service.ControllersRestored += (_, _) => restored++;
 
         await service.RestoreControllersAsync();
 
         Assert.Null(service.LastError);
         Assert.Equal(1, _platform.Restores);
+        // The pad may count afresh (T243-40).
+        Assert.Equal(1, restored);
     }
 
     [Fact]
@@ -1815,10 +1819,13 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var service = Create(enabled: false);
         _platform.RestoreDeclined = true;
+        var restored = 0;
+        service.ControllersRestored += (_, _) => restored++;
 
         await service.RestoreControllersAsync();
 
         Assert.Contains("abgelehnt", service.LastError);
+        Assert.Equal(0, restored);
     }
 
     private sealed class FakePlatform : IControllerSupportPlatform

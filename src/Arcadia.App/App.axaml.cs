@@ -189,7 +189,7 @@ public partial class App : Application
             controllerSupport.HidingCheck = pan;
             var steamPlatform = new ControllerSupportPlatform();
             var forGames = SteamControllerForGames.Create(
-                viiper, pan, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, panNotices, time);
+                viiper, pan, controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, panNotices, time);
             pan.Start();
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;

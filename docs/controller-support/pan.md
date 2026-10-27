@@ -47,7 +47,8 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
   `TornDown` notice given 2 s to go out before the pipe closes; then the client sees `Lost` with the service gone.
   While a teardown runs, heartbeats and a new `EmulationStarted` get `TeardownNotAcknowledged`: the client then reports
   "Pan räumt noch auf" as unavailable, so the pad counts as lost once, not once per tick, until the notice comes. Power
-  resume only restarts the hang clock: sleep is no hang. A torn-down generation is remembered per connection only: a
+  resume restarts the hang clock and gives Arcadia 30 s (`Guardian.ResumeGrace`, logged) before silence counts: sleep
+  is no hang, and Arcadia and the puck took longer than 3 s to run again on the owner's PC (2026-10-27). A torn-down generation is remembered per connection only: a
   Pan that counts anew (reinstalled, journal gone) may hand it out again as a live one.
 
 ## Teardown and journal

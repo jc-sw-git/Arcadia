@@ -178,6 +178,26 @@ public sealed class GuardianTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T243-39")]
+    public void After_waking_Arcadia_gets_its_grace_before_silence_is_a_hang()
+    {
+        Connect();
+        StartEmulation();
+
+        _guardian.PowerResumed();
+        _clock.Advance(Guardian.ResumeGrace - TimeSpan.FromSeconds(1));
+        _guardian.Tick();
+        Assert.True(_guardian.IsEmulating);
+        Assert.Contains("woke from sleep", Log());
+
+        // Still silent once the grace is over: that is a hang after all.
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        _guardian.Tick();
+        Assert.Contains("hang", Log());
+        Assert.NotNull(_guardian.Teardown);
+    }
+
+    [Fact]
     public async Task A_client_that_dies_while_emulating_has_its_emulation_torn_down_and_the_next_client_starts_fresh()
     {
         Connect();

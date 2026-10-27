@@ -1170,7 +1170,11 @@ public sealed class ControllerSupportService(
             }
 
             Log?.Invoke("Controller über Pan wiederhergestellt");
+            ControllersRestored?.Invoke(this, EventArgs.Empty);
         }, cancellationToken);
+
+    /// <summary>"Controller wiederherstellen" succeeded: Pan ended the emulation on purpose, so the pad may count afresh.</summary>
+    public event EventHandler? ControllersRestored;
 
     /// <summary>The fix whose last run failed with <see cref="LastError"/>, so the settings show the error at its row (owner's test, 2026-10-26).</summary>
     public HealthFix? FailedFix { get; private set; }

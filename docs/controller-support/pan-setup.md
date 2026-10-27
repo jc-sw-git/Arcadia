@@ -49,7 +49,8 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   budgets (`PanTimeouts`: install ~10 min, uninstall 9 min). Declined: the service stays, idles
   and stops itself; `Pan.exe --uninstall` by hand removes it. Known limits and accepted risks: [pan-risks.md](pan-risks.md).
 - "Controller wiederherstellen" (settings, shown while Pan is installed): `Pan.exe --restore` elevated, for the case
-  the service itself hangs: undoes the journal without the service.
+  the service itself hangs: undoes the journal without the service. The Xbox pad comes back afterwards, also after
+  Arcadia gave up on VIIPER, and the pad Pan ended doesn't count as a VIIPER failure.
 - A Debug build on Windows publishes `Pan\Pan.exe` beside `Arcadia.dll` (target `PublishPanForDebug` in
   `Arcadia.App.csproj`: single-file, framework-dependent, not AOT; skipped when nothing of Pan changed,
   `-p:ArcadiaSkipPan=true` skips it), so "Installieren" works from the IDE; without it Arcadia says "Pan fehlt in

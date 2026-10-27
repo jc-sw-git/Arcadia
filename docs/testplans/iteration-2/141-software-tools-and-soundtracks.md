@@ -7,38 +7,38 @@ engines and launchable add-ons from manifests and catalog. In `--demo` the demo 
 software, two tools and two soundtracks with all three switches, so every case except the real-launcher ones can be
 tried without Steam or Epic.
 
-- [ ] **T141-1** Epic "Software und Engines einbeziehen" on: Unreal Engine (one entry, however many versions) and Unreal
+- [x] **T141-1** Epic "Software und Engines einbeziehen" on: Unreal Engine (one entry, however many versions) and Unreal
   Editor for Fortnite appear in the Epic tab with the wrench; off: they disappear at once, without a rescan · E2E: yes
-- [ ] **T141-2** Unreal Engine with two versions installed: A ("Tüfteln") starts the newest · E2E: no (real Epic install)
-- [ ] **T141-3** Steam: each of the three switches shows and hides only its type; demos are games; runtimes and
+- [x] **T141-2** Unreal Engine with two versions installed: A ("Tüfteln") starts the newest · E2E: no (real Epic install)
+- [x] **T141-3** Steam: each of the three switches shows and hides only its type; demos are games; runtimes and
   redistributables (Proton, Steam Linux Runtime, Steamworks Common Redistributables) never appear · E2E: yes
-- [ ] **T141-4** The type icon on tile (above the title), search hit, preview (line with name) and detail page (chip);
+- [x] **T141-4** The type icon on tile (above the title), search hit, preview (line with name) and detail page (chip);
   none on games; on a tile it never overlaps the install, update, running or starting badge or the progress bar; a long
   three-line title still ends in an ellipsis · E2E: yes
-- [ ] **T141-5** A says "Spielen" / "Tüfteln" / "Abrocken" by type on the preview and detail page button, in the context
+- [x] **T141-5** A says "Spielen" / "Tüfteln" / "Abrocken" by type on the preview and detail page button, in the context
   menu and in the button hint; not installed it says "Installieren"; while software or a tool runs it says "Weiter
   tüfteln", a game "Zurück ins Spiel" · E2E: yes
-- [ ] **T141-6** A real Steam soundtrack: "Abrocken" plays it in Steam and brings Steam to the front on the
+- [x] **T141-6** A real Steam soundtrack: "Abrocken" plays it in Steam and brings Steam to the front on the
   soundtrack's page (as "In Steam öffnen"); Arcadia shows a toast, no "Startet"/"Läuft"; its detail page notes "Steam
   spielt den Soundtrack ab." · E2E: no (real Steam)
-- [ ] **T141-7** Count line beside the tab's name: parts in the order Spiele, Software, Werkzeuge, Soundtracks; a type
+- [x] **T141-7** Count line beside the tab's name: parts in the order Spiele, Software, Werkzeuge, Soundtracks; a type
   without entries left out; the bracket left out when all of a type are installed; parts split by a divider; the tooltip
   spells it out; four-digit counts with a dot ("1.234"); no page number; an empty tab keeps its text; the tab's number
   counts all entries shown · E2E: yes
-- [ ] **T141-8** Launcher page: "Neu einlesen" and "Launcher-Details" ("Einträge") show the same count line · E2E: yes
-- [ ] **T141-9** The switches survive a restart; with all off the launcher's entry in `settings.json` holds no
+- [x] **T141-8** Launcher page: "Neu einlesen" and "Launcher-Details" ("Einträge") show the same count line · E2E: yes
+- [x] **T141-9** The switches survive a restart; with all off the launcher's entry in `settings.json` holds no
   `LibraryOptions` · E2E: yes
-- [ ] **T141-10** Real Steam with `appinfo.vdf` unreadable (renamed while Arcadia is closed): tools and soundtracks are
+- [x] **T141-10** Real Steam with `appinfo.vdf` unreadable (renamed while Arcadia is closed): tools and soundtracks are
   still recognised by id and name, software counts as a game, no crash, one warning `Steam: appinfo.vdf nicht lesbar …`
   in arcadia.log; named back and rescanned, the types are right again. Also check whether every installed soundtrack has
   its own manifest and where its files are (`steamapps/music` or `common`) · E2E: no (real Steam)
-- [ ] **T141-11** Start to usable library with all switches on, Release build, real Steam and Epic, and
+- [x] **T141-11** Start to usable library with all switches on, Release build, real Steam and Epic, and
   `--demo --demo-games 1000`: within 2 s; arcadia.log's line `Steam: Typen von … aus appinfo.vdf in … ms gelesen` gives the read time ·
   E2E: no (owner's PC)
-- [ ] **T141-13** Unreal Engine not installed: "Installieren" opens Epic on its Unreal Engine library and the toast says
+- [x] **T141-13** Unreal Engine not installed: "Installieren" opens Epic on its Unreal Engine library and the toast says
   to start the installation there ("Bitte in Epic Games starten" on the cover); once started in Epic, Arcadia shows it
   with its progress; with Epic closed before, too · E2E: yes (the link and texts; Epic's page by hand)
-- [ ] **T141-12** The whole flow (switch on, see the entry, open its detail page, start it, switch off) with the controller
+- [x] **T141-12** The whole flow (switch on, see the entry, open its detail page, start it, switch off) with the controller
   only, with the keyboard only and with the mouse only (the count line's tooltip with the mouse) · E2E: no
 
 **Visual checklist for the quality engineer** (from the issue): the focus ring fully visible on the first, the last and
@@ -74,3 +74,4 @@ History:
 | Owner's test, continued: UEFN's end, the soundtrack | 2026-10-27 | owner, Claude (Epic log) | PR build, owner's PC, real Steam and Epic | UEFN: ✅ its end is `HandleTaskComplete: AppId [<UEFN>] AlertCode=[ok]`, which Arcadia reads; soundtrack: ❌ it opened its page but no longer played (before, `rungameid` did play it) | soundtrack plays again and also opens its page; note back to "Steam spielt den Soundtrack ab." |
 | Owner's test, continued: soundtrack, Unreal Engine install, UEFN | 2026-10-27 | owner, Claude (Steam's `console_log.txt`) | owner's PC, real Steam and Epic | soundtrack: ❌ only the page opened (the build had the fix 3022ea9); Steam's log shows only `nav/games/details`, no `rungameid`: Steam lost the first of the two links Arcadia opened at once. Unreal Engine: ✅ Epic's Unreal Engine page opens, but Arcadia asked for a confirmation that never comes. UEFN: no fraction, as intended | the toast and cover now say to start the installation in Epic; the soundtrack's page opens 2 s after the play link |
 | Fix: soundtrack page 2 s after the play link (`EntryTypeTests`, red once with both links at once); all App and Core tests | 2026-10-27 | Claude | PR branch, Linux cloud container | ✅ Core 909, App 326 | T141-6 on the owner's PC |
+| Owner's retest: soundtrack with the page 2 s later, the new Unreal Engine install texts, then all cases T141-1 to 13 | 2026-10-27 | owner | PR build (59fdbe9), owner's PC, real Steam and Epic | ✅ the soundtrack plays and its page opens; texts approved; all cases passed | merge |

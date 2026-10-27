@@ -127,4 +127,19 @@ internal static class Native
     public static extern bool ShowWindow(IntPtr window, int command);
 
     public const int SwShowNoActivate = 4;
+
+    // Spike #118: which desktop has the input. A non-elevated process on the interactive desktop can open the
+    // input desktop and read its name while it is "Default"; when UAC (or lock/sign-in) switches to a Secure
+    // Desktop, OpenInputDesktop is denied (returns 0). consent.exe tells UAC apart from LogonUI's lock/sign-in.
+    public const uint DesktopReadObjects = 0x0001;
+    public const int UoiName = 2;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr OpenInputDesktop(uint flags, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint desiredAccess);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool CloseDesktop(IntPtr desktop);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern bool GetUserObjectInformationW(IntPtr obj, int index, byte[] info, uint length, out uint lengthNeeded);
 }

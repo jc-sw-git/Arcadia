@@ -15,7 +15,7 @@ one names the countermeasure that would close it, so a later story can pick it u
 - **`Pan.exe` runs elevated from the user's folder** (install, update, uninstall, restore): whoever can write to
   `%LOCALAPPDATA%\Arcadia` gets SYSTEM code at the next confirmed UAC prompt. `--expect-hash` only closes the window
   between Arcadia's hash and Pan's copy. The countermeasure is code signing of `Pan.exe` (the UAC dialog then names
-  the publisher); a release topic, see `docs/releases.md`.
+  the publisher); a release topic (#271), see `docs/releases.md`.
 - **`%ProgramFiles%\Arcadia\Pan`** is trusted as Program Files is: only administrators can write there. A junction
   planted by an administrator is not defended against (administrators are trusted anyway).
 - **Process name as a hint only:** `viiper.exe` is taken as the client's child by parent id, start time and name, and

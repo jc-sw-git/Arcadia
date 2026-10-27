@@ -16,7 +16,11 @@ Since #141 both come as tools when the launcher's switch is on: engines by categ
 title starting "Unreal Engine", or an app name `UE_<version>`; every installed version is one entry "Unreal Engine" whose
 A starts the newest (by `UE_5.4`, else the leading numbers of `AppVersionString`), not installed the newest catalog
 version; launchable add-ons by `addons/launchable` even though their `mainGameItem`/`MainGameAppName` names a game.
-The manifests' `AppCategories` for these were not yet checked on the owner's PC (T141-1, T141-2). Epic's
+The owner's catalog (2026-10-27): every engine item has namespace `ue` and categories `engines` (+ `engines/ue5`,
+`engines/ue4`, `engines/preview`, `engines/unstable`), 13 items from `UE_4.x` (one item with 28 app ids) to `UE_5.8`;
+UEFN is `Fortnite_Studio` with `addons/launchable`, `software`, `addons`, `applications` and a `mainGameItem`. With
+both the Epic tab holds 333 entries, as Epic's library. UEFN's cached title is "Unreal Editor f?r Fortnite" (umlauts:
+#43). An installed engine's manifest was not seen (none installed; T141-2). Epic's
 umlauts stay broken until metadata providers (#43) supply titles. Install: `…?action=install`.
 `EpicInstallMonitor` (verified 2026-10-10 with real installs): queue order from
 `Data\DownloadManager\DownloadState_<account>.json` (incl. paused, `[]` when idle); per-app events

@@ -287,10 +287,11 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             return null;
         }
 
-        // Steam installs soundtracks into steamapps/music; one installed as a game's content stays in common.
+        // Steam installs soundtracks into steamapps/music (owner's PC, 2026-10-27), under the same folder name as their
+        // game's in common ("RSDragonwilds"): music wins, so a soundtrack never claims its game's folder.
         var common = Path.Combine(library, "steamapps", "common", installDir);
         var music = Path.Combine(library, "steamapps", "music", installDir);
-        return type == GameType.Soundtrack && !Directory.Exists(common) && Directory.Exists(music) ? music : common;
+        return type == GameType.Soundtrack && Directory.Exists(music) ? music : common;
     }
 
     internal static IEnumerable<string> ManifestFiles(string library)

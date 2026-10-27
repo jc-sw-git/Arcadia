@@ -178,10 +178,23 @@ public sealed class SteamScannerTests : IDisposable
     }
 
     [Fact]
-    public void Keeps_a_soundtrack_in_common_when_it_is_there()
+    public void A_soundtrack_never_takes_its_games_folder_of_the_same_name()
+    {
+        // Real: RuneScape: Dragonwilds' soundtrack is installed as music/RSDragonwilds, its game as common/RSDragonwilds.
+        var library = Path.Combine(_root, "Lib");
+        var music = Directory.CreateDirectory(Path.Combine(library, "steamapps", "music", "RSDragonwilds")).FullName;
+        Directory.CreateDirectory(Path.Combine(library, "steamapps", "common", "RSDragonwilds"));
+        var types = new Dictionary<uint, string> { [3637470] = "Music" };
+
+        var soundtrack = SteamScanner.ParseManifest(Manifest("3637470", "RuneScape: Dragonwilds Early Adopter Soundtrack", "RSDragonwilds"), library, appTypes: types);
+
+        Assert.Equal(music, soundtrack?.InstallDirectory);
+    }
+
+    [Fact]
+    public void A_soundtrack_without_a_music_folder_stays_in_common()
     {
         var library = Path.Combine(_root, "Lib");
-        Directory.CreateDirectory(Path.Combine(library, "steamapps", "music", "OST"));
         var common = Directory.CreateDirectory(Path.Combine(library, "steamapps", "common", "OST")).FullName;
 
         var soundtrack = SteamScanner.ParseManifest(Manifest("1145350", "Game Soundtrack", "OST"), library);

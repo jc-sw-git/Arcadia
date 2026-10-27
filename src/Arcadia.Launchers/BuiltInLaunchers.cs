@@ -27,17 +27,28 @@ public static class BuiltInLaunchers
     /// large library against the budgets in <c>CLAUDE.md</c>; null for the usual sizes.
     /// </param>
     /// <param name="folders">Where Steam and Epic keep their files; null: where they keep them on this PC.</param>
-    /// <param name="http">For the Steam account's web requests (#83); null offers no Steam sign-in.</param>
-    /// <param name="steamAccount">The Steam account to use instead of one over <paramref name="http"/>; the acceptance tests' own.</param>
+    /// <param name="http">
+    /// Given by the app: the Steam sign-in (#83) is off for now, so a sign-in an earlier build stored is deleted.
+    /// </param>
+    /// <param name="steamAccount">The Steam account to use; only the acceptance tests give one.</param>
+    /// <param name="dataFolder">Where a stored Steam sign-in is deleted; null: Arcadia's data folder.</param>
     /// <returns>In the order of <see cref="KnownLaunchers.All"/>, which is the tab order.</returns>
-    public static IReadOnlyList<ILauncherIntegration> Create(TimeProvider time, bool demo, int? demoGames = null, LauncherFolders? folders = null, HttpClient? http = null, SteamOnlineAccount? steamAccount = null)
+    public static IReadOnlyList<ILauncherIntegration> Create(
+        TimeProvider time, bool demo, int? demoGames = null, LauncherFolders? folders = null, HttpClient? http = null, SteamOnlineAccount? steamAccount = null, string? dataFolder = null)
     {
+        // Signing in as Steam's phone app got the owner's account restricted as possibly stolen (2026-10-27), so no user may
+        // sign in until the sign-in is reworked; the stored refresh token is deleted, not kept around.
+        if (steamAccount is null && http is not null)
+        {
+            SteamAccountStore.CreateDefault(dataFolder).Clear(null);
+        }
+
         var total = DemoGameCounts.Values.Sum();
         int DemoCount(int usual) => demoGames is { } wanted ? Math.Max(1, (int)Math.Round((double)usual * wanted / total)) : usual;
 
         ILauncherIntegration[] integrations =
         [
-            new SteamIntegration(time, folders?.Steam, steamAccount ?? (http is null ? null : SteamOnlineAccount.Create(http, time))),
+            new SteamIntegration(time, folders?.Steam, steamAccount),
             new EpicIntegration(time, folders?.Epic),
         ];
 

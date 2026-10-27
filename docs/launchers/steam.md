@@ -68,6 +68,8 @@ so Arcadia offers no "Controller-Layout" action for now (owner's decision).
 `Steam/Account/`: a QR sign-in over Steam's web API, as Steam's phone app and `node-steam-session` (MIT, reference only)
 do it. `IAuthenticationService/BeginAuthSessionViaQR`, `PollAuthSessionStatus` and `GenerateAccessTokenForApp` take
 `input_protobuf_encoded` (base64 protobuf, POST) and answer protobuf; the result is the `x-eresult` header (1 = OK).
+**Don't:** right after the owner's test (2026-10-27) Steam restricted the account ("unexpected device", trading and
+buying off); most likely because of this phone-app pose. The sign-in is off (`BuiltInLaunchers`) until reworked.
 Arcadia signs in as platform `MobileApp` (device name "Arcadia"): only such a refresh token may get new access tokens
 over the web API (WebBrowser gets AccessDenied since 2025-04-30). The code renews itself (`new_challenge_url`,
 `new_client_id`; the owner saw it change about every 30 s); the old one is then invalid. A poll error after

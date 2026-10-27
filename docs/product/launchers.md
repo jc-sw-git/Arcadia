@@ -44,7 +44,9 @@ Agreed with the owner; don't change without asking. Read this before changing th
   versions as one entry that starts the newest, and launchable add-ons such as Unreal Editor for Fortnite), counted as
   Werkzeug; Epic's soundtracks (`digitaldownloads`) stay out. "Neu einlesen" and "Launcher-Details" ("Einträge") show
   the library's count line (`docs/product/library.md`).
-- Steam account (#83, owner 2026-10-26, changed after the test 2026-10-27): Steam's page starts with the group "Konto",
+- Steam account (#83, owner 2026-10-26, changed after the test 2026-10-27). **Off since 2026-10-27**: right after the
+  merge Steam restricted the owner's account as possibly stolen; the row is gone and a stored sign-in is deleted at start
+  until the sign-in is reworked (likely Steam's own store page in a web view, as Playnite does). As built: Steam's page starts with the group "Konto",
   the row "Steam-Konto"; while Steam is inactive or missing it stays there, disabled, and says why (a sign-in stays
   stored). Sign-in only by QR code approved in the Steam app on the phone, no password. Signed out: pill "Anmelden",
   subtitle "Melde dich an, um vollen Zugriff auf deine Spielebibliothek zu haben"; A shows the code in the info panel. It renews

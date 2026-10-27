@@ -25,6 +25,8 @@ internal sealed class FakeIntegration(LauncherInfo launcher) : ILauncherIntegrat
 
     public ILauncherFolderChoice? FolderChoice { get; init; }
 
+    public IReadOnlyList<LibraryTypeOption> LibraryOptions { get; init; } = [];
+
     /// <summary>Without a choice of the user: every launcher found is active.</summary>
     public static LauncherRegistry Registry(params ILauncherIntegration[] integrations) => new(integrations, () => null);
 

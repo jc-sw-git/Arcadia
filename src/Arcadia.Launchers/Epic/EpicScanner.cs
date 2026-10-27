@@ -115,17 +115,18 @@ public sealed class EpicScanner(
         var games = new List<Game>(installed);
         var seen = new HashSet<string>(StringComparer.Ordinal);
 
-        // Epic shows one tile for all engine versions, installed or not (owner, 2026-10-22).
+        // Epic shows one tile for all engine versions, installed or not (owner, 2026-10-22); not installed, it offers the newest.
         var hasEngine = installed.Any(game => game.Title == EpicCatalog.UnrealEngineTitle && game.Type == GameType.Tool);
+        var newestEngine = hasEngine ? null
+            : catalog.Where(item => item.IsEngine).MaxBy(item => EngineVersionOf(item.AppName, versionString: null));
         foreach (var item in catalog)
         {
             if (installedIds.Contains(item.CatalogItemId) || installedApps.Contains(item.AppName) || !seen.Add(item.AppName)
-                || (item.IsEngine && hasEngine))
+                || (item.IsEngine && item != newestEngine))
             {
                 continue;
             }
 
-            hasEngine |= item.IsEngine;
             games.Add(new Game
             {
                 Id = item.AppName,
@@ -277,7 +278,7 @@ public sealed class EpicScanner(
     /// The engine version of <c>UE_5.4</c>, else the leading numbers of its version string (<c>5.4.2-…</c>); 0 if neither
     /// says, so a version that does wins.
     /// </summary>
-    internal static Version EngineVersionOf(string appName, string? versionString)
+    public static Version EngineVersionOf(string appName, string? versionString)
     {
         static Version? Leading(string? text)
         {

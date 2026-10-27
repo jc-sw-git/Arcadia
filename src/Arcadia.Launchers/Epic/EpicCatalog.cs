@@ -137,13 +137,13 @@ public static partial class EpicCatalog
     /// cache files Unreal Engine under applications and software, not in a category of its own), or an app named
     /// <c>UE_5.4</c>. Marketplace assets share the namespace but not the name.
     /// </summary>
-    internal static bool IsEngine(IReadOnlySet<string> categories, string? catalogNamespace, string? title, string? appName) =>
+    public static bool IsEngine(IReadOnlySet<string> categories, string? catalogNamespace, string? title, string? appName) =>
         categories.Contains(EngineCategory)
         || (catalogNamespace == EngineNamespace && title?.StartsWith(UnrealEngineTitle, StringComparison.OrdinalIgnoreCase) == true)
         || appName?.StartsWith(EngineAppPrefix, StringComparison.Ordinal) == true;
 
     /// <summary>Epic names the engine's versions <c>UE_5.4</c>.</summary>
-    internal const string EngineAppPrefix = "UE_";
+    public const string EngineAppPrefix = "UE_";
 
     private const string EngineNamespace = "ue";
 

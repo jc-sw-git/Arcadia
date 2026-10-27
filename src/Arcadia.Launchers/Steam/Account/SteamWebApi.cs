@@ -63,7 +63,7 @@ internal sealed record SteamApiResult<T>(T? Value, SteamApiError? Error)
 /// new access tokens, the owned games, the profile name (JSON) and the store's list of owned apps. HTTPS only; every
 /// request ends after <see cref="Timeout"/>. Requests and answers hold tokens, so nothing of them is logged. Arcadia signs
 /// in as Steam's phone app does: only that kind of sign-in may get new access tokens over the web API, and its access
-/// token is also the store's session cookie (<c>docs/launchers/steam.md</c>).
+/// token is also the store's session cookie (<c>docs/launchers/steam/account.md</c>).
 /// </summary>
 internal sealed class SteamWebApi(HttpClient http)
 {

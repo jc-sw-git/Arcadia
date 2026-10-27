@@ -159,7 +159,7 @@ errors land with stack trace in `arcadia.log` and as a toast. No `_ = SomethingA
 
 **Launcher and controller findings** (verified on the owner's PC; read the matching file before
 touching that code, and add new findings there, not here):
-- Steam library, installs, updates, `shortcuts.vdf`: `docs/launchers/steam.md`
+- Steam library, installs, updates, account, running games, `shortcuts.vdf`: `docs/launchers/steam/` (README first, then the topic file)
 - Epic launcher, catalog, install monitor, playtime: `docs/launchers/epic.md`
 - Steam Controller Support (SISR, usbip-win2, focus handling): `docs/controller-support/` (README first, then the topic file)
 

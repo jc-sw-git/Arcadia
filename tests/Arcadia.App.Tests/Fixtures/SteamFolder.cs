@@ -5,7 +5,7 @@ namespace Arcadia.App.Tests.Fixtures;
 
 /// <summary>
 /// One app manifest (<c>steamapps/appmanifest_&lt;id&gt;.acf</c>) as Steam writes it; the fields and their meaning are in
-/// <c>docs/launchers/steam.md</c>. The ids are made up, apart from Steam's own tools, which Arcadia knows by id.
+/// <c>docs/launchers/steam/library-and-installs.md</c>. The ids are made up, apart from Steam's own tools, which Arcadia knows by id.
 /// </summary>
 internal sealed record SteamApp(string AppId, string Name)
 {

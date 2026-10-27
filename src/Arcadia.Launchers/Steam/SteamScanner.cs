@@ -353,7 +353,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
     /// <summary>The game's page in the Steam library.</summary>
     public static string DetailsUri(uint appId) => $"steam://nav/games/details/{appId.ToString(CultureInfo.InvariantCulture)}";
 
-    /// <summary>Opens Steam's install dialog; ignored for an installed game (docs/launchers/steam.md).</summary>
+    /// <summary>Opens Steam's install dialog; ignored for an installed game (docs/launchers/steam/library-and-installs.md).</summary>
     public static string InstallUri(uint appId) => $"steam://install/{appId.ToString(CultureInfo.InvariantCulture)}";
 
     /// <summary>Steam asks for confirmation itself before it deletes anything.</summary>

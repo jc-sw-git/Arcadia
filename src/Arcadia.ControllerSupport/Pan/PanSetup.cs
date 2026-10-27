@@ -17,7 +17,6 @@ namespace Arcadia.ControllerSupport.Pan;
 public static class PanSetup
 {
     private const int ErrorCancelled = 1223;
-    private static readonly TimeSpan CommandWait = TimeSpan.FromMinutes(6);
 
     public static string BundledExecutable => Path.Combine(AppContext.BaseDirectory, "Pan", "Pan.exe");
 
@@ -74,7 +73,7 @@ public static class PanSetup
             arguments.Add(hidHideInstaller);
         }
 
-        return await RunElevatedAsync(arguments, cancellationToken);
+        return await RunElevatedAsync(arguments, PanTimeouts.Install, cancellationToken);
     }
 
     /// <summary>
@@ -82,12 +81,12 @@ public static class PanSetup
     /// files; with <paramref name="removeDrivers"/> HidHide and usbip-win2 too, after Pan undid its own entries.
     /// </summary>
     public static Task<bool> UninstallAsync(bool removeDrivers, CancellationToken cancellationToken) =>
-        RunElevatedAsync(removeDrivers ? ["--uninstall", "--remove-drivers"] : ["--uninstall"], cancellationToken);
+        RunElevatedAsync(removeDrivers ? ["--uninstall", "--remove-drivers"] : ["--uninstall"], PanTimeouts.Uninstall, cancellationToken);
 
     /// <summary><c>Pan.exe --restore</c> elevated: the manual way out when the service hangs; undoes what its journal lists.</summary>
-    public static Task<bool> RestoreAsync(CancellationToken cancellationToken) => RunElevatedAsync(["--restore"], cancellationToken);
+    public static Task<bool> RestoreAsync(CancellationToken cancellationToken) => RunElevatedAsync(["--restore"], PanTimeouts.Restore, cancellationToken);
 
-    private static async Task<bool> RunElevatedAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    private static async Task<bool> RunElevatedAsync(IReadOnlyList<string> arguments, TimeSpan wait, CancellationToken cancellationToken)
     {
         var exe = BundledExecutable;
         if (!File.Exists(exe))
@@ -105,14 +104,14 @@ public static class PanSetup
         {
             using var process = Process.Start(info) ?? throw new InvalidOperationException("Pan konnte nicht gestartet werden.");
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(CommandWait);
+            timeout.CancelAfter(wait);
             try
             {
                 await process.WaitForExitAsync(timeout.Token);
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                throw new System.TimeoutException($"Pan {arguments[0]} hat nach {CommandWait.TotalMinutes:0} Minuten nicht geantwortet.");
+                throw new System.TimeoutException($"Pan {arguments[0]} hat nach {wait.TotalMinutes:0} Minuten nicht geantwortet.");
             }
 
             if (process.ExitCode == DataFolderExitCode)

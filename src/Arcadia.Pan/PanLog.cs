@@ -17,17 +17,32 @@ public sealed class PanLog(string path, bool console)
     private readonly Lock _lock = new();
     private readonly Queue<string> _early = new();
     private bool _fileAllowed;
+    private bool _fileStopped;
 
     /// <summary>The data folder is ours (secured or checked in this process): the file may be written from now on.</summary>
     public void TrustFolder()
     {
         lock (_lock)
         {
-            _fileAllowed = true;
+            _fileAllowed = !_fileStopped;
             while (_early.TryDequeue(out var line))
             {
                 Append(line);
             }
+        }
+    }
+
+    /// <summary>
+    /// The folder is about to be deleted: from now on lines go to the console only. Once it is gone anyone may create
+    /// it again (or a junction in its place), and an elevated write by path would follow (overall review, finding 1).
+    /// </summary>
+    public void StopFileLogging()
+    {
+        lock (_lock)
+        {
+            _fileAllowed = false;
+            _fileStopped = true;
+            _early.Clear();
         }
     }
 
@@ -41,6 +56,11 @@ public sealed class PanLog(string path, bool console)
 
         lock (_lock)
         {
+            if (_fileStopped)
+            {
+                return;
+            }
+
             if (!_fileAllowed)
             {
                 _early.Enqueue(stamped);

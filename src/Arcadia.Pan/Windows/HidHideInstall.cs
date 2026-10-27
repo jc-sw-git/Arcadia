@@ -11,7 +11,7 @@ namespace Arcadia.Pan.Windows;
 [SupportedOSPlatform("windows")]
 public static class HidHideInstall
 {
-    private static readonly TimeSpan PuckRestartWait = TimeSpan.FromSeconds(10);
+    private static TimeSpan PuckRestartWait => PanTimeouts.PuckRestart;
 
     /// <exception cref="UntrustedInstallerException">Not the pinned installer or not signed by HidHide's publisher; nothing was started.</exception>
     /// <exception cref="InvalidOperationException">The setup failed; the message says how.</exception>

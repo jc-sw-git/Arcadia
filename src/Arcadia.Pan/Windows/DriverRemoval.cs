@@ -13,7 +13,7 @@ namespace Arcadia.Pan.Windows;
 [SupportedOSPlatform("windows")]
 public static class DriverRemoval
 {
-    private static readonly TimeSpan UninstallerWait = TimeSpan.FromMinutes(3);
+    private static TimeSpan UninstallerWait => PanTimeouts.DriverUninstaller;
 
     private static readonly string[] UninstallRoots =
     [

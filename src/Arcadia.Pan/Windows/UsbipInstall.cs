@@ -13,7 +13,7 @@ namespace Arcadia.Pan.Windows;
 [SupportedOSPlatform("windows")]
 public static class UsbipInstall
 {
-    private static readonly TimeSpan InstallerWait = TimeSpan.FromMinutes(5);
+    private static TimeSpan InstallerWait => PanTimeouts.UsbipInstaller;
 
     /// <exception cref="UntrustedInstallerException">Not signed by usbip-win2's publisher; nothing was started.</exception>
     /// <exception cref="TimeoutException">The setup still runs after the wait; it is left running, as killing an installer mid-driver-install could leave it half set up.</exception>

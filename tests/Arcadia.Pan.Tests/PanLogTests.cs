@@ -36,4 +36,25 @@ public class PanLogTests
         Assert.False(File.Exists(path));
         Assert.False(Directory.Exists(journal.Folder));
     }
+
+    [Fact]
+    public void Once_the_folder_is_being_deleted_a_folder_recreated_at_its_path_gets_no_line()
+    {
+        using var journal = new TempJournal();
+        var path = Path.Combine(journal.Folder, "pan.log");
+        Directory.CreateDirectory(journal.Folder);
+        var log = new PanLog(path, console: false);
+        log.TrustFolder();
+        log.Write("uninstalling");
+
+        log.StopFileLogging();
+        Directory.Delete(journal.Folder, recursive: true);
+        // Anyone may create the path again once it is gone; an elevated write must not follow.
+        Directory.CreateDirectory(journal.Folder);
+        log.Write("Pan's folder deleted");
+        log.TrustFolder();
+        log.Write("later");
+
+        Assert.False(File.Exists(path));
+    }
 }

@@ -58,7 +58,7 @@ public enum HidHideSetupOutcome
 public static class HidHideSetup
 {
     /// <summary>How long Pan waits for HidHide's setup; it takes seconds when it doesn't hang.</summary>
-    public static readonly TimeSpan Wait = TimeSpan.FromMinutes(2);
+    public static TimeSpan Wait => PanTimeouts.HidHideInstaller;
 
     private const int RestartRequired = 3010;
 

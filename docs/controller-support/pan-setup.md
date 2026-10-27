@@ -40,9 +40,13 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   entfernen?" listing what is there (usbip-win2, HidHide, SISR/VIIPER until #214), default no (other programs may use
   the drivers; `ControllerSupportRemoval.Question`). Then `Pan.exe --uninstall [--remove-drivers]` elevated, one UAC
   prompt (when Pan or a driver to remove exists), no question about Pan itself (it exists for Arcadia alone): stop (= teardown), delete the service, undo the journal, delete both folders and the empty
-  `%ProgramData%\Arcadia` (a file in use goes at the next boot, `MoveFileEx`). With `--remove-drivers`, after that undo
-  (`DriverRemoval`): HidHide first (`msiexec /x {GUID} /qn /norestart` from its uninstall entry), then usbip-win2 (its
-  Inno `unins*.exe` under Program Files, `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART`), 3 min each, 0/3010 = removed. Declined: the service stays, idles
+  `%ProgramData%\Arcadia` (a file in use goes at the next boot, `MoveFileEx`). With `--remove-drivers`, only after that undo
+  is confirmed (`UninstallOrder`: removing HidHide shows the real puck, so an incomplete undo or a data folder that
+  isn't Pan's keeps the drivers, exit 5 or 7) and before the data folder goes (`DriverRemoval`): HidHide first (`msiexec /x {GUID} /qn /norestart` from its uninstall entry), then usbip-win2 (its
+  Inno `unins*.exe` under Program Files, `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART`), 3 min each, 0/3010 = removed;
+  a driver that stays keeps the data folder with `pan.log`. File logging stops before the data folder is deleted
+  (`PanLog.StopFileLogging`): anyone may recreate the path then. Arcadia's wait per command is the sum of Pan's step
+  budgets (`PanTimeouts`: install ~10 min, uninstall 9 min). Declined: the service stays, idles
   and stops itself; `Pan.exe --uninstall` by hand removes it. Known limits and accepted risks: [pan-risks.md](pan-risks.md).
 - "Controller wiederherstellen" (settings, shown while Pan is installed): `Pan.exe --restore` elevated, for the case
   the service itself hangs: undoes the journal without the service.

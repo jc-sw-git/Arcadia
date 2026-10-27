@@ -107,10 +107,17 @@ internal static class Program
                         Console.Error.WriteLine($"Leaving the data folder alone: {dataProblem}.");
                     }
 
-                    var undone = ServiceSetup.UninstallAsync(removeData: dataProblem is null, log.Write).GetAwaiter().GetResult();
-                    // After Pan undid its HidHide entries (#243 part B2); the user said yes at Arcadia's uninstall.
-                    var driversRemoved = !Flag(args, "--remove-drivers") || DriverRemoval.RunAsync(log.Write).GetAwaiter().GetResult();
-                    return !undone ? RestoreIncompleteExitCode : driversRemoved ? 0 : DriversNotRemovedExitCode;
+                    var data = dataProblem is null ? DataFolder.Ours
+                        : Directory.Exists(PanPaths.DataDirectory) || File.Exists(PanPaths.DataDirectory) ? DataFolder.NotOurs
+                        : DataFolder.Missing;
+                    // The drivers only when the user said yes at Arcadia's uninstall (#243 part B2).
+                    Func<Task<bool>>? removeDrivers = Flag(args, "--remove-drivers") ? () => DriverRemoval.RunAsync(log.Write) : null;
+                    return ServiceSetup.UninstallAsync(data, removeDrivers, log.StopFileLogging, log.Write).GetAwaiter().GetResult() switch
+                    {
+                        UninstallOutcome.RestoreIncomplete => RestoreIncompleteExitCode,
+                        UninstallOutcome.DriversLeft => DriversNotRemovedExitCode,
+                        _ => 0,
+                    };
                 case "--restore":
                     if (ServiceSetup.CheckDataDirectory() is { } problem)
                     {

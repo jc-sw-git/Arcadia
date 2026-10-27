@@ -227,12 +227,12 @@ public static class ServiceSetup
     }
 
     /// <summary>
-    /// Stops the service (its stop is the full teardown), removes it, undoes what the journal still lists, and deletes
-    /// Pan's files; with <paramref name="removeData"/> false (the data folder isn't ours) the journal and the data folder
-    /// are left alone. Returns false when something could not be undone: then the journal and Pan.exe stay too, so
+    /// Stops the service (its stop is the full teardown), removes it, then goes on in <see cref="UninstallOrder"/>: undoes
+    /// what the journal still lists, removes the drivers if asked, deletes the data folder; a data folder that isn't
+    /// ours is left alone. When something could not be undone, the journal and Pan.exe stay too, so
     /// <c>Pan.exe --restore</c> (or the next install) can finish it (review point 8).
     /// </summary>
-    public static async Task<bool> UninstallAsync(bool removeData, Action<string> log)
+    public static async Task<UninstallOutcome> UninstallAsync(DataFolder data, Func<Task<bool>>? removeDrivers, Action stopFileLog, Action<string> log)
     {
         using (var manager = OpenManager(Native.ScManagerConnect))
         {
@@ -255,20 +255,17 @@ public static class ServiceSetup
             }
         }
 
-        if (removeData)
+        var outcome = await UninstallOrder.RunAsync(data, () => Restore.RunAsync(log), removeDrivers, stopFileLog, () =>
         {
-            if (!await Restore.RunAsync(log))
-            {
-                log($"Uninstall incomplete: {PanPaths.JournalPath} and {PanPaths.InstalledExecutable} stay for a later `Pan.exe --restore`");
-                return false;
-            }
-
             DeleteTree(PanPaths.DataDirectory, log);
             DeleteIfEmpty(Path.GetDirectoryName(PanPaths.DataDirectory)!, log);
+        }, log);
+        if (outcome != UninstallOutcome.RestoreIncomplete)
+        {
+            DeleteTree(PanPaths.InstallDirectory, log);
         }
 
-        DeleteTree(PanPaths.InstallDirectory, log);
-        return true;
+        return outcome;
     }
 
     private static void Stop(ServiceHandle service, Action<string> log)

@@ -9,72 +9,72 @@ puck, a game of another launcher, `services.msc`, "Game controllers" = `joy.cpl`
 Automated: the Windows CI runner installs the real service (`tests/Arcadia.Pan.Tests/ServiceTests`, T243-7 … T243-12);
 the player's side runs in the acceptance tests with a faked Pan (`PanGuardianTests`).
 
-- [ ] **T243-1** Setup on a PC without usbip-win2 and without Pan: Einstellungen → Controller → "Treiber installieren"
+- [x] **T243-1** Setup on a PC without usbip-win2 and without Pan: Einstellungen → Controller → "Treiber installieren"
       (or the row "Wächterdienst Pan fehlt" → "Installieren") asks for administrator rights exactly once; afterwards
       `services.msc` lists "Pan - Arcadias Guardian" (running, automatic, description in German on a German Windows),
       `%ProgramFiles%\Arcadia\Pan\Pan.exe` exists, `sc sdshow ArcadiaPan` gives users (IU) only LC RP LO RC, the warning
       row is gone and "Controller wiederherstellen" appears. `pan.log`: "Copied to … (SHA-256 …)", "Service started".
       · E2E: no (UAC and the real driver; the service's install: T243-7)
-- [ ] **T243-2** Without Pan (service uninstalled by hand: `Pan.exe --uninstall` elevated): no Xbox controller of
+- [x] **T243-2** Without Pan (service uninstalled by hand: `Pan.exe --uninstall` elevated): no Xbox controller of
       Arcadia's appears, the per-game mode is greyed out with "„Arcadia“ braucht den usbip-Treiber, VIIPER und den
       Wächterdienst Pan – …"; Pan installed again, the controller comes back by itself within a few seconds. · E2E: yes
-- [ ] **T243-3** `arcadia.log` after start: "Pan: verbunden (…, Protokoll 1, Generation n)"; in a game with the pad,
+- [x] **T243-3** `arcadia.log` after start: "Pan: verbunden (…, Protokoll 1, Generation n)"; in a game with the pad,
       `pan.log` shows the emulation started with its generation and the held `viiper.exe`; the game plays as before (no
       added latency: Pan only receives heartbeats). · E2E: yes (registration and heartbeat)
-- [ ] **T243-4** A teardown by Pan (e.g. `sc stop ArcadiaPan` elevated while a game runs with the pad): the Xbox
+- [x] **T243-4** A teardown by Pan (e.g. `sc stop ArcadiaPan` elevated while a game runs with the pad): the Xbox
       controller leaves "Game controllers" at once, `viiper.exe` is gone, Arcadia shows the toast "… Pan wurde beendet und
       hat den Xbox Controller entfernt – er kommt zurück, sobald Pan wieder läuft"; Pan started again (Arcadia starts
       it itself), the controller is back within about 2 s with the next generation. · E2E: yes
-- [ ] **T243-5** Pan's process killed in the Task Manager while emulating: the SCM restarts it, the restarted Pan undoes
+- [x] **T243-5** Pan's process killed in the Task Manager while emulating: the SCM restarts it, the restarted Pan undoes
       its journal (`pan.log`: "Recover…", `viiper.exe` ended), Arcadia shows "… Verbindung zu Pan verloren …" and the
       controller returns. · E2E: yes (the lost connection and the return)
-- [ ] **T243-6** Arcadia closed normally: `viiper.exe` and the controller are gone, `pan.log` logs the planned exit, no
+- [x] **T243-6** Arcadia closed normally: `viiper.exe` and the controller are gone, `pan.log` logs the planned exit, no
       teardown runs, Pan stops itself after 30 s without a client. · E2E: yes
-- [ ] **T243-7** `Pan.exe --install --expect-hash <sha256>` (CI): exit 0, the copy in Program Files, the service running;
+- [x] **T243-7** `Pan.exe --install --expect-hash <sha256>` (CI): exit 0, the copy in Program Files, the service running;
       a wrong hash installs nothing and exits 3; a wrong hash on an installed Pan leaves it running and unchanged, no
       `Pan.exe.new` left. · E2E: yes (Windows CI, `ServiceTests`, all three)
-- [ ] **T243-8** The service's DACL gives users start, query and interrogate only (`sc sdshow`: the IU entry has only LC RP LO RC, no
+- [x] **T243-8** The service's DACL gives users start, query and interrogate only (`sc sdshow`: the IU entry has only LC RP LO RC, no
       `WD`/`BU`/`AU` entry); `ImagePath` in the registry is quoted; the description is the system language's. · E2E: yes (CI)
-- [ ] **T243-9** The pipe `ArcadiaPan` takes SYSTEM and the interactive user, not Everyone or Users; hello answers
+- [x] **T243-9** The pipe `ArcadiaPan` takes SYSTEM and the interactive user, not Everyone or Users; hello answers
       `HelloOk` with the generation. · E2E: yes (CI)
-- [ ] **T243-10** Service stop while a child `viiper.exe` of the client is registered: the child is ended before the
+- [x] **T243-10** Service stop while a child `viiper.exe` of the client is registered: the child is ended before the
       service reports stopped. · E2E: yes (CI)
-- [ ] **T243-11** A client that sends no heartbeat for 3 s after `EmulationStarted`: Pan ends the forwarding process and
+- [x] **T243-11** A client that sends no heartbeat for 3 s after `EmulationStarted`: Pan ends the forwarding process and
       sends `TornDown(Hang)` with the generation; the client acknowledges. · E2E: yes (CI)
-- [ ] **T243-12** `Pan.exe --uninstall`: service gone (`sc query` → 1060), `%ProgramFiles%\Arcadia\Pan` gone. · E2E: yes (CI)
-- [ ] **T243-13** Einstellungen → Controller with Pan missing and the switch off: the category shows the warning
+- [x] **T243-12** `Pan.exe --uninstall`: service gone (`sc query` → 1060), `%ProgramFiles%\Arcadia\Pan` gone. · E2E: yes (CI)
+- [x] **T243-13** Einstellungen → Controller with Pan missing and the switch off: the category shows the warning
       triangle, the library's header too (tooltip "Steam Controller: Wächterdienst Pan fehlt"); the row "Wächterdienst
       Pan fehlt" offers "Installieren", while "Steam Controller Kompatibilität" stays a switch whose status points to
       that row (no second install button). "Installieren" asks for UAC once; afterwards the row, the triangle and the
       header mark are gone and "Controller wiederherstellen" appears. A failed install (e.g. the prompt declined)
       shows its message in place of the row's subtitle with the error icon and how to go on, and in the row's panel;
       the switch's panel shows no error. · E2E: yes (acceptance tests; the real UAC by hand)
-- [ ] **T243-14** An Arcadia update that brings a newer Pan: at start one dialog "Pan aktualisieren"; B closes it and
+- [x] **T243-14** An Arcadia update that brings a newer Pan: at start one dialog "Pan aktualisieren"; B closes it and
       the next start asks again; A asks for administrator rights once, `services.msc` shows the new version afterwards
       (`Pan.exe --version`). While the first-run dialog or the settings are open, no question. · E2E: yes (the dialog;
       the real update is manual)
-- [ ] **T243-15** Arcadia ended in the Task Manager while a game runs with the pad: the Xbox controller leaves "Game
+- [x] **T243-15** Arcadia ended in the Task Manager while a game runs with the pad: the Xbox controller leaves "Game
       controllers" within about a second, `viiper.exe` is gone, `pan.log`: "Client … gone while emulating", the usbip
       port detached, "torn down". After the next start the controller is back and nothing is listed twice. · E2E: no
       (a real crash; the fake Pan's side: T243-4)
-- [ ] **T243-16** Arcadia suspended for 5 s (Process Explorer → Suspend, or `pssuspend Arcadia`) while a game runs with
+- [x] **T243-16** Arcadia suspended for 5 s (Process Explorer → Suspend, or `pssuspend Arcadia`) while a game runs with
       the pad: the controller goes after 3 s; resumed, the toast "… Arcadia hat 3 Sekunden nicht reagiert, Pan hat den
       Xbox Controller entfernt – er kommt gleich zurück" and the controller returns within about 2 s. Three such losses
       within 5 minutes: Arcadia gives up until the next start (toast). · E2E: no (a real hang)
-- [ ] **T243-17** Sleep: PC put to sleep for over a minute while a game runs with the pad; after waking, no teardown
+- [x] **T243-17** Sleep: PC put to sleep for over a minute while a game runs with the pad; after waking, no teardown
       (`pan.log` has no "hang"), the controller still works. Shutdown with a game running: Pan's pre-shutdown tears the
       emulation down (log after the next boot). · E2E: no
-- [ ] **T243-18** Uninstalling Arcadia (Windows → Apps): after the SISR and data questions one UAC prompt for Pan; the
+- [x] **T243-18** Uninstalling Arcadia (Windows → Apps): after the SISR and data questions one UAC prompt for Pan; the
       service, `%ProgramFiles%\Arcadia\Pan` and `%ProgramData%\Arcadia` are gone. Declined: Arcadia is removed, Pan
       stays idle and `Pan.exe --uninstall` (an elevated prompt, exe from the old install folder or the repo) removes it.
       With Pan never installed, no UAC prompt at all. · E2E: no (uninstall hook and UAC)
-- [ ] **T243-19** "Controller wiederherstellen" with nothing to restore: one UAC prompt, no error, `pan.log`: "Nothing to
+- [x] **T243-19** "Controller wiederherstellen" with nothing to restore: one UAC prompt, no error, `pan.log`: "Nothing to
       restore". With the service stopped by hand (`sc stop`, elevated) after `viiper.exe` was left running from a killed
       Arcadia: the action ends `viiper.exe` and detaches the port, "Restore complete". · E2E: no (UAC)
-- [ ] **T243-20** A standard user (second Windows account, not administrator): `sc stop ArcadiaPan` and
+- [x] **T243-20** A standard user (second Windows account, not administrator): `sc stop ArcadiaPan` and
       `sc config` are denied, `sc start ArcadiaPan` works; Arcadia in that account connects and emulates. · E2E: no
       (second account)
-- [ ] **T243-21** Budget (Release build): Pan idle 0 % CPU and under 20 MB in the Task Manager; while a game runs with
+- [x] **T243-21** Budget (Release build): Pan idle 0 % CPU and under 20 MB in the Task Manager; while a game runs with
       the pad, Pan stays under 1 % CPU; `arcadia.log`'s latency line ("Verzögerung im Mittel …") is as without Pan.
       · E2E: no (measurement)
 
@@ -86,35 +86,35 @@ Needed besides the above: HidHide (1.5.230 on the owner's PC), `HidHideCLI.exe -
 (elevated) to look at HidHide, Steam's button (opens Steam's menu or Big Picture) as the sign whether Steam has the
 puck: while hidden the trackpad still moves the pointer by the controller's own mouse mode (R12b). How it works: `docs/controller-support/pan-hiding.md`.
 
-- [ ] **T243-22** R12: `Run-Check-243-R12.ps1` (project files `spikes/243/`) on the owner's PC: Steam loses the puck at
+- [x] **T243-22** R12: `Run-Check-243-R12.ps1` (project files `spikes/243/`) on the owner's PC: Steam loses the puck at
       a hide and gets it back after an unhide without and with restart, after a killed and a frozen client and after a
       planned exit; the script notes "sofort" or "nach Fokuswechsel" per case, and HidHide is as before at the end.
       The result goes into `pan-hiding.md` → R12. · E2E: no (Steam and the real puck)
-- [ ] **T243-23** `PanDevClient` → `hide`: status `hidden 5` (or the number of the puck's HID instances); `--dev-list` lists
+- [x] **T243-23** `PanDevClient` → `hide`: status `hidden 5` (or the number of the puck's HID instances); `--dev-list` lists
       them, `--app-list` the client's path, cloaking on; the Steam button no longer opens Steam's menu; `journal.json` lists exactly
       those entries and `CloakingWasOn`. `unhide`: `shown`, HidHide as before, Steam has the puck again. · E2E: yes (CI:
       `HidHideTests` with the real driver, the service test's hide)
-- [ ] **T243-24** The user's own entries: a second pad hidden in HidHide by hand, cloaking on, `PanDevClient.exe` already
+- [x] **T243-24** The user's own entries: a second pad hidden in HidHide by hand, cloaking on, `PanDevClient.exe` already
       allow-listed: `hide` and `unhide` leave the pad's entry, the allow-list entry and cloaking as they were (compare
       the three lists before and after). · E2E: yes (`HidingTests`, fake HidHide)
-- [ ] **T243-25** States Pan refuses, each with `check` and `hide`: HidHide's "Inverse" ticked → `HidHideInverseMode`;
+- [x] **T243-25** States Pan refuses, each with `check` and `hide`: HidHide's "Inverse" ticked → `HidHideInverseMode`;
       cloaking off with a pad of the user's listed → `HidHideCloakingOffWithForeignEntries`; HidHide's configuration
       client open → `HidHideBusy`; nothing changes in HidHide. · E2E: yes (`HidingTests`, the state matrix)
-- [ ] **T243-26** `hide`, then the client ended in the Task Manager: the Steam button opens Steam's menu again without any
+- [x] **T243-26** `hide`, then the client ended in the Task Manager: the Steam button opens Steam's menu again without any
       other input (R12b); `pan.log`: "show the Steam Controller: ok", "restart the Steam Controller: ok";
       HidHide as before. · E2E: no (a real kill; the guardian's side: `HidingTests`)
-- [ ] **T243-27** `hide`, `freeze`: after 3 s status `torn down Hang`, Steam has the puck; `resume`, `hide`: hidden again
+- [x] **T243-27** `hide`, `freeze`: after 3 s status `torn down Hang`, Steam has the puck; `resume`, `hide`: hidden again
       under the next generation. · E2E: no (a real hang; the guardian's side: `HidingTests`)
-- [ ] **T243-28** `hide`, then the PC switched off hard (power button held) or reset: after the boot, before Steam is
+- [x] **T243-28** `hide`, then the PC switched off hard (power button held) or reset: after the boot, before Steam is
       opened, `--dev-list` and cloaking are as before the hide; `pan.log`: "Journal: emulation … left open", the show
       and restart steps ok. · E2E: no (power loss)
-- [ ] **T243-29** `hide`, then the puck unplugged and plugged into another USB port: every present instance is hidden
+- [x] **T243-29** `hide`, then the puck unplugged and plugged into another USB port: every present instance is hidden
       (`--dev-list`; a puck with a serial number keeps its instance ids on any port, so `pan.log` names newly hidden
       ones only for one without), Steam doesn't get the puck; `unhide` shows all. · E2E: no (USB)
-- [ ] **T243-30** `quit` (goodbye without unhide): `pan.log` "exits with the Steam Controller still hidden", HidHide as
+- [x] **T243-30** `quit` (goodbye without unhide): `pan.log` "exits with the Steam Controller still hidden", HidHide as
       before. `sc stop ArcadiaPan` (elevated) while hidden: shown before the service reports stopped. · E2E: no (the
       guardian's side: `HidingTests`)
-- [ ] **T243-31** Budget: `hide` and `unhide` each answer within 5 s (`devclient.log` times; Windows' puck restart alone
+- [x] **T243-31** Budget: `hide` and `unhide` each answer within 5 s (`devclient.log` times; Windows' puck restart alone
       takes 2.4–3.9 s, owner 2026-10-27); Pan idle stays at 0 %
       CPU with the arrival watch (Task Manager), also while hidden. · E2E: no (measurement)
 
@@ -123,7 +123,7 @@ puck: while hidden the trackpad still moves the pointer by the controller's own 
 Part B2 (third PR into `feat/replace-sisr`): Arcadia without SISR (the App), Steam running. To make HidHide or every
 part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it works: `docs/controller-support/pan-setup.md`.
 
-- [ ] **T243-32** HidHide missing: "Steam Controller Kompatibilität" greyed out, "Aus – es fehlt: HidHide", row "HidHide
+- [x] **T243-32** HidHide missing: "Steam Controller Kompatibilität" greyed out, "Aus – es fehlt: HidHide", row "HidHide
       fehlt" with "Installieren"; A → one UAC prompt; then HidHide 1.5.230 in Windows' Apps, the row is gone and
       the switch, still greyed out until #214, reads "Nicht mehr nötig – …"; `pan.log` names the Nefarius signature, "HidHide 1.5.230 installed" (or "setup still runs … left running"
       after 2 min on a PC where its last step hangs) and the puck restart. · E2E: yes (`EmulationSetupTests`; the
@@ -133,14 +133,14 @@ part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it w
       prompt, then one UAC prompt for the rest and no installer window (usbip-win2's Inno wizard stays hidden); afterwards
       all four are there, `pan.log` names the SHA-256 and signature checks of both installers. UAC declined: the error stands at the
       first part left ("usbip-Treiber fehlt"), VIIPER stays. · E2E: yes (`EmulationSetupTests`)
-- [ ] **T243-34** An older HidHide (e.g. 1.2.93 from HidHide's releases, installed after a restart) installed: row
+- [x] **T243-34** An older HidHide (e.g. 1.2.93 from HidHide's releases, installed after a restart) installed: row
       "HidHide-Version wird nicht unterstützt" ("Installiert ist ein älteres HidHide (Treiber …), Arcadia braucht HidHide
       1.5.230 oder neuer.") with "Aktualisieren"; A → one
       UAC prompt, HidHide 1.5.230 afterwards. Anything older than the tested 1.5.230 counts (owner, 2026-10-27). · E2E: yes (`EmulationSetupTests`)
-- [ ] **T243-35** With the settings open: HidHide's Configuration Client opened → within 10 s the row
+- [x] **T243-35** With the settings open: HidHide's Configuration Client opened → within 10 s the row
       "HidHide-Konfiguration ist geöffnet" ("… Bitte schließe sie."); closed → gone within 10 s. "Inverse" ticked in it
       (then closed) → "HidHide: Liste ist umgekehrt"; unticked → gone. · E2E: yes (`EmulationSetupTests`, `PanClientTests`)
-- [ ] **T243-36** Pan's notices: `sc stop ArcadiaPan` (elevated) while Arcadia is in front → a toast; again while a game
+- [x] **T243-36** Pan's notices: `sc stop ArcadiaPan` (elevated) while Arcadia is in front → a toast; again while a game
       is in front (Arcadia in the background) → the overlay notice over the game, readable, gone after ~6 s; no toast
       waiting when Arcadia comes back. A notice during a View hold over the game stands below "Zurück zu Arcadia", whose
       frame keeps filling. · E2E: yes for which of the two (`EmulationSetupTests`, `PanGuardianTests`); no
@@ -152,32 +152,32 @@ part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it w
 - [ ] **T243-38** Pan removes the drivers only through their own uninstallers: HidHide by its MSI product code through
       `msiexec`, usbip-win2 by its `unins*.exe` under Program Files; anything else runs nothing. · E2E: no (unit:
       `HidHideSetupTests`; the real removal is T243-37)
-- [ ] **T243-39** Sleep with the Xbox pad in (a game on "Arcadia" or Steam's Big Picture without a game, Arcadia
+- [x] **T243-39** Sleep with the Xbox pad in (a game on "Arcadia" or Steam's Big Picture without a game, Arcadia
       behind): Windows' sleep, wake after ~10 s → the pad works again within ~30 s, no toast "VIIPER fiel …";
       `pan.log` says "The PC woke from sleep" and no "hang". Found in the owner's B2 test (2026-10-27): Pan tore the
       pad down 3.4 s after waking. · E2E: yes for "Pan's teardowns never make Arcadia give up"
       (`SteamControllerXboxPadTests`; the grace: `GuardianTests`); no for the real sleep
-- [ ] **T243-40** "Controller wiederherstellen" three times within 5 minutes with the Xbox pad in → no toast "VIIPER
+- [x] **T243-40** "Controller wiederherstellen" three times within 5 minutes with the Xbox pad in → no toast "VIIPER
       fiel …", the pad comes back each time. After Arcadia gave up (e.g. viiper.exe ended in Task Manager four times,
       toast "… erst nach einem Neustart oder „Controller wiederherstellen“ wieder") → "Controller wiederherstellen"
       brings the pad back without restarting Arcadia. · E2E: yes (`SteamControllerXboxPadTests`)
-- [ ] **T243-41** Uninstall HidHide (Windows' Apps), don't restart, open the controller settings: row "HidHide:
+- [x] **T243-41** Uninstall HidHide (Windows' Apps), don't restart, open the controller settings: row "HidHide:
       Neustart ausstehend" ("Windows entfernt HidHide beim nächsten Neustart."), no button, the setting reads "Aus – es
       fehlt: HidHide". After the restart: "HidHide fehlt" with "Installieren". Found in the owner's B2 test
       (2026-10-27): before, "HidHide fehlt" only came after the restart. · E2E: yes (`EmulationSetupTests`; the registry
       signals: `HidHideWireTests`)
-- [ ] **T243-42** Update usbip-win2 (or install it), don't restart: row "Windows-Neustart ausstehend" ("Bis zum Neustart
+- [x] **T243-42** Update usbip-win2 (or install it), don't restart: row "Windows-Neustart ausstehend" ("Bis zum Neustart
       kann der Steam Controller in Spielen aussetzen."), no "SISR neu starten". Found in the owner's B2 test
       (2026-10-27). · E2E: yes (`EmulationSetupTests`)
-- [ ] **T243-43** Close Arcadia, wait ~30 s until `pan.log` says "No client for 30 s: stopping", start Arcadia right
+- [x] **T243-43** Close Arcadia, wait ~30 s until `pan.log` says "No client for 30 s: stopping", start Arcadia right
       then (or several times around that moment): Arcadia connects, `pan.log` shows "Pan … starting" and "Client …
       connected", no "Pan startet nicht (Stopped)" in `arcadia.log`. Found in the owner's B2 test (2026-10-27).
       · E2E: no (the service manager's timing; the rule: `PanServiceStartTests`)
-- [ ] **T243-44** Pan ends at once after its start (e.g. `Pan.exe` in Program Files replaced by a copy of
+- [x] **T243-44** Pan ends at once after its start (e.g. `Pan.exe` in Program Files replaced by a copy of
       `cmd.exe` as admin, or the service crashing): the settings show "Wächterdienst Pan startet nicht" with "Neu einrichten", the header its triangle,
       `arcadia.log` no start attempt every 2 s; "Neu einrichten" → one UAC prompt, Pan runs again. Found in the owner's B2
       test (2026-10-27). · E2E: yes (`EmulationSetupTests`; exit code rule: `PanServiceStartTests`)
-- [ ] **T243-45** Users read Pan's folder: open `C:\ProgramData\Arcadia\Pan\pan.log` in Explorer without admin rights →
+- [x] **T243-45** Users read Pan's folder: open `C:\ProgramData\Arcadia\Pan\pan.log` in Explorer without admin rights →
       it opens, no "Fortsetzen" prompt. As admin, give your user full control on that folder (Properties → Security),
       then `sc stop ArcadiaPan` and start Arcadia: Pan runs, `Pan.untrusted-<time>` lies beside it, `pan.log` says "Data
       folder not trusted … made anew". Unelevated `Pan.exe --install` stops at once with "needs administrator rights"
@@ -229,3 +229,4 @@ History:
 | T243-44 (`EmulationSetupTests`: the row, the header, "Neu einrichten" installs Pan again; `PanServiceStartTests`: a Pan that ends at once after Arcadia's start, a stop with an exit code counts as failing) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; seen red before the fix (the install skipped because Pan counted as ready) and by mutation (row not a missing part, ending at once only waited); the real service only on Windows | pass | owner's manual run open; the data folder's rights: owner's decision pending |
 | T243-45 (`DataFolderRightsTests`: which rights make the folder untrusted, which commands need admin rights; `ServiceTests`: users read, a folder with a user's full control set aside and made anew at the service's start) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container (Pan 165, Core 974, App 342); the rights rule seen red with the old "any rule" check; `ServiceTests` only on the Windows runner | pass (Linux part) | Windows runner run to come |
 | T243-45 (`ServiceTests`: users read the data folder; a user's full control on it set aside and made anew by the service at its start, logged), T243-34 (`WindowsHidingTests`: HidHide 1.5.230's driver 1.4.181 accepted) | 2026-10-27 | Claude (thread) | Windows CI runner (Server 2025, HidHide 1.5.230), run on f47dc7c: Pan 171/171, Core 976, App 342, none skipped | pass | – |
+| T243-32, T243-34 … T243-36, T243-39 … T243-45 (owner's B2 run after the fixes from their test) | 2026-10-27 | owner | Windows 11, Steam running, Debug build from the IDE with `Pan\Pan.exe` published by the build, commit 7f408c3, Pan reinstalled elevated | pass | ready to merge into `feat/replace-sisr`; T243-33, -37, -38 in the acceptance review |

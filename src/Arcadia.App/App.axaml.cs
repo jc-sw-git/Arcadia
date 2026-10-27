@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
@@ -73,6 +74,7 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            Trace.Listeners.Add(new AppLogTraceListener());
             var args = desktop.Args ?? [];
             var time = TimeProvider.System;
             var http = new HttpClient();

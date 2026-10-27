@@ -42,7 +42,13 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     [ObservableProperty]
     public partial bool IsLoading { get; private set; } = true;
 
-    /// <summary>The libraries read last, one per active launcher in the user's order.</summary>
+    // What the scanners delivered, every type (#141): a switch on a launcher's page then needs no rescan.
+    private IReadOnlyList<LauncherLibrary> _scanned = [];
+
+    /// <summary>
+    /// The libraries read last, one per active launcher in the user's order, with the entries their tabs show: software,
+    /// tools and soundtracks only where the launcher's switch for them is on (#141).
+    /// </summary>
     public IReadOnlyList<LauncherLibrary> Libraries { get; private set; } = [];
 
     /// <summary>The install folders of the library's games: a process from one of them is a game in front.</summary>
@@ -186,7 +192,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
-        if (await _refresher.RefreshAsync(() => Libraries, force) is { } libraries)
+        if (await _refresher.RefreshAsync(() => _scanned, force) is { } libraries)
         {
             Show(libraries);
         }
@@ -225,11 +231,23 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         }
 
         var active = _library.Launchers.ActiveIds;
-        var kept = active.Select(LibraryOf).OfType<LauncherLibrary>().ToList();
+        var kept = active.Select(id => _scanned.FirstOrDefault(l => l.Launcher.Id == id)).OfType<LauncherLibrary>().ToList();
         Show(kept);
         if (kept.Count < active.Count)
         {
             RefreshLibraryAsync(force: true).Forget("Bibliothek aktualisieren");
+        }
+    }
+
+    /// <summary>
+    /// A switch for software, tools or soundtracks changed on a launcher's page (#141): the tabs show the entries it adds
+    /// or hides at once, from what is already read.
+    /// </summary>
+    public void ShowChosenTypes()
+    {
+        if (!IsLoading)
+        {
+            Show(_scanned);
         }
     }
 
@@ -250,7 +268,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
-        if (await _refresher.RefreshAsync(() => Libraries, launcherId) is { } libraries)
+        if (await _refresher.RefreshAsync(() => _scanned, launcherId) is { } libraries)
         {
             Show(libraries);
         }
@@ -302,7 +320,10 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
-        Libraries = libraries;
+        _scanned = libraries;
+        var launchers = _library.Launchers;
+        Libraries = libraries.Select(l => l with { Games = launchers.ShownEntries(l.Launcher.Id, l.Games) }).ToList();
+        libraries = Libraries;
         GameFolders = GameFolders.Of(libraries.SelectMany(l => l.Games));
         _running.SetLibrary(libraries.SelectMany(l => l.Games));
         LibrariesChanged?.Invoke(this, EventArgs.Empty);

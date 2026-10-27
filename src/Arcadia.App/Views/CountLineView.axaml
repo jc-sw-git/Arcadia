@@ -1,0 +1,34 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             x:Class="Arcadia.App.Views.CountLineView"
+             x:DataType="vm:TypeCountLine"
+             Background="Transparent"
+             ToolTip.Tip="{Binding Tip}">
+
+  <!-- The count line (#141): "331 🎮 (1 ✓) | 2 🔧". Sizes and colours are styles in Theme.axaml (CountLineView, .small). -->
+  <ItemsControl ItemsSource="{Binding Parts}">
+    <ItemsControl.ItemsPanel>
+      <ItemsPanelTemplate>
+        <StackPanel Classes="countLine" Orientation="Horizontal" />
+      </ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate>
+      <DataTemplate x:DataType="vm:TypeCountPart">
+        <StackPanel Classes="countLine" Orientation="Horizontal">
+          <Border Classes="countDivider" IsVisible="{Binding HasDivider}" />
+          <StackPanel Classes="countPart" Orientation="Horizontal">
+            <TextBlock Classes="countTotal" Text="{Binding TotalText}" />
+            <ctl:LineIcon Classes="countType" Icon="{Binding IconKey}" />
+            <StackPanel Classes="countInstalled" Orientation="Horizontal" IsVisible="{Binding ShowsInstalled}">
+              <TextBlock Classes="countBracket" Text="{Binding InstalledText, StringFormat='({0}'}" />
+              <ctl:LineIcon Classes="countInstalled" Icon="IconInstalled" />
+              <TextBlock Classes="countBracket" Text=")" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+      </DataTemplate>
+    </ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

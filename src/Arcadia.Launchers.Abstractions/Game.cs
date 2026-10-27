@@ -19,6 +19,9 @@ public sealed record Game
     /// </summary>
     public bool IsInstalled { get; init; } = true;
 
+    /// <summary>Game, software, tool or soundtrack (#141); independent of <see cref="IsInstalled"/>.</summary>
+    public GameType Type { get; init; } = GameType.Game;
+
     /// <summary>How to ask the launcher to install the game; null if Arcadia can't trigger it.</summary>
     public LaunchTarget? Install { get; init; }
 

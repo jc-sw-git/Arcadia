@@ -30,6 +30,13 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     public bool HasSubtitle => !string.IsNullOrEmpty(Subtitle) && !HasProblem;
 
+    /// <summary>A count line before the subtitle, e.g. the entries of a launcher on "Neu einlesen" (#141); null shows none.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCounts))]
+    public partial ViewModels.TypeCountLine? Counts { get; set; }
+
+    public bool HasCounts => Counts is { HasParts: true } && !HasProblem;
+
     /// <summary>Why what is being entered can't be taken, e.g. a keyword in use (#137); shown in place of the subtitle.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasProblem), nameof(HasSubtitle))]

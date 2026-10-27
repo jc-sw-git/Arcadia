@@ -66,7 +66,11 @@ public sealed record InfoNote(string Text, HealthSeverity Severity = HealthSever
 /// <summary>A fact in a line: what on the left, its value on the right, e.g. "Such-Kürzel  /epic".</summary>
 /// <param name="IsMuted">Something missing or off, e.g. "Aus" or "–".</param>
 /// <param name="IsGood">Something that works as it should, e.g. "werden überwacht".</param>
-public sealed record InfoFact(string Label, string Value, bool IsMuted = false, bool IsGood = false);
+/// <param name="Counts">A count line in place of <paramref name="Value"/> (#141), which then is its tooltip's text.</param>
+public sealed record InfoFact(string Label, string Value, bool IsMuted = false, bool IsGood = false, ViewModels.TypeCountLine? Counts = null)
+{
+    public bool HasCounts => Counts is { HasParts: true };
+}
 
 /// <summary>Facts under a small heading, line by line, e.g. "BIBLIOTHEK" of a launcher (#136).</summary>
 public sealed record InfoFacts(string Title, IReadOnlyList<InfoFact> Facts) : InfoBlock;

@@ -124,7 +124,11 @@
       <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto" IsVisible="{Binding IsLibraryShown}">
         <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
           <TextBlock Text="{Binding LauncherTabs.SelectedTab?.Name, TargetNullValue=''}" FontSize="34" FontWeight="ExtraBold" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding Library.CountText}" FontSize="18" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,8,0,0" />
+          <!-- A panel of its own, so more can follow the count line (e.g. a launcher's notice, #83). -->
+          <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="0,8,0,0">
+            <TextBlock Text="{Binding Library.CountText}" IsVisible="{Binding !Library.Counts.HasParts}" FontSize="18" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+            <views:CountLineView DataContext="{Binding Library.Counts}" IsVisible="{Binding HasParts}" VerticalAlignment="Center" />
+          </StackPanel>
         </StackPanel>
         <Button Grid.Column="1" Classes="plain toolbar" Command="{Binding Library.OpenViewOptionsCommand}" IsVisible="{Binding AreGamesShown}">
           <StackPanel Orientation="Horizontal" Spacing="12">
@@ -212,6 +216,11 @@
                 <StackPanel Spacing="20">
                   <StackPanel Spacing="8">
                     <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="ExtraBold" TextWrapping="Wrap" />
+                    <!-- What the entry is, when it is no game (#141): like "Update verfügbar", in the softer text colour. -->
+                    <StackPanel IsVisible="{Binding HasTypeIcon}" Orientation="Horizontal" Spacing="8">
+                      <ctl:LineIcon Icon="{Binding TypeIconKey}" Foreground="{StaticResource TextSoft}" StrokeThickness="2.2" Width="18" Height="18" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding TypeName}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                    </StackPanel>
                     <!-- A status, not a control: plain text, no pill that could pass for a button. -->
                     <StackPanel IsVisible="{Binding UpdateAvailable}" Orientation="Horizontal" Spacing="8">
                       <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
@@ -306,8 +315,14 @@
                       <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
                       <Grid RowDefinitions="*,Auto" Margin="12">
                         <TextBlock Text="{Binding Monogram}" FontSize="56" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Classes.dim="{Binding !IsInstalled}" />
-                        <TextBlock Grid.Row="1" Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
-                                   TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                        <!-- The kind sits above the title, where no state badge ever is (#141); the title keeps its width. -->
+                        <StackPanel Grid.Row="1" Spacing="8">
+                          <Border Classes="typeBadge" IsVisible="{Binding HasTypeIcon}" ToolTip.Tip="{Binding TypeName}">
+                            <ctl:LineIcon Icon="{Binding TypeIconKey}" />
+                          </Border>
+                          <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                                     TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
                       </Grid>
                       <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Nicht installiert – A installiert">
@@ -460,8 +475,13 @@
                     <Border DockPanel.Dock="Top" Classes="launcherBadge" Width="28" Height="28" CornerRadius="7" HorizontalAlignment="Left">
                       <ctl:LauncherLogo Classes="onCover" Badge="{Binding LauncherBadge}" />
                     </Border>
-                    <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Bottom"
-                               TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                    <StackPanel Spacing="8" VerticalAlignment="Bottom">
+                      <Border Classes="typeBadge" IsVisible="{Binding HasTypeIcon}" ToolTip.Tip="{Binding TypeName}">
+                        <ctl:LineIcon Icon="{Binding TypeIconKey}" />
+                      </Border>
+                      <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                                 TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
                   </DockPanel>
                   <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"
                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Nicht installiert – ≡ installiert">
@@ -1166,7 +1186,10 @@
                                 <Ellipse Classes="statusDot" Classes.active="{Binding IsLampWorking}" Classes.warning="{Binding IsLampProblem}" Classes.error="{Binding IsLampFailure}" Width="10" Height="10" VerticalAlignment="Center"
                                          IsVisible="{Binding HasLamp}" />
                               </StackPanel>
-                              <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <views:CountLineView Classes="small" DataContext="{Binding Counts}" IsVisible="{Binding $parent[StackPanel].((settings:SettingsRowViewModel)DataContext)?.HasCounts, TargetNullValue=False}" />
+                                <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                              </StackPanel>
                               <TextBlock Classes="rowProblem" Text="{Binding Problem}" IsVisible="{Binding HasProblem}" />
                             </StackPanel>
                             <ContentControl Grid.Column="2" Content="{Binding}" VerticalAlignment="Center">
@@ -1382,7 +1405,8 @@
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
                               <TextBlock Classes="factLabel" Text="{Binding Label}" />
                               <TextBlock Grid.Column="1" Classes="factValue" Classes.muted="{Binding IsMuted}" Classes.good="{Binding IsGood}" Text="{Binding Value}"
-                                         ToolTip.Tip="{Binding Value}" />
+                                         ToolTip.Tip="{Binding Value}" IsVisible="{Binding !HasCounts}" />
+                              <views:CountLineView Grid.Column="1" Classes="small" HorizontalAlignment="Right" DataContext="{Binding Counts}" IsVisible="{Binding $parent[Grid].((settings:InfoFact)DataContext)?.HasCounts, TargetNullValue=False}" />
                             </Grid>
                           </Border>
                         </DataTemplate>

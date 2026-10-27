@@ -159,7 +159,7 @@ public sealed partial class GameActionViewModel : ViewModelBase
                 ? new(GameActionKind.Play, "Installieren", $"Die Installation wird in {launcher} geöffnet", true, () => host.Play(tile))
                 : tile.IsRunningOrStarting
                     ? new(GameActionKind.Play, tile.PrimaryActionText, null, true, () => host.Play(tile))
-                    : new(GameActionKind.Play, "Spielen", tile.UpdateAvailable ? $"{launcher} installiert ggf. vorher das Update" : null, true, () => host.Play(tile)));
+                    : new(GameActionKind.Play, tile.PrimaryActionText, tile.UpdateAvailable ? $"{launcher} installiert ggf. vorher das Update" : null, true, () => host.Play(tile)));
 
         actions.Add(new(GameActionKind.Details, "Details anzeigen", null, true, () => host.ShowDetails(tile)));
         actions.Add(new(GameActionKind.Favorite, "Zu Favoriten hinzufügen", NotYetAvailable, false, () => { }, "Zu Favoriten"));

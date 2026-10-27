@@ -204,6 +204,13 @@ public sealed class GameActions : IGameActionHost
             return;
         }
 
+        // The launcher plays a soundtrack in its own window (#141): nothing runs that Arcadia could wait for or switch to.
+        if (tile.IsSoundtrack)
+        {
+            HandOver(tile, tile.Game.Launch, $"„{tile.Title}“ wird in {tile.LauncherName} geöffnet …", $"Demo: Hier würde jetzt „{tile.Title}“ abgespielt.");
+            return;
+        }
+
         LaunchAsync(tile).Forget("Spielstart");
     }
 

@@ -91,8 +91,13 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
     [ObservableProperty]
     public partial EmptyTabViewModel? EmptyTab { get; private set; }
 
+    /// <summary>An empty tab's line beside its name; a tab with entries shows <see cref="Counts"/> instead.</summary>
     [ObservableProperty]
     public partial string CountText { get; private set; } = string.Empty;
+
+    /// <summary>The count line beside the tab's name (#141): per type, with the installed ones; none on an empty tab.</summary>
+    [ObservableProperty]
+    public partial TypeCountLine Counts { get; private set; } = TypeCountLine.None;
 
     [ObservableProperty]
     public partial string ViewSummary { get; private set; } = string.Empty;
@@ -222,6 +227,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         var tabs = _tabs.Items;
         EmptyTab = EmptyTab is { HasNoLauncher: true } shown && tabs.Count == 0 ? shown : null;
         CountText = RangeText = ViewSummary = string.Empty;
+        Counts = TypeCountLine.None;
         if (tabs.Count > 0)
         {
             // Selected, not chosen: a launcher missing from this scan must not overwrite the user's choice.
@@ -297,7 +303,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
             return sorted;
         }
 
-        sorted = new SortedTab(tab.Games, sort, GameSorter.Sort(tab.Games, sort, Formatting.Culture), tab.Games.Count(g => g.IsInstalled));
+        sorted = new SortedTab(tab.Games, sort, GameSorter.Sort(tab.Games, sort, Formatting.Culture), TypeCountLine.Of(tab.Games));
         _sorted[tab] = sorted;
         return sorted;
     }
@@ -466,13 +472,13 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         EmptyTab = tab.Count > 0 ? null
             : EmptyTab is { } shown && shown.Tab == tab && shown.IsMissing == !tab.IsFound ? shown
             : new EmptyTabViewModel(tab, () => _host.OpenLauncherSettings(tab.Launcher.Id), () => _host.Rescan(tab.Launcher));
-        var installed = snapshot.InstalledCount;
-        var installedText = installed == tab.Count ? string.Empty : $" · {installed} installiert";
-        CountText = EmptyTab is { } emptyTab ? emptyTab.Summary : $"{tab.Count} Spiele{installedText} · Seite {window.PageIndex + 1} von {window.PageCount}";
+        // The page number is the pager's below the covers (owner, 2026-10-26).
+        CountText = EmptyTab?.Summary ?? string.Empty;
+        Counts = EmptyTab is null ? snapshot.Counts : TypeCountLine.None;
         RangeText = window.Length == 0 ? string.Empty : $"{window.Start + 1}–{window.Start + window.Length} von {sorted.Count}";
         ViewSummary = $"{Formatting.SortLabel(view.LibrarySort)}  ·  {pageSize} pro Seite";
     }
 
-    /// <summary>A tab's games sorted, what they were sorted from, and how many of them are installed.</summary>
-    private sealed record SortedTab(IReadOnlyList<Game> Source, SortOrder Sort, IReadOnlyList<Game> Games, int InstalledCount);
+    /// <summary>A tab's games sorted, what they were sorted from, and its count line.</summary>
+    private sealed record SortedTab(IReadOnlyList<Game> Source, SortOrder Sort, IReadOnlyList<Game> Games, TypeCountLine Counts);
 }

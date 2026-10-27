@@ -38,6 +38,21 @@ public partial class GameTileViewModel : ViewModelBase
 
     public bool IsInstalled => Game.IsInstalled;
 
+    /// <summary>Software, tools and soundtracks show their kind on cover, preview and detail page (#141); games don't.</summary>
+    public bool HasTypeIcon => Game.Type != GameType.Game;
+
+    /// <summary>The resource key of the kind's icon (<see cref="GameTypeTexts.IconKey"/>).</summary>
+    public string TypeIconKey => GameTypeTexts.IconKey(Game.Type);
+
+    /// <summary>"Werkzeug" in the preview.</summary>
+    public string TypeName => GameTypeTexts.Name(Game.Type);
+
+    /// <summary>"WERKZEUG" on the detail page's chip.</summary>
+    public string TypeNameUpper => TypeName.ToUpper(Formatting.Culture);
+
+    /// <summary>A soundtrack is handed to its launcher, which plays it; Arcadia doesn't wait for it to run (#141).</summary>
+    public bool IsSoundtrack => Game.Type == GameType.Soundtrack;
+
     /// <summary>The update icon; a running game shows that it runs instead, its update comes with the next start.</summary>
     public bool UpdateAvailable => Game.IsInstalled && Game.UpdateAvailable && InstallState is null && RunState is null;
 
@@ -46,7 +61,7 @@ public partial class GameTileViewModel : ViewModelBase
         : !Game.IsInstalled ? "Installieren"
         : IsStarting ? "Wird gestartet …"
         : IsRunning ? "Zurück ins Spiel"
-        : "Spielen";
+        : GameTypeTexts.PrimaryAction(Game.Type);
 
     /// <summary>Whether the game runs, or was handed to its launcher and doesn't run yet (#95); null if neither.</summary>
     [ObservableProperty]

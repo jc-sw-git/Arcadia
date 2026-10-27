@@ -153,6 +153,23 @@ public sealed class RunningGamesTrackerTests
     }
 
     [Fact]
+    [Trait("TestCase", "T277-1")]
+    public async Task An_abort_steam_logs_earlier_in_the_second_arcadia_asked_still_counts()
+    {
+        // Arcadia asks at 18:01:00.700; Steam's line says 18:01:00, its whole second, though it came after.
+        _time.Advance(TimeSpan.FromMilliseconds(700));
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+
+        var refusal = new RefusedStart("440", Started.AddMinutes(1), null, "AppError_5");
+        _steam.Refused.Add(refusal);
+        var changes = await tracker.PollAsync();
+
+        Assert.Null(tracker.StateOf("steam:440"));
+        Assert.Equal([new UnstartedGame("steam:440", refusal)], changes?.NotStarted);
+    }
+
+    [Fact]
     public async Task An_abort_of_a_game_nobody_started_from_arcadia_is_no_news()
     {
         var tracker = CreateTracker();

@@ -114,6 +114,24 @@ public sealed class SteamConsoleLogTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T277-1")]
+    public void Steams_running_games_report_the_aborts_of_its_console_log()
+    {
+        var root = Path.Combine(_folder, "Steam");
+        var log = Path.Combine(root, "logs", "console_log.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(log)!);
+        File.WriteAllText(log, "[2026-10-27 17:00:00] older start\n");
+        var steam = new SteamIntegration(TimeProvider.System, () => new SteamInstallation(root, activeUserId: null)).RunningGames!;
+        Assert.Empty(steam.RefusedStarts());
+
+        File.AppendAllText(log, NoLicense + "\n");
+
+        var refusal = Assert.Single(steam.RefusedStarts());
+        Assert.Equal("214490", refusal.GameId);
+        Assert.Equal("AppError_5", refusal.Detail);
+    }
+
+    [Fact]
     [Trait("TestCase", "T277-4")]
     public void Without_a_readable_log_nothing_is_reported()
     {

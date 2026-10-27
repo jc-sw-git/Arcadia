@@ -26,6 +26,6 @@ Verlauf:
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | T139-1 bis T139-3, T139-5 bis T139-7 | 2026-10-23 | Claude | Branch `feat/ersteinrichtung-launcher-waehlen-139`, Debug, Linux in der Cloud mit Xvfb 1920×1080, `--demo --first-run` (Steam und Epic dort „nicht gefunden“) und ohne `--demo` mit frischer `settings.json` (kein Launcher gefunden), Tasten und Klicks über xdotool | ⚠️ Seite wie im Design, W/S, A/D, Esc, Enter, Hover, Klick auf Schalter und „Fertig“, danach nur gewählte Tabs; `--demo` schreibt keine `settings.json`; ohne `--demo` `ActiveLaunchers: []` gespeichert und nach Neustart direkt „Kein Launcher aktiv“; kein echter Controller, keine echten Launcher | Lauf am PC des Owners |
-| T139-2 (Juris Feedback) | 2026-10-23 | Claude | wie oben, `--demo --first-run` | ⚠️ Datum neben der Uhrzeit, Vorschau „Launcher-Reihenfolge“ statt Text, folgt dem Abschalten, fokussierter Launcher umrandet; Logos wie in den Einstellungen | Lauf am PC des Owners |
+| T139-2 (owner's Feedback) | 2026-10-23 | Claude | wie oben, `--demo --first-run` | ⚠️ Datum neben der Uhrzeit, Vorschau „Launcher-Reihenfolge“ statt Text, folgt dem Abschalten, fokussierter Launcher umrandet; Logos wie in den Einstellungen | Lauf am PC des Owners |
 | T139-3 bis T139-5 | 2026-10-23 | Claude | `FirstRunSetupTests` | ✅ Fällig ohne Liste, auch nach Update; speichert, nicht wieder nach Neustart; `--demo` speichert nichts; `--first-run`; fehlgeschlagenes Speichern beendet die Frage trotzdem | – |
-| T139-1 bis T139-7 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T139-1 bis T139-7 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

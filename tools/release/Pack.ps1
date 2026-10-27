@@ -51,7 +51,7 @@ try {
         --packId Arcadia `
         --packVersion $Version `
         --packTitle Arcadia `
-        --packAuthors 'Juri Himmelreich' `
+        --packAuthors 'jc-sw-git' `
         --packDir $publish `
         --mainExe Arcadia.exe `
         --icon (Join-Path $root 'src\Arcadia.App\Assets\arcadia.ico') `

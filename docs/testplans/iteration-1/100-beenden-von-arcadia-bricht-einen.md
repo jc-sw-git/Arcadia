@@ -15,5 +15,5 @@ Verlauf:
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | T100-1, T100-2 (Logik) | 2026-10-21 | Claude | Branch `td/sisr-shutdown-and-usbip-signature-100-29`, Linux, `dotnet test` (`ControllerSupportServiceTests`, Fake-SISR, `FakeTimeProvider`) | ✅ vorher rot (SISR, das `quit` ignoriert, hielt das Beenden auf; Warten auf Steam wurde nicht abgebrochen), nachher grün | Echter Ablauf am PC des Owners |
-| T100-1, T100-2 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
-| T100-3 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ⏭️ Nicht getestet: kein neueres Release als 0.1.0-rc.1, auf das aktualisiert werden kann | Beim Update auf das nächste Release, mit T23-3 bis T23-6 |
+| T100-1, T100-2 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T100-3 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ⏭️ Nicht getestet: kein neueres Release als 0.1.0-rc.1, auf das aktualisiert werden kann | Beim Update auf das nächste Release, mit T23-3 bis T23-6 |

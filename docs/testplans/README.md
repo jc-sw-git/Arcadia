@@ -106,5 +106,5 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T<issue>-1 | YYYY-MM-DD | Claude | PR #…, demo data | ✅ | – |
-| T<issue>-2 | YYYY-MM-DD | Juri | v0.x.y-rc1, real PC | ❌ <cause> | #… (fixed in this iteration / iteration N+1 / backlog) |
+| T<issue>-2 | YYYY-MM-DD | owner | v0.x.y-rc1, real PC | ❌ <cause> | #… (fixed in this iteration / iteration N+1 / backlog) |
 ```

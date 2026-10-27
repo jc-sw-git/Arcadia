@@ -96,7 +96,7 @@ vulnerabilities not as an issue but as described in [SECURITY.md](SECURITY.md).
 
 ## License
 
-Copyright (C) 2026 Juri Himmelreich
+Copyright (C) 2026 jc-sw-git
 
 Arcadia is free software under the **GNU General Public License v3.0**, see
 [LICENSE](LICENSE). Anyone who distributes Arcadia or a modified version must also

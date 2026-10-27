@@ -33,8 +33,8 @@ Verlauf:
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | T124-1 bis T124-4 | 2026-10-20 | Claude | Branch `fix/steam-input-fuer-xbox-laesst-sisr-den-xbox-controller-uebernehmen-124`, Linux, nur Unit-Tests mit nachgebildetem SISR (`ControllerSupportServiceTests`, `SisrDevicesTests`) | ⚠️ Logik grün, App und echtes SISR nicht gestartet | Lauf am PC des Owners |
-| T124-1 | 2026-10-21 | Juri | PC des Owners, PR #125 (erster Stand), Castlevania: Belmont's Curse, 8BitDo Ultimate 2 und Steam Controller | ❌ Erster Start: SISR übernahm den Pad nicht, keine Pause, keine Eingaben; mit beiden Controllern pausierte SISR erst 85 s nach dem Start, das Spiel reagierte nicht | Pause nach Steams Einstellung schon vor dem Spielstart (`SteamInputSetting`) |
-| T124-1, T124-7 | 2026-10-21 | Claude | Branch wie oben, Linux, Unit-Tests; Steams Einstellung aus Juris `localconfig.vdf` gelesen (`UseSteamControllerConfig 2` für 4231820) | ⚠️ Logik grün, App nicht gestartet | Lauf am PC des Owners |
-| T124-1 | 2026-10-21 | Juri | PC des Owners, PR #125 (Pause nach Steams Einstellung) | ✅ „Sieht grundsätzlich erstmal gut aus“; Hinweis zeigte noch das Warnsymbol | Drei Stufen Info/Warnung/Fehler (T124-9) |
+| T124-1 | 2026-10-21 | owner | PC des Owners, PR #125 (erster Stand), Castlevania: Belmont's Curse, 8BitDo Ultimate 2 und Steam Controller | ❌ Erster Start: SISR übernahm den Pad nicht, keine Pause, keine Eingaben; mit beiden Controllern pausierte SISR erst 85 s nach dem Start, das Spiel reagierte nicht | Pause nach Steams Einstellung schon vor dem Spielstart (`SteamInputSetting`) |
+| T124-1, T124-7 | 2026-10-21 | Claude | Branch wie oben, Linux, Unit-Tests; Steams Einstellung aus owner's `localconfig.vdf` gelesen (`UseSteamControllerConfig 2` für 4231820) | ⚠️ Logik grün, App nicht gestartet | Lauf am PC des Owners |
+| T124-1 | 2026-10-21 | owner | PC des Owners, PR #125 (Pause nach Steams Einstellung) | ✅ „Sieht grundsätzlich erstmal gut aus“; Hinweis zeigte noch das Warnsymbol | Drei Stufen Info/Warnung/Fehler (T124-9) |
 | T124-9 | 2026-10-21 | Claude | Branch wie oben, Linux, Unit-Tests (Stufen der Meldungen); App gebaut, nicht gestartet | ⚠️ Stufen grün, Symbole nicht angesehen | Lauf am PC des Owners |
-| T124-1 bis T124-9 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T124-1 bis T124-9 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

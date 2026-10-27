@@ -43,3 +43,7 @@ one names the countermeasure that would close it, so a later story can pick it u
 - **HidHide's silent setup can hang (for B2):** on about half the CI runners (Windows Server 2025) its last MSI action,
   registering `nefarius_HidHide_Updater.exe`, never returned after the driver was in place; killing it risks a rollback.
   B2's install must bound the wait and tell the user, never block Arcadia on it.
+- **HidHide's Configuration Client competes with Pan:** while it is open it holds HidHide (`HidHideBusy`: a hide is
+  refused, a show retried until it closes; B2 should tell the user to close it). What the user changes there during
+  an emulation applies at once: unticking the puck or turning hiding off shows Steam both controllers (double input),
+  removing Arcadia from the list cuts the emulation off from the real controller, inverse mode refuses the next hide.

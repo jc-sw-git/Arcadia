@@ -60,6 +60,9 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   planned exit while hidden, Pan's start after a crash or power loss (`RecoverAsync`), `--restore`, uninstall. The undo
   goes through the driver whatever its version reads as; only with HidHide's service gone and its control device too
   (uninstalled with its lists) the journal drops the entries.
+- Last resort for the user, if Pan can't undo: HidHide's Configuration Client (admin) unticks the puck, removes
+  Arcadia from the application list and turns hiding off; uninstalling HidHide empties its lists. Pan's later undo
+  removes only what is still there.
 - Journal: `HiddenDevices`, `AllowListed`, `CloakingWasOn`, `PuckRestartPending`; a journal naming a hidden device that
   isn't on `HidingList` counts as unreadable (an undo must never remove one of the user's entries).
 

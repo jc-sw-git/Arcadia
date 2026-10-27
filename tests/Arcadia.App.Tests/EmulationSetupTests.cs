@@ -157,6 +157,51 @@ public sealed class EmulationSetupTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T243-41")]
+    public async Task An_uninstalled_HidHide_waiting_for_the_restart_says_so_and_offers_no_install()
+    {
+        // Owner's B2 test (2026-10-27): until the restart HidHide's service and driver file stay, so its version read as
+        // installed and the settings showed nothing; its setup would fail while the old service waits for deletion.
+        var steam = new FakeSteam { HidHideRemovalPending = true };
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+        arcadia.Pan.Hiding = PanReason.HidHideBusy;
+
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-removal-pending"), "die Meldung „HidHide: Neustart ausstehend“");
+        await arcadia.TickControllerSupportAsync();
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-removal-pending"));
+        Assert.Equal("HidHide: Neustart ausstehend", row.Title);
+        Assert.Equal("Windows entfernt HidHide beim nächsten Neustart.", row.Subtitle);
+        Assert.Equal(string.Empty, row.ActionText);
+        Assert.Equal("Aus – es fehlt: HidHide", Switch(controller).Subtitle);
+        // Pan isn't asked about a HidHide on its way out: one row, not a second one from its state.
+        Assert.Single(controller.Rows, row => row.Key.StartsWith("issue:hidhide", StringComparison.Ordinal));
+
+        // After the restart HidHide is gone and can be installed again.
+        steam.HidHideRemovalPending = false;
+        steam.HidHideVersion = null;
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Meldung „HidHide fehlt“");
+        Assert.DoesNotContain(controller.Rows, row => row.Key == "issue:hidhide-removal-pending");
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T243-42")]
+    public async Task A_pending_restart_after_the_usbip_update_offers_no_SISR_restart_any_more()
+    {
+        var steam = new FakeSteam { UsbipRebootPending = true };
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:reboot-pending"), "die Meldung „Windows-Neustart ausstehend“");
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:reboot-pending"));
+        Assert.Equal("Windows-Neustart ausstehend", row.Title);
+        Assert.Equal("Bis zum Neustart kann der Steam Controller in Spielen aussetzen.", row.Subtitle);
+        Assert.Equal(string.Empty, row.ActionText);
+        Assert.DoesNotContain("SISR", row.Info.OfType<InfoText>().Single().Text);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T243-35")]
     public async Task While_HidHide_s_configuration_is_open_the_settings_ask_to_close_it()
     {

@@ -209,6 +209,9 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
 
     public Version? HidHideVersion => OperatingSystem.IsWindows() ? HidHideInstallation.InstalledVersion() : null;
 
+    /// <summary>HidHide was uninstalled and goes at the next restart; its setup would fail until then.</summary>
+    private static bool HidHideRemovalPending => OperatingSystem.IsWindows() && HidHideInstallation.IsRemovalPending();
+
     public bool IsCefDebuggingEnabled => _locate() is { } steam && File.Exists(steam.CefDebuggingFlagPath);
 
     public void EnableCefDebugging()
@@ -289,7 +292,7 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
         try
         {
             usbipInstaller = IsUsbipReady ? null : await UsbipDriver.DownloadInstallerAsync(http, cancellationToken);
-            hidHideInstaller = HidHideNeedsInstaller(HidHideVersion) ? await HidHideInstallation.DownloadInstallerAsync(http, cancellationToken) : null;
+            hidHideInstaller = HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending ? await HidHideInstallation.DownloadInstallerAsync(http, cancellationToken) : null;
             return await PanSetup.InstallAsync(usbipInstaller, hidHideInstaller, cancellationToken);
         }
         finally
@@ -365,7 +368,7 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
             issues.Add(new("reboot-pending", HealthSeverity.Warning, "Windows-Neustart ausstehend", "Der usbip-Treiber wurde aktualisiert. Bis zum Neustart kann der Controller aussetzen; dann hilft es, SISR neu zu starten.", HealthFix.RestartSisr, "SISR neu starten"));
         }
 
-        if (CheckHidHide(HidHideVersion) is { } hidHide)
+        if (CheckHidHide(HidHideVersion, HidHideRemovalPending) is { } hidHide)
         {
             issues.Add(hidHide);
         }
@@ -379,8 +382,9 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
     }
 
     /// <summary>The row for HidHide's installation (#243 part B2), or null when a supported version is installed.</summary>
-    public static HealthIssue? CheckHidHide(Version? installed) => installed switch
+    public static HealthIssue? CheckHidHide(Version? installed, bool removalPending = false) => installed switch
     {
+        _ when removalPending => EmulationParts.HidHideRemovalPending,
         null => new("hidhide-missing", HealthSeverity.Warning, "HidHide fehlt", HidHideMissingText, HealthFix.InstallDrivers, "Installieren"),
         _ when HidHideRelease.IsSupported(installed) => null,
         _ when HidHideNeedsInstaller(installed) => new("hidhide-unsupported", HealthSeverity.Warning, "HidHide-Version wird nicht unterstützt",

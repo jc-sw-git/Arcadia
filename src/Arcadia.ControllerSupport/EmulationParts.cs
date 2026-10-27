@@ -12,7 +12,7 @@ public static class EmulationParts
     /// <summary>The ids of the rows that mean "this part is missing or too old"; "Installieren" sets each one up.</summary>
     private static readonly HashSet<string> MissingIds =
     [
-        "usbip-missing", "usbip-outdated", "usbip-stopped", "viiper-missing", "pan-missing", "hidhide-missing", "hidhide-unsupported",
+        "usbip-missing", "usbip-outdated", "usbip-stopped", "viiper-missing", "pan-missing", "hidhide-missing", "hidhide-unsupported", "hidhide-removal-pending",
     ];
 
     /// <summary>The parts as the user knows them, by the rows that say one is missing.</summary>
@@ -24,6 +24,22 @@ public static class EmulationParts
     public static HealthIssue ViiperMissing { get; } = new("viiper-missing", HealthSeverity.Warning, "VIIPER fehlt",
         "Arcadia erzeugt mit VIIPER den virtuellen Controller. Bis auf Weiteres kommt VIIPER mit den Dateien von SISR; „Installieren“ lädt sie herunter, ohne Administratorrechte.",
         HealthFix.InstallDrivers, "Installieren");
+
+    /// <summary>
+    /// HidHide was uninstalled and is still there until Windows restarts (owner's B2 test, 2026-10-27). No "Installieren":
+    /// its setup fails while the old service waits for deletion.
+    /// </summary>
+    public static HealthIssue HidHideRemovalPending { get; } = new("hidhide-removal-pending", HealthSeverity.Warning, "HidHide: Neustart ausstehend",
+        "HidHide wurde deinstalliert, Windows entfernt es aber erst beim nächsten Neustart des PCs. Danach lässt es sich hier wieder installieren.",
+        Summary: "Windows entfernt HidHide beim nächsten Neustart.");
+
+    /// <summary>
+    /// The usbip driver was updated and Windows wants a restart; with SISR gone (#213) there is nothing to restart in
+    /// Arcadia, so the row only says so (owner's B2 test, 2026-10-27: "SISR neu starten" was left over).
+    /// </summary>
+    public static HealthIssue RebootPending { get; } = new("reboot-pending", HealthSeverity.Warning, "Windows-Neustart ausstehend",
+        "Der usbip-Treiber wurde aktualisiert und ist erst nach einem Neustart des PCs ganz aktiv. Bis dahin kann der Steam Controller in Spielen kurz aussetzen; Arcadia verbindet ihn dann selbst neu.",
+        Summary: "Bis zum Neustart kann der Steam Controller in Spielen aussetzen.");
 
     /// <summary>True if <paramref name="issue"/> says a part is missing or too old (not how a present part is set).</summary>
     public static bool IsMissingPart(HealthIssue issue) => MissingIds.Contains(issue.Id);

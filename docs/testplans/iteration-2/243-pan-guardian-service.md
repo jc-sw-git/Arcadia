@@ -159,6 +159,14 @@ part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it w
       fiel …", the pad comes back each time. After Arcadia gave up (e.g. viiper.exe ended in Task Manager four times,
       toast "… erst nach einem Neustart oder „Controller wiederherstellen“ wieder") → "Controller wiederherstellen"
       brings the pad back without restarting Arcadia. · E2E: yes (`SteamControllerXboxPadTests`)
+- [ ] **T243-41** Uninstall HidHide (Windows' Apps), don't restart, open the controller settings: row "HidHide:
+      Neustart ausstehend" ("Windows entfernt HidHide beim nächsten Neustart."), no button, the setting reads "Aus – es
+      fehlt: HidHide". After the restart: "HidHide fehlt" with "Installieren". Found in the owner's B2 test
+      (2026-10-27): before, "HidHide fehlt" only came after the restart. · E2E: yes (`EmulationSetupTests`; the registry
+      signals: `HidHideWireTests`)
+- [ ] **T243-42** Update usbip-win2 (or install it), don't restart: row "Windows-Neustart ausstehend" ("Bis zum Neustart
+      kann der Steam Controller in Spielen aussetzen."), no "SISR neu starten". Found in the owner's B2 test
+      (2026-10-27). · E2E: yes (`EmulationSetupTests`)
 
 History:
 
@@ -198,3 +206,4 @@ History:
 | Second overall review (Claude) on PR #264, point 1 (`PanClientTests`: `SteamControllerBeingShown` is "Pan räumt noch auf" for 10 s, no loss, then the pad goes on) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; seen red with the new branch disabled; whole suite: Pan 141, Core 970, App 337 | pass | – |
 | Real-HidHide tests after the reviews (`DriverRemovalTests` T243-38: the real HidHide entry gives an msiexec `/x` by product code; `HidHideTests`; CI no longer hangs in HidHide's updater registration) | 2026-10-27 | Claude (thread) | Windows CI runner (Server 2025, HidHide 1.5.230), run 40507889490 on 818605a: Pan 147/147, Core 972, App 337, none skipped | pass | – |
 | T243-39, T243-40 after the owner's B2 test (sleep: `GuardianTests` resume grace; `SteamControllerXboxPadTests` Pan's teardowns no loss, restore clears the count and a give-up; `GuardedXboxPadsTests` `TakenAway`; `ControllerSupportServiceTests` the restore event) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; each new check seen red once by mutation (grace removed, loss always counted, restore not clearing the count or the give-up, `TakenAway` false, the event not raised or not wired); Pan 142, Core 972, App 339 | pass | owner's manual run of T243-39/40 open |
+| T243-41, T243-42 after the owner's second B2 test (`EmulationSetupTests`: the removal row without a fix and no Pan check, the restart row without SISR; `HidHideWireTests`: `DeleteFlag` and the pending deletion of the driver file) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; each seen red once by mutation (removal not checked, Pan asked anyway, the SISR row kept, either registry signal ignored); the real registry after an uninstall only on Windows | pass | owner's manual run of T243-41/42 open |

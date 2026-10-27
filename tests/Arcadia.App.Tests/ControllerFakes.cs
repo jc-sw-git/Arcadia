@@ -110,6 +110,12 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     /// <summary>HidHide's driver version (#243 B2): a supported one unless a test sets another or null (missing).</summary>
     public Version? HidHideVersion { get; set; } = Arcadia.Pan.HidHideRelease.Version;
 
+    /// <summary>HidHide was uninstalled and Windows removes it at the next restart; its version still reads (owner's B2 test).</summary>
+    public bool HidHideRemovalPending { get; set; }
+
+    /// <summary>The usbip driver was updated and Windows wants a restart: the platform's "reboot-pending" row.</summary>
+    public bool UsbipRebootPending { get; set; }
+
     /// <summary>How often "Treiber installieren" or the Pan update ran, i.e. asked Windows for administrator rights.</summary>
     public int DriverInstalls => Volatile.Read(ref _driverInstalls);
 
@@ -140,7 +146,7 @@ internal sealed class FakeSteam : IControllerSupportPlatform
         IsUsbipReady = true;
         IsPanReady = true;
         IsPanUpdateAvailable = false;
-        if (ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion))
+        if (ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending)
         {
             HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
         }
@@ -161,7 +167,8 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     [
         .. IsUsbipReady || !ReportsUsbip ? Array.Empty<HealthIssue>() : [new("usbip-missing", HealthSeverity.Warning, "usbip-Treiber fehlt", "Arcadia erzeugt den virtuellen Controller über diesen Treiber.", HealthFix.InstallDrivers, "Installieren")],
         .. IsPanReady ? Array.Empty<HealthIssue>() : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Ohne Pan kein Xbox Controller.", HealthFix.InstallDrivers, "Installieren")],
-        .. ControllerSupportPlatform.CheckHidHide(HidHideVersion) is { } hidHide ? [hidHide] : Array.Empty<HealthIssue>(),
+        .. UsbipRebootPending ? [new HealthIssue("reboot-pending", HealthSeverity.Warning, "Windows-Neustart ausstehend", "Der usbip-Treiber wurde aktualisiert.", HealthFix.RestartSisr, "SISR neu starten")] : Array.Empty<HealthIssue>(),
+        .. ControllerSupportPlatform.CheckHidHide(HidHideVersion, HidHideRemovalPending) is { } hidHide ? [hidHide] : Array.Empty<HealthIssue>(),
     ];
 
     public void ResetSteamInputLayout()

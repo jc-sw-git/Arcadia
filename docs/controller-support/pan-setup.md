@@ -67,3 +67,8 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   While the settings are open and Pan and HidHide are there, Arcadia asks Pan `CheckHiding` (25 s reply timeout) and
   shows its answer as a row: HidHide not active, unexpected interface, inverse mode, hiding off, or its configuration
   client open ("Bitte schließe sie"). A missing HidHide doesn't stop the Xbox pad: only #242 hides.
+- An uninstalled HidHide stays until Windows restarts (owner's B2 test, 2026-10-27): its service key and driver file
+  remain, so its version still reads. `HidHideInstallation.IsRemovalPending` (`DeleteFlag` on the service, or the
+  driver file deleted via `PendingFileRenameOperations`) gives the row "HidHide: Neustart ausstehend" without a fix
+  (its setup would fail on the service marked for deletion), and Pan isn't asked about it. The usbip restart row no
+  longer offers "SISR neu starten" once SISR is replaced (`EmulationParts.RebootPending`).

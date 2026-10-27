@@ -1422,7 +1422,9 @@ public sealed class ControllerSupportService(
     /// </summary>
     private async Task<IReadOnlyList<HealthIssue>> CheckEmulationPartsAsync(CancellationToken cancellationToken)
     {
-        var issues = new List<HealthIssue>(_platform.CheckDrivers(Settings, time.GetUtcNow()));
+        var issues = _platform.CheckDrivers(Settings, time.GetUtcNow())
+            .Select(issue => issue.Id == EmulationParts.RebootPending.Id && !StartsSisr ? EmulationParts.RebootPending : issue)
+            .ToList();
         // While SISR runs (before #213 part B) VIIPER is a part of SISR, set up with it.
         if (!StartsSisr && !sisr.HasViiper)
         {
@@ -1432,6 +1434,7 @@ public sealed class ControllerSupportService(
         // Only while the settings are open: asking Pan costs a pipe round trip and HidHide's lock.
         if (WatchSetup && HidingCheck is { } check && _platform.IsPanReady
             && _platform.HidHideVersion is { } hidHide && HidHideRelease.IsSupported(hidHide)
+            && !issues.Contains(EmulationParts.HidHideRemovalPending)
             && EmulationParts.FromHidingCheck(await check.CheckHidingAsync(cancellationToken)) is { } hiding)
         {
             issues.Add(hiding);

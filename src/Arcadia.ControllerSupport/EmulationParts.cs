@@ -26,12 +26,12 @@ public static class EmulationParts
         HealthFix.InstallDrivers, "Installieren");
 
     /// <summary>
-    /// Pan is installed but its last run ended with an error, mostly because it refuses a data folder whose rights were
-    /// changed (owner's B2 test, 2026-10-27: Explorer's "Fortsetzen" gives the user rights on it). Its install makes the
-    /// folder anew, so the fix is the same as for a missing Pan.
+    /// Pan is installed but its last run ended with an error: it crashed, or its data folder was untrusted and couldn't be
+    /// made anew (owner's B2 test, 2026-10-27). Its install makes the folder anew, so the fix is the same as for a
+    /// missing Pan.
     /// </summary>
     public static HealthIssue PanFailing { get; } = new("pan-failing", HealthSeverity.Warning, "Wächterdienst Pan startet nicht",
-        $"Pan beendet sich gleich nach dem Start, meist weil die Rechte an seinem Ordner {PanPaths.DataDirectory} geändert wurden (etwa mit „Fortsetzen“ im Explorer). „Neu einrichten“ legt den Ordner neu an. Die Installation fragt einmalig nach Administratorrechten.",
+        $"Pan beendet sich gleich nach dem Start. „Neu einrichten“ installiert Pan neu und legt seinen Ordner neu an; warum es sich beendet hat, steht in {PanPaths.LogPath}. Die Installation fragt einmalig nach Administratorrechten.",
         HealthFix.InstallDrivers, "Neu einrichten", Summary: "„Neu einrichten“ behebt das meist.");
 
     /// <summary>

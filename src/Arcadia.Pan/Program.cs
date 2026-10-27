@@ -33,6 +33,14 @@ internal static class Program
             return 0;
         }
 
+        if (PanCommands.NeedsAdministrator(command) && !IsElevated())
+        {
+            // Unelevated, --install got as far as setting the data folder aside and then failed to make it anew
+            // (owner's B2 test, 2026-10-27): nothing is touched without the rights to finish.
+            Console.Error.WriteLine($"Pan.exe {command} needs administrator rights: run it from an elevated prompt.");
+            return NotElevatedExitCode;
+        }
+
         var log = new PanLog(PanPaths.LogPath, console: command.Length > 0);
         try
         {
@@ -57,9 +65,10 @@ internal static class Program
                 case "--install":
                     // The log lives in the data folder: secured before anything is written there (review, bug 1). A
                     // failure here can't be logged, so its own exit code tells Arcadia what to say.
+                    IReadOnlyList<string> setAside;
                     try
                     {
-                        ServiceSetup.SecureDataDirectory();
+                        setAside = ServiceSetup.SecureDataDirectory();
                     }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
                     {
@@ -68,6 +77,11 @@ internal static class Program
                     }
 
                     log.TrustFolder();
+                    foreach (var folder in setAside)
+                    {
+                        log.Write($"Data folder not trusted: {folder}; made anew, its journal not used");
+                    }
+
                     if (Option(args, "--usbip-installer") is { } usbipInstaller)
                     {
                         var usbipHash = Option(args, "--usbip-sha256")
@@ -157,6 +171,16 @@ internal static class Program
 
     /// <summary>Exit code of <c>--uninstall --remove-drivers</c> when Pan went but a driver stayed; <c>pan.log</c> says which.</summary>
     public const int DriversNotRemovedExitCode = 7;
+
+    /// <summary>Exit code of a command that changes the machine, run without administrator rights: nothing was done.</summary>
+    public const int NotElevatedExitCode = 8;
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private static bool IsElevated()
+    {
+        using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+        return new System.Security.Principal.WindowsPrincipal(identity).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+    }
 
     private static bool Flag(string[] args, string name) => args.Skip(1).Contains(name, StringComparer.OrdinalIgnoreCase);
 

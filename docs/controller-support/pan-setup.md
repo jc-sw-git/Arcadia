@@ -26,9 +26,13 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   already installed is reused; VIIPER comes from SISR's folder without UAC until #214.
 - Data folder: `%ProgramData%` lets any user create `Arcadia\Pan` first and keep its ownership, so `--install`
   secures both folders before its first log line (`ServiceSetup.SecureDataDirectory`): a reparse point is deleted, a
-  folder not owned by SYSTEM/Administrators is renamed to `<name>.untrusted-<time>`, the folder is created with a
-  protected DACL (SYSTEM and Administrators full, no inheritance) and Administrators as owner. The service and
-  `--restore` refuse to run when the folder doesn't look like that (`CheckDataDirectory`; exit 3 / service failure);
+  folder not owned by SYSTEM/Administrators or writable by anyone else (`DataFolderRights`) is renamed to
+  `<name>.untrusted-<time>`, the folder is created with a protected DACL (SYSTEM and Administrators full, Users read so
+  they reach `pan.log`, no inheritance) and Administrators as owner; an older trusted folder gets the Users rule in
+  place. The service does the same at its start, as SYSTEM, and logs what it set aside (its journal unread), instead
+  of refusing to run (owner, 2026-10-27, after Explorer's "Fortsetzen" gave a user full control). `--restore` still
+  refuses an untrusted folder (`CheckDataDirectory`; exit 3). Commands that change the machine stop at once without
+  administrator rights (exit 8: unelevated, `--install` had set the folder aside and failed to make it anew);
   `--uninstall` then removes only the service and Program Files. `PanLog` writes its file only after the process
   secured or checked the folder (`TrustFolder`); lines from before follow then, or reach only a console.
 - Update: at start, when the bundled Pan is newer than the installed one (file versions), one dialog "Pan

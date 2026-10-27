@@ -173,10 +173,16 @@ part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it w
       then (or several times around that moment): Arcadia connects, `pan.log` shows "Pan … starting" and "Client …
       connected", no "Pan startet nicht (Stopped)" in `arcadia.log`. Found in the owner's B2 test (2026-10-27).
       · E2E: no (the service manager's timing; the rule: `PanServiceStartTests`)
-- [ ] **T243-44** Pan refuses to run (e.g. Explorer's "Fortsetzen" on `C:\ProgramData\Arcadia\Pan` gave the user
-      rights): the settings show "Wächterdienst Pan startet nicht" with "Neu einrichten", the header its triangle,
+- [ ] **T243-44** Pan ends at once after its start (e.g. `Pan.exe` in Program Files replaced by a copy of
+      `cmd.exe` as admin, or the service crashing): the settings show "Wächterdienst Pan startet nicht" with "Neu einrichten", the header its triangle,
       `arcadia.log` no start attempt every 2 s; "Neu einrichten" → one UAC prompt, Pan runs again. Found in the owner's B2
       test (2026-10-27). · E2E: yes (`EmulationSetupTests`; exit code rule: `PanServiceStartTests`)
+- [ ] **T243-45** Users read Pan's folder: open `C:\ProgramData\Arcadia\Pan\pan.log` in Explorer without admin rights →
+      it opens, no "Fortsetzen" prompt. As admin, give your user full control on that folder (Properties → Security),
+      then `sc stop ArcadiaPan` and start Arcadia: Pan runs, `Pan.untrusted-<time>` lies beside it, `pan.log` says "Data
+      folder not trusted … made anew". Unelevated `Pan.exe --install` stops at once with "needs administrator rights"
+      and changes nothing in ProgramData. Found in the owner's B2 test (2026-10-27). · E2E: yes (`ServiceTests` on the
+      Windows runner; rights rule: `DataFolderRightsTests`)
 
 History:
 
@@ -221,3 +227,4 @@ History:
 | T243-43 (`PanServiceStartTests`: a Pan stopping itself is started once it has stopped, a failed one not in a loop) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; seen red with the start never made after a pending stop; the real service only on Windows | pass | owner's manual run open |
 | T243-34 after the owner's decision (minimum HidHide 1.5.230: `HidHideSetupTests` the supported range, `EmulationSetupTests` 1.2.93 gets "Aktualisieren") | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; seen red with the old minimum 1.2; on the Windows runner (run 40567958178) HidHide 1.5.230's `HidHide.sys` read 1.4.181 and was refused, so the minimum is that driver version (`HidHideRelease.DriverVersion`) | fail, fixed | owner's manual run of T243-34 open (1.2.93 gave no row before) |
 | T243-44 (`EmulationSetupTests`: the row, the header, "Neu einrichten" installs Pan again; `PanServiceStartTests`: a Pan that ends at once after Arcadia's start, a stop with an exit code counts as failing) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; seen red before the fix (the install skipped because Pan counted as ready) and by mutation (row not a missing part, ending at once only waited); the real service only on Windows | pass | owner's manual run open; the data folder's rights: owner's decision pending |
+| T243-45 (`DataFolderRightsTests`: which rights make the folder untrusted, which commands need admin rights; `ServiceTests`: users read, a folder with a user's full control set aside and made anew at the service's start) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container (Pan 165, Core 974, App 342); the rights rule seen red with the old "any rule" check; `ServiceTests` only on the Windows runner | pass (Linux part) | Windows runner run to come |

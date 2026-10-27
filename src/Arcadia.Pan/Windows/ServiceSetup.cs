@@ -370,26 +370,32 @@ public static class ServiceSetup
     private static readonly SecurityIdentifier Administrators = new(WellKnownSidType.BuiltinAdministratorsSid, null);
 
     /// <summary>
-    /// <c>%ProgramData%\Arcadia</c> and its <c>Pan</c>, for administrators and SYSTEM only (review, bug 1): everyone may
-    /// create folders in <c>%ProgramData%</c> and keep them, so one that exists but isn't ours (a user's, or a junction to
-    /// anywhere) is moved aside and made anew: owner Administrators, nothing inherited. Before the first log line of
-    /// <c>--install</c>, because the log lives there too.
+    /// <c>%ProgramData%\Arcadia</c> and its <c>Pan</c>, writable by administrators and SYSTEM only (review, bug 1): everyone
+    /// may create folders in <c>%ProgramData%</c> and keep them, so one that exists but isn't ours (a user's, a junction
+    /// to anywhere, or one somebody got write rights on) is moved aside and made anew: owner Administrators, nothing
+    /// inherited, users may read (the log; owner, 2026-10-27). Before the first log line of <c>--install</c>, because
+    /// the log lives there too; also by the service at its start, as SYSTEM.
     /// </summary>
-    public static void SecureDataDirectory()
+    /// <returns>The folders set aside, with why each wasn't trusted.</returns>
+    public static IReadOnlyList<string> SecureDataDirectory()
     {
+        var setAside = new List<string>();
         foreach (var directory in DataDirectories())
         {
-            if (Exists(directory) && !IsOurs(directory, out _))
+            if (Exists(directory) && !IsOurs(directory, out var notOurs))
             {
-                MoveAside(directory);
+                setAside.Add($"{directory} ({notOurs}) set aside as {MoveAside(directory)}");
+            }
+            else if (Exists(directory) && !UsersMayRead(directory))
+            {
+                // A folder from before users could read it: verified ours (admin-owned, no link, parent ours too), so its
+                // rules are replaced in place; the owner stays as it is.
+                new DirectoryInfo(directory).SetAccessControl(Rules(new DirectorySecurity()));
+                continue;
             }
 
-            var security = new DirectorySecurity();
-            security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+            var security = Rules(new DirectorySecurity());
             security.SetOwner(Administrators);
-            var inherit = InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit;
-            security.AddAccessRule(new FileSystemAccessRule(LocalSystem, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
-            security.AddAccessRule(new FileSystemAccessRule(Administrators, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
             // Created with its descriptor in one step and never re-secured by path: a junction somebody plants between
             // the move-aside and the create leaves this a no-op, and the check below fails instead of the elevated
             // process putting an admin-only DACL on the junction's target (review, point 4).
@@ -399,7 +405,28 @@ public static class ServiceSetup
                 throw new InvalidOperationException($"{directory} could not be secured: {problem}");
             }
         }
+
+        return setAside;
     }
+
+    private static readonly SecurityIdentifier Users = new(WellKnownSidType.BuiltinUsersSid, null);
+
+    /// <summary>SYSTEM and administrators may do anything, users only read and list.</summary>
+    private static DirectorySecurity Rules(DirectorySecurity security)
+    {
+        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+        var inherit = InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit;
+        security.AddAccessRule(new FileSystemAccessRule(LocalSystem, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
+        security.AddAccessRule(new FileSystemAccessRule(Administrators, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
+        security.AddAccessRule(new FileSystemAccessRule(Users, FileSystemRights.ReadAndExecute, inherit, PropagationFlags.None, AccessControlType.Allow));
+        return security;
+    }
+
+    private static bool UsersMayRead(string directory) =>
+        new DirectoryInfo(directory).GetAccessControl(AccessControlSections.Access)
+            .GetAccessRules(includeExplicit: true, includeInherited: false, typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>()
+            .Any(rule => rule.AccessControlType == AccessControlType.Allow && rule.IdentityReference == Users
+                && rule.FileSystemRights.HasFlag(FileSystemRights.ReadAndExecute));
 
     /// <summary>Why the data folders can't be trusted (the service and --restore refuse to run then), or null.</summary>
     public static string? CheckDataDirectory()
@@ -424,7 +451,7 @@ public static class ServiceSetup
 
     private static bool Exists(string path) => Directory.Exists(path) || File.Exists(path);
 
-    /// <summary>A real folder, owned by Administrators or SYSTEM, with no access rule for anyone else.</summary>
+    /// <summary>A real folder, owned by Administrators or SYSTEM, that nobody else may change (reading is fine).</summary>
     private static bool IsOurs(string directory, out string problem)
     {
         try
@@ -458,9 +485,10 @@ public static class ServiceSetup
 
             foreach (FileSystemAccessRule rule in security.GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier)))
             {
-                if (rule.AccessControlType == AccessControlType.Allow && rule.IdentityReference is SecurityIdentifier who && who != LocalSystem && who != Administrators)
+                if (rule.AccessControlType == AccessControlType.Allow && rule.IdentityReference is SecurityIdentifier who && who != LocalSystem && who != Administrators
+                    && DataFolderRights.Writes((uint)rule.FileSystemRights))
                 {
-                    problem = $"gives access to {who}";
+                    problem = $"lets {who} write";
                     return false;
                 }
             }
@@ -476,7 +504,8 @@ public static class ServiceSetup
     }
 
     /// <summary>A link goes as the link alone; a folder is renamed, which the parent's rights allow whatever its own say.</summary>
-    private static void MoveAside(string directory)
+    /// <returns>Where it went, or "deleted" for a link.</returns>
+    private static string MoveAside(string directory)
     {
         var attributes = File.GetAttributes(directory);
         if (attributes.HasFlag(FileAttributes.ReparsePoint))
@@ -490,7 +519,7 @@ public static class ServiceSetup
                 File.Delete(directory);
             }
 
-            return;
+            return "deleted (a link)";
         }
 
         var aside = $"{directory}.untrusted-{DateTime.UtcNow:yyyyMMddHHmmss}";
@@ -502,6 +531,8 @@ public static class ServiceSetup
         {
             File.Move(directory, aside);
         }
+
+        return aside;
     }
 
     /// <summary>The parent folder Pan created for itself goes when nothing else is in it; never anything inside.</summary>

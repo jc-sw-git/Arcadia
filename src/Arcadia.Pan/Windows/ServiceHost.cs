@@ -86,15 +86,29 @@ public static class ServiceHost
     /// <summary>Also used by <c>--console</c>, where the console's Ctrl+C is the stop.</summary>
     public static async Task RunAsync(PanLog log, CancellationToken? consoleStop = null)
     {
+        // The journal and log live there; a folder somebody else owns or may write could point them anywhere, or feed
+        // Pan a journal to undo (review, bug 1). Pan makes it anew itself instead of refusing to run (owner,
+        // 2026-10-27: Explorer's "Fortsetzen" had given the user full control); what was there is set aside unread.
+        IReadOnlyList<string> setAside = [];
         if (ServiceSetup.CheckDataDirectory() is { } problem)
         {
-            // The journal and log live there; a folder somebody else owns could point them anywhere (review, bug 1).
-            // The log file stays untouched: the line reaches only a console, the SCM sees the exit code.
-            log.Write($"Refusing to run: {problem}; run Pan.exe --install again");
-            throw new InvalidOperationException(problem);
+            try
+            {
+                setAside = ServiceSetup.SecureDataDirectory();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                // The log file stays untouched: the line reaches only a console, the SCM sees the exit code.
+                log.Write($"Refusing to run: {problem}, and it could not be made anew: {ex.Message}; run Pan.exe --install again");
+                throw new InvalidOperationException(problem, ex);
+            }
         }
 
         log.TrustFolder();
+        foreach (var folder in setAside)
+        {
+            log.Write($"Data folder not trusted: {folder}; made anew, its journal not used");
+        }
 
         var cleanup = new WindowsCleanup(log.Write);
         var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath), cleanup, log.Write, hiding: WindowsHiding.Create());

@@ -129,6 +129,39 @@ public sealed class ServiceTests : IDisposable
             service.WaitForStatus(ServiceControllerStatus.Running, ReplyTimeout);
         }
 
+        // T243-45: users may read the data folder (the log) but not write it. A folder somebody got write rights on
+        // (Explorer's "Fortsetzen", owner's B2 test) doesn't stop Pan: at its start it sets the folder aside and makes
+        // it anew, and the log says so.
+        var users = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+        var dataFolder = new DirectoryInfo(PanPaths.DataDirectory);
+        Assert.Contains(UserRules(dataFolder, users), rule => rule.HasFlag(FileSystemRights.ReadAndExecute));
+        Assert.DoesNotContain(UserRules(dataFolder, users), rule => DataFolderRights.Writes((uint)rule));
+        using (var service = new ServiceController(PanPaths.ServiceName))
+        {
+            service.Stop();
+            service.WaitForStatus(ServiceControllerStatus.Stopped, TeardownTimeout);
+            var tampered = dataFolder.GetAccessControl();
+            tampered.AddAccessRule(new FileSystemAccessRule(users, FileSystemRights.FullControl, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+            dataFolder.SetAccessControl(tampered);
+            service.Start();
+            service.WaitForStatus(ServiceControllerStatus.Running, ReplyTimeout);
+        }
+
+        var setAside = Directory.GetDirectories(Path.GetDirectoryName(PanPaths.DataDirectory)!, "Pan.untrusted-*");
+        try
+        {
+            Assert.NotEmpty(setAside);
+            Assert.DoesNotContain(UserRules(new DirectoryInfo(PanPaths.DataDirectory), users), rule => DataFolderRights.Writes((uint)rule));
+            Assert.Contains("Data folder not trusted", ReadShared(PanPaths.LogPath));
+        }
+        finally
+        {
+            foreach (var folder in setAside)
+            {
+                Directory.Delete(folder, recursive: true);
+            }
+        }
+
         // T243-8: a user can start and query it but never change it; the image path is quoted.
         // sc prints the rights in its own order (LCRPLORC), so the ACE is compared as a set of rights. Only the DACL
         // (D:) counts: Windows adds an audit entry for Everyone to the SACL (S:) of every service.
@@ -234,6 +267,17 @@ public sealed class ServiceTests : IDisposable
         Assert.Equal(0, Run(pan, "--uninstall"));
         Assert.Contains("1060", Output("sc.exe", "query", PanPaths.ServiceName));
         Assert.False(Directory.Exists(PanPaths.InstallDirectory), "Program Files\\Arcadia\\Pan is gone");
+    }
+
+    private static List<FileSystemRights> UserRules(DirectoryInfo folder, SecurityIdentifier who) =>
+        folder.GetAccessControl().GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>()
+            .Where(rule => rule.AccessControlType == AccessControlType.Allow && rule.IdentityReference == who)
+            .Select(rule => rule.FileSystemRights).ToList();
+
+    private static string ReadShared(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        return new StreamReader(stream).ReadToEnd();
     }
 
     /// <summary>The two-letter rights of the allow ACE for <paramref name="sid"/> in an SDDL string, sorted.</summary>

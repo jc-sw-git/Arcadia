@@ -25,15 +25,16 @@ public sealed class HidHideSetupTests
     }
 
     [Theory]
+    [InlineData("1.4.181", true)]
+    [InlineData("1.4.181.0", true)]
     [InlineData("1.5.230", true)]
-    [InlineData("1.5.230.0", true)]
     [InlineData("1.99", true)]
-    [InlineData("1.5.229", false)]
+    [InlineData("1.4.180", false)]
     [InlineData("1.2.93", false)]
     [InlineData("1.1.999", false)]
     [InlineData("2.0", false)]
     [InlineData("0.9", false)]
-    public void Pan_supports_HidHide_from_the_tested_1_5_230_up_to_the_next_major(string version, bool supported)
+    public void Pan_supports_HidHide_from_the_driver_of_the_tested_1_5_230_up_to_the_next_major(string version, bool supported)
     {
         Assert.Equal(supported, HidHideRelease.IsSupported(Version.Parse(version)));
     }
@@ -41,7 +42,7 @@ public sealed class HidHideSetupTests
     [Fact]
     public void The_pinned_installer_is_a_version_Pan_supports()
     {
-        Assert.True(HidHideRelease.IsSupported(HidHideRelease.Version));
+        Assert.True(HidHideRelease.IsSupported(HidHideRelease.DriverVersion));
         Assert.EndsWith(HidHideRelease.InstallerName, HidHideRelease.InstallerUrl.AbsolutePath, StringComparison.Ordinal);
         Assert.Equal(64, HidHideRelease.Sha256.Length);
     }

@@ -149,7 +149,7 @@ public sealed class EmulationSetupTests
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-unsupported"));
         Assert.Equal("HidHide-Version wird nicht unterstützt", row.Title);
         Assert.Equal("Aktualisieren", row.ActionText);
-        Assert.Contains("Installiert ist HidHide 1.2.93, Arcadia braucht mindestens 1.5.230.", row.Info.OfType<InfoText>().Single().Text);
+        Assert.Contains("Installiert ist ein älteres HidHide (Treiber 1.2.93), Arcadia braucht HidHide 1.5.230 oder neuer.", row.Info.OfType<InfoText>().Single().Text);
 
         row.Activate();
         await arcadia.WaitUntilAsync(() => controller.Rows.All(r => r.Key != "issue:hidhide-unsupported"), "die Meldung verschwindet");

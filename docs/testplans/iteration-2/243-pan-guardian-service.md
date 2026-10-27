@@ -134,7 +134,8 @@ part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it w
       all four are there, `pan.log` names the SHA-256 and signature checks of both installers. UAC declined: the error stands at the
       first part left ("usbip-Treiber fehlt"), VIIPER stays. · E2E: yes (`EmulationSetupTests`)
 - [ ] **T243-34** An older HidHide (e.g. 1.2.93 from HidHide's releases, installed after a restart) installed: row
-      "HidHide-Version wird nicht unterstützt" ("… Arcadia braucht mindestens 1.5.230.") with "Aktualisieren"; A → one
+      "HidHide-Version wird nicht unterstützt" ("Installiert ist ein älteres HidHide (Treiber …), Arcadia braucht HidHide
+      1.5.230 oder neuer.") with "Aktualisieren"; A → one
       UAC prompt, HidHide 1.5.230 afterwards. Anything older than the tested 1.5.230 counts (owner, 2026-10-27). · E2E: yes (`EmulationSetupTests`)
 - [ ] **T243-35** With the settings open: HidHide's Configuration Client opened → within 10 s the row
       "HidHide-Konfiguration ist geöffnet" ("… Bitte schließe sie."); closed → gone within 10 s. "Inverse" ticked in it
@@ -214,4 +215,4 @@ History:
 | T243-41, T243-42 after the owner's second B2 test (`EmulationSetupTests`: the removal row without a fix and no Pan check, the restart row without SISR; `HidHideWireTests`: `DeleteFlag` and the pending deletion of the driver file) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; each seen red once by mutation (removal not checked, Pan asked anyway, the SISR row kept, either registry signal ignored); the real registry after an uninstall only on Windows | pass | owner's manual run of T243-41/42 open |
 | T243-33, T243-37, T243-38 (every part missing; Arcadia uninstall with the driver question; removal only through the drivers' own uninstallers) | 2026-10-27 | owner | – | deferred | moved to the acceptance review of the iteration by the owner (manual run before the merge skipped) |
 | T243-43 (`PanServiceStartTests`: a Pan stopping itself is started once it has stopped, a failed one not in a loop) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; seen red with the start never made after a pending stop; the real service only on Windows | pass | owner's manual run open |
-| T243-34 after the owner's decision (minimum HidHide 1.5.230: `HidHideSetupTests` the supported range, `EmulationSetupTests` 1.2.93 gets "Aktualisieren") | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; seen red with the old minimum 1.2; the real driver's file version against the new minimum on the Windows runner (`WindowsHidingTests`) | pass | owner's manual run of T243-34 open (1.2.93 gave no row before) |
+| T243-34 after the owner's decision (minimum HidHide 1.5.230: `HidHideSetupTests` the supported range, `EmulationSetupTests` 1.2.93 gets "Aktualisieren") | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; seen red with the old minimum 1.2; on the Windows runner (run 40567958178) HidHide 1.5.230's `HidHide.sys` read 1.4.181 and was refused, so the minimum is that driver version (`HidHideRelease.DriverVersion`) | fail, fixed | owner's manual run of T243-34 open (1.2.93 gave no row before) |

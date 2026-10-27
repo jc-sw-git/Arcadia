@@ -9,6 +9,12 @@ public static class HidHideRelease
 {
     public static Version Version { get; } = new(1, 5, 230);
 
+    /// <summary>
+    /// The file version of the <c>HidHide.sys</c> it installs, which is what Arcadia and Pan read: the driver keeps its
+    /// own numbering (seen on the CI runner, 2026-10-27).
+    /// </summary>
+    public static Version DriverVersion { get; } = new(1, 4, 181);
+
     public static Uri InstallerUrl { get; } = new("https://github.com/nefarius/HidHide/releases/download/v1.5.230.0/HidHide_1.5.230_x64.exe");
 
     public const string InstallerName = "HidHide_1.5.230_x64.exe";

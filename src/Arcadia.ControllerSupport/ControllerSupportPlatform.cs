@@ -388,7 +388,7 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
         null => new("hidhide-missing", HealthSeverity.Warning, "HidHide fehlt", HidHideMissingText, HealthFix.InstallDrivers, "Installieren"),
         _ when HidHideRelease.IsSupported(installed) => null,
         _ when HidHideNeedsInstaller(installed) => new("hidhide-unsupported", HealthSeverity.Warning, "HidHide-Version wird nicht unterstützt",
-            $"Installiert ist HidHide {installed.ToString(3)}, Arcadia braucht mindestens {SteamControllerHiding.MinimumVersion}. „Aktualisieren“ installiert HidHide {HidHideRelease.Version}; was in HidHide eingestellt ist, bleibt erhalten. Die Installation fragt einmalig nach Administratorrechten.",
+            $"Installiert ist ein älteres HidHide (Treiber {installed.ToString(3)}), Arcadia braucht HidHide {HidHideRelease.Version} oder neuer. „Aktualisieren“ installiert HidHide {HidHideRelease.Version}; was in HidHide eingestellt ist, bleibt erhalten. Die Installation fragt einmalig nach Administratorrechten.",
             HealthFix.InstallDrivers, "Aktualisieren"),
         _ => new("hidhide-unsupported", HealthSeverity.Warning, "HidHide-Version wird nicht unterstützt",
             $"Installiert ist HidHide {installed.ToString(3)}, Arcadia kennt bisher nur HidHide {SteamControllerHiding.SupportedMajorVersion}.x. Ein Arcadia-Update bringt die Unterstützung."),

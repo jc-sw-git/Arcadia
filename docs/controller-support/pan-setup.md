@@ -9,7 +9,7 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   Authenticode signature against `UsbipRelease.Publisher` on a copy in Pan's data folder (the user can't swap it
   after the check), runs that `/S` (5 min), copies itself to
   `%ProgramFiles%\Arcadia\Pan\Pan.exe` and compares the copy's SHA-256 with the source and the expected hash, creates the service with a quoted image path, auto
-  start, the description in the system language (de, en, fr, es, it; else en), recovery, 40 s pre-shutdown, and the
+  start, the description in the system language (de, en, fr, es, it; else en), recovery, 90 s pre-shutdown, and the
   DACL `D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;RPLCLORC;;;IU)` (users start and query,
   never change). A declined prompt is a failed action ("… abgelehnt"); Pan's exit code 3 points to `pan.log`.
 - Data folder: `%ProgramData%` lets any user create `Arcadia\Pan` first and keep its ownership, so `--install`

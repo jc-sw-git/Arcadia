@@ -33,7 +33,9 @@ one names the countermeasure that would close it, so a later story can pick it u
   hid with HidHide (whose configuration is admin-only). Part A's "no privilege gain" no longer holds for this. The
   countermeasure: accept `Hide` only from Arcadia's installed and signed exe (with code signing, `docs/releases.md`).
 - **HidHide's IOCTLs have no timeout:** they run inline, because a step left behind could write a stale list after the
-  undo. They don't wait on Windows' PnP lock; listing and restarting the devices do and are bounded.
+  undo. They don't wait on Windows' PnP lock; listing and restarting the devices do and are bounded. If one did hang,
+  it would hold the HidHide gate: every later show times out and the puck stays hidden until the service restarts
+  (Pan doesn't die, so Windows' recovery doesn't help, nor does `Pan.exe --restore` while the service runs).
 - **`Unhide` is trusted:** the client says it removed its copy before it unhides (#242's order); Pan can't check that a
   forwarding inside Arcadia stopped. Every unplanned path goes through the teardown, which does check.
 - **A puck restart that needs a replug** (`DI_NEEDRESTART`) leaves it pending: the puck is visible to programs that

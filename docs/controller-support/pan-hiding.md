@@ -23,6 +23,12 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   after any rejected `Hide` (#242).
 - While the client's `Hide`/`Unhide` runs (up to ~20 s if a device step hangs), its heartbeats wait on the pipe; the hang
   watch pauses and restarts its clock afterwards.
+- For #242's client: `Hide`, `Unhide` and `CheckHiding` need their own reply timeout of ~25 s (the 2 s request
+  timeout drops the link mid-hide; a hide takes ~2.4 s on the owner's PC). A heartbeat waiting behind one is no loss;
+  don't queue more than the pipe buffer holds (192 bytes, 16 messages). A timeout still means the link is gone: the
+  protocol has no correlation, so a late reply would answer the next request.
+- `EmulationStarted` → `Rejected(SteamControllerBeingShown)` while a retry (below) shows the controller of an earlier
+  teardown: start again in a moment.
 
 ## Hiding
 
@@ -56,6 +62,7 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   journaled).
 - A partial show (HidHide busy, its driver restarting, a failed restart) after the forwarding was gone is retried by
   itself after 5 s, 30 s, then every 2 min while nothing emulates; a restart that only a replug does stops after those.
+  Pan doesn't idle-stop while that retry runs, and a new emulation waits for a retry that is changing HidHide.
 - Triggers: crash/kill (`ClientGone`), hang, service stop or pre-shutdown, a stop with an incomplete teardown journaled,
   planned exit while hidden, Pan's start after a crash or power loss (`RecoverAsync`), `--restore`, uninstall. The undo
   goes through the driver whatever its version reads as; only with HidHide's service gone and its control device too

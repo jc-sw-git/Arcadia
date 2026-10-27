@@ -22,7 +22,8 @@ public static class ServiceSetup
     /// </summary>
     public const string ServiceSddl = "D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;RPLCLORC;;;IU)";
 
-    private static readonly TimeSpan StopWait = TimeSpan.FromSeconds(40);
+    // The stop's teardown, then the notices to the client; also Windows' pre-shutdown wait.
+    private static readonly TimeSpan StopWait = ServiceHost.TeardownWait + TimeSpan.FromSeconds(10);
 
     /// <summary>
     /// Installs or updates Pan: stages <paramref name="source"/> as <c>Pan.exe.new</c> in Program Files (unless it

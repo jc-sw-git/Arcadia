@@ -114,6 +114,12 @@ public enum PanReason : uint
 
     /// <summary>A teardown at the client's planned exit, because it left the Steam Controller hidden.</summary>
     PlannedExit = 20,
+
+    /// <summary>
+    /// <see cref="PanCommand.EmulationStarted"/> while Pan retries showing the Steam Controller after an earlier
+    /// teardown (usually milliseconds, a puck restart ~2.5 s): start again in a moment.
+    /// </summary>
+    SteamControllerBeingShown = 21,
 }
 
 /// <summary>

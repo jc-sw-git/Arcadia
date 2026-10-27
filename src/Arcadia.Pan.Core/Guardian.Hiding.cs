@@ -612,6 +612,24 @@ public sealed partial class Guardian
     /// <summary>The retry of a partial show, for tests to wait on; never faults.</summary>
     public Task? ShowRetry { get; private set; }
 
+    /// <summary>A retry still has to show the Steam Controller: Pan stays up for it without a client (<see cref="IdleStop"/>).</summary>
+    public bool ShowRetryPending
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _showRetry is not null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Under the lock: a retry is changing HidHide or restarting the puck. A new emulation waits for it, because the
+    /// retry checked that nothing emulates only before it started (review of #252, P2 2).
+    /// </summary>
+    private bool _retryShowing;
+
     private async Task RetryShowAsync(CancellationToken cancellationToken)
     {
         try
@@ -627,9 +645,23 @@ public sealed partial class Guardian
                         // Done elsewhere, or an emulation runs: its teardown shows the controller.
                         return;
                     }
+
+                    _retryShowing = true;
                 }
 
-                var results = await ShowAfterTeardownAsync(forwardingGone: true, retry: true);
+                IReadOnlyList<StepResult> results;
+                try
+                {
+                    results = await ShowAfterTeardownAsync(forwardingGone: true, retry: true);
+                }
+                finally
+                {
+                    lock (_lock)
+                    {
+                        _retryShowing = false;
+                    }
+                }
+
                 if (results.All(r => r.Outcome == StepOutcome.Ok))
                 {
                     lock (_lock)

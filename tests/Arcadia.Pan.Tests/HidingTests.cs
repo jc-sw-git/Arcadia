@@ -595,6 +595,60 @@ public sealed class HidingTests : IDisposable
         Assert.True(guardian.IsEmulating);
     }
 
+    [Fact]
+    public async Task A_new_emulation_waits_while_a_retry_shows_the_controller()
+    {
+        var guardian = RetryingGuardian(TimeSpan.FromMilliseconds(300));
+        var generation = await EmulatingAsync(guardian);
+        await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation));
+        _hidHide.FailOn = "SetHidden";
+        guardian.ClientGone();
+        await guardian.Teardown!;
+        _hidHide.FailOn = null;
+
+        // The retry passed its check that nothing emulates and now reads HidHide's list.
+        using var retryReads = new ManualResetEventSlim();
+        using var retryGoesOn = new ManualResetEventSlim();
+        _hidHide.BeforeRead = name =>
+        {
+            if (name == "GetHidden" && !retryReads.IsSet)
+            {
+                retryReads.Set();
+                retryGoesOn.Wait(TimeSpan.FromSeconds(30));
+            }
+        };
+        Assert.True(retryReads.Wait(TimeSpan.FromSeconds(10)));
+
+        Assert.Equal(PanReason.None, guardian.Register(Arcadia with { Pid = 501 }));
+        Assert.Equal(PanReply.HelloOk, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello))).Reply);
+        var early = await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted));
+        Assert.Equal(PanReason.SteamControllerBeingShown, early.Reason);
+        Assert.False(guardian.IsEmulating);
+
+        retryGoesOn.Set();
+        await guardian.ShowRetry!;
+        Assert.Empty(_hidHide.Hidden);
+        Assert.False(_hidHide.Cloaking);
+        Assert.Equal(PanReply.Started, (await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted))).Reply);
+    }
+
+    [Fact]
+    public async Task Pan_reports_a_pending_show_retry_until_it_succeeds()
+    {
+        var guardian = RetryingGuardian(TimeSpan.FromMilliseconds(300));
+        var generation = await EmulatingAsync(guardian);
+        await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation));
+        _hidHide.FailAll = PanReason.HidHideBusy;
+        guardian.ClientGone();
+        await guardian.Teardown!;
+
+        Assert.True(guardian.ShowRetryPending);
+        _hidHide.FailAll = null;
+        await guardian.ShowRetry!;
+        Assert.False(guardian.ShowRetryPending);
+        Assert.Empty(_hidHide.Hidden);
+    }
+
     private Guardian RetryingGuardian(TimeSpan? pause = null) => new(
         _clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
         hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: FakeDevices.StepTimeout)

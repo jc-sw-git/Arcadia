@@ -334,6 +334,12 @@ public sealed partial class Guardian
             return PanMessage.Of(PanReply.Rejected, _generation, PanReason.AlreadyEmulating);
         }
 
+        if (_retryShowing)
+        {
+            // Its forwarding would run while the retry makes the real controller visible.
+            return PanMessage.Of(PanReply.Rejected, _generation, PanReason.SteamControllerBeingShown);
+        }
+
         var client = _client!;
         var held = _cleanup.TakeChildrenOf(client.Pid, client.StartTime, ForwardingImageName);
         // What an incomplete teardown left (a process that wouldn't end) stays listed and is retried with this one. A

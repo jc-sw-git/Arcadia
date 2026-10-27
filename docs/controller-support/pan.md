@@ -67,7 +67,8 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
 - A restarted Pan (crash, reboot, `--restore`) always undoes its journal first: held processes are re-verified by PID +
   start time, the client itself is never killed, "client N still running/gone" is only logged (#244 adds the crash
   report hook).
-- Pan stops itself after 30 s without a client (nothing idles in the background); Arcadia starts it with
+- Pan stops itself after 30 s without a client (nothing idles in the background), unless a retry still has to show
+  the Steam Controller ([pan-hiding.md](pan-hiding.md)); Arcadia starts it with
   `ServiceController.Start` on connect (users have `SERVICE_START` by the DACL). Recovery: 3 restarts, 1 s, reset daily,
   also on non-zero exit.
 

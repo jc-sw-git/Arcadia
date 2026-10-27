@@ -157,6 +157,9 @@ public sealed class FakeHidHide : IHidHideDriver
     /// <summary>Runs before every change, e.g. to look at the journal at that moment.</summary>
     public Action<string>? BeforeChange;
 
+    /// <summary>Runs before every read, e.g. to hold a caller there.</summary>
+    public Action<string>? BeforeRead;
+
     public Version? InstalledVersion() => Version;
 
     /// <summary>False with <see cref="DriverRunning"/> false: HidHide uninstalled.</summary>
@@ -198,6 +201,7 @@ public sealed class FakeHidHide : IHidHideDriver
             throw new HidHideException(FailAll ?? PanReason.HidingFailed, $"{name} failed");
         }
 
+        BeforeRead?.Invoke(name);
         lock (Calls) Calls.Add(name);
         return call();
     }

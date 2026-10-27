@@ -94,6 +94,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     /// <summary>A game started from Arcadia ended, with its key: Arcadia may come back to the front (#94).</summary>
     public event EventHandler<string>? StartedGameEnded;
 
+    /// <summary>The launcher aborted the start of a game from Arcadia, with its key: Arcadia comes to the front as after a game (#277).</summary>
+    public event EventHandler<string>? StartRefused;
+
     public DateTimeOffset? ScannedAt(string launcherId) => _library.ScannedAt(launcherId);
 
     public InstallProgress? InstallStateOf(string gameKey) => _installs.StateOf(gameKey);
@@ -180,6 +183,11 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         if (changes.StatesChanged)
         {
             RunStatesChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        foreach (var unstarted in changes.NotStarted)
+        {
+            ReportNotStarted(unstarted);
         }
 
         if (changes.Ended.Count == 0)
@@ -357,6 +365,19 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         Noticed?.Invoke(this, new LibraryNotice.InstallEnded(outcome, titleBefore ?? KnownTitleOf(key), completed));
     }
 
+    /// <summary>"Wird gestartet …" ended without the game running: says why (#277); an aborted start brings Arcadia back.</summary>
+    private void ReportNotStarted(UnstartedGame unstarted)
+    {
+        var launcher = Launchers.Info(Game.LauncherIdOf(unstarted.GameKey));
+        Noticed?.Invoke(this, new LibraryNotice.GameNotStarted(TitleOf(unstarted.GameKey), launcher, unstarted.Refusal));
+        if (unstarted.Refusal is not null)
+        {
+            StartRefused?.Invoke(this, unstarted.GameKey);
+        }
+    }
+
+    private string? TitleOf(string gameKey) => Libraries.SelectMany(l => l.Games).FirstOrDefault(g => g.Key == gameKey)?.Title;
+
     private void RefreshLibraryLater(TimeSpan delay) => RefreshLibraryAfterAsync(delay, _shutdown.Token).Forget("Bibliothek aktualisieren");
 
     // Continues on the UI thread it was started on; a cancelled delay ends quietly (AppErrors ignores the cancellation).
@@ -402,6 +423,13 @@ public abstract record LibraryNotice
     /// <paramref name="Title"/> (null if unknown) are the last one's, <paramref name="Completed"/> counts the completed installs.
     /// </summary>
     public sealed record InstallEnded(InstallOutcome Outcome, string? Title, int Completed) : LibraryNotice;
+
+    /// <summary>
+    /// A game started from Arcadia didn't run (#277): <paramref name="Launcher"/> aborted the start
+    /// (<paramref name="Refusal"/>), or nothing was heard of it until "Wird gestartet …" timed out (null).
+    /// <paramref name="Title"/> is null if the game left the library meanwhile.
+    /// </summary>
+    public sealed record GameNotStarted(string? Title, LauncherInfo Launcher, RefusedStart? Refusal) : LibraryNotice;
 
     /// <summary>"Neu einlesen" started for <paramref name="Launcher"/>, or for all launchers (null).</summary>
     public sealed record RescanStarted(LauncherInfo? Launcher) : LibraryNotice;

@@ -95,4 +95,14 @@ internal sealed class FakeRunningGames(string launcherId) : IRunningGamesMonitor
         Polls++;
         return [.. Running];
     }
+
+    /// <summary>The starts the launcher aborted; each is reported once, as a log is read on.</summary>
+    public List<RefusedStart> Refused { get; } = [];
+
+    public IReadOnlyList<RefusedStart> RefusedStarts()
+    {
+        var refused = Refused.ToList();
+        Refused.Clear();
+        return refused;
+    }
 }

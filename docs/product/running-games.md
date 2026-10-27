@@ -17,3 +17,11 @@ Agreed with the owner; don't change without asking. Read this before changing th
   the library is read again (playtime, "Zuletzt gespielt"). Only a game started from Arcadia brings Arcadia to the front
   when it ends (#94), 1 s later, and only if that game, its launcher (`ProgramNames`), the desktop or no window is in
   front then; another program keeps the front.
+- A start that doesn't run (#277, owner 2026-10-27): when the launcher itself aborts the start (Steam: `LaunchApp failed`,
+  e.g. the signed-in account owns no license), "Wird gestartet …" ends at once (within 5 s), Arcadia comes to the front
+  as after a game's end (#94) and a toast names the reason: a known code its own text („3000th Duel“: Das angemeldete
+  Steam-Konto besitzt dieses Spiel nicht.), any other „<Spiel>“: <Launcher> hat den Start abgebrochen. The launcher's
+  own window (e.g. Steam's error dialog) stays open; Arcadia doesn't close other programs' windows. The launcher waiting
+  for the player (launch option, EULA, cloud conflict) is no failure. Only an explicit abort ends a start early, never a
+  missing signal; a start that ends by the 2 min timeout (any launcher) toasts „<Spiel>“ wurde nicht gestartet. and
+  leaves Arcadia where it is. No warning before a start (e.g. another account's game): the launcher decides.

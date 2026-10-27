@@ -380,12 +380,16 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
     /// (every time Arcadia comes to the front) doesn't read the file again. A file that can't be read is said once in the
     /// log, and the apps are typed by id and name.
     /// </summary>
-    private sealed class AppTypeCache
+    internal sealed class AppTypeCache(Action<string>? warn = null)
     {
+        private readonly Action<string> _warn = warn ?? (message => System.Diagnostics.Trace.TraceWarning(message));
         private readonly Lock _lock = new();
         private (string Path, long Length, DateTime Written)? _stamp;
         private IReadOnlySet<uint> _asked = new HashSet<uint>();
         private IReadOnlyDictionary<uint, string>? _types;
+
+        // Whether the last read failed, so a file that stays missing or broken is logged once, not on every rescan.
+        private bool _isUnreadable;
 
         public IReadOnlyDictionary<uint, string>? Read(string path, IReadOnlySet<uint> appIds)
         {
@@ -407,14 +411,15 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
                     return _types;
                 }
 
-                var wasReadable = _stamp is null || _types is not null;
                 _stamp = stamp;
                 _asked = appIds;
                 _types = stamp is null ? null : TryRead(path, appIds);
-                if (_types is null && wasReadable)
+                if (_types is null && !_isUnreadable)
                 {
-                    System.Diagnostics.Trace.TraceWarning("Steam: appinfo.vdf nicht lesbar, Werkzeuge und Soundtracks werden am Namen erkannt, Software als Spiel");
+                    _warn("Steam: appinfo.vdf nicht lesbar, Werkzeuge und Soundtracks werden am Namen erkannt, Software als Spiel");
                 }
+
+                _isUnreadable = _types is null;
 
                 return _types;
             }

@@ -1186,10 +1186,12 @@
                                 <Ellipse Classes="statusDot" Classes.active="{Binding IsLampWorking}" Classes.warning="{Binding IsLampProblem}" Classes.error="{Binding IsLampFailure}" Width="10" Height="10" VerticalAlignment="Center"
                                          IsVisible="{Binding HasLamp}" />
                               </StackPanel>
-                              <StackPanel Orientation="Horizontal" Spacing="8">
-                                <views:CountLineView Classes="small" DataContext="{Binding Counts}" IsVisible="{Binding $parent[StackPanel].((settings:SettingsRowViewModel)DataContext)?.HasCounts, TargetNullValue=False}" />
+                              <!-- A DockPanel, not a horizontal StackPanel: the subtitle keeps its width and wraps. -->
+                              <DockPanel>
+                                <views:CountLineView DockPanel.Dock="Left" Classes="small" Margin="0,0,8,0" VerticalAlignment="Top" DataContext="{Binding Counts}"
+                                                     IsVisible="{Binding $parent[DockPanel].((settings:SettingsRowViewModel)DataContext)?.HasCounts, TargetNullValue=False}" />
                                 <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
-                              </StackPanel>
+                              </DockPanel>
                               <TextBlock Classes="rowProblem" Text="{Binding Problem}" IsVisible="{Binding HasProblem}" />
                             </StackPanel>
                             <ContentControl Grid.Column="2" Content="{Binding}" VerticalAlignment="Center">

@@ -400,6 +400,29 @@ public sealed class SteamScannerTests : IDisposable
         Assert.Empty(await new SteamScanner(() => new SteamInstallation(Path.Combine(_root, "missing"), null)).ScanAsync());
     }
 
+    [Fact]
+    [Trait("TestCase", "T141-10")]
+    public void An_unreadable_appinfo_is_logged_once_until_it_was_readable_again()
+    {
+        var path = Path.Combine(_root, "appcache", "appinfo.vdf");
+        var warnings = new List<string>();
+        var cache = new SteamScanner.AppTypeCache(warnings.Add);
+        HashSet<uint> ids = [239030];
+
+        // Missing on every rescan: one warning.
+        Assert.Null(cache.Read(path, ids));
+        Assert.Null(cache.Read(path, ids));
+        Assert.Single(warnings);
+
+        // Readable again, then broken: one more.
+        WriteBytes(path, AppInfoFile.Build(AppInfoFile.V29, [(239030, "Papers, Please", "Game")]));
+        Assert.Equal("Game", cache.Read(path, ids)![239030]);
+        WriteBytes(path, [1, 2, 3]);
+        Assert.Null(cache.Read(path, ids));
+        Assert.Null(cache.Read(path, new HashSet<uint> { 239030, 431960 }));
+        Assert.Equal(2, warnings.Count);
+    }
+
     private static void WriteBytes(string path, byte[] bytes)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);

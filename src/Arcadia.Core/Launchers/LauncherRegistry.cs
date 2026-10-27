@@ -63,10 +63,6 @@ public sealed class LauncherRegistry
     /// <summary>Every registered launcher, active or not, e.g. for the launcher settings.</summary>
     public IReadOnlyList<ILauncherIntegration> All => _all;
 
-    /// <summary>
-    /// The launcher as Arcadia shows it: with the name and search keyword the user gave it (#137). A value that breaks the
-    /// rules (<see cref="LauncherNames"/>), e.g. edited by hand in settings.json, gives way to the launcher's own.
-    /// </summary>
     /// <summary>The switches the launcher offers for software, tools or soundtracks (#141); none for an unknown launcher.</summary>
     public IReadOnlyList<LibraryTypeOption> LibraryOptions(string launcherId) => Registered(launcherId)?.LibraryOptions ?? [];
 
@@ -77,6 +73,10 @@ public sealed class LauncherRegistry
     public IReadOnlyList<Game> ShownEntries(string launcherId, IReadOnlyList<Game> games) =>
         Library.LibraryTypes.Shown(games, LibraryOptions(launcherId), _preferences(launcherId).SwitchedOnOptions);
 
+    /// <summary>
+    /// The launcher as Arcadia shows it: with the name and search keyword the user gave it (#137). A value that breaks the
+    /// rules (<see cref="LauncherNames"/>), e.g. edited by hand in settings.json, gives way to the launcher's own.
+    /// </summary>
     /// <exception cref="ArgumentException">No launcher with this id is registered.</exception>
     public LauncherInfo Info(string launcherId)
     {

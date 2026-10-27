@@ -24,7 +24,7 @@
             <StackPanel Classes="countInstalled" Orientation="Horizontal" IsVisible="{Binding ShowsInstalled}">
               <TextBlock Classes="countBracket" Text="{Binding InstalledText, StringFormat='({0}'}" />
               <ctl:LineIcon Classes="countInstalled" Icon="IconInstalled" />
-              <TextBlock Classes="countBracket" Text=")" />
+              <TextBlock Classes="countBracket countClose" Text=")" />
             </StackPanel>
           </StackPanel>
         </StackPanel>

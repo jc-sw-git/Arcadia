@@ -520,6 +520,10 @@
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
   <!-- Shorter than the header's divider (owner, 2026-10-26). -->
+  <!-- ")" has a wide left bearing; pulled in, both sides of the installed icon look alike. -->
+  <Style Selector="views|CountLineView TextBlock.countClose">
+    <Setter Property="Margin" Value="-2,0,0,0" />
+  </Style>
   <Style Selector="views|CountLineView Border.countDivider">
     <Setter Property="Width" Value="1" />
     <Setter Property="Height" Value="24" />

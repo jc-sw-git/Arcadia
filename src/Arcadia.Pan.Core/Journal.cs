@@ -40,9 +40,13 @@ public sealed class JournalState
     /// <summary>The Steam Controller still has to be restarted, so Windows announces it again (after a hide, unhide or arrival).</summary>
     public bool PuckRestartPending { get; set; }
 
+    /// <summary>HidHide holds a change of Pan's: entries it added, or cloaking it turned on.</summary>
+    [JsonIgnore]
+    public bool HidHideChanged => HiddenDevices.Count > 0 || AllowListed.Count > 0 || CloakingWasOn is not null;
+
     /// <summary>Pan hides, or has a HidHide change or a restart left to undo or finish.</summary>
     [JsonIgnore]
-    public bool HidingHasWork => HiddenDevices.Count > 0 || AllowListed.Count > 0 || CloakingWasOn is not null || PuckRestartPending;
+    public bool HidingHasWork => HidHideChanged || PuckRestartPending;
 
     [JsonIgnore]
     public bool HasWork => Emulating || HeldProcesses.Count > 0 || HidingHasWork;

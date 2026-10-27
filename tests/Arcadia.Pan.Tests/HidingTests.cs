@@ -510,4 +510,88 @@ public sealed class HidingTests : IDisposable
         Assert.Equal(PanReply.Unsupported, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation))).Reply);
         Assert.Equal(PanReply.Unsupported, (await guardian.HandleAsync(PanMessage.Of(PanCommand.CheckHiding))).Reply);
     }
+
+    [Fact]
+    public async Task HidHide_uninstalled_meanwhile_leaves_nothing_to_undo()
+    {
+        await HiddenAsync();
+        // Uninstalled with its lists: no service, no control device.
+        (_hidHide.DriverRunning, _hidHide.ServiceRegistered, _hidHide.Version) = (false, false, null);
+
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+
+        Assert.False(Journal.HasWork);
+        Assert.Contains("HidHide is gone", Log());
+    }
+
+    [Fact]
+    public async Task A_driver_that_does_not_answer_while_its_service_is_registered_keeps_the_journal()
+    {
+        await HiddenAsync();
+        _hidHide.DriverRunning = false;
+
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+
+        Assert.Equal(2, Journal.HiddenDevices.Count);
+    }
+
+    [Fact]
+    public async Task A_show_that_fails_for_a_passing_reason_is_retried_without_waiting_for_the_next_trigger()
+    {
+        var guardian = RetryingGuardian();
+        var generation = await EmulatingAsync(guardian);
+        Assert.Equal(PanReply.Hidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation))).Reply);
+        _hidHide.FailAll = PanReason.HidHideBusy;
+
+        guardian.ClientGone();
+        await guardian.Teardown!;
+        Assert.Equal(2, _hidHide.Hidden.Count);
+
+        // The configuration client is closed again.
+        _hidHide.FailAll = null;
+        await guardian.ShowRetry!;
+
+        AssertRestored([], [], cloaking: false);
+        Assert.False(Journal.HasWork);
+        Assert.Contains("shown on retry", Log());
+    }
+
+    [Fact]
+    public async Task A_retry_leaves_the_hiding_of_a_new_emulation_alone()
+    {
+        var guardian = RetryingGuardian(TimeSpan.FromMilliseconds(300));
+        var generation = await EmulatingAsync(guardian);
+        await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation));
+        _hidHide.FailOn = "SetHidden";
+        guardian.ClientGone();
+        await guardian.Teardown!;
+        _hidHide.FailOn = null;
+
+        // Arcadia is back before the retry and hides again.
+        var next = await EmulatingAsync(guardian, Arcadia with { Pid = 501 });
+        Assert.Equal(PanReply.Hidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, next))).Reply);
+        await guardian.ShowRetry!;
+
+        Assert.Equal(2, _hidHide.Hidden.Count);
+        Assert.True(_hidHide.Cloaking);
+        Assert.True(guardian.IsEmulating);
+    }
+
+    private Guardian RetryingGuardian(TimeSpan? pause = null) => new(
+        _clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
+        hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: TimeSpan.FromMilliseconds(300))
+    {
+        ShowRetryDelays = [pause ?? TimeSpan.FromMilliseconds(20)],
+    };
+
+    private async Task<uint> EmulatingAsync(Guardian guardian, ClientIdentity? client = null)
+    {
+        Assert.Equal(PanReason.None, guardian.Register(client ?? Arcadia));
+        Assert.Equal(PanReply.HelloOk, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello))).Reply);
+        var started = await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted));
+        Assert.Equal(PanReply.Started, started.Reply);
+        return started.Generation;
+    }
 }

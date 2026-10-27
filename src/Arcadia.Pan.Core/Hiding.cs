@@ -33,8 +33,11 @@ public sealed class HidHideException(PanReason reason, string message) : Excepti
 /// </summary>
 public interface IHidHideDriver
 {
-    /// <summary>The installed driver's version, or null when HidHide isn't installed.</summary>
+    /// <summary>The installed driver's version, or null when HidHide isn't installed or its version can't be read.</summary>
     Version? InstalledVersion();
+
+    /// <summary>HidHide's service is registered (it may still be stopped): its lists may still hide devices.</summary>
+    bool IsServiceRegistered();
 
     /// <exception cref="HidHideException">HidHide can't be reached or refused the call.</exception>
     IReadOnlyList<string> GetHiddenDevices();

@@ -159,6 +159,11 @@ public sealed class FakeHidHide : IHidHideDriver
 
     public Version? InstalledVersion() => Version;
 
+    /// <summary>False with <see cref="DriverRunning"/> false: HidHide uninstalled.</summary>
+    public bool ServiceRegistered = true;
+
+    public bool IsServiceRegistered() => ServiceRegistered;
+
     public IReadOnlyList<string> GetHiddenDevices() => Call("GetHidden", () => (IReadOnlyList<string>)[.. Hidden]);
 
     public void SetHiddenDevices(IReadOnlyList<string> instanceIds) => Change("SetHidden", () => Hidden = [.. instanceIds]);

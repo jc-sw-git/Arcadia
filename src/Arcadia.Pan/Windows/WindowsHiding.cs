@@ -49,6 +49,12 @@ public sealed unsafe class HidHideDriver : IHidHideDriver
         return new Version(info.FileMajorPart, info.FileMinorPart, info.FileBuildPart, info.FilePrivatePart);
     }
 
+    public bool IsServiceRegistered()
+    {
+        using var key = Registry.LocalMachine.OpenSubKey(ServiceKey);
+        return key is not null;
+    }
+
     public IReadOnlyList<string> GetHiddenDevices() => GetList(HidHideWire.GetHiddenList);
 
     public void SetHiddenDevices(IReadOnlyList<string> instanceIds) => Set(HidHideWire.SetHiddenList, HidHideWire.EncodeList(instanceIds));

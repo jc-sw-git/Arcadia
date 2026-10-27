@@ -14,10 +14,13 @@ doesn't know), `HidHideInverseMode`, `HidHideCloakingOffWithForeignEntries`, `Hi
 has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log says why), `StillHidden`.
 
 - `Hide`/`Unhide` only within the current generation's emulation, so every teardown undoes the hiding too.
-  `EmulationStopped` while hidden → `StillHidden`: the client unhides first. `PlannedExit` while hidden → a full
+  `EmulationStopped` while HidHide holds a change of Pan's → `StillHidden`: the client unhides first (a restart still
+  pending doesn't count). `PlannedExit` while hidden → a full
   teardown (reason `PlannedExit`, no notice).
 - `Unhide` is trusted to come after Arcadia removed its copy (#242 keeps that order); every unplanned path goes
   through the teardown, which checks that the forwarding is gone.
+- A rejected `Hide` may have changed HidHide already (e.g. hidden, then the restart failed): the client sends `Unhide`
+  after any rejected `Hide` (#242).
 - While the client's `Hide`/`Unhide` runs (up to ~20 s if a device step hangs), its heartbeats wait on the pipe; the hang
   watch pauses and restarts its clock afterwards.
 
@@ -32,7 +35,7 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   the hidden list (listed puck entries don't count): turning cloaking on would hide those too.
 - What: only `HidingList` — the puck `HID\VID_28DE&PID_1304&…`, every instance Pan finds present itself
   (`CM_Get_Device_ID_List`, enumerator `HID`). Other Valve devices stay visible (#248, #249).
-- Order: journal first (write-ahead), then allow list (the client's image path in device form,
+- Order: list the devices (may wait on the PnP lock), then read and check HidHide, journal (write-ahead), allow list (the client's image path in device form,
   `QueryFullProcessImageNameW(PROCESS_NAME_NATIVE)` on the pipe client's process), hidden list, cloaking on, then the
   puck restart (SetupAPI `DIF_PROPERTYCHANGE`/`DICS_PROPCHANGE` on `USB\VID_28DE&PID_1304\…`, as devcon and
   `pnputil /restart-device` do), so programs that have it open lose it. A restart Windows can only do by replug
@@ -51,9 +54,12 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
 - HidHide changes run one at a time (a gate shared by hide, unhide, arrival, check and the teardown's steps); IOCTLs run
   inline (no PnP lock), device listing and restart have a 10 s timeout and may be left behind (they change nothing
   journaled).
+- A partial show (HidHide busy, its driver restarting, a failed restart) after the forwarding was gone is retried by
+  itself after 5 s, 30 s, then every 2 min while nothing emulates; a restart that only a replug does stops after those.
 - Triggers: crash/kill (`ClientGone`), hang, service stop or pre-shutdown, a stop with an incomplete teardown journaled,
-  planned exit while hidden, Pan's start after a crash or power loss (`RecoverAsync`), `--restore`, uninstall. HidHide
-  uninstalled meanwhile (no driver file): nothing of Pan's is hidden any more; the journal drops the entries.
+  planned exit while hidden, Pan's start after a crash or power loss (`RecoverAsync`), `--restore`, uninstall. The undo
+  goes through the driver whatever its version reads as; only with HidHide's service gone and its control device too
+  (uninstalled with its lists) the journal drops the entries.
 - Journal: `HiddenDevices`, `AllowListed`, `CloakingWasOn`, `PuckRestartPending`; a journal naming a hidden device that
   isn't on `HidingList` counts as unreadable (an undo must never remove one of the user's entries).
 
@@ -68,5 +74,5 @@ without and with a puck restart, kill and freeze of the client, planned exit. Re
 `HidingTests` (fake HidHide and devices: order, write-ahead, the HidHide state matrix, the user's entries, every
 teardown trigger, failing/hanging steps, arrival, the hang watch during a hide), `HidHideWireTests` (IOCTL codes,
 REG_MULTI_SZ, driver path, the device list). On the Windows CI runner `tools/ci/Install-HidHide.ps1` installs the
-latest signed HidHide; with its control device answering, `HidHideTests` and the service test hide through the real
+signed HidHide 1.5.230 (pinned, the owner's version); with its control device answering, `HidHideTests` and the service test hide through the real
 driver and check HidHide is back as before; otherwise they skip with the reason.

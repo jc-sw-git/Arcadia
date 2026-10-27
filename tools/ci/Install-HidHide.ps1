@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    CI only: installs the latest HidHide on the Windows runner, so Pan's hiding runs against the real driver (#243
+    CI only: installs HidHide 1.5.230 on the Windows runner, so Pan's hiding runs against the real driver (#243
     part B, tests marked HidHideFact and the service test). Sets ARCADIA_HIDHIDE_TESTS=1 for the next steps once
     HidHide's control device answers; without it those tests skip and say why.
     Never run this on a PC of your own: it installs a filter driver for every HID device.
@@ -9,7 +9,11 @@ $ErrorActionPreference = 'Stop'
 
 $headers = @{ 'User-Agent' = 'arcadia-ci' }
 if ($env:GH_TOKEN) { $headers.Authorization = "Bearer $env:GH_TOKEN" }
-$release = Invoke-RestMethod -Headers $headers -Uri 'https://api.github.com/repos/nefarius/HidHide/releases/latest'
+# Pinned to the owner's version: a new HidHide (e.g. 2.x, which Pan refuses) must not turn unrelated PRs red.
+$pinned = '1.5.230'
+$releases = Invoke-RestMethod -Headers $headers -Uri 'https://api.github.com/repos/nefarius/HidHide/releases?per_page=50'
+$release = $releases | Where-Object { $_.tag_name -match [regex]::Escape($pinned) } | Select-Object -First 1
+if (-not $release) { throw "HidHide $pinned not found among its releases" }
 $asset = $release.assets | Where-Object { $_.name -match 'x64.*\.(exe|msi)$' } | Select-Object -First 1
 if (-not $asset) { throw "No x64 installer in HidHide release $($release.tag_name)" }
 

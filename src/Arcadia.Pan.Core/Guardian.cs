@@ -300,6 +300,7 @@ public sealed partial class Guardian
         lock (_lock)
         {
             _stopping = true;
+            _showRetry?.Cancel();
             if (_phase == Phase.Emulating)
             {
                 _log($"Service stopping while emulating generation {_generation}: tearing down");
@@ -403,9 +404,10 @@ public sealed partial class Guardian
 
     private PanMessage StopEmulation()
     {
-        if (_journal.HidingHasWork)
+        if (_journal.HidHideChanged)
         {
-            // Hiding belongs to the emulation: the client shows the controller first, or a teardown does.
+            // Hiding belongs to the emulation: the client shows the controller first, or a teardown does. A restart
+            // still pending (it needs a replug) hides nothing and waits for the next trigger.
             return PanMessage.Of(PanReply.Rejected, _generation, PanReason.StillHidden);
         }
 
@@ -455,7 +457,7 @@ public sealed partial class Guardian
 
     private PanMessage PlannedExit()
     {
-        if (_journal.HidingHasWork)
+        if (_journal.HidHideChanged)
         {
             if (_teardown is not { IsCompleted: false })
             {
@@ -508,7 +510,8 @@ public sealed partial class Guardian
 
         var plan = new TeardownPlan(_cleanup, held, ProcessEnded);
         var results = (await TeardownRunner.RunAsync(plan.Steps(), _log)).ToList();
-        results.AddRange(await ShowAfterTeardownAsync(forwardingGone: results.All(r => r.Outcome == StepOutcome.Ok)));
+        var forwardingGone = results.All(r => r.Outcome == StepOutcome.Ok);
+        results.AddRange(await ShowAfterTeardownAsync(forwardingGone));
         var complete = results.All(r => r.Outcome == StepOutcome.Ok);
         lock (_lock)
         {
@@ -521,8 +524,13 @@ public sealed partial class Guardian
             }
             else
             {
-                // What failed stays in the journal and is retried at the next trigger (a stop, a restart, --restore).
+                // What failed stays in the journal and is retried at the next trigger (a stop, a restart, --restore),
+                // a partial show also on its own after a pause.
                 _log($"Teardown of generation {generation} incomplete ({reason}); the rest stays journaled");
+                if (forwardingGone && _journal.HidingHasWork)
+                {
+                    ScheduleShowRetry();
+                }
             }
 
             if (_client is null)

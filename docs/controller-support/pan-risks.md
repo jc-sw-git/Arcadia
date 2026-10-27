@@ -25,9 +25,13 @@ one names the countermeasure that would close it, so a later story can pick it u
 
 ## Hiding (part B1)
 
-- **HidHide has no atomic add or remove:** Pan reads a list and writes it back. A change the user makes in HidHide's
-  configuration client in the same moment can be lost (HidHide lets one program open it at a time, which narrows
-  the window to Pan's read-to-write gap). Pan only ever removes its journaled entries.
+- **HidHide has no atomic add or remove:** Pan reads a list and writes it back right after (the device listing comes
+  before the read). A change the user makes in HidHide's configuration client in that gap can be lost (HidHide lets one
+  program open it at a time, which narrows it further). Pan only ever removes its journaled entries.
+- **A console-session program gains a little:** `Hide` lets the first client of the console session, without
+  administrator rights, have Pan allow-list its own image and turn cloaking on; it then sees every device the user
+  hid with HidHide (whose configuration is admin-only). Part A's "no privilege gain" no longer holds for this. The
+  countermeasure: accept `Hide` only from Arcadia's installed and signed exe (with code signing, `docs/releases.md`).
 - **HidHide's IOCTLs have no timeout:** they run inline, because a step left behind could write a stale list after the
   undo. They don't wait on Windows' PnP lock; listing and restarting the devices do and are bounded.
 - **`Unhide` is trusted:** the client says it removed its copy before it unhides (#242's order); Pan can't check that a

@@ -23,6 +23,12 @@ public sealed partial class SteamConsoleLog(Func<string?> path, TimeZoneInfo? zo
         ["AppError_5"] = "Das angemeldete Steam-Konto besitzt dieses Spiel nicht.",
     };
 
+    /// <summary>
+    /// Codes after which Steam goes on by itself, so the start isn't over: after <c>AppError_18</c> Steam starts the game's
+    /// update 4 s later (owner's log, 1740720, 2026-10-24), and "Wird gestartet …" waits for it as for any update (#167).
+    /// </summary>
+    private static readonly HashSet<string> SteamGoesOn = new(StringComparer.Ordinal) { "AppError_18" };
+
     private readonly TimeZoneInfo _zone = zone ?? TimeZoneInfo.Local;
     private string? _readPath;
     private long _offset;
@@ -58,7 +64,9 @@ public sealed partial class SteamConsoleLog(Func<string?> path, TimeZoneInfo? zo
             stream.Seek(_offset, SeekOrigin.Begin);
             using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
             var text = _partialLine + reader.ReadToEnd();
-            _offset = stream.Length;
+
+            // Where reading stopped, not the length: Steam may have written more since, and that is read next time.
+            _offset = stream.Position;
 
             var end = text.LastIndexOf('\n');
             _partialLine = end < 0 ? text : text[(end + 1)..];
@@ -83,6 +91,11 @@ public sealed partial class SteamConsoleLog(Func<string?> path, TimeZoneInfo? zo
             }
 
             var code = match.Groups["code"].Value;
+            if (SteamGoesOn.Contains(code))
+            {
+                continue;
+            }
+
             var at = new DateTimeOffset(local, _zone.GetUtcOffset(local));
             refusals.Add(new RefusedStart(match.Groups["id"].Value, at, KnownReasons.GetValueOrDefault(code), code));
         }

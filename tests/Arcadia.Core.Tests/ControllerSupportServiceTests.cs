@@ -429,6 +429,53 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T277-1")]
+    public async Task A_start_the_launcher_refused_ends_the_pause_long_before_the_start_timeout()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        var game = SteamGame();
+        var asked = _time.GetUtcNow();
+        await service.BeginGameAsync(game);
+        Assert.Equal(SisrState.Paused, service.State);
+
+        // The game never runs; its launcher refused the start a few seconds after Arcadia asked.
+        _time.Advance(TimeSpan.FromSeconds(3));
+        service.StartRefused(game);
+        for (var i = 0; i < 100 && _sisr.Starts == 0; i++)
+        {
+            _time.Advance(TimeSpan.FromMilliseconds(500));
+            await Task.Delay(1);
+        }
+
+        Assert.Equal(1, _sisr.Starts);
+        Assert.Empty(service.PausedFor);
+        Assert.True(_time.GetUtcNow() - asked < TimeSpan.FromSeconds(30), "SISR soll nicht erst nach den 2 min zurückkommen");
+        AssertNoUnexpectedTransition();
+    }
+
+    [Fact]
+    public async Task A_refusal_of_an_earlier_start_doesnt_end_the_pause_of_the_next_one()
+    {
+        var service = Create();
+        _sisr.Running = true;
+        var game = SteamGame();
+        await service.BeginGameAsync(game);
+        service.StartRefused(game);
+        await AdvanceUntil(() => _sisr.Starts == 1);
+
+        // A again: this start runs.
+        _sisr.Running = true;
+        _platform.RunningDirectories.Add(game.InstallDirectory!);
+        await service.BeginGameAsync(game);
+        _time.Advance(TimeSpan.FromSeconds(5));
+        await Task.Delay(20);
+
+        Assert.Equal(SisrState.Paused, service.State);
+        Assert.Equal([game.InstallDirectory!], service.PausedFor);
+    }
+
+    [Fact]
     public async Task A_pause_that_ends_after_switching_off_does_not_restart_SISR()
     {
         var service = Create();

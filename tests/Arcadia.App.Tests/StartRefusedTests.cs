@@ -1,5 +1,7 @@
 using Arcadia.App.Input;
+using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
+using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 using Avalonia.Headless.XUnit;
 
@@ -26,7 +28,6 @@ public sealed class StartRefusedTests
         await arcadia.FollowRunningGamesAsync();
         Assert.True(tile.IsStarting);
 
-        arcadia.IsArcadiaInFront = false;
         arcadia.RefuseInLauncher(tile.Game, NoLicense, "AppError_5");
         await arcadia.FollowRunningGamesAsync();
 
@@ -37,10 +38,51 @@ public sealed class StartRefusedTests
         Assert.Contains("AppError_5", ArcadiaDriver.Log, StringComparison.Ordinal);
 
         // A tries again.
-        arcadia.IsArcadiaInFront = true;
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 2, "A soll den Start erneut versuchen");
         Assert.True(tile.IsStarting);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T277-1")]
+    public async Task After_a_refused_start_SISR_comes_back_at_once_so_the_Steam_Controller_drives_Arcadia_again()
+    {
+        // A Steam game with its folder on disk: SISR pauses for it from the start on (Steam Input takes the controller).
+        var folder = Directory.CreateTempSubdirectory("arcadia-refused-").FullName;
+        try
+        {
+            var game = new Game
+            {
+                Id = "214490",
+                LauncherId = KnownLaunchers.Steam.Id,
+                Title = "Alien: Isolation",
+                Launch = new LaunchTarget.ProtocolUri("steam://rungameid/214490"),
+                IsInstalled = true,
+                InstallDirectory = folder,
+            };
+            var steam = new FakeSteam { IsSteamRunning = true };
+            using var arcadia = await ArcadiaDriver.StartAsync(
+                [new LauncherSpec(KnownLaunchers.Steam, 1, Library: [game], Running: [])],
+                new AppSettings { ActiveLaunchers = [KnownLaunchers.Steam.Id], SteamControllerSupport = true },
+                steam);
+            await arcadia.TickControllerSupportAsync();
+            await arcadia.WaitOnClockUntilAsync(() => arcadia.ControllerSupport.State == SisrState.Running, "SISR läuft", TimeSpan.FromSeconds(30));
+
+            arcadia.Press(UiAction.Accept);
+            await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count > 0, "der Launcher soll das Spiel starten");
+            await arcadia.WaitUntilAsync(() => arcadia.ControllerSupport.State == SisrState.Paused, "SISR pausiert für das Spiel");
+            var starts = steam.Sisr.Starts;
+
+            arcadia.RefuseInLauncher(game, NoLicense, "AppError_5");
+            await arcadia.FollowRunningGamesAsync();
+
+            await arcadia.WaitOnClockUntilAsync(() => steam.Sisr.Starts > starts, "SISR läuft wieder", TimeSpan.FromSeconds(5));
+            Assert.Empty(arcadia.ControllerSupport.PausedFor);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
     [AvaloniaFact]

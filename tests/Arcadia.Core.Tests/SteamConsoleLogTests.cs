@@ -68,6 +68,17 @@ public sealed class SteamConsoleLogTests : IDisposable
     }
 
     [Fact]
+    public void An_update_steam_starts_instead_of_the_game_is_no_refusal()
+    {
+        // Steam started the update 4 s later; "Wird gestartet …" waits for it (#167).
+        Assert.Empty(Parse(
+            """
+            [2026-10-24 20:54:25] GameAction [AppID 1740720, ActionID 4] : LaunchApp failed with AppError_18 with ""
+            [2026-10-24 20:54:25] GameAction [AppID 1740720, ActionID 4] : LaunchApp changed task to Failed with ""
+            """));
+    }
+
+    [Fact]
     public void A_line_without_steams_time_stamp_is_left_alone()
     {
         Assert.Empty(Parse("GameAction [AppID 214490, ActionID 1] : LaunchApp failed with AppError_5 with \"\""));

@@ -22,6 +22,6 @@ Agreed with the owner; don't change without asking. Read this before changing th
   as after a game's end (#94) and a toast names the reason: a known code its own text („3000th Duel“: Das angemeldete
   Steam-Konto besitzt dieses Spiel nicht.), any other „<Spiel>“: <Launcher> hat den Start abgebrochen. The launcher's
   own window (e.g. Steam's error dialog) stays open; Arcadia doesn't close other programs' windows. The launcher waiting
-  for the player (launch option, EULA, cloud conflict) is no failure. Only an explicit abort ends a start early, never a
+  for the player (launch option, EULA, cloud conflict) or updating the game first (Steam's `AppError_18`) is no failure. Only an explicit abort ends a start early, never a
   missing signal; a start that ends by the 2 min timeout (any launcher) toasts „<Spiel>“ wurde nicht gestartet. and
-  leaves Arcadia where it is. No warning before a start (e.g. another account's game): the launcher decides.
+  leaves Arcadia where it is. After an aborted start SISR comes back at once (it paused for the game). No warning before a start (e.g. another account's game): the launcher decides.

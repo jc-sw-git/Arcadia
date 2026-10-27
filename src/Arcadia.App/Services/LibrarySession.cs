@@ -343,11 +343,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
 
     private async Task ReportInstallResultsAsync(IReadOnlyList<InstallResult> results)
     {
-        string? KnownTitleOf(string key) => Libraries.SelectMany(l => l.Games).FirstOrDefault(g => g.Key == key)?.Title;
-
         // An uninstalled game leaves the library with the rescan below, a newly installed one only comes with it.
         var (key, outcome) = results[^1];
-        var titleBefore = KnownTitleOf(key);
+        var titleBefore = GameOf(key)?.Title;
 
         if (results.Any(r => r.Outcome == InstallOutcome.Completed))
         {
@@ -362,21 +360,22 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         }
 
         var completed = results.Count(r => r.Outcome == InstallOutcome.Completed);
-        Noticed?.Invoke(this, new LibraryNotice.InstallEnded(outcome, titleBefore ?? KnownTitleOf(key), completed));
+        Noticed?.Invoke(this, new LibraryNotice.InstallEnded(outcome, titleBefore ?? GameOf(key)?.Title, completed));
     }
 
     /// <summary>"Wird gestartet …" ended without the game running: says why (#277); an aborted start brings Arcadia back.</summary>
     private void ReportNotStarted(UnstartedGame unstarted)
     {
         var launcher = Launchers.Info(Game.LauncherIdOf(unstarted.GameKey));
-        Noticed?.Invoke(this, new LibraryNotice.GameNotStarted(TitleOf(unstarted.GameKey), launcher, unstarted.Refusal));
+        Noticed?.Invoke(this, new LibraryNotice.GameNotStarted(GameOf(unstarted.GameKey)?.Title, launcher, unstarted.Refusal));
         if (unstarted.Refusal is not null)
         {
             StartRefused?.Invoke(this, unstarted.GameKey);
         }
     }
 
-    private string? TitleOf(string gameKey) => Libraries.SelectMany(l => l.Games).FirstOrDefault(g => g.Key == gameKey)?.Title;
+    /// <summary>The game with this key in <see cref="Libraries"/>, or null if it left them.</summary>
+    public Game? GameOf(string gameKey) => Libraries.SelectMany(l => l.Games).FirstOrDefault(g => g.Key == gameKey);
 
     private void RefreshLibraryLater(TimeSpan delay) => RefreshLibraryAfterAsync(delay, _shutdown.Token).Forget("Bibliothek aktualisieren");
 

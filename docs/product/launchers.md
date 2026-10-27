@@ -44,6 +44,18 @@ Agreed with the owner; don't change without asking. Read this before changing th
   versions as one entry that starts the newest, and launchable add-ons such as Unreal Editor for Fortnite), counted as
   Werkzeug; Epic's soundtracks (`digitaldownloads`) stay out. "Neu einlesen" and "Launcher-Details" ("Einträge") show
   the library's count line (`docs/product/library.md`).
+- Steam account (#83, owner 2026-10-26): Steam's page has a group "Konto" (after "Bibliothek", only while Steam is
+  active and found; a sign-in stays stored meanwhile) with the row "Steam-Konto". Sign-in only by QR code approved in
+  the Steam app on the phone, no password. Signed out: pill "Anmelden", subtitle "Melde dich an, um auch nicht
+  installierte Spiele zu sehen"; A shows the code in the info panel, which renews itself; B drops it and stays on the
+  page. Not approved within 2 minutes: "Abgelaufen – [A] für neuen Code"; rejected: "Abgelehnt – …"; Steam unreachable:
+  "Steam nicht erreichbar – [A] erneut versuchen". Signed in: the Steam profile name and "Abmelden", which asks first
+  and then deletes sign-in and cached list; the uninstalled games leave tab and search at once. No hint elsewhere (no
+  status message while signed out, nothing in the tab or the first start). Another account in Steam: no uninstalled
+  games, an info (blue i) on the row. A failed fetch or an expired sign-in is a warning on the row, never a toast; the
+  cached list applies offline. Uninstalled games count in the count line's total, not in the installed bracket; their
+  playtime and last start come from Steam's web API, installed ones keep `localconfig.vdf`. Only games for now; other
+  types appear only when Steam's `appinfo.vdf` types them, then #141's switches apply.
 - First start (#139, owner 2026-10-11, 2026-10-12 and 2026-10-22): Arcadia never takes a launcher on just because it is
   installed. While `settings.json` has no `ActiveLaunchers` (also after an update from a version without it), a page
   "Welche Launcher soll Arcadia nutzen?" stands in place of the library, pattern "Leiste": "Gefunden" switched on with

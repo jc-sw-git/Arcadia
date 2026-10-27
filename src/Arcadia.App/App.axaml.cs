@@ -87,7 +87,7 @@ public partial class App : Application
             // while the question shows, every launcher found is read, so it can count their games. Names, keywords and
             // folders the user gave launchers apply from their next read (#137, #138).
             var launchers = new LauncherRegistry(
-                BuiltInLaunchers.Create(time, demo, DemoGames(args)),
+                BuiltInLaunchers.Create(time, demo, DemoGames(args), http: http),
                 firstRun.ChosenLaunchers,
                 id => settings.Current.PreferencesOf(id));
             foreach (var problem in launchers.Rejected)

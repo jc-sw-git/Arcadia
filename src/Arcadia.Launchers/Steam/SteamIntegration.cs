@@ -1,5 +1,6 @@
 using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Steam.Account;
 
 namespace Arcadia.Launchers.Steam;
 
@@ -9,7 +10,8 @@ namespace Arcadia.Launchers.Steam;
 /// uninstalls are followed through the app manifests, running games through Steam's registry.
 /// </summary>
 /// <param name="locate">Finds Steam; defaults to <see cref="SteamInstallation.Find"/>. The acceptance tests point it at a Steam folder of their own.</param>
-public sealed class SteamIntegration(TimeProvider time, Func<SteamInstallation?>? locate = null) : ILauncherIntegration
+/// <param name="account">The sign-in for the uninstalled games (#83); null offers none.</param>
+public sealed class SteamIntegration(TimeProvider time, Func<SteamInstallation?>? locate = null, SteamOnlineAccount? account = null) : ILauncherIntegration
 {
     private readonly Func<SteamInstallation?> _locate = locate ?? SteamInstallation.Find;
 
@@ -22,7 +24,9 @@ public sealed class SteamIntegration(TimeProvider time, Func<SteamInstallation?>
 
     public LauncherInfo Launcher { get; } = KnownLaunchers.Steam with { Logo = Logo };
 
-    public ILauncherScanner Scanner { get; } = new SteamScanner(locate);
+    public ILauncherScanner Scanner { get; } = new SteamScanner(locate, account);
+
+    public ILauncherAccount? Account => account;
 
     public ILauncherClient? Client => null;
 

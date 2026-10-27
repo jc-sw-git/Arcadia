@@ -30,7 +30,7 @@ so only `LastOwner` decides. Playtime (minutes) and `LastPlayed` come from `user
 `UserLocalConfigStore/Software/Valve/Steam/apps/<appid>`; that file also holds app tickets — never log it.
 Steam stores no install date (the game folder's creation time is used). Owned but uninstalled games are **not**
 readable locally: `appcache/packageinfo.vdf` keeps packages after a refund (owner's 007 First Light), and the real
-license list (`userdata/<id>/config/licensecache`) is encrypted — they come with a Steam login (#83). Libraries are re-read on every scan,
+license list (`userdata/<id>/config/licensecache`) is encrypted — they come with a Steam login (#83, Account below). Libraries are re-read on every scan,
 so added or missing drives need no handling of their own.
 **Types** (#141, checked 2026-10-27 against the owner's files): app manifests hold no type; it is
 `appinfo/common/type` in the binary `appcache/appinfo.vdf` (`SteamAppInfo`; versions 0x07564427/28/29, v29 with a
@@ -62,6 +62,23 @@ but first verifies every file (and resets modified ones).
 `steam://controllerconfig/<id>` is unreliable (owner's PC, 2026-10-18): Steam goes to the game in its library, but
 often, mostly on the first call, the controller configurator doesn't open; a second call mostly works. Cause unknown,
 so Arcadia offers no "Controller-Layout" action for now (owner's decision).
+
+## Account (#83, 2026-10-27, not yet checked against the real Steam)
+
+`Steam/Account/`: a QR sign-in over Steam's web API, as Steam's phone app and `node-steam-session` (MIT, reference only)
+do it. `IAuthenticationService/BeginAuthSessionViaQR`, `PollAuthSessionStatus` and `GenerateAccessTokenForApp` take
+`input_protobuf_encoded` (base64 protobuf, POST) and answer protobuf; the result is the `x-eresult` header (1 = OK).
+Arcadia signs in as platform `MobileApp` (device name "Arcadia"): only such a refresh token may get new access tokens
+over the web API (WebBrowser gets AccessDenied since 2025-04-30). The code renews itself (`new_challenge_url`,
+`new_client_id`); a phone rejecting it is assumed to end the poll with an EResult (unverified: else it just expires).
+Tokens are JWTs (`sub` = SteamID64, `exp`); the access token lives about a day, the refresh token about 200 days.
+Owned games: `IPlayerService/GetOwnedGames` with `access_token`, `include_appinfo`, `include_played_free_games`,
+`include_free_sub`; whether it drops refunded licences and lists tools or soundtracks is to be checked (T83-3).
+Types come from `appinfo.vdf` like installed apps, so #141's switches apply when Steam knows the app.
+Games hidden in Steam: `userdata/<id>/config/cloudstorage/cloud-storage-namespace-1.json`, a JSON list of
+`[key, {key, value, …}]`; the entry `user-collections.hidden` holds the collection as a JSON string, app ids in
+`added` (owner's PC: 7 ids, plain text). Steam's own account: `ActiveUser`, else `loginusers.vdf`'s latest; another
+account than Arcadia's shows no uninstalled games, since `steam://install` installs into Steam's account.
 
 ## Running games (#95, 2026-10-21)
 

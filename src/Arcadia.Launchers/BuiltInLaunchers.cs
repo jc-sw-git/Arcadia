@@ -3,6 +3,7 @@ using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Demo;
 using Arcadia.Launchers.Epic;
 using Arcadia.Launchers.Steam;
+using Arcadia.Launchers.Steam.Account;
 
 namespace Arcadia.Launchers;
 
@@ -26,15 +27,17 @@ public static class BuiltInLaunchers
     /// large library against the budgets in <c>CLAUDE.md</c>; null for the usual sizes.
     /// </param>
     /// <param name="folders">Where Steam and Epic keep their files; null: where they keep them on this PC.</param>
+    /// <param name="http">For the Steam account's web requests (#83); null offers no Steam sign-in.</param>
+    /// <param name="steamAccount">The Steam account to use instead of one over <paramref name="http"/>; the acceptance tests' own.</param>
     /// <returns>In the order of <see cref="KnownLaunchers.All"/>, which is the tab order.</returns>
-    public static IReadOnlyList<ILauncherIntegration> Create(TimeProvider time, bool demo, int? demoGames = null, LauncherFolders? folders = null)
+    public static IReadOnlyList<ILauncherIntegration> Create(TimeProvider time, bool demo, int? demoGames = null, LauncherFolders? folders = null, HttpClient? http = null, SteamOnlineAccount? steamAccount = null)
     {
         var total = DemoGameCounts.Values.Sum();
         int DemoCount(int usual) => demoGames is { } wanted ? Math.Max(1, (int)Math.Round((double)usual * wanted / total)) : usual;
 
         ILauncherIntegration[] integrations =
         [
-            new SteamIntegration(time, folders?.Steam),
+            new SteamIntegration(time, folders?.Steam, steamAccount ?? (http is null ? null : SteamOnlineAccount.Create(http, time))),
             new EpicIntegration(time, folders?.Epic),
         ];
 

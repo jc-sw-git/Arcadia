@@ -52,6 +52,9 @@
     <SolidColorBrush x:Key="TextDisabled" Color="#4A5563" />
     <!-- Backdrop behind dialogs, and the shade over covers of games that aren't installed. -->
     <SolidColorBrush x:Key="Scrim" Color="#C705080C" />
+    <!-- A QR code (#83) stays dark on light whatever the theme: phone cameras read that best. -->
+    <SolidColorBrush x:Key="QrCodeModules" Color="#000000" />
+    <SolidColorBrush x:Key="QrCodeBackground" Color="#FFFFFF" />
     <SolidColorBrush x:Key="CoverShade" Color="#B80B0F14" />
     <SolidColorBrush x:Key="ProgressTrack" Color="#33FFFFFF" />
     <!-- Bg at zero opacity, for gradients that fade into the background. -->

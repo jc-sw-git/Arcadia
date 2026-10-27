@@ -8,6 +8,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers;
+using Arcadia.Launchers.Steam.Account;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Demo;
 using Arcadia.Tests.Sdl;
@@ -86,9 +87,14 @@ internal sealed class ArcadiaDriver : IDisposable
         Settings = new SettingsService(new SettingsStore(SettingsPath));
         var demo = arguments.Demo || files?.Demo == true;
         var firstRun = new FirstRunSetup(Settings, demo, arguments.FirstRun);
+        // The Steam account (#83) over the fake web API; its sign-in is kept unencrypted in the test's folder.
+        SteamAccount = files is null ? null : new SteamOnlineAccount(
+            new SteamWebApi(new HttpClient(files.SteamWeb, disposeHandler: false)),
+            new SteamAccountStore(files.AccountFolder, data => data, data => data),
+            time);
         IReadOnlyList<ILauncherIntegration> integrations = files is null
             ? Launchers
-            : BuiltInLaunchers.Create(time, demo, folders: files.Folders);
+            : BuiltInLaunchers.Create(time, demo, folders: files.Folders, steamAccount: SteamAccount);
         var registry = new LauncherRegistry(integrations, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
         ControllerSupport = (steam, files?.ControllerSupport) switch
         {
@@ -134,6 +140,9 @@ internal sealed class ArcadiaDriver : IDisposable
     }
 
     public string Folder { get; }
+
+    /// <summary>The Steam account of the real Steam integration (#83); null without launcher files.</summary>
+    internal SteamOnlineAccount? SteamAccount { get; }
 
     /// <summary>The lines the controller's presses logged with their time to the frame (#229); the test's frame comes at once.</summary>
     public List<string> LatencyLines { get; } = [];
@@ -486,6 +495,7 @@ internal sealed class ArcadiaDriver : IDisposable
     public void Dispose()
     {
         Main.Dispose();
+        SteamAccount?.Dispose();
         _controllers.Dispose();
         _http.Dispose();
         if (_ownsFolder)

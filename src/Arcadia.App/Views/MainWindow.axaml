@@ -1361,6 +1361,14 @@
                     </Grid>
                   </Border>
                 </DataTemplate>
+                <!-- A launcher account's sign-in (#83): the code a phone scans, on light ground with its quiet zone. -->
+                <DataTemplate x:DataType="settings:InfoQrCode">
+                  <Border Width="260" Height="260" HorizontalAlignment="Left" Background="{StaticResource QrCodeBackground}" CornerRadius="12">
+                    <Viewbox Stretch="Uniform">
+                      <Path Data="{Binding Modules}" Fill="{StaticResource QrCodeModules}" Width="100" Height="100" />
+                    </Viewbox>
+                  </Border>
+                </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoTabBar">
                   <Border Classes="miniTabs">
                     <Panel>
@@ -1524,6 +1532,35 @@
         <!-- A dialog of the shown category over the page, e.g. before "SISR installieren" goes on. -->
         <ContentControl Content="{Binding Settings?.Selected.Dialog, TargetNullValue={x:Null}}">
           <ContentControl.DataTemplates>
+            <!-- A question before something that can't be undone, e.g. signing out of a launcher's account (#83). -->
+            <DataTemplate x:DataType="vm:ConfirmationViewModel">
+              <Panel>
+                <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                        Command="{Binding CancelCommand}" />
+                <Border Width="680" Background="{StaticResource Surface}" CornerRadius="20" Padding="48,40,48,32"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
+                  <StackPanel Spacing="28">
+                    <StackPanel Spacing="12">
+                      <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Message}" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Button Classes="plain action danger" Classes.focused="{Binding IsConfirmFocused}" Content="{Binding ConfirmLabel}"
+                              Command="{Binding ConfirmAndCloseCommand}" />
+                      <Button Classes="plain action" Classes.focused="{Binding IsCancelFocused}" Content="Abbrechen"
+                              Command="{Binding CancelCommand}" />
+                    </StackPanel>
+                    <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                      <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                        <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="Wechseln" />
+                        <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Auswählen" />
+                        <ctl:KeyHint Pad="B" Keys="Esc" Text="Abbrechen" />
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                </Border>
+              </Panel>
+            </DataTemplate>
             <DataTemplate x:DataType="settings:ControllerSettingsViewModel">
               <!-- The page stays dimmed behind it. -->
               <Panel>

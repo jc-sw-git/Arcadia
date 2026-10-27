@@ -47,4 +47,7 @@ public interface ILauncherIntegration
     /// shown; none if the launcher delivers games only. The scanner delivers every type; Arcadia leaves out what is off.
     /// </summary>
     IReadOnlyList<LibraryTypeOption> LibraryOptions => [];
+
+    /// <summary>The sign-in to the launcher's online account for its uninstalled games (#83); null if it has none.</summary>
+    ILauncherAccount? Account => null;
 }

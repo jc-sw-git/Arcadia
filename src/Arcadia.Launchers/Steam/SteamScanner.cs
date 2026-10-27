@@ -1,6 +1,7 @@
 using System.Globalization;
 using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Steam.Account;
 
 namespace Arcadia.Launchers.Steam;
 
@@ -16,7 +17,8 @@ public sealed record SteamPlayStats(DateTimeOffset? LastPlayedAt, TimeSpan? Play
 /// refunded games.
 /// </summary>
 /// <param name="locate">Finds Steam; defaults to <see cref="SteamInstallation.Find"/>.</param>
-public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILauncherScanner
+/// <param name="account">The Steam account signed in to Arcadia, whose games are added as not installed (#83); null for none.</param>
+public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamOnlineAccount? account = null) : ILauncherScanner
 {
     // EAppState bits in the manifest's StateFlags (verified on the owner's PC, 2026-10-12:
     // 4 = installed, 6 = installed with a pending update). Bit 64 (68/70) was only seen on
@@ -77,10 +79,14 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             .SelectMany(library => ManifestFiles(library).Select(file => (Library: library, File: file)))
             .ToList();
 
+        // Every scan asks for a fresh list; the account fetches it in the background and asks for a rescan when it changed.
+        account?.FetchSoon();
+        var owned = account?.OwnedGamesFor(steam.ActiveUserId is { } active and not 0 ? active : steam.LastLoggedInUserId()) ?? [];
+
         // The manifest's file name carries the app id, so the types are read before the manifests, in one pass.
         var appTypes = _appTypes.Read(
             Path.Combine(steam.RootPath, "appcache", "appinfo.vdf"),
-            manifests.Select(m => AppIdOfManifestFile(m.File)).OfType<uint>().ToHashSet());
+            manifests.Select(m => AppIdOfManifestFile(m.File)).OfType<uint>().Concat(owned.Select(game => game.AppId)).ToHashSet());
 
         var games = new List<Game>();
         var installed = new HashSet<uint>();
@@ -94,7 +100,42 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
             }
         }
 
+        if (owned.Count > 0)
+        {
+            var hidden = SteamHiddenGames.Read(steam.UserDataDirectory);
+            games.AddRange(owned
+                .Where(game => !installed.Contains(game.AppId) && !hidden.Contains(game.AppId))
+                .Select(game => Uninstalled(game, appTypes))
+                .OfType<Game>());
+        }
+
         return games;
+    }
+
+    /// <summary>
+    /// An owned game that isn't installed (#83): A installs it through <c>steam://install</c>, which opens Steam's install
+    /// dialog; playtime and last start come from Steam's web API. Null for a type that never appears (runtimes, DLC).
+    /// </summary>
+    internal static Game? Uninstalled(SteamOwnedGame owned, IReadOnlyDictionary<uint, string>? appTypes)
+    {
+        if (TypeOf(owned.AppId, owned.Name, appTypes?.GetValueOrDefault(owned.AppId)) is not { } type)
+        {
+            return null;
+        }
+
+        return new Game
+        {
+            Id = owned.AppId.ToString(CultureInfo.InvariantCulture),
+            LauncherId = KnownLaunchers.Steam.Id,
+            Title = owned.Name,
+            Type = type,
+            IsInstalled = false,
+            Launch = new LaunchTarget.ProtocolUri(RunUri(owned.AppId)),
+            Install = new LaunchTarget.ProtocolUri(InstallUri(owned.AppId)),
+            OpenInLauncher = new LaunchTarget.ProtocolUri(DetailsUri(owned.AppId)),
+            Playtime = owned.PlaytimeMinutes > 0 ? TimeSpan.FromMinutes(owned.PlaytimeMinutes) : null,
+            LastPlayedAt = owned.LastPlayedUnix > 0 ? DateTimeOffset.FromUnixTimeSeconds(owned.LastPlayedUnix) : null,
+        };
     }
 
     /// <summary>The app id in <c>appmanifest_&lt;appid&gt;.acf</c>; null for another name.</summary>
@@ -256,6 +297,9 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null) : ILau
 
     /// <summary>The game's page in the Steam library.</summary>
     public static string DetailsUri(uint appId) => $"steam://nav/games/details/{appId.ToString(CultureInfo.InvariantCulture)}";
+
+    /// <summary>Opens Steam's install dialog; ignored for an installed game (docs/launchers/steam.md).</summary>
+    public static string InstallUri(uint appId) => $"steam://install/{appId.ToString(CultureInfo.InvariantCulture)}";
 
     /// <summary>Steam asks for confirmation itself before it deletes anything.</summary>
     public static string UninstallUri(uint appId) => $"steam://uninstall/{appId.ToString(CultureInfo.InvariantCulture)}";

@@ -23,7 +23,7 @@ jobs:
       - name: Install HidHide
         if: runner.os == 'Windows'
         continue-on-error: true
-        timeout-minutes: 8
+        timeout-minutes: 5
         shell: pwsh
         run: ./tools/ci/Install-HidHide.ps1
       - name: Test

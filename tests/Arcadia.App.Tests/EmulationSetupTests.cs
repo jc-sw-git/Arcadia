@@ -58,6 +58,32 @@ public sealed class EmulationSetupTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T243-32")]
+    public async Task A_HidHide_setup_that_fails_inside_Pan_s_install_keeps_its_row_with_the_error_while_Pan_is_set_up()
+    {
+        const string error = "Pan ist eingerichtet, HidHide aber nicht – Details stehen in pan.log. HidHide lässt sich auch selbst installieren: https://github.com/nefarius/HidHide/releases";
+        var steam = new FakeSteam { IsPanReady = false, HidHideVersion = null, HidHideInstallError = error };
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Wächterdienst Pan fehlt“");
+        Assert.Contains(controller.Rows, row => row.Key == "issue:hidhide-missing");
+
+        Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-missing")).Activate();
+        await arcadia.WaitUntilAsync(() => controller.Rows.OfType<ActionRowViewModel>().Any(row => row.HasProblem), "der Fehler an einer Zeile");
+
+        // One prompt; Pan came, HidHide didn't: its row stays and carries the error, nothing else does.
+        Assert.Equal(1, steam.DriverInstalls);
+        Assert.DoesNotContain(controller.Rows, row => row.Key == "issue:pan-missing");
+        var failed = Assert.Single(controller.Rows.OfType<ActionRowViewModel>(), row => row.HasProblem);
+        Assert.Equal("issue:hidhide-missing", failed.Key);
+        Assert.Equal(error, failed.Problem);
+        var sisr = Switch(controller);
+        Assert.True(sisr.IsDimmed);
+        Assert.False(sisr.HasProblem);
+        Assert.Equal("Aus – es fehlt: HidHide", sisr.Subtitle);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T243-33")]
     public async Task With_every_part_missing_the_switch_itself_offers_Treiber_installieren_instead_of_the_rows()
     {
@@ -126,6 +152,7 @@ public sealed class EmulationSetupTests
 
         row.Activate();
         await arcadia.WaitUntilAsync(() => controller.Rows.All(r => r.Key != "issue:hidhide-unsupported"), "die Meldung verschwindet");
+        Assert.Equal(1, steam.DriverInstalls);
         Assert.Equal(HidHideRelease.Version, steam.HidHideVersion);
     }
 

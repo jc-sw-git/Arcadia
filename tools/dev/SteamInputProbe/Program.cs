@@ -66,7 +66,7 @@ internal sealed record ProbeOptions(string Mode, string LogPath)
         var mode = args[0];
         if (mode is not ("steam" or "raw" or "describe" or "uac")) return null;
         var options = new ProbeOptions(mode, Path.Combine(AppContext.BaseDirectory, $"probe-{mode}-{DateTime.Now:HHmmss}.log"));
-        if (mode == "uac") options = options with { Seconds = 1800 }; // the UAC probe waits for Juri; a long default
+        if (mode == "uac") options = options with { Seconds = 1800 }; // the UAC probe waits for the owner; a long default
         for (var i = 1; i < args.Length; i++)
         {
             string Next() => i + 1 < args.Length ? args[++i] : throw new ArgumentException($"{args[i]} needs a value");

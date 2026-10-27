@@ -47,6 +47,6 @@ Verlauf:
 | T11-3 | 2026-10-17 | Claude | Unit-Tests (`CarouselTests`) | ✅ Nachbarn rotieren, zwei Spiele stehen beidseitig, ein Spiel hat keine Nachbarn | Sichtprüfung am PC des Owners (die Demo hat keinen Tab mit 1–2 Spielen) |
 | T11-10 | 2026-10-17 | Claude | Release-Build, Linux-Container ohne GPU, Xvfb | ✅ Taste bis fertiges Layout 14–39 ms; Öffnen der Seite 199 ms (erstes Mal) | Messung am PC des Owners |
 | T11-8, T11-9 | 2026-10-17 | Claude | wie oben, nach dem Code Review | ✅ Unter dem Titel keine Zeile mehr; installiertes Spiel mit Update und nicht installiertes Spiel geprüft | – |
-| T11-2 | 2026-10-18 | Juri | PC des Owners, PR #101, Tastatur | ❌ Spiel lässt sich per Tastatur nicht wechseln (Bild ↑/↓ gab es, aber ohne Hinweis); Wunsch: Umschalt+Pfeile und Mausrad | Umschalt+←/→ und Mausrad ergänzt |
+| T11-2 | 2026-10-18 | owner | PC des Owners, PR #101, Tastatur | ❌ Spiel lässt sich per Tastatur nicht wechseln (Bild ↑/↓ gab es, aber ohne Hinweis); Wunsch: Umschalt+Pfeile und Mausrad | Umschalt+←/→ und Mausrad ergänzt |
 | T11-2, T11-7 | 2026-10-18 | Claude | Xvfb 1745×1000 `--demo`, Umschalt+→, Mausrad runter und hoch, Umschalt+← | ✅ 1 → 2 → 3 → 2 → 1 von 31; untere Reihe nur noch „Artwork ändern“ und „Deinstallieren …“ | Mausrad am PC des Owners |
-| T11-1 bis T11-10 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T11-1 bis T11-10 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

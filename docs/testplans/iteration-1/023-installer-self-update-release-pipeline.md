@@ -25,6 +25,6 @@ Verlauf:
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | T23-2, T23-3, T23-4 | 2026-10-11 | Claude | PR #65, Linux mit virtuellem Display, simuliertes Update | ✅ nur UI, kein echtes Update | Echter Update-Pfad braucht `v0.1.0` und ein Folge-Release |
-| T23-7 | 2026-10-16 | Juri + Claude | PC des Owners, SISR v0.6.2 per Windows-Apps deinstalliert (nicht über Arcadia) | ❌ `%APPDATA%\SISR.exe` (WebView2-Daten) und `%APPDATA%\VIIPER` blieben; Arcadias Deinstallation hätte nur `%APPDATA%\SISR` entfernt | In PR #96 behoben: beide Ordner kommen mit |
-| T23-1, T23-2, T23-7, T23-8 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
-| T23-3 bis T23-6 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ⏭️ Nicht getestet: kein neueres Release als 0.1.0-rc.1, auf das aktualisiert werden kann | Beim Update auf das nächste Release (rc.2 oder 0.1.0) |
+| T23-7 | 2026-10-16 | owner + Claude | PC des Owners, SISR v0.6.2 per Windows-Apps deinstalliert (nicht über Arcadia) | ❌ `%APPDATA%\SISR.exe` (WebView2-Daten) und `%APPDATA%\VIIPER` blieben; Arcadias Deinstallation hätte nur `%APPDATA%\SISR` entfernt | In PR #96 behoben: beide Ordner kommen mit |
+| T23-1, T23-2, T23-7, T23-8 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T23-3 bis T23-6 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ⏭️ Nicht getestet: kein neueres Release als 0.1.0-rc.1, auf das aktualisiert werden kann | Beim Update auf das nächste Release (rc.2 oder 0.1.0) |

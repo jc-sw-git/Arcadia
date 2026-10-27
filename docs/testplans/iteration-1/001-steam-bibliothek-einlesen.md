@@ -26,6 +26,6 @@ Verlauf:
 |---|---|---|---|---|---|
 | T1-1, T1-2 | 2026-10-12 | Claude | PR-Branch, Linux, Scanner-Code gegen Kopien der echten Dateien des Owners (3 Bibliotheken, 77 Manifeste, `localconfig.vdf`), nicht in der App | ✅ 74 Spiele, ausgefiltert genau Steamworks Redistributables, Source SDK Base 2013 und ein Soundtrack; Update bei den 4 Spielen mit `StateFlags` 6/70 | Ansicht in Arcadia, Start und Update am PC des Owners |
 | T1-7 | 2026-10-12 | Claude | PR-Branch, Linux, Leser gegen Kopien von `packageinfo.vdf`/`appinfo.vdf` des Owners, nicht in der App | ✅ 74 installierte + 394 nicht installierte Spiele; Abgleich mit der Zahl in Steam steht aus | Owner vergleicht mit seiner Steam-Bibliothek |
-| T1-7 | 2026-10-12 | Juri | PR #80, PC des Owners | ❌ Zurückerstattete Spiele (007 First Light, Alchemy Factory) erscheinen: Steams Paket-Cache behält sie | Nicht installierte Steam-Spiele aus #80 entfernt; Steam-Anmeldung #83, diese Iteration |
-| T1-1 bis T1-6 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
-| T1-9 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ⏭️ Nicht getestet: ein fehlendes Laufwerk lässt sich am PC des Owners nicht ohne weiteres nachstellen | Wird als Abnahmetest (E2E: ja, Testordner) in der Abnahme-Iteration geprüft |
+| T1-7 | 2026-10-12 | owner | PR #80, PC des Owners | ❌ Zurückerstattete Spiele (007 First Light, Alchemy Factory) erscheinen: Steams Paket-Cache behält sie | Nicht installierte Steam-Spiele aus #80 entfernt; Steam-Anmeldung #83, diese Iteration |
+| T1-1 bis T1-6 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T1-9 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ⏭️ Nicht getestet: ein fehlendes Laufwerk lässt sich am PC des Owners nicht ohne weiteres nachstellen | Wird als Abnahmetest (E2E: ja, Testordner) in der Abnahme-Iteration geprüft |

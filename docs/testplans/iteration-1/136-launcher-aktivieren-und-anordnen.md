@@ -48,7 +48,7 @@
       Controller erreicht ▼ die Zeile, A liest ein. Ohne aktiven Launcher ist sie ausgegraut. · E2E: ja
 - [ ] **T136-15** Alle Launcher aus: „Kein Launcher aktiv“ zeigt nur „Launcher-Einstellungen“, kein „Erneut suchen“; ◀ ▶
       ändern nichts, A und ein Klick öffnen die Einstellungen. · E2E: ja
-- [ ] **T136-16** Ein aktiver Launcher ohne Spiele ist eine Info, keine Warnung (Juri, 2026-10-24): In seiner Zeile steht
+- [ ] **T136-16** Ein aktiver Launcher ohne Spiele ist eine Info, keine Warnung (owner, 2026-10-24): In seiner Zeile steht
       „Keine Spiele gefunden“ blau mit dem runden i, in „Launcher-Details“ der Hinweis in einer blauen Box mit i; der Tab
       „Launcher“ zeigt dafür kein Symbol. Ein aktiver, nicht mehr gefundener Launcher bleibt eine Warnung (gelbes Dreieck,
       Symbol am Tab). · E2E: ja
@@ -61,15 +61,15 @@ Verlauf:
 |---|---|---|---|---|---|
 | T136-1, T136-2, T136-4 bis T136-7 | 2026-10-22 | Claude | Branch `feat/launcher-aktivieren-und-anordnen-136`, Debug, Linux in der Cloud mit Xvfb 1920×1080, `--demo`-Bibliothek (Steam und Epic dort „nicht gefunden“), Tasten und Klicks über xdotool | ⚠️ Liste, Schalter, Anheben/Verschieben/Ablegen samt Abbruch, Ablegen unter „Nicht aktiv“ (in `settings.json` gespeichert, Tab weg), Ziehen mit der Maus, beide leeren Tabs und ihre Knöpfe, Infopanel, Toast über der Seite wie erwartet; kein echter Controller, keine echten Launcher | Lauf am PC des Owners |
 | T136-3 | 2026-10-22 | Claude | wie oben | ⚠️ Nur mit Demo-Launchern ohne Fundort; echte Deinstallation nicht | Lauf am PC des Owners |
-| T136-2, T136-5, T136-7, T136-11 (Juris Feedback) | 2026-10-22 | Claude | wie oben | ⚠️ Klick auf den Schalter schaltet um (erst auf die ganze Zeile, von Juri verworfen), zwei Boxen, „Kein Launcher aktiv“ samt Knöpfen (Leertaste öffnet die Einstellungen, Klick schaltet GOG ein, Tab erscheint), Pfeile mittig | Lauf am PC des Owners |
+| T136-2, T136-5, T136-7, T136-11 (owner's Feedback) | 2026-10-22 | Claude | wie oben | ⚠️ Klick auf den Schalter schaltet um (erst auf die ganze Zeile, von owner verworfen), zwei Boxen, „Kein Launcher aktiv“ samt Knöpfen (Leertaste öffnet die Einstellungen, Klick schaltet GOG ein, Tab erscheint), Pfeile mittig | Lauf am PC des Owners |
 | T136-12 | 2026-10-22 | Claude | wie oben; Aktionszeilen in „Über Arcadia“ lokal eingeblendet | ⚠️ Pille unfokussiert, fokussiert und als Hauptaktion gesehen; die SISR-Meldung selbst nur per Test (`ShortText`) | Lauf am PC des Owners |
 | T136-13 | 2026-10-22 | Claude | wie oben | ⚠️ Boxen in „Launcher“ und „Controller“, Einrückung in zwei Stufen gesehen | Lauf am PC des Owners |
 | T136-10 | 2026-10-22 | Claude | wie oben | ⚠️ Unter Linux ist SISR nicht verfügbar, Lampe nur gebaut, nicht gesehen | Lauf am PC des Owners |
 | T136-9 | 2026-10-22 | Claude | wie oben, Demo-Zahlen lokal auf 1.045 Spiele aus 4 Launchern erhöht | ⚠️ 426 ms eingelesen (außerhalb des UI-Threads), 37 ms angezeigt; kein Release-Build, nicht der PC des Owners | Messung am PC des Owners |
 | T136-16 | 2026-10-24 | Claude | Branch `feat/keine-spiele-als-info`, Debug, Linux in der Cloud mit Xvfb 1920×1080, `--demo` mit Amazon lokal auf 0 Spiele gesetzt, Tasten über xdotool | ⚠️ Zeile „Keine Spiele gefunden“ blau mit i, blaue Box in „Launcher-Details“, kein Symbol am Tab „Launcher“ gesehen; Warnung für einen nicht mehr gefundenen aktiven Launcher nicht nachgestellt (Code unverändert) | Lauf am PC des Owners |
-| T136-2 bis T136-7, T136-9 bis T136-13 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
-| T136-8 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ❌ T136-6 („Neu einlesen“, X) ist mit der Maus nicht zu erreichen | Wird in einem eigenen Thread behoben |
-| T136-16 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | Nicht im Lauf: kam nach 0.1.0-rc.1 hinzu (PR #177) | Mit dem nächsten Release-Kandidaten |
-| T136-1 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | Überholt: eine frische `settings.json` startet die Ersteinrichtung (#139) | Durchgestrichen; prüft T139-1 |
+| T136-2 bis T136-7, T136-9 bis T136-13 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T136-8 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ❌ T136-6 („Neu einlesen“, X) ist mit der Maus nicht zu erreichen | Wird in einem eigenen Thread behoben |
+| T136-16 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | Nicht im Lauf: kam nach 0.1.0-rc.1 hinzu (PR #177) | Mit dem nächsten Release-Kandidaten |
+| T136-1 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | Überholt: eine frische `settings.json` startet die Ersteinrichtung (#139) | Durchgestrichen; prüft T139-1 |
 | T136-14, T136-15 | 2026-10-24 | Claude | Branch `feat/alle-launcher-per-maus-neu-einlesen`, Release, Linux in der Cloud mit Xvfb 1920×1080, `--demo`, Tasten und Klicks über xdotool | ⚠️ Zeile mit ▼ erreicht, Leertaste und Klick lesen ein (Toast), Fußleiste ohne „Verschieben“ auf der Zeile; alle Launcher aus: nur „Launcher-Einstellungen“, D ändert nichts, „Wechseln“ fehlt in der Fußleiste; kein echter Controller | Lauf am PC des Owners |
-| T136-14 (Juris Feedback) | 2026-10-24 | Claude | wie oben | ⚠️ Glyphe F in der Pille unfokussiert und fokussiert gesehen, [X] nur gebaut (kein Controller); Controller-Symbol im Einstellungs-Header jetzt mittig zum Text | Lauf am PC des Owners |
+| T136-14 (owner's Feedback) | 2026-10-24 | Claude | wie oben | ⚠️ Glyphe F in der Pille unfokussiert und fokussiert gesehen, [X] nur gebaut (kein Controller); Controller-Symbol im Einstellungs-Header jetzt mittig zum Text | Lauf am PC des Owners |

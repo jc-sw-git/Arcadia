@@ -15,4 +15,4 @@ Verlauf:
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | T29-2 (Logik) | 2026-10-21 | Claude | Branch `td/sisr-shutdown-and-usbip-signature-100-29`, Linux, `dotnet test` (`InstallerSignatureTests`, selbst erzeugte Zertifikate, Fake-`IAuthenticode`) | ✅ nicht signiert, ungültige Signatur, falsche Organisation, Land oder Registriernummer, doppelte Organisation: kein Start; passender Herausgeber startet | `WinVerifyTrust` selbst läuft nur unter Windows: T29-1 bis T29-3 am PC des Owners |
-| T29-1 bis T29-3 | 2026-10-24 | Juri | 0.1.0-rc.1, PC des Owners | ✅ | – |
+| T29-1 bis T29-3 | 2026-10-24 | owner | 0.1.0-rc.1, PC des Owners | ✅ | – |

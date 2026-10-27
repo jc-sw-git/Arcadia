@@ -8,6 +8,6 @@ Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
-| T113-1 | 2026-10-20 | Juri | PC des Owners, `main` | ❌ 80 statt 78 Spiele, die vier oben zu viel | #113 |
-| T113-1 | 2026-10-20 | Claude | Juris Manifeste nur gelesen (83 in 3 Bibliotheken), Regel mechanisch nachgezählt, App nicht gestartet | ⚠️ Die vier haben als einzige `LastOwner 0` und fallen weg; 83 − 3 Werkzeuge − 4 = 76, Steam nennt 78 | Zählweise in Steam mit Juri klären, Lauf am PC des Owners |
-| T113-1 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T113-1 | 2026-10-20 | owner | PC des Owners, `main` | ❌ 80 statt 78 Spiele, die vier oben zu viel | #113 |
+| T113-1 | 2026-10-20 | Claude | owner's Manifeste nur gelesen (83 in 3 Bibliotheken), Regel mechanisch nachgezählt, App nicht gestartet | ⚠️ Die vier haben als einzige `LastOwner 0` und fallen weg; 83 − 3 Werkzeuge − 4 = 76, Steam nennt 78 | Zählweise in Steam mit owner klären, Lauf am PC des Owners |
+| T113-1 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

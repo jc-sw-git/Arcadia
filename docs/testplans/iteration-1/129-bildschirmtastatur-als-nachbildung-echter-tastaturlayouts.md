@@ -29,4 +29,4 @@ Verlauf:
 |---|---|---|---|---|---|
 | T129-1, T129-2, T129-3, T129-6, T129-7 | 2026-10-21 | Claude | Branch `feat/bildschirmtastatur-als-nachbildung-echter-tastaturlayouts-129`, Linux, Xvfb 1920×1080 `--demo`, Fenster 1600×900, nur Maus per xdotool | ✅ DE mit Umschalt- und AltGr-Zeichen in der bisherigen Breite; Klick auf „AltGr“ zeigt nur ² ³ { [ ] } \ @ € ~ \| µ, auf „⇧ Groß“ nur ° ! " … Q W E …; Klick auf „a“ tippt „a“; US mit ausgegrautem „AltGr“, Klick darauf ändert nichts | Controller (LB/RB gehalten, D-Pad über leere Tasten) am PC des Owners |
 | T129-4, T129-5, T129-6 | 2026-10-21 | Claude | wie oben, Unit-Tests (`KeyboardLayoutTests`, `KeyGridTests`) | ⚠️ Layouts aller fünf Sprachen, Tottasten und das Überspringen leerer Tasten grün; mit dem Controller nicht gefahren | Lauf am PC des Owners |
-| T129-1 bis T129-7 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T129-1 bis T129-7 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

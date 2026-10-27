@@ -38,5 +38,5 @@ Verlauf:
 |---|---|---|---|---|---|
 | T137-1 bis T137-7 | 2026-10-23 | Claude | Branch `feat/launcher-bearbeiten-und-logos-137-138`, Debug, Linux in der Cloud mit Xvfb 1920×1080, `--demo`-Bibliothek, Tasten und Klicks über xdotool | ⚠️ Seite per Leertaste und Klick, Blättern mit ⇧ E, zurück mit Esc (Fokus auf dem Launcher), Name mit der Tastatur geändert (Tabs, Chips, Treffer folgen, keine Leertaste getippt), belegtes Kürzel „/ubi“ rot und abgelehnt, `/gog` sucht mit neuem Namen; kein echter Controller | Lauf am PC des Owners |
 | T137-8 | 2026-10-23 | Claude | wie oben | ⚠️ Nur Tastatur und Maus; Controller nur über die Tasten, die seine Aktionen auslösen | Lauf am PC des Owners |
-| T137-1 bis T137-8 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T137-1 bis T137-8 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
 | T137-5 | 2026-10-25 | Claude | Abnahmetest `LauncherPageTests` (#190), Linux-Container | ❌ Leer übernommen wurde abgelehnt („Der Name darf nicht leer sein.“) statt wieder der Standardname | Behoben im PR zu #190 |

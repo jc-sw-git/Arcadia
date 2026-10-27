@@ -18,4 +18,4 @@ Verlauf:
 |---|---|---|---|---|---|
 | T103-1 (nur Binding-Fehler) | 2026-10-20 | Claude | Branch `fix/processwatch-103-xq8e1u`, Linux, Xvfb 1920×1080 `--demo`, Avalonia-Log lokal auf die Konsole umgeleitet (nicht eingecheckt), Tastatur und Maus per xdotool | ✅ vorher 22 Binding-Fehler beim Start, 4 beim Öffnen der Suche, 50 beim Ausklappen der Tastatur; nachher keiner. Bibliothek, Detailseite, Kontextmenü, Suche und Einstellungen sehen aus wie vorher | Exceptions, Adminrechte und CPU nur unter Windows prüfbar |
 | T103-1 bis T103-3 (Logik) | 2026-10-20 | Claude | `dotnet test` (`ProcessWatchTests`), Linux | ⚠️ Ordner des eigenen Prozesses wird gefunden, leerer Ordner nicht; den Windows-Weg (`PathOf`) prüft nur die CI unter Windows | Windows, Adminrechte und CPU am PC des Owners |
-| T103-1 bis T103-3 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T103-1 bis T103-3 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

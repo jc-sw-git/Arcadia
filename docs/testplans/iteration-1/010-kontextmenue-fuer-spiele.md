@@ -38,10 +38,10 @@ Verlauf:
 |---|---|---|---|---|---|
 | T10-1, T10-2, T10-4 | 2026-10-17 | Claude | Branch `feat/context-menu-and-detail-page-10-11`, Linux, Xvfb 1920×1080 `--demo`, Tastatur (Pfeile, Kontextmenü-Taste, Enter gehalten) | ✅ Menü eines GOG-Spiels mit deaktivierten Einträgen und Begründung; Enter 1,2 s gehalten öffnet (noch) den Platzhalter der Detailseite, der Rahmen füllt sich sichtbar | Controller am PC des Owners |
 | T10-1 | 2026-10-17 | Claude | wie oben, Menü an der Kachel | ✅ Menü rechts neben dem Cover in der Mitte, links neben dem Cover in der rechten Spalte | – |
-| T10-4 | 2026-10-17 | Juri | PC des Owners, PR #101 | ❌ Der Rahmen bricht manchmal auf den letzten 5–10 % ab | Haltezeit lief ab dem Drücken, die Animation erst ab ihrem (verspäteten) Start |
+| T10-4 | 2026-10-17 | owner | PC des Owners, PR #101 | ❌ Der Rahmen bricht manchmal auf den letzten 5–10 % ab | Haltezeit lief ab dem Drücken, die Animation erst ab ihrem (verspäteten) Start |
 | T10-4 | 2026-10-17 | Claude | PR #101, Unit-Test (geht vorher rot) und Xvfb `--demo`, Enter 0,93 s gehalten | ✅ Rahmen geschlossen, bevor die Detailseite öffnet | Kontrolle am PC des Owners |
 | T10-6 | 2026-10-17 | Claude | wie oben | ✅ Rückfrage mit Fokus auf „Abbrechen“ (Demo-Spiel, ohne echten Launcher) | Steam am PC des Owners |
 | T10-4 | 2026-10-17 | Claude | Unit-Tests (`HoldGestureTests`) | ✅ Tippen, Abbrechen, Halten, wiederholte KeyDown-Ereignisse, verspätete Timer (geht ohne Zählung der Drücke rot) | – |
 | T10-9 | 2026-10-17 | Claude | Xvfb `--demo`, Debug-Build mit vorübergehendem Einlesen 0,1 s nach jedem Druck auf Enter (wieder entfernt) | ✅ Enter 0,12 s: Spiel startet (Toast); Enter 1,5 s gehalten: Rahmen läuft durch, Detailseite öffnet | – |
 | T10-2 | 2026-10-18 | Claude | Xvfb 1745×1000 `--demo`, Kontextmenü-Taste | ✅ Menü ohne „Controller-Layout anzeigen“ | – |
-| T10-1 bis T10-9 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T10-1 bis T10-9 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

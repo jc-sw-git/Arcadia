@@ -15,6 +15,6 @@ Verlauf:
 
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
-| T167-1 | 2026-10-24 | Juri | rc.1, Abschluss-Test #74, Steam (Dispatch) | ❌ „Lädt“ liegt über „Startet“ | #167 |
+| T167-1 | 2026-10-24 | owner | rc.1, Abschluss-Test #74, Steam (Dispatch) | ❌ „Lädt“ liegt über „Startet“ | #167 |
 | T167-1 (nur Cover der Bibliothek) | 2026-10-24 | Claude | Branch `fix/update-und-startanzeige-ueberlappen-167`, Linux, Xvfb 1920×1080 `--demo`; lokal nicht eingecheckt: dem laufenden Demo-Spiel eine Installation „Lädt“ gegeben | ✅ das Cover zeigt nur „Lädt“ mit Balken, „Läuft“ liegt nicht mehr darunter | Echtes Update in Steam/Epic, „Startet“, Suche, Vorschau und Detailseite am PC des Owners |
 | T167-4, T167-5 (Logik) | 2026-10-24 | Claude | `dotnet test` (`RunningGamesTrackerTests`), Linux | ✅ „Wird gestartet …“ bleibt während einer Installation, danach 2 min | Echtes Update am PC des Owners |

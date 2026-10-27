@@ -15,4 +15,4 @@ Verlauf:
 |---|---|---|---|---|---|
 | T27-1, T27-3 | 2026-10-12 | Claude | Branch `claude/project-thread-y4c95v`, Linux, Unit-Tests mit Fake-Launcher (`GameLaunchTests`), nicht in der App | ✅ Fehler gemeldet und geloggt, zweiter Start läuft | Ansicht in Arcadia am PC des Owners |
 | T27-2 | 2026-10-12 | Claude | dito, Unit-Test mit Fake-Prozessen und `FakeTimeProvider` | ✅ Stufen `StartingLauncher → LauncherNotReady → NotConfirmed`, URI zweimal geschickt | Echter Epic Launcher am PC des Owners |
-| T27-1 bis T27-3 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T27-1 bis T27-3 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

@@ -219,8 +219,11 @@ public sealed class FakeDevices : ISteamControllerDevices, IDisposable
     /// </summary>
     public static readonly TimeSpan StepTimeout = TimeSpan.FromSeconds(10);
 
-    /// <summary>The device timeout in tests whose devices hang: it always runs out, however slow the runner is.</summary>
-    public static readonly TimeSpan HangTimeout = TimeSpan.FromMilliseconds(300);
+    /// <summary>
+    /// The device timeout in tests whose devices hang until it runs out. Their other device steps must still make it, so
+    /// it isn't cut to a few hundred milliseconds; a test that only needs a long step ends it with <see cref="EndRestartHang"/>.
+    /// </summary>
+    public static readonly TimeSpan HangTimeout = TimeSpan.FromSeconds(1);
 
     public const string Slot2 = @"HID\VID_28DE&PID_1304&MI_02&COL03\8&1A2B3C4D&0&0002";
     public const string Slot3 = @"HID\VID_28DE&PID_1304&MI_03&COL03\8&1A2B3C4D&0&0002";
@@ -233,6 +236,7 @@ public sealed class FakeDevices : ISteamControllerDevices, IDisposable
     public bool ListHangs;
     public List<string> Calls = [];
     private readonly ManualResetEventSlim _listHangEnds = new();
+    private readonly TaskCompletionSource _restartHangEnds = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>Runs while the devices are listed, e.g. a change the user makes in HidHide meanwhile.</summary>
     public Action? WhileListing;
@@ -253,7 +257,7 @@ public sealed class FakeDevices : ISteamControllerDevices, IDisposable
     {
         if (RestartHangs)
         {
-            await Task.Delay(Timeout.Infinite, cancellationToken);
+            await _restartHangEnds.Task.WaitAsync(cancellationToken);
         }
 
         if (RestartFails)
@@ -265,5 +269,12 @@ public sealed class FakeDevices : ISteamControllerDevices, IDisposable
         lock (Calls) Calls.Add("Restart");
     }
 
-    public void Dispose() => _listHangEnds.Set();
+    /// <summary>A restart that took long finishes now (and every later one at once).</summary>
+    public void EndRestartHang() => _restartHangEnds.TrySetResult();
+
+    public void Dispose()
+    {
+        _listHangEnds.Set();
+        _restartHangEnds.TrySetResult();
+    }
 }

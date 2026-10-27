@@ -74,5 +74,5 @@ without and with a puck restart, kill and freeze of the client, planned exit. Re
 `HidingTests` (fake HidHide and devices: order, write-ahead, the HidHide state matrix, the user's entries, every
 teardown trigger, failing/hanging steps, arrival, the hang watch during a hide), `HidHideWireTests` (IOCTL codes,
 REG_MULTI_SZ, driver path, the device list). On the Windows CI runner `tools/ci/Install-HidHide.ps1` installs the
-HidHide 1.5.230 (pinned to the owner's version, hash and signature checked, setup with an 8 min deadline); with its control device answering, `HidHideTests` and the service test hide through the real
+HidHide 1.5.230 (pinned to the owner's version, hash and signature checked, setup with a 4 min deadline); with its control device answering, `HidHideTests` and the service test hide through the real
 driver and check HidHide is back as before; otherwise they skip with the reason.

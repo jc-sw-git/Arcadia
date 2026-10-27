@@ -22,13 +22,14 @@ if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notm
 }
 
 Write-Host 'Installing HidHide 1.5.230'
-# An Advanced Installer bootstrapper: /exenoui /qn is its silent mode. Burn's "/install /quiet" opened its UI and
-# waited on the runner for six hours, so the setup gets a deadline of its own as well. It usually takes seconds, but
-# once waited minutes behind another msiexec; a setup cut off may still finish, so the tests check HidHide themselves.
-$setup = Start-Process -FilePath $installer -ArgumentList @('/exenoui', '/qn', '/norestart') -PassThru
-if (-not $setup.WaitForExit(480000)) {
+# An Advanced Installer bootstrapper: /exenoui /qn is its silent mode (Burn's "/install /quiet" opened its UI and waited
+# six hours). It takes seconds, but on some runners it never ends; the MSI log then says where it waits.
+$msiLog = Join-Path $env:RUNNER_TEMP 'hidhide-msi.log'
+$setup = Start-Process -FilePath $installer -ArgumentList @('/exenoui', '/qn', '/norestart', '/L*V', "`"$msiLog`"") -PassThru
+if (-not $setup.WaitForExit(240000)) {
     Stop-Process -Id $setup.Id -Force -ErrorAction SilentlyContinue
-    throw 'HidHide setup did not finish within 8 minutes'
+    if (Test-Path $msiLog) { Get-Content $msiLog -Tail 40 | ForEach-Object { Write-Host $_ } }
+    throw 'HidHide setup did not finish within 4 minutes'
 }
 if ($setup.ExitCode -notin 0, 3010) { throw "HidHide setup exited with $($setup.ExitCode)" }
 

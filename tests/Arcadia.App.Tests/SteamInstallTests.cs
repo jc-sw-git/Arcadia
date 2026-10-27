@@ -5,7 +5,7 @@ namespace Arcadia.App.Tests;
 
 /// <summary>
 /// Installations and updates in Steam as Arcadia follows them (#81): the app manifests and <c>content_log.txt</c> change
-/// as they did on the owner's PC (<c>docs/launchers/steam.md</c>), and the real install monitor reads them.
+/// as they did on the owner's PC (<c>docs/launchers/steam/library-and-installs.md</c>), and the real install monitor reads them.
 /// </summary>
 public sealed class SteamInstallTests
 {

@@ -56,7 +56,7 @@ internal sealed record SteamApiResult<T>(T? Value, SteamApiError? Error)
 /// <summary>
 /// Steam's web API for the account (#83): the owned games and the profile name, with the web API token of a signed-in
 /// store page (<see cref="SteamStorePage"/>). HTTPS only; every request ends after <see cref="Timeout"/>. Requests and
-/// answers hold the token, so nothing of them is logged.
+/// answers hold the token, so nothing of them is logged (<c>docs/launchers/steam/account.md</c>).
 /// </summary>
 internal sealed class SteamWebApi(HttpClient http)
 {

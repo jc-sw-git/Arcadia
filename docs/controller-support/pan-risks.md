@@ -40,3 +40,6 @@ one names the countermeasure that would close it, so a later story can pick it u
   open it anew, but one that kept a handle may not see it until a replug; retried at every trigger.
 - **Hiding cloaks for every allow-listed program:** with cloaking off before, the user's allow list (e.g. DS4Windows)
   was meaningless; while Pan hides, those programs see the puck too. They are the user's choice.
+- **HidHide's silent setup can hang (for B2):** on about half the CI runners (Windows Server 2025) its last MSI action,
+  registering `nefarius_HidHide_Updater.exe`, never returned after the driver was in place; killing it risks a rollback.
+  B2's install must bound the wait and tell the user, never block Arcadia on it.

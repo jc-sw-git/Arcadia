@@ -24,7 +24,8 @@ both the Epic tab holds 333 entries, as Epic's library. UEFN's cached title is "
 `engines/ue5`, `engines`. Installing an engine queues its plugins (`QuixelBridge_<v>`, `FabPlugin_<v>`, categories
 `plugins/engine`) as followers with their own manifests in the engine's folder. `…?action=install` for an engine
 logged "dispatching install" but showed no dialog (Epic was started by that link; the owner then installed from the
-Unreal Engine tab), so Arcadia opens `com.epicgames.launcher://ue/library` for an engine. Epic's
+Unreal Engine tab), so Arcadia opens `com.epicgames.launcher://ue/library` for an engine. No dialog opens there either:
+the user starts the installation (`Game.InstallStartsInLauncher`), and only then does it show in Arcadia with its progress. Epic's
 umlauts stay broken until metadata providers (#43) supply titles. Install: `…?action=install`.
 `EpicInstallMonitor` (verified 2026-10-10 with real installs): queue order from
 `Data\DownloadManager\DownloadState_<account>.json` (incl. paused, `[]` when idle); per-app events

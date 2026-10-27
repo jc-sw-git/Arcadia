@@ -209,6 +209,8 @@ public class EpicScannerTests
 
         // Epic installs engines from its Unreal Engine library; other entries keep their own install dialog.
         Assert.Equal(new LaunchTarget.ProtocolUri(EpicScanner.EngineLibraryUri), engine.Install);
+        Assert.True(engine.InstallStartsInLauncher, "the user starts an engine's installation in Epic");
+        Assert.False(Assert.Single(games, g => g.Id == "Fortnite_Studio").InstallStartsInLauncher);
         Assert.Equal(
             new LaunchTarget.ProtocolUri(EpicScanner.InstallUri("fn", "uefn", "Fortnite_Studio")),
             Assert.Single(games, g => g.Id == "Fortnite_Studio").Install);

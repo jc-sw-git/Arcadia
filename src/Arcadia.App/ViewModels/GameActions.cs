@@ -180,7 +180,9 @@ public sealed class GameActions : IGameActionHost
         if (tile.InstallState is { } install)
         {
             _toast.Show(install.Phase == InstallPhase.AwaitingConfirmation
-                ? $"Die Installation von „{tile.Title}“ wartet auf deine Bestätigung in {tile.LauncherName}."
+                ? tile.Game.InstallStartsInLauncher
+                    ? $"Die Installation von „{tile.Title}“ wartet darauf, dass du sie in {tile.LauncherName} startest."
+                    : $"Die Installation von „{tile.Title}“ wartet auf deine Bestätigung in {tile.LauncherName}."
                 : install.Phase == InstallPhase.Uninstalling
                     ? $"„{tile.Title}“ wird gerade deinstalliert."
                     : $"„{tile.Title}“ wird bereits {(tile.IsInstalled ? "aktualisiert" : "installiert")} – Pausieren und Abbrechen in {tile.LauncherName}.");
@@ -285,7 +287,9 @@ public sealed class GameActions : IGameActionHost
             if (_launcher.Install(tile.Game))
             {
                 tile.InstallState = _installs.Started(tile.Game);
-                _toast.Show($"Installation von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …");
+                _toast.Show(tile.Game.InstallStartsInLauncher
+                    ? $"{tile.LauncherName} wird geöffnet – starte dort selbst die Installation von „{tile.Title}“."
+                    : $"Installation von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …");
             }
             else
             {

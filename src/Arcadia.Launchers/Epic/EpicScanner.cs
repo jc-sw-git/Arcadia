@@ -136,6 +136,7 @@ public sealed class EpicScanner(
                 Launch = new LaunchTarget.ProtocolUri(LaunchUri(item.Namespace, item.CatalogItemId, item.AppName)),
                 IsInstalled = false,
                 Install = new LaunchTarget.ProtocolUri(item.IsEngine ? EngineLibraryUri : InstallUri(item.Namespace, item.CatalogItemId, item.AppName)),
+                InstallStartsInLauncher = item.IsEngine,
                 OpenInLauncher = new LaunchTarget.ProtocolUri(LibraryUri),
             });
         }

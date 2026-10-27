@@ -134,6 +134,7 @@ public partial class GameTileViewModel : ViewModelBase
     public string InstallStatusText => InstallState switch
     {
         null => string.Empty,
+        { Phase: InstallPhase.AwaitingConfirmation } when Game.InstallStartsInLauncher => $"Bitte in {LauncherName} starten",
         { Phase: InstallPhase.AwaitingConfirmation } => $"Bitte in {LauncherName} bestätigen",
         { Phase: InstallPhase.Queued, QueuePosition: { } position } => $"In der Warteschlange · Platz {position}",
         { Phase: InstallPhase.Queued } => "In der Warteschlange",
@@ -152,6 +153,7 @@ public partial class GameTileViewModel : ViewModelBase
     public string InstallShortText => InstallState switch
     {
         null => string.Empty,
+        { Phase: InstallPhase.AwaitingConfirmation } when Game.InstallStartsInLauncher => "Wartet",
         { Phase: InstallPhase.AwaitingConfirmation } => "Bestätigen",
         { Phase: InstallPhase.Queued, QueuePosition: { } position } => $"Wartet · {position}",
         { Phase: InstallPhase.Queued } => "Wartet",

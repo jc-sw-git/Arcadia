@@ -35,8 +35,9 @@ tried without Steam or Epic.
 - [ ] **T141-11** Start to usable library with all switches on, Release build, real Steam and Epic, and
   `--demo --demo-games 1000`: within 2 s; arcadia.log's line `Steam: Typen von … aus appinfo.vdf in … ms gelesen` gives the read time ·
   E2E: no (owner's PC)
-- [ ] **T141-13** Unreal Engine not installed: "Installieren" opens Epic on its Unreal Engine library, where a version
-  can be installed; with Epic closed before, too · E2E: yes (the link; Epic's page by hand)
+- [ ] **T141-13** Unreal Engine not installed: "Installieren" opens Epic on its Unreal Engine library and the toast says
+  to start the installation there ("Bitte in Epic Games starten" on the cover); once started in Epic, Arcadia shows it
+  with its progress; with Epic closed before, too · E2E: yes (the link and texts; Epic's page by hand)
 - [ ] **T141-12** The whole flow (switch on, see the entry, open its detail page, start it, switch off) with the controller
   only, with the keyboard only and with the mouse only (the count line's tooltip with the mouse) · E2E: no
 
@@ -71,3 +72,4 @@ History:
 | Owner's test, continued: UEFN after Fortnite, Unreal Engine 5.7 beside 5.8 | 2026-10-27 | owner | PR build, Debug, owner's PC, real Epic | ❌ UEFN showed "Fast fertig" while it still downloaded; after an Arcadia restart UEFN showed no installation and "Installieren" waited for a confirmation that never came. A starts 5.8 with 5.7 installed beside it (the newest, as decided) | fixed below; choosing the engine version becomes its own issue |
 | UEFN fix: `EpicInstallMonitorTests` with the lines from the owner's log (follower queued, left the queue file, main app unchanged; add-on without a fraction; found after a restart), red once with the old monitor; Epic monitor tests | 2026-10-27 | Claude | PR branch, Linux cloud container | ✅ | the end of UEFN's download (its completion line) still to be seen in the owner's log |
 | Owner's test, continued: UEFN's end, the soundtrack | 2026-10-27 | owner, Claude (Epic log) | PR build, owner's PC, real Steam and Epic | UEFN: ✅ its end is `HandleTaskComplete: AppId [<UEFN>] AlertCode=[ok]`, which Arcadia reads; soundtrack: ❌ it opened its page but no longer played (before, `rungameid` did play it) | soundtrack plays again and also opens its page; note back to "Steam spielt den Soundtrack ab." |
+| Owner's test, continued: soundtrack, Unreal Engine install, UEFN | 2026-10-27 | owner, Claude (Steam's `console_log.txt`) | owner's PC, real Steam and Epic | soundtrack: ❌ only the page opened; Steam's log shows no `rungameid` from Arcadia at 13:21 and 14:12, so the build tested predates the fix (3022ea9). Unreal Engine: ✅ Epic's Unreal Engine page opens, but Arcadia asked for a confirmation that never comes. UEFN: no fraction, as intended | the toast and cover now say to start the installation in Epic; soundtrack again with the current build |

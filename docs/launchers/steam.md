@@ -43,8 +43,9 @@ come from ids and names (tools as before, a name ending in "Soundtrack"), softwa
 goes to arcadia.log. A soundtrack has its own manifest and lives in `steamapps/music/<installdir>`, with the same folder
 name as its game in `common` (RuneScape: Dragonwilds' soundtrack: `music/RSDragonwilds`), so `music` wins for a
 soundtrack. Steam types SDKs (Source SDK Base 2013) and the merged Half-Life 2 episodes as `Tool`, the redistributables
-(228980) too. `steam://rungameid/<id>` plays a soundtrack in Steam's player (owner's PC, 2026-10-27); Arcadia
-then also opens its page (`steam://nav/games/details/<id>`, owner's wish).
+(228980) too. `steam://rungameid/<id>` plays a soundtrack in Steam's player (owner's PC, 2026-10-27: `console_log.txt` shows the
+launch ending in `ExecuteSteamURL: "steam://musicplayer/playappalbum/<id>"`); Arcadia then also opens its page
+(`steam://nav/games/details/<id>`, owner's wish).
 `SteamInstallMonitor` (verified 2026-10-12 with real installs): a new install's manifest appears with `StateFlags` 2
 and `buildid` 0, then 1026 (+1024 started) while downloading *or* waiting, 1538 (+512) when paused, 4 when done;
 an update of an installed game is 1030. Steam downloads one app at a time but flags all waiting ones alike, so the

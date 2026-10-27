@@ -211,7 +211,7 @@ public sealed class EntryTypeTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T141-13")]
-    public async Task Installieren_on_a_not_installed_Unreal_Engine_opens_the_Unreal_Engine_library_in_Epic()
+    public async Task Installieren_on_a_not_installed_Unreal_Engine_opens_the_Unreal_Engine_library_in_Epic_and_asks_to_start_it_there()
     {
         using var files = new LauncherFiles();
         var epic = files.Epic.Install();
@@ -229,7 +229,11 @@ public sealed class EntryTypeTests
 
         // Epic's install link for an engine opened no dialog on the owner's PC; its Unreal Engine library does.
         Assert.Equal([new LaunchTarget.ProtocolUri("com.epicgames.launcher://ue/library")], arcadia.Opened);
-        Assert.Equal("Installation von „Unreal Engine“ wird in Epic Games geöffnet …", arcadia.Main.Toast.Text);
+        // No dialog opens by itself there: Arcadia says so and waits for the start in Epic, not for a confirmation.
+        Assert.Equal("Epic Games wird geöffnet – starte dort selbst die Installation von „Unreal Engine“.", arcadia.Main.Toast.Text);
+        Assert.Equal(("Bitte in Epic Games starten", "Wartet"), (tile.InstallStatusText, tile.InstallShortText));
+        arcadia.Press(UiAction.Accept);
+        Assert.Equal("Die Installation von „Unreal Engine“ wartet darauf, dass du sie in Epic Games startest.", arcadia.Main.Toast.Text);
     }
 
     [AvaloniaFact]

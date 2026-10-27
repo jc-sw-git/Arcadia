@@ -20,6 +20,28 @@ public sealed class PanUnavailableException(string message, bool permanent = fal
     public bool Permanent { get; } = permanent;
 }
 
+public enum PanServiceStartStep
+{
+    Wait,
+    Start,
+    Running,
+}
+
+/// <summary>
+/// What Arcadia does with Pan's service state while it waits for it to run. Pan stops itself 30 s after its last
+/// client; Arcadia coming back in that moment found it "StopPending", waited without starting it, and gave up after
+/// 10 s with "Pan startet nicht (Stopped)" (owner's B2 test, 2026-10-27). A stopped service is started once.
+/// </summary>
+public static class PanServiceStart
+{
+    /// <param name="running">The service runs.</param>
+    /// <param name="stopped">The service is stopped (not pending either way).</param>
+    public static PanServiceStartStep Next(bool running, bool stopped, bool startRequested) =>
+        running ? PanServiceStartStep.Running
+        : stopped && !startRequested ? PanServiceStartStep.Start
+        : PanServiceStartStep.Wait;
+}
+
 /// <summary>Opens the connection to Pan; replaced in tests by a stream pair.</summary>
 public interface IPanTransport
 {
@@ -92,16 +114,22 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
     {
         try
         {
-            if (service.Status == ServiceControllerStatus.Stopped)
-            {
-                log($"Pan: Dienst {PanPaths.ServiceName} wird gestartet");
-                service.Start();
-            }
-
+            var startRequested = false;
             var until = DateTime.UtcNow + ServiceStartTimeout;
-            service.Refresh();
-            while (service.Status != ServiceControllerStatus.Running)
+            while (true)
             {
+                var status = service.Status;
+                switch (PanServiceStart.Next(status == ServiceControllerStatus.Running, status == ServiceControllerStatus.Stopped, startRequested))
+                {
+                    case PanServiceStartStep.Running:
+                        return;
+                    case PanServiceStartStep.Start:
+                        log($"Pan: Dienst {PanPaths.ServiceName} wird gestartet");
+                        service.Start();
+                        startRequested = true;
+                        break;
+                }
+
                 if (DateTime.UtcNow > until)
                 {
                     throw new PanUnavailableException($"Pan startet nicht ({service.Status})");
@@ -111,7 +139,7 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
                 service.Refresh();
             }
         }
-        catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+        catch (Exception ex) when (ex is (InvalidOperationException and not PanUnavailableException) or Win32Exception)
         {
             throw new PanUnavailableException($"Pan lässt sich nicht starten: {ex.Message}");
         }

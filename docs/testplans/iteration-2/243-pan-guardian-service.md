@@ -167,6 +167,10 @@ part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it w
 - [ ] **T243-42** Update usbip-win2 (or install it), don't restart: row "Windows-Neustart ausstehend" ("Bis zum Neustart
       kann der Steam Controller in Spielen aussetzen."), no "SISR neu starten". Found in the owner's B2 test
       (2026-10-27). · E2E: yes (`EmulationSetupTests`)
+- [ ] **T243-43** Close Arcadia, wait ~30 s until `pan.log` says "No client for 30 s: stopping", start Arcadia right
+      then (or several times around that moment): Arcadia connects, `pan.log` shows "Pan … starting" and "Client …
+      connected", no "Pan startet nicht (Stopped)" in `arcadia.log`. Found in the owner's B2 test (2026-10-27).
+      · E2E: no (the service manager's timing; the rule: `PanServiceStartTests`)
 
 History:
 
@@ -208,3 +212,4 @@ History:
 | T243-39, T243-40 after the owner's B2 test (sleep: `GuardianTests` resume grace; `SteamControllerXboxPadTests` Pan's teardowns no loss, restore clears the count and a give-up; `GuardedXboxPadsTests` `TakenAway`; `ControllerSupportServiceTests` the restore event) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; each new check seen red once by mutation (grace removed, loss always counted, restore not clearing the count or the give-up, `TakenAway` false, the event not raised or not wired); Pan 142, Core 972, App 339 | pass | owner's manual run of T243-39/40 open |
 | T243-41, T243-42 after the owner's second B2 test (`EmulationSetupTests`: the removal row without a fix and no Pan check, the restart row without SISR; `HidHideWireTests`: `DeleteFlag` and the pending deletion of the driver file) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; each seen red once by mutation (removal not checked, Pan asked anyway, the SISR row kept, either registry signal ignored); the real registry after an uninstall only on Windows | pass | owner's manual run of T243-41/42 open |
 | T243-33, T243-37, T243-38 (every part missing; Arcadia uninstall with the driver question; removal only through the drivers' own uninstallers) | 2026-10-27 | owner | – | deferred | moved to the acceptance review of the iteration by the owner (manual run before the merge skipped) |
+| T243-43 (`PanServiceStartTests`: a Pan stopping itself is started once it has stopped, a failed one not in a loop) | 2026-10-27 | Claude (thread) | Debug, Linux cloud container; seen red with the start never made after a pending stop; the real service only on Windows | pass | owner's manual run open |

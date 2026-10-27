@@ -74,7 +74,8 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
   report hook).
 - Pan stops itself after 30 s without a client (nothing idles in the background), unless a retry still has to show
   the Steam Controller ([pan-hiding.md](pan-hiding.md)); Arcadia starts it with
-  `ServiceController.Start` on connect (users have `SERVICE_START` by the DACL). Recovery: 3 restarts, 1 s, reset daily,
+  `ServiceController.Start` on connect (users have `SERVICE_START` by the DACL); a Pan still stopping itself is waited
+  for and then started (`PanServiceStart`; before, Arcadia gave up with "Pan startet nicht (Stopped)"). Recovery: 3 restarts, 1 s, reset daily,
   also on non-zero exit.
 
 ## Setup, update, uninstall

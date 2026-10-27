@@ -109,15 +109,15 @@ public enum PanReason : uint
     /// <summary>Changing HidHide or restarting the controller failed; Pan's log says why. What Pan changed stays journaled.</summary>
     HidingFailed = 18,
 
-    /// <summary><see cref="PanCommand.EmulationStopped"/> while the Steam Controller is hidden: unhide first.</summary>
-    StillHidden = 19,
+    /// <summary>A teardown after <see cref="PanCommand.EmulationStopped"/> while the Steam Controller was still hidden.</summary>
+    EmulationStoppedWhileHidden = 19,
 
     /// <summary>A teardown at the client's planned exit, because it left the Steam Controller hidden.</summary>
     PlannedExit = 20,
 
     /// <summary>
-    /// <see cref="PanCommand.EmulationStarted"/> while Pan retries showing the Steam Controller after an earlier
-    /// teardown (usually milliseconds, a puck restart ~2.5 s): start again in a moment.
+    /// <see cref="PanCommand.EmulationStarted"/> while Pan shows the Steam Controller after an earlier emulation (a
+    /// retry, or the teardown after a stop while hidden; usually milliseconds, a puck restart ~2.5 s): start again in a moment.
     /// </summary>
     SteamControllerBeingShown = 21,
 }

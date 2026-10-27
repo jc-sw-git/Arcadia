@@ -273,11 +273,29 @@ public sealed class HidingTests : IDisposable
     }
 
     [Fact]
-    public async Task The_emulation_cannot_stop_while_hidden_but_a_planned_exit_tears_it_down()
+    public async Task Stopping_the_emulation_while_hidden_tears_it_down_and_a_new_one_waits_for_that()
+    {
+        var generation = await HiddenAsync();
+        _devices.RestartHangs = true;
+
+        Assert.Equal(PanReply.Stopped, (await Send(PanCommand.EmulationStopped, generation)).Reply);
+        Assert.False(_guardian.IsEmulating);
+        Assert.Equal(PanReason.SteamControllerBeingShown, (await Send(PanCommand.EmulationStarted)).Reason);
+        _devices.EndRestartHang();
+        await TeardownDoneAsync();
+
+        Assert.Single(_cleanup.Ended);
+        AssertRestored([], [], cloaking: false);
+        Assert.False(Journal.HasWork);
+        Assert.Contains("stopped by the client with the Steam Controller still hidden", Log());
+        Assert.Equal(PanReply.Started, (await Send(PanCommand.EmulationStarted)).Reply);
+    }
+
+    [Fact]
+    public async Task A_planned_exit_while_hidden_tears_it_down()
     {
         var generation = await HiddenAsync();
 
-        Assert.Equal(PanReason.StillHidden, (await Send(PanCommand.EmulationStopped, generation)).Reason);
         Assert.Equal(PanReply.Acknowledged, (await Send(PanCommand.PlannedExit, generation)).Reply);
         await TeardownDoneAsync();
         _guardian.ClientGone();

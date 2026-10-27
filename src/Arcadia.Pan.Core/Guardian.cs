@@ -334,9 +334,9 @@ public sealed partial class Guardian
             return PanMessage.Of(PanReply.Rejected, _generation, PanReason.AlreadyEmulating);
         }
 
-        if (_retryShowing)
+        if (_retryShowing || _teardown is { IsCompleted: false })
         {
-            // Its forwarding would run while the retry makes the real controller visible.
+            // Its forwarding would run while a retry or a teardown after a stop makes the real controller visible.
             return PanMessage.Of(PanReply.Rejected, _generation, PanReason.SteamControllerBeingShown);
         }
 
@@ -412,9 +412,14 @@ public sealed partial class Guardian
     {
         if (_journal.HidHideChanged)
         {
-            // Hiding belongs to the emulation: the client shows the controller first, or a teardown does. A restart
+            // The client stopped with the controller still hidden (its Unhide failed, e.g. HidHide busy): Pan's teardown
+            // ends what is left of the forwarding and shows it, retrying, so the client needn't disconnect for that.
+            // Nothing to acknowledge, the client knows it stopped; a new emulation waits for the teardown. A restart
             // still pending (it needs a replug) hides nothing and waits for the next trigger.
-            return PanMessage.Of(PanReply.Rejected, _generation, PanReason.StillHidden);
+            _log($"Emulation generation {_generation} stopped by the client with the Steam Controller still hidden: tearing down");
+            BeginTeardown(PanReason.EmulationStoppedWhileHidden, notify: false, unplanned: false);
+            _phase = Phase.Idle;
+            return PanMessage.Of(PanReply.Stopped, _generation);
         }
 
         // Arcadia removed its emulation itself: let go of its processes, nothing to undo. What an earlier teardown

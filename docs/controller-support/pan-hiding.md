@@ -11,12 +11,12 @@ New: `CheckHiding` (9) → `HidingState` with a reason or `None`; `Hide` → `Hi
 instances are hidden now, 0 = not connected yet) or `Rejected(reason)`; `Unhide` → `Shown` or `Rejected(reason)`.
 Reasons: `HidHideMissing` (not installed, or its driver not running), `HidHideUnsupported` (version or an IOCTL it
 doesn't know), `HidHideInverseMode`, `HidHideCloakingOffWithForeignEntries`, `HidHideBusy` (its configuration client
-has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log says why), `StillHidden`.
+has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log says why).
 
 - `Hide`/`Unhide` only within the current generation's emulation, so every teardown undoes the hiding too.
-  `EmulationStopped` while HidHide holds a change of Pan's → `StillHidden`: the client unhides first (a restart still
-  pending doesn't count). `PlannedExit` while hidden → a full
-  teardown (reason `PlannedExit`, no notice).
+  `EmulationStopped` or `PlannedExit` while HidHide holds a change of Pan's (the client's `Unhide` failed, e.g. HidHide
+  busy) → `Stopped`/`Acknowledged` and a full teardown with its retries (no notice, nothing to acknowledge); a restart
+  still pending doesn't count. A new `EmulationStarted` waits for that teardown.
 - `Unhide` is trusted to come after Arcadia removed its copy (#242 keeps that order); every unplanned path goes
   through the teardown, which checks that the forwarding is gone.
 - A rejected `Hide` may have changed HidHide already (e.g. hidden, then the restart failed): the client sends `Unhide`
@@ -27,8 +27,8 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   timeout drops the link mid-hide; a hide takes ~2.4 s on the owner's PC). A heartbeat waiting behind one is no loss;
   don't queue more than the pipe buffer holds (192 bytes, 16 messages). A timeout still means the link is gone: the
   protocol has no correlation, so a late reply would answer the next request.
-- `EmulationStarted` → `Rejected(SteamControllerBeingShown)` while a retry (below) shows the controller of an earlier
-  teardown: start again in a moment.
+- `EmulationStarted` → `Rejected(SteamControllerBeingShown)` while the teardown after such a stop or a retry (below)
+  shows the controller: start again in a moment.
 
 ## Hiding
 

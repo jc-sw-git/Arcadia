@@ -18,18 +18,24 @@ public sealed class HidingReviewTests : IDisposable
     private readonly FakeHidHide _hidHide = new();
     private readonly FakeDevices _devices = new();
     private readonly List<string> _log = [];
-    private readonly Guardian _guardian;
+    private Guardian _guardian;
 
     public HidingReviewTests()
     {
-        _guardian = new Guardian(
-            _clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
-            hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: TimeSpan.FromMilliseconds(300));
+        _guardian = NewGuardian(FakeDevices.StepTimeout);
         _cleanup.Children = [new HeldProcess(600, 1500, "viiper.exe")];
         _cleanup.Ports = [3];
     }
 
-    public void Dispose() => _journal.Dispose();
+    public void Dispose()
+    {
+        _devices.Dispose();
+        _journal.Dispose();
+    }
+
+    private Guardian NewGuardian(TimeSpan deviceStepTimeout) => new(
+        _clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
+        hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: deviceStepTimeout);
 
     private JournalState Journal => _journal.File.Load().State;
 
@@ -76,6 +82,7 @@ public sealed class HidingReviewTests : IDisposable
     [Fact]
     public async Task A_hiding_check_queued_behind_an_arrival_does_not_count_as_a_hang()
     {
+        _guardian = NewGuardian(FakeDevices.HangTimeout);
         var generation = await EmulatingAsync();
         Assert.Equal(PanReply.Hidden, (await Send(PanCommand.Hide, generation)).Reply);
         // The puck arrives on another port; its restart takes long (Windows' PnP lock), holding HidHide's gate.

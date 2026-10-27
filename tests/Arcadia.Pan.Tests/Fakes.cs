@@ -211,8 +211,17 @@ public sealed class FakeHidHide : IHidHideDriver
 }
 
 /// <summary>The puck's devices: which are connected, and a restart that can fail, hang or need a replug.</summary>
-public sealed class FakeDevices : ISteamControllerDevices
+public sealed class FakeDevices : ISteamControllerDevices, IDisposable
 {
+    /// <summary>
+    /// The guardian's device timeout in tests whose devices answer: far above what a loaded CI runner needs to schedule
+    /// an instant fake (300 ms was not, run 40458024167), and never waited out, as the fake answers at once.
+    /// </summary>
+    public static readonly TimeSpan StepTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>The device timeout in tests whose devices hang: it always runs out, however slow the runner is.</summary>
+    public static readonly TimeSpan HangTimeout = TimeSpan.FromMilliseconds(300);
+
     public const string Slot2 = @"HID\VID_28DE&PID_1304&MI_02&COL03\8&1A2B3C4D&0&0002";
     public const string Slot3 = @"HID\VID_28DE&PID_1304&MI_03&COL03\8&1A2B3C4D&0&0002";
     public const string Dongle = @"HID\VID_28DE&PID_1304&MI_06\8&5E6F7A8B&0&0000";
@@ -223,6 +232,7 @@ public sealed class FakeDevices : ISteamControllerDevices
     public bool RestartHangs;
     public bool ListHangs;
     public List<string> Calls = [];
+    private readonly ManualResetEventSlim _listHangEnds = new();
 
     /// <summary>Runs while the devices are listed, e.g. a change the user makes in HidHide meanwhile.</summary>
     public Action? WhileListing;
@@ -232,7 +242,8 @@ public sealed class FakeDevices : ISteamControllerDevices
         WhileListing?.Invoke();
         if (ListHangs)
         {
-            Thread.Sleep(TimeSpan.FromSeconds(30));
+            // Blocks like Windows' PnP lock, but only until the test ends, so it doesn't starve the thread pool.
+            _listHangEnds.Wait(TimeSpan.FromSeconds(30));
         }
 
         return [.. Present];
@@ -253,4 +264,6 @@ public sealed class FakeDevices : ISteamControllerDevices
         Interlocked.Increment(ref Restarts);
         lock (Calls) Calls.Add("Restart");
     }
+
+    public void Dispose() => _listHangEnds.Set();
 }

@@ -20,21 +20,34 @@ public sealed class HidingTests : IDisposable
     private readonly FakeDevices _devices = new();
     private readonly List<string> _log = [];
     private readonly List<PanMessage> _notified = [];
-    private readonly Guardian _guardian;
+    private Guardian _guardian;
 
     public HidingTests()
     {
         _guardian = NewGuardian();
-        _guardian.Notify += message => { lock (_notified) _notified.Add(message); };
+        ListenTo(_guardian);
         _cleanup.Children = [new HeldProcess(600, 1500, "viiper.exe")];
         _cleanup.Ports = [3];
     }
 
-    public void Dispose() => _journal.Dispose();
+    public void Dispose()
+    {
+        _devices.Dispose();
+        _journal.Dispose();
+    }
 
-    private Guardian NewGuardian() => new(
+    private Guardian NewGuardian(TimeSpan? deviceStepTimeout = null) => new(
         _clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
-        hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: TimeSpan.FromMilliseconds(300));
+        hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: deviceStepTimeout ?? FakeDevices.StepTimeout);
+
+    private void ListenTo(Guardian guardian) => guardian.Notify += message => { lock (_notified) _notified.Add(message); };
+
+    /// <summary>For a test whose devices hang: the guardian gives up on them soon.</summary>
+    private void WithDevicesThatMayHang()
+    {
+        _guardian = NewGuardian(FakeDevices.HangTimeout);
+        ListenTo(_guardian);
+    }
 
     private string Log() { lock (_log) return string.Join("\n", _log); }
 
@@ -375,6 +388,7 @@ public sealed class HidingTests : IDisposable
     [Fact]
     public async Task A_restart_that_fails_or_hangs_is_journaled_as_pending_and_retried()
     {
+        WithDevicesThatMayHang();
         var generation = await EmulatingAsync();
         _devices.RestartHangs = true;
 
@@ -401,6 +415,7 @@ public sealed class HidingTests : IDisposable
     [Fact]
     public async Task A_device_list_that_hangs_fails_the_hide_without_changing_HidHide()
     {
+        WithDevicesThatMayHang();
         var generation = await EmulatingAsync();
         _devices.ListHangs = true;
 
@@ -472,6 +487,7 @@ public sealed class HidingTests : IDisposable
     [Fact]
     public async Task The_hang_watch_waits_while_the_clients_hide_runs()
     {
+        WithDevicesThatMayHang();
         var generation = await EmulatingAsync();
         _devices.RestartHangs = true;
         var hide = Send(PanCommand.Hide, generation);
@@ -581,7 +597,7 @@ public sealed class HidingTests : IDisposable
 
     private Guardian RetryingGuardian(TimeSpan? pause = null) => new(
         _clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
-        hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: TimeSpan.FromMilliseconds(300))
+        hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: FakeDevices.StepTimeout)
     {
         ShowRetryDelays = [pause ?? TimeSpan.FromMilliseconds(20)],
     };

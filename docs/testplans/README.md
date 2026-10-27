@@ -48,6 +48,21 @@ not the whole folder.
    then reads PR, issue and test plan file instead of the old thread.
 5. The owner tests only what the rework changed, and merges.
 
+## Process metrics (owner 2026-10-27, from Iteration 3)
+
+Few numbers, captured where the work happens, evaluated in each iteration's retro (table in the retro issue).
+Without them the AI-assisted QA process is a story, not evidence.
+
+1. **Bugs before the merge, by source:** every code PR description has a line `Process metrics: found by QE n,
+   Codex n, owner test n, other n | owner test rounds n`. The QE thread fills in its findings, the implementation
+   thread the rest after the owner's test.
+2. **Bugs after the merge:** issue label `escaped-bug`, the issue names the PR that introduced it. Counted at
+   iteration end, no other effort.
+3. **Rework after the owner's test:** the `owner test rounds` value above (fix batches after the first test).
+4. **Cost per issue:** threads per issue and how many ended over ~150k tokens; counted by the coordinator from
+   the thread list at iteration end. Token numbers only where available without manual work.
+5. **Once, in the Iteration 3 retro:** how many of Iteration 2's Codex findings were real.
+
 ## Course of an iteration
 
 1. **Feature iteration N** (milestone "Iteration N"): implement issues, every PR extends the test plan.

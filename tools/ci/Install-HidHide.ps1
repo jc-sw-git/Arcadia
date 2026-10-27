@@ -23,11 +23,12 @@ if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notm
 
 Write-Host 'Installing HidHide 1.5.230'
 # An Advanced Installer bootstrapper: /exenoui /qn is its silent mode. Burn's "/install /quiet" opened its UI and
-# waited on the runner for six hours, so the setup gets a deadline of its own as well.
+# waited on the runner for six hours, so the setup gets a deadline of its own as well. It usually takes seconds, but
+# once waited minutes behind another msiexec; a setup cut off may still finish, so the tests check HidHide themselves.
 $setup = Start-Process -FilePath $installer -ArgumentList @('/exenoui', '/qn', '/norestart') -PassThru
-if (-not $setup.WaitForExit(300000)) {
+if (-not $setup.WaitForExit(480000)) {
     Stop-Process -Id $setup.Id -Force -ErrorAction SilentlyContinue
-    throw 'HidHide setup did not finish within 5 minutes'
+    throw 'HidHide setup did not finish within 8 minutes'
 }
 if ($setup.ExitCode -notin 0, 3010) { throw "HidHide setup exited with $($setup.ExitCode)" }
 

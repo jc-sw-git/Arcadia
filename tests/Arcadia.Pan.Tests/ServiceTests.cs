@@ -174,16 +174,23 @@ public sealed class ServiceTests : IDisposable
 
             // Part B: the real service reaches HidHide. With HidHide on the runner it hides (no puck there: nothing to
             // hide, but the test host is allow-listed and cloaking turned on) and the hang's teardown restores HidHide.
+            // A HidHide the test may not change (a developer's PC, or a CI setup that timed out but still installed it)
+            // is only asked about.
             var hidHideBefore = HidHideTests.Enabled ? HidHideTests.Snapshot() : null;
             var check = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.CheckHiding));
-            var hide = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.Hide, started.Generation));
-            if (hidHideBefore is null)
+            if (hidHideBefore is null && new HidHideDriver().IsServiceRegistered())
             {
+                Assert.Equal(PanReply.HidingState, check.Reply);
+            }
+            else if (hidHideBefore is null)
+            {
+                var hide = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.Hide, started.Generation));
                 Assert.Equal((PanReply.HidingState, PanReason.HidHideMissing), (check.Reply, check.Reason));
                 Assert.Equal((PanReply.Rejected, PanReason.HidHideMissing), (hide.Reply, hide.Reason));
             }
             else
             {
+                var hide = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.Hide, started.Generation));
                 Assert.Equal((PanReply.HidingState, PanReason.None), (check.Reply, check.Reason));
                 Assert.Equal(PanReply.Hidden, hide.Reply);
                 Assert.True(new HidHideDriver().GetCloaking(), "Pan turned cloaking on");

@@ -128,6 +128,36 @@ public sealed class StartRefusedTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T277-7")]
+    public async Task An_update_the_launcher_runs_before_the_start_keeps_it_starting_and_the_cover_shows_only_the_update()
+    {
+        using var arcadia = await StartAsync();
+        var tile = arcadia.FocusedGame!;
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count > 0, "der Launcher soll das Spiel starten");
+        var startToast = arcadia.Main.Toast.Text;
+
+        // Steam refuses with AppError_18, which it doesn't report as an abort, and updates the game first (#167).
+        arcadia.Installs.Set(tile.Game, new InstallProgress(InstallPhase.Downloading, 0.3));
+        await arcadia.FollowInstallsAsync();
+        arcadia.Time.Advance(RunningGamesTracker.StartTimeout);
+        await arcadia.FollowRunningGamesAsync();
+
+        Assert.True(tile.IsStarting);
+        Assert.True(tile.IsInstallActive);
+        Assert.False(tile.ShowStartingBadge);
+
+        arcadia.Installs.Set(tile.Game, null);
+        await arcadia.FollowInstallsAsync();
+        arcadia.RunInLauncher(tile.Game);
+        await arcadia.FollowRunningGamesAsync();
+
+        Assert.True(tile.IsRunning);
+        Assert.Equal(startToast, arcadia.Main.Toast.Text);
+        Assert.Empty(arcadia.BroughtToFrontFor);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T277-4")]
     public async Task A_start_nothing_is_heard_of_ends_after_the_timeout_with_a_toast_and_leaves_Arcadia_where_it_is()
     {

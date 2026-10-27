@@ -39,4 +39,4 @@ Charter: –. Time box: –. Findings: –.
 | T141-1, T141-3, T141-5, T141-7, T141-8, T141-9 | `tests/Arcadia.App.Tests/EntryTypeTests.cs` |
 | T141-4, T141-7 (drawn) | `tests/Arcadia.App.Tests/Window/EntryTypeViewTests.cs` |
 | T83-1 (faked Steam), T83-2, T83-5, T83-6, T83-7 | `tests/Arcadia.App.Tests/SteamAccountTests.cs` |
-| T277-1, T277-3 to T277-5 | `tests/Arcadia.App.Tests/StartRefusedTests.cs` |
+| T277-1, T277-3 to T277-5, T277-7 | `tests/Arcadia.App.Tests/StartRefusedTests.cs` |

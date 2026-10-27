@@ -27,9 +27,11 @@ public sealed class SteamInstallTests
         Assert.Equal("In der Warteschlange", TileOf(arcadia, Kupferwald).InstallStatusText);
         Assert.True(TileOf(arcadia, Kupferwald).IsInstallQueued);
 
+        // Running, the manifest's counters go stale at once, so no number (#278); paused they are exact.
         steam.Write(Kupferwald with { StateFlags = 1030, BytesToDownload = 1000, BytesDownloaded = 300, BytesToStage = 1000, BytesStaged = 300 });
         await arcadia.FollowInstallsAsync();
-        Assert.Equal("Wird aktualisiert · 30 %", TileOf(arcadia, Kupferwald).InstallStatusText);
+        Assert.Equal("Wird aktualisiert …", TileOf(arcadia, Kupferwald).InstallStatusText);
+        Assert.True(TileOf(arcadia, Kupferwald).IsInstallIndeterminate);
 
         steam.Write(Kupferwald with { StateFlags = 1542, BytesToDownload = 1000, BytesDownloaded = 300, BytesToStage = 1000, BytesStaged = 300 });
         await arcadia.FollowInstallsAsync();

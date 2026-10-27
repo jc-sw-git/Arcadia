@@ -1,6 +1,7 @@
 using System.Globalization;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
+using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Navigation;
@@ -51,6 +52,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private readonly ActionRowViewModel _rescanRow;
     private readonly ActionRowViewModel _rescanAllRow;
     private readonly List<(string LauncherId, ActionRowViewModel Row)> _linkRows = [];
+
+    // A launcher's switches for software, tools and soundtracks (#141), made when its page first shows them.
+    private readonly Dictionary<string, SwitchRowViewModel> _optionRows = new(StringComparer.Ordinal);
 
     private LauncherRowViewModel? _lifted;
 
@@ -510,21 +514,62 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
 
         var library = isActive ? _host.LibraryOf(id) : null;
         var scannedAt = _host.ScannedAt(id);
+        var counts = library is { Games.Count: > 0 } && isFound ? TypeCountLine.Of(library.Games) : null;
         _rescanRow.IsEnabled = isActive && isFound;
+        _rescanRow.Counts = counts;
         _rescanRow.Subtitle = (isActive, isFound, library) switch
         {
             (false, _, _) => "Nur für einen aktiven Launcher",
             (true, false, _) => "Nicht gefunden",
             (true, true, null) => "Wird eingelesen …",
-            (true, true, { } shown) when scannedAt is null => GameCount(shown.Games.Count),
-            (true, true, { } shown) => $"{GameCount(shown.Games.Count)} · zuletzt {Ago(scannedAt)}",
+            (true, true, { Games.Count: 0 }) when scannedAt is null => GameCount(0),
+            (true, true, { Games.Count: 0 }) => $"{GameCount(0)} · zuletzt {Ago(scannedAt)}",
+            (true, true, _) when scannedAt is null => null,
+            // After the count line (#141).
+            (true, true, _) => $"· zuletzt {Ago(scannedAt)}",
         };
         _rescanRow.Info =
         [
             new InfoText($"Liest die Spiele von {name} sofort neu ein, etwa nach einer Installation, die Arcadia nicht mitbekommen hat. Sonst liest Arcadia neu ein, wenn es wieder nach vorne kommt."),
         ];
 
-        SetRows([_activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), _rescanRow, .. _linkRows.Where(l => l.LauncherId == id).Select(l => l.Row)]);
+        var optionRows = launchers.LibraryOptions(id).Select(option => OptionRow(id, option)).ToList();
+        SetRows([_activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), .. optionRows, _rescanRow, .. _linkRows.Where(l => l.LauncherId == id).Select(l => l.Row)]);
+    }
+
+    /// <summary>
+    /// A switch that adds software, tools or soundtracks to the launcher's library (#141), as the launcher offers it. Acts
+    /// at once and is kept in the settings; the tab shows the entries without reading the launcher again.
+    /// </summary>
+    private SwitchRowViewModel OptionRow(string launcherId, Arcadia.Launchers.Abstractions.LibraryTypeOption option)
+    {
+        var key = $"library-option:{launcherId}:{option.Id}";
+        if (!_optionRows.TryGetValue(key, out var row))
+        {
+            row = new SwitchRowViewModel(key, option.Title, () => _host.Launchers.IsOptionOn(launcherId, option.Id), on => SwitchOption(launcherId, option, on))
+            {
+                Group = LibraryGroup,
+                Subtitle = option.Subtitle,
+                Info =
+                [
+                    new InfoText(option.Info),
+                    .. option.Examples.Select(example => new InfoBullet(example)),
+                    new InfoFootnote("Standard: Aus. Wirkt sofort, ohne Speichern."),
+                ],
+            };
+            _optionRows[key] = row;
+        }
+
+        row.Refresh();
+        return row;
+    }
+
+    private void SwitchOption(string launcherId, Arcadia.Launchers.Abstractions.LibraryTypeOption option, bool on)
+    {
+        _changes.Apply(settings => settings.WithLauncherPreferences(launcherId, p => p.WithLibraryOption(option.Id, on)), option.Title);
+        AppLog.Write($"{launcherId}: „{option.Title}“ {(on ? "an" : "aus")}");
+        _host.LibraryTypesChanged();
+        Refresh();
     }
 
     /// <summary>A on "Name im Tab" or "Such-Kürzel": the on-screen keyboard over the text, checked while it is typed.</summary>
@@ -806,7 +851,6 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         };
 
         var tabNumber = isActive ? place + 1 : (int?)null;
-        var installed = library?.Games.Count(g => g.IsInstalled) ?? 0;
         var integration = launchers.Registered(id);
         var location = launchers.LocationOf(id);
         InfoBlock[] preview = [new InfoTabBar([.. tabs.Select(tab => new InfoTab(tab.Launcher.DisplayName, tab.Badge, tab == row))])];
@@ -823,7 +867,8 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         [
             library is null
                 ? new InfoFact("Spiele", isActive ? "werden eingelesen" : "nicht eingelesen", IsMuted: true)
-                : new InfoFact("Spiele", library.Games.Count == installed ? GameCount(installed) : $"{GameCount(library.Games.Count)} · {installed} installiert"),
+                : library.Games.Count == 0 ? new InfoFact("Spiele", GameCount(0))
+                : CountsFact(TypeCountLine.Of(library.Games)),
             new InfoFact("Zuletzt eingelesen", Ago(scannedAt), IsMuted: scannedAt is null),
         ]));
         info.Add(new InfoFacts("ORT",
@@ -845,6 +890,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
 
         row.Show(isActive, isFound, tabNumber, status, notice, preview, info);
     }
+
+    // The same count line as beside the tab's name (#141); the words are the tooltip's.
+    private static InfoFact CountsFact(TypeCountLine counts) => new("Einträge", counts.Tip, Counts: counts);
 
     private static string GameCount(int count) => count == 1 ? "1 Spiel" : $"{count} Spiele";
 

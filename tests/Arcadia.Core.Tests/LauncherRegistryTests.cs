@@ -148,7 +148,8 @@ public sealed class LauncherRegistryTests
             games.AddRange(await integration.Scanner.ScanAsync());
         }
 
-        Assert.InRange(games.Count, 4990, 5010);
+        // Besides the games each demo launcher has a few software, tool and soundtrack entries (#141).
+        Assert.InRange(games.Count(g => g.Type == GameType.Game), 4990, 5010);
         Assert.All(games.GroupBy(g => g.LauncherId), library => Assert.Equal(library.Count(), library.Select(g => g.Title).Distinct().Count()));
     }
 

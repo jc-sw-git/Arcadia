@@ -23,11 +23,21 @@ internal sealed class TestLauncher(LauncherSpec spec, DateTimeOffset now, Record
 
     public IInstallMonitor? InstallMonitor { get; } = new TestInstallMonitor(spec.Launcher.Id, installs);
 
-    public IRunningGamesMonitor? RunningGames => null;
+    public IRunningGamesMonitor? RunningGames { get; } = spec.Running is { } running ? new FixedRunningGames(spec.Launcher.Id, running, now) : null;
 
     public IReadOnlyCollection<string> ProgramNames => [];
 
+    public IReadOnlyList<LibraryTypeOption> LibraryOptions => spec.Options ?? [];
+
     public string? Locate() => spec.IsInstalled ? "Test" : null;
+}
+
+/// <summary>The launcher reports these games as running, since 25 minutes before Arcadia started.</summary>
+internal sealed class FixedRunningGames(string launcherId, IReadOnlyList<string> gameIds, DateTimeOffset now) : IRunningGamesMonitor
+{
+    public string LauncherId => launcherId;
+
+    public IReadOnlyList<RunningGame> Poll() => [.. gameIds.Select(id => new RunningGame(id, now.AddMinutes(-25)))];
 }
 
 /// <summary>

@@ -17,6 +17,7 @@ its file.
 | [208-split-main-view-model-tabs-and-page-interface.md](208-split-main-view-model-tabs-and-page-interface.md) | #208 | Split MainViewModel: shared tabs and the page interface | 0 (refactoring) |
 | [209-split-main-view-model-search-page.md](209-split-main-view-model-search-page.md) | #209 | Split MainViewModel: the search page handles its own input | 0 (refactoring) |
 | [210-split-main-view-model-detail-and-library.md](210-split-main-view-model-detail-and-library.md) | #210 | Split MainViewModel: detail page, LibraryViewModel and routing | 0 (refactoring) |
+| [141-software-tools-and-soundtracks.md](141-software-tools-and-soundtracks.md) | #141 | Software, tools and soundtracks in the library | 12 |
 
 ## Exploratory test
 
@@ -33,3 +34,5 @@ Charter: –. Time box: –. Findings: –.
 | T208-1 to T208-3, T209-3 | `tests/Arcadia.App.Tests/PageInterfaceTests.cs` |
 | T209-1, T209-2 | `tests/Arcadia.App.Tests/PageTransitionTests.cs`, `Window/SearchViewTests.cs` |
 | T210-1 to T210-3 | `tests/Arcadia.App.Tests/RoutingTests.cs` |
+| T141-1, T141-3, T141-5, T141-7, T141-8, T141-9 | `tests/Arcadia.App.Tests/EntryTypeTests.cs` |
+| T141-4, T141-7 (drawn) | `tests/Arcadia.App.Tests/Window/EntryTypeViewTests.cs` |

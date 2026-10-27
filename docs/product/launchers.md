@@ -37,6 +37,13 @@ Agreed with the owner; don't change without asking. Read this before changing th
   the launcher (no choice between automatic and own): the folder is checked when picked and taken only if the launcher
   is there, then it is switched on and read. The mouse mode's "Bei System-Dialogfenstern einschalten" (under "Mausmodus",
   for "Von Hand" and "Automatisch", greyed out with "Aus") switches it on while a dialog opened from the controller is open.
+- Software, tools and soundtracks (#141, owner 2026-10-22 and 2026-10-26): a launcher's switches stand in "Bibliothek"
+  above "Neu einlesen", each default off, acting at once (no rescan) and saved. Steam: "Werkzeuge einbeziehen" (`Tool`),
+  "Software einbeziehen" (`Application`), "Soundtracks einbeziehen" (`Music`); demos are games; runtimes,
+  redistributables and every other type never appear. Epic: "Software und Engines einbeziehen" (Unreal Engine, all
+  versions as one entry that starts the newest, and launchable add-ons such as Unreal Editor for Fortnite), counted as
+  Werkzeug; Epic's soundtracks (`digitaldownloads`) stay out. "Neu einlesen" and "Launcher-Details" ("Einträge") show
+  the library's count line (`docs/product/library.md`).
 - First start (#139, owner 2026-10-11, 2026-10-12 and 2026-10-22): Arcadia never takes a launcher on just because it is
   installed. While `settings.json` has no `ActiveLaunchers` (also after an update from a version without it), a page
   "Welche Launcher soll Arcadia nutzen?" stands in place of the library, pattern "Leiste": "Gefunden" switched on with

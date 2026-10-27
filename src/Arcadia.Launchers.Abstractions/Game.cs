@@ -19,8 +19,17 @@ public sealed record Game
     /// </summary>
     public bool IsInstalled { get; init; } = true;
 
+    /// <summary>Game, software, tool or soundtrack (#141); independent of <see cref="IsInstalled"/>.</summary>
+    public GameType Type { get; init; } = GameType.Game;
+
     /// <summary>How to ask the launcher to install the game; null if Arcadia can't trigger it.</summary>
     public LaunchTarget? Install { get; init; }
+
+    /// <summary>
+    /// <see cref="Install"/> only opens the launcher's page, where the user picks and starts the installation; no install
+    /// dialog opens by itself (Epic's Unreal Engine, #141).
+    /// </summary>
+    public bool InstallStartsInLauncher { get; init; }
 
     /// <summary>Shows the game in its launcher; null if Arcadia can't open the launcher at all.</summary>
     public LaunchTarget? OpenInLauncher { get; init; }

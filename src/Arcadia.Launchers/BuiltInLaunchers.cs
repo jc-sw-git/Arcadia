@@ -47,7 +47,7 @@ public static class BuiltInLaunchers
             }
             else if (demo && DemoGameCounts.TryGetValue(launcher.Id, out var count))
             {
-                ordered.Add(new DemoIntegration(launcher, DemoCount(count), time.GetLocalNow()));
+                ordered.Add(new DemoIntegration(launcher, DemoCount(count), time.GetLocalNow(), withOtherTypes: true));
             }
         }
 

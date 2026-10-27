@@ -41,4 +41,10 @@ public interface ILauncherIntegration
 
     /// <summary>Lets the user pick the launcher's folder when <see cref="Locate"/> doesn't find it; null if it can't (#138).</summary>
     ILauncherFolderChoice? FolderChoice => null;
+
+    /// <summary>
+    /// The switches on the launcher's page that add software, tools or soundtracks to its library (#141), in the order
+    /// shown; none if the launcher delivers games only. The scanner delivers every type; Arcadia leaves out what is off.
+    /// </summary>
+    IReadOnlyList<LibraryTypeOption> LibraryOptions => [];
 }

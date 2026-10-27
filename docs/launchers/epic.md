@@ -12,6 +12,20 @@ launcher, no login needed). Games = category `games` without `addons`/`digitaldo
 an empty `mainGameItem.id` (DLC/season passes name their game there): 331 on the owner's PC vs.
 333 in the Epic library — the difference is Unreal Engine (one tile for all `engines` versions) and Unreal Editor for Fortnite (`addons/launchable`), which Epic shows but which are no games. Epic's own library list is cached in `webcache_*/IndexedDB/https_launcher.store.epicgames.com_0.indexeddb.blob` (V8-serialized, 431 apps incl. DLC). The cache is **ASCII-only** — every other
 character is `?` ("Batman? Arkham", "K?ln"); `EpicCatalog.RepairTitle` drops trademark `?`s,
+Since #141 both come as tools when the launcher's switch is on: engines by category `engines`, namespace `ue` with a
+title starting "Unreal Engine", or an app name `UE_<version>`; every installed version is one entry "Unreal Engine" whose
+A starts the newest (by `UE_5.4`, else the leading numbers of `AppVersionString`), not installed the newest catalog
+version; launchable add-ons by `addons/launchable` even though their `mainGameItem`/`MainGameAppName` names a game.
+The owner's catalog (2026-10-27): every engine item has namespace `ue` and categories `engines` (+ `engines/ue5`,
+`engines/ue4`, `engines/preview`, `engines/unstable`), 13 items from `UE_4.x` (one item with 28 app ids) to `UE_5.8`;
+UEFN is `Fortnite_Studio` with `addons/launchable`, `software`, `addons`, `applications` and a `mainGameItem`. With
+both the Epic tab holds 333 entries, as Epic's library. UEFN's cached title is "Unreal Editor f?r Fortnite" (umlauts:
+#43). An installed engine's manifest (2026-10-27): `AppName` `UE_5.8`, `DisplayName` "Unreal Engine", categories
+`engines/ue5`, `engines`. Installing an engine queues its plugins (`QuixelBridge_<v>`, `FabPlugin_<v>`, categories
+`plugins/engine`) as followers with their own manifests in the engine's folder. `…?action=install` for an engine
+logged "dispatching install" but showed no dialog (Epic was started by that link; the owner then installed from the
+Unreal Engine tab), so Arcadia opens `com.epicgames.launcher://ue/library` for an engine. No dialog opens there either:
+the user starts the installation (`Game.InstallStartsInLauncher`), and only then does it show in Arcadia with its progress. Epic's
 umlauts stay broken until metadata providers (#43) supply titles. Install: `…?action=install`.
 `EpicInstallMonitor` (verified 2026-10-10 with real installs): queue order from
 `Data\DownloadManager\DownloadState_<account>.json` (incl. paused, `[]` when idle); per-app events
@@ -22,6 +36,11 @@ the same `Queued`/`StartTask`/`HandleTaskComplete` lines, so only that first lin
 `Manifests\Pending\*.item`, which **stays behind after a cancel** (never use it as state). The
 queue file can lag behind (owner saw a running install vanish after cancelling a paused one), so
 for apps the log reported on while Arcadia ran, the log decides; the file only orders them.
+Followers (2026-10-27): an add-on installed before its game (UEFN before Fortnite) or an engine's plugins are queued as
+`Queued follower install for the <app>`; once the main app is done Epic logs `Not persisting follower [<app>]` and drops
+them from the queue file while it still downloads them, in one task whose `StartTask` lines name the main app first,
+followed by `Skipping OnInstallBegin broadcast for unchanged action <main app>`. So a follower is open by the log alone,
+and the main app is not. An add-on (`MainGameAppName` set) installs into its game's folder, so its progress has no fraction.
 Reordering logs `New active position is requested for the <app>` followed by a pause of the old one. Resuming a paused app while
 another downloads logs only `Resume of active installation` for the new one; the running one is cancelled
 without a pause line (verified 2026-10-12), so only the latest `StartTask` counts as downloading. Progress =

@@ -98,6 +98,11 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     public bool HasUpdateNote => UpdateNote is not null;
 
+    /// <summary>A soundtrack is played by its launcher, not by Arcadia (#141).</summary>
+    public string? SoundtrackNote => Tile.IsSoundtrack && Tile.IsInstalled ? $"{Tile.LauncherName} spielt den Soundtrack ab." : null;
+
+    public bool HasSoundtrackNote => SoundtrackNote is not null;
+
     /// <summary>
     /// Why "Spielen" isn't available, e.g. the running installation. The other buttons show nothing below them: their
     /// label says what they do, and a disabled one explains itself in its tooltip (owner, 2026-10-21).
@@ -109,7 +114,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     public bool HasPlayNote => PlayNote is not null;
 
     /// <summary>The line below the buttons has something to say; without, it takes no room.</summary>
-    public bool HasNotes => HasUpdateNote || HasPlayNote;
+    public bool HasNotes => HasUpdateNote || HasPlayNote || HasSoundtrackNote;
 
     public IRelayCommand SelectCommand { get; }
 

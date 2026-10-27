@@ -102,7 +102,7 @@ public sealed class LauncherSettingsTests
         Assert.Equal(["GOG Galaxy"], tabs.Tabs.Where(tab => tab.IsHighlighted).Select(tab => tab.Name));
         var head = Assert.IsType<InfoLauncher>(gog.Info[0]);
         Assert.Equal(("GOG Galaxy", "Aktiv · Tab 1"), (head.Name, head.StateText));
-        Assert.Equal("3 Spiele · 2 installiert", gog.Fact("Spiele"));
+        Assert.Equal("3 Spiele, davon 2 installiert", gog.Fact("Einträge"));
         Assert.Equal("gerade eben", gog.Fact("Zuletzt eingelesen"));
         Assert.Equal("Test", gog.Fact("Gefunden unter"));
         Assert.Equal("werden überwacht", gog.Fact("Installationen"));
@@ -308,7 +308,7 @@ internal static class LauncherSettingsDriving
     public static IReadOnlyList<string> LauncherKeys(this LauncherSettingsViewModel settings) =>
         [.. settings.Rows.OfType<LauncherRowViewModel>().Select(row => row.Key)];
 
-    /// <summary>A line of the info panel, e.g. "Spiele" → "3 Spiele · 2 installiert".</summary>
+    /// <summary>A line of the info panel, e.g. "Einträge" → "3 Spiele, davon 2 installiert".</summary>
     public static string Fact(this SettingsRowViewModel row, string label) =>
         row.Info.OfType<InfoFacts>().SelectMany(facts => facts.Facts).Single(fact => fact.Label == label).Value;
 }

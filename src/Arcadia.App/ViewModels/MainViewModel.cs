@@ -950,6 +950,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     void ILauncherSettingsHost.LauncherLooksChanged() => ApplyLauncherLooks();
 
+    void ILauncherSettingsHost.LibraryTypesChanged() => Session.ShowChosenTypes();
+
     void ILauncherSettingsHost.RescanLauncher(string launcherId) =>
         Session.RescanAsync(Session.Launchers.Info(launcherId)).Forget("Launcher neu einlesen");
 

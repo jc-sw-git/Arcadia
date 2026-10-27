@@ -7,8 +7,18 @@ namespace Arcadia.Launchers.Demo;
 /// Generates a fictional library for one launcher, so the UI can be tried out without any
 /// launcher installed. Enabled with <c>--demo</c>. The data is deterministic per launcher.
 /// </summary>
-public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOffset now) : ILauncherScanner
+/// <param name="withOtherTypes">Adds a few software, tool and soundtrack entries after the games (#141), for <c>--demo</c>.</param>
+public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOffset now, bool withOtherTypes = false) : ILauncherScanner
 {
+    private static readonly (string Title, GameType Type, bool IsInstalled)[] OtherTypes =
+    [
+        ("Pixel Forge Studio", GameType.Software, true),
+        ("Mapping Kit", GameType.Tool, true),
+        ("Dedicated Server", GameType.Tool, false),
+        ("Neon Drift Soundtrack", GameType.Soundtrack, true),
+        ("Hollow Crown Soundtrack", GameType.Soundtrack, false),
+    ];
+
     private static readonly string[] Adjectives =
     [
         "Hollow", "Iron", "Silent", "Crimson", "Distant", "Broken", "Neon", "Frozen", "Golden", "Shattered",
@@ -100,6 +110,26 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
                 InstallSizeBytes = (long)(sizeGb * 1024 * 1024 * 1024),
                 UpdateAvailable = random.NextDouble() < 0.12,
             });
+        }
+
+        if (withOtherTypes)
+        {
+            foreach (var (title, type, isInstalled) in OtherTypes)
+            {
+                games.Add(new Game
+                {
+                    Id = $"demo-{games.Count}",
+                    LauncherId = launcher.Id,
+                    Title = title,
+                    Type = type,
+                    Launch = new LaunchTarget.None(),
+                    OpenInLauncher = new LaunchTarget.None(),
+                    IsInstalled = isInstalled,
+                    Install = isInstalled ? null : new LaunchTarget.None(),
+                    InstalledAt = isInstalled ? now.AddDays(-30) : null,
+                    InstallDirectory = isInstalled ? Path.Combine("D:", "Games", launcher.DisplayName, title) : null,
+                });
+            }
         }
 
         return games;

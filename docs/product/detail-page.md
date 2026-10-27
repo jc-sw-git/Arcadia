@@ -25,6 +25,5 @@ Agreed with the owner; don't change without asking. Read this before changing th
   tools, "Abrocken" for a soundtrack; the same text on the button, in the context menu and in the button hint. Not
   installed it says "Installieren". While software or a tool runs, A says "Weiter tüfteln" instead of "Zurück ins
   Spiel" (owner, 2026-10-27). A soundtrack is handed to its launcher, so it gets no "Startet" or "Läuft" state: Steam
-  opens the soundtrack's page, as "In Steam öffnen" does, and it is played there (owner, 2026-10-27; controlling the
-  music from Arcadia is its own story). Its detail page notes "Steam öffnet den Soundtrack, dort spielst du ihn ab."
-  under the actions.
+  plays it and also shows the soundtrack's page, as "In Steam öffnen" does (owner, 2026-10-27; controlling the music
+  from Arcadia is its own story). Its detail page notes "Steam spielt den Soundtrack ab." under the actions.

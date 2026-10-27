@@ -204,10 +204,12 @@ public sealed class GameActions : IGameActionHost
             return;
         }
 
-        // The launcher opens a soundtrack in its own window (#141): nothing runs that Arcadia could wait for or switch to.
+        // The launcher plays a soundtrack and shows its page (#141, owner 2026-10-27): nothing runs that Arcadia could
+        // wait for or switch to.
         if (tile.IsSoundtrack)
         {
             HandOver(tile, tile.Game.Launch, $"„{tile.Title}“ wird in {tile.LauncherName} geöffnet …", $"Demo: Hier würde jetzt „{tile.Title}“ abgespielt.");
+            ShowInLauncher(tile);
             return;
         }
 
@@ -327,6 +329,19 @@ public sealed class GameActions : IGameActionHost
                 StartFailed(tile);
                 _toast.Show($"„{tile.Title}“ ist nicht gestartet – bitte in {tile.LauncherName} nachsehen.");
                 break;
+        }
+    }
+
+    /// <summary>Shows the game's page in its launcher beside another action, which already said what happens.</summary>
+    private void ShowInLauncher(GameTileViewModel tile)
+    {
+        try
+        {
+            _launcher.Open(tile.Game.OpenInLauncher);
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            AppLog.Write($"{tile.Game.Key} ließ sich nicht in {tile.LauncherName} zeigen: {ex.Message}");
         }
     }
 

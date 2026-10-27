@@ -18,9 +18,9 @@ tried without Steam or Epic.
 - [ ] **T141-5** A says "Spielen" / "Tüfteln" / "Abrocken" by type on the preview and detail page button, in the context
   menu and in the button hint; not installed it says "Installieren"; while software or a tool runs it says "Weiter
   tüfteln", a game "Zurück ins Spiel" · E2E: yes
-- [ ] **T141-6** A real Steam soundtrack: "Abrocken" brings Steam to the front on the soundtrack's page (as "In Steam
-  öffnen"), where it can be played; Arcadia shows a toast, no "Startet"/"Läuft"; its detail page notes "Steam öffnet den
-  Soundtrack, dort spielst du ihn ab." · E2E: no (real Steam)
+- [ ] **T141-6** A real Steam soundtrack: "Abrocken" plays it in Steam and brings Steam to the front on the
+  soundtrack's page (as "In Steam öffnen"); Arcadia shows a toast, no "Startet"/"Läuft"; its detail page notes "Steam
+  spielt den Soundtrack ab." · E2E: no (real Steam)
 - [ ] **T141-7** Count line beside the tab's name: parts in the order Spiele, Software, Werkzeuge, Soundtracks; a type
   without entries left out; the bracket left out when all of a type are installed; parts split by a divider; the tooltip
   spells it out; four-digit counts with a dot ("1.234"); no page number; an empty tab keeps its text; the tab's number
@@ -70,3 +70,4 @@ History:
 | Fixes 1–3: `EntryTypeTests` (running tool and software, engine install link, soundtrack page), `EpicScannerTests`, `SteamScannerTests`, `TypeCountLineTests`, each red once with the old code; all App and Core tests | 2026-10-27 | Claude | PR branch, Linux cloud container | ✅ | T141-6 and T141-13 on the owner's PC |
 | Owner's test, continued: UEFN after Fortnite, Unreal Engine 5.7 beside 5.8 | 2026-10-27 | owner | PR build, Debug, owner's PC, real Epic | ❌ UEFN showed "Fast fertig" while it still downloaded; after an Arcadia restart UEFN showed no installation and "Installieren" waited for a confirmation that never came. A starts 5.8 with 5.7 installed beside it (the newest, as decided) | fixed below; choosing the engine version becomes its own issue |
 | UEFN fix: `EpicInstallMonitorTests` with the lines from the owner's log (follower queued, left the queue file, main app unchanged; add-on without a fraction; found after a restart), red once with the old monitor; Epic monitor tests | 2026-10-27 | Claude | PR branch, Linux cloud container | ✅ | the end of UEFN's download (its completion line) still to be seen in the owner's log |
+| Owner's test, continued: UEFN's end, the soundtrack | 2026-10-27 | owner, Claude (Epic log) | PR build, owner's PC, real Steam and Epic | UEFN: ✅ its end is `HandleTaskComplete: AppId [<UEFN>] AlertCode=[ok]`, which Arcadia reads; soundtrack: ❌ it opened its page but no longer played (before, `rungameid` did play it) | soundtrack plays again and also opens its page; note back to "Steam spielt den Soundtrack ab." |

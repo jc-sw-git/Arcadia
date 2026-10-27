@@ -50,7 +50,7 @@ public partial class GameTileViewModel : ViewModelBase
     /// <summary>"WERKZEUG" on the detail page's chip.</summary>
     public string TypeNameUpper => TypeName.ToUpper(Formatting.Culture);
 
-    /// <summary>A soundtrack is handed to its launcher, which opens it; Arcadia doesn't wait for it to run (#141).</summary>
+    /// <summary>A soundtrack is handed to its launcher, which plays it; Arcadia doesn't wait for it to run (#141).</summary>
     public bool IsSoundtrack => Game.Type == GameType.Soundtrack;
 
     /// <summary>The update icon; a running game shows that it runs instead, its update comes with the next start.</summary>

@@ -234,7 +234,7 @@ public sealed class EntryTypeTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T141-5")]
-    public async Task A_on_an_installed_Steam_soundtrack_opens_its_page_in_Steam_with_a_toast_and_its_page_says_where_it_plays()
+    public async Task A_on_an_installed_Steam_soundtrack_plays_it_and_shows_its_page_in_Steam_with_a_toast_and_its_page_says_Steam_plays_it()
     {
         using var files = new LauncherFiles();
         var steam = files.Steam.Install();
@@ -251,13 +251,15 @@ public sealed class EntryTypeTests
         arcadia.Hold(UiAction.Accept, PastHoldTime);
         var page = arcadia.Detail!.Current;
         Assert.Equal("Abrocken", page.TopRow[0].ButtonLabel);
-        Assert.Equal("Steam öffnet den Soundtrack, dort spielst du ihn ab.", page.SoundtrackNote);
+        Assert.Equal("Steam spielt den Soundtrack ab.", page.SoundtrackNote);
 
         arcadia.Press(UiAction.Accept);
 
         Assert.Equal("„Salzwiesen Klänge“ wird in Steam geöffnet …", arcadia.Main.Toast.Text);
-        // Its page in Steam, as "In Steam öffnen" (owner, 2026-10-27).
-        Assert.Equal([new LaunchTarget.ProtocolUri("steam://nav/games/details/910101")], arcadia.Opened);
+        // Steam plays it and shows its page, as "In Steam öffnen" does (owner, 2026-10-27).
+        Assert.Equal(
+            [new LaunchTarget.ProtocolUri("steam://rungameid/910101"), new LaunchTarget.ProtocolUri("steam://nav/games/details/910101")],
+            arcadia.Opened);
         Assert.False(page.Tile.IsRunningOrStarting, "Kein „Startet“ oder „Läuft“");
     }
 

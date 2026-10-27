@@ -99,7 +99,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     public bool HasUpdateNote => UpdateNote is not null;
 
     /// <summary>A soundtrack is played by its launcher, not by Arcadia (#141).</summary>
-    public string? SoundtrackNote => Tile.IsSoundtrack && Tile.IsInstalled ? $"{Tile.LauncherName} öffnet den Soundtrack, dort spielst du ihn ab." : null;
+    public string? SoundtrackNote => Tile.IsSoundtrack && Tile.IsInstalled ? $"{Tile.LauncherName} spielt den Soundtrack ab." : null;
 
     public bool HasSoundtrackNote => SoundtrackNote is not null;
 

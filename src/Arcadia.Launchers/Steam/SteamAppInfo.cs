@@ -33,14 +33,26 @@ public static class SteamAppInfo
     /// <exception cref="FormatException">An unknown version or a broken file.</exception>
     /// <exception cref="IOException">The file can't be read.</exception>
     /// <exception cref="UnauthorizedAccessException">The file may not be read.</exception>
-    public static IReadOnlyDictionary<uint, string> ReadTypes(string path, IReadOnlySet<uint> appIds)
-    {
-        using var file = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        return ReadTypes(file, appIds);
-    }
+    public static IReadOnlyDictionary<uint, string> ReadTypes(string path, IReadOnlySet<uint> appIds) =>
+        ReadApps(path, appIds).ToDictionary(app => app.Key, app => app.Value.Type);
 
     /// <inheritdoc cref="ReadTypes(string, IReadOnlySet{uint})"/>
-    public static IReadOnlyDictionary<uint, string> ReadTypes(SafeFileHandle file, IReadOnlySet<uint> appIds)
+    public static IReadOnlyDictionary<uint, string> ReadTypes(SafeFileHandle file, IReadOnlySet<uint> appIds) =>
+        ReadApps(file, appIds).ToDictionary(app => app.Key, app => app.Value.Type);
+
+    /// <summary>
+    /// Type and name of every app of <paramref name="appIds"/> found in the file; the name names an owned app that isn't
+    /// installed (#83), which has no manifest.
+    /// </summary>
+    /// <inheritdoc cref="ReadTypes(string, IReadOnlySet{uint})"/>
+    public static IReadOnlyDictionary<uint, SteamAppEntry> ReadApps(string path, IReadOnlySet<uint> appIds)
+    {
+        using var file = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        return ReadApps(file, appIds);
+    }
+
+    /// <inheritdoc cref="ReadApps(string, IReadOnlySet{uint})"/>
+    public static IReadOnlyDictionary<uint, SteamAppEntry> ReadApps(SafeFileHandle file, IReadOnlySet<uint> appIds)
     {
         var length = RandomAccess.GetLength(file);
         Span<byte> header = stackalloc byte[16];
@@ -69,7 +81,7 @@ public static class SteamAppInfo
         }
 
         var entryHeader = magic == V27 ? EntryHeaderV27 : EntryHeaderV28;
-        var types = new Dictionary<uint, string>();
+        var types = new Dictionary<uint, SteamAppEntry>();
         while (types.Count < appIds.Count && position + 4 <= end)
         {
             // Id and size in one read: one system call per app, and there are tens of thousands.
@@ -96,9 +108,9 @@ public static class SteamAppInfo
             {
                 var entry = new byte[size - entryHeader];
                 Read(file, entry, data + entryHeader, end);
-                if (TypeOf(entry, strings) is { Length: > 0 } type)
+                if (EntryOf(entry, strings) is { } app)
                 {
-                    types[appId] = type;
+                    types[appId] = app;
                 }
             }
 
@@ -108,10 +120,13 @@ public static class SteamAppInfo
         return types;
     }
 
-    private static string? TypeOf(ReadOnlySpan<byte> entry, string[]? strings)
+    private static SteamAppEntry? EntryOf(ReadOnlySpan<byte> entry, string[]? strings)
     {
         var reader = new Reader(entry, strings);
-        return reader.Map().GetMap("appinfo")?.GetMap("common")?.GetString("type");
+        var common = reader.Map().GetMap("appinfo")?.GetMap("common");
+        return common?.GetString("type") is { Length: > 0 } type
+            ? new SteamAppEntry(type, common.GetString("name") is { Length: > 0 } name ? name : null)
+            : null;
     }
 
     private static string[] ReadStringTable(SafeFileHandle file, long offset, long length)
@@ -252,3 +267,6 @@ public static class SteamAppInfo
         }
     }
 }
+
+/// <summary>An app as <c>appinfo.vdf</c> knows it: Steam's type (e.g. <c>Game</c>) and its name, if it has one.</summary>
+public sealed record SteamAppEntry(string Type, string? Name);

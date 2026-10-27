@@ -64,9 +64,12 @@ public static class BuiltInLaunchers
 /// launchers' files there, so the real integrations read them on every platform.
 /// </summary>
 /// <param name="SteamRoot">Steam's folder (with <c>steamapps</c>, <c>config</c>, <c>userdata</c>, <c>logs</c>); Steam counts as not
-/// installed while it doesn't exist. Nobody is logged in, as with Steam closed.</param>
+/// installed while it doesn't exist.</param>
 /// <param name="Epic">Epic's folders; Epic counts as not installed while its data folder doesn't exist.</param>
 public sealed record LauncherFolders(string SteamRoot, EpicFolders Epic)
 {
-    public Func<SteamInstallation?> Steam => () => Directory.Exists(SteamRoot) ? new SteamInstallation(SteamRoot, activeUserId: null) : null;
+    /// <summary>The account signed in to the running Steam; null by default: nobody, as with Steam closed.</summary>
+    public Func<uint?> SteamActiveUser { get; init; } = () => null;
+
+    public Func<SteamInstallation?> Steam => () => Directory.Exists(SteamRoot) ? new SteamInstallation(SteamRoot, SteamActiveUser()) : null;
 }

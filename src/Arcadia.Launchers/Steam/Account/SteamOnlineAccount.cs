@@ -11,8 +11,17 @@ namespace Arcadia.Launchers.Steam.Account;
 /// </summary>
 public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 {
-    /// <summary>A code nobody approved disappears after this (owner, 2026-10-26).</summary>
-    internal static readonly TimeSpan CodeLifetime = TimeSpan.FromMinutes(2);
+    /// <summary>
+    /// The code stays while the page shows it: Steam renews it now and then, and when Steam ends a session nobody scanned,
+    /// a new one starts (owner, 2026-10-27). Without an answer from Steam for this long, the code is useless: "nicht erreichbar".
+    /// </summary>
+    internal static readonly TimeSpan SilenceLimit = TimeSpan.FromSeconds(60);
+
+    /// <summary>A session Steam ends sooner than this wasn't used up: something is wrong, so no new one starts by itself.</summary>
+    internal static readonly TimeSpan ShortestSession = TimeSpan.FromSeconds(30);
+
+    /// <summary>How often the account Steam runs with is looked at, so a switch in Steam shows at once (#83, finding 10).</summary>
+    internal static readonly TimeSpan ClientCheckInterval = TimeSpan.FromSeconds(2);
 
     /// <summary>
     /// The owned games are fetched at most this often: every rescan asks (Arcadia back in front, a game ended), but a
@@ -47,6 +56,11 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
     private Task _signInTask = Task.CompletedTask;
     private Task _fetchTask = Task.CompletedTask;
     private DateTimeOffset? _fetchedAt;
+
+    // The account the running Steam is signed in with, as last seen; 0 or null while Steam isn't running.
+    private Func<uint?>? _activeClient;
+    private uint? _lastClient;
+    private ITimer? _clientCheck;
 
     internal SteamOnlineAccount(SteamWebApi api, SteamAccountStore store, TimeProvider time)
     {
@@ -156,34 +170,82 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
     }
 
     /// <summary>
-    /// The owned games for Steam's library, or null if none are to be added: signed out, not fetched yet, or Steam is signed
-    /// in with another account (<paramref name="clientAccountId"/>, null or 0 when unknown), which <c>steam://install</c>
-    /// would install into; then <see cref="LauncherAccountState.Notice"/> says so.
+    /// The owned apps for Steam's library, or null while signed out. <paramref name="activeClient"/> is the account the
+    /// running Steam is signed in with (null or 0: Steam isn't running). Another account there still shows the games, but
+    /// <c>steam://install</c> would install into that account and a start may fail or use other saves
+    /// (owner, 2026-10-27), so <see cref="SteamOwnedApps.SteamHasOtherAccount"/> says so and
+    /// <see cref="LauncherAccountState.Notice"/> too.
     /// </summary>
-    internal IReadOnlyList<SteamOwnedGame>? OwnedGamesFor(uint? clientAccountId)
+    internal SteamOwnedApps? OwnedGamesFor(uint? activeClient)
     {
         bool noticeChanged;
-        IReadOnlyList<SteamOwnedGame>? games;
+        SteamOwnedApps? apps;
         lock (_lock)
         {
-            var notice = IsSignedIn && clientAccountId is { } client and not 0 && client != _signIn!.SteamId - SteamId64Base ? OtherAccountNotice : null;
+            var other = IsOtherAccount(activeClient);
+            var notice = other ? OtherAccountNotice : null;
             noticeChanged = notice != _notice;
             _notice = notice;
-            games = IsSignedIn && notice is null ? _owned?.Games : null;
+            _lastClient = activeClient;
+            apps = IsSignedIn ? new SteamOwnedApps(_owned?.Games ?? [], other) : null;
         }
 
         if (noticeChanged)
         {
             if (_notice is not null)
             {
-                Trace.TraceInformation("Steam-Konto: Steam ist mit einem anderen Konto angemeldet, nicht installierte Spiele ausgeblendet");
+                Trace.TraceInformation("Steam-Konto: Steam ist mit einem anderen Konto angemeldet");
             }
 
             SetStep(State.Step);
         }
 
-        return games;
+        return apps;
     }
+
+    /// <summary>
+    /// Looks every <see cref="ClientCheckInterval"/> at the account the running Steam is signed in with (null or 0: not
+    /// running) and asks for a rescan when it changed, so a switch in Steam shows without waiting for the next rescan.
+    /// </summary>
+    internal void FollowClient(Func<uint?> activeClient)
+    {
+        lock (_lock)
+        {
+            _activeClient = activeClient;
+            _clientCheck ??= _time.CreateTimer(_ => CheckClient(), null, ClientCheckInterval, ClientCheckInterval);
+        }
+    }
+
+    private void CheckClient()
+    {
+        try
+        {
+            Func<uint?>? read;
+            lock (_lock)
+            {
+                read = IsSignedIn && !_shutdown.IsCancellationRequested ? _activeClient : null;
+            }
+
+            if (read?.Invoke() is var client && read is not null && Normal(client) != Normal(_lastClient))
+            {
+                lock (_lock)
+                {
+                    _lastClient = client;
+                }
+
+                LibraryChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        catch (Exception e)
+        {
+            Report(e, "Steam-Konto prüfen");
+        }
+
+        static uint Normal(uint? client) => client ?? 0;
+    }
+
+    private bool IsOtherAccount(uint? activeClient) =>
+        IsSignedIn && activeClient is { } client and not 0 && client != _signIn!.SteamId - SteamId64Base;
 
     /// <summary>
     /// Fetches the owned games in the background, unless that happened in the last <see cref="FetchPause"/> or is under
@@ -219,6 +281,12 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 
     public void Dispose()
     {
+        lock (_lock)
+        {
+            _clientCheck?.Dispose();
+            _clientCheck = null;
+        }
+
         if (!_shutdown.IsCancellationRequested)
         {
             _shutdown.Cancel();
@@ -228,63 +296,112 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
     private async Task SignInAsync(CancellationTokenSource run)
     {
         var cancellationToken = run.Token;
-        SteamQrSession session;
-        try
+        while (!cancellationToken.IsCancellationRequested)
         {
-            session = await _api.BeginQrSessionAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception e) when (IsTransient(e, cancellationToken))
-        {
-            Trace.TraceWarning($"Steam-Konto: Anmeldung nicht möglich, Steam nicht erreichbar ({Describe(e)})");
-            SetStepFor(run, AccountStep.Unreachable);
-            return;
-        }
+            var begun = await _api.BeginQrSessionAsync(cancellationToken).ConfigureAwait(false);
+            if (begun.Value is not { } session)
+            {
+                if (!begun.Error!.IsCancelled)
+                {
+                    Trace.TraceWarning($"Steam-Konto: Anmeldung nicht möglich, Steam nicht erreichbar ({begun.Error.Message})");
+                    SetStepFor(run, AccountStep.Unreachable);
+                }
 
-        Trace.TraceInformation("Steam-Konto: QR-Code angezeigt");
+                return;
+            }
+
+            Trace.TraceInformation("Steam-Konto: QR-Code angezeigt");
+            switch (await PollSessionAsync(run, session).ConfigureAwait(false))
+            {
+                case SessionEnd.Ended:
+                    // Nobody scanned the code while Steam kept the session: a new one, without a press.
+                    Trace.TraceInformation("Steam-Konto: Sitzung von Steam beendet, neuer QR-Code");
+                    continue;
+                case SessionEnd.Rejected:
+                    Trace.TraceInformation("Steam-Konto: Anmeldung abgelehnt");
+                    SetStepFor(run, AccountStep.CodeRejected);
+                    return;
+                case SessionEnd.Silent:
+                    Trace.TraceWarning("Steam-Konto: Steam antwortet nicht mehr, QR-Code entfernt");
+                    SetStepFor(run, AccountStep.Unreachable);
+                    return;
+                default:
+                    return;
+            }
+        }
+    }
+
+    /// <summary>Polls one QR session until it is approved, rejected, ended by Steam, or the sign-in is cancelled.</summary>
+    private async Task<SessionEnd> PollSessionAsync(CancellationTokenSource run, SteamQrSession session)
+    {
+        var cancellationToken = run.Token;
         var clientId = session.ClientId;
-        SetStepFor(run, AccountStep.ShowingCode, session.ChallengeUrl);
         var started = _time.GetUtcNow();
+        var heard = started;
+        var scanned = false;
+        SetStepFor(run, AccountStep.ShowingCode, session.ChallengeUrl, started);
         while (true)
         {
-            await Task.Delay(session.Interval, _time, cancellationToken).ConfigureAwait(false);
-            if (_time.GetUtcNow() - started >= CodeLifetime)
+            // A cancel ends the wait without an exception: B is no error, and a debugger shouldn't stop at it.
+            await Task.Delay(session.Interval, _time, cancellationToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (cancellationToken.IsCancellationRequested)
             {
-                Trace.TraceInformation("Steam-Konto: QR-Code abgelaufen");
-                SetStepFor(run, AccountStep.CodeExpired);
-                return;
+                return SessionEnd.Cancelled;
             }
 
-            SteamPollResult poll;
-            try
+            var answer = await _api.PollAsync(clientId, session.RequestId, cancellationToken).ConfigureAwait(false);
+            var now = _time.GetUtcNow();
+            if (answer.Value is not { } poll)
             {
-                poll = await _api.PollAsync(clientId, session.RequestId, cancellationToken).ConfigureAwait(false);
-            }
-            catch (SteamApiException e) when (!e.IsTemporary)
-            {
-                // Steam ends the session when the phone rejects it; busy or unavailable is only a poll lost.
-                Trace.TraceInformation($"Steam-Konto: Anmeldung abgelehnt (EResult {e.EResult})");
-                SetStepFor(run, AccountStep.CodeRejected);
-                return;
-            }
-            catch (Exception e) when (IsTransient(e, cancellationToken))
-            {
-                // A poll lost on the way: the next one may get through, until the code expires.
-                Trace.TraceWarning($"Steam-Konto: Abfrage fehlgeschlagen ({Describe(e)})");
+                var error = answer.Error!;
+                if (error.IsCancelled)
+                {
+                    return SessionEnd.Cancelled;
+                }
+
+                if (!error.IsTemporary)
+                {
+                    // Steam ends a session the phone rejected, or one that ran out; only a scan tells them apart.
+                    return scanned ? SessionEnd.Rejected : now - started >= ShortestSession ? SessionEnd.Ended : SessionEnd.Silent;
+                }
+
+                // Busy, unavailable or lost on the way: the next poll may get through.
+                Trace.TraceWarning($"Steam-Konto: Abfrage fehlgeschlagen ({error.Message})");
+                if (now - heard >= SilenceLimit)
+                {
+                    return SessionEnd.Silent;
+                }
+
                 continue;
             }
 
+            heard = now;
+            scanned |= poll.HadRemoteInteraction;
             clientId = poll.NewClientId ?? clientId;
             if (poll.NewChallengeUrl is { } renewed)
             {
-                SetStepFor(run, AccountStep.ShowingCode, renewed);
+                SetStepFor(run, AccountStep.ShowingCode, renewed, now);
             }
 
             if (poll.RefreshToken is { } refreshToken)
             {
                 await CompleteSignInAsync(run, refreshToken, poll).ConfigureAwait(false);
-                return;
+                return SessionEnd.SignedIn;
             }
         }
+    }
+
+    private enum SessionEnd
+    {
+        SignedIn,
+        Cancelled,
+        Rejected,
+
+        /// <summary>Steam ended a session nobody scanned: a new one starts.</summary>
+        Ended,
+
+        /// <summary>Steam stopped answering, or ended the session at once.</summary>
+        Silent,
     }
 
     private async Task CompleteSignInAsync(CancellationTokenSource run, string refreshToken, SteamPollResult poll)
@@ -299,15 +416,21 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 
         var accessToken = poll.AccessToken;
         string? name = null;
-        try
+        if (accessToken is null)
         {
-            accessToken ??= await _api.GenerateAccessTokenAsync(refreshToken, steamId, cancellationToken).ConfigureAwait(false);
-            name = await _api.GetProfileNameAsync(accessToken, steamId, cancellationToken).ConfigureAwait(false);
+            var renewed = await _api.GenerateAccessTokenAsync(refreshToken, steamId, cancellationToken).ConfigureAwait(false);
+            accessToken = renewed.Value;
         }
-        catch (Exception e) when (IsTransient(e, cancellationToken))
+
+        if (accessToken is not null)
         {
-            // The sign-in holds; the name falls back to the login name, the games come with the next fetch.
-            Trace.TraceWarning($"Steam-Konto: Profilname nicht geladen ({Describe(e)})");
+            var profile = await _api.GetProfileNameAsync(accessToken, steamId, cancellationToken).ConfigureAwait(false);
+            name = profile.Value;
+            if (profile.Error is { IsCancelled: false } error)
+            {
+                // The sign-in holds; the name falls back to the login name.
+                Trace.TraceWarning($"Steam-Konto: Profilname nicht geladen ({error.Message})");
+            }
         }
 
         lock (_lock)
@@ -345,44 +468,37 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         }
 
         var watch = Stopwatch.StartNew();
-        IReadOnlyList<SteamOwnedGame> games;
-        try
+        var cached = signIn.AccessToken is { } stored && SteamToken.ExpiresAt(stored) is { } expires && expires - _time.GetUtcNow() > TimeSpan.FromMinutes(5)
+            ? stored
+            : null;
+        var accessToken = cached is not null ? SteamApiResult<string>.Ok(cached) : await NewAccessTokenAsync(signIn, cancellationToken).ConfigureAwait(false);
+        var listed = accessToken.Value is { } token
+            ? await _api.GetOwnedGamesAsync(token, signIn.SteamId, cancellationToken).ConfigureAwait(false)
+            : accessToken.Error!;
+        if (listed.Error is { IsSignInGone: true } && cached is not null)
         {
-            var accessToken = signIn.AccessToken is { } cached && SteamToken.ExpiresAt(cached) is { } expires && expires - _time.GetUtcNow() > TimeSpan.FromMinutes(5)
-                ? cached
-                : null;
-            try
-            {
-                games = await _api.GetOwnedGamesAsync(accessToken ?? await NewAccessTokenAsync(signIn, cancellationToken).ConfigureAwait(false), signIn.SteamId, cancellationToken).ConfigureAwait(false);
-            }
-            catch (SteamApiException e) when (e.IsSignInGone && accessToken is not null)
-            {
-                // The stored access token may have been revoked before it expired: one more try with a new one.
-                games = await _api.GetOwnedGamesAsync(await NewAccessTokenAsync(signIn, cancellationToken).ConfigureAwait(false), signIn.SteamId, cancellationToken).ConfigureAwait(false);
-            }
+            // The stored access token may have been revoked before it expired: one more try with a new one.
+            accessToken = await NewAccessTokenAsync(signIn, cancellationToken).ConfigureAwait(false);
+            listed = accessToken.Value is { } renewed
+                ? await _api.GetOwnedGamesAsync(renewed, signIn.SteamId, cancellationToken).ConfigureAwait(false)
+                : accessToken.Error!;
         }
-        catch (SteamApiException e) when (e.IsSignInGone)
-        {
-            Trace.TraceWarning($"Steam-Konto: Anmeldung abgelaufen ({Describe(e)})");
-            lock (_lock)
-            {
-                if (_signIn?.SteamId != signIn.SteamId)
-                {
-                    return;
-                }
 
-                _signIn = signIn with { RefreshToken = null, AccessToken = null, Expired = true };
-                _owned = null;
-                _store.Clear(_signIn);
+        if (listed.Value is not { } games)
+        {
+            var error = listed.Error!;
+            if (error.IsCancelled)
+            {
+                return;
             }
 
-            SetStep(AccountStep.SignedOut);
-            LibraryChanged?.Invoke(this, EventArgs.Empty);
-            return;
-        }
-        catch (Exception e) when (IsTransient(e, cancellationToken))
-        {
-            Trace.TraceWarning($"Steam-Konto: Spiele nicht geladen ({Describe(e)}), es gilt die zuletzt geladene Liste");
+            if (error.IsSignInGone)
+            {
+                SignInGone(signIn, error);
+                return;
+            }
+
+            Trace.TraceWarning($"Steam-Konto: Spiele nicht geladen ({error.Message}), es gilt die zuletzt geladene Liste");
             lock (_lock)
             {
                 _problem = _owned is null ? UnreachableWithoutList : UnreachableWithList;
@@ -390,6 +506,18 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 
             SetStep(State.Step);
             return;
+        }
+
+        var apps = await _api.GetOwnedAppsAsync(accessToken.Value!, signIn.SteamId, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<SteamOwnedGame> owned;
+        lock (_lock)
+        {
+            owned = WithStoreApps(games, apps.Value ?? StoreOnly(_owned));
+        }
+
+        if (apps.Error is { IsCancelled: false } storeError)
+        {
+            Trace.TraceWarning($"Steam-Konto: Store-Liste nicht geladen ({storeError.Message}), Soundtracks und Werkzeuge wie zuletzt");
         }
 
         bool changed;
@@ -400,13 +528,13 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
                 return;
             }
 
-            changed = _owned is null || !_owned.Games.SequenceEqual(games);
-            _owned = new SteamOwnedList(_time.GetUtcNow(), games);
+            changed = _owned is null || !_owned.Games.SequenceEqual(owned);
+            _owned = new SteamOwnedList(_time.GetUtcNow(), owned);
             _problem = null;
             _store.SaveOwned(_owned);
         }
 
-        Trace.TraceInformation($"Steam-Konto: {games.Count} Spiele in {watch.ElapsedMilliseconds} ms geladen{(changed ? string.Empty : ", unverändert")}");
+        Trace.TraceInformation($"Steam-Konto: {games.Count} Spiele und {owned.Count - games.Count} weitere Apps in {watch.ElapsedMilliseconds} ms geladen{(changed ? string.Empty : ", unverändert")}");
         SetStep(State.Step);
         if (changed)
         {
@@ -414,23 +542,59 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         }
     }
 
-    private async Task<string> NewAccessTokenAsync(SteamSignIn signIn, CancellationToken cancellationToken)
+    private async Task<SteamApiResult<string>> NewAccessTokenAsync(SteamSignIn signIn, CancellationToken cancellationToken)
     {
-        var accessToken = await _api.GenerateAccessTokenAsync(signIn.RefreshToken!, signIn.SteamId, cancellationToken).ConfigureAwait(false);
-        lock (_lock)
+        var answer = await _api.GenerateAccessTokenAsync(signIn.RefreshToken!, signIn.SteamId, cancellationToken).ConfigureAwait(false);
+        if (answer.Value is { } accessToken)
         {
-            if (_signIn?.SteamId == signIn.SteamId && IsSignedIn)
+            lock (_lock)
             {
-                _signIn = _signIn with { AccessToken = accessToken };
-                _store.SaveSignIn(_signIn);
+                if (_signIn?.SteamId == signIn.SteamId && IsSignedIn)
+                {
+                    _signIn = _signIn with { AccessToken = accessToken };
+                    _store.SaveSignIn(_signIn);
+                }
             }
         }
 
-        return accessToken;
+        return answer;
     }
 
+    /// <summary>Steam no longer takes the refresh token: signed out, with a status message saying why.</summary>
+    private void SignInGone(SteamSignIn signIn, SteamApiError error)
+    {
+        Trace.TraceWarning($"Steam-Konto: Anmeldung abgelaufen ({error.Message})");
+        lock (_lock)
+        {
+            if (_signIn?.SteamId != signIn.SteamId)
+            {
+                return;
+            }
+
+            _signIn = signIn with { RefreshToken = null, AccessToken = null, Expired = true };
+            _owned = null;
+            _store.Clear(_signIn);
+        }
+
+        SetStep(AccountStep.SignedOut);
+        LibraryChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// The games with name and playtime, then every other app the store lists, nameless: <c>appinfo.vdf</c> names and
+    /// types them, and leaves out DLC and the like.
+    /// </summary>
+    private static IReadOnlyList<SteamOwnedGame> WithStoreApps(IReadOnlyList<SteamOwnedGame> games, IReadOnlyList<uint> storeApps)
+    {
+        var listed = games.Select(game => game.AppId).ToHashSet();
+        return [.. games, .. storeApps.Where(listed.Add).Order().Select(appId => new SteamOwnedGame(appId, null, 0, 0))];
+    }
+
+    private static IReadOnlyList<uint> StoreOnly(SteamOwnedList? owned) =>
+        owned?.Games.Where(game => game.Name is null).Select(game => game.AppId).ToList() ?? [];
+
     /// <summary>A step of the sign-in <paramref name="run"/>, unless a newer one or a cancel replaced it.</summary>
-    private void SetStepFor(CancellationTokenSource run, AccountStep step, string? code = null)
+    private void SetStepFor(CancellationTokenSource run, AccountStep step, string? code = null, DateTimeOffset? codeRenewedAt = null)
     {
         // Checked and set under one lock, so a run cancelled meanwhile can't overwrite a newer one's step.
         lock (_lock)
@@ -445,29 +609,31 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
                 _signInRun = null;
             }
 
-            _state = Compose(step, code);
+            _state = Compose(step, code, codeRenewedAt);
         }
 
         StateChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private void SetStep(AccountStep step, string? code = null)
+    /// <summary>Sets the step; staying on the same step keeps the code shown.</summary>
+    private void SetStep(AccountStep step)
     {
         lock (_lock)
         {
-            _state = Compose(step, code);
+            _state = step == _state.Step ? Compose(step, _state.Code, _state.CodeRenewedAt) : Compose(step);
         }
 
         StateChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private LauncherAccountState Compose(AccountStep step, string? code = null) => new(step)
+    private LauncherAccountState Compose(AccountStep step, string? code = null, DateTimeOffset? codeRenewedAt = null) => new(step)
     {
         AccountName = IsSignedIn ? _signIn!.Name : null,
         Code = step == AccountStep.ShowingCode ? code : null,
+        CodeRenewedAt = step == AccountStep.ShowingCode ? codeRenewedAt : null,
         Problem = IsSignedIn ? _problem : _signIn is { Expired: true } && step == AccountStep.SignedOut ? ExpiredProblem : null,
         Notice = IsSignedIn ? _notice : null,
-        OwnedGames = IsSignedIn ? _owned?.Games.Count : null,
+        OwnedGames = IsSignedIn ? _owned?.Games.Count(game => game.Name is not null) : null,
         ListedAt = IsSignedIn ? _owned?.ListedAt : null,
     };
 
@@ -484,24 +650,27 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         }
         catch (Exception e)
         {
-            // Whoever listens logs it with its stack trace; else at least the log has it.
-            if (Failed is { } failed)
-            {
-                failed(this, e);
-            }
-            else
-            {
-                Trace.TraceError($"Steam-Konto: {what}: {e}");
-            }
+            Report(e, what);
         }
     });
 
-    /// <summary>Steam not reachable or its answer unusable: a timeout counts, a cancel by the user doesn't.</summary>
-    private static bool IsTransient(Exception e, CancellationToken cancellationToken) =>
-        e is HttpRequestException or SteamApiException or FormatException or System.Text.Json.JsonException
-        || (e is OperationCanceledException && !cancellationToken.IsCancellationRequested);
-
-    private static string Describe(Exception e) => e is SteamApiException ? e.Message : e.GetType().Name;
+    /// <summary>Whoever listens logs it with its stack trace; else at least the log has it.</summary>
+    private void Report(Exception e, string what)
+    {
+        if (Failed is { } failed)
+        {
+            failed(this, e);
+        }
+        else
+        {
+            Trace.TraceError($"Steam-Konto: {what}: {e}");
+        }
+    }
 
     private static string Clip(string name) => name.Length <= 64 ? name : name[..64];
 }
+
+/// <summary>What the account adds to Steam's library (#83).</summary>
+/// <param name="Owned">The owned apps; nameless ones are named and typed by <c>appinfo.vdf</c>.</param>
+/// <param name="SteamHasOtherAccount">The running Steam is signed in with another account than Arcadia.</param>
+internal sealed record SteamOwnedApps(IReadOnlyList<SteamOwnedGame> Owned, bool SteamHasOtherAccount);

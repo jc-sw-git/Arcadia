@@ -44,7 +44,42 @@ public sealed class SteamOnlineAccountTests : IDisposable
         Assert.Equal(1, libraryChanges);
         var owned = account.OwnedGamesFor(Account);
         Assert.NotNull(owned);
-        Assert.Equal([10u, 20u], owned.Select(g => g.AppId));
+        Assert.Equal([10u, 20u], owned.Owned.Select(g => g.AppId));
+    }
+
+    [Fact]
+    public async Task Profile_name_that_cannot_be_loaded_falls_back_to_the_login_name()
+    {
+        _web.ProfileFails = true;
+        var account = await SignedInAsync();
+
+        Assert.Equal(FakeSteamWeb.LoginName, account.State.AccountName);
+    }
+
+    [Fact]
+    public async Task Apps_only_the_store_lists_are_added_without_a_name_and_do_not_count_as_games()
+    {
+        _web.StoreApps.AddRange([40u, 5u]);
+        var account = await SignedInAsync();
+
+        var owned = account.OwnedGamesFor(Account)!.Owned;
+        Assert.Equal([10u, 20u, 5u, 40u], owned.Select(g => g.AppId));
+        Assert.Equal([null, null], owned.Skip(2).Select(g => g.Name));
+        Assert.Equal(2, account.State.OwnedGames);
+    }
+
+    [Fact]
+    public async Task A_failed_store_list_keeps_the_store_apps_fetched_before()
+    {
+        _web.StoreApps.Add(40);
+        var account = await SignedInAsync();
+
+        _web.StoreFails = true;
+        account.RefreshNow();
+        await account.WhenIdleAsync();
+
+        Assert.Equal([10u, 20u, 40u], account.OwnedGamesFor(Account)!.Owned.Select(g => g.AppId));
+        Assert.Null(account.State.Problem);
     }
 
     [Fact]
@@ -54,26 +89,66 @@ public sealed class SteamOnlineAccountTests : IDisposable
         account.BeginSignIn();
         await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
 
+        var shownAt = account.State.CodeRenewedAt;
+        _time.Advance(TimeSpan.FromSeconds(20));
+
         _web.RenewCode();
         await AdvanceUntilAsync(() => account.State.Code == FakeSteamWeb.CodeUrl(2));
 
         Assert.Equal(AccountStep.ShowingCode, account.State.Step);
+        Assert.True(account.State.CodeRenewedAt > shownAt);
     }
 
     [Fact]
-    public async Task Code_nobody_approves_expires_after_two_minutes_and_A_gets_a_new_one()
+    public async Task Code_stays_while_nobody_approves_and_a_session_Steam_ends_gets_a_new_code_by_itself()
     {
         var account = Create();
         account.BeginSignIn();
         await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
         var shownAt = _time.GetUtcNow();
 
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.CodeExpired);
+        // Longer than the two minutes the code used to last.
+        await AdvanceUntilAsync(() => _time.GetUtcNow() - shownAt > TimeSpan.FromMinutes(3));
+        Assert.Equal(AccountStep.ShowingCode, account.State.Step);
 
-        Assert.InRange(_time.GetUtcNow() - shownAt, SteamOnlineAccount.CodeLifetime, SteamOnlineAccount.CodeLifetime + TimeSpan.FromSeconds(10));
+        _web.EndSession();
+        await AdvanceUntilAsync(() => account.State.Code == FakeSteamWeb.CodeUrl(2));
+
+        Assert.Equal(AccountStep.ShowingCode, account.State.Step);
+        Assert.Equal(2, _web.CodesIssued);
+        _web.IsApproved = true;
+        await AdvanceUntilAsync(() => account.State.Step == AccountStep.SignedIn);
+    }
+
+    [Fact]
+    public async Task Session_Steam_ends_at_once_says_Steam_is_unreachable_instead_of_starting_over()
+    {
+        var account = Create();
+        account.BeginSignIn();
+        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
+
+        _web.EndSession();
+        await AdvanceUntilAsync(() => account.State.Step == AccountStep.Unreachable);
+
+        Assert.Equal(1, _web.CodesIssued);
         Assert.Null(account.State.Code);
+    }
+
+    [Fact]
+    public async Task Code_goes_when_Steam_stops_answering_and_A_gets_a_new_one()
+    {
+        var account = Create();
+        account.BeginSignIn();
+        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
+
+        _web.IsOffline = true;
+        var lostAt = _time.GetUtcNow();
+        await AdvanceUntilAsync(() => account.State.Step == AccountStep.Unreachable);
+
+        Assert.InRange(_time.GetUtcNow() - lostAt, SteamOnlineAccount.SilenceLimit - TimeSpan.FromSeconds(10), SteamOnlineAccount.SilenceLimit + TimeSpan.FromSeconds(10));
         Assert.True(account.State.IsSigningIn);
 
+        _web.IsOffline = false;
         account.BeginSignIn();
         await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
         Assert.Equal(FakeSteamWeb.CodeUrl(2), account.State.Code);
@@ -151,7 +226,7 @@ public sealed class SteamOnlineAccountTests : IDisposable
         await AdvanceUntilAsync(() => restarted.State.Problem is not null);
 
         Assert.Equal(SteamOnlineAccount.UnreachableWithList, restarted.State.Problem);
-        Assert.Equal(2, restarted.OwnedGamesFor(Account)?.Count);
+        Assert.Equal(2, restarted.OwnedGamesFor(Account)?.Owned.Count);
     }
 
     [Fact]
@@ -201,7 +276,7 @@ public sealed class SteamOnlineAccountTests : IDisposable
         account.RefreshNow();
         await account.WhenIdleAsync();
 
-        Assert.Equal(2, account.OwnedGamesFor(Account)?.Count);
+        Assert.Equal(2, account.OwnedGamesFor(Account)?.Owned.Count);
         Assert.Equal(SteamOnlineAccount.UnreachableWithList, account.State.Problem);
     }
 
@@ -257,18 +332,42 @@ public sealed class SteamOnlineAccountTests : IDisposable
     }
 
     [Fact]
-    public async Task Another_account_in_the_Steam_client_hides_the_games_with_a_notice()
+    public async Task Another_account_in_the_Steam_client_keeps_the_games_and_says_so()
     {
         var account = await SignedInAsync();
 
-        Assert.Null(account.OwnedGamesFor(Account + 1));
+        var other = account.OwnedGamesFor(Account + 1);
+        Assert.Equal(2, other?.Owned.Count);
+        Assert.True(other?.SteamHasOtherAccount);
         Assert.Equal(SteamOnlineAccount.OtherAccountNotice, account.State.Notice);
 
-        Assert.NotNull(account.OwnedGamesFor(Account));
+        Assert.False(account.OwnedGamesFor(Account)?.SteamHasOtherAccount);
         Assert.Null(account.State.Notice);
 
-        // Nobody signed in to Steam: nothing to compare with.
-        Assert.NotNull(account.OwnedGamesFor(null));
+        // Steam isn't running: nothing to compare with.
+        Assert.False(account.OwnedGamesFor(0)?.SteamHasOtherAccount);
+        Assert.False(account.OwnedGamesFor(null)?.SteamHasOtherAccount);
+    }
+
+    [Fact]
+    public async Task Account_switch_in_Steam_asks_for_a_rescan_without_waiting_for_one()
+    {
+        var account = await SignedInAsync();
+        uint? client = Account;
+        account.OwnedGamesFor(client);
+        account.FollowClient(() => client);
+        var libraryChanges = 0;
+        account.LibraryChanged += (_, _) => Interlocked.Increment(ref libraryChanges);
+
+        _time.Advance(SteamOnlineAccount.ClientCheckInterval * 3);
+        Assert.Equal(0, libraryChanges);
+
+        client = Account + 1;
+        _time.Advance(SteamOnlineAccount.ClientCheckInterval);
+        Assert.Equal(1, libraryChanges);
+
+        _time.Advance(SteamOnlineAccount.ClientCheckInterval * 3);
+        Assert.Equal(1, libraryChanges);
     }
 
     [Fact]

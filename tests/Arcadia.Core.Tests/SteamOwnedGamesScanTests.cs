@@ -37,17 +37,22 @@ public sealed class SteamOwnedGamesScanTests : IDisposable
             (40, "Half-Life Soundtrack", 0, 0),
             (50, "Some DLC", 0, 0),
         ]);
+
+        // Only the store lists these: a tool, DLC, and an app appinfo.vdf doesn't know (so nothing names or types it).
+        _web.StoreApps.AddRange([60u, 70u, 80u]);
         WriteFile(Path.Combine(SteamRoot, "appcache", "appinfo.vdf"), AppInfoFile.Build(AppInfoFile.V29,
         [
             (10, "Counter-Strike", "Game"),
             (40, "Half-Life Soundtrack", "Music"),
             (50, "Some DLC", "DLC"),
+            (60, "Dedicated Server", "Tool"),
+            (80, "Store DLC", "DLC"),
         ]));
         await SignInAsync();
 
         var games = (await new SteamScanner(() => new SteamInstallation(SteamRoot, Account), _account).ScanAsync()).OrderBy(g => g.Id).ToList();
 
-        Assert.Equal(["10", "20", "40"], games.Select(g => g.Id));
+        Assert.Equal(["10", "20", "40", "60"], games.Select(g => g.Id));
         var installed = games[0];
         Assert.True(installed.IsInstalled);
         // Installed: the account's localconfig.vdf counts, not the web API.
@@ -64,19 +69,41 @@ public sealed class SteamOwnedGamesScanTests : IDisposable
         Assert.Null(uninstalled.InstallDirectory);
 
         Assert.Equal(GameType.Soundtrack, games[2].Type);
+        Assert.Equal(GameType.Tool, games[3].Type);
+        Assert.Equal("Dedicated Server", games[3].Title);
+        Assert.False(games[3].IsInstalled);
+        Assert.All(games, game => Assert.Null(game.Notice));
     }
 
     [Fact]
-    public async Task Another_account_in_Steam_adds_no_uninstalled_games()
+    public async Task Another_account_in_the_running_Steam_keeps_the_games_but_blocks_installs_and_says_so()
     {
         WriteSteam();
         _web.OwnedGames.Add((20, "Team Fortress Classic", 0, 0));
         await SignInAsync();
 
-        var games = await new SteamScanner(() => new SteamInstallation(SteamRoot, Account + 1), _account).ScanAsync();
+        var games = (await new SteamScanner(() => new SteamInstallation(SteamRoot, Account + 1), _account).ScanAsync()).OrderBy(g => g.Id).ToList();
 
-        Assert.Equal(["10"], games.Select(g => g.Id));
+        Assert.Equal(["10", "20"], games.Select(g => g.Id));
+        Assert.All(games, game => Assert.Equal(SteamScanner.OtherAccountNotice, game.Notice));
+        Assert.Null(games[0].InstallBlockedReason);
+        Assert.Equal(SteamScanner.OtherAccountInstall, games[1].InstallBlockedReason);
         Assert.Equal(SteamOnlineAccount.OtherAccountNotice, _account.State.Notice);
+    }
+
+    [Fact]
+    public async Task A_closed_Steam_compares_with_no_account()
+    {
+        WriteSteam();
+        _web.OwnedGames.Add((20, "Team Fortress Classic", 0, 0));
+        await SignInAsync();
+
+        // Steam writes ActiveUser 0 when it closes; it starts with whichever account the user picks then.
+        var games = await new SteamScanner(() => new SteamInstallation(SteamRoot, 0), _account).ScanAsync();
+
+        Assert.Equal(2, games.Count);
+        Assert.All(games, game => Assert.Null(game.Notice));
+        Assert.All(games, game => Assert.Null(game.InstallBlockedReason));
     }
 
     [Fact]

@@ -37,7 +37,10 @@ public interface ILauncherAccount
     /// <summary>Background work failed unexpectedly (a bug, not Steam being unreachable); Arcadia logs and shows it.</summary>
     event EventHandler<Exception>? Failed;
 
-    /// <summary>Starts a sign-in: a QR code to approve, renewed by itself until it is approved, rejected or expires.</summary>
+    /// <summary>
+    /// Starts a sign-in: a QR code to approve, renewed by itself until it is approved, rejected or cancelled, or the
+    /// launcher's sign-in service stops answering.
+    /// </summary>
     void BeginSignIn();
 
     /// <summary>Drops a sign-in that is under way; the account stays as it was.</summary>
@@ -61,13 +64,10 @@ public enum AccountStep
     /// <summary><see cref="LauncherAccountState.Code"/> waits for approval on the phone.</summary>
     ShowingCode,
 
-    /// <summary>Nobody approved the code in time.</summary>
-    CodeExpired,
-
     /// <summary>The code was rejected on the phone.</summary>
     CodeRejected,
 
-    /// <summary>The launcher's sign-in service couldn't be reached.</summary>
+    /// <summary>The launcher's sign-in service couldn't be reached, or stopped answering.</summary>
     Unreachable,
 
     SignedIn,
@@ -83,6 +83,9 @@ public sealed record LauncherAccountState(AccountStep Step)
 
     /// <summary>The text of the QR code while <see cref="AccountStep.ShowingCode"/>.</summary>
     public string? Code { get; init; }
+
+    /// <summary>When <see cref="Code"/> was shown or last renewed; the launcher's service doesn't say how long it holds.</summary>
+    public DateTimeOffset? CodeRenewedAt { get; init; }
 
     /// <summary>
     /// A status message (warning) about the account, e.g. the owned games couldn't be fetched or the sign-in expired;
@@ -100,5 +103,5 @@ public sealed record LauncherAccountState(AccountStep Step)
     public DateTimeOffset? ListedAt { get; init; }
 
     /// <summary>A sign-in is under way or ended without success: B drops it.</summary>
-    public bool IsSigningIn => Step is AccountStep.Starting or AccountStep.ShowingCode or AccountStep.CodeExpired or AccountStep.CodeRejected or AccountStep.Unreachable;
+    public bool IsSigningIn => Step is AccountStep.Starting or AccountStep.ShowingCode or AccountStep.CodeRejected or AccountStep.Unreachable;
 }

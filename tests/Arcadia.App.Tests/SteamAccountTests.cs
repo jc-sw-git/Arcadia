@@ -4,6 +4,7 @@ using Arcadia.App.Tests.Fixtures;
 using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
+using Arcadia.Core.Settings;
 using Arcadia.Core.Tests;
 using Arcadia.Launchers.Abstractions;
 using Avalonia.Headless.XUnit;
@@ -22,6 +23,8 @@ public sealed class SteamAccountTests
     private static readonly SteamApp Installed = new("910001", "Salzwiesen");
 
     private static readonly TimeSpan SignInLimit = TimeSpan.FromSeconds(30);
+
+    private const string OtherAccountNotice = "In Steam ist ein anderes Konto angemeldet als in Arcadia. Spielstart und Installation können fehlschlagen, Spielstände können andere sein.";
 
     [AvaloniaFact]
     [Trait("TestCase", "T83-1")]
@@ -88,7 +91,7 @@ public sealed class SteamAccountTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T83-2")]
-    public async Task An_expired_or_rejected_code_says_so_and_A_gets_a_new_one()
+    public async Task A_code_nobody_approves_stays_and_counts_since_its_renewal_and_a_rejected_one_says_so()
     {
         using var files = SteamWithOwnedGames();
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
@@ -96,41 +99,116 @@ public sealed class SteamAccountTests
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitOnClockUntilAsync(() => row.Info.OfType<InfoQrCode>().Any(), "der QR-Code", SignInLimit);
 
-        // Nobody approves it: after 2 minutes it is gone.
-        await arcadia.WaitOnClockUntilAsync(() => row.Subtitle == "Abgelaufen – [A] für neuen Code", "„Abgelaufen“", TimeSpan.FromMinutes(3));
-        Assert.Empty(row.Info.OfType<InfoQrCode>());
-        Assert.Equal("Neuer Code", row.ActionText);
+        // The row counts up since the code was shown (owner, 2026-10-27).
+        await arcadia.WaitOnClockUntilAsync(() => row.Subtitle == "Warte auf Bestätigung · Code erneuert vor 10 s", "„erneuert vor 10 s“", SignInLimit);
 
-        arcadia.Press(UiAction.Accept);
-        await arcadia.WaitOnClockUntilAsync(() => row.Info.OfType<InfoQrCode>().Any(), "der neue QR-Code", SignInLimit);
+        // Steam renews the code: the new one shows, and the count starts again.
+        files.SteamWeb.RenewCode();
+        await arcadia.WaitOnClockUntilAsync(() => row.Subtitle is "Warte auf Bestätigung · Code erneuert gerade eben" or "Warte auf Bestätigung · Code erneuert vor 1 s", "die Zählung beginnt neu", SignInLimit);
+
+        // Longer than the two minutes the code used to last, and Steam ends the session nobody scanned: a new code, no press.
+        arcadia.Wait(TimeSpan.FromMinutes(3));
+        Assert.Single(row.Info.OfType<InfoQrCode>());
+        files.SteamWeb.EndSession();
+        await arcadia.WaitOnClockUntilAsync(() => files.SteamWeb.CodesIssued == 3, "ein neuer Code ohne Tastendruck", SignInLimit);
+        Dispatcher();
+        Assert.Single(row.Info.OfType<InfoQrCode>());
+        Assert.Equal("Abbrechen", row.ActionText);
 
         files.SteamWeb.IsRejected = true;
         await arcadia.WaitOnClockUntilAsync(() => row.Subtitle == "Abgelehnt – [A] für neuen Code", "„Abgelehnt“", SignInLimit);
         Assert.Empty(row.Info.OfType<InfoQrCode>());
+        Assert.Equal("Neuer Code", row.ActionText);
 
         files.SteamWeb.IsRejected = false;
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitOnClockUntilAsync(() => row.Info.OfType<InfoQrCode>().Any(), "noch ein QR-Code", SignInLimit);
-        Assert.Equal(3, files.SteamWeb.CodesIssued);
+        Assert.Equal(4, files.SteamWeb.CodesIssued);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T83-3")]
+    public async Task Soundtracks_and_tools_only_the_store_lists_join_as_not_installed_with_their_switches_on()
+    {
+        using var files = SteamWithOwnedGames();
+        var soundtrack = new SteamApp("930001", "Leuchtturm Klänge");
+        var tool = new SteamApp("930002", "Leuchtturm Dedicated Server");
+        var dlc = new SteamApp("930003", "Leuchtturm Bonus");
+        files.SteamWeb.StoreApps.AddRange([930001u, 930002u, 930003u]);
+        files.Steam.WriteAppInfo((Installed, "Game"), (soundtrack, "Music"), (tool, "Tool"), (dlc, "DLC"));
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files, new AppSettings
+        {
+            ActiveLaunchers = [KnownLaunchers.Steam.Id],
+            Launchers = new Dictionary<string, LauncherPreferences> { [KnownLaunchers.Steam.Id] = new(LibraryOptions: ["soundtracks", "tools"]) },
+        });
+
+        await SignInAsync(arcadia, files);
+        await arcadia.WaitOnClockUntilAsync(() => TitlesOf(arcadia).Count == 5, "Soundtrack und Werkzeug im Steam-Tab", SignInLimit);
+
+        Assert.Equal(["Leuchtturm", "Leuchtturm Dedicated Server", "Leuchtturm Klänge", "Salzwiesen", "Tidenhub"], TitlesOf(arcadia));
+        var games = TabOf(arcadia).Games;
+        Assert.False(games.Single(game => game.Title == soundtrack.Name).IsInstalled);
+        Assert.Equal(GameType.Soundtrack, games.Single(game => game.Title == soundtrack.Name).Type);
+        Assert.Equal(GameType.Tool, games.Single(game => game.Title == tool.Name).Type);
     }
 
     [AvaloniaFact]
     [Trait("TestCase", "T83-5")]
-    public async Task Another_account_in_Steam_shows_no_uninstalled_games_and_an_info_on_the_launcher_page()
+    public async Task Another_account_in_the_running_Steam_keeps_the_games_blocks_installing_and_says_so_on_preview_detail_and_page()
     {
         using var files = SteamWithOwnedGames();
-        files.Steam.AddAccount(SteamFolder.Account + 7, "Jemand anderes", timestamp: 1_800_000_000, mostRecent: true);
+        files.Steam.ActiveUser = SteamFolder.Account + 7;
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
 
         var row = await SignInAsync(arcadia, files);
-        await arcadia.WaitOnClockUntilAsync(() => row.Severity == HealthSeverity.Info, "die Info zum anderen Konto", SignInLimit);
+        await arcadia.WaitOnClockUntilAsync(() => row.Severity == HealthSeverity.Info && TitlesOf(arcadia).Count == 3, "die Info zum anderen Konto", SignInLimit);
 
-        Assert.Equal([Installed.Name], TitlesOf(arcadia));
         Assert.Equal($"{FakeSteamWeb.ProfileName} · Steam ist mit einem anderen Konto angemeldet", row.Subtitle);
         var note = Assert.Single(row.Info.OfType<InfoNote>());
         Assert.True(note.IsInfo);
-        Assert.StartsWith("Steam ist mit einem anderen Konto angemeldet.", note.Text, StringComparison.Ordinal);
-        Assert.Null(arcadia.Main.Toast.Text);
+        Assert.StartsWith("Steam ist mit einem anderen Konto angemeldet. Arcadia zeigt deine Spiele trotzdem", note.Text, StringComparison.Ordinal);
+
+        arcadia.CloseSettings();
+        arcadia.FocusTile("Leuchtturm");
+        var tile = arcadia.Main.Library.FocusedGame!;
+        Assert.Equal(OtherAccountNotice, tile.Notice);
+        Assert.False(tile.CanActivate);
+        Assert.True(tile.IsInstallBlocked);
+        Assert.Equal(OtherAccountNotice, TabOf(arcadia).Games.Single(game => game.Title == Installed.Name).Notice);
+
+        // A on the cover says why instead of opening Steam's install dialog.
+        arcadia.Press(UiAction.Accept);
+        Assert.Empty(arcadia.Opened);
+        Assert.Equal("„Leuchtturm“ lässt sich gerade nicht installieren: In Steam ist ein anderes Konto angemeldet.", arcadia.Main.Toast.Text);
+
+        arcadia.Hold(UiAction.Accept, TimeSpan.FromSeconds(1.2));
+        var page = arcadia.Detail!.Current;
+        var install = page.TopRow[0];
+        Assert.Equal("Installieren", install.ButtonLabel);
+        Assert.False(install.IsEnabled);
+        Assert.Equal("In Steam ist ein anderes Konto angemeldet", install.DisabledReason);
+        Assert.Equal(OtherAccountNotice, page.Tile.Notice);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T83-5")]
+    public async Task Switching_the_account_in_Steam_shows_in_the_library_within_seconds_without_a_press()
+    {
+        using var files = SteamWithOwnedGames();
+        files.Steam.ActiveUser = SteamFolder.Account;
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
+        await SignInAsync(arcadia, files);
+        arcadia.CloseSettings();
+        await arcadia.WaitOnClockUntilAsync(() => TitlesOf(arcadia).Count == 3, "die nicht installierten Spiele", SignInLimit);
+        Assert.All(TabOf(arcadia).Games, game => Assert.Null(game.Notice));
+
+        files.Steam.ActiveUser = SteamFolder.Account + 7;
+        await arcadia.WaitOnClockUntilAsync(() => TabOf(arcadia).Games.All(game => game.Notice == OtherAccountNotice), "der Hinweis nach dem Kontowechsel", TimeSpan.FromSeconds(5));
+
+        // Back to Arcadia's account, and Steam closed: no hint either way.
+        files.Steam.ActiveUser = null;
+        await arcadia.WaitOnClockUntilAsync(() => TabOf(arcadia).Games.All(game => game.Notice is null), "kein Hinweis bei geschlossenem Steam", TimeSpan.FromSeconds(5));
+        Assert.Equal(3, TitlesOf(arcadia).Count);
     }
 
     [AvaloniaFact]
@@ -220,17 +298,28 @@ public sealed class SteamAccountTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T83-1")]
-    public async Task The_account_group_shows_only_while_Steam_is_active()
+    public async Task The_account_group_comes_first_and_is_disabled_while_Steam_is_inactive()
     {
         using var files = SteamWithOwnedGames();
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
-        var settings = arcadia.OpenLauncherPage(KnownLaunchers.Steam.Id);
-        Assert.Contains(settings.Rows, r => r.Key == AccountRow);
+        await SignInAsync(arcadia, files);
+        var settings = (LauncherSettingsViewModel)arcadia.Main.Settings!.Selected;
+        Assert.Equal(AccountRow, settings.Rows[0].Key);
 
         arcadia.FocusRow("launcher-active");
         arcadia.Press(UiAction.Left);
 
-        Assert.DoesNotContain(settings.Rows, r => r.Key == AccountRow);
+        var row = Assert.IsType<ActionRowViewModel>(settings.Rows[0]);
+        Assert.Equal(AccountRow, row.Key);
+        Assert.False(row.IsEnabled);
+        Assert.Equal($"{FakeSteamWeb.ProfileName} · nur bei aktivem Steam", row.Subtitle);
+
+        // Its info says why; A on it does nothing, and the sign-in stays stored.
+        arcadia.FocusRow(AccountRow);
+        Assert.Contains(row.Info.OfType<InfoNote>(), note => note.Text.StartsWith("Anmelden und Abmelden geht erst, wenn Steam aktiv ist.", StringComparison.Ordinal));
+        arcadia.Press(UiAction.Accept);
+        Assert.Null(settings.Dialog);
+        Assert.Equal(AccountStep.SignedIn, arcadia.SteamAccount!.State.Step);
     }
 
     /// <summary>Steam with one installed game; the account owns it and two more, Leuchtturm (920001) and Tidenhub (920002).</summary>

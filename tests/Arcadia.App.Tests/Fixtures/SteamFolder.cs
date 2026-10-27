@@ -76,6 +76,9 @@ internal sealed class SteamFolder(string root)
     public static ulong SteamId64(uint accountId) => SteamId64Base + accountId;
 
     /// <summary>Steam is installed: its folder with <c>steam.exe</c> and an empty library.</summary>
+    /// <summary>The account signed in to the running Steam (registry <c>ActiveUser</c>); null while Steam is closed.</summary>
+    public uint? ActiveUser { get; set; }
+
     public SteamFolder Install()
     {
         Directory.CreateDirectory(Path.Combine(root, "steamapps"));

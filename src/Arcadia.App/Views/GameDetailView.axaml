@@ -174,6 +174,12 @@
                           <TextBlock Text="{Binding SoundtrackNote}" FontSize="16" Foreground="{StaticResource AccentSoft}" VerticalAlignment="Center" />
                         </StackPanel>
                       </WrapPanel>
+                      <!-- E.g. another account in Steam than in Arcadia (#83): longer than the notes above, so a line of its own. -->
+                      <DockPanel IsVisible="{Binding Tile.HasNotice}">
+                        <Path DockPanel.Dock="Left" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7.5v5.5M12 16.5v.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.2" StrokeLineCap="Round"
+                              Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Top" Margin="0,3,10,0" />
+                        <TextBlock Text="{Binding Tile.Notice}" FontSize="16" Foreground="{StaticResource AccentSoft}" TextWrapping="Wrap" />
+                      </DockPanel>
                     </StackPanel>
                   </DockPanel>
                 </Border>

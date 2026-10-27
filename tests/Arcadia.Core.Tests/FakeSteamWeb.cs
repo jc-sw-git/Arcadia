@@ -22,6 +22,8 @@ internal sealed class FakeSteamWeb : HttpMessageHandler
     private readonly Lock _lock = new();
     private int _codes;
     private string? _pendingCodeRenewal;
+    private bool _scanReported;
+    private bool _sessionEnded;
 
     public FakeSteamWeb(DateTimeOffset now) => Now = now;
 
@@ -36,11 +38,22 @@ internal sealed class FakeSteamWeb : HttpMessageHandler
     /// <summary>The next poll returns the tokens.</summary>
     public bool IsApproved { get; set; }
 
-    /// <summary>The next poll fails as Steam does when the phone rejects the sign-in.</summary>
+    /// <summary>
+    /// The phone scans the code and rejects the sign-in: one poll says the code was scanned, the next fails as Steam does.
+    /// </summary>
     public bool IsRejected { get; set; }
 
     /// <summary>Polls fail with this EResult, e.g. 10 (busy), as Steam does when it has a hiccup.</summary>
     public int? PollEResult { get; set; }
+
+    /// <summary>The app ids Steam's store lists as owned, besides <see cref="OwnedGames"/>: soundtracks, tools, DLC.</summary>
+    public List<uint> StoreApps { get; } = [];
+
+    /// <summary>The store's list fails as if the store didn't take the sign-in.</summary>
+    public bool StoreFails { get; set; }
+
+    /// <summary>The profile name can't be loaded.</summary>
+    public bool ProfileFails { get; set; }
 
     /// <summary>The owned games come back as <c>{"response":{}}</c>.</summary>
     public bool ListsNoGames { get; set; }
@@ -69,6 +82,15 @@ internal sealed class FakeSteamWeb : HttpMessageHandler
 
     public static string CodeUrl(int number) => $"https://s.team/q/1/{number}";
 
+    /// <summary>The next poll fails as Steam does when a session nobody scanned ran out.</summary>
+    public void EndSession()
+    {
+        lock (_lock)
+        {
+            _sessionEnded = true;
+        }
+    }
+
     /// <summary>The next poll hands out a new code, as Steam does after a while.</summary>
     public void RenewCode()
     {
@@ -96,16 +118,24 @@ internal sealed class FakeSteamWeb : HttpMessageHandler
         var query = System.Web.HttpUtility.ParseQueryString(request.RequestUri.Query);
         lock (_lock)
         {
-            return path switch
+            return (request.RequestUri.Host, path) switch
             {
-                "/IAuthenticationService/BeginAuthSessionViaQR/v1/" => Proto(new ProtoWriter().UInt(1, ClientId).String(2, CodeUrl(++_codes)).Bytes(3, [1, 2, 3])),
-                "/IAuthenticationService/PollAuthSessionStatus/v1/" => Poll(),
-                "/IAuthenticationService/GenerateAccessTokenForApp/v1/" => AccessToken(),
-                "/IPlayerService/GetOwnedGames/v1/" => Owned(query["access_token"]),
-                "/ISteamUser/GetPlayerSummaries/v2/" => Json(JsonSerializer.Serialize(new { response = new { players = new[] { new { personaname = ProfileName } } } })),
+                ("api.steampowered.com", "/IAuthenticationService/BeginAuthSessionViaQR/v1/") => Begin(),
+                ("api.steampowered.com", "/IAuthenticationService/PollAuthSessionStatus/v1/") => Poll(),
+                ("api.steampowered.com", "/IAuthenticationService/GenerateAccessTokenForApp/v1/") => AccessToken(),
+                ("api.steampowered.com", "/IPlayerService/GetOwnedGames/v1/") => Owned(query["access_token"]),
+                ("api.steampowered.com", "/IPlayerService/GetPlayerLinkDetails/v1/") => Profile(query["access_token"], query["steamids[0]"]),
+                ("store.steampowered.com", "/dynamicstore/userdata/") => Store(request.Headers.TryGetValues("Cookie", out var cookies) ? string.Join("; ", cookies) : null),
                 _ => new HttpResponseMessage(HttpStatusCode.NotFound),
             };
         }
+    }
+
+    private HttpResponseMessage Begin()
+    {
+        _scanReported = false;
+        _sessionEnded = false;
+        return Proto(new ProtoWriter().UInt(1, ClientId).String(2, CodeUrl(++_codes)).Bytes(3, [1, 2, 3]));
     }
 
     private HttpResponseMessage Poll()
@@ -116,12 +146,18 @@ internal sealed class FakeSteamWeb : HttpMessageHandler
             return EResult(result);
         }
 
-        if (IsRejected)
+        if (_sessionEnded || (IsRejected && _scanReported))
         {
             return EResult(9);
         }
 
         var response = new ProtoWriter();
+        if (IsRejected)
+        {
+            response.UInt(5, 1);
+            _scanReported = true;
+        }
+
         if (_pendingCodeRenewal is { } renewed)
         {
             response.UInt(1, ClientId + 1).String(2, renewed);
@@ -170,6 +206,25 @@ internal sealed class FakeSteamWeb : HttpMessageHandler
 
         var games = OwnedGames.Select(g => new { appid = g.AppId, name = g.Name, playtime_forever = g.Minutes, rtime_last_played = g.LastPlayed });
         return Json(JsonSerializer.Serialize(new { response = new { game_count = OwnedGames.Count, games } }));
+    }
+
+    private HttpResponseMessage Profile(string? accessToken, string? steamId)
+    {
+        if (ProfileFails || accessToken is null || accessToken != LastAccessToken || steamId != AccountSteamId.ToString(System.Globalization.CultureInfo.InvariantCulture))
+        {
+            return new HttpResponseMessage(HttpStatusCode.BadRequest);
+        }
+
+        return Json(JsonSerializer.Serialize(new { response = new { accounts = new[] { new { public_data = new { steamid = steamId, persona_name = ProfileName } } } } }));
+    }
+
+    private HttpResponseMessage Store(string? cookie)
+    {
+        // The store takes the phone app's access token as its session cookie; without it, every list is empty.
+        var signedIn = !StoreFails && LastAccessToken is { } token
+            && cookie == $"steamLoginSecure={Uri.EscapeDataString($"{AccountSteamId}||{token}")}";
+        var apps = signedIn ? OwnedGames.Select(g => g.AppId).Concat(StoreApps).ToArray() : [];
+        return Json(JsonSerializer.Serialize(new { rgWishlist = Array.Empty<uint>(), rgOwnedPackages = Array.Empty<uint>(), rgOwnedApps = apps }));
     }
 
     private static HttpResponseMessage Proto(ProtoWriter message)

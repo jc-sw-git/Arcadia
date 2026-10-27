@@ -188,7 +188,7 @@
               <DockPanel Grid.Row="1" Margin="24,22,24,24">
                 <StackPanel DockPanel.Dock="Bottom" Spacing="10">
                   <!-- One below the other, so a long label ("Zurück ins Spiel" beside the Space key) has the full width. -->
-                  <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
+                  <Button Classes="plain primary" Classes.blocked="{Binding IsInstallBlocked}" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
                     <Viewbox StretchDirection="DownOnly">
                       <StackPanel Orientation="Horizontal" Spacing="12">
                         <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" />
@@ -206,9 +206,10 @@
                   <TextBlock IsVisible="{Binding UpdateAvailable}" Classes="actionHint">
                     <Run Text="{Binding LauncherName}" /><Run Text=" installiert das Update ggf. vor dem Start" />
                   </TextBlock>
-                  <TextBlock IsVisible="{Binding ShowInstallBadge}" Classes="actionHint">
+                  <TextBlock IsVisible="{Binding ShowInstallHint}" Classes="actionHint">
                     <Run Text="Die Installation wird in " /><Run Text="{Binding LauncherName}" /><Run Text=" geöffnet" />
                   </TextBlock>
+                  <TextBlock IsVisible="{Binding ShowInstallBlockedHint}" Classes="actionHint" Text="{Binding Game.InstallBlockedReason}" />
                   <TextBlock IsVisible="{Binding ShowLauncherControlsHint}" Classes="actionHint">
                     <Run Text="Pausieren und Abbrechen in " /><Run Text="{Binding LauncherName}" />
                   </TextBlock>
@@ -234,6 +235,12 @@
                       <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeJoin="Round" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" />
                       <TextBlock Text="{Binding RunStateText}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
                     </StackPanel>
+                    <!-- E.g. another account in Steam than in Arcadia (#83): an info, like the detail page's notes. -->
+                    <DockPanel IsVisible="{Binding HasNotice}">
+                      <Path DockPanel.Dock="Left" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7.5v5.5M12 16.5v.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.2" StrokeLineCap="Round"
+                            Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Top" Margin="0,2,8,0" />
+                      <TextBlock Text="{Binding Notice}" FontSize="14" Foreground="{StaticResource AccentSoft}" TextWrapping="Wrap" />
+                    </DockPanel>
                   </StackPanel>
                   <StackPanel Spacing="10" IsVisible="{Binding IsInstallActive}">
                     <StackPanel Orientation="Horizontal" Spacing="10">

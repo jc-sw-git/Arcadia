@@ -621,6 +621,11 @@
   <Style Selector="Button.primary:pointerover">
     <Setter Property="Background" Value="{StaticResource AccentHover}" />
   </Style>
+  <!-- "Installieren" while the launcher can't install (#83: Steam runs with another account): greyed like a disabled action. -->
+  <Style Selector="Button.primary.blocked">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
   <!-- Below the primary button in the preview, e.g. "⧉ Optionen". -->
   <Style Selector="Button.secondary">
     <Setter Property="Height" Value="60" />

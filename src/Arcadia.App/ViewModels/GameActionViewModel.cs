@@ -156,7 +156,9 @@ public sealed partial class GameActionViewModel : ViewModelBase
         actions.Add(busy
             ? new(GameActionKind.Play, tile.InstallStatusText, tile.ShowLauncherControlsHint ? $"Pausieren und Abbrechen in {launcher}" : null, false, () => { })
             : !game.IsInstalled
-                ? new(GameActionKind.Play, "Installieren", $"Die Installation wird in {launcher} geöffnet", true, () => host.Play(tile))
+                ? game.InstallBlockedReason is { } blocked
+                    ? new(GameActionKind.Play, "Installieren", blocked, false, () => { })
+                    : new(GameActionKind.Play, "Installieren", $"Die Installation wird in {launcher} geöffnet", true, () => host.Play(tile))
                 : tile.IsRunningOrStarting
                     ? new(GameActionKind.Play, tile.PrimaryActionText, null, true, () => host.Play(tile))
                     : new(GameActionKind.Play, tile.PrimaryActionText, tile.UpdateAvailable ? $"{launcher} installiert ggf. vorher das Update" : null, true, () => host.Play(tile)));

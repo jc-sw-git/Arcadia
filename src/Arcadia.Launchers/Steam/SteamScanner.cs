@@ -81,7 +81,9 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
 
         // Every scan asks for a fresh list; the account fetches it in the background and asks for a rescan when it changed.
         account?.FetchSoon();
-        var owned = account?.OwnedGamesFor(steam.ActiveUserId is { } active and not 0 ? active : steam.LastLoggedInUserId()) ?? [];
+        // Only a running Steam's account counts: a closed Steam starts with whichever account the user picks (owner, 2026-10-27).
+        var apps = account?.OwnedGamesFor(steam.ActiveUserId);
+        var owned = apps?.Owned ?? [];
 
         // The manifest's file name carries the app id, so the types are read before the manifests, in one pass.
         var appTypes = _appTypes.Read(
@@ -103,22 +105,28 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
         if (owned.Count > 0)
         {
             var hidden = SteamHiddenGames.Read(steam.UserDataDirectory);
+            var names = _appTypes.Names;
             games.AddRange(owned
                 .Where(game => !installed.Contains(game.AppId) && !hidden.Contains(game.AppId))
-                .Select(game => Uninstalled(game, appTypes))
+                .Select(game => Uninstalled(game, appTypes, names))
                 .OfType<Game>());
         }
 
-        return games;
+        return apps is { SteamHasOtherAccount: true } ? [.. games.Select(WithOtherAccount)] : games;
     }
 
     /// <summary>
     /// An owned game that isn't installed (#83): A installs it through <c>steam://install</c>, which opens Steam's install
     /// dialog; playtime and last start come from Steam's web API. Null for a type that never appears (runtimes, DLC).
     /// </summary>
-    internal static Game? Uninstalled(SteamOwnedGame owned, IReadOnlyDictionary<uint, string>? appTypes)
+    internal static Game? Uninstalled(SteamOwnedGame owned, IReadOnlyDictionary<uint, string>? appTypes, IReadOnlyDictionary<uint, string>? names = null)
     {
-        if (TypeOf(owned.AppId, owned.Name, appTypes?.GetValueOrDefault(owned.AppId)) is not { } type)
+        // An app only the store lists (a soundtrack, a tool, DLC) needs appinfo.vdf for its name and type; without, it would
+        // pass for a game.
+        var steamType = appTypes?.GetValueOrDefault(owned.AppId);
+        if ((owned.Name ?? names?.GetValueOrDefault(owned.AppId)) is not { } title
+            || (owned.Name is null && steamType is null)
+            || TypeOf(owned.AppId, title, steamType) is not { } type)
         {
             return null;
         }
@@ -127,7 +135,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
         {
             Id = owned.AppId.ToString(CultureInfo.InvariantCulture),
             LauncherId = KnownLaunchers.Steam.Id,
-            Title = owned.Name,
+            Title = title,
             Type = type,
             IsInstalled = false,
             Launch = new LaunchTarget.ProtocolUri(RunUri(owned.AppId)),
@@ -137,6 +145,20 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
             LastPlayedAt = owned.LastPlayedUnix > 0 ? DateTimeOffset.FromUnixTimeSeconds(owned.LastPlayedUnix) : null,
         };
     }
+
+    /// <summary>
+    /// The running Steam is signed in with another account than Arcadia (#83, owner 2026-10-27): the games stay, but an
+    /// install would go to that account, so it is blocked, and every game says that a start may fail or use other saves.
+    /// </summary>
+    internal static Game WithOtherAccount(Game game) => game with
+    {
+        InstallBlockedReason = game.IsInstalled ? null : OtherAccountInstall,
+        Notice = OtherAccountNotice,
+    };
+
+    internal const string OtherAccountInstall = "In Steam ist ein anderes Konto angemeldet";
+
+    internal const string OtherAccountNotice = "In Steam ist ein anderes Konto angemeldet als in Arcadia. Spielstart und Installation können fehlschlagen, Spielstände können andere sein.";
 
     /// <summary>The app id in <c>appmanifest_&lt;appid&gt;.acf</c>; null for another name.</summary>
     internal static uint? AppIdOfManifestFile(string path)
@@ -432,6 +454,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
         private (string Path, long Length, DateTime Written)? _stamp;
         private IReadOnlySet<uint> _asked = new HashSet<uint>();
         private IReadOnlyDictionary<uint, string>? _types;
+        private IReadOnlyDictionary<uint, string>? _names = new Dictionary<uint, string>();
 
         // Whether the last read failed, so a file that stays missing or broken is logged once, not on every rescan.
         private bool _isUnreadable;
@@ -458,7 +481,9 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
 
                 _stamp = stamp;
                 _asked = appIds;
-                _types = stamp is null ? null : TryRead(path, appIds);
+                var apps = stamp is null ? null : TryRead(path, appIds);
+                _types = apps?.ToDictionary(app => app.Key, app => app.Value.Type);
+                _names = apps?.Where(app => app.Value.Name is not null).ToDictionary(app => app.Key, app => app.Value.Name!);
                 if (_types is null && !_isUnreadable)
                 {
                     _warn("Steam: appinfo.vdf nicht lesbar, Werkzeuge und Soundtracks werden am Namen erkannt, Software als Spiel");
@@ -470,13 +495,25 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
             }
         }
 
-        private static IReadOnlyDictionary<uint, string>? TryRead(string path, IReadOnlySet<uint> appIds)
+        /// <summary>The names of the apps read last, for owned apps that have no manifest; null if the file is unreadable.</summary>
+        public IReadOnlyDictionary<uint, string>? Names
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _names;
+                }
+            }
+        }
+
+        private static IReadOnlyDictionary<uint, SteamAppEntry>? TryRead(string path, IReadOnlySet<uint> appIds)
         {
             try
             {
                 var watch = System.Diagnostics.Stopwatch.StartNew();
-                var types = SteamAppInfo.ReadTypes(path, appIds);
-                System.Diagnostics.Trace.TraceInformation($"Steam: Typen von {types.Count} der {appIds.Count} installierten Apps aus appinfo.vdf in {watch.ElapsedMilliseconds} ms gelesen");
+                var types = SteamAppInfo.ReadApps(path, appIds);
+                System.Diagnostics.Trace.TraceInformation($"Steam: Typen von {types.Count} der {appIds.Count} installierten und eigenen Apps aus appinfo.vdf in {watch.ElapsedMilliseconds} ms gelesen");
                 return types;
             }
             catch (Exception e) when (e is FormatException or IOException or UnauthorizedAccessException)

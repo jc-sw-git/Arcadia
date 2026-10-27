@@ -33,7 +33,7 @@ internal sealed class LauncherFiles : IDisposable
 
     public SteamPc? ControllerSupport => OnWindows ? field ??= new SteamPc(Steam) : null;
 
-    public LauncherFolders Folders => new(Steam.Root, Epic.Folders);
+    public LauncherFolders Folders => new(Steam.Root, Epic.Folders) { SteamActiveUser = () => Steam.ActiveUser };
 
     /// <summary>Steam's web API for the Steam account (#83), with the time of <see cref="ArcadiaDriver.Now"/>.</summary>
     public Arcadia.Core.Tests.FakeSteamWeb SteamWeb { get; } = new(ArcadiaDriver.Now);

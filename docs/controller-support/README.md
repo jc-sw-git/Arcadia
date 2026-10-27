@@ -47,6 +47,7 @@ More findings, one file per topic (read only the one you touch):
 | Pan: setup with one UAC prompt, update dialog, uninstall hook, `--restore`, securing the data folder | [pan-setup.md](pan-setup.md) |
 | Pan hides the real Steam Controller with HidHide and shows it again in every teardown (#243 B1) | [pan-hiding.md](pan-hiding.md) |
 | Pan: known limits and accepted risks (foreign VIIPER ports, late usbip step, unsigned `Pan.exe`, HidHide races) | [pan-risks.md](pan-risks.md) |
+| Answering the UAC consent prompt by controller through a VIIPER virtual keyboard/mouse (spike #118) | [uac.md](uac.md) |
 
 ## Setup and naming (#85, #92, 2026-10-16)
 

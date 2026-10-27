@@ -32,5 +32,5 @@ Verlauf:
 | T66-5 | 2026-10-23 | Claude | Branch `td/vordergrund-log-nur-spiel-66`, Linux, nur Build und Tests (unter Linux gibt es keinen Windows-Vordergrund) | ➖ nicht ausführbar | Fensterwechsel am PC des Owners |
 | T66-6 | 2026-10-24 | Claude | Branch `fix/einstellungen-beim-deinstallieren`, Linux, Unit-Tests (`LogLocationTests`: Umzug aus beiden alten Ordnern, mit und ohne Installation) | ✅ Umzug und Aufräumen | Setup und Deinstallation am PC des Owners |
 | T66-7 | 2026-10-24 | Claude | Branch `fix/einstellungen-beim-deinstallieren`, Linux, Unit-Test (`ControllerSupportRemovalTests`: Marker aus allen Konten, andere Einträge bleiben) | ✅ Marker in 2 von 3 Konten entfernt | Steam schließen und Deinstallation am PC des Owners |
-| T66-1 bis T66-5 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
-| T66-6, T66-7 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | Nicht im Lauf: Datenordner, Deinstallationsfragen und Marker kamen mit #162/#163 nach rc.1 | Mit dem nächsten Release-Kandidaten |
+| T66-1 bis T66-5 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T66-6, T66-7 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | Nicht im Lauf: Datenordner, Deinstallationsfragen und Marker kamen mit #162/#163 nach rc.1 | Mit dem nächsten Release-Kandidaten |

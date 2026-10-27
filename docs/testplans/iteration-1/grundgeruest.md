@@ -101,9 +101,9 @@ Verlauf:
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | G-21 bis G-24 | 2026-10-09 | nicht festgehalten | PC des Owners (laut `docs/controller-support/`) | ✅ | – |
-| G-32 | 2026-10-17 | Juri | PC des Owners, „Ansicht“ | ❌ Fokusrahmen oben und unten abgeschnitten, auch an anderen Stellen | Fix ohne Issue (Fluent-Button schneidet auf seine Größe zu) |
+| G-32 | 2026-10-17 | owner | PC des Owners, „Ansicht“ | ❌ Fokusrahmen oben und unten abgeschnitten, auch an anderen Stellen | Fix ohne Issue (Fluent-Button schneidet auf seine Größe zu) |
 | G-32 | 2026-10-17 | Claude | Branch `fix/focus-ring-clipped`, Linux, Xvfb 1920×1080 `--demo` | ✅ Kachel (auch oberste Reihe), Seitengröße in „Ansicht“ und erste Einstellungszeile mit vollem Rahmen | Kontrolle am PC des Owners |
-| G-32 | 2026-10-17 | Juri | PC des Owners, Branch `fix/focus-ring-clipped` | ❌ Sortier-Schalter in „Ansicht“ noch oben und unten abgeschnitten; Kachelrahmen unten dunkler | `ItemsControl` schneidet ebenfalls zu; Schlagschatten lag über dem Rahmen |
+| G-32 | 2026-10-17 | owner | PC des Owners, Branch `fix/focus-ring-clipped` | ❌ Sortier-Schalter in „Ansicht“ noch oben und unten abgeschnitten; Kachelrahmen unten dunkler | `ItemsControl` schneidet ebenfalls zu; Schlagschatten lag über dem Rahmen |
 | G-32 | 2026-10-17 | Claude | Branch `fix/focus-ring-clipped`, Linux, Xvfb 1920×1080 `--demo` | ✅ Sortier-Schalter mit vollem Rahmen, Kachelrahmen unten so hell wie oben | Kontrolle am PC des Owners |
 | G-33 | 2026-10-21 | Claude | Branch `feat/laufende-spiele-anzeigen-94-95`, Linux, Xvfb `--demo`, Maus und Tastatur per xdotool | ✅ Rechtsklick: Menü rechts neben der Kachel; R und Klick auf „Optionen“: Menü über dem Button, unten und links bündig. ⧉ am Controller nicht gesehen (kein XInput unter Linux), läuft aber über denselben Weg wie R | Controller am PC des Owners |
-| G-1 bis G-33 (ohne die gestrichenen G-21 und G-25) | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| G-1 bis G-33 (ohne die gestrichenen G-21 und G-25) | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

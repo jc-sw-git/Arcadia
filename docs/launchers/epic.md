@@ -35,6 +35,11 @@ the same `Queued`/`StartTask`/`HandleTaskComplete` lines, so only that first lin
 `Manifests\Pending\*.item`, which **stays behind after a cancel** (never use it as state). The
 queue file can lag behind (owner saw a running install vanish after cancelling a paused one), so
 for apps the log reported on while Arcadia ran, the log decides; the file only orders them.
+Followers (2026-10-27): an add-on installed before its game (UEFN before Fortnite) or an engine's plugins are queued as
+`Queued follower install for the <app>`; once the main app is done Epic logs `Not persisting follower [<app>]` and drops
+them from the queue file while it still downloads them, in one task whose `StartTask` lines name the main app first,
+followed by `Skipping OnInstallBegin broadcast for unchanged action <main app>`. So a follower is open by the log alone,
+and the main app is not. An add-on (`MainGameAppName` set) installs into its game's folder, so its progress has no fraction.
 Reordering logs `New active position is requested for the <app>` followed by a pause of the old one. Resuming a paused app while
 another downloads logs only `Resume of active installation` for the new one; the running one is cancelled
 without a pause line (verified 2026-10-12), so only the latest `StartTask` counts as downloading. Progress =

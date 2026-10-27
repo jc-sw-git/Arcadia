@@ -22,6 +22,18 @@ public sealed class EpicInstallMonitorTests : IDisposable
     private const string OtherId = $"a940fa38f001486a9884640924119576:f3ac42b603f546ccbd0f0240ba120143:{Other}";
     private const string OtherStarted = $"[2026.10.12-17.27.27:692][853]LogEoshPatcher: StartTask: BinaryId [{OtherId}:1.3] — using default components: []";
 
+    // Installing the Fortnite editor (UEFN) before Fortnite, owner's log 2026-10-27: Epic queues the editor as a follower
+    // of Fortnite and, once Fortnite is done, downloads it in one task with Fortnite unchanged.
+    private const string Fortnite = "fn:4fe75bbc5a674f4f9b356b5c90567da5:Fortnite";
+    private const string Editor = "fn:1e8bda5cfbb641b9a9aea8bd62285f73:Fortnite_Studio";
+    private const string EditorQueued = $"[2026.10.27-10.23.47:191][259]LogDownloadManager: Queued follower install for the {Editor}, Main App Id is {Fortnite} , Queue length is 2, Are we uninstalling 0";
+    private const string FortniteStarted = $"[2026.10.27-11.55.21:533][175]LogEoshPatcher: StartTask: BinaryId [{Fortnite}:++Fortnite+Release-42.40-CL-59343437-Windows] — using validated components: [A17316661F902216B15E8DAB34ECCD71]";
+    private const string FortniteCompleted = $"[2026.10.27-12.10.02:316][113]LogDownloadManager: HandleTaskComplete: AppId [{Fortnite}] AlertCode=[ok] QueueLen=4 IncompleteInstall=0 AutoResume=1";
+    private const string EditorLeftQueueFile = $"[2026.10.27-12.10.02:345][113]LogDownloadManager: Not persisting follower [{Editor}], its main [{Fortnite}] is no longer queued.";
+    private const string FortniteInEditorTask = $"[2026.10.27-12.10.02:928][121]LogEoshPatcher: StartTask: BinaryId [{Fortnite}:++Fortnite+Release-42.40-CL-59343437-Windows] — using validated components: [A17316661F902216B15E8DAB34ECCD71]";
+    private const string EditorStarted = $"[2026.10.27-12.10.02:928][121]LogEoshPatcher: StartTask: BinaryId [{Editor}:++Fortnite+Release-42.40-CL-59343437-Windows] — using default components: []";
+    private const string FortniteUnchanged = $"[2026.10.27-12.10.02:987][122]LogDownloadManager: HandlePatcherTaskBegin: Skipping OnInstallBegin broadcast for unchanged action {Fortnite}:++Fortnite+Release-42.40-CL-59343437-Windows";
+
     private readonly string _root = Path.Combine(Path.GetTempPath(), "arcadia-epic-" + Guid.NewGuid().ToString("N"));
     private readonly string _data;
     private readonly string _log;
@@ -48,6 +60,48 @@ public sealed class EpicInstallMonitorTests : IDisposable
     [InlineData(Uninstalled, EpicInstallEvent.Uninstalled)]
     public void Parses_log_lines(string line, EpicInstallEvent expected) =>
         Assert.Equal((App, expected), EpicInstallMonitor.ParseLogLine(line));
+
+    [Theory]
+    [InlineData(EditorQueued, "Fortnite_Studio", EpicInstallEvent.Queued)]
+    [InlineData(EditorLeftQueueFile, "Fortnite_Studio", EpicInstallEvent.LeftQueueFile)]
+    [InlineData(FortniteUnchanged, "Fortnite", EpicInstallEvent.Unchanged)]
+    public void Parses_the_lines_of_a_follower(string line, string app, EpicInstallEvent expected) =>
+        Assert.Equal((app, expected), EpicInstallMonitor.ParseLogLine(line));
+
+    [Fact]
+    public void A_follower_downloading_after_its_main_app_is_open_without_the_queue_file_and_its_main_app_is_done()
+    {
+        // Epic's queue file was empty while the editor downloaded; Arcadia, restarted then, showed nothing (owner, 2026-10-27).
+        SetQueue();
+        WritePending("Fortnite_Studio", installSize: 1000, mainGame: "Fortnite");
+        WriteGameBytes(5000);
+        AppendLog(EditorQueued, FortniteStarted, FortniteCompleted, EditorLeftQueueFile, FortniteInEditorTask, EditorStarted, FortniteUnchanged);
+
+        var active = Monitor().Poll().Active;
+
+        // In its game's folder, which is full already: no fraction, so not "Fast fertig".
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading), Assert.Single(active, entry => entry.Key == "Fortnite_Studio").Value);
+        Assert.DoesNotContain("Fortnite", active.Keys);
+    }
+
+    [Fact]
+    public void A_follower_seen_live_downloads_without_a_fraction_and_its_main_app_is_done()
+    {
+        SetQueue("Fortnite", "Fortnite_Studio");
+        var monitor = Monitor();
+        monitor.Poll();
+        WritePending("Fortnite_Studio", installSize: 1000, mainGame: "Fortnite");
+        WriteGameBytes(5000);
+        AppendLog(EditorQueued, FortniteStarted, FortniteCompleted);
+        SetQueue();
+        AppendLog(EditorLeftQueueFile, FortniteInEditorTask, EditorStarted, FortniteUnchanged);
+
+        var snapshot = monitor.Poll();
+
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading), snapshot.Active["Fortnite_Studio"]);
+        Assert.DoesNotContain("Fortnite", snapshot.Active.Keys);
+        Assert.Equal(InstallOutcome.Completed, snapshot.Finished["Fortnite"]);
+    }
 
     [Fact]
     public void Parses_cancel_and_failure()
@@ -260,9 +314,9 @@ public sealed class EpicInstallMonitorTests : IDisposable
         Path.Combine(_data, "DownloadManager", "DownloadState_account.json"),
         "[" + string.Join(",", apps.Select(a => $$"""{ "AppId": { "NamespaceId": "ns", "ItemId": "id", "AppName": "{{a}}" } }""")) + "]");
 
-    private void WritePending(string app, long installSize) => File.WriteAllText(
+    private void WritePending(string app, long installSize, string mainGame = "") => File.WriteAllText(
         Path.Combine(_data, "Manifests", "Pending", app + ".item"),
-        $$"""{ "AppName": "{{app}}", "InstallLocation": {{System.Text.Json.JsonSerializer.Serialize(_installDir)}}, "InstallSize": {{installSize}}, "bIsIncompleteInstall": true }""");
+        $$"""{ "AppName": "{{app}}", "InstallLocation": {{System.Text.Json.JsonSerializer.Serialize(_installDir)}}, "InstallSize": {{installSize}}, "bIsIncompleteInstall": true, "MainGameAppName": "{{mainGame}}" }""");
 
     private void WriteGameBytes(int count)
     {

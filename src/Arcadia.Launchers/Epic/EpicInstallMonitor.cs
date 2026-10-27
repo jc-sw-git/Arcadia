@@ -35,6 +35,10 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
     // installation is open; the queue file only orders them. Epic doesn't always rewrite the queue
     // file right away (seen when a paused install was cancelled while another one ran).
     private readonly HashSet<string> _seenLive = new(StringComparer.Ordinal);
+
+    // Followers (an add-on like the Fortnite editor, an engine's plugins) Epic keeps downloading after their main app
+    // finished, but drops from the queue file (owner's log, 2026-10-27): for them the log alone tells that they are open.
+    private readonly HashSet<string> _outsideQueueFile = new(StringComparer.Ordinal);
     private long _logOffset;
     private string _partialLine = string.Empty;
     private bool _primed;
@@ -48,6 +52,13 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
         var finished = new Dictionary<string, InstallOutcome>(StringComparer.Ordinal);
         foreach (var (app, installEvent) in newEvents)
         {
+            // Says where Epic keeps the app, not what happens to it.
+            if (installEvent == EpicInstallEvent.LeftQueueFile)
+            {
+                _outsideQueueFile.Add(app);
+                continue;
+            }
+
             _lastEvent[app] = installEvent;
 
             // An uninstall runs as a task too, but whether it stops a download is unknown; assume not.
@@ -85,7 +96,7 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
 
         var queue = ReadQueue();
         var open = queue.Where(app => !_seenLive.Contains(app) || IsOpen(app))
-            .Concat(_seenLive.Where(app => !queue.Contains(app) && IsOpen(app)).Order(StringComparer.Ordinal))
+            .Concat(_seenLive.Union(_outsideQueueFile).Where(app => !queue.Contains(app) && IsOpen(app)).Order(StringComparer.Ordinal))
             .ToList();
 
         var pending = ReadPendingManifests();
@@ -101,7 +112,7 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
             }
             else if (last is EpicInstallEvent.Started or EpicInstallEvent.Paused)
             {
-                var fraction = !installed.Contains(app) && pending.TryGetValue(app, out var manifest) ? FractionOf(manifest) : null;
+                var fraction = !installed.Contains(app) && pending.TryGetValue(app, out var manifest) && manifest.HasOwnFolder ? FractionOf(manifest) : null;
                 // A complete download moving its files may overlap the next app's start; it isn't paused.
                 var phase = fraction >= 0.999 && last == EpicInstallEvent.Started ? InstallPhase.Finishing
                     : last == EpicInstallEvent.Paused || app != _latestStart ? InstallPhase.Paused
@@ -155,6 +166,8 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
         (PauseLine(), EpicInstallEvent.Paused),
         (CancelLine(), EpicInstallEvent.Cancelled),
         (UninstallLine(), EpicInstallEvent.Uninstalled),
+        (UnchangedLine(), EpicInstallEvent.Unchanged),
+        (LeftQueueFileLine(), EpicInstallEvent.LeftQueueFile),
     ];
 
     /// <summary>"namespace:item:app[:version]" → app.</summary>
@@ -176,7 +189,7 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
     [GeneratedRegex(@"HandleTaskComplete: AppId \[(?<id>[^\]]+)\] AlertCode=\[(?<code>[^\]]*)\]")]
     private static partial Regex CompleteLine();
 
-    [GeneratedRegex(@"Queued install for the (?<id>[^\s,]+)")]
+    [GeneratedRegex(@"Queued (?:follower )?install for the (?<id>[^\s,]+)")]
     private static partial Regex QueuedLine();
 
     [GeneratedRegex(@"StartTask: BinaryId \[(?<id>[^\]]+)\]")]
@@ -194,6 +207,12 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
     [GeneratedRegex(@"FCommunityPortalAppManagerImpl: Uninstall (?<id>\S+)")]
     private static partial Regex UninstallLine();
 
+    [GeneratedRegex(@"Skipping OnInstallBegin broadcast for unchanged action (?<id>\S+)")]
+    private static partial Regex UnchangedLine();
+
+    [GeneratedRegex(@"Not persisting follower \[(?<id>[^\]]+)\]")]
+    private static partial Regex LeftQueueFileLine();
+
     private List<string> ReadNewLogLines()
     {
         var lines = new List<string>();
@@ -209,6 +228,7 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
                 _lastEvent.Clear();
                 _uninstalling.Clear();
                 _seenLive.Clear();
+                _outsideQueueFile.Clear();
                 _latestStart = null;
             }
 
@@ -279,7 +299,11 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
         return queue;
     }
 
-    private sealed record PendingManifest(string InstallLocation, long InstallSize);
+    /// <param name="HasOwnFolder">
+    /// False for an add-on (<c>MainGameAppName</c> set): it installs into its main app's folder, whose size says nothing
+    /// about the add-on's download (the Fortnite editor showed "Fast fertig" at once, owner 2026-10-27).
+    /// </param>
+    private sealed record PendingManifest(string InstallLocation, long InstallSize, bool HasOwnFolder);
 
     private Dictionary<string, PendingManifest> ReadPendingManifests()
     {
@@ -303,7 +327,8 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
                         && root.TryGetProperty("InstallLocation", out var location) && location.GetString() is { Length: > 0 } installLocation
                         && root.TryGetProperty("InstallSize", out var size) && size.TryGetInt64(out var installSize) && installSize > 0)
                     {
-                        result[appName] = new PendingManifest(installLocation, installSize);
+                        var isAddOn = root.TryGetProperty("MainGameAppName", out var main) && main.ValueKind == JsonValueKind.String && main.GetString() is { Length: > 0 };
+                        result[appName] = new PendingManifest(installLocation, installSize, HasOwnFolder: !isAddOn);
                     }
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -412,4 +437,12 @@ public enum EpicInstallEvent
     Completed,
     Failed,
     Uninstalled,
+
+    /// <summary>
+    /// The app runs in a task without being changed: the main app of a follower that is downloaded after it finished.
+    /// </summary>
+    Unchanged,
+
+    /// <summary>Epic keeps the app (a follower) in its download but no longer in its queue file.</summary>
+    LeftQueueFile,
 }

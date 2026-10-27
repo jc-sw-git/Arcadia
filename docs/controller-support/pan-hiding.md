@@ -49,7 +49,8 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
 - Entries that were there before (the user hid the puck, or allow-listed Arcadia) aren't journaled and never removed;
   `CloakingWasOn` keeps what cloaking was before the first hide.
 - Arrival: Windows' `CM_Register_Notification` for HID interfaces whose link names `VID_28DE&PID_1304`; while Pan hides,
-  new instances are hidden and the puck restarted (its own restart finds nothing new). No polling.
+  new instances are hidden and the puck restarted (its own restart finds nothing new). No polling. The owner's puck
+  keeps its instance ids on any USB port (it has a serial number), so a replug while hidden needs no new entry (B1 run).
 
 ## Showing again
 

@@ -14,4 +14,4 @@ Verlauf:
 | Test | Datum | Wer | Build / Umgebung | Ergebnis | Folge |
 |---|---|---|---|---|---|
 | G-1, G-20, G-30 | 2026-10-12 | Claude | PR-Branch, Linux mit virtuellem Display, `--demo` | ✅ Tabs, Uhr, Demo-Hinweis als Toast (verschwindet nach 4 s), Tab-Wechsel | Echte Epic-Installation und T67-1 am PC des Owners |
-| T67-1 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | Überholt: seit #136 behält ein aktiver Launcher ohne Spiele seinen Tab | Durchgestrichen; prüft T136-7 |
+| T67-1 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | Überholt: seit #136 behält ein aktiver Launcher ohne Spiele seinen Tab | Durchgestrichen; prüft T136-7 |

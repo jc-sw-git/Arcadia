@@ -16,4 +16,4 @@ Verlauf:
 | T8-1 | 2026-10-17 | Claude | Branch `feat/save-view-and-tab-8`, Linux, Xvfb 1920×1080 `--demo`, Tastatur (E, V, Pfeile, Enter) | ✅ Nach Neustart EA app, „Zuletzt gespielt · neueste zuerst“, 10 pro Seite, Fokus auf dem ersten Spiel | – |
 | T8-3 | 2026-10-17 | Claude | Branch `feat/save-view-and-tab-8`, Linux, Xvfb `--demo`, `LastTabLauncherId` von Hand auf einen unbekannten Launcher gesetzt | ✅ Start im ersten Tab (GOG Galaxy), der gespeicherte Wert bleibt erhalten | Echter fehlender Launcher am PC des Owners |
 | T8-1, T8-3 | 2026-10-17 | Claude | Branch `feat/save-view-and-tab-8`, Unit-Tests (`SettingsServiceTests`) | ✅ Neustart, alte `settings.json` ohne die Felder, unbekannte Werte, gleichzeitiges Speichern aus zwei Threads (geht ohne Lock rot) | – |
-| T8-1 bis T8-3 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T8-1 bis T8-3 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

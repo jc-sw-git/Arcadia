@@ -9,7 +9,7 @@
     <Company>Arcadia</Company>
     <Product>Arcadia</Product>
     <Version>0.1.0</Version>
-    <Copyright>Copyright (C) 2026 Juri Himmelreich</Copyright>
+    <Copyright>Copyright (C) 2026 jc-sw-git</Copyright>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
   </PropertyGroup>
 </Project>

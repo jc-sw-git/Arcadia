@@ -46,6 +46,7 @@ More findings, one file per topic (read only the one you touch):
 | Pan, the guardian service: protocol, journal, teardown, setup with one UAC prompt, update, uninstall, `--restore` (#243) | [pan.md](pan.md) |
 | Pan: setup with one UAC prompt, update dialog, uninstall hook, `--restore`, securing the data folder | [pan-setup.md](pan-setup.md) |
 | Pan: known limits and accepted risks (foreign VIIPER ports, late usbip step, unsigned `Pan.exe`) | [pan-risks.md](pan-risks.md) |
+| Answering the UAC consent prompt by controller through a VIIPER virtual keyboard/mouse (spike #118) | [uac.md](uac.md) |
 
 ## Setup and naming (#85, #92, 2026-10-16)
 

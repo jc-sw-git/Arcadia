@@ -12,7 +12,6 @@ namespace SteamInputProbe;
 /// </summary>
 internal sealed class ViiperForwarder : IAsyncDisposable
 {
-    private const int ApiPort = 3242;
     private readonly ProbeLog _log;
     private readonly ViiperClient _client;
     private readonly Process? _ownServer;
@@ -39,27 +38,10 @@ internal sealed class ViiperForwarder : IAsyncDisposable
 
     public static async Task<ViiperForwarder?> StartAsync(ProbeLog log, CancellationToken cancel)
     {
-        var client = new ViiperClient("localhost", ApiPort);
-        Process? ownServer = null;
+        if (await ViiperServer.EnsureAsync(log, cancel) is not { } server) return null;
+        var (client, ownServer) = server;
         try
         {
-            if (!await PingAsync(client, log, cancel))
-            {
-                ownServer = StartServer(log);
-                if (ownServer is null) return null;
-                var clock = Stopwatch.StartNew();
-                while (!await PingAsync(client, log: null, cancel))
-                {
-                    if (clock.Elapsed > TimeSpan.FromSeconds(10))
-                    {
-                        log.Line("VIIPER: server did not answer within 10 s");
-                        ownServer.Kill();
-                        return null;
-                    }
-                    await Task.Delay(200, cancel);
-                }
-                log.Line($"VIIPER: own server up after {clock.ElapsedMilliseconds} ms");
-            }
             var bus = (await client.BusCreateAsync(null, cancel)).BusID;
             var device = await client.BusDeviceAddAsync(bus, new DeviceCreateRequest { Type = "xbox360" }, cancel);
             var stream = await client.ConnectDeviceAsync(bus, device.DevID, cancel);
@@ -73,41 +55,6 @@ internal sealed class ViiperForwarder : IAsyncDisposable
             client.Dispose();
             return null;
         }
-    }
-
-    private static async Task<bool> PingAsync(ViiperClient client, ProbeLog? log, CancellationToken cancel)
-    {
-        try
-        {
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancel);
-            timeout.CancelAfter(TimeSpan.FromSeconds(1));
-            var ping = await client.PingAsync(timeout.Token);
-            log?.Line($"VIIPER: {ping.Server} {ping.Version} already listens on {ApiPort}");
-            return true;
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException || !cancel.IsCancellationRequested)
-        {
-            return false;
-        }
-    }
-
-    private static Process? StartServer(ProbeLog log)
-    {
-        var exe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SISR", "viiper.exe");
-        if (!File.Exists(exe))
-        {
-            log.Line($"VIIPER: {exe} not found");
-            return null;
-        }
-        var logFile = Path.Combine(Path.GetDirectoryName(log.Path)!, "viiper.log");
-        var start = new ProcessStartInfo(exe)
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            ArgumentList = { "server", "--no-tray", $"--log.file={logFile}" },
-        };
-        log.Line($"VIIPER: starting {exe} server --no-tray (log {logFile})");
-        return Process.Start(start);
     }
 
     public void Send(XInputState state) => _states.Writer.TryWrite(state);

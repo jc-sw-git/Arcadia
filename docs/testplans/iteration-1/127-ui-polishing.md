@@ -37,4 +37,4 @@ Verlauf:
 |---|---|---|---|---|---|
 | T127-1, T127-3 bis T127-8 | 2026-10-21 | Claude | Branch `feat/ui-polishing-127`, Linux, Xvfb 1920×1080 `--demo`, Tastatur per xdotool (W, 4, Leertaste gehalten, F, Esc); wenige und viele Launcher mit einem vorübergehenden, nicht eingecheckten Eingriff in die Demo-Launcher; Controller-Ansicht nur im Startzustand | ✅ Screenshots im Projektordner `screenshots/ui-polishing-127/`: Streifen mittig bzw. bis an die Trennstriche mit Ausblendung, gewählter Tab zentriert; Tastenhinweise rund/eckig; Detailseite mit neuen Abständen; F öffnet die Suche über der Detailseite, Esc führt zurück. Statusmeldung, Tooltip, T127-2, T127-9 und echter Controller nicht angesehen | Rest am PC des Owners |
 | T127-10 | 2026-10-21 | Claude | Branch `feat/ui-polishing-127`, Linux, Xvfb 1920×1080 `--demo`, „Burning Kingdom“ | ❌ vorher: das g abgeschnitten (Zeilenhöhe 70 bei 64 px Schrift), ✅ nachher ganz zu sehen | — |
-| T127-1 bis T127-10 | 2026-10-24 | Juri | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |
+| T127-1 bis T127-10 | 2026-10-24 | owner | 0.1.0-rc.1 installiert, PC des Owners | ✅ | – |

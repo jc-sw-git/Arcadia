@@ -3,7 +3,7 @@
 Meilenstein „Iteration 1“. Format und Regeln: [README](../README.md). Die Häkchen setzt erst der
 Abschluss-Test am installierten Release-Kandidaten.
 
-**Abschluss-Test:** Release-Kandidat 0.1.0-rc.1, getestet von Juri, am 2026-10-24 (#74).
+**Abschluss-Test:** Release-Kandidat 0.1.0-rc.1, getestet von owner, am 2026-10-24 (#74).
 
 Eine Datei pro Issue (bzw. für das Grundgerüst). Ein PR, der ein Issue schließt, legt dessen Datei an
 und trägt sie hier ein; wer ein Issue testet, liest nur dessen Datei.
@@ -63,7 +63,7 @@ und trägt sie hier ein; wer ein Issue testet, liest nur dessen Datei.
 
 Auftrag: –. Zeitrahmen: –.
 
-Funde am 0.1.0-rc.1 (Juri, 2026-10-24, bei Testfällen und nebenbei):
+Funde am 0.1.0-rc.1 (owner, 2026-10-24, bei Testfällen und nebenbei):
 
 - Setup meldet „bereits installiert“, weil nur der Log-Ordner unter `%LOCALAPPDATA%\Arcadia` lag → PR #162 (behoben).
 - Deinstallieren entfernt den Steam-Eintrag „SISR Marker“ nicht; Einstellungen und Logs bleiben ohne Nachfrage → PR #163.

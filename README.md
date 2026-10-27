@@ -28,7 +28,7 @@ build Arcadia yourself (see below).
 
 ## Structure
 
-.NET 10, C#, user interface with [Avalonia UI](https://avaloniaui.net/) (Windows, macOS, Linux).
+.NET 10, C#, user interface with [Avalonia UI](https://avaloniaui.net/) (Windows; Linux is possible later, macOS is dropped).
 
 | Project | Purpose |
 |---------|---------|

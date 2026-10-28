@@ -25,7 +25,9 @@ public sealed record UnstartedGame(string GameKey, RefusedStart? Refusal);
 
 /// <param name="StatesChanged">A game started, ended or gave up starting; the covers show it.</param>
 /// <param name="NotStarted">The games Arcadia started that gave up starting, not counting those of a launcher switched off.</param>
-public sealed record RunningChanges(bool StatesChanged, IReadOnlyList<EndedGame> Ended, IReadOnlyList<UnstartedGame> NotStarted);
+/// <param name="StartAgain">Games Arcadia should hand to their launcher once more: an update ran first and the launcher
+/// didn't start the game after it (<see cref="RunningGamesTracker.StartAgainAfterInstall"/>).</param>
+public sealed record RunningChanges(bool StatesChanged, IReadOnlyList<EndedGame> Ended, IReadOnlyList<UnstartedGame> NotStarted, IReadOnlyList<string> StartAgain);
 
 /// <summary>
 /// Which games run (#95), whether started from Arcadia or in their launcher: as the launcher reports it
@@ -36,10 +38,17 @@ public sealed record RunningChanges(bool StatesChanged, IReadOnlyList<EndedGame>
 public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames processes, TimeProvider time)
 {
     /// <summary>
-    /// "Wird gestartet …" lasts this long at most (owner, 2026-10-20), counted from the end of an installation of the game
-    /// that runs meanwhile: a launcher may update a game first, however long that takes (owner, 2026-10-24, #167).
+    /// "Wird gestartet …" lasts this long at most (owner, 2026-10-28, was 2 min), counted from the end of an installation of
+    /// the game that runs meanwhile: a launcher may update a game first, however long that takes (owner, 2026-10-24, #167).
     /// </summary>
-    public static readonly TimeSpan StartTimeout = TimeSpan.FromMinutes(2);
+    public static readonly TimeSpan StartTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// A launcher doesn't always start a game after the update it ran first: Steam didn't when the update had waited in its
+    /// queue and was moved up by hand (owner's PC, 2026-10-28). So when the game doesn't run this long after the update,
+    /// Arcadia starts it once more, and waits <see cref="StartTimeout"/> again.
+    /// </summary>
+    public static readonly TimeSpan StartAgainAfterInstall = TimeSpan.FromSeconds(10);
 
     // Games Arcadia handed to their launcher that weren't seen running yet.
     private readonly Dictionary<string, Start> _starting = new(StringComparer.Ordinal);
@@ -79,7 +88,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
     public void Starting(string gameKey)
     {
         var now = time.GetUtcNow();
-        _starting[gameKey] = new Start(now, now);
+        _starting[gameKey] = new Start(now, now, AfterInstall: false);
     }
 
     /// <summary>The start failed or was refused; the game shows "Spielen" again.</summary>
@@ -189,6 +198,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
 
         var now = time.GetUtcNow();
         var notStarted = new List<UnstartedGame>();
+        var startAgain = new List<string>();
         foreach (var (key, start) in _starting.ToList())
         {
             if (running.ContainsKey(key))
@@ -206,7 +216,13 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
             }
             else if (enabled.Contains(LauncherIdOf(key)) && IsInstalling(key))
             {
-                _starting[key] = start with { WaitsSince = now };
+                _starting[key] = start with { WaitsSince = now, AfterInstall = true };
+            }
+            else if (start.AfterInstall && now - start.WaitsSince > StartAgainAfterInstall && enabled.Contains(LauncherIdOf(key)))
+            {
+                Log?.Invoke($"{key} läuft {StartAgainAfterInstall.TotalSeconds:0} s nach dem Update nicht; Arcadia startet es noch einmal.");
+                _starting[key] = start with { WaitsSince = now, AfterInstall = false };
+                startAgain.Add(key);
             }
             else if (now - start.WaitsSince > StartTimeout || !enabled.Contains(LauncherIdOf(key)))
             {
@@ -224,7 +240,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         // A game whose launcher was switched off would be awaited for ever.
         _startedFromArcadia.RemoveWhere(key => !enabled.Contains(LauncherIdOf(key)));
         _running = running;
-        return new RunningChanges(changed, ended, notStarted);
+        return new RunningChanges(changed, ended, notStarted, startAgain);
     }
 
     // Launchers log in whole seconds, so an abort in the second Arcadia asked counts; one from before is an older start's.
@@ -244,6 +260,8 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
     private readonly record struct Running(string LauncherId, DateTimeOffset? StartedAt);
 
     /// <param name="AskedAt">When Arcadia handed the game to its launcher.</param>
-    /// <param name="WaitsSince">Where <see cref="StartTimeout"/> counts from: the request, or the end of an installation since.</param>
-    private readonly record struct Start(DateTimeOffset AskedAt, DateTimeOffset WaitsSince);
+    /// <param name="WaitsSince">Where <see cref="StartTimeout"/> counts from: the request, the end of an installation since, or
+    /// the second start after it.</param>
+    /// <param name="AfterInstall">An installation ran since the request and Arcadia hasn't started the game again yet.</param>
+    private readonly record struct Start(DateTimeOffset AskedAt, DateTimeOffset WaitsSince, bool AfterInstall);
 }

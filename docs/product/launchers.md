@@ -46,11 +46,13 @@ Agreed with the owner; don't change without asking. Read this before changing th
   the library's count line (`docs/product/library.md`).
 - Steam account (#83, owner 2026-10-26, changed after the test 2026-10-27): Steam's page starts with the group "Konto",
   the row "Steam-Konto"; while Steam is inactive or missing it stays there, disabled, and says why (a sign-in stays
-  stored). Sign-in only by QR code approved in the Steam app on the phone, no password. Signed out: pill "Anmelden",
-  subtitle "Melde dich an, um vollen Zugriff auf deine Spielebibliothek zu haben"; A shows the code in the info panel. It renews
-  itself as long as the page shows it (no time limit), the row counts "Code erneuert vor … s"; B drops it and stays on
-  the page. Rejected: "Abgelehnt – [A] für neuen Code"; Steam unreachable or silent: "Steam nicht erreichbar – [A]
-  erneut versuchen". Signed in: the Steam profile name and "Abmelden", which asks first and then deletes sign-in and
+  stored). Sign-in on Steam's own login page (QR code with the Steam app, or name and password; owner 2026-10-27
+  after the account lock, "wie Playnite"): A on "Anmelden" opens it over the whole window with its address shown like a
+  browser's, scaled to the window; B or ✕ closes it and stays on the launcher page; while it shows, no press reaches
+  Arcadia below. Opened by controller, the mouse mode comes on for it with its keyboard open, whatever the settings say,
+  and goes off after it if it was off before (owner 2026-10-27). Signed in, the info panel starts with the avatar and name. Signed out:
+  pill "Anmelden", subtitle "Melde dich an, um vollen Zugriff auf deine Spielebibliothek zu haben". Page not loaded:
+  "Steam nicht erreichbar – [A] erneut versuchen". Signed in: the Steam profile name and "Abmelden", which asks first and then deletes sign-in and
   cached list; the uninstalled games leave tab and search at once. No hint elsewhere while signed out. Another account
   in the running Steam: the games stay, "Installieren" is disabled with the reason, preview and detail page note it
   (uninstalled: no installs from Arcadia meanwhile; installed: may not start or use the wrong saves), and the row has an info (blue i); a closed Steam

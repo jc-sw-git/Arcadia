@@ -78,6 +78,7 @@ public partial class App : Application
             var args = desktop.Args ?? [];
             var time = TimeProvider.System;
             var http = new HttpClient();
+            var webPages = new WebPages(time, action => Dispatcher.UIThread.Post(action));
 
             var settings = new SettingsService(SettingsStore.CreateDefault());
             var demo = args.Contains(DemoArgument, StringComparer.OrdinalIgnoreCase);
@@ -87,7 +88,7 @@ public partial class App : Application
             // while the question shows, every launcher found is read, so it can count their games. Names, keywords and
             // folders the user gave launchers apply from their next read (#137, #138).
             var launchers = new LauncherRegistry(
-                BuiltInLaunchers.Create(time, demo, DemoGames(args), http: http),
+                BuiltInLaunchers.Create(time, demo, DemoGames(args), http: http, web: webPages),
                 firstRun.ChosenLaunchers,
                 id => settings.Current.PreferencesOf(id));
             foreach (var problem in launchers.Rejected)
@@ -137,6 +138,7 @@ public partial class App : Application
                 firstRun,
                 time,
                 new InstallFolderCheck(Directory.Exists, action => Dispatcher.UIThread.Post(action)));
+            webPages.Attach(viewModel);
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
             if (args.Contains("--fullscreen", StringComparer.OrdinalIgnoreCase))

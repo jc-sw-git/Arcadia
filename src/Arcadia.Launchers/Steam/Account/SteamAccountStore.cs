@@ -6,17 +6,22 @@ using Arcadia.Core.Diagnostics;
 
 namespace Arcadia.Launchers.Steam.Account;
 
-/// <summary>The stored sign-in: tokens and the account they belong to. Never logged.</summary>
-/// <param name="Expired">Steam no longer took the refresh token: signed out, with a status message until a new sign-in.</param>
-internal sealed record SteamSignIn(string? RefreshToken, string? AccessToken, ulong SteamId, string Name, bool Expired = false);
+/// <summary>The stored sign-in: the account, its name and the last web API token. Never logged.</summary>
+/// <param name="AccessToken">The store page's web API token as read last; it lives about a day.</param>
+/// <param name="Expired">The store page was no longer signed in: signed out, with a status message until a new sign-in.</param>
+/// <param name="RefreshToken">
+/// Only in a sign-in of the first #83 build, which posed as Steam's phone app; such a sign-in is deleted, not used.
+/// </param>
+internal sealed record SteamSignIn(string? AccessToken, ulong SteamId, string Name, bool Expired = false, string? RefreshToken = null);
 
 /// <summary>The owned games as fetched last, for a start offline or before the next fetch.</summary>
 /// <param name="Packages">The account's packages from the store; null in a list cached before they were kept.</param>
 internal sealed record SteamOwnedList(DateTimeOffset ListedAt, IReadOnlyList<SteamOwnedGame> Games, IReadOnlyList<uint>? Packages = null);
 
 /// <summary>
-/// Keeps the Steam sign-in (#83) in <c>steam-account.dat</c>, encrypted for the current Windows user (DPAPI), and the
-/// owned games in <c>steam-owned-games.json</c>, both in Arcadia's data folder. Without DPAPI (not Windows) the sign-in
+/// Keeps the Steam sign-in (#83) in <c>steam-account.dat</c>, encrypted for the current Windows user (DPAPI), the
+/// owned games in <c>steam-owned-games.json</c> and the profile's avatar in <c>steam-avatar.jpg</c>, all in Arcadia's
+/// data folder. Without DPAPI (not Windows) the sign-in
 /// lasts only until Arcadia closes. A file that can't be read counts as missing; reading and writing never throw.
 /// </summary>
 /// <param name="protect">Encrypts the sign-in; null keeps it in memory only.</param>
@@ -34,6 +39,36 @@ internal sealed class SteamAccountStore(string folder, Func<byte[], byte[]>? pro
     private string SignInPath => Path.Combine(folder, "steam-account.dat");
 
     private string OwnedPath => Path.Combine(folder, "steam-owned-games.json");
+
+    private string AvatarPath => Path.Combine(folder, "steam-avatar.jpg");
+
+    /// <summary>The stored avatar's file, null if there is none.</summary>
+    public string? AvatarFile
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return File.Exists(AvatarPath) ? AvatarPath : null;
+            }
+        }
+    }
+
+    /// <summary>Keeps <paramref name="picture"/> as the account's avatar; null deletes it. Returns the file, if one is kept.</summary>
+    public string? SaveAvatar(byte[]? picture)
+    {
+        lock (_lock)
+        {
+            if (picture is null)
+            {
+                Delete(AvatarPath);
+                return null;
+            }
+
+            Write(AvatarPath, picture);
+            return File.Exists(AvatarPath) ? AvatarPath : null;
+        }
+    }
 
     public SteamSignIn? LoadSignIn()
     {
@@ -104,6 +139,7 @@ internal sealed class SteamAccountStore(string folder, Func<byte[], byte[]>? pro
             {
                 _inMemory = null;
                 Delete(SignInPath);
+                Delete(AvatarPath);
             }
             else
             {

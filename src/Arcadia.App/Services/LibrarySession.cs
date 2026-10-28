@@ -97,6 +97,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     /// <summary>The launcher aborted the start of a game from Arcadia, with its key: Arcadia comes to the front as after a game (#277).</summary>
     public event EventHandler<string>? StartRefused;
 
+    /// <summary>A game Arcadia started waited for an update, and its launcher didn't start it after it: start it once more.</summary>
+    public event EventHandler<string>? StartAgainRequested;
+
     public DateTimeOffset? ScannedAt(string launcherId) => _library.ScannedAt(launcherId);
 
     public InstallProgress? InstallStateOf(string gameKey) => _installs.StateOf(gameKey);
@@ -188,6 +191,11 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         foreach (var unstarted in changes.NotStarted)
         {
             ReportNotStarted(unstarted);
+        }
+
+        foreach (var gameKey in changes.StartAgain)
+        {
+            StartAgainRequested?.Invoke(this, gameKey);
         }
 
         if (changes.Ended.Count == 0)

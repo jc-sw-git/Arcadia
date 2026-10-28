@@ -69,9 +69,10 @@ raw and VIIPER shows Steam a USB device with the puck's descriptors. Measured de
 
 ## Open (owner's PC)
 
-- Steam's real update path for the Triton and the routine drops: the check script
-  `spikes/242/Record-SteamTraffic-242.ps1` (project files) records the copy's log lines at rest, in Steam's controller
-  settings, in a game with the overlay and during an offered update.
+- Steam's real update path for the Triton and the routine drops: spike #295 with the check script
+  `spikes/242/Record-SteamTraffic-242-v2.ps1` (project files; the copy's log lines, Steam's `controller*.txt`, the
+  puck's devices and COM ports per phase). Until then the consent modal, the firmware dialog and Pan's hold stay as a
+  precaution (owner, 2026-10-28).
 - An update offered in Steam's in-game overlay: the game stays in front, so a short gap there skips the question.
   The script asks whether the overlay offers one.
 - "Neu installieren" for "HidHide antwortet unerwartet" runs the pinned installer with Windows Installer's reinstall
@@ -79,4 +80,4 @@ raw and VIIPER shows Steam a USB device with the puck's descriptors. Measured de
   only over the very driver it installs (`HidHideRelease.IsPinnedDriver`), refused while Pan hides the puck or a
   firmware attempt runs (`ControllerSupportService.PanHoldsPuck`; Pan runs the installer before it replaces itself),
   and refused while Steam runs: the installer restarts the puck, which then is Steam's and may be mid-update.
-- The real puck's COM port (interface 0) stays Steam's while Pan hides: decision pending (`pan-risks.md`).
+- The real puck's COM port (interface 0) stays Steam's while Pan hides: accepted (`pan-risks.md`).

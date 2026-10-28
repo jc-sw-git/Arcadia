@@ -98,7 +98,7 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
       "Installieren"; it downloads the pinned build without a Windows prompt, checks its SHA-256 and the copy works
       again. A `viiper.exe` that isn't the pinned one: no copy, Pan hides nothing. · E2E: yes (Core: install, the
       wrong file and the hash check; the real download by hand)
-- [ ] **T242-28** After part C, the check script `spikes/242/Record-SteamTraffic-242.ps1`: Steam at rest, in its
+- [ ] **T242-28** After part C, the check script `spikes/242/Record-SteamTraffic-242-v2.ps1` (spike #295): Steam at rest, in its
       controller settings and in a game on "Steam-Eingabe" sends nothing that counts as an update (no firmware dialog);
       `arcadia.log` names each dropped type once; an offered update brings the firmware dialog and the controller
       works as before. The recording settles the routine drop list. · E2E: no (Steam's real traffic)

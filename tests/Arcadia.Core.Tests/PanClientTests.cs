@@ -335,6 +335,18 @@ public sealed class PanClientTests : IAsyncDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task Back_during_Pans_teardown_the_hold_comes_with_the_acknowledgement()
+    {
+        _server.HelloReply = PanMessage.Of(PanReply.HelloOk, 5, PanReason.TeardownNotAcknowledged);
+        _server.AcknowledgeReply = PanMessage.Of(PanReply.Acknowledged, 5, PanReason.HeldForFirmware);
+
+        await ConnectedAsync();
+
+        Assert.True(_client.HeldForFirmware);
+    }
+
+    [Fact]
     public async Task An_unreadable_journal_is_passed_on_for_a_toast()
     {
         var problems = 0;
@@ -564,6 +576,9 @@ public sealed class PanClientTests : IAsyncDisposable
         /// <summary>Overrides the guardian's answer to hello.</summary>
         public PanMessage? HelloReply { get; set; }
 
+        /// <summary>Overrides the guardian's answer to a teardown's acknowledgement.</summary>
+        public PanMessage? AcknowledgeReply { get; set; }
+
         /// <summary>Overrides the guardian's answer to "emulation started".</summary>
         public PanMessage? StartReply { get; set; }
 
@@ -661,6 +676,11 @@ public sealed class PanClientTests : IAsyncDisposable
                     if (message.Command == PanCommand.Hello && HelloReply is { } forced)
                     {
                         reply = forced;
+                    }
+
+                    if (message.Command == PanCommand.TeardownAcknowledged && AcknowledgeReply is { } forcedAck)
+                    {
+                        reply = forcedAck;
                     }
 
                     await _paused.WaitAsync();

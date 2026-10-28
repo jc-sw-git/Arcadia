@@ -54,18 +54,30 @@ public sealed class SteamControllerTakeover(Action<string> log)
     /// <summary><see cref="State"/> changed; any thread.</summary>
     public event Action? Changed;
 
+    // Granted because Steam wasn't running, not by the player: checked again right before the hide. Once hidden, Steam
+    // sees only the copy, and every gap asks anew (Gap).
+    private bool _becauseSteamWasNotRunning;
+
     /// <summary>
     /// Whether a hide may start now: granted, or Steam doesn't run (no one can update the puck then). Starts the question
     /// when the state is unknown and Steam runs.
     /// </summary>
     public bool MayHide(bool steamRuns, SteamControllerParts connected)
     {
+        if (_state == TakeoverState.Granted && _becauseSteamWasNotRunning && steamRuns)
+        {
+            // Granted only because Steam wasn't running, and Steam came up before the hide held: Steam may update the
+            // real puck now, so the player decides (review of 68a163f, Codex point 1).
+            Set(TakeoverState.Unknown, "Steam läuft jetzt, bevor Arcadia übernommen hat");
+        }
+
         switch (_state)
         {
             case TakeoverState.Granted:
                 return true;
             case TakeoverState.Unknown when !steamRuns:
                 Set(TakeoverState.Granted, "Steam läuft nicht, Arcadia übernimmt den Steam Controller");
+                _becauseSteamWasNotRunning = true;
                 return true;
             case TakeoverState.Unknown:
                 Asked = connected;
@@ -129,6 +141,7 @@ public sealed class SteamControllerTakeover(Action<string> log)
 
     private void Set(TakeoverState state, string why)
     {
+        _becauseSteamWasNotRunning = false;
         if (_state == state)
         {
             return;

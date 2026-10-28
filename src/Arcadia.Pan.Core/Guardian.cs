@@ -215,7 +215,7 @@ public sealed partial class Guardian
                 // The client learns of an open teardown it must acknowledge, and of a journal Pan couldn't read.
                 return _phase == Phase.TornDown
                     ? PanMessage.Of(PanReply.HelloOk, _generation, PanReason.TeardownNotAcknowledged)
-                    : _journal.FirmwareHold
+                    : HeldForFirmware()
                     ? PanMessage.Of(PanReply.HelloOk, _generation, PanReason.HeldForFirmware)
                     : PanMessage.Of(PanReply.HelloOk, _generation, _journalProblem is null ? PanReason.None : PanReason.JournalUnreadable);
             }
@@ -237,6 +237,8 @@ public sealed partial class Guardian
                 PanCommand.Heartbeat => WithGeneration(message, Heartbeat),
                 PanCommand.TeardownAcknowledged => Acknowledge(message.Generation),
                 PanCommand.PlannedExit => PlannedExit(),
+                // The lift needs no emulation: a hold from before a crash ends also when the next emulation isn't hidden.
+                PanCommand.HoldForFirmware when message.Value == 0 && _phase != Phase.Emulating => LiftFirmwareHold(),
                 PanCommand.HoldForFirmware => WithGeneration(message, () => HoldForFirmware(message.Value != 0)),
                 _ => PanMessage.Of(PanReply.Rejected, message.Generation, PanReason.NotRegistered),
             };
@@ -468,13 +470,37 @@ public sealed partial class Guardian
         _journal.FirmwareHold = hold;
         if (!TrySaveJournal())
         {
-            _journal.FirmwareHold = before;
+            // Not durable, but a hold stays in effect while Pan runs, so a crash of Arcadia still keeps the puck hidden;
+            // the client sends it again until it is saved. A lift that wasn't saved is no lift (the safe direction).
+            _journal.FirmwareHold = hold || before;
             return PanMessage.Of(PanReply.Rejected, _generation, PanReason.JournalUnreadable);
         }
 
         _log(hold
             ? $"Firmware attempt through the copy of generation {_generation}: the Steam Controller stays hidden while Steam runs"
             : $"Firmware attempt of generation {_generation} over");
+        return PanMessage.Of(PanReply.Acknowledged, _generation);
+    }
+
+    /// <summary>Under the lock, outside an emulation: the player released the puck after Steam gave up.</summary>
+    private PanMessage LiftFirmwareHold()
+    {
+        if (_journal.FirmwareHold)
+        {
+            _journal.FirmwareHold = false;
+            if (!TrySaveJournal())
+            {
+                _journal.FirmwareHold = true;
+                return PanMessage.Of(PanReply.Rejected, _generation, PanReason.JournalUnreadable);
+            }
+
+            _log("Firmware hold lifted by the client: the Steam Controller may be shown");
+            if (_journal.HidingHasWork)
+            {
+                ScheduleShowRetry();
+            }
+        }
+
         return PanMessage.Of(PanReply.Acknowledged, _generation);
     }
 
@@ -499,7 +525,8 @@ public sealed partial class Guardian
 
         _phase = Phase.Idle;
         _log($"Teardown of generation {generation} acknowledged by the client");
-        return PanMessage.Of(PanReply.Acknowledged, generation);
+        // A client that came back during the teardown heard of it instead of the hold at its hello.
+        return PanMessage.Of(PanReply.Acknowledged, generation, HeldForFirmware() ? PanReason.HeldForFirmware : PanReason.None);
     }
 
     private PanMessage PlannedExit()

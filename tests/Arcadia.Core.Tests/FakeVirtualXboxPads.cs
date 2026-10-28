@@ -18,6 +18,9 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
     /// <summary>Unplugging throws, as removing the device from a VIIPER that doesn't answer would.</summary>
     public bool FailUnplug;
 
+    /// <summary>Set, unplugging waits for it, as a VIIPER that is slow to remove the device would.</summary>
+    public TaskCompletionSource? UnplugGate;
+
     /// <summary>A send never ends until cancelled, as a write to a stuck VIIPER would.</summary>
     public bool StallSends;
     public FakePad? Current;
@@ -145,11 +148,19 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
             lock (_sent) throw new Xunit.Sdk.XunitException($"never sent; last: {(_sent.Count > 0 ? _sent[^1] : "nothing")}");
         }
 
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
+            if (owner.UnplugGate is { } gate)
+            {
+                await gate.Task;
+            }
+
             owner.Unplugged++;
             owner.Note("pad unplugged");
-            return owner.FailUnplug ? ValueTask.FromException(new IOException("VIIPER antwortet nicht")) : ValueTask.CompletedTask;
+            if (owner.FailUnplug)
+            {
+                throw new IOException("VIIPER antwortet nicht");
+            }
         }
     }
 }

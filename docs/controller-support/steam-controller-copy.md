@@ -33,6 +33,10 @@ and writer for the puck, the VIIPER client, SDL ignoring the copy). Until then t
   is taken over too: Steam never saw it); every gap (paused, Pan's teardown, a hide that didn't hold, switched off)
   asks again. "Nein" (held 1 s) and a release for a firmware update hold until Arcadia's next start or the settings
   row "… übernehmen" (held 3 s, the press is the consent). Meanwhile nothing is emulated, Arcadia's Xbox pad included.
+  Arcadia asks only once Pan can hide (`CheckHiding` first): a question the hide can't follow would come back every
+  tick and teach the player to hold "Ja" by reflex. A take-over only because Steam wasn't running is checked again
+  right before the hide: Steam started meanwhile (e.g. while VIIPER got ready) turns it into the question.
+  A pad still being unplugged stays in the session until it is gone, so the end shows the puck only after it.
 - `HideAsync` waits up to 25 s (the puck restarts, ~2.5 s) and can't be cancelled once sent: a half-done hide would
   leave the puck hidden with nothing in its place. A rejected hide is undone by the client at once.
 
@@ -66,7 +70,7 @@ Decision 8 (owner: "no bricked Steam Controllers under any circumstances"): an a
   be chosen, as releasing the real puck mid-attempt could hand it the rest of the update. "Steam hat das Update
   abgebrochen" (held 3 s) is the player's own way out of a misread; "Schließen" (no hold, greyed and focused like the
   others) closes the dialog and keeps the takeover. While the attempt runs, Pan holds the puck hidden even if Arcadia
-  ends unexpectedly, until Steam is closed (`pan-hiding.md`, firmware hold). `arcadia.log` names every message that counted
+  ends unexpectedly, until Steam is closed (`pan-firmware-hold.md`). `arcadia.log` names every message that counted
   and how the attempt ended (Steam gave up, or the player said so).
 - Open for part C: whether Steam misses `0xA3` (sent on every slot in the spike), and the real update path. No
   bootloader type is known; it would be dropped and counted all the same.

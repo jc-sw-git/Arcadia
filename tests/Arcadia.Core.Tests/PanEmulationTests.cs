@@ -429,6 +429,156 @@ public sealed class PanEmulationTests
 
     [Fact]
     [Trait("TestCase", "T242-24")]
+    public async Task Arcadia_beenden_after_the_attempt_lifts_a_hold_Pan_still_has_before_the_puck_is_shown()
+    {
+        var emulation = WithSteam(() => false);
+        await emulation.TickAsync();
+        await emulation.HoldForFirmwareAsync(true);
+        _pan.FailHolds = true;
+        await emulation.HoldForFirmwareAsync(false);
+        _pan.FailHolds = false;
+        _events.Clear();
+
+        await emulation.ShutdownAsync();
+
+        Assert.Equal(["copy detached", "firmware hold 1 False", "unhide 1", "stopped 1"], _events);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task The_end_of_the_attempt_counts_at_once_for_a_quit_that_comes_before_Pan_heard_of_it()
+    {
+        var emulation = WithSteam(() => false);
+        await emulation.TickAsync();
+        await emulation.HoldForFirmwareAsync(true);
+        _events.Clear();
+
+        // The lift and the quit race for the gate; whichever wins, the puck is shown.
+        var lift = emulation.HoldForFirmwareAsync(false);
+        await emulation.ShutdownAsync();
+        await lift;
+
+        Assert.Contains("firmware hold 1 False", _events);
+        Assert.Equal([1u], _pan.Unhidden);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task A_hold_Pan_did_not_take_is_sent_again_at_the_next_tick()
+    {
+        var emulation = WithSteam(() => false);
+        await emulation.TickAsync();
+        _pan.FailHolds = true;
+        await emulation.HoldForFirmwareAsync(true);
+        _pan.FailHolds = false;
+
+        await emulation.TickAsync();
+
+        Assert.Equal([(1u, true), (1u, true)], _pan.FirmwareHolds);
+        await emulation.TickAsync();
+        Assert.Equal(2, _pan.FirmwareHolds.Count);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task A_hold_from_before_the_start_shows_the_dialog_also_with_Pan_switched_off_and_its_release_lifts_it()
+    {
+        _pan.HeldForFirmware = true;
+        _enabled = false;
+        var emulation = WithSteam(() => true);
+        var found = 0;
+        emulation.FirmwareHoldFound += () => found++;
+
+        await emulation.TickAsync();
+        await emulation.TickAsync();
+        Assert.Equal(1, found);
+
+        await emulation.ReleaseForFirmwareAsync();
+        Assert.Equal([(0u, false)], _pan.FirmwareHolds);
+        Assert.False(_pan.HeldForFirmware);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task A_hold_from_before_the_start_that_Pan_keeps_brings_the_dialog_back_only_once()
+    {
+        _pan.HeldForFirmware = true;
+        _pan.HideResult = PanReason.HidingLost;
+        var emulation = WithSteam(() => true);
+        var found = 0;
+        emulation.FirmwareHoldFound += () => found++;
+        await emulation.TickAsync();
+
+        _pan.FailHolds = true;
+        await emulation.HoldForFirmwareAsync(false);
+        await emulation.ReleaseForFirmwareAsync();
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await emulation.TickAsync();
+        await emulation.TickAsync();
+
+        Assert.Equal(1, found);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-20")]
+    public async Task Steam_starting_while_VIIPER_gets_ready_turns_the_take_over_without_Steam_into_a_question()
+    {
+        var steamRuns = false;
+        var emulation = WithSteam(() => steamRuns);
+        var asked = 0;
+        emulation.Takeover.ConsentNeeded += _ => asked++;
+        _pads.DuringPrepare = () => steamRuns = true;
+
+        await emulation.TickAsync();
+
+        Assert.Empty(_pan.Hidden);
+        Assert.Equal(1, asked);
+        Assert.Equal(TakeoverState.Asking, emulation.Takeover.State);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-9")]
+    public async Task A_pad_still_being_unplugged_holds_the_puck_hidden_until_it_is_gone()
+    {
+        await _emulation.TickAsync();
+        var pad = await _emulation.PlugAsync(CancellationToken.None);
+        _pads.UnplugGate = new TaskCompletionSource();
+        var unplugging = pad.DisposeAsync().AsTask();
+        _events.Clear();
+
+        _enabled = false;
+        var tick = _emulation.TickAsync();
+        await Task.Delay(100);
+        Assert.DoesNotContain("unhide 1", _events);
+
+        _pads.UnplugGate.SetResult();
+        await tick;
+        await unplugging;
+        Assert.Equal(["pad unplugged", "copy detached", "unhide 1", "stopped 1"], _events);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-20")]
+    public async Task While_Pan_cannot_hide_Arcadia_does_not_ask()
+    {
+        _pan.Hiding = PanReason.HidHideBusy;
+        var emulation = WithSteam(() => true);
+        var asked = 0;
+        emulation.Takeover.ConsentNeeded += _ => asked++;
+
+        await emulation.TickAsync();
+        await emulation.TickAsync();
+
+        Assert.Equal(0, asked);
+        Assert.Equal(PanEmulationProblem.Hiding, emulation.Status.Problem);
+
+        _pan.Hiding = PanReason.None;
+        await emulation.TickAsync();
+        Assert.Equal(1, asked);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
     public async Task The_release_ends_the_hold_before_the_puck_is_shown()
     {
         var emulation = WithSteam(() => false);

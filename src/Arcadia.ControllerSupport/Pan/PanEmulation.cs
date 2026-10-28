@@ -111,6 +111,9 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     // Steam tries a firmware update through the copy (#242): the puck must stay hidden, also if Arcadia ends meanwhile.
     private volatile bool _firmwareHold;
+
+    // The hold from before the start has been noted (FirmwareHoldFound raised) since Pan last reported it.
+    private bool _holdFromBeforeNoted;
     private string? _lastLogged;
 
     public PanEmulation(IVirtualXboxPads pads, IEmulationGuardian guardian, ISteamControllerHold hold, TimeProvider time, Action<string> log)
@@ -254,6 +257,8 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
+        NoteHoldFromBeforeStart();
+
         if (!Enabled())
         {
             Takeover.Gap("ausgeschaltet", switchedOff: true);
@@ -310,17 +315,20 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     private async Task StartOrPauseAsync(CancellationToken cancellationToken)
     {
-        if (Hides && !MayHide())
-        {
-            return;
-        }
-
-        if (Hides && await _guardian.CheckHidingAsync(0, cancellationToken) is var could && could != PanReason.None)
+        // Whether Pan can hide comes before the question: a question the hide can't follow at once would come back every
+        // tick and teach the player to hold "Ja" by reflex (review of 68a163f, point 5).
+        if (Hides && Takeover.State is TakeoverState.Unknown or TakeoverState.Granted
+            && await _guardian.CheckHidingAsync(0, cancellationToken) is var could && could != PanReason.None)
         {
             // Pan can't hide now (HidHide busy, inverse, ...): no emulation at all, the real controller stays as it is.
             SetStatus(could is null
                 ? new(PanEmulationState.Unavailable, Reason: "Pan kann den Steam Controller nicht verstecken – Pan aktualisieren")
                 : new(PanEmulationState.Paused, PanEmulationProblem.Hiding, could.Value, $"HidHide: {could}"));
+            return;
+        }
+
+        if (Hides && !MayHide())
+        {
             return;
         }
 
@@ -387,13 +395,6 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// </summary>
     private bool MayHide()
     {
-        if (_guardian.HeldForFirmware && !_firmwareHold)
-        {
-            _firmwareHold = true;
-            _log("Pan-Emulation: ein Firmware-Versuch von vor dem Start hält den Steam Controller versteckt; Arcadia wartet ihn ab");
-            FirmwareHoldFound?.Invoke();
-        }
-
         if (_firmwareHold)
         {
             Takeover.KeepForFirmware();
@@ -408,6 +409,29 @@ public sealed class PanEmulation : IVirtualXboxPads
             ? new(PanEmulationState.Ready, PanEmulationProblem.Excluded, Reason: "Steam Controller und Puck ausgenommen")
             : new(PanEmulationState.SettingUp, PanEmulationProblem.AwaitingConsent, Reason: "wartet auf die Antwort, ob ein Firmware-Update läuft"));
         return false;
+    }
+
+    /// <summary>
+    /// Pan still holds the puck hidden from before Arcadia's start: the dialog waits it out, whether Pan is switched on
+    /// in Arcadia or not. Once per hold, so a lift Pan didn't take doesn't bring the dialog back each tick.
+    /// </summary>
+    private void NoteHoldFromBeforeStart()
+    {
+        if (!_guardian.HeldForFirmware)
+        {
+            _holdFromBeforeNoted = false;
+            return;
+        }
+
+        if (_holdFromBeforeNoted)
+        {
+            return;
+        }
+
+        _holdFromBeforeNoted = true;
+        _firmwareHold = true;
+        _log("Pan-Emulation: ein Firmware-Versuch von vor dem Start hält den Steam Controller versteckt; Arcadia wartet ihn ab");
+        FirmwareHoldFound?.Invoke();
     }
 
     /// <summary>
@@ -432,11 +456,17 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     /// <summary>
     /// Steam tries a firmware update through the copy, or the attempt is over (the dialog's end): Pan keeps the puck
-    /// hidden meanwhile, also if Arcadia ends unexpectedly. Never throws; off the copy's thread.
+    /// hidden meanwhile, also if Arcadia ends unexpectedly. The wish is set at once, on the caller's thread, so the last
+    /// call wins and a quit right after the end already sees it; Pan hears of it on the thread pool. Never throws.
     /// </summary>
-    public async Task HoldForFirmwareAsync(bool hold)
+    public Task HoldForFirmwareAsync(bool hold)
     {
         _firmwareHold = hold;
+        return Task.Run(() => SendFirmwareHoldAsync(hold));
+    }
+
+    private async Task SendFirmwareHoldAsync(bool hold)
+    {
         await _gate.WaitAsync();
         try
         {
@@ -469,8 +499,8 @@ public sealed class PanEmulation : IVirtualXboxPads
         }
         else if (!hold && _guardian.HeldForFirmware)
         {
-            // No emulation runs to send it with: the hold from before the start stays with Pan until Steam closes.
-            _log("Pan-Emulation: Firmware-Halt von vor dem Start bleibt bei Pan, bis Steam beendet ist");
+            // A hold from before the start, and no hidden emulation to lift it with: Pan takes the lift without one.
+            await _guardian.HoldForFirmwareAsync(_session?.Generation ?? 0, false, CancellationToken.None);
         }
     }
 
@@ -496,6 +526,12 @@ public sealed class PanEmulation : IVirtualXboxPads
             }
 
             return;
+        }
+
+        if (_firmwareHold && session.Hidden && !session.HoldSent)
+        {
+            // Pan didn't take the hold (journal not writable, link busy): a crash now must not show the puck mid-attempt.
+            session.HoldSent = await _guardian.HoldForFirmwareAsync(session.Generation, true, CancellationToken.None);
         }
 
         if (session.Hidden && await _guardian.CheckHidingAsync(session.Generation, cancellationToken) is { } holds && holds != PanReason.None)
@@ -581,6 +617,12 @@ public sealed class PanEmulation : IVirtualXboxPads
         _session = null;
         Takeover.Gap(why);
         var removed = await RemoveDevicesAsync(session) && !session.LeftBehind;
+        if (session.HoldSent && !_firmwareHold)
+        {
+            // The attempt is over (Steam gave up, "Arcadia beenden"), but the lift may not have reached Pan yet.
+            session.HoldSent = !await _guardian.HoldForFirmwareAsync(session.Generation, false, CancellationToken.None);
+        }
+
         if (session.Hidden && _firmwareHold)
         {
             // Mid firmware attempt (Arcadia closing, a gap): the copy goes, the puck stays hidden; Pan's teardown after the
@@ -745,7 +787,9 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// </summary>
     private sealed class GuardedPad(IVirtualXboxPad pad, Session session, IEmulationGuardian guardian) : IVirtualXboxPad
     {
+        private readonly Lock _lock = new();
         private int _disposed;
+        private Task? _removal;
 
         public bool IsConnected => !session.Ended && pad.IsConnected && guardian.IsCurrent(session.Generation);
 
@@ -755,14 +799,23 @@ public sealed class PanEmulation : IVirtualXboxPads
         public Task SendAsync(Arcadia.Input.XboxPadState state, CancellationToken cancellationToken) =>
             Volatile.Read(ref _disposed) == 1 ? Task.CompletedTask : pad.SendAsync(state, cancellationToken);
 
-        public async ValueTask DisposeAsync()
+        /// <summary>
+        /// Unplugged once; a second caller (the emulation's end) awaits the same removal, so the puck is never shown while
+        /// the pad may still forward to it. The session lists the pad until the removal is done.
+        /// </summary>
+        public ValueTask DisposeAsync()
         {
-            if (Interlocked.Exchange(ref _disposed, 1) == 1)
+            lock (_lock)
             {
-                return;
+                Volatile.Write(ref _disposed, 1);
+                _removal ??= RemoveAsync();
+                return new ValueTask(_removal);
             }
+        }
 
-            session.Remove(this);
+        private async Task RemoveAsync()
+        {
+            await Task.Yield();
             try
             {
                 await pad.DisposeAsync();
@@ -771,6 +824,10 @@ public sealed class PanEmulation : IVirtualXboxPads
             {
                 session.LeftBehind = true;
                 throw;
+            }
+            finally
+            {
+                session.Remove(this);
             }
         }
     }

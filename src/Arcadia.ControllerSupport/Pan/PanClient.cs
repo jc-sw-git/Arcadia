@@ -208,9 +208,18 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     {
         var reply = await RequestAsync(PanMessage.Of(PanCommand.TeardownAcknowledged, generation), cancellationToken);
         var stillRunning = reply.Reply == PanReply.Rejected && reply.Reason == PanReason.TeardownNotAcknowledged;
+
+        // Back during Pan's teardown after a crash: the hold comes with the acknowledgement, not the hello.
+        var held = reply.Reply == PanReply.Acknowledged && reply.Reason == PanReason.HeldForFirmware;
         lock (_lock)
         {
             _teardownPending = stillRunning;
+            _heldForFirmware |= held;
+        }
+
+        if (held)
+        {
+            _log("Pan: ein Firmware-Versuch über die Kopie hält den Steam Controller versteckt, Steam läuft noch");
         }
 
         if (reply.Reply == PanReply.Rejected && !stillRunning)
@@ -503,7 +512,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
 
         if (hello.Reason == PanReason.TeardownNotAcknowledged)
         {
-            await QuietRequestAsync(PanMessage.Of(PanCommand.TeardownAcknowledged, hello.Generation), cancellationToken);
+            await AcknowledgeTeardownAsync(hello.Generation, cancellationToken);
         }
 
         lock (_lock)

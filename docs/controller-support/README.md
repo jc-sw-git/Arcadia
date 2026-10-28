@@ -46,6 +46,7 @@ More findings, one file per topic (read only the one you touch):
 | Pan, the guardian service: protocol, journal, teardown, setup with one UAC prompt, update, uninstall, `--restore` (#243) | [pan.md](pan.md) |
 | Pan: setup with one UAC prompt (usbip-win2, HidHide), missing parts in the settings, update dialog, uninstall hook with the drivers, `--restore`, securing the data folder | [pan-setup.md](pan-setup.md) |
 | Pan hides the real Steam Controller with HidHide and shows it again in every teardown (#243 B1) | [pan-hiding.md](pan-hiding.md) |
+| Pan keeps the puck hidden through a crash mid firmware attempt until Steam is closed (#242) | [pan-firmware-hold.md](pan-firmware-hold.md) |
 | Steam gets a copy of the Steam Controller: lifecycle, who gets input, the allow list and the firmware lock (#242) | [steam-controller-copy.md](steam-controller-copy.md) |
 | Pan: known limits and accepted risks (foreign VIIPER ports, late usbip step, unsigned `Pan.exe`, HidHide races) | [pan-risks.md](pan-risks.md) |
 | Answering the UAC consent prompt by controller through a VIIPER virtual keyboard/mouse (spike #118) | [uac.md](uac.md) |

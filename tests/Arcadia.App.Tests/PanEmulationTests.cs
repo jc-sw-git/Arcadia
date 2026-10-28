@@ -254,7 +254,7 @@ public sealed class PanEmulationTests
         var consent = arcadia.Main.TakeoverConsent!;
         Assert.Equal("Steam Controller und Puck übernehmen?", consent.Title);
         Assert.Equal(["Steam Controller", "Puck", "Steam läuft"], consent.Found);
-        Assert.Equal("Erst prüfen: Zeigt Steam gerade ein Firmware-Update an?", consent.WarningTitle);
+        Assert.Equal("Erst prüfen: Führt Steam gerade ein Firmware-Update des Steam Controllers oder Pucks aus?", consent.WarningTitle);
         Assert.True(consent.No.IsFocused, "„Nein, nicht übernehmen“ ist vorausgewählt");
         Assert.Equal("Halten (1 s): Nicht übernehmen", consent.Legend);
         Assert.Empty(arcadia.Pan.Hidden);
@@ -340,9 +340,10 @@ public sealed class PanEmulationTests
         Assert.True(dialog.SkipButton.IsFocused);
         Assert.False(dialog.ReleaseButton.IsEnabled, "erst wenn Steam aufgegeben hat");
         Assert.False(dialog.QuitButton.IsEnabled);
+        Assert.False(dialog.CloseButton.IsEnabled);
 
         // [B] doesn't close it; the greyed buttons do nothing.
-        arcadia.Press(UiAction.Back).Press(UiAction.Left, 2);
+        arcadia.Press(UiAction.Back).Press(UiAction.Left, 3);
         Assert.True(dialog.ReleaseButton.IsFocused);
         Assert.Equal("Noch gesperrt", dialog.Legend);
         arcadia.Hold(UiAction.Accept, OneSecondHold);
@@ -361,10 +362,11 @@ public sealed class PanEmulationTests
         Assert.True(dialog.IsReady);
         Assert.Equal("Steam hat aufgegeben", dialog.StatusTitle);
         Assert.False(dialog.SkipButton.IsShown);
-        Assert.True(dialog.ReleaseButton.IsFocused);
+        Assert.True(dialog.CloseButton.IsFocused, "„Schließen“ hat den Fokus, sobald es geht");
+        Assert.Equal("Schließen", dialog.Legend);
         Assert.Single(arcadia.Pan.Hidden);
 
-        arcadia.Hold(UiAction.Accept, OneSecondHold);
+        arcadia.Press(UiAction.Left, 2).Hold(UiAction.Accept, OneSecondHold);
         await arcadia.WaitUntilAsync(() => dialog.IsReleased, "„Steam Controller und Puck freigegeben“");
         Assert.Equal("Steam Controller und Puck freigegeben", dialog.ReleasedTitle);
         Assert.Single(arcadia.Pan.Unhidden);
@@ -395,11 +397,32 @@ public sealed class PanEmulationTests
 
         Assert.True(dialog.IsReady, "der Spieler darf selbst freigeben");
         Assert.Equal("Du hast bestätigt, dass Steam abgebrochen hat", dialog.StatusTitle);
-        Assert.True(dialog.ReleaseButton.IsFocused);
+        Assert.True(dialog.CloseButton.IsFocused);
         Assert.Contains("Pan: Spieler sagt, Steam hat das Update abgebrochen (vor Ablauf der Wartezeit); als Update gewertet: Nachricht ", ArcadiaDriver.Log);
 
-        arcadia.Press(UiAction.Right).Hold(UiAction.Accept, OneSecondHold);
+        arcadia.Press(UiAction.Left).Hold(UiAction.Accept, OneSecondHold);
         Assert.Equal(1, quit);
         Assert.Contains("Pan: Firmware-Versuch beendet (vom Spieler übersprungen, Arcadia beendet)", ArcadiaDriver.Log);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T242-23")]
+    public async Task Schliessen_after_Steam_gave_up_closes_the_dialog_and_keeps_the_controller_and_a_new_attempt_shows_it_again()
+    {
+        using var arcadia = await StartUpdateAttemptAsync();
+        var dialog = arcadia.Main.FirmwareAttempt!;
+        Assert.False(dialog.CloseButton.IsEnabled, "greyed while Steam still tries");
+        arcadia.Wait(TimeSpan.FromSeconds(30.3));
+        Assert.True(dialog.CloseButton.IsFocused, "focused once Steam gave up");
+
+        arcadia.Press(UiAction.Accept);
+
+        Assert.Null(arcadia.Main.FirmwareAttempt);
+        Assert.Empty(arcadia.Pan.Unhidden);
+        Assert.Equal(TakeoverState.Granted, arcadia.ForGames.Takeover.State);
+        Assert.Contains("Pan: Firmware-Versuch beendet (Steam hat aufgegeben, geschlossen, Controller bleiben übernommen)", ArcadiaDriver.Log);
+
+        arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, [1, 0xB8, 0x00], forwarding: true);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Dialog beim nächsten Versuch");
     }
 }

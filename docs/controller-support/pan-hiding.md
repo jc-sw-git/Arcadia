@@ -77,7 +77,12 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   Configuration Client (Start menu, admin) unticks the puck, removes
   Arcadia from the application list and turns hiding off; uninstalling HidHide empties its lists. Pan's later undo
   removes only what is still there.
-- Journal: `HiddenDevices`, `AllowListed`, `CloakingWasOn`, `PuckRestartPending`; a journal naming a hidden device that
+- Firmware hold (#242, owner 2026-10-28): `HoldForFirmware` (10, value 1/0, current generation, journaled before the
+  reply) while Steam tries an update through the copy. While held and Steam runs, every show is skipped (the retry
+  waits on) and `Unhide` is rejected `HeldForFirmware`; once Steam is closed Pan clears it and shows. A crash mid-attempt
+  thus keeps the puck hidden; the next `Hello` answers with reason `HeldForFirmware` (23), and Arcadia opens the
+  firmware dialog with the wait at once. `--restore` always shows.
+- Journal: `HiddenDevices`, `AllowListed`, `CloakingWasOn`, `PuckRestartPending`, `FirmwareHold`; a journal naming a hidden device that
   isn't on `HidingList` counts as unreadable (an undo must never remove one of the user's entries).
 
 ## Steam's focus change (R12)

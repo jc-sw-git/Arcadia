@@ -44,7 +44,7 @@ public sealed partial class TakeoverConsentViewModel : ViewModelBase, IDisposabl
     public TakeoverConsentViewModel(SteamControllerParts parts, Action<bool> answer, TimeProvider time, Action<Action> post)
     {
         Parts = parts;
-        Yes = new HoldButtonViewModel("Ja, es läuft gerade kein Firmware-Update", TimeSpan.FromSeconds(3), () => answer(true), time, post);
+        Yes = new HoldButtonViewModel("Ja, übernehmen. Es läuft gerade kein Firmware-Update!", TimeSpan.FromSeconds(3), () => answer(true), time, post);
         No = new HoldButtonViewModel("Nein, nicht übernehmen", TimeSpan.FromSeconds(1), () => answer(false), time, post) { IsFocused = true };
     }
 
@@ -60,9 +60,14 @@ public sealed partial class TakeoverConsentViewModel : ViewModelBase, IDisposabl
     public IReadOnlyList<string> Found => SteamControllerPartsNames.Found(Parts);
 
     public string Message =>
-        $"Übernimmt Arcadia {SteamControllerPartsNames.Object(Parts)}, sieht Steam nur noch eine Kopie davon. Läuft in diesem Moment ein Firmware-Update, wird es unterbrochen und kann schiefgehen.";
+        $"Übernimmt Arcadia {SteamControllerPartsNames.Object(Parts)}, kann ein laufendes Firmware-Update dadurch unterbrochen werden und scheitern. Das kann im Zweifel {SteamControllerPartsNames.Object(Parts)} beschädigen!";
 
-    public string WarningTitle => "Erst prüfen: Zeigt Steam gerade ein Firmware-Update an?";
+    public string WarningTitle => Parts switch
+    {
+        SteamControllerParts.Puck => "Erst prüfen: Führt Steam gerade ein Firmware-Update des Pucks aus?",
+        SteamControllerParts.Controller => "Erst prüfen: Führt Steam gerade ein Firmware-Update des Steam Controllers aus?",
+        _ => "Erst prüfen: Führt Steam gerade ein Firmware-Update des Steam Controllers oder Pucks aus?",
+    };
 
     public string WarningText => "Dann wähle „Nein“ und lass das Update fertig laufen.";
 

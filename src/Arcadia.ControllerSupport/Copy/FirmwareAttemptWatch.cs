@@ -37,6 +37,9 @@ public sealed class FirmwareAttemptWatch(TimeProvider time, Action<string> log)
     /// <summary>The first update traffic of an attempt: Arcadia comes to the front with the dialog. Any thread.</summary>
     public event Action? Started;
 
+    /// <summary>The attempt ended (<see cref="End"/>); on the caller's thread.</summary>
+    public event Action? Ended;
+
     public bool IsActive
     {
         get { lock (_lock) return _active; }
@@ -112,6 +115,7 @@ public sealed class FirmwareAttemptWatch(TimeProvider time, Action<string> log)
         }
 
         log($"Pan: Firmware-Versuch beendet ({how}); als Update gewertet: {counted}");
+        Ended?.Invoke();
     }
 
     private string Counted() => string.Join(", ", _counted.Select(entry => $"{entry.Key} ×{entry.Value}"));

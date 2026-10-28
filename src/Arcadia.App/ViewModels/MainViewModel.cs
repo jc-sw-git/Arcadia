@@ -1058,14 +1058,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             return;
         }
 
-        var parts = _pan.Connected;
-        ShowPanDialog(new FirmwareAttemptViewModel(
+        var dialog = new FirmwareAttemptViewModel(
             _pan.FirmwareAttempt,
-            parts,
+            _pan.Connected,
             _pan.ReleaseForFirmwareAsync,
             () => QuitRequested?.Invoke(this, EventArgs.Empty),
             _time,
-            action => Avalonia.Threading.Dispatcher.UIThread.Post(action)));
+            action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
+        dialog.Closed += () => ClosePanDialog(dialog);
+        ShowPanDialog(dialog);
     }
 
     private void ShowPanDialog(ViewModelBase dialog)

@@ -413,6 +413,55 @@ public sealed class PanEmulationTests
         Assert.Equal([1u], _pan.Started);
     }
     [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task Mid_firmware_attempt_Pan_holds_the_puck_and_closing_Arcadia_leaves_it_hidden()
+    {
+        var emulation = WithSteam(() => false);
+        await emulation.TickAsync();
+        _events.Clear();
+
+        await emulation.HoldForFirmwareAsync(true);
+        await emulation.ShutdownAsync();
+
+        Assert.Equal(["firmware hold 1 True", "copy detached", "stopped 1"], _events);
+        Assert.Empty(_pan.Unhidden);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task The_release_ends_the_hold_before_the_puck_is_shown()
+    {
+        var emulation = WithSteam(() => false);
+        await emulation.TickAsync();
+        await emulation.HoldForFirmwareAsync(true);
+        _events.Clear();
+
+        await emulation.ReleaseForFirmwareAsync();
+
+        Assert.Equal(["firmware hold 1 False", "copy detached", "unhide 1", "stopped 1"], _events);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task A_hold_from_before_the_start_takes_the_puck_over_without_asking_and_holds_it_for_the_new_generation()
+    {
+        _pan.HeldForFirmware = true;
+        var emulation = WithSteam(() => true);
+        var asked = 0;
+        var found = 0;
+        emulation.Takeover.ConsentNeeded += _ => asked++;
+        emulation.FirmwareHoldFound += () => found++;
+
+        await emulation.TickAsync();
+        await emulation.TickAsync();
+
+        Assert.Equal(0, asked);
+        Assert.Equal(1, found);
+        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
+        Assert.Equal([(1u, true)], _pan.FirmwareHolds);
+    }
+
+    [Fact]
     [Trait("TestCase", "T242-9")]
     public async Task A_pad_that_failed_to_go_earlier_leaves_the_puck_to_Pans_teardown()
     {

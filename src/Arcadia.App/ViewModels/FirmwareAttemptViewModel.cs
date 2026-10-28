@@ -11,8 +11,8 @@ namespace Arcadia.App.ViewModels;
 /// which never reaches the real puck. Releasing the puck while Steam still sends could hand it the rest of the update, so
 /// "Controller freigeben" and "Arcadia beenden" (held 1 s) wait until Steam gave up (<see cref="FirmwareAttemptWatch"/>).
 /// "Steam hat das Update abgebrochen" (held 3 s) is the player's own fallback, so a misread message never traps them.
-/// Can't be closed until then; [B] does nothing. After the release it says how the update goes on, and closes with
-/// [A] or [B].
+/// "Schließen" (no hold) then closes it and keeps them taken over. Can't be closed before; [B] does nothing. After the
+/// release it says how the update goes on, and closes with [A] or [B].
 /// </summary>
 public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposable
 {
@@ -44,8 +44,13 @@ public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposabl
             _watch.End(_skipped ? "vom Spieler übersprungen, Arcadia beendet" : "Steam hat aufgegeben, Arcadia beendet");
             quit();
         }, time, post);
+        CloseButton = new HoldButtonViewModel("Schließen", TimeSpan.Zero, () =>
+        {
+            _watch.End(_skipped ? "vom Spieler übersprungen, geschlossen, Controller bleiben übernommen" : "Steam hat aufgegeben, geschlossen, Controller bleiben übernommen");
+            Closed?.Invoke();
+        }, time, post);
         SkipButton = new HoldButtonViewModel("Steam hat das Update abgebrochen", TimeSpan.FromSeconds(3), Skip, time, post) { IsFocused = true };
-        _order = [ReleaseButton, QuitButton, SkipButton];
+        _order = [ReleaseButton, QuitButton, CloseButton, SkipButton];
         Refresh();
         _refresh = time.CreateTimer(_ => post(Refresh), null, RefreshEvery, RefreshEvery);
     }
@@ -54,13 +59,19 @@ public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposabl
 
     public string Title => "Steam will die Firmware aktualisieren";
 
-    public string Message => "Steam sieht nur Arcadias Kopie deines Steam Controllers und würde das Update an sie schicken. Arcadia hält es deshalb auf; dein Steam Controller und der Puck sind unverändert. Für das Update gibt Arcadia sie frei, sobald Steam aufgegeben hat.";
+    public string Message => "Arcadia hat festgestellt, dass Steam ein Firmware-Update deines Steam Controllers oder Pucks gestartet hat. Solange Arcadia Controller und Puck verwaltet, sind keine Firmware-Updates möglich. Das laufende Update muss in Steam erst abbrechen oder fehlschlagen, bevor Arcadia Controller und Puck sicher freigeben kann. Bis dahin kann es sie nicht beschädigen.";
 
-    public string Hint => "Schneller geht es, wenn du das Update in Steam abbrichst. Versucht Steam es immer wieder, beende Steam.";
+    /// <summary>Above "Steam hat das Update abgebrochen": the player confirms it on their own responsibility.</summary>
+    public string SkipWarning => "Vergewissere dich, dass Steam das Firmware-Update wirklich abgebrochen hat, bevor du den Abbruch selbst bestätigst! Am besten beendest du dafür Steam.";
+
+    /// <summary>"Schließen": the dialog goes, the controllers stay taken over.</summary>
+    public event Action? Closed;
 
     public HoldButtonViewModel ReleaseButton { get; }
 
     public HoldButtonViewModel QuitButton { get; }
+
+    public HoldButtonViewModel CloseButton { get; }
 
     public HoldButtonViewModel SkipButton { get; }
 
@@ -97,7 +108,7 @@ public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposabl
     public string StatusTitle => _skipped ? "Du hast bestätigt, dass Steam abgebrochen hat"
         : State switch
         {
-            FirmwareAttemptState.CountingDown => "Seit 5 Sekunden kein Versuch mehr",
+            FirmwareAttemptState.CountingDown => "Es gab seit einigen Sekunden keinen Versuch mehr von Steam",
             FirmwareAttemptState.GaveUp => "Steam hat aufgegeben",
             _ => "Steam versucht es noch",
         };
@@ -107,7 +118,7 @@ public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposabl
         : State switch
         {
             FirmwareAttemptState.CountingDown => "Kommt bis dahin kein neuer Versuch, gilt das Update als abgebrochen. Ein neuer Versuch startet die Wartezeit neu.",
-            FirmwareAttemptState.GaveUp => "30 Sekunden lang kam kein Update-Versuch mehr. Du kannst die Controller jetzt freigeben oder Arcadia beenden.",
+            FirmwareAttemptState.GaveUp => "30 Sekunden lang kam kein Update-Versuch mehr. Du kannst die Controller jetzt freigeben, Arcadia beenden oder einfach weiterspielen.",
             _ => "Arcadia wartet, bis 30 Sekunden lang kein Update-Versuch mehr kommt. Erst dann ist es sicher, die Controller freizugeben.",
         };
 
@@ -171,7 +182,7 @@ public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposabl
 
     private HoldButtonViewModel Focused => _order.First(button => button.IsFocused);
 
-    private IEnumerable<HoldButtonViewModel> Shown => IsReady ? [ReleaseButton, QuitButton] : _order;
+    private IEnumerable<HoldButtonViewModel> Shown => IsReady ? [ReleaseButton, QuitButton, CloseButton] : _order;
 
     private void Move(int step)
     {
@@ -220,11 +231,11 @@ public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposabl
         OnPropertyChanged(nameof(IsCountingDown));
         OnPropertyChanged(nameof(StatusTitle));
         OnPropertyChanged(nameof(StatusText));
-        ReleaseButton.IsEnabled = QuitButton.IsEnabled = IsReady;
+        ReleaseButton.IsEnabled = QuitButton.IsEnabled = CloseButton.IsEnabled = IsReady;
         SkipButton.IsShown = !IsReady;
         if (IsReady && !_wasReady)
         {
-            Focus(ReleaseButton);
+            Focus(CloseButton);
         }
 
         _wasReady = IsReady;
@@ -237,8 +248,12 @@ public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposabl
         var focused = Focused;
         FocusText = focused == ReleaseButton ? $"Controller freigeben: Steam sieht {SteamControllerPartsNames.Names(Parts)} wieder direkt, Arcadia läuft weiter."
             : focused == QuitButton ? "Arcadia beenden: Arcadia gibt alle Controller frei und beendet sich."
+            : focused == CloseButton ? $"Schließen: Arcadia behält {SteamControllerPartsNames.Names(Parts)}. Das Firmware-Update ist dann erst möglich, wenn du Arcadia beendest."
             : "Erst wenn 30 Sekunden lang kein Versuch mehr kommt, lassen sich die Controller freigeben.";
-        Legend = focused == SkipButton ? "Halten (3 s): Abgebrochen" : IsReady ? "Halten (1 s): Auswählen" : "Noch gesperrt";
+        Legend = focused == SkipButton ? "Halten (3 s): Abgebrochen"
+            : !IsReady ? "Noch gesperrt"
+            : focused == CloseButton ? "Schließen"
+            : "Halten (1 s): Auswählen";
     }
 
     public void Dispose()

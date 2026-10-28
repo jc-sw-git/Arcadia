@@ -65,7 +65,7 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
       · E2E: no (Linux build by hand)
 - [ ] **T242-20** Steam running, Steam Controller and puck connected, Arcadia started: "Steam Controller und Puck
       übernehmen?" lists what was found and "Steam läuft"; "Nein" has the focus; [B], a tap of [A] and letting go
-      early do nothing; nothing is hidden (the puck doesn't restart) until "Ja, es läuft gerade kein Firmware-Update"
+      early do nothing; nothing is hidden (the puck doesn't restart) until "Ja, übernehmen. Es läuft gerade kein Firmware-Update!"
       is held 3 s. Without Steam running, no question: taken over at once. · E2E: yes (the real puck after part C)
 - [ ] **T242-21** "Nein" (held 1 s): Steam keeps the real controller; the switch reads "An – Steam Controller und Puck
       ausgenommen, siehe unten" without a triangle, the row "Steam Controller und Puck übernehmen" shows its bold red
@@ -77,6 +77,10 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
 - [ ] **T242-23** In the firmware dialog, "Steam hat das Update abgebrochen" held 3 s frees the choice before the wait
       is over; "Arcadia beenden" (held 1 s) closes Arcadia. `arcadia.log` names every message that counted as an
       update and whether Steam gave up or the player said so. · E2E: yes
+- [ ] **T242-24** Arcadia ends unexpectedly (killed) while the firmware dialog waits: the puck stays hidden while
+      Steam runs; Arcadia started again shows "Steam will die Firmware aktualisieren" with the wait at once and asks
+      nothing. Steam closed instead: Pan shows the puck. "Schließen" after Steam gave up keeps the controllers taken
+      over. · E2E: yes (the kill: the real puck after part C)
 
 ## Test runs
 
@@ -86,3 +90,4 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
 | T242-8, T242-10 … T242-16 (acceptance tests) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; each test seen red once by mutation (dialog shown over settings, switch not toggling, game lock removed, paused notice removed, stopped row not built, spinner while setting up removed, broken mode not focusable, A not leading to the row) | pass | not rendered on Windows; owner's manual run open |
 | T242-9, T242-20 after the QE review (`PanEmulationTests` Core: firmware guard, a copy that fails to go leaves the puck to Pan's teardown, one restart per tick; App: the row "Pan wartet auf Steam") | 2026-10-28 | Claude (thread) | Debug, Linux cloud container; each new test seen red once by mutation (guard off, Steam's turn not noted, unhide after a failed removal, restart unbounded, row not built) | pass | real update after part C |
 | T242-8, T242-20 … T242-23 after the owner's firmware design (Core: `PanEmulationTests` consent and gaps, `FirmwareAttemptWatchTests`, `SteamControllerCopyFilterTests` update traffic; App: consent, "Nein" and the settings row, the firmware wait and release, the player's fallback and quit) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; mutations listed in the PR | pass | not rendered on Windows; owner's manual run open |
+| T242-24, T242-23 "Schließen", the designer's texts (Pan: `HidingTests` firmware hold; Core: `PanEmulationTests` hold sent, lifted, found at start; App: close keeps the takeover) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; mutations listed in the PR | pass | the kill on Windows open |

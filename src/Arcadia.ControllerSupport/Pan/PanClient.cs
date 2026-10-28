@@ -45,6 +45,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     private uint _currentGeneration;
     private uint _tornDownGeneration;
     private bool _teardownPending;
+    private bool _heldForFirmware;
     private DateTimeOffset _beingShownUntil;
     private bool _emulating;
     private long _pulses;
@@ -91,6 +92,40 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     public string? Unavailable()
     {
         lock (_lock) return _unavailable ?? (_teardownPending || _time.GetUtcNow() < _beingShownUntil ? CleaningUp : null);
+    }
+
+    public bool HeldForFirmware
+    {
+        get { lock (_lock) return _heldForFirmware; }
+    }
+
+    public async Task<bool> HoldForFirmwareAsync(uint generation, bool hold, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var reply = await RequestAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation, hold ? 1u : 0u), cancellationToken);
+            if (reply.Reply != PanReply.Acknowledged)
+            {
+                _log($"Pan: Firmware-Halt {(hold ? "an" : "aus")} abgelehnt ({reply})");
+                return false;
+            }
+
+            if (!hold)
+            {
+                lock (_lock)
+                {
+                    _heldForFirmware = false;
+                }
+            }
+
+            _log($"Pan: Firmware-Halt {(hold ? "an: der Steam Controller bleibt versteckt, auch wenn Arcadia unerwartet endet" : "aus")}");
+            return true;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            _log($"Pan: Firmware-Halt {(hold ? "an" : "aus")} nicht gesendet: {ex.Message}");
+            return false;
+        }
     }
 
     public bool IsCurrent(uint generation)
@@ -454,6 +489,16 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         {
             _log("Pan: das Journal war nicht lesbar; Pan nutzt die vorherige Fassung oder beginnt leer");
             JournalProblem?.Invoke();
+        }
+
+        lock (_lock)
+        {
+            _heldForFirmware = hello.Reason == PanReason.HeldForFirmware;
+        }
+
+        if (_heldForFirmware)
+        {
+            _log("Pan: ein Firmware-Versuch über die Kopie hält den Steam Controller versteckt, Steam läuft noch");
         }
 
         if (hello.Reason == PanReason.TeardownNotAcknowledged)

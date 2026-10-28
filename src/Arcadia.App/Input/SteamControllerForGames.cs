@@ -1,3 +1,4 @@
+using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Copy;
 using Arcadia.ControllerSupport.Pan;
@@ -103,6 +104,10 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         var filter = new SteamControllerCopyFilter(time, Services.AppLog.Write);
         var attempt = new FirmwareAttemptWatch(time, Services.AppLog.Write);
         filter.UpdateTraffic += attempt.Traffic;
+        // Off the copy's thread. Pan keeps the puck hidden while Steam tries, also if Arcadia ends meanwhile (owner, 2026-10-28).
+        attempt.Started += () => Task.Run(() => emulation.HoldForFirmwareAsync(true)).Forget("Firmware-Halt bei Pan setzen");
+        attempt.Ended += () => Task.Run(() => emulation.HoldForFirmwareAsync(false)).Forget("Firmware-Halt bei Pan aufheben");
+        emulation.FirmwareHoldFound += () => attempt.Traffic("Firmware-Versuch von vor dem Start von Arcadia");
         return new SteamControllerForGames(pad, routing, emulation, filter, attempt);
     }
 

@@ -46,9 +46,9 @@ Agreed with the owner; don't change without asking. Read this before changing th
 - Pan's firmware dialogs (#242, owner 2026-10-28, designs T242Zustimmung/T242Firmware): "Steam Controller und Puck
   übernehmen?" and "Steam will die Firmware aktualisieren" come to the front over everything, can't be clicked away
   and ignore [B] (no [B] hint): the answer must be deliberate. Their buttons act only when [A] (or the mouse) is held,
-  filling while held: "Ja, es läuft gerade kein Firmware-Update" 3 s, "Nein, nicht übernehmen" (focused first) 1 s;
+  filling while held: "Ja, übernehmen. Es läuft gerade kein Firmware-Update!" 3 s, "Nein, nicht übernehmen" (focused first) 1 s;
   "Controller freigeben" and "Arcadia beenden" 1 s, greyed until Steam gave up; "Steam hat das Update abgebrochen" 3 s,
-  gone once Steam gave up. Only a fresh press counts. The note after the release closes with [A] or [B].
+  gone once Steam gave up; "Schließen" acts on a plain press, greyed until then too, and gets the focus once Steam gave up. Only a fresh press counts. The note after the release closes with [A] or [B].
 - Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has
   no "Schließen" button besides (owner, 2026-10-20).

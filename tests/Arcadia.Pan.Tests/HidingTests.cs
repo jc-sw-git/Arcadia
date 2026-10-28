@@ -719,6 +719,80 @@ public sealed class HidingTests : IDisposable
         Assert.Empty(_hidHide.Hidden);
     }
 
+    /// <summary>Steam tried a firmware update through the copy (#242), then Arcadia crashed: Steam still runs.</summary>
+    private async Task<Guardian> HeldForFirmwareAfterACrashAsync(Func<bool> steamRuns)
+    {
+        var guardian = new Guardian(_clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
+            hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: FakeDevices.StepTimeout)
+        {
+            ShowRetryDelays = [TimeSpan.FromMilliseconds(20)],
+            SteamRuns = steamRuns,
+        };
+        var generation = await EmulatingAsync(guardian);
+        Assert.Equal(PanReply.Hidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation))).Reply);
+        Assert.Equal(PanReply.Acknowledged, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation, 1))).Reply);
+        Assert.True(Journal.FirmwareHold, "journaled before the reply");
+
+        guardian.ClientGone();
+        await guardian.Teardown!;
+        return guardian;
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task A_crash_mid_firmware_attempt_ends_the_forwarding_but_keeps_the_puck_hidden_until_Steam_is_closed()
+    {
+        var steamRuns = true;
+        var guardian = await HeldForFirmwareAfterACrashAsync(() => steamRuns);
+
+        Assert.Single(_cleanup.Ended);
+        Assert.Equal(2, _hidHide.Hidden.Count);
+        Assert.True(guardian.ShowRetryPending, "Pan stays up for it");
+        Assert.Contains("held: Steam tried a firmware update through the copy and still runs", Log());
+
+        // Waiting is not failing: Pan keeps waiting for Steam to close.
+        await Task.Delay(200);
+        Assert.Equal(2, _hidHide.Hidden.Count);
+
+        steamRuns = false;
+        await guardian.ShowRetry!.WaitAsync(TimeSpan.FromSeconds(30));
+        AssertRestored([], [], cloaking: false);
+        Assert.False(Journal.FirmwareHold);
+        Assert.Contains("Steam is closed: the firmware hold ends", Log());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task While_held_the_next_Arcadia_hears_of_it_at_hello_and_the_hold_ends_only_when_it_says_so()
+    {
+        var guardian = await HeldForFirmwareAfterACrashAsync(() => true);
+
+        Assert.Equal(PanReason.None, guardian.Register(Arcadia with { Pid = 501 }));
+        var hello = await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello));
+        Assert.Equal(PanReason.HeldForFirmware, hello.Reason);
+        var started = await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted));
+        Assert.Equal(PanReply.Started, started.Reply);
+        Assert.Equal(PanReply.Hidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, started.Generation))).Reply);
+
+        // Mid-attempt not even the client may show it.
+        Assert.Equal(PanReason.HeldForFirmware, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Unhide, started.Generation))).Reason);
+        Assert.Equal(2, _hidHide.Hidden.Count);
+
+        Assert.Equal(PanReply.Acknowledged, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, started.Generation, 0))).Reply);
+        Assert.False(Journal.FirmwareHold);
+        Assert.Equal(PanReply.Shown, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Unhide, started.Generation))).Reply);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task A_hold_needs_the_current_emulation()
+    {
+        var generation = await EmulatingAsync();
+
+        Assert.Equal(PanReason.WrongGeneration, (await _guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation + 1, 1))).Reason);
+        Assert.False(Journal.FirmwareHold);
+    }
+
     private Guardian RetryingGuardian(TimeSpan? pause = null) => new(
         _clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
         hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: FakeDevices.StepTimeout)

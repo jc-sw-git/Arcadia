@@ -64,7 +64,9 @@ Decision 8 (owner: "no bricked Steam Controllers under any circumstances"): an a
   brings Arcadia to the front with "Steam will die Firmware aktualisieren": after 5 s without traffic a 25 s
   countdown runs (new traffic starts it anew); only then can "Controller freigeben" or "Arcadia beenden" (held 1 s)
   be chosen, as releasing the real puck mid-attempt could hand it the rest of the update. "Steam hat das Update
-  abgebrochen" (held 3 s) is the player's own way out of a misread. `arcadia.log` names every message that counted
+  abgebrochen" (held 3 s) is the player's own way out of a misread; "Schließen" (no hold, greyed and focused like the
+  others) closes the dialog and keeps the takeover. While the attempt runs, Pan holds the puck hidden even if Arcadia
+  ends unexpectedly, until Steam is closed (`pan-hiding.md`, firmware hold). `arcadia.log` names every message that counted
   and how the attempt ended (Steam gave up, or the player said so).
 - Open for part C: whether Steam misses `0xA3` (sent on every slot in the spike), and the real update path. No
   bootloader type is known; it would be dropped and counted all the same.

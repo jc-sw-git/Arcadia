@@ -184,6 +184,13 @@ public sealed partial class Guardian
                     }
                 }
 
+                if (HeldForFirmware())
+                {
+                    // Also the client may not show it mid-attempt (#242); it ends the hold first.
+                    _log($"Steam Controller not shown for generation {message.Generation}: held for a firmware attempt while Steam runs");
+                    return PanMessage.Of(PanReply.Rejected, message.Generation, PanReason.HeldForFirmware);
+                }
+
                 // The client sends this once it removed its copy of the controller (#242), so nothing forwards to it.
                 lock (_lock)
                 {
@@ -576,6 +583,13 @@ public sealed partial class Guardian
             return [];
         }
 
+        if (HeldForFirmware())
+        {
+            var held = new StepResult("show the Steam Controller", StepOutcome.Failed, "held: Steam tried a firmware update through the copy and still runs; shown once Steam is closed");
+            _log($"Teardown: {held}");
+            return [held];
+        }
+
         if (!forwardingGone)
         {
             var skipped = new StepResult("show the Steam Controller", StepOutcome.Failed, "skipped: the forwarding may still run; it stays hidden until the next teardown");
@@ -625,6 +639,50 @@ public sealed partial class Guardian
         {
             _hidingGate.Release();
         }
+    }
+
+    /// <summary>Whether Steam runs, checked while a firmware hold keeps the controller hidden; the service passes the real one.</summary>
+    public Func<bool> SteamRuns { get; init; } = () => false;
+
+    /// <summary>
+    /// The firmware hold applies: Steam still runs. Once Steam is closed nothing can go on with the update, so the hold
+    /// ends (journaled) and the controller may be shown.
+    /// </summary>
+    private bool HeldForFirmware()
+    {
+        lock (_lock)
+        {
+            if (!_journal.FirmwareHold)
+            {
+                return false;
+            }
+        }
+
+        bool steamRuns;
+        try
+        {
+            steamRuns = SteamRuns();
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Unknown counts as running: the controller stays hidden, the retry asks again.
+            _log($"Whether Steam runs not known: {ex.Message}");
+            return true;
+        }
+
+        if (steamRuns)
+        {
+            return true;
+        }
+
+        lock (_lock)
+        {
+            _journal.FirmwareHold = false;
+            SaveJournal();
+        }
+
+        _log("Steam is closed: the firmware hold ends, the Steam Controller may be shown");
+        return false;
     }
 
     /// <summary>
@@ -687,6 +745,18 @@ public sealed partial class Guardian
                     }
 
                     _retryShowing = true;
+                }
+
+                if (HeldForFirmware())
+                {
+                    // Not a failed show: it waits for Steam to close, as long as that takes.
+                    lock (_lock)
+                    {
+                        _retryShowing = false;
+                    }
+
+                    attempt = -1;
+                    continue;
                 }
 
                 IReadOnlyList<StepResult> results;

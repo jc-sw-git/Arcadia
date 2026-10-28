@@ -51,6 +51,18 @@ public interface IEmulationGuardian
     /// </summary>
     Task<Arcadia.Pan.PanReason?> CheckHidingAsync(uint generation, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Steam tries a firmware update through the copy (#242): while held, Pan's teardown keeps the real Steam Controller
+    /// hidden until Steam no longer runs, also after a crash of Arcadia. False if Pan didn't take it. Never throws.
+    /// </summary>
+    Task<bool> HoldForFirmwareAsync(uint generation, bool hold, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Pan said at the connection that a firmware attempt held the real Steam Controller hidden when the last Arcadia
+    /// ended, and Steam still runs: Arcadia takes it over without asking and waits the attempt out.
+    /// </summary>
+    bool HeldForFirmware { get; }
+
     /// <summary>Pan tore an emulation down: the generation and why. Off the UI thread.</summary>
     event Action<uint, Arcadia.Pan.PanReason>? TornDown;
 

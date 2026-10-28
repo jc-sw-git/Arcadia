@@ -19,7 +19,7 @@ public enum TakeoverState
     /// <summary>Not known whether a firmware update runs: the real puck was visible while Steam ran. Nothing is hidden.</summary>
     Unknown,
 
-    /// <summary>The player is asked ("Ja, es läuft gerade kein Firmware-Update" / "Nein, nicht übernehmen").</summary>
+    /// <summary>The player is asked ("Ja, übernehmen. Es läuft gerade kein Firmware-Update!" / "Nein, nicht übernehmen").</summary>
     Asking,
 
     /// <summary>Steam didn't run, or the player said yes: hidden while the emulation runs without a gap.</summary>
@@ -95,6 +95,18 @@ public sealed class SteamControllerTakeover(Action<string> log)
         if (_state is TakeoverState.Declined or TakeoverState.Released)
         {
             Set(TakeoverState.Granted, "in den Einstellungen wieder erlaubt");
+        }
+    }
+
+    /// <summary>
+    /// A firmware attempt keeps the real puck hidden (Pan's hold, also from before a crash of Arcadia): Steam never saw it
+    /// since, so it is taken over without asking, and showing it is what must not happen now.
+    /// </summary>
+    public void KeepForFirmware()
+    {
+        if (_state is TakeoverState.Unknown or TakeoverState.Asking)
+        {
+            Set(TakeoverState.Granted, "ein Firmware-Versuch hält den Steam Controller versteckt");
         }
     }
 

@@ -1251,7 +1251,7 @@
                                           </Border.RenderTransform>
                                         </Border>
                                       </Border>
-                                      <TextBlock Text="{Binding Shown}" />
+                                      <TextBlock Text="{Binding Label}" />
                                     </Panel>
                                   </Border>
                                 </DataTemplate>
@@ -1686,7 +1686,7 @@
               </Grid>
             </Border>
             <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,4,0,0">
-              <Button DataContext="{Binding Yes}" x:DataType="vm:HoldButtonViewModel" Width="470"
+              <Button DataContext="{Binding Yes}" x:DataType="vm:HoldButtonViewModel" Width="510"
                       Classes="plain hold" Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}"
                       Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}">
                 <Panel>
@@ -1697,10 +1697,10 @@
                       </Border.RenderTransform>
                     </Border>
                   </Border>
-                  <TextBlock Text="{Binding Shown}" />
+                  <TextBlock Text="{Binding Label}" />
                 </Panel>
               </Button>
-              <Button DataContext="{Binding No}" x:DataType="vm:HoldButtonViewModel" Width="324"
+              <Button DataContext="{Binding No}" x:DataType="vm:HoldButtonViewModel" Width="284"
                       Classes="plain hold light" Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}"
                       Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}">
                 <Panel>
@@ -1711,7 +1711,7 @@
                       </Border.RenderTransform>
                     </Border>
                   </Border>
-                  <TextBlock Text="{Binding Shown}" />
+                  <TextBlock Text="{Binding Label}" />
                 </Panel>
               </Button>
             </StackPanel>
@@ -1759,7 +1759,6 @@
                   <TextBlock Text="{Binding StatusText}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
                 </StackPanel>
               </Border>
-              <TextBlock Text="{Binding Hint}" IsVisible="{Binding !IsReady}" FontSize="16" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
               <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,4,0,0">
                 <Button DataContext="{Binding ReleaseButton}" x:DataType="vm:HoldButtonViewModel" Width="300"
                         Classes="plain hold light" Classes.locked="{Binding !IsEnabled}" Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}"
@@ -1772,7 +1771,7 @@
                         </Border.RenderTransform>
                       </Border>
                     </Border>
-                    <TextBlock Text="{Binding Shown}" />
+                    <TextBlock Text="{Binding Label}" />
                   </Panel>
                 </Button>
                 <Button DataContext="{Binding QuitButton}" x:DataType="vm:HoldButtonViewModel" Width="260"
@@ -1786,11 +1785,21 @@
                         </Border.RenderTransform>
                       </Border>
                     </Border>
-                    <TextBlock Text="{Binding Shown}" />
+                    <TextBlock Text="{Binding Label}" />
                   </Panel>
+                </Button>
+                <Button DataContext="{Binding CloseButton}" x:DataType="vm:HoldButtonViewModel" Width="200"
+                        Classes="plain hold raised" Classes.locked="{Binding !IsEnabled}" Classes.focused="{Binding IsFocused}">
+                  <TextBlock Text="{Binding Label}" />
                 </Button>
               </StackPanel>
               <TextBlock Text="{Binding FocusText}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+              <Border Classes="dangerBox strong" Padding="20,14" IsVisible="{Binding SkipButton.IsShown}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                  <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.01" Stroke="{StaticResource Danger}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" VerticalAlignment="Top" />
+                  <TextBlock Grid.Column="1" Text="{Binding SkipWarning}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
+                </Grid>
+              </Border>
               <Button DataContext="{Binding SkipButton}" x:DataType="vm:HoldButtonViewModel" HorizontalAlignment="Left"
                       IsVisible="{Binding IsShown}"
                       Classes="plain hold small" Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}"
@@ -1803,7 +1812,7 @@
                       </Border.RenderTransform>
                     </Border>
                   </Border>
-                  <TextBlock Text="{Binding Shown}" />
+                  <TextBlock Text="{Binding Label}" />
                 </Panel>
               </Button>
               <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0">

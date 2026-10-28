@@ -108,6 +108,9 @@ public sealed class PanEmulation : IVirtualXboxPads
     private long _hideRetryAt = long.MinValue;
     private bool _pausedByLoss;
     private volatile bool _gaveUp;
+
+    // Steam tries a firmware update through the copy (#242): the puck must stay hidden, also if Arcadia ends meanwhile.
+    private volatile bool _firmwareHold;
     private string? _lastLogged;
 
     public PanEmulation(IVirtualXboxPads pads, IEmulationGuardian guardian, ISteamControllerHold hold, TimeProvider time, Action<string> log)
@@ -151,6 +154,12 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     /// <summary><see cref="Status"/> changed; any thread.</summary>
     public event Action? Changed;
+
+    /// <summary>
+    /// Pan still holds the puck hidden for a firmware attempt from before Arcadia's start (it ended unexpectedly while
+    /// Steam tried): the dialog waits it out. Raised once, by the first tick that sees it; off the UI thread.
+    /// </summary>
+    public event Action? FirmwareHoldFound;
 
     /// <summary>A notice for a toast or the in-game notice: hiding lost, back again, given up. Any thread.</summary>
     public event Action<string>? Notice;
@@ -361,6 +370,10 @@ public sealed class PanEmulation : IVirtualXboxPads
             }
 
             session.Hidden = true;
+            if (_firmwareHold)
+            {
+                session.HoldSent = await _guardian.HoldForFirmwareAsync(generation, true, CancellationToken.None);
+            }
         }
 
         _session = session;
@@ -374,6 +387,18 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// </summary>
     private bool MayHide()
     {
+        if (_guardian.HeldForFirmware && !_firmwareHold)
+        {
+            _firmwareHold = true;
+            _log("Pan-Emulation: ein Firmware-Versuch von vor dem Start hält den Steam Controller versteckt; Arcadia wartet ihn ab");
+            FirmwareHoldFound?.Invoke();
+        }
+
+        if (_firmwareHold)
+        {
+            Takeover.KeepForFirmware();
+        }
+
         if (Takeover.MayHide(SteamRuns(), Connected()))
         {
             return true;
@@ -394,6 +419,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         await _gate.WaitAsync();
         try
         {
+            await SetFirmwareHoldAsync(false);
             Takeover.Release();
             await EndIfRunningAsync("für ein Firmware-Update freigegeben");
             MayHide();
@@ -401,6 +427,50 @@ public sealed class PanEmulation : IVirtualXboxPads
         finally
         {
             _gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Steam tries a firmware update through the copy, or the attempt is over (the dialog's end): Pan keeps the puck
+    /// hidden meanwhile, also if Arcadia ends unexpectedly. Never throws; off the copy's thread.
+    /// </summary>
+    public async Task HoldForFirmwareAsync(bool hold)
+    {
+        _firmwareHold = hold;
+        await _gate.WaitAsync();
+        try
+        {
+            if (_firmwareHold == hold)
+            {
+                await SetFirmwareHoldAsync(hold);
+            }
+        }
+        catch (Exception ex)
+        {
+            _log($"Pan-Emulation: Firmware-Halt nicht gesetzt: {ex}");
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>Inside the gate.</summary>
+    private async Task SetFirmwareHoldAsync(bool hold)
+    {
+        _firmwareHold = hold;
+        if (_session is { Hidden: true } session)
+        {
+            // Only a hold Pan has is lifted: a release without an attempt sends nothing.
+            if (session.HoldSent != hold && await _guardian.HoldForFirmwareAsync(session.Generation, hold, CancellationToken.None))
+            {
+                session.HoldSent = hold;
+            }
+        }
+        else if (!hold && _guardian.HeldForFirmware)
+        {
+            // No emulation runs to send it with: the hold from before the start stays with Pan until Steam closes.
+            _log("Pan-Emulation: Firmware-Halt von vor dem Start bleibt bei Pan, bis Steam beendet ist");
         }
     }
 
@@ -511,7 +581,13 @@ public sealed class PanEmulation : IVirtualXboxPads
         _session = null;
         Takeover.Gap(why);
         var removed = await RemoveDevicesAsync(session) && !session.LeftBehind;
-        if (session.Hidden && removed)
+        if (session.Hidden && _firmwareHold)
+        {
+            // Mid firmware attempt (Arcadia closing, a gap): the copy goes, the puck stays hidden; Pan's teardown after the
+            // stop keeps it so until Steam no longer runs.
+            _log($"Pan-Emulation {session.Generation}: Firmware-Versuch läuft, der Steam Controller bleibt versteckt");
+        }
+        else if (session.Hidden && removed)
         {
             // Not shown (HidHide busy): Pan's teardown after the stop shows it, with its own retries.
             await _guardian.UnhideAsync(session.Generation, CancellationToken.None);
@@ -621,6 +697,9 @@ public sealed class PanEmulation : IVirtualXboxPads
         public uint Generation { get; } = generation;
 
         public bool Hidden { get; set; }
+
+        /// <summary>Pan holds the puck hidden for a firmware attempt in this generation.</summary>
+        public bool HoldSent { get; set; }
 
         public ISteamControllerCopy? Copy { get; set; }
 

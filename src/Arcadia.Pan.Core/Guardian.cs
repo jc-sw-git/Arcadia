@@ -215,6 +215,8 @@ public sealed partial class Guardian
                 // The client learns of an open teardown it must acknowledge, and of a journal Pan couldn't read.
                 return _phase == Phase.TornDown
                     ? PanMessage.Of(PanReply.HelloOk, _generation, PanReason.TeardownNotAcknowledged)
+                    : _journal.FirmwareHold
+                    ? PanMessage.Of(PanReply.HelloOk, _generation, PanReason.HeldForFirmware)
                     : PanMessage.Of(PanReply.HelloOk, _generation, _journalProblem is null ? PanReason.None : PanReason.JournalUnreadable);
             }
 
@@ -235,6 +237,7 @@ public sealed partial class Guardian
                 PanCommand.Heartbeat => WithGeneration(message, Heartbeat),
                 PanCommand.TeardownAcknowledged => Acknowledge(message.Generation),
                 PanCommand.PlannedExit => PlannedExit(),
+                PanCommand.HoldForFirmware => WithGeneration(message, () => HoldForFirmware(message.Value != 0)),
                 _ => PanMessage.Of(PanReply.Rejected, message.Generation, PanReason.NotRegistered),
             };
         }
@@ -451,6 +454,28 @@ public sealed partial class Guardian
         _phase = Phase.Idle;
         _log($"Emulation generation {_generation} stopped by the client");
         return PanMessage.Of(PanReply.Stopped, _generation);
+    }
+
+    /// <summary>Under the lock: journaled before the reply, so a crash right after it already keeps the controller hidden.</summary>
+    private PanMessage HoldForFirmware(bool hold)
+    {
+        if (_phase != Phase.Emulating)
+        {
+            return PanMessage.Of(PanReply.Rejected, _generation, PanReason.NotEmulating);
+        }
+
+        var before = _journal.FirmwareHold;
+        _journal.FirmwareHold = hold;
+        if (!TrySaveJournal())
+        {
+            _journal.FirmwareHold = before;
+            return PanMessage.Of(PanReply.Rejected, _generation, PanReason.JournalUnreadable);
+        }
+
+        _log(hold
+            ? $"Firmware attempt through the copy of generation {_generation}: the Steam Controller stays hidden while Steam runs"
+            : $"Firmware attempt of generation {_generation} over");
+        return PanMessage.Of(PanReply.Acknowledged, _generation);
     }
 
     private PanMessage Heartbeat()

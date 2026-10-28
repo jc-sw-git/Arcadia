@@ -20,7 +20,7 @@ public sealed class SteamOwnedGamesScanTests : IDisposable
     {
         _web = new FakeSteamWeb(_time.GetUtcNow());
         _http = new HttpClient(_web);
-        _account = new SteamOnlineAccount(new SteamWebApi(_http), new SteamAccountStore(Path.Combine(_root, "Arcadia"), d => d, d => d), _time);
+        _account = new SteamOnlineAccount(new SteamWebApi(_http), new SteamAccountStore(Path.Combine(_root, "Arcadia"), d => d, d => d), _web, _time);
     }
 
     private string SteamRoot => Path.Combine(_root, "Steam");
@@ -171,20 +171,42 @@ public sealed class SteamOwnedGamesScanTests : IDisposable
         Assert.Empty(SteamHiddenGames.Parse("""[["user-collections.hidden", {"is_deleted":true,"value":"{\"added\":[5]}"}]]"""));
     }
 
-    [Fact]
-    public void Protobuf_messages_round_trip_and_a_cut_message_is_refused()
+    [Theory]
+    [InlineData("""{"logged_in":true,"steamid":"76561197960265729"}""", """{"webapi_token":"tok"}""", 76561197960265729UL)]
+    [InlineData("""{"logged_in":true,"steamid":76561197960265729}""", """{"webapi_token":"tok"}""", 76561197960265729UL)]
+    [InlineData("""{"logged_in":false,"steamid":"76561197960265729"}""", """{"webapi_token":"tok"}""", null)]
+    [InlineData("""{"logged_in":true}""", """{"webapi_token":"tok"}""", null)]
+    [InlineData("""{"logged_in":true,"steamid":"x"}""", """{"webapi_token":"tok"}""", null)]
+    [InlineData("""{"logged_in":true,"steamid":"76561197960265729"}""", """{"webapi_token":""}""", null)]
+    [InlineData("""{"logged_in":true,"steamid":"76561197960265729"}""", """{}""", null)]
+    [InlineData("""{"logged_in":true,"steamid":"76561197960265729"}""", "kaputt", null)]
+    public void Store_page_counts_as_signed_in_only_with_account_and_token(string user, string config, ulong? steamId)
     {
-        var bytes = new ProtoWriter().UInt(1, ulong.MaxValue).String(2, "hällo").Bytes(3, [9, 8]).Fixed64(4, 76561197960265729).Int32(5, -500).ToArray();
+        var page = System.Text.Json.JsonSerializer.Serialize(new { user, config });
 
-        var message = ProtoMessage.Parse(bytes);
+        var signIn = SteamStorePage.SignInOf(page);
 
-        Assert.Equal(ulong.MaxValue, message.UInt(1));
-        Assert.Equal("hällo", message.String(2));
-        Assert.Equal([9, 8], message.Bytes(3));
-        Assert.Equal(76561197960265729UL, message.UInt(4));
-        Assert.Equal(-500, unchecked((int)(long)message.UInt(5)!.Value));
-        Assert.Null(message.UInt(7));
-        Assert.Throws<FormatException>(() => ProtoMessage.Parse(bytes.AsSpan(0, bytes.Length - 3)));
+        Assert.Equal(steamId, signIn?.SteamId);
+        Assert.Equal(steamId is null ? null : "tok", signIn?.WebApiToken);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("null")]
+    [InlineData("[]")]
+    [InlineData("""{"user":null,"config":null}""")]
+    [InlineData("<html>")]
+    public void Other_pages_are_no_sign_in(string page) => Assert.Null(SteamStorePage.SignInOf(page));
+
+    [Fact]
+    public void User_data_page_lists_apps_and_packages_and_is_nothing_without_apps()
+    {
+        var owned = SteamStorePage.OwnershipOf("""{"rgWishlist":[],"rgOwnedPackages":[0,500],"rgOwnedApps":[10,"x",20]}""");
+
+        Assert.Equal([10u, 20u], owned?.Apps);
+        Assert.Equal([0u, 500u], owned?.Packages);
+        Assert.Null(SteamStorePage.OwnershipOf("""{"rgOwnedPackages":[],"rgOwnedApps":[]}"""));
+        Assert.Null(SteamStorePage.OwnershipOf("Bitte melde dich an"));
     }
 
     [Fact]

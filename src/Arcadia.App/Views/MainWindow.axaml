@@ -15,6 +15,7 @@
         Background="{StaticResource Bg}"
         Foreground="{StaticResource Text}">
 
+  <Panel>
   <!-- The Big Picture layout is designed for 1920×1080 and scaled to the window. -->
   <!-- No clipping: bands reach past the layout into the bars beside it (Theme.axaml, bleed). -->
   <Viewbox Stretch="Uniform" ClipToBounds="False">
@@ -1299,6 +1300,14 @@
                 <DataTemplate x:DataType="settings:InfoText">
                   <TextBlock Classes="infoText" ctl:ButtonTextBlock.Text="{Binding Text}" />
                 </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoAvatar">
+                  <StackPanel Orientation="Horizontal" Spacing="16">
+                    <Border Width="72" Height="72" CornerRadius="12" ClipToBounds="True">
+                      <Image Source="{Binding Picture}" Stretch="UniformToFill" />
+                    </Border>
+                    <TextBlock Text="{Binding Name}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="300" />
+                  </StackPanel>
+                </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoHeading">
                   <TextBlock Classes="label" Text="{Binding Text}" Margin="0,8,0,0" />
                 </DataTemplate>
@@ -1366,14 +1375,6 @@
                       <Path Classes="statusIcon" Classes.info="{Binding IsInfo}" VerticalAlignment="Top" />
                       <TextBlock Grid.Column="1" Text="{Binding Text}" />
                     </Grid>
-                  </Border>
-                </DataTemplate>
-                <!-- A launcher account's sign-in (#83): the code a phone scans, on light ground with its quiet zone. -->
-                <DataTemplate x:DataType="settings:InfoQrCode">
-                  <Border Width="260" Height="260" HorizontalAlignment="Left" Background="{StaticResource QrCodeBackground}" CornerRadius="12">
-                    <Viewbox Stretch="Uniform">
-                      <Path Data="{Binding Modules}" Fill="{StaticResource QrCodeModules}" Width="100" Height="100" />
-                    </Viewbox>
                   </Border>
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoTabBar">
@@ -1678,6 +1679,31 @@
         <views:FirstRunView DataContext="{Binding FirstRun}" />
       </Panel>
 
+      <!-- A launcher's web page (#83), e.g. Steam's sign-in: shown over everything, or hidden while Arcadia reads a page
+           unseen (the web view is made either way). Nothing can be drawn over the web view itself, so the bars stay free. -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsWebSignInOpen}">
+        <Border Classes="bleedAll" Background="{StaticResource Bg}" />
+        <Grid RowDefinitions="104,*,72">
+          <Grid Margin="80,0" ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="24" VerticalAlignment="Center">
+              <TextBlock Text="{Binding WebPage?.Title}" FontSize="26" FontWeight="ExtraBold" VerticalAlignment="Center" />
+              <!-- Like a browser's address bar: the user sees the page is the launcher's own site. -->
+              <Border Background="{StaticResource SurfaceRaised}" CornerRadius="10" Padding="16,8" VerticalAlignment="Center">
+                <TextBlock Text="{Binding WebPage?.Address}" FontSize="17" Foreground="{StaticResource TextMuted}" />
+              </Border>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="plain dialogClose" VerticalAlignment="Center" ToolTip.Tip="Abbrechen (B)" Command="{Binding CloseWebPageCommand}">
+              <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+            </Button>
+          </Grid>
+          <!-- Where the web page goes; the page itself lies over the window, outside the scaled layout (WebPageView). -->
+          <Border Name="WebPageArea" Grid.Row="1" Margin="80,0" />
+          <StackPanel Grid.Row="2" Margin="80,0" Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <ctl:KeyHint Pad="B" Keys="Esc" Text="Abbrechen" />
+          </StackPanel>
+        </Grid>
+      </Panel>
+
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->
       <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding Toast.IsVisible}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"
               Padding="24,14" Margin="0,0,0,96" HorizontalAlignment="Center" VerticalAlignment="Bottom" BoxShadow="{StaticResource ToastShadow}">
@@ -1685,6 +1711,12 @@
       </Border>
     </Grid>
   </Viewbox>
+
+  <!-- A native web view isn't scaled with the Viewbox (owner's test, 2026-10-27: it kept its 1920×1080 size in a larger
+       window), so it lies over the window and MainWindow.axaml.cs puts it on WebPageArea's place after every layout. -->
+  <views:WebPageHost Name="WebPageView" Page="{Binding WebPage}" HorizontalAlignment="Left" VerticalAlignment="Top"
+                     IsVisible="{Binding IsWebSignInOpen}" />
+  </Panel>
 
   <Window.Styles>
     <Style Selector="TextBlock.label">

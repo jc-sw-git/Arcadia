@@ -13,6 +13,9 @@ public abstract record InfoBlock;
 /// <summary>A paragraph.</summary>
 public sealed record InfoText(string Text) : InfoBlock;
 
+/// <summary>An account's picture and name, e.g. the Steam avatar after the sign-in (#280).</summary>
+public sealed record InfoAvatar(string Name, Avalonia.Media.Imaging.Bitmap Picture) : InfoBlock;
+
 /// <summary>A small heading in capitals, e.g. "NACHTEILE".</summary>
 public sealed record InfoHeading(string Text) : InfoBlock;
 
@@ -93,7 +96,3 @@ public sealed record InfoLauncher(string Name, Services.LauncherBadge Badge, str
 
 /// <summary>Something to type and what it does, e.g. "/steam hollow" – "sucht nur in Steam" (#137).</summary>
 public sealed record InfoExample(string Sample, string Effect) : InfoBlock;
-
-/// <summary>A QR code to scan with a phone, e.g. the sign-in to a launcher's account (#83): its dark modules as a shape.</summary>
-/// <param name="Modules">The dark modules in a square of <see cref="Services.QrCodes.Size"/> units, quiet zone included.</param>
-public sealed record InfoQrCode(Avalonia.Media.Geometry Modules) : InfoBlock;

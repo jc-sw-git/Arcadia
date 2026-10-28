@@ -34,6 +34,9 @@ public enum HealthFix
     CreateMarker,
     StopExternalSisr,
     RestartSisr,
+
+    /// <summary>The pinned HidHide over the installed one (#242): its driver doesn't answer a request Pan needs.</summary>
+    ReinstallHidHide,
 }
 
 /// <summary>Whether the setting can be switched on, offered for installing, or not used at all.</summary>
@@ -262,6 +265,24 @@ public sealed class ControllerSupportService(
     /// drivers; null without Pan (tests, other platforms).
     /// </summary>
     public IHidingCheck? HidingCheck { get; set; }
+
+    /// <summary>
+    /// Arcadia's own <c>viiper.exe</c> (#242 part B), set once a fork build is pinned; until then VIIPER comes with SISR's
+    /// files.
+    /// </summary>
+    public IViiperInstallation? Viiper { get; init; }
+
+    private bool HasViiper => Viiper?.IsInstalled ?? sisr.HasViiper;
+
+    /// <summary>Pan hides the puck or holds it for a firmware attempt now (#242): HidHide must not be reinstalled then.</summary>
+    public Func<bool>? PanHoldsPuck { get; set; }
+
+    public const string HidHideReinstallWhileHiddenText =
+        "Solange Pan den Steam Controller versteckt, lässt sich HidHide nicht neu installieren. Schalte den Controller-Wächter (Pan) aus und versuche es dann noch einmal.";
+
+    /// <summary>"Neu installieren" while Steam runs: the reinstall restarts the puck, which Steam may be updating.</summary>
+    public const string HidHideReinstallWhileSteamRunsText =
+        "Beende zuerst Steam: „Neu installieren“ startet den Steam Controller neu, und Steam könnte gerade seine Firmware aktualisieren.";
 
     /// <summary>What the settings offer; rechecked on every <see cref="RefreshAsync"/>, and by the tick while on or while the settings are open.</summary>
     public ControllerSupportSetup Setup => _setup ??= CheckSetup();
@@ -1129,7 +1150,16 @@ public sealed class ControllerSupportService(
 
     private async Task InstallDriversAsync(bool updatePan, CancellationToken cancellationToken)
     {
-        if (!sisr.HasViiper)
+        if (Viiper is { } own)
+        {
+            if (!own.IsInstalled)
+            {
+                SetBusyText("VIIPER wird installiert …");
+                await WithTimeoutAsync(token => own.InstallAsync(http, token), InstallTimeout, "Der VIIPER-Download", cancellationToken);
+                Log?.Invoke("VIIPER eingerichtet");
+            }
+        }
+        else if (!sisr.HasViiper)
         {
             SetBusyText("VIIPER wird installiert …");
             await InstallLatestSisrAsync(cancellationToken);
@@ -1241,6 +1271,34 @@ public sealed class ControllerSupportService(
         {
             sisr.StopExternalInstances();
             return Task.CompletedTask;
+        }, cancellationToken),
+        HealthFix.ReinstallHidHide => RunBusyAsync(DriversBusyText, async token =>
+        {
+            // Pan runs HidHide's installer before it replaces itself: a filter reinstall while the puck is hidden or held
+            // for a firmware attempt could show Steam the real puck mid-attempt (decision 8).
+            if (PanHoldsPuck?.Invoke() == true)
+            {
+                throw new InvalidOperationException(HidHideReinstallWhileHiddenText);
+            }
+
+            // HidHide answering unexpectedly means Pan can't hide: the puck is Steam's, and the installer restarts it. Only
+            // with Steam closed is no firmware update cut off by that (review of PR #294).
+            if (_platform.IsSteamRunning)
+            {
+                throw new InvalidOperationException(HidHideReinstallWhileSteamRunsText);
+            }
+
+            if (_platform.HidHideVersion is not { } installed || !HidHideRelease.IsPinnedDriver(installed))
+            {
+                throw new InvalidOperationException($"„Neu installieren“ geht nur über HidHide {HidHideRelease.Version}; installiert ist eine andere Version.");
+            }
+
+            if (!await WithTimeoutAsync(t => _platform.ReinstallHidHideAsync(http, t), DriversInstallTimeout, "Die HidHide-Installation", token))
+            {
+                throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Neu installieren“ wählen und die Abfrage bestätigen.");
+            }
+
+            Log?.Invoke("HidHide neu installiert");
         }, cancellationToken),
         HealthFix.RestartSisr when _otherControllerPause is not null => RetryAfterOtherController(),
         HealthFix.RestartSisr => RunBusyAsync("SISR wird neu gestartet …", async token =>
@@ -1435,7 +1493,7 @@ public sealed class ControllerSupportService(
             .Select(issue => issue.Id == EmulationParts.RebootPending.Id && !StartsSisr ? EmulationParts.RebootPending : issue)
             .ToList();
         // While SISR runs (before #213 part B) VIIPER is a part of SISR, set up with it.
-        if (!StartsSisr && !sisr.HasViiper)
+        if (!StartsSisr && !HasViiper)
         {
             issues.Add(EmulationParts.ViiperMissing);
         }
@@ -1444,7 +1502,7 @@ public sealed class ControllerSupportService(
         if (WatchSetup && HidingCheck is { } check && _platform.IsPanReady
             && _platform.HidHideVersion is { } hidHide && HidHideRelease.IsSupported(hidHide)
             && !issues.Contains(EmulationParts.HidHideRemovalPending)
-            && EmulationParts.FromHidingCheck(await check.CheckHidingAsync(cancellationToken)) is { } hiding)
+            && EmulationParts.FromHidingCheck(await check.CheckHidingAsync(cancellationToken), hidHide) is { } hiding)
         {
             issues.Add(hiding);
         }

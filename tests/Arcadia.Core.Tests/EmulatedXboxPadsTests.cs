@@ -69,7 +69,7 @@ public sealed class EmulatedXboxPadsTests
     [InlineData(@"ACPI\PNP0A08\0", false)]
     [InlineData("", false)]
     public void A_root_enumerated_host_controller_is_a_software_one(string deviceId, bool software) =>
-        Assert.Equal(software, XusbDevices.IsSoftwareHost(deviceId));
+        Assert.Equal(software, DeviceTree.IsSoftwareHost(deviceId));
 
     [Theory]
     [InlineData(0, null)]
@@ -80,4 +80,29 @@ public sealed class EmulatedXboxPadsTests
     [InlineData(9, 3)]
     [InlineData(10, null)]
     public void The_player_LED_names_the_slot(byte led, int? slot) => Assert.Equal(slot, XusbDevices.SlotOfLed(led));
+    [Fact]
+    [Trait("TestCase", "T242-17")]
+    public void The_copy_of_the_puck_is_ignored_and_the_real_one_read()
+    {
+        var copyPath = @"\\?\hid#vid_28de&pid_1304&mi_02#copy";
+        var pads = new DeviceTreeEmulatedPads(() => [], _ => { }, path => path == copyPath);
+        var puck = new PadDevice("Steam Controller", PadDevice.ValveVendor, 0x1304, PadType.Steam, StickDeviceType.Gamepad);
+
+        Assert.Equal("Kopie des Steam Controllers für Steam", GamepadDevices.WhyIgnored(puck with { Path = copyPath }, pads));
+        Assert.Null(GamepadDevices.WhyIgnored(puck with { Path = @"\\?\hid#vid_28de&pid_1304&mi_02#real" }, pads));
+        // A pad read through XInput is never the copy: its path leads nowhere in the device tree.
+        Assert.False(pads.IsCopy(puck with { Path = "XInput#0" }));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-17")]
+    public void A_device_tree_that_can_t_be_read_keeps_the_puck_read_and_says_so()
+    {
+        var log = new List<string>();
+        var pads = new DeviceTreeEmulatedPads(() => [], log.Add, _ => throw new InvalidOperationException("kaputt"));
+        var puck = new PadDevice("Steam Controller", PadDevice.ValveVendor, 0x1304, PadType.Steam, StickDeviceType.Gamepad) { Path = "hid#x" };
+
+        Assert.False(pads.IsCopy(puck));
+        Assert.Contains(log, line => line.Contains("kaputt", StringComparison.Ordinal));
+    }
 }

@@ -113,6 +113,54 @@ public sealed class SteamControllerModeTests
         Assert.Equal(ControllerModes.Steam, restarted.Main.FocusedControllerSupportText);
     }
 
+    /// <summary>
+    /// T242-2 and T242-3 (#242 part C): what the App tells the copy, asked per report on the copy's own thread. Steam
+    /// reads every input with Steam in front and no game, and in a game on "Steam-Eingabe"; at rest otherwise.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T242-2")]
+    public async Task The_copy_passes_input_only_where_Steam_has_the_controller()
+    {
+        using var arcadia = await StartWithSteamControllerAsync();
+        Assert.Same(arcadia.ForGames.CopyFilter, arcadia.CopyWiring.Filter);
+        arcadia.IsArcadiaInFront = true;
+        Assert.False(arcadia.CopyWiring.Forwarding());
+
+        arcadia.IsArcadiaInFront = false;
+        arcadia.IsSteamInFront = true;
+        Assert.True(arcadia.CopyWiring.Forwarding());
+        arcadia.IsMouseModeOn = true;
+        Assert.False(arcadia.CopyWiring.Forwarding());
+        arcadia.IsMouseModeOn = false;
+
+        // A game on "Arcadia" (GOG): Steam gets the copy at rest, also with Steam's window in front.
+        arcadia.IsArcadiaInFront = true;
+        arcadia.Press(UiAction.NextTab);
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "GOG soll das Spiel starten");
+        await arcadia.TickSteamControllerAsync();
+        arcadia.IsArcadiaInFront = false;
+        Assert.False(arcadia.CopyWiring.Forwarding());
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T242-3")]
+    public async Task In_a_game_on_Steam_Eingabe_the_copy_passes_input_until_Arcadia_comes_to_the_front()
+    {
+        using var arcadia = await StartWithSteamControllerAsync();
+        Assert.Equal(ControllerModes.Steam, arcadia.Main.FocusedControllerSupportText);
+
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "Steam soll das Spiel starten");
+        await arcadia.TickSteamControllerAsync();
+        arcadia.IsArcadiaInFront = false;
+        arcadia.IsSteamInFront = false;
+        Assert.True(arcadia.CopyWiring.Forwarding());
+
+        arcadia.IsArcadiaInFront = true;
+        Assert.False(arcadia.CopyWiring.Forwarding());
+    }
+
     /// <summary>T213-11 (#119): a Steam game started directly in Steam takes its mode as well, also without being in the library.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T213-11")]

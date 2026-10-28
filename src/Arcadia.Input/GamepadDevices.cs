@@ -69,6 +69,12 @@ public readonly record struct PadDevice(string Name, ushort Vendor, ushort Produ
 public interface IEmulatedPads
 {
     bool IsEmulated(PadDevice device);
+
+    /// <summary>
+    /// The pad is Pan's copy of the Steam Controller's puck for Steam (#242): VIIPER's device on usbip-win2's software
+    /// host, with the puck's ids and serial number. Arcadia reads the real puck, so the copy must not count a second time.
+    /// </summary>
+    bool IsCopy(PadDevice device) => false;
 }
 
 /// <summary>Where nothing emulates pads (no Windows, the tests by default).</summary>
@@ -86,7 +92,7 @@ public sealed class NoEmulatedPads : IEmulatedPads
 /// </summary>
 public static class GamepadDevices
 {
-    /// <param name="emulated">Asked only for pads SDL reads through XInput, as an emulated Xbox pad is one.</param>
+    /// <param name="emulated">Asked for pads SDL reads through XInput, as an emulated Xbox pad is one, and for Steam Controllers.</param>
     /// <returns>Null to read the device; otherwise why not, for <c>arcadia.log</c>.</returns>
     public static string? WhyIgnored(PadDevice device, IEmulatedPads emulated)
     {
@@ -99,7 +105,7 @@ public static class GamepadDevices
         // Steam Deck's own controls, stay Steam's.
         if (device.Type == PadType.Steam)
         {
-            return null;
+            return emulated.IsCopy(device) ? "Kopie des Steam Controllers für Steam" : null;
         }
 
         if (device.Vendor == PadDevice.ValveVendor)

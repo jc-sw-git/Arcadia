@@ -93,6 +93,12 @@ public interface IControllerSupportPlatform
     /// </summary>
     Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// "Neu installieren" for a HidHide that doesn't answer as expected (#242): the pinned installer over the installed
+    /// one, Pan with it, one Windows prompt; false if the user declined it.
+    /// </summary>
+    Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(false);
+
     /// <summary>Pan's <c>--restore</c>: gives the real controllers back by hand; false if the user declined the Windows prompt.</summary>
     Task<bool> RestoreControllersAsync(CancellationToken cancellationToken);
 
@@ -305,6 +311,30 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
                     File.Delete(installer);
                 }
             }
+        }
+    }
+
+    public async Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return false;
+        }
+
+        // The service checked it too; the repair arguments over another version would be an up- or downgrade.
+        if (HidHideVersion is not { } installed || !HidHideRelease.IsPinnedDriver(installed))
+        {
+            throw new InvalidOperationException($"HidHide {HidHideRelease.Version} ist nicht installiert; „Neu installieren“ geht nur darüber.");
+        }
+
+        var installer = await HidHideInstallation.DownloadInstallerAsync(http, cancellationToken);
+        try
+        {
+            return await PanSetup.InstallAsync(null, installer, cancellationToken, repairHidHide: true);
+        }
+        finally
+        {
+            File.Delete(installer);
         }
     }
 

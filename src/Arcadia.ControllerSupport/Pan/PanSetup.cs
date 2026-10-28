@@ -47,10 +47,11 @@ public static class PanSetup
 
     /// <summary>
     /// <c>Pan.exe --install</c> elevated: the usbip-win2 and HidHide installers first when given, then Pan itself.
+    /// <paramref name="repairHidHide"/>: HidHide's installer runs over the same version ("Neu installieren").
     /// </summary>
     /// <returns>False if the user declined the UAC prompt.</returns>
     /// <exception cref="InvalidOperationException">Pan reported an error; its log says which (<see cref="PanPaths.LogPath"/>).</exception>
-    public static async Task<bool> InstallAsync(string? usbipInstaller, string? hidHideInstaller, CancellationToken cancellationToken)
+    public static async Task<bool> InstallAsync(string? usbipInstaller, string? hidHideInstaller, CancellationToken cancellationToken, bool repairHidHide = false)
     {
         if (!IsBundled)
         {
@@ -71,6 +72,10 @@ public static class PanSetup
         {
             arguments.Add("--hidhide-installer");
             arguments.Add(hidHideInstaller);
+            if (repairHidHide)
+            {
+                arguments.Add("--hidhide-repair");
+            }
         }
 
         return await RunElevatedAsync(arguments, PanTimeouts.Install, cancellationToken);

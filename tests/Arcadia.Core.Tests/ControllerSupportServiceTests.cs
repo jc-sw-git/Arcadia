@@ -1604,6 +1604,132 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T242-27")]
+    public async Task Arcadia_s_own_missing_VIIPER_is_fetched_without_SISR_and_without_a_Windows_prompt()
+    {
+        var viiper = new FakeViiper();
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        var service = new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, StartsSisr = false, Viiper = viiper };
+        _sisr.Installed = false;
+
+        await service.RefreshAsync();
+        Assert.Equal("viiper-missing", Assert.Single(service.Issues).Id);
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+        await service.RefreshAsync();
+
+        Assert.Null(service.LastError);
+        Assert.Equal(1, viiper.Installs);
+        Assert.False(_sisr.Installed);
+        Assert.Equal(0, _platform.UsbipInstalls);
+        Assert.Empty(service.Issues);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-27")]
+    public async Task A_VIIPER_download_that_fails_shows_at_its_row_and_SISR_is_not_tried_instead()
+    {
+        var viiper = new FakeViiper { Error = new InvalidOperationException("Prüfsumme von viiper.exe stimmt nicht – Download verworfen.") };
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        var service = new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, StartsSisr = false, Viiper = viiper };
+        _sisr.Installed = false;
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Contains("Prüfsumme", service.LastError);
+        Assert.Equal(HealthFix.InstallDrivers, service.FailedFix);
+        Assert.False(_sisr.Installed);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T242-26")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Neu_installieren_runs_HidHide_s_installer_through_Pan_and_a_declined_prompt_says_so(bool declined)
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = false;
+        _platform.HidHideVersion = PinnedHidHideDriver;
+        _platform.HidHideReinstallDeclined = declined;
+
+        await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
+
+        Assert.Equal(1, _platform.HidHideReinstalls);
+        Assert.Equal(0, _platform.UsbipInstalls);
+        Assert.Equal(declined, service.LastError?.Contains("„Neu installieren“", StringComparison.Ordinal) ?? false);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-26")]
+    public async Task HidHide_is_not_reinstalled_while_Pan_hides_or_holds_the_puck()
+    {
+        var service = CreateReplaced();
+        _platform.HidHideVersion = PinnedHidHideDriver;
+        service.PanHoldsPuck = () => true;
+
+        await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
+
+        Assert.Equal(0, _platform.HidHideReinstalls);
+        Assert.Equal(ControllerSupportService.HidHideReinstallWhileHiddenText, service.LastError);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-26")]
+    public async Task HidHide_is_not_reinstalled_while_Steam_runs()
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = PinnedHidHideDriver;
+
+        await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
+
+        Assert.Equal(0, _platform.HidHideReinstalls);
+        Assert.Equal(ControllerSupportService.HidHideReinstallWhileSteamRunsText, service.LastError);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T242-26")]
+    [InlineData("1.5.0.0")]
+    [InlineData("1.4.180.0")]
+    [InlineData(null)]
+    public async Task HidHide_is_reinstalled_only_over_the_pinned_version(string? installed)
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = false;
+        _platform.HidHideVersion = installed is null ? null : Version.Parse(installed);
+
+        await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
+
+        Assert.Equal(0, _platform.HidHideReinstalls);
+        Assert.Contains("andere Version", service.LastError);
+    }
+
+    private static readonly Version PinnedHidHideDriver = new(1, 4, 181, 0);
+
+    private sealed class FakeViiper : IViiperInstallation
+    {
+        public bool IsInstalled { get; private set; }
+
+        public int Installs { get; private set; }
+
+        public Exception? Error { get; init; }
+
+        public Task InstallAsync(HttpClient http, CancellationToken cancellationToken)
+        {
+            Installs++;
+            if (Error is not null)
+            {
+                throw Error;
+            }
+
+            IsInstalled = true;
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
     [Trait("TestCase", "T243-33")]
     public async Task With_SISR_replaced_a_missing_VIIPER_is_a_part_row_and_its_fix_brings_it_without_a_Windows_prompt()
     {
@@ -1928,6 +2054,16 @@ public sealed class ControllerSupportServiceTests : IDisposable
         public Version? HidHideVersion { get; set; } = Arcadia.Pan.HidHideRelease.Version;
 
         public int Restores { get; private set; }
+
+        public int HidHideReinstalls { get; private set; }
+
+        public bool HidHideReinstallDeclined { get; set; }
+
+        public Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken)
+        {
+            HidHideReinstalls++;
+            return Task.FromResult(!HidHideReinstallDeclined);
+        }
 
         public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
         {

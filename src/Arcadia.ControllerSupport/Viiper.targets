@@ -1,0 +1,37 @@
+<Project>
+
+  <!--
+    VIIPER's viiper.exe from Arcadia's fork (https://github.com/jc-sw-git/VIIPER, branch arcadia, #242 part B): upstream
+    VIIPER plus the copy's device type "hidproxy". Built by the fork's workflow "Arcadia build" and published as a
+    release arcadia-<commit>. Pinned: a new build means a new commit, URL and hash here. Downloaded once into obj/,
+    checked against its SHA-256, then copied next to Arcadia.exe. The same pin is compiled into Arcadia
+    (ViiperRelease), so "Installieren" fetches exactly this file when it went missing.
+    An empty hash means no fork build is pinned yet: nothing is downloaded and the copy stays off.
+  -->
+  <PropertyGroup>
+    <ViiperCommit>f1baf515abbaa388a9e5c989d5b4e9ab86e84080</ViiperCommit>
+    <ViiperSha256>6b034d2d0bdb2d82184d1ed79fba30f251e710907e4ee1cb56e5e3d8d9622e39</ViiperSha256>
+    <ViiperSize>13665280</ViiperSize>
+    <ViiperUrl>https://github.com/jc-sw-git/VIIPER/releases/download/arcadia-$(ViiperCommit.Substring(0, $([System.Math]::Min(12, $(ViiperCommit.Length)))))/viiper.exe</ViiperUrl>
+    <ViiperDir>$(MSBuildProjectDirectory)/$(BaseIntermediateOutputPath)viiper-$(ViiperCommit)/</ViiperDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="ViiperCommit" Value="$(ViiperCommit)" />
+    <AssemblyMetadata Include="ViiperSha256" Value="$(ViiperSha256)" />
+    <AssemblyMetadata Include="ViiperSize" Value="$(ViiperSize)" />
+    <AssemblyMetadata Include="ViiperUrl" Value="$(ViiperUrl)" />
+    <None Include="$(ViiperDir)viiper.exe" Link="viiper.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" Condition="'$(ViiperSha256)' != ''" />
+  </ItemGroup>
+
+  <Target Name="FetchViiper" BeforeTargets="AssignTargetPaths" Condition="'$(ViiperSha256)' != '' And !Exists('$(ViiperDir)viiper.exe')">
+    <DownloadFile SourceUrl="$(ViiperUrl)" DestinationFolder="$(ViiperDir)" DestinationFileName="viiper.download" Retries="3" />
+    <GetFileHash Files="$(ViiperDir)viiper.download" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="ViiperDownloadedSha256" />
+    </GetFileHash>
+    <Delete Files="$(ViiperDir)viiper.download" Condition="'$(ViiperDownloadedSha256.ToLowerInvariant())' != '$(ViiperSha256)'" />
+    <Error Condition="'$(ViiperDownloadedSha256.ToLowerInvariant())' != '$(ViiperSha256)'" Text="viiper.exe download does not match its SHA-256 ($(ViiperDownloadedSha256)); not used." />
+    <Move SourceFiles="$(ViiperDir)viiper.download" DestinationFiles="$(ViiperDir)viiper.exe" />
+  </Target>
+
+</Project>

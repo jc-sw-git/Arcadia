@@ -26,9 +26,6 @@ public static partial class XusbDevices
     private const uint OpenExisting = 3;
     private const uint IoctlXusbGetLedState = 0x8000E008;
 
-    /// <summary>A USB device has a few USB levels above it (composite device, hubs); more means the tree is odd.</summary>
-    private const int MaxUsbLevels = 16;
-
     [SupportedOSPlatform("windows")]
     public static IReadOnlyList<XusbDevice> List()
     {
@@ -87,46 +84,12 @@ public static partial class XusbDevices
             }
 
             var path = Marshal.PtrToStringUni(detail + 4) ?? string.Empty;
-            return new XusbDevice(OnSoftwareHost(info.DevInst), Slot(path));
+            return new XusbDevice(DeviceTree.OnSoftwareHost(info.DevInst), Slot(path));
         }
         finally
         {
             Marshal.FreeHGlobal(detail);
         }
-    }
-
-    /// <summary>Climbs the USB levels above the device; the first device that isn't USB is the host controller.</summary>
-    private static bool OnSoftwareHost(uint devInst)
-    {
-        var current = devInst;
-        for (var level = 0; level < MaxUsbLevels; level++)
-        {
-            if (CM_Get_Parent(out var parent, current, 0) != 0)
-            {
-                return false;
-            }
-
-            var id = DeviceId(parent);
-            if (!id.StartsWith(@"USB\", StringComparison.OrdinalIgnoreCase))
-            {
-                return IsSoftwareHost(id);
-            }
-
-            current = parent;
-        }
-
-        return false;
-    }
-
-    /// <summary>Root-enumerated (usbip-win2) or created by software (<c>SWD\</c>); PCI and ACPI devices are hardware.</summary>
-    public static bool IsSoftwareHost(string deviceId) =>
-        deviceId.StartsWith(@"ROOT\", StringComparison.OrdinalIgnoreCase) || deviceId.StartsWith(@"SWD\", StringComparison.OrdinalIgnoreCase);
-
-    private static unsafe string DeviceId(uint devInst)
-    {
-        const int MaxDeviceIdLength = 200;
-        var buffer = stackalloc char[MaxDeviceIdLength + 1];
-        return CM_Get_Device_IDW(devInst, buffer, MaxDeviceIdLength + 1, 0) == 0 ? new string(buffer) : string.Empty;
     }
 
     private static unsafe int? Slot(string path)
@@ -192,12 +155,6 @@ public static partial class XusbDevices
     [LibraryImport("setupapi.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool SetupDiDestroyDeviceInfoList(nint set);
-
-    [LibraryImport("cfgmgr32.dll")]
-    private static partial uint CM_Get_Parent(out uint parent, uint devInst, uint flags);
-
-    [LibraryImport("cfgmgr32.dll")]
-    private static unsafe partial uint CM_Get_Device_IDW(uint devInst, char* buffer, int bufferLength, uint flags);
 
     [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
     private static partial Microsoft.Win32.SafeHandles.SafeFileHandle CreateFileW(string name, uint access, uint share, nint security, uint creation, uint flags, nint template);

@@ -19,8 +19,8 @@ no empty layout forced on a marker, no focus bounce. Overview and the other file
   running, so a combo begun in Arcadia stays Arcadia's.
 - `TickAsync` (every 2 s, `App`) plugs the pad in while a Steam Controller is connected and `Wanted` holds, and out
   otherwise: a game never sees an idle extra pad. `Wanted` comes from `SteamControllerRouting` (below).
-- `ViiperXboxPads` runs `viiper.exe server --no-tray` from SISR's folder (`%LOCALAPPDATA%\SISR`, until #214 brings its
-  own) as its own process, log `viiper.log` beside `arcadia.log`, API `localhost:3242`, and drives it with VIIPER's MIT
+- `ViiperXboxPads` runs `viiper.exe server --no-tray` (Arcadia's own build of its VIIPER fork next to Arcadia.exe, #242;
+  SISR's in `%LOCALAPPDATA%\SISR` while no build is pinned) as its own process, log `viiper.log` beside `arcadia.log`, API `localhost:3242`, and drives it with VIIPER's MIT
   client `Viiper.Client` 0.9.0: one bus, one `xbox360` device per plug. A VIIPER that already answers on the port (another
   program's) is used, not replaced. A plug-in that fails after the bus was created removes the bus again. Before Arcadia's first server it runs SISR's clean-up once
   (`SisrHost.CleanUpViiperAsync`: a VIIPER from SISR's folder left over from a crash, and its usbip ports).
@@ -54,7 +54,7 @@ no empty layout forced on a marker, no focus bounce. Overview and the other file
   the next 2 s tick.
 - SISR is no longer started (`ControllerSupportService.StartsSisr = false` in the App): its switch, pauses and health
   stay idle, a SISR left running is stopped at the start (before Arcadia's own VIIPER, as stopping it cleans up SISR's
-  VIIPER). Its install still brings `viiper.exe` and usbip until #214.
+  VIIPER). Its install brings `viiper.exe` only while no fork build is pinned.
 
 ## Not seen yet (owner's PC)
 

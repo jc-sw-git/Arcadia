@@ -29,6 +29,15 @@ files `spikes/239/`.
   reconstructions per collection, in collection order. With `bcdUSB` 2.01 Windows asks for a BOS descriptor VIIPER
   doesn't serve, so the copy says 2.00.
 - Windows refuses to open the mouse and keyboard collections for reading; only the vendor collection is read.
+- Interface 0 is a COM port (`usbser`, "Serielles USB-Gerät"); HidHide doesn't hide it, so Steam can always open the
+  real puck's COM port (owner's PC, 2026-10-28).
+- Every restart of the puck (unplug, Pan's or HidHide's restart, a reset) passes a few seconds through its bootloader
+  `28DE:1007` "Steam Controller Bootloader" (same serial, CDC ACM, a COM port of its own), then the puck comes back.
+  Six such cycles between 2026-10-25 and -27 left the firmware unchanged. Arcadia and Pan never touch `1007`.
+- Proof of a real update: Steam's `logs\controller.txt` names the firmware at every connect (dongle HWID 71
+  `FWTimestamp 0x6AC6869B`, controller HWID 73 `0x6ACFF323` on 2026-10-28); a changed timestamp means it was flashed.
+- The Triton by cable is `28DE:1302`, one HID interface (mouse, keyboard, vendor collection), no COM port. Steam
+  updates the controller only by cable (owner). Pan neither hides nor copies `1302`.
 
 ## Steam accepts the copy (check 2)
 
@@ -57,7 +66,7 @@ icon, gyro and trackpads in the input test, haptics, and a game's own layout all
 
 - Firmware updates: block or pass through on purpose (e.g. hiding off while Steam updates); unverified.
 - The unknown messages `0xDC`, `0xE2`, `0xED`, `0xF3`: what they do, and whether blocking them costs anything.
-- Only the Triton puck with one controller was tried: not the Triton by cable, a second controller, nor the 2015
-  Steam Controller.
+- Only the Triton puck with one controller was tried: not a second controller, nor the 2015 Steam Controller. The
+  Triton by cable was only listed, not used through Arcadia.
 - VIIPER needs a device type for this (Go, in VIIPER's server) and a fix so it does not resend the last input
   report every interval (`tools/dev/SteamControllerProxy/viiper-no-in-repeat.patch`).

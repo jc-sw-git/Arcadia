@@ -48,6 +48,7 @@ More findings, one file per topic (read only the one you touch):
 | Pan hides the real Steam Controller with HidHide and shows it again in every teardown (#243 B1) | [pan-hiding.md](pan-hiding.md) |
 | Pan keeps the puck hidden through a crash mid firmware attempt until Steam is closed (#242) | [pan-firmware-hold.md](pan-firmware-hold.md) |
 | Steam gets a copy of the Steam Controller: lifecycle, who gets input, the allow list and the firmware lock (#242) | [steam-controller-copy.md](steam-controller-copy.md) |
+| The copy on Windows: VIIPER fork `hidproxy`, pinned `viiper.exe`, raw puck, bridge, SDL ignoring it (#242 B, C) | [steam-controller-copy-windows.md](steam-controller-copy-windows.md) |
 | Pan: known limits and accepted risks (foreign VIIPER ports, late usbip step, unsigned `Pan.exe`, HidHide races) | [pan-risks.md](pan-risks.md) |
 | Answering the UAC consent prompt by controller through a VIIPER virtual keyboard/mouse (spike #118) | [uac.md](uac.md) |
 

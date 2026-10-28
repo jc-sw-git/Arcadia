@@ -1,14 +1,18 @@
-# #242 Steam gets a copy of the Steam Controller (part A)
+# #242 Steam gets a copy of the Steam Controller (parts A, B and C)
 
-Part A (PR into `feat/replace-sisr`): Pan's emulation lifecycle, the copy's rules and allow list, the group "PAN" in
-the controller settings, the greyed mode, the header and the firmware dialog. The copy itself needs the VIIPER fork
-(part B) and its Windows side (part C); until then the App passes `NoSteamControllerCopy`, so Pan hides nothing and
-the pad works as in #213, and the takeover question and the firmware dialog never show (they guard the hide). Cases marked "after part C" are run then. Needed: the Steam Controller with its puck, Steam,
+Part A (PR #286 into `feat/replace-sisr`): Pan's emulation lifecycle, the copy's rules and allow list, the group "PAN"
+in the controller settings, the greyed mode, the header and the firmware dialog. Parts B and C (one PR into
+`feat/replace-sisr`): the VIIPER fork's `hidproxy` and Arcadia's pinned `viiper.exe`, the raw puck on Windows and the
+bridge, SDL ignoring the copy, "Neu installieren" for HidHide. Cases marked "after part C" need a build with the fork
+pinned (since PR #294: release `arcadia-f1baf515abba` of `jc-sw-git/VIIPER`); with an empty pin the App passes
+`NoSteamControllerCopy` and the pad works as in #213. The owner runs the manual cases at the end of the iteration
+(owner, 2026-10-28), not before this PR's merge into `feat/replace-sisr`. Needed: the Steam Controller with its puck, Steam,
 a game on "Steam-Eingabe" and one on "Arcadia", HidHide's configuration client, "Game controllers" = `joy.cpl`. How it
 works: `docs/controller-support/steam-controller-copy.md`.
 
 Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopyFilterTests`,
-`SteamControllerRoutingTests`, `PanClientTests`) and the acceptance tests `tests/Arcadia.App.Tests/PanEmulationTests.cs`,
+`SteamControllerRoutingTests`, `PanClientTests`, `SteamControllerCopyBridgeTests`, `HidProxyTests`,
+`ViiperInstallationTests`, `EmulatedXboxPadsTests`), the fork's `go test ./device/hidproxy/...` and the acceptance tests `tests/Arcadia.App.Tests/PanEmulationTests.cs`,
 `SteamControllerModeTests.cs`.
 
 - [ ] **T242-1** Steam sends the puck only what the allow list names: known features always, haptics only while the
@@ -86,6 +90,21 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
       without Arcadia coming to the front. Switching to another window during the gap, a gap of 10 s or more, or
       Arcadia suspended for 10 s (a delayed script with `PsSuspend`): the question comes. · E2E: yes
 
+- [ ] **T242-26** HidHide answers unexpectedly (Pan's `HidHideUnsupported`, e.g. a damaged driver): the PAN group
+      shows "HidHide antwortet unerwartet" / "HidHide 1.5.230 neu installieren hilft" with "Neu installieren"; it asks
+      Windows once, runs HidHide's installer over the installed one, keeps HidHide's lists and the row goes.
+      · E2E: yes (`EmulationSetupTests`; the real reinstall by hand)
+- [ ] **T242-27** `viiper.exe` deleted next to Arcadia.exe (as a virus scanner would): "VIIPER fehlt" with
+      "Installieren"; it downloads the pinned build without a Windows prompt, checks its SHA-256 and the copy works
+      again. A `viiper.exe` that isn't the pinned one: no copy, Pan hides nothing. · E2E: yes (Core: install, the
+      wrong file and the hash check; the real download by hand)
+- [ ] **T242-28** After part C, the check script `spikes/242/Record-SteamTraffic-242-v2.ps1` (spike #295): Steam at rest, in its
+      controller settings and in a game on "Steam-Eingabe" sends nothing that counts as an update (no firmware dialog);
+      `arcadia.log` names each dropped type once; an offered update brings the firmware dialog and the controller
+      works as before. The recording settles the routine drop list. · E2E: no (Steam's real traffic)
+- [ ] **T242-29** After part C: Steam's in-game overlay offers no firmware update without Arcadia's dialog (the
+      script asks). If it does, a short gap mid-game must ask too (open risk of T242-25). · E2E: no
+
 ## Test runs
 
 | Cases | Date | Who | Environment | Result | Notes |
@@ -98,3 +117,10 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
 | T242-20, T242-24 after the second review and the QE review of 68a163f (Pan: hold with the teardown's acknowledgement, lift without emulation, hello with Steam closed; Core: `PanClientTests` hold at the acknowledgement, `PanEmulationTests` quit lifts the hold, the end's wish counts at once, hold retried, hold from before with Pan off and only once, no question while Pan can't hide; after Codex: Steam starting while VIIPER gets ready asks, a pad still being unplugged holds the puck hidden, an unsaved hold holds while Pan runs) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container; each new test seen red once by mutation (listed in the PR) | pass | Windows open |
 | T242-25 (Core: `PanEmulationTests` short gap, hang, another window, 10 s; App: no question and no front after a short gap, the question after a hang) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; each new test seen red once by mutation (no time limit, hang not seen, another window ignored, never skips, front never checked) | pass | Windows open; overlay risk for part C |
 | T242-24, T242-25 after the reviews of 613b592 (Core: the short gap checked again before the hide, the release lifts a rejected hold, the hold resent every 10 s; Pan: an unsaved lift still lifts) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container; each new test seen red once by mutation, but one equivalent (listed in the PR) | pass | Windows open |
+| Parts B and C: T242-1, T242-2, T242-3, T242-6, T242-8 through the bridge (Core: `SteamControllerCopyBridgeTests` on a fake puck over a loopback socket: rest and forwarding, allowed feature and its read, firmware dropped and counted, housekeeping answered and not counted, vendor and unknown refused and counted, haptics only while passing, a broken puck or stream; `HidProxyTests` framing, descriptors, serial check, request classes); App: `SteamControllerModeTests` the copy passes input only where Steam has the controller | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; Pan 180, Core 1884, App 359 (after rebasing onto #156); each new test seen red once by mutation (rest off, haptics always, housekeeping counted, CDC not housekeeping, dropped refused, stream end unseen, serial unchecked, serial not string 3, Push/Pop ignored, long frame accepted, mouse mode or routing not passed to the copy). Survived: the closed-copy guard in `ToPuck` (closing the stream ends the loop first in the test; the guard stays as a second line) | pass | the real puck on Windows open |
+| T242-4 (fork: `go test ./...`, `TestTheHostReadsEachReportOnce` through VIIPER's usbip server and its test client) | 2026-10-28 | Claude (thread) | Go 1.27.2, Linux cloud container; red without the server's NoInRepeat check, with `NoInRepeat` false and with HID idle requests sent to the client | pass | Windows (usbip-win2) open |
+| T242-17 (Core: `EmulatedXboxPadsTests` the copy ignored by its HID path, a device tree that can't be read keeps the puck), T242-26 (Core: the row's fix, the reinstall through the platform, a declined prompt, the installer's arguments; App: `EmulationSetupTests` the row and its button), T242-27 (Core: `ViiperInstallationTests`, `ControllerSupportServiceTests` own VIIPER fetched without SISR and without a prompt, a failed download at its row) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; each new test seen red once by mutation (copy not ignored, read errors taken for a copy, hash cache ignoring changes, any file pinned, own VIIPER ignored, install through SISR, declined prompt ignored, reinstall not wired, row without fix). Equivalent: the pin check in `InstallAsync` (`VerifiedDownload` refuses an asset without a hash too) | pass | the real reinstall and download on Windows open |
+| T242-1, T242-6 after the QE review of 49703e7 (QE's own tests in `SteamControllerCopyBridgeTests`: serial data never reaches the puck and counts, an unlisted output never reaches it and counts, a failed GET_REPORT is refused) | 2026-10-28 | Claude (QE thread) | Debug, Linux cloud container; Pan 180, Core 1887, App 359; each seen red once by mutation (any interface taken for HID, output always forwarded, a failed read answered without data) | pass | — |
+| T242-4, T242-17, T242-26, T242-27 after the QE fixes (Core: `HidProxyTests` only a puck on a known hardware host is the real one, CDC requests other than the line settings count; `ViiperXboxPadsTests` no copy on a VIIPER Arcadia didn't start; `ControllerSupportServiceTests` no HidHide reinstall while Pan hides or holds, nor over another version; `EmulationPartsTests` no fix offered over another version; `ViiperInstallationTests` a viiper.exe that isn't the pinned build counts as missing and is replaced; fork: `TestOtherCdcRequestsGoToTheClient`) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Go 1.27.2; Pan 180, Core 1905, App 359, fork `go test ./...`; each new test seen red once by mutation (unknown host taken for the puck, foreign server used, hold not checked, version not checked, fix offered over any version, partial version compare, every file counted, CDC all housekeeping in Arcadia and in the fork). Not covered by a test: the read race at close in `WindowsPuck` (Windows only) | pass | Windows open |
+| T242-27 the pin (fork release `arcadia-f1baf515abba`, built by the fork's "Arcadia build" with `go vet` and `go test`: SHA-256 and size checked again by hand against `Viiper.targets`; `dotnet build` downloads it into `obj/`, checks it and copies it next to the App and the tests; all tests with the pinned build compiled in) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container; Pan 180, Core 1905, App 359 | pass | running it on Windows open |
+| T242-1, T242-2, T242-4, T242-6, T242-26, T242-27 after the security and code reviews of 1238f81 (Core: `SteamControllerCopyBridgeTests` a GET_REPORT of an input report gets the filtered last report, never the puck, and nothing once it no longer passes; a call to the puck that doesn't end makes closing throw; a VIIPER that stops reading breaks the copy; `PanEmulationTests` a lost copy that won't go ends the emulation; `ControllerSupportServiceTests` no HidHide reinstall while Steam runs; `ViiperInstallationTests` the replaced file is moved aside and removed; `HidProxyTests` with two pucks one is copied; `ViiperXboxPadsTests` only Arcadia's server may listen on the port; App: `EmulationSetupTests` "Neu installieren" while Steam runs) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; Pan 180, Core 1918, App 360; each new test seen red once by mutation (input GET_REPORT from the puck, stale report kept, closing without the throw, send watch off, lost copy replaced, Steam guard off in Core and App, old files kept, unknown USB device copied, both pucks mixed, any listener taken for Arcadia's, no listener taken for Arcadia's). Only mechanical: renaming a running `viiper.exe` aside (Linux overwrites running files), Windows' TCP table (`WindowsFact`, runs in Windows CI). Two pucks: unit test only, no manual case (owner) | pass | Windows open |

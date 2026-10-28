@@ -106,6 +106,14 @@ public sealed class InstallerSignatureTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T242-26")]
+    public void HidHide_s_reinstall_stays_silent_and_reinstalls_every_feature_over_the_same_version()
+    {
+        // Without REINSTALL, Windows Installer finds the product installed and does nothing.
+        Assert.Equal(["/exenoui", "/qn", "/norestart", "REINSTALL=ALL", "REINSTALLMODE=vamus"], HidHideRelease.RepairArguments);
+    }
+
+    [Fact]
     public async Task An_unsigned_installer_does_not_start_and_the_message_names_the_manual_install()
     {
         var (started, rejected) = await Run(new SignatureCheck(NoSignature, null));

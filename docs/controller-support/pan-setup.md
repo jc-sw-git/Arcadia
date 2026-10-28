@@ -23,7 +23,10 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   registration) on some PCs: Pan waits 2 min, accepts a supported driver in place and leaves the setup running, never
   kills it. Then a connected puck is restarted (10 s, best effort) so HidHide filters it without a reboot. A HidHide
   failure doesn't stop Pan's install: exit code 6, Arcadia names the log and the manual download. A supported HidHide
-  already installed is reused; VIIPER comes from SISR's folder without UAC until #214.
+  already installed is reused; VIIPER comes with Arcadia (fetched again without UAC if it went missing, #242).
+  "HidHide antwortet unerwartet" offers "Neu installieren": `--install --hidhide-installer … --hidhide-repair` runs
+  the pinned installer with `HidHideRelease.RepairArguments` (Windows Installer's reinstall), one prompt; only over
+  the very driver it installs and never while Pan hides the puck or a firmware attempt runs.
 - Data folder: `%ProgramData%` lets any user create `Arcadia\Pan` first and keep its ownership, so `--install`
   secures both folders before its first log line (`ServiceSetup.SecureDataDirectory`): a reparse point is deleted, a
   folder not owned by SYSTEM/Administrators or writable by anyone else (`DataFolderRights`) is renamed to
@@ -75,8 +78,8 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   and grey out "Steam Controller Kompatibilität" ("Aus – es fehlt: …"); with every part missing the setting itself
   offers "Treiber installieren" instead (`ControllerSupportService.CheckEmulationPartsAsync`, `CheckDrivers`).
   While the settings are open and Pan and HidHide are there, Arcadia asks Pan `CheckHiding` (25 s reply timeout) and
-  shows its answer as a row: HidHide not active, unexpected interface, inverse mode, hiding off, or its configuration
-  client open ("Bitte schließe sie"). A missing HidHide doesn't stop the Xbox pad: only #242 hides.
+  shows its answer as a row: HidHide not active, unexpected interface ("Neu installieren"), inverse mode, hiding off,
+  or its configuration client open ("Bitte schließe sie"). A missing HidHide doesn't stop the Xbox pad: only #242 hides.
 - An uninstalled HidHide stays until Windows restarts (owner's B2 test, 2026-10-27): its service key and driver file
   remain, so its version still reads. `HidHideInstallation.IsRemovalPending` (`DeleteFlag` on the service, or the
   driver file deleted via `PendingFileRenameOperations`) gives the row "HidHide: Neustart ausstehend" without a fix

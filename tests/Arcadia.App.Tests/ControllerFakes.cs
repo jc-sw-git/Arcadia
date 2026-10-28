@@ -165,6 +165,21 @@ internal sealed class FakeSteam : IControllerSupportPlatform
         return Task.FromResult(true);
     }
 
+    /// <summary>How often "Neu installieren" ran HidHide's installer over the installed one (#242).</summary>
+    public int HidHideReinstalls => Volatile.Read(ref _hidHideReinstalls);
+
+    private int _hidHideReinstalls;
+
+    /// <summary>Called by "Neu installieren", as the real reinstall repairs the driver Pan talks to.</summary>
+    public Action? HidHideReinstalled { get; set; }
+
+    public Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _hidHideReinstalls);
+        HidHideReinstalled?.Invoke();
+        return Task.FromResult(true);
+    }
+
     public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(true);
 
     /// <summary>

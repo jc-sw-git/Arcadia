@@ -158,6 +158,9 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     public PanEmulationStatus Status => _status;
 
+    /// <summary>Pan hides the puck now, or was asked to hold it for a firmware attempt (#242); any thread.</summary>
+    public bool HidesPuck => _session is { Ended: false } session && (session.Hidden || session.HoldTried);
+
     /// <summary>The puck is hidden for this emulation (only when this build has the copy).</summary>
     public bool Hides => _hold.CanCopy;
 
@@ -591,7 +594,15 @@ public sealed class PanEmulation : IVirtualXboxPads
         if (session.Copy is { IsConnected: false } lost)
         {
             session.Copy = null;
-            await DisposeQuietlyAsync(lost, "Kopie entfernen");
+            if (!await DisposeQuietlyAsync(lost, "Kopie entfernen"))
+            {
+                // Its forwarding isn't confirmed stopped: no new copy beside it; Pan's teardown ends viiper.exe first.
+                session.LeftBehind = true;
+                await EndAsync(session, "Kopie lässt sich nicht sauber entfernen");
+                Failed(new(PanEmulationState.Paused, PanEmulationProblem.CopyFailed, Reason: "Kopie lässt sich nicht sauber entfernen"));
+                return false;
+            }
+
             if (_hold.PuckPresent)
             {
                 _log("Pan-Emulation: Kopie für Steam verloren");

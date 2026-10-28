@@ -101,11 +101,13 @@ public partial class App : Application
 
             var sisrHost = SisrHost.CreateDefault(http);
             // SISR is replaced by Arcadia's own Xbox pad (#213); it stays only for what its install brings until #214.
+            var ownViiper = ViiperRelease.IsPinned ? ViiperInstallation.NextToArcadia() : null;
             var controllerSupport = new ControllerSupportService(settings, sisrHost, http, time)
             {
                 Log = AppLog.Write,
                 StartsSisr = false,
                 GamesUseSteamInput = launchers.GamesUseSteamInput,
+                Viiper = ownViiper,
             };
             // After an update restart: SISR kept running, and pauses for running games carry over.
             for (var i = 0; i < args.Length - 1; i++)
@@ -181,25 +183,31 @@ public partial class App : Application
             var routing = new GamepadRouting(viewModel, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, time, window.Latency);
             _gamepad.Polled += routing.Tick;
 
-            // The Steam Controller as an Xbox pad for games, in the mode of the running games (#213); VIIPER from SISR's
-            // folder until #214. Steam games started directly in Steam count too (#119).
-            var viiper = new ViiperXboxPads(Path.Combine(sisrHost.InstallDirectory, "viiper.exe"), Core.Diagnostics.LogLocation.Directory, sisrHost.CleanUpViiperAsync, AppLog.Write);
+            // The Steam Controller as an Xbox pad for games, in the mode of the running games (#213); Steam games started
+            // directly in Steam count too (#119). VIIPER is Arcadia's own build of its fork (#242 part B); a build without
+            // a pinned one takes SISR's.
+            var viiper = new ViiperXboxPads(ownViiper?.Executable ?? Path.Combine(sisrHost.InstallDirectory, ViiperRelease.ExecutableName),
+                Core.Diagnostics.LogLocation.Directory, sisrHost.CleanUpViiperAsync, AppLog.Write);
             // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
             var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write) : new NoPanTransport(), time, AppLog.Write);
             var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
             pan.JournalProblem += () => panNotices.Show(PanJournalText);
             controllerSupport.HidingCheck = pan;
             var steamPlatform = new ControllerSupportPlatform();
-            // The copy of the Steam Controller for Steam needs the VIIPER fork (#242 parts B and C); until then Pan hides nothing.
+            // The copy of the Steam Controller for Steam needs the VIIPER fork (#242 parts B and C); without it Pan hides nothing.
+            ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && ownViiper is not null
+                ? new ViiperSteamControllerCopy(viiper, ownViiper, wiring, AppLog.Write)
+                : new NoSteamControllerCopy();
             var steamInFront = new SteamInFront(time);
             var forGames = SteamControllerForGames.Create(
-                OperatingSystem.IsWindows(), viiper, pan, new NoSteamControllerCopy(), controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId,
+                OperatingSystem.IsWindows(), viiper, pan, Copy, controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId,
                 () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, steamInFront.Now,
                 () => ForegroundGame.InFront(viewModel.Session.GameFolders, launchedGames), panNotices, time);
             pan.Start();
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;
             viewModel.ConnectPan(forGames);
+            controllerSupport.PanHoldsPuck = () => forGames.Emulation.HidesPuck || forGames.FirmwareAttempt.IsActive;
             viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
             // Pan's question before taking the Steam Controller over, or a firmware update Steam tries through the copy (#242):
             // Arcadia may be behind a game, and the player must answer.

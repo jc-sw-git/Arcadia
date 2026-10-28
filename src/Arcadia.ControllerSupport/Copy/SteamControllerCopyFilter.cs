@@ -15,8 +15,59 @@ public enum SteamReportKind
     /// <summary>A GET_REPORT (feature or input): Steam reads the answer to its last message.</summary>
     GetReport,
 
-    /// <summary>Anything else, e.g. the puck's serial interfaces: never passed on.</summary>
+    /// <summary>
+    /// What a host's driver says to any device of its class (a HID interface's idle rate and protocol, a CDC interface's
+    /// line coding and control line state): between Windows and the copy only, never passed on and no sign of an update.
+    /// </summary>
+    Housekeeping,
+
+    /// <summary>Anything else (vendor and unknown requests, data for the puck's serial interfaces): never passed on.</summary>
     Other,
+}
+
+/// <summary>Which <see cref="SteamReportKind"/> a control request from Steam is (#242 part C).</summary>
+public static class SteamControlRequests
+{
+    private const byte ClassToInterface = 0x21;
+    private const byte ClassFromInterface = 0xA1;
+    private const byte GetReport = 0x01;
+    private const byte GetIdle = 0x02;
+    private const byte GetProtocol = 0x03;
+    private const byte SetReport = 0x09;
+    private const byte SetIdle = 0x0A;
+    private const byte SetProtocol = 0x0B;
+    private const byte SetLineCoding = 0x20;
+    private const byte GetLineCoding = 0x21;
+    private const byte SetControlLineState = 0x22;
+
+    /// <summary>
+    /// <paramref name="isHid"/>, <paramref name="isCdc"/>: the class of the interface the request names. Only class
+    /// requests to an interface can be anything but <see cref="SteamReportKind.Other"/>; vendor requests, requests to the
+    /// device and unknown class requests are <see cref="SteamReportKind.Other"/> and count as update traffic.
+    /// </summary>
+    public static (SteamReportKind Kind, HidReportType Type) Classify(SetupPacket setup, bool isHid, bool isCdc)
+    {
+        var type = (HidReportType)(setup.Value >> 8);
+        if (isCdc && (setup.RequestType & 0x7F) == ClassToInterface)
+        {
+            // Only the line settings: a break or an encapsulated command could start a bootloader (QE review of PR #294).
+            return (setup.Request is SetLineCoding or GetLineCoding or SetControlLineState ? SteamReportKind.Housekeeping : SteamReportKind.Other, type);
+        }
+
+        if (!isHid)
+        {
+            return (SteamReportKind.Other, type);
+        }
+
+        return (setup.RequestType, setup.Request) switch
+        {
+            (ClassToInterface, SetReport) when type == HidReportType.Output => (SteamReportKind.Output, type),
+            (ClassToInterface, SetReport) when type == HidReportType.Feature => (SteamReportKind.SetFeature, type),
+            (ClassFromInterface, GetReport) when type is HidReportType.Feature or HidReportType.Input => (SteamReportKind.GetReport, type),
+            (ClassToInterface, SetIdle or SetProtocol) or (ClassFromInterface, GetIdle or GetProtocol) => (SteamReportKind.Housekeeping, type),
+            _ => (SteamReportKind.Other, type),
+        };
+    }
 }
 
 /// <summary>
@@ -85,6 +136,9 @@ public sealed class SteamControllerCopyFilter(TimeProvider time, Action<string> 
             case SteamReportKind.GetReport:
                 // Reading the answer to an allowed message changes nothing on the controller.
                 return true;
+            case SteamReportKind.Housekeeping:
+                // Windows' own business with the copy: nothing for the puck, and no sign of an update.
+                return false;
             case SteamReportKind.Output when report.Length >= 1:
                 return Decide(SteamControllerMessages.OfOutput(report[0]), $"Ausgabe {SteamControllerMessages.NameOfOutput(report[0])}", report.Length, forwarding, routine: false);
             case SteamReportKind.SetFeature when report.Length >= 2 && report[0] is 1 or 2:

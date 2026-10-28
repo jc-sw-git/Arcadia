@@ -27,6 +27,12 @@ public sealed record AppSettings
     /// <summary>When Arcadia last asked GitHub for a newer SISR.</summary>
     public DateTimeOffset? LastSisrUpdateCheck { get; init; }
 
+    /// <summary>
+    /// "SISR behalten" (#214): the group "SISR" in the controller settings stays hidden and SISR stays as it is. A factory
+    /// reset (#146) shows the group again; the warning "SISR läuft" under Pan shows anyway.
+    /// </summary>
+    public bool KeepSisr { get; init; }
+
     /// <summary>When Arcadia last installed the usbip driver; a Windows restart is due after that.</summary>
     public DateTimeOffset? UsbipInstalledAt { get; init; }
 

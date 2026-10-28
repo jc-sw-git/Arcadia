@@ -38,7 +38,7 @@ Agreed with the owner; don't change without asking. Read this before changing th
   "Erst änderbar, wenn „…“ beendet ist". Off Windows: "Auf diesem System noch nicht verfügbar". Below it, indented,
   one row per reason (part rows, HidHide's states, "Steam Controller lässt sich nicht verstecken", "Emulation startet
   nicht", "Emulation angehalten" with "Erneut versuchen"); "Windows-Neustart ausstehend", "HidHide: Neustart
-  ausstehend" and "Pan räumt noch auf" carry the blue i. "Controller wiederherstellen" stays while Pan is installed,
+  ausstehend", "Pan räumt noch auf" and "Pan wartet auf Steam" (firmware guard) carry the blue i. "Controller wiederherstellen" stays while Pan is installed,
   also while the switch is off. Steam's launcher page links to the switch. This replaces the B2 rows above where they
   differ (greyed switch "Aus – es fehlt: …").
 - Pan's notices (#243 B2): a toast while Arcadia is in front, the overlay notice (where the mouse mode shows its

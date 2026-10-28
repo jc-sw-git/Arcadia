@@ -45,6 +45,12 @@ public enum PanEmulationProblem
     /// <summary>Pan still shows the real controllers after the last emulation; no problem, it goes on by itself.</summary>
     CleaningUp,
 
+    /// <summary>
+    /// Steam had the real puck and may be updating its firmware: hiding restarts the puck, so Pan waits until Steam
+    /// has been away for <see cref="PanEmulation.FirmwareGrace"/>; no problem, it goes on by itself.
+    /// </summary>
+    WaitingForSteam,
+
     /// <summary>Too many failures in <see cref="PanEmulation.FailureWindow"/>.</summary>
     TooManyFailures,
 }
@@ -84,6 +90,12 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>A hide that failed (the puck didn't restart, HidHide changed nothing) is tried again after this (designs: "alle 10 Sekunden").</summary>
     public static readonly TimeSpan HideRetry = TimeSpan.FromSeconds(10);
 
+    /// <summary>
+    /// How long after Steam was last in front with the real puck visible no hide starts (decision 8, QE review of #286):
+    /// a hide restarts the puck, which would break off a firmware update Steam started on it.
+    /// </summary>
+    public static readonly TimeSpan FirmwareGrace = TimeSpan.FromMinutes(3);
+
     public const string PausedText = "Pan: Controller-Wächter pausiert. Die echten Controller werden nicht mehr versteckt.";
     public const string RunningAgainText = "Pan: Controller-Wächter läuft wieder";
     public const string StoppedText = "Pan: Emulation angehalten – sie ist mehrmals kurz hintereinander ausgefallen. „Erneut versuchen“ in den Controller-Einstellungen startet sie neu.";
@@ -99,6 +111,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     private volatile Session? _session;
     private volatile PanEmulationStatus _status = PanEmulationStatus.Off;
     private DateTimeOffset _hideRetryAt;
+    private DateTimeOffset? _steamHadPuckAt;
     private bool _pausedByLoss;
     private volatile bool _gaveUp;
     private string? _lastLogged;
@@ -114,6 +127,9 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     /// <summary>The switch "Controller-Wächter (Pan)"; read on every tick.</summary>
     public Func<bool> Enabled { get; init; } = () => true;
+
+    /// <summary>A window of Steam itself is in front (<see cref="FirmwareGrace"/>); asked on every tick.</summary>
+    public Func<bool> SteamInFront { get; init; } = () => false;
 
     /// <summary>Pan can run on this system at all (Windows).</summary>
     public bool Supported { get; init; } = true;
@@ -219,6 +235,12 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     private async Task StepAsync(CancellationToken cancellationToken)
     {
+        if (Hides && _session is not { Hidden: true } && SteamInFront())
+        {
+            // Steam reads the real puck now and may start a firmware update on it.
+            _steamHadPuckAt = _time.GetUtcNow();
+        }
+
         if (!Supported)
         {
             SetStatus(new(PanEmulationState.Unsupported));
@@ -270,6 +292,12 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     private async Task StartAsync(CancellationToken cancellationToken)
     {
+        if (Hides && SteamMayUpdateFirmware())
+        {
+            SetStatus(new(PanEmulationState.SettingUp, PanEmulationProblem.WaitingForSteam, Reason: "Steam hatte den Steam Controller gerade selbst"));
+            return;
+        }
+
         if (Hides && await _guardian.CheckHidingAsync(0, cancellationToken) is var could && could != PanReason.None)
         {
             // Pan can't hide now (HidHide busy, inverse, ...): no emulation at all, the real controller stays as it is.
@@ -320,11 +348,22 @@ public sealed class PanEmulation : IVirtualXboxPads
 
         _session = session;
         _log($"Pan-Emulation {generation} läuft{(Hides ? ", Steam Controller versteckt" : " (ohne Kopie für Steam, der Steam Controller bleibt sichtbar)")}");
-        await KeepAsync(session, cancellationToken);
+        await KeepAsync(session, cancellationToken, mayRestart: false);
     }
 
+    /// <summary>
+    /// Every automatic hide checks this first, as there is no telling from outside whether Steam updates the real puck:
+    /// Steam in front now, or within <see cref="FirmwareGrace"/> while it could read the real puck.
+    /// </summary>
+    private bool SteamMayUpdateFirmware() =>
+        SteamInFront() || (_steamHadPuckAt is { } at && _time.GetUtcNow() - at < FirmwareGrace);
+
     /// <summary>The emulation runs: Pan still has it, the hiding still holds, the copy is up while the puck is there.</summary>
-    private async Task KeepAsync(Session session, CancellationToken cancellationToken)
+    /// <param name="mayRestart">
+    /// False right after a start: a Pan that tore every new generation down at once would otherwise restart the puck
+    /// over and over within one tick. The next tick starts again.
+    /// </param>
+    private async Task KeepAsync(Session session, CancellationToken cancellationToken, bool mayRestart = true)
     {
         if (!_guardian.IsCurrent(session.Generation))
         {
@@ -332,7 +371,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             // new generation can start at once, so a game gets its pad back within the same tick.
             await DropAsync(session);
             SetStatus(new(PanEmulationState.SettingUp));
-            if (_guardian.Unavailable() is null && SteamControllerPresent())
+            if (mayRestart && _guardian.Unavailable() is null && SteamControllerPresent())
             {
                 await StartAsync(cancellationToken);
             }
@@ -411,11 +450,17 @@ public sealed class PanEmulation : IVirtualXboxPads
     {
         _log($"Pan-Emulation {session.Generation} endet ({why})");
         _session = null;
-        await RemoveDevicesAsync(session);
-        if (session.Hidden)
+        var removed = await RemoveDevicesAsync(session);
+        if (session.Hidden && removed)
         {
             // Not shown (HidHide busy): Pan's teardown after the stop shows it, with its own retries.
             await _guardian.UnhideAsync(session.Generation, CancellationToken.None);
+        }
+        else if (session.Hidden)
+        {
+            // A device that failed to go may still forward to the puck: Pan's teardown after the stop ends what is left
+            // of the forwarding (viiper.exe) before it shows the puck.
+            _log($"Pan-Emulation {session.Generation}: nicht alles entfernt, Pan zeigt den Steam Controller nach seinem Aufräumen");
         }
 
         await _guardian.EmulationStoppedAsync(session.Generation, CancellationToken.None);
@@ -433,29 +478,35 @@ public sealed class PanEmulation : IVirtualXboxPads
         }
     }
 
-    private async Task RemoveDevicesAsync(Session session)
+    /// <summary>False if a device failed to go.</summary>
+    private async Task<bool> RemoveDevicesAsync(Session session)
     {
+        var removed = true;
         foreach (var pad in session.End())
         {
-            await DisposeQuietlyAsync(pad, "Xbox-Pad entfernen");
+            removed &= await DisposeQuietlyAsync(pad, "Xbox-Pad entfernen");
         }
 
         if (session.Copy is { } copy)
         {
             session.Copy = null;
-            await DisposeQuietlyAsync(copy, "Kopie entfernen");
+            removed &= await DisposeQuietlyAsync(copy, "Kopie entfernen");
         }
+
+        return removed;
     }
 
-    private async Task DisposeQuietlyAsync(IAsyncDisposable device, string what)
+    private async Task<bool> DisposeQuietlyAsync(IAsyncDisposable device, string what)
     {
         try
         {
             await device.DisposeAsync();
+            return true;
         }
         catch (Exception ex)
         {
             _log($"Pan-Emulation: {what} fehlgeschlagen: {ex.Message}");
+            return false;
         }
     }
 

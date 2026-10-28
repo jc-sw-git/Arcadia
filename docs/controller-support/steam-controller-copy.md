@@ -22,7 +22,14 @@ and writer for the puck, the VIIPER client, SDL ignoring the copy). Until then t
   Controller-Wächter läuft wieder".
 - More than 3 failures in 5 minutes (copy lost or not attaching, the pad giving up) stop it: "Emulation angehalten"
   until "Erneut versuchen" or "Controller wiederherstellen".
-- A teardown by Pan (Arcadia hung) is acknowledged and a new generation starts in the same tick.
+- A teardown by Pan (Arcadia hung) is acknowledged and a new generation starts in the same tick, at most once per tick
+  (a Pan that ends every new generation at once would restart the puck in a loop).
+- A pad or copy that fails to go leaves the puck hidden: `EmulationStopped` without `Unhide`, so Pan's teardown ends
+  the forwarding (`viiper.exe`) before it shows the puck.
+- Firmware guard before every hide (QE review of #286): no automatic hide while Steam is in front, or within 3 minutes
+  (`FirmwareGrace`) after Steam was in front while it could read the real puck (paused, off, no puck yet). A hide
+  restarts the puck and would break off an update Steam started on the real one. Meanwhile the row "Pan wartet auf
+  Steam" (info) shows and nothing is emulated, Arcadia's Xbox pad included.
 - `HideAsync` waits up to 25 s (the puck restarts, ~2.5 s) and can't be cancelled once sent: a half-done hide would
   leave the puck hidden with nothing in its place. A rejected hide is undone by the client at once.
 
@@ -45,7 +52,7 @@ Decision 8 (owner: "no bricked Steam Controllers under any circumstances"): an a
 | Haptic features | `0x8F 0xEA 0xEB` | only while the copy passes input |
 | Haptic outputs | report ids `0x80`–`0x85` | only while the copy passes input |
 | Firmware | `0xB7 0xB8 0xB9` | never; raises `FirmwareBlocked` once per run |
-| Anything else (reset `0x86`, bootloader `0xA9`, serial `0xAD`, pairing `0xAF`–`0xB3`, unknown) | — | never |
+| Anything else (`FACTORY_RESET` `0x86`, `SET_SERIAL_NUMBER` `0xA9`, `ENABLE_PAIRING` `0xAD`, radio and dongle `0xAF`–`0xB3`, unknown) | — | never |
 
 - Reads (GET_REPORT) always pass: they change nothing.
 - Each dropped type is logged once, with its name and length, never its payload.
@@ -53,7 +60,11 @@ Decision 8 (owner: "no bricked Steam Controllers under any circumstances"): an a
   update in Steam, start Arcadia again).
 - Open: `0xA3`, which Steam sent on every slot in the spike, has no known name and is dropped; whether Steam misses it
   needs the owner's test with part C. Steam's real firmware path for the Triton is unverified (no update was offered
-  in the spike); the dialog fires only for the three known types, unknown ones are dropped anyway.
+  in the spike); the dialog fires only for the three known types, unknown ones are dropped anyway. No bootloader type is
+  known, so decision 8's "bootloader → dialog" never fires (it is dropped all the same).
+- For part C: GET_REPORT always passes, but Arcadia's own SDL sends feature reports to the same puck too, so a feature
+  transaction (SET then GET) needs one owner at a time, or Steam may read SDL's answer. The VIIPER fork hands every
+  control request (class and vendor too) to `FromSteam`; it never answers or forwards one itself.
 
 ## UI (designs, section "#242 Pan")
 

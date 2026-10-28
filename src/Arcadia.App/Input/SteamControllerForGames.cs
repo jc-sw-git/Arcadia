@@ -63,6 +63,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         {
             Supported = panSupported,
             Enabled = () => settings.Current.PanEnabled,
+            SteamInFront = isSteamInFront,
             SteamControllerPresent = () => hold.PuckPresent || padForPresence?.SteamControllerConnected == true,
         };
         var routing = new SteamControllerRouting(

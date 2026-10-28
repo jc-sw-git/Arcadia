@@ -207,6 +207,26 @@ public sealed class PanEmulationTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T242-20")]
+    public async Task While_Steam_may_update_the_real_puck_a_blue_row_says_Pan_waits_and_the_mode_is_not_broken()
+    {
+        using var arcadia = await StartAsync(copy: true);
+        var controller = OpenControllerSettings(arcadia);
+        arcadia.Pan.HidingHolds = PanReason.HidingLost;
+        await arcadia.TickSteamControllerAsync();
+        arcadia.Pan.HidingHolds = PanReason.None;
+
+        arcadia.IsSteamInFront = true;
+        await arcadia.TickSteamControllerAsync();
+
+        Assert.Equal(PanEmulationProblem.WaitingForSteam, arcadia.ForGames.Status.Problem);
+        var row = controller.Rows.Single(r => r.Key == "pan:waiting-for-steam");
+        Assert.Equal("Pan wartet auf Steam", row.Title);
+        Assert.True(row.IsInfo);
+        Assert.False(arcadia.Main.ControllerModeBroken, "kein Problem, es geht von selbst weiter");
+    }
+
+        [AvaloniaFact]
     [Trait("TestCase", "T242-16")]
     public async Task On_the_detail_page_the_broken_mode_is_focusable_and_A_opens_the_row_that_says_why_and_B_goes_back()
     {

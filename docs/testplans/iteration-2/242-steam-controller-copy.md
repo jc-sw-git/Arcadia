@@ -61,6 +61,10 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
 - [ ] **T242-19** On Linux the mode doesn't show (state `Unsupported`), the Pan switch is greyed and unavailable, the
       pad behaves as before.
       · E2E: no (Linux build by hand)
+- [ ] **T242-20** With Pan paused (e.g. HidHide's configuration client open), Steam in front: start a firmware update
+      on the real Steam Controller in Steam and close the configuration client during it. Pan doesn't hide (the puck
+      doesn't restart), the row "Pan wartet auf Steam" shows; 3 minutes after Steam left the front, Pan hides by
+      itself. · E2E: yes (the guard and the row; the real update after part C)
 
 ## Test runs
 
@@ -68,3 +72,4 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
 |---|---|---|---|---|---|
 | T242-1 … T242-9 (Core: `PanEmulationTests`, `SteamControllerCopyFilterTests`, `SteamControllerRoutingTests`, `PanClientTests`) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, fakes for Pan, VIIPER and the puck; Pan 172, Core 1783 | pass | the real copy after parts B and C |
 | T242-8, T242-10 … T242-16 (acceptance tests) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; each test seen red once by mutation (dialog shown over settings, switch not toggling, game lock removed, paused notice removed, stopped row not built, spinner while setting up removed, broken mode not focusable, A not leading to the row) | pass | not rendered on Windows; owner's manual run open |
+| T242-9, T242-20 after the QE review (`PanEmulationTests` Core: firmware guard, a copy that fails to go leaves the puck to Pan's teardown, one restart per tick; App: the row "Pan wartet auf Steam") | 2026-10-28 | Claude (thread) | Debug, Linux cloud container; each new test seen red once by mutation (guard off, Steam's turn not noted, unhide after a failed removal, restart unbounded, row not built) | pass | real update after part C |

@@ -217,6 +217,99 @@ public sealed class PanEmulationTests
     }
 
     [Fact]
+    [Trait("TestCase", "T242-9")]
+    public async Task A_copy_that_fails_to_go_leaves_the_puck_hidden_for_Pans_teardown_which_ends_the_forwarding_first()
+    {
+        await _emulation.TickAsync();
+        _copy.FailDetach = "VIIPER antwortet nicht";
+        _events.Clear();
+
+        await _emulation.ShutdownAsync();
+
+        Assert.Empty(_pan.Unhidden);
+        Assert.Equal(["stopped 1"], _events);
+        Assert.Contains(_log, line => line.Contains("Kopie entfernen fehlgeschlagen"));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-9")]
+    public async Task A_Pan_that_ends_every_new_emulation_at_once_restarts_the_puck_at_most_once_per_tick()
+    {
+        _pan.TearDownAfterHides = 3;
+
+        await _emulation.TickAsync();
+
+        Assert.Equal([1u], _pan.Started);
+        Assert.Equal([1u], _pan.Hidden);
+
+        await _emulation.TickAsync();
+        Assert.Equal([1u, 2u], _pan.Started);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-20")]
+    public async Task While_Steam_is_in_front_or_was_within_three_minutes_with_the_real_puck_nothing_is_hidden()
+    {
+        var steamInFront = true;
+        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            SteamControllerPresent = () => _present,
+            SteamInFront = () => steamInFront,
+        };
+
+        await emulation.TickAsync();
+        Assert.Equal(PanEmulationState.SettingUp, emulation.Status.State);
+        Assert.Equal(PanEmulationProblem.WaitingForSteam, emulation.Status.Problem);
+
+        steamInFront = false;
+        _time.Advance(PanEmulation.FirmwareGrace - TimeSpan.FromSeconds(1));
+        await emulation.TickAsync();
+        Assert.Empty(_pan.Hidden);
+        Assert.Empty(_pan.Started);
+
+        _time.Advance(TimeSpan.FromSeconds(1));
+        await emulation.TickAsync();
+        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
+        Assert.Equal([1u], _pan.Hidden);
+
+        // Hidden, Steam reads only the copy: Steam in front changes nothing.
+        steamInFront = true;
+        await emulation.TickAsync();
+        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-20")]
+    public async Task After_a_pause_with_Steam_in_front_the_hide_waits_three_minutes_after_Steam_left()
+    {
+        var steamInFront = false;
+        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            SteamControllerPresent = () => _present,
+            SteamInFront = () => steamInFront,
+        };
+        await emulation.TickAsync();
+        _pan.HidingHolds = PanReason.HidingLost;
+        await emulation.TickAsync();
+        Assert.Equal(PanEmulationState.Paused, emulation.Status.State);
+
+        // Paused, Steam reads the real puck and may start an update on it.
+        steamInFront = true;
+        _pan.HidingHolds = PanReason.None;
+        await emulation.TickAsync();
+        steamInFront = false;
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await emulation.TickAsync();
+
+        Assert.Equal([1u], _pan.Hidden);
+        Assert.Equal(PanEmulationProblem.WaitingForSteam, emulation.Status.Problem);
+
+        _time.Advance(PanEmulation.FirmwareGrace);
+        await emulation.TickAsync();
+        Assert.Equal([1u, 2u], _pan.Hidden);
+    }
+
+    [Fact]
     public async Task Without_Pan_or_a_part_nothing_starts_and_the_reason_is_given()
     {
         _pan.Missing = "Pan ist nicht eingerichtet";

@@ -240,13 +240,18 @@ public sealed class PanRows
                     StartFailedText, "Erneut versuchen", _pan.Retry));
                 break;
             case PanEmulationProblem.TooManyFailures:
-                yield return ("pan:stopped", Row("pan:stopped", "Emulation angehalten", "3 Ausfälle in 5 Minuten, Arcadia versucht es nicht mehr von selbst", HealthSeverity.Error,
+                yield return ("pan:stopped", Row("pan:stopped", "Emulation angehalten", "Mehr als 3 Ausfälle in 5 Minuten, Arcadia versucht es nicht mehr von selbst", HealthSeverity.Error,
                     "Die Emulation ist mehrmals kurz hintereinander ausgefallen. Damit Spiele nicht ständig Controller verlieren und wiederbekommen, wartet Arcadia jetzt auf dich. „Erneut versuchen“ startet sie neu. Hilft das nicht, „Controller wiederherstellen“.",
                     "Erneut versuchen", _pan.Retry));
                 break;
             case PanEmulationProblem.CleaningUp:
                 yield return ("pan:cleaning-up", Row("pan:cleaning-up", "Pan räumt noch auf", "Gleich geht es von selbst weiter", HealthSeverity.Info,
                     "Pan gibt gerade nach dem letzten Ende der Emulation die echten Controller zurück. Danach richtet Arcadia die Emulation von selbst neu ein; das dauert wenige Sekunden.",
+                    null, null));
+                break;
+            case PanEmulationProblem.WaitingForSteam:
+                yield return ("pan:waiting-for-steam", Row("pan:waiting-for-steam", "Pan wartet auf Steam", "Geht von selbst weiter, 3 Minuten nachdem Steam nicht mehr vorne ist", HealthSeverity.Info,
+                    "Steam hatte gerade den echten Steam Controller und könnte seine Firmware aktualisieren. Verstecken startet den Controller neu und würde ein Update abbrechen, deshalb wartet Pan, bis Steam 3 Minuten lang nicht mehr vorne ist. So lange sehen Spiele den Controller wie ohne Pan.",
                     null, null));
                 break;
         }

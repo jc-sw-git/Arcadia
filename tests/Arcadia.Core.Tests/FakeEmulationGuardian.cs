@@ -39,6 +39,9 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
     /// <summary>The generation the puck is hidden for, or 0.</summary>
     public uint HiddenFor;
 
+    /// <summary>So many hides are followed at once by Pan's teardown (a Pan that ends every new emulation).</summary>
+    public int TearDownAfterHides;
+
     public List<uint> Hidden = [];
     public List<uint> Unhidden = [];
 
@@ -79,6 +82,12 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
                 Hidden.Add(generation);
                 HiddenFor = generation;
             }
+        }
+
+        if (TearDownAfterHides > 0)
+        {
+            TearDownAfterHides--;
+            TearDown();
         }
 
         return Task.FromResult(HideResult);

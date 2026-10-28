@@ -12,6 +12,9 @@ public sealed class FakeSteamControllerHold : ISteamControllerHold
     /// <summary>Attaching throws with this message, as a VIIPER without the copy's device type would.</summary>
     public string? FailAttach;
 
+    /// <summary>The copy's removal throws with this (e.g. VIIPER not answering).</summary>
+    public string? FailDetach;
+
     public int Attached;
     public int Detached;
     public FakeCopy? Current;
@@ -50,6 +53,11 @@ public sealed class FakeSteamControllerHold : ISteamControllerHold
 
         public ValueTask DisposeAsync()
         {
+            if (owner.FailDetach is { } why)
+            {
+                throw new InvalidOperationException(why);
+            }
+
             owner.Detached++;
             owner.Note("copy detached");
             return ValueTask.CompletedTask;

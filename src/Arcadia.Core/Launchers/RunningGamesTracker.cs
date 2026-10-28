@@ -19,10 +19,15 @@ public sealed record RunState(RunPhase Phase, DateTimeOffset? Since);
 /// <param name="StartedFromArcadia">Arcadia started it, so its end may bring Arcadia back to the front (#94).</param>
 public sealed record EndedGame(string GameKey, bool StartedFromArcadia);
 
+/// <summary>A game Arcadia started that didn't run (#277).</summary>
+/// <param name="Refusal">How its launcher aborted the start, or null if nothing was heard of it within <see cref="RunningGamesTracker.StartTimeout"/>.</param>
+public sealed record UnstartedGame(string GameKey, RefusedStart? Refusal);
+
 /// <param name="StatesChanged">A game started, ended or gave up starting; the covers show it.</param>
+/// <param name="NotStarted">The games Arcadia started that gave up starting, not counting those of a launcher switched off.</param>
 /// <param name="StartAgain">Games Arcadia should hand to their launcher once more: an update ran first and the launcher
 /// didn't start the game after it (<see cref="RunningGamesTracker.StartAgainAfterInstall"/>).</param>
-public sealed record RunningChanges(bool StatesChanged, IReadOnlyList<EndedGame> Ended, IReadOnlyList<string> StartAgain);
+public sealed record RunningChanges(bool StatesChanged, IReadOnlyList<EndedGame> Ended, IReadOnlyList<UnstartedGame> NotStarted, IReadOnlyList<string> StartAgain);
 
 /// <summary>
 /// Which games run (#95), whether started from Arcadia or in their launcher: as the launcher reports it
@@ -127,6 +132,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
             });
 
             var asked = reports.Select(r => r.LauncherId).ToHashSet(StringComparer.Ordinal);
+            var refused = reports.SelectMany(r => r.Refused.Select(refusal => (Key: Game.KeyOf(r.LauncherId, refusal.GameId), Refusal: refusal))).ToList();
             var found = reports.SelectMany(r => r.Games.Select(g => (Key: Game.KeyOf(r.LauncherId, g.GameId), r.LauncherId, g.StartedAt))).ToList();
             if (processGames is not null)
             {
@@ -134,7 +140,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
                 found.AddRange(processGames.Select(g => (g.Key, LauncherIdOf(g.Key), g.Value)));
             }
 
-            return Apply(asked, found, enabled.Select(i => i.Launcher.Id).ToHashSet(StringComparer.Ordinal));
+            return Apply(asked, found, refused, enabled.Select(i => i.Launcher.Id).ToHashSet(StringComparer.Ordinal));
         }
         finally
         {
@@ -144,9 +150,10 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
 
     private Report? Ask(IRunningGamesMonitor monitor)
     {
+        IReadOnlyList<RunningGame> games;
         try
         {
-            return new Report(monitor.LauncherId, monitor.Poll());
+            games = monitor.Poll();
         }
         catch (Exception ex)
         {
@@ -154,9 +161,22 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
             Log?.Invoke($"Laufende Spiele von {monitor.LauncherId} nicht lesbar: {ex}");
             return null;
         }
+
+        try
+        {
+            return new Report(monitor.LauncherId, games, monitor.RefusedStarts());
+        }
+        catch (Exception ex)
+        {
+            // Without them a start the launcher aborted ends after the timeout, as before #277.
+            Log?.Invoke($"Abgebrochene Starts von {monitor.LauncherId} nicht lesbar: {ex}");
+            return new Report(monitor.LauncherId, games, []);
+        }
     }
 
-    private RunningChanges Apply(HashSet<string> asked, List<(string Key, string LauncherId, DateTimeOffset? StartedAt)> found, HashSet<string> enabled)
+    private RunningChanges Apply(
+        HashSet<string> asked, List<(string Key, string LauncherId, DateTimeOffset? StartedAt)> found,
+        List<(string Key, RefusedStart Refusal)> refused, HashSet<string> enabled)
     {
         var running = _running
             .Where(game => !asked.Contains(game.Value.LauncherId) && enabled.Contains(game.Value.LauncherId))
@@ -177,6 +197,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         }
 
         var now = time.GetUtcNow();
+        var notStarted = new List<UnstartedGame>();
         var startAgain = new List<string>();
         foreach (var (key, start) in _starting.ToList())
         {
@@ -184,6 +205,13 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
             {
                 _starting.Remove(key);
                 _startedFromArcadia.Add(key);
+                changed = true;
+            }
+            else if (RefusalOf(key, start, refused) is { } refusal)
+            {
+                Log?.Invoke($"{key}: der Launcher hat den Start abgebrochen ({refusal.Detail}); „Wird gestartet …“ endet.");
+                _starting.Remove(key);
+                notStarted.Add(new UnstartedGame(key, refusal));
                 changed = true;
             }
             else if (enabled.Contains(LauncherIdOf(key)) && IsInstalling(key))
@@ -200,6 +228,11 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
             {
                 Log?.Invoke($"{key} lief nach dem Start aus Arcadia nicht; „Wird gestartet …“ endet.");
                 _starting.Remove(key);
+                if (enabled.Contains(LauncherIdOf(key)))
+                {
+                    notStarted.Add(new UnstartedGame(key, null));
+                }
+
                 changed = true;
             }
         }
@@ -207,7 +240,14 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         // A game whose launcher was switched off would be awaited for ever.
         _startedFromArcadia.RemoveWhere(key => !enabled.Contains(LauncherIdOf(key)));
         _running = running;
-        return new RunningChanges(changed, ended, startAgain);
+        return new RunningChanges(changed, ended, notStarted, startAgain);
+    }
+
+    // Launchers log in whole seconds, so an abort in the second Arcadia asked counts; one from before is an older start's.
+    private static RefusedStart? RefusalOf(string key, Start start, List<(string Key, RefusedStart Refusal)> refused)
+    {
+        var askedSecond = start.AskedAt.AddTicks(-(start.AskedAt.UtcTicks % TimeSpan.TicksPerSecond));
+        return refused.LastOrDefault(r => r.Key == key && r.Refusal.At >= askedSecond).Refusal;
     }
 
     private HashSet<string> FallbackLaunchers(IEnumerable<ILauncherIntegration>? enabled = null) =>
@@ -215,7 +255,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
 
     private static string LauncherIdOf(string gameKey) => Game.LauncherIdOf(gameKey);
 
-    private sealed record Report(string LauncherId, IReadOnlyList<RunningGame> Games);
+    private sealed record Report(string LauncherId, IReadOnlyList<RunningGame> Games, IReadOnlyList<RefusedStart> Refused);
 
     private readonly record struct Running(string LauncherId, DateTimeOffset? StartedAt);
 

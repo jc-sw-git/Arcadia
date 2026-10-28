@@ -183,6 +183,9 @@ public sealed class ControllerSupportService(
     /// <summary>Since when Steam runs but hasn't finished logging in, or null.</summary>
     private DateTimeOffset? _steamLoginSince;
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _pausedDirectories = new(StringComparer.OrdinalIgnoreCase);
+
+    // Install folders of games whose launcher refused the start (#277): their pause stops waiting for the game to begin.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _refusedStarts = new(StringComparer.OrdinalIgnoreCase);
     private SisrState _state;
     private ControllerSupportSetup? _setup;
     private int _startGeneration;
@@ -1173,24 +1176,40 @@ public sealed class ControllerSupportService(
         SettleRestingState();
     }
 
+    /// <summary>
+    /// The launcher refused to start <paramref name="game"/> (#277): a pause for it ends now instead of after its start
+    /// timeout, so the Steam Controller drives Arcadia again at once.
+    /// </summary>
+    public void StartRefused(Game game)
+    {
+        if (game.InstallDirectory is { } directory && _pausedDirectories.ContainsKey(directory))
+        {
+            Log?.Invoke($"„{game.Title}“ wurde nicht gestartet: SISR wartet nicht länger auf das Spiel");
+            _refusedStarts[directory] = 0;
+        }
+    }
+
     private void Pause(string directory, SteamInputPause? steamInput = null)
     {
+        _refusedStarts.TryRemove(directory, out _);
         _pausedDirectories.AddOrUpdate(directory, 1, (_, n) => n + 1);
         PauseWhile(() => _platform.AnyRunningFrom(directory), startTimeout: TimeSpan.FromMinutes(2), $"Spiel in {directory}", steamInput, ended: () =>
         {
             if (_pausedDirectories.AddOrUpdate(directory, 0, (_, n) => n - 1) <= 0)
             {
                 _pausedDirectories.TryRemove(directory, out _);
+                _refusedStarts.TryRemove(directory, out _);
             }
-        });
+        }, refused: () => _refusedStarts.ContainsKey(directory));
     }
 
     /// <summary>
     /// Keeps SISR paused while <paramref name="running"/> holds, after waiting up to
     /// <paramref name="startTimeout"/> for it to begin; <paramref name="ended"/> runs under the gate when it is over.
-    /// <paramref name="steamInput"/> is shown in the settings meanwhile.
+    /// <paramref name="steamInput"/> is shown in the settings meanwhile. Once <paramref name="refused"/> holds before it
+    /// began, the pause ends without waiting out <paramref name="startTimeout"/>.
     /// </summary>
-    private void PauseWhile(Func<bool> running, TimeSpan startTimeout, string what, SteamInputPause? steamInput, Action ended)
+    private void PauseWhile(Func<bool> running, TimeSpan startTimeout, string what, SteamInputPause? steamInput, Action ended, Func<bool>? refused = null)
     {
         if (steamInput is not null)
         {
@@ -1199,7 +1218,7 @@ public sealed class ControllerSupportService(
 
         Interlocked.Increment(ref _pausedGames);
         OnChanged();
-        _ = Task.Run(() => WatchPausedGameAsync(running, startTimeout, what, () =>
+        _ = Task.Run(() => WatchPausedGameAsync(running, refused ?? (() => false), startTimeout, what, () =>
         {
             ended();
             if (steamInput is not null)
@@ -1209,11 +1228,11 @@ public sealed class ControllerSupportService(
         }), CancellationToken.None);
     }
 
-    private async Task WatchPausedGameAsync(Func<bool> running, TimeSpan startTimeout, string what, Action ended)
+    private async Task WatchPausedGameAsync(Func<bool> running, Func<bool> refused, TimeSpan startTimeout, string what, Action ended)
     {
         try
         {
-            if (await ProcessWatch.WaitUntilAsync(running, startTimeout, time, CancellationToken.None))
+            if (await ProcessWatch.WaitUntilAsync(() => running() || refused(), startTimeout, time, CancellationToken.None))
             {
                 while (running())
                 {

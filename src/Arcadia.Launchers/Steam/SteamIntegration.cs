@@ -7,7 +7,8 @@ namespace Arcadia.Launchers.Steam;
 /// <summary>
 /// Steam: the installed games of all libraries. Games start through <c>steam://rungameid</c>,
 /// which starts Steam itself when needed, so there is no client of its own. Installs, updates and
-/// uninstalls are followed through the app manifests, running games through Steam's registry.
+/// uninstalls are followed through the app manifests, running games through Steam's registry, starts Steam aborts
+/// through its console log.
 /// </summary>
 public sealed class SteamIntegration : ILauncherIntegration
 {
@@ -23,7 +24,7 @@ public sealed class SteamIntegration : ILauncherIntegration
         _account = account;
         Scanner = new SteamScanner(locate, account);
         InstallMonitor = new SteamInstallMonitor(locate, time);
-        RunningGames = new SteamRunningGames(time);
+        RunningGames = new SteamRunningGames(time, consoleLog: new SteamConsoleLog(() => _locate()?.ConsoleLogPath));
 
         // A switch of the account in Steam shows at once, not only with the next rescan (owner, 2026-10-27).
         account?.FollowClient(() => _locate()?.ActiveUserId);

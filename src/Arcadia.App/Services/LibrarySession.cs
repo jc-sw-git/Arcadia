@@ -94,6 +94,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     /// <summary>A game started from Arcadia ended, with its key: Arcadia may come back to the front (#94).</summary>
     public event EventHandler<string>? StartedGameEnded;
 
+    /// <summary>The launcher aborted the start of a game from Arcadia, with its key: Arcadia comes to the front as after a game (#277).</summary>
+    public event EventHandler<string>? StartRefused;
+
     /// <summary>A game Arcadia started waited for an update, and its launcher didn't start it after it: start it once more.</summary>
     public event EventHandler<string>? StartAgainRequested;
 
@@ -183,6 +186,11 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         if (changes.StatesChanged)
         {
             RunStatesChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        foreach (var unstarted in changes.NotStarted)
+        {
+            ReportNotStarted(unstarted);
         }
 
         foreach (var gameKey in changes.StartAgain)
@@ -343,11 +351,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
 
     private async Task ReportInstallResultsAsync(IReadOnlyList<InstallResult> results)
     {
-        string? KnownTitleOf(string key) => Libraries.SelectMany(l => l.Games).FirstOrDefault(g => g.Key == key)?.Title;
-
         // An uninstalled game leaves the library with the rescan below, a newly installed one only comes with it.
         var (key, outcome) = results[^1];
-        var titleBefore = KnownTitleOf(key);
+        var titleBefore = GameOf(key)?.Title;
 
         if (results.Any(r => r.Outcome == InstallOutcome.Completed))
         {
@@ -362,8 +368,22 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         }
 
         var completed = results.Count(r => r.Outcome == InstallOutcome.Completed);
-        Noticed?.Invoke(this, new LibraryNotice.InstallEnded(outcome, titleBefore ?? KnownTitleOf(key), completed));
+        Noticed?.Invoke(this, new LibraryNotice.InstallEnded(outcome, titleBefore ?? GameOf(key)?.Title, completed));
     }
+
+    /// <summary>"Wird gestartet …" ended without the game running: says why (#277); an aborted start brings Arcadia back.</summary>
+    private void ReportNotStarted(UnstartedGame unstarted)
+    {
+        var launcher = Launchers.Info(Game.LauncherIdOf(unstarted.GameKey));
+        Noticed?.Invoke(this, new LibraryNotice.GameNotStarted(GameOf(unstarted.GameKey)?.Title, launcher, unstarted.Refusal));
+        if (unstarted.Refusal is not null)
+        {
+            StartRefused?.Invoke(this, unstarted.GameKey);
+        }
+    }
+
+    /// <summary>The game with this key in <see cref="Libraries"/>, or null if it left them.</summary>
+    public Game? GameOf(string gameKey) => Libraries.SelectMany(l => l.Games).FirstOrDefault(g => g.Key == gameKey);
 
     private void RefreshLibraryLater(TimeSpan delay) => RefreshLibraryAfterAsync(delay, _shutdown.Token).Forget("Bibliothek aktualisieren");
 
@@ -410,6 +430,13 @@ public abstract record LibraryNotice
     /// <paramref name="Title"/> (null if unknown) are the last one's, <paramref name="Completed"/> counts the completed installs.
     /// </summary>
     public sealed record InstallEnded(InstallOutcome Outcome, string? Title, int Completed) : LibraryNotice;
+
+    /// <summary>
+    /// A game started from Arcadia didn't run (#277): <paramref name="Launcher"/> aborted the start
+    /// (<paramref name="Refusal"/>), or nothing was heard of it until "Wird gestartet …" timed out (null).
+    /// <paramref name="Title"/> is null if the game left the library meanwhile.
+    /// </summary>
+    public sealed record GameNotStarted(string? Title, LauncherInfo Launcher, RefusedStart? Refusal) : LibraryNotice;
 
     /// <summary>"Neu einlesen" started for <paramref name="Launcher"/>, or for all launchers (null).</summary>
     public sealed record RescanStarted(LauncherInfo? Launcher) : LibraryNotice;

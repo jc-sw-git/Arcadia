@@ -140,6 +140,8 @@ internal sealed class ArcadiaDriver : IDisposable
             LatencyLines.Add(line);
         }));
 
+        Main.Session.StartRefused += (_, gameKey) => BroughtToFrontFor.Add(gameKey);
+
         // The controllers as the App reads them (#72), through SDL as the test sets it up.
         _controllers = ControllerInput.Create(Sdl, Main);
         _controllers.Polled += _ => _gamepad.Tick();
@@ -427,6 +429,20 @@ internal sealed class ArcadiaDriver : IDisposable
         Sdl.Hold(pad);
         return PollControllers();
     }
+
+    /// <summary>The games whose aborted start brought Arcadia to the front (#277), as <c>App.axaml.cs</c> does it.</summary>
+    public List<string> BroughtToFrontFor { get; } = [];
+
+    /// <summary>The launcher of a test (<see cref="LauncherSpec.Running"/> set) reports <paramref name="game"/> as running from now.</summary>
+    public void RunInLauncher(Game game) => MonitorOf(game).Run(game.Id, Time.GetUtcNow());
+
+    /// <summary>The launcher of a test (<see cref="LauncherSpec.Running"/> set) aborts the start of <paramref name="game"/> now (#277).</summary>
+    public void RefuseInLauncher(Game game, string? reason, string detail) =>
+        MonitorOf(game).Refuse(new RefusedStart(game.Id, Time.GetUtcNow(), reason, detail));
+
+    private FixedRunningGames MonitorOf(Game game) =>
+        Launchers.Single(launcher => launcher.Launcher.Id == game.LauncherId).RunningGames as FixedRunningGames
+        ?? throw new InvalidOperationException($"{game.LauncherId} reports no running games; give its spec Running: [].");
 
     /// <summary>What the App's timer does every few seconds: asks the launchers which games run.</summary>
     public async Task FollowRunningGamesAsync()

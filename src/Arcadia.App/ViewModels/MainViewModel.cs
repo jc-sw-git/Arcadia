@@ -74,6 +74,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         Session.RunStatesChanged += (_, _) => UpdateRunStates();
         Session.StartAgainRequested += (_, gameKey) => StartAgain(gameKey);
         Session.Noticed += (_, notice) => ShowNotice(notice);
+
+        // SISR stopped for the game; it comes back now instead of after its own start timeout (#277).
+        Session.StartRefused += (_, gameKey) =>
+        {
+            if (Session.GameOf(gameKey) is { } game)
+            {
+                _controllerSupport.StartRefused(game);
+            }
+        };
         _actions = new GameActions(this, launcher, controllerSupport, installs, running, launchedGames, settings, Toast, time);
         _actions.ForegroundRequested += (_, e) => ForegroundRequested?.Invoke(this, e);
         Library = new LibraryViewModel(LauncherTabs, settings, SaveView, _actions, ShowStates, this, time, installFolders);

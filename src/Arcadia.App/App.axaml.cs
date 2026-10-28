@@ -204,9 +204,12 @@ public partial class App : Application
                 await AppErrors.Guard(viewModel.Session.PollRunningGamesAsync, "Laufende Spiele"));
             running.Start();
             window.Activated += (_, _) => viewModel.Session.PollRunningGamesAsync().Forget("Laufende Spiele");
-            viewModel.Session.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey).Forget("Nach dem Spiel zurück zu Arcadia");
+            viewModel.Session.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey, "beendet").Forget("Nach dem Spiel zurück zu Arcadia");
 
-            async Task ReturnAfterGameAsync(string gameKey)
+            // The launcher's own window (Steam's error dialog) stays open behind Arcadia: Arcadia doesn't close other programs' windows (#277).
+            viewModel.Session.StartRefused += (_, gameKey) => ReturnAfterGameAsync(gameKey, "nicht gestartet").Forget("Nach abgebrochenem Start zurück zu Arcadia");
+
+            async Task ReturnAfterGameAsync(string gameKey, string what)
             {
                 await Task.Delay(ReturnAfterGameDelay, time);
                 if (mouseMode.IsArcadiaActive)
@@ -218,12 +221,12 @@ public partial class App : Application
                 var launcherPrograms = launchers.Find(Game.LauncherIdOf(gameKey))?.ProgramNames ?? [];
                 if (ForegroundGame.InFrontAfter(gameKey, viewModel.Session.GameFolders, launchedGames, launcherPrograms) is var front and not ForegroundAfterGame.Other)
                 {
-                    AppLog.Write($"{gameKey} beendet, vorne: {front} – Arcadia kommt nach vorne");
+                    AppLog.Write($"{gameKey} {what}, vorne: {front} – Arcadia kommt nach vorne");
                     ForegroundGuard.BringBack(window);
                 }
                 else
                 {
-                    AppLog.Write($"{gameKey} beendet, ein anderes Programm ist vorne – Arcadia bleibt hinten");
+                    AppLog.Write($"{gameKey} {what}, ein anderes Programm ist vorne – Arcadia bleibt hinten");
                 }
             }
 

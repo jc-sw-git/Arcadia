@@ -21,7 +21,7 @@ the thread small and focused.
 2. **Implementation:** the architect. Code, unit and integration tests, the issue's test plan file, PR.
 3. **Review and acceptance tests:** a fresh quality engineer thread, in the same PR.
 4. **Owner's manual test:** in the implementation thread, which fixes the owner's feedback and any open
-   review findings in one batch (`docs/testplans/README.md` → Before the merge).
+   review findings in one batch (`docs/process/iteration.md` → Before the merge).
 
 Cost rules (owner, 2026-10-28): each tool call re-reads the thread's whole context, so a long thread gets
 expensive mostly through its size.

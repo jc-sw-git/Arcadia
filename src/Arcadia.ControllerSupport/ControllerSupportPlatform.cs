@@ -64,6 +64,12 @@ public interface IControllerSupportPlatform
     /// <summary>HidHide's driver version, or null if HidHide isn't installed (#243 part B2).</summary>
     Version? HidHideVersion { get; }
 
+    /// <summary>
+    /// <see cref="InstallDriversAsync"/> would run HidHide's installer now, which restarts the puck afterwards (#296):
+    /// HidHide is missing or of an unsupported version, and no uninstall waits for a restart.
+    /// </summary>
+    bool InstallsHidHide => ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion);
+
     /// <summary>Steam's CEF debug flag file exists (it takes effect on Steam's next start).</summary>
     bool IsCefDebuggingEnabled { get; }
 
@@ -219,6 +225,8 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
     /// <summary>HidHide was uninstalled and goes at the next restart; its setup would fail until then.</summary>
     private static bool HidHideRemovalPending => OperatingSystem.IsWindows() && HidHideInstallation.IsRemovalPending();
 
+    public bool InstallsHidHide => HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending;
+
     public bool IsCefDebuggingEnabled => _locate() is { } steam && File.Exists(steam.CefDebuggingFlagPath);
 
     public void EnableCefDebugging()
@@ -299,7 +307,7 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
         try
         {
             usbipInstaller = IsUsbipReady ? null : await UsbipDriver.DownloadInstallerAsync(http, cancellationToken);
-            hidHideInstaller = HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending ? await HidHideInstallation.DownloadInstallerAsync(http, cancellationToken) : null;
+            hidHideInstaller = InstallsHidHide ? await HidHideInstallation.DownloadInstallerAsync(http, cancellationToken) : null;
             return await PanSetup.InstallAsync(usbipInstaller, hidHideInstaller, cancellationToken);
         }
         finally

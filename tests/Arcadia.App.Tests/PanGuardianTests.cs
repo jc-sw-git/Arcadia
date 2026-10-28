@@ -181,6 +181,42 @@ public sealed class PanGuardianTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T296-7")]
+    public async Task A_Pan_update_that_installs_HidHide_says_Steam_closes_and_runs_with_Steam_closed()
+    {
+        var steam = new FakeSteam { IsPanUpdateAvailable = true, HidHideVersion = null, IsSteamRunning = true };
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+
+        arcadia.OfferPanUpdate();
+        Assert.True(arcadia.Main.IsConfirmationOpen);
+        Assert.Equal($"{PanUpdateOffer.Text} {PanUpdateOffer.SteamStopText}", arcadia.Main.Confirmation!.Message);
+
+        arcadia.Press(UiAction.Left).Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => steam.DriverInstalls == 1 && steam.IsSteamRunning && arcadia.ControllerSupport.BusyText is null, "Pan aktualisiert, Steam wieder da");
+
+        Assert.Equal(0, steam.PuckRestartsWhileSteamRuns);
+        Assert.Equal(1, steam.SteamStops);
+        Assert.Null(arcadia.ControllerSupport.LastError);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T296-7")]
+    public async Task A_Pan_update_that_would_close_Steam_isn_t_offered_beside_a_Steam_game_and_one_that_wouldn_t_doesn_t_mention_Steam()
+    {
+        var steam = new FakeSteam { IsPanUpdateAvailable = true, HidHideVersion = null, IsSteamRunning = true, SteamGame = "Hollow Knight" };
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+
+        arcadia.OfferPanUpdate();
+        Assert.False(arcadia.Main.IsConfirmationOpen);
+
+        // With a current HidHide the update doesn't restart the puck: offered beside the game, without the Steam sentence.
+        steam.HidHideVersion = HidHideRelease.Version;
+        arcadia.OfferPanUpdate();
+        Assert.True(arcadia.Main.IsConfirmationOpen);
+        Assert.Equal(PanUpdateOffer.Text, arcadia.Main.Confirmation!.Message);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T243-14")]
     public async Task The_Pan_update_question_is_a_dialog_B_declines_and_A_confirms()
     {

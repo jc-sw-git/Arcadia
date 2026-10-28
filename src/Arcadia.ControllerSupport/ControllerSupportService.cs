@@ -280,9 +280,8 @@ public sealed class ControllerSupportService(
     public const string HidHideReinstallWhileHiddenText =
         "Solange Pan den Steam Controller versteckt, lässt sich HidHide nicht neu installieren. Schalte den Controller-Wächter (Pan) aus und versuche es dann noch einmal.";
 
-    /// <summary>"Neu installieren" while Steam runs: the reinstall restarts the puck, which Steam may be updating.</summary>
-    public const string HidHideReinstallWhileSteamRunsText =
-        "Beende zuerst Steam: „Neu installieren“ startet den Steam Controller neu, und Steam könnte gerade seine Firmware aktualisieren.";
+    /// <summary>An action that has to close Steam stops before it changes anything when Steam doesn't exit.</summary>
+    public const string SteamWontCloseText = "Steam ließ sich nicht beenden. Beende Steam selbst und versuche es dann erneut.";
 
     /// <summary>What the settings offer; rechecked on every <see cref="RefreshAsync"/>, and by the tick while on or while the settings are open.</summary>
     public ControllerSupportSetup Setup => _setup ??= CheckSetup();
@@ -423,6 +422,22 @@ public sealed class ControllerSupportService(
             ? $"Ein laufendes Steam-Spiel ({game}) wurde erkannt. Beende es zuerst, da für die Installation Steam beendet und neu gestartet werden muss."
             : null;
 
+    /// <summary>
+    /// <paramref name="fix"/> closes Steam first and starts it again afterwards (#296): it runs HidHide's installer, which
+    /// restarts the puck, and Steam must not be updating it then. The settings ask before (or name a running Steam game).
+    /// </summary>
+    public bool StopsSteamFor(HealthFix fix) => _platform.IsSteamRunning && RestartsPuck(fix);
+
+    /// <summary>The Pan update at start closes Steam first, as <see cref="StopsSteamFor"/>: only when it installs HidHide too.</summary>
+    public bool PanUpdateStopsSteam => _platform.IsSteamRunning && _platform.InstallsHidHide;
+
+    private bool RestartsPuck(HealthFix fix) => fix switch
+    {
+        HealthFix.ReinstallHidHide => true,
+        HealthFix.InstallDrivers => _platform.InstallsHidHide,
+        _ => false,
+    };
+
     /// <summary>The name of the Steam game that keeps "SISR installieren" from closing Steam, or null.</summary>
     /// <remarks>Read fresh on every call, so the settings notice the game ending.</remarks>
     public string? SteamGameBlockingInstall() => _platform.IsSteamRunning ? _platform.RunningSteamGame() : null;
@@ -484,7 +499,7 @@ public sealed class ControllerSupportService(
                     SetBusyText("Steam wird beendet …");
                     if (!await _platform.StopSteamAsync(time, token))
                     {
-                        throw new InvalidOperationException("Steam ließ sich nicht beenden. Beende Steam selbst und versuche es dann erneut.");
+                        throw new InvalidOperationException(SteamWontCloseText);
                     }
 
                     stoppedSteam = true;
@@ -555,7 +570,7 @@ public sealed class ControllerSupportService(
         await StopSisrAndReleaseControllerAsync(cancellationToken);
         if (_platform.IsSteamRunning && !await _platform.StopSteamAsync(time, cancellationToken))
         {
-            throw new InvalidOperationException("Steam ließ sich nicht beenden. Beende Steam selbst und versuche es dann erneut.");
+            throw new InvalidOperationException(SteamWontCloseText);
         }
 
         if (enableCefDebugging)
@@ -1171,11 +1186,12 @@ public sealed class ControllerSupportService(
             return;
         }
 
-        SetBusyText(DriversBusyText);
         var usbipWasReady = _platform.IsUsbipReady;
         try
         {
-            if (!await WithTimeoutAsync(token => _platform.InstallDriversAsync(http, token), DriversInstallTimeout, "Die Treiber-Installation", cancellationToken))
+            var installed = await InstallWithSteamClosedAsync(_platform.InstallsHidHide,
+                token => WithTimeoutAsync(t => _platform.InstallDriversAsync(http, t), DriversInstallTimeout, "Die Treiber-Installation", token), cancellationToken);
+            if (!installed)
             {
                 throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Installieren“ wählen und die Abfrage bestätigen.");
             }
@@ -1191,6 +1207,58 @@ public sealed class ControllerSupportService(
 
         Log?.Invoke("Treiber eingerichtet (usbip-win2, HidHide und Pan)");
     }
+
+    /// <summary>
+    /// Runs <paramref name="install"/> (true: done, false: the Windows prompt was declined). One that restarts the puck
+    /// runs only with Steam closed (#296): Steam must not be updating the puck at that moment. If Steam runs, it is closed
+    /// first (the caller has asked the user) and started again afterwards, also after a failed or declined install; a
+    /// Steam game in the way, or a Steam that won't close, stops it before anything is installed.
+    /// </summary>
+    private async Task<bool> InstallWithSteamClosedAsync(bool restartsPuck, Func<CancellationToken, Task<bool>> install, CancellationToken cancellationToken)
+    {
+        if (!restartsPuck || !_platform.IsSteamRunning)
+        {
+            SetBusyText(DriversBusyText);
+            return await install(cancellationToken);
+        }
+
+        if (SteamGameBlockingInstall() is { } game)
+        {
+            throw new InvalidOperationException(DriverInstallBlocker(game));
+        }
+
+        SetBusyText("Steam wird beendet …");
+        if (!await _platform.StopSteamAsync(time, cancellationToken))
+        {
+            throw new InvalidOperationException(SteamWontCloseText);
+        }
+
+        Log?.Invoke("Steam für die Treiber-Installation beendet (der Puck startet dabei neu)");
+        bool installed;
+        try
+        {
+            SetBusyText(DriversBusyText);
+            installed = await install(cancellationToken);
+        }
+        finally
+        {
+            // Arcadia closed Steam, so it brings it back, also after a failed, declined or cancelled install.
+            _platform.StartSteam();
+        }
+
+        if (installed)
+        {
+            // Waited for, as in the SISR setup, but not required: the install counts even if Steam is slow to come back.
+            SetBusyText("Steam wird gestartet …");
+            await ProcessWatch.WaitUntilAsync(() => _platform.IsSteamReady, SteamStartTimeout, time, cancellationToken);
+        }
+
+        return installed;
+    }
+
+    /// <summary>Why a driver install that closes Steam can't run now: closing Steam would end <paramref name="game"/>.</summary>
+    public static string DriverInstallBlocker(string game) =>
+        $"Ein laufendes Steam-Spiel ({game}) wurde erkannt. Beende es zuerst, da Steam für die Installation kurz beendet werden muss.";
 
     /// <summary>This Arcadia bundles a newer Pan than the installed one (#243); looks at files and the service, so off the UI thread.</summary>
     public bool IsPanUpdateAvailable => IsSupportedPlatform && _platform.IsPanUpdateAvailable;
@@ -1281,19 +1349,16 @@ public sealed class ControllerSupportService(
                 throw new InvalidOperationException(HidHideReinstallWhileHiddenText);
             }
 
-            // HidHide answering unexpectedly means Pan can't hide: the puck is Steam's, and the installer restarts it. Only
-            // with Steam closed is no firmware update cut off by that (review of PR #294).
-            if (_platform.IsSteamRunning)
-            {
-                throw new InvalidOperationException(HidHideReinstallWhileSteamRunsText);
-            }
-
+            // Checked before Steam closes: a reinstall that can't run must not close it for nothing.
             if (_platform.HidHideVersion is not { } installed || !HidHideRelease.IsPinnedDriver(installed))
             {
                 throw new InvalidOperationException($"„Neu installieren“ geht nur über HidHide {HidHideRelease.Version}; installiert ist eine andere Version.");
             }
 
-            if (!await WithTimeoutAsync(t => _platform.ReinstallHidHideAsync(http, t), DriversInstallTimeout, "Die HidHide-Installation", token))
+            // HidHide answering unexpectedly means Pan can't hide: the puck is Steam's, and the installer restarts it.
+            var reinstalled = await InstallWithSteamClosedAsync(restartsPuck: true,
+                ct => WithTimeoutAsync(t => _platform.ReinstallHidHideAsync(http, t), DriversInstallTimeout, "Die HidHide-Installation", ct), token);
+            if (!reinstalled)
             {
                 throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Neu installieren“ wählen und die Abfrage bestätigen.");
             }

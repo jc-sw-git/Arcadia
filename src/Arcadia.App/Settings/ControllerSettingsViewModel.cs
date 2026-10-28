@@ -97,6 +97,12 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     /// <summary>The accounts chosen in the marker prompt for the install under way; null until chosen (or not asked).</summary>
     private IReadOnlyCollection<uint>? _markerChoice;
+
+    /// <summary>
+    /// The driver fix the Steam prompts are open for (#296): it restarts the puck, so Steam closes for it; null while
+    /// they are open for "SISR installieren".
+    /// </summary>
+    private HealthFix? _steamStopFix;
     private readonly DispatcherTimer _promptCheck;
     private bool _disposed;
     private int _promptFocus;
@@ -252,7 +258,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     /// <summary>The dialog over the page, if any.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsSteamStartFailedPrompt), nameof(IsMarkerPrompt), nameof(IsQuestionPrompt), nameof(IsWarningPrompt), nameof(PromptBackText))]
+    [NotifyPropertyChangedFor(nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsSteamStartFailedPrompt), nameof(IsMarkerPrompt), nameof(IsQuestionPrompt), nameof(IsWarningPrompt), nameof(PromptBackText), nameof(SteamStopDetail))]
     public partial SettingsPrompt Prompt { get; private set; }
 
     partial void OnPromptChanged(SettingsPrompt value) => Dialog = value == SettingsPrompt.None ? null : this;
@@ -275,6 +281,14 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private bool IsInstallPrompt => Prompt is SettingsPrompt.SteamGameRunning or SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ChooseMarkerAccounts;
 
     public string PromptBackText => IsGamePrompt ? "Schließen" : "Abbrechen";
+
+    /// <summary>What "Steam beenden?" installs once Steam is closed, and for a driver fix why Steam has to close.</summary>
+    public string SteamStopDetail => _steamStopFix switch
+    {
+        HealthFix.InstallDrivers => "Die Treiber-Installation startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren. Windows fragt dabei einmal nach Administratorrechten.",
+        HealthFix.ReinstallHidHide => "Die Neuinstallation von HidHide startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren. Windows fragt dabei einmal nach Administratorrechten.",
+        _ => "Danach werden SISR und der usbip-Treiber installiert. Windows fragt dabei einmal nach Administratorrechten.",
+    };
 
     /// <summary>The Steam game named in the game prompt.</summary>
     [ObservableProperty]
@@ -374,8 +388,15 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private void BeginInstall()
     {
         _markerChoice = null;
+        _steamStopFix = null;
         ContinueInstall();
     }
+
+    /// <summary>
+    /// The prompts' install closes Steam whenever Steam runs: a driver fix gets here only if it restarts the puck, decided
+    /// once at the press, so the prompt's 1-s check doesn't read HidHide's version on the UI thread.
+    /// </summary>
+    private bool PromptInstallStopsSteam => _support.InstallStopsSteam;
 
     /// <summary>
     /// Installing closes Steam, so it can't run beside a Steam game. With several Steam accounts the
@@ -384,16 +405,21 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// </summary>
     private void ContinueInstall()
     {
-        if (_support.SteamGameBlockingInstall() is { } game)
+        if (_steamStopFix is not null && !PromptInstallStopsSteam)
+        {
+            // Steam was closed meanwhile: nothing to ask, no game in the way.
+            Install();
+        }
+        else if (_support.SteamGameBlockingInstall() is { } game)
         {
             RunningGame = game;
             ShowPrompt(SettingsPrompt.SteamGameRunning);
         }
-        else if (_markerChoice is null && _support.MarkerAccountsToChoose() is { Count: > 0 } accounts)
+        else if (_steamStopFix is null && _markerChoice is null && _support.MarkerAccountsToChoose() is { Count: > 0 } accounts)
         {
             ShowMarkerPrompt(accounts);
         }
-        else if (_support.InstallStopsSteam)
+        else if (PromptInstallStopsSteam)
         {
             ShowPrompt(SettingsPrompt.ConfirmSteamStop);
         }
@@ -406,6 +432,12 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private void Install()
     {
         ShowPrompt(SettingsPrompt.None);
+        if (_steamStopFix is { } fix)
+        {
+            _support.ApplyFixAsync(fix).Forget("Problem beheben");
+            return;
+        }
+
         _support.InstallAsync(_markerChoice).Forget("SISR installieren");
     }
 
@@ -488,7 +520,10 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         }
     }
 
-    /// <summary>The marker can only be written while Steam is closed, so it goes through the install prompts.</summary>
+    /// <summary>
+    /// The marker can only be written while Steam is closed, so it goes through the install prompts; so does a driver
+    /// fix that restarts the puck while Steam runs (#296), with the same "Steam beenden?" or "Steam-Spiel läuft".
+    /// </summary>
     private void ApplyFix(HealthFix fix)
     {
         if (IsBusy || IsSettling)
@@ -499,6 +534,13 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         if (fix == HealthFix.CreateMarker)
         {
             BeginInstall();
+            return;
+        }
+
+        if (_support.StopsSteamFor(fix))
+        {
+            _steamStopFix = fix;
+            ContinueInstall();
             return;
         }
 
@@ -553,11 +595,11 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             case SettingsPrompt.SteamGameRunning when game is not null:
                 RunningGame = game;
                 break;
-            case SettingsPrompt.SteamGameRunning when _markerChoice is null && _support.MarkerAccountsToChoose() is { Count: > 0 } accounts:
+            case SettingsPrompt.SteamGameRunning when _steamStopFix is null && _markerChoice is null && _support.MarkerAccountsToChoose() is { Count: > 0 } accounts:
                 ShowMarkerPrompt(accounts);
                 break;
             case SettingsPrompt.SteamGameRunning:
-                ShowPrompt(_support.InstallStopsSteam ? SettingsPrompt.ConfirmSteamStop : SettingsPrompt.None);
+                ShowPrompt(PromptInstallStopsSteam ? SettingsPrompt.ConfirmSteamStop : SettingsPrompt.None);
                 break;
             case SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ChooseMarkerAccounts when game is not null:
                 RunningGame = game;
@@ -591,6 +633,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         if (!_support.StartsSisr)
         {
             RefreshPan();
+            FocusPromptButton();
             return;
         }
 
@@ -626,7 +669,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             enabled ? ShortStatus(state, hasProblems) : null);
         // "Treiber installieren" on the row itself: a failure shows there, as there is no part row to carry it.
         _sisr.ShowProblem(installsAll && _support.FailedFix == HealthFix.InstallDrivers ? _support.LastError : null);
-        if (IsInstallPrompt && ((!showInstall && !needsMarker) || IsBusy))
+        if (IsInstallPrompt && ((_steamStopFix is null && !showInstall && !needsMarker) || IsBusy))
         {
             // Installed some other way, or something else started: the question is moot.
             Prompt = SettingsPrompt.None;
@@ -699,6 +742,11 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             .. _returnWithView.Rows,
         ]);
 
+        FocusPromptButton();
+    }
+
+    private void FocusPromptButton()
+    {
         var buttons = PromptButtons();
         _promptFocus = Math.Clamp(_promptFocus, 0, Math.Max(0, buttons.Count - 1));
         foreach (var button in AllPromptButtons())
@@ -712,9 +760,9 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     {
         var rows = _panRows.Build();
         Marker = _panRows.Marker;
-        if (IsInstallPrompt)
+        if (IsInstallPrompt && (_steamStopFix is null || IsBusy))
         {
-            // The install prompts belong to SISR's install.
+            // SISR's install prompts don't belong here; a driver fix's are moot once something else runs.
             Prompt = SettingsPrompt.None;
             _promptCheck.Stop();
         }

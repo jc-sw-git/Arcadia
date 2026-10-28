@@ -49,8 +49,8 @@ Agreed with the owner; don't change without asking. Read this before changing th
   label) while a game is in front, so the player sees them in the game too. All Pan notices go this way. A hold the
   player is watching goes on: during the View hold the notice stands below "Zurück zu Arcadia".
   "Controller wiederherstellen" (Pan's
-  `--restore`) stands below the problems, indented like them, while Pan is installed. A newer Pan after an Arcadia update is one question
-  at start, "Pan aktualisieren" (A updates, B asks again at the next start).
+  `--restore`) stands below the problems, indented like them, while Pan is installed. An installed Pan that isn't the bundled one is
+  replaced at start without a question (#297, page "Pan wird aktualisiert"; details in `docs/controller-support/pan-setup.md`).
   Steam's launcher page links there (owner 2026-10-24): group "Controller", row "Controller-Einstellungen für Steam",
   A opens the category with the focus on "Steam Controller Kompatibilität", B goes back to Steam's page. The settings
   stay in "Controller" because they work without Steam's tab too; a category offers such links

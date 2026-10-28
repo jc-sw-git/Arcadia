@@ -1958,6 +1958,83 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Equal(0, restored);
     }
 
+    [Theory]
+    [InlineData(Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired, true)]
+    [InlineData(Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible, false)]
+    [InlineData(Arcadia.ControllerSupport.Pan.PanCompatibility.NotInstalled, false)]
+    [InlineData(Arcadia.ControllerSupport.Pan.PanCompatibility.NotBundled, false)]
+    public void Only_a_Pan_that_differs_from_the_bundled_one_makes_the_update_due(Arcadia.ControllerSupport.Pan.PanCompatibility compatibility, bool due)
+    {
+        _platform.PanCompatibility = compatibility;
+        var service = Create(enabled: false);
+
+        Assert.Equal(due, service.CheckPanAtStart());
+        Assert.Equal(due, service.IsPanUpdateDue);
+    }
+
+    [Fact]
+    public void Off_Windows_Pan_is_never_checked()
+    {
+        _platform.IsSupported = false;
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+
+        Assert.False(Create(enabled: false).CheckPanAtStart());
+    }
+
+    [Fact]
+    public async Task The_Pan_update_clears_the_due_flag_only_once_it_is_done()
+    {
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        var service = Create(enabled: false);
+        service.CheckPanAtStart();
+
+        _platform.PanUpdateAnswer = false;
+        Assert.False(await service.UpdatePanAsync());
+        Assert.True(service.IsPanUpdateDue);
+
+        _platform.PanUpdateAnswer = true;
+        Assert.True(await service.UpdatePanAsync());
+        Assert.False(service.IsPanUpdateDue);
+        Assert.Equal(2, _platform.PanUpdates);
+        Assert.Equal(0, _platform.UsbipInstalls);
+    }
+
+    [Fact]
+    public async Task A_failing_Pan_update_throws_and_stays_due()
+    {
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        _platform.PanUpdateError = new InvalidOperationException("Pan --install meldete Fehler 3");
+        var service = Create(enabled: false);
+        service.CheckPanAtStart();
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdatePanAsync());
+
+        Assert.Contains("Fehler 3", error.Message);
+        Assert.True(service.IsPanUpdateDue);
+    }
+
+    [Fact]
+    public async Task Removing_Pan_switches_it_off_and_a_declined_prompt_changes_nothing()
+    {
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings { PanEnabled = true });
+        var settings = new SettingsService(store);
+        var service = new ControllerSupportService(settings, _sisr, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, StartsSisr = false };
+        service.CheckPanAtStart();
+
+        _platform.PanUpdateAnswer = false;
+        Assert.False(await service.RemovePanAsync());
+        Assert.True(service.IsPanUpdateDue);
+        Assert.True(settings.Current.PanEnabled);
+
+        _platform.PanUpdateAnswer = true;
+        Assert.True(await service.RemovePanAsync());
+        Assert.False(service.IsPanUpdateDue);
+        Assert.False(settings.Current.PanEnabled);
+        Assert.Equal(2, _platform.PanUninstalls);
+    }
+
     private sealed class FakePlatform : IControllerSupportPlatform
     {
         public HashSet<string> RunningDirectories { get; } = [];
@@ -2048,7 +2125,44 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public bool IsPanReady { get; set; } = true;
 
-        public bool IsPanUpdateAvailable { get; set; }
+        public Arcadia.ControllerSupport.Pan.PanCompatibility PanCompatibility { get; set; } = Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible;
+
+        /// <summary>What the Pan-only update and the uninstall at start answer (#297): true done, false declined; a set error is thrown.</summary>
+        public bool PanUpdateAnswer { get; set; } = true;
+
+        public Exception? PanUpdateError { get; set; }
+
+        public int PanUpdates { get; private set; }
+
+        public int PanUninstalls { get; private set; }
+
+        public Task<bool> UpdatePanAsync(CancellationToken cancellationToken)
+        {
+            PanUpdates++;
+            if (PanUpdateError is { } error)
+            {
+                throw error;
+            }
+
+            if (PanUpdateAnswer)
+            {
+                PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible;
+            }
+
+            return Task.FromResult(PanUpdateAnswer);
+        }
+
+        public Task<bool> UninstallPanAsync(CancellationToken cancellationToken)
+        {
+            PanUninstalls++;
+            if (PanUpdateAnswer)
+            {
+                PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.NotInstalled;
+                IsPanReady = false;
+            }
+
+            return Task.FromResult(PanUpdateAnswer);
+        }
 
         /// <summary>HidHide's version (#243 B2); a supported one unless a test takes it away.</summary>
         public Version? HidHideVersion { get; set; } = Arcadia.Pan.HidHideRelease.Version;

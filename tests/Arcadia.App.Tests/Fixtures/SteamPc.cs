@@ -36,7 +36,7 @@ internal sealed class SteamPc : IControllerSupportPlatform
 
     public bool IsPanReady => true;
 
-    public bool IsPanUpdateAvailable => false;
+    public Arcadia.ControllerSupport.Pan.PanCompatibility PanCompatibility => Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible;
 
     public Version? HidHideVersion => Arcadia.Pan.HidHideRelease.Version;
 

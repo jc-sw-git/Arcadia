@@ -149,6 +149,9 @@ internal sealed class ArcadiaDriver : IDisposable
         _controllers.ButtonPressed += _gamepad.Press;
         _controllers.ButtonReleased += _gamepad.Release;
         _controllers.Lost += _gamepad.Drop;
+
+        // As the App does before its window shows (#297).
+        Main.ShowPanUpdateIfDue();
     }
 
     public string Folder { get; }
@@ -190,16 +193,15 @@ internal sealed class ArcadiaDriver : IDisposable
     public int? RunningSteamAppId { get; set; }
 
     /// <summary>The App's 2 s tick of the Steam Controller for games: the mode of the running games, then the pad.</summary>
-    /// <summary>The start's Pan update question (#243), as the App asks it after the controller support's first tick.</summary>
-    public ArcadiaDriver OfferPanUpdate()
+    /// <summary>
+    /// The App's start once Pan answered its first hello (#297): the tick that opens the dialog of a firmware hold from
+    /// before, then the update, which waits for that dialog.
+    /// </summary>
+    public async Task PanAnsweredAtStartAsync()
     {
-        var offer = new PanUpdateOffer(ControllerSupport, Main);
-        if (offer.IsDue())
-        {
-            offer.Ask();
-        }
-
-        return this;
+        await ForGames.Emulation.TickAsync();
+        Dispatcher.UIThread.Post(Main.StartPanUpdate);
+        Dispatcher.UIThread.RunJobs();
     }
 
     public async Task TickSteamControllerAsync()

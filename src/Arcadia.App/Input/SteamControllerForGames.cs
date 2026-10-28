@@ -80,7 +80,8 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
         {
             Supported = panSupported,
-            Enabled = () => settings.Current.PanEnabled,
+            // While the installed Pan is about to be replaced (#297), nothing starts on it: the update would end it.
+            Enabled = () => settings.Current.PanEnabled && !controllerSupport.IsPanUpdateDue,
             SteamRuns = () => controllerSupport.SteamRuns,
             Connected = () => (hold.PuckPresent ? SteamControllerParts.Puck : SteamControllerParts.None)
                 | (padForPresence?.SteamControllerConnected == true ? SteamControllerParts.Controller : SteamControllerParts.None),

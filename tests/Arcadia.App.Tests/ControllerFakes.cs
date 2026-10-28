@@ -111,8 +111,52 @@ internal sealed class FakeSteam : IControllerSupportPlatform
         set => _panInstalled = value;
     }
 
-    /// <summary>This Arcadia bundles a newer Pan than the installed one (#243).</summary>
-    public bool IsPanUpdateAvailable { get; set; }
+    /// <summary>Whether the installed Pan is this Arcadia's (#297): the bundled one unless a test sets another.</summary>
+    public Arcadia.ControllerSupport.Pan.PanCompatibility PanCompatibility { get; set; } = Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible;
+
+    /// <summary>How often the update at start ran Pan's <c>--install</c> alone (#297), i.e. asked Windows once.</summary>
+    public int PanUpdates => Volatile.Read(ref _panUpdates);
+
+    private int _panUpdates;
+
+    /// <summary>How often "Pan entfernen" ran Pan's <c>--uninstall</c> (#297).</summary>
+    public int PanUninstalls => Volatile.Read(ref _panUninstalls);
+
+    private int _panUninstalls;
+
+    /// <summary>What the Windows prompt of the next update or uninstall answers: true confirmed, false declined.</summary>
+    public bool PromptConfirmed { get; set; } = true;
+
+    /// <summary>Set, the next update fails with this message (Pan's exit code, a timeout).</summary>
+    public string? PanUpdateError { get; set; }
+
+    public Task<bool> UpdatePanAsync(CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _panUpdates);
+        if (PanUpdateError is { } error)
+        {
+            throw new InvalidOperationException(error);
+        }
+
+        if (PromptConfirmed)
+        {
+            PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible;
+        }
+
+        return Task.FromResult(PromptConfirmed);
+    }
+
+    public Task<bool> UninstallPanAsync(CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _panUninstalls);
+        if (PromptConfirmed)
+        {
+            PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.NotInstalled;
+            IsPanReady = false;
+        }
+
+        return Task.FromResult(PromptConfirmed);
+    }
 
     /// <summary>HidHide's driver version (#243 B2): a supported one unless a test sets another or null (missing).</summary>
     public Version? HidHideVersion { get; set; } = Arcadia.Pan.HidHideRelease.Version;
@@ -126,7 +170,7 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     /// <summary>The usbip driver was updated and Windows wants a restart: the platform's "reboot-pending" row.</summary>
     public bool UsbipRebootPending { get; set; }
 
-    /// <summary>How often "Treiber installieren" or the Pan update ran, i.e. asked Windows for administrator rights.</summary>
+    /// <summary>How often "Treiber installieren" ran, i.e. asked Windows for administrator rights.</summary>
     public int DriverInstalls => Volatile.Read(ref _driverInstalls);
 
     private int _driverInstalls;
@@ -156,7 +200,6 @@ internal sealed class FakeSteam : IControllerSupportPlatform
         IsUsbipReady = true;
         IsPanReady = true;
         PanFailing = false;
-        IsPanUpdateAvailable = false;
         if (ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending)
         {
             HidHideVersion = Arcadia.Pan.HidHideRelease.Version;

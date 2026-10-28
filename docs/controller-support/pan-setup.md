@@ -38,11 +38,8 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   administrator rights (exit 8: unelevated, `--install` had set the folder aside and failed to make it anew);
   `--uninstall` then removes only the service and Program Files. `PanLog` writes its file only after the process
   secured or checked the folder (`TrustFolder`); lines from before follow then, or reach only a console.
-- Update: at start, when the bundled Pan is newer than the installed one (file versions), one dialog "Pan
-  aktualisieren" (A updates with one UAC prompt, B later; asked again at the next start). Pan's `--install` stages the
-  new exe as `Pan.exe.new` and verifies it first, then stops (= full teardown) and replaces the old service; if the file
-  swap fails or the new Pan can't be created, configured or started, a half-made service goes and the old `Pan.exe`
-  comes back as the service. A rejected update changes nothing.
+- Update at start: an installed Pan that isn't exactly the bundled one is replaced before the library shows,
+  without a question: [pan-update.md](pan-update.md).
 - Uninstall (Velopack hook, `Program.OnBeforeUninstall`): one question "Treiber für die Controller-Emulation auch
   entfernen?" listing what is there (usbip-win2, HidHide, SISR/VIIPER until #214), default no (other programs may use
   the drivers; `ControllerSupportRemoval.Question`). Then `Pan.exe --uninstall [--remove-drivers]` elevated, one UAC

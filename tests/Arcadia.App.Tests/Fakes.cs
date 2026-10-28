@@ -211,7 +211,7 @@ internal sealed class NoControllerSupportPlatform : IControllerSupportPlatform
 
     public bool IsPanReady => false;
 
-    public bool IsPanUpdateAvailable => false;
+    public Arcadia.ControllerSupport.Pan.PanCompatibility PanCompatibility => Arcadia.ControllerSupport.Pan.PanCompatibility.NotInstalled;
 
     public Version? HidHideVersion => null;
 

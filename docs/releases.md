@@ -9,8 +9,8 @@
   The `Velopack` package and the `vpk` tool (`.config/dotnet-tools.json`) share one version.
 - `Pack.ps1` also publishes Pan, the guardian service (#243), as Native AOT into `Pan\Pan.exe` beside `Arcadia.exe`
   (needs Visual Studio's C++ build tools; the CI's Windows runner has them). Pan installs itself to
-  `%ProgramFiles%\Arcadia\Pan` with one UAC prompt ("Treiber installieren"); when an update brings a newer Pan, Arcadia
-  asks once at start ("Pan aktualisieren", one UAC prompt, B asks again next start). `Pan.exe --restore` (settings:
+  `%ProgramFiles%\Arcadia\Pan` with one UAC prompt ("Treiber installieren"); an installed Pan that isn't exactly the one
+  the update brought is replaced at start, without a question (#297: one UAC prompt, no driver, then the library). `Pan.exe --restore` (settings:
   "Controller wiederherstellen") gives the controllers back if the service itself hangs. Details:
   `docs/controller-support/pan.md`.
 - `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`. Uninstalling asks "Treiber für die Controller-Emulation auch

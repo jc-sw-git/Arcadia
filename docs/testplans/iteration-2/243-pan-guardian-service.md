@@ -49,7 +49,7 @@ the player's side runs in the acceptance tests with a faked Pan (`PanGuardianTes
       header mark are gone and "Controller wiederherstellen" appears. A failed install (e.g. the prompt declined)
       shows its message in place of the row's subtitle with the error icon and how to go on, and in the row's panel;
       the switch's panel shows no error. · E2E: yes (acceptance tests; the real UAC by hand)
-- [x] **T243-14** An Arcadia update that brings a newer Pan: at start one dialog "Pan aktualisieren"; B closes it and
+- [x] **T243-14** (replaced by #297: no question any more, T297-1 … T297-8) An Arcadia update that brings a newer Pan: at start one dialog "Pan aktualisieren"; B closes it and
       the next start asks again; A asks for administrator rights once, `services.msc` shows the new version afterwards
       (`Pan.exe --version`). While the first-run dialog or the settings are open, no question. · E2E: yes (the dialog;
       the real update is manual)

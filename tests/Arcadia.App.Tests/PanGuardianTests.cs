@@ -179,33 +179,4 @@ public sealed class PanGuardianTests
         Assert.DoesNotContain(main.Info, block => block is InfoError);
         Assert.Equal(HealthSeverity.Warning, controller.Marker);
     }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "T243-14")]
-    public async Task The_Pan_update_question_is_a_dialog_B_declines_and_A_confirms()
-    {
-        var steam = new FakeSteam { IsPanUpdateAvailable = true };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
-
-        // Over another dialog the question is dropped: it comes again at the next start.
-        arcadia.Press(UiAction.Settings).OfferPanUpdate();
-        Assert.False(arcadia.Main.IsConfirmationOpen);
-        arcadia.Press(UiAction.Back);
-
-        arcadia.OfferPanUpdate();
-        Assert.True(arcadia.Main.IsConfirmationOpen);
-        Assert.Equal(PanUpdateOffer.Title, arcadia.Main.Confirmation!.Title);
-        arcadia.Press(UiAction.Back);
-        Assert.False(arcadia.Main.IsConfirmationOpen);
-        Assert.Equal(0, steam.DriverInstalls);
-
-        // The next start asks again; [A] runs the update, which asks Windows once.
-        arcadia.OfferPanUpdate().Press(UiAction.Left).Press(UiAction.Accept);
-        Assert.False(arcadia.Main.IsConfirmationOpen);
-        await arcadia.WaitUntilAsync(() => steam.DriverInstalls == 1, "Pan aktualisiert");
-
-        // Updated, nothing is asked any more.
-        arcadia.OfferPanUpdate();
-        Assert.False(arcadia.Main.IsConfirmationOpen);
-    }
 }

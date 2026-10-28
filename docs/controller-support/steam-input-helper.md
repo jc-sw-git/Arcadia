@@ -6,7 +6,9 @@ SISR's marker and Steam's CEF flag present) with the probe `tools/dev/SteamInput
 
 Decision (owner, 2026-10-25): replace SISR. Arcadia reads the Steam Controller itself with SDL3 (#212), a small
 helper serves games outside Steam (#213), setup and moving off SISR in #214. Until then SISR stays. Their PRs target the branch `feat/replace-sisr`, not
-`main`; it reaches `main` only after the owner's full manual test of the whole replacement (owner, 2026-10-25).
+`main`; it reaches `main` only after the owner's full manual test of the whole replacement (owner, 2026-10-25). An issue
+whose work is all merged into the branch is closed then; its open manual cases wait for that one test of the whole
+branch, listed in the iteration's acceptance review (owner, 2026-10-28).
 
 ## What was seen
 

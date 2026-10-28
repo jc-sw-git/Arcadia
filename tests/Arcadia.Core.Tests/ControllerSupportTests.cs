@@ -22,34 +22,25 @@ public class ControllerSupportTests
     };
 
     [Fact]
-    public void Off_means_off_for_every_game()
-    {
-        var settings = new AppSettings { SteamControllerSupport = false };
-
-        Assert.False(settings.ControllerSupportFor(G("epic"), Builtin));
-        Assert.False(settings.ControllerSupportFor(G("steam"), Builtin));
-    }
-
-    [Fact]
     public void The_mode_per_game_needs_no_switch_and_is_read_by_key_also_for_games_outside_the_library()
     {
-        var settings = new AppSettings { SteamControllerSupport = false };
+        var settings = new AppSettings();
 
         Assert.True(settings.UsesArcadiaPad("epic:x", Builtin));
         Assert.False(settings.UsesArcadiaPad("steam:570", Builtin));
 
-        settings = settings.WithControllerSupportChoice(G("steam"), useSisr: true, Builtin);
+        settings = settings.WithControllerSupportChoice(G("steam"), useArcadiaPad: true, Builtin);
         Assert.True(settings.UsesArcadiaPad("steam:x", Builtin));
         Assert.False(settings.UsesArcadiaPad("steam:570", Builtin));
     }
 
     [Fact]
-    public void By_default_SISR_runs_for_everything_but_steam_games()
+    public void By_default_every_game_but_Steam_s_starts_on_Arcadia()
     {
-        var settings = new AppSettings { SteamControllerSupport = true };
+        var settings = new AppSettings();
 
-        Assert.True(settings.ControllerSupportFor(G("epic"), Builtin));
-        Assert.False(settings.ControllerSupportFor(G("steam"), Builtin));
+        Assert.True(settings.UsesArcadiaPad(G("epic").Key, Builtin));
+        Assert.False(settings.UsesArcadiaPad(G("steam").Key, Builtin));
     }
 
     [Fact]
@@ -57,29 +48,29 @@ public class ControllerSupportTests
     {
         var steamGame = G("steam");
         var epicGame = G("epic");
-        var settings = new AppSettings { SteamControllerSupport = true }
+        var settings = new AppSettings()
             .WithControllerSupportOverride(steamGame, true)
             .WithControllerSupportOverride(epicGame, false);
 
-        Assert.True(settings.ControllerSupportFor(steamGame, Builtin));
-        Assert.False(settings.ControllerSupportFor(epicGame, Builtin));
+        Assert.True(settings.UsesArcadiaPad(steamGame.Key, Builtin));
+        Assert.False(settings.UsesArcadiaPad(epicGame.Key, Builtin));
 
         settings = settings.WithControllerSupportOverride(epicGame, null);
         Assert.Null(settings.ControllerSupportOverrideFor(epicGame));
-        Assert.True(settings.ControllerSupportFor(epicGame, Builtin));
+        Assert.True(settings.UsesArcadiaPad(epicGame.Key, Builtin));
     }
 
     [Fact]
     public void Choosing_a_games_default_mode_stores_nothing()
     {
         var steamGame = G("steam");
-        var settings = new AppSettings { SteamControllerSupport = true }.WithControllerSupportChoice(steamGame, useSisr: true, Builtin);
-        Assert.True(settings.ControllerSupportFor(steamGame, Builtin));
+        var settings = new AppSettings().WithControllerSupportChoice(steamGame, useArcadiaPad: true, Builtin);
+        Assert.True(settings.UsesArcadiaPad(steamGame.Key, Builtin));
         Assert.True(settings.ControllerSupportOverrideFor(steamGame));
 
         // Back to "Steam Input", the default for Steam games: the override is gone again.
-        settings = settings.WithControllerSupportChoice(steamGame, useSisr: false, Builtin);
-        Assert.False(settings.ControllerSupportFor(steamGame, Builtin));
+        settings = settings.WithControllerSupportChoice(steamGame, useArcadiaPad: false, Builtin);
+        Assert.False(settings.UsesArcadiaPad(steamGame.Key, Builtin));
         Assert.Null(settings.ControllerSupportOverrideFor(steamGame));
         Assert.Empty(settings.ControllerSupportOverrides);
     }
@@ -89,15 +80,15 @@ public class ControllerSupportTests
     {
         var plugin = FakeIntegration.LauncherOf("plugin") with { GamesUseSteamInput = true };
         var registry = FakeIntegration.Registry(new FakeIntegration(plugin), new FakeIntegration(FakeIntegration.LauncherOf("other")));
-        var settings = new AppSettings { SteamControllerSupport = true };
+        var settings = new AppSettings();
 
         Assert.False(settings.UsesArcadiaPad("plugin:1", registry.GamesUseSteamInput));
         Assert.True(settings.UsesArcadiaPad("other:1", registry.GamesUseSteamInput));
 
         // Its default is what the launcher says, so choosing it stores nothing.
         var game = G("plugin");
-        Assert.Empty(settings.WithControllerSupportChoice(game, useSisr: false, registry.GamesUseSteamInput).ControllerSupportOverrides);
-        Assert.True(settings.WithControllerSupportChoice(game, useSisr: true, registry.GamesUseSteamInput).ControllerSupportFor(game, registry.GamesUseSteamInput));
+        Assert.Empty(settings.WithControllerSupportChoice(game, useArcadiaPad: false, registry.GamesUseSteamInput).ControllerSupportOverrides);
+        Assert.True(settings.WithControllerSupportChoice(game, useArcadiaPad: true, registry.GamesUseSteamInput).UsesArcadiaPad(game.Key, registry.GamesUseSteamInput));
     }
 
     [Fact]
@@ -105,11 +96,11 @@ public class ControllerSupportTests
     {
         // E.g. a game key left in settings.json by a launcher plugin that was removed since.
         var registry = FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Steam));
-        var settings = new AppSettings { SteamControllerSupport = true };
+        var settings = new AppSettings();
 
         Assert.False(registry.GamesUseSteamInput("removed"));
         Assert.True(settings.UsesArcadiaPad("removed:1", registry.GamesUseSteamInput));
-        Assert.True(settings.ControllerSupportFor(G("removed"), registry.GamesUseSteamInput));
+        Assert.True(settings.UsesArcadiaPad(G("removed").Key, registry.GamesUseSteamInput));
     }
 
     [Fact]
@@ -129,11 +120,10 @@ public class ControllerSupportTests
         {
             var store = new SettingsStore(path);
             var game = G("epic");
-            store.Save(new AppSettings { SteamControllerSupport = true }.WithControllerSupportOverride(game, false));
+            store.Save(new AppSettings().WithControllerSupportOverride(game, false));
 
             var loaded = store.Load();
 
-            Assert.True(loaded.SteamControllerSupport);
             Assert.False(loaded.ControllerSupportOverrideFor(game));
         }
         finally
@@ -166,12 +156,12 @@ public class ControllerSupportTests
         var path = Path.Combine(Path.GetTempPath(), "arcadia-settings-" + Guid.NewGuid() + ".json");
         try
         {
-            File.WriteAllText(path, "{ \"SteamControllerSupport\": tru");
+            File.WriteAllText(path, "{ \"PanEnabled\": fals");
 
             var loaded = new SettingsStore(path).Load();
 
-            Assert.False(loaded.SteamControllerSupport);
-            Assert.Equal("{ \"SteamControllerSupport\": tru", File.ReadAllText(path + ".broken"));
+            Assert.True(loaded.PanEnabled);
+            Assert.Equal("{ \"PanEnabled\": fals", File.ReadAllText(path + ".broken"));
         }
         finally
         {

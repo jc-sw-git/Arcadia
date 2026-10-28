@@ -601,8 +601,9 @@ public sealed class ControllerSupportService(
             issues.Add(hiding);
         }
 
-        // Also while the group "SISR" is hidden ("SISR behalten"): two programs on the Steam Controller break both.
-        if (WatchSetup && Sisr?.IsAnyRunning == true)
+        // Also while the group "SISR" is hidden ("SISR behalten"): two programs on the Steam Controller break both. With
+        // Pan off nothing of Arcadia's takes the controller, so SISR is welcome then.
+        if (WatchSetup && Settings.PanEnabled && Sisr?.IsAnyRunning == true)
         {
             issues.Add(EmulationParts.SisrRunning);
         }

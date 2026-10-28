@@ -1,4 +1,3 @@
-using System.Globalization;
 using Arcadia.ControllerSupport;
 using Arcadia.Launchers.Steam;
 
@@ -6,28 +5,21 @@ namespace Arcadia.Core.Tests;
 
 public sealed class SisrInstallationTests : IDisposable
 {
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "arcadia-sisr-" + Guid.NewGuid());
-    private readonly FakeSisrSystem _system = new();
+    private readonly FakeSisrPc _pc = new();
 
-    private string LocalAppData => Path.Combine(_root, "Local");
+    private string LocalAppData => _pc.LocalAppData;
 
-    private string Roaming => Path.Combine(_root, "Roaming");
+    private string Roaming => _pc.Roaming;
 
-    private string SteamRoot => Path.Combine(_root, "Steam");
+    private string SteamRoot => _pc.SteamRoot;
 
-    private string SisrExe => Path.Combine(LocalAppData, "SISR", "SISR.exe");
+    private string SisrExe => _pc.SisrExe;
 
-    private string LogDirectory => Path.Combine(Roaming, "Arcadia", "logs");
+    private string LogDirectory => _pc.LogDirectory;
 
-    private string ArcadiaViiper => Path.Combine(LocalAppData, "Arcadia", "current", "viiper.exe");
+    private string ArcadiaViiper => _pc.ArcadiaViiper;
 
-    public void Dispose()
-    {
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-    }
+    public void Dispose() => _pc.Dispose();
 
     [Fact]
     [Trait("TestCase", "T214-1")]
@@ -35,7 +27,7 @@ public sealed class SisrInstallationTests : IDisposable
     {
         Touch(Path.Combine(SteamRoot, ".cef-enable-remote-debugging"));
 
-        var found = Installation().Find();
+        var found = _pc.Installation().Find();
 
         Assert.False(found.ShowsGroup);
         Assert.True(found.CefFlag);
@@ -46,11 +38,11 @@ public sealed class SisrInstallationTests : IDisposable
     public void SISR_installed_or_only_its_marker_left_shows_the_group()
     {
         Touch(SisrExe);
-        Assert.True(Installation().Find() is { ShowsGroup: true, Program: true, HasMarker: false });
+        Assert.True(_pc.Installation().Find() is { ShowsGroup: true, Program: true, HasMarker: false });
 
         Directory.Delete(Path.GetDirectoryName(SisrExe)!, recursive: true);
         SteamShortcuts.Add(Shortcuts(111), "SISR Marker", SisrExe, "--marker");
-        Assert.True(Installation().Find() is { ShowsGroup: true, Program: false, MarkerAccounts: 1 });
+        Assert.True(_pc.Installation().Find() is { ShowsGroup: true, Program: false, MarkerAccounts: 1 });
     }
 
     [Fact]
@@ -62,34 +54,34 @@ public sealed class SisrInstallationTests : IDisposable
         Touch(Path.Combine(LocalAppData, "SISR", "viiper.exe"));
         Touch(Path.Combine(Roaming, "SISR", "settings.yaml"));
         Touch(Path.Combine(Roaming, "SISR.exe", "EBWebView", "data"));
-        Touch(Path.Combine(_root, "Desktop", "SISR.lnk"));
-        Touch(Path.Combine(_root, "Programs", "SISR.lnk"));
-        Touch(Path.Combine(_root, "Programs", "SISR (No Steam).lnk"));
-        Touch(Path.Combine(_root, "Programs", "Other.lnk"));
+        Touch(Path.Combine(_pc.Root, "Desktop", "SISR.lnk"));
+        Touch(Path.Combine(_pc.Root, "Programs", "SISR.lnk"));
+        Touch(Path.Combine(_pc.Root, "Programs", "SISR (No Steam).lnk"));
+        Touch(Path.Combine(_pc.Root, "Programs", "Other.lnk"));
         Touch(Path.Combine(LocalAppData, "VIIPER", "viiper.exe"));
         Touch(Path.Combine(Roaming, "VIIPER", "key"));
         Touch(Path.Combine(SteamRoot, ".cef-enable-remote-debugging"));
         Touch(Path.Combine(Roaming, "Arcadia", "settings.json"));
         SteamShortcuts.Add(Shortcuts(111), "SISR Marker", SisrExe, "--marker");
         SteamShortcuts.Add(Shortcuts(111), "Spiel", @"D:\Spiele\spiel.exe");
-        _system.HasUninstallEntry = true;
+        _pc.System.HasUninstallEntry = true;
 
-        var result = Installation(arcadiaViiper: null).Remove(steamRunning: false);
+        var result = _pc.Installation(arcadiaViiper: null).Remove(steamRunning: false);
 
         Assert.True(result.Complete, result.Cause);
         Assert.False(Directory.Exists(Path.Combine(LocalAppData, "SISR")));
         Assert.False(Directory.Exists(Path.Combine(Roaming, "SISR")));
         Assert.False(Directory.Exists(Path.Combine(Roaming, "SISR.exe")));
-        Assert.Equal(["Other.lnk"], Directory.GetFiles(Path.Combine(_root, "Programs")).Select(Path.GetFileName));
-        Assert.False(File.Exists(Path.Combine(_root, "Desktop", "SISR.lnk")));
-        Assert.False(_system.HasUninstallEntry);
+        Assert.Equal(["Other.lnk"], Directory.GetFiles(Path.Combine(_pc.Root, "Programs")).Select(Path.GetFileName));
+        Assert.False(File.Exists(Path.Combine(_pc.Root, "Desktop", "SISR.lnk")));
+        Assert.False(_pc.System.HasUninstallEntry);
         Assert.False(File.Exists(Path.Combine(SteamRoot, ".cef-enable-remote-debugging")));
         Assert.Equal(["Spiel"], SteamShortcuts.Read(Shortcuts(111)).Select(s => s.Name));
-        Assert.Equal([Path.Combine(LocalAppData, "VIIPER", "viiper.exe")], _system.ViiperUninstalls);
+        Assert.Equal([Path.Combine(LocalAppData, "VIIPER", "viiper.exe")], _pc.System.ViiperUninstalls);
         Assert.False(Directory.Exists(Path.Combine(LocalAppData, "VIIPER")));
         Assert.False(Directory.Exists(Path.Combine(Roaming, "VIIPER")));
         Assert.True(File.Exists(Path.Combine(Roaming, "Arcadia", "settings.json")));
-        Assert.False(Installation().Find().ShowsGroup);
+        Assert.False(_pc.Installation().Find().ShowsGroup);
     }
 
     [Fact]
@@ -100,7 +92,7 @@ public sealed class SisrInstallationTests : IDisposable
         Touch(ArcadiaViiper);
         Touch(Path.Combine(Roaming, "VIIPER", "key"));
 
-        Assert.True(Installation().Remove(steamRunning: false).Complete);
+        Assert.True(_pc.Installation().Remove(steamRunning: false).Complete);
 
         Assert.True(File.Exists(Path.Combine(Roaming, "VIIPER", "key")));
     }
@@ -113,12 +105,12 @@ public sealed class SisrInstallationTests : IDisposable
         var standalone = Path.Combine(LocalAppData, "VIIPER", "viiper.exe");
         Touch(standalone);
         Touch(Path.Combine(Roaming, "VIIPER", "key"));
-        _system.Running.Add(new("viiper", new(7, standalone, null)));
+        _pc.System.Running.Add(new("viiper", new(7, standalone, null)));
 
-        Assert.True(Installation(arcadiaViiper: null).Remove(steamRunning: false).Complete);
+        Assert.True(_pc.Installation(arcadiaViiper: null).Remove(steamRunning: false).Complete);
 
         Assert.True(File.Exists(standalone));
-        Assert.Empty(_system.ViiperUninstalls);
+        Assert.Empty(_pc.System.ViiperUninstalls);
         Assert.True(File.Exists(Path.Combine(Roaming, "VIIPER", "key")));
     }
 
@@ -126,14 +118,14 @@ public sealed class SisrInstallationTests : IDisposable
     [Trait("TestCase", "T214-5")]
     public void Only_markers_to_exactly_SISRs_folder_go_in_every_account()
     {
-        var elsewhere = Path.Combine(_root, "Tools", "SISR", "SISR.exe");
+        var elsewhere = Path.Combine(_pc.Root, "Tools", "SISR", "SISR.exe");
         SteamShortcuts.Add(Shortcuts(111), "SISR Marker", SisrExe, "--marker");
         SteamShortcuts.Add(Shortcuts(222), "SISR Marker", SisrExe, "--marker");
         SteamShortcuts.Add(Shortcuts(222), "SISR Marker", elsewhere, "--marker");
         SteamShortcuts.Add(Shortcuts(333), "Spiel", @"D:\Spiele\spiel.exe");
 
-        Assert.Equal(2, Installation().Find().MarkerAccounts);
-        Assert.True(Installation().Remove(steamRunning: false).Complete);
+        Assert.Equal(2, _pc.Installation().Find().MarkerAccounts);
+        Assert.True(_pc.Installation().Remove(steamRunning: false).Complete);
 
         Assert.Empty(SteamShortcuts.Read(Shortcuts(111)));
         Assert.Equal([elsewhere], SteamShortcuts.Read(Shortcuts(222)).Select(s => s.Executable));
@@ -148,12 +140,12 @@ public sealed class SisrInstallationTests : IDisposable
         Touch(SisrExe);
         SteamShortcuts.Add(Shortcuts(111), "SISR Marker", SisrExe, "--marker");
 
-        var result = Installation().Remove(steamRunning: true);
+        var result = _pc.Installation().Remove(steamRunning: true);
 
         Assert.False(result.Complete);
         Assert.Equal(SisrInstallation.SteamRunningCause, result.Cause);
         Assert.False(File.Exists(SisrExe));
-        Assert.True(Installation().Find() is { ShowsGroup: true, Program: false, MarkerAccounts: 1 });
+        Assert.True(_pc.Installation().Find() is { ShowsGroup: true, Program: false, MarkerAccounts: 1 });
     }
 
     [Fact]
@@ -162,10 +154,10 @@ public sealed class SisrInstallationTests : IDisposable
     {
         Touch(SisrExe);
         SteamShortcuts.Add(Shortcuts(111), "SISR Marker", SisrExe, "--marker");
-        _system.Running.Add(new("SISR", new(5, SisrExe, "SISR.exe")));
-        _system.Unstoppable.Add(5);
+        _pc.System.Running.Add(new("SISR", new(5, SisrExe, "SISR.exe")));
+        _pc.System.Unstoppable.Add(5);
 
-        var installation = Installation();
+        var installation = _pc.Installation();
         Assert.False(installation.StopForRemoval());
         var result = installation.Remove(steamRunning: false);
 
@@ -180,11 +172,11 @@ public sealed class SisrInstallationTests : IDisposable
     {
         Touch(SisrExe);
         SteamShortcuts.Add(Shortcuts(111), "SISR Marker", SisrExe, "--marker");
-        Assert.False(Installation().Remove(steamRunning: true).Complete);
+        Assert.False(_pc.Installation().Remove(steamRunning: true).Complete);
 
-        Assert.True(Installation().Remove(steamRunning: false).Complete);
-        Assert.False(Installation().Find().ShowsGroup);
-        Assert.True(Installation().Remove(steamRunning: false).Complete);
+        Assert.True(_pc.Installation().Remove(steamRunning: false).Complete);
+        Assert.False(_pc.Installation().Find().ShowsGroup);
+        Assert.True(_pc.Installation().Remove(steamRunning: false).Complete);
     }
 
     [Fact]
@@ -193,14 +185,14 @@ public sealed class SisrInstallationTests : IDisposable
     {
         Touch(SisrExe);
         var sisrViiper = Path.Combine(LocalAppData, "SISR", "viiper.exe");
-        _system.Running.Add(new("SISR", new(5, SisrExe, null)));
-        _system.Running.Add(new("SISR", new(6, Path.Combine(_root, "Tools", "SISR.exe"), null)));
-        _system.Running.Add(new("viiper", new(7, sisrViiper, null)));
-        _system.Running.Add(new("viiper", new(8, ArcadiaViiper, null)));
+        _pc.System.Running.Add(new("SISR", new(5, SisrExe, null)));
+        _pc.System.Running.Add(new("SISR", new(6, Path.Combine(_pc.Root, "Tools", "SISR.exe"), null)));
+        _pc.System.Running.Add(new("viiper", new(7, sisrViiper, null)));
+        _pc.System.Running.Add(new("viiper", new(8, ArcadiaViiper, null)));
 
-        Assert.True(Installation().StopForRemoval());
+        Assert.True(_pc.Installation().StopForRemoval());
 
-        Assert.Equal([5, 7], _system.Stopped);
+        Assert.Equal([5, 7], _pc.System.Stopped);
     }
 
     [Theory]
@@ -224,65 +216,17 @@ public sealed class SisrInstallationTests : IDisposable
     public void At_start_only_the_SISR_the_old_Arcadia_started_is_stopped()
     {
         var arcadias = $"SISR.exe --api.listen-address localhost:47640 --update-notify none --log.file {Path.Combine(LogDirectory, "sisr.log")}";
-        _system.Running.Add(new("SISR", new(5, SisrExe, arcadias)));
-        _system.Running.Add(new("SISR", new(6, SisrExe, "SISR.exe")));
-        _system.Running.Add(new("SISR", new(7, SisrExe, null)));
+        _pc.System.Running.Add(new("SISR", new(5, SisrExe, arcadias)));
+        _pc.System.Running.Add(new("SISR", new(6, SisrExe, "SISR.exe")));
+        _pc.System.Running.Add(new("SISR", new(7, SisrExe, null)));
 
-        Assert.Equal(1, Installation().StopStartedByOldArcadia());
+        Assert.Equal(1, _pc.Installation().StopStartedByOldArcadia());
 
-        Assert.Equal([5], _system.Stopped);
-        Assert.True(Installation().IsAnyRunning);
+        Assert.Equal([5], _pc.System.Stopped);
+        Assert.True(_pc.Installation().IsAnyRunning);
     }
 
-    private SisrInstallation Installation() => Installation(ArcadiaViiper);
+    private string Shortcuts(uint account) => _pc.Shortcuts(account);
 
-    private SisrInstallation Installation(string? arcadiaViiper) => new(
-        new SisrPaths(LocalAppData, Roaming, Path.Combine(_root, "Programs"), Path.Combine(_root, "Desktop"), [LogDirectory], arcadiaViiper),
-        new SteamInstallation(SteamRoot, 111),
-        _system);
-
-    private string Shortcuts(uint account)
-    {
-        var config = Path.Combine(SteamRoot, "userdata", account.ToString(CultureInfo.InvariantCulture), "config");
-        Directory.CreateDirectory(config);
-        return Path.Combine(config, "shortcuts.vdf");
-    }
-
-    private static void Touch(string path)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, string.Empty);
-    }
-
-    private sealed class FakeSisrSystem : ISisrSystem
-    {
-        public List<(string Name, SisrProcess Process)> Running { get; } = [];
-
-        public HashSet<int> Unstoppable { get; } = [];
-
-        public List<int> Stopped { get; } = [];
-
-        public List<string> ViiperUninstalls { get; } = [];
-
-        public bool HasUninstallEntry { get; set; }
-
-        public IReadOnlyList<SisrProcess> Processes(string name) =>
-            Running.Where(r => r.Name == name).Select(r => r.Process).ToList();
-
-        public bool Stop(int processId)
-        {
-            if (Unstoppable.Contains(processId))
-            {
-                return false;
-            }
-
-            Stopped.Add(processId);
-            Running.RemoveAll(r => r.Process.Id == processId);
-            return true;
-        }
-
-        public void DeleteUninstallEntry() => HasUninstallEntry = false;
-
-        public void UninstallViiper(string viiperExecutable) => ViiperUninstalls.Add(viiperExecutable);
-    }
+    private static void Touch(string path) => FakeSisrPc.Touch(path);
 }

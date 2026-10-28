@@ -15,6 +15,7 @@ always shows.
 - Arcadia sets the hold when `FirmwareAttemptWatch` starts and lifts it when the attempt ends; the wish counts at once
   (a quit right after the end lifts it in `EndAsync` before `Unhide`), and a hold Pan didn't take is sent again at the
   next tick.
-- A hold the journal can't save is rejected (`JournalUnreadable`) but stays in effect while Pan runs; a lift that
-  isn't saved is no lift.
+- A hold the journal can't save is rejected (`JournalUnreadable`) but stays in effect while Pan runs; Arcadia sends it
+  again every 10 s. A lift that isn't saved is in effect too (a restarted Pan then holds until Steam is closed), and
+  Arcadia's release lifts also a hold Pan rejected.
 - A hold from before Arcadia's start is noted at every tick, whether Pan is switched on in Arcadia or not, once per hold.

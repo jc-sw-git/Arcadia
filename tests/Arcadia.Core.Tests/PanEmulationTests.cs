@@ -296,6 +296,38 @@ public sealed class PanEmulationTests
         Assert.Contains(_log, line => line.Contains("kurze Lücke, während steam:620 vorne blieb", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [Trait("TestCase", "T242-25")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task The_short_gap_is_checked_again_right_before_the_hide(bool tooLong)
+    {
+        var asked = 0;
+        var emulation = await TakenOverWithAGameInFrontAsync(_ => asked++);
+        _pan.HidingHolds = PanReason.HidingLost;
+        _time.Advance(TimeSpan.FromSeconds(2));
+        await emulation.TickAsync();
+        _pan.HidingHolds = PanReason.None;
+
+        // VIIPER's start takes a while: the game goes to the back, or the gap grows past 10 s.
+        _pads.DuringPrepare = () =>
+        {
+            if (tooLong)
+            {
+                _time.Advance(TimeSpan.FromSeconds(9));
+            }
+            else
+            {
+                _gameInFront = null;
+            }
+        };
+        _time.Advance(TimeSpan.FromSeconds(2));
+        await emulation.TickAsync();
+
+        Assert.Equal(1, asked);
+        Assert.Equal([1u], _pan.Hidden);
+    }
+
     [Fact]
     [Trait("TestCase", "T242-25")]
     public async Task After_a_hang_Arcadia_asks_although_the_game_is_in_front_again()
@@ -577,13 +609,34 @@ public sealed class PanEmulationTests
         await emulation.TickAsync();
         _pan.FailHolds = true;
         await emulation.HoldForFirmwareAsync(true);
-        _pan.FailHolds = false;
 
+        // Not every tick: an old or broken Pan would fill the log.
+        _time.Advance(TimeSpan.FromSeconds(2));
         await emulation.TickAsync();
+        Assert.Single(_pan.FirmwareHolds);
 
+        _pan.FailHolds = false;
+        _time.Advance(PanEmulation.HoldRetry);
+        await emulation.TickAsync();
         Assert.Equal([(1u, true), (1u, true)], _pan.FirmwareHolds);
+        _time.Advance(PanEmulation.HoldRetry);
         await emulation.TickAsync();
         Assert.Equal(2, _pan.FirmwareHolds.Count);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
+    public async Task The_release_lifts_also_a_hold_Pan_rejected()
+    {
+        var emulation = WithSteam(() => false);
+        await emulation.TickAsync();
+        _pan.FailHolds = true;
+        await emulation.HoldForFirmwareAsync(true);
+        _pan.FailHolds = false;
+
+        await emulation.ReleaseForFirmwareAsync();
+
+        Assert.Equal([(1u, true), (1u, false)], _pan.FirmwareHolds);
     }
 
     [Fact]

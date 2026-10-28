@@ -466,14 +466,18 @@ public sealed partial class Guardian
             return PanMessage.Of(PanReply.Rejected, _generation, PanReason.NotEmulating);
         }
 
-        var before = _journal.FirmwareHold;
         _journal.FirmwareHold = hold;
         if (!TrySaveJournal())
         {
-            // Not durable, but a hold stays in effect while Pan runs, so a crash of Arcadia still keeps the puck hidden;
-            // the client sends it again until it is saved. A lift that wasn't saved is no lift (the safe direction).
-            _journal.FirmwareHold = hold || before;
-            return PanMessage.Of(PanReply.Rejected, _generation, PanReason.JournalUnreadable);
+            if (hold)
+            {
+                // Not durable, but in effect while Pan runs, so a crash of Arcadia still keeps the puck hidden; the client
+                // sends it again until it is saved.
+                return PanMessage.Of(PanReply.Rejected, _generation, PanReason.JournalUnreadable);
+            }
+
+            // In effect too: a Pan restarted before the journal is written keeps the puck hidden until Steam closes.
+            _log("Firmware hold lifted, but the journal could not be written: a restarted Pan holds until Steam is closed");
         }
 
         _log(hold
@@ -488,13 +492,9 @@ public sealed partial class Guardian
         if (_journal.FirmwareHold)
         {
             _journal.FirmwareHold = false;
-            if (!TrySaveJournal())
-            {
-                _journal.FirmwareHold = true;
-                return PanMessage.Of(PanReply.Rejected, _generation, PanReason.JournalUnreadable);
-            }
-
-            _log("Firmware hold lifted by the client: the Steam Controller may be shown");
+            _log(TrySaveJournal()
+                ? "Firmware hold lifted by the client: the Steam Controller may be shown"
+                : "Firmware hold lifted by the client, but the journal could not be written: a restarted Pan holds until Steam is closed");
             if (_journal.HidingHasWork)
             {
                 ScheduleShowRetry();

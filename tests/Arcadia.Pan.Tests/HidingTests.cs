@@ -860,6 +860,25 @@ public sealed class HidingTests : IDisposable
 
     [Fact]
     [Trait("TestCase", "T242-24")]
+    public async Task A_lift_the_journal_could_not_keep_still_lifts_while_Pan_runs()
+    {
+        var guardian = new Guardian(_clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
+            hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: FakeDevices.StepTimeout)
+        {
+            SteamRuns = () => true,
+        };
+        var generation = await EmulatingAsync(guardian);
+        Assert.Equal(PanReply.Hidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation))).Reply);
+        Assert.Equal(PanReply.Acknowledged, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation, 1))).Reply);
+        File.Delete(_journal.File.Path);
+        Directory.CreateDirectory(_journal.File.Path);
+
+        Assert.Equal(PanReply.Acknowledged, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation, 0))).Reply);
+        Assert.Equal(PanReply.Shown, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Unhide, generation))).Reply);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-24")]
     public async Task A_hold_needs_the_current_emulation()
     {
         var generation = await EmulatingAsync();

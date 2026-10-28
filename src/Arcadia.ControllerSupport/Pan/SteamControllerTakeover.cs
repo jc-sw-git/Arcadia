@@ -41,6 +41,8 @@ public enum TakeoverState
 /// Except a short gap mid-game (owner, 2026-10-28): while a game of the library stays in front, Steam's update window
 /// can't be, so a gap of less than <see cref="MidGameGapLimit"/> with the same game in front at every check, from
 /// just before the gap until the hide, is taken over again without asking. A missing check (Arcadia hung) asks.
+/// A take-over without the player (Steam not running, a short gap) is checked again right before the hide.
+/// The tick and the UI thread both change it: every member takes the lock, and the events are raised after it.
 /// </summary>
 public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? time = null)
 {
@@ -51,6 +53,7 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
     public static readonly TimeSpan CheckLimit = TimeSpan.FromSeconds(5);
 
     private readonly TimeProvider _time = time ?? TimeProvider.System;
+    private readonly Lock _lock = new();
     private volatile TakeoverState _state = TakeoverState.Unknown;
 
     // The game in front at every check since Since, the last one At; null without a game.
@@ -58,6 +61,17 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
 
     // A gap that began with this game in front, and when; null once a check saw anything else, or none came in time.
     private (string Game, long Since)? _gapInGame;
+
+    // Granted because Steam wasn't running, not by the player: checked again right before the hide. Once hidden, Steam
+    // sees only the copy, and every gap asks anew (Gap).
+    private bool _becauseSteamWasNotRunning;
+
+    // Granted because the game stayed in front through a short gap: checked again right before the hide (review of 613b592).
+    private (string Game, long Since)? _becauseGameStayed;
+
+    // Raised once the lock is released: a handler may come back or wait on another thread.
+    private bool _changed;
+    private SteamControllerParts? _ask;
 
     public TakeoverState State => _state;
 
@@ -70,15 +84,23 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
     /// <summary><see cref="State"/> changed; any thread.</summary>
     public event Action? Changed;
 
-    // Granted because Steam wasn't running, not by the player: checked again right before the hide. Once hidden, Steam
-    // sees only the copy, and every gap asks anew (Gap).
-    private bool _becauseSteamWasNotRunning;
-
     /// <summary>
     /// Whether a hide may start now: granted, or Steam doesn't run (no one can update the puck then). Starts the question
     /// when the state is unknown and Steam runs.
     /// </summary>
     public bool MayHide(bool steamRuns, SteamControllerParts connected)
+    {
+        bool may;
+        lock (_lock)
+        {
+            may = MayHideLocked(steamRuns, connected);
+        }
+
+        Raise();
+        return may;
+    }
+
+    private bool MayHideLocked(bool steamRuns, SteamControllerParts connected)
     {
         if (_state == TakeoverState.Granted && _becauseSteamWasNotRunning && steamRuns)
         {
@@ -87,12 +109,18 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
             Set(TakeoverState.Unknown, "Steam läuft jetzt, bevor Arcadia übernommen hat");
         }
 
+        if (_state == TakeoverState.Granted && _becauseGameStayed is { } stayed && !StillInFront(stayed))
+        {
+            Set(TakeoverState.Unknown, $"{stayed.Game} ist vor dem Verstecken nicht mehr vorne oder die Lücke ist zu lang");
+        }
+
         switch (_state)
         {
             case TakeoverState.Granted:
                 return true;
-            case TakeoverState.Unknown when steamRuns && GameStayedInFront() is { } game:
-                Set(TakeoverState.Granted, $"kurze Lücke, während {game} vorne blieb: Steam konnte kein Firmware-Update anzeigen");
+            case TakeoverState.Unknown when steamRuns && GameStayedInFront() is { } gap:
+                Set(TakeoverState.Granted, $"kurze Lücke, während {gap.Game} vorne blieb: Steam konnte kein Firmware-Update anzeigen");
+                _becauseGameStayed = gap;
                 return true;
             case TakeoverState.Unknown when !steamRuns:
                 Set(TakeoverState.Granted, "Steam läuft nicht, Arcadia übernimmt den Steam Controller");
@@ -101,7 +129,7 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
             case TakeoverState.Unknown:
                 Asked = connected;
                 Set(TakeoverState.Asking, $"Steam läuft, Arcadia fragt, ob es übernehmen darf ({connected})");
-                ConsentNeeded?.Invoke(connected);
+                _ask = connected;
                 return false;
             default:
                 return false;
@@ -111,22 +139,30 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
     /// <summary>The player's answer in the dialog.</summary>
     public void Answer(bool takeOver)
     {
-        if (_state != TakeoverState.Asking)
+        lock (_lock)
         {
-            return;
+            if (_state == TakeoverState.Asking)
+            {
+                Set(takeOver ? TakeoverState.Granted : TakeoverState.Declined,
+                    takeOver ? "vom Spieler erlaubt: es läuft kein Firmware-Update" : "vom Spieler abgelehnt, bis zum nächsten Start oder bis zur Freigabe in den Einstellungen");
+            }
         }
 
-        Set(takeOver ? TakeoverState.Granted : TakeoverState.Declined,
-            takeOver ? "vom Spieler erlaubt: es läuft kein Firmware-Update" : "vom Spieler abgelehnt, bis zum nächsten Start oder bis zur Freigabe in den Einstellungen");
+        Raise();
     }
 
     /// <summary>The settings row "Steam Controller und Puck übernehmen" (held 3 s): the press is the consent.</summary>
     public void TakeOverAgain()
     {
-        if (_state is TakeoverState.Declined or TakeoverState.Released)
+        lock (_lock)
         {
-            Set(TakeoverState.Granted, "in den Einstellungen wieder erlaubt");
+            if (_state is TakeoverState.Declined or TakeoverState.Released)
+            {
+                Set(TakeoverState.Granted, "in den Einstellungen wieder erlaubt");
+            }
         }
+
+        Raise();
     }
 
     /// <summary>
@@ -135,14 +171,27 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
     /// </summary>
     public void KeepForFirmware()
     {
-        if (_state is TakeoverState.Unknown or TakeoverState.Asking)
+        lock (_lock)
         {
-            Set(TakeoverState.Granted, "ein Firmware-Versuch hält den Steam Controller versteckt");
+            if (_state is TakeoverState.Unknown or TakeoverState.Asking)
+            {
+                Set(TakeoverState.Granted, "ein Firmware-Versuch hält den Steam Controller versteckt");
+            }
         }
+
+        Raise();
     }
 
     /// <summary>Released for a firmware update Steam tried: hidden no more until the settings row.</summary>
-    public void Release() => Set(TakeoverState.Released, "für ein Firmware-Update freigegeben");
+    public void Release()
+    {
+        lock (_lock)
+        {
+            Set(TakeoverState.Released, "für ein Firmware-Update freigegeben");
+        }
+
+        Raise();
+    }
 
     /// <summary>
     /// The real puck was or will be visible (the emulation ended, paused, was torn down, a hide didn't hold): a consent
@@ -151,42 +200,50 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
     /// </summary>
     public void Gap(string why, bool switchedOff = false)
     {
-        var wasGranted = _state == TakeoverState.Granted;
-        if (wasGranted
-            || (switchedOff && _state is TakeoverState.Asking or TakeoverState.Declined or TakeoverState.Released))
+        lock (_lock)
         {
-            Set(TakeoverState.Unknown, $"Lücke ({why}): Arcadia fragt beim nächsten Verstecken wieder");
+            var wasGranted = _state == TakeoverState.Granted;
+            if (wasGranted
+                || (switchedOff && _state is TakeoverState.Asking or TakeoverState.Declined or TakeoverState.Released))
+            {
+                Set(TakeoverState.Unknown, $"Lücke ({why}): Arcadia fragt beim nächsten Verstecken wieder");
+            }
+
+            // The emulation was fine at the check before (every tick checks it), so the gap began after it: the game must
+            // have been in front then already. After a hang that check is too long ago, and the run of checks starts anew.
+            if (wasGranted && !switchedOff && _lastInFront is { } last && last.Since < last.At
+                && _time.GetElapsedTime(last.At) <= CheckLimit)
+            {
+                _gapInGame = (last.Game, _time.GetTimestamp());
+            }
         }
 
-        // The emulation was fine at the check before (every tick checks it), so the gap began after it: the game must have
-        // been in front then already. After a hang that check is too long ago, and the run of checks starts anew.
-        if (wasGranted && !switchedOff && _lastInFront is { } last && last.Since < last.At
-            && _time.GetElapsedTime(last.At) <= CheckLimit)
-        {
-            _gapInGame = (last.Game, _time.GetTimestamp());
-        }
+        Raise();
     }
 
     /// <summary>
-    /// Every tick, before anything else: the library game in front, or null. Ends a mid-game gap's exception when
-    /// something else is in front or the last check is too long ago.
+    /// Every tick before anything else, and right before a hide: the library game in front, or null. Ends a mid-game
+    /// gap's exception when something else is in front or the last check is too long ago.
     /// </summary>
     public void InFront(string? game)
     {
-        var now = _time.GetTimestamp();
-        if (_gapInGame is { } gap
-            && (game != gap.Game || _lastInFront is not { } last || _time.GetElapsedTime(last.At, now) > CheckLimit))
+        lock (_lock)
         {
-            _gapInGame = null;
-            log($"Pan-Übernahme: während der Lücke war {(game is null ? "kein Spiel" : game == gap.Game ? "eine Prüfung zu spät" : "ein anderes Spiel")} vorne, Arcadia fragt");
-        }
+            var now = _time.GetTimestamp();
+            if (_gapInGame is { } gap
+                && (game != gap.Game || _lastInFront is not { } last || _time.GetElapsedTime(last.At, now) > CheckLimit))
+            {
+                _gapInGame = null;
+                log($"Pan-Übernahme: während der Lücke war {(game is null ? "kein Spiel" : game == gap.Game ? "eine Prüfung zu spät" : "ein anderes Spiel")} vorne, Arcadia fragt");
+            }
 
-        _lastInFront = game is null ? null
-            : _lastInFront is { } run && run.Game == game && _time.GetElapsedTime(run.At, now) <= CheckLimit ? (game, run.Since, now)
-            : (game, now, now);
+            _lastInFront = game is null ? null
+                : _lastInFront is { } run && run.Game == game && _time.GetElapsedTime(run.At, now) <= CheckLimit ? (game, run.Since, now)
+                : (game, now, now);
+        }
     }
 
-    private string? GameStayedInFront()
+    private (string Game, long Since)? GameStayedInFront()
     {
         if (_gapInGame is not { } gap)
         {
@@ -194,15 +251,19 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
         }
 
         _gapInGame = null;
-        return _time.GetElapsedTime(gap.Since) < MidGameGapLimit
-            && _lastInFront is { } last && last.Game == gap.Game && _time.GetElapsedTime(last.At) <= CheckLimit
-            ? gap.Game
-            : null;
+        return StillInFront(gap) ? gap : null;
     }
 
+    /// <summary>The gap is short enough, and the same game was in front at every check since before it, the last one recent.</summary>
+    private bool StillInFront((string Game, long Since) gap) =>
+        _time.GetElapsedTime(gap.Since) < MidGameGapLimit
+        && _lastInFront is { } last && last.Game == gap.Game && last.Since < gap.Since && _time.GetElapsedTime(last.At) <= CheckLimit;
+
+    /// <summary>Under the lock.</summary>
     private void Set(TakeoverState state, string why)
     {
         _becauseSteamWasNotRunning = false;
+        _becauseGameStayed = null;
         _gapInGame = null;
         if (_state == state)
         {
@@ -211,6 +272,29 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
 
         _state = state;
         log($"Pan-Übernahme: {state} – {why}");
-        Changed?.Invoke();
+        _changed = true;
+    }
+
+    private void Raise()
+    {
+        bool changed;
+        SteamControllerParts? ask;
+        lock (_lock)
+        {
+            changed = _changed;
+            ask = _ask;
+            _changed = false;
+            _ask = null;
+        }
+
+        if (changed)
+        {
+            Changed?.Invoke();
+        }
+
+        if (ask is { } connected)
+        {
+            ConsentNeeded?.Invoke(connected);
+        }
     }
 }

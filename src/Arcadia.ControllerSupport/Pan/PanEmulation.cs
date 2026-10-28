@@ -110,6 +110,9 @@ public sealed class PanEmulation : IVirtualXboxPads
     private volatile bool _gaveUp;
 
     // Steam tries a firmware update through the copy (#242): the puck must stay hidden, also if Arcadia ends meanwhile.
+    /// <summary>A hold Pan didn't take is sent again after this long, not every tick (the log would fill).</summary>
+    public static readonly TimeSpan HoldRetry = TimeSpan.FromSeconds(10);
+
     private volatile bool _firmwareHold;
 
     // The hold from before the start has been noted (FirmwareHoldFound raised) since Pan last reported it.
@@ -362,6 +365,8 @@ public sealed class PanEmulation : IVirtualXboxPads
         var session = new Session(generation);
         if (Hides)
         {
+            // What is in front now, not at the tick's start: VIIPER's start may have taken seconds.
+            Takeover.InFront(GameInFront());
             if (!MayHide())
             {
                 // The consent went while VIIPER started or Pan registered (switched off, released): nothing is hidden
@@ -384,7 +389,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             session.Hidden = true;
             if (_firmwareHold)
             {
-                session.HoldSent = await _guardian.HoldForFirmwareAsync(generation, true, CancellationToken.None);
+                await SendHoldAsync(session);
             }
         }
 
@@ -495,16 +500,35 @@ public sealed class PanEmulation : IVirtualXboxPads
         _firmwareHold = hold;
         if (_session is { Hidden: true } session)
         {
-            // Only a hold Pan has is lifted: a release without an attempt sends nothing.
-            if (session.HoldSent != hold && await _guardian.HoldForFirmwareAsync(session.Generation, hold, CancellationToken.None))
+            if (hold && !session.HoldSent)
             {
-                session.HoldSent = hold;
+                await SendHoldAsync(session);
+            }
+            else if (!hold && session.HoldTried)
+            {
+                // Also a hold Pan rejected: it keeps one it couldn't save in memory. A release without an attempt sends nothing.
+                await LiftHoldAsync(session);
             }
         }
         else if (!hold && _guardian.HeldForFirmware)
         {
             // A hold from before the start, and no hidden emulation to lift it with: Pan takes the lift without one.
             await _guardian.HoldForFirmwareAsync(_session?.Generation ?? 0, false, CancellationToken.None);
+        }
+    }
+
+    private async Task SendHoldAsync(Session session)
+    {
+        session.HoldTried = true;
+        session.HoldTriedAt = _time.GetTimestamp();
+        session.HoldSent = await _guardian.HoldForFirmwareAsync(session.Generation, true, CancellationToken.None);
+    }
+
+    private async Task LiftHoldAsync(Session session)
+    {
+        if (await _guardian.HoldForFirmwareAsync(session.Generation, false, CancellationToken.None))
+        {
+            session.HoldTried = session.HoldSent = false;
         }
     }
 
@@ -532,10 +556,10 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
-        if (_firmwareHold && session.Hidden && !session.HoldSent)
+        if (_firmwareHold && session.Hidden && !session.HoldSent && _time.GetElapsedTime(session.HoldTriedAt) >= HoldRetry)
         {
             // Pan didn't take the hold (journal not writable, link busy): a crash now must not show the puck mid-attempt.
-            session.HoldSent = await _guardian.HoldForFirmwareAsync(session.Generation, true, CancellationToken.None);
+            await SendHoldAsync(session);
         }
 
         if (session.Hidden && await _guardian.CheckHidingAsync(session.Generation, cancellationToken) is { } holds && holds != PanReason.None)
@@ -621,10 +645,10 @@ public sealed class PanEmulation : IVirtualXboxPads
         _session = null;
         Takeover.Gap(why);
         var removed = await RemoveDevicesAsync(session) && !session.LeftBehind;
-        if (session.HoldSent && !_firmwareHold)
+        if (session.HoldTried && !_firmwareHold)
         {
             // The attempt is over (Steam gave up, "Arcadia beenden"), but the lift may not have reached Pan yet.
-            session.HoldSent = !await _guardian.HoldForFirmwareAsync(session.Generation, false, CancellationToken.None);
+            await LiftHoldAsync(session);
         }
 
         if (session.Hidden && _firmwareHold)
@@ -746,6 +770,11 @@ public sealed class PanEmulation : IVirtualXboxPads
 
         /// <summary>Pan holds the puck hidden for a firmware attempt in this generation.</summary>
         public bool HoldSent { get; set; }
+
+        /// <summary>A hold was sent, taken or not (Pan keeps one it couldn't save in memory), and when last.</summary>
+        public bool HoldTried { get; set; }
+
+        public long HoldTriedAt { get; set; }
 
         public ISteamControllerCopy? Copy { get; set; }
 

@@ -267,6 +267,24 @@ public sealed class PanEmulationTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T242-8")]
+    public async Task Over_another_dialog_the_firmware_dialog_waits_and_shows_once_that_one_is_closed()
+    {
+        using var arcadia = await StartAsync(copy: true);
+        var other = new ConfirmationViewModel("Andere Frage", "Eine offene Frage", "Ja", () => { });
+        arcadia.Main.Ask(other);
+
+        Assert.False(arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, [1, 0xB7, 0x00], forwarding: true));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Same(other, arcadia.Main.Confirmation);
+
+        arcadia.Press(UiAction.Back);
+        Assert.Equal("Firmware-Update gestoppt", arcadia.Main.Confirmation?.Title);
+        arcadia.Press(UiAction.Back);
+        Assert.Null(arcadia.Main.Confirmation);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T242-8")]
     public async Task Arcadia_jetzt_beenden_in_the_firmware_dialog_asks_the_App_to_close()
     {
         using var arcadia = await StartAsync(copy: true);

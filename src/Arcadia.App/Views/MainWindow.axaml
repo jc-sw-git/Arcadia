@@ -1566,7 +1566,7 @@
                     </StackPanel>
                     <StackPanel Spacing="14" IsVisible="{Binding IsSteamStopPrompt}">
                       <TextBlock Classes="promptBody" Text="Für die Installation muss Steam beendet werden. Arcadia startet Steam danach wieder im Hintergrund." />
-                      <TextBlock Classes="promptBody" Text="Danach werden SISR und der usbip-Treiber installiert. Windows fragt dabei einmal nach Administratorrechten." />
+                      <TextBlock Classes="promptBody" Text="{Binding SteamStopDetail}" />
                     </StackPanel>
 
                     <StackPanel Spacing="14" IsVisible="{Binding IsSteamStartFailedPrompt}">

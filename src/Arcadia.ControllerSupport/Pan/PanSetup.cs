@@ -44,7 +44,8 @@ public static class PanSetup
     public static PanCompatibility Compatibility =>
         PanCompatibilityCheck.Judge(
             PanPipeTransport.ServiceExists() || File.Exists(PanPaths.InstalledExecutable),
-            IsBundled ? PanCompatibilityCheck.HashOf(BundledExecutable) : null,
+            IsBundled,
+            () => PanCompatibilityCheck.HashOf(BundledExecutable),
             () => PanCompatibilityCheck.HashOf(PanPaths.InstalledExecutable));
 
     /// <summary>

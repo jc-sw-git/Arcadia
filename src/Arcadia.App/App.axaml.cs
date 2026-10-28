@@ -275,34 +275,42 @@ public partial class App : Application
 
             Task.Run(async () =>
             {
-                SisrHost.RemoveLegacyCopy();
-
-                // Before Arcadia's pad starts VIIPER: stopping SISR cleans up the VIIPER in SISR's folder.
-                await controllerSupport.StopReplacedSisrAsync();
-                await controllerSupport.TickAsync();
-                await forGames.Emulation.TickAsync();
-                var route = forGames.Routing.Update();
-                if (controllerSupport.IsPanUpdateDue)
+                SteamControllerRoute route;
+                try
                 {
-                    // Pan's hello says whether a firmware attempt from before still holds the puck; its dialog then
-                    // opens with the tick below, ahead of the update (#297).
-                    try
-                    {
-                        await pan.FirstAttempt.WaitAsync(PanFirstAnswerWait, time);
-                    }
-                    catch (TimeoutException)
-                    {
-                        AppLog.Write("Pan hat beim Start nicht rechtzeitig geantwortet – die Aktualisierung beginnt trotzdem");
-                    }
+                    SisrHost.RemoveLegacyCopy();
 
+                    // Before Arcadia's pad starts VIIPER: stopping SISR cleans up the VIIPER in SISR's folder.
+                    await controllerSupport.StopReplacedSisrAsync();
+                    await controllerSupport.TickAsync();
                     await forGames.Emulation.TickAsync();
+                    route = forGames.Routing.Update();
+                    if (controllerSupport.IsPanUpdateDue)
+                    {
+                        // Pan's hello says whether a firmware attempt from before still holds the puck; its dialog then
+                        // opens with the tick below, ahead of the update (#297).
+                        try
+                        {
+                            await pan.FirstAttempt.WaitAsync(PanFirstAnswerWait, time);
+                        }
+                        catch (TimeoutException)
+                        {
+                            AppLog.Write("Pan hat beim Start nicht rechtzeitig geantwortet – die Aktualisierung beginnt trotzdem");
+                        }
+
+                        await forGames.Emulation.TickAsync();
+                    }
+                }
+                finally
+                {
+                    // Also when a step above failed: the update page waits for this and must never wait for good (#297).
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        xboxPadTick.Start();
+                        viewModel.StartPanUpdate();
+                    });
                 }
 
-                Dispatcher.UIThread.Post(() =>
-                {
-                    xboxPadTick.Start();
-                    viewModel.StartPanUpdate();
-                });
                 await xboxPad.TickAsync();
                 AppLog.Write($"Steam Controller in Spielen bereit ({route.Why})");
             }).Forget("SISR-Überwachung");

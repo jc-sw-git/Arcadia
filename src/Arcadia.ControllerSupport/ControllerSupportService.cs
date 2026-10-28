@@ -1208,7 +1208,14 @@ public sealed class ControllerSupportService(
     /// </summary>
     public bool CheckPanAtStart()
     {
+        var started = time.GetTimestamp();
         var compatibility = IsSupportedPlatform ? _platform.PanCompatibility : PanCompatibility.NotInstalled;
+        if (compatibility is not PanCompatibility.NotInstalled)
+        {
+            // On the start path before the window: the time it takes is part of the start budget.
+            Log?.Invoke($"Pan geprüft in {time.GetElapsedTime(started).TotalMilliseconds:0} ms: {compatibility}");
+        }
+
         if (compatibility is PanCompatibility.UpdateRequired)
         {
             Log?.Invoke("Pan: die installierte Version ist nicht die mitgelieferte – Arcadia ersetzt sie vor dem Start");

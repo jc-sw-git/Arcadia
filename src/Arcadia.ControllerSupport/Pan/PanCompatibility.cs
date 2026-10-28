@@ -26,22 +26,24 @@ public enum PanCompatibility
 public static class PanCompatibilityCheck
 {
     /// <param name="installed">Pan's service or its exe in Program Files exists.</param>
-    /// <param name="bundledHash">The bundled exe's SHA-256, or null if this Arcadia brings none.</param>
+    /// <param name="bundled">This Arcadia brings a Pan.exe.</param>
+    /// <param name="bundledHash">The bundled exe's SHA-256, or null if it can't be read.</param>
     /// <param name="installedHash">The installed exe's SHA-256, or null if it is missing or can't be read.</param>
-    public static PanCompatibility Judge(bool installed, string? bundledHash, Func<string?> installedHash)
+    public static PanCompatibility Judge(bool installed, bool bundled, Func<string?> bundledHash, Func<string?> installedHash)
     {
         if (!installed)
         {
             return PanCompatibility.NotInstalled;
         }
 
-        if (bundledHash is null)
+        if (!bundled)
         {
             return PanCompatibility.NotBundled;
         }
 
-        // An unreadable exe or a service without one is an unknown state, which counts as incompatible.
-        return string.Equals(installedHash(), bundledHash, StringComparison.OrdinalIgnoreCase)
+        // An unreadable exe on either side, or a service without one, is an unknown state, which counts as incompatible:
+        // the update page then names what failed instead of Arcadia going on with a Pan it can't vouch for.
+        return bundledHash() is { } expected && string.Equals(installedHash(), expected, StringComparison.OrdinalIgnoreCase)
             ? PanCompatibility.Compatible
             : PanCompatibility.UpdateRequired;
     }

@@ -22,7 +22,7 @@ public sealed class PanCompatibilityTests : IDisposable
         var bundled = PanCompatibilityCheck.HashOf(Exe("bundled.exe", "Pan 1.2"));
         var installed = Exe("installed.exe", "Pan 1.2");
 
-        Assert.Equal(PanCompatibility.Compatible, PanCompatibilityCheck.Judge(true, bundled, () => PanCompatibilityCheck.HashOf(installed)));
+        Assert.Equal(PanCompatibility.Compatible, PanCompatibilityCheck.Judge(true, true, () => bundled, () => PanCompatibilityCheck.HashOf(installed)));
     }
 
     [Theory]
@@ -34,7 +34,7 @@ public sealed class PanCompatibilityTests : IDisposable
         var bundled = PanCompatibilityCheck.HashOf(Exe("bundled.exe", "Pan 1.2"));
         var installed = Exe("installed.exe", content);
 
-        Assert.Equal(PanCompatibility.UpdateRequired, PanCompatibilityCheck.Judge(true, bundled, () => PanCompatibilityCheck.HashOf(installed)));
+        Assert.Equal(PanCompatibility.UpdateRequired, PanCompatibilityCheck.Judge(true, true, () => bundled, () => PanCompatibilityCheck.HashOf(installed)));
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public sealed class PanCompatibilityTests : IDisposable
         var bundled = PanCompatibilityCheck.HashOf(Exe("bundled.exe", "Pan 1.2"));
 
         Assert.Null(PanCompatibilityCheck.HashOf(Path.Combine(_directory, "missing.exe")));
-        Assert.Equal(PanCompatibility.UpdateRequired, PanCompatibilityCheck.Judge(true, bundled, () => PanCompatibilityCheck.HashOf(Path.Combine(_directory, "missing.exe"))));
+        Assert.Equal(PanCompatibility.UpdateRequired, PanCompatibilityCheck.Judge(true, true, () => bundled, () => PanCompatibilityCheck.HashOf(Path.Combine(_directory, "missing.exe"))));
 
         // Locked by another process, as a running service's exe may be for a moment.
         var locked = Exe("locked.exe", "Pan 1.2");
@@ -58,7 +58,7 @@ public sealed class PanCompatibilityTests : IDisposable
     {
         var read = false;
 
-        Assert.Equal(PanCompatibility.NotInstalled, PanCompatibilityCheck.Judge(false, "ABC", () =>
+        Assert.Equal(PanCompatibility.NotInstalled, PanCompatibilityCheck.Judge(false, true, () => "ABC", () =>
         {
             read = true;
             return null;
@@ -69,6 +69,12 @@ public sealed class PanCompatibilityTests : IDisposable
     [Fact]
     public void Without_a_bundled_Pan_nothing_can_be_compared()
     {
-        Assert.Equal(PanCompatibility.NotBundled, PanCompatibilityCheck.Judge(true, null, () => "ABC"));
+        Assert.Equal(PanCompatibility.NotBundled, PanCompatibilityCheck.Judge(true, false, () => null, () => "ABC"));
+    }
+
+    [Fact]
+    public void A_bundled_exe_that_can_t_be_read_counts_as_incompatible_not_as_missing()
+    {
+        Assert.Equal(PanCompatibility.UpdateRequired, PanCompatibilityCheck.Judge(true, true, () => null, () => "ABC"));
     }
 }

@@ -5,8 +5,8 @@ Owner's decisions 2026-10-28 (issue #297).
 
 - Compatible = exactly the bundled Pan, no version range. Before the window shows,
   `ControllerSupportService.CheckPanAtStart` compares the SHA-256 of the installed and the bundled exe
-  (`PanCompatibilityCheck`, the hash `--install --expect-hash` checks too). A newer Pan after an Arcadia downgrade is
-  replaced as well; an unreadable exe or a service without one counts as different. Reads two small files, so it stays
+  (`PanCompatibilityCheck`, the hash `--install --expect-hash` checks too; the log line "Pan geprüft in … ms" times it). A newer Pan after an Arcadia downgrade is
+  replaced as well; an unreadable exe (installed or bundled) or a service without one counts as different. Reads two small files, so it stays
   within the start budget when nothing is due.
 - Not installed: no check, no page. Switched off in Arcadia (`PanEnabled`): replaced all the same, and stays off. A
   build without a bundled Pan (`NotBundled`, a Debug build that skipped it) checks nothing.

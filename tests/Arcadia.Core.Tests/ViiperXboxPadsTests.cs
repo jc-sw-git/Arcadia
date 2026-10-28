@@ -13,11 +13,11 @@ public sealed class ViiperXboxPadsTests
     [Trait("TestCase", "T242-4")]
     public async Task The_copy_is_not_made_on_a_VIIPER_Arcadia_did_not_start()
     {
-        using var foreign = new TcpListener(IPAddress.Loopback, ViiperXboxPads.ApiPort);
-        foreign.Start();
+        // Both loopbacks: on Windows "localhost" is ::1 first (the Windows CI run, 2026-10-28).
+        var listeners = Listen(IPAddress.Loopback, IPAddress.IPv6Loopback);
         var requests = new List<string>();
         using var stop = new CancellationTokenSource();
-        var serving = ServeAsync(foreign, requests, stop.Token);
+        var serving = Task.WhenAll(listeners.Select(listener => ServeAsync(listener, requests, stop.Token)));
         var log = new List<string>();
         var pads = new ViiperXboxPads(Path.Combine(Path.GetTempPath(), "nowhere", "viiper.exe"), Path.GetTempPath(), _ => Task.FromResult(0), line => { lock (log) { log.Add(line); } });
 
@@ -25,11 +25,33 @@ public sealed class ViiperXboxPadsTests
 
         await stop.CancelAsync();
         await serving;
+        listeners.ForEach(listener => listener.Dispose());
         Assert.Contains("nicht gestartet", refused.Message, StringComparison.Ordinal);
         lock (requests)
         {
             Assert.DoesNotContain(requests, request => request.StartsWith("bus/", StringComparison.Ordinal));
         }
+    }
+
+    /// <summary>A listener on each address the machine has; a container without IPv6 has no ::1.</summary>
+    private static List<TcpListener> Listen(params IPAddress[] addresses)
+    {
+        var listeners = new List<TcpListener>();
+        foreach (var address in addresses)
+        {
+            try
+            {
+                var listener = new TcpListener(address, ViiperXboxPads.ApiPort);
+                listener.Start();
+                listeners.Add(listener);
+            }
+            catch (SocketException e) when (e.SocketErrorCode == SocketError.AddressFamilyNotSupported && address.AddressFamily == AddressFamily.InterNetworkV6)
+            {
+                // No IPv6 here, so "localhost" can't be ::1 either.
+            }
+        }
+
+        return listeners;
     }
 
     /// <summary>Answers every request like a VIIPER would answer a ping, and notes what was asked.</summary>

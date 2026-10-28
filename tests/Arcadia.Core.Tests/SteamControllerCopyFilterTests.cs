@@ -110,6 +110,15 @@ public sealed class SteamControllerCopyFilterTests
     }
 
     [Fact]
+    [Trait("TestCase", "T242-1")]
+    public void A_handler_that_throws_still_drops_the_firmware_message()
+    {
+        _filter.FirmwareBlocked += _ => throw new InvalidOperationException("Dialog kaputt");
+
+        Assert.False(_filter.FromSteam(SteamReportKind.SetFeature, [1, 0xB7, 0x00], forwarding: true));
+    }
+
+    [Fact]
     [Trait("TestCase", "T242-8")]
     public void A_known_firmware_message_is_reported_once_and_every_dropped_type_is_logged_once_without_its_payload()
     {

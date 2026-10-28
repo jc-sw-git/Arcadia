@@ -26,6 +26,9 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
     public int Prepared;
     public bool FailPrepare;
 
+    /// <summary>Runs while VIIPER is made ready, e.g. Steam coming to the front meanwhile.</summary>
+    public Action? DuringPrepare;
+
     /// <summary>Shared with the other fakes for the order of events; null: not recorded.</summary>
     public List<string>? Events;
 
@@ -47,6 +50,7 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
         }
 
         Prepared++;
+        DuringPrepare?.Invoke();
         return Task.CompletedTask;
     }
 

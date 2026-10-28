@@ -65,6 +65,19 @@ public sealed class SteamControllerCopyFilter(TimeProvider time, Action<string> 
     /// </summary>
     public bool FromSteam(SteamReportKind kind, ReadOnlySpan<byte> report, bool forwarding)
     {
+        try
+        {
+            return Classify(kind, report, forwarding);
+        }
+        catch (Exception)
+        {
+            // A handler or the log failed: dropped, so nothing reaches the puck by an error's path.
+            return false;
+        }
+    }
+
+    private bool Classify(SteamReportKind kind, ReadOnlySpan<byte> report, bool forwarding)
+    {
         switch (kind)
         {
             case SteamReportKind.GetReport:

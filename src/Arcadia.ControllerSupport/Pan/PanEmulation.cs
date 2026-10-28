@@ -106,12 +106,12 @@ public sealed class PanEmulation : IVirtualXboxPads
     private readonly TimeProvider _time;
     private readonly Action<string> _log;
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private readonly List<DateTimeOffset> _failures = [];
+    private readonly List<long> _failures = [];
 
     private volatile Session? _session;
     private volatile PanEmulationStatus _status = PanEmulationStatus.Off;
-    private DateTimeOffset _hideRetryAt;
-    private DateTimeOffset? _steamHadPuckAt;
+    // Monotonic timestamps; written by "Erneut versuchen" on the UI thread too, so read and written as one long.
+    private long _hideRetryAt = long.MinValue;
     private bool _pausedByLoss;
     private volatile bool _gaveUp;
     private string? _lastLogged;
@@ -128,8 +128,11 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>The switch "Controller-Wächter (Pan)"; read on every tick.</summary>
     public Func<bool> Enabled { get; init; } = () => true;
 
-    /// <summary>A window of Steam itself is in front (<see cref="FirmwareGrace"/>); asked on every tick.</summary>
-    public Func<bool> SteamInFront { get; init; } = () => false;
+    /// <summary>Whether Steam is or was in front (<see cref="FirmwareGrace"/>); asked on every tick and right before a hide.</summary>
+    public SteamFrontWatch? SteamFront { get; init; }
+
+    /// <summary>Attaching the copy waits this long at most: a hanging attach would hold the gate and stop every tick.</summary>
+    public static readonly TimeSpan AttachTimeout = TimeSpan.FromSeconds(10);
 
     /// <summary>Pan can run on this system at all (Windows).</summary>
     public bool Supported { get; init; } = true;
@@ -185,7 +188,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             _gaveUp = false;
         }
 
-        _hideRetryAt = default;
+        Interlocked.Exchange(ref _hideRetryAt, long.MinValue);
         _log("Pan-Emulation: bisherige Ausfälle zählen nicht mehr");
     }
 
@@ -235,12 +238,6 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     private async Task StepAsync(CancellationToken cancellationToken)
     {
-        if (Hides && _session is not { Hidden: true } && SteamInFront())
-        {
-            // Steam reads the real puck now and may start a firmware update on it.
-            _steamHadPuckAt = _time.GetUtcNow();
-        }
-
         if (!Supported)
         {
             SetStatus(new(PanEmulationState.Unsupported));
@@ -282,7 +279,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
-        if (_time.GetUtcNow() < _hideRetryAt)
+        if (Interlocked.Read(ref _hideRetryAt) is var retryAt && retryAt != long.MinValue && _time.GetElapsedTime(retryAt) < HideRetry)
         {
             return;
         }
@@ -292,9 +289,9 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     private async Task StartAsync(CancellationToken cancellationToken)
     {
-        if (Hides && SteamMayUpdateFirmware())
+        if (Hides && !HideIsSafe())
         {
-            SetStatus(new(PanEmulationState.SettingUp, PanEmulationProblem.WaitingForSteam, Reason: "Steam hatte den Steam Controller gerade selbst"));
+            WaitForSteam();
             return;
         }
 
@@ -333,13 +330,23 @@ public sealed class PanEmulation : IVirtualXboxPads
         var session = new Session(generation);
         if (Hides)
         {
+            if (!HideIsSafe())
+            {
+                // Steam came to the front while VIIPER started or Pan registered: nothing is hidden yet, so undo the
+                // registration only.
+                await _guardian.EmulationStoppedAsync(generation, CancellationToken.None);
+                WaitForSteam();
+                return;
+            }
+
             var hidden = await _guardian.HideAsync(generation, cancellationToken);
             if (hidden != PanReason.None)
             {
-                // The client already asked Pan to undo the rejected hide.
+                // The client already asked Pan to undo the rejected hide. Counted: a hide that keeps failing restarts the
+                // puck each time (the hide and its undo), so it must not go on forever.
                 await _guardian.EmulationStoppedAsync(generation, CancellationToken.None);
-                _hideRetryAt = _time.GetUtcNow() + HideRetry;
-                SetStatus(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, hidden, $"nicht versteckt: {hidden}"));
+                Interlocked.Exchange(ref _hideRetryAt, _time.GetTimestamp());
+                Failed(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, hidden, $"nicht versteckt: {hidden}"));
                 return;
             }
 
@@ -352,11 +359,21 @@ public sealed class PanEmulation : IVirtualXboxPads
     }
 
     /// <summary>
-    /// Every automatic hide checks this first, as there is no telling from outside whether Steam updates the real puck:
-    /// Steam in front now, or within <see cref="FirmwareGrace"/> while it could read the real puck.
+    /// Asked before every automatic hide and again right before it is sent, as a hide restarts the puck and would break off
+    /// a firmware update Steam started on it: not while Steam is in front, nor within <see cref="FirmwareGrace"/> after.
     /// </summary>
-    private bool SteamMayUpdateFirmware() =>
-        SteamInFront() || (_steamHadPuckAt is { } at && _time.GetUtcNow() - at < FirmwareGrace);
+    private bool HideIsSafe()
+    {
+        if (SteamFront is not { } steam)
+        {
+            return true;
+        }
+
+        return !steam.Now() && (steam.LastSeen is not { } seen || _time.GetElapsedTime(seen) >= FirmwareGrace);
+    }
+
+    private void WaitForSteam() =>
+        SetStatus(new(PanEmulationState.SettingUp, PanEmulationProblem.WaitingForSteam, Reason: "Steam hatte den Steam Controller gerade selbst"));
 
     /// <summary>The emulation runs: Pan still has it, the hiding still holds, the copy is up while the puck is there.</summary>
     /// <param name="mayRestart">
@@ -423,7 +440,17 @@ public sealed class PanEmulation : IVirtualXboxPads
 
         try
         {
-            session.Copy = await _hold.AttachAsync(cancellationToken);
+            using var timeout = new CancellationTokenSource(AttachTimeout, _time);
+            using var attach = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+            try
+            {
+                session.Copy = await _hold.AttachAsync(attach.Token);
+            }
+            catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                throw new TimeoutException($"Kopie für Steam nach {AttachTimeout.TotalSeconds:0} s nicht angesteckt");
+            }
+
             _log("Pan-Emulation: Kopie für Steam angesteckt");
             return true;
         }
@@ -450,7 +477,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     {
         _log($"Pan-Emulation {session.Generation} endet ({why})");
         _session = null;
-        var removed = await RemoveDevicesAsync(session);
+        var removed = await RemoveDevicesAsync(session) && !session.LeftBehind;
         if (session.Hidden && removed)
         {
             // Not shown (HidHide busy): Pan's teardown after the stop shows it, with its own retries.
@@ -520,9 +547,8 @@ public sealed class PanEmulation : IVirtualXboxPads
     {
         lock (_failures)
         {
-            var now = _time.GetUtcNow();
-            _failures.RemoveAll(at => now - at > FailureWindow);
-            _failures.Add(now);
+            _failures.RemoveAll(at => _time.GetElapsedTime(at) > FailureWindow);
+            _failures.Add(_time.GetTimestamp());
             if (_failures.Count <= MaxFailuresPerWindow || _gaveUp)
             {
                 return;
@@ -565,6 +591,9 @@ public sealed class PanEmulation : IVirtualXboxPads
         public ISteamControllerCopy? Copy { get; set; }
 
         public bool Ended { get; private set; }
+
+        /// <summary>A pad that failed to go: it may still be there, so only Pan's teardown may show the puck.</summary>
+        public bool LeftBehind { get; set; }
 
         public bool Add(GuardedPad pad)
         {
@@ -621,7 +650,15 @@ public sealed class PanEmulation : IVirtualXboxPads
             }
 
             session.Remove(this);
-            await pad.DisposeAsync();
+            try
+            {
+                await pad.DisposeAsync();
+            }
+            catch
+            {
+                session.LeftBehind = true;
+                throw;
+            }
         }
     }
 }

@@ -1,3 +1,4 @@
+using Arcadia.ControllerSupport.Copy;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Input;
 using Arcadia.Pan;
@@ -254,7 +255,7 @@ public sealed class PanEmulationTests
         var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
         {
             SteamControllerPresent = () => _present,
-            SteamInFront = () => steamInFront,
+            SteamFront = new SteamFrontWatch(() => steamInFront, _time),
         };
 
         await emulation.TickAsync();
@@ -286,7 +287,7 @@ public sealed class PanEmulationTests
         var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
         {
             SteamControllerPresent = () => _present,
-            SteamInFront = () => steamInFront,
+            SteamFront = new SteamFrontWatch(() => steamInFront, _time),
         };
         await emulation.TickAsync();
         _pan.HidingHolds = PanReason.HidingLost;
@@ -307,6 +308,101 @@ public sealed class PanEmulationTests
         _time.Advance(PanEmulation.FirmwareGrace);
         await emulation.TickAsync();
         Assert.Equal([1u, 2u], _pan.Hidden);
+    }
+
+    private PanEmulation WithSteam(Func<bool> steamInFront) =>
+        new(_pads, _pan, _copy, _time, _log.Add)
+        {
+            SteamControllerPresent = () => _present,
+            SteamFront = new SteamFrontWatch(steamInFront, _time),
+        };
+
+    [Fact]
+    [Trait("TestCase", "T242-20")]
+    public async Task After_Pans_teardown_with_Steam_in_front_the_next_hide_still_waits_the_whole_grace()
+    {
+        var steamInFront = false;
+        var emulation = WithSteam(() => steamInFront);
+        await emulation.TickAsync();
+        Assert.Equal([1u], _pan.Hidden);
+
+        // Pan tore it down: the real puck is visible while Steam is in front.
+        _pan.TearDown();
+        steamInFront = true;
+        await emulation.TickAsync();
+        steamInFront = false;
+        await emulation.TickAsync();
+
+        Assert.Equal([1u], _pan.Hidden);
+        Assert.Equal(PanEmulationProblem.WaitingForSteam, emulation.Status.Problem);
+        _time.Advance(PanEmulation.FirmwareGrace);
+        await emulation.TickAsync();
+        Assert.Equal(2, _pan.Hidden.Count);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-20")]
+    public async Task Steam_coming_to_the_front_while_VIIPER_starts_stops_the_hide_and_undoes_the_registration()
+    {
+        var steamInFront = false;
+        var emulation = WithSteam(() => steamInFront);
+        _pads.DuringPrepare = () => steamInFront = true;
+
+        await emulation.TickAsync();
+
+        Assert.Empty(_pan.Hidden);
+        Assert.Equal([1u], _pan.Started);
+        Assert.Equal([1u], _pan.Stopped);
+        Assert.Equal(PanEmulationProblem.WaitingForSteam, emulation.Status.Problem);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-9")]
+    public async Task A_pad_that_failed_to_go_earlier_leaves_the_puck_to_Pans_teardown()
+    {
+        await _emulation.TickAsync();
+        var pad = await _emulation.PlugAsync(CancellationToken.None);
+        _pads.FailUnplug = true;
+        await Assert.ThrowsAsync<IOException>(async () => await pad.DisposeAsync());
+        _events.Clear();
+
+        _enabled = false;
+        await _emulation.TickAsync();
+
+        Assert.Empty(_pan.Unhidden);
+        Assert.Equal(["copy detached", "stopped 1"], _events);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-6")]
+    public async Task A_hide_that_keeps_being_rejected_counts_as_a_failure_and_stops()
+    {
+        _pan.HideResult = PanReason.HidingLost;
+        for (var i = 0; i <= PanEmulation.MaxFailuresPerWindow; i++)
+        {
+            await _emulation.TickAsync();
+            _time.Advance(PanEmulation.HideRetry);
+        }
+
+        await _emulation.TickAsync();
+        Assert.Equal(PanEmulationState.Stopped, State);
+        Assert.Equal(PanEmulation.MaxFailuresPerWindow + 1, _pan.Started.Count);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-6")]
+    public async Task A_copy_that_hangs_while_attaching_times_out_and_shows_the_puck_again()
+    {
+        _copy.HangAttach = true;
+
+        var tick = _emulation.TickAsync();
+        await Task.Yield();
+        _time.Advance(PanEmulation.AttachTimeout);
+        await tick.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Equal(PanEmulationState.Paused, State);
+        Assert.Equal(PanEmulationProblem.CopyFailed, _emulation.Status.Problem);
+        Assert.Equal([1u], _pan.Unhidden);
     }
 
     [Fact]

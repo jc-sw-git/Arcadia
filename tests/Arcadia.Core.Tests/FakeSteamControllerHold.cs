@@ -30,17 +30,25 @@ public sealed class FakeSteamControllerHold : ISteamControllerHold
         }
     }
 
-    public Task<ISteamControllerCopy> AttachAsync(CancellationToken cancellationToken)
+    /// <summary>Attaching never finishes until it is cancelled (a hanging VIIPER).</summary>
+    public bool HangAttach;
+
+    public async Task<ISteamControllerCopy> AttachAsync(CancellationToken cancellationToken)
     {
         if (FailAttach is { } failure)
         {
             throw new InvalidOperationException(failure);
         }
 
+        if (HangAttach)
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+        }
+
         Attached++;
         Note("copy attached");
         Current = new FakeCopy(this);
-        return Task.FromResult<ISteamControllerCopy>(Current);
+        return Current;
     }
 
     public sealed class FakeCopy(FakeSteamControllerHold owner) : ISteamControllerCopy

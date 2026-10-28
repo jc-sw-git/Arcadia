@@ -137,7 +137,7 @@ public sealed partial class Guardian
                 lock (_lock)
                 {
                     _hiddenFor = _hiddenFor is { } before && before.Generation == message.Generation
-                        ? before with { Instances = [.. before.Instances, .. listed] }
+                        ? before with { Instances = new HashSet<string>(before.Instances.Concat(listed), StringComparer.OrdinalIgnoreCase) }
                         : new HiddenFor(message.Generation, imagePath, new HashSet<string>(listed, StringComparer.OrdinalIgnoreCase));
                 }
 

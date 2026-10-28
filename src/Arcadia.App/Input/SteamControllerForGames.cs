@@ -59,11 +59,12 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         TimeProvider time)
     {
         SteamControllerXboxPad? padForPresence = null;
+        var steamFront = new SteamFrontWatch(isSteamInFront, time);
         var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
         {
             Supported = panSupported,
             Enabled = () => settings.Current.PanEnabled,
-            SteamInFront = isSteamInFront,
+            SteamFront = steamFront,
             SteamControllerPresent = () => hold.PuckPresent || padForPresence?.SteamControllerConnected == true,
         };
         var routing = new SteamControllerRouting(
@@ -76,7 +77,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         var pad = new SteamControllerXboxPad(emulation, time, Services.AppLog.Write)
         {
             Wanted = () => routing.Current.PadWanted,
-            ForwardingAllowed = () => SteamControllerCopyRules.PadPasses(routing.Current, new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront())),
+            ForwardingAllowed = () => SteamControllerCopyRules.PadPasses(routing.Current, new ForegroundNow(isArcadiaActive(), isMouseModeOn(), steamFront.Now())),
             Combos = combos.Current,
             FeedAlive = guardian.Pulse,
         };

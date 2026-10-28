@@ -7,8 +7,9 @@ Agreed with the owner; don't change without asking. Read this before changing th
   launcher; the launcher tells (`IRunningGamesMonitor`: Steam's registry, Epic's log), else a process from the install
   folder (`ProcessGames`, only for launchers without a monitor, never on the UI thread). Asked every 2 s, also with
   Arcadia in the background, since it may be seen on a second screen (owner, 2026-10-21). From A until it is seen running
-  a game shows "Wird gestartet …" (2 min at most; while the launcher installs or updates the game meanwhile, for as
-  long as that runs, then 2 min again, owner 2026-10-24, #167); a second A then only toasts. A on a running game is "Zurück ins
+  a game shows "Wird gestartet …" (30 s at most, owner 2026-10-28; while the launcher installs or updates the game
+  meanwhile, for as long as that runs, #167; if the game doesn't run 10 s after the update, Arcadia starts it once more,
+  since Steam doesn't always do it, and waits 30 s again, owner 2026-10-28, #278); a second A then only toasts. A on a running game is "Zurück ins
   Spiel" (its window comes to the front, a toast if it has none); several games may run at once. The cover gets a
   "Läuft" badge (one badge per cover: while the launcher installs or updates the game, e.g. an update before the start,
   the cover shows that progress instead, #167), preview and detail page "Läuft seit HH:MM", likewise the search hits and the context menu. While it

@@ -72,6 +72,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         Session.LaunchersRead += (_, _) => RefreshLauncherSettings();
         Session.InstallStatesChanged += (_, _) => UpdateInstallStates();
         Session.RunStatesChanged += (_, _) => UpdateRunStates();
+        Session.StartAgainRequested += (_, gameKey) => StartAgain(gameKey);
         Session.Noticed += (_, notice) => ShowNotice(notice);
         _actions = new GameActions(this, launcher, controllerSupport, installs, running, launchedGames, settings, Toast, time);
         _actions.ForegroundRequested += (_, e) => ForegroundRequested?.Invoke(this, e);
@@ -576,6 +577,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     }
 
     /// <summary>A game is starting, its start failed, it runs or ended: every shown cover takes its run state again.</summary>
+    private void StartAgain(string gameKey)
+    {
+        // The game may not be on any shown page; its own cover is created for the start.
+        if (Session.LibraryOf(Game.LauncherIdOf(gameKey))?.Games.FirstOrDefault(g => g.Key == gameKey) is { } game)
+        {
+            _actions.StartAgain(CreateDetailTile(game));
+        }
+    }
+
     private void UpdateRunStates()
     {
         foreach (var tile in ShownTiles())

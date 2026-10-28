@@ -36,9 +36,33 @@ an update of an installed game is 1030. Steam downloads one app at a time but fl
 app whose `BytesDownloaded`/`BytesStaged` moved last is the downloading one. Cancelling a new install and
 uninstalling (38 for a moment) both delete the manifest. Steam updates runtimes/redistributables on its own —
 they are filtered like in the scanner.
-The manifest's byte counters are written rarely (an update of Schedule I: 0 at the start, complete at the end), so the
-monitor also reads `logs/content_log.txt` (`SteamContentLog`): `AppID <id> state changed : …,Update Running,…` marks
-the app Steam works on (a waiting or paused one lacks it), `App update changed : …Verifying Staged|Committing` the end.
+The manifest's byte counters are written only on a state change (an update of Schedule I: 0 at the start, complete at
+the end), and the paused flag came late or not at all (#278), so the monitor takes what a download does from
+`logs/content_log.txt` (`SteamContentLog`), which Steam writes the moment it happens (owner's PC, 2026-10-27):
+
+| Line | Meaning |
+|---|---|
+| `AppID <id> state changed : …,Update Running,…` | Steam works on the app (a waiting or paused one lacks it) |
+| `App update changed : Running Update,Preallocating,` (also `Verifying Installed`, `Reconfiguring`) | started, not downloading yet |
+| `update started : download 1485691824/5899237456, store …, stage …` | start or resume; the exact download bytes (the number Steam's download page shows) |
+| `App update changed : Running Update,Downloading,Staging,` | downloading |
+| `update canceled : Disabled (Suspended)` | paused by the user, also on a logoff |
+| `update canceled : Priority (Suspended)` | another download took over: queued |
+| `update canceled : Uninstall (Canceled)` | dropped for good |
+| `App update changed : …Verifying Staged` / `…Committing` | data complete, files verified or moved |
+| `finished update` | done |
+| `Client version: …` | Steam started anew (restart, account switch); queued apps follow as `state changed : …Update Queued,Update Started,` |
+
+There is **no per-app progress** while a download runs: only a global `Current download rate: X Mbps` about every 60 s.
+An account switch writes no login line; the running download gets `Disabled (Suspended)` in the same second, then a new
+session starts that doesn't mention the other account's downloads, so Arcadia shows them as paused. Arcadia shows a
+percentage only when it is exact (owner's decision): paused or queued, the larger of the manifest's and the last
+`update started` download bytes; running, none.
+**`steamapps/downloading/<id>` is no live source** (check script on the owner's PC, 2026-10-27, a 6.5 GB new install):
+Steam preallocates every file there before downloading (`preallocated 493 files (7510 MB)`), so the folder holds the
+whole staging size (7,875,211,774 of 7,888,336,863 bytes) from the first second, and the size on disk is the same; in
+4 minutes it grew by 1.6 MB while Steam went from 0 to 4 %. A pause rewrote the manifest at once
+(`BytesDownloaded` 139,259,776 = the next `update started`; Steam showed 2 %); while running it stayed unchanged.
 Steam has no update-only URI: `steam://install/<id>` is ignored for installed games, `steam://validate/<id>` updates
 but first verifies every file (and resets modified ones).
 

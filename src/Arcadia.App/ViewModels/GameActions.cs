@@ -226,10 +226,20 @@ public sealed class GameActions : IGameActionHost
         LaunchAsync(tile).Forget("Spielstart");
     }
 
-    private async Task LaunchAsync(GameTileViewModel tile)
+    /// <summary>
+    /// The launcher ran an update before the game and didn't start the game after it: Arcadia hands it over once more,
+    /// still "Wird gestartet …" (<see cref="RunningGamesTracker.StartAgainAfterInstall"/>).
+    /// </summary>
+    public void StartAgain(GameTileViewModel tile) => LaunchAsync(tile, again: true).Forget("Spielstart nach dem Update");
+
+    private async Task LaunchAsync(GameTileViewModel tile, bool again = false)
     {
-        _running.Starting(tile.Game.Key);
-        _owner.RunStatesChanged();
+        if (!again)
+        {
+            _running.Starting(tile.Game.Key);
+            _owner.RunStatesChanged();
+        }
+
         var progress = new Progress<LaunchStage>(stage => OnLaunchStage(tile, stage));
 
         // Games that use Steam Input themselves would get every input twice while SISR runs.

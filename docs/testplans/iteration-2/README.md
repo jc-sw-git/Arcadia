@@ -19,6 +19,7 @@ its file.
 | [210-split-main-view-model-detail-and-library.md](210-split-main-view-model-detail-and-library.md) | #210 | Split MainViewModel: detail page, LibraryViewModel and routing | 0 (refactoring) |
 | [141-software-tools-and-soundtracks.md](141-software-tools-and-soundtracks.md) | #141 | Software, tools and soundtracks in the library | 12 |
 | [083-steam-sign-in-by-qr-code.md](083-steam-sign-in-by-qr-code.md) | #83 | Steam sign-in by QR code for owned games | 8 |
+| [278-follow-steam-downloads-live.md](278-follow-steam-downloads-live.md) | #278 | Follow Steam's install progress, pauses and account switches live | 8 |
 | [280-steam-sign-in-on-steams-login-page.md](280-steam-sign-in-on-steams-login-page.md) | #280 | Steam sign-in on Steam's own login page | 11 |
 
 ## Exploratory test
@@ -39,3 +40,5 @@ Charter: –. Time box: –. Findings: –.
 | T141-1, T141-3, T141-5, T141-7, T141-8, T141-9 | `tests/Arcadia.App.Tests/EntryTypeTests.cs` |
 | T141-4, T141-7 (drawn) | `tests/Arcadia.App.Tests/Window/EntryTypeViewTests.cs` |
 | T83-1 (faked Steam), T83-2, T83-5, T83-6, T83-7 | `tests/Arcadia.App.Tests/SteamAccountTests.cs` |
+| T278-2 to T278-5 (faked Steam) | `tests/Arcadia.App.Tests/SteamInstallTests.cs` |
+| T278-8 (faked launcher) | `tests/Arcadia.App.Tests/GameStartTests.cs` |

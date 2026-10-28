@@ -234,6 +234,12 @@ public sealed class ControllerSupportService(
 
     public AppSettings Settings => sharedSettings.Current;
 
+    /// <summary>Whether a launcher's games use Steam Input themselves, by launcher id: <see cref="LauncherRegistry.GamesUseSteamInput"/>.</summary>
+    public required Func<string, bool> GamesUseSteamInput { get; init; }
+
+    /// <summary>The Steam Controller mode of the game with this key: true = "Arcadia", false = "Steam-Eingabe" (<see cref="AppSettings.UsesArcadiaPad"/>).</summary>
+    public bool UsesArcadiaPad(string gameKey) => Settings.UsesArcadiaPad(gameKey, GamesUseSteamInput);
+
     /// <summary>
     /// "Steam Controller Kompatibilität" is on and SISR may run. Never while <see cref="StartsSisr"/> is off: then all of
     /// SISR's running, pausing and health stays idle, and only the setup is left for what SISR brings (VIIPER, usbip).
@@ -666,7 +672,7 @@ public sealed class ControllerSupportService(
     }
 
     /// <summary>Per game: true = "Arcadia" (formerly "Xbox Controller (SISR)"), false = "Steam-Eingabe".</summary>
-    public void SetModeFor(Game game, bool useSisr) => UpdateSettings(settings => settings.WithControllerSupportChoice(game, useSisr));
+    public void SetModeFor(Game game, bool useSisr) => UpdateSettings(settings => settings.WithControllerSupportChoice(game, useSisr, GamesUseSteamInput));
 
     /// <summary>
     /// Called periodically: restarts a crashed SISR, rechecks health, checks for updates once a day.
@@ -1273,7 +1279,7 @@ public sealed class ControllerSupportService(
         }
 
         SteamInputPause? steamInput = null;
-        if (Settings.ControllerSupportFor(game))
+        if (Settings.ControllerSupportFor(game, GamesUseSteamInput))
         {
             if (SteamAppIdOf(game) is not { } appId)
             {

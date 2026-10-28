@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Net;
 using Arcadia.ControllerSupport;
 using Arcadia.Pan;
+using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Steam;
@@ -23,6 +24,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
     private readonly string _directory = Directory.CreateTempSubdirectory("arcadia-sisr-").FullName;
     private readonly HttpClient _http;
 
+    // The built-in launchers as the registry knows them: Steam's games use Steam Input, Epic's don't.
+    private static readonly LauncherRegistry Registered = FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Steam), new FakeIntegration(KnownLaunchers.Epic));
+
     public ControllerSupportServiceTests()
     {
         _http = new HttpClient(_api);
@@ -39,7 +43,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings { SteamControllerSupport = enabled });
-        return new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log };
+        return new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
     }
 
     private void Log(string line)
@@ -1042,7 +1046,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         await Task.WhenAll(games.Select(game => Task.Run(() => service.SetModeFor(game, useSisr: true))));
 
         var saved = new SettingsStore(Path.Combine(_directory, "settings.json")).Load();
-        Assert.All(games, game => Assert.True(saved.ControllerSupportFor(game)));
+        Assert.All(games, game => Assert.True(saved.ControllerSupportFor(game, Registered.GamesUseSteamInput)));
     }
 
     [Fact]
@@ -1571,7 +1575,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
-        var service = new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, StartsSisr = false };
+        var service = new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, StartsSisr = false };
         _platform.IsPanReady = false;
 
         await service.RefreshAsync();
@@ -1596,7 +1600,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
-        return new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, StartsSisr = false };
+        return new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, StartsSisr = false };
     }
 
     [Fact]
@@ -1732,7 +1736,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
-        var service = new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, StartsSisr = false };
+        var service = new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, StartsSisr = false };
         _platform.IsPanReady = false;
 
         // The first tick looks once, for the header; closed settings don't look again (registry, service list).
@@ -1771,7 +1775,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
         var settings = new SettingsService(store);
-        var service = new ControllerSupportService(settings, _sisr, _http, _time, _platform) { Log = Log, StartsSisr = false };
+        var service = new ControllerSupportService(settings, _sisr, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, StartsSisr = false };
         _platform.IsUsbipReady = false;
         _platform.HidHideVersion = null;
         _platform.HidHideInstallError = new InvalidOperationException("Pan ist eingerichtet, HidHide aber nicht");

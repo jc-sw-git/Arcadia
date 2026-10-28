@@ -80,6 +80,39 @@ public sealed class SteamControllerModeTests
         Assert.False(arcadia.XboxPad.IsPlugged);
     }
 
+    /// <summary>
+    /// #156: the mode chosen against each launcher's default is stored as before (Steam game "Arcadia" = true, GOG game
+    /// "Steam-Eingabe" = false) and keeps its meaning after a restart, now that the default comes from the launcher.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task A_mode_chosen_against_the_launchers_default_is_stored_as_before_and_kept_after_a_restart()
+    {
+        using var arcadia = await StartWithSteamControllerAsync();
+        var steamGame = arcadia.Main.Library.FocusedGame!.Game.Key;
+        arcadia.Click(arcadia.Main.CycleControllerSupportCommand);
+        arcadia.Press(UiAction.NextTab);
+        var gogGame = arcadia.Main.Library.FocusedGame!.Game.Key;
+        arcadia.Click(arcadia.Main.CycleControllerSupportCommand);
+
+        var saved = new SettingsStore(arcadia.SettingsPath).Load().ControllerSupportOverrides;
+        Assert.Equal(new Dictionary<string, bool> { [steamGame] = true, [gogGame] = false }, saved);
+
+        using var restarted = await arcadia.RestartAsync();
+        restarted.Sdl.Plug(KnownPads.SteamController);
+        restarted.StartControllers();
+        await restarted.TickSteamControllerAsync();
+        Assert.Equal("GOG Galaxy", restarted.SelectedTab?.Name); // the last tab comes back
+        Assert.Equal(gogGame, restarted.Main.Library.FocusedGame!.Game.Key);
+        Assert.Equal(ControllerModes.Steam, restarted.Main.FocusedControllerSupportText);
+        restarted.Press(UiAction.Right);
+        Assert.Equal(ControllerModes.Arcadia, restarted.Main.FocusedControllerSupportText); // the next GOG game keeps the default
+        restarted.Press(UiAction.PreviousTab);
+        Assert.Equal(steamGame, restarted.Main.Library.FocusedGame!.Game.Key);
+        Assert.Equal(ControllerModes.Arcadia, restarted.Main.FocusedControllerSupportText);
+        restarted.Press(UiAction.Right);
+        Assert.Equal(ControllerModes.Steam, restarted.Main.FocusedControllerSupportText);
+    }
+
     /// <summary>T213-11 (#119): a Steam game started directly in Steam takes its mode as well, also without being in the library.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T213-11")]

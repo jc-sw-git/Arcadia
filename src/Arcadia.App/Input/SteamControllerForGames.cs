@@ -78,7 +78,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         };
         var routing = new SteamControllerRouting(
             activeGames,
-            key => settings.Current.UsesArcadiaPad(key),
+            controllerSupport.UsesArcadiaPad,
             runningSteamAppId,
             () => emulation.Status.State == PanEmulationState.Running,
             Services.AppLog.Write);

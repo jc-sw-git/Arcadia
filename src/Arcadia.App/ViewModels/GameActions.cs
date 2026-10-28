@@ -349,7 +349,7 @@ public sealed class GameActions : IGameActionHost
 
     /// <summary>"Arcadia" or "Steam-Eingabe"; while Pan's emulation doesn't run always "Steam-Eingabe", as that is what the game gets.</summary>
     public string ControllerModeOf(Game game) =>
-        !_owner.ControllerModeBroken && _settings.Current.UsesArcadiaPad(game.Key) ? ControllerModes.Arcadia : ControllerModes.Steam;
+        !_owner.ControllerModeBroken && _controllerSupport.UsesArcadiaPad(game.Key) ? ControllerModes.Arcadia : ControllerModes.Steam;
 
     bool IGameActionHost.ShowControllerMode => _owner.ShowControllerMode;
 
@@ -365,7 +365,7 @@ public sealed class GameActions : IGameActionHost
         HandOver(tile, tile.Game.OpenInLauncher, $"{tile.LauncherName} wird geöffnet …", $"Demo-Spiel: Hier würde jetzt {tile.LauncherName} geöffnet.");
 
     void IGameActionHost.ToggleControllerMode(GameTileViewModel tile) =>
-        _controllerSupport.SetModeFor(tile.Game, !_settings.Current.UsesArcadiaPad(tile.Game.Key));
+        _controllerSupport.SetModeFor(tile.Game, !_controllerSupport.UsesArcadiaPad(tile.Game.Key));
 
     void IGameActionHost.Uninstall(GameTileViewModel tile)
     {

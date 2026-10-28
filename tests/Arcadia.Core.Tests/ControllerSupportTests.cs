@@ -1,11 +1,18 @@
 using Arcadia.ControllerSupport;
+using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
+using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Demo;
 
 namespace Arcadia.Core.Tests;
 
 public class ControllerSupportTests
 {
+    // Steam and Epic as registered: Steam says its games use Steam Input, Epic doesn't.
+    private static readonly Func<string, bool> Builtin =
+        FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Steam), new FakeIntegration(KnownLaunchers.Epic)).GamesUseSteamInput;
+
     private static Game G(string launcher) => new()
     {
         Id = "x",
@@ -19,8 +26,8 @@ public class ControllerSupportTests
     {
         var settings = new AppSettings { SteamControllerSupport = false };
 
-        Assert.False(settings.ControllerSupportFor(G("epic")));
-        Assert.False(settings.ControllerSupportFor(G("steam")));
+        Assert.False(settings.ControllerSupportFor(G("epic"), Builtin));
+        Assert.False(settings.ControllerSupportFor(G("steam"), Builtin));
     }
 
     [Fact]
@@ -28,12 +35,12 @@ public class ControllerSupportTests
     {
         var settings = new AppSettings { SteamControllerSupport = false };
 
-        Assert.True(settings.UsesArcadiaPad("epic:x"));
-        Assert.False(settings.UsesArcadiaPad("steam:570"));
+        Assert.True(settings.UsesArcadiaPad("epic:x", Builtin));
+        Assert.False(settings.UsesArcadiaPad("steam:570", Builtin));
 
-        settings = settings.WithControllerSupportChoice(G("steam"), useSisr: true);
-        Assert.True(settings.UsesArcadiaPad("steam:x"));
-        Assert.False(settings.UsesArcadiaPad("steam:570"));
+        settings = settings.WithControllerSupportChoice(G("steam"), useSisr: true, Builtin);
+        Assert.True(settings.UsesArcadiaPad("steam:x", Builtin));
+        Assert.False(settings.UsesArcadiaPad("steam:570", Builtin));
     }
 
     [Fact]
@@ -41,8 +48,8 @@ public class ControllerSupportTests
     {
         var settings = new AppSettings { SteamControllerSupport = true };
 
-        Assert.True(settings.ControllerSupportFor(G("epic")));
-        Assert.False(settings.ControllerSupportFor(G("steam")));
+        Assert.True(settings.ControllerSupportFor(G("epic"), Builtin));
+        Assert.False(settings.ControllerSupportFor(G("steam"), Builtin));
     }
 
     [Fact]
@@ -54,27 +61,64 @@ public class ControllerSupportTests
             .WithControllerSupportOverride(steamGame, true)
             .WithControllerSupportOverride(epicGame, false);
 
-        Assert.True(settings.ControllerSupportFor(steamGame));
-        Assert.False(settings.ControllerSupportFor(epicGame));
+        Assert.True(settings.ControllerSupportFor(steamGame, Builtin));
+        Assert.False(settings.ControllerSupportFor(epicGame, Builtin));
 
         settings = settings.WithControllerSupportOverride(epicGame, null);
         Assert.Null(settings.ControllerSupportOverrideFor(epicGame));
-        Assert.True(settings.ControllerSupportFor(epicGame));
+        Assert.True(settings.ControllerSupportFor(epicGame, Builtin));
     }
 
     [Fact]
     public void Choosing_a_games_default_mode_stores_nothing()
     {
         var steamGame = G("steam");
-        var settings = new AppSettings { SteamControllerSupport = true }.WithControllerSupportChoice(steamGame, useSisr: true);
-        Assert.True(settings.ControllerSupportFor(steamGame));
+        var settings = new AppSettings { SteamControllerSupport = true }.WithControllerSupportChoice(steamGame, useSisr: true, Builtin);
+        Assert.True(settings.ControllerSupportFor(steamGame, Builtin));
         Assert.True(settings.ControllerSupportOverrideFor(steamGame));
 
         // Back to "Steam Input", the default for Steam games: the override is gone again.
-        settings = settings.WithControllerSupportChoice(steamGame, useSisr: false);
-        Assert.False(settings.ControllerSupportFor(steamGame));
+        settings = settings.WithControllerSupportChoice(steamGame, useSisr: false, Builtin);
+        Assert.False(settings.ControllerSupportFor(steamGame, Builtin));
         Assert.Null(settings.ControllerSupportOverrideFor(steamGame));
         Assert.Empty(settings.ControllerSupportOverrides);
+    }
+
+    [Fact]
+    public void A_launcher_that_says_its_games_use_Steam_Input_starts_them_on_Steam_Eingabe()
+    {
+        var plugin = FakeIntegration.LauncherOf("plugin") with { GamesUseSteamInput = true };
+        var registry = FakeIntegration.Registry(new FakeIntegration(plugin), new FakeIntegration(FakeIntegration.LauncherOf("other")));
+        var settings = new AppSettings { SteamControllerSupport = true };
+
+        Assert.False(settings.UsesArcadiaPad("plugin:1", registry.GamesUseSteamInput));
+        Assert.True(settings.UsesArcadiaPad("other:1", registry.GamesUseSteamInput));
+
+        // Its default is what the launcher says, so choosing it stores nothing.
+        var game = G("plugin");
+        Assert.Empty(settings.WithControllerSupportChoice(game, useSisr: false, registry.GamesUseSteamInput).ControllerSupportOverrides);
+        Assert.True(settings.WithControllerSupportChoice(game, useSisr: true, registry.GamesUseSteamInput).ControllerSupportFor(game, registry.GamesUseSteamInput));
+    }
+
+    [Fact]
+    public void A_game_of_a_launcher_that_is_not_registered_starts_on_Arcadia()
+    {
+        // E.g. a game key left in settings.json by a launcher plugin that was removed since.
+        var registry = FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Steam));
+        var settings = new AppSettings { SteamControllerSupport = true };
+
+        Assert.False(registry.GamesUseSteamInput("removed"));
+        Assert.True(settings.UsesArcadiaPad("removed:1", registry.GamesUseSteamInput));
+        Assert.True(settings.ControllerSupportFor(G("removed"), registry.GamesUseSteamInput));
+    }
+
+    [Fact]
+    public void Of_the_built_in_launchers_only_Steam_says_its_games_use_Steam_Input()
+    {
+        var registry = FakeIntegration.Registry([.. BuiltInLaunchers.Create(TimeProvider.System, demo: true)], _ => true);
+
+        Assert.Equal(["steam"], registry.All.Where(i => i.Launcher.GamesUseSteamInput).Select(i => i.Launcher.Id));
+        Assert.Contains(registry.All, i => i is DemoIntegration);
     }
 
     [Fact]

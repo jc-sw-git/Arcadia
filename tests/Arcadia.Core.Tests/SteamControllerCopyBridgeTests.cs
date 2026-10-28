@@ -146,6 +146,45 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
 
     [Fact]
     [Trait("TestCase", "T242-1")]
+    public async Task Data_Steam_sends_to_the_serial_interface_never_reaches_the_puck_and_counts_as_an_update()
+    {
+        _forwarding = true;
+        // A haptics id, which would pass on a HID interface: on the serial interface nothing passes.
+        await SendAsync(HidProxyFrames.Output, Cdc, [0x80, 0x01, 0x02]);
+        await ControlAsync(1, Setup(0x21, 0x0A, 0, Hid, 0));
+
+        Assert.Empty(_puck.Outputs);
+        Assert.Single(_updates);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-1")]
+    public async Task An_output_report_the_allow_list_doesnt_name_never_reaches_the_puck_and_counts_as_an_update()
+    {
+        _forwarding = true;
+        await SendAsync(HidProxyFrames.Output, Hid, [0x42, 0x01, 0x02]);
+        var reply = await ControlAsync(1, Setup(0x21, 0x09, (int)HidReportType.Output << 8 | 0x42, Hid, 3), [0x42, 0x03, 0x04]);
+
+        Assert.True(reply.Done);
+        Assert.Empty(_puck.Outputs);
+        Assert.Equal(2, _updates.Count);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-6")]
+    public async Task A_GET_REPORT_the_puck_fails_is_refused_rather_than_answered_with_nothing()
+    {
+        _puck.Answer = [0x01, 0x83, 0x05];
+        _puck.FailGetReport = true;
+
+        var reply = await ControlAsync(1, GetReport(64));
+
+        Assert.False(reply.Done);
+        Assert.Empty(reply.Data);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-1")]
     public async Task Once_the_copy_closes_nothing_Steam_sent_reaches_the_puck()
     {
         _puck.HoldFeatures.Reset();
@@ -309,8 +348,16 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
 
         public void WriteOutput(byte iface, ReadOnlySpan<byte> report) => OutputQueue.Enqueue(report.ToArray());
 
+        /// <summary>The next GET_REPORT throws, as when the puck doesn't answer.</summary>
+        public bool FailGetReport { get; set; }
+
         public int GetReport(byte iface, HidReportType type, byte id, Span<byte> report)
         {
+            if (FailGetReport)
+            {
+                throw new IOException("Das Gerät antwortet nicht.");
+            }
+
             Answer.CopyTo(report);
             return Answer.Length;
         }

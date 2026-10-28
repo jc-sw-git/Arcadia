@@ -389,7 +389,7 @@ public sealed class SdlGamepadSource : IGamepadSource
     }
 
     private GamepadReading Read(uint id, nint handle, PadDevice device) =>
-        SdlPadMapping.ToReading((int)id, _sdl.Read(handle)) with { IsSteamController = device.Type == PadType.Steam };
+        SdlPadMapping.ToReading((int)id, _sdl.Read(handle)) with { Type = device.Type };
 
     private void Disconnect(uint id)
     {

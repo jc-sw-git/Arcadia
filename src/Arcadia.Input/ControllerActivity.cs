@@ -90,5 +90,5 @@ public sealed class ControllerActivity
 
     private static bool Touched(TouchpadReading touchpad) => touchpad.Touched || touchpad.Clicked;
 
-    private static bool Pushed(StickPosition stick) => Math.Abs(stick.X) > StickDeadZone || Math.Abs(stick.Y) > StickDeadZone;
+    internal static bool Pushed(StickPosition stick) => Math.Abs(stick.X) > StickDeadZone || Math.Abs(stick.Y) > StickDeadZone;
 }

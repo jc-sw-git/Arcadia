@@ -767,7 +767,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         SettingsCategoryViewModel[] categories =
         [
             new LauncherSettingsViewModel(this, changes, _time, launcherId),
-            new ControllerSettingsViewModel(_controllerSupport, changes, _pan, GameInTheWay, _time),
+            new ControllerSettingsViewModel(_controllerSupport, changes, _pan, GameInTheWay, message => Toast.Show(message), _time),
             new AboutSettingsViewModel(_updates, _updates.InstallAsync),
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
@@ -962,7 +962,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         // The mode only matters with a Steam Controller; other pads are never emulated (#72, #213). With Pan off nothing
         // is emulated, so there is no mode either (#242).
         var show = _steamControllerSeenBySdl
-            && (_controllerSupport.StartsSisr || (_settings.Current.PanEnabled && _pan.Status.State != PanEmulationState.Unsupported));
+            && _settings.Current.PanEnabled && _pan.Status.State != PanEmulationState.Unsupported;
         if (ShowControllerSupport != show)
         {
             ShowControllerSupport = show;

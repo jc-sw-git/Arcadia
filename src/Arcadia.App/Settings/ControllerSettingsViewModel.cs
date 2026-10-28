@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
@@ -18,102 +17,75 @@ public partial class PromptButtonViewModel(Action activate) : ViewModels.ViewMod
     public virtual void Activate() => activate();
 }
 
-/// <summary>A Steam account in the marker prompt; accounts that already have the marker stay ticked.</summary>
-public sealed partial class MarkerAccountViewModel(MarkerAccount account) : PromptButtonViewModel(static () => { })
-{
-    public uint Id => account.Id;
-
-    public string Name => account.Name;
-
-    public bool HasMarker => account.HasMarker;
-
-    [ObservableProperty]
-    public partial bool IsChecked { get; set; } = account.HasMarker;
-
-    public IRelayCommand ToggleCommand => field ??= new RelayCommand(Activate);
-
-    public override void Activate()
-    {
-        if (!HasMarker)
-        {
-            IsChecked = !IsChecked;
-        }
-    }
-}
-
-/// <summary>A question over the settings that has to be answered before "SISR installieren" can go on.</summary>
+/// <summary>A question over the settings that has to be answered before an action that closes Steam can go on.</summary>
 public enum SettingsPrompt
 {
     None,
 
-    /// <summary>A Steam game runs; installing would end it, because Steam has to close.</summary>
+    /// <summary>A Steam game runs; the action would end it, because Steam has to close.</summary>
     SteamGameRunning,
 
-    /// <summary>Steam runs; asking whether Arcadia may close it for the install.</summary>
+    /// <summary>Steam runs; asking whether Arcadia may close it for the action.</summary>
     ConfirmSteamStop,
 
-    /// <summary>Switching on started Steam, but it wasn't up within a minute; the setting is off again.</summary>
-    SteamStartFailed,
-
-    /// <summary>Several Steam accounts: which of them get SISR's marker in their Steam library.</summary>
-    ChooseMarkerAccounts,
+    /// <summary>"SISR entfernen" runs (#214): what it does right now.</summary>
+    RemovingSisr,
 }
 
 /// <summary>
-/// The category "Controller" (#15): the group "Steam" with Steam Controller Support (switch, problems with their fix,
-/// SISR's update) and Steam's desktop layout (#169), then the mouse mode and "Zurück zu Arcadia", as rows of the page. Status, how it works, drawbacks and SISR's
-/// version are nothing to set, so they are boxes in the switch's info panel (owner, 2026-10-22). Installing SISR asks its
-/// questions in dialogs over the page.
+/// The category "Controller" (#15): the group "Pan" (#242) with the emulation's parts, the group "Steam" with Steam's
+/// desktop layout (#169), the group "SISR" while the old SISR is there (#214), then the mouse mode and "Zurück zu
+/// Arcadia", as rows of the page. A driver fix that restarts the puck (#296) and "SISR entfernen" with its Steam marker
+/// close Steam, so they ask first in dialogs over the page.
 /// </summary>
 public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewModel
 {
-    /// <summary>
-    /// Everything Steam does to the controllers, in one group (owner, 2026-10-24). The desktop layout isn't a
-    /// dependent of the SISR switch: it covers every controller, SISR only the Steam Controller.
-    /// </summary>
+    /// <summary>Everything Steam does to the controllers, in one group (owner, 2026-10-24).</summary>
     private const string SteamGroup = "STEAM";
+
+    private const string SteamDesktopLayoutKey = "steam-desktop-layout";
 
     private static readonly TimeSpan PromptCheckInterval = TimeSpan.FromSeconds(1);
 
     private readonly ControllerSupportService _support;
+    private readonly SettingsChanges _changes;
+    private readonly Action<string> _notify;
     private readonly IPanEmulationView _pan;
     private readonly PanRows _panRows;
-    private readonly SisrRowViewModel _sisr;
-    private readonly ActionRowViewModel _restore;
-    private readonly ActionRowViewModel _update;
+    private readonly SisrRows _sisrRows;
     private readonly MouseModeRows _mouseMode;
     private readonly ReturnWithViewRows _returnWithView;
     private readonly SwitchRowViewModel _steamDesktopLayout;
-    private readonly Dictionary<string, ActionRowViewModel> _issueRows = [];
 
     private readonly PromptButtonViewModel _retryInstall;
     private readonly PromptButtonViewModel _closeGamePrompt;
     private readonly PromptButtonViewModel _confirmSteamStop;
     private readonly PromptButtonViewModel _cancelSteamStop;
-    private readonly PromptButtonViewModel _retrySteamStart;
-    private readonly PromptButtonViewModel _cancelSteamStart;
-    private readonly PromptButtonViewModel _confirmMarkerAccounts;
-    private readonly PromptButtonViewModel _cancelMarkerAccounts;
 
-    /// <summary>The accounts chosen in the marker prompt for the install under way; null until chosen (or not asked).</summary>
-    private IReadOnlyCollection<uint>? _markerChoice;
-
-    /// <summary>
-    /// The driver fix the Steam prompts are open for (#296): it restarts the puck, so Steam closes for it; null while
-    /// they are open for "SISR installieren".
-    /// </summary>
+    /// <summary>The driver fix the Steam prompts are open for (#296): it restarts the puck, so Steam closes for it.</summary>
     private HealthFix? _steamStopFix;
+
+    /// <summary>The Steam prompts are open for "SISR entfernen", whose marker needs Steam closed (#214).</summary>
+    private bool _forSisr;
+
+    /// <summary>"SISR entfernen" closes Steam: its dialog says Steam comes back.</summary>
+    private bool _sisrRemovalStopsSteam;
+
     private readonly DispatcherTimer _promptCheck;
     private bool _disposed;
     private int _promptFocus;
 
-    /// <param name="pan">Pan's emulation (#242); its group replaces "Steam Controller Kompatibilität" once SISR no longer runs.</param>
+    /// <param name="pan">Pan's emulation (#242).</param>
     /// <param name="gameInTheWay">The title of a game that runs or starts: the switch "Controller-Wächter (Pan)" waits for its end.</param>
+    /// <param name="notify">Shows a toast, e.g. "SISR ist vollständig entfernt."</param>
     /// <param name="time">Times the held row "Steam Controller und Puck übernehmen"; tests pass a fake.</param>
-    public ControllerSettingsViewModel(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay, TimeProvider? time = null)
+    public ControllerSettingsViewModel(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay,
+        Action<string> notify, TimeProvider? time = null)
         : base("Controller", "M7 7h10a5 5 0 0 1 4.6 6.9l-1.3 3.2a2.3 2.3 0 0 1-3.9.6L14.6 16H9.4l-1.8 1.7a2.3 2.3 0 0 1-3.9-.6l-1.3-3.2A5 5 0 0 1 7 7z M8 10v3 M6.5 11.5h3 M16 10.5v.01 M17.5 12.5v.01")
     {
         _support = support;
+        _changes = changes;
+        _notify = notify;
         _pan = pan;
         _panRows = new PanRows(support, changes, pan, gameInTheWay, ApplyFix, time ?? TimeProvider.System, action => Dispatcher.UIThread.Post(action));
         _panRows.Switched += Refresh;
@@ -122,40 +94,17 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             Refresh();
             FocusRow(PanRows.MainKey);
         };
-        _sisr = new SisrRowViewModel(ActivateSisr)
-        {
-            Group = SteamGroup,
-            Subtitle = "Erlaubt es, den Steam Controller auch in Spielen außerhalb von Steam zu verwenden",
-        };
-        _update = new ActionRowViewModel("sisr-update", "SISR aktualisieren", () => _support.InstallUpdateAsync().Forget("SISR aktualisieren"))
-        {
-            Group = SteamGroup,
-            Indent = 1,
-            ActionText = "Aktualisieren",
-            IsPrimary = true,
-        };
-        _restore = new ActionRowViewModel("pan-restore", "Controller wiederherstellen", () => _support.RestoreControllersAsync().Forget("Controller wiederherstellen"))
-        {
-            Group = SteamGroup,
-            Indent = 1,
-            Subtitle = "Gibt die echten Controller zurück, falls Arcadias Wächterdienst Pan hängt",
-            ActionText = "Wiederherstellen",
-            Info =
-            [
-                new InfoText("Pan, Arcadias Wächterdienst, nimmt den Xbox Controller von Arcadia zurück, wenn Arcadia abstürzt oder hängt. Bleibt trotzdem ein Xbox Controller übrig, den kein Programm mehr sieht, räumt diese Aktion mit Pans Journal auf – mit einer Windows-Abfrage nach Administratorrechten."),
-                new InfoText("Im Normalfall ist das nie nötig."),
-            ],
-        };
+        _sisrRows = new SisrRows(support, RemoveSisr, KeepSisr);
         _mouseMode = new MouseModeRows(changes);
         _returnWithView = new ReturnWithViewRows(changes);
         _steamDesktopLayout = new SwitchRowViewModel(
-            "steam-desktop-layout",
+            SteamDesktopLayoutKey,
             "Steams Desktop-Belegung ignorieren",
             () => changes.Current.IgnoreSteamDesktopLayout,
             value => changes.Apply(s => s with { IgnoreSteamDesktopLayout = value }, "Steams Desktop-Belegung ignorieren"))
         {
             Group = SteamGroup,
-            Subtitle = "Alle Controller: z. B. Steams Alt+Tab bei ⧉ + ≡ verwerfen",
+            Subtitle = "Alle Controller: Maus und Tasten, die Steam simuliert, kommen nicht an",
             Info =
             [
                 new InfoText("Läuft Steam, macht es außerhalb von Spielen aus manchen Controller-Eingaben selbst Tasten („Desktop-Belegung“): Hältst du ⧉ + ≡, löst Steam mit jedem Controller ein Alt+Tab aus."),
@@ -164,17 +113,11 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             ],
         };
 
-        _retryInstall = new PromptButtonViewModel(ContinueInstall);
+        _retryInstall = new PromptButtonViewModel(ContinueSteamStop);
         _closeGamePrompt = new PromptButtonViewModel(ClosePrompt);
         _confirmSteamStop = new PromptButtonViewModel(ConfirmSteamStop);
         _cancelSteamStop = new PromptButtonViewModel(ClosePrompt);
-        _retrySteamStart = new PromptButtonViewModel(RetrySteamStart);
-        _cancelSteamStart = new PromptButtonViewModel(ClosePrompt);
-        _confirmMarkerAccounts = new PromptButtonViewModel(ConfirmMarkerAccounts);
-        _cancelMarkerAccounts = new PromptButtonViewModel(ClosePrompt);
-        RetryInstallCommand = new RelayCommand(ContinueInstall);
-        ConfirmMarkerAccountsCommand = new RelayCommand(ConfirmMarkerAccounts);
-        RetrySteamStartCommand = new RelayCommand(RetrySteamStart);
+        RetryInstallCommand = new RelayCommand(ContinueSteamStop);
         ConfirmSteamStopCommand = new RelayCommand(ConfirmSteamStop);
         ClosePromptCommand = new RelayCommand(ClosePrompt);
 
@@ -182,36 +125,24 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _promptCheck = new DispatcherTimer(PromptCheckInterval, DispatcherPriority.Background,
             async (_, _) => await AppErrors.Guard(CheckPromptAsync, "Laufendes Steam-Spiel prüfen"));
 
-        // This DispatcherTimer constructor starts the timer; it only runs while an install prompt is open.
+        // This DispatcherTimer constructor starts the timer; it only runs while a Steam prompt is open.
         _promptCheck.Stop();
 
         // An old failure describes a moment that is over; the page opens without it.
         _support.ClearError();
         _support.Changed += OnSupportChanged;
+        _support.SisrRemoved += OnSisrRemoved;
         _pan.Changed += OnPanChanged;
         _pan.Takeover.Changed += OnPanChanged;
         Refresh();
-        if (_support.UnseenSteamStartFailure)
-        {
-            ShowSteamStartFailure();
-        }
 
-        // Only while the settings are open does the tick recheck what they offer (SISR installed elsewhere).
+        // Only while the settings are open does the tick recheck the parts, HidHide's state and SISR.
         _support.WatchSetup = true;
         Task.Run(() => _support.RefreshAsync()).Forget("Einstellungen aktualisieren");
     }
 
     /// <summary>Steam's page points here too: Steam decides how the controllers behave outside its games (#169).</summary>
-    public override IReadOnlyList<SettingsLink> LauncherPageLinks => _support.StartsSisr ? SisrLinks : PanLinks;
-
-    private static readonly IReadOnlyList<SettingsLink> SisrLinks =
-    [
-        new(KnownLaunchers.Steam.Id, "Controller-Einstellungen für Steam", "Steam Controller Kompatibilität und Steams Desktop-Belegung", "sisr",
-        [
-            new InfoText("Was Steam mit deinen Controllern macht, stellst du unter Controller → Steam ein: ob Arcadia den Steam Controller mit SISR auch außerhalb von Steam nutzbar macht, und ob es Steams Desktop-Belegung für alle Controller ignoriert."),
-            new InfoText("[A] springt dorthin, [B] kommt hierher zurück."),
-        ]),
-    ];
+    public override IReadOnlyList<SettingsLink> LauncherPageLinks => PanLinks;
 
     private static readonly IReadOnlyList<SettingsLink> PanLinks =
     [
@@ -230,26 +161,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     public PromptButtonViewModel CancelSteamStopItem => _cancelSteamStop;
 
-    public PromptButtonViewModel RetrySteamStartItem => _retrySteamStart;
-
-    public PromptButtonViewModel CancelSteamStartItem => _cancelSteamStart;
-
-    public PromptButtonViewModel ConfirmMarkerAccountsItem => _confirmMarkerAccounts;
-
-    public PromptButtonViewModel CancelMarkerAccountsItem => _cancelMarkerAccounts;
-
-    public IRelayCommand ConfirmMarkerAccountsCommand { get; }
-
-    /// <summary>The Steam accounts in the marker prompt.</summary>
-    public ObservableCollection<MarkerAccountViewModel> MarkerAccounts { get; } = [];
-
-    /// <summary>"Weiter" in the marker prompt needs at least one account ticked.</summary>
-    [ObservableProperty]
-    public partial bool CanConfirmMarkerAccounts { get; private set; }
-
     public IRelayCommand RetryInstallCommand { get; }
-
-    public IRelayCommand RetrySteamStartCommand { get; }
 
     public IRelayCommand ConfirmSteamStopCommand { get; }
 
@@ -258,7 +170,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     /// <summary>The dialog over the page, if any.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsSteamStartFailedPrompt), nameof(IsMarkerPrompt), nameof(IsQuestionPrompt), nameof(IsWarningPrompt), nameof(PromptBackText), nameof(SteamStopDetail))]
+    [NotifyPropertyChangedFor(nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsRemovingSisrPrompt), nameof(IsQuestionPrompt), nameof(IsWarningPrompt),
+        nameof(PromptBackText), nameof(SteamStopText), nameof(SteamStopDetail), nameof(GamePromptText), nameof(CanRetryGamePrompt), nameof(ConfirmSteamStopText), nameof(RemovingSisrText))]
     public partial SettingsPrompt Prompt { get; private set; }
 
     partial void OnPromptChanged(SettingsPrompt value) => Dialog = value == SettingsPrompt.None ? null : this;
@@ -267,54 +180,56 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     public bool IsSteamStopPrompt => Prompt == SettingsPrompt.ConfirmSteamStop;
 
-    public bool IsSteamStartFailedPrompt => Prompt == SettingsPrompt.SteamStartFailed;
+    public bool IsRemovingSisrPrompt => Prompt == SettingsPrompt.RemovingSisr;
 
-    public bool IsMarkerPrompt => Prompt == SettingsPrompt.ChooseMarkerAccounts;
-
-    /// <summary>The prompt asks a question ("?").</summary>
-    public bool IsQuestionPrompt => Prompt is SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ChooseMarkerAccounts;
+    /// <summary>The prompt asks a question, or reports what runs ("?").</summary>
+    public bool IsQuestionPrompt => Prompt is SettingsPrompt.ConfirmSteamStop or SettingsPrompt.RemovingSisr;
 
     /// <summary>The prompt reports a problem ("!") rather than asking ("?").</summary>
-    public bool IsWarningPrompt => Prompt is SettingsPrompt.SteamGameRunning or SettingsPrompt.SteamStartFailed;
+    public bool IsWarningPrompt => Prompt is SettingsPrompt.SteamGameRunning;
 
-    /// <summary>The prompts that "SISR installieren" opens; they end when the install becomes moot.</summary>
-    private bool IsInstallPrompt => Prompt is SettingsPrompt.SteamGameRunning or SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ChooseMarkerAccounts;
+    /// <summary>The prompts that wait for Steam: they end when the action becomes moot.</summary>
+    private bool IsSteamPrompt => Prompt is SettingsPrompt.SteamGameRunning or SettingsPrompt.ConfirmSteamStop;
 
-    public string PromptBackText => IsGamePrompt ? "Schließen" : "Abbrechen";
+    public string PromptBackText => Prompt is SettingsPrompt.ConfirmSteamStop ? "Abbrechen" : "Schließen";
 
-    /// <summary>What "Steam beenden?" installs once Steam is closed, and for a driver fix why Steam has to close.</summary>
+    /// <summary>Why Steam has to close.</summary>
+    public string SteamStopText => _forSisr
+        ? "Den Eintrag „SISR Marker“ kann Arcadia nur entfernen, solange Steam geschlossen ist. Steam wird dafür kurz beendet und danach wieder gestartet."
+        : "Für die Installation muss Steam beendet werden. Arcadia startet Steam danach wieder im Hintergrund.";
+
+    /// <summary>For a driver fix, why it restarts the puck; nothing more for "SISR entfernen".</summary>
     public string SteamStopDetail => _steamStopFix switch
     {
-        HealthFix.InstallDrivers => "Die Treiber-Installation startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren. Windows fragt dabei einmal nach Administratorrechten.",
         HealthFix.ReinstallHidHide => "Die Neuinstallation von HidHide startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren. Windows fragt dabei einmal nach Administratorrechten.",
-        _ => "Danach werden SISR und der usbip-Treiber installiert. Windows fragt dabei einmal nach Administratorrechten.",
+        HealthFix.InstallDrivers => "Die Treiber-Installation startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren. Windows fragt dabei einmal nach Administratorrechten.",
+        _ => string.Empty,
     };
+
+    public bool HasSteamStopDetail => SteamStopDetail.Length > 0;
+
+    public string ConfirmSteamStopText => _forSisr ? "Weiter" : "Steam beenden und installieren";
+
+    /// <summary>What the game prompt asks for, below the game's name.</summary>
+    public string GamePromptText => _forSisr
+        ? "Beende das Spiel zuerst, dann kann Arcadia SISR entfernen."
+        : "Für die Installation muss Steam beendet und neu gestartet werden. Beende zuerst das Spiel und versuche es dann erneut.";
+
+    /// <summary>The design for "SISR entfernen" has only "Schließen": the prompt goes on by itself when the game ends.</summary>
+    public bool CanRetryGamePrompt => !_forSisr;
+
+    public string RemovingSisrText => _sisrRemovalStopsSteam
+        ? "Das dauert nur einen Moment. Steam startet danach von selbst wieder."
+        : "Das dauert nur einen Moment.";
+
+    /// <summary>The step "SISR entfernen" is at, e.g. "Steam wird beendet …".</summary>
+    public string RemovingSisrStep => _support.BusyText ?? ControllerSupportService.SisrRemovingText;
 
     /// <summary>The Steam game named in the game prompt.</summary>
     [ObservableProperty]
     public partial string RunningGame { get; private set; } = string.Empty;
 
-    /// <summary>Steam runs but never finished logging in: restarting it helps, waiting again doesn't.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SteamStartFailedTitle), nameof(SteamStartFailedText), nameof(SteamStartFailedHint), nameof(SteamStartFailedAction))]
-    public partial bool SteamLoginHangs { get; private set; }
-
-    public string SteamStartFailedTitle => SteamLoginHangs ? "Steam meldet sich nicht an" : "Steam startet nicht";
-
-    public string SteamStartFailedText => SteamLoginHangs
-        ? "Steam läuft, hat sich aber nicht innerhalb von einer Minute fertig angemeldet. Erst danach kann SISR den Steam Controller als Xbox Controller weiterreichen."
-        : "Steam konnte nicht innerhalb von einer Minute gestartet werden. Ohne Steam kann SISR den Steam Controller nicht als Xbox Controller weiterreichen.";
-
-    public string SteamStartFailedHint => SteamLoginHangs
-        ? "Die Einstellung bleibt deshalb aus. Ein Neustart von Steam hilft meist; danach wird sie eingeschaltet."
-        : "Die Einstellung bleibt deshalb aus. Du kannst es erneut versuchen oder Steam selbst starten.";
-
-    public string SteamStartFailedAction => SteamLoginHangs ? "Steam neu starten" : "Erneut versuchen";
-
     private bool IsBusy => _support.BusyText is not null;
-
-    /// <summary>Steam, SISR or VIIPER start or stop: what depends on them can't be changed now, the rest can.</summary>
-    private bool IsSettling => _support.IsSettling;
 
     public override void HandleDialog(UiAction action)
     {
@@ -326,8 +241,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             case UiAction.Right or UiAction.Down:
                 MovePromptFocus(1);
                 break;
-            case UiAction.Accept when !IsBusy:
-                PromptButtons()[_promptFocus].Activate();
+            case UiAction.Accept when !IsBusy && PromptButtons() is { Count: > 0 } buttons:
+                buttons[_promptFocus].Activate();
                 break;
             case UiAction.Back:
                 ClosePrompt();
@@ -341,6 +256,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support.WatchSetup = false;
         _promptCheck.Stop();
         _support.Changed -= OnSupportChanged;
+        _support.SisrRemoved -= OnSisrRemoved;
         _pan.Changed -= OnPanChanged;
         _pan.Takeover.Changed -= OnPanChanged;
         _panRows.TakeOver.Dispose();
@@ -348,7 +264,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     }
 
     /// <summary>The first row below "Controller-Wächter (Pan)" that says why it doesn't run; [A] on a greyed mode leads there (#242).</summary>
-    public string? PanWarningKey => _support.StartsSisr ? null : _panRows.FirstWarningKey;
+    public string? PanWarningKey => _panRows.FirstWarningKey;
 
     private void OnPanChanged() => Dispatcher.UIThread.Post(() =>
     {
@@ -358,189 +274,100 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         }
     });
 
-    /// <summary>A, ◀ ▶ or a click on "Steam Controller Kompatibilität": switch, or install first.</summary>
-    private void ActivateSisr(bool? on)
+    /// <summary>[Entfernen]: its Steam marker needs Steam closed, so a running Steam is asked about (or a game named) first.</summary>
+    private void RemoveSisr()
     {
-        if (IsBusy || IsSettling)
+        if (IsBusy)
         {
             return;
         }
 
-        if (_sisr.Mode == SisrRowMode.Switch && _support.Enabled && on != true)
-        {
-            _support.SetEnabledAsync(false).Forget("Steam Controller (SISR) ausschalten");
-        }
-        else if (_sisr.Mode == SisrRowMode.Switch && !_support.Enabled && on != false)
-        {
-            SwitchOn();
-        }
-        else if (_sisr.Mode == SisrRowMode.Install && on != false && !_support.StartsSisr)
-        {
-            // Every part of the emulation is missing (#243 part B2): one install for all of them, no Steam involved.
-            ApplyFix(HealthFix.InstallDrivers);
-        }
-        else if (_sisr.Mode == SisrRowMode.Install && on != false)
-        {
-            BeginInstall();
-        }
-    }
-
-    private void BeginInstall()
-    {
-        _markerChoice = null;
         _steamStopFix = null;
-        ContinueInstall();
+        _forSisr = true;
+        ContinueSteamStop();
     }
 
-    /// <summary>
-    /// The prompts' install closes Steam whenever Steam runs: a driver fix gets here only if it restarts the puck, decided
-    /// once at the press, so the prompt's 1-s check doesn't read HidHide's version on the UI thread.
-    /// </summary>
-    private bool PromptInstallStopsSteam => _support.InstallStopsSteam;
+    /// <summary>[Ausblenden]: the group goes, the focus moves to the row above it.</summary>
+    private void KeepSisr()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        _changes.Apply(settings => settings with { KeepSisr = true }, "SISR behalten");
+        AppLog.Write("SISR behalten: Bereich ausgeblendet");
+        Refresh();
+        FocusRow(SteamDesktopLayoutKey);
+    }
+
+    private void OnSisrRemoved(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _notify("SISR ist vollständig entfernt.");
+        Refresh();
+        FocusRow(SteamDesktopLayoutKey);
+    });
+
+    /// <summary>Whether the action the prompts are open for closes Steam right now.</summary>
+    private bool StopsSteam => _forSisr ? _support.SisrRemovalStopsSteam : _steamStopFix is { } fix && _support.StopsSteamFor(fix);
 
     /// <summary>
-    /// Installing closes Steam, so it can't run beside a Steam game. With several Steam accounts the
-    /// user chooses who gets SISR's marker, and is asked before Steam closes. Without Steam running it
-    /// just installs. Also "Erneut versuchen".
+    /// The action closes Steam, so it can't run beside a Steam game; with Steam running it asks first, without it just
+    /// runs. Also "Erneut versuchen".
     /// </summary>
-    private void ContinueInstall()
+    private void ContinueSteamStop()
     {
-        if (_steamStopFix is not null && !PromptInstallStopsSteam)
+        if (!StopsSteam)
         {
-            // Steam was closed meanwhile: nothing to ask, no game in the way.
-            Install();
+            // Steam was closed meanwhile (or never ran): nothing to ask, no game in the way.
+            Run();
         }
         else if (_support.SteamGameBlockingInstall() is { } game)
         {
             RunningGame = game;
             ShowPrompt(SettingsPrompt.SteamGameRunning);
         }
-        else if (_steamStopFix is null && _markerChoice is null && _support.MarkerAccountsToChoose() is { Count: > 0 } accounts)
-        {
-            ShowMarkerPrompt(accounts);
-        }
-        else if (PromptInstallStopsSteam)
+        else
         {
             ShowPrompt(SettingsPrompt.ConfirmSteamStop);
         }
-        else
-        {
-            Install();
-        }
     }
 
-    private void Install()
+    private void Run()
     {
+        if (_forSisr)
+        {
+            _sisrRemovalStopsSteam = _support.SisrRemovalStopsSteam;
+            ShowPrompt(SettingsPrompt.RemovingSisr);
+            _support.RemoveSisrAsync().Forget("SISR entfernen");
+            return;
+        }
+
         ShowPrompt(SettingsPrompt.None);
         if (_steamStopFix is { } fix)
         {
             _support.ApplyFixAsync(fix).Forget("Problem beheben");
-            return;
-        }
-
-        _support.InstallAsync(_markerChoice).Forget("SISR installieren");
-    }
-
-    private void ShowMarkerPrompt(IReadOnlyList<MarkerAccount> accounts)
-    {
-        foreach (var item in MarkerAccounts)
-        {
-            item.PropertyChanged -= OnMarkerAccountChanged;
-        }
-
-        MarkerAccounts.Clear();
-        foreach (var account in accounts)
-        {
-            var item = new MarkerAccountViewModel(account);
-            item.PropertyChanged += OnMarkerAccountChanged;
-            MarkerAccounts.Add(item);
-        }
-
-        // The account that logged in last (listed first) is the likely one to play with.
-        MarkerAccounts[0].IsChecked = true;
-        CanConfirmMarkerAccounts = true;
-        ShowPrompt(SettingsPrompt.ChooseMarkerAccounts);
-    }
-
-    private void OnMarkerAccountChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
-        CanConfirmMarkerAccounts = MarkerAccounts.Any(a => a.IsChecked);
-
-    private void ConfirmMarkerAccounts()
-    {
-        if (!CanConfirmMarkerAccounts)
-        {
-            return;
-        }
-
-        _markerChoice = MarkerAccounts.Where(a => a.IsChecked && !a.HasMarker).Select(a => a.Id).ToList();
-        ContinueInstall();
-    }
-
-    /// <summary>Switching on starts Steam first; if Steam doesn't come up, the setting is off again and a prompt says so.</summary>
-    private void SwitchOn()
-    {
-        ShowPrompt(SettingsPrompt.None);
-        SwitchOnAsync().Forget("Steam Controller (SISR) einschalten");
-    }
-
-    private async Task SwitchOnAsync()
-    {
-        if (!await _support.SetEnabledAsync(true) && !_disposed)
-        {
-            ShowSteamStartFailure();
         }
     }
 
-    /// <summary>Shown where it happened, or when the settings open next if they were closed meanwhile.</summary>
-    private void ShowSteamStartFailure()
-    {
-        _support.AcknowledgeSteamStartFailure();
-        SteamLoginHangs = _support.InstallStopsSteam;
-        ShowPrompt(SettingsPrompt.SteamStartFailed);
-    }
-
-    private void RetrySteamStart()
-    {
-        if (!SteamLoginHangs)
-        {
-            SwitchOn();
-            return;
-        }
-
-        ShowPrompt(SettingsPrompt.None);
-        RestartSteamAndSwitchOnAsync().Forget("Steam neu starten");
-    }
-
-    private async Task RestartSteamAndSwitchOnAsync()
-    {
-        await _support.ApplyFixAsync(HealthFix.RestartSteam);
-        if (_support.LastError is null)
-        {
-            await SwitchOnAsync();
-        }
-    }
-
-    /// <summary>
-    /// The marker can only be written while Steam is closed, so it goes through the install prompts; so does a driver
-    /// fix that restarts the puck while Steam runs (#296), with the same "Steam beenden?" or "Steam-Spiel läuft".
-    /// </summary>
+    /// <summary>A driver fix that restarts the puck while Steam runs (#296) asks "Steam beenden?" (or names a running Steam game).</summary>
     private void ApplyFix(HealthFix fix)
     {
-        if (IsBusy || IsSettling)
+        if (IsBusy)
         {
-            return;
-        }
-
-        if (fix == HealthFix.CreateMarker)
-        {
-            BeginInstall();
             return;
         }
 
         if (_support.StopsSteamFor(fix))
         {
             _steamStopFix = fix;
-            ContinueInstall();
+            _forSisr = false;
+            ContinueSteamStop();
             return;
         }
 
@@ -552,26 +379,34 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         // A game may have started since the question came up.
         if (_support.SteamGameBlockingInstall() is not null)
         {
-            ContinueInstall();
+            ContinueSteamStop();
             return;
         }
 
-        Install();
+        Run();
     }
 
-    private void ClosePrompt() => ShowPrompt(SettingsPrompt.None);
+    /// <summary>The removal can't be called off halfway, so its dialog stays until it is done.</summary>
+    private void ClosePrompt()
+    {
+        if (Prompt != SettingsPrompt.RemovingSisr)
+        {
+            ShowPrompt(SettingsPrompt.None);
+        }
+    }
 
     private void ShowPrompt(SettingsPrompt prompt)
     {
         var opens = prompt != SettingsPrompt.None && prompt != Prompt;
         Prompt = prompt;
-        if (!IsInstallPrompt)
+        OnPropertyChanged(nameof(HasSteamStopDetail));
+        if (IsSteamPrompt)
         {
-            _promptCheck.Stop();
+            _promptCheck.Start();
         }
         else
         {
-            _promptCheck.Start();
+            _promptCheck.Stop();
         }
 
         // A prompt opening focuses its first button.
@@ -584,8 +419,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     }
 
     /// <summary>
-    /// Keeps an open prompt true: when the game ends it goes on with "Steam beenden?" (or closes
-    /// if Steam is gone too); when a game starts during "Steam beenden?" it says so.
+    /// Keeps an open prompt true: when the game ends it goes on with "Steam beenden?" (or closes if Steam is gone too);
+    /// when a game starts during "Steam beenden?" it says so.
     /// </summary>
     private Task CheckPromptAsync()
     {
@@ -595,13 +430,10 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             case SettingsPrompt.SteamGameRunning when game is not null:
                 RunningGame = game;
                 break;
-            case SettingsPrompt.SteamGameRunning when _steamStopFix is null && _markerChoice is null && _support.MarkerAccountsToChoose() is { Count: > 0 } accounts:
-                ShowMarkerPrompt(accounts);
-                break;
             case SettingsPrompt.SteamGameRunning:
-                ShowPrompt(PromptInstallStopsSteam ? SettingsPrompt.ConfirmSteamStop : SettingsPrompt.None);
+                ShowPrompt(StopsSteam ? SettingsPrompt.ConfirmSteamStop : SettingsPrompt.None);
                 break;
-            case SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ChooseMarkerAccounts when game is not null:
+            case SettingsPrompt.ConfirmSteamStop when game is not null:
                 RunningGame = game;
                 ShowPrompt(SettingsPrompt.SteamGameRunning);
                 break;
@@ -612,17 +444,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     private void OnSupportChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
     {
-        if (_disposed)
-        {
-            return;
-        }
-
-        // A start that failed while the page was closed and opened again shows here, not one opening late.
-        if (_support.UnseenSteamStartFailure && Prompt == SettingsPrompt.None)
-        {
-            ShowSteamStartFailure();
-        }
-        else
+        if (!_disposed)
         {
             Refresh();
         }
@@ -630,114 +452,26 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     private void Refresh()
     {
-        if (!_support.StartsSisr)
+        var rows = _panRows.Build();
+        Marker = _panRows.Marker;
+        if (IsSteamPrompt && IsBusy)
         {
-            RefreshPan();
-            FocusPromptButton();
-            return;
-        }
-
-        var enabled = _support.Enabled;
-        var setup = _support.Setup;
-
-        // Information (e.g. SISR paused for a game) is intended behaviour, not a problem.
-        var hasProblems = _support.Issues.Any(i => i.Severity > HealthSeverity.Info);
-        Marker = HealthIssues.WorstProblem(_support.Issues);
-
-        // Once on, the switch stays even if something breaks later; the problem shows below it.
-        var needsMarker = _support.Issues.Any(i => i.Fix == HealthFix.CreateMarker);
-        var notHere = !enabled && setup is ControllerSupportSetup.UnsupportedPlatform or ControllerSupportSetup.SteamMissing;
-        // Since #213 part B SISR no longer runs: the row stands for the controller emulation's parts (#243 part B2).
-        // A missing part greys it out with one row per part below; with every part missing the row itself offers
-        // "Treiber installieren" instead of those rows. Set up, there is nothing to switch until #214 rebuilds it.
-        var emulation = !_support.StartsSisr && !notHere;
-        var missingParts = emulation ? EmulationParts.MissingNames(_support.Issues) : [];
-        var installsAll = emulation && EmulationParts.AllMissing(_support.Issues);
-        var replaced = emulation && !installsAll;
-        var unavailable = notHere || replaced;
-        // A missing driver or Pan has its own row with "Installieren" below; the switch then stays a switch, so there
-        // is one install button, not two that do the same (owner's test, 2026-10-26).
-        var installsBelow = _support.Issues.Any(i => i.Fix == HealthFix.InstallDrivers);
-        var showInstall = installsAll || (!emulation && !enabled && setup == ControllerSupportSetup.NeedsInstall && !installsBelow);
-        var state = _support.State;
-        _sisr.Update(
-            unavailable ? SisrRowMode.Unavailable : showInstall ? SisrRowMode.Install : SisrRowMode.Switch,
-            enabled,
-            IsSettling,
-            replaced ? missingParts.Count > 0 ? PartsMissingText(missingParts) : SisrReplacedText
-                : setup == ControllerSupportSetup.SteamMissing ? "Benötigt Steam." : "Momentan nur unter Windows verfügbar.",
-            enabled ? ShortStatus(state, hasProblems) : null);
-        // "Treiber installieren" on the row itself: a failure shows there, as there is no part row to carry it.
-        _sisr.ShowProblem(installsAll && _support.FailedFix == HealthFix.InstallDrivers ? _support.LastError : null);
-        if (IsInstallPrompt && ((_steamStopFix is null && !showInstall && !needsMarker) || IsBusy))
-        {
-            // Installed some other way, or something else started: the question is moot.
+            // Something else started: the question is moot.
             Prompt = SettingsPrompt.None;
             _promptCheck.Stop();
         }
-
-        var statusText = (enabled, state == SisrState.Paused, hasProblems) switch
+        else if (Prompt == SettingsPrompt.RemovingSisr && !IsBusy && (_support.SisrRemovalCause is not null || _support.LastError is not null || !_support.ShowsSisrGroup))
         {
-            (false, _, _) when installsAll => $"Nicht eingerichtet – „Treiber installieren“ richtet alles Nötige ein ({string.Join(", ", missingParts)}), mit einer Windows-Abfrage nach Administratorrechten.",
-            (false, _, _) when missingParts.Count > 0 => $"Nicht eingerichtet, es fehlt: {string.Join(", ", missingParts)}. Solange etwas fehlt, ist die Controller-Emulation aus; „Installieren“ bei der Meldung darunter richtet es ein.",
-            (false, _, _) when installsBelow => "Nicht eingerichtet – „Installieren“ bei der Meldung unter der Einstellung richtet die Treiber ein.",
-            (false, _, _) when showInstall => "Nicht eingerichtet – „Treiber installieren“ richtet alles Nötige ein und schaltet die Option ein.",
-            (false, _, _) => "Aus – außerhalb von Steam läuft der Steam Controller im Desktop-Modus (Maus und Tastatur).",
-            (true, true, true) => "Pausiert – die Meldungen unter der Einstellung sagen, warum.",
-            (true, true, _) => "Pausiert – ein Spiel mit „Steam Input“ läuft.",
-            (true, false, true) => "Eingeschaltet, aber nicht voll funktionsfähig – die Meldungen unter der Einstellung sagen, was fehlt.",
-            _ => state switch
-            {
-                SisrState.Starting => "SISR startet – der Steam Controller wird gleich als Xbox Controller eingerichtet …",
-                SisrState.NoController => "Bereit, aber kein Steam Controller gefunden – schalte ihn ein.",
-                SisrState.Running => "Aktiv – der Steam Controller wird als Xbox Controller erkannt.",
-                SisrState.Stopping => "SISR wird beendet …",
-                _ => "Wird gestartet …",
-            },
-        };
-        var healthy = enabled && !hasProblems && _support.BusyText is null && state is not (SisrState.Starting or SisrState.NoController);
-        var settlingNow = enabled && state is SisrState.Starting or SisrState.Stopping;
-        _sisr.ShowLamp(!enabled ? null : Marker switch
-        {
-            HealthSeverity.Error => RowLamp.Failure,
-            HealthSeverity.Warning => RowLamp.Problem,
-            _ => state == SisrState.Running ? RowLamp.Working : RowLamp.Resting,
-        });
-        var status = new InfoSection("STATUS",
-        [
-            new InfoStatus(statusText, healthy, settlingNow),
-            .. _support.BusyText is { } busy ? [new InfoText(busy)] : Array.Empty<InfoBlock>(),
-            .. _support.LastError is { } error && _support.FailedFix is null ? [new InfoError(error)] : Array.Empty<InfoBlock>(),
-        ]);
-        var version = new InfoSection("SISR-VERSION",
-        [
-            new InfoText(_support.Sisr.InstalledVersion is { } installed ? $"SISR {installed}" : "SISR ist noch nicht installiert."),
-            .. _support.AvailableUpdate is { } available ? [new InfoText($"Neue Version verfügbar: {available.Tag}")] : Array.Empty<InfoBlock>(),
-            SisrCredit,
-        ]);
-        _sisr.Info = unavailable && missingParts.Count == 0
-            ? [.. SisrDescription, HowItWorks, Drawbacks]
-            : emulation
-                ? [.. SisrDescription, status, HowItWorks, Drawbacks]
-                : [.. SisrDescription, status, HowItWorks, Drawbacks, version];
-
-        var hasUpdate = !unavailable && _support.AvailableUpdate is not null;
-        if (_support.AvailableUpdate is { } update)
-        {
-            _update.Subtitle = $"Neue Version verfügbar: {update.Tag}";
-            _update.Info = [new InfoText($"SISR {update.Tag} ersetzt die installierte Version {_support.Sisr.InstalledVersion}."), SisrCredit];
+            // Done: the toast says so, or the group row says what is left and why.
+            Prompt = SettingsPrompt.None;
         }
 
-        _update.IsEnabled = !IsBusy && !IsSettling;
-        _restore.IsEnabled = !IsBusy && !IsSettling;
-
+        OnPropertyChanged(nameof(RemovingSisrStep));
         SetRows(
         [
-            _sisr,
-            .. IssueRows(hideMissingParts: installsAll),
-            .. hasUpdate ? [_update] : Array.Empty<SettingsRowViewModel>(),
-            .. _support.PanInstalled ? [_restore] : Array.Empty<SettingsRowViewModel>(),
+            .. rows,
             _steamDesktopLayout,
+            .. _sisrRows.Build(),
             .. _mouseMode.Rows,
             .. _returnWithView.Rows,
         ]);
@@ -755,126 +489,16 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         }
     }
 
-    /// <summary>Since SISR no longer runs (#213): the group "PAN" (#242), then "STEAM" with Steam's desktop layout.</summary>
-    private void RefreshPan()
-    {
-        var rows = _panRows.Build();
-        Marker = _panRows.Marker;
-        if (IsInstallPrompt && (_steamStopFix is null || IsBusy))
-        {
-            // SISR's install prompts don't belong here; a driver fix's are moot once something else runs.
-            Prompt = SettingsPrompt.None;
-            _promptCheck.Stop();
-        }
-
-        _steamDesktopLayout.Subtitle = "Alle Controller: Maus und Tasten, die Steam simuliert, kommen nicht an";
-        SetRows(
-        [
-            .. rows,
-            _steamDesktopLayout,
-            .. _mouseMode.Rows,
-            .. _returnWithView.Rows,
-        ]);
-    }
-
-    /// <summary>While the option is on, its row says in one line how it is doing instead of what it is for (owner, 2026-10-24).</summary>
-    private static string ShortStatus(SisrState state, bool hasProblems) => (state == SisrState.Paused, hasProblems) switch
-    {
-        (true, true) => "Pausiert – die Meldungen darunter sagen, warum",
-        (true, false) => "Pausiert, solange ein Spiel mit „Steam Input“ läuft",
-        (false, true) => "Nicht voll funktionsfähig – die Meldungen darunter sagen, was fehlt",
-        _ => state switch
-        {
-            SisrState.Starting => "SISR startet …",
-            SisrState.NoController => "Bereit, aber kein Steam Controller gefunden",
-            SisrState.Running => "Aktiv – der Steam Controller läuft als Xbox Controller",
-            SisrState.Stopping => "SISR wird beendet …",
-            _ => "Wird gestartet …",
-        },
-    };
-
-    /// <summary>The row's line once SISR is replaced by Arcadia's own pad (#213).</summary>
-    private const string SisrReplacedText = "Nicht mehr nötig – Arcadia bringt den Steam Controller selbst in Spiele.";
-
-    /// <summary>What "Steam Controller Kompatibilität" does, at the top of its info panel.</summary>
-    private static readonly InfoBlock[] SisrDescription =
-    [
-        new InfoText("Mit dieser Einstellung wird der Steam Controller als Xbox Controller erkannt. Das ist nützlich, wenn du den Steam Controller auch in Spielen außerhalb von Steam benutzen möchtest, da er dort sonst im „Desktop-Modus“ läuft. Dies ist eine Besonderheit des Steam Controllers."),
-        new InfoText("Dafür wird die Drittanbieter-Software SISR benötigt und bei Bedarf automatisch installiert. Arcadia startet SISR unsichtbar im Hintergrund."),
-    ];
-
-    private static readonly InfoSection HowItWorks = new("SO FUNKTIONIERT ES",
-    [
-        new InfoText("Ist diese Option aktiv (und ein Steam Controller verbunden), kann in Arcadia pro Spiel zwischen zwei Modi für den Steam Controller gewechselt werden:"),
-        new InfoCard(ViewModels.ControllerModes.Arcadia, "Arcadia lässt den Steam Controller in diesem Spiel als Xbox Controller erkennen.", "Vorauswahl für Spiele außerhalb von Steam"),
-        new InfoCard(ViewModels.ControllerModes.Steam, "Das Standardverhalten des Steam Controllers. Empfohlen für Steam-Spiele oder wenn du außerhalb von Steam den Desktop-Modus nutzen möchtest; der Controller simuliert dann Maus und Tastatur.", "Vorauswahl für Spiele aus Steam"),
-    ]);
-
-    private static readonly InfoSection Drawbacks = new("NACHTEILE",
-    [
-        new InfoBullet("Steam muss im Hintergrund laufen."),
-    ]);
-
-    private static readonly InfoFootnote SisrCredit = new("SISR von Peter Repukat (Alia5) · GPL-3.0 · github.com/Alia5/SISR");
-
-    /// <summary>The greyed-out row's line while some parts of the emulation are missing (#243 part B2).</summary>
-    private static string PartsMissingText(IReadOnlyList<string> missing) =>
-        $"Aus – es fehlt: {string.Join(", ", missing)}";
-
-    /// <summary>
-    /// One row per problem, with its fix as the row's action; a row stays the same while its problem lasts. With
-    /// <paramref name="hideMissingParts"/> the missing parts have no rows: the switch offers "Treiber installieren".
-    /// </summary>
-    private List<SettingsRowViewModel> IssueRows(bool hideMissingParts)
-    {
-        var rows = new List<SettingsRowViewModel>();
-        var ids = new HashSet<string>();
-        // Several parts share "Installieren": its error shows once, at the first of them.
-        var errorShown = false;
-        foreach (var issue in _support.Issues.Where(i => !hideMissingParts || !EmulationParts.IsMissingPart(i)))
-        {
-            ids.Add(issue.Id);
-            if (!_issueRows.TryGetValue(issue.Id, out var row))
-            {
-                var fix = issue.Fix;
-                row = new ActionRowViewModel($"issue:{issue.Id}", issue.Title, () => ApplyFix(fix)) { Group = SteamGroup, Indent = 1 };
-                _issueRows[issue.Id] = row;
-            }
-
-            // A fix that failed shows its error at the row it belongs to, with the error icon, and how to go on.
-            var failed = !errorShown && _support.FailedFix == issue.Fix ? _support.LastError : null;
-            errorShown |= failed is not null;
-            row.Title = issue.Title;
-            row.Subtitle = issue.ShortText;
-            row.ShowProblem(failed);
-            row.Severity = failed is null ? issue.Severity : HealthSeverity.Error;
-            row.ActionText = issue.Fix == HealthFix.None ? string.Empty : issue.FixLabel ?? "Beheben";
-            row.IsEnabled = !IsBusy && !IsSettling;
-            row.Info = failed is null ? [new InfoText(issue.Detail)] : [new InfoText(issue.Detail), new InfoError(failed)];
-            rows.Add(row);
-        }
-
-        foreach (var gone in _issueRows.Keys.Where(id => !ids.Contains(id)).ToList())
-        {
-            _issueRows.Remove(gone);
-        }
-
-        return rows;
-    }
-
     /// <summary>While a prompt is open, only its buttons can be focused.</summary>
     private List<PromptButtonViewModel> PromptButtons() => Prompt switch
     {
-        SettingsPrompt.SteamGameRunning => [_retryInstall, _closeGamePrompt],
+        SettingsPrompt.SteamGameRunning when CanRetryGamePrompt => [_retryInstall, _closeGamePrompt],
+        SettingsPrompt.SteamGameRunning => [_closeGamePrompt],
         SettingsPrompt.ConfirmSteamStop => [_confirmSteamStop, _cancelSteamStop],
-        SettingsPrompt.SteamStartFailed => [_retrySteamStart, _cancelSteamStart],
-        SettingsPrompt.ChooseMarkerAccounts => [.. MarkerAccounts.Where(a => !a.HasMarker), _confirmMarkerAccounts, _cancelMarkerAccounts],
         _ => [],
     };
 
-    private IEnumerable<PromptButtonViewModel> AllPromptButtons() =>
-        new[] { _retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop, _retrySteamStart, _cancelSteamStart, _confirmMarkerAccounts, _cancelMarkerAccounts }
-            .Concat(MarkerAccounts);
+    private IEnumerable<PromptButtonViewModel> AllPromptButtons() => [_retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop];
 
     private void MovePromptFocus(int delta)
     {
@@ -888,89 +512,4 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _promptFocus = Math.Clamp(_promptFocus + delta, 0, buttons.Count - 1);
         buttons[_promptFocus].IsFocused = true;
     }
-}
-
-/// <summary>What "Steam Controller Kompatibilität" offers on this PC.</summary>
-public enum SisrRowMode
-{
-    /// <summary>Everything is in place (or the setting is already on): a switch.</summary>
-    Switch,
-
-    /// <summary>Something is missing: "SISR installieren" instead of the switch.</summary>
-    Install,
-
-    /// <summary>Not on this PC (no Windows, no Steam): greyed out, saying why.</summary>
-    Unavailable,
-}
-
-/// <summary>"Steam Controller Kompatibilität": a switch, "SISR installieren", or why neither is possible.</summary>
-public sealed class SisrRowViewModel(Action<bool?> activate)
-    : SetupSwitchRowViewModel("sisr", "Steam Controller Kompatibilität", activate);
-
-/// <summary>A setting that needs something installed first: a switch, an install action, or why neither is possible.</summary>
-public partial class SetupSwitchRowViewModel(string key, string title, Action<bool?> activate)
-    : SettingsRowViewModel(key, title)
-{
-    private string _subtitle = string.Empty;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsSwitch), nameof(IsInstall))]
-    public partial SisrRowMode Mode { get; private set; }
-
-    public bool IsSwitch => Mode == SisrRowMode.Switch;
-
-    public bool IsInstall => Mode == SisrRowMode.Install;
-
-    /// <summary>What the install action says on the right, e.g. "Treiber installieren" or "Wird installiert …".</summary>
-    [ObservableProperty]
-    public partial string InstallText { get; set; } = "Treiber installieren";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ValueText))]
-    public partial bool IsOn { get; private set; }
-
-    public string ValueText => IsOn ? "An" : "Aus";
-
-    /// <summary>Something starts or stops (or a game runs): the switch keeps its position but can't be flipped.</summary>
-    [ObservableProperty]
-    public partial bool IsLocked { get; private set; }
-
-    public override bool CanChange => IsSwitch && !IsLocked;
-
-    public override bool CanActivate => Mode != SisrRowMode.Unavailable && !IsLocked;
-
-    public override string ActivateText => IsInstall ? InstallText : "Umschalten";
-
-    /// <summary>◀ and ▶ both switch it, like every ◀ ▶ selector (owner, 2026-10-24).</summary>
-    public override void Change(int delta) => activate(null);
-
-    public override void Activate() => activate(null);
-
-    /// <summary>Whether what it switches on really works: null while the option is off, the switch says so.</summary>
-    public void ShowLamp(RowLamp? lamp) => Lamp = lamp;
-
-    /// <summary>"Treiber installieren" on this row failed (#243 part B2): the error in place of the subtitle, with the error icon.</summary>
-    public void ShowProblem(string? problem)
-    {
-        Problem = problem;
-        Severity = problem is null ? null : HealthSeverity.Error;
-    }
-
-    /// <param name="status">How the option is doing while it is on, shown in place of what it is for; null while off.</param>
-    public void Update(SisrRowMode mode, bool isOn, bool isLocked, string unavailableText, string? status)
-    {
-        if (_subtitle.Length == 0)
-        {
-            _subtitle = Subtitle ?? string.Empty;
-        }
-
-        Mode = mode;
-        IsOn = isOn;
-        IsLocked = isLocked;
-        IsDimmed = mode == SisrRowMode.Unavailable;
-        Subtitle = mode == SisrRowMode.Unavailable ? unavailableText : status ?? _subtitle;
-        NotifyActionsChanged();
-    }
-
-    partial void OnInstallTextChanged(string value) => NotifyActionsChanged();
 }

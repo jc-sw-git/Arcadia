@@ -1221,7 +1221,7 @@
   <Style Selector="Button.settingRow.unavailable">
     <Setter Property="Opacity" Value="0.55" />
   </Style>
-  <!-- An action shown inside a setting row, e.g. "SISR installieren"; the row itself is the button. -->
+  <!-- An action shown inside a setting row, e.g. "Installieren"; the row itself is the button. -->
   <Style Selector="Border.rowAction">
     <Setter Property="Height" Value="44" />
     <Setter Property="CornerRadius" Value="22" />
@@ -1351,28 +1351,7 @@
     <Setter Property="TextAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
-  <!-- A tick box in a prompt, e.g. the Steam accounts that get SISR's marker. -->
-  <Style Selector="Border.checkbox">
-    <Setter Property="Width" Value="30" />
-    <Setter Property="Height" Value="30" />
-    <Setter Property="CornerRadius" Value="8" />
-    <Setter Property="Background" Value="{StaticResource Line}" />
-  </Style>
-  <Style Selector="Border.checkbox.on">
-    <Setter Property="Background" Value="{StaticResource Accent}" />
-  </Style>
-  <Style Selector="Border.checkbox > TextBlock">
-    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
-    <Setter Property="FontSize" Value="18" />
-    <Setter Property="FontWeight" Value="ExtraBold" />
-    <Setter Property="HorizontalAlignment" Value="Center" />
-    <Setter Property="VerticalAlignment" Value="Center" />
-  </Style>
-  <!-- Already set up: stays ticked and can't be unticked. -->
-  <Style Selector="Button.settingRow.done">
-    <Setter Property="Opacity" Value="0.55" />
-  </Style>
-  <!-- Locked while Steam, SISR or VIIPER start or stop: the switch keeps its position but can't be flipped. -->
+  <!-- Locked while Steam, Pan or VIIPER start or stop: the switch keeps its position but can't be flipped. -->
   <Style Selector="Border.switch.locked, Border.rowAction.locked">
     <Setter Property="Opacity" Value="0.35" />
   </Style>

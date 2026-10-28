@@ -38,7 +38,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public bool HasProblem => Problem is not null;
 
     /// <summary>
-    /// A lamp beside the title that shows at a glance whether what the row switches on really works, e.g. SISR (owner,
+    /// A lamp beside the title that shows at a glance whether what the row switches on really works, e.g. Pan (owner,
     /// 2026-10-22 and 2026-10-24); null shows none.
     /// </summary>
     [ObservableProperty]
@@ -307,7 +307,7 @@ public partial class ActionRowViewModel(string key, string title, Action run) : 
     [ObservableProperty]
     public partial bool IsEnabled { get; set; } = true;
 
-    /// <summary>The action the row is there for, drawn in the accent colour (e.g. "SISR installieren").</summary>
+    /// <summary>The action the row is there for, drawn in the accent colour (e.g. "Treiber installieren").</summary>
     [ObservableProperty]
     public partial bool IsPrimary { get; set; }
 
@@ -377,7 +377,7 @@ public partial class InfoRowViewModel(string key, string title) : SettingsRowVie
 /// <summary>The colour of a row's lamp (owner, 2026-10-24).</summary>
 public enum RowLamp
 {
-    /// <summary>Grey: on, but resting for now, e.g. SISR paused for a game.</summary>
+    /// <summary>Grey: on, but resting for now, e.g. Pan waiting for the Steam Controller.</summary>
     Resting,
 
     /// <summary>Green: on and ready.</summary>
@@ -386,6 +386,6 @@ public enum RowLamp
     /// <summary>Yellow: a warning below the row needs the user.</summary>
     Problem,
 
-    /// <summary>Red: an error below the row, e.g. SISR keeps crashing.</summary>
+    /// <summary>Red: an error below the row, e.g. Pan keeps crashing.</summary>
     Failure,
 }

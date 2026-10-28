@@ -20,7 +20,7 @@ public sealed class ViiperXboxPadsTests
         using var stop = new CancellationTokenSource();
         var serving = Task.WhenAll(listeners.Select(listener => ServeAsync(listener, requests, stop.Token)));
         var log = new List<string>();
-        var pads = new ViiperXboxPads(Path.Combine(Path.GetTempPath(), "nowhere", "viiper.exe"), Path.GetTempPath(), _ => Task.FromResult(0), line => { lock (log) { log.Add(line); } });
+        var pads = new ViiperXboxPads(Path.Combine(Path.GetTempPath(), "nowhere", "viiper.exe"), Path.GetTempPath(), line => { lock (log) { log.Add(line); } });
 
         var refused = await Assert.ThrowsAsync<InvalidOperationException>(() => pads.AddRawDeviceAsync("hidproxy", new Dictionary<string, object?> { ["device"] = "12" }, CancellationToken.None));
 

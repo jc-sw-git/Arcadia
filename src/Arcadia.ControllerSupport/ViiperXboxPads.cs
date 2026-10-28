@@ -11,13 +11,9 @@ namespace Arcadia.ControllerSupport;
 /// <summary>
 /// Virtual Xbox 360 pads from VIIPER (https://github.com/Alia5/VIIPER, #213): Arcadia runs <c>viiper.exe</c> as its own
 /// process, so a crash of either leaves the other, and drives it through VIIPER's MIT client over its local TCP API.
-/// usbip-win2 attaches each pad as a USB device. Until #214 the <c>viiper.exe</c> is the one in SISR's folder.
+/// usbip-win2 attaches each pad as a USB device. The <c>viiper.exe</c> is Arcadia's own build next to Arcadia.exe (#242).
 /// </summary>
-/// <param name="cleanUpLeftovers">
-/// Ends a VIIPER from SISR's folder that outlived an earlier Arcadia and detaches its pads (SISR's own clean-up); run
-/// once, before Arcadia's first server starts.
-/// </param>
-public sealed partial class ViiperXboxPads(string viiperExecutable, string logDirectory, Func<CancellationToken, Task<int>> cleanUpLeftovers, Action<string> log)
+public sealed partial class ViiperXboxPads(string viiperExecutable, string logDirectory, Action<string> log)
     : IVirtualXboxPads
 {
     public const int ApiPort = 3242;
@@ -30,7 +26,6 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
 
     private readonly SemaphoreSlim _serverGate = new(1, 1);
     private Process? _server;
-    private bool _cleanedUp;
 
     public string? Unavailable()
     {
@@ -175,16 +170,6 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
                 log($"Xbox-Pad: viiper.exe beendet (Code {ended.ExitCode})");
                 ended.Dispose();
                 _server = null;
-            }
-
-            if (!_cleanedUp)
-            {
-                _cleanedUp = true;
-                var leftovers = await cleanUpLeftovers(cancellationToken);
-                if (leftovers > 0)
-                {
-                    log($"Xbox-Pad: {leftovers} Reste eines früheren VIIPER aufgeräumt");
-                }
             }
 
             if (_server is null && await AnswersAsync(client, cancellationToken))

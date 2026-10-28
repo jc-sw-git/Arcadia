@@ -18,7 +18,7 @@ nothing happens. The Pan update at start goes to #297 (it becomes a pure Pan upd
       (`EmulationSetupTests`; the real reinstall by hand)
 - [ ] **T296-4** A Steam game runs (e.g. started from Steam), HidHide missing: "Installieren" shows "Steam-Spiel läuft"
       naming the game; [B] closes it, nothing is installed, the game keeps running. Ending the game while the notice is
-      open turns it into "Steam beenden?" within a second. · E2E: yes (`EmulationSetupTests`, the hand-over by hand)
+      open turns it into "Steam beenden?" within a second. · E2E: yes (`EmulationSetupTests`)
 - [ ] **T296-5** HidHide missing, Steam running: [A] in "Steam beenden?", then "Nein" in the Windows prompt: the row
       shows the "abgelehnt" message, and Steam is started again. · E2E: no (real UAC; Core covers declined, failed and
       cancelled installs)
@@ -30,3 +30,4 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T296-1 to T296-4 (App), T296-1 to T296-6 (Core `ControllerSupportServiceTests`, incl. a Steam slow to come back), all App and Core tests | 2026-10-28 | Claude | PR branch, Linux cloud container, Avalonia headless | ✅ (each also ❌ once with the code broken on purpose, see the PR) | – |
+| T296-4 hand-over (App: `EmulationSetupTests` the game ending turns the notice into "Steam beenden?", [A] installs with Steam closed), all App, Core and Pan tests | 2026-10-28 | Claude (QE review) | PR branch c7b02d0, Linux cloud container, Avalonia headless; Pan 190, Core 1930, App 365 plus the new test; the new test seen red once (game prompt closing instead of handing over) | pass | Pan update at start (B1 in the QE review) open |

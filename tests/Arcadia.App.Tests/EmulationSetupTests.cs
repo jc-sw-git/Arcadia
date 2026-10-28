@@ -377,6 +377,30 @@ public sealed class EmulationSetupTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T296-4")]
+    public async Task When_the_Steam_game_ends_the_driver_notice_turns_into_the_Steam_question()
+    {
+        var steam = new FakeSteam { HidHideVersion = null, IsSteamRunning = true, SteamGame = "Hollow Knight" };
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Meldung „HidHide fehlt“");
+
+        Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).Activate();
+        Assert.Equal(SettingsPrompt.SteamGameRunning, controller.Prompt);
+
+        steam.SteamGame = null;
+        await arcadia.WaitUntilAsync(() => controller.Prompt == SettingsPrompt.ConfirmSteamStop, "„Steam beenden?“ nach dem Spielende");
+        Assert.StartsWith("Die Treiber-Installation startet den Puck", controller.SteamStopDetail, StringComparison.Ordinal);
+        Assert.True(controller.ConfirmSteamStopItem.IsFocused);
+        Assert.Equal((0, 0), (steam.DriverInstalls, steam.SteamStops));
+
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => steam.DriverInstalls == 1 && steam.IsSteamRunning && arcadia.ControllerSupport.BusyText is null, "installiert, Steam wieder da");
+        Assert.Equal(0, steam.PuckRestartsWhileSteamRuns);
+        Assert.Equal(1, steam.SteamStops);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T243-36")]
     public async Task Pan_s_notice_is_a_toast_while_Arcadia_is_in_front_and_the_overlay_s_while_a_game_is()
     {

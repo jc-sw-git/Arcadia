@@ -268,6 +268,9 @@ public sealed class ServiceTests : IDisposable
         Assert.Equal(0, Run(pan, "--uninstall"));
         Assert.True(File.Exists(pan), "the Pan that was started is not deleted");
         Assert.True(WaitForHandOff(TimeSpan.FromMinutes(3)), "the hand-off copy finished");
+        // Without this the test is green when Pan quietly uninstalled in place: only a hand-off leaves the copy, which
+        // waits for the reboot to go (QE review of #270).
+        Assert.True(File.Exists(Path.Combine(PanPaths.HandOffDirectory, PanPaths.ExecutableName)), "the uninstall ran in the hand-off copy, which stays until the next boot");
         Assert.Contains("1060", Output("sc.exe", "query", PanPaths.ServiceName));
         Assert.False(Directory.Exists(PanPaths.InstallDirectory), "Program Files\\Arcadia\\Pan is gone");
     }

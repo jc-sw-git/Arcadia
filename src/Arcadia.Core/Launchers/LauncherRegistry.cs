@@ -95,6 +95,13 @@ public sealed class LauncherRegistry
     public ILauncherIntegration? Find(string launcherId) =>
         ActiveIds.Contains(launcherId) ? _all.FirstOrDefault(i => i.Launcher.Id == launcherId) : null;
 
+    /// <summary>
+    /// Whether the games of this launcher use Steam Input themselves (<see cref="LauncherInfo.GamesUseSteamInput"/>).
+    /// False for a launcher that isn't registered, e.g. a removed plugin's: "Arcadia" is the safe default, as a game on
+    /// "Steam-Eingabe" that doesn't use Steam Input would see no controller at all (#156).
+    /// </summary>
+    public bool GamesUseSteamInput(string launcherId) => Registered(launcherId)?.Launcher.GamesUseSteamInput == true;
+
     /// <summary>The registered launcher with this id, active or not, or null.</summary>
     public ILauncherIntegration? Registered(string launcherId) => _all.FirstOrDefault(i => i.Launcher.Id == launcherId);
 

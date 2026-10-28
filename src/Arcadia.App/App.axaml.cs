@@ -105,6 +105,7 @@ public partial class App : Application
             {
                 Log = AppLog.Write,
                 StartsSisr = false,
+                GamesUseSteamInput = launchers.GamesUseSteamInput,
             };
             // After an update restart: SISR kept running, and pauses for running games carry over.
             for (var i = 0; i < args.Length - 1; i++)

@@ -42,7 +42,9 @@ no empty layout forced on a marker, no focus bounce. Overview and the other file
 - `SteamControllerRouting.Decide` (ControllerSupport) takes the running games: `RunningGamesTracker.ActiveGames` (started
   from Arcadia, also while "Wird gestartet …", or seen in their launcher) plus Steam's `RunningAppID` as `steam:<id>`, so
   a Steam game started directly in Steam counts even when it isn't in the library (#119). The mode is
-  `AppSettings.UsesArcadiaPad(key)`: the stored choice, else Steam-Eingabe for Steam games and Arcadia for all others.
+  `ControllerSupportService.UsesArcadiaPad(key)`: the stored choice, else Steam-Eingabe for games whose launcher says
+  they use Steam Input (`LauncherInfo.GamesUseSteamInput`, only Steam) and Arcadia for all others, also for a launcher
+  that isn't registered (#156).
 - Any running game on Steam-Eingabe: no pad, Steam may use the controller. Without the driver (`IVirtualXboxPads.Unavailable`:
   VIIPER or usbip missing) no game gets the pad, and Steam may use it while any game runs. Otherwise the pad is in and
   Steam is kept away (`ISteamControllerHold`, a no-op until #242: `Apply(false)` = the copy reports

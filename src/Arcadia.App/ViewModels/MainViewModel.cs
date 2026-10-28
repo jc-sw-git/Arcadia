@@ -887,7 +887,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             return;
         }
 
-        _controllerSupport.SetModeFor(game, !_settings.Current.UsesArcadiaPad(game.Key));
+        _controllerSupport.SetModeFor(game, !_controllerSupport.UsesArcadiaPad(game.Key));
     }
 
     private IPanEmulationView _pan = new NoPanEmulation();

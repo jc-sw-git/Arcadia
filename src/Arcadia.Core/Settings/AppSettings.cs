@@ -106,28 +106,30 @@ public sealed record AppSettings
 
     /// <summary>
     /// Whether SISR should run while <paramref name="game"/> runs. Without an override it runs for
-    /// every game except those from the Steam launcher, which use Steam Input natively — running
+    /// every game except those whose launcher says they use Steam Input themselves — running
     /// SISR there would double every input.
     /// </summary>
-    public bool ControllerSupportFor(Game game) => SteamControllerSupport && UsesArcadiaPad(game.Key);
+    /// <param name="gamesUseSteamInput">Whether a launcher's games use Steam Input, by launcher id (<see cref="LauncherRegistry.GamesUseSteamInput"/>).</param>
+    public bool ControllerSupportFor(Game game, Func<string, bool> gamesUseSteamInput) =>
+        SteamControllerSupport && UsesArcadiaPad(game.Key, gamesUseSteamInput);
 
     /// <summary>
     /// The Steam Controller mode of the game with this key (#213): true = "Arcadia" (Arcadia's Xbox pad), false =
-    /// "Steam-Eingabe". Without an override, Steam games use Steam-Eingabe and all others Arcadia. Takes a key, not a
-    /// game, so a Steam game started directly in Steam counts too when it isn't in the library (#119).
+    /// "Steam-Eingabe". Without an override, games whose launcher uses Steam Input (Steam's) start on Steam-Eingabe and
+    /// all others on Arcadia (#156). Takes a key, not a game, so a Steam game started directly in Steam counts too when
+    /// it isn't in the library (#119).
     /// </summary>
-    public bool UsesArcadiaPad(string gameKey) =>
-        ControllerSupportOverrides.TryGetValue(gameKey, out var arcadia) ? arcadia : Game.LauncherIdOf(gameKey) != KnownLaunchers.Steam.Id;
-
-    /// <summary>The mode a game starts with: "Steam Input" for Steam games, "Xbox Controller (SISR)" for all others.</summary>
-    public static bool DefaultControllerSupportFor(Game game) => game.LauncherId != KnownLaunchers.Steam.Id;
+    /// <param name="gamesUseSteamInput">Whether a launcher's games use Steam Input, by launcher id (<see cref="LauncherRegistry.GamesUseSteamInput"/>).</param>
+    public bool UsesArcadiaPad(string gameKey, Func<string, bool> gamesUseSteamInput) =>
+        ControllerSupportOverrides.TryGetValue(gameKey, out var arcadia) ? arcadia : !gamesUseSteamInput(Game.LauncherIdOf(gameKey));
 
     /// <summary>
     /// Sets the mode for <paramref name="game"/>. Only a choice that differs from the game's default
     /// is stored, so untouched games follow the default if it ever changes.
     /// </summary>
-    public AppSettings WithControllerSupportChoice(Game game, bool useSisr) =>
-        WithControllerSupportOverride(game, useSisr == DefaultControllerSupportFor(game) ? null : useSisr);
+    /// <param name="gamesUseSteamInput">Whether a launcher's games use Steam Input, by launcher id (<see cref="LauncherRegistry.GamesUseSteamInput"/>).</param>
+    public AppSettings WithControllerSupportChoice(Game game, bool useSisr, Func<string, bool> gamesUseSteamInput) =>
+        WithControllerSupportOverride(game, useSisr == !gamesUseSteamInput(game.LauncherId) ? null : useSisr);
 
     /// <summary>Null means "use the default" for this game.</summary>
     public bool? ControllerSupportOverrideFor(Game game) =>

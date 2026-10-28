@@ -94,9 +94,9 @@ internal sealed class ArcadiaDriver : IDisposable
         var registry = new LauncherRegistry(integrations, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
         ControllerSupport = (steam, files?.ControllerSupport) switch
         {
-            ({ } fake, _) => new ControllerSupportService(Settings, fake.Sisr, _http, time, fake) { Log = AppLog.Write, StartsSisr = arguments.Sisr },
-            (_, { } steamPc) => new ControllerSupportService(Settings, steamPc.Sisr, _http, time, steamPc) { Log = AppLog.Write, StartsSisr = arguments.Sisr },
-            _ => new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform()) { Log = AppLog.Write, StartsSisr = arguments.Sisr },
+            ({ } fake, _) => new ControllerSupportService(Settings, fake.Sisr, _http, time, fake) { Log = AppLog.Write, StartsSisr = arguments.Sisr, GamesUseSteamInput = registry.GamesUseSteamInput },
+            (_, { } steamPc) => new ControllerSupportService(Settings, steamPc.Sisr, _http, time, steamPc) { Log = AppLog.Write, StartsSisr = arguments.Sisr, GamesUseSteamInput = registry.GamesUseSteamInput },
+            _ => new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform()) { Log = AppLog.Write, StartsSisr = arguments.Sisr, GamesUseSteamInput = registry.GamesUseSteamInput },
         };
         Updates = releases is null ? new ArcadiaUpdateService(_http, time) : new ArcadiaUpdateService(_http, time, releases.Manager(folder));
         Updates.Log = AppLog.Write;

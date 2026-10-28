@@ -16,6 +16,9 @@ the owner's.
 
 ## 2. Ask in rounds
 
+Open with a short summary of the issue (owner, 2026-10-26): user story, acceptance criteria, and what else
+matters (dependencies, what existing work already covers). Then the first round.
+
 Map the work as a tree of decisions: each one opens the decisions that depend on it. A round asks the
 whole **frontier**, every question whose prerequisites are settled. A question that depends on another
 open question of the same round waits for the next round.
@@ -33,13 +36,24 @@ Ask in German (chat), numbered, each with your recommendation, worded so "ja" ac
 
 Keep rounds short (about five questions). After each answer, recompute the frontier.
 
+Before the frontier counts as empty, two passes (owner, 2026-10-28; #242's concept gap was only found in
+review and cost a second implementation):
+
+- **Failure cases:** for every decided behaviour, what happens in an unknown state (e.g. right after
+  Arcadia starts), on a crash or hang, on a restart, and when it is interrupted halfway. "Unknown" must
+  lead to the safe side. For safety-critical work, a second look (quality engineer or architect) checks
+  the concept against these cases before the refinement ends.
+- **Assumptions:** list what the concept assumes about Steam, a launcher or hardware that only the
+  owner's PC can prove. Each one gets a step-by-step check script that runs before implementation; the
+  issue says what changes if it fails.
+
 **Done when** the frontier is empty and the owner confirms the shared understanding. Don't start
 implementing before that.
 
 ## 3. Write the result into the issue
 
 Update the issue body in English (it is the source of truth, not the chat): scenarios, decisions with date,
-out of scope, and acceptance criteria as checkboxes. These become the test plan cases later.
+failure cases, assumptions with their check scripts, out of scope, and acceptance criteria as checkboxes. These become the test plan cases later.
 
 ## 4. Epic refinement (only on request): slice into issues
 

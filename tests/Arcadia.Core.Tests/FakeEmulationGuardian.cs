@@ -30,16 +30,73 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
     /// <summary>How often Arcadia asked whether Pan could hide.</summary>
     public int HidingChecks;
 
+    /// <summary>What a hide answers (#242): None = hidden.</summary>
+    public PanReason HideResult = PanReason.None;
+
+    /// <summary>What a check of the hiding generation answers while hidden: None = the hiding holds.</summary>
+    public PanReason HidingHolds = PanReason.None;
+
+    /// <summary>The generation the puck is hidden for, or 0.</summary>
+    public uint HiddenFor;
+
+    public List<uint> Hidden = [];
+    public List<uint> Unhidden = [];
+
+    /// <summary>Shared with the other fakes, so a test sees the order of everything (e.g. "copy detached" before "unhide 1").</summary>
+    public List<string> Events = [];
+
+    private void Note(string e)
+    {
+        lock (Events) Events.Add(e);
+    }
+
     public event Action<uint, PanReason>? TornDown;
 
     public event Action<string>? Lost;
 
     public string? Unavailable() => Missing;
 
-    public Task<PanReason?> CheckHidingAsync(CancellationToken cancellationToken)
+    public Task<PanReason?> CheckHidingAsync(CancellationToken cancellationToken) => CheckHidingAsync(0, cancellationToken);
+
+    public Task<PanReason?> CheckHidingAsync(uint generation, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref HidingChecks);
-        return Task.FromResult(Missing is null ? Hiding : null);
+        if (Missing is not null)
+        {
+            return Task.FromResult<PanReason?>(null);
+        }
+
+        return Task.FromResult(generation != 0 && generation == HiddenFor && Hiding == PanReason.None ? HidingHolds : Hiding);
+    }
+
+    public Task<PanReason> HideAsync(uint generation, CancellationToken cancellationToken)
+    {
+        Note($"hide {generation}");
+        lock (_lock)
+        {
+            if (HideResult == PanReason.None)
+            {
+                Hidden.Add(generation);
+                HiddenFor = generation;
+            }
+        }
+
+        return Task.FromResult(HideResult);
+    }
+
+    public Task<bool> UnhideAsync(uint generation, CancellationToken cancellationToken)
+    {
+        Note($"unhide {generation}");
+        lock (_lock)
+        {
+            Unhidden.Add(generation);
+            if (HiddenFor == generation)
+            {
+                HiddenFor = 0;
+            }
+        }
+
+        return Task.FromResult(true);
     }
 
     public Task<uint> EmulationStartedAsync(CancellationToken cancellationToken)
@@ -59,12 +116,14 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
             _current = ++_generation;
             _emulating = true;
             Started.Add(_current);
+            Note($"started {_current}");
             return Task.FromResult(_current);
         }
     }
 
     public Task EmulationStoppedAsync(uint generation, CancellationToken cancellationToken)
     {
+        Note($"stopped {generation}");
         lock (_lock)
         {
             Stopped.Add(generation);
@@ -79,6 +138,7 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
 
     public Task AcknowledgeTeardownAsync(uint generation, CancellationToken cancellationToken)
     {
+        Note($"acknowledged {generation}");
         lock (_lock) Acknowledged.Add(generation);
         return Task.CompletedTask;
     }
@@ -110,6 +170,7 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
             generation = _current;
             _tornDown = generation;
             _emulating = false;
+            HiddenFor = 0;
         }
 
         TornDown?.Invoke(generation, reason);

@@ -22,11 +22,11 @@ public sealed class EmulationSetupTests
         return (arcadia, Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected));
     }
 
-    private static SisrRowViewModel Switch(ControllerSettingsViewModel controller) =>
-        Assert.IsType<SisrRowViewModel>(controller.Rows.Single(row => row.Key == "sisr"));
+    /// <summary>"Controller-Wächter (Pan)" (#242), which took the place of "Steam Controller Kompatibilität".</summary>
+    private static PanRowViewModel Switch(ControllerSettingsViewModel controller) =>
+        Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
 
-    private static IEnumerable<string> StatusTexts(SisrRowViewModel row) =>
-        row.Info.OfType<InfoSection>().SelectMany(section => section.Blocks).OfType<InfoStatus>().Select(status => status.Text);
+    private const string ProblemText = "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.";
 
     [AvaloniaFact]
     [Trait("TestCase", "T243-32")]
@@ -41,19 +41,20 @@ public sealed class EmulationSetupTests
         Assert.Equal("HidHide fehlt", hidHide.Title);
         Assert.Equal("Installieren", hidHide.ActionText);
         Assert.Equal(HealthSeverity.Warning, hidHide.Severity);
-        var sisr = Switch(controller);
-        Assert.True(sisr.IsDimmed);
-        Assert.False(sisr.IsSwitch);
-        Assert.False(sisr.IsInstall);
-        Assert.Equal("Aus – es fehlt: HidHide", sisr.Subtitle);
-        Assert.Contains(StatusTexts(sisr), text => text.Contains("es fehlt: HidHide") && text.Contains("Controller-Emulation aus"));
+        // The switch stays a switch (on by default); the row below says what is missing (#242).
+        var pan = Switch(controller);
+        Assert.True(pan.IsSwitch);
+        Assert.True(pan.IsOn);
+        Assert.Equal(ProblemText, pan.Subtitle);
+        Assert.True(pan.IsLampProblem);
+        Assert.Equal("Versteckt die echten Controller vor anderen Programmen", hidHide.Subtitle);
 
         hidHide.Activate();
         await arcadia.WaitUntilAsync(() => controller.Rows.All(row => row.Key != "issue:hidhide-missing"), "die Meldung verschwindet");
 
         Assert.Equal(1, steam.DriverInstalls);
         Assert.Equal(HidHideRelease.Version, steam.HidHideVersion);
-        Assert.Equal("Nicht mehr nötig – Arcadia bringt den Steam Controller selbst in Spiele.", Switch(controller).Subtitle);
+        Assert.NotEqual(ProblemText, Switch(controller).Subtitle);
         Assert.Null(controller.Marker);
     }
 
@@ -77,10 +78,9 @@ public sealed class EmulationSetupTests
         var failed = Assert.Single(controller.Rows.OfType<ActionRowViewModel>(), row => row.HasProblem);
         Assert.Equal("issue:hidhide-missing", failed.Key);
         Assert.Equal(error, failed.Problem);
-        var sisr = Switch(controller);
-        Assert.True(sisr.IsDimmed);
-        Assert.False(sisr.HasProblem);
-        Assert.Equal("Aus – es fehlt: HidHide", sisr.Subtitle);
+        var pan = Switch(controller);
+        Assert.False(pan.HasProblem);
+        Assert.Equal(ProblemText, pan.Subtitle);
     }
 
     [AvaloniaFact]
@@ -94,19 +94,21 @@ public sealed class EmulationSetupTests
         using var _ = arcadia;
 
         await arcadia.WaitUntilAsync(() => Switch(controller).IsInstall, "„Treiber installieren“ an der Einstellung");
-        var sisr = Switch(controller);
-        Assert.Equal("Treiber installieren", sisr.ActivateText);
+        var pan = Switch(controller);
+        Assert.Equal("Treiber installieren", pan.ActivateText);
+        Assert.Equal("Pan verwaltet, wie Spiele, Programme und Launcher deine Controller nutzen", pan.Subtitle);
+        Assert.False(pan.HasLamp);
         Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:", StringComparison.Ordinal));
-        Assert.Contains(StatusTexts(sisr), text => text.Contains("usbip-Treiber, VIIPER, Wächterdienst Pan, HidHide"));
+        Assert.DoesNotContain(controller.Rows, row => row.Key == PanRows.RestoreKey);
         Assert.Equal(HealthSeverity.Warning, controller.Marker);
 
-        sisr.Activate();
-        await arcadia.WaitUntilAsync(() => Switch(controller).IsDimmed, "eingerichtet");
+        pan.Activate();
+        await arcadia.WaitUntilAsync(() => Switch(controller).IsSwitch, "eingerichtet");
 
         Assert.Equal(1, steam.DriverInstalls);
         Assert.True(steam.Sisr.IsInstalled, "VIIPER kommt bis #214 mit SISR");
         Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:", StringComparison.Ordinal));
-        Assert.Equal("Nicht mehr nötig – Arcadia bringt den Steam Controller selbst in Spiele.", Switch(controller).Subtitle);
+        Assert.True(Switch(controller).IsOn);
     }
 
     [AvaloniaFact]
@@ -130,10 +132,9 @@ public sealed class EmulationSetupTests
         var failed = Assert.Single(controller.Rows.OfType<ActionRowViewModel>(), row => row.HasProblem);
         Assert.Equal("issue:usbip-missing", failed.Key);
         Assert.Equal(error, failed.Problem);
-        var sisr = Switch(controller);
-        Assert.True(sisr.IsDimmed);
-        Assert.False(sisr.HasProblem);
-        Assert.Equal("Aus – es fehlt: usbip-Treiber, Wächterdienst Pan, HidHide", sisr.Subtitle);
+        var pan = Switch(controller);
+        Assert.False(pan.HasProblem);
+        Assert.Equal(ProblemText, pan.Subtitle);
     }
 
     [AvaloniaFact]
@@ -172,9 +173,10 @@ public sealed class EmulationSetupTests
         await arcadia.TickControllerSupportAsync();
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-removal-pending"));
         Assert.Equal("HidHide: Neustart ausstehend", row.Title);
-        Assert.Equal("Windows entfernt HidHide beim nächsten Neustart.", row.Subtitle);
+        Assert.Equal("Windows entfernt HidHide beim nächsten Neustart", row.Subtitle);
         Assert.Equal(string.Empty, row.ActionText);
-        Assert.Equal("Aus – es fehlt: HidHide", Switch(controller).Subtitle);
+        // Nothing to do but restart: the blue i (#242).
+        Assert.True(row.IsInfo);
         // Pan isn't asked about a HidHide on its way out: one row, not a second one from its state.
         Assert.Single(controller.Rows, row => row.Key.StartsWith("issue:hidhide", StringComparison.Ordinal));
 
@@ -197,8 +199,9 @@ public sealed class EmulationSetupTests
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:reboot-pending"), "die Meldung „Windows-Neustart ausstehend“");
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:reboot-pending"));
         Assert.Equal("Windows-Neustart ausstehend", row.Title);
-        Assert.Equal("Bis zum Neustart kann der Steam Controller in Spielen aussetzen.", row.Subtitle);
+        Assert.Equal("Bis dahin können Controller in Spielen kurz aussetzen", row.Subtitle);
         Assert.Equal(string.Empty, row.ActionText);
+        Assert.True(row.IsInfo);
         Assert.DoesNotContain("SISR", row.Info.OfType<InfoText>().Single().Text);
     }
 
@@ -216,7 +219,7 @@ public sealed class EmulationSetupTests
         Assert.Equal("Wächterdienst Pan startet nicht", row.Title);
         Assert.Equal("Neu einrichten", row.ActionText);
         Assert.Contains(PanPaths.DataDirectory, row.Info.OfType<InfoText>().Single().Text);
-        Assert.Equal("Aus – es fehlt: Wächterdienst Pan", Switch(controller).Subtitle);
+        Assert.Equal(ProblemText, Switch(controller).Subtitle);
         await arcadia.TickControllerSupportAsync();
         await arcadia.WaitUntilAsync(() => arcadia.Main.Status.ControllerStatusText.Contains("Wächterdienst Pan startet nicht"), "das Dreieck im Header");
 

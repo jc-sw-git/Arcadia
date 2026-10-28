@@ -1109,7 +1109,7 @@ public sealed class ControllerSupportService(
             StartSisr();
         }, cancellationToken);
 
-    private const string DriversBusyText = "Treiber werden installiert – bitte die Windows-Abfrage bestätigen …";
+    public const string DriversBusyText = "Treiber werden installiert – bitte die Windows-Abfrage bestätigen …";
 
     /// <summary>
     /// What is missing of the controller emulation (#243): VIIPER (with SISR's files until #214, no prompt), then the

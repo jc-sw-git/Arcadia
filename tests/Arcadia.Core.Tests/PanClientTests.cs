@@ -376,31 +376,147 @@ public sealed class PanClientTests : IAsyncDisposable
         Assert.True(_client.IsConnected);
     }
 
+    [Fact]
+    [Trait("TestCase", "T242-5")]
+    public async Task Arcadia_hides_within_its_emulation_hears_when_the_hiding_is_lost_and_shows_the_controller_again()
+    {
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide);
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+
+        Assert.Equal(PanReason.None, await _client.HideAsync(generation, CancellationToken.None));
+        Assert.True(hidHide.Cloaking);
+        Assert.Contains(ArcadiaImage, hidHide.Allowed);
+        Assert.Equal(PanReason.None, await _client.CheckHidingAsync(generation, CancellationToken.None));
+
+        // Someone turns hiding off in HidHide's configuration client.
+        hidHide.Cloaking = false;
+        Assert.Equal(PanReason.HidingLost, await _client.CheckHidingAsync(generation, CancellationToken.None));
+
+        Assert.True(await _client.UnhideAsync(generation, CancellationToken.None));
+        Assert.DoesNotContain(ArcadiaImage, hidHide.Allowed);
+        Assert.True(_client.IsConnected);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-6")]
+    public async Task A_rejected_hide_is_undone_at_once()
+    {
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide);
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+
+        // The allow-list entry goes in, then turning cloaking on fails: the hide is rejected with part of it done.
+        hidHide.ChangesBeforeFailing = 1;
+
+        Assert.Equal(PanReason.HidingFailed, await _client.HideAsync(generation, CancellationToken.None));
+
+        Assert.Contains("Pan: Hide abgelehnt", LogText());
+        Assert.Contains("Pan: Steam Controller wieder sichtbar", LogText());
+        Assert.DoesNotContain(ArcadiaImage, hidHide.Allowed);
+        Assert.False(hidHide.Cloaking);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-6")]
+    public async Task Hiding_outside_an_emulation_is_refused_and_a_Pan_without_hiding_cannot_hide()
+    {
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        Assert.Equal(PanReason.HidingFailed, await _client.HideAsync(generation, CancellationToken.None));
+        Assert.Contains("Pan zu alt", LogText());
+        Assert.True(_client.IsConnected);
+    }
+
+    /// <summary>QE review point 8 of PR #264: a check holds the client's request lock; a start meanwhile waits for it.</summary>
+    [Fact]
+    [Trait("TestCase", "T242-6")]
+    public async Task An_emulation_started_while_a_hiding_check_waits_on_Pan_goes_through_after_it()
+    {
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide);
+        await ConnectedAsync();
+        _server.Pause();
+        var check = _client.CheckHidingAsync(CancellationToken.None);
+        await WaitUntil(() => _server.Received(PanCommand.CheckHiding) > 0, "CheckHiding bei Pan");
+        var start = _client.EmulationStartedAsync(CancellationToken.None);
+
+        _server.Resume();
+
+        Assert.Equal(PanReason.None, await check);
+        Assert.Equal(1u, await LoggedAsync(() => start));
+        Assert.True(_client.IsConnected);
+    }
+
     /// <summary>HidHide 1.5.230 whose state a test sets; "busy" is its configuration client holding it.</summary>
     private sealed class SettableHidHide : IHidHideDriver
     {
+        private readonly Lock _lock = new();
+        private List<string> _hidden = [];
+        private List<string> _allowed = [];
+        private bool _cloaking;
+
         public volatile bool Busy;
         public volatile bool Inverse;
+
+        /// <summary>How many changes go through before one fails, as with HidHide's driver restarting for a moment; -1: none fails.</summary>
+        public int ChangesBeforeFailing = -1;
+
+        public bool Cloaking
+        {
+            get { lock (_lock) return _cloaking; }
+            set { lock (_lock) _cloaking = value; }
+        }
+
+        public IReadOnlyList<string> Allowed
+        {
+            get { lock (_lock) return [.. _allowed]; }
+        }
 
         public Version? InstalledVersion() => HidHideRelease.Version;
 
         public bool IsServiceRegistered() => true;
 
-        public IReadOnlyList<string> GetHiddenDevices() => Reach<IReadOnlyList<string>>([]);
+        public IReadOnlyList<string> GetHiddenDevices() => Reach<IReadOnlyList<string>>(() => [.. _hidden]);
 
-        public void SetHiddenDevices(IReadOnlyList<string> instanceIds) => Reach(instanceIds);
+        public void SetHiddenDevices(IReadOnlyList<string> instanceIds) => Change(() => _hidden = [.. instanceIds]);
 
-        public IReadOnlyList<string> GetAllowedApplications() => Reach<IReadOnlyList<string>>([]);
+        public IReadOnlyList<string> GetAllowedApplications() => Reach<IReadOnlyList<string>>(() => [.. _allowed]);
 
-        public void SetAllowedApplications(IReadOnlyList<string> imagePaths) => Reach(imagePaths);
+        public void SetAllowedApplications(IReadOnlyList<string> imagePaths) => Change(() => _allowed = [.. imagePaths]);
 
-        public bool GetCloaking() => Reach(false);
+        public bool GetCloaking() => Reach(() => _cloaking);
 
-        public void SetCloaking(bool on) => Reach(on);
+        public void SetCloaking(bool on) => Change(() => _cloaking = on);
 
-        public bool GetInverse() => Reach(Inverse);
+        public bool GetInverse() => Reach(() => Inverse);
 
-        private T Reach<T>(T value) => Busy ? throw new HidHideException(PanReason.HidHideBusy, "HidHide is open in another program") : value;
+        private T Reach<T>(Func<T> value)
+        {
+            lock (_lock) return Busy ? throw new HidHideException(PanReason.HidHideBusy, "HidHide is open in another program") : value();
+        }
+
+        private void Change(Action change)
+        {
+            if (ChangesBeforeFailing == 0)
+            {
+                ChangesBeforeFailing = -1;
+                throw new HidHideException(PanReason.HidingFailed, "HidHide's driver is restarting");
+            }
+
+            if (ChangesBeforeFailing > 0)
+            {
+                ChangesBeforeFailing--;
+            }
+
+            Reach(() =>
+            {
+                change();
+                return true;
+            });
+        }
     }
 
     /// <summary>No Steam Controller connected: checking needs none.</summary>
@@ -410,6 +526,8 @@ public sealed class PanClientTests : IAsyncDisposable
 
         public Task RestartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
+
+    private const string ArcadiaImage = @"\Device\HarddiskVolume3\Program Files\Arcadia\Arcadia.exe";
 
     private sealed class FakePanServer : IPanTransport, IDisposable
     {
@@ -453,6 +571,10 @@ public sealed class PanClientTests : IAsyncDisposable
 
         public int Heartbeats => Volatile.Read(ref _heartbeats);
 
+        private readonly int[] _received = new int[256];
+
+        public int Received(PanCommand command) => Volatile.Read(ref _received[(byte)command]);
+
         public async Task<PanLink> ConnectAsync(CancellationToken cancellationToken)
         {
             Connections++;
@@ -468,7 +590,7 @@ public sealed class PanClientTests : IAsyncDisposable
             var clientSide = new DuplexStream(new AnonymousPipeClientStream(PipeDirection.In, toClient.ClientSafePipeHandle), toServer);
             _serverSide = new DuplexStream(new AnonymousPipeClientStream(PipeDirection.In, toServer.ClientSafePipeHandle), toClient);
             var guardian = Guardian;
-            guardian.Register(new ClientIdentity(Environment.ProcessId, 1, InConsoleSession: true));
+            guardian.Register(new ClientIdentity(Environment.ProcessId, 1, InConsoleSession: true, ArcadiaImage));
             var serverSide = _serverSide;
             _serving = Task.Run(() => ServeAsync(guardian, serverSide));
             return new PanLink(clientSide, "Testserver");
@@ -526,6 +648,7 @@ public sealed class PanClientTests : IAsyncDisposable
                     }
 
                     var message = PanMessage.Read(buffer);
+                    Interlocked.Increment(ref _received[message.Kind]);
                     if (message.Command == PanCommand.Heartbeat)
                     {
                         Interlocked.Increment(ref _heartbeats);

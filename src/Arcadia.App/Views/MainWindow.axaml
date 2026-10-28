@@ -75,7 +75,7 @@
 
         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Status.IsControllerStarting}" VerticalAlignment="Center"
-                      ToolTip.Tip="SISR startet und richtet den Steam Controller als Xbox Controller ein">
+                      ToolTip.Tip="Pan versteckt den echten Steam Controller und richtet die emulierten Controller ein">
             <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
             <TextBlock Text="Controller wird eingerichtet …" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
           </StackPanel>
@@ -263,17 +263,18 @@
                   <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowControllerSupport, TargetNullValue=False}">
                     <TextBlock Classes="label" Text="STEAM CONTROLLER" />
                     <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10.
-                         Without the driver it is greyed out, and the line below says why (#213). -->
-                    <Panel IsEnabled="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.SteamControllerDriverReady, TargetNullValue=False}">
-                      <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
-                              IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
-                              ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Arcadia“ und „Steam-Eingabe“'}">
+                         While Pan's emulation doesn't run it is greyed out with a triangle, and a click leads to why (#242). -->
+                    <Button Classes="plain modeValue" Classes.broken="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeBroken, TargetNullValue=False}"
+                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
+                            IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Arcadia“ und „Steam-Eingabe“'}">
+                      <StackPanel Orientation="Horizontal" Spacing="10">
                         <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
-                      </Button>
-                    </Panel>
-                    <TextBlock Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeUnavailableReason}" FontSize="13"
-                               Foreground="{StaticResource TextSoft}" TextWrapping="Wrap"
-                               IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeUnavailableReason, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        <Path Classes="statusIcon small" VerticalAlignment="Center"
+                              IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeBroken, TargetNullValue=False}"
+                              ToolTip.Tip="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeUnavailableReason}" />
+                      </StackPanel>
+                    </Button>
                   </StackPanel>
                   <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowGameMouseMode, TargetNullValue=False}">
                     <TextBlock Classes="label" Text="INDIVIDUELLER MAUSMODUS" />
@@ -941,15 +942,16 @@
                 <DataTemplate x:DataType="vm:GameActionViewModel">
                   <StackPanel>
                     <Border IsVisible="{Binding StartsGroup}" Height="1" Background="{StaticResource Line}" Margin="8,6" />
-                    <Button Classes="plain menuItem" Classes.focused="{Binding IsFocused}" Classes.danger="{Binding IsDanger}" IsEnabled="{Binding IsEnabled}"
+                    <Button Classes="plain menuItem" Classes.focused="{Binding IsFocused}" Classes.danger="{Binding IsDanger}" Classes.broken="{Binding IsBroken}" IsEnabled="{Binding IsEnabled}"
                             Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.InvokeMenuActionCommand}" CommandParameter="{Binding}">
-                      <Grid ColumnDefinitions="24,*" ColumnSpacing="14">
+                      <Grid ColumnDefinitions="24,*,Auto" ColumnSpacing="14">
                         <Path Classes="icon" Data="{Binding Icon}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
                               Width="24" Height="24" Stretch="None" VerticalAlignment="Top" />
                         <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Label}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
                           <TextBlock Classes="note" Text="{Binding Note}" IsVisible="{Binding HasNote}" />
                         </StackPanel>
+                        <Path Grid.Column="2" Classes="statusIcon small" IsVisible="{Binding IsBroken}" VerticalAlignment="Center" />
                       </Grid>
                     </Button>
                   </StackPanel>
@@ -975,17 +977,29 @@
               <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" TextWrapping="Wrap" />
               <TextBlock Text="{Binding Message}" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
             </StackPanel>
+            <StackPanel Spacing="10" IsVisible="{Binding HasSteps}">
+              <TextBlock Classes="label" Text="{Binding StepsTitle}" />
+              <ItemsControl ItemsSource="{Binding NumberedSteps}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <TextBlock Text="{Binding}" FontSize="17" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" Margin="0,3" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="12">
-              <Button Classes="plain action danger" Classes.focused="{Binding IsConfirmFocused}" Content="{Binding ConfirmLabel}"
+              <Button Classes="plain action" Classes.focused="{Binding IsCancelFocused}" Content="{Binding CancelLabel}" IsVisible="{Binding IsCancelFirst}"
+                      Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CancelConfirmationCommand}" />
+              <Button Classes="plain action" Classes.danger="{Binding IsConfirmDanger}" Classes.focused="{Binding IsConfirmFocused}" Content="{Binding ConfirmLabel}"
                       Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ConfirmCommand}" />
-              <Button Classes="plain action" Classes.focused="{Binding IsCancelFocused}" Content="Abbrechen"
+              <Button Classes="plain action" Classes.focused="{Binding IsCancelFocused}" Content="{Binding CancelLabel}" IsVisible="{Binding IsConfirmFirst}"
                       Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CancelConfirmationCommand}" />
             </StackPanel>
             <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                 <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="Wechseln" />
                 <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Auswählen" />
-                <ctl:KeyHint Pad="B" Keys="Esc" Text="Abbrechen" />
+                <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding CancelLabel}" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -1192,7 +1206,7 @@
                                     </Grid>
                                   </Border>
                                 </DataTemplate>
-                                <DataTemplate x:DataType="settings:SisrRowViewModel">
+                                <DataTemplate x:DataType="settings:SetupSwitchRowViewModel">
                                   <Panel>
                                     <Border Classes="valuePill" Classes.locked="{Binding IsLocked}" IsVisible="{Binding IsSwitch}">
                                       <Grid ColumnDefinitions="Auto,*,Auto">
@@ -1207,7 +1221,7 @@
                                     </Border>
                                     <!-- Not a button of its own: the whole row is the button, so A on the row installs. -->
                                     <Border Classes="rowAction" Classes.locked="{Binding IsLocked}" IsVisible="{Binding IsInstall}">
-                                      <TextBlock Text="Treiber installieren" />
+                                      <TextBlock Text="{Binding InstallText}" />
                                     </Border>
                                   </Panel>
                                 </DataTemplate>

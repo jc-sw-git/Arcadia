@@ -25,6 +25,27 @@ public sealed partial class ConfirmationViewModel : ViewModelBase
 
     public string ConfirmLabel { get; }
 
+    /// <summary>The other button; it closes the dialog, as B does.</summary>
+    public string CancelLabel { get; init; } = "Abbrechen";
+
+    /// <summary>The confirming button is red: it does something that can't be undone, e.g. uninstall.</summary>
+    public bool IsConfirmDanger { get; init; } = true;
+
+    /// <summary>The closing button stands first, e.g. "Verstanden" before "Arcadia jetzt beenden" (#242).</summary>
+    public bool IsCancelFirst { get; init; }
+
+    public bool IsConfirmFirst => !IsCancelFirst;
+
+    /// <summary>Numbered steps below the message, under <see cref="StepsTitle"/>; empty shows none.</summary>
+    public IReadOnlyList<string> Steps { get; init; } = [];
+
+    public string StepsTitle { get; init; } = string.Empty;
+
+    public bool HasSteps => Steps.Count > 0;
+
+    /// <summary>The steps with their number, for the list.</summary>
+    public IReadOnlyList<string> NumberedSteps => [.. Steps.Select((step, i) => $"{i + 1}.  {step}")];
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCancelFocused))]
     public partial bool IsConfirmFocused { get; private set; }
@@ -37,10 +58,10 @@ public sealed partial class ConfirmationViewModel : ViewModelBase
         switch (action)
         {
             case UiAction.Left:
-                IsConfirmFocused = true;
+                IsConfirmFocused = !IsCancelFirst;
                 return true;
             case UiAction.Right:
-                IsConfirmFocused = false;
+                IsConfirmFocused = IsCancelFirst;
                 return true;
             case UiAction.Accept:
                 if (IsConfirmFocused)

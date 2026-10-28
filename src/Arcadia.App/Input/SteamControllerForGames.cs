@@ -1,4 +1,5 @@
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Copy;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Settings;
 using Arcadia.Pan;
@@ -7,66 +8,114 @@ using Arcadia.Input;
 namespace Arcadia.App.Input;
 
 /// <summary>
-/// Wires the Steam Controller's virtual Xbox pad for games (#213) to Arcadia's state: the running games and their mode
-/// ("Arcadia" or "Steam-Eingabe") decide whether it is plugged in (<see cref="SteamControllerRouting"/>), a game gets
-/// nothing while Arcadia is in front or the mouse mode is on, and Back + Start is withheld while the mouse mode is not "Aus".
-/// The pad stands under Pan's watch (#243): no pad without Pan, every poll pulses the heartbeat, and a teardown by Pan
-/// (Arcadia hung) or a lost Pan shows as a notice (<see cref="PanNotices"/>) while the pad comes back by itself.
-/// "Controller wiederherstellen" lets the pad count its losses afresh.
+/// Wires the Steam Controller for games to Arcadia's state. Pan's emulation (#242, <see cref="PanEmulation"/>) hides the
+/// real puck and shows Steam a copy while the switch "Controller-Wächter (Pan)" is on; within it, the running games and
+/// their mode ("Arcadia" or "Steam-Eingabe") decide whether Arcadia's Xbox pad is plugged in (<see cref="SteamControllerRouting"/>),
+/// and <see cref="SteamControllerCopyRules"/> decide whether the copy or the pad passes input: nothing while Arcadia is
+/// in front or the mouse mode is on, and Back + Start is withheld while the mouse mode is not "Aus".
+/// Everything stands under Pan's watch (#243): every poll pulses the heartbeat, and a teardown by Pan (Arcadia hung) or a
+/// lost Pan shows as a notice (<see cref="PanNotices"/>) while the emulation comes back by itself.
+/// "Controller wiederherstellen" and "Erneut versuchen" let pad and emulation count their failures afresh.
 /// </summary>
-public sealed class SteamControllerForGames
+public sealed class SteamControllerForGames : Settings.IPanEmulationView
 {
-    private SteamControllerForGames(SteamControllerXboxPad pad, SteamControllerRouting routing)
+    private SteamControllerForGames(SteamControllerXboxPad pad, SteamControllerRouting routing, PanEmulation emulation, SteamControllerCopyFilter copyFilter)
     {
         Pad = pad;
         Routing = routing;
+        Emulation = emulation;
+        CopyFilter = copyFilter;
     }
 
     public SteamControllerXboxPad Pad { get; }
 
     public SteamControllerRouting Routing { get; }
 
-    /// <param name="pads">The virtual pads; they are put under <paramref name="guardian"/>'s watch here.</param>
+    public PanEmulation Emulation { get; }
+
+    /// <summary>What passes between Steam and the real puck; its <see cref="SteamControllerCopyFilter.FirmwareBlocked"/> opens the firmware dialog.</summary>
+    public SteamControllerCopyFilter CopyFilter { get; }
+
+    /// <param name="pads">The virtual pads; Pan's emulation plugs them in here.</param>
+    /// <param name="hold">The copy of the puck for Steam; <see cref="NoSteamControllerCopy"/> until this build can make it.</param>
     /// <param name="controllerSupport">Its "Controller wiederherstellen" ends the pad on purpose (#243).</param>
     /// <param name="activeGames">The keys of the games that run or are being started (<c>RunningGamesTracker.ActiveGames</c>).</param>
     /// <param name="runningSteamAppId">The Steam game running right now, also one started directly in Steam (#119).</param>
+    /// <param name="isSteamInFront">A window of Steam itself is in front; asked on every poll, so it must be cheap.</param>
+    /// <param name="panSupported">Pan can run on this system (Windows); elsewhere nothing is emulated and the mode doesn't show.</param>
     public static SteamControllerForGames Create(
+        bool panSupported,
         IVirtualXboxPads pads,
         IEmulationGuardian guardian,
+        ISteamControllerHold hold,
         ControllerSupportService controllerSupport,
         SettingsService settings,
         Func<IReadOnlyCollection<string>> activeGames,
         Func<int?> runningSteamAppId,
         Func<bool> isArcadiaActive,
         Func<bool> isMouseModeOn,
+        Func<bool> isSteamInFront,
         PanNotices notices,
         TimeProvider time)
     {
-        var guarded = new GuardedXboxPads(pads, guardian);
+        SteamControllerXboxPad? padForPresence = null;
+        var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
+        {
+            Supported = panSupported,
+            Enabled = () => settings.Current.PanEnabled,
+            SteamControllerPresent = () => hold.PuckPresent || padForPresence?.SteamControllerConnected == true,
+        };
         var routing = new SteamControllerRouting(
             activeGames,
             key => settings.Current.UsesArcadiaPad(key),
             runningSteamAppId,
-            () => guarded.Unavailable() is null,
+            () => emulation.Status.State == PanEmulationState.Running,
             Services.AppLog.Write);
         var combos = new CombosFromSettings(settings);
-        var pad = new SteamControllerXboxPad(guarded, time, Services.AppLog.Write)
+        var pad = new SteamControllerXboxPad(emulation, time, Services.AppLog.Write)
         {
             Wanted = () => routing.Current.PadWanted,
-            ForwardingAllowed = () => !isMouseModeOn() && !isArcadiaActive(),
+            ForwardingAllowed = () => SteamControllerCopyRules.PadPasses(routing.Current, new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront())),
             Combos = combos.Current,
             FeedAlive = guardian.Pulse,
         };
-        pad.GaveUp += notices.Show;
-        controllerSupport.ControllersRestored += (_, _) => pad.ForgetLosses();
+        padForPresence = pad;
+        pad.GaveUp += text =>
+        {
+            emulation.PadGaveUp();
+            notices.Show(text);
+        };
+        emulation.Notice += notices.Show;
+        controllerSupport.ControllersRestored += (_, _) =>
+        {
+            pad.ForgetLosses();
+            emulation.ForgetFailures();
+        };
         guardian.TornDown += (_, reason) => notices.Show(TornDownText(reason));
         guardian.Lost += _ => notices.Show(PanLostText);
-        return new SteamControllerForGames(pad, routing);
+        return new SteamControllerForGames(pad, routing, emulation, new SteamControllerCopyFilter(time, Services.AppLog.Write));
     }
 
-    /// <summary>Every 2 s, off the UI thread: decides anew, then plugs the pad in or out.</summary>
+    public PanEmulationStatus Status => Emulation.Status;
+
+    public event Action? Changed
+    {
+        add => Emulation.Changed += value;
+        remove => Emulation.Changed -= value;
+    }
+
+    /// <summary>"Erneut versuchen" on a stopped emulation: pad and emulation start counting afresh, and the next tick tries again.</summary>
+    public void Retry()
+    {
+        Pad.ForgetLosses();
+        Emulation.ForgetFailures();
+    }
+
+    /// <summary>Every 2 s, off the UI thread: keeps the emulation, decides anew, then plugs the pad in or out.</summary>
     public async Task TickAsync()
     {
+        // The emulation first: the route asks whether it runs, and a game's pad needs it.
+        await Emulation.TickAsync();
         await Task.Run(Routing.Update);
         await Pad.TickAsync();
     }

@@ -22,7 +22,33 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
     public bool StallSends;
     public FakePad? Current;
 
+    /// <summary>How often VIIPER's server was made ready; <see cref="FailPrepare"/> makes it fail.</summary>
+    public int Prepared;
+    public bool FailPrepare;
+
+    /// <summary>Shared with the other fakes for the order of events; null: not recorded.</summary>
+    public List<string>? Events;
+
+    private void Note(string e)
+    {
+        if (Events is { } events)
+        {
+            lock (events) events.Add(e);
+        }
+    }
+
     public string? Unavailable() => Missing;
+
+    public Task PrepareAsync(CancellationToken cancellationToken)
+    {
+        if (FailPrepare)
+        {
+            throw new TimeoutException("viiper.exe antwortet nicht nach 10 s");
+        }
+
+        Prepared++;
+        return Task.CompletedTask;
+    }
 
     public Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken)
     {
@@ -33,6 +59,7 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
         }
 
         Plugged++;
+        Note("pad plugged");
         Current = new FakePad(this);
         return Task.FromResult<IVirtualXboxPad>(Current);
     }
@@ -117,6 +144,7 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
         public ValueTask DisposeAsync()
         {
             owner.Unplugged++;
+            owner.Note("pad unplugged");
             return owner.FailUnplug ? ValueTask.FromException(new IOException("VIIPER antwortet nicht")) : ValueTask.CompletedTask;
         }
     }

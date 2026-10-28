@@ -1,3 +1,4 @@
+using Arcadia.App.Settings;
 using Arcadia.App.Input;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Launchers;
@@ -110,36 +111,50 @@ public sealed class SteamControllerModeTests
         Assert.Equal(1, arcadia.XboxPads.Unplugged);
     }
 
-    /// <summary>T213-12: without usbip or VIIPER the mode is greyed out at "Steam-Eingabe", says why, and no pad comes.</summary>
+    /// <summary>
+    /// T213-12, T242-10: without usbip or VIIPER Pan's emulation doesn't run, so the mode is greyed out at "Steam-Eingabe"
+    /// with a triangle, no game gets a pad, and [A] on it leads to the controller settings on the row that says why.
+    /// </summary>
     [AvaloniaFact]
     [Trait("TestCase", "T213-12")]
-    public async Task Without_the_driver_the_mode_is_greyed_out_at_Steam_Eingabe_and_no_game_gets_a_pad()
+    [Trait("TestCase", "T242-10")]
+    public async Task Without_the_driver_the_mode_is_greyed_out_at_Steam_Eingabe_and_leads_to_why()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] });
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
         arcadia.XboxPads.Missing = "Treiber usbip nicht geladen";
         arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.StartControllers();
         await arcadia.TickSteamControllerAsync();
         arcadia.Press(UiAction.NextTab);
 
-        Assert.False(arcadia.Main.SteamControllerDriverReady);
+        Assert.True(arcadia.Main.ShowControllerSupport);
+        Assert.True(arcadia.Main.ControllerModeBroken);
+        Assert.True(arcadia.Main.Status.HasControllerStatus, "das Dreieck im Header");
         Assert.Equal(ControllerModes.Steam, arcadia.Main.FocusedControllerSupportText);
-        Assert.Equal(ControllerModes.NeedsDriver, arcadia.Main.ControllerModeUnavailableReason);
+        Assert.Equal(ControllerModes.PanNotRunning, arcadia.Main.ControllerModeUnavailableReason);
         arcadia.Click(arcadia.Main.CycleControllerSupportCommand);
-        Assert.Equal(ControllerModes.Steam, arcadia.Main.FocusedControllerSupportText);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings?.Selected);
+        Assert.Equal("pan:start-failed", controller.Rows.Single(row => row.IsFocused).Key);
+        Assert.Equal("Treiber usbip nicht geladen", controller.Rows.Single(row => row.IsFocused).Subtitle);
         Assert.Empty(arcadia.Settings.Current.ControllerSupportOverrides);
+        arcadia.Press(UiAction.Back);
+        Assert.False(arcadia.Main.IsSettingsOpen);
 
         arcadia.Press(UiAction.Options);
         var mode = arcadia.Main.GameMenu!.Actions.Single(action => action.Kind == GameActionKind.ControllerMode);
-        Assert.False(mode.IsEnabled);
-        Assert.Equal(ControllerModes.NeedsDriver, mode.Note);
+        Assert.True(mode.IsEnabled, "fokussierbar");
+        Assert.True(mode.IsBroken);
+        Assert.Equal(ControllerModes.PanNotRunning, mode.Note);
+        mode.Invoke();
+        Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings?.Selected);
         arcadia.Press(UiAction.Back);
         Assert.Equal(0, arcadia.XboxPads.Plugged);
+        Assert.Empty(arcadia.Settings.Current.ControllerSupportOverrides);
 
         // The driver installed meanwhile: the next tick offers the mode again.
         arcadia.XboxPads.Missing = null;
         await arcadia.TickSteamControllerAsync();
-        Assert.True(arcadia.Main.SteamControllerDriverReady);
+        Assert.False(arcadia.Main.ControllerModeBroken);
         Assert.Equal(ControllerModes.Arcadia, arcadia.Main.FocusedControllerSupportText);
         Assert.Equal(1, arcadia.XboxPads.Plugged);
     }

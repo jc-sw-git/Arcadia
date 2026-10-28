@@ -17,8 +17,11 @@ public interface IGameActionsOwner
     /// <summary>True when the Steam Controller mode matters: a Steam Controller is connected.</summary>
     bool ShowControllerMode { get; }
 
-    /// <summary>usbip and VIIPER are there; without them a game can't get Arcadia's pad, so the mode is "Steam-Eingabe" (#213).</summary>
-    bool SteamControllerDriverReady { get; }
+    /// <summary>Pan's emulation is on but doesn't run (#242): a game can't get Arcadia's pad, so the mode is "Steam-Eingabe".</summary>
+    bool ControllerModeBroken { get; }
+
+    /// <summary>The controller settings on the row that says why Pan's emulation doesn't run (#242).</summary>
+    void ShowPanProblem();
 
     /// <summary>Right before a game starts (it is already starting): the Steam Controller takes the game's mode (#213).</summary>
     Task BeforeGameStartsAsync(CancellationToken cancellationToken);
@@ -344,13 +347,15 @@ public sealed class GameActions : IGameActionHost
         }
     }
 
-    /// <summary>"Arcadia" or "Steam-Eingabe"; without the driver always "Steam-Eingabe", as that is what the game gets.</summary>
+    /// <summary>"Arcadia" or "Steam-Eingabe"; while Pan's emulation doesn't run always "Steam-Eingabe", as that is what the game gets.</summary>
     public string ControllerModeOf(Game game) =>
-        _owner.SteamControllerDriverReady && _settings.Current.UsesArcadiaPad(game.Key) ? ControllerModes.Arcadia : ControllerModes.Steam;
+        !_owner.ControllerModeBroken && _settings.Current.UsesArcadiaPad(game.Key) ? ControllerModes.Arcadia : ControllerModes.Steam;
 
     bool IGameActionHost.ShowControllerMode => _owner.ShowControllerMode;
 
-    bool IGameActionHost.CanChooseControllerMode => _owner.SteamControllerDriverReady;
+    bool IGameActionHost.ControllerModeBroken => _owner.ControllerModeBroken;
+
+    void IGameActionHost.ShowPanProblem() => _owner.ShowPanProblem();
 
     void IGameActionHost.Play(GameTileViewModel tile) => Start(tile);
 

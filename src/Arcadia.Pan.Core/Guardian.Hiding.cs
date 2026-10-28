@@ -23,6 +23,15 @@ public sealed partial class Guardian
     private int _arrivalQueued;
 
     /// <summary>
+    /// What the client's last hide made sure of, so a <see cref="PanCommand.CheckHiding"/> of that generation can tell
+    /// whether it still holds (#242): someone changed HidHide meanwhile (its configuration client, an uninstall). Under
+    /// the lock; null while nothing is hidden for the client.
+    /// </summary>
+    private HiddenFor? _hiddenFor;
+
+    private sealed record HiddenFor(uint Generation, string ImagePath, HashSet<string> Instances);
+
+    /// <summary>
     /// A HID device of the puck arrived (Windows' notification, or a test). While Pan hides, the new instances are
     /// hidden too and the puck restarted, so no program keeps a handle it opened in between. Never throws.
     /// </summary>
@@ -56,10 +65,17 @@ public sealed partial class Guardian
                 if (hiding)
                 {
                     // Every HID collection of the puck arrives on its own: only a burst that changed something is logged.
-                    var (reason, _) = await HideCoreAsync(imagePath: null);
+                    var (reason, listed) = await HideCoreAsync(imagePath: null);
                     if (reason != PanReason.None)
                     {
                         _log($"Steam Controller device arrived while hiding, not hidden: {reason}");
+                    }
+                    else
+                    {
+                        lock (_lock)
+                        {
+                            _hiddenFor?.Instances.UnionWith(listed);
+                        }
                     }
                 }
             }
@@ -109,13 +125,23 @@ public sealed partial class Guardian
                     }
                 }
 
-                var (reason, count) = await HideCoreAsync(imagePath);
+                var (reason, listed) = await HideCoreAsync(imagePath);
                 _log(reason == PanReason.None
-                    ? $"Steam Controller hidden for generation {message.Generation}: {count} instance(s)"
+                    ? $"Steam Controller hidden for generation {message.Generation}: {listed.Count} instance(s)"
                     : $"Steam Controller not hidden for generation {message.Generation}: {reason}");
-                return reason == PanReason.None
-                    ? new PanMessage((byte)PanReply.Hidden, PanMessage.ProtocolVersion, message.Generation, (uint)count)
-                    : PanMessage.Of(PanReply.Rejected, message.Generation, reason);
+                if (reason != PanReason.None)
+                {
+                    return PanMessage.Of(PanReply.Rejected, message.Generation, reason);
+                }
+
+                lock (_lock)
+                {
+                    _hiddenFor = _hiddenFor is { } before && before.Generation == message.Generation
+                        ? before with { Instances = [.. before.Instances, .. listed] }
+                        : new HiddenFor(message.Generation, imagePath, new HashSet<string>(listed, StringComparer.OrdinalIgnoreCase));
+                }
+
+                return new PanMessage((byte)PanReply.Hidden, PanMessage.ProtocolVersion, message.Generation, (uint)listed.Count);
             }
             finally
             {
@@ -159,6 +185,11 @@ public sealed partial class Guardian
                 }
 
                 // The client sends this once it removed its copy of the controller (#242), so nothing forwards to it.
+                lock (_lock)
+                {
+                    _hiddenFor = null;
+                }
+
                 var reason = ShowCore();
                 if (reason == PanReason.None && !await RestartIfPendingAsync(CancellationToken.None))
                 {
@@ -191,6 +222,7 @@ public sealed partial class Guardian
     private async Task<PanMessage> CheckHidingAsync(PanMessage message)
     {
         List<string> ours;
+        HiddenFor? hidden;
         lock (_lock)
         {
             if (RefuseHiding(message) is { } refused)
@@ -199,6 +231,8 @@ public sealed partial class Guardian
             }
 
             ours = [.. _journal.HiddenDevices];
+            // Asked with the generation it hides for: whether that hiding still holds, not only whether Pan could hide.
+            hidden = _hiddenFor is { } h && h.Generation == message.Generation && message.Generation != 0 && _phase == Phase.Emulating ? h : null;
             // Behind an arrival's hide this may wait long; the client's heartbeats wait behind it on the pipe.
             _hidingBusy++;
         }
@@ -207,7 +241,13 @@ public sealed partial class Guardian
         await _hidingGate.WaitAsync();
         try
         {
-            var (reason, _, detail) = _hiding!.Check(ours);
+            var (reason, state, detail) = _hiding!.Check(ours);
+            if (reason == PanReason.None && hidden is not null)
+            {
+                detail = SteamControllerHiding.WhyNotHidden(state!, hidden.ImagePath, hidden.Instances);
+                reason = detail is null ? PanReason.None : PanReason.HidingLost;
+            }
+
             if (detail is not null)
             {
                 _log($"Hiding check: {reason} ({detail})");
@@ -279,7 +319,7 @@ public sealed partial class Guardian
     /// (unless <paramref name="imagePath"/> is null: an arrival) and turns cloaking on, each journaled first; then
     /// restarts the puck so programs that have it open lose it. Returns why not, and how many instances are hidden.
     /// </summary>
-    private async Task<(PanReason Reason, int Count)> HideCoreAsync(string? imagePath)
+    private async Task<(PanReason Reason, IReadOnlyList<string> Listed)> HideCoreAsync(string? imagePath)
     {
         // Listed first: it may wait on Windows' PnP lock, and HidHide's lists must be read right before they are written
         // back, so a change the user makes meanwhile isn't lost.
@@ -291,7 +331,7 @@ public sealed partial class Guardian
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             _log($"Steam Controller devices not listed: {ex.Message}");
-            return (PanReason.HidingFailed, 0);
+            return (PanReason.HidingFailed, []);
         }
 
         List<string> ours;
@@ -304,7 +344,7 @@ public sealed partial class Guardian
         if (reason != PanReason.None)
         {
             _log($"Not hiding: {detail}");
-            return (reason, 0);
+            return (reason, []);
         }
 
         // Only listed devices, also if the device list returned something else.
@@ -315,7 +355,7 @@ public sealed partial class Guardian
         if (toHide.Count == 0 && allow is null && !turnOn)
         {
             // Hidden already (a second hide, or the puck's own restart announcing it again).
-            return (await RestartIfPendingAsync(CancellationToken.None) ? PanReason.None : PanReason.HidingFailed, listed.Count);
+            return (await RestartIfPendingAsync(CancellationToken.None) ? PanReason.None : PanReason.HidingFailed, listed);
         }
 
         bool restart;
@@ -334,7 +374,7 @@ public sealed partial class Guardian
             if (!TrySaveJournal())
             {
                 (_journal.HiddenDevices, _journal.AllowListed, _journal.CloakingWasOn, _journal.PuckRestartPending) = before;
-                return (PanReason.HidingFailed, 0);
+                return (PanReason.HidingFailed, []);
             }
         }
 
@@ -360,16 +400,16 @@ public sealed partial class Guardian
         {
             // What was journaled is undone by the next show or teardown; removing an entry that never got in is harmless.
             _log($"HidHide not changed: {ex.Message}");
-            return (ex.Reason, 0);
+            return (ex.Reason, []);
         }
 
         _log($"HidHide: {toHide.Count} device(s) hidden, {(allow is null ? "allow list unchanged" : "client allow-listed")}, cloaking {(turnOn ? "turned on" : "was on")}");
         if (restart && !await RestartIfPendingAsync(CancellationToken.None))
         {
-            return (PanReason.HidingFailed, 0);
+            return (PanReason.HidingFailed, []);
         }
 
-        return (PanReason.None, listed.Count);
+        return (PanReason.None, listed);
     }
 
     /// <summary>

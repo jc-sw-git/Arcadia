@@ -247,6 +247,58 @@ public sealed class HidingTests : IDisposable
         AssertRestored(before.Hidden, before.Allowed, before.Cloaking);
     }
 
+    public static TheoryData<string, PanReason> LostHidings => new()
+    {
+        { "a hidden instance unticked", PanReason.HidingLost },
+        { "cloaking turned off", PanReason.HidingLost },
+        { "Arcadia taken off the allow list", PanReason.HidingLost },
+        { "configuration client open", PanReason.HidHideBusy },
+        { "HidHide uninstalled", PanReason.HidHideMissing },
+    };
+
+    [Theory]
+    [MemberData(nameof(LostHidings))]
+    public async Task A_check_with_the_hiding_generation_says_when_its_hiding_no_longer_holds(string change, PanReason reason)
+    {
+        var generation = await HiddenAsync();
+        Assert.Equal(PanReason.None, (await Send(PanCommand.CheckHiding, generation)).Reason);
+
+        switch (change)
+        {
+            case "a hidden instance unticked": _hidHide.Hidden.Remove(FakeDevices.Slot2); break;
+            case "cloaking turned off": _hidHide.Cloaking = false; break;
+            case "Arcadia taken off the allow list": _hidHide.Allowed.Remove(ArcadiaImage); break;
+            case "configuration client open": _hidHide.FailAll = PanReason.HidHideBusy; break;
+            case "HidHide uninstalled": _hidHide.Version = null; break;
+        }
+
+        var check = await Send(PanCommand.CheckHiding, generation);
+
+        Assert.Equal((PanReply.HidingState, reason), (check.Reply, check.Reason));
+        // The settings' check (no generation) still only asks whether Pan could hide.
+        Assert.Equal(change is "configuration client open" or "HidHide uninstalled" ? reason : PanReason.None, (await Send(PanCommand.CheckHiding)).Reason);
+    }
+
+    [Fact]
+    public async Task A_hiding_the_user_had_set_up_before_counts_as_held_while_it_stays()
+    {
+        (_hidHide.Hidden, _hidHide.Allowed, _hidHide.Cloaking) = ([FakeDevices.Slot2, FakeDevices.Slot3], [ArcadiaImage], true);
+        var generation = await HiddenAsync();
+
+        Assert.Equal(PanReason.None, (await Send(PanCommand.CheckHiding, generation)).Reason);
+        _hidHide.Hidden.Remove(FakeDevices.Slot3);
+        Assert.Equal(PanReason.HidingLost, (await Send(PanCommand.CheckHiding, generation)).Reason);
+    }
+
+    [Fact]
+    public async Task After_an_unhide_a_check_of_that_generation_no_longer_expects_hiding()
+    {
+        var generation = await HiddenAsync();
+        Assert.Equal(PanReply.Shown, (await Send(PanCommand.Unhide, generation)).Reply);
+
+        Assert.Equal(PanReason.None, (await Send(PanCommand.CheckHiding, generation)).Reason);
+    }
+
     [Fact]
     public async Task Hiding_belongs_to_the_current_emulation()
     {

@@ -14,6 +14,13 @@ public sealed record AppSettings
     /// </summary>
     public bool SteamControllerSupport { get; init; }
 
+    /// <summary>
+    /// "Controller-Wächter (Pan)" (#242): Pan hides the real Steam Controller and Arcadia emulates it, for games (Xbox
+    /// pad) and for Steam (a copy). Off, nothing is emulated and every program sees the real controllers. On by default,
+    /// so it runs as soon as "Treiber installieren" has set up its parts.
+    /// </summary>
+    public bool PanEnabled { get; init; } = true;
+
     /// <summary>Per-game override of <see cref="SteamControllerSupport"/>, keyed by <see cref="Game.Key"/>.</summary>
     public Dictionary<string, bool> ControllerSupportOverrides { get; init; } = [];
 

@@ -5,6 +5,7 @@ using Arcadia.App.Services;
 using Arcadia.App.Settings;
 using Arcadia.App.Setup;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Search;
@@ -119,13 +120,19 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     [ObservableProperty]
     public partial bool ShowControllerSupport { get; private set; }
 
-    /// <summary>usbip and VIIPER are there, so "Arcadia" can be chosen; without them the mode is greyed out (#213).</summary>
+    /// <summary>
+    /// Pan's emulation is on but doesn't run (#242): the mode is greyed out with a triangle and says "Steam-Eingabe", as
+    /// that is what a game gets; [A] on it opens the controller settings on the row that says why.
+    /// </summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ControllerModeUnavailableReason))]
-    public partial bool SteamControllerDriverReady { get; private set; }
+    [NotifyPropertyChangedFor(nameof(ControllerModeWorks), nameof(ControllerModeUnavailableReason))]
+    public partial bool ControllerModeBroken { get; private set; }
 
-    /// <summary>The preview's tooltip while the mode can't be chosen for want of the driver, else null.</summary>
-    public string? ControllerModeUnavailableReason => SteamControllerDriverReady ? null : ControllerModes.NeedsDriver;
+    /// <summary>"Arcadia" can be chosen and is what a game gets.</summary>
+    public bool ControllerModeWorks => !ControllerModeBroken;
+
+    /// <summary>The mode's tooltip while it doesn't work, else null.</summary>
+    public string? ControllerModeUnavailableReason => ControllerModeBroken ? ControllerModes.PanNotRunning : null;
 
     /// <summary>
     /// Right before a game starts: the App unplugs Arcadia's pad for a game on "Steam-Eingabe" (#213). Set once by the
@@ -706,7 +713,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         SettingsCategoryViewModel[] categories =
         [
             new LauncherSettingsViewModel(this, changes, _time, launcherId),
-            new ControllerSettingsViewModel(_controllerSupport, changes),
+            new ControllerSettingsViewModel(_controllerSupport, changes, _pan, GameInTheWay),
             new AboutSettingsViewModel(_updates, _updates.InstallAsync),
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
@@ -719,6 +726,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     {
         OnPagesChanged();
         UpdateGameMouseModeState();
+        UpdatePanState();
     }
 
     partial void OnFirstRunChanged(FirstRunViewModel? value) => OnPagesChanged();
@@ -826,11 +834,20 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
-    /// <summary>Switches the focused game between "Arcadia" and "Steam-Eingabe"; not while it runs (#95), nor without the driver.</summary>
+    /// <summary>
+    /// Switches the focused game between "Arcadia" and "Steam-Eingabe"; not while it runs (#95). While Pan's emulation
+    /// doesn't run it opens the controller settings on the row that says why (#242).
+    /// </summary>
     [RelayCommand]
     private void CycleControllerSupport()
     {
-        if (!SteamControllerDriverReady || Library.FocusedGame is not { IsRunningOrStarting: false, Game: var game })
+        if (ControllerModeBroken)
+        {
+            ShowPanProblem();
+            return;
+        }
+
+        if (Library.FocusedGame is not { IsRunningOrStarting: false, Game: var game })
         {
             return;
         }
@@ -838,13 +855,43 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         _controllerSupport.SetModeFor(game, !_settings.Current.UsesArcadiaPad(game.Key));
     }
 
-    /// <summary>The driver for Arcadia's pad (usbip, VIIPER) came or went; UI thread.</summary>
-    public void SetSteamControllerDriverReady(bool ready)
+    private IPanEmulationView _pan = new NoPanEmulation();
+
+    /// <summary>Pan's emulation (#242), once at the start: the mode, the header and the controller settings follow it.</summary>
+    public void ConnectPan(IPanEmulationView pan)
     {
-        SteamControllerDriverReady = ready;
-        Detail?.RebuildActions();
+        _pan = pan;
+        pan.Changed += () => Avalonia.Threading.Dispatcher.UIThread.Post(UpdatePanState);
+        UpdatePanState();
+    }
+
+    private void UpdatePanState()
+    {
+        var status = _pan.Status;
+        Status.ShowPan(status);
+        var broken = _settings.Current.PanEnabled && status.HasProblem;
+        if (ControllerModeBroken != broken)
+        {
+            ControllerModeBroken = broken;
+            Detail?.RebuildActions();
+        }
+
         UpdateControllerSupportState();
     }
+
+    /// <summary>The controller settings with the row focused that says why Pan's emulation doesn't run; B goes back.</summary>
+    private void ShowPanProblem()
+    {
+        ShowSettings(typeof(ControllerSettingsViewModel));
+        if (Settings?.Selected is ControllerSettingsViewModel controller)
+        {
+            controller.FocusRow(controller.PanWarningKey ?? PanRows.MainKey);
+        }
+    }
+
+    /// <summary>The title of a game that runs or is being started, for "Erst änderbar, wenn „…“ beendet ist" (#242).</summary>
+    private string? GameInTheWay() =>
+        Session.Libraries.SelectMany(library => library.Games).FirstOrDefault(game => Session.RunStateOf(game.Key) is not null)?.Title;
 
     /// <summary>SDL sees a Steam Controller or no longer does (#212); the per-game mode shows only while it does (#213).</summary>
     public void SetSteamControllerSeen(bool seen)
@@ -855,8 +902,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     private void UpdateControllerSupportState()
     {
-        // The mode only matters with a Steam Controller; other pads are never emulated (#72, #213).
-        var show = _steamControllerSeenBySdl;
+        // The mode only matters with a Steam Controller; other pads are never emulated (#72, #213). With Pan off nothing
+        // is emulated, so there is no mode either (#242).
+        var show = _steamControllerSeenBySdl
+            && (_controllerSupport.StartsSisr || (_settings.Current.PanEnabled && _pan.Status.State != PanEmulationState.Unsupported));
         if (ShowControllerSupport != show)
         {
             ShowControllerSupport = show;
@@ -918,7 +967,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     bool IGameActionsOwner.ShowControllerMode => ShowControllerSupport;
 
-    bool IGameActionsOwner.SteamControllerDriverReady => SteamControllerDriverReady;
+    bool IGameActionsOwner.ControllerModeBroken => ControllerModeBroken;
+
+    void IGameActionsOwner.ShowPanProblem() => ShowPanProblem();
 
     Task IGameActionsOwner.BeforeGameStartsAsync(CancellationToken cancellationToken) =>
         BeforeGameStarts?.Invoke(cancellationToken) ?? Task.CompletedTask;
@@ -937,6 +988,51 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (!IsDialogOpen)
         {
             Confirmation = confirmation;
+        }
+    }
+
+    /// <summary>"Arcadia jetzt beenden" in a dialog; the App closes the window, as its close button would.</summary>
+    public event EventHandler? QuitRequested;
+
+    /// <summary>
+    /// Steam tried to update the Steam Controller's firmware through the copy and Arcadia dropped it (#242, decision 8):
+    /// says so, with how the update works; it waits for an open question to close rather than replacing it.
+    /// </summary>
+    public void ShowFirmwareBlocked()
+    {
+        var dialog = new ConfirmationViewModel(
+            "Firmware-Update gestoppt",
+            "Steam wollte die Firmware deines Steam Controllers aktualisieren. Solange Pan aktiv ist, verhindert Arcadia Firmware-Updates des Steam Controllers und seines Pucks, damit dabei nichts schiefgehen kann. Dein Steam Controller ist unverändert.",
+            "Arcadia jetzt beenden",
+            () => QuitRequested?.Invoke(this, EventArgs.Empty))
+        {
+            CancelLabel = "Verstanden",
+            IsCancelFirst = true,
+            IsConfirmDanger = false,
+            StepsTitle = "SO KLAPPT DAS UPDATE",
+            Steps = ["Arcadia beenden", "Das Update in Steam erneut starten und abwarten", "Arcadia wieder starten"],
+        };
+        if (Confirmation is not null)
+        {
+            _firmwareBlockedPending = dialog;
+            return;
+        }
+
+        // The settings and menus would stand over the dialog: they close, the library or detail page stays underneath.
+        GameMenu = null;
+        ViewOptions = null;
+        Settings = null;
+        Confirmation = dialog;
+    }
+
+    private ConfirmationViewModel? _firmwareBlockedPending;
+
+    partial void OnConfirmationChanged(ConfirmationViewModel? value)
+    {
+        if (value is null && _firmwareBlockedPending is { } pending)
+        {
+            _firmwareBlockedPending = null;
+            Confirmation = pending;
         }
     }
 

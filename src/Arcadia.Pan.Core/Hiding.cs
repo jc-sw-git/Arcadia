@@ -150,6 +150,27 @@ public sealed class SteamControllerHiding(IHidHideDriver hidHide, ISteamControll
         return (PanReason.None, state, null);
     }
 
+    /// <summary>
+    /// Why a hide Pan did for the client no longer holds in <paramref name="state"/> (#242), or null if it does: every
+    /// instance it made sure of is still hidden, the client still allow-listed, cloaking still on. Entries are compared as
+    /// HidHide does; the user may have added more of their own.
+    /// </summary>
+    public static string? WhyNotHidden(HidHideState state, string imagePath, IReadOnlyCollection<string> instances)
+    {
+        if (!state.Cloaking)
+        {
+            return "cloaking was turned off";
+        }
+
+        if (!Contains(state.Allowed, imagePath))
+        {
+            return "the client is no longer on the allow list";
+        }
+
+        var shown = instances.Count(id => !Contains(state.Hidden, id));
+        return shown == 0 ? null : $"{shown} of {instances.Count} Steam Controller instance(s) no longer hidden";
+    }
+
     /// <summary>The entries of <paramref name="list"/> without <paramref name="remove"/>, compared as HidHide does (ignoring case).</summary>
     public static List<string> Without(IEnumerable<string> list, IEnumerable<string> remove)
     {

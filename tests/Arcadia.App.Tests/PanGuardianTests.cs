@@ -37,14 +37,13 @@ public sealed class PanGuardianTests
         await arcadia.TickSteamControllerAsync();
 
         Assert.Equal(0, arcadia.XboxPads.Plugged);
-        Assert.False(arcadia.Main.SteamControllerDriverReady);
+        Assert.True(arcadia.Main.ControllerModeBroken);
         Assert.Contains("ohne Treiber", arcadia.ForGames.Routing.Current.Why);
 
         arcadia.Pan.Return();
         await arcadia.TickSteamControllerAsync();
-        await arcadia.TickSteamControllerAsync();
         Assert.Equal(1, arcadia.XboxPads.Plugged);
-        Assert.True(arcadia.Main.SteamControllerDriverReady);
+        Assert.False(arcadia.Main.ControllerModeBroken);
     }
 
     [AvaloniaFact]
@@ -98,13 +97,12 @@ public sealed class PanGuardianTests
 
         Assert.Equal(1, arcadia.XboxPads.Unplugged);
         Assert.Equal(1, arcadia.XboxPads.Plugged);
-        Assert.False(arcadia.Main.SteamControllerDriverReady);
+        Assert.True(arcadia.Main.ControllerModeBroken);
 
         arcadia.Pan.Return();
         await arcadia.TickSteamControllerAsync();
-        await arcadia.TickSteamControllerAsync();
         Assert.Equal(2, arcadia.XboxPads.Plugged);
-        Assert.True(arcadia.Main.SteamControllerDriverReady);
+        Assert.False(arcadia.Main.ControllerModeBroken);
     }
 
     [AvaloniaFact]
@@ -143,19 +141,17 @@ public sealed class PanGuardianTests
         Assert.Equal(HealthSeverity.Warning, warning.Severity);
         Assert.Equal("Installieren", warning.ActionText);
         Assert.Equal(HealthSeverity.Warning, controller.Marker);
-        Assert.DoesNotContain(controller.Rows, row => row.Key == "pan-restore");
-        // One install button: the switch above is greyed out while a part is missing (#243 B2) and points down.
-        var sisr = Assert.IsType<SisrRowViewModel>(controller.Rows.Single(row => row.Key == "sisr"));
-        Assert.False(sisr.IsSwitch);
-        Assert.True(sisr.IsDimmed);
-        Assert.Equal("Aus – es fehlt: Wächterdienst Pan", sisr.Subtitle);
-        Assert.Contains(sisr.Info.OfType<InfoSection>().SelectMany(section => section.Blocks).OfType<InfoStatus>(), status => status.Text.Contains("„Installieren“ bei der Meldung"));
+        Assert.DoesNotContain(controller.Rows, row => row.Key == PanRows.RestoreKey);
+        // One install button: the switch above stays a switch and points down to the row (#243 B2, #242).
+        var pan = Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
+        Assert.True(pan.IsSwitch);
+        Assert.Equal("Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.", pan.Subtitle);
 
         warning.Activate();
         await arcadia.WaitUntilAsync(() => steam.IsPanReady, "Treiber installiert");
         await arcadia.WaitUntilAsync(() => controller.Rows.All(row => row.Key != "issue:pan-missing"), "die Meldung verschwindet");
         Assert.Null(controller.Marker);
-        Assert.Contains(controller.Rows, row => row.Key == "pan-restore");
+        Assert.Contains(controller.Rows, row => row.Key == PanRows.RestoreKey);
         await arcadia.TickControllerSupportAsync();
         await arcadia.WaitUntilAsync(() => !arcadia.Main.Status.HasControllerStatus, "der Header ist wieder leer");
     }
@@ -179,8 +175,8 @@ public sealed class PanGuardianTests
         Assert.Equal(error, pan.Problem);
         Assert.Equal(HealthSeverity.Error, pan.Severity);
         Assert.Contains(pan.Info.OfType<InfoError>(), block => block.Text == error);
-        var sisr = Assert.IsType<SisrRowViewModel>(controller.Rows.Single(row => row.Key == "sisr"));
-        Assert.DoesNotContain(sisr.Info.OfType<InfoSection>().SelectMany(section => section.Blocks), block => block is InfoError);
+        var main = Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
+        Assert.DoesNotContain(main.Info, block => block is InfoError);
         Assert.Equal(HealthSeverity.Warning, controller.Marker);
     }
 

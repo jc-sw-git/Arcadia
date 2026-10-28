@@ -186,7 +186,9 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         return !stillRunning;
     }
 
-    public async Task<PanReason?> CheckHidingAsync(CancellationToken cancellationToken)
+    public Task<PanReason?> CheckHidingAsync(CancellationToken cancellationToken) => CheckHidingAsync(0, cancellationToken);
+
+    public async Task<PanReason?> CheckHidingAsync(uint generation, CancellationToken cancellationToken)
     {
         if (!IsConnected)
         {
@@ -198,7 +200,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         {
             // Not cancelled by the caller: a request given up after it reached Pan costs the link (its late reply would
             // pass for the next request's), and with it a running emulation. Bounded by its own timeout instead.
-            var reply = await RequestAsync(PanMessage.Of(PanCommand.CheckHiding), HidingRequestTimeout, CancellationToken.None);
+            var reply = await RequestAsync(PanMessage.Of(PanCommand.CheckHiding, generation), HidingRequestTimeout, CancellationToken.None);
             if (reply.Reply == PanReply.HidingState)
             {
                 return reply.Reason;
@@ -219,6 +221,64 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         catch (OperationCanceledException) when (_disposed.IsCancellationRequested)
         {
             return null;
+        }
+    }
+
+    public async Task<PanReason> HideAsync(uint generation, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        PanMessage reply;
+        try
+        {
+            // A hide restarts the puck (~2.5 s, up to ~20 s if a device step hangs): its own timeout, never cancelled
+            // halfway, for the same reason as the check.
+            reply = await RequestAsync(PanMessage.Of(PanCommand.Hide, generation), HidingRequestTimeout, CancellationToken.None);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // The link is gone; Pan's teardown for the lost client undoes whatever the hide had done.
+            _log($"Pan: Hide ohne Antwort: {ex.Message}");
+            return PanReason.HidingFailed;
+        }
+
+        if (reply.Reply == PanReply.Hidden)
+        {
+            _log($"Pan: Steam Controller versteckt ({reply.Value} Geräte)");
+            return PanReason.None;
+        }
+
+        var reason = reply.Reply == PanReply.Rejected ? reply.Reason : PanReason.HidingFailed;
+        _log(reply.Reply == PanReply.Unsupported ? "Pan: kann den Steam Controller nicht verstecken (Pan zu alt)" : $"Pan: Hide abgelehnt ({reply})");
+
+        // A rejected hide may have changed HidHide already (hidden, then the restart failed): undo it (pan-hiding.md).
+        if (reply.Reply == PanReply.Rejected)
+        {
+            await UnhideAsync(generation, CancellationToken.None);
+        }
+
+        return reason;
+    }
+
+    public async Task<bool> UnhideAsync(uint generation, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            var reply = await RequestAsync(PanMessage.Of(PanCommand.Unhide, generation), HidingRequestTimeout, CancellationToken.None);
+            if (reply.Reply == PanReply.Shown)
+            {
+                _log("Pan: Steam Controller wieder sichtbar");
+                return true;
+            }
+
+            // Pan's teardown after EmulationStopped shows it then, with its own retries.
+            _log($"Pan: Unhide abgelehnt ({reply})");
+            return false;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _log($"Pan: Unhide ohne Antwort: {ex.Message}");
+            return false;
         }
     }
 

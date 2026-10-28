@@ -120,6 +120,7 @@ public sealed class SisrRemovalTests
     {
         var steam = new FakeSteam { IsSteamRunning = true, SteamGame = "Hades II" };
         steam.Sisr.WithSisr();
+        steam.Sisr.System.RunSisr(steam.Sisr.SisrExe, id: 5);
         using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
         var controller = await OpenControllerAsync(arcadia);
         arcadia.FocusRow(SisrRows.RemoveKey);
@@ -135,6 +136,7 @@ public sealed class SisrRemovalTests
         Assert.Equal(SettingsPrompt.None, controller.Prompt);
         Assert.Equal(0, steam.SteamStops);
         Assert.True(File.Exists(steam.Sisr.SisrExe));
+        Assert.Empty(steam.Sisr.System.Stopped);
     }
 
     [AvaloniaFact]
@@ -154,7 +156,31 @@ public sealed class SisrRemovalTests
         await arcadia.WaitUntilAsync(() => controller.Prompt == SettingsPrompt.None, "der Dialog geht zu");
         Assert.True(File.Exists(steam.Sisr.SisrExe));
         Assert.Equal(1, steam.Sisr.Installation().Find().MarkerAccounts);
-        Assert.Contains(controller.Rows, row => row.Key == SisrRows.RemoveKey);
+
+        // The player sees why: the row says so, the cause in its info panel.
+        var row = controller.Rows.Single(r => r.Key == SisrRows.RemoveKey);
+        await arcadia.WaitUntilAsync(() => row.Subtitle == "SISR wurde nicht entfernt", "die Zeile sagt, dass nichts entfernt wurde");
+        Assert.Equal(HealthSeverity.Warning, row.Severity);
+        Assert.Contains(row.Info, block => block is InfoNote { Text: ControllerSupportService.SteamWontCloseText });
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T214-4")]
+    public async Task A_Steam_that_won_t_close_leaves_a_running_SISR_running()
+    {
+        // "Nothing removed" includes the SISR a game may be using right now: it is stopped only once Steam is closed.
+        var steam = new FakeSteam { IsSteamRunning = true, RefusesToExit = true };
+        steam.Sisr.WithSisr();
+        steam.Sisr.System.RunSisr(steam.Sisr.SisrExe, id: 5);
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        await OpenControllerAsync(arcadia);
+        arcadia.FocusRow(SisrRows.RemoveKey);
+
+        arcadia.Press(UiAction.Accept).Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.ControllerSupport.LastError is not null, "die Meldung, dass Steam nicht beendet wurde");
+
+        Assert.Equal(ControllerSupportService.SteamWontCloseText, arcadia.ControllerSupport.LastError);
+        Assert.Empty(steam.Sisr.System.Stopped);
     }
 
     [AvaloniaFact]
@@ -171,7 +197,7 @@ public sealed class SisrRemovalTests
 
         arcadia.Press(UiAction.Accept);
         var row = controller.Rows.Single(r => r.Key == SisrRows.RemoveKey);
-        await arcadia.WaitUntilAsync(() => row.Subtitle == "Nicht alles ließ sich entfernen", "die Zeile sagt, dass etwas übrig ist");
+        await arcadia.WaitUntilAsync(() => row.Subtitle == "SISR wurde nicht entfernt", "die Zeile sagt, dass nichts entfernt wurde");
 
         Assert.Equal(HealthSeverity.Warning, row.Severity);
         Assert.Contains(row.Info, block => block is InfoNote { Text: SisrInstallation.StopFailedCause });
@@ -186,6 +212,27 @@ public sealed class SisrRemovalTests
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == Removed, "der Toast „SISR ist vollständig entfernt.“");
         Assert.DoesNotContain(controller.Rows, r => r.Group == SisrRows.Group);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T214-8")]
+    public async Task What_is_left_after_SISR_and_its_marker_went_keeps_the_row_saying_why_without_a_toast()
+    {
+        var steam = new FakeSteam { IsSteamRunning = false };
+        steam.Sisr.WithSisr();
+        steam.Sisr.System.HasUninstallEntry = true;
+        steam.Sisr.System.UninstallEntryLocked = true;
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        var controller = await OpenControllerAsync(arcadia);
+        arcadia.FocusRow(SisrRows.RemoveKey);
+
+        arcadia.Press(UiAction.Accept);
+        var row = controller.Rows.Single(r => r.Key == SisrRows.RemoveKey);
+        await arcadia.WaitUntilAsync(() => row.Subtitle == "Nicht alles ließ sich entfernen", "die Zeile sagt, dass etwas übrig ist");
+
+        Assert.False(File.Exists(steam.Sisr.SisrExe));
+        Assert.Contains(row.Info, block => block is InfoNote { Text: var cause } && cause.StartsWith("SISR-Deinstallationseintrag", StringComparison.Ordinal));
+        Assert.NotEqual(Removed, arcadia.Main.Toast.Text);
     }
 
     [AvaloniaFact]

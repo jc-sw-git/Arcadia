@@ -85,6 +85,86 @@ public static class UsbipDriver
         return File.Exists(path) ? path : null;
     }
 
+    /// <summary>
+    /// Detaches the controllers VIIPER attached. VIIPER has no detach of its own: the driver drops a
+    /// device when VIIPER's connection closes. This is the safety net for when Arcadia killed SISR's VIIPER
+    /// (#214) and a device might be left behind. Returns how many
+    /// were detached; never throws.
+    /// </summary>
+    public static async Task<int> DetachViiperDevicesAsync(CancellationToken cancellationToken = default)
+    {
+        if (CommandLineTool() is not { } usbip)
+        {
+            return 0;
+        }
+
+        var listing = await RunAsync(usbip, ["port"], cancellationToken);
+        if (listing is null)
+        {
+            return 0;
+        }
+
+        var detached = 0;
+        foreach (var port in UsbipPorts.FromLocalViiper(listing))
+        {
+            if (await RunAsync(usbip, ["detach", "-p", port.ToString(System.Globalization.CultureInfo.InvariantCulture)], cancellationToken) is not null)
+            {
+                detached++;
+            }
+        }
+
+        return detached;
+    }
+
+    private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(5);
+
+    /// <summary>usbip.exe from usbip-win2's install folder (default <c>C:\Program Files\USBip</c>), or null.</summary>
+    private static string? CommandLineTool()
+    {
+        var folders = UninstallEntries().Select(e => e.InstallLocation)
+            .Append(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "USBip"));
+        return folders.Where(f => !string.IsNullOrWhiteSpace(f))
+            .Select(f => Path.Combine(f!.Trim('"'), "usbip.exe"))
+            .FirstOrDefault(File.Exists);
+    }
+
+    /// <summary>Runs usbip.exe; its output, or null if it failed, timed out or exited with an error.</summary>
+    private static async Task<string?> RunAsync(string usbip, string[] arguments, CancellationToken cancellationToken)
+    {
+        var info = new ProcessStartInfo(usbip) { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true };
+        foreach (var argument in arguments)
+        {
+            info.ArgumentList.Add(argument);
+        }
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(CommandTimeout);
+        try
+        {
+            using var process = Process.Start(info);
+            if (process is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var output = await process.StandardOutput.ReadToEndAsync(timeout.Token);
+                await process.WaitForExitAsync(timeout.Token);
+                return process.ExitCode == 0 ? output : null;
+            }
+            catch (OperationCanceledException)
+            {
+                process.Kill();
+                return null;
+            }
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>True if the emulated host controller driver is loaded.</summary>
     public static bool IsRunning()
     {

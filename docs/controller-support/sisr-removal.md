@@ -18,8 +18,11 @@ nothing by itself. The product side (group "SISR", its texts and dialogs) is in 
 
 Each step on its own, so one that fails doesn't stop the rest; a second run picks up what is left (idempotent).
 
-1. Stops every `SISR.exe` and every `viiper.exe` from SISR's folder; if an SISR stays, nothing else goes
-   (`StopFailedCause`: its files are in use).
+1. Stops the `SISR.exe` and `viiper.exe` from SISR's folder (one elsewhere stays); if an SISR stays, nothing else
+   goes (`StopFailedCause`: its files are in use). Then what SISR's own quit would have done (`CleanUpAfterStop`, as
+   the old Arcadia did): with Steam running, `steam://forceinputappid/0`, so Steam drops the layout SISR forced (with
+   Steam closed the URL would start it, and a fresh Steam has none); with no VIIPER left running, `usbip detach` for
+   the pads on VIIPER's address, a safety net, since the driver drops them when VIIPER's connection closes.
 2. `%LOCALAPPDATA%\SISR` (incl. `.initial_setup_done` and its `viiper.exe`), `%APPDATA%\SISR`, `%APPDATA%\SISR.exe`
    (SISR's WebView2 data, which SISR's own uninstaller leaves, seen 2026-10-16), the links `SISR.lnk` on the desktop and
    `SISR.lnk` / `SISR (No Steam).lnk` in the start menu, and SISR's entry in HKCU's uninstall list.
@@ -37,6 +40,9 @@ usbip-win2 stays (Pan needs it), and so do the per-game modes. No step needs adm
 
 - With a marker and Steam running, the settings ask "Steam beenden?" first; a running Steam game stops it before anything
   changes ("Steam-Spiel läuft" with the game's name), and so does a Steam that won't close (`SteamWontCloseText`).
+  SISR is stopped only after Steam closed: a game may be using SISR's pad. Either cause shows in the row ("SISR wurde
+  nicht entfernt"), like what a removal left ("Nicht alles ließ sich entfernen"); the group stays while there is a
+  cause, also when only something that alone wouldn't show it is left (the uninstall entry, the CEF flag).
 - Arcadia closes Steam, removes, and starts Steam again also after a failure (`WithSteamClosedAsync`, shared with the
   driver fixes that restart the puck, #296). If Arcadia crashes in between, Steam stays closed; the user starts it.
 - Whether the marker stays gone after a removal with Steam closed and a Steam restart: the check script
@@ -48,7 +54,8 @@ usbip-win2 stays (Pan needs it), and so do the per-game modes. No step needs adm
   `--api.listen-address localhost:47640` and `--log.file` in one of Arcadia's log folders (`%APPDATA%\Arcadia\logs`,
   and the older `%LOCALAPPDATA%\Arcadia\logs`, `%LOCALAPPDATA%\Arcadia-Logs`). The old Arcadia kept SISR running across
   its update, so after updating to this version it would take the controller beside Pan. An SISR the user started
-  stays.
+  stays. A `viiper.exe` from SISR's folder goes too while no SISR from there runs: Arcadia's own VIIPER would
+  otherwise find the port taken and use it. The clean-up of step 1 follows.
 - While the settings are open and Pan is on, a running SISR shows the warning row "SISR läuft" under Pan
   (`EmulationParts.SisrRunning`), also with the group hidden; it is settings-only, so it never stays in the header.
 - The old settings `SteamControllerSupport` and `LastSisrUpdateCheck` are no properties any more: loading ignores them

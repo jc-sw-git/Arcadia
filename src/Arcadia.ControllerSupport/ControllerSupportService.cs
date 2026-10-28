@@ -334,14 +334,20 @@ public sealed class ControllerSupportService(
     /// <summary>What of SISR is on the PC (#214), as of the last check; null until checked or without <see cref="Sisr"/>.</summary>
     public SisrFound? SisrFound { get; private set; }
 
-    /// <summary>The group "SISR" shows: SISR or its marker is there and the player didn't choose "SISR behalten".</summary>
-    public bool ShowsSisrGroup => SisrFound is { ShowsGroup: true } && !Settings.KeepSisr;
+    /// <summary>
+    /// The group "SISR" shows: SISR or its marker is there, or the last "SISR entfernen" left something (a locked key
+    /// folder, the CEF flag) that only its row can name; and the player didn't choose "SISR behalten".
+    /// </summary>
+    public bool ShowsSisrGroup => SisrFound is not null && (SisrFound.ShowsGroup || SisrRemovalCause is not null) && !Settings.KeepSisr;
 
     /// <summary>"SISR entfernen" has to close Steam first: the marker is there and Steam runs (it writes it back on exit).</summary>
     public bool SisrRemovalStopsSteam => SisrFound is { HasMarker: true } && _platform.IsSteamRunning;
 
     /// <summary>Why the last "SISR entfernen" left something, until it runs again; the group row names it.</summary>
     public string? SisrRemovalCause { get; private set; }
+
+    /// <summary>The last "SISR entfernen" stopped before anything went (<see cref="SisrRemovalCause"/> says why).</summary>
+    public bool SisrRemovedNothing { get; private set; }
 
     /// <summary>"SISR entfernen" removed everything: the settings show the toast and move the focus.</summary>
     public event EventHandler? SisrRemoved;
@@ -353,7 +359,7 @@ public sealed class ControllerSupportService(
         $"„{game}“ läuft gerade über Steam. Beende das Spiel zuerst, dann kann Arcadia SISR entfernen.";
 
     /// <summary>
-    /// "SISR entfernen" (#214): stops SISR, closes Steam for the marker if it runs (the settings asked), removes what is
+    /// "SISR entfernen" (#214): closes Steam for the marker if it runs (the settings asked), stops SISR, removes what is
     /// there and starts Steam again, also after a failure. What is left stays in the group with its cause.
     /// </summary>
     public Task RemoveSisrAsync(CancellationToken cancellationToken = default) =>
@@ -364,22 +370,30 @@ public sealed class ControllerSupportService(
                 return;
             }
 
-            // Before Steam closes: an SISR that won't stop keeps its files, and Steam needn't close for nothing.
-            if (!await Task.Run(sisr.StopForRemoval, token))
+            // SISR is stopped inside Remove, so only once Steam is closed: a Steam game or a Steam that won't close
+            // leaves it running for the game that may be using its pad.
+            SisrRemoval result;
+            try
             {
-                SisrRemovalCause = SisrInstallation.StopFailedCause;
-                throw new InvalidOperationException(SisrInstallation.StopFailedCause);
+                result = await WithSteamClosedAsync(sisr.Find().HasMarker, "„SISR entfernen“", SisrRemovalBlocker,
+                    async t =>
+                    {
+                        SetBusyText(SisrRemovingText);
+                        return await Task.Run(() => sisr.Remove(_platform.IsSteamRunning), t);
+                    },
+                    waitForSteam: _ => true, token);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // A Steam game or a Steam that won't close: the group row says why, like any other cause.
+                SisrRemovalCause = ex.Message;
+                SisrRemovedNothing = true;
+                throw;
             }
 
-            var result = await WithSteamClosedAsync(sisr.Find().HasMarker, "„SISR entfernen“", SisrRemovalBlocker,
-                async t =>
-                {
-                    SetBusyText(SisrRemovingText);
-                    return await Task.Run(() => sisr.Remove(_platform.IsSteamRunning), t);
-                },
-                waitForSteam: _ => true, token);
             SisrFound = sisr.Find();
             SisrRemovalCause = result.Complete && !SisrFound.ShowsGroup ? null : result.Cause ?? SisrInstallation.SteamRunningCause;
+            SisrRemovedNothing = result.Cause == SisrInstallation.StopFailedCause;
             Log?.Invoke(result.Complete ? "SISR entfernt" : $"SISR nicht ganz entfernt: {string.Join(", ", result.NotRemoved)} ({result.Cause})");
             if (SisrRemovalCause is null)
             {
@@ -400,7 +414,7 @@ public sealed class ControllerSupportService(
 
         try
         {
-            if (await Task.Run(sisr.StopStartedByOldArcadia, cancellationToken) is > 0 and var stopped)
+            if (await Task.Run(() => sisr.StopStartedByOldArcadia(_platform.IsSteamRunning), cancellationToken) is > 0 and var stopped)
             {
                 Log?.Invoke($"SISR beendet, das die frühere Arcadia-Version gestartet hatte ({stopped})");
             }

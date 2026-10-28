@@ -772,18 +772,24 @@ public sealed class ControllerSupportServiceTests : IDisposable
     public async Task A_Steam_that_won_t_close_or_a_Steam_game_leaves_SISR_as_it_is()
     {
         using var pc = new FakeSisrPc().WithSisr();
+        pc.System.RunSisr(pc.SisrExe, id: 5);
         var service = Create(sisr: pc.Installation());
         await service.RefreshAsync();
 
         _platform.SteamGame = "Hades II";
         await service.RemoveSisrAsync();
         Assert.Equal(ControllerSupportService.SisrRemovalBlocker("Hades II"), service.LastError);
+        Assert.Equal(service.LastError, service.SisrRemovalCause);
+        Assert.True(service.SisrRemovedNothing);
 
         _platform.SteamGame = null;
         _platform.SteamRefusesToExit = true;
         await service.RemoveSisrAsync();
         Assert.Equal(ControllerSupportService.SteamWontCloseText, service.LastError);
+        Assert.Equal(service.LastError, service.SisrRemovalCause);
 
+        // The game may be using SISR's pad: SISR is stopped only once Steam is closed.
+        Assert.Empty(pc.System.Stopped);
         Assert.True(File.Exists(pc.SisrExe));
         Assert.Equal(1, pc.Installation().Find().MarkerAccounts);
         Assert.Equal(0, _platform.SteamStarts);
@@ -803,14 +809,46 @@ public sealed class ControllerSupportServiceTests : IDisposable
         await service.RemoveSisrAsync();
 
         Assert.Equal(SisrInstallation.StopFailedCause, service.SisrRemovalCause);
+        Assert.True(service.SisrRemovedNothing);
         Assert.True(File.Exists(pc.SisrExe));
-        Assert.Equal(0, _platform.SteamStops);
+        // Steam closed first (SISR is stopped only then) and came back.
+        Assert.Equal(1, _platform.SteamStops);
+        Assert.Equal(1, _platform.SteamStarts);
 
         // Idempotent: once SISR can stop, the next try finishes the job.
         pc.System.Unstoppable.Clear();
         await service.RemoveSisrAsync();
         Assert.Null(service.SisrRemovalCause);
         Assert.False(service.ShowsSisrGroup);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T214-8")]
+    public async Task What_is_left_after_program_and_marker_went_keeps_the_group_until_a_retry_removes_it()
+    {
+        using var pc = new FakeSisrPc().WithSisr();
+        _platform.IsSteamRunning = false;
+        var service = Create(sisr: pc.Installation());
+        await service.RefreshAsync();
+        var removed = 0;
+        service.SisrRemoved += (_, _) => removed++;
+
+        pc.System.HasUninstallEntry = true;
+        pc.System.UninstallEntryLocked = true;
+        await service.RemoveSisrAsync();
+        Assert.False(service.SisrFound!.ShowsGroup);
+
+        // Only SISR's uninstall entry is left; it alone wouldn't show the group, so the cause keeps it.
+        Assert.NotNull(service.SisrRemovalCause);
+        Assert.False(service.SisrRemovedNothing);
+        Assert.True(service.ShowsSisrGroup);
+        Assert.Equal(0, removed);
+
+        pc.System.UninstallEntryLocked = false;
+        await service.RemoveSisrAsync();
+        Assert.Null(service.SisrRemovalCause);
+        Assert.False(service.ShowsSisrGroup);
+        Assert.Equal(1, removed);
     }
 
     [Fact]
@@ -849,6 +887,8 @@ public sealed class ControllerSupportServiceTests : IDisposable
         await service.StopSisrStartedByOldArcadiaAsync();
 
         Assert.Equal([5], pc.System.Stopped);
+        // Steam runs, so it drops the layout SISR forced; a kill skips SISR's own reset.
+        Assert.Equal(1, pc.System.SteamLayoutResets);
     }
 
     /// <summary>Nothing here goes to the network; a request that does is a bug.</summary>

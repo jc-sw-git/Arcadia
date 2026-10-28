@@ -49,7 +49,7 @@ public sealed class SisrRows
 
         var cause = _support.SisrRemovalCause;
         var busy = _support.BusyText is not null;
-        Remove.Subtitle = cause is not null ? "Nicht alles ließ sich entfernen"
+        Remove.Subtitle = cause is not null ? (_support.SisrRemovedNothing ? "SISR wurde nicht entfernt" : "Nicht alles ließ sich entfernen")
             : found.Program ? "Pan ersetzt SISR. Arcadia braucht es nicht mehr."
             : "Übrig ist noch ein Eintrag in Steam";
         Remove.Severity = cause is null ? null : HealthSeverity.Warning;
@@ -60,7 +60,10 @@ public sealed class SisrRows
             new InfoText("Früher hat Arcadia den Steam Controller mit SISR in Spielen außerhalb von Steam nutzbar gemacht. Das übernimmt jetzt Pan, Arcadia startet SISR nicht mehr. Brauchst du SISR für ein anderes Programm, kannst du es behalten."),
             new InfoNote("Nutze SISR und Pan nicht gleichzeitig. Beide greifen auf den Steam Controller zu, Spiele bekommen dann Eingaben doppelt oder gar nicht."),
             .. cause is not null ? [new InfoNote(cause)] : Array.Empty<InfoBlock>(),
-            new InfoSection("WAS ENTFERNT WIRD", [.. Removed(found).Select(item => new InfoBullet(item))]),
+            // Empty when only something the cause names is left.
+            .. Removed(found).Select(item => new InfoBullet(item)).ToList() is { Count: > 0 } removed
+                ? [new InfoSection("WAS ENTFERNT WIRD", [.. removed])]
+                : Array.Empty<InfoBlock>(),
             .. found.HasMarker
                 ? [new InfoText("Den Eintrag in Steam kann Arcadia nur ändern, solange Steam geschlossen ist. Steam wird dafür kurz beendet und danach wieder gestartet.")]
                 : Array.Empty<InfoBlock>(),

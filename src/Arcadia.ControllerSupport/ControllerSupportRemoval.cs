@@ -75,7 +75,7 @@ public static class ControllerSupportRemoval
     public static void Remove(Action<string> log)
     {
         // Ordered by what matters most, because Velopack may end the uninstall hook before the slow steps are done.
-        StopProcesses("SISR");
+        // Arcadia's own viiper.exe has to end before its folder goes; SISR and its VIIPER stop in Remove, by path.
         StopProcesses("viiper");
 
         var steam = SteamInstallation.Find();

@@ -38,7 +38,8 @@ Agreed with the owner; don't change without asking. Read this before changing th
   nothing without the player. With the marker and Steam running, [Entfernen] asks "Steam beenden?" ([A] Weiter, [B]
   Abbrechen); a Steam game shows "Steam-Spiel läuft" with its name and only "Schließen". While it removes, the dialog
   "SISR wird entfernt" names the step and can't be closed. Everything gone: the toast "SISR ist vollständig entfernt.",
-  the group goes, the focus moves to the row above. Something left: the row reads "Nicht alles ließ sich entfernen",
+  the group goes, the focus moves to the row above. Something left: the row reads "Nicht alles ließ sich entfernen"
+  ("SISR wurde nicht entfernt" when a Steam game, a Steam that won't close or an SISR that won't stop kept everything),
   the cause in its info panel; [Entfernen] tries again. "SISR behalten" hides the group for good
   (`AppSettings.KeepSisr`; the factory reset, #146, shows it again); SISR stays as it is. While SISR runs and Pan is on,
   the warning row "SISR läuft" stands under Pan, also with the group hidden. What goes and why:

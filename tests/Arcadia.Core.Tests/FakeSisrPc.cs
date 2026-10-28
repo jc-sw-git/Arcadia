@@ -125,7 +125,19 @@ public sealed class FakeSisrSystem : ISisrSystem
         }
     }
 
-    public void DeleteUninstallEntry() => HasUninstallEntry = false;
+    /// <summary>The registry refuses to delete SISR's uninstall entry, as for a key another program holds.</summary>
+    public bool UninstallEntryLocked { get; set; }
+
+    public void DeleteUninstallEntry() =>
+        HasUninstallEntry = UninstallEntryLocked ? throw new UnauthorizedAccessException("Zugriff verweigert") : false;
 
     public void UninstallViiper(string viiperExecutable) => ViiperUninstalls.Add(viiperExecutable);
+
+    public int SteamLayoutResets { get; private set; }
+
+    public int ViiperDetaches { get; private set; }
+
+    public void ResetSteamInputLayout() => SteamLayoutResets++;
+
+    public void DetachViiperDevices() => ViiperDetaches++;
 }

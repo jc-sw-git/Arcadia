@@ -159,7 +159,6 @@ public sealed class SisrInstallationTests : IDisposable
         _pc.System.Unstoppable.Add(5);
 
         var installation = _pc.Installation();
-        Assert.False(installation.StopForRemoval());
         var result = installation.Remove(steamRunning: false);
 
         Assert.Equal(SisrInstallation.StopFailedCause, result.Cause);
@@ -191,9 +190,40 @@ public sealed class SisrInstallationTests : IDisposable
         _pc.System.Running.Add(new("viiper", new(7, sisrViiper, null)));
         _pc.System.Running.Add(new("viiper", new(8, ArcadiaViiper, null)));
 
-        Assert.True(_pc.Installation().StopForRemoval());
+        Assert.True(_pc.Installation().Remove(steamRunning: false).Complete);
 
         Assert.Equal([5, 7], _pc.System.Stopped);
+        // Arcadia's VIIPER still runs, so the pads on VIIPER's address may be its own.
+        Assert.Equal(0, _pc.System.ViiperDetaches);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T214-3")]
+    [InlineData(true, 1)]
+    [InlineData(false, 0)]
+    public void Removing_does_what_SISRs_own_quit_would_have_done(bool steamRunning, int layoutResets)
+    {
+        // Steam closed: steam://forceinputappid/0 would start it again, and a fresh Steam has no forced layout.
+        Touch(SisrExe);
+        _pc.System.Running.Add(new("SISR", new(5, SisrExe, null)));
+        _pc.System.Running.Add(new("viiper", new(7, Path.Combine(LocalAppData, "SISR", "viiper.exe"), null)));
+
+        _pc.Installation().Remove(steamRunning);
+
+        Assert.Equal(layoutResets, _pc.System.SteamLayoutResets);
+        Assert.Equal(1, _pc.System.ViiperDetaches);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T214-3")]
+    public void Removing_with_no_SISR_running_touches_neither_Steams_layout_nor_the_pads()
+    {
+        Touch(SisrExe);
+
+        _pc.Installation().Remove(steamRunning: true);
+
+        Assert.Equal(0, _pc.System.SteamLayoutResets);
+        Assert.Equal(0, _pc.System.ViiperDetaches);
     }
 
     [Theory]
@@ -216,16 +246,65 @@ public sealed class SisrInstallationTests : IDisposable
     [Trait("TestCase", "T214-10")]
     public void At_start_only_the_SISR_the_old_Arcadia_started_is_stopped()
     {
-        var arcadias = $"SISR.exe --api.listen-address localhost:47640 --update-notify none --log.file {Path.Combine(LogDirectory, "sisr.log")}";
-        _pc.System.Running.Add(new("SISR", new(5, SisrExe, arcadias)));
+        _pc.System.Running.Add(new("SISR", new(5, SisrExe, OldArcadiasCommandLine)));
         _pc.System.Running.Add(new("SISR", new(6, SisrExe, "SISR.exe")));
         _pc.System.Running.Add(new("SISR", new(7, SisrExe, null)));
+        _pc.System.Running.Add(new("viiper", new(8, SisrViiper, null)));
 
-        Assert.Equal(1, _pc.Installation().StopStartedByOldArcadia());
+        Assert.Equal(1, _pc.Installation().StopStartedByOldArcadia(steamRunning: true));
 
+        // The user's SISR still runs and uses its VIIPER.
         Assert.Equal([5], _pc.System.Stopped);
         Assert.True(_pc.Installation().IsAnyRunning);
+        Assert.Equal(0, _pc.System.ViiperDetaches);
     }
+
+    [Theory]
+    [Trait("TestCase", "T214-10")]
+    [InlineData(true, 1)]
+    [InlineData(false, 0)]
+    public void At_start_a_stopped_SISR_leaves_Steams_layout_and_no_pads_behind(bool steamRunning, int layoutResets)
+    {
+        _pc.System.Running.Add(new("SISR", new(5, SisrExe, OldArcadiasCommandLine)));
+        _pc.System.Running.Add(new("viiper", new(8, SisrViiper, null)));
+
+        _pc.Installation().StopStartedByOldArcadia(steamRunning);
+
+        Assert.Equal([5, 8], _pc.System.Stopped);
+        Assert.Equal(layoutResets, _pc.System.SteamLayoutResets);
+        Assert.Equal(1, _pc.System.ViiperDetaches);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T214-10")]
+    public void At_start_a_VIIPER_SISR_left_behind_goes_so_Arcadias_VIIPER_does_not_use_it()
+    {
+        _pc.System.Running.Add(new("viiper", new(8, SisrViiper, null)));
+        _pc.System.Running.Add(new("viiper", new(9, Path.Combine(_pc.Root, "Tools", "viiper.exe"), null)));
+
+        Assert.Equal(0, _pc.Installation().StopStartedByOldArcadia(steamRunning: true));
+
+        Assert.Equal([8], _pc.System.Stopped);
+        // No SISR was stopped, so Steam's layout is its own; the other VIIPER may hold pads on the address.
+        Assert.Equal(0, _pc.System.SteamLayoutResets);
+        Assert.Equal(0, _pc.System.ViiperDetaches);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T214-10")]
+    public void At_start_with_no_SISR_nothing_is_stopped_or_cleaned_up()
+    {
+        Assert.Equal(0, _pc.Installation().StopStartedByOldArcadia(steamRunning: true));
+
+        Assert.Empty(_pc.System.Stopped);
+        Assert.Equal(0, _pc.System.SteamLayoutResets);
+        Assert.Equal(0, _pc.System.ViiperDetaches);
+    }
+
+    private string OldArcadiasCommandLine =>
+        $"SISR.exe --api.listen-address localhost:47640 --update-notify none --log.file {Path.Combine(LogDirectory, "sisr.log")}";
+
+    private string SisrViiper => Path.Combine(LocalAppData, "SISR", "viiper.exe");
 
     private string Shortcuts(uint account) => _pc.Shortcuts(account);
 

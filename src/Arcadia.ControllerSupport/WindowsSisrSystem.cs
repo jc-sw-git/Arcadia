@@ -72,6 +72,11 @@ public sealed partial class WindowsSisrSystem : ISisrSystem
         }
     }
 
+    public void ResetSteamInputLayout() =>
+        Process.Start(new ProcessStartInfo("steam://forceinputappid/0") { UseShellExecute = true })?.Dispose();
+
+    public void DetachViiperDevices() => UsbipDriver.DetachViiperDevicesAsync().GetAwaiter().GetResult();
+
     /// <summary>
     /// The command line through <c>NtQueryInformationProcess</c> (Windows 8.1 and later), which needs only the limited
     /// query right; null when Windows doesn't tell.

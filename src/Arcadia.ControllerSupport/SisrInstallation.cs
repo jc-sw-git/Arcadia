@@ -42,6 +42,12 @@ public interface ISisrSystem
 
     /// <summary><c>viiper.exe uninstall --quiet</c>: VIIPER's own clean-up of what its <c>install</c> set up.</summary>
     void UninstallViiper(string viiperExecutable);
+
+    /// <summary><c>steam://forceinputappid/0</c>: Steam drops the layout SISR forced on it; starts Steam if it is closed.</summary>
+    void ResetSteamInputLayout();
+
+    /// <summary>Detaches the pads usbip-win2 still holds for VIIPER's address (<see cref="UsbipDriver.DetachViiperDevicesAsync"/>).</summary>
+    void DetachViiperDevices();
 }
 
 /// <summary>The folders <see cref="SisrInstallation"/> looks in; temp folders in tests.</summary>
@@ -117,10 +123,17 @@ public sealed class SisrInstallation(SisrPaths paths, SteamInstallation? steam, 
 
     /// <summary>
     /// The old Arcadia kept SISR running across its update; the new one stops it at start, but only an SISR whose
-    /// command line shows Arcadia's start. One the user started stays (decision 6). Returns how many were stopped.
+    /// command line shows Arcadia's start. One the user started stays (decision 6). A VIIPER from SISR's folder that no
+    /// SISR from there runs any more goes too: Arcadia's own VIIPER would otherwise use it. Returns how many SISR were
+    /// stopped.
     /// </summary>
-    public int StopStartedByOldArcadia() =>
-        system.Processes("SISR").Count(p => IsStartedByArcadia(p.CommandLine, paths.ArcadiaLogDirectories) && system.Stop(p.Id));
+    public int StopStartedByOldArcadia(bool steamRunning)
+    {
+        var stopped = system.Processes("SISR").Count(p => IsStartedByArcadia(p.CommandLine, paths.ArcadiaLogDirectories) && system.Stop(p.Id));
+        var leftovers = system.Processes("SISR").Any(IsFromInstallDirectory) ? 0 : StopViiperFromInstallDirectory();
+        CleanUpAfterStop(stopped > 0 && steamRunning, leftovers);
+        return stopped;
+    }
 
     /// <summary>Arcadia's API port and its <c>--log.file</c> in one of Arcadia's log folders, as <c>SisrHost.Start</c> wrote them.</summary>
     public static bool IsStartedByArcadia(string? commandLine, IEnumerable<string> arcadiaLogDirectories)
@@ -144,22 +157,35 @@ public sealed class SisrInstallation(SisrPaths paths, SteamInstallation? steam, 
     }
 
     /// <summary>
-    /// First step of "SISR entfernen", before Steam is closed: stops SISR from its folder and the VIIPER it brought.
-    /// False when SISR.exe won't stop; then nothing else is touched (<see cref="StopFailedCause"/>).
+    /// First step of "SISR entfernen": stops SISR from its folder and the VIIPER it brought. False when SISR.exe won't
+    /// stop; then nothing else is touched (<see cref="StopFailedCause"/>).
     /// </summary>
-    public bool StopForRemoval()
+    private bool StopForRemoval(bool steamRunning)
     {
-        foreach (var process in system.Processes("SISR").Where(IsFromInstallDirectory))
-        {
-            system.Stop(process.Id);
-        }
-
-        foreach (var process in system.Processes("viiper").Where(IsFromInstallDirectory))
-        {
-            system.Stop(process.Id);
-        }
-
+        var stopped = system.Processes("SISR").Where(IsFromInstallDirectory).Count(p => system.Stop(p.Id));
+        CleanUpAfterStop(stopped > 0 && steamRunning, StopViiperFromInstallDirectory());
         return !system.Processes("SISR").Any(IsFromInstallDirectory);
+    }
+
+    private int StopViiperFromInstallDirectory() =>
+        system.Processes("viiper").Where(IsFromInstallDirectory).Count(p => system.Stop(p.Id));
+
+    /// <summary>
+    /// What SISR's own quit does and a kill skips (as the old Arcadia did after it, until #214): Steam drops the layout
+    /// SISR forced, and pads of a killed VIIPER that usbip-win2 still holds go, but only while no other VIIPER runs,
+    /// since the pads on VIIPER's address may be that one's.
+    /// </summary>
+    private void CleanUpAfterStop(bool resetSteamLayout, int viipersStopped)
+    {
+        if (resetSteamLayout)
+        {
+            system.ResetSteamInputLayout();
+        }
+
+        if (viipersStopped > 0 && system.Processes("viiper").Count == 0)
+        {
+            system.DetachViiperDevices();
+        }
     }
 
     /// <summary>
@@ -169,7 +195,7 @@ public sealed class SisrInstallation(SisrPaths paths, SteamInstallation? steam, 
     /// </summary>
     public SisrRemoval Remove(bool steamRunning)
     {
-        if (!StopForRemoval())
+        if (!StopForRemoval(steamRunning))
         {
             return new(["SISR"], StopFailedCause);
         }

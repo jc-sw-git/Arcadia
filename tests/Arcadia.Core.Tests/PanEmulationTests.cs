@@ -459,6 +459,8 @@ public sealed class PanEmulationTests
         Assert.Equal(1, found);
         Assert.Equal(PanEmulationState.Running, emulation.Status.State);
         Assert.Equal([(1u, true)], _pan.FirmwareHolds);
+        // The copy comes back, so Steam has a device to retry on and the wait sees it.
+        Assert.Contains("copy attached", _events);
     }
 
     [Fact]

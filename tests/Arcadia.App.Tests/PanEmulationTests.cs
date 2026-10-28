@@ -24,9 +24,10 @@ public sealed class PanEmulationTests
     private static readonly LauncherSpec[] SteamAndGog = [new(KnownLaunchers.Steam, 3), new(KnownLaunchers.Gog, 3)];
 
     /// <param name="copy">This build has the copy for Steam, so Pan hides the puck (#242 parts B and C).</param>
-    private static async Task<ArcadiaDriver> StartAsync(bool copy = false, FakeSteam? steam = null)
+    private static async Task<ArcadiaDriver> StartAsync(bool copy = false, FakeSteam? steam = null, bool heldForFirmware = false)
     {
         var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, steam ?? new FakeSteam());
+        arcadia.Pan.HeldForFirmware = heldForFirmware;
         arcadia.SteamControllerCopy.CanCopy = copy;
         arcadia.SteamControllerCopy.PuckPresent = copy;
         arcadia.Sdl.Plug(KnownPads.SteamController);
@@ -424,5 +425,27 @@ public sealed class PanEmulationTests
 
         arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, [1, 0xB8, 0x00], forwarding: true);
         await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Dialog beim nächsten Versuch");
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T242-24")]
+    public async Task After_a_crash_mid_attempt_the_next_start_takes_over_without_asking_and_waits_on_the_new_copy()
+    {
+        using var arcadia = await StartAsync(copy: true, new FakeSteam { IsSteamRunning = true }, heldForFirmware: true);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Dialog „Steam will die Firmware aktualisieren“");
+        var dialog = arcadia.Main.FirmwareAttempt!;
+        Assert.Null(arcadia.Main.TakeoverConsent);
+        Assert.Single(arcadia.Pan.Hidden);
+        Assert.NotNull(arcadia.SteamControllerCopy.Current); // the copy is back, so Steam has a device to retry on
+        Assert.True(dialog.IsTrying);
+        Assert.False(dialog.ReleaseButton.IsEnabled);
+
+        // Steam retries on the new copy: the wait starts anew.
+        arcadia.Wait(TimeSpan.FromSeconds(20));
+        Assert.False(arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, [1, 0xB8, 0x00], forwarding: true));
+        arcadia.Wait(TimeSpan.FromSeconds(20));
+        Assert.False(dialog.ReleaseButton.IsEnabled, "der neue Versuch hat die Wartezeit neu gestartet");
+        arcadia.Wait(TimeSpan.FromSeconds(10.3));
+        Assert.True(dialog.ReleaseButton.IsEnabled);
     }
 }

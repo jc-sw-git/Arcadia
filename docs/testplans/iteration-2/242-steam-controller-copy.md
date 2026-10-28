@@ -78,8 +78,8 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
       is over; "Arcadia beenden" (held 1 s) closes Arcadia. `arcadia.log` names every message that counted as an
       update and whether Steam gave up or the player said so. · E2E: yes
 - [ ] **T242-24** Arcadia ends unexpectedly (killed) while the firmware dialog waits: the puck stays hidden while
-      Steam runs; Arcadia started again shows "Steam will die Firmware aktualisieren" with the wait at once and asks
-      nothing. Steam closed instead: Pan shows the puck. "Schließen" after Steam gave up keeps the controllers taken
+      Steam runs; Arcadia started again takes the puck over without the consent question, plugs the copy in again and
+      shows "Steam will die Firmware aktualisieren" with the wait at once; a retry on the new copy restarts the wait. Steam closed instead: Pan shows the puck. "Schließen" after Steam gave up keeps the controllers taken
       over. · E2E: yes (the kill: the real puck after part C)
 
 ## Test runs

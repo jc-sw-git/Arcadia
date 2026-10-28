@@ -259,6 +259,31 @@ public sealed class EmulationSetupTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T242-26")]
+    public async Task A_HidHide_that_answers_unexpectedly_is_reinstalled_from_its_row()
+    {
+        var steam = new FakeSteam();
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+        steam.HidHideReinstalled = () => arcadia.Pan.Hiding = PanReason.None;
+        arcadia.Pan.Hiding = PanReason.HidHideUnsupported;
+
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-interface"), "die Meldung „HidHide antwortet unerwartet“");
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-interface"));
+        Assert.Equal("HidHide antwortet unerwartet", row.Title);
+        Assert.Equal($"HidHide {HidHideRelease.Version} neu installieren hilft", row.Subtitle);
+        Assert.Equal("Neu installieren", row.ActionText);
+
+        row.Activate();
+        await arcadia.WaitUntilAsync(() => steam.HidHideReinstalls == 1, "HidHide wird neu installiert");
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => controller.Rows.All(r => r.Key != "issue:hidhide-interface"), "die Meldung verschwindet");
+        Assert.Equal(0, steam.DriverInstalls);
+        Assert.Null(arcadia.ControllerSupport.LastError);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T243-36")]
     public async Task Pan_s_notice_is_a_toast_while_Arcadia_is_in_front_and_the_overlay_s_while_a_game_is()
     {

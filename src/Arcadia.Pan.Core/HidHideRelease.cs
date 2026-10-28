@@ -38,6 +38,13 @@ public static class HidHideRelease
     /// </summary>
     public static IReadOnlyList<string> SilentArguments { get; } = ["/exenoui", "/qn", "/norestart"];
 
+    /// <summary>
+    /// Silent again over the same version ("Neu installieren", #242): Windows Installer's reinstall of every feature,
+    /// run from this installer rather than the cached one (<c>v</c>), files replaced even when their version matches (<c>a</c>), the registry rewritten, HidHide's lists kept (they
+    /// live in the driver's own registry values, which no feature writes).
+    /// </summary>
+    public static IReadOnlyList<string> RepairArguments { get; } = [.. SilentArguments, "REINSTALL=ALL", "REINSTALLMODE=vamus"];
+
     /// <summary>The versions Pan hides with (<see cref="SteamControllerHiding.MinimumVersion"/> up to the next major).</summary>
     public static bool IsSupported(Version version) =>
         version.Major == SteamControllerHiding.SupportedMajorVersion && version >= SteamControllerHiding.MinimumVersion;

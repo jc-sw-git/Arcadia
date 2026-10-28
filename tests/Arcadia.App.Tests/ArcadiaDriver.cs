@@ -4,6 +4,7 @@ using Arcadia.Input;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Copy;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
@@ -133,7 +134,11 @@ internal sealed class ArcadiaDriver : IDisposable
         _running = running;
         PanNotices = new PanNotices(Main.Toast, () => IsArcadiaInFront, OverlayNotices.Add);
         ControllerSupport.HidingCheck = Pan;
-        ForGames = SteamControllerForGames.Create(panSupported: true, XboxPads, Pan, SteamControllerCopy, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, PanNotices, time);
+        ForGames = SteamControllerForGames.Create(panSupported: true, XboxPads, Pan, wiring =>
+        {
+            CopyWiring = wiring;
+            return SteamControllerCopy;
+        }, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, PanNotices, time);
         XboxPad = ForGames.Pad;
         Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
         Main.ConnectPan(ForGames);
@@ -158,6 +163,9 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <see cref="FakeSteamControllerHold.CanCopy"/> before <see cref="StartControllers"/>.
     /// </summary>
     public FakeSteamControllerHold SteamControllerCopy { get; } = new() { CanCopy = false, PuckPresent = false };
+
+    /// <summary>What the App hands the copy (#242): its filter and when it passes input, as a real copy would ask them.</summary>
+    public SteamControllerCopyWiring CopyWiring { get; private set; } = null!;
 
     /// <summary>A window of Steam itself is in front (#242).</summary>
     public bool IsSteamInFront { get; set; }

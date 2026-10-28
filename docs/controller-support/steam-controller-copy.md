@@ -1,10 +1,10 @@
 # Steam gets a copy of the Steam Controller (#242)
 
 Builds on spike #239 ([emulated-steam-controller.md](emulated-steam-controller.md)) and Pan (#243,
-[pan-hiding.md](pan-hiding.md)). Part A (logic, settings, tests) is in place; the copy itself needs the VIIPER fork
-(part B: Go device type, no IN repeat, a CI-built pinned `viiper.exe`) and its Windows side (part C: raw HID reader
-and writer for the puck, the VIIPER client, SDL ignoring the copy). Until then the App passes `NoSteamControllerCopy`
-(`CanCopy` false): Pan hides nothing and Arcadia's Xbox pad works as in #213.
+[pan-hiding.md](pan-hiding.md)). Part A: the logic, settings and tests below. Parts B and C (the VIIPER fork, the
+raw puck on Windows, SDL ignoring the copy): [steam-controller-copy-windows.md](steam-controller-copy-windows.md).
+Without a pinned fork build, or off Windows, the App passes `NoSteamControllerCopy` (`CanCopy` false): Pan hides
+nothing and Arcadia's Xbox pad works as in #213.
 
 ## Lifecycle (`PanEmulation`)
 
@@ -40,7 +40,8 @@ and writer for the puck, the VIIPER client, SDL ignoring the copy). Until then t
   under 10 s with the same game in front at every check (every tick, at most 5 s apart) from the check before the gap
   until the hide is taken over again without asking or coming to the front; checked again with a fresh look right
   before the hide (VIIPER's start may take seconds). A missed check (Arcadia hung) asks.
-  Open risk for part C: an update offered in Steam's in-game overlay leaves the game in front.
+  Open risk: an update offered in Steam's in-game overlay leaves the game in front (checked by the script in
+  [steam-controller-copy-windows.md](steam-controller-copy-windows.md)).
   A pad still being unplugged stays in the session until it is gone, so the end shows the puck only after it.
 - `HideAsync` waits up to 25 s (the puck restarts, ~2.5 s) and can't be cancelled once sent: a half-done hide would
   leave the puck hidden with nothing in its place. A rejected hide is undone by the client at once.
@@ -77,11 +78,10 @@ Decision 8 (owner: "no bricked Steam Controllers under any circumstances"): an a
   others) closes the dialog and keeps the takeover. While the attempt runs, Pan holds the puck hidden even if Arcadia
   ends unexpectedly, until Steam is closed (`pan-firmware-hold.md`). `arcadia.log` names every message that counted
   and how the attempt ended (Steam gave up, or the player said so).
-- Open for part C: whether Steam misses `0xA3` (sent on every slot in the spike), and the real update path. No
-  bootloader type is known; it would be dropped and counted all the same.
-- For part C: GET_REPORT always passes, but Arcadia's own SDL sends feature reports to the same puck too, so a feature
-  transaction (SET then GET) needs one owner at a time, or Steam may read SDL's answer. The VIIPER fork hands every
-  control request (class and vendor too) to `FromSteam`; it never answers or forwards one itself.
+- Open: whether Steam misses `0xA3` (sent on every slot in the spike), and the real update path (the owner's check
+  script). No bootloader type is known; it would be dropped and counted all the same.
+- What Windows' class drivers say to any device (HID idle and protocol, CDC line settings) is housekeeping: answered,
+  never passed on, never counted (`SteamReportKind.Housekeeping`). Vendor and unknown control requests count.
 
 ## UI (designs, section "#242 Pan")
 

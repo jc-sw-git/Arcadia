@@ -27,7 +27,7 @@ public static class ControllerInput
             AppLog.Write("Controller: Arcadia wurde über Steam gestartet; Steam verbirgt den Steam Controller vor Arcadia");
         }
 
-        return Create(new SdlGamepads(), viewModel, new DeviceTreeEmulatedPads(XusbDevices.List, AppLog.Write));
+        return Create(new SdlGamepads(), viewModel, new DeviceTreeEmulatedPads(XusbDevices.List, AppLog.Write, DeviceTree.InterfaceOnSoftwareHost));
     }
 
     public static SdlGamepadSource Create(ISdlGamepads sdl, MainViewModel viewModel, IEmulatedPads? emulated = null) =>

@@ -48,8 +48,30 @@ public sealed class EmulationPartsTests
         if (issue is not null)
         {
             Assert.Equal(HealthSeverity.Warning, issue.Severity);
-            Assert.Equal(HealthFix.None, issue.Fix);
+            // Only a HidHide that doesn't know Pan's requests can be fixed from Arcadia: the others are HidHide's own settings.
+            Assert.Equal(reason == PanReason.HidHideUnsupported ? HealthFix.ReinstallHidHide : HealthFix.None, issue.Fix);
         }
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-26")]
+    public void A_HidHide_that_answers_unexpectedly_offers_its_reinstall()
+    {
+        var issue = EmulationParts.FromHidingCheck(PanReason.HidHideUnsupported)!;
+
+        Assert.Equal("Neu installieren", issue.FixLabel);
+        Assert.Equal($"HidHide {HidHideRelease.Version} neu installieren hilft", issue.ShortText);
+        Assert.Contains("Windows fragt einmal nach Administratorrechten", issue.Detail);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-27")]
+    public void Missing_VIIPER_says_it_comes_with_Arcadia_and_installs_without_admin_rights()
+    {
+        Assert.Equal("Leitet die Signale der Controller an Spiele und Programme weiter", EmulationParts.ViiperMissing.ShortText);
+        Assert.Contains("Es kommt mit Arcadia", EmulationParts.ViiperMissing.Detail);
+        Assert.DoesNotContain("SISR", EmulationParts.ViiperMissing.Detail);
+        Assert.Equal(HealthFix.InstallDrivers, EmulationParts.ViiperMissing.Fix);
     }
 
     [Theory]

@@ -22,8 +22,8 @@ public static class EmulationParts
     ];
 
     public static HealthIssue ViiperMissing { get; } = new("viiper-missing", HealthSeverity.Warning, "VIIPER fehlt",
-        "Arcadia erzeugt mit VIIPER den virtuellen Controller. Bis auf Weiteres kommt VIIPER mit den Dateien von SISR; „Installieren“ lädt sie herunter, ohne Administratorrechte.",
-        HealthFix.InstallDrivers, "Installieren");
+        "VIIPER leitet die Signale der emulierten Controller an Spiele und Programme weiter. Es kommt mit Arcadia; fehlt es trotzdem (zum Beispiel weil ein Virenscanner es entfernt hat), lädt „Installieren“ die geprüfte Version neu herunter, ohne Administratorrechte.",
+        HealthFix.InstallDrivers, "Installieren", Summary: "Leitet die Signale der Controller an Spiele und Programme weiter");
 
     /// <summary>
     /// Pan is installed but its last run ended with an error: it crashed, or its data folder was untrusted and couldn't be
@@ -81,7 +81,8 @@ public static class EmulationParts
         PanReason.HidHideMissing => new("hidhide-inactive", HealthSeverity.Warning, "HidHide ist nicht aktiv",
             "HidHide ist installiert, sein Treiber läuft aber noch nicht. Meist hilft ein Neustart des PCs."),
         PanReason.HidHideUnsupported => new("hidhide-interface", HealthSeverity.Warning, "HidHide antwortet unerwartet",
-            $"Der HidHide-Treiber kennt eine Anfrage nicht, die Arcadia braucht. HidHide {HidHideRelease.Version} neu installieren hilft: {HidHideRelease.ManualInstallUrl}"),
+            $"Der HidHide-Treiber kennt eine Anfrage nicht, die Pan braucht. „Neu installieren“ installiert HidHide {HidHideRelease.Version}; was dort eingestellt ist, bleibt erhalten. Windows fragt einmal nach Administratorrechten.",
+            HealthFix.ReinstallHidHide, "Neu installieren", Summary: $"HidHide {HidHideRelease.Version} neu installieren hilft"),
         PanReason.HidHideInverseMode => new("hidhide-inverse", HealthSeverity.Warning, "HidHide: Liste ist umgekehrt",
             "In HidHide ist „Inverse application cloak“ eingeschaltet. So kann Arcadia den Steam Controller nicht verstecken. Schalte es in der HidHide-Konfiguration aus."),
         PanReason.HidHideCloakingOffWithForeignEntries => new("hidhide-cloaking-off", HealthSeverity.Warning, "HidHide: Verstecken ist aus",

@@ -77,6 +77,58 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
         }
     }
 
+    /// <summary>
+    /// Adds a device of another type on a bus of its own on the same server, and opens its raw stream: the copy of the
+    /// Steam Controller's puck (#242, type <c>hidproxy</c> of the VIIPER fork). Throws when that fails; then nothing is left
+    /// behind. The device goes when the returned one is disposed.
+    /// </summary>
+    public async Task<ViiperRawDevice> AddRawDeviceAsync(string type, Dictionary<string, object?> deviceSpecific, CancellationToken cancellationToken)
+    {
+        var client = new ViiperClient("localhost", ApiPort);
+        uint? bus = null;
+        Stream? stream = null;
+        try
+        {
+            await EnsureServerAsync(client, cancellationToken);
+            using var timeout = Timeout(cancellationToken);
+            bus = (await client.BusCreateAsync(null, timeout.Token)).BusID;
+            var device = await client.BusDeviceAddAsync(bus.Value, new DeviceCreateRequest { Type = type, DeviceSpecific = deviceSpecific }, timeout.Token);
+            stream = await ConnectRawAsync(bus.Value, device.DevID, timeout.Token);
+            log($"VIIPER: Gerät {type} angesteckt (Bus {bus}, Gerät {device.DevID})");
+            return new ViiperRawDevice(client, bus.Value, stream, () => _server is { HasExited: true });
+        }
+        catch
+        {
+            stream?.Dispose();
+            if (bus is { } created)
+            {
+                await RemoveBusAsync(client, created);
+            }
+
+            client.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>VIIPER's device stream as plain bytes: the handshake is the path, ended by a zero byte (VIIPER's own client does the same).</summary>
+    private static async Task<Stream> ConnectRawAsync(uint bus, string deviceId, CancellationToken cancellationToken)
+    {
+        var tcp = new System.Net.Sockets.TcpClient { NoDelay = true };
+        try
+        {
+            await tcp.ConnectAsync("localhost", ApiPort, cancellationToken);
+            var stream = tcp.GetStream();
+            stream.Socket.NoDelay = true;
+            await stream.WriteAsync(System.Text.Encoding.UTF8.GetBytes($"bus/{bus}/{deviceId}\0"), cancellationToken);
+            return new OwningStream(stream, tcp);
+        }
+        catch
+        {
+            tcp.Dispose();
+            throw;
+        }
+    }
+
     public async Task ShutdownAsync()
     {
         await _serverGate.WaitAsync();
@@ -153,6 +205,8 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
             CreateNoWindow = true,
             ArgumentList = { "server", "--no-tray", $"--log.file={Path.Combine(logDirectory, "viiper.log")}" },
         };
+        // VIIPER would offer to replace itself with an upstream release every hour, which lacks the copy's device type.
+        start.Environment["VIIPER_UPDATE_NOTIFY"] = "none";
         var process = Process.Start(start) ?? throw new InvalidOperationException("viiper.exe startet nicht");
         log($"Xbox-Pad: viiper.exe gestartet (PID {process.Id})");
         EndsWithArcadia.Add(process, log);
@@ -283,6 +337,45 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
             {
                 client.Dispose();
             }
+        }
+    }
+
+    /// <summary>A stream that also closes the connection it reads from.</summary>
+    private sealed class OwningStream(System.Net.Sockets.NetworkStream inner, IDisposable owner) : Stream
+    {
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => true;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override void Flush() => inner.Flush();
+
+        public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => inner.ReadAsync(buffer, cancellationToken);
+
+        public override void Write(byte[] buffer, int offset, int count) => inner.Write(buffer, offset, count);
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => inner.WriteAsync(buffer, cancellationToken);
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                inner.Dispose();
+                owner.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
     }
 

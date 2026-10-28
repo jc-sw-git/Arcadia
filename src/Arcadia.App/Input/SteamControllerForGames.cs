@@ -42,7 +42,10 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     public FirmwareAttemptWatch FirmwareAttempt { get; }
 
     /// <param name="pads">The virtual pads; Pan's emulation plugs them in here.</param>
-    /// <param name="hold">The copy of the puck for Steam; <see cref="NoSteamControllerCopy"/> until this build can make it.</param>
+    /// <param name="copy">
+    /// Makes the copy of the puck for Steam from what it passes through and when (#242); <see cref="NoSteamControllerCopy"/>
+    /// where this build can't make one.
+    /// </param>
     /// <param name="controllerSupport">Its "Controller wiederherstellen" ends the pad on purpose (#243).</param>
     /// <param name="activeGames">The keys of the games that run or are being started (<c>RunningGamesTracker.ActiveGames</c>).</param>
     /// <param name="runningSteamAppId">The Steam game running right now, also one started directly in Steam (#119).</param>
@@ -53,7 +56,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         bool panSupported,
         IVirtualXboxPads pads,
         IEmulationGuardian guardian,
-        ISteamControllerHold hold,
+        Func<SteamControllerCopyWiring, ISteamControllerHold> copy,
         ControllerSupportService controllerSupport,
         SettingsService settings,
         Func<IReadOnlyCollection<string>> activeGames,
@@ -66,6 +69,14 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         TimeProvider time)
     {
         SteamControllerXboxPad? padForPresence = null;
+        SteamControllerRouting? routingForCopy = null;
+        var filter = new SteamControllerCopyFilter(time, Services.AppLog.Write);
+        // Its own combo state: the copy reads it on its reader thread, the pad on the polling thread.
+        var copyCombos = new CombosFromSettings(settings);
+        var hold = copy(new SteamControllerCopyWiring(
+            filter,
+            () => routingForCopy is { } route && SteamControllerCopyRules.CopyPasses(route.Current, new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront())),
+            copyCombos.Current));
         var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
         {
             Supported = panSupported,
@@ -82,6 +93,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             runningSteamAppId,
             () => emulation.Status.State == PanEmulationState.Running,
             Services.AppLog.Write);
+        routingForCopy = routing;
         var combos = new CombosFromSettings(settings);
         var pad = new SteamControllerXboxPad(emulation, time, Services.AppLog.Write)
         {
@@ -104,7 +116,6 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         };
         guardian.TornDown += (_, reason) => notices.Show(TornDownText(reason));
         guardian.Lost += _ => notices.Show(PanLostText);
-        var filter = new SteamControllerCopyFilter(time, Services.AppLog.Write);
         var attempt = new FirmwareAttemptWatch(time, Services.AppLog.Write);
         filter.UpdateTraffic += attempt.Traffic;
         // Pan keeps the puck hidden while Steam tries, also if Arcadia ends meanwhile (owner, 2026-10-28).

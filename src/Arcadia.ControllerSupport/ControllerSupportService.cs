@@ -34,6 +34,9 @@ public enum HealthFix
     CreateMarker,
     StopExternalSisr,
     RestartSisr,
+
+    /// <summary>The pinned HidHide over the installed one (#242): its driver doesn't answer a request Pan needs.</summary>
+    ReinstallHidHide,
 }
 
 /// <summary>Whether the setting can be switched on, offered for installing, or not used at all.</summary>
@@ -262,6 +265,14 @@ public sealed class ControllerSupportService(
     /// drivers; null without Pan (tests, other platforms).
     /// </summary>
     public IHidingCheck? HidingCheck { get; set; }
+
+    /// <summary>
+    /// Arcadia's own <c>viiper.exe</c> (#242 part B), set once a fork build is pinned; until then VIIPER comes with SISR's
+    /// files.
+    /// </summary>
+    public IViiperInstallation? Viiper { get; init; }
+
+    private bool HasViiper => Viiper?.IsInstalled ?? sisr.HasViiper;
 
     /// <summary>What the settings offer; rechecked on every <see cref="RefreshAsync"/>, and by the tick while on or while the settings are open.</summary>
     public ControllerSupportSetup Setup => _setup ??= CheckSetup();
@@ -1129,7 +1140,16 @@ public sealed class ControllerSupportService(
 
     private async Task InstallDriversAsync(bool updatePan, CancellationToken cancellationToken)
     {
-        if (!sisr.HasViiper)
+        if (Viiper is { } own)
+        {
+            if (!own.IsInstalled)
+            {
+                SetBusyText("VIIPER wird installiert …");
+                await WithTimeoutAsync(token => own.InstallAsync(http, token), InstallTimeout, "Der VIIPER-Download", cancellationToken);
+                Log?.Invoke("VIIPER eingerichtet");
+            }
+        }
+        else if (!sisr.HasViiper)
         {
             SetBusyText("VIIPER wird installiert …");
             await InstallLatestSisrAsync(cancellationToken);
@@ -1241,6 +1261,15 @@ public sealed class ControllerSupportService(
         {
             sisr.StopExternalInstances();
             return Task.CompletedTask;
+        }, cancellationToken),
+        HealthFix.ReinstallHidHide => RunBusyAsync(DriversBusyText, async token =>
+        {
+            if (!await WithTimeoutAsync(t => _platform.ReinstallHidHideAsync(http, t), DriversInstallTimeout, "Die HidHide-Installation", token))
+            {
+                throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Neu installieren“ wählen und die Abfrage bestätigen.");
+            }
+
+            Log?.Invoke("HidHide neu installiert");
         }, cancellationToken),
         HealthFix.RestartSisr when _otherControllerPause is not null => RetryAfterOtherController(),
         HealthFix.RestartSisr => RunBusyAsync("SISR wird neu gestartet …", async token =>
@@ -1435,7 +1464,7 @@ public sealed class ControllerSupportService(
             .Select(issue => issue.Id == EmulationParts.RebootPending.Id && !StartsSisr ? EmulationParts.RebootPending : issue)
             .ToList();
         // While SISR runs (before #213 part B) VIIPER is a part of SISR, set up with it.
-        if (!StartsSisr && !sisr.HasViiper)
+        if (!StartsSisr && !HasViiper)
         {
             issues.Add(EmulationParts.ViiperMissing);
         }

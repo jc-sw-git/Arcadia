@@ -12,6 +12,16 @@ SISR is not part of Arcadia's source code and is not modified by Arcadia.
 
 SISR ships with VIIPER (https://github.com/Alia5/VIIPER) and SDL3 (https://libsdl.org), under their own licenses.
 
+## VIIPER (Arcadia's fork)
+
+Arcadia ships `viiper.exe`, built from its fork of VIIPER with the device type `hidproxy` for the copy of the Steam
+Controller's puck (#242), and runs it as a separate program. The fork's commit and the file's SHA-256 are pinned in
+`src/Arcadia.ControllerSupport/Viiper.targets`; the fork's release carries the licenses of its Go modules.
+
+- Author: Peter Repukat (Alia5); fork: jc-sw-git
+- License: GPL-3.0
+- Source: https://github.com/Alia5/VIIPER, fork https://github.com/jc-sw-git/VIIPER (branch `arcadia`)
+
 ## usbip-win2
 
 Installed on request for the Steam Controller Support (SISR/VIIPER need it).

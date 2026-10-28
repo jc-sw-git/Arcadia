@@ -6,7 +6,7 @@ namespace Arcadia.Pan;
 /// <summary>
 /// <c>Pan.exe</c> (#243). Without arguments it runs as the service (or, started from a console, says how to use
 /// it). Commands, all started elevated by Arcadia or by hand:
-/// <c>--install [--expect-hash sha256] [--usbip-installer path --usbip-sha256 sha256] [--hidhide-installer path]</c>,
+/// <c>--install [--expect-hash sha256] [--usbip-installer path --usbip-sha256 sha256] [--hidhide-installer path [--hidhide-repair]]</c>,
 /// <c>--uninstall [--remove-drivers]</c>, <c>--restore</c>, <c>--console</c> (the service in a console, for development),
 /// <c>--version</c>.
 /// </summary>
@@ -96,7 +96,7 @@ internal static class Program
                     {
                         try
                         {
-                            HidHideInstall.RunAsync(hidHideInstaller, log.Write).GetAwaiter().GetResult();
+                            HidHideInstall.RunAsync(hidHideInstaller, args.Contains("--hidhide-repair", StringComparer.OrdinalIgnoreCase), log.Write).GetAwaiter().GetResult();
                         }
                         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception)
                         {

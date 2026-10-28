@@ -15,7 +15,8 @@ public static class HidHideInstall
 
     /// <exception cref="UntrustedInstallerException">Not the pinned installer or not signed by HidHide's publisher; nothing was started.</exception>
     /// <exception cref="InvalidOperationException">The setup failed; the message says how.</exception>
-    public static async Task RunAsync(string installer, Action<string> log)
+    /// <param name="repair">Over the same version ("Neu installieren"): <see cref="HidHideRelease.RepairArguments"/>.</param>
+    public static async Task RunAsync(string installer, bool repair, Action<string> log)
     {
         if (!File.Exists(installer))
         {
@@ -27,7 +28,7 @@ public static class HidHideInstall
         var stillRunning = false;
         try
         {
-            stillRunning = await RunCopyAsync(copy, log);
+            stillRunning = await RunCopyAsync(copy, repair ? HidHideRelease.RepairArguments : HidHideRelease.SilentArguments, log);
         }
         finally
         {
@@ -42,13 +43,13 @@ public static class HidHideInstall
     }
 
     /// <returns>True if the setup was left running (the driver is in place, its last step hangs).</returns>
-    private static Task<bool> RunCopyAsync(string installer, Action<string> log) =>
+    private static Task<bool> RunCopyAsync(string installer, IReadOnlyList<string> arguments, Action<string> log) =>
         InstallerSignature.RunIfTrustedAsync(installer, "Der HidHide-Installer", HidHideRelease.Publisher, HidHideRelease.ManualInstallUrl,
             new WinTrustAuthenticode(), async () =>
             {
-                log($"HidHide installer signed by {HidHideRelease.Publisher.Organization}, SHA-256 as pinned; running {installer} {string.Join(' ', HidHideRelease.SilentArguments)}");
+                log($"HidHide installer signed by {HidHideRelease.Publisher.Organization}, SHA-256 as pinned; running {installer} {string.Join(' ', arguments)}");
                 var start = new ProcessStartInfo(installer) { UseShellExecute = false };
-                foreach (var argument in HidHideRelease.SilentArguments)
+                foreach (var argument in arguments)
                 {
                     start.ArgumentList.Add(argument);
                 }

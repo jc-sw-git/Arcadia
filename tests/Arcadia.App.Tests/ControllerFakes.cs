@@ -79,7 +79,12 @@ internal sealed class FakeSteam : IControllerSupportPlatform
 
     public void EnableCefDebugging() => IsCefDebuggingEnabled = true;
 
-    public string? RunningSteamGame() => null;
+    private volatile string? _steamGame;
+
+    /// <summary>The Steam game that runs, or null.</summary>
+    public string? SteamGame { get => _steamGame; set => _steamGame = value; }
+
+    public string? RunningSteamGame() => IsSteamRunning ? SteamGame : null;
 
     public int? RunningSteamAppId() => null;
 
@@ -87,8 +92,13 @@ internal sealed class FakeSteam : IControllerSupportPlatform
 
     public SteamInputSetting? SteamInputDefaults() => null;
 
+    private int _steamStops;
+
+    public int SteamStops => Volatile.Read(ref _steamStops);
+
     public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken)
     {
+        Interlocked.Increment(ref _steamStops);
         IsSteamRunning = false;
         return Task.FromResult(true);
     }
@@ -137,9 +147,21 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     /// <summary>Set, the install sets up usbip-win2 and Pan but not HidHide and fails with this text (Pan's exit code 6, #243 B2).</summary>
     public string? HidHideInstallError { get; set; }
 
+    public bool InstallsHidHide => ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending;
+
+    /// <summary>HidHide's installer ran, and with it the puck's restart, while Steam ran (#296): never should.</summary>
+    public int PuckRestartsWhileSteamRuns => Volatile.Read(ref _puckRestartsWhileSteamRuns);
+
+    private int _puckRestartsWhileSteamRuns;
+
     public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _driverInstalls);
+        if (IsSteamRunning && InstallsHidHide)
+        {
+            Interlocked.Increment(ref _puckRestartsWhileSteamRuns);
+        }
+
         if (InstallError is { } error)
         {
             throw new InvalidOperationException(error);
@@ -157,7 +179,7 @@ internal sealed class FakeSteam : IControllerSupportPlatform
         IsPanReady = true;
         PanFailing = false;
         IsPanUpdateAvailable = false;
-        if (ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending)
+        if (InstallsHidHide)
         {
             HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
         }
@@ -176,6 +198,11 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     public Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _hidHideReinstalls);
+        if (IsSteamRunning)
+        {
+            Interlocked.Increment(ref _puckRestartsWhileSteamRuns);
+        }
+
         HidHideReinstalled?.Invoke();
         return Task.FromResult(true);
     }

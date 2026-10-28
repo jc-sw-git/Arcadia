@@ -1,0 +1,32 @@
+# #296 Restart the Steam Controller's puck for a driver install only while Steam is closed
+
+HidHide's installer restarts the connected puck. "Treiber installieren" (and the part rows "HidHide fehlt" /
+"Wächterdienst Pan fehlt" / "usbip-Treiber fehlt") and "Neu installieren" for "HidHide antwortet unerwartet" now close a
+running Steam first, after the same "Steam beenden?" as the SISR setup, and start it again afterwards, but only when the
+step runs HidHide's installer (`IControllerSupportPlatform.InstallsHidHide`). A running Steam game: "Steam-Spiel läuft",
+nothing happens. The Pan update at start goes to #297 (it becomes a pure Pan update without HidHide's installer).
+
+- [ ] **T296-1** HidHide uninstalled, Steam running (no game). PAN group, "HidHide fehlt" → "Installieren" with [A]:
+      "Steam beenden?" opens, the focus on "Steam beenden und installieren", the text says the installation restarts the
+      puck. [B] closes it, nothing is installed, Steam keeps running. [A] again, then [A] in the dialog: Steam closes,
+      Windows asks once, HidHide is installed, Steam comes back in the tray, the row goes. · E2E: yes
+      (`EmulationSetupTests`; the real UAC and the puck restart by hand)
+- [ ] **T296-2** Only Pan missing (HidHide current), Steam running: "Installieren" asks nothing about Steam, Steam keeps
+      running, Windows asks once. · E2E: yes (`EmulationSetupTests`, Core)
+- [ ] **T296-3** "HidHide antwortet unerwartet" with Steam running: "Neu installieren" asks "Steam beenden?"; [A] closes
+      Steam, reinstalls HidHide, starts Steam again; no "Beende zuerst Steam" message any more. · E2E: yes
+      (`EmulationSetupTests`; the real reinstall by hand)
+- [ ] **T296-4** A Steam game runs (e.g. started from Steam), HidHide missing: "Installieren" shows "Steam-Spiel läuft"
+      naming the game; [B] closes it, nothing is installed, the game keeps running. Ending the game while the notice is
+      open turns it into "Steam beenden?" within a second. · E2E: yes (`EmulationSetupTests`, the hand-over by hand)
+- [ ] **T296-5** HidHide missing, Steam running: [A] in "Steam beenden?", then "Nein" in the Windows prompt: the row
+      shows the "abgelehnt" message, and Steam is started again. · E2E: no (real UAC; Core covers declined, failed and
+      cancelled installs)
+- [ ] **T296-6** Steam that won't close (e.g. a Steam dialog blocking its exit): the action stops with "Steam ließ sich
+      nicht beenden …" and installs nothing. · E2E: no (needs a real Steam that refuses; Core covers it)
+
+History:
+
+| Test | Date | Who | Build / environment | Result | Consequence |
+|---|---|---|---|---|---|
+| T296-1 to T296-4 (App), T296-1 to T296-6 (Core `ControllerSupportServiceTests`, incl. a Steam slow to come back), all App and Core tests | 2026-10-28 | Claude | PR branch, Linux cloud container, Avalonia headless | ✅ (each also ❌ once with the code broken on purpose, see the PR) | – |

@@ -1676,8 +1676,8 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
-    [Trait("TestCase", "T242-26")]
-    public async Task HidHide_is_not_reinstalled_while_Steam_runs()
+    [Trait("TestCase", "T296-3")]
+    public async Task While_Steam_runs_HidHide_is_reinstalled_with_Steam_closed_and_Steam_starts_again()
     {
         var service = CreateReplaced();
         _platform.IsSteamRunning = true;
@@ -1685,8 +1685,149 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
 
-        Assert.Equal(0, _platform.HidHideReinstalls);
-        Assert.Equal(ControllerSupportService.HidHideReinstallWhileSteamRunsText, service.LastError);
+        Assert.Equal(1, _platform.HidHideReinstalls);
+        Assert.Equal(0, _platform.PuckRestartsWhileSteamRuns);
+        Assert.Equal((1, 1), (_platform.SteamStops, _platform.SteamStarts));
+        Assert.True(_platform.IsSteamRunning);
+        Assert.Null(service.LastError);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T296-1")]
+    [InlineData(HealthFix.InstallDrivers)]
+    [InlineData(HealthFix.ReinstallHidHide)]
+    public async Task A_driver_install_that_restarts_the_puck_runs_only_with_Steam_closed(HealthFix fix)
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = fix == HealthFix.ReinstallHidHide ? PinnedHidHideDriver : null;
+
+        Assert.True(service.StopsSteamFor(fix));
+        await service.ApplyFixAsync(fix);
+
+        Assert.Equal(1, _platform.UsbipInstalls + _platform.HidHideReinstalls);
+        Assert.Equal(0, _platform.PuckRestartsWhileSteamRuns);
+        Assert.Equal((1, 1), (_platform.SteamStops, _platform.SteamStarts));
+        Assert.Null(service.LastError);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T296-2")]
+    public async Task Without_HidHide_s_installer_Steam_is_neither_closed_nor_asked_about()
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = true;
+        _platform.IsUsbipReady = false;
+
+        Assert.False(service.StopsSteamFor(HealthFix.InstallDrivers));
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Equal(1, _platform.UsbipInstalls);
+        Assert.Equal((0, 0), (_platform.SteamStops, _platform.SteamStarts));
+        Assert.Null(service.LastError);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T296-2")]
+    public async Task A_HidHide_whose_removal_waits_for_a_restart_doesn_t_close_Steam()
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = null;
+        _platform.HidHideRemovalPending = true;
+
+        Assert.False(service.StopsSteamFor(HealthFix.InstallDrivers));
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Equal(1, _platform.UsbipInstalls);
+        Assert.Equal(0, _platform.SteamStops);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T296-5")]
+    [InlineData(HealthFix.InstallDrivers, "declined")]
+    [InlineData(HealthFix.InstallDrivers, "failed")]
+    [InlineData(HealthFix.ReinstallHidHide, "declined")]
+    public async Task Steam_closed_for_a_driver_install_starts_again_when_the_install_fails(HealthFix fix, string outcome)
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = fix == HealthFix.ReinstallHidHide ? PinnedHidHideDriver : null;
+        _platform.UsbipInstallDeclined = outcome == "declined";
+        _platform.HidHideReinstallDeclined = outcome == "declined";
+        _platform.UsbipInstallError = outcome == "failed" ? new IOException("Download abgebrochen") : null;
+
+        await service.ApplyFixAsync(fix);
+
+        Assert.NotNull(service.LastError);
+        Assert.Equal((1, 1), (_platform.SteamStops, _platform.SteamStarts));
+        Assert.True(_platform.IsSteamRunning);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T296-5")]
+    public async Task Steam_closed_for_a_driver_install_starts_again_when_the_install_is_cancelled()
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = null;
+        using var cancel = new CancellationTokenSource();
+        _platform.DuringDriverInstall = cancel.Cancel;
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ApplyFixAsync(HealthFix.InstallDrivers, cancel.Token));
+
+        Assert.Equal((1, 1), (_platform.SteamStops, _platform.SteamStarts));
+    }
+
+    [Theory]
+    [Trait("TestCase", "T296-6")]
+    [InlineData(HealthFix.InstallDrivers)]
+    [InlineData(HealthFix.ReinstallHidHide)]
+    public async Task A_Steam_that_won_t_close_stops_the_driver_install_before_anything_is_installed(HealthFix fix)
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = true;
+        _platform.SteamRefusesToExit = true;
+        _platform.HidHideVersion = fix == HealthFix.ReinstallHidHide ? PinnedHidHideDriver : null;
+
+        await service.ApplyFixAsync(fix);
+
+        Assert.Equal(ControllerSupportService.SteamWontCloseText, service.LastError);
+        Assert.Equal(0, _platform.UsbipInstalls + _platform.HidHideReinstalls);
+        Assert.Equal(0, _platform.SteamStarts);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T296-4")]
+    public async Task A_running_Steam_game_stops_a_driver_install_that_would_close_Steam()
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = true;
+        _platform.SteamGame = "Hollow Knight";
+        _platform.HidHideVersion = null;
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Equal(ControllerSupportService.DriverInstallBlocker("Hollow Knight"), service.LastError);
+        Assert.Equal((0, 0), (_platform.UsbipInstalls, _platform.SteamStops));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T296-1")]
+    public async Task A_Steam_slow_to_come_back_after_a_driver_install_doesn_t_fail_the_install()
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = true;
+        _platform.SteamWontStart = true;
+        _platform.HidHideVersion = null;
+
+        var install = service.ApplyFixAsync(HealthFix.InstallDrivers);
+        await AdvanceUntil(() => install.IsCompleted);
+        await install;
+
+        Assert.Null(service.LastError);
+        Assert.Equal(1, _platform.SteamStarts);
+        Assert.Null(service.BusyText);
     }
 
     [Theory]
@@ -2059,15 +2200,30 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public bool HidHideReinstallDeclined { get; set; }
 
+        /// <summary>HidHide's installer ran (and with it the puck's restart) while Steam ran (#296): never should.</summary>
+        public int PuckRestartsWhileSteamRuns { get; private set; }
+
+        /// <summary>HidHide was uninstalled and goes at the next restart: its installer doesn't run until then.</summary>
+        public bool HidHideRemovalPending { get; set; }
+
+        public bool InstallsHidHide => ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending;
+
+        /// <summary>Runs inside the driver install, e.g. to cancel it midway.</summary>
+        public Action? DuringDriverInstall { get; set; }
+
         public Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken)
         {
             HidHideReinstalls++;
+            PuckRestartsWhileSteamRuns += IsSteamRunning ? 1 : 0;
             return Task.FromResult(!HidHideReinstallDeclined);
         }
 
         public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
         {
             UsbipInstalls++;
+            PuckRestartsWhileSteamRuns += IsSteamRunning && InstallsHidHide ? 1 : 0;
+            DuringDriverInstall?.Invoke();
+            cancellationToken.ThrowIfCancellationRequested();
             if (UsbipInstallError is { } error)
             {
                 throw error;
@@ -2080,7 +2236,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
                 throw hidHideError;
             }
 
-            if (!UsbipInstallDeclined && ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion))
+            if (!UsbipInstallDeclined && InstallsHidHide)
             {
                 HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
             }

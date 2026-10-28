@@ -20,10 +20,9 @@ no empty layout forced on a marker, no focus bounce. Overview and the other file
 - `TickAsync` (every 2 s, `App`) plugs the pad in while a Steam Controller is connected and `Wanted` holds, and out
   otherwise: a game never sees an idle extra pad. `Wanted` comes from `SteamControllerRouting` (below).
 - `ViiperXboxPads` runs `viiper.exe server --no-tray` (Arcadia's own build of its VIIPER fork next to Arcadia.exe, #242;
-  SISR's in `%LOCALAPPDATA%\SISR` while no build is pinned) as its own process, log `viiper.log` beside `arcadia.log`, API `localhost:3242`, and drives it with VIIPER's MIT
+  the one an older SISR install left in `%LOCALAPPDATA%\SISR` while no build is pinned) as its own process, log `viiper.log` beside `arcadia.log`, API `localhost:3242`, and drives it with VIIPER's MIT
   client `Viiper.Client` 0.9.0: one bus, one `xbox360` device per plug. A VIIPER that already answers on the port (another
-  program's) is used, not replaced. A plug-in that fails after the bus was created removes the bus again. Before Arcadia's first server it runs SISR's clean-up once
-  (`SisrHost.CleanUpViiperAsync`: a VIIPER from SISR's folder left over from a crash, and its usbip ports).
+  program's) is used, not replaced. A plug-in that fails after the bus was created removes the bus again.
 - `viiper.exe` is in a job object with kill-on-close, so it ends with Arcadia also after a crash; the usbip port it held
   is cleaned up at the next start.
 - `IGamepadSource.Lost` (SDL failed for good) calls `Drop`: the game gets a pad at rest at once, and the next tick
@@ -52,9 +51,8 @@ no empty layout forced on a marker, no focus bounce. Overview and the other file
 - Right before a game starts (`GameActions`, after "Wird gestartet …" is set) the App decides again and unplugs at once
   (`TickNowAsync`, 3 s at most), so a game on Steam-Eingabe never finds Arcadia's pad. Its end brings the pad back at
   the next 2 s tick.
-- SISR is no longer started (`ControllerSupportService.StartsSisr = false` in the App): its switch, pauses and health
-  stay idle, a SISR left running is stopped at the start (before Arcadia's own VIIPER, as stopping it cleans up SISR's
-  VIIPER). Its install brings `viiper.exe` only while no fork build is pinned.
+- SISR is never started; at the start only an SISR the older Arcadia left running is stopped, and the settings remove
+  what is left of it on request ([sisr-removal.md](sisr-removal.md), #214).
 
 ## Not seen yet (owner's PC)
 

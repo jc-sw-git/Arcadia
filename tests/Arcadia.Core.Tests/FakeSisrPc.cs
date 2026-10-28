@@ -2,7 +2,7 @@ using System.Globalization;
 using Arcadia.ControllerSupport;
 using Arcadia.Launchers.Steam;
 
-namespace Arcadia.Core.Tests;
+namespace Arcadia.Tests.Sisr;
 
 /// <summary>
 /// A PC an older Arcadia left SISR on (#214), in a temp folder: SISR's folders, Steam's shortcuts.vdf per account and

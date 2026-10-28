@@ -27,9 +27,9 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
 
 - .NET 10 SDK. `Directory.Build.props` sets `TreatWarningsAsErrors` — keep the build warning-free.
 - A running Arcadia locks `bin/` → close it before building: `Get-Process Arcadia | % { $_.CloseMainWindow() }`
-  (CloseMainWindow, not Stop-Process: SISR must shut down cleanly).
-- Logs: `%APPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, `Bild:` press to frame, SISR start/stop),
-  `sisr.log` (SISR's own log, overwritten per start). Settings: `%APPDATA%\Arcadia\settings.json`.
+  (CloseMainWindow, not Stop-Process: Arcadia must shut down cleanly).
+- Logs: `%APPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, `Bild:` press to frame, Pan and the emulation),
+  `viiper.log` (VIIPER's own log). Settings: `%APPDATA%\Arcadia\settings.json`.
 - Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log:
   `Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} | ? ProviderName -match '.NET Runtime'`.
 
@@ -109,7 +109,7 @@ acceptance iteration (owner 2026-10-25; "Abnahme Iteration 1" was the last). Det
 | `src/Arcadia.Core` | Launcher registry and selection, library, search, settings, running games, keyboard layouts, paging |
 | `src/Arcadia.Launchers` | `BuiltInLaunchers` (the one place a launcher is registered), Steam, Epic, Demo, game start |
 | `src/Arcadia.Input` | Controllers via SDL3, gestures, mouse mode, `SendInput`, Steam desktop input filter |
-| `src/Arcadia.ControllerSupport` | Steam Controller Support (SISR, usbip-win2), Pan client |
+| `src/Arcadia.ControllerSupport` | Steam Controller Support (usbip-win2, VIIPER, Pan client; SISR's removal) |
 | `src/Arcadia.Pan*` | Pan guardian service; `docs/controller-support/pan.md` |
 | `src/Arcadia.App` | Avalonia 12 UI (MVVM), `Theme/Theme.axaml`, `MainViewModel` (routing between pages) and the pages (`IPage`) |
 | `tests/Arcadia.Core.Tests` | xUnit |
@@ -162,7 +162,7 @@ errors land with stack trace in `arcadia.log` and as a toast. No `_ = SomethingA
 touching that code, and add new findings there, not here):
 - Steam library, installs, updates, `shortcuts.vdf`: `docs/launchers/steam.md`
 - Epic launcher, catalog, install monitor, playtime: `docs/launchers/epic.md`
-- Steam Controller Support (SISR, usbip-win2, focus handling): `docs/controller-support/` (README first, then the topic file)
+- Steam Controller Support (Pan, VIIPER, usbip-win2, SISR): `docs/controller-support/` (README first, then the topic file)
 
 ## Context economy
 

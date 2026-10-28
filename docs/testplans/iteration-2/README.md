@@ -21,6 +21,7 @@ its file.
 | [213-steam-controller-as-xbox-pad-without-sisr.md](213-steam-controller-as-xbox-pad-without-sisr.md) | #213 | Steam Controller as an Xbox controller in every game, without SISR | 13 |
 | [242-steam-controller-copy.md](242-steam-controller-copy.md) | #242 | Steam gets a copy of the Steam Controller (parts A, B and C) | 29 |
 | [297-arcadia-runs-only-with-a-compatible-pan.md](297-arcadia-runs-only-with-a-compatible-pan.md) | #297 | Arcadia runs only with a compatible Pan | 12 |
+| [214-remove-or-keep-sisr.md](214-remove-or-keep-sisr.md) | #214 | Remove SISR on request, or keep it, in the controller settings | 13 |
 
 ## Exploratory test
 
@@ -32,7 +33,7 @@ Charter: –. Time box: –. Findings: –.
 |---|---|
 | T72-1 (mapping), T72-4, T72-6, T72-7, T72-9, T72-12 | `tests/Arcadia.App.Tests/ControllerTypesTests.cs` |
 | T212-2, T212-3, T212-5, T212-6, T212-7, T212-10 | `tests/Arcadia.App.Tests/SteamControllerTests.cs` |
-| T169-1 to T169-8 | `tests/Arcadia.App.Tests/SteamSettingsGroupTests.cs` |
+| T169-1 to T169-5 (T169-6 to T169-8 went with the SISR row, #214) | `tests/Arcadia.App.Tests/SteamSettingsGroupTests.cs` |
 | T180-2, T180-3 | `tests/Arcadia.App.Tests/Window/RingGeometryTests.cs`, `tests/Arcadia.App.Tests/Window/FocusRingTests.cs` |
 | T155-1 to T155-12 | `tests/Arcadia.App.Tests/PageTransitionTests.cs` |
 | T208-1 to T208-3, T209-3 | `tests/Arcadia.App.Tests/PageInterfaceTests.cs` |
@@ -40,3 +41,4 @@ Charter: –. Time box: –. Findings: –.
 | T210-1 to T210-3 | `tests/Arcadia.App.Tests/RoutingTests.cs` |
 | T242-8, T242-10 to T242-16, T242-20 to T242-25 | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `SteamControllerModeTests.cs` |
 | T297-1 to T297-8 | `tests/Arcadia.App.Tests/PanUpdateAtStartTests.cs` |
+| T214-1 to T214-8, T214-11; T214-10 | `tests/Arcadia.App.Tests/SisrRemovalTests.cs`; `SteamControllerModeTests.cs` |

@@ -41,7 +41,7 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
 - Update at start: an installed Pan that isn't exactly the bundled one is replaced before the library shows,
   without a question: [pan-update.md](pan-update.md).
 - Uninstall (Velopack hook, `Program.OnBeforeUninstall`): one question "Treiber für die Controller-Emulation auch
-  entfernen?" listing what is there (usbip-win2, HidHide, SISR/VIIPER until #214), default no (other programs may use
+  entfernen?" listing what is there (usbip-win2, HidHide, SISR and its VIIPER as in [sisr-removal.md](sisr-removal.md)), default no (other programs may use
   the drivers; `ControllerSupportRemoval.Question`). Then `Pan.exe --uninstall [--remove-drivers]` elevated, one UAC
   prompt (when Pan or a driver to remove exists), no question about Pan itself (it exists for Arcadia alone): stop (= teardown), delete the service, undo the journal, delete both folders and the empty
   `%ProgramData%\Arcadia` (a file in use goes at the next boot, `MoveFileEx`). With `--remove-drivers`, only after that undo
@@ -80,5 +80,5 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
 - An uninstalled HidHide stays until Windows restarts (owner's B2 test, 2026-10-27): its service key and driver file
   remain, so its version still reads. `HidHideInstallation.IsRemovalPending` (`DeleteFlag` on the service, or the
   driver file deleted via `PendingFileRenameOperations`) gives the row "HidHide: Neustart ausstehend" without a fix
-  (its setup would fail on the service marked for deletion), and Pan isn't asked about it. The usbip restart row no
-  longer offers "SISR neu starten" once SISR is replaced (`EmulationParts.RebootPending`).
+  (its setup would fail on the service marked for deletion), and Pan isn't asked about it. The usbip restart row offers
+  no fix (`EmulationParts.RebootPending`).

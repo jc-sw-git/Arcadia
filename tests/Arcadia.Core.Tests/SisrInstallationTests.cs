@@ -1,4 +1,5 @@
 using Arcadia.ControllerSupport;
+using Arcadia.Tests.Sisr;
 using Arcadia.Launchers.Steam;
 
 namespace Arcadia.Core.Tests;

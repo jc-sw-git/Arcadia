@@ -134,10 +134,10 @@ public sealed class SteamControllerXboxPadTests
         Assert.DoesNotContain(pad.Sent, state => (state.Buttons & A) != 0);
     }
 
-    /// <summary>T213-5 (automated part): the pad goes with the Steam Controller and comes back with it, and while SISR is on there is none.</summary>
+    /// <summary>T213-5 (automated part): the pad goes with the Steam Controller and comes back with it.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T213-5")]
-    public async Task The_pad_goes_and_comes_with_the_Steam_Controller_and_not_beside_SISR()
+    public async Task The_pad_goes_and_comes_with_the_Steam_Controller()
     {
         var (arcadia, steamController) = await StartInBackgroundAsync();
         using var _ = arcadia;
@@ -152,7 +152,6 @@ public sealed class SteamControllerXboxPadTests
         await arcadia.TickSteamControllerAsync();
         Assert.True(arcadia.XboxPad.IsPlugged);
         Assert.Equal(2, arcadia.XboxPads.Plugged);
-        Assert.Equal(SisrState.Off, arcadia.ControllerSupport.State);
     }
 
     /// <summary>T213-6 (automated part): VIIPER lost is plugged in again; lost too often, a toast says so and Arcadia stops trying.</summary>

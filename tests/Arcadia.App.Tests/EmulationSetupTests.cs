@@ -87,9 +87,8 @@ public sealed class EmulationSetupTests
     [Trait("TestCase", "T243-33")]
     public async Task With_every_part_missing_the_switch_itself_offers_Treiber_installieren_instead_of_the_rows()
     {
-        var steam = new FakeSteam { ReportsUsbip = true, IsUsbipReady = false, IsPanReady = false, HidHideVersion = null };
-        steam.Sisr.IsInstalled = false;
-        steam.Sisr.LatestRelease = new Release("v1.0.0", new Version(1, 0, 0), []);
+        var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideVersion = null };
+        steam.Viiper.IsInstalled = false;
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
 
@@ -106,7 +105,7 @@ public sealed class EmulationSetupTests
         await arcadia.WaitUntilAsync(() => Switch(controller).IsSwitch, "eingerichtet");
 
         Assert.Equal(1, steam.DriverInstalls);
-        Assert.True(steam.Sisr.IsInstalled, "VIIPER kommt bis #214 mit SISR");
+        Assert.Equal(1, steam.Viiper.Installs);
         Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:", StringComparison.Ordinal));
         Assert.True(Switch(controller).IsOn);
     }
@@ -116,9 +115,8 @@ public sealed class EmulationSetupTests
     public async Task A_declined_install_of_every_part_keeps_VIIPER_and_shows_its_error_at_the_first_part_left()
     {
         const string error = "Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Installieren“ wählen und die Abfrage bestätigen.";
-        var steam = new FakeSteam { ReportsUsbip = true, IsUsbipReady = false, IsPanReady = false, HidHideVersion = null, InstallError = error };
-        steam.Sisr.IsInstalled = false;
-        steam.Sisr.LatestRelease = new Release("v1.0.0", new Version(1, 0, 0), []);
+        var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideVersion = null, InstallError = error };
+        steam.Viiper.IsInstalled = false;
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
         await arcadia.WaitUntilAsync(() => Switch(controller).IsInstall, "„Treiber installieren“ an der Einstellung");
@@ -127,7 +125,7 @@ public sealed class EmulationSetupTests
         await arcadia.WaitUntilAsync(() => controller.Rows.OfType<ActionRowViewModel>().Any(row => row.HasProblem), "der Fehler an einer Zeile");
 
         // VIIPER needs no Windows prompt and came before it: the rest is three parts with one error, at the first.
-        Assert.True(steam.Sisr.IsInstalled);
+        Assert.True(steam.Viiper.IsInstalled);
         Assert.Equal(["issue:usbip-missing", "issue:pan-missing", "issue:hidhide-missing"], controller.Rows.Where(row => row.Key.StartsWith("issue:", StringComparison.Ordinal)).Select(row => row.Key));
         var failed = Assert.Single(controller.Rows.OfType<ActionRowViewModel>(), row => row.HasProblem);
         Assert.Equal("issue:usbip-missing", failed.Key);

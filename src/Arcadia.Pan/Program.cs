@@ -126,7 +126,7 @@ internal static class Program
                     // From Arcadia's folder the uninstall moves to a copy in Program Files and this process exits (#270).
                     var ownPath = OwnPath();
                     UninstallHandOff.RemoveLeftover(ownPath, PanPaths.HandOffDirectory, log.Write);
-                    if (UninstallHandOff.TryHandOff(ownPath, PanPaths.ArcadiaProgramFiles, PanPaths.HandOffDirectory, copy => StartHandOff(copy, args), log.Write) == HandOffResult.HandedOff)
+                    if (UninstallHandOff.TryHandOff(ownPath, PanPaths.ArcadiaProgramFiles, PanPaths.HandOffDirectory, copy => throw new InvalidOperationException("QE red check, reverted next"), log.Write) == HandOffResult.HandedOff)
                     {
                         Console.WriteLine($"The uninstall goes on in {PanPaths.HandOffDirectory}; {PanPaths.LogPath} says how it went.");
                         return 0;

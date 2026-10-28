@@ -6,6 +6,9 @@ manual cases: Windows, a build of this PR (Debug from the IDE publishes `Pan\Pan
 installieren", `pan.log` (`%ProgramData%\Arcadia\Pan`). A "different" Pan is made by installing the Pan of another
 build (e.g. the release before, or this branch rebuilt after a change to `src/Arcadia.Pan`).
 
+**Owner's manual run deferred to the acceptance review** (owner, 2026-10-28): all cases below are tested on the
+release candidate, installed with the Velopack installer, instead of before the merge.
+
 Automated: `PanUpdateAtStartTests` (T297-1 … T297-8, Pan's `--install` and the UAC prompt faked), unit tests
 `PanCompatibilityTests` (comparison, unreadable exe) and `ControllerSupportServiceTests` (due flag, update, removal).
 

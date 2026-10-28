@@ -82,6 +82,8 @@ internal static class Program
                         log.Write($"Data folder not trusted: {folder}; made anew, its journal not used");
                     }
 
+                    UninstallHandOff.RemoveLeftover(OwnPath(), PanPaths.HandOffDirectory, log.Write);
+
                     if (Option(args, "--usbip-installer") is { } usbipInstaller)
                     {
                         var usbipHash = Option(args, "--usbip-sha256")
@@ -106,7 +108,7 @@ internal static class Program
                         }
                     }
 
-                    ServiceSetup.Install(Environment.ProcessPath ?? throw new InvalidOperationException("own path unknown"), Option(args, "--expect-hash"), log.Write);
+                    ServiceSetup.Install(OwnPath(), Option(args, "--expect-hash"), log.Write);
                     return hidHideFailed ? HidHideFailedExitCode : 0;
                 case "--uninstall":
                     // Runs at every Arcadia uninstall, also where Pan never was: a data folder that isn't ours is
@@ -121,17 +123,45 @@ internal static class Program
                         Console.Error.WriteLine($"Leaving the data folder alone: {dataProblem}.");
                     }
 
+                    // From Arcadia's folder the uninstall moves to a copy in Program Files and this process exits (#270).
+                    var ownPath = OwnPath();
+                    // The prompt returns at once, so a second --uninstall may start while the copy still works: it must not
+                    // run teardown, undo and driver removal a second time beside it (QE review of #270).
+                    if (RunningHandOffCopy() is { } running)
+                    {
+                        log.Write($"Not uninstalling: the uninstall in {PanPaths.HandOffDirectory} still runs (process {running})");
+                        Console.WriteLine($"An uninstall is already running (process {running}); {PanPaths.LogPath} says how it went.");
+                        return 0;
+                    }
+
+                    UninstallHandOff.RemoveLeftover(ownPath, PanPaths.HandOffDirectory, log.Write);
+                    if (UninstallHandOff.TryHandOff(ownPath, PanPaths.ArcadiaProgramFiles, PanPaths.HandOffDirectory, copy => StartHandOff(copy, args), log.Write) == HandOffResult.HandedOff)
+                    {
+                        Console.WriteLine($"The uninstall goes on in {PanPaths.HandOffDirectory}; {PanPaths.LogPath} says how it went.");
+                        return 0;
+                    }
+
                     var data = dataProblem is null ? DataFolder.Ours
                         : Directory.Exists(PanPaths.DataDirectory) || File.Exists(PanPaths.DataDirectory) ? DataFolder.NotOurs
                         : DataFolder.Missing;
                     // The drivers only when the user said yes at Arcadia's uninstall (#243 part B2).
                     Func<Task<bool>>? removeDrivers = Flag(args, "--remove-drivers") ? () => DriverRemoval.RunAsync(log.Write) : null;
-                    return ServiceSetup.UninstallAsync(data, removeDrivers, log.StopFileLogging, log.Write).GetAwaiter().GetResult() switch
+                    try
                     {
-                        UninstallOutcome.RestoreIncomplete => RestoreIncompleteExitCode,
-                        UninstallOutcome.DriversLeft => DriversNotRemovedExitCode,
-                        _ => 0,
-                    };
+                        return ServiceSetup.UninstallAsync(data, removeDrivers, log.StopFileLogging, log.Write).GetAwaiter().GetResult() switch
+                        {
+                            UninstallOutcome.RestoreIncomplete => RestoreIncompleteExitCode,
+                            UninstallOutcome.DriversLeft => DriversNotRemovedExitCode,
+                            _ => 0,
+                        };
+                    }
+                    finally
+                    {
+                        if (UninstallHandOff.IsInside(ownPath, PanPaths.HandOffDirectory))
+                        {
+                            ServiceSetup.ScheduleHandOffRemoval(ownPath, log.Write);
+                        }
+                    }
                 case "--restore":
                     if (ServiceSetup.CheckDataDirectory() is { } problem)
                     {
@@ -180,6 +210,52 @@ internal static class Program
     {
         using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
         return new System.Security.Principal.WindowsPrincipal(identity).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+    }
+
+    /// <summary>
+    /// The id of another process running the hand-off copy, or null. Checked by its image path: only administrators can
+    /// start a program from Program Files, so nobody else can fake one (a named mutex could be squatted by any user).
+    /// </summary>
+    private static int? RunningHandOffCopy()
+    {
+        var copy = Path.Combine(PanPaths.HandOffDirectory, PanPaths.ExecutableName);
+        var self = Environment.ProcessId;
+        foreach (var process in System.Diagnostics.Process.GetProcessesByName(Path.GetFileNameWithoutExtension(PanPaths.ExecutableName)))
+        {
+            using (process)
+            {
+                try
+                {
+                    if (process.Id != self && string.Equals(process.MainModule?.FileName, copy, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return process.Id;
+                    }
+                }
+                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+                {
+                    // Exited meanwhile, or a process this one may not inspect: not the copy, which runs elevated like this one.
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static string OwnPath() => Environment.ProcessPath ?? throw new InvalidOperationException("own path unknown");
+
+    /// <summary>
+    /// Starts the hand-off copy with this process's arguments, elevated like this one (a plain start inherits the
+    /// token), and doesn't wait: the bundled exe must be closed before Velopack deletes Arcadia's folder.
+    /// </summary>
+    private static void StartHandOff(string copy, string[] args)
+    {
+        var info = new System.Diagnostics.ProcessStartInfo(copy) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(copy)! };
+        foreach (var argument in args)
+        {
+            info.ArgumentList.Add(argument);
+        }
+
+        using var process = System.Diagnostics.Process.Start(info) ?? throw new InvalidOperationException($"{copy} did not start");
     }
 
     private static bool Flag(string[] args, string name) => args.Skip(1).Contains(name, StringComparer.OrdinalIgnoreCase);

@@ -52,6 +52,12 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   (`PanLog.StopFileLogging`): anyone may recreate the path then. Arcadia's wait per command is the sum of Pan's step
   budgets (`PanTimeouts`: install ~10 min, uninstall 9 min). Declined: the service stays, idles
   and stops itself; `Pan.exe --uninstall` by hand removes it. Known limits and accepted risks: [pan-risks.md](pan-risks.md).
+- Hand-off (#270): `--uninstall` from anywhere but `%ProgramFiles%\Arcadia` copies itself to `Pan-Uninstall\Pan.exe`
+  there, checks the copy's SHA-256, starts it with the same arguments and exits, so the hook ends in seconds and Velopack
+  deletes the bundled exe. The copy uninstalls as above and schedules itself, `Pan-Uninstall` and the then empty
+  `%ProgramFiles%\Arcadia` for the next boot (safe there, never in the user's folder: a planted junction). A failed copy
+  or start uninstalls in place (`pan.log` says why); a leftover `Pan-Uninstall` goes at the next `--install`/`--uninstall`.
+  Arcadia then sees exit 0, not the copy's result: that stays in `pan.log` (`UninstallHandOff`).
 - "Controller wiederherstellen" (settings, shown while Pan is installed): `Pan.exe --restore` elevated, for the case
   the service itself hangs: undoes the journal without the service. The Xbox pad comes back afterwards, also after
   Arcadia gave up on VIIPER, and the pad Pan ended doesn't count as a VIIPER failure.

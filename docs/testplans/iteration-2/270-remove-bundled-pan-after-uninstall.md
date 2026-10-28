@@ -13,11 +13,12 @@ outside Program Files, waits for the hand-off copy and checks the service is gon
       right after the uninstaller closes, `%LocalAppData%\Arcadia` is gone or empty (A1: with the build before this PR
       exactly `current\Pan\Pan.exe` stayed); within a few minutes the drivers are gone (usbip-win2 and HidHide missing
       from Apps), `Pan-Uninstall\Pan.exe` no longer runs, `pan.log` is gone with the data folder. A2: the copy kept running
-      after the uninstaller closed (it was not ended by Velopack). · E2E: no (real Velopack uninstall, UAC, real drivers)
+      after the uninstaller closed (it was not ended by Velopack). · E2E: no (real Velopack uninstall, UAC, real drivers);
+      deferred to the acceptance review (needs an installer of the branch; owner, 2026-10-28)
 - [ ] **T270-2** After T270-1 or T270-3, restart Windows: `%ProgramFiles%\Arcadia\Pan-Uninstall` and the then empty
-      `%ProgramFiles%\Arcadia` are gone. · E2E: no (reboot)
+      `%ProgramFiles%\Arcadia` are gone. · E2E: no (reboot); deferred to the acceptance review (as T270-1)
 - [ ] **T270-3** Same as T270-1 with the drivers question answered no: Pan's service and `%ProgramFiles%\Arcadia\Pan` are
-      gone, usbip-win2 and HidHide stay installed, nothing is left in `%LocalAppData%\Arcadia`. · E2E: no (as T270-1)
+      gone, usbip-win2 and HidHide stay installed, nothing is left in `%LocalAppData%\Arcadia`. · E2E: no (as T270-1); deferred to the acceptance review (as T270-1)
 - [ ] **T270-4** `Pan.exe --uninstall` started by hand, elevated, from Arcadia's folder (`%LocalAppData%\Arcadia\current\Pan`)
       while Arcadia stays installed: the prompt returns at once with "The uninstall goes on in …", the service goes, the
       bundled `Pan\Pan.exe` is still there; `pan.log` shows "Handing the uninstall off to …". · E2E: yes (Windows CI,

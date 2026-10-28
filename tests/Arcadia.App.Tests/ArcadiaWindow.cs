@@ -353,11 +353,19 @@ internal sealed class ArcadiaWindow : IDisposable
         .OrderBy(hint => Bounds(hint).Left)
         .Select(hint => string.Join(' ', hint.Children.Select(child => child switch
         {
-            Border { Child: TextBlock glyph } => glyph.Text,
+            Border glyph => Printed(glyph),
             TextBlock text => text.Text,
             _ => null,
         }).Where(text => !string.IsNullOrEmpty(text))))
         .ToList();
+
+    /// <summary>What a glyph shows: its text, or the name of the icon a controller's symbol is drawn with (#215, e.g. "Cross").</summary>
+    public static string? Printed(Border glyph) => glyph switch
+    {
+        Controls.PadGlyph { Shown: { Icon: not global::Arcadia.Input.ButtonIcon.None } symbol } => symbol.Icon.ToString(),
+        { Child: TextBlock text } => text.Text,
+        _ => null,
+    };
 
     /// <summary>The glyphs (button or key frames) drawn inside <paramref name="within"/>.</summary>
     public static IReadOnlyList<Border> Glyphs(Control within) => within.GetVisualDescendants().OfType<Border>()

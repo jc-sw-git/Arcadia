@@ -165,7 +165,7 @@ touching that code, and add new findings there, not here):
 
 ## Context economy
 
-Every step of a session resends its whole context, so keep it small (owner, 2026-10-23):
+Keep context small, every step resends it (owner, 2026-10-23):
 - `CLAUDE.md` holds only what nearly every task needs. Everything else (a product decision, a finding, a
   workflow detail) goes into the topic file under `docs/` and at most gets a pointer here. Limits: `CLAUDE.md`
   15 KB, every other doc and skill 10 KB (test plan files exempt); the `Doc sizes` CI check enforces them. A file
@@ -192,6 +192,6 @@ Every step of a session resends its whole context, so keep it small (owner, 2026
   yourself that your open PR is still mergeable and resolve conflicts before the owner finds them.
 - Threads work as personas (`docs/personas/`): a fresh quality engineer thread reviews and adds the acceptance
   tests to every code PR; Codex (`AGENTS.md`) reviews only the whole iteration.
-- Opening a PR needs no prior OK (tell the owner the link). Merging, tags/releases, closing issues and posting
-  comments only on the owner's explicit word.
+- Opening a PR needs no OK (tell the owner the link). Link it to its issue, close it when all its PRs are merged
+  (`docs/process/issues-and-prs.md`). Merges, releases, comments only on the owner's word.
 - License: GPL-3.0-only. Third-party notes in `THIRD-PARTY-NOTICES.md`.

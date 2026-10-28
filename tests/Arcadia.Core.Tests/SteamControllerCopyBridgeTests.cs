@@ -222,6 +222,82 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
         await WaitUntilAsync(() => !_bridge.IsConnected);
     }
 
+    [Fact]
+    [Trait("TestCase", "T242-2")]
+    public async Task Reading_an_input_report_directly_gets_what_the_filter_let_through_never_the_puck_itself()
+    {
+        var before = await ControlAsync(1, GetReport(HidReportType.Input, SteamControllerCopyFilter.StateReport, 64));
+        _puck.Send(Hid, StateReport(buttons: 0x00004041, stick: 0x55));
+        var resting = await ReadFrameAsync();
+
+        var read = await ControlAsync(2, GetReport(HidReportType.Input, SteamControllerCopyFilter.StateReport, 64));
+
+        Assert.False(before.Done);
+        Assert.True(read.Done);
+        Assert.Equal(resting.Payload, read.Data);
+        Assert.Equal(0u, BinaryPrimitives.ReadUInt32LittleEndian(read.Data.AsSpan(2)));
+        Assert.All(read.Data[6..18], value => Assert.Equal(0, value));
+        Assert.Equal(0, _puck.GetReportCalls);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-2")]
+    public async Task A_report_that_passed_while_forwarding_is_no_longer_read_once_the_copy_rests()
+    {
+        _forwarding = true;
+        _puck.Send(Hid, [0x44, 0x01, 0x2A]);
+        await ReadFrameAsync();
+        var passing = await ControlAsync(1, GetReport(HidReportType.Input, 0x44, 64));
+
+        _forwarding = false;
+        _puck.Send(Hid, [0x44, 0x01, 0x2B]);
+        // The dropped report sends no frame; the battery report after it marks that the first was handled.
+        _puck.Send(Hid, [SteamControllerCopyFilter.BatteryReport, 0x01]);
+        await ReadFrameAsync();
+        var resting = await ControlAsync(2, GetReport(HidReportType.Input, 0x44, 64));
+
+        Assert.Equal([0x44, 0x01, 0x2A], passing.Data);
+        Assert.False(resting.Done);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-1")]
+    public async Task A_call_to_the_puck_that_doesnt_end_makes_closing_fail_rather_than_report_it_stopped()
+    {
+        _puck.HoldFeatures.Reset();
+        await SendControlAsync(1, SetReport(HidReportType.Feature), [0x01, 0x83]);
+        await WaitUntilAsync(() => _puck.FeatureCalls == 1);
+
+        try
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _bridge.DisposeAsync().AsTask());
+            Assert.False(_bridge.IsConnected);
+        }
+        finally
+        {
+            _puck.HoldFeatures.Set();
+        }
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-6")]
+    public async Task A_VIIPER_that_stops_reading_breaks_the_copy_instead_of_hanging_it()
+    {
+        var puck = new FakePuck([Hid]);
+        await using var stalled = new StalledStream();
+        var filter = new SteamControllerCopyFilter(new FakeTimeProvider(), _ => { });
+        var bridge = new SteamControllerCopyBridge(puck, stalled, filter, () => true, () => new ComboWithholdingOptions(BackAndStart: true),
+            PuckDescriptors.Triton, _ => { }, sendTimeout: TimeSpan.FromMilliseconds(200));
+        bridge.Start();
+
+        puck.Send(Hid, StateReport(buttons: 0x00000001, stick: 0x55));
+
+        await WaitUntilAsync(() => stalled.Writing);
+        await WaitUntilAsync(() => !bridge.IsConnected);
+        await WaitUntilAsync(() => stalled.IsDisposed);
+        await bridge.DisposeAsync();
+    }
+
     private static byte[] StateReport(uint buttons, byte stick)
     {
         var report = new byte[64];
@@ -234,7 +310,9 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
 
     private static byte[] SetReport(HidReportType type) => Setup(0x21, 0x09, (ushort)(((int)type << 8) | 0x01), Hid, 2);
 
-    private static byte[] GetReport(ushort length) => Setup(0xA1, 0x01, ((int)HidReportType.Feature << 8) | 0x01, Hid, length);
+    private static byte[] GetReport(ushort length) => GetReport(HidReportType.Feature, 0x01, length);
+
+    private static byte[] GetReport(HidReportType type, byte id, ushort length) => Setup(0xA1, 0x01, (ushort)(((int)type << 8) | id), Hid, length);
 
     private static byte[] Setup(byte requestType, byte request, ushort value, ushort index, ushort length)
     {
@@ -294,6 +372,7 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
         private readonly ConcurrentDictionary<byte, BlockingCollection<byte[]?>> _reports = new(interfaces.Select(i => KeyValuePair.Create(i, new BlockingCollection<byte[]?>())));
         private readonly CancellationTokenSource _closed = new();
         private int _featureCalls;
+        private int _getReportCalls;
 
         public IReadOnlyCollection<byte> Interfaces => interfaces;
 
@@ -343,7 +422,8 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
         {
             Interlocked.Increment(ref _featureCalls);
             FeatureQueue.Enqueue(report.ToArray());
-            HoldFeatures.Wait(Wait);
+            // Longer than the bridge waits when it closes (twice 2 s plus the frame loop), so a held call outlasts it.
+            HoldFeatures.Wait(TimeSpan.FromSeconds(30));
         }
 
         public void WriteOutput(byte iface, ReadOnlySpan<byte> report) => OutputQueue.Enqueue(report.ToArray());
@@ -351,8 +431,11 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
         /// <summary>The next GET_REPORT throws, as when the puck doesn't answer.</summary>
         public bool FailGetReport { get; set; }
 
+        public int GetReportCalls => Volatile.Read(ref _getReportCalls);
+
         public int GetReport(byte iface, HidReportType type, byte id, Span<byte> report)
         {
+            Interlocked.Increment(ref _getReportCalls);
             if (FailGetReport)
             {
                 throw new IOException("Das Gerät antwortet nicht.");
@@ -363,5 +446,56 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
         }
 
         public void Dispose() => _closed.Cancel();
+    }
+    /// <summary>A VIIPER that stopped reading: every write hangs until the stream is closed; reads wait for the close.</summary>
+    private sealed class StalledStream : Stream
+    {
+        private readonly ManualResetEventSlim _closed = new();
+        private readonly TaskCompletionSource _closedTask = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private volatile bool _writing;
+
+        public bool Writing => _writing;
+
+        public bool IsDisposed => _closed.IsSet;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => true;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            _writing = true;
+            _closed.Wait();
+            throw new IOException("Der Stream wurde geschlossen.");
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            await _closedTask.Task.WaitAsync(cancellationToken);
+            return 0;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            _closed.Set();
+            _closedTask.TrySetResult();
+            base.Dispose(disposing);
+        }
     }
 }

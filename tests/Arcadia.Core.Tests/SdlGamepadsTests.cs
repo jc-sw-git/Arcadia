@@ -2,14 +2,14 @@ using Arcadia.Input;
 
 namespace Arcadia.Core.Tests;
 
-/// <summary>Only where Arcadia ships SDL3: the build puts the pinned <c>SDL3.dll</c> next to the tests.</summary>
+/// <summary>Only on Windows: the build puts the pinned <c>SDL3.dll</c> next to the tests there, and Windows' own tables are read.</summary>
 public sealed class WindowsFactAttribute : FactAttribute
 {
     public WindowsFactAttribute()
     {
         if (!OperatingSystem.IsWindows())
         {
-            Skip = "SDL3.dll ships for Windows only";
+            Skip = "Windows only (SDL3.dll, Windows' device and TCP tables)";
         }
     }
 }

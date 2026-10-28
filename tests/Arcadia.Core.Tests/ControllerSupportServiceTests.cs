@@ -1650,6 +1650,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     public async Task Neu_installieren_runs_HidHide_s_installer_through_Pan_and_a_declined_prompt_says_so(bool declined)
     {
         var service = CreateReplaced();
+        _platform.IsSteamRunning = false;
         _platform.HidHideVersion = PinnedHidHideDriver;
         _platform.HidHideReinstallDeclined = declined;
 
@@ -1674,6 +1675,20 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Equal(ControllerSupportService.HidHideReinstallWhileHiddenText, service.LastError);
     }
 
+    [Fact]
+    [Trait("TestCase", "T242-26")]
+    public async Task HidHide_is_not_reinstalled_while_Steam_runs()
+    {
+        var service = CreateReplaced();
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = PinnedHidHideDriver;
+
+        await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
+
+        Assert.Equal(0, _platform.HidHideReinstalls);
+        Assert.Equal(ControllerSupportService.HidHideReinstallWhileSteamRunsText, service.LastError);
+    }
+
     [Theory]
     [Trait("TestCase", "T242-26")]
     [InlineData("1.5.0.0")]
@@ -1682,6 +1697,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     public async Task HidHide_is_reinstalled_only_over_the_pinned_version(string? installed)
     {
         var service = CreateReplaced();
+        _platform.IsSteamRunning = false;
         _platform.HidHideVersion = installed is null ? null : Version.Parse(installed);
 
         await service.ApplyFixAsync(HealthFix.ReinstallHidHide);

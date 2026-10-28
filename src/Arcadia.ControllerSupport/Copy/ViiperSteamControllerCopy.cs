@@ -44,6 +44,11 @@ public sealed class ViiperSteamControllerCopy(ViiperXboxPads viiper, ViiperInsta
     public async Task<ISteamControllerCopy> AttachAsync(CancellationToken cancellationToken)
     {
         var puck = await Task.Run(() => WindowsPuck.Open(PuckDescriptors.Triton), cancellationToken);
+        if (puck.PucksFound > 1)
+        {
+            log($"Steam-Controller-Kopie: {puck.PucksFound} Pucks angesteckt, nur einer wird für Steam kopiert");
+        }
+
         try
         {
             var device = await viiper.AddRawDeviceAsync("hidproxy", PuckDescriptors.Triton.DeviceSpecific(puck.Serial), cancellationToken);
@@ -58,15 +63,24 @@ public sealed class ViiperSteamControllerCopy(ViiperXboxPads viiper, ViiperInsta
         }
     }
 
-    /// <summary>The bridge first (nothing reaches the puck any more), then VIIPER's device.</summary>
+    /// <summary>
+    /// The bridge first (nothing reaches the puck any more), then VIIPER's device, also when the bridge couldn't confirm
+    /// that; its exception still reaches Pan's emulation, which then tears down in full.
+    /// </summary>
     private sealed class Copy(SteamControllerCopyBridge bridge, ViiperRawDevice device) : ISteamControllerCopy
     {
         public bool IsConnected => bridge.IsConnected && !device.ServerEnded;
 
         public async ValueTask DisposeAsync()
         {
-            await bridge.DisposeAsync();
-            await device.DisposeAsync();
+            try
+            {
+                await bridge.DisposeAsync();
+            }
+            finally
+            {
+                await device.DisposeAsync();
+            }
         }
     }
 }

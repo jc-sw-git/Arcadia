@@ -77,6 +77,21 @@ public sealed class ViiperInstallationTests : IDisposable
 
     [Fact]
     [Trait("TestCase", "T242-27")]
+    public async Task The_replaced_viiper_exe_is_moved_aside_and_gone_once_nothing_runs_from_it()
+    {
+        // Left by an earlier install while its VIIPER still ran (Windows can't delete a running image, only rename it).
+        var earlier = Executable + ".0123456789abcdef.old";
+        File.WriteAllBytes(earlier, "older viiper"u8.ToArray());
+        File.WriteAllBytes(Executable, "upstream viiper"u8.ToArray());
+        using var http = new HttpClient(new Handler(Build));
+
+        await new ViiperInstallation(Executable, Pinned(Build)).InstallAsync(http, CancellationToken.None);
+
+        Assert.Equal([ViiperRelease.ExecutableName], Directory.GetFiles(_directory).Select(Path.GetFileName));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-27")]
     public async Task A_download_that_fails_its_check_leaves_nothing_where_VIIPER_starts()
     {
         using var http = new HttpClient(new Handler("tampered"u8.ToArray()));

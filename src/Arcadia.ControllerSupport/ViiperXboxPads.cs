@@ -25,6 +25,9 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
     private static readonly TimeSpan ServerStartTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan ApiTimeout = TimeSpan.FromSeconds(3);
 
+    /// <summary>The processes listening on a port (null: can't tell, the check is skipped); the copy's check, #242.</summary>
+    public Func<int, IReadOnlyCollection<int>?> ListenersOnPort { get; init; } = DefaultListenersOnPort;
+
     private readonly SemaphoreSlim _serverGate = new(1, 1);
     private Process? _server;
     private bool _cleanedUp;
@@ -92,7 +95,8 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
         try
         {
             await EnsureServerAsync(client, cancellationToken);
-            if (_server is not { HasExited: false })
+            // Arcadia's viiper.exe alive isn't enough: "localhost" may reach another program listening on the other loopback.
+            if (_server is not { HasExited: false } server || ListenersOnPort(ApiPort) is { } listeners && !OnlyOwnServerListens(listeners, server.Id))
             {
                 throw new InvalidOperationException("Auf dem Port von VIIPER antwortet ein Programm, das Arcadia nicht gestartet hat; die Kopie des Pucks läuft nur auf Arcadias eigenem VIIPER");
             }
@@ -116,6 +120,13 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
             throw;
         }
     }
+
+    /// <summary>True when the server Arcadia started is the only process listening on VIIPER's port.</summary>
+    public static bool OnlyOwnServerListens(IReadOnlyCollection<int> listeners, int ownServer) =>
+        listeners.Count > 0 && listeners.All(listener => listener == ownServer);
+
+    private static IReadOnlyCollection<int>? DefaultListenersOnPort(int port) =>
+        OperatingSystem.IsWindows() ? TcpListeners.OwnersOnPort(port) : null;
 
     /// <summary>VIIPER's device stream as plain bytes: the handshake is the path, ended by a zero byte (VIIPER's own client does the same).</summary>
     private static async Task<Stream> ConnectRawAsync(uint bus, string deviceId, CancellationToken cancellationToken)

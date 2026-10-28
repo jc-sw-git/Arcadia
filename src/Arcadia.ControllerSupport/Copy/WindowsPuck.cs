@@ -34,11 +34,15 @@ public sealed partial class WindowsPuck : IRealPuck
 
     private readonly Dictionary<byte, Collection> _collections;
 
-    private WindowsPuck(Dictionary<byte, Collection> collections, string serial)
+    private WindowsPuck(Dictionary<byte, Collection> collections, string serial, int pucksFound)
     {
         _collections = collections;
         Serial = serial;
+        PucksFound = pucksFound;
     }
+
+    /// <summary>How many real pucks were plugged in when it opened; only one of them is copied.</summary>
+    public int PucksFound { get; }
 
     /// <summary>The puck's serial number; the copy shows Steam the same one, so Steam keeps its settings for it.</summary>
     public string Serial { get; }
@@ -50,7 +54,7 @@ public sealed partial class WindowsPuck : IRealPuck
     {
         try
         {
-            return Find().Count > 0;
+            return PuckDescriptors.OnePuck(Find(), out _).Count > 0;
         }
         catch (Exception)
         {
@@ -61,7 +65,7 @@ public sealed partial class WindowsPuck : IRealPuck
     /// <summary>Opens every vendor collection of the real puck; throws when there is none or one can't be opened.</summary>
     public static WindowsPuck Open(PuckDescriptors descriptors)
     {
-        var found = Find();
+        var found = PuckDescriptors.OnePuck(Find(), out var pucks);
         if (found.Count == 0)
         {
             throw new InvalidOperationException("Der Puck des Steam Controllers ist nicht da (oder Arcadia steht nicht auf der Liste von HidHide)");
@@ -87,7 +91,7 @@ public sealed partial class WindowsPuck : IRealPuck
                 throw new InvalidOperationException("Der Puck meldet eine ungültige Seriennummer");
             }
 
-            return new WindowsPuck(collections, serial);
+            return new WindowsPuck(collections, serial, pucks);
         }
         catch
         {
@@ -116,8 +120,11 @@ public sealed partial class WindowsPuck : IRealPuck
         }
     }
 
-    /// <summary>The vendor collections of the real puck, by interface number (<c>&amp;mi_02</c> in the path).</summary>
-    private static List<(byte Interface, string Path)> Find()
+    /// <summary>
+    /// The vendor collections of every real puck, by interface number (<c>&amp;mi_02</c> in the path) and the USB device
+    /// they belong to.
+    /// </summary>
+    private static List<(byte Interface, string Path, string? UsbDevice)> Find()
     {
         HidD_GetHidGuid(out var guid);
         var set = SetupDiGetClassDevsW(ref guid, 0, 0, DigcfPresent | DigcfDeviceInterface);
@@ -128,7 +135,7 @@ public sealed partial class WindowsPuck : IRealPuck
 
         try
         {
-            var found = new List<(byte, string)>();
+            var found = new List<(byte, string, string?)>();
             for (uint index = 0; ; index++)
             {
                 var data = new DeviceInterfaceData { Size = (uint)Marshal.SizeOf<DeviceInterfaceData>() };
@@ -141,7 +148,7 @@ public sealed partial class WindowsPuck : IRealPuck
                 if (PathOf(set, ref data) is { } path && InterfaceOf(path) is { } iface && IsVendorCollection(path)
                     && PuckDescriptors.IsRealPuck(DeviceTree.HostOfInterface(path)))
                 {
-                    found.Add((iface, path));
+                    found.Add((iface, path, DeviceTree.UsbDeviceOfInterface(path)));
                 }
             }
         }

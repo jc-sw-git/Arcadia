@@ -51,3 +51,9 @@ one names the countermeasure that would close it, so a later story can pick it u
   refused, a show retried until it closes; B2 should tell the user to close it). What the user changes there during
   an emulation applies at once: unticking the puck or turning hiding off shows Steam both controllers (double input),
   removing Arcadia from the list cuts the emulation off from the real controller, inverse mode refuses the next hide.
+- **The real puck's COM port stays Steam's while Pan hides** (review of PR #294, #242). HidHide hides HID only; the
+  puck's interface 0 is a CDC ACM COM port. If Steam sent the puck to its bootloader over it, Arcadia would see no
+  traffic, no firmware dialog and no hold: the puck would just vanish mid-copy and come back after the update. The
+  flash itself runs on the bootloader `28DE:1007`, which Arcadia and Pan never touch
+  ([emulated-steam-controller.md](emulated-steam-controller.md)). Countermeasure: Pan disables the puck's
+  `USB\VID_28DE&PID_1304&MI_00` while it hides (elevated, journaled like HidHide). Owner's decision pending.

@@ -130,6 +130,21 @@ public sealed class PuckDescriptors
     /// </summary>
     public static bool IsRealPuck(DeviceHost host) => host == DeviceHost.Hardware;
 
+    /// <summary>
+    /// The collections of one real puck when several are plugged in (review of PR #294): those of the first USB device by
+    /// its id, so a copy never mixes interfaces of two pucks under one serial. Collections whose USB device can't be read
+    /// are left out. <paramref name="pucks"/>: how many pucks were found.
+    /// </summary>
+    public static List<(byte Interface, string Path)> OnePuck(IEnumerable<(byte Interface, string Path, string? UsbDevice)> collections, out int pucks)
+    {
+        var byDevice = collections.Where(c => c.UsbDevice is not null)
+            .GroupBy(c => c.UsbDevice!, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        pucks = byDevice.Count;
+        return byDevice.Count == 0 ? [] : [.. byDevice[0].Select(c => (c.Interface, c.Path))];
+    }
+
     /// <summary>A serial number as Windows read it from the puck: letters and digits only, at most 32.</summary>
     public static bool IsValidSerial(string serial) =>
         serial.Length is > 0 and <= MaxSerialLength && serial.All(char.IsAsciiLetterOrDigit);

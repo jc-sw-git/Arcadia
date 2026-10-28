@@ -102,6 +102,26 @@ public sealed class HidProxyTests
         Assert.Equal(real, PuckDescriptors.IsRealPuck(DeviceTree.HostOf(hostId)));
     }
 
+    [Fact]
+    [Trait("TestCase", "T242-4")]
+    public void With_two_pucks_plugged_in_the_copy_takes_the_collections_of_one_of_them()
+    {
+        const string first = @"USB\VID_28DE&PID_1304\FXB0000000001";
+        const string second = @"USB\VID_28DE&PID_1304\FXB0000000002";
+
+        var chosen = PuckDescriptors.OnePuck(
+        [
+            (2, "second-2", second),
+            (2, "first-2", first),
+            (3, "second-3", second),
+            (3, "first-3", first),
+            (4, "unknown-4", null),
+        ], out var pucks);
+
+        Assert.Equal(2, pucks);
+        Assert.Equal(new (byte, string)[] { (2, "first-2"), (3, "first-3") }, chosen.OrderBy(c => c.Interface).ToArray());
+    }
+
     [Theory]
     [Trait("TestCase", "T242-4")]
     [InlineData("FXA1234567", true)]

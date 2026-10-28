@@ -280,6 +280,10 @@ public sealed class ControllerSupportService(
     public const string HidHideReinstallWhileHiddenText =
         "Solange Pan den Steam Controller versteckt, lässt sich HidHide nicht neu installieren. Schalte den Controller-Wächter (Pan) aus und versuche es dann noch einmal.";
 
+    /// <summary>"Neu installieren" while Steam runs: the reinstall restarts the puck, which Steam may be updating.</summary>
+    public const string HidHideReinstallWhileSteamRunsText =
+        "Beende zuerst Steam: „Neu installieren“ startet den Steam Controller neu, und Steam könnte gerade seine Firmware aktualisieren.";
+
     /// <summary>What the settings offer; rechecked on every <see cref="RefreshAsync"/>, and by the tick while on or while the settings are open.</summary>
     public ControllerSupportSetup Setup => _setup ??= CheckSetup();
 
@@ -1275,6 +1279,13 @@ public sealed class ControllerSupportService(
             if (PanHoldsPuck?.Invoke() == true)
             {
                 throw new InvalidOperationException(HidHideReinstallWhileHiddenText);
+            }
+
+            // HidHide answering unexpectedly means Pan can't hide: the puck is Steam's, and the installer restarts it. Only
+            // with Steam closed is no firmware update cut off by that (review of PR #294).
+            if (_platform.IsSteamRunning)
+            {
+                throw new InvalidOperationException(HidHideReinstallWhileSteamRunsText);
             }
 
             if (_platform.HidHideVersion is not { } installed || !HidHideRelease.IsPinnedDriver(installed))

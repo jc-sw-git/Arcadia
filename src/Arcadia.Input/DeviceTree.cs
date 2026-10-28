@@ -55,6 +55,37 @@ public static partial class DeviceTree
     public static DeviceHost HostOfInterface(string interfacePath) =>
         InstanceOf(interfacePath) is { } devInst ? HostOf(devInst) : DeviceHost.Unknown;
 
+    /// <summary>
+    /// The USB device a device interface belongs to (<c>USB\VID_…&amp;PID_…\serial</c>, above its <c>&amp;MI_xx</c> function), so
+    /// the collections of one composite device can be told from another's. Null when the tree can't be read.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    public static string? UsbDeviceOfInterface(string interfacePath)
+    {
+        if (InstanceOf(interfacePath) is not { } current)
+        {
+            return null;
+        }
+
+        for (var level = 0; level < MaxUsbLevels; level++)
+        {
+            if (CM_Get_Parent(out var parent, current, 0) != 0)
+            {
+                return null;
+            }
+
+            var id = DeviceId(parent);
+            if (id.StartsWith(@"USB\", StringComparison.OrdinalIgnoreCase) && !id.Contains("&MI_", StringComparison.OrdinalIgnoreCase))
+            {
+                return id;
+            }
+
+            current = parent;
+        }
+
+        return null;
+    }
+
     /// <summary>Climbs the levels above the device to the first one that isn't USB or HID: the host controller.</summary>
     public static bool OnSoftwareHost(uint devInst) => HostOf(devInst) == DeviceHost.Software;
 

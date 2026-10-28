@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Versioning;
 using System.Text;
 using Arcadia.ControllerSupport;
 
@@ -31,6 +32,30 @@ public sealed class ViiperXboxPadsTests
         {
             Assert.DoesNotContain(requests, request => request.StartsWith("bus/", StringComparison.Ordinal));
         }
+    }
+
+    [Theory]
+    [Trait("TestCase", "T242-4")]
+    [InlineData(new[] { 42 }, true)]
+    [InlineData(new[] { 42, 42 }, true)]
+    [InlineData(new[] { 42, 7 }, false)]
+    [InlineData(new[] { 7 }, false)]
+    [InlineData(new int[0], false)]
+    public void The_copy_runs_only_where_Arcadia_s_server_is_the_only_one_listening(int[] listeners, bool own)
+    {
+        Assert.Equal(own, ViiperXboxPads.OnlyOwnServerListens(listeners, ownServer: 42));
+    }
+
+    [WindowsFact]
+    [Trait("TestCase", "T242-4")]
+    [SupportedOSPlatform("windows")]
+    public void Windows_names_this_process_as_the_one_listening_on_its_port()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+
+        Assert.Equal([Environment.ProcessId], TcpListeners.OwnersOnPort(port));
     }
 
     /// <summary>A listener on each address the machine has; a container without IPv6 has no ::1.</summary>

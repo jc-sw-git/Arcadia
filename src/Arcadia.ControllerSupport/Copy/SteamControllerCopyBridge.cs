@@ -12,14 +12,16 @@ namespace Arcadia.ControllerSupport.Copy;
 /// </summary>
 /// <remarks>
 /// One thread per HID interface reads the puck (a read blocks until the puck sends); a task reads VIIPER's frames and
-/// answers its control requests in order, as VIIPER asks them one at a time. Writes to VIIPER share one lock, and so do
-/// calls to the puck on Steam's behalf. Arcadia's own SDL also sends feature reports to the puck (lizard mode every 3 s),
+/// answers its control requests in order, as VIIPER asks them one at a time. Writes to VIIPER share one lock and a time
+/// limit (a VIIPER that stops reading breaks the copy rather than hanging it), and calls to the puck on Steam's behalf
+/// share another. Arcadia's own SDL also sends feature reports to the puck (lizard mode every 3 s),
 /// as it did before #242: a GET_REPORT of Steam's may then read SDL's answer, which Steam already had to live with.
 /// </remarks>
 public sealed class SteamControllerCopyBridge : IAsyncDisposable
 {
     private const int MaxReport = 64;
     private static readonly TimeSpan CloseWait = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan DefaultSendTimeout = TimeSpan.FromSeconds(1);
 
     private readonly IRealPuck _puck;
     private readonly Stream _viiper;
@@ -34,15 +36,21 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
     private readonly Lock _toSteam = new();
     private readonly List<Thread> _readers = [];
     private readonly CopyLatency _latency = new();
+    private readonly Dictionary<(byte Interface, byte Id), byte[]> _shown = [];
+    private readonly TimeSpan _sendTimeout;
+    private Timer? _sendWatch;
+    private long _sendingSince;
     private Task _frames = Task.CompletedTask;
     private volatile bool _closed;
     private volatile bool _broken;
     private int _brokenLogged;
 
     /// <param name="forwarding">The copy passes input now (<see cref="SteamControllerCopyRules.CopyPasses"/>); asked per report.</param>
+    /// <param name="sendTimeout">How long a write to VIIPER may hang before the copy counts as broken; 1 s by default.</param>
     public SteamControllerCopyBridge(IRealPuck puck, Stream viiper, SteamControllerCopyFilter filter, Func<bool> forwarding,
-        Func<ComboWithholdingOptions> combos, PuckDescriptors descriptors, Action<string> log)
+        Func<ComboWithholdingOptions> combos, PuckDescriptors descriptors, Action<string> log, TimeSpan? sendTimeout = null)
     {
+        _sendTimeout = sendTimeout ?? DefaultSendTimeout;
         _puck = puck;
         _viiper = viiper;
         _filter = filter;
@@ -65,9 +73,15 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
         }
 
         _frames = Task.Run(ReadViiperAsync);
+        var every = _sendTimeout / 4;
+        _sendWatch = new Timer(_ => WatchSend(), null, every, every);
     }
 
-    /// <summary>Stops all forwarding first (this can't fail), then closes the stream and the puck.</summary>
+    /// <summary>
+    /// Stops all forwarding first, then closes the stream and the puck. Throws when a call to the puck on Steam's behalf
+    /// still runs after that (or the puck won't close): forwarding isn't confirmed stopped, so Pan's full teardown must
+    /// follow before the real puck shows.
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
         if (_closed)
@@ -76,20 +90,25 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
         }
 
         // A call to the puck already under way finishes; none starts after this.
-        if (_toPuck.TryEnter(CloseWait))
+        var idle = _toPuck.TryEnter(CloseWait);
+        _closed = true;
+        if (idle)
         {
-            _closed = true;
             _toPuck.Exit();
         }
         else
         {
-            _closed = true;
             _log("Steam-Controller-Kopie: ein Aufruf an den Puck hängt beim Beenden");
         }
 
         await _stop.CancelAsync();
+        if (_sendWatch is { } watch)
+        {
+            await watch.DisposeAsync();
+        }
+
         Quietly(_viiper.Dispose);
-        Quietly(_puck.Dispose);
+        var puckClosed = Quietly(_puck.Dispose);
         try
         {
             await _frames.WaitAsync(CloseWait);
@@ -104,8 +123,21 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
             reader.Join(CloseWait);
         }
 
+        // Closing the puck ends a call that hung in it; if even that didn't, it may still reach the puck.
+        var callsEnded = idle || _toPuck.TryEnter(CloseWait);
+        if (callsEnded && !idle)
+        {
+            _toPuck.Exit();
+        }
+
         _log($"Steam-Controller-Kopie beendet; Verzögerung Puck → VIIPER: {_latency.Summary()}");
         _stop.Dispose();
+        if (!callsEnded || !puckClosed)
+        {
+            throw new InvalidOperationException(callsEnded
+                ? "Der Puck ließ sich nicht schließen; die Kopie ist nicht sicher beendet"
+                : "Ein Aufruf an den Puck endet nicht; die Kopie ist nicht sicher beendet");
+        }
     }
 
     private void ReadPuck(byte iface)
@@ -129,6 +161,7 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
                 {
                     // One filter holds the combo state for every interface.
                     passed = _filter.ToSteam(report.AsSpan(0, Math.Min(length, MaxReport)), toSteam, _forwarding(), _combos());
+                    Remember(iface, report[0], toSteam.AsSpan(0, passed));
                 }
 
                 if (passed == 0)
@@ -137,10 +170,7 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
                 }
 
                 var size = HidProxyFrames.Write(frame, HidProxyFrames.Input, iface, toSteam.AsSpan(0, passed));
-                lock (_send)
-                {
-                    _viiper.Write(frame, 0, size);
-                }
+                Send(frame, size);
 
                 _latency.Add(Stopwatch.GetElapsedTime(read));
                 if (_latency.Due())
@@ -235,9 +265,37 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
 
     private bool IsCdc(byte iface) => _descriptors.InterfaceClasses.TryGetValue(iface, out var cls) && cls is 0x02 or 0x0A;
 
+    /// <summary>
+    /// The last input report of this id as Steam got it (after <see cref="SteamControllerCopyFilter.ToSteam"/>), so a
+    /// GET_REPORT can't read past the filter what the interrupt path keeps at rest; nothing when none passed lately.
+    /// </summary>
+    private void Remember(byte iface, byte id, ReadOnlySpan<byte> shown)
+    {
+        if (shown.IsEmpty)
+        {
+            _shown.Remove((iface, id));
+        }
+        else if (_shown.TryGetValue((iface, id), out var last) && last.Length == shown.Length)
+        {
+            shown.CopyTo(last);
+        }
+        else
+        {
+            _shown[(iface, id)] = shown.ToArray();
+        }
+    }
+
     /// <returns>The report Steam reads, or null when the puck didn't give one.</returns>
     private byte[]? GetReport(byte iface, HidReportType type, byte id, ushort length)
     {
+        if (type == HidReportType.Input)
+        {
+            lock (_toSteam)
+            {
+                return _shown.TryGetValue((iface, id), out var shown) ? shown[..Math.Min(shown.Length, Math.Max((int)length, 1))] : null;
+            }
+        }
+
         var report = new byte[Math.Clamp((int)length, 1, HidProxyFrames.MaxPayload - 16)];
         var read = 0;
         return ToPuck(() => read = _puck.GetReport(iface, type, id, report), "GET_REPORT") ? report[..Math.Min(read, report.Length)] : null;
@@ -271,10 +329,37 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
     {
         var frame = new byte[HidProxyFrames.HeaderSize + 3 + (data?.Length ?? 0)];
         var size = HidProxyFrames.WriteReply(frame, iface, sequence, data is not null, data ?? []);
+        Send(frame, size);
+    }
+
+    private void Send(byte[] frame, int size)
+    {
         lock (_send)
         {
-            _viiper.Write(frame, 0, size);
+            Volatile.Write(ref _sendingSince, Stopwatch.GetTimestamp());
+            try
+            {
+                _viiper.Write(frame, 0, size);
+            }
+            finally
+            {
+                Volatile.Write(ref _sendingSince, 0);
+            }
         }
+    }
+
+    /// <summary>A write to VIIPER that hangs past the limit (VIIPER stopped reading, its buffer is full): the copy broke.</summary>
+    private void WatchSend()
+    {
+        var since = Volatile.Read(ref _sendingSince);
+        if (since == 0 || _closed || Stopwatch.GetElapsedTime(since) < _sendTimeout)
+        {
+            return;
+        }
+
+        Broke($"VIIPER nimmt seit {_sendTimeout.TotalSeconds:0.#} s keine Daten an");
+        // Ends the hanging write, so the thread that waits in it gets free.
+        Quietly(_viiper.Dispose);
     }
 
     private void Broke(string why)
@@ -286,15 +371,18 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
         }
     }
 
-    private static void Quietly(Action action)
+    /// <returns>False when it threw.</returns>
+    private static bool Quietly(Action action)
     {
         try
         {
             action();
+            return true;
         }
         catch (Exception)
         {
             // Closing what is already broken.
+            return false;
         }
     }
 }

@@ -77,6 +77,42 @@ public sealed class ViiperInstallation(string executable, ReleaseAsset pinned) :
         // Downloaded beside it and moved only once checked, so a viiper.exe that failed the check never sits where it runs.
         var download = executable + ".download";
         await VerifiedDownload.DownloadAsync(http, pinned, download, cancellationToken);
+        MoveRunningAside();
         File.Move(download, executable, overwrite: true);
+    }
+
+    /// <summary>
+    /// The Xbox pad may run a VIIPER from the file being replaced; Windows won't overwrite a running image but lets it
+    /// be renamed. Renamed aside, then deleted at once if nothing runs from it, else at a later install (review of PR #294).
+    /// </summary>
+    private void MoveRunningAside()
+    {
+        var directory = Path.GetDirectoryName(executable)!;
+        var name = Path.GetFileName(executable);
+        foreach (var old in Directory.EnumerateFiles(directory, name + ".*.old"))
+        {
+            DeleteQuietly(old);
+        }
+
+        if (!File.Exists(executable))
+        {
+            return;
+        }
+
+        var aside = Path.Combine(directory, $"{name}.{Guid.NewGuid():N}.old");
+        File.Move(executable, aside);
+        DeleteQuietly(aside);
+    }
+
+    private static void DeleteQuietly(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Still running: deleted at a later install.
+        }
     }
 }

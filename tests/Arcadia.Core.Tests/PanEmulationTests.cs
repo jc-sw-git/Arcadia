@@ -842,6 +842,23 @@ public sealed class PanEmulationTests
     }
 
     [Fact]
+    [Trait("TestCase", "T242-6")]
+    public async Task A_lost_copy_that_wont_go_cleanly_ends_the_emulation_instead_of_a_new_copy_beside_it()
+    {
+        await _emulation.TickAsync();
+        Assert.Equal(PanEmulationState.Running, State);
+        _copy.FailDetach = "Ein Aufruf an den Puck endet nicht";
+        _copy.Current!.Lose();
+
+        await _emulation.TickAsync();
+
+        Assert.Equal((PanEmulationState.Paused, PanEmulationProblem.CopyFailed), (State, _emulation.Status.Problem));
+        Assert.Equal(1, _copy.Attached);
+        // Not shown by Arcadia: Pan's teardown ends viiper.exe first, then shows the puck.
+        Assert.Empty(_pan.Unhidden);
+    }
+
+    [Fact]
     public async Task Pan_gone_while_running_drops_everything_without_asking_Pan()
     {
         await _emulation.TickAsync();

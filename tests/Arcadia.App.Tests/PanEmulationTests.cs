@@ -448,4 +448,40 @@ public sealed class PanEmulationTests
         arcadia.Wait(TimeSpan.FromSeconds(10.3));
         Assert.True(dialog.ReleaseButton.IsEnabled);
     }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T242-25")]
+    public async Task A_short_gap_mid_game_brings_neither_the_question_nor_Arcadia_to_the_front_and_after_a_hang_it_asks()
+    {
+        var steam = new FakeSteam();
+        using var arcadia = await StartAsync(copy: true, steam);
+        Assert.Single(arcadia.Pan.Hidden);
+        steam.IsSteamRunning = true;
+        arcadia.GameInFront = "steam:620";
+        var shown = 0;
+        arcadia.Main.PanDialogShown += (_, _) => shown++;
+
+        async Task TickAsync(double seconds)
+        {
+            arcadia.Wait(TimeSpan.FromSeconds(seconds));
+            await arcadia.TickSteamControllerAsync();
+        }
+
+        await TickAsync(2);
+        await TickAsync(2);
+        arcadia.Pan.HidingHolds = PanReason.HidingLost;
+        await TickAsync(2);
+        arcadia.Pan.HidingHolds = PanReason.None;
+        await TickAsync(2);
+        Assert.Null(arcadia.Main.TakeoverConsent);
+        Assert.Equal(0, shown);
+        Assert.Equal(2, arcadia.Pan.Hidden.Count);
+
+        // A hang: no check for 8 s, Pan tore the emulation down meanwhile.
+        arcadia.Wait(TimeSpan.FromSeconds(8));
+        arcadia.Pan.TearDown();
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.TakeoverConsent is not null, "die Frage nach dem Hänger");
+        Assert.Equal(1, shown);
+    }
 }

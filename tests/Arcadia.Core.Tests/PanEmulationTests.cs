@@ -254,7 +254,114 @@ public sealed class PanEmulationTests
             SteamRuns = steamRuns,
             Connected = () => connected,
             Enabled = () => _enabled,
+            GameInFront = () => _gameInFront,
         };
+
+    private string? _gameInFront;
+
+    /// <summary>Taken over without Steam, then Steam runs and a game is in front for two checks, 2 s apart.</summary>
+    private async Task<PanEmulation> TakenOverWithAGameInFrontAsync(Action<SteamControllerParts> asked)
+    {
+        var steamRuns = false;
+        var emulation = WithSteam(() => steamRuns);
+        emulation.Takeover.ConsentNeeded += asked;
+        await emulation.TickAsync();
+        steamRuns = true;
+        _gameInFront = "steam:620";
+        foreach (var _ in Enumerable.Range(0, 2))
+        {
+            _time.Advance(TimeSpan.FromSeconds(2));
+            await emulation.TickAsync();
+        }
+
+        return emulation;
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-25")]
+    public async Task A_short_gap_while_the_same_game_stays_in_front_is_taken_over_again_without_asking()
+    {
+        var asked = 0;
+        var emulation = await TakenOverWithAGameInFrontAsync(_ => asked++);
+
+        _pan.HidingHolds = PanReason.HidingLost;
+        _time.Advance(TimeSpan.FromSeconds(2));
+        await emulation.TickAsync();
+        _pan.HidingHolds = PanReason.None;
+        _time.Advance(TimeSpan.FromSeconds(2));
+        await emulation.TickAsync();
+
+        Assert.Equal(0, asked);
+        Assert.Equal([1u, 2u], _pan.Hidden);
+        Assert.Contains(_log, line => line.Contains("kurze Lücke, während steam:620 vorne blieb", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-25")]
+    public async Task After_a_hang_Arcadia_asks_although_the_game_is_in_front_again()
+    {
+        var asked = 0;
+        var emulation = await TakenOverWithAGameInFrontAsync(_ => asked++);
+
+        // Arcadia hung: no check for 8 s, and Pan tore the emulation down meanwhile.
+        _time.Advance(TimeSpan.FromSeconds(8));
+        _pan.TearDown();
+        await emulation.TickAsync();
+
+        Assert.Equal(1, asked);
+        Assert.Equal([1u], _pan.Hidden);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T242-25")]
+    [InlineData(null)]
+    [InlineData("epic:fortnite")]
+    public async Task Anything_else_in_front_during_the_gap_asks(string? meanwhile)
+    {
+        var asked = 0;
+        var emulation = await TakenOverWithAGameInFrontAsync(_ => asked++);
+
+        _pan.HidingHolds = PanReason.HidingLost;
+        _time.Advance(TimeSpan.FromSeconds(2));
+        await emulation.TickAsync();
+        _pan.HidingHolds = PanReason.None;
+        _pan.Hiding = PanReason.HidHideBusy; // the hide comes only once the game is back in front
+        _gameInFront = meanwhile;
+        _time.Advance(TimeSpan.FromSeconds(2));
+        await emulation.TickAsync();
+        _pan.Hiding = PanReason.None;
+        _gameInFront = "steam:620";
+        _time.Advance(TimeSpan.FromSeconds(2));
+        await emulation.TickAsync();
+
+        Assert.Equal(1, asked);
+        Assert.Equal([1u], _pan.Hidden);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-25")]
+    public async Task A_gap_of_10_s_or_more_asks_although_the_game_stayed_in_front()
+    {
+        var asked = 0;
+        var emulation = await TakenOverWithAGameInFrontAsync(_ => asked++);
+
+        _pan.HidingHolds = PanReason.HidingLost;
+        _time.Advance(TimeSpan.FromSeconds(2));
+        await emulation.TickAsync();
+        _pan.HidingHolds = PanReason.None;
+        _pan.Hiding = PanReason.HidHideBusy;
+        foreach (var _ in Enumerable.Range(0, 5))
+        {
+            _time.Advance(TimeSpan.FromSeconds(2));
+            await emulation.TickAsync();
+        }
+
+        _pan.Hiding = PanReason.None;
+        _time.Advance(TimeSpan.FromSeconds(2));
+        await emulation.TickAsync();
+
+        Assert.Equal(1, asked);
+    }
 
     [Fact]
     [Trait("TestCase", "T242-20")]

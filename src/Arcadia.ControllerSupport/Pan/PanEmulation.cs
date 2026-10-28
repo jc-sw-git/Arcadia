@@ -123,7 +123,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         _hold = hold;
         _time = time;
         _log = log;
-        Takeover = new SteamControllerTakeover(log);
+        Takeover = new SteamControllerTakeover(log, time);
     }
 
     /// <summary>The switch "Controller-Wächter (Pan)"; read on every tick.</summary>
@@ -149,6 +149,9 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// while no emulation runs; once it runs, it stays until the end (a replug while hidden needs nothing).
     /// </summary>
     public Func<bool> SteamControllerPresent { get; init; } = () => true;
+
+    /// <summary>The <c>Game.Key</c> of the library game in front, or null; asked every tick (a short gap mid-game).</summary>
+    public Func<string?> GameInFront { get; init; } = () => null;
 
     public PanEmulationStatus Status => _status;
 
@@ -258,6 +261,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         }
 
         NoteHoldFromBeforeStart();
+        Takeover.InFront(GameInFront());
 
         if (!Enabled())
         {

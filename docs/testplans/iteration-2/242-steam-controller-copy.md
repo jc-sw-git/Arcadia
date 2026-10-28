@@ -81,6 +81,10 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
       Steam runs; Arcadia started again takes the puck over without the consent question, plugs the copy in again and
       shows "Steam will die Firmware aktualisieren" with the wait at once; a retry on the new copy restarts the wait. Steam closed instead: Pan shows the puck. "Schließen" after Steam gave up keeps the controllers taken
       over. · E2E: yes (the kill: the real puck after part C)
+- [ ] **T242-25** Taken over, a library game in front, Steam running. A short gap caused without leaving the game
+      (e.g. `Restart-Service ArcadiaPan` started by a delayed script): taken over again without the question and
+      without Arcadia coming to the front. Switching to another window during the gap, a gap of 10 s or more, or
+      Arcadia suspended for 10 s (a delayed script with `PsSuspend`): the question comes. · E2E: yes
 
 ## Test runs
 
@@ -92,3 +96,4 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
 | T242-8, T242-20 … T242-23 after the owner's firmware design (Core: `PanEmulationTests` consent and gaps, `FirmwareAttemptWatchTests`, `SteamControllerCopyFilterTests` update traffic; App: consent, "Nein" and the settings row, the firmware wait and release, the player's fallback and quit) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; mutations listed in the PR | pass | not rendered on Windows; owner's manual run open |
 | T242-24, T242-23 "Schließen", the designer's texts (Pan: `HidingTests` firmware hold; Core: `PanEmulationTests` hold sent, lifted, found at start; App: close keeps the takeover) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; mutations listed in the PR | pass | the kill on Windows open |
 | T242-20, T242-24 after the second review and the QE review of 68a163f (Pan: hold with the teardown's acknowledgement, lift without emulation, hello with Steam closed; Core: `PanClientTests` hold at the acknowledgement, `PanEmulationTests` quit lifts the hold, the end's wish counts at once, hold retried, hold from before with Pan off and only once, no question while Pan can't hide; after Codex: Steam starting while VIIPER gets ready asks, a pad still being unplugged holds the puck hidden, an unsaved hold holds while Pan runs) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container; each new test seen red once by mutation (listed in the PR) | pass | Windows open |
+| T242-25 (Core: `PanEmulationTests` short gap, hang, another window, 10 s; App: no question and no front after a short gap, the question after a hang) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; each new test seen red once by mutation (no time limit, hang not seen, another window ignored, never skips, front never checked) | pass | Windows open; overlay risk for part C |

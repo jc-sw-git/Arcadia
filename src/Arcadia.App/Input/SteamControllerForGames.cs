@@ -47,6 +47,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     /// <param name="activeGames">The keys of the games that run or are being started (<c>RunningGamesTracker.ActiveGames</c>).</param>
     /// <param name="runningSteamAppId">The Steam game running right now, also one started directly in Steam (#119).</param>
     /// <param name="isSteamInFront">A window of Steam itself is in front; asked on every poll, so it must be cheap.</param>
+    /// <param name="gameInFront">The key of the library game in front, or null; asked every 2 s, off the UI thread.</param>
     /// <param name="panSupported">Pan can run on this system (Windows); elsewhere nothing is emulated and the mode doesn't show.</param>
     public static SteamControllerForGames Create(
         bool panSupported,
@@ -60,6 +61,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         Func<bool> isArcadiaActive,
         Func<bool> isMouseModeOn,
         Func<bool> isSteamInFront,
+        Func<string?> gameInFront,
         PanNotices notices,
         TimeProvider time)
     {
@@ -72,6 +74,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             Connected = () => (hold.PuckPresent ? SteamControllerParts.Puck : SteamControllerParts.None)
                 | (padForPresence?.SteamControllerConnected == true ? SteamControllerParts.Controller : SteamControllerParts.None),
             SteamControllerPresent = () => hold.PuckPresent || padForPresence?.SteamControllerConnected == true,
+            GameInFront = gameInFront,
         };
         var routing = new SteamControllerRouting(
             activeGames,

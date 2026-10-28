@@ -38,10 +38,26 @@ public enum TakeoverState
 /// over without asking only when Steam doesn't run; otherwise the player confirms it (held for 3 s). The consent holds
 /// while the emulation runs without a gap, as Steam never sees the real puck then (also when one is plugged in meanwhile);
 /// every gap (paused, Pan's teardown, switched off) asks again. A "no" holds until Arcadia's next start.
+/// Except a short gap mid-game (owner, 2026-10-28): while a game of the library stays in front, Steam's update window
+/// can't be, so a gap of less than <see cref="MidGameGapLimit"/> with the same game in front at every check, from
+/// just before the gap until the hide, is taken over again without asking. A missing check (Arcadia hung) asks.
 /// </summary>
-public sealed class SteamControllerTakeover(Action<string> log)
+public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? time = null)
 {
+    /// <summary>A gap mid-game at most this long is taken over again without asking.</summary>
+    public static readonly TimeSpan MidGameGapLimit = TimeSpan.FromSeconds(10);
+
+    /// <summary>The checks of what is in front come every 2 s; one further apart missed what was in front meanwhile.</summary>
+    public static readonly TimeSpan CheckLimit = TimeSpan.FromSeconds(5);
+
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
     private volatile TakeoverState _state = TakeoverState.Unknown;
+
+    // The game in front at every check since Since, the last one At; null without a game.
+    private (string Game, long Since, long At)? _lastInFront;
+
+    // A gap that began with this game in front, and when; null once a check saw anything else, or none came in time.
+    private (string Game, long Since)? _gapInGame;
 
     public TakeoverState State => _state;
 
@@ -74,6 +90,9 @@ public sealed class SteamControllerTakeover(Action<string> log)
         switch (_state)
         {
             case TakeoverState.Granted:
+                return true;
+            case TakeoverState.Unknown when steamRuns && GameStayedInFront() is { } game:
+                Set(TakeoverState.Granted, $"kurze Lücke, während {game} vorne blieb: Steam konnte kein Firmware-Update anzeigen");
                 return true;
             case TakeoverState.Unknown when !steamRuns:
                 Set(TakeoverState.Granted, "Steam läuft nicht, Arcadia übernimmt den Steam Controller");
@@ -132,16 +151,59 @@ public sealed class SteamControllerTakeover(Action<string> log)
     /// </summary>
     public void Gap(string why, bool switchedOff = false)
     {
-        if (_state == TakeoverState.Granted
+        var wasGranted = _state == TakeoverState.Granted;
+        if (wasGranted
             || (switchedOff && _state is TakeoverState.Asking or TakeoverState.Declined or TakeoverState.Released))
         {
             Set(TakeoverState.Unknown, $"Lücke ({why}): Arcadia fragt beim nächsten Verstecken wieder");
         }
+
+        // The emulation was fine at the check before (every tick checks it), so the gap began after it: the game must have
+        // been in front then already. After a hang that check is too long ago, and the run of checks starts anew.
+        if (wasGranted && !switchedOff && _lastInFront is { } last && last.Since < last.At
+            && _time.GetElapsedTime(last.At) <= CheckLimit)
+        {
+            _gapInGame = (last.Game, _time.GetTimestamp());
+        }
+    }
+
+    /// <summary>
+    /// Every tick, before anything else: the library game in front, or null. Ends a mid-game gap's exception when
+    /// something else is in front or the last check is too long ago.
+    /// </summary>
+    public void InFront(string? game)
+    {
+        var now = _time.GetTimestamp();
+        if (_gapInGame is { } gap
+            && (game != gap.Game || _lastInFront is not { } last || _time.GetElapsedTime(last.At, now) > CheckLimit))
+        {
+            _gapInGame = null;
+            log($"Pan-Übernahme: während der Lücke war {(game is null ? "kein Spiel" : game == gap.Game ? "eine Prüfung zu spät" : "ein anderes Spiel")} vorne, Arcadia fragt");
+        }
+
+        _lastInFront = game is null ? null
+            : _lastInFront is { } run && run.Game == game && _time.GetElapsedTime(run.At, now) <= CheckLimit ? (game, run.Since, now)
+            : (game, now, now);
+    }
+
+    private string? GameStayedInFront()
+    {
+        if (_gapInGame is not { } gap)
+        {
+            return null;
+        }
+
+        _gapInGame = null;
+        return _time.GetElapsedTime(gap.Since) < MidGameGapLimit
+            && _lastInFront is { } last && last.Game == gap.Game && _time.GetElapsedTime(last.At) <= CheckLimit
+            ? gap.Game
+            : null;
     }
 
     private void Set(TakeoverState state, string why)
     {
         _becauseSteamWasNotRunning = false;
+        _gapInGame = null;
         if (_state == state)
         {
             return;

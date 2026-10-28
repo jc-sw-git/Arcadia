@@ -133,7 +133,7 @@ internal sealed class ArcadiaDriver : IDisposable
         _running = running;
         PanNotices = new PanNotices(Main.Toast, () => IsArcadiaInFront, OverlayNotices.Add);
         ControllerSupport.HidingCheck = Pan;
-        ForGames = SteamControllerForGames.Create(panSupported: true, XboxPads, Pan, SteamControllerCopy, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, PanNotices, time);
+        ForGames = SteamControllerForGames.Create(panSupported: true, XboxPads, Pan, SteamControllerCopy, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, PanNotices, time);
         XboxPad = ForGames.Pad;
         Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
         Main.ConnectPan(ForGames);
@@ -161,6 +161,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>A window of Steam itself is in front (#242).</summary>
     public bool IsSteamInFront { get; set; }
+
+    /// <summary>The library game in front, as <c>ForegroundGame.InFront</c> tells it (a short gap mid-game, #242).</summary>
+    public string? GameInFront { get; set; }
 
     /// <summary>Notices about Pan and the emulated controller (#243 B2): a toast in front, else the overlay.</summary>
     public PanNotices PanNotices { get; }

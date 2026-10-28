@@ -36,6 +36,10 @@ and writer for the puck, the VIIPER client, SDL ignoring the copy). Until then t
   Arcadia asks only once Pan can hide (`CheckHiding` first): a question the hide can't follow would come back every
   tick and teach the player to hold "Ja" by reflex. A take-over only because Steam wasn't running is checked again
   right before the hide: Steam started meanwhile (e.g. while VIIPER got ready) turns it into the question.
+  Short gap mid-game (owner 2026-10-28): while a library game stays in front, Steam's update window can't be, so a gap
+  under 10 s with the same game in front at every check (every tick, at most 5 s apart) from the check before the gap
+  until the hide is taken over again without asking or coming to the front. A missed check (Arcadia hung) asks.
+  Open risk for part C: an update offered in Steam's in-game overlay leaves the game in front.
   A pad still being unplugged stays in the session until it is gone, so the end shows the puck only after it.
 - `HideAsync` waits up to 25 s (the puck restarts, ~2.5 s) and can't be cancelled once sent: a half-done hide would
   leave the puck hidden with nothing in its place. A rejected hide is undone by the client at once.

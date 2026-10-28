@@ -193,7 +193,8 @@ public partial class App : Application
             var steamInFront = new SteamInFront(time);
             var forGames = SteamControllerForGames.Create(
                 OperatingSystem.IsWindows(), viiper, pan, new NoSteamControllerCopy(), controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId,
-                () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, steamInFront.Now, panNotices, time);
+                () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, steamInFront.Now,
+                () => ForegroundGame.InFront(viewModel.Session.GameFolders, launchedGames), panNotices, time);
             pan.Start();
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;

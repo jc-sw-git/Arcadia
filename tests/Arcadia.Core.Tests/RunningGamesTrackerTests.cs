@@ -131,8 +131,9 @@ public sealed class RunningGamesTrackerTests
     }
 
     [Fact]
-    public async Task After_an_update_the_start_waits_the_start_timeout_again()
+    public async Task A_game_the_launcher_doesnt_start_after_its_update_is_started_once_more_then_given_up()
     {
+        // Owner's PC, 2026-10-28: an update moved up in Steam's queue by hand, and Steam didn't start the game after it.
         var tracker = CreateTracker();
         tracker.Starting("steam:440");
         _installing.Add("steam:440");
@@ -140,14 +141,54 @@ public sealed class RunningGamesTrackerTests
         await tracker.PollAsync();
 
         _installing.Clear();
-        _time.Advance(RunningGamesTracker.StartTimeout);
         await tracker.PollAsync();
+        _time.Advance(RunningGamesTracker.StartAgainAfterInstall);
+        Assert.Empty((await tracker.PollAsync())!.StartAgain);
+
+        _time.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(["steam:440"], (await tracker.PollAsync())!.StartAgain);
+        Assert.Equal(RunPhase.Starting, tracker.StateOf("steam:440")?.Phase);
+
+        _time.Advance(RunningGamesTracker.StartTimeout);
+        Assert.Empty((await tracker.PollAsync())!.StartAgain);
         Assert.Equal(RunPhase.Starting, tracker.StateOf("steam:440")?.Phase);
 
         _time.Advance(TimeSpan.FromSeconds(1));
+        var changes = await tracker.PollAsync();
+
+        Assert.Empty(changes!.StartAgain);
+        Assert.True(changes.StatesChanged);
+        Assert.Null(tracker.StateOf("steam:440"));
+    }
+
+    [Fact]
+    public async Task A_game_that_runs_after_its_update_is_not_started_again()
+    {
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+        _installing.Add("steam:440");
         await tracker.PollAsync();
 
-        Assert.Null(tracker.StateOf("steam:440"));
+        _installing.Clear();
+        await tracker.PollAsync();
+        _time.Advance(TimeSpan.FromSeconds(5));
+        _steam.Running.Add(new RunningGame("440", _time.GetUtcNow()));
+        await tracker.PollAsync();
+        _time.Advance(RunningGamesTracker.StartAgainAfterInstall);
+
+        Assert.Empty((await tracker.PollAsync())!.StartAgain);
+        Assert.Equal(RunPhase.Running, tracker.StateOf("steam:440")?.Phase);
+    }
+
+    [Fact]
+    public async Task A_start_without_an_update_is_never_started_again()
+    {
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+
+        _time.Advance(RunningGamesTracker.StartAgainAfterInstall * 2);
+
+        Assert.Empty((await tracker.PollAsync())!.StartAgain);
     }
 
     [Fact]

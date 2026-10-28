@@ -94,6 +94,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     /// <summary>A game started from Arcadia ended, with its key: Arcadia may come back to the front (#94).</summary>
     public event EventHandler<string>? StartedGameEnded;
 
+    /// <summary>A game Arcadia started waited for an update, and its launcher didn't start it after it: start it once more.</summary>
+    public event EventHandler<string>? StartAgainRequested;
+
     public DateTimeOffset? ScannedAt(string launcherId) => _library.ScannedAt(launcherId);
 
     public InstallProgress? InstallStateOf(string gameKey) => _installs.StateOf(gameKey);
@@ -180,6 +183,11 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         if (changes.StatesChanged)
         {
             RunStatesChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        foreach (var gameKey in changes.StartAgain)
+        {
+            StartAgainRequested?.Invoke(this, gameKey);
         }
 
         if (changes.Ended.Count == 0)

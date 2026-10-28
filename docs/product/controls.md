@@ -43,9 +43,12 @@ Agreed with the owner; don't change without asking. Read this before changing th
   While the copy passes input (#242): Steam gets the Steam Controller for a game on "Steam-Eingabe" and, with no game
   running, while Steam itself is in front; never while Arcadia is in front or the mouse mode is on. Otherwise Steam
   reads a controller at rest except the Steam button and "…" (`SteamControllerCopyRules`).
-- "Firmware-Update gestoppt" (#242): when Steam tries a firmware update through the copy, Arcadia comes to the front
-  once per run with the dialog; "Verstanden" has the focus, "Arcadia jetzt beenden" closes Arcadia. B closes it like
-  "Verstanden" (the design shows only [A]; B going back is the rule for every dialog).
+- Pan's firmware dialogs (#242, owner 2026-10-28, designs T242Zustimmung/T242Firmware): "Steam Controller und Puck
+  übernehmen?" and "Steam will die Firmware aktualisieren" come to the front over everything, can't be clicked away
+  and ignore [B] (no [B] hint): the answer must be deliberate. Their buttons act only when [A] (or the mouse) is held,
+  filling while held: "Ja, es läuft gerade kein Firmware-Update" 3 s, "Nein, nicht übernehmen" (focused first) 1 s;
+  "Controller freigeben" and "Arcadia beenden" 1 s, greyed until Steam gave up; "Steam hat das Update abgebrochen" 3 s,
+  gone once Steam gave up. Only a fresh press counts. The note after the release closes with [A] or [B].
 - Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has
   no "Schließen" button besides (owner, 2026-10-20).

@@ -103,13 +103,19 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     /// <param name="pan">Pan's emulation (#242); its group replaces "Steam Controller Kompatibilität" once SISR no longer runs.</param>
     /// <param name="gameInTheWay">The title of a game that runs or starts: the switch "Controller-Wächter (Pan)" waits for its end.</param>
-    public ControllerSettingsViewModel(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay)
+    /// <param name="time">Times the held row "Steam Controller und Puck übernehmen"; tests pass a fake.</param>
+    public ControllerSettingsViewModel(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay, TimeProvider? time = null)
         : base("Controller", "M7 7h10a5 5 0 0 1 4.6 6.9l-1.3 3.2a2.3 2.3 0 0 1-3.9.6L14.6 16H9.4l-1.8 1.7a2.3 2.3 0 0 1-3.9-.6l-1.3-3.2A5 5 0 0 1 7 7z M8 10v3 M6.5 11.5h3 M16 10.5v.01 M17.5 12.5v.01")
     {
         _support = support;
         _pan = pan;
-        _panRows = new PanRows(support, changes, pan, gameInTheWay, ApplyFix);
+        _panRows = new PanRows(support, changes, pan, gameInTheWay, ApplyFix, time ?? TimeProvider.System, action => Dispatcher.UIThread.Post(action));
         _panRows.Switched += Refresh;
+        _panRows.TakenOver += () =>
+        {
+            Refresh();
+            FocusRow(PanRows.MainKey);
+        };
         _sisr = new SisrRowViewModel(ActivateSisr)
         {
             Group = SteamGroup,
@@ -177,6 +183,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support.ClearError();
         _support.Changed += OnSupportChanged;
         _pan.Changed += OnPanChanged;
+        _pan.Takeover.Changed += OnPanChanged;
         Refresh();
         if (_support.UnseenSteamStartFailure)
         {
@@ -321,6 +328,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _promptCheck.Stop();
         _support.Changed -= OnSupportChanged;
         _pan.Changed -= OnPanChanged;
+        _pan.Takeover.Changed -= OnPanChanged;
+        _panRows.TakeOver.Dispose();
         _support.ClearError();
     }
 

@@ -53,10 +53,12 @@ public sealed class SteamControllerCopyFilter(TimeProvider time, Action<string> 
 
     private readonly ComboWithholding _withholding = new(time);
     private readonly HashSet<string> _logged = [];
-    private int _firmwareSeen;
 
-    /// <summary>Steam sent a known firmware or flash update message (dropped). Raised once per filter; any thread.</summary>
-    public event Action<string>? FirmwareBlocked;
+    /// <summary>
+    /// Steam sent a message the allow list drops and that it doesn't send routinely: maybe part of a firmware update
+    /// (<see cref="FirmwareAttemptWatch"/>). Raised for every such message, with its name; on the copy's thread.
+    /// </summary>
+    public event Action<string>? UpdateTraffic;
 
     /// <summary>
     /// Whether a report Steam sent goes on to the real puck. <paramref name="forwarding"/>: the copy passes input now, so
@@ -84,13 +86,13 @@ public sealed class SteamControllerCopyFilter(TimeProvider time, Action<string> 
                 // Reading the answer to an allowed message changes nothing on the controller.
                 return true;
             case SteamReportKind.Output when report.Length >= 1:
-                return Decide(SteamControllerMessages.OfOutput(report[0]), $"Ausgabe {SteamControllerMessages.NameOfOutput(report[0])}", report.Length, forwarding);
+                return Decide(SteamControllerMessages.OfOutput(report[0]), $"Ausgabe {SteamControllerMessages.NameOfOutput(report[0])}", report.Length, forwarding, routine: false);
             case SteamReportKind.SetFeature when report.Length >= 2 && report[0] is 1 or 2:
-                return Decide(SteamControllerMessages.OfFeature(report[1]), $"Nachricht {SteamControllerMessages.NameOfFeature(report[1])}", report.Length, forwarding);
+                return Decide(SteamControllerMessages.OfFeature(report[1]), $"Nachricht {SteamControllerMessages.NameOfFeature(report[1])}", report.Length, forwarding, SteamControllerMessages.IsRoutineDrop(report[1]));
             case SteamReportKind.SetFeature:
-                return Decide(SteamMessageKind.Blocked, $"Feature-Report {(report.Length >= 1 ? $"0x{report[0]:X2}" : "leer")}", report.Length, forwarding);
+                return Decide(SteamMessageKind.Blocked, $"Feature-Report {(report.Length >= 1 ? $"0x{report[0]:X2}" : "leer")}", report.Length, forwarding, routine: false);
             default:
-                return Decide(SteamMessageKind.Blocked, kind.ToString(), report.Length, forwarding);
+                return Decide(SteamMessageKind.Blocked, kind.ToString(), report.Length, forwarding, routine: false);
         }
     }
 
@@ -174,26 +176,29 @@ public sealed class SteamControllerCopyFilter(TimeProvider time, Action<string> 
         }
     }
 
-    private bool Decide(SteamMessageKind kind, string what, int length, bool forwarding)
+    private bool Decide(SteamMessageKind kind, string what, int length, bool forwarding, bool routine)
     {
         switch (kind)
         {
             case SteamMessageKind.Allowed:
                 return true;
             case SteamMessageKind.Haptics:
+                // Haptics while the copy rests are routine, not an update.
                 return forwarding;
             case SteamMessageKind.Firmware:
                 LogOnce($"Steam-Controller-Kopie: Firmware-{what} verworfen ({length} Bytes)");
-                if (Interlocked.Exchange(ref _firmwareSeen, 1) == 0)
-                {
-                    FirmwareBlocked?.Invoke(what);
-                }
-
-                return false;
+                break;
             default:
                 LogOnce($"Steam-Controller-Kopie: {what} verworfen ({length} Bytes)");
-                return false;
+                break;
         }
+
+        if (!routine)
+        {
+            UpdateTraffic?.Invoke(what);
+        }
+
+        return false;
     }
 
     private void LogOnce(string line)

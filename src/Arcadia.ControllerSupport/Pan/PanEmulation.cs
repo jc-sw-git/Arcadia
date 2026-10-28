@@ -45,11 +45,11 @@ public enum PanEmulationProblem
     /// <summary>Pan still shows the real controllers after the last emulation; no problem, it goes on by itself.</summary>
     CleaningUp,
 
-    /// <summary>
-    /// Steam had the real puck and may be updating its firmware: hiding restarts the puck, so Pan waits until Steam
-    /// has been away for <see cref="PanEmulation.FirmwareGrace"/>; no problem, it goes on by itself.
-    /// </summary>
-    WaitingForSteam,
+    /// <summary>Steam runs and the real puck was visible: the player is asked whether a firmware update runs (<see cref="SteamControllerTakeover"/>).</summary>
+    AwaitingConsent,
+
+    /// <summary>The player said no, or released them for a firmware update: Steam Controller and puck are left alone.</summary>
+    Excluded,
 
     /// <summary>Too many failures in <see cref="PanEmulation.FailureWindow"/>.</summary>
     TooManyFailures,
@@ -90,12 +90,6 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>A hide that failed (the puck didn't restart, HidHide changed nothing) is tried again after this (designs: "alle 10 Sekunden").</summary>
     public static readonly TimeSpan HideRetry = TimeSpan.FromSeconds(10);
 
-    /// <summary>
-    /// How long after Steam was last in front with the real puck visible no hide starts (decision 8, QE review of #286):
-    /// a hide restarts the puck, which would break off a firmware update Steam started on it.
-    /// </summary>
-    public static readonly TimeSpan FirmwareGrace = TimeSpan.FromMinutes(3);
-
     public const string PausedText = "Pan: Controller-Wächter pausiert. Die echten Controller werden nicht mehr versteckt.";
     public const string RunningAgainText = "Pan: Controller-Wächter läuft wieder";
     public const string StoppedText = "Pan: Emulation angehalten – sie ist mehrmals kurz hintereinander ausgefallen. „Erneut versuchen“ in den Controller-Einstellungen startet sie neu.";
@@ -123,13 +117,20 @@ public sealed class PanEmulation : IVirtualXboxPads
         _hold = hold;
         _time = time;
         _log = log;
+        Takeover = new SteamControllerTakeover(log);
     }
 
     /// <summary>The switch "Controller-Wächter (Pan)"; read on every tick.</summary>
     public Func<bool> Enabled { get; init; } = () => true;
 
-    /// <summary>Whether Steam is or was in front (<see cref="FirmwareGrace"/>); asked on every tick and right before a hide.</summary>
-    public SteamFrontWatch? SteamFront { get; init; }
+    /// <summary>Steam runs (its client process); asked before every hide.</summary>
+    public Func<bool> SteamRuns { get; init; } = () => false;
+
+    /// <summary>What of the Steam Controller is connected now, for the question.</summary>
+    public Func<SteamControllerParts> Connected { get; init; } = () => SteamControllerParts.Puck;
+
+    /// <summary>Whether Arcadia may hide the real puck: never in an unknown state while Steam runs.</summary>
+    public SteamControllerTakeover Takeover { get; }
 
     /// <summary>Attaching the copy waits this long at most: a hanging attach would hold the gate and stop every tick.</summary>
     public static readonly TimeSpan AttachTimeout = TimeSpan.FromSeconds(10);
@@ -246,6 +247,7 @@ public sealed class PanEmulation : IVirtualXboxPads
 
         if (!Enabled())
         {
+            Takeover.Gap("ausgeschaltet", switchedOff: true);
             await EndIfRunningAsync("ausgeschaltet");
             SetStatus(PanEmulationStatus.Off);
             return;
@@ -289,9 +291,18 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     private async Task StartAsync(CancellationToken cancellationToken)
     {
-        if (Hides && !HideIsSafe())
+        await StartOrPauseAsync(cancellationToken);
+        if (Hides && _session is not { Hidden: true })
         {
-            WaitForSteam();
+            // Not hidden after all (Pan can't hide, the hide or the copy failed): Steam sees the real puck again.
+            Takeover.Gap("nicht versteckt");
+        }
+    }
+
+    private async Task StartOrPauseAsync(CancellationToken cancellationToken)
+    {
+        if (Hides && !MayHide())
+        {
             return;
         }
 
@@ -330,12 +341,11 @@ public sealed class PanEmulation : IVirtualXboxPads
         var session = new Session(generation);
         if (Hides)
         {
-            if (!HideIsSafe())
+            if (!MayHide())
             {
-                // Steam came to the front while VIIPER started or Pan registered: nothing is hidden yet, so undo the
-                // registration only.
+                // The consent went while VIIPER started or Pan registered (switched off, released): nothing is hidden
+                // yet, so undo the registration only.
                 await _guardian.EmulationStoppedAsync(generation, CancellationToken.None);
-                WaitForSteam();
                 return;
             }
 
@@ -359,21 +369,43 @@ public sealed class PanEmulation : IVirtualXboxPads
     }
 
     /// <summary>
-    /// Asked before every automatic hide and again right before it is sent, as a hide restarts the puck and would break off
-    /// a firmware update Steam started on it: not while Steam is in front, nor within <see cref="FirmwareGrace"/> after.
+    /// Asked before every hide and again right before it is sent, as a hide restarts the puck and would break off a
+    /// firmware update Steam runs on it (<see cref="SteamControllerTakeover"/>).
     /// </summary>
-    private bool HideIsSafe()
+    private bool MayHide()
     {
-        if (SteamFront is not { } steam)
+        if (Takeover.MayHide(SteamRuns(), Connected()))
         {
             return true;
         }
 
-        return !steam.Now() && (steam.LastSeen is not { } seen || _time.GetElapsedTime(seen) >= FirmwareGrace);
+        SetStatus(Takeover.State is TakeoverState.Declined or TakeoverState.Released
+            ? new(PanEmulationState.Ready, PanEmulationProblem.Excluded, Reason: "Steam Controller und Puck ausgenommen")
+            : new(PanEmulationState.SettingUp, PanEmulationProblem.AwaitingConsent, Reason: "wartet auf die Antwort, ob ein Firmware-Update läuft"));
+        return false;
     }
 
-    private void WaitForSteam() =>
-        SetStatus(new(PanEmulationState.SettingUp, PanEmulationProblem.WaitingForSteam, Reason: "Steam hatte den Steam Controller gerade selbst"));
+    /// <summary>
+    /// "Controller freigeben" after Steam tried a firmware update through the copy: pad and copy go, the puck is shown,
+    /// and nothing is hidden again until the settings row takes them over.
+    /// </summary>
+    public async Task ReleaseForFirmwareAsync()
+    {
+        await _gate.WaitAsync();
+        try
+        {
+            Takeover.Release();
+            await EndIfRunningAsync("für ein Firmware-Update freigegeben");
+            MayHide();
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>The settings row "Steam Controller und Puck übernehmen": hidden at the next tick.</summary>
+    public void TakeOverAgain() => Takeover.TakeOverAgain();
 
     /// <summary>The emulation runs: Pan still has it, the hiding still holds, the copy is up while the puck is there.</summary>
     /// <param name="mayRestart">
@@ -477,6 +509,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     {
         _log($"Pan-Emulation {session.Generation} endet ({why})");
         _session = null;
+        Takeover.Gap(why);
         var removed = await RemoveDevicesAsync(session) && !session.LeftBehind;
         if (session.Hidden && removed)
         {
@@ -498,6 +531,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     {
         _log($"Pan-Emulation {session.Generation}: von Pan beendet");
         _session = null;
+        Takeover.Gap("von Pan beendet");
         await RemoveDevicesAsync(session);
         if (_guardian.WasTornDown(session.Generation))
         {

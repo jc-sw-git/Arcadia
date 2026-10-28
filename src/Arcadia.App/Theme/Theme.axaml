@@ -20,6 +20,9 @@
     <SolidColorBrush x:Key="PromptIcon" Color="#1F3A5C" />
     <SolidColorBrush x:Key="PromptIconWarning" Color="#4A3418" />
     <SolidColorBrush x:Key="PromptGame" Color="#1F2833" />
+    <!-- The firmware warnings of Pan's dialogs and its settings row (#242): a dark red box. -->
+    <SolidColorBrush x:Key="DangerSurface" Color="#2A1618" />
+    <SolidColorBrush x:Key="DangerBorder" Color="#5A2A2D" />
     <SolidColorBrush x:Key="Line" Color="#2A3440" />
     <!-- The line between the rows of a settings group: full in the middle, gone 10 % before the box's edges (owner,
          2026-10-23). -->
@@ -619,6 +622,139 @@
   </Style>
   <Style Selector="Button.action.danger">
     <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
+
+  <!-- Buttons that act only when held (#242, Pan's dialogs and its settings row): the fill runs over the hold time and
+       the button acts once it is full; letting go earlier empties it. Each fill needs its own <ScaleTransform ScaleX="0" />. -->
+  <Style Selector="Button.hold">
+    <Setter Property="Height" Value="56" />
+    <Setter Property="CornerRadius" Value="28" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{StaticResource PromptBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.hold TextBlock">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="26,0" />
+  </Style>
+  <Style Selector="Button.hold.small">
+    <Setter Property="Height" Value="48" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="FontSize" Value="16" />
+  </Style>
+  <!-- The answer that is safe to give, light as the focused tab. -->
+  <Style Selector="Button.hold.light">
+    <Setter Property="Background" Value="{StaticResource TextStrong}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource Bg}" />
+  </Style>
+  <Style Selector="Button.hold.raised">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <!-- Shown, but it can't act yet (Steam still tries the update). -->
+  <Style Selector="Button.hold.locked">
+    <Setter Property="Background" Value="{StaticResource SurfaceDisabled}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="Button.hold.holding">
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.hold.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRingGap}" />
+  </Style>
+  <Style Selector=".hold Border.holdClip">
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="CornerRadius" Value="28" />
+  </Style>
+  <Style Selector="Button.hold.small Border.holdClip">
+    <Setter Property="CornerRadius" Value="24" />
+  </Style>
+  <Style Selector="Border.holdPill Border.holdClip">
+    <Setter Property="CornerRadius" Value="23" />
+  </Style>
+  <Style Selector=".hold Border.holdFill">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="RenderTransformOrigin" Value="0%,50%" />
+  </Style>
+  <Style Selector="Button.hold.light Border.holdFill">
+    <Setter Property="Background" Value="{StaticResource TextSoft}" />
+  </Style>
+  <Style Selector=".hold.holding.one Border.holdFill">
+    <Style.Animations>
+      <Animation Duration="0:0:1" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="ScaleTransform.ScaleX" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="ScaleTransform.ScaleX" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector=".hold.holding.three Border.holdFill">
+    <Style.Animations>
+      <Animation Duration="0:0:3" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="ScaleTransform.ScaleX" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="ScaleTransform.ScaleX" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <!-- The pill of a settings row held with [A] ("Steam Controller und Puck übernehmen"): stays dark when focused, so the fill shows. -->
+  <Style Selector="Border.holdPill">
+    <Setter Property="Width" Value="250" />
+    <Setter Property="Height" Value="46" />
+    <Setter Property="CornerRadius" Value="23" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Border.holdPill TextBlock">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.holdPill.holding TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Border.dangerBox">
+    <Setter Property="Background" Value="{StaticResource DangerSurface}" />
+    <Setter Property="BorderBrush" Value="{StaticResource DangerBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="22,16" />
+  </Style>
+  <Style Selector="Border.dangerBox.strong">
+    <Setter Property="BorderBrush" Value="{StaticResource Danger}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="Padding" Value="22,20" />
+  </Style>
+  <Style Selector="Border.panStatus">
+    <Setter Property="Background" Value="{StaticResource SurfaceDisabled}" />
+    <Setter Property="BorderBrush" Value="{StaticResource ChangelogBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="22,18" />
+  </Style>
+  <Style Selector="Border.foundChip">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="16,0" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Background" Value="{StaticResource SurfaceDisabled}" />
+    <Setter Property="BorderBrush" Value="{StaticResource ChangelogBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
   </Style>
 
   <!-- Buttons on the detail page; the second row is smaller. -->

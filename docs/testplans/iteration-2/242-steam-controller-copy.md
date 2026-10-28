@@ -3,7 +3,7 @@
 Part A (PR into `feat/replace-sisr`): Pan's emulation lifecycle, the copy's rules and allow list, the group "PAN" in
 the controller settings, the greyed mode, the header and the firmware dialog. The copy itself needs the VIIPER fork
 (part B) and its Windows side (part C); until then the App passes `NoSteamControllerCopy`, so Pan hides nothing and
-the pad works as in #213. Cases marked "after part C" are run then. Needed: the Steam Controller with its puck, Steam,
+the pad works as in #213, and the takeover question and the firmware dialog never show (they guard the hide). Cases marked "after part C" are run then. Needed: the Steam Controller with its puck, Steam,
 a game on "Steam-Eingabe" and one on "Arcadia", HidHide's configuration client, "Game controllers" = `joy.cpl`. How it
 works: `docs/controller-support/steam-controller-copy.md`.
 
@@ -33,10 +33,12 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
       once, the notice "Pan: Controller-Wächter pausiert …" shows, and after closing it "Pan: Controller-Wächter läuft
       wieder". Steam's battery and connection state stay current while the copy rests. · E2E: yes (the real HidHide
       client after part C)
-- [ ] **T242-8** A firmware update started in Steam for the Steam Controller: nothing reaches the puck, Arcadia comes
-      to the front with "Firmware-Update gestoppt" and the three steps; B / "Verstanden" closes it, "Arcadia jetzt
-      beenden" closes Arcadia; over open settings or another dialog it shows after that one. · E2E: yes (the dialog;
-      Steam's real firmware path is unverified, after part C)
+- [ ] **T242-8** Steam Controller taken over, a firmware update started in Steam: nothing reaches the puck, Arcadia
+      comes to the front (also over the settings) with "Steam will die Firmware aktualisieren"; [B] does nothing;
+      "Controller freigeben" and "Arcadia beenden" are greyed while Steam tries, the countdown starts 5 s after the last
+      attempt and starts anew with a new one; 25 s later "Steam hat aufgegeben", "Controller freigeben" (held 1 s)
+      shows the puck and the note how the update goes on; the settings row then says "Für ein Firmware-Update
+      freigegeben". · E2E: yes (the dialog and the wait; Steam's real update path after part C)
 - [ ] **T242-9** Arcadia closed normally: pad and copy go, then the puck is shown and Steam reads it directly again,
       `pan.log` logs the planned exit; a teardown by Pan (Arcadia suspended) drops both and a new emulation starts by
       itself. · E2E: yes
@@ -61,10 +63,20 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
 - [ ] **T242-19** On Linux the mode doesn't show (state `Unsupported`), the Pan switch is greyed and unavailable, the
       pad behaves as before.
       · E2E: no (Linux build by hand)
-- [ ] **T242-20** With Pan paused (e.g. HidHide's configuration client open), Steam in front: start a firmware update
-      on the real Steam Controller in Steam and close the configuration client during it. Pan doesn't hide (the puck
-      doesn't restart), the row "Pan wartet auf Steam" shows; 3 minutes after Steam left the front, Pan hides by
-      itself. · E2E: yes (the guard and the row; the real update after part C)
+- [ ] **T242-20** Steam running, Steam Controller and puck connected, Arcadia started: "Steam Controller und Puck
+      übernehmen?" lists what was found and "Steam läuft"; "Nein" has the focus; [B], a tap of [A] and letting go
+      early do nothing; nothing is hidden (the puck doesn't restart) until "Ja, es läuft gerade kein Firmware-Update"
+      is held 3 s. Without Steam running, no question: taken over at once. · E2E: yes (the real puck after part C)
+- [ ] **T242-21** "Nein" (held 1 s): Steam keeps the real controller; the switch reads "An – Steam Controller und Puck
+      ausgenommen, siehe unten" without a triangle, the row "Steam Controller und Puck übernehmen" shows its bold red
+      warning; holding "Übernehmen" 3 s takes them over without a second question, the toast "Pan: … übernommen"
+      shows, the row goes and the focus is on the switch. Arcadia restarted: asked again. · E2E: yes (restart by hand)
+- [ ] **T242-22** Taken over, then a gap: Pan paused (HidHide's configuration client), Pan's teardown, the switch off
+      and on: each asks again while Steam runs. The puck unplugged and plugged in again while the emulation runs
+      without a gap: taken over without asking. · E2E: yes (the real puck after part C)
+- [ ] **T242-23** In the firmware dialog, "Steam hat das Update abgebrochen" held 3 s frees the choice before the wait
+      is over; "Arcadia beenden" (held 1 s) closes Arcadia. `arcadia.log` names every message that counted as an
+      update and whether Steam gave up or the player said so. · E2E: yes
 
 ## Test runs
 
@@ -73,3 +85,4 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
 | T242-1 … T242-9 (Core: `PanEmulationTests`, `SteamControllerCopyFilterTests`, `SteamControllerRoutingTests`, `PanClientTests`) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, fakes for Pan, VIIPER and the puck; Pan 172, Core 1783 | pass | the real copy after parts B and C |
 | T242-8, T242-10 … T242-16 (acceptance tests) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; each test seen red once by mutation (dialog shown over settings, switch not toggling, game lock removed, paused notice removed, stopped row not built, spinner while setting up removed, broken mode not focusable, A not leading to the row) | pass | not rendered on Windows; owner's manual run open |
 | T242-9, T242-20 after the QE review (`PanEmulationTests` Core: firmware guard, a copy that fails to go leaves the puck to Pan's teardown, one restart per tick; App: the row "Pan wartet auf Steam") | 2026-10-28 | Claude (thread) | Debug, Linux cloud container; each new test seen red once by mutation (guard off, Steam's turn not noted, unhide after a failed removal, restart unbounded, row not built) | pass | real update after part C |
+| T242-8, T242-20 … T242-23 after the owner's firmware design (Core: `PanEmulationTests` consent and gaps, `FirmwareAttemptWatchTests`, `SteamControllerCopyFilterTests` update traffic; App: consent, "Nein" and the settings row, the firmware wait and release, the player's fallback and quit) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; mutations listed in the PR | pass | not rendered on Windows; owner's manual run open |

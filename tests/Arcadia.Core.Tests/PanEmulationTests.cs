@@ -247,115 +247,171 @@ public sealed class PanEmulationTests
         Assert.Equal([1u, 2u], _pan.Started);
     }
 
-    [Fact]
-    [Trait("TestCase", "T242-20")]
-    public async Task While_Steam_is_in_front_or_was_within_three_minutes_with_the_real_puck_nothing_is_hidden()
-    {
-        var steamInFront = true;
-        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
-        {
-            SteamControllerPresent = () => _present,
-            SteamFront = new SteamFrontWatch(() => steamInFront, _time),
-        };
-
-        await emulation.TickAsync();
-        Assert.Equal(PanEmulationState.SettingUp, emulation.Status.State);
-        Assert.Equal(PanEmulationProblem.WaitingForSteam, emulation.Status.Problem);
-
-        steamInFront = false;
-        _time.Advance(PanEmulation.FirmwareGrace - TimeSpan.FromSeconds(1));
-        await emulation.TickAsync();
-        Assert.Empty(_pan.Hidden);
-        Assert.Empty(_pan.Started);
-
-        _time.Advance(TimeSpan.FromSeconds(1));
-        await emulation.TickAsync();
-        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
-        Assert.Equal([1u], _pan.Hidden);
-
-        // Hidden, Steam reads only the copy: Steam in front changes nothing.
-        steamInFront = true;
-        await emulation.TickAsync();
-        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-20")]
-    public async Task After_a_pause_with_Steam_in_front_the_hide_waits_three_minutes_after_Steam_left()
-    {
-        var steamInFront = false;
-        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
-        {
-            SteamControllerPresent = () => _present,
-            SteamFront = new SteamFrontWatch(() => steamInFront, _time),
-        };
-        await emulation.TickAsync();
-        _pan.HidingHolds = PanReason.HidingLost;
-        await emulation.TickAsync();
-        Assert.Equal(PanEmulationState.Paused, emulation.Status.State);
-
-        // Paused, Steam reads the real puck and may start an update on it.
-        steamInFront = true;
-        _pan.HidingHolds = PanReason.None;
-        await emulation.TickAsync();
-        steamInFront = false;
-        _time.Advance(TimeSpan.FromMinutes(1));
-        await emulation.TickAsync();
-
-        Assert.Equal([1u], _pan.Hidden);
-        Assert.Equal(PanEmulationProblem.WaitingForSteam, emulation.Status.Problem);
-
-        _time.Advance(PanEmulation.FirmwareGrace);
-        await emulation.TickAsync();
-        Assert.Equal([1u, 2u], _pan.Hidden);
-    }
-
-    private PanEmulation WithSteam(Func<bool> steamInFront) =>
+    private PanEmulation WithSteam(Func<bool> steamRuns, SteamControllerParts connected = SteamControllerParts.Controller | SteamControllerParts.Puck) =>
         new(_pads, _pan, _copy, _time, _log.Add)
         {
             SteamControllerPresent = () => _present,
-            SteamFront = new SteamFrontWatch(steamInFront, _time),
+            SteamRuns = steamRuns,
+            Connected = () => connected,
+            Enabled = () => _enabled,
         };
 
     [Fact]
     [Trait("TestCase", "T242-20")]
-    public async Task After_Pans_teardown_with_Steam_in_front_the_next_hide_still_waits_the_whole_grace()
+    public async Task Without_Steam_running_Arcadia_takes_the_controller_over_without_asking()
     {
-        var steamInFront = false;
-        var emulation = WithSteam(() => steamInFront);
-        await emulation.TickAsync();
-        Assert.Equal([1u], _pan.Hidden);
+        var emulation = WithSteam(() => false);
+        var asked = 0;
+        emulation.Takeover.ConsentNeeded += _ => asked++;
 
-        // Pan tore it down: the real puck is visible while Steam is in front.
-        _pan.TearDown();
-        steamInFront = true;
-        await emulation.TickAsync();
-        steamInFront = false;
         await emulation.TickAsync();
 
-        Assert.Equal([1u], _pan.Hidden);
-        Assert.Equal(PanEmulationProblem.WaitingForSteam, emulation.Status.Problem);
-        _time.Advance(PanEmulation.FirmwareGrace);
-        await emulation.TickAsync();
-        Assert.Equal(2, _pan.Hidden.Count);
+        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
+        Assert.Equal(TakeoverState.Granted, emulation.Takeover.State);
+        Assert.Equal(0, asked);
     }
 
     [Fact]
     [Trait("TestCase", "T242-20")]
-    public async Task Steam_coming_to_the_front_while_VIIPER_starts_stops_the_hide_and_undoes_the_registration()
+    public async Task With_Steam_running_nothing_is_hidden_until_the_player_says_no_update_runs()
     {
-        var steamInFront = false;
-        var emulation = WithSteam(() => steamInFront);
-        _pads.DuringPrepare = () => steamInFront = true;
+        var emulation = WithSteam(() => true, SteamControllerParts.Puck);
+        var asked = new List<SteamControllerParts>();
+        emulation.Takeover.ConsentNeeded += asked.Add;
 
         await emulation.TickAsync();
+        await emulation.TickAsync();
 
-        Assert.Empty(_pan.Hidden);
-        Assert.Equal([1u], _pan.Started);
-        Assert.Equal([1u], _pan.Stopped);
-        Assert.Equal(PanEmulationProblem.WaitingForSteam, emulation.Status.Problem);
+        Assert.Equal([SteamControllerParts.Puck], asked);
+        Assert.Empty(_pan.Started);
+        Assert.Equal(PanEmulationProblem.AwaitingConsent, emulation.Status.Problem);
+        Assert.False(emulation.Status.HasProblem);
+
+        emulation.Takeover.Answer(takeOver: true);
+        await emulation.TickAsync();
+        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
+        Assert.Equal([1u], _pan.Hidden);
     }
 
+    [Fact]
+    [Trait("TestCase", "T242-21")]
+    public async Task No_leaves_the_controller_alone_until_the_settings_row_takes_it_over()
+    {
+        var emulation = WithSteam(() => true);
+        await emulation.TickAsync();
+
+        emulation.Takeover.Answer(takeOver: false);
+        await emulation.TickAsync();
+        _time.Advance(TimeSpan.FromHours(1));
+        await emulation.TickAsync();
+
+        Assert.Empty(_pan.Started);
+        Assert.Equal(PanEmulationProblem.Excluded, emulation.Status.Problem);
+        Assert.False(emulation.Status.HasProblem);
+
+        emulation.TakeOverAgain();
+        await emulation.TickAsync();
+        Assert.Equal([1u], _pan.Hidden);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T242-22")]
+    [InlineData("paused")]
+    [InlineData("teardown")]
+    [InlineData("switched off")]
+    public async Task After_a_gap_with_Steam_running_the_player_is_asked_again(string gap)
+    {
+        var emulation = WithSteam(() => true);
+        var asked = 0;
+        emulation.Takeover.ConsentNeeded += _ => asked++;
+        await emulation.TickAsync();
+        emulation.Takeover.Answer(takeOver: true);
+        await emulation.TickAsync();
+        Assert.Equal([1u], _pan.Hidden);
+
+        switch (gap)
+        {
+            case "paused":
+                _pan.HidingHolds = PanReason.HidingLost;
+                await emulation.TickAsync();
+                _pan.HidingHolds = PanReason.None;
+                break;
+            case "teardown":
+                _pan.TearDown();
+                break;
+            default:
+                _enabled = false;
+                await emulation.TickAsync();
+                _enabled = true;
+                break;
+        }
+
+        await emulation.TickAsync();
+        await emulation.TickAsync();
+
+        Assert.Equal(2, asked);
+        Assert.Equal([1u], _pan.Hidden);
+        Assert.Equal(PanEmulationProblem.AwaitingConsent, emulation.Status.Problem);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-22")]
+    public async Task A_hide_that_failed_after_the_yes_asks_again_before_the_next_one()
+    {
+        var emulation = WithSteam(() => true);
+        var asked = 0;
+        emulation.Takeover.ConsentNeeded += _ => asked++;
+        await emulation.TickAsync();
+        _pan.HideResult = PanReason.HidingLost;
+        emulation.Takeover.Answer(takeOver: true);
+
+        await emulation.TickAsync();
+        _pan.HideResult = PanReason.None;
+        _time.Advance(PanEmulation.HideRetry);
+        await emulation.TickAsync();
+
+        Assert.Equal(2, asked);
+        Assert.Empty(_pan.Hidden);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-22")]
+    public async Task A_controller_that_comes_back_while_the_emulation_runs_without_a_gap_stays_taken_over()
+    {
+        var emulation = WithSteam(() => true);
+        var asked = 0;
+        emulation.Takeover.ConsentNeeded += _ => asked++;
+        await emulation.TickAsync();
+        emulation.Takeover.Answer(takeOver: true);
+        await emulation.TickAsync();
+
+        _copy.PuckPresent = false;
+        _copy.Current!.Lose();
+        await emulation.TickAsync();
+        _copy.PuckPresent = true;
+        await emulation.TickAsync();
+
+        Assert.Equal(1, asked);
+        Assert.Equal([1u], _pan.Hidden);
+        Assert.Equal(2, _copy.Attached);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-8")]
+    public async Task Released_for_a_firmware_update_the_puck_is_shown_and_stays_so_until_the_settings_row()
+    {
+        var emulation = WithSteam(() => false);
+        await emulation.TickAsync();
+        _events.Clear();
+
+        await emulation.ReleaseForFirmwareAsync();
+        await emulation.TickAsync();
+
+        Assert.Equal(["copy detached", "unhide 1", "stopped 1"], _events);
+        Assert.Equal(TakeoverState.Released, emulation.Takeover.State);
+        Assert.Equal(PanEmulationProblem.Excluded, emulation.Status.Problem);
+        Assert.Equal([1u], _pan.Started);
+    }
     [Fact]
     [Trait("TestCase", "T242-9")]
     public async Task A_pad_that_failed_to_go_earlier_leaves_the_puck_to_Pans_teardown()

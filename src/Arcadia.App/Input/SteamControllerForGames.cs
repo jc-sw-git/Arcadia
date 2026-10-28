@@ -19,12 +19,13 @@ namespace Arcadia.App.Input;
 /// </summary>
 public sealed class SteamControllerForGames : Settings.IPanEmulationView
 {
-    private SteamControllerForGames(SteamControllerXboxPad pad, SteamControllerRouting routing, PanEmulation emulation, SteamControllerCopyFilter copyFilter)
+    private SteamControllerForGames(SteamControllerXboxPad pad, SteamControllerRouting routing, PanEmulation emulation, SteamControllerCopyFilter copyFilter, FirmwareAttemptWatch firmwareAttempt)
     {
         Pad = pad;
         Routing = routing;
         Emulation = emulation;
         CopyFilter = copyFilter;
+        FirmwareAttempt = firmwareAttempt;
     }
 
     public SteamControllerXboxPad Pad { get; }
@@ -33,8 +34,11 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
 
     public PanEmulation Emulation { get; }
 
-    /// <summary>What passes between Steam and the real puck; its <see cref="SteamControllerCopyFilter.FirmwareBlocked"/> opens the firmware dialog.</summary>
+    /// <summary>What passes between Steam and the real puck; what it drops feeds <see cref="FirmwareAttempt"/>.</summary>
     public SteamControllerCopyFilter CopyFilter { get; }
+
+    /// <summary>A firmware update Steam tries through the copy; its start opens the firmware dialog.</summary>
+    public FirmwareAttemptWatch FirmwareAttempt { get; }
 
     /// <param name="pads">The virtual pads; Pan's emulation plugs them in here.</param>
     /// <param name="hold">The copy of the puck for Steam; <see cref="NoSteamControllerCopy"/> until this build can make it.</param>
@@ -59,12 +63,13 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         TimeProvider time)
     {
         SteamControllerXboxPad? padForPresence = null;
-        var steamFront = new SteamFrontWatch(isSteamInFront, time);
         var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
         {
             Supported = panSupported,
             Enabled = () => settings.Current.PanEnabled,
-            SteamFront = steamFront,
+            SteamRuns = () => controllerSupport.SteamRuns,
+            Connected = () => (hold.PuckPresent ? SteamControllerParts.Puck : SteamControllerParts.None)
+                | (padForPresence?.SteamControllerConnected == true ? SteamControllerParts.Controller : SteamControllerParts.None),
             SteamControllerPresent = () => hold.PuckPresent || padForPresence?.SteamControllerConnected == true,
         };
         var routing = new SteamControllerRouting(
@@ -77,7 +82,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         var pad = new SteamControllerXboxPad(emulation, time, Services.AppLog.Write)
         {
             Wanted = () => routing.Current.PadWanted,
-            ForwardingAllowed = () => SteamControllerCopyRules.PadPasses(routing.Current, new ForegroundNow(isArcadiaActive(), isMouseModeOn(), steamFront.Now())),
+            ForwardingAllowed = () => SteamControllerCopyRules.PadPasses(routing.Current, new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront())),
             Combos = combos.Current,
             FeedAlive = guardian.Pulse,
         };
@@ -95,10 +100,21 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         };
         guardian.TornDown += (_, reason) => notices.Show(TornDownText(reason));
         guardian.Lost += _ => notices.Show(PanLostText);
-        return new SteamControllerForGames(pad, routing, emulation, new SteamControllerCopyFilter(time, Services.AppLog.Write));
+        var filter = new SteamControllerCopyFilter(time, Services.AppLog.Write);
+        var attempt = new FirmwareAttemptWatch(time, Services.AppLog.Write);
+        filter.UpdateTraffic += attempt.Traffic;
+        return new SteamControllerForGames(pad, routing, emulation, filter, attempt);
     }
 
     public PanEmulationStatus Status => Emulation.Status;
+
+    public SteamControllerTakeover Takeover => Emulation.Takeover;
+
+    public SteamControllerParts Connected => Emulation.Connected();
+
+    public Task ReleaseForFirmwareAsync() => Emulation.ReleaseForFirmwareAsync();
+
+    public void TakeOverAgain() => Emulation.TakeOverAgain();
 
     public event Action? Changed
     {

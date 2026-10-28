@@ -271,6 +271,9 @@ public sealed class ControllerSupportService(
     /// <summary>"SISR installieren" closes Steam first (after asking) and starts it again afterwards.</summary>
     public bool InstallStopsSteam => _platform.IsSteamRunning;
 
+    /// <summary>Steam's client runs: it could update the Steam Controller's firmware (#242).</summary>
+    public bool SteamRuns => _platform.IsSteamRunning;
+
     public ISisrHost Sisr => sisr;
 
     public SisrState State

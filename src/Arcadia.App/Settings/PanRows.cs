@@ -1,6 +1,7 @@
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Copy;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Pan;
 
@@ -16,6 +17,21 @@ public interface IPanEmulationView
 
     /// <summary>"Erneut versuchen": the failures so far no longer count, and the next tick tries again.</summary>
     void Retry();
+
+    /// <summary>Whether Arcadia may take the Steam Controller over (the question at the start, "Nein", a release).</summary>
+    SteamControllerTakeover Takeover { get; }
+
+    /// <summary>A firmware update Steam tries through the copy.</summary>
+    FirmwareAttemptWatch FirmwareAttempt { get; }
+
+    /// <summary>What of the Steam Controller is connected now.</summary>
+    SteamControllerParts Connected { get; }
+
+    /// <summary>"Controller freigeben" for a firmware update: the real puck is shown until the settings row takes it over.</summary>
+    Task ReleaseForFirmwareAsync();
+
+    /// <summary>The row "Steam Controller und Puck übernehmen", held 3 s.</summary>
+    void TakeOverAgain();
 }
 
 /// <summary>No emulation (tests that don't need one): always off.</summary>
@@ -30,6 +46,18 @@ public sealed class NoPanEmulation : IPanEmulationView
     }
 
     public void Retry()
+    {
+    }
+
+    public SteamControllerTakeover Takeover { get; } = new(_ => { });
+
+    public FirmwareAttemptWatch FirmwareAttempt { get; } = new(TimeProvider.System, _ => { });
+
+    public SteamControllerParts Connected => SteamControllerParts.None;
+
+    public Task ReleaseForFirmwareAsync() => Task.CompletedTask;
+
+    public void TakeOverAgain()
     {
     }
 }
@@ -52,6 +80,7 @@ public sealed class PanRows
 {
     public const string MainKey = "pan";
     public const string RestoreKey = "pan-restore";
+    public const string TakeOverKey = "pan-take-over";
     public const string Group = "PAN";
 
     private const string Admin = "Windows fragt einmal nach Administratorrechten.";
@@ -62,8 +91,10 @@ public sealed class PanRows
     private readonly Func<string?> _gameInTheWay;
     private readonly Action<HealthFix> _applyFix;
     private readonly Dictionary<string, ActionRowViewModel> _rows = [];
+    private readonly HoldRowViewModel _takeOver;
 
-    public PanRows(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay, Action<HealthFix> applyFix)
+    public PanRows(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay, Action<HealthFix> applyFix,
+        TimeProvider time, Action<Action> post)
     {
         _support = support;
         _changes = changes;
@@ -86,9 +117,26 @@ public sealed class PanRows
                 ]),
             ],
         };
+        // The press is the consent (owner, 2026-10-28): no second question.
+        _takeOver = new HoldRowViewModel(TakeOverKey, string.Empty, "Übernehmen", TimeSpan.FromSeconds(3), () =>
+        {
+            _pan.TakeOverAgain();
+            TakenOver?.Invoke();
+        }, time, post)
+        {
+            Group = Group,
+            Indent = 1,
+            Severity = HealthSeverity.Info,
+        };
     }
 
     public PanRowViewModel Main { get; }
+
+    /// <summary>"Steam Controller und Puck übernehmen" (held 3 s), while the player said no or released them for a firmware update.</summary>
+    public HoldRowViewModel TakeOver => _takeOver;
+
+    /// <summary>The settings row took Steam Controller and puck over again: the row goes, the focus goes to the switch.</summary>
+    public event Action? TakenOver;
 
     public ActionRowViewModel Restore { get; }
 
@@ -116,6 +164,16 @@ public sealed class PanRows
         var installFailed = allMissing && _support.FailedFix == HealthFix.InstallDrivers && _support.LastError is not null;
         var game = _gameInTheWay();
         var warnings = !notHere && !allMissing && IsOn ? WarningRows(status) : [];
+        var excluded = !notHere && !allMissing && IsOn && _pan.Takeover.State is TakeoverState.Declined or TakeoverState.Released;
+        if (excluded)
+        {
+            UpdateTakeOver();
+        }
+        else
+        {
+            _takeOver.Hold.Cancel();
+        }
+
         var problem = warnings.Any(row => row.Severity > HealthSeverity.Info) || status.HasProblem;
 
         Main.InstallText = IsInstalling ? "Wird installiert …" : installFailed ? "Erneut versuchen" : "Treiber installieren";
@@ -124,7 +182,7 @@ public sealed class PanRows
             !notHere && !allMissing && IsOn,
             isLocked: IsBusy || (game is not null && !allMissing),
             unavailableText: "Auf diesem System noch nicht verfügbar",
-            status: Subtitle(status, allMissing, installFailed, problem, game));
+            status: Subtitle(status, allMissing, installFailed, problem, game, excluded));
         // A running game would lose its controller mid-game: greyed out like "Auf Werkseinstellungen zurücksetzen".
         Main.IsDimmed = notHere || (game is not null && !allMissing && !IsBusy);
         Main.Severity = installFailed ? HealthSeverity.Error : null;
@@ -143,10 +201,37 @@ public sealed class PanRows
             : problem || allMissing ? HealthSeverity.Warning
             : null;
         FirstWarningKey = warnings.FirstOrDefault(row => row.Severity > HealthSeverity.Info)?.Key ?? warnings.FirstOrDefault()?.Key;
-        return [Main, .. warnings, .. _support.PanInstalled ? [Restore] : Array.Empty<SettingsRowViewModel>()];
+        return [Main, .. warnings, .. excluded ? [_takeOver] : Array.Empty<SettingsRowViewModel>(), .. _support.PanInstalled ? [Restore] : Array.Empty<SettingsRowViewModel>()];
     }
 
-    private string Subtitle(PanEmulationStatus status, bool allMissing, bool installFailed, bool problem, string? game) =>
+    /// <summary>Why the row shows, and the warning the press confirms (artboard T242Uebernahme).</summary>
+    private void UpdateTakeOver()
+    {
+        var parts = Parts();
+        var names = SteamControllerPartsNames.Names(parts);
+        var them = SteamControllerPartsNames.Object(parts);
+        var released = _pan.Takeover.State == TakeoverState.Released;
+        _takeOver.Title = $"{names} übernehmen";
+        _takeOver.Subtitle = released ? "Für ein Firmware-Update freigegeben" : "Beim Start abgelehnt, weil Steam lief";
+        _takeOver.IsEnabled = !IsBusy;
+        _takeOver.Info =
+        [
+            new InfoText(released
+                ? $"Du hast {them} freigegeben, damit Steam die Firmware aktualisieren kann. Bis du sie hier wieder übernimmst, sieht Steam sie direkt und Arcadia emuliert sie nicht."
+                : "Beim Start der Emulation lief Steam, und du hast „Nein, nicht übernehmen“ gewählt. Bis du sie hier übernimmst, sieht Steam sie direkt und Arcadia emuliert sie nicht."),
+            new InfoDanger("Vorher sicherstellen, dass kein Firmware-Update läuft", "Weder am Steam Controller noch am Puck. Ein Update, das Arcadia unterbricht, kann schiefgehen."),
+            new InfoText($"Halte [A] 3 Sekunden, dann übernimmt Arcadia {them} wieder und diese Zeile verschwindet."),
+            new InfoFootnote("Gilt nur bis zum Neustart von Arcadia. Beim nächsten Start fragt Arcadia wieder, falls Steam dann läuft."),
+        ];
+    }
+
+    /// <summary>What was asked about, or what is connected now; both when neither is known.</summary>
+    private SteamControllerParts Parts() =>
+        _pan.Takeover.Asked is not SteamControllerParts.None and var asked ? asked
+        : _pan.Connected is not SteamControllerParts.None and var connected ? connected
+        : SteamControllerParts.Controller | SteamControllerParts.Puck;
+
+    private string Subtitle(PanEmulationStatus status, bool allMissing, bool installFailed, bool problem, string? game, bool excluded) =>
         (allMissing, IsOn) switch
         {
             (true, _) when IsInstalling => "Windows fragt einmal nach Administratorrechten",
@@ -156,6 +241,7 @@ public sealed class PanRows
             (_, false) => "Aus – Spiele und Launcher sehen deine echten Controller direkt",
             _ when status.State == PanEmulationState.Stopped => "Angehalten – der Grund steht darunter",
             _ when problem => "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.",
+            _ when excluded => $"An – {SteamControllerPartsNames.Names(Parts())} ausgenommen, siehe unten",
             _ => status.State switch
             {
                 PanEmulationState.Running => "An – deine Controller werden von Arcadia verwaltet",
@@ -249,11 +335,6 @@ public sealed class PanRows
                     "Pan gibt gerade nach dem letzten Ende der Emulation die echten Controller zurück. Danach richtet Arcadia die Emulation von selbst neu ein; das dauert wenige Sekunden.",
                     null, null));
                 break;
-            case PanEmulationProblem.WaitingForSteam:
-                yield return ("pan:waiting-for-steam", Row("pan:waiting-for-steam", "Pan wartet auf Steam", "Geht von selbst weiter, 3 Minuten nachdem Steam nicht mehr vorne ist", HealthSeverity.Info,
-                    "Steam hatte gerade den echten Steam Controller und könnte seine Firmware aktualisieren. Verstecken startet den Controller neu und würde ein Update abbrechen, deshalb wartet Pan, bis Steam 3 Minuten lang nicht mehr vorne ist. So lange sehen Spiele den Controller wie ohne Pan.",
-                    null, null));
-                break;
         }
     }
 
@@ -341,7 +422,7 @@ public sealed class PanRows
             new InfoText("Von Haus aus funktioniert der Steam Controller nur in Steam als echter Controller. Arcadia betreibt ihn deshalb in zwei Modi, „Steam-Eingabe“ und „Arcadia“, damit er auch außerhalb von Steam funktioniert, zum Beispiel in Spielen aus dem Epic Games Launcher oder dem Xbox Game Pass. Den Modus stellst du pro Spiel ein. Vorausgewählt ist „Steam-Eingabe“ für Spiele aus Steam und „Arcadia“ für alle anderen Launcher."),
             new InfoCard(ControllerModes.Arcadia, "+ In jedem Spiel, auch ohne Steam\n+ Das Spiel sieht einen Xbox Controller\n− Keine Steam-Belegungen, kein Gyro, keine Trackpads", string.Empty),
             new InfoCard(ControllerModes.Steam, "+ Belegungen aus Steam, auch Community, Gyro und Trackpads\n− Außerhalb von Steam nur Steams Desktop-Belegung", string.Empty),
-            new InfoNote("Solange Pan aktiv ist, verhindert Arcadia Firmware-Updates des Steam Controllers und seines Pucks. Beende Arcadia, bevor du ein Firmware-Update startest.", HealthSeverity.Info),
+            new InfoNote("Solange Arcadia den Steam Controller übernommen hat, hält es Firmware-Updates von Steam auf und gibt ihn dafür frei, sobald Steam aufgegeben hat. Läuft Steam beim Start der Emulation, fragt Arcadia vorher, ob gerade ein Update läuft.", HealthSeverity.Info),
         ]),
         new InfoSection("WAS PAN BRAUCHT",
         [

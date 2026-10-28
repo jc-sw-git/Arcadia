@@ -157,11 +157,14 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     private void Click()
     {
         Point();
-        if (CanActivate)
+        if (CanActivate && ActivatesOnClick)
         {
             Activate();
         }
     }
+
+    /// <summary>False for a row held with the pointer instead (<see cref="HoldRowViewModel"/>): the click's release comes too late.</summary>
+    protected virtual bool ActivatesOnClick => true;
 
     /// <summary>The arrow left of a value: focus, then what ◀ does.</summary>
     [RelayCommand]
@@ -324,6 +327,40 @@ public partial class ActionRowViewModel(string key, string title, Action run) : 
     partial void OnActionTextChanged(string value) => NotifyActionsChanged();
 
     partial void OnIsEnabledChanged(bool value) => NotifyActionsChanged();
+}
+
+/// <summary>
+/// A row whose action needs [A] held, for a step that must not happen by a stray press (#242, "Steam Controller und Puck
+/// übernehmen", held 3 s): the pill fills while it is held, and letting go earlier does nothing.
+/// </summary>
+public sealed class HoldRowViewModel : ActionRowViewModel, IDisposable
+{
+    public HoldRowViewModel(string key, string title, string actionText, TimeSpan holdTime, Action held, TimeProvider time, Action<Action> post)
+        : base(key, title, () => { })
+    {
+        ActionText = actionText;
+        Hold = new HoldButtonViewModel(actionText, holdTime, held, time, post);
+    }
+
+    public HoldButtonViewModel Hold { get; }
+
+    public override string ActivateText => $"Halten ({Hold.HoldTime.TotalSeconds:0} s): {ActionText}";
+
+    public override void Activate() => Hold.Press();
+
+    protected override bool ActivatesOnClick => false;
+
+    /// <summary>The pointer went down on the row's pill: focus, then held as [A] would be.</summary>
+    public void PressByPointer()
+    {
+        Point();
+        if (CanActivate)
+        {
+            Activate();
+        }
+    }
+
+    public void Dispose() => Hold.Dispose();
 }
 
 /// <summary>A row that only shows something, with more about it in the info panel (e.g. "Nachteile").</summary>

@@ -77,6 +77,13 @@ public static class SteamControllerMessages
         [0xB3] = "DONGLE_COMMIT_DEVICE",
     };
 
+    /// <summary>
+    /// Dropped types Steam sent all along in spike #239 without trying an update (<c>0xA3</c> on every slot, four unknown
+    /// ones): they don't count as update traffic (<see cref="FirmwareAttemptWatch"/>), or the dialog would show on
+    /// every run.
+    /// </summary>
+    private static readonly HashSet<byte> RoutineDrops = [0xA3, 0xDC, 0xE2, 0xED, 0xF3];
+
     /// <summary>Output reports of the puck's vendor collection whose report id says they are haptics (SDL: <c>ValveTritonOutReportMessageIDs</c>).</summary>
     private static readonly Dictionary<byte, string> HapticOutputs = new()
     {
@@ -94,6 +101,9 @@ public static class SteamControllerMessages
         : HapticFeatures.ContainsKey(type) ? SteamMessageKind.Haptics
         : FirmwareFeatures.ContainsKey(type) ? SteamMessageKind.Firmware
         : SteamMessageKind.Blocked;
+
+    /// <summary>A dropped feature type Steam sends anyway, not as part of an update.</summary>
+    public static bool IsRoutineDrop(byte type) => RoutineDrops.Contains(type);
 
     /// <summary>What happens with an output report of this id: haptics, or dropped.</summary>
     public static SteamMessageKind OfOutput(byte reportId) =>

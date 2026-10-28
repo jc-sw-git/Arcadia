@@ -22,7 +22,7 @@ public sealed class SteamControllerCopyFilterTests
     public SteamControllerCopyFilterTests()
     {
         _filter = new SteamControllerCopyFilter(_time, _log.Add);
-        _filter.FirmwareBlocked += _firmware.Add;
+        _filter.UpdateTraffic += _firmware.Add;
     }
 
     /// <summary>The allow list, written out on its own so a change to it shows here as a deliberate second edit.</summary>
@@ -113,14 +113,14 @@ public sealed class SteamControllerCopyFilterTests
     [Trait("TestCase", "T242-1")]
     public void A_handler_that_throws_still_drops_the_firmware_message()
     {
-        _filter.FirmwareBlocked += _ => throw new InvalidOperationException("Dialog kaputt");
+        _filter.UpdateTraffic += _ => throw new InvalidOperationException("Dialog kaputt");
 
         Assert.False(_filter.FromSteam(SteamReportKind.SetFeature, [1, 0xB7, 0x00], forwarding: true));
     }
 
     [Fact]
     [Trait("TestCase", "T242-8")]
-    public void A_known_firmware_message_is_reported_once_and_every_dropped_type_is_logged_once_without_its_payload()
+    public void Every_dropped_message_but_the_routine_ones_counts_as_update_traffic_and_each_type_is_logged_once_without_its_payload()
     {
         for (var i = 0; i < 3; i++)
         {
@@ -130,7 +130,6 @@ public sealed class SteamControllerCopyFilterTests
 
         _filter.FromSteam(SteamReportKind.SetFeature, [1, 0x86], forwarding: true);
 
-        Assert.Equal(["Nachricht AUDIO_UPDATE_DATA (0xB8)"], _firmware);
         Assert.Equal(
         [
             "Steam-Controller-Kopie: Firmware-Nachricht AUDIO_UPDATE_DATA (0xB8) verworfen (5 Bytes)",
@@ -138,6 +137,16 @@ public sealed class SteamControllerCopyFilterTests
             "Steam-Controller-Kopie: Nachricht FACTORY_RESET (0x86) verworfen (2 Bytes)",
         ], _log);
         Assert.DoesNotContain(_log, line => line.Contains("42 42") || line.Contains("0x42"));
+
+        _filter.FromSteam(SteamReportKind.SetFeature, [1, 0xA3, 0x00], forwarding: true);
+        _filter.FromSteam(SteamReportKind.Output, [0x81, 0x00], forwarding: false);
+
+        // 0xDC and 0xA3 Steam sends all along, haptics while resting are dropped as routine: none of them counts.
+        Assert.Equal(
+        [
+            "Nachricht AUDIO_UPDATE_DATA (0xB8)", "Nachricht AUDIO_UPDATE_DATA (0xB8)", "Nachricht AUDIO_UPDATE_DATA (0xB8)",
+            "Nachricht FACTORY_RESET (0x86)",
+        ], _firmware);
     }
 
     [Fact]

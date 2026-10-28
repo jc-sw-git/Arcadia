@@ -199,12 +199,9 @@ public partial class App : Application
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;
             viewModel.ConnectPan(forGames);
             viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
-            // Once per run: Steam tried a firmware update through the copy; Arcadia comes to the front and says so (#242).
-            forGames.CopyFilter.FirmwareBlocked += _ => Dispatcher.UIThread.Post(() =>
-            {
-                ForegroundGuard.BringBack(window);
-                viewModel.ShowFirmwareBlocked();
-            });
+            // Pan's question before taking the Steam Controller over, or a firmware update Steam tries through the copy (#242):
+            // Arcadia may be behind a game, and the player must answer.
+            viewModel.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
             _gamepad.Polled += xboxPad.Feed;
             _gamepad.Lost += xboxPad.Drop;
             _gamepad.ButtonPressed += routing.Press;

@@ -137,7 +137,6 @@ internal sealed class ArcadiaDriver : IDisposable
         XboxPad = ForGames.Pad;
         Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
         Main.ConnectPan(ForGames);
-        ForGames.CopyFilter.FirmwareBlocked += _ => Dispatcher.UIThread.Post(Main.ShowFirmwareBlocked);
         ForGames.Routing.Update();
         _controllers.Polled += XboxPad.Feed;
         _controllers.Lost += XboxPad.Drop;

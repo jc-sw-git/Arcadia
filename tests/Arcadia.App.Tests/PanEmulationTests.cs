@@ -207,26 +207,6 @@ public sealed class PanEmulationTests
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T242-20")]
-    public async Task While_Steam_may_update_the_real_puck_a_blue_row_says_Pan_waits_and_the_mode_is_not_broken()
-    {
-        using var arcadia = await StartAsync(copy: true);
-        var controller = OpenControllerSettings(arcadia);
-        arcadia.Pan.HidingHolds = PanReason.HidingLost;
-        await arcadia.TickSteamControllerAsync();
-        arcadia.Pan.HidingHolds = PanReason.None;
-
-        arcadia.IsSteamInFront = true;
-        await arcadia.TickSteamControllerAsync();
-
-        Assert.Equal(PanEmulationProblem.WaitingForSteam, arcadia.ForGames.Status.Problem);
-        var row = controller.Rows.Single(r => r.Key == "pan:waiting-for-steam");
-        Assert.Equal("Pan wartet auf Steam", row.Title);
-        Assert.True(row.IsInfo);
-        Assert.False(arcadia.Main.ControllerModeBroken, "kein Problem, es geht von selbst weiter");
-    }
-
-        [AvaloniaFact]
     [Trait("TestCase", "T242-16")]
     public async Task On_the_detail_page_the_broken_mode_is_focusable_and_A_opens_the_row_that_says_why_and_B_goes_back()
     {
@@ -254,67 +234,172 @@ public sealed class PanEmulationTests
         Assert.Same(detail, arcadia.Main.Detail);
     }
 
-    [AvaloniaFact]
-    [Trait("TestCase", "T242-8")]
-    public async Task A_firmware_update_through_the_copy_is_dropped_and_a_dialog_says_how_the_update_works()
+    /// <summary>Steam runs at the start: it may be updating the puck right now, so Arcadia asks before it hides anything.</summary>
+    private static async Task<ArcadiaDriver> StartWithSteamRunningAsync()
     {
-        using var arcadia = await StartAsync(copy: true);
-        var quit = 0;
-        arcadia.Main.QuitRequested += (_, _) => quit++;
-        arcadia.Press(UiAction.Settings);
+        var arcadia = await StartAsync(copy: true, new FakeSteam { IsSteamRunning = true });
+        await arcadia.WaitUntilAsync(() => arcadia.Main.TakeoverConsent is not null, "die Frage „Steam Controller und Puck übernehmen?“");
+        return arcadia;
+    }
 
-        Assert.False(arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, [1, 0xB7, 0x00], forwarding: true));
-        await arcadia.WaitUntilAsync(() => arcadia.Main.Confirmation is not null, "der Dialog „Firmware-Update gestoppt“");
+    private static readonly TimeSpan OneSecondHold = TimeSpan.FromMilliseconds(1100);
+    private static readonly TimeSpan ThreeSecondHold = TimeSpan.FromMilliseconds(3100);
 
-        var dialog = arcadia.Main.Confirmation!;
-        Assert.False(arcadia.Main.IsSettingsOpen, "der Dialog steht nicht unter den Einstellungen");
-        Assert.Equal("Firmware-Update gestoppt", dialog.Title);
-        Assert.Contains("Dein Steam Controller ist unverändert.", dialog.Message);
-        Assert.Equal("SO KLAPPT DAS UPDATE", dialog.StepsTitle);
-        Assert.Equal(["Arcadia beenden", "Das Update in Steam erneut starten und abwarten", "Arcadia wieder starten"], dialog.Steps);
-        Assert.True(dialog.IsCancelFocused, "„Verstanden“ hat den Fokus");
-        Assert.Equal("Verstanden", dialog.CancelLabel);
-        Assert.Equal("Arcadia jetzt beenden", dialog.ConfirmLabel);
+    [AvaloniaFact]
+    [Trait("TestCase", "T242-20")]
+    public async Task With_Steam_running_Arcadia_asks_first_and_hides_nothing_and_B_or_a_tap_answers_nothing()
+    {
+        using var arcadia = await StartWithSteamRunningAsync();
 
-        // Once per run: the next firmware message is dropped without a dialog.
+        var consent = arcadia.Main.TakeoverConsent!;
+        Assert.Equal("Steam Controller und Puck übernehmen?", consent.Title);
+        Assert.Equal(["Steam Controller", "Puck", "Steam läuft"], consent.Found);
+        Assert.Equal("Erst prüfen: Zeigt Steam gerade ein Firmware-Update an?", consent.WarningTitle);
+        Assert.True(consent.No.IsFocused, "„Nein, nicht übernehmen“ ist vorausgewählt");
+        Assert.Equal("Halten (1 s): Nicht übernehmen", consent.Legend);
+        Assert.Empty(arcadia.Pan.Hidden);
+        Assert.Equal(PanEmulationProblem.AwaitingConsent, arcadia.ForGames.Status.Problem);
+        Assert.False(arcadia.Main.ControllerModeBroken, "die Frage ist kein Problem");
+
+        // [B] and a tap of [A] answer nothing: the question stays until a button is held.
+        arcadia.Press(UiAction.Back).Press(UiAction.Accept).Press(UiAction.Left).Press(UiAction.Accept);
+        await arcadia.TickSteamControllerAsync();
+        Assert.Same(consent, arcadia.Main.TakeoverConsent);
+        Assert.Equal("Halten (3 s): Übernehmen", consent.Legend);
+        Assert.Equal(TakeoverState.Asking, arcadia.ForGames.Takeover.State);
+        Assert.Empty(arcadia.Pan.Hidden);
+
+        // Let go before the 3 s are up: still nothing.
+        arcadia.Hold(UiAction.Accept, TimeSpan.FromSeconds(2));
+        Assert.Same(consent, arcadia.Main.TakeoverConsent);
+
+        arcadia.Hold(UiAction.Accept, ThreeSecondHold);
+        Assert.Null(arcadia.Main.TakeoverConsent);
+        await arcadia.TickSteamControllerAsync();
+        Assert.Single(arcadia.Pan.Hidden);
+        Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T242-21")]
+    public async Task After_Nein_the_Steam_Controller_is_left_alone_until_the_settings_row_is_held_for_3_seconds()
+    {
+        using var arcadia = await StartWithSteamRunningAsync();
+        arcadia.Hold(UiAction.Accept, OneSecondHold);
+        Assert.Null(arcadia.Main.TakeoverConsent);
+        await arcadia.TickSteamControllerAsync();
+        Assert.Empty(arcadia.Pan.Hidden);
+        Assert.Equal(PanEmulationProblem.Excluded, arcadia.ForGames.Status.Problem);
+        Assert.False(arcadia.Main.ControllerModeBroken, "ausgenommen ist kein Problem");
+        Assert.Null(arcadia.Main.TakeoverConsent);
+
+        var controller = OpenControllerSettings(arcadia);
+        var pan = Switch(controller);
+        Assert.Equal("An – Steam Controller und Puck ausgenommen, siehe unten", pan.Subtitle);
+        Assert.Null(controller.Marker);
+        var row = Assert.IsType<HoldRowViewModel>(controller.Rows.Single(r => r.Key == PanRows.TakeOverKey));
+        Assert.Equal("Steam Controller und Puck übernehmen", row.Title);
+        Assert.Equal("Beim Start abgelehnt, weil Steam lief", row.Subtitle);
+        Assert.Equal("Halten (3 s): Übernehmen", row.ActivateText);
+        Assert.Equal("Vorher sicherstellen, dass kein Firmware-Update läuft", row.Info.OfType<InfoDanger>().Single().Title);
+
+        controller.FocusRow(PanRows.TakeOverKey);
         arcadia.Press(UiAction.Accept);
-        Assert.Null(arcadia.Main.Confirmation);
+        arcadia.Hold(UiAction.Accept, TimeSpan.FromSeconds(2));
+        Assert.Contains(row, controller.Rows);
+        Assert.Equal(TakeoverState.Declined, arcadia.ForGames.Takeover.State);
+
+        // The press is the consent: no second question.
+        arcadia.Hold(UiAction.Accept, ThreeSecondHold);
+        Assert.DoesNotContain(controller.Rows, r => r.Key == PanRows.TakeOverKey);
+        Assert.Equal(PanRows.MainKey, controller.Rows.Single(r => r.IsFocused).Key);
+        Assert.Equal("Pan: Steam Controller und Puck übernommen", arcadia.Main.Toast.Text);
+        await arcadia.TickSteamControllerAsync();
+        Assert.Null(arcadia.Main.TakeoverConsent);
+        Assert.Single(arcadia.Pan.Hidden);
+    }
+
+    /// <summary>Taken over without a question (Steam didn't run), then Steam tries a firmware update through the copy.</summary>
+    private static async Task<ArcadiaDriver> StartUpdateAttemptAsync()
+    {
+        var arcadia = await StartAsync(copy: true);
+        Assert.Single(arcadia.Pan.Hidden);
         Assert.False(arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, [1, 0xB8, 0x00], forwarding: true));
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Null(arcadia.Main.Confirmation);
-        Assert.Equal(0, quit);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Dialog „Steam will die Firmware aktualisieren“");
+        return arcadia;
     }
 
     [AvaloniaFact]
     [Trait("TestCase", "T242-8")]
-    public async Task Over_another_dialog_the_firmware_dialog_waits_and_shows_once_that_one_is_closed()
+    public async Task A_firmware_attempt_holds_the_controller_until_Steam_gave_up_and_then_releases_it_for_the_update()
     {
-        using var arcadia = await StartAsync(copy: true);
-        var other = new ConfirmationViewModel("Andere Frage", "Eine offene Frage", "Ja", () => { });
-        arcadia.Main.Ask(other);
+        using var arcadia = await StartUpdateAttemptAsync();
+        var dialog = arcadia.Main.FirmwareAttempt!;
+        Assert.Equal("Steam will die Firmware aktualisieren", dialog.Title);
+        Assert.True(dialog.IsTrying);
+        Assert.True(dialog.SkipButton.IsFocused);
+        Assert.False(dialog.ReleaseButton.IsEnabled, "erst wenn Steam aufgegeben hat");
+        Assert.False(dialog.QuitButton.IsEnabled);
 
-        Assert.False(arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, [1, 0xB7, 0x00], forwarding: true));
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Same(other, arcadia.Main.Confirmation);
+        // [B] doesn't close it; the greyed buttons do nothing.
+        arcadia.Press(UiAction.Back).Press(UiAction.Left, 2);
+        Assert.True(dialog.ReleaseButton.IsFocused);
+        Assert.Equal("Noch gesperrt", dialog.Legend);
+        arcadia.Hold(UiAction.Accept, OneSecondHold);
+        Assert.Same(dialog, arcadia.Main.FirmwareAttempt);
+        Assert.False(dialog.IsReleased);
+
+        // 5 s quiet: the countdown; a new attempt starts the wait anew.
+        arcadia.Wait(TimeSpan.FromSeconds(5.3));
+        Assert.True(dialog.IsCountingDown);
+        Assert.InRange(dialog.SecondsLeft, 24, 25);
+        arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, [1, 0xB8, 0x00], forwarding: true);
+        arcadia.Wait(TimeSpan.FromMilliseconds(300));
+        Assert.True(dialog.IsTrying);
+
+        arcadia.Wait(TimeSpan.FromSeconds(30.3));
+        Assert.True(dialog.IsReady);
+        Assert.Equal("Steam hat aufgegeben", dialog.StatusTitle);
+        Assert.False(dialog.SkipButton.IsShown);
+        Assert.True(dialog.ReleaseButton.IsFocused);
+        Assert.Single(arcadia.Pan.Hidden);
+
+        arcadia.Hold(UiAction.Accept, OneSecondHold);
+        await arcadia.WaitUntilAsync(() => dialog.IsReleased, "„Steam Controller und Puck freigegeben“");
+        Assert.Equal("Steam Controller und Puck freigegeben", dialog.ReleasedTitle);
+        Assert.Single(arcadia.Pan.Unhidden);
+        Assert.Equal(TakeoverState.Released, arcadia.ForGames.Takeover.State);
+        Assert.Contains("Pan: Firmware-Versuch beendet (Steam hat aufgegeben, Controller freigegeben); als Update gewertet: ", ArcadiaDriver.Log);
 
         arcadia.Press(UiAction.Back);
-        Assert.Equal("Firmware-Update gestoppt", arcadia.Main.Confirmation?.Title);
-        arcadia.Press(UiAction.Back);
-        Assert.Null(arcadia.Main.Confirmation);
+        Assert.Null(arcadia.Main.FirmwareAttempt);
+        await arcadia.TickSteamControllerAsync();
+        Assert.Single(arcadia.Pan.Hidden);
+        Assert.Null(arcadia.Main.TakeoverConsent);
+        var controller = OpenControllerSettings(arcadia);
+        Assert.Equal("Für ein Firmware-Update freigegeben", controller.Rows.Single(r => r.Key == PanRows.TakeOverKey).Subtitle);
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T242-8")]
-    public async Task Arcadia_jetzt_beenden_in_the_firmware_dialog_asks_the_App_to_close()
+    [Trait("TestCase", "T242-23")]
+    public async Task Steam_hat_das_Update_abgebrochen_held_3_seconds_frees_the_choice_and_Arcadia_beenden_quits_and_both_are_logged()
     {
-        using var arcadia = await StartAsync(copy: true);
+        using var arcadia = await StartUpdateAttemptAsync();
+        var dialog = arcadia.Main.FirmwareAttempt!;
         var quit = 0;
         arcadia.Main.QuitRequested += (_, _) => quit++;
-        arcadia.Main.ShowFirmwareBlocked();
 
-        arcadia.Press(UiAction.Right).Press(UiAction.Accept);
+        arcadia.Hold(UiAction.Accept, TimeSpan.FromSeconds(2));
+        Assert.False(dialog.IsReady);
+        arcadia.Hold(UiAction.Accept, ThreeSecondHold);
 
+        Assert.True(dialog.IsReady, "der Spieler darf selbst freigeben");
+        Assert.Equal("Du hast bestätigt, dass Steam abgebrochen hat", dialog.StatusTitle);
+        Assert.True(dialog.ReleaseButton.IsFocused);
+        Assert.Contains("Pan: Spieler sagt, Steam hat das Update abgebrochen (vor Ablauf der Wartezeit); als Update gewertet: Nachricht ", ArcadiaDriver.Log);
+
+        arcadia.Press(UiAction.Right).Hold(UiAction.Accept, OneSecondHold);
         Assert.Equal(1, quit);
-        Assert.Null(arcadia.Main.Confirmation);
+        Assert.Contains("Pan: Firmware-Versuch beendet (vom Spieler übersprungen, Arcadia beendet)", ArcadiaDriver.Log);
     }
 }

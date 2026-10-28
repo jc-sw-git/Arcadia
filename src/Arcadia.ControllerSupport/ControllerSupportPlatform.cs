@@ -58,8 +58,8 @@ public interface IControllerSupportPlatform
     /// <summary>Pan, the guardian service, is installed (#243); without it Arcadia plugs no pad in.</summary>
     bool IsPanReady { get; }
 
-    /// <summary>Arcadia ships a newer Pan than the installed one.</summary>
-    bool IsPanUpdateAvailable { get; }
+    /// <summary>Whether the installed Pan is exactly the one Arcadia ships (#297); reads files, so off the UI thread or once at start.</summary>
+    PanCompatibility PanCompatibility { get; }
 
     /// <summary>HidHide's driver version, or null if HidHide isn't installed (#243 part B2).</summary>
     Version? HidHideVersion { get; }
@@ -104,6 +104,15 @@ public interface IControllerSupportPlatform
     /// one, Pan with it, one Windows prompt; false if the user declined it.
     /// </summary>
     Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(false);
+
+    /// <summary>
+    /// The update at start (#297): only Pan's <c>--install</c> with the bundled exe, no driver installer, so no download
+    /// and no puck restart; false if the user declined the Windows prompt.
+    /// </summary>
+    Task<bool> UpdatePanAsync(CancellationToken cancellationToken) => Task.FromResult(false);
+
+    /// <summary>"Pan entfernen" after a failed update (#297): Pan's <c>--uninstall</c> without the drivers; false if declined.</summary>
+    Task<bool> UninstallPanAsync(CancellationToken cancellationToken) => Task.FromResult(false);
 
     /// <summary>Pan's <c>--restore</c>: gives the real controllers back by hand; false if the user declined the Windows prompt.</summary>
     Task<bool> RestoreControllersAsync(CancellationToken cancellationToken);
@@ -218,7 +227,7 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
     /// <summary>Installed, and its last run didn't end with an error (then its install repairs it).</summary>
     public bool IsPanReady => OperatingSystem.IsWindows() && PanSetup.IsInstalled && !PanPipeTransport.LastRunFailed();
 
-    public bool IsPanUpdateAvailable => OperatingSystem.IsWindows() && PanSetup.UpdateAvailable;
+    public PanCompatibility PanCompatibility => OperatingSystem.IsWindows() ? PanSetup.Compatibility : PanCompatibility.NotInstalled;
 
     public Version? HidHideVersion => OperatingSystem.IsWindows() ? HidHideInstallation.InstalledVersion() : null;
 
@@ -321,6 +330,12 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
             }
         }
     }
+
+    public Task<bool> UpdatePanAsync(CancellationToken cancellationToken) =>
+        OperatingSystem.IsWindows() ? PanSetup.InstallAsync(null, null, cancellationToken) : Task.FromResult(false);
+
+    public Task<bool> UninstallPanAsync(CancellationToken cancellationToken) =>
+        OperatingSystem.IsWindows() ? PanSetup.UninstallAsync(removeDrivers: false, cancellationToken) : Task.FromResult(false);
 
     public async Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken)
     {

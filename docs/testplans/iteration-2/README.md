@@ -20,6 +20,7 @@ its file.
 | [210-split-main-view-model-detail-and-library.md](210-split-main-view-model-detail-and-library.md) | #210 | Split MainViewModel: detail page, LibraryViewModel and routing | 0 (refactoring) |
 | [213-steam-controller-as-xbox-pad-without-sisr.md](213-steam-controller-as-xbox-pad-without-sisr.md) | #213 | Steam Controller as an Xbox controller in every game, without SISR | 13 |
 | [242-steam-controller-copy.md](242-steam-controller-copy.md) | #242 | Steam gets a copy of the Steam Controller (parts A, B and C) | 29 |
+| [297-arcadia-runs-only-with-a-compatible-pan.md](297-arcadia-runs-only-with-a-compatible-pan.md) | #297 | Arcadia runs only with a compatible Pan | 12 |
 
 ## Exploratory test
 
@@ -38,3 +39,4 @@ Charter: –. Time box: –. Findings: –.
 | T209-1, T209-2 | `tests/Arcadia.App.Tests/PageTransitionTests.cs`, `Window/SearchViewTests.cs` |
 | T210-1 to T210-3 | `tests/Arcadia.App.Tests/RoutingTests.cs` |
 | T242-8, T242-10 to T242-16, T242-20 to T242-25 | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `SteamControllerModeTests.cs` |
+| T297-1 to T297-8 | `tests/Arcadia.App.Tests/PanUpdateAtStartTests.cs` |

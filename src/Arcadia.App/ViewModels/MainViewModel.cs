@@ -203,8 +203,21 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>A Pan dialog opened: the App brings Arcadia to the front, as it may be behind a game.</summary>
     public event EventHandler? PanDialogShown;
 
+    /// <summary>
+    /// The start page while the installed Pan isn't this Arcadia's (#297): over everything but Pan's dialogs, until Pan
+    /// is updated or removed.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPanUpdateShown), nameof(IsDialogOpen))]
+    public partial PanUpdatePageViewModel? PanUpdate { get; private set; }
+
+    public bool IsPanUpdateShown => PanUpdate is not null;
+
+    // Pan answered while one of its dialogs was open: the update runs once that dialog is closed.
+    private bool _panUpdateAfterDialog;
+
     /// <summary>A dialog or menu over the page takes the input.</summary>
-    public bool IsDialogOpen => IsPanDialogOpen || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen;
+    public bool IsDialogOpen => IsPanDialogOpen || IsPanUpdateShown || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen;
 
     /// <summary>The detail page; it takes the place of the cover grid while open, and of the search when opened from there.</summary>
     [ObservableProperty]
@@ -298,6 +311,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
                 }
 
                 return;
+        }
+
+        if (PanUpdate is { } panUpdate)
+        {
+            panUpdate.Handle(action);
+            return;
         }
 
         _actions.Pressed(action);
@@ -1020,13 +1039,43 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     void IGameActionsOwner.Confirm(ConfirmationViewModel confirmation) => Confirmation = confirmation;
 
-    /// <summary>A question from outside the pages, e.g. "Pan aktualisieren" at start (#243); dropped while another dialog is open.</summary>
-    public void Ask(ConfirmationViewModel confirmation)
+    /// <summary>
+    /// At start, before the window shows (#297): compares the installed Pan with the bundled one and, if they differ,
+    /// shows the update page in place of the library. The update itself waits for <see cref="StartPanUpdate"/>.
+    /// </summary>
+    public void ShowPanUpdateIfDue()
     {
-        if (!IsDialogOpen)
+        if (!_controllerSupport.CheckPanAtStart())
         {
-            Confirmation = confirmation;
+            return;
         }
+
+        PanUpdate = new PanUpdatePageViewModel(_controllerSupport, toast =>
+        {
+            PanUpdate = null;
+            Toast.Show(toast);
+        }, () => QuitRequested?.Invoke(this, EventArgs.Empty));
+    }
+
+    /// <summary>
+    /// Pan has answered once at start, so a firmware hold from before has shown its dialog: the update runs now, or
+    /// after that dialog, so the puck is never released in the middle of Steam's update (#297, decision 7).
+    /// </summary>
+    public void StartPanUpdate()
+    {
+        if (PanUpdate is not { } panUpdate)
+        {
+            return;
+        }
+
+        if (IsPanDialogOpen || _pan.FirmwareAttempt.IsActive)
+        {
+            _panUpdateAfterDialog = true;
+            return;
+        }
+
+        _panUpdateAfterDialog = false;
+        panUpdate.Run();
     }
 
     /// <summary>"Arcadia jetzt beenden" in a dialog; the App closes the window, as its close button would.</summary>
@@ -1083,6 +1132,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         {
             (dialog as IDisposable)?.Dispose();
             PanDialog = null;
+            if (_panUpdateAfterDialog)
+            {
+                StartPanUpdate();
+            }
         }
     }
 

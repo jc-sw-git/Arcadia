@@ -83,7 +83,7 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
 
 ## Setup, update, uninstall
 
-One UAC prompt for drivers and service, the "Pan aktualisieren" dialog, the uninstall hook, `--restore` and how the data
+One UAC prompt for drivers and service, the mandatory update at start (#297), the uninstall hook, `--restore` and how the data
 folder is secured: [pan-setup.md](pan-setup.md). Known limits and accepted risks: [pan-risks.md](pan-risks.md).
 
 ## Tests

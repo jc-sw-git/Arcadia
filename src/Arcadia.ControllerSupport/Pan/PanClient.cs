@@ -94,6 +94,14 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         lock (_lock) return _unavailable ?? (_teardownPending || _time.GetUtcNow() < _beingShownUntil ? CleaningUp : null);
     }
 
+    /// <summary>
+    /// Done once the first try to reach Pan has ended, connected or not: then <see cref="HeldForFirmware"/> says whether a
+    /// firmware attempt from before the start still holds the puck (#297 waits for it before the update).
+    /// </summary>
+    public Task FirstAttempt => _firstAttempt.Task;
+
+    private readonly TaskCompletionSource _firstAttempt = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public bool HeldForFirmware
     {
         get { lock (_lock) return _heldForFirmware; }
@@ -447,6 +455,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             if (_transport.Unavailable() is { } why)
             {
                 SetUnavailable(why.Reason);
+                _firstAttempt.TrySetResult();
                 await Task.Delay(why.Permanent ? SlowRetry : Retry, _time, token);
                 continue;
             }
@@ -465,6 +474,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
                 SetUnavailable($"Pan nicht erreichbar: {ex.Message}");
             }
 
+            _firstAttempt.TrySetResult();
             await Task.Delay(wait, _time, token);
         }
     }

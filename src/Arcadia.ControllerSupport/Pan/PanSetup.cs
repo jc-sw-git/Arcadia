@@ -34,16 +34,19 @@ public static class PanSetup
     /// <summary>Pan's exit code when <c>--uninstall --remove-drivers</c> left a driver (<c>Program.DriversNotRemovedExitCode</c> in Pan).</summary>
     private const int DriversNotRemovedExitCode = 7;
 
-    public static Version? BundledVersion => FileVersion(BundledExecutable);
-
-    public static Version? InstalledVersion => FileVersion(PanPaths.InstalledExecutable);
-
     /// <summary>The service exists and its exe is in place.</summary>
     public static bool IsInstalled => PanPipeTransport.ServiceExists() && File.Exists(PanPaths.InstalledExecutable);
 
-    /// <summary>Arcadia brings a newer Pan than the one installed (an Arcadia update): the dialog at start offers it.</summary>
-    public static bool UpdateAvailable =>
-        IsInstalled && BundledVersion is { } bundled && (InstalledVersion is not { } installed || bundled > installed);
+    /// <summary>
+    /// Whether the installed Pan is exactly the bundled one (#297); a service without its exe counts as installed, so it
+    /// is replaced. Reads both exes, so off the UI thread or once at start.
+    /// </summary>
+    public static PanCompatibility Compatibility =>
+        PanCompatibilityCheck.Judge(
+            PanPipeTransport.ServiceExists() || File.Exists(PanPaths.InstalledExecutable),
+            IsBundled,
+            () => PanCompatibilityCheck.HashOf(BundledExecutable),
+            () => PanCompatibilityCheck.HashOf(PanPaths.InstalledExecutable));
 
     /// <summary>
     /// <c>Pan.exe --install</c> elevated: the usbip-win2 and HidHide installers first when given, then Pan itself.
@@ -161,23 +164,5 @@ public static class PanSetup
     {
         using var stream = File.OpenRead(file);
         return Convert.ToHexString(SHA256.HashData(stream));
-    }
-
-    private static Version? FileVersion(string file)
-    {
-        if (!File.Exists(file))
-        {
-            return null;
-        }
-
-        try
-        {
-            var info = FileVersionInfo.GetVersionInfo(file);
-            return new Version(info.FileMajorPart, info.FileMinorPart, info.FileBuildPart, info.FilePrivatePart);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
-        {
-            return null;
-        }
     }
 }

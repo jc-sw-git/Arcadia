@@ -44,7 +44,8 @@ More findings, one file per topic (read only the one you touch):
 | The Steam Controller as an Xbox pad for games, without SISR: VIIPER, combos, plugging in and out (#213) | [xbox-pad.md](xbox-pad.md) |
 | Hiding the real Steam Controller from Steam and showing it a 1:1 copy: HidHide, puck descriptors, latency (spike #239) | [emulated-steam-controller.md](emulated-steam-controller.md) |
 | Pan, the guardian service: protocol, journal, teardown, setup with one UAC prompt, update, uninstall, `--restore` (#243) | [pan.md](pan.md) |
-| Pan: setup with one UAC prompt (usbip-win2, HidHide), missing parts in the settings, update dialog, uninstall hook with the drivers, `--restore`, securing the data folder | [pan-setup.md](pan-setup.md) |
+| Pan: setup with one UAC prompt (usbip-win2, HidHide), missing parts in the settings, uninstall hook with the drivers, `--restore`, securing the data folder | [pan-setup.md](pan-setup.md) |
+| Pan: the mandatory update at start (exactly the bundled Pan, SHA-256), its page and failure cases (#297) | [pan-update.md](pan-update.md) |
 | Pan hides the real Steam Controller with HidHide and shows it again in every teardown (#243 B1) | [pan-hiding.md](pan-hiding.md) |
 | Pan keeps the puck hidden through a crash mid firmware attempt until Steam is closed (#242) | [pan-firmware-hold.md](pan-firmware-hold.md) |
 | Steam gets a copy of the Steam Controller: lifecycle, who gets input, the allow list and the firmware lock (#242) | [steam-controller-copy.md](steam-controller-copy.md) |

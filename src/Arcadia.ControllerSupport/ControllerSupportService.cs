@@ -428,9 +428,6 @@ public sealed class ControllerSupportService(
     /// </summary>
     public bool StopsSteamFor(HealthFix fix) => _platform.IsSteamRunning && RestartsPuck(fix);
 
-    /// <summary>The Pan update at start closes Steam first, as <see cref="StopsSteamFor"/>: only when it installs HidHide too.</summary>
-    public bool PanUpdateStopsSteam => _platform.IsSteamRunning && _platform.InstallsHidHide;
-
     private bool RestartsPuck(HealthFix fix) => fix switch
     {
         HealthFix.ReinstallHidHide => true,
@@ -1158,12 +1155,10 @@ public sealed class ControllerSupportService(
 
     /// <summary>
     /// What is missing of the controller emulation (#243): VIIPER (with SISR's files until #214, no prompt), then the
-    /// usbip driver, HidHide and Pan in one Windows prompt, only if one of them is missing or Pan is to be updated.
+    /// usbip driver, HidHide and Pan in one Windows prompt, only if one of them is missing.
     /// Inside a busy action; throws when the prompt was declined, so the action fails visibly.
     /// </summary>
-    private async Task InstallDriversAsync(CancellationToken cancellationToken) => await InstallDriversAsync(updatePan: false, cancellationToken);
-
-    private async Task InstallDriversAsync(bool updatePan, CancellationToken cancellationToken)
+    private async Task InstallDriversAsync(CancellationToken cancellationToken)
     {
         if (Viiper is { } own)
         {
@@ -1181,7 +1176,7 @@ public sealed class ControllerSupportService(
             Log?.Invoke("VIIPER eingerichtet (mit SISR)");
         }
 
-        if (!updatePan && _platform.IsUsbipReady && _platform.IsPanReady && !ControllerSupportPlatform.HidHideNeedsInstaller(_platform.HidHideVersion))
+        if (_platform.IsUsbipReady && _platform.IsPanReady && !ControllerSupportPlatform.HidHideNeedsInstaller(_platform.HidHideVersion))
         {
             return;
         }
@@ -1260,12 +1255,84 @@ public sealed class ControllerSupportService(
     public static string DriverInstallBlocker(string game) =>
         $"Ein laufendes Steam-Spiel ({game}) wurde erkannt. Beende es zuerst, da Steam für die Installation kurz beendet werden muss.";
 
-    /// <summary>This Arcadia bundles a newer Pan than the installed one (#243); looks at files and the service, so off the UI thread.</summary>
-    public bool IsPanUpdateAvailable => IsSupportedPlatform && _platform.IsPanUpdateAvailable;
 
-    /// <summary>Arcadia brought a newer Pan and the user said yes at start (#243): installs it, and the driver if that is missing too.</summary>
-    public Task UpdatePanAsync(CancellationToken cancellationToken = default) =>
-        RunBusyAsync(DriversBusyText, token => InstallDriversAsync(updatePan: true, token), cancellationToken);
+    /// <summary>
+    /// Set at start while the installed Pan isn't the bundled one (#297) until it is replaced or removed: Pan's emulation
+    /// waits meanwhile, as the update ends whatever the old Pan runs.
+    /// </summary>
+    public bool IsPanUpdateDue
+    {
+        get => Volatile.Read(ref _panUpdateDue);
+        private set => Volatile.Write(ref _panUpdateDue, value);
+    }
+
+    private bool _panUpdateDue;
+
+    /// <summary>
+    /// Once at start, before the library shows (#297): reads the bundled and the installed Pan.exe. Not installed: no
+    /// update; installed (also switched off in Arcadia) and not exactly the bundled one: <see cref="IsPanUpdateDue"/>.
+    /// </summary>
+    public bool CheckPanAtStart()
+    {
+        var started = time.GetTimestamp();
+        var compatibility = IsSupportedPlatform ? _platform.PanCompatibility : PanCompatibility.NotInstalled;
+        if (compatibility is not PanCompatibility.NotInstalled)
+        {
+            // On the start path before the window: the time it takes is part of the start budget.
+            Log?.Invoke($"Pan geprüft in {time.GetElapsedTime(started).TotalMilliseconds:0} ms: {compatibility}");
+        }
+
+        if (compatibility is PanCompatibility.UpdateRequired)
+        {
+            Log?.Invoke("Pan: die installierte Version ist nicht die mitgelieferte – Arcadia ersetzt sie vor dem Start");
+        }
+        else if (compatibility is PanCompatibility.NotBundled)
+        {
+            Log?.Invoke("Pan: diese Arcadia-Version bringt kein Pan.exe mit – keine Prüfung");
+        }
+
+        IsPanUpdateDue = compatibility is PanCompatibility.UpdateRequired;
+        return IsPanUpdateDue;
+    }
+
+    /// <summary>
+    /// The mandatory update at start (#297): only Pan, with one Windows prompt; no driver, no download, Steam may run.
+    /// False if the prompt was declined; throws when Pan failed or didn't answer in time (its log says why).
+    /// </summary>
+    public async Task<bool> UpdatePanAsync(CancellationToken cancellationToken = default)
+    {
+        if (!await WithTimeoutAsync(_platform.UpdatePanAsync, DriversInstallTimeout, "Die Aktualisierung von Pan", cancellationToken))
+        {
+            Log?.Invoke("Pan-Aktualisierung in der Windows-Abfrage abgelehnt");
+            return false;
+        }
+
+        IsPanUpdateDue = false;
+        _driversChecked = false;
+        Log?.Invoke("Pan aktualisiert");
+        OnChanged();
+        return true;
+    }
+
+    /// <summary>
+    /// "Pan entfernen" when the update at start fails (#297): Pan's <c>--uninstall</c> without the drivers, one prompt;
+    /// Arcadia then runs without Pan, switched off. False if the prompt was declined.
+    /// </summary>
+    public async Task<bool> RemovePanAsync(CancellationToken cancellationToken = default)
+    {
+        if (!await WithTimeoutAsync(_platform.UninstallPanAsync, DriversInstallTimeout, "Das Entfernen von Pan", cancellationToken))
+        {
+            Log?.Invoke("Entfernen von Pan in der Windows-Abfrage abgelehnt");
+            return false;
+        }
+
+        IsPanUpdateDue = false;
+        _driversChecked = false;
+        UpdateSettings(settings => settings with { PanEnabled = false });
+        Log?.Invoke("Pan entfernt, Pan ist ausgeschaltet");
+        OnChanged();
+        return true;
+    }
 
     /// <summary>"Controller wiederherstellen": Pan's <c>--restore</c>, elevated, for when the service itself hangs (#243).</summary>
     public Task RestoreControllersAsync(CancellationToken cancellationToken = default) =>

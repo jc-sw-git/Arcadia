@@ -24,6 +24,9 @@ public partial class App : Application
     /// <summary>How often SISR and its dependencies are checked.</summary>
     private static readonly TimeSpan ControllerSupportInterval = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan ControllerSupportWatchInterval = TimeSpan.FromSeconds(2);
+
+    // Pan's first answer at start (#297): its hello takes milliseconds; a Pan that hangs mustn't hold the update.
+    private static readonly TimeSpan PanFirstAnswerWait = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan InstallCheckInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan InstallProgressInterval = TimeSpan.FromSeconds(2);
 
@@ -147,6 +150,8 @@ public partial class App : Application
                 firstRun,
                 time,
                 new InstallFolderCheck(Directory.Exists, action => Dispatcher.UIThread.Post(action)));
+            // Before the window: an installed Pan that isn't this Arcadia's shows its update page instead of the library (#297).
+            viewModel.ShowPanUpdateIfDue();
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
             if (args.Contains("--fullscreen", StringComparer.OrdinalIgnoreCase))
@@ -270,23 +275,42 @@ public partial class App : Application
 
             Task.Run(async () =>
             {
-                SisrHost.RemoveLegacyCopy();
-
-                // Before Arcadia's pad starts VIIPER: stopping SISR cleans up the VIIPER in SISR's folder.
-                await controllerSupport.StopReplacedSisrAsync();
-                await controllerSupport.TickAsync();
-                await forGames.Emulation.TickAsync();
-                var route = forGames.Routing.Update();
-                var panUpdate = new PanUpdateOffer(controllerSupport, viewModel);
-                var panUpdateDue = panUpdate.IsDue();
-                Dispatcher.UIThread.Post(() =>
+                SteamControllerRoute route;
+                try
                 {
-                    xboxPadTick.Start();
-                    if (panUpdateDue)
+                    SisrHost.RemoveLegacyCopy();
+
+                    // Before Arcadia's pad starts VIIPER: stopping SISR cleans up the VIIPER in SISR's folder.
+                    await controllerSupport.StopReplacedSisrAsync();
+                    await controllerSupport.TickAsync();
+                    await forGames.Emulation.TickAsync();
+                    route = forGames.Routing.Update();
+                    if (controllerSupport.IsPanUpdateDue)
                     {
-                        panUpdate.Ask();
+                        // Pan's hello says whether a firmware attempt from before still holds the puck; its dialog then
+                        // opens with the tick below, ahead of the update (#297).
+                        try
+                        {
+                            await pan.FirstAttempt.WaitAsync(PanFirstAnswerWait, time);
+                        }
+                        catch (TimeoutException)
+                        {
+                            AppLog.Write("Pan hat beim Start nicht rechtzeitig geantwortet – die Aktualisierung beginnt trotzdem");
+                        }
+
+                        await forGames.Emulation.TickAsync();
                     }
-                });
+                }
+                finally
+                {
+                    // Also when a step above failed: the update page waits for this and must never wait for good (#297).
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        xboxPadTick.Start();
+                        viewModel.StartPanUpdate();
+                    });
+                }
+
                 await xboxPad.TickAsync();
                 AppLog.Write($"Steam Controller in Spielen bereit ({route.Why})");
             }).Forget("SISR-Überwachung");

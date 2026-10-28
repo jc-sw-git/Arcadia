@@ -1644,6 +1644,46 @@
         <views:FirstRunView DataContext="{Binding FirstRun}" />
       </Panel>
 
+      <!-- The installed Pan isn't this Arcadia's (#297): a page over everything but Pan's dialogs, no question, until Pan is
+           updated or removed. Failed, [A] tries again, [X] removes Pan, [B] ends Arcadia. -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsPanUpdateShown}">
+        <!-- Covers the library entirely, in the bars beside the layout too: it isn't there yet for the player. -->
+        <Border Classes="bleedAll" Background="{StaticResource Bg}" />
+        <Border Classes="prompt" Width="920" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <StackPanel Spacing="22" DataContext="{Binding PanUpdate}" x:DataType="vm:PanUpdatePageViewModel">
+            <StackPanel Orientation="Horizontal" Spacing="18">
+              <Border Classes="promptIcon" IsVisible="{Binding IsBusy}">
+                <Path Classes="spinner" HorizontalAlignment="Center" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+              </Border>
+              <Border Classes="promptIcon warning" IsVisible="{Binding IsFailed}">
+                <TextBlock Text="!" />
+              </Border>
+              <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Classes="promptBody" Text="{Binding Text}" Foreground="{StaticResource Text}" />
+            <TextBlock Classes="promptBody" Text="{x:Static vm:PanUpdatePageViewModel.PromptHint}" IsVisible="{Binding IsAskingWindows}" />
+            <Border Classes="dangerBox" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.01" Stroke="{StaticResource Danger}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" VerticalAlignment="Top" />
+                <TextBlock Grid.Column="1" Text="{Binding Error}" FontSize="16" TextWrapping="Wrap" />
+              </Grid>
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsFailed}">
+              <Button Classes="plain action primaryAction" Content="Erneut versuchen" Command="{Binding RetryCommand}" />
+              <Button Classes="plain action" Content="Pan entfernen" Command="{Binding RemoveCommand}" />
+              <Button Classes="plain action" Content="Arcadia beenden" Command="{Binding QuitCommand}" />
+            </StackPanel>
+            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0" IsVisible="{Binding IsFailed}">
+              <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Erneut versuchen" />
+                <ctl:KeyHint Pad="X" Keys="F" Text="Pan entfernen" />
+                <ctl:KeyHint Pad="B" Keys="Esc" Text="Arcadia beenden" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+      </Panel>
+
       <!-- Pan's questions about the Steam Controller's firmware (#242, artboards T242Zustimmung, T242Firmware): over
            everything, the settings and the first start too. Neither can be clicked away nor closed with [B]; their
            buttons act only when held. -->

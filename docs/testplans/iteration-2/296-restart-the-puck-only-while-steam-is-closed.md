@@ -25,7 +25,7 @@ pure Pan update without HidHide's installer.
       cancelled installs)
 - [ ] **T296-6** Steam that won't close (e.g. a Steam dialog blocking its exit): the action stops with "Steam ließ sich
       nicht beenden …" and installs nothing. · E2E: no (needs a real Steam that refuses; Core covers it)
-- [ ] **T296-7** Arcadia brings a newer Pan, HidHide uninstalled, Steam running: the question "Pan aktualisieren" at
+- [ ] **T296-7** (dropped with #297: the update at start installs only Pan, never HidHide, and leaves Steam alone; see T297-4) Arcadia brings a newer Pan, HidHide uninstalled, Steam running: the question "Pan aktualisieren" at
       start ends with "Steam wird dafür kurz beendet und danach wieder gestartet."; [A] closes Steam, updates, starts
       Steam again. With a Steam game running the question doesn't come at this start; with a current HidHide it comes
       without the Steam sentence and leaves Steam alone. · E2E: yes (`PanGuardianTests`; obsolete once #297 lands)

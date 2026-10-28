@@ -197,4 +197,36 @@ public sealed class PanUpdateAtStartTests
         arcadia.Press(UiAction.Back);
         Assert.Equal(1, quit);
     }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T297-8")]
+    public async Task While_the_prompt_is_up_no_press_quits_starts_a_second_update_or_removes_Pan()
+    {
+        var prompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var steam = new FakeSteam { PanCompatibility = PanCompatibility.UpdateRequired, PanPromptUp = prompt };
+        using var arcadia = await StartAsync(steam);
+        var quit = 0;
+        arcadia.Main.QuitRequested += (_, _) => quit++;
+
+        await arcadia.PanAnsweredAtStartAsync();
+        var page = arcadia.Main.PanUpdate!;
+        await arcadia.WaitUntilAsync(() => steam.PanUpdates == 1, "die Windows-Abfrage der Aktualisierung");
+        Assert.Equal(PanUpdateState.Updating, page.State);
+        Assert.True(page.IsAskingWindows);
+
+        arcadia.Press(UiAction.Back).Press(UiAction.Accept).Press(UiAction.Search).Press(UiAction.Settings);
+        page.QuitCommand.Execute(null);
+        page.RetryCommand.Execute(null);
+        page.RemoveCommand.Execute(null);
+
+        Assert.Equal(0, quit);
+        Assert.Equal(1, steam.PanUpdates);
+        Assert.Equal(0, steam.PanUninstalls);
+        Assert.False(arcadia.Main.IsSettingsOpen);
+        Assert.Same(page, arcadia.Main.PanUpdate);
+
+        prompt.SetResult();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der bestätigten Abfrage");
+        Assert.Equal(1, steam.PanUpdates);
+    }
 }

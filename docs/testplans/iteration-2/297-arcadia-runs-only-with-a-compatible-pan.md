@@ -44,3 +44,4 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T297-1 … T297-8 | 2026-10-28 | Claude | PR branch, Debug, Linux cloud container, acceptance tests with a faked Pan; each seen red once by a mutation of the code it covers | ✅ | Windows CI and owner's PC open |
+| T297-8 (prompt up) | 2026-10-28 | Claude (QE review) | PR branch, Debug, Linux cloud container, new acceptance test with the Windows prompt held open; red once each by dropping the busy guard of [B] and of [X] | ✅ | – |

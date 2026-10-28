@@ -130,9 +130,17 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     /// <summary>Set, the next update fails with this message (Pan's exit code, a timeout).</summary>
     public string? PanUpdateError { get; set; }
 
-    public Task<bool> UpdatePanAsync(CancellationToken cancellationToken)
+    /// <summary>Set, the next update's Windows prompt stays up until the test completes it (#297: presses while it is up).</summary>
+    public TaskCompletionSource? PanPromptUp { get; set; }
+
+    public async Task<bool> UpdatePanAsync(CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _panUpdates);
+        if (PanPromptUp is { } prompt)
+        {
+            await prompt.Task.WaitAsync(cancellationToken);
+        }
+
         if (PanUpdateError is { } error)
         {
             throw new InvalidOperationException(error);
@@ -143,7 +151,7 @@ internal sealed class FakeSteam : IControllerSupportPlatform
             PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible;
         }
 
-        return Task.FromResult(PromptConfirmed);
+        return PromptConfirmed;
     }
 
     public Task<bool> UninstallPanAsync(CancellationToken cancellationToken)

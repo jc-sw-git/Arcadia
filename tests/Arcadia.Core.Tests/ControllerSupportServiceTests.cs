@@ -1650,6 +1650,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     public async Task Neu_installieren_runs_HidHide_s_installer_through_Pan_and_a_declined_prompt_says_so(bool declined)
     {
         var service = CreateReplaced();
+        _platform.HidHideVersion = PinnedHidHideDriver;
         _platform.HidHideReinstallDeclined = declined;
 
         await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
@@ -1658,6 +1659,38 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Equal(0, _platform.UsbipInstalls);
         Assert.Equal(declined, service.LastError?.Contains("„Neu installieren“", StringComparison.Ordinal) ?? false);
     }
+
+    [Fact]
+    [Trait("TestCase", "T242-26")]
+    public async Task HidHide_is_not_reinstalled_while_Pan_hides_or_holds_the_puck()
+    {
+        var service = CreateReplaced();
+        _platform.HidHideVersion = PinnedHidHideDriver;
+        service.PanHoldsPuck = () => true;
+
+        await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
+
+        Assert.Equal(0, _platform.HidHideReinstalls);
+        Assert.Equal(ControllerSupportService.HidHideReinstallWhileHiddenText, service.LastError);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T242-26")]
+    [InlineData("1.5.0.0")]
+    [InlineData("1.4.180.0")]
+    [InlineData(null)]
+    public async Task HidHide_is_reinstalled_only_over_the_pinned_version(string? installed)
+    {
+        var service = CreateReplaced();
+        _platform.HidHideVersion = installed is null ? null : Version.Parse(installed);
+
+        await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
+
+        Assert.Equal(0, _platform.HidHideReinstalls);
+        Assert.Contains("andere Version", service.LastError);
+    }
+
+    private static readonly Version PinnedHidHideDriver = new(1, 4, 181, 0);
 
     private sealed class FakeViiper : IViiperInstallation
     {

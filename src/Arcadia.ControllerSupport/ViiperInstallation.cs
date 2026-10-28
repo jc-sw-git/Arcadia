@@ -5,6 +5,7 @@ namespace Arcadia.ControllerSupport;
 /// <summary>The <c>viiper.exe</c> next to Arcadia: there, the pinned build, and fetched again when it went missing.</summary>
 public interface IViiperInstallation
 {
+    /// <summary>The pinned build is there; another <c>viiper.exe</c> counts as missing, so "Installieren" replaces it.</summary>
     bool IsInstalled { get; }
 
     /// <summary>
@@ -25,7 +26,7 @@ public sealed class ViiperInstallation(string executable, ReleaseAsset pinned) :
 
     public string Executable => executable;
 
-    public bool IsInstalled => File.Exists(executable);
+    public bool IsInstalled => IsPinned();
 
     /// <summary>
     /// The file is the pinned build. Another <c>viiper.exe</c> (an upstream one put there by hand) lacks the copy's device

@@ -274,6 +274,12 @@ public sealed class ControllerSupportService(
 
     private bool HasViiper => Viiper?.IsInstalled ?? sisr.HasViiper;
 
+    /// <summary>Pan hides the puck or holds it for a firmware attempt now (#242): HidHide must not be reinstalled then.</summary>
+    public Func<bool>? PanHoldsPuck { get; set; }
+
+    public const string HidHideReinstallWhileHiddenText =
+        "Solange Pan den Steam Controller versteckt, lässt sich HidHide nicht neu installieren. Schalte den Controller-Wächter (Pan) aus und versuche es dann noch einmal.";
+
     /// <summary>What the settings offer; rechecked on every <see cref="RefreshAsync"/>, and by the tick while on or while the settings are open.</summary>
     public ControllerSupportSetup Setup => _setup ??= CheckSetup();
 
@@ -1264,6 +1270,18 @@ public sealed class ControllerSupportService(
         }, cancellationToken),
         HealthFix.ReinstallHidHide => RunBusyAsync(DriversBusyText, async token =>
         {
+            // Pan runs HidHide's installer before it replaces itself: a filter reinstall while the puck is hidden or held
+            // for a firmware attempt could show Steam the real puck mid-attempt (decision 8).
+            if (PanHoldsPuck?.Invoke() == true)
+            {
+                throw new InvalidOperationException(HidHideReinstallWhileHiddenText);
+            }
+
+            if (_platform.HidHideVersion is not { } installed || !HidHideRelease.IsPinnedDriver(installed))
+            {
+                throw new InvalidOperationException($"„Neu installieren“ geht nur über HidHide {HidHideRelease.Version}; installiert ist eine andere Version.");
+            }
+
             if (!await WithTimeoutAsync(t => _platform.ReinstallHidHideAsync(http, t), DriversInstallTimeout, "Die HidHide-Installation", token))
             {
                 throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Neu installieren“ wählen und die Abfrage bestätigen.");
@@ -1473,7 +1491,7 @@ public sealed class ControllerSupportService(
         if (WatchSetup && HidingCheck is { } check && _platform.IsPanReady
             && _platform.HidHideVersion is { } hidHide && HidHideRelease.IsSupported(hidHide)
             && !issues.Contains(EmulationParts.HidHideRemovalPending)
-            && EmulationParts.FromHidingCheck(await check.CheckHidingAsync(cancellationToken)) is { } hiding)
+            && EmulationParts.FromHidingCheck(await check.CheckHidingAsync(cancellationToken), hidHide) is { } hiding)
         {
             issues.Add(hiding);
         }

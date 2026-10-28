@@ -158,6 +158,9 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     public PanEmulationStatus Status => _status;
 
+    /// <summary>Pan hides the puck now, or was asked to hold it for a firmware attempt (#242); any thread.</summary>
+    public bool HidesPuck => _session is { Ended: false } session && (session.Hidden || session.HoldTried);
+
     /// <summary>The puck is hidden for this emulation (only when this build has the copy).</summary>
     public bool Hides => _hold.CanCopy;
 

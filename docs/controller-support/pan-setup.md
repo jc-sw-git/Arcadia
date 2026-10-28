@@ -25,7 +25,8 @@ How Pan (#243, [pan.md](pan.md)) gets onto the PC and off it again, and how its 
   failure doesn't stop Pan's install: exit code 6, Arcadia names the log and the manual download. A supported HidHide
   already installed is reused; VIIPER comes with Arcadia (fetched again without UAC if it went missing, #242).
   "HidHide antwortet unerwartet" offers "Neu installieren": `--install --hidhide-installer … --hidhide-repair` runs
-  the pinned installer with `HidHideRelease.RepairArguments` (Windows Installer's reinstall), one prompt.
+  the pinned installer with `HidHideRelease.RepairArguments` (Windows Installer's reinstall), one prompt; only over
+  the very driver it installs and never while Pan hides the puck or a firmware attempt runs.
 - Data folder: `%ProgramData%` lets any user create `Arcadia\Pan` first and keep its ownership, so `--install`
   secures both folders before its first log line (`ServiceSetup.SecureDataDirectory`): a reparse point is deleted, a
   folder not owned by SYSTEM/Administrators or writable by anyone else (`DataFolderRights`) is renamed to

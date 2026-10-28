@@ -45,6 +45,13 @@ public static class HidHideRelease
     /// </summary>
     public static IReadOnlyList<string> RepairArguments { get; } = [.. SilentArguments, "REINSTALL=ALL", "REINSTALLMODE=vamus"];
 
+    /// <summary>
+    /// The installed driver is the one this installer brings (major, minor, build), so "Neu installieren" repairs it and
+    /// is never a downgrade over a newer one.
+    /// </summary>
+    public static bool IsPinnedDriver(Version installed) =>
+        installed.Major == DriverVersion.Major && installed.Minor == DriverVersion.Minor && installed.Build == DriverVersion.Build;
+
     /// <summary>The versions Pan hides with (<see cref="SteamControllerHiding.MinimumVersion"/> up to the next major).</summary>
     public static bool IsSupported(Version version) =>
         version.Major == SteamControllerHiding.SupportedMajorVersion && version >= SteamControllerHiding.MinimumVersion;

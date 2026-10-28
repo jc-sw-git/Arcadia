@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Arcadia.Input;
 
 namespace Arcadia.ControllerSupport.Copy;
 
@@ -122,6 +123,12 @@ public sealed class PuckDescriptors
     public IReadOnlyDictionary<byte, HidReportSizes> ReportSizes { get; }
 
     public bool IsHid(byte iface) => InterfaceClasses.TryGetValue(iface, out var cls) && cls == HidClass;
+
+    /// <summary>
+    /// Fail closed (QE review of PR #294): the copy (on usbip-win2's software host) and a device whose place can't be
+    /// read are never taken for the real puck, or Arcadia would read its own copy and send Steam's requests back into it.
+    /// </summary>
+    public static bool IsRealPuck(DeviceHost host) => host == DeviceHost.Hardware;
 
     /// <summary>A serial number as Windows read it from the puck: letters and digits only, at most 32.</summary>
     public static bool IsValidSerial(string serial) =>

@@ -42,7 +42,7 @@ public sealed class EmulationPartsTests
     [InlineData(null, null)]
     public void Pan_s_answer_about_hiding_maps_to_a_row_that_says_what_to_do(PanReason? reason, string? id)
     {
-        var issue = EmulationParts.FromHidingCheck(reason);
+        var issue = EmulationParts.FromHidingCheck(reason, new Version(1, 4, 181, 0));
 
         Assert.Equal(id, issue?.Id);
         if (issue is not null)
@@ -57,11 +57,24 @@ public sealed class EmulationPartsTests
     [Trait("TestCase", "T242-26")]
     public void A_HidHide_that_answers_unexpectedly_offers_its_reinstall()
     {
-        var issue = EmulationParts.FromHidingCheck(PanReason.HidHideUnsupported)!;
+        var issue = EmulationParts.FromHidingCheck(PanReason.HidHideUnsupported, new Version(1, 4, 181, 0))!;
 
         Assert.Equal("Neu installieren", issue.FixLabel);
         Assert.Equal($"HidHide {HidHideRelease.Version} neu installieren hilft", issue.ShortText);
         Assert.Contains("Windows fragt einmal nach Administratorrechten", issue.Detail);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T242-26")]
+    [InlineData("1.4.180.0")]
+    [InlineData("1.5.0.0")]
+    [InlineData(null)]
+    public void Over_another_HidHide_than_the_pinned_one_no_reinstall_is_offered(string? installed)
+    {
+        var issue = EmulationParts.FromHidingCheck(PanReason.HidHideUnsupported, installed is null ? null : Version.Parse(installed))!;
+
+        Assert.Equal(HealthFix.None, issue.Fix);
+        Assert.Null(issue.FixLabel);
     }
 
     [Fact]

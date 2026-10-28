@@ -207,6 +207,7 @@ public partial class App : Application
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;
             viewModel.ConnectPan(forGames);
+            controllerSupport.PanHoldsPuck = () => forGames.Emulation.HidesPuck || forGames.FirmwareAttempt.IsActive;
             viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
             // Pan's question before taking the Steam Controller over, or a firmware update Steam tries through the copy (#242):
             // Arcadia may be behind a game, and the player must answer.

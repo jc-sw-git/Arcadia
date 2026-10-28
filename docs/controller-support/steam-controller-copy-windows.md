@@ -14,11 +14,13 @@ raw and VIIPER shows Steam a USB device with the puck's descriptors. Measured de
 - No IN repeat: an interrupt IN endpoint without a new report NAKs instead of resending the last one (upstream repeats
   it every interval, so Steam would read each report many times). A device opts in with `NoInRepeat()`.
 - Answered by VIIPER itself, never handed on: the standard requests, HID `SET_IDLE`/`SET_PROTOCOL`/`GET_IDLE`/
-  `GET_PROTOCOL` and CDC class requests to the puck's serial interfaces (Windows' drivers send them to any device of
-  their class). Every other control request (GET/SET_REPORT, vendor, unknown) goes to Arcadia and waits up to 1 s.
+  `GET_PROTOCOL` and the CDC line settings (`SET_LINE_CODING`, `GET_LINE_CODING`, `SET_CONTROL_LINE_STATE`; Windows'
+  drivers send them to any device of their class). Every other control request (GET/SET_REPORT, other CDC requests
+  such as a break, vendor, unknown) goes to Arcadia and waits up to 1 s.
 - Stream protocol, one client at a time: 4-byte header (kind, interface, length LE16), then the payload. `0x01` input
   report (Arcadia → VIIPER), `0x81` interrupt OUT data, `0x82` control request (sequence LE16, setup packet, OUT data),
-  `0x02` its reply (sequence, status 0 done or 1 stall, IN data). `HidProxyFrames` in Arcadia, `protocol.go` in the fork.
+  `0x02` its reply (sequence, status 0 done or 1 refused, IN data). VIIPER's server can't stall: a refused request (or
+  no answer within 1 s) reaches the host as an empty, successful data stage. `HidProxyFrames` in Arcadia, `protocol.go`.
 - The fork's workflow "Arcadia build" runs `go vet` and `go test` (an end-to-end test through the real usbip server
   reads every report exactly once) and cross-builds `viiper.exe`; with `publish` it releases `arcadia-<commit>` with
   the exe, its SHA-256 and the licenses. `src/Arcadia.ControllerSupport/Viiper.targets` pins commit, URL, size and
@@ -29,20 +31,25 @@ raw and VIIPER shows Steam a USB device with the puck's descriptors. Measured de
 - "VIIPER fehlt" → "Installieren" (`ViiperInstallation.InstallAsync`): the pinned file into Arcadia's folder (the
   user's own, no administrator rights), downloaded beside it and moved in only once its hash matched.
 - The copy needs exactly the pinned build (`ViiperInstallation.IsPinned`, hash cached per size and write time): with
-  another `viiper.exe` `CanCopy` is false and Pan hides nothing.
+  another `viiper.exe` `CanCopy` is false and Pan hides nothing, and "VIIPER fehlt" offers "Installieren", which
+  replaces it. It also needs the server Arcadia started from that file: on another program's VIIPER on the port
+  `AddRawDeviceAsync` refuses (it would get the puck's serial and all of Steam's traffic), so the copy fails and Pan
+  shows the puck.
 
 ## Arcadia's side (part C)
 
 - `WindowsPuck` opens the vendor collection (usage page ≥ `0xFF00`) of each HID interface of the real puck by SetupDi,
-  leaving out a device on a software host (the copy), with one reader handle (blocking `ReadFile`) and one writer
+  only a device the device tree places on a hardware (PCI, ACPI) host: the copy is on a software host, and a device
+  whose place can't be read is left out too (fail closed, `PuckDescriptors.IsRealPuck`). One reader handle (blocking `ReadFile`) and one writer
   handle (features, outputs) each. Windows' buffers (led by the report id, padded to the longest report) are cut to
-  the USB length from the report descriptor (`HidReportSizes`).
+  the USB length from the report descriptor (`HidReportSizes`). Closing cancels the reads until none is left, also one
+  that began after the first cancel.
 - `SteamControllerCopyBridge`, free of Windows (tested with a fake puck over a loopback socket): one thread per HID
   interface reads the puck and writes `ToSteam`'s result to VIIPER; a task answers VIIPER's frames in order.
   `SteamControlRequests.Classify` names each control request: SET_REPORT feature/output and GET_REPORT feature/input
-  go to the filter; idle, protocol and CDC requests are housekeeping (answered done, never counted, a second guard
-  besides the fork); vendor and unknown requests are refused and count as update traffic. A dropped message is
-  answered done, as the real puck would.
+  go to the filter; HID idle and protocol and the CDC line settings are housekeeping (answered done, never counted, a
+  second guard besides the fork; the fork never sends them); other CDC, vendor and unknown requests are refused and
+  count as update traffic. A dropped message is answered done, as the real puck would.
 - Closing stops every call to the puck first (under the lock the calls take), then closes the stream and the puck;
   then VIIPER's bus is removed. A removal that fails throws, so Pan's teardown ends `viiper.exe` before the puck shows.
 - Arcadia's SDL ignores the copy: a Steam pad whose HID path leads to a software host (`DeviceTree.InterfaceOnSoftwareHost`)
@@ -59,4 +66,6 @@ raw and VIIPER shows Steam a USB device with the puck's descriptors. Measured de
 - An update offered in Steam's in-game overlay: the game stays in front, so a short gap there skips the question.
   The script asks whether the overlay offers one.
 - "Neu installieren" for "HidHide antwortet unerwartet" runs the pinned installer with Windows Installer's reinstall
-  (`REINSTALL=ALL REINSTALLMODE=vamus`, `HidHideRelease.RepairArguments`): not yet run on a real PC.
+  (`REINSTALL=ALL REINSTALLMODE=vamus`, `HidHideRelease.RepairArguments`): not yet run on a real PC. Offered and run
+  only over the very driver it installs (`HidHideRelease.IsPinnedDriver`), and refused while Pan hides the puck or a
+  firmware attempt runs (`ControllerSupportService.PanHoldsPuck`): Pan runs the installer before it replaces itself.

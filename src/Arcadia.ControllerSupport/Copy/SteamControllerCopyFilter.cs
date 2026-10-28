@@ -17,7 +17,7 @@ public enum SteamReportKind
 
     /// <summary>
     /// What a host's driver says to any device of its class (a HID interface's idle rate and protocol, a CDC interface's
-    /// line settings): between Windows and the copy only, never passed on and no sign of an update.
+    /// line coding and control line state): between Windows and the copy only, never passed on and no sign of an update.
     /// </summary>
     Housekeeping,
 
@@ -36,6 +36,9 @@ public static class SteamControlRequests
     private const byte SetReport = 0x09;
     private const byte SetIdle = 0x0A;
     private const byte SetProtocol = 0x0B;
+    private const byte SetLineCoding = 0x20;
+    private const byte GetLineCoding = 0x21;
+    private const byte SetControlLineState = 0x22;
 
     /// <summary>
     /// <paramref name="isHid"/>, <paramref name="isCdc"/>: the class of the interface the request names. Only class
@@ -47,7 +50,8 @@ public static class SteamControlRequests
         var type = (HidReportType)(setup.Value >> 8);
         if (isCdc && (setup.RequestType & 0x7F) == ClassToInterface)
         {
-            return (SteamReportKind.Housekeeping, type);
+            // Only the line settings: a break or an encapsulated command could start a bootloader (QE review of PR #294).
+            return (setup.Request is SetLineCoding or GetLineCoding or SetControlLineState ? SteamReportKind.Housekeeping : SteamReportKind.Other, type);
         }
 
         if (!isHid)

@@ -80,8 +80,9 @@ Decision 8 (owner: "no bricked Steam Controllers under any circumstances"): an a
   and how the attempt ended (Steam gave up, or the player said so).
 - Open: whether Steam misses `0xA3` (sent on every slot in the spike), and the real update path (the owner's check
   script). No bootloader type is known; it would be dropped and counted all the same.
-- What Windows' class drivers say to any device (HID idle and protocol, CDC line settings) is housekeeping: answered,
-  never passed on, never counted (`SteamReportKind.Housekeeping`). Vendor and unknown control requests count.
+- What Windows' class drivers say to any device (HID idle and protocol, CDC line coding and control line state) is
+  housekeeping: answered, never passed on, never counted (`SteamReportKind.Housekeeping`). Other CDC requests (a
+  break, an encapsulated command), vendor and unknown control requests count.
 
 ## UI (designs, section "#242 Pan")
 

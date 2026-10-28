@@ -262,7 +262,7 @@ public sealed class EmulationSetupTests
     [Trait("TestCase", "T242-26")]
     public async Task A_HidHide_that_answers_unexpectedly_is_reinstalled_from_its_row()
     {
-        var steam = new FakeSteam();
+        var steam = new FakeSteam { HidHideVersion = new Version(1, 4, 181, 0) };
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
         steam.HidHideReinstalled = () => arcadia.Pan.Hiding = PanReason.None;

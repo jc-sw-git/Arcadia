@@ -137,8 +137,9 @@ public sealed partial class WindowsPuck : IRealPuck
                     return Marshal.GetLastPInvokeError() == ErrorNoMoreItems ? found : throw new Win32Exception(Marshal.GetLastPInvokeError());
                 }
 
+                // Only a puck known to sit on a hardware host: one whose place can't be read might be the copy itself.
                 if (PathOf(set, ref data) is { } path && InterfaceOf(path) is { } iface && IsVendorCollection(path)
-                    && !DeviceTree.InterfaceOnSoftwareHost(path))
+                    && PuckDescriptors.IsRealPuck(DeviceTree.HostOfInterface(path)))
                 {
                     found.Add((iface, path));
                 }
@@ -217,7 +218,10 @@ public sealed partial class WindowsPuck : IRealPuck
         private readonly HidpCaps _caps;
         private readonly HidReportSizes _sizes;
         private readonly byte[] _readBuffer;
+        private static readonly TimeSpan CloseWait = TimeSpan.FromSeconds(1);
+
         private volatile bool _closed;
+        private int _reading;
 
         private Collection(SafeFileHandle reader, SafeFileHandle writer, HidpCaps caps, HidReportSizes sizes)
         {
@@ -262,17 +266,32 @@ public sealed partial class WindowsPuck : IRealPuck
 
         public unsafe int Read(Span<byte> report)
         {
-            uint read;
-            fixed (byte* buffer = _readBuffer)
+            // Counted before _closed is checked: Dispose cancels until no read is left, also one that began after its
+            // first cancel (QE review of PR #294), or that read would wait for a report an empty slot never sends.
+            Interlocked.Increment(ref _reading);
+            try
             {
-                if (!ReadFile(_reader, buffer, (uint)_readBuffer.Length, out read, 0))
+                if (_closed)
                 {
-                    var error = Marshal.GetLastPInvokeError();
-                    return _closed || error == ErrorOperationAborted ? 0 : throw new Win32Exception(error);
+                    return 0;
                 }
-            }
 
-            return FromWindows(_readBuffer.AsSpan(0, (int)read), _sizes.Input, report);
+                uint read;
+                fixed (byte* buffer = _readBuffer)
+                {
+                    if (!ReadFile(_reader, buffer, (uint)_readBuffer.Length, out read, 0))
+                    {
+                        var error = Marshal.GetLastPInvokeError();
+                        return _closed || error == ErrorOperationAborted ? 0 : throw new Win32Exception(error);
+                    }
+                }
+
+                return FromWindows(_readBuffer.AsSpan(0, (int)read), _sizes.Input, report);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _reading);
+            }
         }
 
         public void SetFeature(ReadOnlySpan<byte> report)
@@ -342,8 +361,20 @@ public sealed partial class WindowsPuck : IRealPuck
         public void Dispose()
         {
             _closed = true;
-            // Ends a read that waits for the puck, then closes both handles.
-            CancelIoEx(_reader, 0);
+            // Ends every read that waits for the puck, then closes both handles.
+            var until = Environment.TickCount64 + (long)CloseWait.TotalMilliseconds;
+            do
+            {
+                CancelIoEx(_reader, 0);
+                if (Volatile.Read(ref _reading) == 0)
+                {
+                    break;
+                }
+
+                Thread.Sleep(5);
+            }
+            while (Environment.TickCount64 < until);
+
             _reader.Dispose();
             _writer.Dispose();
         }

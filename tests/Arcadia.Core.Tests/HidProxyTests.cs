@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Arcadia.ControllerSupport.Copy;
+using Arcadia.Input;
 
 namespace Arcadia.Tests.Pads;
 
@@ -89,6 +90,20 @@ public sealed class HidProxyTests
 
     [Theory]
     [Trait("TestCase", "T242-4")]
+    [InlineData(@"PCI\VEN_8086&DEV_7A60\3&11583659&0&A0", DeviceHost.Hardware, true)]
+    [InlineData(@"ACPI\PNP0A08\0", DeviceHost.Hardware, true)]
+    [InlineData(@"ROOT\USBIP_WIN2\0000", DeviceHost.Software, false)]
+    [InlineData(@"SWD\MMDEVAPI\X", DeviceHost.Software, false)]
+    [InlineData("", DeviceHost.Unknown, false)]
+    [InlineData(@"BTHENUM\X", DeviceHost.Unknown, false)]
+    public void Only_a_puck_on_a_known_hardware_host_is_the_real_one(string hostId, DeviceHost host, bool real)
+    {
+        Assert.Equal(host, DeviceTree.HostOf(hostId));
+        Assert.Equal(real, PuckDescriptors.IsRealPuck(DeviceTree.HostOf(hostId)));
+    }
+
+    [Theory]
+    [Trait("TestCase", "T242-4")]
     [InlineData("FXA1234567", true)]
     [InlineData("", false)]
     [InlineData("FX-123", false)]
@@ -134,6 +149,9 @@ public sealed class HidProxyTests
     [InlineData(0xA1, 0x03, 0x0000, true, false, SteamReportKind.Housekeeping)]
     [InlineData(0x21, 0x20, 0x0000, false, true, SteamReportKind.Housekeeping)]
     [InlineData(0xA1, 0x21, 0x0000, false, true, SteamReportKind.Housekeeping)]
+    [InlineData(0x21, 0x22, 0x0003, false, true, SteamReportKind.Housekeeping)]
+    [InlineData(0x21, 0x23, 0xFFFF, false, true, SteamReportKind.Other)]
+    [InlineData(0x21, 0x00, 0x0000, false, true, SteamReportKind.Other)]
     [InlineData(0x41, 0x01, 0x0000, false, true, SteamReportKind.Other)]
     [InlineData(0x21, 0x0A, 0x0000, false, false, SteamReportKind.Other)]
     [InlineData(0x40, 0x0A, 0x0000, true, false, SteamReportKind.Other)]

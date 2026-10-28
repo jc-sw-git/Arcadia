@@ -80,7 +80,9 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
     /// <summary>
     /// Adds a device of another type on a bus of its own on the same server, and opens its raw stream: the copy of the
     /// Steam Controller's puck (#242, type <c>hidproxy</c> of the VIIPER fork). Throws when that fails; then nothing is left
-    /// behind. The device goes when the returned one is disposed.
+    /// behind. The device goes when the returned one is disposed. Only on the server Arcadia started from its own
+    /// <c>viiper.exe</c>: another program's VIIPER on the port may lack the type or its IN rule, and would get the puck's
+    /// serial number and all of Steam's traffic.
     /// </summary>
     public async Task<ViiperRawDevice> AddRawDeviceAsync(string type, Dictionary<string, object?> deviceSpecific, CancellationToken cancellationToken)
     {
@@ -90,6 +92,11 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
         try
         {
             await EnsureServerAsync(client, cancellationToken);
+            if (_server is not { HasExited: false })
+            {
+                throw new InvalidOperationException("Auf dem Port von VIIPER antwortet ein Programm, das Arcadia nicht gestartet hat; die Kopie des Pucks läuft nur auf Arcadias eigenem VIIPER");
+            }
+
             using var timeout = Timeout(cancellationToken);
             bus = (await client.BusCreateAsync(null, timeout.Token)).BusID;
             var device = await client.BusDeviceAddAsync(bus.Value, new DeviceCreateRequest { Type = type, DeviceSpecific = deviceSpecific }, timeout.Token);

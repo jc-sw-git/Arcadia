@@ -27,13 +27,15 @@ public sealed class ViiperInstallationTests : IDisposable
         var installation = new ViiperInstallation(Executable, Pinned(Build));
         Assert.False(installation.IsPinned());
 
+        // An upstream viiper.exe lacks the copy's device type: it counts as missing, so "Installieren" replaces it.
         File.WriteAllBytes(Executable, "upstream viiper"u8.ToArray());
-        Assert.True(installation.IsInstalled);
+        Assert.False(installation.IsInstalled);
         Assert.False(installation.IsPinned());
 
         File.WriteAllBytes(Executable, Build);
         File.SetLastWriteTimeUtc(Executable, DateTime.UtcNow.AddMinutes(1));
         Assert.True(installation.IsPinned());
+        Assert.True(installation.IsInstalled);
     }
 
     [Fact]
@@ -57,6 +59,20 @@ public sealed class ViiperInstallationTests : IDisposable
         Assert.Equal(Build, File.ReadAllBytes(Executable));
         Assert.True(installation.IsPinned());
         Assert.Equal([ViiperRelease.ExecutableName], Directory.GetFiles(_directory).Select(Path.GetFileName));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T242-27")]
+    public async Task Installieren_replaces_a_viiper_exe_that_is_not_the_pinned_build()
+    {
+        File.WriteAllBytes(Executable, "upstream viiper"u8.ToArray());
+        using var http = new HttpClient(new Handler(Build));
+        var installation = new ViiperInstallation(Executable, Pinned(Build));
+
+        await installation.InstallAsync(http, CancellationToken.None);
+
+        Assert.Equal(Build, File.ReadAllBytes(Executable));
+        Assert.True(installation.IsInstalled);
     }
 
     [Fact]

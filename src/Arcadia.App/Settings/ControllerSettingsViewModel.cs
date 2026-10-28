@@ -392,8 +392,11 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         ContinueInstall();
     }
 
-    /// <summary>The prompts' install closes Steam: "SISR installieren" whenever Steam runs, a driver fix only if it restarts the puck.</summary>
-    private bool PromptInstallStopsSteam => _steamStopFix is { } fix ? _support.StopsSteamFor(fix) : _support.InstallStopsSteam;
+    /// <summary>
+    /// The prompts' install closes Steam whenever Steam runs: a driver fix gets here only if it restarts the puck, decided
+    /// once at the press, so the prompt's 1-s check doesn't read HidHide's version on the UI thread.
+    /// </summary>
+    private bool PromptInstallStopsSteam => _support.InstallStopsSteam;
 
     /// <summary>
     /// Installing closes Steam, so it can't run beside a Steam game. With several Steam accounts the
@@ -404,7 +407,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     {
         if (_steamStopFix is not null && !PromptInstallStopsSteam)
         {
-            // Steam was closed meanwhile, or the fix no longer needs HidHide's installer: nothing to ask, no game in the way.
+            // Steam was closed meanwhile: nothing to ask, no game in the way.
             Install();
         }
         else if (_support.SteamGameBlockingInstall() is { } game)

@@ -428,6 +428,9 @@ public sealed class ControllerSupportService(
     /// </summary>
     public bool StopsSteamFor(HealthFix fix) => _platform.IsSteamRunning && RestartsPuck(fix);
 
+    /// <summary>The Pan update at start closes Steam first, as <see cref="StopsSteamFor"/>: only when it installs HidHide too.</summary>
+    public bool PanUpdateStopsSteam => _platform.IsSteamRunning && _platform.InstallsHidHide;
+
     private bool RestartsPuck(HealthFix fix) => fix switch
     {
         HealthFix.ReinstallHidHide => true,

@@ -4,7 +4,8 @@ HidHide's installer restarts the connected puck. "Treiber installieren" (and the
 "Wächterdienst Pan fehlt" / "usbip-Treiber fehlt") and "Neu installieren" for "HidHide antwortet unerwartet" now close a
 running Steam first, after the same "Steam beenden?" as the SISR setup, and start it again afterwards, but only when the
 step runs HidHide's installer (`IControllerSupportPlatform.InstallsHidHide`). A running Steam game: "Steam-Spiel läuft",
-nothing happens. The Pan update at start goes to #297 (it becomes a pure Pan update without HidHide's installer).
+nothing happens. The Pan update at start does the same while it still installs missing drivers; #297 replaces it with a
+pure Pan update without HidHide's installer.
 
 - [ ] **T296-1** HidHide uninstalled, Steam running (no game). PAN group, "HidHide fehlt" → "Installieren" with [A]:
       "Steam beenden?" opens, the focus on "Steam beenden und installieren", the text says the installation restarts the
@@ -24,6 +25,10 @@ nothing happens. The Pan update at start goes to #297 (it becomes a pure Pan upd
       cancelled installs)
 - [ ] **T296-6** Steam that won't close (e.g. a Steam dialog blocking its exit): the action stops with "Steam ließ sich
       nicht beenden …" and installs nothing. · E2E: no (needs a real Steam that refuses; Core covers it)
+- [ ] **T296-7** Arcadia brings a newer Pan, HidHide uninstalled, Steam running: the question "Pan aktualisieren" at
+      start ends with "Steam wird dafür kurz beendet und danach wieder gestartet."; [A] closes Steam, updates, starts
+      Steam again. With a Steam game running the question doesn't come at this start; with a current HidHide it comes
+      without the Steam sentence and leaves Steam alone. · E2E: yes (`PanGuardianTests`; obsolete once #297 lands)
 
 History:
 

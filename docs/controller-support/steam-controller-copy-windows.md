@@ -80,7 +80,7 @@ raw and VIIPER shows Steam a USB device with the puck's descriptors. Measured de
   only over the very driver it installs (`HidHideRelease.IsPinnedDriver`), refused while Pan hides the puck or a
   firmware attempt runs (`ControllerSupportService.PanHoldsPuck`; Pan runs the installer before it replaces itself),
   and run with Steam closed (#296): the installer restarts the puck, which then is Steam's and may be mid-update.
-- Puck restart and Steam (#296): every step that runs HidHide's installer ("Treiber installieren" and its part rows
+- Puck restart and Steam (#296): every step that runs HidHide's installer ("Treiber installieren", its part rows and the Pan update at start
   when `InstallsHidHide`: missing or unsupported, no removal pending; "Neu installieren" always) runs only with Steam
   closed. The settings ask "Steam beenden?" (or name a running Steam game); `InstallWithSteamClosedAsync` closes Steam,
   installs, starts it again also after a failure, and waits up to `SteamStartTimeout`. Without HidHide's installer

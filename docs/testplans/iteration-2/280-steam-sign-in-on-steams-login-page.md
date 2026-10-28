@@ -55,3 +55,4 @@ History:
 | T280-1, T280-3 | 2026-10-27 | Owner | PR build (`1fa33fc`) on the owner's PC, real Steam page | ❌ Steam's page loads, but doesn't scale with the window; wished: mouse mode and its keyboard for a page opened by controller, avatar in the info panel | Fixed in this PR (T280-9 to T280-11) |
 | T280-9, T280-11 | 2026-10-27 | Claude | PR branch after the findings: window test at 1920×1080, 2560×1440, 1280×1024 and acceptance test against a faked Steam (Linux, headless); each made red once | ✅ | – |
 | T280-5, T280-8 | 2026-10-27 | Claude | PR branch, unit tests (`Expired_token_is_read_anew_from_the_store_page_without_showing_the_login_page`, `Sign_in_of_the_first_version_posing_as_the_phone_app_is_deleted_at_the_start`, `Log_holds_no_token_no_account_id_and_no_name`) | ✅ | – |
+| T280-1 to T280-11 | 2026-10-28 | Owner | PR build (`3ab4aeb`) on the owner's PC, real Steam page | ✅ | Merge |

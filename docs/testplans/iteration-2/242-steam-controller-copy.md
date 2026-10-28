@@ -6,7 +6,8 @@ in the controller settings, the greyed mode, the header and the firmware dialog.
 bridge, SDL ignoring the copy, "Neu installieren" for HidHide. Cases marked "after part C" need a build with the fork
 pinned (since PR #294: release `arcadia-f1baf515abba` of `jc-sw-git/VIIPER`); with an empty pin the App passes
 `NoSteamControllerCopy` and the pad works as in #213. The owner runs the manual cases at the end of the iteration
-(owner, 2026-10-28), not before this PR's merge into `feat/replace-sisr`. Needed: the Steam Controller with its puck, Steam,
+(owner, 2026-10-28), in the one full test of `feat/replace-sisr` before its merge into `main` (acceptance review #222),
+not before this PR's merge into `feat/replace-sisr`. Needed: the Steam Controller with its puck, Steam,
 a game on "Steam-Eingabe" and one on "Arcadia", HidHide's configuration client, "Game controllers" = `joy.cpl`. How it
 works: `docs/controller-support/steam-controller-copy.md`.
 

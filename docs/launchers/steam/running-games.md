@@ -1,7 +1,5 @@
 # Steam — running games (#95, 2026-10-21)
 
-Index: `README.md`. Verified on the owner's PC.
-
 `SteamRunningGames` reads `HKCU\Software\Valve\Steam\Apps\<appid>\Running` (1 while the game runs) and, like SISR
 already does, `RunningAppID` (the game Steam started last, while it runs; it counts even without the flag). There
 are thousands of `Apps` keys (every app Steam ever touched), so only a poll after a pause of more than 10 s (Arcadia

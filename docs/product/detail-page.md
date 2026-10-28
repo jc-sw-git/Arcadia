@@ -1,8 +1,5 @@
 # Product decisions: Game start, detail page and game actions
 
-Agreed with the owner; don't change without asking. Read this before changing this area
-(index in `CLAUDE.md` → Product decisions).
-
 - A starts a game on release; holding A for 1 s opens the detail page (a ring around the preview fills from
   0.2 s on, letting go before 1 s cancels). With the mouse a click picks a cover, a double click starts it and
   holding the left button 1 s opens the details with the same ring (owner, 2026-10-19). The context menu and the detail page offer the same actions

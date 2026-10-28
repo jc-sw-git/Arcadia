@@ -1,7 +1,5 @@
 # Steam — account (#83, #280, 2026-10-27, partly checked against the real Steam)
 
-Index: `README.md`.
-
 `Steam/Account/`: sign-in on Steam's own store login page in Arcadia's browser (`IWebPages`, a system web view:
 WebView2 / WebKitGTK, profile in `%APPDATA%\Arcadia\WebView`), the way Playnite does it. Every store page then holds
 `#application_config` with `data-userinfo` (`logged_in`, `steamid`) and `data-store_user_config` (`webapi_token`, a JWT:

@@ -1,8 +1,5 @@
 # Product decisions: Library
 
-Agreed with the owner; don't change without asking. Read this before changing this area
-(index in `CLAUDE.md` → Product decisions).
-
 - Page sizes 10/25/50/100, default 25. A size is selectable if the library has *more* games
   than the next smaller size (`PageSizes.IsAllowed`).
 - Sorting: name / install date / last played, each ascending or descending; games without a

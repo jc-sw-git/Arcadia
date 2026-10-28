@@ -1,7 +1,6 @@
 # Product decisions: UI texts
 
-Agreed with the owner; don't change without asking. Read this before writing or changing any text the
-user sees (index in `CLAUDE.md` → Product decisions). Controller buttons in texts: `docs/product/controls.md`.
+Read before writing or changing any text the user sees. Controller buttons in texts: `docs/product/controls.md`.
 
 - German UI terms, no English loan words where a German one exists: "Steam-Eingabe", not "Steam Input"
   (owner, 2026-10-22).

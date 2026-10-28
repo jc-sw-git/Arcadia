@@ -1,7 +1,5 @@
 # Steam — library and installs
 
-Index: `README.md`. Verified on the owner's PC.
-
 **Steam library** (`SteamScanner`, verified 2026-10-12 against the owner's 3 libraries): libraries from
 `steamapps/libraryfolders.vdf` (`path`), one `appmanifest_<appid>.acf` per installed app. `StateFlags` bit 2 =
 update pending (4 = installed, 6 = with update); a first install without `buildid` is not shown.

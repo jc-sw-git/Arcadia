@@ -133,12 +133,11 @@ internal sealed class ArcadiaDriver : IDisposable
         _running = running;
         PanNotices = new PanNotices(Main.Toast, () => IsArcadiaInFront, OverlayNotices.Add);
         ControllerSupport.HidingCheck = Pan;
-        ForGames = SteamControllerForGames.Create(XboxPads, Pan, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, PanNotices, time);
+        ForGames = SteamControllerForGames.Create(panSupported: true, XboxPads, Pan, SteamControllerCopy, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, PanNotices, time);
         XboxPad = ForGames.Pad;
         Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
-        ForGames.Routing.DriverChanged += () => Dispatcher.UIThread.Post(() => Main.SetSteamControllerDriverReady(ForGames.Routing.DriverReady));
+        Main.ConnectPan(ForGames);
         ForGames.Routing.Update();
-        Main.SetSteamControllerDriverReady(ForGames.Routing.DriverReady);
         _controllers.Polled += XboxPad.Feed;
         _controllers.Lost += XboxPad.Drop;
         _controllers.ButtonPressed += _gamepad.Press;
@@ -153,6 +152,18 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>Pan, the guardian the pads stand under (#243); available unless a test takes it away.</summary>
     public FakeEmulationGuardian Pan { get; } = new();
+
+    /// <summary>
+    /// The copy of the Steam Controller for Steam (#242); like this build, no copy unless a test gives it one with
+    /// <see cref="FakeSteamControllerHold.CanCopy"/> before <see cref="StartControllers"/>.
+    /// </summary>
+    public FakeSteamControllerHold SteamControllerCopy { get; } = new() { CanCopy = false, PuckPresent = false };
+
+    /// <summary>A window of Steam itself is in front (#242).</summary>
+    public bool IsSteamInFront { get; set; }
+
+    /// <summary>The library game in front, as <c>ForegroundGame.InFront</c> tells it (a short gap mid-game, #242).</summary>
+    public string? GameInFront { get; set; }
 
     /// <summary>Notices about Pan and the emulated controller (#243 B2): a toast in front, else the overlay.</summary>
     public PanNotices PanNotices { get; }
@@ -447,7 +458,13 @@ internal sealed class ArcadiaDriver : IDisposable
     {
         _controllers.Open();
         Dispatcher.UIThread.RunJobs();
-        return PollControllers();
+        PollControllers();
+
+        // As the App's first tick after the start: Pan's emulation comes up (#242), and the mode can be chosen.
+        Task.Run(() => ForGames.Emulation.TickAsync()).Wait();
+        ForGames.Routing.Update();
+        Dispatcher.UIThread.RunJobs();
+        return this;
     }
 
     /// <summary>One read of the controllers, as the App does every 8 ms.</summary>

@@ -36,8 +36,19 @@ Agreed with the owner; don't change without asking. Read this before changing th
   mode is on, the game gets a pad at rest. Own hold times and a pause key per game: separate issue.
   Per game the Steam Controller is on "Arcadia" (Arcadia's pad) or "Steam-Eingabe" (no pad of Arcadia's, the game's own
   Steam configuration); Steam games start on Steam-Eingabe, all others on Arcadia. It shows in preview, detail page and
-  context menu whenever a Steam Controller is connected; there is no global switch. Without the usbip driver and VIIPER
-  it is greyed out at "Steam-Eingabe" and says why (#213, owner 2026-10-25/26).
+  context menu whenever a Steam Controller is connected and "Controller-Wächter (Pan)" is on (#242); off, or off Windows,
+  it is gone. While Pan's emulation is on but doesn't run (a part missing, hiding lost, stopped) it is greyed out at
+  "Steam-Eingabe" with a triangle, yet focusable: [A] (or a click) opens the controller settings on the row that says
+  why, [B] goes back (#242, designs T242Library/T242Zustaende).
+  While the copy passes input (#242): Steam gets the Steam Controller for a game on "Steam-Eingabe" and, with no game
+  running, while Steam itself is in front; never while Arcadia is in front or the mouse mode is on. Otherwise Steam
+  reads a controller at rest except the Steam button and "…" (`SteamControllerCopyRules`).
+- Pan's firmware dialogs (#242, owner 2026-10-28, designs T242Zustimmung/T242Firmware): "Steam Controller und Puck
+  übernehmen?" and "Steam will die Firmware aktualisieren" come to the front over everything, can't be clicked away
+  and ignore [B] (no [B] hint): the answer must be deliberate. Their buttons act only when [A] (or the mouse) is held,
+  filling while held: "Ja, übernehmen. Es läuft gerade kein Firmware-Update!" 3 s, "Nein, nicht übernehmen" (focused first) 1 s;
+  "Controller freigeben" and "Arcadia beenden" 1 s, greyed until Steam gave up; "Steam hat das Update abgebrochen" 3 s,
+  gone once Steam gave up; "Schließen" acts on a plain press, greyed until then too, and gets the focus once Steam gave up. Only a fresh press counts. The note after the release closes with [A] or [B].
 - Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
   (`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has
   no "Schließen" button besides (owner, 2026-10-20).

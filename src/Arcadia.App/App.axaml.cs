@@ -3,6 +3,7 @@ using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.App.Views;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Copy;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
@@ -188,12 +189,20 @@ public partial class App : Application
             pan.JournalProblem += () => panNotices.Show(PanJournalText);
             controllerSupport.HidingCheck = pan;
             var steamPlatform = new ControllerSupportPlatform();
+            // The copy of the Steam Controller for Steam needs the VIIPER fork (#242 parts B and C); until then Pan hides nothing.
+            var steamInFront = new SteamInFront(time);
             var forGames = SteamControllerForGames.Create(
-                viiper, pan, controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, panNotices, time);
+                OperatingSystem.IsWindows(), viiper, pan, new NoSteamControllerCopy(), controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId,
+                () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, steamInFront.Now,
+                () => ForegroundGame.InFront(viewModel.Session.GameFolders, launchedGames), panNotices, time);
             pan.Start();
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;
-            forGames.Routing.DriverChanged += () => Dispatcher.UIThread.Post(() => viewModel.SetSteamControllerDriverReady(forGames.Routing.DriverReady));
+            viewModel.ConnectPan(forGames);
+            viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
+            // Pan's question before taking the Steam Controller over, or a firmware update Steam tries through the copy (#242):
+            // Arcadia may be behind a game, and the player must answer.
+            viewModel.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
             _gamepad.Polled += xboxPad.Feed;
             _gamepad.Lost += xboxPad.Drop;
             _gamepad.ButtonPressed += routing.Press;
@@ -257,12 +266,12 @@ public partial class App : Application
                 // Before Arcadia's pad starts VIIPER: stopping SISR cleans up the VIIPER in SISR's folder.
                 await controllerSupport.StopReplacedSisrAsync();
                 await controllerSupport.TickAsync();
+                await forGames.Emulation.TickAsync();
                 var route = forGames.Routing.Update();
                 var panUpdate = new PanUpdateOffer(controllerSupport, viewModel);
                 var panUpdateDue = panUpdate.IsDue();
                 Dispatcher.UIThread.Post(() =>
                 {
-                    viewModel.SetSteamControllerDriverReady(forGames.Routing.DriverReady);
                     xboxPadTick.Start();
                     if (panUpdateDue)
                     {

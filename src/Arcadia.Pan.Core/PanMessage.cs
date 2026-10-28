@@ -38,8 +38,18 @@ public enum PanCommand : byte
     /// <summary>Show the real Steam Controller again; Arcadia sends it before <see cref="EmulationStopped"/>.</summary>
     Unhide = 8,
 
-    /// <summary>Whether Pan could hide now (HidHide installed, supported, in a usable state); needs no emulation.</summary>
+    /// <summary>
+    /// Whether Pan could hide now (HidHide installed, supported, in a usable state); needs no emulation. Asked with the
+    /// generation Pan hides for (#242), it also checks that hiding still holds (<see cref="PanReason.HidingLost"/>).
+    /// </summary>
     CheckHiding = 9,
+
+    /// <summary>
+    /// Steam tries a firmware update through the copy (<see cref="PanMessage.Value"/> 1) or no longer does (0), #242: while
+    /// it is held, a teardown keeps the real Steam Controller hidden until Steam no longer runs. Journaled, so it holds
+    /// after a crash of Arcadia and a restart of Pan; it needs the current generation's emulation.
+    /// </summary>
+    HoldForFirmware = 10,
 }
 
 /// <summary>Pan's answers; the high bit tells them from commands.</summary>
@@ -120,6 +130,19 @@ public enum PanReason : uint
     /// retry, or the teardown after a stop while hidden; usually milliseconds, a puck restart ~2.5 s): start again in a moment.
     /// </summary>
     SteamControllerBeingShown = 21,
+
+    /// <summary>
+    /// The answer to <see cref="PanCommand.CheckHiding"/> of the generation Pan hides for, when that hiding no longer
+    /// holds (#242): a hidden device, the client's allow-list entry or cloaking is gone, e.g. changed in HidHide's
+    /// configuration client. Arcadia ends its emulation at once.
+    /// </summary>
+    HidingLost = 22,
+
+    /// <summary>
+    /// With <see cref="PanReply.HelloOk"/>: a firmware attempt held the real Steam Controller hidden when the last client
+    /// ended, and Steam still runs (#242). Arcadia takes it over without asking and shows the firmware dialog.
+    /// </summary>
+    HeldForFirmware = 23,
 }
 
 /// <summary>

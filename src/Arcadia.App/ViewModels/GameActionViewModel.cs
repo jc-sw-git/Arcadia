@@ -24,8 +24,11 @@ public interface IGameActionHost
     /// <summary>True when the Steam Controller mode matters (option on, Steam Controller connected).</summary>
     bool ShowControllerMode { get; }
 
-    /// <summary>False without the driver: the mode stays "Steam-Eingabe" (#213).</summary>
-    bool CanChooseControllerMode { get; }
+    /// <summary>Pan's emulation is on but doesn't run (#242): the mode stays "Steam-Eingabe", greyed out with a triangle.</summary>
+    bool ControllerModeBroken { get; }
+
+    /// <summary>[A] on the greyed mode: the controller settings on the row that says why (#242).</summary>
+    void ShowPanProblem();
 
     /// <summary>"Xbox Controller (SISR)" or "Steam Input".</summary>
     string ControllerModeOf(Game game);
@@ -108,9 +111,12 @@ public sealed partial class GameActionViewModel : ViewModelBase
     /// Why the action isn't available, for the detail page's tooltip. The focus skips such a button, so only the
     /// mouse can ask (#127); an available button explains itself.
     /// </summary>
-    public string? DisabledReason => IsEnabled ? null : Note;
+    public string? DisabledReason => IsEnabled && !IsBroken ? null : Note;
 
     public bool IsEnabled { get; }
+
+    /// <summary>The Steam Controller mode while Pan's emulation doesn't run (#242): greyed out with a triangle, but focusable.</summary>
+    public bool IsBroken { get; private set; }
 
     public bool IsDanger => Kind == GameActionKind.Uninstall;
 
@@ -185,15 +191,23 @@ public sealed partial class GameActionViewModel : ViewModelBase
         if (host.ShowControllerMode)
         {
             GameActionViewModel? mode = null;
-            mode = new(GameActionKind.ControllerMode, string.Empty, null, !tile.IsRunningOrStarting && host.CanChooseControllerMode, () =>
+            // Broken, it stays focusable: [A] leads to the row that says why (#242).
+            mode = new(GameActionKind.ControllerMode, string.Empty, null, host.ControllerModeBroken || !tile.IsRunningOrStarting, () =>
             {
+                if (host.ControllerModeBroken)
+                {
+                    host.ShowPanProblem();
+                    return;
+                }
+
                 host.ToggleControllerMode(tile);
                 mode!.ShowControllerMode(host.ControllerModeOf(game));
             });
             mode.ShowControllerMode(host.ControllerModeOf(game));
-            if (!host.CanChooseControllerMode)
+            mode.IsBroken = host.ControllerModeBroken;
+            if (host.ControllerModeBroken)
             {
-                mode.Note = ControllerModes.NeedsDriver;
+                mode.Note = ControllerModes.PanNotRunning;
             }
             else if (tile.IsRunningOrStarting)
             {
@@ -253,6 +267,6 @@ public static class ControllerModes
     /// <summary>No pad of Arcadia's; the game's own Steam configuration applies.</summary>
     public const string Steam = "Steam-Eingabe";
 
-    /// <summary>Why "Arcadia" can't be chosen; until #214 brings its own setup, SISR's install brings both.</summary>
-    public const string NeedsDriver = "„Arcadia“ braucht den usbip-Treiber, VIIPER und den Wächterdienst Pan – „Treiber installieren“ in den Controller-Einstellungen richtet alles ein";
+    /// <summary>Why the mode is greyed out while Pan's emulation is on but doesn't run (#242); [A] leads to the reason.</summary>
+    public const string PanNotRunning = "Pan läuft nicht – öffnet die Controller-Einstellungen, die sagen, warum";
 }

@@ -18,11 +18,44 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
     /// <summary>Unplugging throws, as removing the device from a VIIPER that doesn't answer would.</summary>
     public bool FailUnplug;
 
+    /// <summary>Set, unplugging waits for it, as a VIIPER that is slow to remove the device would.</summary>
+    public TaskCompletionSource? UnplugGate;
+
     /// <summary>A send never ends until cancelled, as a write to a stuck VIIPER would.</summary>
     public bool StallSends;
     public FakePad? Current;
 
+    /// <summary>How often VIIPER's server was made ready; <see cref="FailPrepare"/> makes it fail.</summary>
+    public int Prepared;
+    public bool FailPrepare;
+
+    /// <summary>Runs while VIIPER is made ready, e.g. Steam coming to the front meanwhile.</summary>
+    public Action? DuringPrepare;
+
+    /// <summary>Shared with the other fakes for the order of events; null: not recorded.</summary>
+    public List<string>? Events;
+
+    private void Note(string e)
+    {
+        if (Events is { } events)
+        {
+            lock (events) events.Add(e);
+        }
+    }
+
     public string? Unavailable() => Missing;
+
+    public Task PrepareAsync(CancellationToken cancellationToken)
+    {
+        if (FailPrepare)
+        {
+            throw new TimeoutException("viiper.exe antwortet nicht nach 10 s");
+        }
+
+        Prepared++;
+        DuringPrepare?.Invoke();
+        return Task.CompletedTask;
+    }
 
     public Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken)
     {
@@ -33,6 +66,7 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
         }
 
         Plugged++;
+        Note("pad plugged");
         Current = new FakePad(this);
         return Task.FromResult<IVirtualXboxPad>(Current);
     }
@@ -114,10 +148,19 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
             lock (_sent) throw new Xunit.Sdk.XunitException($"never sent; last: {(_sent.Count > 0 ? _sent[^1] : "nothing")}");
         }
 
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
+            if (owner.UnplugGate is { } gate)
+            {
+                await gate.Task;
+            }
+
             owner.Unplugged++;
-            return owner.FailUnplug ? ValueTask.FromException(new IOException("VIIPER antwortet nicht")) : ValueTask.CompletedTask;
+            owner.Note("pad unplugged");
+            if (owner.FailUnplug)
+            {
+                throw new IOException("VIIPER antwortet nicht");
+            }
         }
     }
 }

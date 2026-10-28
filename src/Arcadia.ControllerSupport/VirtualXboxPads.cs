@@ -8,6 +8,12 @@ public interface IVirtualXboxPads
     /// <summary>Why no pad can be plugged in (e.g. VIIPER or the usbip driver missing), or null when one can.</summary>
     string? Unavailable();
 
+    /// <summary>
+    /// Gets ready to plug pads in (VIIPER's server runs), so Pan can take the forwarding process at the emulation's
+    /// registration (#242); throws when that fails.
+    /// </summary>
+    Task PrepareAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
     /// <summary>Plugs a new pad in; throws when that fails. The pad goes when it is disposed.</summary>
     Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken);
 

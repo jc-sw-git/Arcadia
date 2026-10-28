@@ -45,6 +45,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     private uint _currentGeneration;
     private uint _tornDownGeneration;
     private bool _teardownPending;
+    private bool _heldForFirmware;
     private DateTimeOffset _beingShownUntil;
     private bool _emulating;
     private long _pulses;
@@ -91,6 +92,40 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     public string? Unavailable()
     {
         lock (_lock) return _unavailable ?? (_teardownPending || _time.GetUtcNow() < _beingShownUntil ? CleaningUp : null);
+    }
+
+    public bool HeldForFirmware
+    {
+        get { lock (_lock) return _heldForFirmware; }
+    }
+
+    public async Task<bool> HoldForFirmwareAsync(uint generation, bool hold, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var reply = await RequestAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation, hold ? 1u : 0u), cancellationToken);
+            if (reply.Reply != PanReply.Acknowledged)
+            {
+                _log($"Pan: Firmware-Halt {(hold ? "an" : "aus")} abgelehnt ({reply})");
+                return false;
+            }
+
+            if (!hold)
+            {
+                lock (_lock)
+                {
+                    _heldForFirmware = false;
+                }
+            }
+
+            _log($"Pan: Firmware-Halt {(hold ? "an: der Steam Controller bleibt versteckt, auch wenn Arcadia unerwartet endet" : "aus")}");
+            return true;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            _log($"Pan: Firmware-Halt {(hold ? "an" : "aus")} nicht gesendet: {ex.Message}");
+            return false;
+        }
     }
 
     public bool IsCurrent(uint generation)
@@ -173,9 +208,18 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     {
         var reply = await RequestAsync(PanMessage.Of(PanCommand.TeardownAcknowledged, generation), cancellationToken);
         var stillRunning = reply.Reply == PanReply.Rejected && reply.Reason == PanReason.TeardownNotAcknowledged;
+
+        // Back during Pan's teardown after a crash: the hold comes with the acknowledgement, not the hello.
+        var held = reply.Reply == PanReply.Acknowledged && reply.Reason == PanReason.HeldForFirmware;
         lock (_lock)
         {
             _teardownPending = stillRunning;
+            _heldForFirmware |= held;
+        }
+
+        if (held)
+        {
+            _log("Pan: ein Firmware-Versuch über die Kopie hält den Steam Controller versteckt, Steam läuft noch");
         }
 
         if (reply.Reply == PanReply.Rejected && !stillRunning)
@@ -186,7 +230,9 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         return !stillRunning;
     }
 
-    public async Task<PanReason?> CheckHidingAsync(CancellationToken cancellationToken)
+    public Task<PanReason?> CheckHidingAsync(CancellationToken cancellationToken) => CheckHidingAsync(0, cancellationToken);
+
+    public async Task<PanReason?> CheckHidingAsync(uint generation, CancellationToken cancellationToken)
     {
         if (!IsConnected)
         {
@@ -198,7 +244,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         {
             // Not cancelled by the caller: a request given up after it reached Pan costs the link (its late reply would
             // pass for the next request's), and with it a running emulation. Bounded by its own timeout instead.
-            var reply = await RequestAsync(PanMessage.Of(PanCommand.CheckHiding), HidingRequestTimeout, CancellationToken.None);
+            var reply = await RequestAsync(PanMessage.Of(PanCommand.CheckHiding, generation), HidingRequestTimeout, CancellationToken.None);
             if (reply.Reply == PanReply.HidingState)
             {
                 return reply.Reason;
@@ -219,6 +265,64 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         catch (OperationCanceledException) when (_disposed.IsCancellationRequested)
         {
             return null;
+        }
+    }
+
+    public async Task<PanReason> HideAsync(uint generation, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        PanMessage reply;
+        try
+        {
+            // A hide restarts the puck (~2.5 s, up to ~20 s if a device step hangs): its own timeout, never cancelled
+            // halfway, for the same reason as the check.
+            reply = await RequestAsync(PanMessage.Of(PanCommand.Hide, generation), HidingRequestTimeout, CancellationToken.None);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // The link is gone; Pan's teardown for the lost client undoes whatever the hide had done.
+            _log($"Pan: Hide ohne Antwort: {ex.Message}");
+            return PanReason.HidingFailed;
+        }
+
+        if (reply.Reply == PanReply.Hidden)
+        {
+            _log($"Pan: Steam Controller versteckt ({reply.Value} Geräte)");
+            return PanReason.None;
+        }
+
+        var reason = reply.Reply == PanReply.Rejected ? reply.Reason : PanReason.HidingFailed;
+        _log(reply.Reply == PanReply.Unsupported ? "Pan: kann den Steam Controller nicht verstecken (Pan zu alt)" : $"Pan: Hide abgelehnt ({reply})");
+
+        // A rejected hide may have changed HidHide already (hidden, then the restart failed): undo it (pan-hiding.md).
+        if (reply.Reply == PanReply.Rejected)
+        {
+            await UnhideAsync(generation, CancellationToken.None);
+        }
+
+        return reason;
+    }
+
+    public async Task<bool> UnhideAsync(uint generation, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            var reply = await RequestAsync(PanMessage.Of(PanCommand.Unhide, generation), HidingRequestTimeout, CancellationToken.None);
+            if (reply.Reply == PanReply.Shown)
+            {
+                _log("Pan: Steam Controller wieder sichtbar");
+                return true;
+            }
+
+            // Pan's teardown after EmulationStopped shows it then, with its own retries.
+            _log($"Pan: Unhide abgelehnt ({reply})");
+            return false;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _log($"Pan: Unhide ohne Antwort: {ex.Message}");
+            return false;
         }
     }
 
@@ -396,9 +500,19 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             JournalProblem?.Invoke();
         }
 
+        lock (_lock)
+        {
+            _heldForFirmware = hello.Reason == PanReason.HeldForFirmware;
+        }
+
+        if (_heldForFirmware)
+        {
+            _log("Pan: ein Firmware-Versuch über die Kopie hält den Steam Controller versteckt, Steam läuft noch");
+        }
+
         if (hello.Reason == PanReason.TeardownNotAcknowledged)
         {
-            await QuietRequestAsync(PanMessage.Of(PanCommand.TeardownAcknowledged, hello.Generation), cancellationToken);
+            await AcknowledgeTeardownAsync(hello.Generation, cancellationToken);
         }
 
         lock (_lock)

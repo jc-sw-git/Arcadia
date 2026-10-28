@@ -75,7 +75,7 @@
 
         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Status.IsControllerStarting}" VerticalAlignment="Center"
-                      ToolTip.Tip="SISR startet und richtet den Steam Controller als Xbox Controller ein">
+                      ToolTip.Tip="Pan versteckt den echten Steam Controller und richtet die emulierten Controller ein">
             <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
             <TextBlock Text="Controller wird eingerichtet …" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
           </StackPanel>
@@ -263,17 +263,18 @@
                   <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowControllerSupport, TargetNullValue=False}">
                     <TextBlock Classes="label" Text="STEAM CONTROLLER" />
                     <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10.
-                         Without the driver it is greyed out, and the line below says why (#213). -->
-                    <Panel IsEnabled="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.SteamControllerDriverReady, TargetNullValue=False}">
-                      <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
-                              IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
-                              ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Arcadia“ und „Steam-Eingabe“'}">
+                         While Pan's emulation doesn't run it is greyed out with a triangle, and a click leads to why (#242). -->
+                    <Button Classes="plain modeValue" Classes.broken="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeBroken, TargetNullValue=False}"
+                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
+                            IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Arcadia“ und „Steam-Eingabe“'}">
+                      <StackPanel Orientation="Horizontal" Spacing="10">
                         <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
-                      </Button>
-                    </Panel>
-                    <TextBlock Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeUnavailableReason}" FontSize="13"
-                               Foreground="{StaticResource TextSoft}" TextWrapping="Wrap"
-                               IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeUnavailableReason, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        <Path Classes="statusIcon small" VerticalAlignment="Center"
+                              IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeBroken, TargetNullValue=False}"
+                              ToolTip.Tip="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeUnavailableReason}" />
+                      </StackPanel>
+                    </Button>
                   </StackPanel>
                   <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowGameMouseMode, TargetNullValue=False}">
                     <TextBlock Classes="label" Text="INDIVIDUELLER MAUSMODUS" />
@@ -941,15 +942,16 @@
                 <DataTemplate x:DataType="vm:GameActionViewModel">
                   <StackPanel>
                     <Border IsVisible="{Binding StartsGroup}" Height="1" Background="{StaticResource Line}" Margin="8,6" />
-                    <Button Classes="plain menuItem" Classes.focused="{Binding IsFocused}" Classes.danger="{Binding IsDanger}" IsEnabled="{Binding IsEnabled}"
+                    <Button Classes="plain menuItem" Classes.focused="{Binding IsFocused}" Classes.danger="{Binding IsDanger}" Classes.broken="{Binding IsBroken}" IsEnabled="{Binding IsEnabled}"
                             Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.InvokeMenuActionCommand}" CommandParameter="{Binding}">
-                      <Grid ColumnDefinitions="24,*" ColumnSpacing="14">
+                      <Grid ColumnDefinitions="24,*,Auto" ColumnSpacing="14">
                         <Path Classes="icon" Data="{Binding Icon}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
                               Width="24" Height="24" Stretch="None" VerticalAlignment="Top" />
                         <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Label}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
                           <TextBlock Classes="note" Text="{Binding Note}" IsVisible="{Binding HasNote}" />
                         </StackPanel>
+                        <Path Grid.Column="2" Classes="statusIcon small" IsVisible="{Binding IsBroken}" VerticalAlignment="Center" />
                       </Grid>
                     </Button>
                   </StackPanel>
@@ -1192,7 +1194,7 @@
                                     </Grid>
                                   </Border>
                                 </DataTemplate>
-                                <DataTemplate x:DataType="settings:SisrRowViewModel">
+                                <DataTemplate x:DataType="settings:SetupSwitchRowViewModel">
                                   <Panel>
                                     <Border Classes="valuePill" Classes.locked="{Binding IsLocked}" IsVisible="{Binding IsSwitch}">
                                       <Grid ColumnDefinitions="Auto,*,Auto">
@@ -1207,7 +1209,7 @@
                                     </Border>
                                     <!-- Not a button of its own: the whole row is the button, so A on the row installs. -->
                                     <Border Classes="rowAction" Classes.locked="{Binding IsLocked}" IsVisible="{Binding IsInstall}">
-                                      <TextBlock Text="Treiber installieren" />
+                                      <TextBlock Text="{Binding InstallText}" />
                                     </Border>
                                   </Panel>
                                 </DataTemplate>
@@ -1235,6 +1237,22 @@
                                         <Path Classes="chevronRight" />
                                       </Button>
                                     </Grid>
+                                  </Border>
+                                </DataTemplate>
+                                <!-- Held with [A] (#242): the pill fills over the hold time; before the action row, which it is too. -->
+                                <DataTemplate x:DataType="settings:HoldRowViewModel">
+                                  <Border Classes="holdPill hold" DataContext="{Binding Hold}" x:DataType="vm:HoldButtonViewModel"
+                                          Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}" Classes.holding="{Binding IsHolding}">
+                                    <Panel>
+                                      <Border Classes="holdClip">
+                                        <Border Classes="holdFill">
+                                          <Border.RenderTransform>
+                                            <ScaleTransform ScaleX="0" />
+                                          </Border.RenderTransform>
+                                        </Border>
+                                      </Border>
+                                      <TextBlock Text="{Binding Label}" />
+                                    </Panel>
                                   </Border>
                                 </DataTemplate>
                                 <DataTemplate x:DataType="settings:ActionRowViewModel">
@@ -1334,6 +1352,18 @@
                   <TextBlock Text="{Binding Text}" FontSize="16" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
                 </DataTemplate>
                 <!-- The launcher settings (#136): a note, the tab strip in miniature, the launcher's head, its facts. -->
+                <!-- A warning that must not be missed (#242): bold, on red. -->
+                <DataTemplate x:DataType="settings:InfoDanger">
+                  <Border Classes="dangerBox strong">
+                    <StackPanel Spacing="10">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.01" Stroke="{StaticResource Danger}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="28" Height="28" Stretch="Uniform" VerticalAlignment="Top" />
+                        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="20" FontWeight="ExtraBold" Foreground="{StaticResource Danger}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                      </Grid>
+                      <TextBlock Text="{Binding Text}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoNote">
                   <Border Classes="infoNote" Classes.info="{Binding IsInfo}">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
@@ -1612,6 +1642,211 @@
       <!-- The first start's question which launchers Arcadia uses (#139): over everything but the toast until "Fertig". -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsFirstRunShown}">
         <views:FirstRunView DataContext="{Binding FirstRun}" />
+      </Panel>
+
+      <!-- Pan's questions about the Steam Controller's firmware (#242, artboards T242Zustimmung, T242Firmware): over
+           everything, the settings and the first start too. Neither can be clicked away nor closed with [B]; their
+           buttons act only when held. -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsPanDialogOpen}">
+        <Border Classes="bleedAll" Background="{StaticResource Scrim}" />
+        <Border Classes="prompt" Width="920" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding TakeoverConsent, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <StackPanel Spacing="22" DataContext="{Binding TakeoverConsent}" x:DataType="vm:TakeoverConsentViewModel">
+            <StackPanel Orientation="Horizontal" Spacing="18">
+              <Border Classes="promptIcon">
+                <Path Data="M7 7h10a5 5 0 0 1 4.6 7l-1 2.3a2.5 2.5 0 0 1-4.2.5L15 15H9l-1.4 1.8a2.5 2.5 0 0 1-4.2-.5l-1-2.3A5 5 0 0 1 7 7z M8 10v3 M6.5 11.5h3"
+                      Stroke="{StaticResource AccentSoft}" StrokeThickness="1.9" StrokeLineCap="Round" Width="28" Height="28" Stretch="Uniform" />
+              </Border>
+              <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding Found}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="12" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Border Classes="foundChip">
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                      <Path Data="M5 12.5l4.5 4.5L19 7.5" Stroke="{StaticResource Success}" StrokeThickness="2.6" StrokeLineCap="Round" StrokeJoin="Round" Width="18" Height="18" Stretch="Uniform" />
+                      <TextBlock Text="{Binding}" FontSize="16" FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Classes="promptBody" Text="{Binding Message}" Foreground="{StaticResource Text}" />
+            <Border Classes="dangerBox">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.01" Stroke="{StaticResource Danger}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" VerticalAlignment="Top" />
+                <StackPanel Grid.Column="1" Spacing="6">
+                  <TextBlock Text="{Binding WarningTitle}" FontSize="17" FontWeight="ExtraBold" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding WarningText}" FontSize="16" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,4,0,0">
+              <Button DataContext="{Binding Yes}" x:DataType="vm:HoldButtonViewModel" Width="510"
+                      Classes="plain hold" Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}"
+                      Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}">
+                <Panel>
+                  <Border Classes="holdClip">
+                    <Border Classes="holdFill">
+                      <Border.RenderTransform>
+                        <ScaleTransform ScaleX="0" />
+                      </Border.RenderTransform>
+                    </Border>
+                  </Border>
+                  <TextBlock Text="{Binding Label}" />
+                </Panel>
+              </Button>
+              <Button DataContext="{Binding No}" x:DataType="vm:HoldButtonViewModel" Width="284"
+                      Classes="plain hold light" Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}"
+                      Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}">
+                <Panel>
+                  <Border Classes="holdClip">
+                    <Border Classes="holdFill">
+                      <Border.RenderTransform>
+                        <ScaleTransform ScaleX="0" />
+                      </Border.RenderTransform>
+                    </Border>
+                  </Border>
+                  <TextBlock Text="{Binding Label}" />
+                </Panel>
+              </Button>
+            </StackPanel>
+            <TextBlock Text="{Binding After}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+              <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                <ctl:KeyHint Pad="D-Pad" Keys="A D" Text="Wechseln" />
+                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding Legend}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="prompt" Width="920" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding FirmwareAttempt, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Panel DataContext="{Binding FirmwareAttempt}" x:DataType="vm:FirmwareAttemptViewModel">
+            <StackPanel Spacing="22" IsVisible="{Binding IsWaiting}">
+              <StackPanel Orientation="Horizontal" Spacing="18">
+                <Border Classes="promptIcon warning">
+                  <TextBlock Text="!" />
+                </Border>
+                <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Classes="promptBody" Text="{Binding Message}" Foreground="{StaticResource Text}" />
+              <Border Classes="panStatus">
+                <StackPanel Spacing="12">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                    <Panel VerticalAlignment="Center">
+                      <Path Classes="spinner" IsVisible="{Binding IsTrying}">
+                        <Path.RenderTransform>
+                          <RotateTransform />
+                        </Path.RenderTransform>
+                      </Path>
+                      <Path Data="M4 13a8 8 0 1 0 16 0a8 8 0 1 0 -16 0z M12 9v4l2.5 2 M9.5 2.5h5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.2" StrokeLineCap="Round"
+                            Width="24" Height="24" Stretch="Uniform" IsVisible="{Binding IsCountingDown}" />
+                      <Path Data="M5 12.5l4.5 4.5L19 7.5" Stroke="{StaticResource Success}" StrokeThickness="2.6" StrokeLineCap="Round" StrokeJoin="Round"
+                            Width="24" Height="24" Stretch="Uniform" IsVisible="{Binding IsReady}" />
+                    </Panel>
+                    <TextBlock Grid.Column="1" Text="{Binding StatusTitle}" FontSize="19" FontWeight="Bold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <TextBlock Grid.Column="2" IsVisible="{Binding IsCountingDown}" FontSize="26" FontWeight="ExtraBold" Foreground="{StaticResource AccentSoft}" VerticalAlignment="Center">
+                      <Run Text="{Binding SecondsLeft}" />
+                      <Run Text=" s" />
+                    </TextBlock>
+                  </Grid>
+                  <ProgressBar Classes="install" Minimum="0" Maximum="1" Value="{Binding CountdownPassed}" IsVisible="{Binding IsCountingDown}" />
+                  <TextBlock Text="{Binding StatusText}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+              <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,4,0,0">
+                <Button DataContext="{Binding ReleaseButton}" x:DataType="vm:HoldButtonViewModel" Width="300"
+                        Classes="plain hold light" Classes.locked="{Binding !IsEnabled}" Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}"
+                        Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}">
+                  <Panel>
+                    <Border Classes="holdClip">
+                      <Border Classes="holdFill">
+                        <Border.RenderTransform>
+                          <ScaleTransform ScaleX="0" />
+                        </Border.RenderTransform>
+                      </Border>
+                    </Border>
+                    <TextBlock Text="{Binding Label}" />
+                  </Panel>
+                </Button>
+                <Button DataContext="{Binding QuitButton}" x:DataType="vm:HoldButtonViewModel" Width="260"
+                        Classes="plain hold raised" Classes.locked="{Binding !IsEnabled}" Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}"
+                        Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}">
+                  <Panel>
+                    <Border Classes="holdClip">
+                      <Border Classes="holdFill">
+                        <Border.RenderTransform>
+                          <ScaleTransform ScaleX="0" />
+                        </Border.RenderTransform>
+                      </Border>
+                    </Border>
+                    <TextBlock Text="{Binding Label}" />
+                  </Panel>
+                </Button>
+                <Button DataContext="{Binding CloseButton}" x:DataType="vm:HoldButtonViewModel" Width="200"
+                        Classes="plain hold raised" Classes.locked="{Binding !IsEnabled}" Classes.focused="{Binding IsFocused}">
+                  <TextBlock Text="{Binding Label}" />
+                </Button>
+              </StackPanel>
+              <TextBlock Text="{Binding FocusText}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+              <Border Classes="dangerBox strong" Padding="20,14" IsVisible="{Binding SkipButton.IsShown}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                  <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.01" Stroke="{StaticResource Danger}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" VerticalAlignment="Top" />
+                  <TextBlock Grid.Column="1" Text="{Binding SkipWarning}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
+                </Grid>
+              </Border>
+              <Button DataContext="{Binding SkipButton}" x:DataType="vm:HoldButtonViewModel" HorizontalAlignment="Left"
+                      IsVisible="{Binding IsShown}"
+                      Classes="plain hold small" Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}"
+                      Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}">
+                <Panel>
+                  <Border Classes="holdClip">
+                    <Border Classes="holdFill">
+                      <Border.RenderTransform>
+                        <ScaleTransform ScaleX="0" />
+                      </Border.RenderTransform>
+                    </Border>
+                  </Border>
+                  <TextBlock Text="{Binding Label}" />
+                </Panel>
+              </Button>
+              <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                  <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="Wechseln" />
+                  <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding Legend}" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="22" IsVisible="{Binding IsReleased}">
+              <StackPanel Orientation="Horizontal" Spacing="18">
+                <Border Classes="promptIcon">
+                  <Path Data="M5 12.5l4.5 4.5L19 7.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.6" StrokeLineCap="Round" StrokeJoin="Round" Width="28" Height="28" Stretch="Uniform" />
+                </Border>
+                <TextBlock Text="{Binding ReleasedTitle}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Classes="promptBody" Text="{Binding ReleasedText}" Foreground="{StaticResource Text}" />
+              <Border Classes="panStatus">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="DANACH" FontSize="12" FontWeight="ExtraBold" LetterSpacing="1.4" Foreground="{StaticResource TextMuted}" />
+                  <TextBlock Text="{Binding ReleasedNext}" FontSize="17" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+              <Button Classes="plain action focused" Content="OK" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CloseFirmwareNoteCommand}" />
+              <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                  <ctl:KeyHint Pad="A" Keys="Leertaste" Text="OK" />
+                  <ctl:KeyHint Pad="B" Keys="Esc" Text="Schließen" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </Panel>
+        </Border>
       </Panel>
 
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->

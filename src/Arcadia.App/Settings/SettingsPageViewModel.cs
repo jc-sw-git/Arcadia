@@ -88,6 +88,12 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
             return true;
         }
 
+        if (action != UiAction.Accept && FocusedRow is HoldRowViewModel held)
+        {
+            // Anything else while [A] is held breaks the hold off, e.g. the focus moving away.
+            held.Hold.Cancel();
+        }
+
         switch (action)
         {
             case UiAction.Up:
@@ -130,11 +136,22 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
         return true;
     }
 
-    /// <summary>A button or key was let go: ends a held erase, shift or AltGr while a text is written.</summary>
-    public void Release(UiAction action) => Selected.Editor?.Release(action);
+    /// <summary>A button or key was let go: ends a held erase, shift or AltGr while a text is written, or a held row (#242).</summary>
+    public void Release(UiAction action)
+    {
+        Selected.Editor?.Release(action);
+        if (action == UiAction.Accept && FocusedRow is HoldRowViewModel held)
+        {
+            held.Hold.Release();
+        }
+    }
 
     /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
-    public void CancelHeldButtons() => Selected.Editor?.CancelHeldButtons();
+    public void CancelHeldButtons()
+    {
+        Selected.Editor?.CancelHeldButtons();
+        (FocusedRow as HoldRowViewModel)?.Hold.Cancel();
+    }
 
     /// <summary>The settings show no covers.</summary>
     public IEnumerable<GameTileViewModel> ShownTiles => [];

@@ -111,7 +111,11 @@ public static class ServiceHost
         }
 
         var cleanup = new WindowsCleanup(log.Write);
-        var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath), cleanup, log.Write, hiding: WindowsHiding.Create());
+        var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath), cleanup, log.Write, hiding: WindowsHiding.Create())
+        {
+            // Steam in any session: a firmware hold keeps the Steam Controller hidden while it runs (#242).
+            SteamRuns = SteamRuns,
+        };
         _guardian = guardian;
         guardian.UnplannedEnd += end => log.Write($"Unplanned end: {end.Reason}, generation {end.Generation}, client {end.ClientPid}, emulating {end.WasEmulating} (crash report: #244)");
         log.Write($"Pan {typeof(ServiceHost).Assembly.GetName().Version} starting (protocol {PanMessage.ProtocolVersion})");
@@ -210,5 +214,16 @@ public static class ServiceHost
             : Native.ServiceAcceptStop | Native.ServiceAcceptShutdown | Native.ServiceAcceptPreshutdown | Native.ServiceAcceptPowerEvent;
         _status.CheckPoint = state is Native.ServiceStartPending or Native.ServiceStopPending ? ++_status.CheckPoint : 0;
         Native.SetServiceStatus(_statusHandle, ref _status);
+    }
+
+    private static bool SteamRuns()
+    {
+        var steam = System.Diagnostics.Process.GetProcessesByName("steam");
+        foreach (var process in steam)
+        {
+            process.Dispose();
+        }
+
+        return steam.Length > 0;
     }
 }

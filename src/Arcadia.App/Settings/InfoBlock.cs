@@ -58,6 +58,9 @@ public sealed record InfoRelease(string VersionText, string DateText, IReadOnlyL
 /// A status message in a box above the rest, with its level's symbol and colour: e.g. "Nicht gefunden" a warning,
 /// "Keine Spiele gefunden" information (owner, 2026-10-24).
 /// </summary>
+/// <summary>A warning that must not be missed, in bold on red (#242: no firmware update may run before a takeover).</summary>
+public sealed record InfoDanger(string Title, string Text) : InfoBlock;
+
 public sealed record InfoNote(string Text, HealthSeverity Severity = HealthSeverity.Warning) : InfoBlock
 {
     public bool IsInfo => Severity == HealthSeverity.Info;

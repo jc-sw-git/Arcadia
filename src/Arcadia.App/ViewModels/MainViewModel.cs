@@ -5,6 +5,7 @@ using Arcadia.App.Services;
 using Arcadia.App.Settings;
 using Arcadia.App.Setup;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Search;
@@ -119,13 +120,19 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     [ObservableProperty]
     public partial bool ShowControllerSupport { get; private set; }
 
-    /// <summary>usbip and VIIPER are there, so "Arcadia" can be chosen; without them the mode is greyed out (#213).</summary>
+    /// <summary>
+    /// Pan's emulation is on but doesn't run (#242): the mode is greyed out with a triangle and says "Steam-Eingabe", as
+    /// that is what a game gets; [A] on it opens the controller settings on the row that says why.
+    /// </summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ControllerModeUnavailableReason))]
-    public partial bool SteamControllerDriverReady { get; private set; }
+    [NotifyPropertyChangedFor(nameof(ControllerModeWorks), nameof(ControllerModeUnavailableReason))]
+    public partial bool ControllerModeBroken { get; private set; }
 
-    /// <summary>The preview's tooltip while the mode can't be chosen for want of the driver, else null.</summary>
-    public string? ControllerModeUnavailableReason => SteamControllerDriverReady ? null : ControllerModes.NeedsDriver;
+    /// <summary>"Arcadia" can be chosen and is what a game gets.</summary>
+    public bool ControllerModeWorks => !ControllerModeBroken;
+
+    /// <summary>The mode's tooltip while it doesn't work, else null.</summary>
+    public string? ControllerModeUnavailableReason => ControllerModeBroken ? ControllerModes.PanNotRunning : null;
 
     /// <summary>
     /// Right before a game starts: the App unplugs Arcadia's pad for a game on "Steam-Eingabe" (#213). Set once by the
@@ -179,8 +186,25 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     public bool IsConfirmationOpen => Confirmation is not null;
 
+    /// <summary>
+    /// Pan's question before taking the Steam Controller over, or its firmware dialog (#242): over everything, the first
+    /// start and the settings included, and [B] doesn't close it.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TakeoverConsent), nameof(FirmwareAttempt), nameof(IsPanDialogOpen), nameof(IsDialogOpen))]
+    public partial ViewModelBase? PanDialog { get; private set; }
+
+    public TakeoverConsentViewModel? TakeoverConsent => PanDialog as TakeoverConsentViewModel;
+
+    public FirmwareAttemptViewModel? FirmwareAttempt => PanDialog as FirmwareAttemptViewModel;
+
+    public bool IsPanDialogOpen => PanDialog is not null;
+
+    /// <summary>A Pan dialog opened: the App brings Arcadia to the front, as it may be behind a game.</summary>
+    public event EventHandler? PanDialogShown;
+
     /// <summary>A dialog or menu over the page takes the input.</summary>
-    public bool IsDialogOpen => IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen;
+    public bool IsDialogOpen => IsPanDialogOpen || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen;
 
     /// <summary>The detail page; it takes the place of the cover grid while open, and of the search when opened from there.</summary>
     [ObservableProperty]
@@ -262,6 +286,20 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// </summary>
     public void Handle(UiAction action)
     {
+        switch (PanDialog)
+        {
+            case TakeoverConsentViewModel consent:
+                consent.Handle(action);
+                return;
+            case FirmwareAttemptViewModel firmware:
+                if (!firmware.Handle(action))
+                {
+                    ClosePanDialog(firmware);
+                }
+
+                return;
+        }
+
         _actions.Pressed(action);
         var page = OpenPages().First();
         if (!page.CoversWindow && HandleDialog(action))
@@ -325,6 +363,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>A button or key was let go.</summary>
     public void Release(UiAction action)
     {
+        (PanDialog as TakeoverConsentViewModel)?.Release(action);
+        (PanDialog as FirmwareAttemptViewModel)?.Release(action);
         _actions.Release(action);
         foreach (var page in OpenPages())
         {
@@ -335,6 +375,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
     public void CancelHold()
     {
+        TakeoverConsent?.CancelHold();
+        FirmwareAttempt?.CancelHold();
         _actions.CancelHold();
         foreach (var page in OpenPages())
         {
@@ -706,7 +748,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         SettingsCategoryViewModel[] categories =
         [
             new LauncherSettingsViewModel(this, changes, _time, launcherId),
-            new ControllerSettingsViewModel(_controllerSupport, changes),
+            new ControllerSettingsViewModel(_controllerSupport, changes, _pan, GameInTheWay, _time),
             new AboutSettingsViewModel(_updates, _updates.InstallAsync),
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
@@ -719,6 +761,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     {
         OnPagesChanged();
         UpdateGameMouseModeState();
+        UpdatePanState();
     }
 
     partial void OnFirstRunChanged(FirstRunViewModel? value) => OnPagesChanged();
@@ -826,11 +869,20 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
-    /// <summary>Switches the focused game between "Arcadia" and "Steam-Eingabe"; not while it runs (#95), nor without the driver.</summary>
+    /// <summary>
+    /// Switches the focused game between "Arcadia" and "Steam-Eingabe"; not while it runs (#95). While Pan's emulation
+    /// doesn't run it opens the controller settings on the row that says why (#242).
+    /// </summary>
     [RelayCommand]
     private void CycleControllerSupport()
     {
-        if (!SteamControllerDriverReady || Library.FocusedGame is not { IsRunningOrStarting: false, Game: var game })
+        if (ControllerModeBroken)
+        {
+            ShowPanProblem();
+            return;
+        }
+
+        if (Library.FocusedGame is not { IsRunningOrStarting: false, Game: var game })
         {
             return;
         }
@@ -838,13 +890,46 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         _controllerSupport.SetModeFor(game, !_settings.Current.UsesArcadiaPad(game.Key));
     }
 
-    /// <summary>The driver for Arcadia's pad (usbip, VIIPER) came or went; UI thread.</summary>
-    public void SetSteamControllerDriverReady(bool ready)
+    private IPanEmulationView _pan = new NoPanEmulation();
+
+    /// <summary>Pan's emulation (#242), once at the start: the mode, the header and the controller settings follow it.</summary>
+    public void ConnectPan(IPanEmulationView pan)
     {
-        SteamControllerDriverReady = ready;
-        Detail?.RebuildActions();
+        _pan = pan;
+        pan.Changed += () => Avalonia.Threading.Dispatcher.UIThread.Post(UpdatePanState);
+        pan.Takeover.ConsentNeeded += parts => Avalonia.Threading.Dispatcher.UIThread.Post(() => ShowTakeoverConsent(parts));
+        pan.Takeover.Changed += () => Avalonia.Threading.Dispatcher.UIThread.Post(OnTakeoverChanged);
+        pan.FirmwareAttempt.Started += () => Avalonia.Threading.Dispatcher.UIThread.Post(ShowFirmwareAttempt);
+        UpdatePanState();
+    }
+
+    private void UpdatePanState()
+    {
+        var status = _pan.Status;
+        Status.ShowPan(status);
+        var broken = _settings.Current.PanEnabled && status.HasProblem;
+        if (ControllerModeBroken != broken)
+        {
+            ControllerModeBroken = broken;
+            Detail?.RebuildActions();
+        }
+
         UpdateControllerSupportState();
     }
+
+    /// <summary>The controller settings with the row focused that says why Pan's emulation doesn't run; B goes back.</summary>
+    private void ShowPanProblem()
+    {
+        ShowSettings(typeof(ControllerSettingsViewModel));
+        if (Settings?.Selected is ControllerSettingsViewModel controller)
+        {
+            controller.FocusRow(controller.PanWarningKey ?? PanRows.MainKey);
+        }
+    }
+
+    /// <summary>The title of a game that runs or is being started, for "Erst änderbar, wenn „…“ beendet ist" (#242).</summary>
+    private string? GameInTheWay() =>
+        Session.Libraries.SelectMany(library => library.Games).FirstOrDefault(game => Session.RunStateOf(game.Key) is not null)?.Title;
 
     /// <summary>SDL sees a Steam Controller or no longer does (#212); the per-game mode shows only while it does (#213).</summary>
     public void SetSteamControllerSeen(bool seen)
@@ -855,8 +940,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     private void UpdateControllerSupportState()
     {
-        // The mode only matters with a Steam Controller; other pads are never emulated (#72, #213).
-        var show = _steamControllerSeenBySdl;
+        // The mode only matters with a Steam Controller; other pads are never emulated (#72, #213). With Pan off nothing
+        // is emulated, so there is no mode either (#242).
+        var show = _steamControllerSeenBySdl
+            && (_controllerSupport.StartsSisr || (_settings.Current.PanEnabled && _pan.Status.State != PanEmulationState.Unsupported));
         if (ShowControllerSupport != show)
         {
             ShowControllerSupport = show;
@@ -918,7 +1005,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     bool IGameActionsOwner.ShowControllerMode => ShowControllerSupport;
 
-    bool IGameActionsOwner.SteamControllerDriverReady => SteamControllerDriverReady;
+    bool IGameActionsOwner.ControllerModeBroken => ControllerModeBroken;
+
+    void IGameActionsOwner.ShowPanProblem() => ShowPanProblem();
 
     Task IGameActionsOwner.BeforeGameStartsAsync(CancellationToken cancellationToken) =>
         BeforeGameStarts?.Invoke(cancellationToken) ?? Task.CompletedTask;
@@ -937,6 +1026,115 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (!IsDialogOpen)
         {
             Confirmation = confirmation;
+        }
+    }
+
+    /// <summary>"Arcadia jetzt beenden" in a dialog; the App closes the window, as its close button would.</summary>
+    public event EventHandler? QuitRequested;
+
+    /// <summary>Steam runs and the real puck was visible: Pan asks before it hides (#242, owner's design 2026-10-28).</summary>
+    public void ShowTakeoverConsent(SteamControllerParts parts)
+    {
+        if (_pan.Takeover.State != TakeoverState.Asking)
+        {
+            return;
+        }
+
+        var takeover = _pan.Takeover;
+        TakeoverConsentViewModel? dialog = null;
+        dialog = new TakeoverConsentViewModel(parts, takeOver =>
+        {
+            takeover.Answer(takeOver);
+            ClosePanDialog(dialog!);
+        }, _time, action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
+        ShowPanDialog(dialog);
+    }
+
+    /// <summary>Steam tries a firmware update through the copy: Arcadia holds it until Steam gave up (#242).</summary>
+    public void ShowFirmwareAttempt()
+    {
+        if (FirmwareAttempt is not null || !_pan.FirmwareAttempt.IsActive)
+        {
+            return;
+        }
+
+        var dialog = new FirmwareAttemptViewModel(
+            _pan.FirmwareAttempt,
+            _pan.Connected,
+            _pan.ReleaseForFirmwareAsync,
+            () => QuitRequested?.Invoke(this, EventArgs.Empty),
+            _time,
+            action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
+        dialog.Closed += () => ClosePanDialog(dialog);
+        ShowPanDialog(dialog);
+    }
+
+    private void ShowPanDialog(ViewModelBase dialog)
+    {
+        CancelHold();
+        (PanDialog as IDisposable)?.Dispose();
+        PanDialog = dialog;
+        PanDialogShown?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ClosePanDialog(ViewModelBase dialog)
+    {
+        if (PanDialog == dialog)
+        {
+            (dialog as IDisposable)?.Dispose();
+            PanDialog = null;
+        }
+    }
+
+    /// <summary>
+    /// The question went (switched off meanwhile): its dialog goes too. Taken over again in the settings: a toast says so,
+    /// as the row that did it disappears.
+    /// </summary>
+    private void OnTakeoverChanged()
+    {
+        var state = _pan.Takeover.State;
+        if (TakeoverConsent is { } consent && state != TakeoverState.Asking)
+        {
+            ClosePanDialog(consent);
+        }
+
+        if (state == TakeoverState.Granted && _takeover is TakeoverState.Declined or TakeoverState.Released)
+        {
+            var parts = _pan.Takeover.Asked is not SteamControllerParts.None and var asked ? asked : _pan.Connected;
+            Toast.Show($"Pan: {SteamControllerPartsNames.Names(parts)} übernommen");
+        }
+
+        _takeover = state;
+    }
+
+    private TakeoverState _takeover;
+
+    /// <summary>"OK" on the note after the release for a firmware update.</summary>
+    [RelayCommand]
+    private void CloseFirmwareNote()
+    {
+        if (FirmwareAttempt is { IsReleased: true } firmware)
+        {
+            ClosePanDialog(firmware);
+        }
+    }
+
+    /// <summary>The pointer went down on a held button (Pan's dialogs, the settings row): held as [A] would be.</summary>
+    public void PressHold(HoldButtonViewModel button)
+    {
+        switch (PanDialog)
+        {
+            case TakeoverConsentViewModel consent:
+                consent.Press(button);
+                return;
+            case FirmwareAttemptViewModel firmware:
+                firmware.Press(button);
+                return;
+        }
+
+        if (Settings?.Selected.Rows.OfType<HoldRowViewModel>().FirstOrDefault(row => row.Hold == button) is { } row)
+        {
+            row.PressByPointer();
         }
     }
 

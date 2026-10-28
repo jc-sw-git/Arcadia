@@ -76,6 +76,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private static readonly TimeSpan PromptCheckInterval = TimeSpan.FromSeconds(1);
 
     private readonly ControllerSupportService _support;
+    private readonly IPanEmulationView _pan;
+    private readonly PanRows _panRows;
     private readonly SisrRowViewModel _sisr;
     private readonly ActionRowViewModel _restore;
     private readonly ActionRowViewModel _update;
@@ -99,10 +101,21 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private bool _disposed;
     private int _promptFocus;
 
-    public ControllerSettingsViewModel(ControllerSupportService support, SettingsChanges changes)
+    /// <param name="pan">Pan's emulation (#242); its group replaces "Steam Controller Kompatibilität" once SISR no longer runs.</param>
+    /// <param name="gameInTheWay">The title of a game that runs or starts: the switch "Controller-Wächter (Pan)" waits for its end.</param>
+    /// <param name="time">Times the held row "Steam Controller und Puck übernehmen"; tests pass a fake.</param>
+    public ControllerSettingsViewModel(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay, TimeProvider? time = null)
         : base("Controller", "M7 7h10a5 5 0 0 1 4.6 6.9l-1.3 3.2a2.3 2.3 0 0 1-3.9.6L14.6 16H9.4l-1.8 1.7a2.3 2.3 0 0 1-3.9-.6l-1.3-3.2A5 5 0 0 1 7 7z M8 10v3 M6.5 11.5h3 M16 10.5v.01 M17.5 12.5v.01")
     {
         _support = support;
+        _pan = pan;
+        _panRows = new PanRows(support, changes, pan, gameInTheWay, ApplyFix, time ?? TimeProvider.System, action => Dispatcher.UIThread.Post(action));
+        _panRows.Switched += Refresh;
+        _panRows.TakenOver += () =>
+        {
+            Refresh();
+            FocusRow(PanRows.MainKey);
+        };
         _sisr = new SisrRowViewModel(ActivateSisr)
         {
             Group = SteamGroup,
@@ -169,6 +182,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         // An old failure describes a moment that is over; the page opens without it.
         _support.ClearError();
         _support.Changed += OnSupportChanged;
+        _pan.Changed += OnPanChanged;
+        _pan.Takeover.Changed += OnPanChanged;
         Refresh();
         if (_support.UnseenSteamStartFailure)
         {
@@ -181,11 +196,22 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     }
 
     /// <summary>Steam's page points here too: Steam decides how the controllers behave outside its games (#169).</summary>
-    public override IReadOnlyList<SettingsLink> LauncherPageLinks { get; } =
+    public override IReadOnlyList<SettingsLink> LauncherPageLinks => _support.StartsSisr ? SisrLinks : PanLinks;
+
+    private static readonly IReadOnlyList<SettingsLink> SisrLinks =
     [
         new(KnownLaunchers.Steam.Id, "Controller-Einstellungen für Steam", "Steam Controller Kompatibilität und Steams Desktop-Belegung", "sisr",
         [
             new InfoText("Was Steam mit deinen Controllern macht, stellst du unter Controller → Steam ein: ob Arcadia den Steam Controller mit SISR auch außerhalb von Steam nutzbar macht, und ob es Steams Desktop-Belegung für alle Controller ignoriert."),
+            new InfoText("[A] springt dorthin, [B] kommt hierher zurück."),
+        ]),
+    ];
+
+    private static readonly IReadOnlyList<SettingsLink> PanLinks =
+    [
+        new(KnownLaunchers.Steam.Id, "Controller-Einstellungen für Steam", "Controller-Wächter (Pan) und Steams Desktop-Belegung", PanRows.MainKey,
+        [
+            new InfoText("Was Steam mit deinen Controllern macht, stellst du unter Controller ein: ob Pan den Steam Controller vor Steam versteckt und Steam eine Kopie zeigt, damit er in jedem Spiel funktioniert, und ob Arcadia Steams Desktop-Belegung für alle Controller ignoriert."),
             new InfoText("[A] springt dorthin, [B] kommt hierher zurück."),
         ]),
     ];
@@ -301,8 +327,22 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support.WatchSetup = false;
         _promptCheck.Stop();
         _support.Changed -= OnSupportChanged;
+        _pan.Changed -= OnPanChanged;
+        _pan.Takeover.Changed -= OnPanChanged;
+        _panRows.TakeOver.Dispose();
         _support.ClearError();
     }
+
+    /// <summary>The first row below "Controller-Wächter (Pan)" that says why it doesn't run; [A] on a greyed mode leads there (#242).</summary>
+    public string? PanWarningKey => _support.StartsSisr ? null : _panRows.FirstWarningKey;
+
+    private void OnPanChanged() => Dispatcher.UIThread.Post(() =>
+    {
+        if (!_disposed)
+        {
+            Refresh();
+        }
+    });
 
     /// <summary>A, ◀ ▶ or a click on "Steam Controller Kompatibilität": switch, or install first.</summary>
     private void ActivateSisr(bool? on)
@@ -548,6 +588,12 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     private void Refresh()
     {
+        if (!_support.StartsSisr)
+        {
+            RefreshPan();
+            return;
+        }
+
         var enabled = _support.Enabled;
         var setup = _support.Setup;
 
@@ -659,6 +705,28 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         {
             button.IsFocused = Prompt != SettingsPrompt.None && buttons.Count > 0 && button == buttons[_promptFocus];
         }
+    }
+
+    /// <summary>Since SISR no longer runs (#213): the group "PAN" (#242), then "STEAM" with Steam's desktop layout.</summary>
+    private void RefreshPan()
+    {
+        var rows = _panRows.Build();
+        Marker = _panRows.Marker;
+        if (IsInstallPrompt)
+        {
+            // The install prompts belong to SISR's install.
+            Prompt = SettingsPrompt.None;
+            _promptCheck.Stop();
+        }
+
+        _steamDesktopLayout.Subtitle = "Alle Controller: Maus und Tasten, die Steam simuliert, kommen nicht an";
+        SetRows(
+        [
+            .. rows,
+            _steamDesktopLayout,
+            .. _mouseMode.Rows,
+            .. _returnWithView.Rows,
+        ]);
     }
 
     /// <summary>While the option is on, its row says in one line how it is doing instead of what it is for (owner, 2026-10-24).</summary>
@@ -788,8 +856,12 @@ public enum SisrRowMode
 }
 
 /// <summary>"Steam Controller Kompatibilität": a switch, "SISR installieren", or why neither is possible.</summary>
-public sealed partial class SisrRowViewModel(Action<bool?> activate)
-    : SettingsRowViewModel("sisr", "Steam Controller Kompatibilität")
+public sealed class SisrRowViewModel(Action<bool?> activate)
+    : SetupSwitchRowViewModel("sisr", "Steam Controller Kompatibilität", activate);
+
+/// <summary>A setting that needs something installed first: a switch, an install action, or why neither is possible.</summary>
+public partial class SetupSwitchRowViewModel(string key, string title, Action<bool?> activate)
+    : SettingsRowViewModel(key, title)
 {
     private string _subtitle = string.Empty;
 
@@ -801,13 +873,17 @@ public sealed partial class SisrRowViewModel(Action<bool?> activate)
 
     public bool IsInstall => Mode == SisrRowMode.Install;
 
+    /// <summary>What the install action says on the right, e.g. "Treiber installieren" or "Wird installiert …".</summary>
+    [ObservableProperty]
+    public partial string InstallText { get; set; } = "Treiber installieren";
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ValueText))]
     public partial bool IsOn { get; private set; }
 
     public string ValueText => IsOn ? "An" : "Aus";
 
-    /// <summary>Steam, SISR or VIIPER are starting or stopping: the switch keeps its position but can't be flipped.</summary>
+    /// <summary>Something starts or stops (or a game runs): the switch keeps its position but can't be flipped.</summary>
     [ObservableProperty]
     public partial bool IsLocked { get; private set; }
 
@@ -815,15 +891,14 @@ public sealed partial class SisrRowViewModel(Action<bool?> activate)
 
     public override bool CanActivate => Mode != SisrRowMode.Unavailable && !IsLocked;
 
-    public override string ActivateText => IsInstall ? "Treiber installieren" : "Umschalten";
+    public override string ActivateText => IsInstall ? InstallText : "Umschalten";
 
-    /// <summary>◀ switches off, ▶ on (or installs first).</summary>
     /// <summary>◀ and ▶ both switch it, like every ◀ ▶ selector (owner, 2026-10-24).</summary>
     public override void Change(int delta) => activate(null);
 
     public override void Activate() => activate(null);
 
-    /// <summary>Whether SISR really works: null while the option is off, the switch says so.</summary>
+    /// <summary>Whether what it switches on really works: null while the option is off, the switch says so.</summary>
     public void ShowLamp(RowLamp? lamp) => Lamp = lamp;
 
     /// <summary>"Treiber installieren" on this row failed (#243 part B2): the error in place of the subtitle, with the error icon.</summary>
@@ -848,4 +923,6 @@ public sealed partial class SisrRowViewModel(Action<bool?> activate)
         Subtitle = mode == SisrRowMode.Unavailable ? unavailableText : status ?? _subtitle;
         NotifyActionsChanged();
     }
+
+    partial void OnInstallTextChanged(string value) => NotifyActionsChanged();
 }

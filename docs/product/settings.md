@@ -27,6 +27,24 @@ Agreed with the owner; don't change without asking. Read this before changing th
   installieren" (one UAC prompt for all) and no part rows. An old HidHide: "HidHide-Version wird nicht unterstützt"
   with "Aktualisieren". Pan's HidHide states (e.g. "HidHide-Konfiguration ist geöffnet … Bitte schließe sie") are rows
   too, asked only while the settings are open and gone with them.
+- Since #242 (designs, section "#242 Pan"): the category starts with the group "PAN", then "STEAM" (only "Steams
+  Desktop-Belegung ignorieren", subtitle "Alle Controller: Maus und Tasten, die Steam simuliert, kommen nicht an").
+  "Controller-Wächter (Pan)" is a switch (`AppSettings.PanEnabled`, on by default; off: nothing is emulated or hidden,
+  no mode, no warning rows, even with a part missing). Its subtitle and lamp say the state: "An – deine Controller
+  werden von Arcadia verwaltet" (green), "Wird eingerichtet …", "Bereit – kein Steam Controller verbunden" (grey),
+  "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter." (yellow), "Angehalten – der Grund steht darunter"
+  (red). Every part missing: the row offers "Treiber installieren" ("Wird installiert …", after a failure "Erneut
+  versuchen" with the red X and the error in the info panel). While a game runs or starts the switch is greyed out:
+  "Erst änderbar, wenn „…“ beendet ist". Off Windows: "Auf diesem System noch nicht verfügbar". Below it, indented,
+  one row per reason (part rows, HidHide's states, "Steam Controller lässt sich nicht verstecken", "Emulation startet
+  nicht", "Emulation angehalten" with "Erneut versuchen"); "Windows-Neustart ausstehend", "HidHide: Neustart
+  ausstehend", and "Pan räumt noch auf" carry the blue i. After "Nein" in the takeover question, or a release for a
+  firmware update, the switch reads "An – Steam Controller und Puck ausgenommen, siehe unten" (no triangle) and the
+  indented row "Steam Controller und Puck übernehmen" (blue i, "Übernehmen" held 3 s, a bold red warning in its info
+  panel) takes them over again: the press is the consent, the toast "Pan: … übernommen" says so, the row goes and the
+  focus moves to the switch. Neither survives a restart of Arcadia (owner, 2026-10-28). "Controller wiederherstellen" stays while Pan is installed,
+  also while the switch is off. Steam's launcher page links to the switch. This replaces the B2 rows above where they
+  differ (greyed switch "Aus – es fehlt: …").
 - Pan's notices (#243 B2): a toast while Arcadia is in front, the overlay notice (where the mouse mode shows its
   label) while a game is in front, so the player sees them in the game too. All Pan notices go this way. A hold the
   player is watching goes on: during the View hold the notice stands below "Zurück zu Arcadia".

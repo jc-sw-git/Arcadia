@@ -271,6 +271,9 @@ public sealed class ControllerSupportService(
     /// <summary>"SISR installieren" closes Steam first (after asking) and starts it again afterwards.</summary>
     public bool InstallStopsSteam => _platform.IsSteamRunning;
 
+    /// <summary>Steam's client runs: it could update the Steam Controller's firmware (#242).</summary>
+    public bool SteamRuns => _platform.IsSteamRunning;
+
     public ISisrHost Sisr => sisr;
 
     public SisrState State
@@ -1109,7 +1112,7 @@ public sealed class ControllerSupportService(
             StartSisr();
         }, cancellationToken);
 
-    private const string DriversBusyText = "Treiber werden installiert – bitte die Windows-Abfrage bestätigen …";
+    public const string DriversBusyText = "Treiber werden installiert – bitte die Windows-Abfrage bestätigen …";
 
     /// <summary>
     /// What is missing of the controller emulation (#243): VIIPER (with SISR's files until #214, no prompt), then the

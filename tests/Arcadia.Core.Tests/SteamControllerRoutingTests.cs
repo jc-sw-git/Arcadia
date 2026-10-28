@@ -7,7 +7,6 @@ public sealed class SteamControllerRoutingTests
     private readonly List<string> _active = [];
     private readonly HashSet<string> _onSteamInput = new(StringComparer.Ordinal);
     private readonly List<string> _log = [];
-    private readonly RecordingHold _hold = new();
     private int? _steamAppId;
     private bool _driverReady = true;
     private Exception? _failure;
@@ -17,10 +16,7 @@ public sealed class SteamControllerRoutingTests
         key => !_onSteamInput.Contains(key),
         () => _steamAppId,
         () => _driverReady,
-        _log.Add)
-    {
-        Hold = _hold,
-    };
+        _log.Add);
 
     [Theory]
     [InlineData(new string[0], true, true, false)]
@@ -44,15 +40,20 @@ public sealed class SteamControllerRoutingTests
         Assert.True(routing.Update().PadWanted);
 
         _steamAppId = 570;
-        Assert.False(routing.Update().PadWanted);
+        var running = routing.Update();
+        Assert.False(running.PadWanted);
+        Assert.True(running.SteamUsesController);
+        Assert.True(running.GameRunning);
 
         _steamAppId = null;
-        Assert.True(routing.Update().PadWanted);
-        Assert.Equal([false, true, false], _hold.Applied);
+        var ended = routing.Update();
+        Assert.True(ended.PadWanted);
+        Assert.False(ended.SteamUsesController);
+        Assert.False(ended.GameRunning);
     }
 
     [Fact]
-    public void Only_changes_are_logged_and_handed_to_the_hold()
+    public void Only_changes_are_logged()
     {
         var routing = Create();
         routing.Update();
@@ -60,7 +61,6 @@ public sealed class SteamControllerRoutingTests
         _active.Add("epic:a");
         routing.Update();
 
-        Assert.Equal([false], _hold.Applied);
         Assert.Single(_log);
         Assert.Contains("Xbox-Pad von Arcadia", _log[0]);
     }
@@ -93,10 +93,43 @@ public sealed class SteamControllerRoutingTests
         Assert.Contains(_log, line => line.Contains("kaputt", StringComparison.Ordinal));
     }
 
-    private sealed class RecordingHold : ISteamControllerHold
+    public static TheoryData<bool, bool, bool, bool, bool, bool, bool> CopyCases => new()
     {
-        public List<bool> Applied { get; } = [];
+        // game on Steam-Eingabe, game on Arcadia, Arcadia in front, mouse mode, Steam in front → copy passes, pad passes
+        { true, false, false, false, false, true, false },
+        { true, false, true, false, false, false, false },
+        { true, false, false, true, false, false, false },
+        { false, true, false, false, false, false, true },
+        { false, true, false, false, true, false, true },
+        { false, true, true, false, false, false, false },
+        { false, true, false, true, false, false, false },
+        { false, false, false, false, true, true, false },
+        { false, false, false, false, false, false, true },
+        { false, false, true, false, true, false, false },
+        { false, false, false, true, true, false, false },
+    };
 
-        public void Apply(bool steamUsesController) => Applied.Add(steamUsesController);
+    [Theory]
+    [MemberData(nameof(CopyCases))]
+    [Trait("TestCase", "T242-2")]
+    public void The_copy_passes_input_only_to_a_game_on_Steam_Eingabe_or_to_Steam_in_front_and_never_while_Arcadia_or_the_mouse_mode_has_the_controller(
+        bool steamInputGame, bool arcadiaGame, bool arcadiaActive, bool mouseMode, bool steamInFront, bool copyPasses, bool padPasses)
+    {
+        var games = new List<string>();
+        if (steamInputGame)
+        {
+            games.Add("steam:570");
+        }
+
+        if (arcadiaGame)
+        {
+            games.Add("epic:a");
+        }
+
+        var route = SteamControllerRouting.Decide(games, key => key != "steam:570", driverReady: true);
+        var now = new ForegroundNow(arcadiaActive, mouseMode, steamInFront);
+
+        Assert.Equal(copyPasses, SteamControllerCopyRules.CopyPasses(route, now));
+        Assert.Equal(padPasses, SteamControllerCopyRules.PadPasses(route, now));
     }
 }

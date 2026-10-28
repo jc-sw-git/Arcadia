@@ -8,21 +8,35 @@ namespace Arcadia.ControllerSupport;
 /// <param name="PadWanted">Arcadia's Xbox pad is plugged in (while a Steam Controller is connected).</param>
 /// <param name="SteamUsesController">
 /// Steam may act on the Steam Controller: a game on "Steam-Eingabe" runs, or Arcadia can't serve the game itself (no
-/// driver). Otherwise Arcadia keeps Steam from it (<see cref="ISteamControllerHold"/>), so Steam's desktop layout and
-/// Steam's own pad send nothing beside Arcadia's pad.
+/// driver). Otherwise Arcadia keeps Steam from it: the copy Steam sees reports rest (<see cref="SteamControllerCopyRules"/>,
+/// #242), so Steam's desktop layout and Steam's own pad send nothing beside Arcadia's pad.
 /// </param>
 /// <param name="Why">For the log.</param>
-public sealed record SteamControllerRoute(bool PadWanted, bool SteamUsesController, string Why);
+public sealed record SteamControllerRoute(bool PadWanted, bool SteamUsesController, string Why)
+{
+    /// <summary>Some game runs (or is being started), on either mode.</summary>
+    public bool GameRunning { get; init; }
+}
+
+/// <summary>Who has the Steam Controller's attention right now, read on every poll.</summary>
+/// <param name="ArcadiaActive">Arcadia's window is in front.</param>
+/// <param name="MouseModeOn">The controller is Arcadia's mouse.</param>
+/// <param name="SteamInFront">A window of Steam itself is in front (Big Picture, the client), not a game.</param>
+public readonly record struct ForegroundNow(bool ArcadiaActive, bool MouseModeOn, bool SteamInFront);
 
 /// <summary>
-/// Keeps Steam from acting on the Steam Controller while Arcadia serves it, and lets Steam have it again. #242 does it
-/// with an emulated copy of the controller that Steam sees instead of the real one (spike #239): false = the copy reports
-/// only rest, true = it forwards again. This is all <see cref="SteamControllerRouting"/> knows of it.
+/// When the copy Steam sees passes input and when Arcadia's Xbox pad does (#242, decisions 2 and 4; product rules in
+/// <c>docs/product/controls.md</c>). Neither while Arcadia is in front or the mouse mode is on. The copy passes to a game
+/// on "Steam-Eingabe", and to Steam itself in front while no game runs, when the pad rests so Steam gets the full
+/// Steam Controller. Steam's overlay inside a game can't be told from the game and counts as the game.
 /// </summary>
-public interface ISteamControllerHold
+public static class SteamControllerCopyRules
 {
-    /// <summary>Called on every change of <see cref="SteamControllerRoute.SteamUsesController"/>, off the UI thread. Never throws.</summary>
-    void Apply(bool steamUsesController);
+    public static bool CopyPasses(SteamControllerRoute route, ForegroundNow now) =>
+        !now.ArcadiaActive && !now.MouseModeOn && (route.SteamUsesController || (!route.GameRunning && now.SteamInFront));
+
+    public static bool PadPasses(SteamControllerRoute route, ForegroundNow now) =>
+        route.PadWanted && !now.ArcadiaActive && !now.MouseModeOn && !(!route.GameRunning && now.SteamInFront);
 }
 
 /// <summary>
@@ -43,9 +57,6 @@ public sealed class SteamControllerRouting(
     private bool _decided;
     private volatile bool _driverReady;
 
-    /// <summary>What keeps Steam from the controller; until #242, nothing does.</summary>
-    public ISteamControllerHold Hold { get; init; } = new NoHold();
-
     public SteamControllerRoute Current => _current;
 
     /// <summary>usbip and VIIPER are there, so the mode "Arcadia" can be chosen; as of the last <see cref="Update"/>.</summary>
@@ -65,17 +76,17 @@ public sealed class SteamControllerRouting(
         var running = games.ToList();
         if (running.FirstOrDefault(key => !usesArcadiaPad(key)) is { } steamInputGame)
         {
-            return new(PadWanted: false, SteamUsesController: true, $"{steamInputGame} auf Steam-Eingabe");
+            return new(PadWanted: false, SteamUsesController: true, $"{steamInputGame} auf Steam-Eingabe") { GameRunning = true };
         }
 
         if (!driverReady)
         {
             return running.Count > 0
-                ? new(PadWanted: false, SteamUsesController: true, "ohne Treiber, ein Spiel läuft")
+                ? new(PadWanted: false, SteamUsesController: true, "ohne Treiber, ein Spiel läuft") { GameRunning = true }
                 : new(PadWanted: false, SteamUsesController: false, "ohne Treiber, kein Spiel");
         }
 
-        return new(PadWanted: true, SteamUsesController: false, running.Count > 0 ? "Spiele auf Arcadia" : "kein Spiel");
+        return new(PadWanted: true, SteamUsesController: false, running.Count > 0 ? "Spiele auf Arcadia" : "kein Spiel") { GameRunning = running.Count > 0 };
     }
 
     /// <summary>Decides anew and applies a change; never throws (an error keeps the last route).</summary>
@@ -95,11 +106,6 @@ public sealed class SteamControllerRouting(
                 if (!_decided || route.PadWanted != before.PadWanted || route.SteamUsesController != before.SteamUsesController)
                 {
                     log($"Steam Controller in Spielen: {(route.PadWanted ? "Xbox-Pad von Arcadia" : "kein Xbox-Pad")}, Steam {(route.SteamUsesController ? "darf ihn verwenden" : "bekommt nichts")} ({route.Why})");
-                }
-
-                if (!_decided || route.SteamUsesController != before.SteamUsesController)
-                {
-                    Hold.Apply(route.SteamUsesController);
                 }
 
                 _decided = true;
@@ -128,12 +134,5 @@ public sealed class SteamControllerRouting(
         }
 
         return games;
-    }
-
-    private sealed class NoHold : ISteamControllerHold
-    {
-        public void Apply(bool steamUsesController)
-        {
-        }
     }
 }

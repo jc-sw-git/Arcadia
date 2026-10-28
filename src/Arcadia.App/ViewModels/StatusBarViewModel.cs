@@ -1,5 +1,6 @@
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Pan;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -16,6 +17,11 @@ public partial class StatusBarViewModel : ViewModelBase
     private readonly ITimer _clock;
 
     private static readonly TimeSpan ClockInterval = TimeSpan.FromSeconds(1);
+
+    /// <summary>The tooltip of the triangle while Pan's emulation is on but doesn't run (#242).</summary>
+    public const string PanNotRunningText = "Pan läuft nicht";
+
+    private PanEmulationStatus _pan = PanEmulationStatus.Off;
 
     public StatusBarViewModel(ControllerSupportService controllerSupport, ArcadiaUpdateService updates, TimeProvider time)
     {
@@ -58,7 +64,7 @@ public partial class StatusBarViewModel : ViewModelBase
     [ObservableProperty]
     public partial string ArcadiaUpdateText { get; private set; } = string.Empty;
 
-    /// <summary>SISR is starting and the controller isn't emulated yet; shown as a spinner in the header.</summary>
+    /// <summary>SISR is starting, or Pan sets up the emulation (#242), and the controller isn't emulated yet; a spinner in the header.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
     public partial bool IsControllerStarting { get; private set; }
@@ -85,22 +91,36 @@ public partial class StatusBarViewModel : ViewModelBase
         ArcadiaUpdateText = _updates.AvailableVersion is { } version ? $"Arcadia {version} verfügbar" : string.Empty;
     }
 
+    /// <summary>Pan's emulation changed (#242); UI thread.</summary>
+    public void ShowPan(PanEmulationStatus status)
+    {
+        _pan = status;
+        UpdateControllerSupportState();
+    }
+
     private void UpdateControllerSupportState()
     {
         var support = _controllerSupport;
         HasSisrUpdate = support.Enabled && support.AvailableUpdate is not null;
-        IsControllerStarting = support.Enabled && support.State == SisrState.Starting;
-        var issues = support.Issues;
+        // With the switch "Controller-Wächter (Pan)" off nothing is needed, so a missing part is no problem then (#242).
+        var panOff = !support.StartsSisr && !support.Settings.PanEnabled;
+        IsControllerStarting = (support.Enabled && support.State == SisrState.Starting) || (!panOff && _pan.State == PanEmulationState.SettingUp);
+        IReadOnlyList<HealthIssue> issues = panOff ? [] : support.Issues;
+        var panProblem = !panOff && _pan.HasProblem;
         var worst = issues.Count > 0 ? issues.Max(i => i.Severity) : HealthSeverity.Info;
         // Also while the option is off: a missing driver or Pan is worth the triangle before the first switch-on (#243).
-        HasControllerStatus = issues.Count > 0;
-        IsControllerStatusInfo = worst == HealthSeverity.Info;
-        IsControllerStatusError = worst == HealthSeverity.Error;
-        ControllerStatusText = issues.Count switch
+        HasControllerStatus = issues.Count > 0 || panProblem;
+        IsControllerStatusInfo = !panProblem && worst == HealthSeverity.Info;
+        IsControllerStatusError = worst == HealthSeverity.Error || _pan.State == PanEmulationState.Stopped && panProblem;
+        var owner = support.Enabled ? "Steam Controller (SISR)" : "Steam Controller";
+        var panSuffix = panProblem ? $" – {PanNotRunningText}" : string.Empty;
+        ControllerStatusText = (issues.Count, panProblem) switch
         {
-            0 => string.Empty,
-            1 => $"{(support.Enabled ? "Steam Controller (SISR)" : "Steam Controller")}: {issues[0].Title}",
-            var n => $"{(support.Enabled ? "Steam Controller (SISR)" : "Steam Controller")}: {n} Meldungen",
+            (0, false) => string.Empty,
+            (0, true) => PanNotRunningText,
+            (1, _) => $"{owner}: {issues[0].Title}{panSuffix}",
+            (var n, _) => $"{owner}: {n} Meldungen{panSuffix}",
         };
+
     }
 }

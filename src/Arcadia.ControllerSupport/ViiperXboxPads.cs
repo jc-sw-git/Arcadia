@@ -44,6 +44,12 @@ public sealed partial class ViiperXboxPads(string viiperExecutable, string logDi
         return UsbipDriver.IsRunning() ? null : "Treiber usbip nicht geladen";
     }
 
+    public async Task PrepareAsync(CancellationToken cancellationToken)
+    {
+        using var client = new ViiperClient("localhost", ApiPort);
+        await EnsureServerAsync(client, cancellationToken);
+    }
+
     public async Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken)
     {
         var client = new ViiperClient("localhost", ApiPort);

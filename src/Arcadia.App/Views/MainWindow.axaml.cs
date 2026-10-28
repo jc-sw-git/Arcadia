@@ -106,6 +106,10 @@ public partial class MainWindow : Window
         // Ends a held click on a cover, wherever the mouse is let go.
         AddHandler(PointerReleasedEvent, (_, _) => _viewModel?.ReleasePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
 
+        // Buttons that act only when held (#242): the press starts the hold, letting go anywhere ends it.
+        AddHandler(PointerPressedEvent, OnHoldPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerReleasedEvent, (_, _) => ReleaseHold(), RoutingStrategies.Tunnel, handledEventsToo: true);
+
         // A key released in another window never reports its release here.
         Deactivated += (_, _) =>
         {
@@ -283,6 +287,28 @@ public partial class MainWindow : Window
     /// A real mouse movement shows the dialogs' ✕. Windows also reports a pointer "move" when only the content under a
     /// resting pointer changes, so a few pixels from where it rested don't count.
     /// </summary>
+    private HoldButtonViewModel? _pointerHold;
+
+    private void OnHoldPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
+            || (e.Source as Visual)?.GetSelfAndVisualAncestors().OfType<StyledElement>()
+                .FirstOrDefault(element => element.Classes.Contains("hold"))?.DataContext is not HoldButtonViewModel button)
+        {
+            return;
+        }
+
+        ReleaseHold();
+        _pointerHold = button;
+        _viewModel?.PressHold(button);
+    }
+
+    private void ReleaseHold()
+    {
+        _pointerHold?.Release();
+        _pointerHold = null;
+    }
+
     private void OnPointerMovedAnywhere(object? sender, PointerEventArgs e)
     {
         var position = e.GetPosition(this);

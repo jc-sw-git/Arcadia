@@ -77,7 +77,9 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
   Configuration Client (Start menu, admin) unticks the puck, removes
   Arcadia from the application list and turns hiding off; uninstalling HidHide empties its lists. Pan's later undo
   removes only what is still there.
-- Journal: `HiddenDevices`, `AllowListed`, `CloakingWasOn`, `PuckRestartPending`; a journal naming a hidden device that
+- Firmware hold (#242): Pan keeps the puck hidden through a crash mid firmware attempt; see
+  [pan-firmware-hold.md](pan-firmware-hold.md).
+- Journal: `HiddenDevices`, `AllowListed`, `CloakingWasOn`, `PuckRestartPending`, `FirmwareHold`; a journal naming a hidden device that
   isn't on `HidingList` counts as unreadable (an undo must never remove one of the user's entries).
 
 ## Steam's focus change (R12)

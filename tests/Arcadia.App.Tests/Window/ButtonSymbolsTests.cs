@@ -16,21 +16,21 @@ namespace Arcadia.App.Tests;
 /// </summary>
 public sealed class ButtonSymbolsTests
 {
-    public static TheoryData<string, string, string> Pads => new()
+    public static TheoryData<string, string, string, string> Pads => new()
     {
-        // The pad, then what the library's footer shows for A and for LB|RB.
-        { nameof(KnownPads.EightBitDoUltimate2), "A", "LB RB" },
-        { nameof(KnownPads.DualSense), "Cross", "L1 R1" },
-        { nameof(KnownPads.DualShock4), "Cross", "L1 R1" },
-        { nameof(KnownPads.SwitchPro), "B", "L R" },
-        { nameof(KnownPads.SteamController), "A", "L1 R1" },
+        // The pad, then what the library's footer shows for A, for LB|RB and for ⧉ (Optionen).
+        { nameof(KnownPads.EightBitDoUltimate2), "A", "LB RB", "⧉" },
+        { nameof(KnownPads.DualSense), "Cross", "L1 R1", "Create" },
+        { nameof(KnownPads.DualShock4), "Cross", "L1 R1", "Share" },
+        { nameof(KnownPads.SwitchPro), "B", "L R", "−" },
+        { nameof(KnownPads.SteamController), "A", "L1 R1", "⧉" },
     };
 
     /// <summary>T215-1: legend, detail page, settings and on-screen keyboard in the printing of each controller.</summary>
     [AvaloniaTheory]
     [MemberData(nameof(Pads))]
     [Trait("TestCase", "T215-1")]
-    public async Task Each_controller_shows_its_printing_in_legend_detail_page_settings_and_on_screen_keyboard(string type, string confirm, string tabs)
+    public async Task Each_controller_shows_its_printing_in_legend_detail_page_settings_and_on_screen_keyboard(string type, string confirm, string tabs, string options)
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
         arcadia.Arcadia.Sdl.Plug(Pad(type));
@@ -41,6 +41,7 @@ public sealed class ButtonSymbolsTests
         Assert.Equal(symbols, arcadia.Arcadia.Main.ButtonSymbols);
         Assert.Contains(arcadia.FooterHints(), hint => hint.StartsWith(confirm + " ", StringComparison.Ordinal));
         Assert.Contains(arcadia.FooterHints(), hint => hint.StartsWith(tabs + " ", StringComparison.Ordinal));
+        Assert.Contains(arcadia.FooterHints(), hint => hint == options + " Optionen");
         AssertAllIn(arcadia, symbols, "Bibliothek");
 
         arcadia.Arcadia.PressDown(UiAction.Accept).Wait(TimeSpan.FromSeconds(1.1)).LetGo(UiAction.Accept);
@@ -119,6 +120,22 @@ public sealed class ButtonSymbolsTests
         Assert.False(restarted.Arcadia.Main.UsesController, "without a controller the hints show the keyboard");
         Assert.All(ArcadiaWindow.Glyphs(restarted.Window), glyph => Assert.IsNotType<PadGlyph>(glyph));
         Assert.Contains(restarted.FooterHints(), hint => hint.StartsWith("Leertaste", StringComparison.Ordinal));
+    }
+
+    /// <summary>T215-4, failure case: without a usable SDL the hints show the keyboard, as with no controller.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T215-4")]
+    public async Task Without_a_usable_SDL_the_hints_show_the_keyboard()
+    {
+        using var arcadia = await ArcadiaWindow.ShowAsync();
+        arcadia.Arcadia.Sdl.InitError = new DllNotFoundException("Unable to load shared library 'SDL3' or one of its dependencies.");
+        arcadia.Arcadia.Sdl.Plug(KnownPads.DualSense);
+
+        arcadia.Arcadia.StartControllers();
+        arcadia.Settle();
+        Assert.False(arcadia.Arcadia.Main.UsesController);
+        Assert.All(ArcadiaWindow.Glyphs(arcadia.Window), glyph => Assert.IsNotType<PadGlyph>(glyph));
+        Assert.Contains(arcadia.FooterHints(), hint => hint.StartsWith("Leertaste", StringComparison.Ordinal));
     }
 
     /// <summary>T215-5: the controller in use unplugged: the other one's symbols, then the keyboard; a new one changes nothing until used.</summary>

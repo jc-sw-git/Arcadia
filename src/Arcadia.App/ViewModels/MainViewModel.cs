@@ -10,10 +10,10 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Search;
 using Arcadia.Core.Settings;
+using Arcadia.Input;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Arcadia.Input;
 using CommunityToolkit.Mvvm.Input;
 
 namespace Arcadia.App.ViewModels;

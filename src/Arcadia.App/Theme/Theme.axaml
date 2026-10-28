@@ -176,7 +176,8 @@
     <StreamGeometry x:Key="PadIconCross">M3.5,3.5 L12.5,12.5 M12.5,3.5 L3.5,12.5</StreamGeometry>
     <StreamGeometry x:Key="PadIconCircle">M2.5,8 A5.5,5.5 0 1 1 13.5,8 A5.5,5.5 0 1 1 2.5,8 Z</StreamGeometry>
     <StreamGeometry x:Key="PadIconSquare">M3,3 H13 V13 H3 Z</StreamGeometry>
-    <StreamGeometry x:Key="PadIconTriangle">M8,2.5 L14,13 H2 Z</StreamGeometry>
+    <!-- Nearly as tall as wide, so it fills its box like the circle and doesn't look smaller. -->
+    <StreamGeometry x:Key="PadIconTriangle">M8,1.5 L14.5,13.5 H1.5 Z</StreamGeometry>
     <StreamGeometry x:Key="PadIconCreate">M3,9 V3 M6,10 L10.5,5.5 M7,13 H13</StreamGeometry>
     <StreamGeometry x:Key="PadIconOptions">M3,4 H13 M3,8 H13 M3,12 H13</StreamGeometry>
     <!-- Dividers between groups in the header. -->

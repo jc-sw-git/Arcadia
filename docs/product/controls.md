@@ -16,8 +16,8 @@ Agreed with the owner; don't change without asking. Read this before changing th
   keys; a controller plugged in changes nothing until used; unplugging the one in use shows the next one's, then the
   keyboard's. Nothing is stored. By position (A = bottom): Xbox (also generic and unknown) A B X Y LB RB LT RT L3 R3 ⧉ ≡;
   PlayStation ✕ ○ □ △ L1 R1 L2 R2 L3 R3 with PS5 Create/Options icons, PS4 "Share"/"Options", PS3 "Select"/"Start";
-  Nintendo (Switch Pro, Joy-Con pair, GameCube) B A Y X (bottom button prints B) L R ZL ZR, LS RS for the stick clicks,
-  − +; Steam Controller A B X Y L1 R1 L2 R2 L3 R3 ⧉ ≡. Monochrome, face buttons round, the rest pills, PlayStation's
+  Nintendo (Switch Pro, Joy-Con pair) B A Y X (bottom button prints B) L R ZL ZR, LS RS for the stick clicks, − +;
+  GameCube as printed: A X B Y (SDL's face style), Z, L R, Start; Steam Controller A B X Y L1 R1 L2 R2 L3 R3 ⧉ ≡. Monochrome, face buttons round, the rest pills, PlayStation's
   shapes as vector icons from the theme. Only buttons Arcadia uses have a symbol; Guide, back grips and trackpads come
   with their first feature (Guide then the controller's own logo, Xbox's when unknown; brand logos are a trademark
   question first). Choosing the symbols by hand: #291. Texts keep the neutral names; a toast already shown stays.

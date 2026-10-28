@@ -178,8 +178,9 @@ public sealed class SdlGamepadSource : IGamepadSource
         }
         catch (Exception ex)
         {
-            // DllNotFoundException, EntryPointNotFoundException, BadImageFormatException or SDL_Init failing.
-            _failed(ex);
+            // DllNotFoundException, EntryPointNotFoundException, BadImageFormatException or SDL_Init failing: the
+            // controllers are gone for good before they came, so the hints show the keyboard (#215).
+            Lose(ex);
             return false;
         }
     }

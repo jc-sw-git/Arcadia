@@ -87,10 +87,13 @@ internal sealed class ArcadiaDriver : IDisposable
         Settings = new SettingsService(new SettingsStore(SettingsPath));
         var demo = arguments.Demo || files?.Demo == true;
         var firstRun = new FirstRunSetup(Settings, demo, arguments.FirstRun);
-        // The Steam account (#83) over the fake web API; its sign-in is kept unencrypted in the test's folder.
+        // The Steam account (#83) over the fake web API and Steam's fake store pages in Arcadia's browser (the window's
+        // web page, answered by TestBrowser); its sign-in is kept unencrypted in the test's folder.
+        var webPages = new WebPages(time, action => Dispatcher.UIThread.Post(action));
         SteamAccount = files is null ? null : new SteamOnlineAccount(
             new SteamWebApi(new HttpClient(files.SteamWeb, disposeHandler: false)),
             new SteamAccountStore(files.AccountFolder, data => data, data => data),
+            webPages,
             time);
         IReadOnlyList<ILauncherIntegration> integrations = files is null
             ? Launchers
@@ -125,6 +128,12 @@ internal sealed class ArcadiaDriver : IDisposable
             firstRun,
             time,
             FolderCheck);
+        webPages.Attach(Main);
+        if (files is not null)
+        {
+            _ = new Fixtures.TestBrowser(Main, files.SteamWeb);
+        }
+
         _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time, new InputLatency(shown => shown(), line =>
         {
             AppLog.Write(line);

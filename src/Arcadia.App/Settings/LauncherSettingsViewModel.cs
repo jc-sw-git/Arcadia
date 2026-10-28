@@ -54,11 +54,13 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private readonly ActionRowViewModel _rescanRow;
     private readonly ActionRowViewModel _rescanAllRow;
     private readonly ActionRowViewModel _accountRow;
+
+    // The account picture shown last, by its file (AvatarOf).
+    private string? _avatarPath;
+    private Avalonia.Media.Imaging.Bitmap? _avatar;
     private readonly List<(ILauncherAccount Account, EventHandler Handler)> _accounts = [];
 
     // Ticks while a QR code is shown, so "erneuert vor … s" counts up (owner, 2026-10-27).
-    private ITimer? _codeClock;
-    private (string Text, Avalonia.Media.Geometry Modules)? _drawnCode;
     private readonly List<(string LauncherId, ActionRowViewModel Row)> _linkRows = [];
 
     // A launcher's switches for software, tools and soundtracks (#141), made when its page first shows them.
@@ -579,10 +581,6 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         {
             ShowAccount(account, name, isActive, isFound);
         }
-        else
-        {
-            StopCodeClock();
-        }
 
         SetRows([.. account is null ? Array.Empty<SettingsRowViewModel>() : [_accountRow], _activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), .. optionRows, _rescanRow, .. _linkRows.Where(l => l.LauncherId == id).Select(l => l.Row)]);
     }
@@ -592,9 +590,35 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         _page is { } id && _host.Launchers.ActiveIds.Contains(id) && _host.Launchers.IsFound(id) ? _host.Launchers.Registered(id)?.Account : null;
 
     /// <summary>
-    /// The row of the launcher's account (#83): signed out "Anmelden"; A shows a QR code in the info panel, renewed until it
-    /// is approved on the phone, B drops it; a rejected code says so and A gets a new one; signed in it shows the account's
-    /// name and "Abmelden", which asks first. Disabled while the launcher is inactive or missing.
+    /// The account's picture, decoded once per file: the info panel is built anew with every change of the account. A file
+    /// that can't be read or isn't an image shows no picture.
+    /// </summary>
+    private Avalonia.Media.Imaging.Bitmap? AvatarOf(string? path)
+    {
+        if (path != _avatarPath)
+        {
+            _avatarPath = path;
+            _avatar = null;
+            if (path is not null)
+            {
+                try
+                {
+                    _avatar = new Avalonia.Media.Imaging.Bitmap(path);
+                }
+                catch (Exception e)
+                {
+                    AppLog.Write($"Avatar nicht lesbar ({e.GetType().Name})");
+                }
+            }
+        }
+
+        return _avatar;
+    }
+
+    /// <summary>
+    /// The row of the launcher's account (#83): signed out "Anmelden"; A opens the launcher's sign-in page over the window,
+    /// B there goes back; signed in it shows the account's name and "Abmelden", which asks first. Disabled while the
+    /// launcher is inactive or missing.
     /// </summary>
     private void ShowAccount(ILauncherAccount account, string launcherName, bool isActive, bool isFound)
     {
@@ -603,7 +627,6 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         row.Title = account.Title;
         if (!isActive || !isFound)
         {
-            StopCodeClock();
             row.IsEnabled = false;
             row.ActionText = state.Step == AccountStep.SignedIn ? "Abmelden" : "Anmelden";
             row.Subtitle = (isActive, state.AccountName) switch
@@ -624,14 +647,10 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             return;
         }
 
-        row.IsEnabled = state.Step != AccountStep.Starting;
+        row.IsEnabled = true;
         (row.ActionText, row.Subtitle) = state.Step switch
         {
-            AccountStep.Starting => ("Abbrechen", "QR-Code wird geholt …"),
-            AccountStep.ShowingCode => ("Abbrechen", state.CodeRenewedAt is { } renewed
-                ? $"Warte auf Bestätigung · Code erneuert {SecondsAgo(renewed)}"
-                : "Warte auf die Bestätigung auf dem Handy …"),
-            AccountStep.CodeRejected => ("Neuer Code", "Abgelehnt – [A] für neuen Code"),
+            AccountStep.SigningIn => ("Abbrechen", $"Anmeldung auf der Seite von {launcherName} …"),
             AccountStep.Unreachable => ("Erneut versuchen", $"{launcherName} nicht erreichbar – [A] erneut versuchen"),
             AccountStep.SignedIn => ("Abmelden", state.Problem is not null || state.Notice is not null
                 ? $"{state.AccountName} · {state.Notice ?? FirstSentence(state.Problem!)}"
@@ -639,14 +658,6 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             _ => ("Anmelden", state.Problem is not null ? FirstSentence(state.Problem) : account.Purpose),
         };
         row.Severity = state.Problem is not null ? HealthSeverity.Warning : state.Notice is not null ? HealthSeverity.Info : null;
-        if (state.Step == AccountStep.ShowingCode)
-        {
-            StartCodeClock(account);
-        }
-        else
-        {
-            StopCodeClock();
-        }
 
         List<InfoBlock> info = [];
         if (state.Problem is { } problem)
@@ -661,23 +672,19 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
 
         switch (state.Step)
         {
-            case AccountStep.ShowingCode when state.Code is { } code:
-                info.Add(new InfoQrCode(QrCode(code)));
-                info.Add(new InfoText(account.CodeInstruction));
+            case AccountStep.SigningIn:
+                info.Add(new InfoText(account.SignInMethod));
                 info.Add(new InfoText("[B] bricht die Anmeldung ab."));
-                info.Add(new InfoFootnote($"{launcherName} erneuert den Code von Zeit zu Zeit, Arcadia zeigt dann gleich den neuen. Der angezeigte Code gilt also immer."));
-                break;
-            case AccountStep.Starting or AccountStep.ShowingCode:
-                info.Add(new InfoText(account.CodeInstruction));
-                info.Add(new InfoText("[B] bricht die Anmeldung ab."));
-                break;
-            case AccountStep.CodeRejected:
-                info.Add(new InfoText("Die Anmeldung wurde auf dem Handy abgelehnt. [A] holt einen neuen Code."));
                 break;
             case AccountStep.Unreachable:
-                info.Add(new InfoText($"Arcadia erreicht die Anmeldung von {launcherName} gerade nicht. Prüfe die Internetverbindung; [A] versucht es erneut."));
+                info.Add(new InfoText($"Arcadia konnte die Anmeldeseite von {launcherName} nicht laden. Prüfe die Internetverbindung; [A] versucht es erneut."));
                 break;
             case AccountStep.SignedIn:
+                if (AvatarOf(state.AvatarPath) is { } avatar)
+                {
+                    info.Add(new InfoAvatar(state.AccountName ?? launcherName, avatar));
+                }
+
                 info.Add(new InfoText($"Angemeldet als {state.AccountName}. Arcadia zeigt neben deinen installierten Spielen auch die Spiele, die im Besitz von {state.AccountName} sind."));
                 info.Add(new InfoFacts("KONTO",
                 [
@@ -695,51 +702,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         row.Info = info;
     }
 
-    /// <summary>The code's modules, drawn once per code: the clock refreshes the row every second.</summary>
-    private Avalonia.Media.Geometry QrCode(string code)
-    {
-        if (_drawnCode is not { } drawn || drawn.Text != code)
-        {
-            drawn = (code, QrCodes.Draw(code));
-            _drawnCode = drawn;
-        }
-
-        return drawn.Modules;
-    }
-
-    /// <summary>Counts "erneuert vor … s" up while the code is shown; only the subtitle changes.</summary>
-    private void StartCodeClock(ILauncherAccount account)
-    {
-        _codeClock ??= _time.CreateTimer(_ => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-        {
-            if (PageAccount == account && account.State is { Step: AccountStep.ShowingCode, CodeRenewedAt: { } renewed })
-            {
-                _accountRow.Subtitle = $"Warte auf Bestätigung · Code erneuert {SecondsAgo(renewed)}";
-            }
-            else
-            {
-                StopCodeClock();
-            }
-        }), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-    }
-
-    private void StopCodeClock()
-    {
-        _codeClock?.Dispose();
-        _codeClock = null;
-    }
-
-    private string SecondsAgo(DateTimeOffset at)
-    {
-        var age = _time.GetUtcNow() - at;
-        return age < TimeSpan.FromSeconds(1) ? "gerade eben"
-            : age < TimeSpan.FromMinutes(1) ? $"vor {(int)age.TotalSeconds} s"
-            : $"vor {(int)age.TotalMinutes} min";
-    }
-
     private static string FirstSentence(string text) => text.IndexOf(". ", StringComparison.Ordinal) is var end and > 0 ? text[..end] : text.TrimEnd('.');
 
-    /// <summary>A on the account's row: sign in, a new code, drop the code shown, or sign out after asking.</summary>
+    /// <summary>A on the account's row: sign in, drop a sign-in under way, or sign out after asking.</summary>
     private void ActivateAccount()
     {
         if (PageAccount is not { } account)
@@ -758,7 +723,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
                     account.SignOut,
                     () => Dialog = null);
                 break;
-            case AccountStep.Starting or AccountStep.ShowingCode:
+            case AccountStep.SigningIn:
                 account.CancelSignIn();
                 break;
             default:
@@ -778,7 +743,6 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
 
     public override void Dispose()
     {
-        StopCodeClock();
         foreach (var (account, handler) in _accounts)
         {
             account.StateChanged -= handler;

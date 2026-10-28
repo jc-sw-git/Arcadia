@@ -21,7 +21,7 @@ namespace Arcadia.App.ViewModels;
 /// detail page, search, settings, first start), holds the dialogs over them and wires the parts. The pages handle their
 /// own input (<see cref="IPage"/>); the library's loading, installs and running games are <see cref="LibrarySession"/>'s.
 /// </summary>
-public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryHost, ILauncherSettingsHost, IDisposable
+public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryHost, ILauncherSettingsHost, IWebPageHost, IDisposable
 {
     private readonly ControllerSupportService _controllerSupport;
     private readonly ArcadiaUpdateService _updates;
@@ -165,7 +165,31 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     public bool IsConfirmationOpen => Confirmation is not null;
 
     /// <summary>A dialog or menu over the page takes the input.</summary>
-    public bool IsDialogOpen => IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen;
+    public bool IsDialogOpen => IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen || IsWebSignInOpen;
+
+    /// <summary>
+    /// The web page Arcadia's browser shows or loads for a launcher (#83): shown over everything for a sign-in, or loaded
+    /// unseen. A shown page takes every press, so B ends it.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsWebSignInOpen))]
+    public partial WebPageViewModel? WebPage { get; private set; }
+
+    public bool IsWebSignInOpen => WebPage?.IsShown == true;
+
+    void IWebPageHost.Open(WebPageViewModel page) => WebPage = page;
+
+    /// <summary>The ✕ over a shown page: like B, it cancels the sign-in.</summary>
+    [RelayCommand]
+    private void CloseWebPage() => WebPage?.Cancel();
+
+    void IWebPageHost.Close(WebPageViewModel page)
+    {
+        if (WebPage == page)
+        {
+            WebPage = null;
+        }
+    }
 
     /// <summary>The detail page; it takes the place of the cover grid while open, and of the search when opened from there.</summary>
     [ObservableProperty]
@@ -248,6 +272,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     public void Handle(UiAction action)
     {
         _actions.Pressed(action);
+        if (WebPage is { IsShown: true } webPage)
+        {
+            webPage.Handle(action);
+            return;
+        }
+
         var page = OpenPages().First();
         if (!page.CoversWindow && HandleDialog(action))
         {

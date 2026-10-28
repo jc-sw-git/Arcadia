@@ -25,15 +25,15 @@ public sealed class SteamOnlineAccountTests : IDisposable
     }
 
     [Fact]
-    public async Task Approved_code_signs_in_with_the_profile_name_and_fetches_the_games()
+    public async Task Sign_in_on_Steams_login_page_takes_the_store_token_and_the_profile_name_and_fetches_the_games()
     {
         var account = Create();
         var libraryChanges = 0;
         account.LibraryChanged += (_, _) => Interlocked.Increment(ref libraryChanges);
 
         account.BeginSignIn();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
-        Assert.Equal(FakeSteamWeb.CodeUrl(1), account.State.Code);
+        await AdvanceUntilAsync(() => _web.IsSignInPageShown);
+        Assert.Equal(AccountStep.SigningIn, account.State.Step);
 
         _web.IsApproved = true;
         await AdvanceUntilAsync(() => account.State.OwnedGames is not null);
@@ -42,18 +42,57 @@ public sealed class SteamOnlineAccountTests : IDisposable
         Assert.Equal(FakeSteamWeb.ProfileName, account.State.AccountName);
         Assert.Equal(2, account.State.OwnedGames);
         Assert.Equal(1, libraryChanges);
+        Assert.Equal(1, _web.SignInPagesShown);
         var owned = account.OwnedGamesFor(Account);
         Assert.NotNull(owned);
         Assert.Equal([10u, 20u], owned.Owned.Select(g => g.AppId));
     }
 
     [Fact]
-    public async Task Profile_name_that_cannot_be_loaded_falls_back_to_the_login_name()
+    public async Task Sign_in_keeps_the_profiles_avatar_and_sign_out_deletes_it()
+    {
+        var account = await SignedInAsync();
+
+        var avatar = account.State.AvatarPath;
+        Assert.NotNull(avatar);
+        Assert.Equal(FakeSteamWeb.AvatarPicture, File.ReadAllBytes(avatar));
+        Assert.Equal(avatar, Create().State.AvatarPath);
+
+        account.SignOut();
+
+        Assert.Null(account.State.AvatarPath);
+        Assert.False(File.Exists(avatar));
+    }
+
+    [Fact]
+    public async Task An_avatar_answer_that_is_no_image_is_not_kept_and_the_sign_in_holds()
+    {
+        _web.AvatarAnswer = "<html>Fehler</html>"u8.ToArray();
+
+        var account = await SignedInAsync();
+
+        Assert.Equal(1, _web.AvatarRequests);
+        Assert.Null(account.State.AvatarPath);
+        Assert.Equal(FakeSteamWeb.ProfileName, account.State.AccountName);
+    }
+
+    [Fact]
+    public async Task An_avatar_too_large_is_not_kept()
+    {
+        _web.AvatarAnswer = [0xFF, 0xD8, 0xFF, .. new byte[SteamWebApi.MaxAvatarBytes]];
+
+        var account = await SignedInAsync();
+
+        Assert.Null(account.State.AvatarPath);
+    }
+
+    [Fact]
+    public async Task Profile_name_that_cannot_be_loaded_falls_back_to_Steam()
     {
         _web.ProfileFails = true;
         var account = await SignedInAsync();
 
-        Assert.Equal(FakeSteamWeb.LoginName, account.State.AccountName);
+        Assert.Equal("Steam", account.State.AccountName);
     }
 
     [Fact]
@@ -89,134 +128,70 @@ public sealed class SteamOnlineAccountTests : IDisposable
     }
 
     [Fact]
-    public async Task Renewed_code_replaces_the_one_shown()
+    public async Task Cancelled_sign_in_closes_the_page_and_stays_signed_out_even_if_signed_in_there_later()
     {
         var account = Create();
         account.BeginSignIn();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
-
-        var shownAt = account.State.CodeRenewedAt;
-        _time.Advance(TimeSpan.FromSeconds(20));
-
-        _web.RenewCode();
-        await AdvanceUntilAsync(() => account.State.Code == FakeSteamWeb.CodeUrl(2));
-
-        Assert.Equal(AccountStep.ShowingCode, account.State.Step);
-        Assert.True(account.State.CodeRenewedAt > shownAt);
-    }
-
-    [Fact]
-    public async Task Code_stays_while_nobody_approves_and_a_session_Steam_ends_gets_a_new_code_by_itself()
-    {
-        var account = Create();
-        account.BeginSignIn();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
-        var shownAt = _time.GetUtcNow();
-
-        // Longer than the two minutes the code used to last.
-        await AdvanceUntilAsync(() => _time.GetUtcNow() - shownAt > TimeSpan.FromMinutes(3));
-        Assert.Equal(AccountStep.ShowingCode, account.State.Step);
-
-        _web.EndSession();
-        await AdvanceUntilAsync(() => account.State.Code == FakeSteamWeb.CodeUrl(2));
-
-        Assert.Equal(AccountStep.ShowingCode, account.State.Step);
-        Assert.Equal(2, _web.CodesIssued);
-        _web.IsApproved = true;
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.SignedIn);
-    }
-
-    [Fact]
-    public async Task Session_Steam_ends_at_once_says_Steam_is_unreachable_instead_of_starting_over()
-    {
-        var account = Create();
-        account.BeginSignIn();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
-
-        _web.EndSession();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.Unreachable);
-
-        Assert.Equal(1, _web.CodesIssued);
-        Assert.Null(account.State.Code);
-    }
-
-    [Fact]
-    public async Task Code_goes_when_Steam_stops_answering_and_A_gets_a_new_one()
-    {
-        var account = Create();
-        account.BeginSignIn();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
-
-        _web.IsOffline = true;
-        var lostAt = _time.GetUtcNow();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.Unreachable);
-
-        Assert.InRange(_time.GetUtcNow() - lostAt, SteamOnlineAccount.SilenceLimit - TimeSpan.FromSeconds(10), SteamOnlineAccount.SilenceLimit + TimeSpan.FromSeconds(10));
-        Assert.True(account.State.IsSigningIn);
-
-        _web.IsOffline = false;
-        account.BeginSignIn();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
-        Assert.Equal(FakeSteamWeb.CodeUrl(2), account.State.Code);
-    }
-
-    [Fact]
-    public async Task Code_rejected_on_the_phone_says_so()
-    {
-        var account = Create();
-        account.BeginSignIn();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
-
-        _web.IsRejected = true;
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.CodeRejected);
-
-        Assert.Null(account.State.AccountName);
-    }
-
-    [Theory]
-    [InlineData(10)]
-    [InlineData(20)]
-    [InlineData(84)]
-    public async Task Steam_busy_or_unavailable_during_the_poll_keeps_the_code(int eResult)
-    {
-        var account = Create();
-        account.BeginSignIn();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
-
-        _web.PollEResult = eResult;
-        var polls = _web.Polls;
-        await AdvanceUntilAsync(() => _web.Polls >= polls + 2);
-        Assert.Equal(AccountStep.ShowingCode, account.State.Step);
-
-        _web.PollEResult = null;
-        _web.IsApproved = true;
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.SignedIn);
-    }
-
-    [Fact]
-    public async Task Sign_in_without_network_says_Steam_is_unreachable()
-    {
-        _web.IsOffline = true;
-        var account = Create();
-
-        account.BeginSignIn();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.Unreachable);
-    }
-
-    [Fact]
-    public async Task Cancelled_sign_in_stays_signed_out_even_if_approved_later()
-    {
-        var account = Create();
-        account.BeginSignIn();
-        await AdvanceUntilAsync(() => account.State.Step == AccountStep.ShowingCode);
+        await AdvanceUntilAsync(() => _web.IsSignInPageShown);
 
         account.CancelSignIn();
+        await AdvanceUntilAsync(() => !_web.IsSignInPageShown);
         _web.IsApproved = true;
-        _time.Advance(TimeSpan.FromSeconds(30));
         await account.WhenIdleAsync();
 
         Assert.Equal(AccountStep.SignedOut, account.State.Step);
         Assert.Null(Create().State.AccountName);
+    }
+
+    [Fact]
+    public async Task Login_page_that_does_not_load_says_Steam_is_unreachable_and_A_tries_again()
+    {
+        _web.IsOffline = true;
+        var account = Create();
+
+        account.BeginSignIn();
+        await AdvanceUntilAsync(() => account.State.Step == AccountStep.Unreachable);
+        Assert.True(account.State.IsSigningIn);
+
+        _web.IsOffline = false;
+        _web.IsApproved = true;
+        account.BeginSignIn();
+        await AdvanceUntilAsync(() => account.State.Step == AccountStep.SignedIn);
+        Assert.Equal(2, _web.SignInPagesShown);
+    }
+
+    [Fact]
+    public async Task Without_a_browser_the_sign_in_says_Steam_is_unreachable()
+    {
+        var account = Create(web: null);
+
+        account.BeginSignIn();
+        await AdvanceUntilAsync(() => account.State.Step == AccountStep.Unreachable);
+        Assert.Equal(0, _web.SignInPagesShown);
+    }
+
+    [Fact]
+    public async Task Browser_still_signed_in_after_a_restart_signs_in_at_once()
+    {
+        await SignedInAsync();
+        File.Delete(Path.Combine(_folder, "steam-account.dat"));
+
+        var account = Create();
+        account.BeginSignIn();
+        await AdvanceUntilAsync(() => account.State.Step == AccountStep.SignedIn);
+    }
+
+    [Fact]
+    public void Sign_in_of_the_first_version_posing_as_the_phone_app_is_deleted_at_the_start()
+    {
+        var store = new SteamAccountStore(_folder, Flip, Flip);
+        store.SaveSignIn(new SteamSignIn("access", FakeSteamWeb.SteamId, "Name", RefreshToken: "refresh"));
+
+        var account = Create();
+
+        Assert.Equal(AccountStep.SignedOut, account.State.Step);
+        Assert.Null(account.State.AccountName);
+        Assert.Null(store.LoadSignIn());
     }
 
     [Fact]
@@ -302,22 +277,40 @@ public sealed class SteamOnlineAccountTests : IDisposable
     }
 
     [Fact]
-    public async Task Expired_access_token_is_renewed_before_the_games_are_fetched()
+    public async Task Expired_token_is_read_anew_from_the_store_page_without_showing_the_login_page()
     {
         var account = await SignedInAsync();
-        var renewals = _web.AccessTokenRequests;
+        var reads = _web.StorePageReads;
 
         _time.Advance(TimeSpan.FromDays(2));
         _web.Now = _time.GetUtcNow();
         account.FetchSoon();
         await account.WhenIdleAsync();
 
-        Assert.Equal(renewals + 1, _web.AccessTokenRequests);
+        Assert.Equal(reads + 1, _web.StorePageReads);
+        Assert.Equal(1, _web.SignInPagesShown);
         Assert.Null(account.State.Problem);
+        Assert.Equal(AccountStep.SignedIn, account.State.Step);
     }
 
     [Fact]
-    public async Task Revoked_sign_in_signs_out_with_a_status_message_and_drops_the_games()
+    public async Task A_store_token_revoked_before_it_expired_is_read_anew_once()
+    {
+        var account = await SignedInAsync();
+        var reads = _web.StorePageReads;
+
+        // Another read of the store page (e.g. in a second Arcadia) replaced the token.
+        await _web.ReadAsync(SteamStorePage.StorePage, SteamStorePage.AccountScript, _ => true, CancellationToken.None);
+        account.RefreshNow();
+        await account.WhenIdleAsync();
+
+        Assert.Equal(reads + 2, _web.StorePageReads);
+        Assert.Null(account.State.Problem);
+        Assert.Equal(AccountStep.SignedIn, account.State.Step);
+    }
+
+    [Fact]
+    public async Task Store_page_signed_out_signs_out_with_a_status_message_and_drops_the_games()
     {
         var account = await SignedInAsync();
         var libraryChanges = 0;
@@ -335,6 +328,21 @@ public sealed class SteamOnlineAccountTests : IDisposable
         Assert.Null(account.OwnedGamesFor(Account));
         Assert.False(File.Exists(Path.Combine(_folder, "steam-owned-games.json")));
         Assert.Equal(SteamOnlineAccount.ExpiredProblem, Create().State.Problem);
+    }
+
+    [Fact]
+    public async Task Store_page_signed_in_with_another_account_counts_as_signed_out()
+    {
+        var account = await SignedInAsync();
+
+        _web.AccountSteamId = FakeSteamWeb.SteamId + 1;
+        _time.Advance(TimeSpan.FromDays(2));
+        _web.Now = _time.GetUtcNow();
+        account.FetchSoon();
+        await account.WhenIdleAsync();
+
+        Assert.Equal(AccountStep.SignedOut, account.State.Step);
+        Assert.Equal(SteamOnlineAccount.ExpiredProblem, account.State.Problem);
     }
 
     [Fact]
@@ -377,19 +385,26 @@ public sealed class SteamOnlineAccountTests : IDisposable
     }
 
     [Fact]
-    public async Task Sign_out_deletes_sign_in_and_games()
+    public async Task Sign_out_deletes_sign_in_games_and_Steams_cookies()
     {
         var account = await SignedInAsync();
         var libraryChanges = 0;
         account.LibraryChanged += (_, _) => Interlocked.Increment(ref libraryChanges);
 
         account.SignOut();
+        await AdvanceUntilAsync(() => _web.CookiesForgotten == 1);
 
         Assert.Equal(AccountStep.SignedOut, account.State.Step);
         Assert.Null(account.OwnedGamesFor(Account));
         Assert.Equal(1, libraryChanges);
         Assert.Empty(Directory.GetFiles(_folder));
         Assert.Equal(AccountStep.SignedOut, Create().State.Step);
+
+        // The next sign-in shows the login page again instead of using the old cookies.
+        var next = Create();
+        next.BeginSignIn();
+        await AdvanceUntilAsync(() => _web.IsSignInPageShown);
+        next.CancelSignIn();
     }
 
     [Fact]
@@ -419,7 +434,7 @@ public sealed class SteamOnlineAccountTests : IDisposable
         }
 
         Assert.Contains(lineCopy, line => line.Contains("Steam-Konto: angemeldet", StringComparison.Ordinal));
-        string[] secrets = [_web.LastAccessToken!, _web.LastRefreshToken!, FakeSteamWeb.SteamId.ToString(System.Globalization.CultureInfo.InvariantCulture), Account.ToString(System.Globalization.CultureInfo.InvariantCulture), FakeSteamWeb.ProfileName, FakeSteamWeb.LoginName];
+        string[] secrets = [_web.LastAccessToken!, FakeSteamWeb.SteamId.ToString(System.Globalization.CultureInfo.InvariantCulture), Account.ToString(System.Globalization.CultureInfo.InvariantCulture), FakeSteamWeb.ProfileName, FakeSteamWeb.AvatarHash];
         foreach (var secret in secrets)
         {
             Assert.DoesNotContain(lineCopy, line => line.Contains(secret, StringComparison.Ordinal));
@@ -430,11 +445,11 @@ public sealed class SteamOnlineAccountTests : IDisposable
     public void Stored_sign_in_is_encrypted_and_an_unreadable_file_counts_as_signed_out()
     {
         var store = new SteamAccountStore(_folder, Flip, Flip);
-        store.SaveSignIn(new SteamSignIn("refresh-secret", null, FakeSteamWeb.SteamId, "Name"));
+        store.SaveSignIn(new SteamSignIn("token-secret", FakeSteamWeb.SteamId, "Name"));
 
         var raw = File.ReadAllBytes(Path.Combine(_folder, "steam-account.dat"));
-        Assert.DoesNotContain("refresh-secret", System.Text.Encoding.UTF8.GetString(raw), StringComparison.Ordinal);
-        Assert.Equal("refresh-secret", store.LoadSignIn()?.RefreshToken);
+        Assert.DoesNotContain("token-secret", System.Text.Encoding.UTF8.GetString(raw), StringComparison.Ordinal);
+        Assert.Equal("token-secret", store.LoadSignIn()?.AccessToken);
 
         File.WriteAllBytes(Path.Combine(_folder, "steam-account.dat"), [1, 2, 3]);
         Assert.Null(store.LoadSignIn());
@@ -444,9 +459,9 @@ public sealed class SteamOnlineAccountTests : IDisposable
     public void Without_encryption_the_sign_in_is_kept_in_memory_only()
     {
         var store = new SteamAccountStore(_folder, null, null);
-        store.SaveSignIn(new SteamSignIn("refresh-secret", null, FakeSteamWeb.SteamId, "Name"));
+        store.SaveSignIn(new SteamSignIn("token-secret", FakeSteamWeb.SteamId, "Name"));
 
-        Assert.Equal("refresh-secret", store.LoadSignIn()?.RefreshToken);
+        Assert.Equal("token-secret", store.LoadSignIn()?.AccessToken);
         Assert.Empty(Directory.GetFiles(_folder));
     }
 
@@ -465,9 +480,11 @@ public sealed class SteamOnlineAccountTests : IDisposable
     // A stand-in for DPAPI that still changes every byte.
     private static byte[] Flip(byte[] data) => [.. data.Select(b => (byte)~b)];
 
-    private SteamOnlineAccount Create()
+    private SteamOnlineAccount Create() => Create(_web);
+
+    private SteamOnlineAccount Create(IWebPages? web)
     {
-        var account = new SteamOnlineAccount(new SteamWebApi(_http), new SteamAccountStore(_folder, Flip, Flip), _time);
+        var account = new SteamOnlineAccount(new SteamWebApi(_http), new SteamAccountStore(_folder, Flip, Flip), web, _time);
         _accounts.Add(account);
         return account;
     }

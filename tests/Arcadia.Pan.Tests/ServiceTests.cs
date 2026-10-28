@@ -263,10 +263,45 @@ public sealed class ServiceTests : IDisposable
             Assert.Equal(PanReply.Acknowledged, acknowledged.Reply);
         }
 
-        // T243-12: uninstall removes the service and Pan's files.
+        // T243-12: uninstall removes the service and Pan's files. From outside Program Files it hands off to a copy in
+        // Pan-Uninstall and exits (#270): the copy does the work, the Pan it was started from stays.
         Assert.Equal(0, Run(pan, "--uninstall"));
+        Assert.True(File.Exists(pan), "the Pan that was started is not deleted");
+        Assert.True(WaitForHandOff(TimeSpan.FromMinutes(3)), "the hand-off copy finished");
         Assert.Contains("1060", Output("sc.exe", "query", PanPaths.ServiceName));
         Assert.False(Directory.Exists(PanPaths.InstallDirectory), "Program Files\\Arcadia\\Pan is gone");
+    }
+
+    /// <summary>Waits until no Pan.exe from the hand-off folder runs any more (#270).</summary>
+    private static bool WaitForHandOff(TimeSpan timeout)
+    {
+        var copy = Path.Combine(PanPaths.HandOffDirectory, PanPaths.ExecutableName);
+        var until = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < until)
+        {
+            var running = Process.GetProcessesByName("Pan").Any(process =>
+            {
+                using (process)
+                {
+                    try
+                    {
+                        return string.Equals(process.MainModule?.FileName, copy, StringComparison.OrdinalIgnoreCase);
+                    }
+                    catch (System.ComponentModel.Win32Exception)
+                    {
+                        return false;
+                    }
+                }
+            });
+            if (!running)
+            {
+                return true;
+            }
+
+            Thread.Sleep(200);
+        }
+
+        return false;
     }
 
     private static List<FileSystemRights> UserRules(DirectoryInfo folder, SecurityIdentifier who) =>

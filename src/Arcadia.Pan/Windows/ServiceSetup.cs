@@ -268,6 +268,25 @@ public static class ServiceSetup
         return outcome;
     }
 
+    /// <summary>
+    /// The hand-off copy's last step (#270): it can't delete itself, so Windows deletes it, its <c>Pan-Uninstall</c>
+    /// folder and then <c>%ProgramFiles%\Arcadia</c> at the next boot, in that order. Safe there: only administrators
+    /// can plant anything in Program Files. A folder that isn't empty by then stays (Windows deletes only empty ones),
+    /// so an Arcadia or Pan installed again before the reboot is kept.
+    /// </summary>
+    public static void ScheduleHandOffRemoval(string ownPath, Action<string> log)
+    {
+        foreach (var path in new[] { ownPath, PanPaths.HandOffDirectory, PanPaths.ArcadiaProgramFiles })
+        {
+            if (!Native.MoveFileExW(path, null, Native.MoveFileDelayUntilReboot))
+            {
+                log($"{path} could not be scheduled for deletion (error {Marshal.GetLastPInvokeError()}); the next --install or --uninstall removes it");
+            }
+        }
+
+        log($"{PanPaths.HandOffDirectory} is deleted at the next boot");
+    }
+
     private static void Stop(ServiceHandle service, Action<string> log)
     {
         var status = new Native.ServiceStatus();

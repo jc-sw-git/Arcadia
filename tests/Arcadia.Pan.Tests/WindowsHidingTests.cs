@@ -96,7 +96,8 @@ public sealed class HidHideTests
     {
         using var journal = new TempJournal();
         var before = Snapshot();
-        var cleanup = new FakeCleanup();
+        // Since #304 Pan takes an emulation only with a viiper.exe of the client serving the port it names.
+        var cleanup = new FakeCleanup { Children = [new HeldProcess(600, 1500, Guardian.ForwardingImageName)] };
         var guardian = new Guardian(new FakeClock(), journal.File, cleanup, _ => { }, hiding: new SteamControllerHiding(new HidHideDriver(), new FakeDevices()));
         guardian.Register(new ClientIdentity(Environment.ProcessId, 1, InConsoleSession: true, NativeImagePath()));
         await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello));

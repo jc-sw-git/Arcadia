@@ -191,8 +191,8 @@ public sealed class ServiceTests : IDisposable
             generation = hello.Generation;
 
             // T243-10: stopping the service is the teardown: the forwarding process Arcadia started is ended.
-            var viiper = StartViiper();
-            var started = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort));
+            var (viiper, usbipPort) = await StartViiperAsync();
+            var started = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.EmulationStarted, value: (uint)usbipPort));
             Assert.Equal(PanReply.Started, started.Reply);
             Assert.True(started.Generation > generation);
             using (var service = new ServiceController(PanPaths.ServiceName))
@@ -221,8 +221,8 @@ public sealed class ServiceTests : IDisposable
         {
             var hello = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.Hello));
             Assert.Equal(PanReply.HelloOk, hello.Reply);
-            var viiper = StartViiper();
-            var started = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort));
+            var (viiper, usbipPort) = await StartViiperAsync();
+            var started = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.EmulationStarted, value: (uint)usbipPort));
             Assert.Equal(PanReply.Started, started.Reply);
 
             // Part B: the real service reaches HidHide. With HidHide on the runner it hides (no puck there: nothing to
@@ -382,15 +382,22 @@ public sealed class ServiceTests : IDisposable
         return directory?.FullName ?? throw new InvalidOperationException("Arcadia.slnx not found above the test output");
     }
 
-    /// <summary>A copy of ping.exe named like VIIPER, pinging for a few minutes: the child Pan must end.</summary>
-    private Process StartViiper()
+    /// <summary>
+    /// A copy of Windows PowerShell named like VIIPER, listening on a port of 127.0.0.1 for a few minutes: the child Pan
+    /// must end. Since #304 Pan takes an emulation only with the usbip port such a child alone listens on.
+    /// </summary>
+    private async Task<(Process Process, int Port)> StartViiperAsync()
     {
         Directory.CreateDirectory(_work);
         var viiper = Path.Combine(_work, Guardian.ForwardingImageName);
-        File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), viiper, overwrite: true);
-        var process = Process.Start(new ProcessStartInfo(viiper, "-n 300 127.0.0.1") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true })!;
+        File.Copy(Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"), viiper, overwrite: true);
+        const string listen = "$l = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0); $l.Start(); "
+            + "[Console]::Out.WriteLine($l.LocalEndpoint.Port); [Console]::Out.Flush(); Start-Sleep -Seconds 300";
+        var process = Process.Start(new ProcessStartInfo(viiper) { ArgumentList = { "-NoProfile", "-NonInteractive", "-Command", listen }, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true })!;
         _children.Add(process);
-        return process;
+        var line = await process.StandardOutput.ReadLineAsync().WaitAsync(ReplyTimeout * 2);
+        Assert.True(int.TryParse(line, out var port), $"the fake viiper.exe names its port ({line})");
+        return (process, port);
     }
 
     private static async Task<NamedPipeClientStream> ConnectAsync()

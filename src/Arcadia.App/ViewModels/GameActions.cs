@@ -62,6 +62,10 @@ public sealed class GameActions : IGameActionHost
     /// <summary>Holding A this long opens the detail page. The ring's animation in Theme.axaml lasts the difference.</summary>
     private static readonly TimeSpan HoldTime = TimeSpan.FromSeconds(1);
 
+    // A launcher link starts a second copy of the launcher that hands it to the running one; Steam lost the first of two
+    // links opened at once (owner's PC, 2026-10-27: the soundtrack's page opened, its music didn't play).
+    private static readonly TimeSpan LinkGap = TimeSpan.FromSeconds(2);
+
     private readonly IGameActionsOwner _owner;
     private readonly GameLaunchService _launcher;
     private readonly ControllerSupportService _controllerSupport;
@@ -189,7 +193,9 @@ public sealed class GameActions : IGameActionHost
         if (tile.InstallState is { } install)
         {
             _toast.Show(install.Phase == InstallPhase.AwaitingConfirmation
-                ? $"Die Installation von „{tile.Title}“ wartet auf deine Bestätigung in {tile.LauncherName}."
+                ? tile.Game.InstallStartsInLauncher
+                    ? $"Die Installation von „{tile.Title}“ wartet darauf, dass du sie in {tile.LauncherName} startest."
+                    : $"Die Installation von „{tile.Title}“ wartet auf deine Bestätigung in {tile.LauncherName}."
                 : install.Phase == InstallPhase.Uninstalling
                     ? $"„{tile.Title}“ wird gerade deinstalliert."
                     : $"„{tile.Title}“ wird bereits {(tile.IsInstalled ? "aktualisiert" : "installiert")} – Pausieren und Abbrechen in {tile.LauncherName}.");
@@ -213,13 +219,36 @@ public sealed class GameActions : IGameActionHost
             return;
         }
 
+        // The launcher plays a soundtrack and shows its page (#141, owner 2026-10-27): nothing runs that Arcadia could
+        // wait for or switch to.
+        if (tile.IsSoundtrack)
+        {
+            if (HandOver(tile, tile.Game.Launch, $"„{tile.Title}“ wird in {tile.LauncherName} geöffnet …", $"Demo: Hier würde jetzt „{tile.Title}“ abgespielt."))
+            {
+                Task.Delay(LinkGap, _time).ContinueWith(_ => ShowInLauncher(tile), TaskScheduler.FromCurrentSynchronizationContext())
+                    .Forget("Soundtrack im Launcher zeigen");
+            }
+
+            return;
+        }
+
         LaunchAsync(tile).Forget("Spielstart");
     }
 
-    private async Task LaunchAsync(GameTileViewModel tile)
+    /// <summary>
+    /// The launcher ran an update before the game and didn't start the game after it: Arcadia hands it over once more,
+    /// still "Wird gestartet …" (<see cref="RunningGamesTracker.StartAgainAfterInstall"/>).
+    /// </summary>
+    public void StartAgain(GameTileViewModel tile) => LaunchAsync(tile, again: true).Forget("Spielstart nach dem Update");
+
+    private async Task LaunchAsync(GameTileViewModel tile, bool again = false)
     {
-        _running.Starting(tile.Game.Key);
-        _owner.RunStatesChanged();
+        if (!again)
+        {
+            _running.Starting(tile.Game.Key);
+            _owner.RunStatesChanged();
+        }
+
         var progress = new Progress<LaunchStage>(stage => OnLaunchStage(tile, stage));
 
         // A game on "Steam-Eingabe" must find neither Arcadia's pad nor Steam kept from the Steam Controller.
@@ -280,12 +309,20 @@ public sealed class GameActions : IGameActionHost
 
     private void Install(GameTileViewModel tile)
     {
+        if (tile.Game.InstallBlockedReason is { } blocked)
+        {
+            _toast.Show($"„{tile.Title}“ lässt sich gerade nicht installieren: {blocked}.");
+            return;
+        }
+
         try
         {
             if (_launcher.Install(tile.Game))
             {
                 tile.InstallState = _installs.Started(tile.Game);
-                _toast.Show($"Installation von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …");
+                _toast.Show(tile.Game.InstallStartsInLauncher
+                    ? $"{tile.LauncherName} wird geöffnet – starte dort selbst die Installation von „{tile.Title}“."
+                    : $"Installation von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …");
             }
             else
             {
@@ -332,18 +369,35 @@ public sealed class GameActions : IGameActionHost
         }
     }
 
-    /// <summary>Hands one of the game's launcher actions to its launcher and says so.</summary>
-    private void HandOver(GameTileViewModel tile, LaunchTarget? target, string handedOver, string demo)
+    /// <summary>Shows the game's page in its launcher beside another action, which already said what happens.</summary>
+    private void ShowInLauncher(GameTileViewModel tile)
     {
         try
         {
-            _toast.Show(_launcher.Open(target) ? handedOver
+            _launcher.Open(tile.Game.OpenInLauncher);
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            AppLog.Write($"{tile.Game.Key} ließ sich nicht in {tile.LauncherName} zeigen: {ex.Message}");
+        }
+    }
+
+    /// <summary>Hands one of the game's launcher actions to its launcher and says so.</summary>
+    /// <returns>True if the launcher got the action.</returns>
+    private bool HandOver(GameTileViewModel tile, LaunchTarget? target, string handedOver, string demo)
+    {
+        try
+        {
+            var opened = _launcher.Open(target);
+            _toast.Show(opened ? handedOver
                 : target is LaunchTarget.None ? demo
                 : $"{tile.LauncherName} bietet das für „{tile.Title}“ nicht an.");
+            return opened;
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
             _toast.Show($"{tile.LauncherName} konnte nicht geöffnet werden: {ex.Message}");
+            return false;
         }
     }
 

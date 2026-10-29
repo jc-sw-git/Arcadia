@@ -19,8 +19,15 @@ public sealed record RunState(RunPhase Phase, DateTimeOffset? Since);
 /// <param name="StartedFromArcadia">Arcadia started it, so its end may bring Arcadia back to the front (#94).</param>
 public sealed record EndedGame(string GameKey, bool StartedFromArcadia);
 
+/// <summary>A game Arcadia started that didn't run (#277).</summary>
+/// <param name="Refusal">How its launcher aborted the start, or null if nothing was heard of it within <see cref="RunningGamesTracker.StartTimeout"/>.</param>
+public sealed record UnstartedGame(string GameKey, RefusedStart? Refusal);
+
 /// <param name="StatesChanged">A game started, ended or gave up starting; the covers show it.</param>
-public sealed record RunningChanges(bool StatesChanged, IReadOnlyList<EndedGame> Ended);
+/// <param name="NotStarted">The games Arcadia started that gave up starting, not counting those of a launcher switched off.</param>
+/// <param name="StartAgain">Games Arcadia should hand to their launcher once more: an update ran first and the launcher
+/// didn't start the game after it (<see cref="RunningGamesTracker.StartAgainAfterInstall"/>).</param>
+public sealed record RunningChanges(bool StatesChanged, IReadOnlyList<EndedGame> Ended, IReadOnlyList<UnstartedGame> NotStarted, IReadOnlyList<string> StartAgain);
 
 /// <summary>
 /// Which games run (#95), whether started from Arcadia or in their launcher: as the launcher reports it
@@ -31,10 +38,17 @@ public sealed record RunningChanges(bool StatesChanged, IReadOnlyList<EndedGame>
 public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames processes, TimeProvider time)
 {
     /// <summary>
-    /// "Wird gestartet …" lasts this long at most (owner, 2026-10-20), counted from the end of an installation of the game
-    /// that runs meanwhile: a launcher may update a game first, however long that takes (owner, 2026-10-24, #167).
+    /// "Wird gestartet …" lasts this long at most (owner, 2026-10-28, was 2 min), counted from the end of an installation of
+    /// the game that runs meanwhile: a launcher may update a game first, however long that takes (owner, 2026-10-24, #167).
     /// </summary>
-    public static readonly TimeSpan StartTimeout = TimeSpan.FromMinutes(2);
+    public static readonly TimeSpan StartTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// A launcher doesn't always start a game after the update it ran first: Steam didn't when the update had waited in its
+    /// queue and was moved up by hand (owner's PC, 2026-10-28). So when the game doesn't run this long after the update,
+    /// Arcadia starts it once more, and waits <see cref="StartTimeout"/> again.
+    /// </summary>
+    public static readonly TimeSpan StartAgainAfterInstall = TimeSpan.FromSeconds(10);
 
     // Games Arcadia handed to their launcher that weren't seen running yet.
     private readonly Dictionary<string, Start> _starting = new(StringComparer.Ordinal);
@@ -93,7 +107,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
     public void Starting(string gameKey)
     {
         var now = time.GetUtcNow();
-        _starting[gameKey] = new Start(now, now);
+        _starting[gameKey] = new Start(now, now, AfterInstall: false);
         UpdateActive();
     }
 
@@ -143,6 +157,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
             });
 
             var asked = reports.Select(r => r.LauncherId).ToHashSet(StringComparer.Ordinal);
+            var refused = reports.SelectMany(r => r.Refused.Select(refusal => (Key: Game.KeyOf(r.LauncherId, refusal.GameId), Refusal: refusal))).ToList();
             var found = reports.SelectMany(r => r.Games.Select(g => (Key: Game.KeyOf(r.LauncherId, g.GameId), r.LauncherId, g.StartedAt))).ToList();
             if (processGames is not null)
             {
@@ -150,7 +165,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
                 found.AddRange(processGames.Select(g => (g.Key, LauncherIdOf(g.Key), g.Value)));
             }
 
-            return Apply(asked, found, enabled.Select(i => i.Launcher.Id).ToHashSet(StringComparer.Ordinal));
+            return Apply(asked, found, refused, enabled.Select(i => i.Launcher.Id).ToHashSet(StringComparer.Ordinal));
         }
         finally
         {
@@ -160,9 +175,10 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
 
     private Report? Ask(IRunningGamesMonitor monitor)
     {
+        IReadOnlyList<RunningGame> games;
         try
         {
-            return new Report(monitor.LauncherId, monitor.Poll());
+            games = monitor.Poll();
         }
         catch (Exception ex)
         {
@@ -170,9 +186,22 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
             Log?.Invoke($"Laufende Spiele von {monitor.LauncherId} nicht lesbar: {ex}");
             return null;
         }
+
+        try
+        {
+            return new Report(monitor.LauncherId, games, monitor.RefusedStarts());
+        }
+        catch (Exception ex)
+        {
+            // Without them a start the launcher aborted ends after the timeout, as before #277.
+            Log?.Invoke($"Abgebrochene Starts von {monitor.LauncherId} nicht lesbar: {ex}");
+            return new Report(monitor.LauncherId, games, []);
+        }
     }
 
-    private RunningChanges Apply(HashSet<string> asked, List<(string Key, string LauncherId, DateTimeOffset? StartedAt)> found, HashSet<string> enabled)
+    private RunningChanges Apply(
+        HashSet<string> asked, List<(string Key, string LauncherId, DateTimeOffset? StartedAt)> found,
+        List<(string Key, RefusedStart Refusal)> refused, HashSet<string> enabled)
     {
         var running = _running
             .Where(game => !asked.Contains(game.Value.LauncherId) && enabled.Contains(game.Value.LauncherId))
@@ -193,6 +222,8 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         }
 
         var now = time.GetUtcNow();
+        var notStarted = new List<UnstartedGame>();
+        var startAgain = new List<string>();
         foreach (var (key, start) in _starting.ToList())
         {
             if (running.ContainsKey(key))
@@ -201,14 +232,32 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
                 _startedFromArcadia.Add(key);
                 changed = true;
             }
+            else if (RefusalOf(key, start, refused) is { } refusal)
+            {
+                Log?.Invoke($"{key}: der Launcher hat den Start abgebrochen ({refusal.Detail}); „Wird gestartet …“ endet.");
+                _starting.Remove(key);
+                notStarted.Add(new UnstartedGame(key, refusal));
+                changed = true;
+            }
             else if (enabled.Contains(LauncherIdOf(key)) && IsInstalling(key))
             {
-                _starting[key] = start with { WaitsSince = now };
+                _starting[key] = start with { WaitsSince = now, AfterInstall = true };
+            }
+            else if (start.AfterInstall && now - start.WaitsSince > StartAgainAfterInstall && enabled.Contains(LauncherIdOf(key)))
+            {
+                Log?.Invoke($"{key} läuft {StartAgainAfterInstall.TotalSeconds:0} s nach dem Update nicht; Arcadia startet es noch einmal.");
+                _starting[key] = start with { WaitsSince = now, AfterInstall = false };
+                startAgain.Add(key);
             }
             else if (now - start.WaitsSince > StartTimeout || !enabled.Contains(LauncherIdOf(key)))
             {
                 Log?.Invoke($"{key} lief nach dem Start aus Arcadia nicht; „Wird gestartet …“ endet.");
                 _starting.Remove(key);
+                if (enabled.Contains(LauncherIdOf(key)))
+                {
+                    notStarted.Add(new UnstartedGame(key, null));
+                }
+
                 changed = true;
             }
         }
@@ -217,7 +266,14 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         _startedFromArcadia.RemoveWhere(key => !enabled.Contains(LauncherIdOf(key)));
         _running = running;
         UpdateActive();
-        return new RunningChanges(changed, ended);
+        return new RunningChanges(changed, ended, notStarted, startAgain);
+    }
+
+    // Launchers log in whole seconds, so an abort in the second Arcadia asked counts; one from before is an older start's.
+    private static RefusedStart? RefusalOf(string key, Start start, List<(string Key, RefusedStart Refusal)> refused)
+    {
+        var askedSecond = start.AskedAt.AddTicks(-(start.AskedAt.UtcTicks % TimeSpan.TicksPerSecond));
+        return refused.LastOrDefault(r => r.Key == key && r.Refusal.At >= askedSecond).Refusal;
     }
 
     // Simulated games (demo data) are no game in front of anything: Steam Controller routing must not treat one as running (#307).
@@ -229,11 +285,13 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
 
     private static string LauncherIdOf(string gameKey) => Game.LauncherIdOf(gameKey);
 
-    private sealed record Report(string LauncherId, IReadOnlyList<RunningGame> Games);
+    private sealed record Report(string LauncherId, IReadOnlyList<RunningGame> Games, IReadOnlyList<RefusedStart> Refused);
 
     private readonly record struct Running(string LauncherId, DateTimeOffset? StartedAt);
 
     /// <param name="AskedAt">When Arcadia handed the game to its launcher.</param>
-    /// <param name="WaitsSince">Where <see cref="StartTimeout"/> counts from: the request, or the end of an installation since.</param>
-    private readonly record struct Start(DateTimeOffset AskedAt, DateTimeOffset WaitsSince);
+    /// <param name="WaitsSince">Where <see cref="StartTimeout"/> counts from: the request, the end of an installation since, or
+    /// the second start after it.</param>
+    /// <param name="AfterInstall">An installation ran since the request and Arcadia hasn't started the game again yet.</param>
+    private readonly record struct Start(DateTimeOffset AskedAt, DateTimeOffset WaitsSince, bool AfterInstall);
 }

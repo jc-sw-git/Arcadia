@@ -5,7 +5,7 @@ namespace Arcadia.App.Tests.Fixtures;
 
 /// <summary>
 /// One app manifest (<c>steamapps/appmanifest_&lt;id&gt;.acf</c>) as Steam writes it; the fields and their meaning are in
-/// <c>docs/launchers/steam.md</c>. The ids are made up, apart from Steam's own tools, which Arcadia knows by id.
+/// <c>docs/launchers/steam/library-and-installs.md</c>. The ids are made up, apart from Steam's own tools, which Arcadia knows by id.
 /// </summary>
 internal sealed record SteamApp(string AppId, string Name)
 {
@@ -76,6 +76,9 @@ internal sealed class SteamFolder(string root)
     public static ulong SteamId64(uint accountId) => SteamId64Base + accountId;
 
     /// <summary>Steam is installed: its folder with <c>steam.exe</c> and an empty library.</summary>
+    /// <summary>The account signed in to the running Steam (registry <c>ActiveUser</c>); null while Steam is closed.</summary>
+    public uint? ActiveUser { get; set; }
+
     public SteamFolder Install()
     {
         Directory.CreateDirectory(Path.Combine(root, "steamapps"));
@@ -111,6 +114,27 @@ internal sealed class SteamFolder(string root)
                 Directory.SetCreationTimeUtc(folder, date);
             }
         }
+    }
+
+    /// <summary>
+    /// Steam's app cache <c>appcache/appinfo.vdf</c> (#141, format v29) with each app's type as Steam writes it, e.g.
+    /// <c>Tool</c>; the manifests hold none.
+    /// </summary>
+    public void WriteAppInfo(params (SteamApp App, string Type)[] apps)
+    {
+        var path = Path.Combine(root, "appcache", "appinfo.vdf");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, Arcadia.Core.Tests.AppInfoFile.Build(
+            Arcadia.Core.Tests.AppInfoFile.V29,
+            apps.Select(app => (uint.Parse(app.App.AppId, CultureInfo.InvariantCulture), app.App.Name, app.Type))));
+    }
+
+    /// <summary>Steam's package cache <c>appcache/packageinfo.vdf</c> (#83, format v40): which apps each package holds.</summary>
+    public void WritePackageInfo(params (uint PackageId, uint[] AppIds)[] packages)
+    {
+        var path = Path.Combine(root, "appcache", "packageinfo.vdf");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, Arcadia.Core.Tests.PackageInfoFile.Build(Arcadia.Core.Tests.PackageInfoFile.V40, packages));
     }
 
     /// <summary>Steam deletes the manifest when a new install is cancelled or a game uninstalled.</summary>

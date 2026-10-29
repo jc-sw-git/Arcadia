@@ -37,6 +37,25 @@ public sealed class MouseModeKeyboardTests
     }
 
     [Fact]
+    public void Arcadia_can_open_the_keyboard_as_Y_would_and_a_request_while_off_is_dropped()
+    {
+        _mode.OpenKeyboard();
+        Update();
+
+        Assert.True(_mode.IsKeyboardOpen);
+        Assert.Equal(["opened"], _keyboard);
+
+        // Asked for while the mode goes off: it doesn't open by itself the next time the mode comes on.
+        _mode.OpenKeyboard();
+        _mode.Request(false);
+        Update();
+        _mode.Request(true);
+        Update();
+        Update();
+        Assert.False(_mode.IsKeyboardOpen);
+    }
+
+    [Fact]
     public void With_the_keyboard_open_the_buttons_are_its_own_and_send_nothing_themselves()
     {
         OpenKeyboard();

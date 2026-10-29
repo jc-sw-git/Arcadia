@@ -145,6 +145,104 @@ public sealed class RunningGamesTrackerTests
 
         Assert.True(changes?.StatesChanged);
         Assert.Null(tracker.StateOf("steam:440"));
+        Assert.Equal([new UnstartedGame("steam:440", Refusal: null)], changes?.NotStarted);
+        Assert.Single(_log);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T277-1")]
+    public async Task A_start_the_launcher_aborts_ends_with_the_next_poll_and_says_why()
+    {
+        var tracker = CreateTracker();
+        tracker.Starting("steam:214490");
+        await tracker.PollAsync();
+
+        // Steam logs in whole seconds: the abort in the second Arcadia asked counts.
+        var refusal = new RefusedStart("214490", Started.AddMinutes(1), "Das angemeldete Steam-Konto besitzt dieses Spiel nicht.", "AppError_5");
+        _steam.Refused.Add(refusal);
+        _time.Advance(TimeSpan.FromSeconds(2));
+        var changes = await tracker.PollAsync();
+
+        Assert.True(changes?.StatesChanged);
+        Assert.Null(tracker.StateOf("steam:214490"));
+        Assert.Equal([new UnstartedGame("steam:214490", refusal)], changes?.NotStarted);
+        Assert.Empty(tracker.StartedFromArcadia);
+        Assert.Contains(_log, line => line.Contains("AppError_5", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T277-3")]
+    public async Task An_abort_of_another_game_or_of_an_older_start_doesnt_touch_the_game_being_started()
+    {
+        _time.Advance(TimeSpan.FromMilliseconds(700));
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+
+        // Another game, a game of another launcher with the same id, and the same game a second before Arcadia asked.
+        _steam.Refused.Add(new RefusedStart("570", Started.AddMinutes(1), null, "AppError_5"));
+        _epic.Refused.Add(new RefusedStart("440", Started.AddMinutes(1), null, "Error"));
+        _steam.Refused.Add(new RefusedStart("440", Started.AddMinutes(1).AddSeconds(-1), null, "AppError_5"));
+        var changes = await tracker.PollAsync();
+
+        Assert.Equal(RunPhase.Starting, tracker.StateOf("steam:440")?.Phase);
+        Assert.Empty(changes!.NotStarted);
+        Assert.False(changes.StatesChanged);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T277-1")]
+    public async Task An_abort_steam_logs_earlier_in_the_second_arcadia_asked_still_counts()
+    {
+        // Arcadia asks at 18:01:00.700; Steam's line says 18:01:00, its whole second, though it came after.
+        _time.Advance(TimeSpan.FromMilliseconds(700));
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+
+        var refusal = new RefusedStart("440", Started.AddMinutes(1), null, "AppError_5");
+        _steam.Refused.Add(refusal);
+        var changes = await tracker.PollAsync();
+
+        Assert.Null(tracker.StateOf("steam:440"));
+        Assert.Equal([new UnstartedGame("steam:440", refusal)], changes?.NotStarted);
+    }
+
+    [Fact]
+    public async Task An_abort_of_a_game_nobody_started_from_arcadia_is_no_news()
+    {
+        var tracker = CreateTracker();
+        _steam.Refused.Add(new RefusedStart("440", Started.AddMinutes(1), null, "AppError_5"));
+
+        var changes = await tracker.PollAsync();
+
+        Assert.Empty(changes!.NotStarted);
+        Assert.Null(tracker.StateOf("steam:440"));
+    }
+
+    [Fact]
+    public async Task A_start_of_a_launcher_switched_off_ends_without_news()
+    {
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+        _disabled.Add("steam");
+
+        var changes = await tracker.PollAsync();
+
+        Assert.Null(tracker.StateOf("steam:440"));
+        Assert.Empty(changes!.NotStarted);
+    }
+
+    [Fact]
+    public async Task A_launcher_whose_aborted_starts_cant_be_read_keeps_its_games_and_the_timeout()
+    {
+        var failing = new FailingRunningGames("gog") { RefusalsFail = true };
+        var tracker = CreateTracker(new FakeIntegration(FakeIntegration.LauncherOf("gog")) { RunningGames = failing });
+        tracker.Starting("gog:chess");
+
+        var changes = await tracker.PollAsync();
+
+        Assert.Equal(RunPhase.Running, tracker.StateOf("gog:witcher")?.Phase);
+        Assert.Equal(RunPhase.Starting, tracker.StateOf("gog:chess")?.Phase);
+        Assert.Empty(changes!.NotStarted);
         Assert.Single(_log);
     }
 
@@ -168,8 +266,9 @@ public sealed class RunningGamesTrackerTests
     }
 
     [Fact]
-    public async Task After_an_update_the_start_waits_the_start_timeout_again()
+    public async Task A_game_the_launcher_doesnt_start_after_its_update_is_started_once_more_then_given_up()
     {
+        // Owner's PC, 2026-10-28: an update moved up in Steam's queue by hand, and Steam didn't start the game after it.
         var tracker = CreateTracker();
         tracker.Starting("steam:440");
         _installing.Add("steam:440");
@@ -177,14 +276,54 @@ public sealed class RunningGamesTrackerTests
         await tracker.PollAsync();
 
         _installing.Clear();
-        _time.Advance(RunningGamesTracker.StartTimeout);
         await tracker.PollAsync();
+        _time.Advance(RunningGamesTracker.StartAgainAfterInstall);
+        Assert.Empty((await tracker.PollAsync())!.StartAgain);
+
+        _time.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(["steam:440"], (await tracker.PollAsync())!.StartAgain);
+        Assert.Equal(RunPhase.Starting, tracker.StateOf("steam:440")?.Phase);
+
+        _time.Advance(RunningGamesTracker.StartTimeout);
+        Assert.Empty((await tracker.PollAsync())!.StartAgain);
         Assert.Equal(RunPhase.Starting, tracker.StateOf("steam:440")?.Phase);
 
         _time.Advance(TimeSpan.FromSeconds(1));
+        var changes = await tracker.PollAsync();
+
+        Assert.Empty(changes!.StartAgain);
+        Assert.True(changes.StatesChanged);
+        Assert.Null(tracker.StateOf("steam:440"));
+    }
+
+    [Fact]
+    public async Task A_game_that_runs_after_its_update_is_not_started_again()
+    {
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+        _installing.Add("steam:440");
         await tracker.PollAsync();
 
-        Assert.Null(tracker.StateOf("steam:440"));
+        _installing.Clear();
+        await tracker.PollAsync();
+        _time.Advance(TimeSpan.FromSeconds(5));
+        _steam.Running.Add(new RunningGame("440", _time.GetUtcNow()));
+        await tracker.PollAsync();
+        _time.Advance(RunningGamesTracker.StartAgainAfterInstall);
+
+        Assert.Empty((await tracker.PollAsync())!.StartAgain);
+        Assert.Equal(RunPhase.Running, tracker.StateOf("steam:440")?.Phase);
+    }
+
+    [Fact]
+    public async Task A_start_without_an_update_is_never_started_again()
+    {
+        var tracker = CreateTracker();
+        tracker.Starting("steam:440");
+
+        _time.Advance(RunningGamesTracker.StartAgainAfterInstall * 2);
+
+        Assert.Empty((await tracker.PollAsync())!.StartAgain);
     }
 
     [Fact]
@@ -386,8 +525,13 @@ public sealed class RunningGamesTrackerTests
 
         public string LauncherId => launcherId;
 
+        public bool RefusalsFail { get; init; }
+
         public IReadOnlyList<RunningGame> Poll() =>
             Fails ? throw new InvalidOperationException("broken plugin") : [new RunningGame("witcher", Started)];
+
+        public IReadOnlyList<RefusedStart> RefusedStarts() =>
+            RefusalsFail ? throw new InvalidOperationException("broken plugin") : [];
     }
 
     private sealed class BlockingRunningGames(string launcherId) : IRunningGamesMonitor

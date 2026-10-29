@@ -1,8 +1,9 @@
 name: Prune artifacts
 
-# The CI uploads a Windows installer per run. On a private repo the artifact storage is small and
-# fills up after a few pushes, which then fails the CI's upload step. This keeps only the newest
-# few installers, so the ones still worth testing stay downloadable.
+# The CI uploads a Windows installer (main only) and a coverage report per run. On a private repo the
+# artifact storage is small and fills up after a few pushes, which then fails the CI's upload step.
+# This keeps only the newest few of each kind, so frequent coverage reports from pull requests don't
+# push out the installers still worth testing.
 on:
   workflow_run:
     workflows: [CI]
@@ -30,8 +31,14 @@ jobs:
             const newestFirst = artifacts
               .filter(artifact => !artifact.expired)
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            for (const artifact of newestFirst.slice(keep)) {
+            const keptPerName = new Map();
+            for (const artifact of newestFirst) {
+              const kept = keptPerName.get(artifact.name) ?? 0;
+              if (kept < keep) {
+                keptPerName.set(artifact.name, kept + 1);
+                continue;
+              }
               core.info(`Deleting ${artifact.name} (${artifact.id}) from ${artifact.created_at}`);
               await github.rest.actions.deleteArtifact({ owner, repo, artifact_id: artifact.id });
             }
-            core.info(`Kept ${Math.min(keep, newestFirst.length)} of ${newestFirst.length} artifacts.`);
+            for (const [name, kept] of keptPerName) core.info(`Kept ${kept} ${name}.`);

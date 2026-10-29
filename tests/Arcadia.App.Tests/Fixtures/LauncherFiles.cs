@@ -33,10 +33,17 @@ internal sealed class LauncherFiles : IDisposable
 
     public SteamPc? ControllerSupport => OnWindows ? field ??= new SteamPc(Steam) : null;
 
-    public LauncherFolders Folders => new(Steam.Root, Epic.Folders);
+    public LauncherFolders Folders => new(Steam.Root, Epic.Folders) { SteamActiveUser = () => Steam.ActiveUser };
+
+    /// <summary>Steam's web API for the Steam account (#83), with the time of <see cref="ArcadiaDriver.Now"/>.</summary>
+    public Arcadia.Core.Tests.FakeSteamWeb SteamWeb { get; } = new(ArcadiaDriver.Now);
+
+    /// <summary>Where the Steam account keeps its sign-in and the owned games, kept across a restart.</summary>
+    public string AccountFolder => PathFor("Arcadia");
 
     public void Dispose()
     {
+        SteamWeb.Dispose();
         try
         {
             Directory.Delete(_root, recursive: true);

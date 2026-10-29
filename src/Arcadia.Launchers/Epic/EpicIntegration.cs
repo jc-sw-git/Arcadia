@@ -28,6 +28,18 @@ public sealed class EpicIntegration(TimeProvider time, EpicFolders? folders = nu
 
     public IReadOnlyCollection<string> ProgramNames { get; } = ["EpicGamesLauncher.exe", "EpicWebHelper.exe"];
 
+    /// <summary>Epic's library tiles that are no games (owner, 2026-10-22): one switch, off at first; they count as tools.</summary>
+    public IReadOnlyList<LibraryTypeOption> LibraryOptions { get; } =
+    [
+        new(
+            "software",
+            "Software und Engines einbeziehen",
+            "Startbare Einträge, die keine Spiele sind",
+            "Epic zeigt in seiner Bibliothek auch Programme, die keine Spiele sind. Eingeschaltet erscheinen sie auch in Arcadia:",
+            ["Unreal Engine, alle Versionen als ein Eintrag", "Unreal Editor für Fortnite", "weitere startbare Add-ons"],
+            [GameType.Tool]),
+    ];
+
     // Epic in folders of its own is found by its data folder: there is no launcher executable to look for.
     public string? Locate() => folders is null ? EpicLauncherClient.FindLauncherExecutable()
         : Directory.Exists(folders.Data) ? folders.Data

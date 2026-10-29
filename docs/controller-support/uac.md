@@ -33,6 +33,14 @@ no `SISR.exe`). The probe ran **non-elevated** throughout.
   apart from the lock/sign-in screen (`LogonUI.exe`, no `consent.exe`). Detection was within one 100 ms poll of the
   prompt appearing; the probe correctly logged `uac` for every consent prompt and `lock/signin` for Win+L.
 - **Admin rights:** none needed beyond the already-installed usbip-win2 driver. The probe is not elevated.
+- **SDL keeps reading the physical pad while the Secure Desktop is in front.** Confirmed 2026-10-27 with a DualSense
+  (`054C:0CE6`, a pure gamepad with no keyboard emulation, so it can't dismiss the prompt itself): with a consent
+  prompt open (`DESKTOP: uac`, `consent.exe`), the non-elevated probe's SDL reader logged a continuous stream of
+  button presses (D-pad in every direction, A/B/X/Y) the whole time the prompt was up, and stopped when it closed
+  (`DESKTOP: interactive`). So Arcadia (non-elevated, default desktop) knows which button the user pressed *during*
+  the prompt and can drive the virtual keyboard accordingly. (Reading needs `SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS`;
+  see #112.) A keyboard-emulating pad like the 8BitDo must not be used to measure this — its own HID keyboard closes
+  the prompt before it can be observed.
 
 ## Security finding
 
@@ -59,10 +67,6 @@ processes cannot drive it. The owner decides whether to accept this, harden it, 
 
 ## Not confirmed yet (for the implementation story)
 
-- Whether SDL delivers the physical pad's input to Arcadia's (non-elevated, default-desktop) process **while the
-  Secure Desktop is in front**, so Arcadia knows which button the user pressed during the prompt. SDL kept the pads
-  open across the desktop switch with background events (and #112 showed background reading works), but button
-  delivery *during* an open prompt was not separately forced. Cheap to verify when the mode is built.
 - Robustness of the "wait ~0.5 s then send" timing across Windows versions, and the exact minimum settle time.
 
 ## Story shape (on go)

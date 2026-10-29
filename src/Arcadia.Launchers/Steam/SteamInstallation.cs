@@ -15,6 +15,9 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
     /// <summary>Steam's log of its client logins, read by <see cref="SteamLoginLog"/>.</summary>
     public string LoginLogPath => Path.Combine(RootPath, "logs", "steamui_login.txt");
 
+    /// <summary>Where Steam logs every step of a game start (<see cref="SteamConsoleLog"/>).</summary>
+    public string ConsoleLogPath => Path.Combine(RootPath, "logs", "console_log.txt");
+
     /// <summary>
     /// While this empty file exists, Steam opens its local CEF debug interface on its next start.
     /// SISR needs it to set the controller layout; "SISR entfernen" deletes it (#214).

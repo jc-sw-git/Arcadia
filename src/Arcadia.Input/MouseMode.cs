@@ -124,6 +124,9 @@ public sealed class MouseMode
     /// <summary>The keyboard closed (B, or Arcadia closed it); from the next poll the buttons are the mouse's again. Callable from any thread.</summary>
     public void CloseKeyboard() => _mapping.CloseKeyboard();
 
+    /// <summary>Opens the keyboard on the next poll while the mode is on, as Y would (#280). Callable from any thread.</summary>
+    public void OpenKeyboard() => _mapping.RequestKeyboard();
+
     public void Update(IReadOnlyList<GamepadReading> pads)
     {
         var options = _options();

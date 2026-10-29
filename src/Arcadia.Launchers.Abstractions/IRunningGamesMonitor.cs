@@ -22,4 +22,10 @@ public interface IRunningGamesMonitor
     bool ReportsSimulatedGames => false;
 
     IReadOnlyList<RunningGame> Poll();
+
+    /// <summary>
+    /// The starts the launcher aborted since the last call (#277), asked right after <see cref="Poll"/> on the same thread.
+    /// Only an explicit abort counts, never a missing signal: a start nothing is heard of ends after Arcadia's own timeout.
+    /// </summary>
+    IReadOnlyList<RefusedStart> RefusedStarts() => [];
 }

@@ -28,6 +28,7 @@
     <Compile Include="..\Arcadia.Core.Tests\FakeVirtualXboxPads.cs" Link="FakeVirtualXboxPads.cs" />
     <Compile Include="..\Arcadia.Core.Tests\FakeEmulationGuardian.cs" Link="FakeEmulationGuardian.cs" />
     <Compile Include="..\Arcadia.Core.Tests\FakeSteamControllerHold.cs" Link="FakeSteamControllerHold.cs" />
+    <Compile Include="..\Arcadia.Core.Tests\FakeSisrPc.cs" Link="FakeSisrPc.cs" />
   </ItemGroup>
 
   <ItemGroup>

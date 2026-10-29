@@ -154,10 +154,4 @@ public sealed class SteamControllerTests
 
         Assert.False(arcadia.Main.ShowControllerSupport);
     }
-
-    private static AppSettings SwitchedOn() => new()
-    {
-        ActiveLaunchers = [.. ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id)],
-        SteamControllerSupport = true,
-    };
 }

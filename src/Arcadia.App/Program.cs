@@ -81,10 +81,6 @@ sealed partial class Program
         {
             ControllerSupportRemoval.Remove(AppLog.Write);
         }
-        else
-        {
-            QuitSisr();
-        }
 
         if (removeData)
         {
@@ -148,22 +144,11 @@ sealed partial class Program
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            // A SISR left running keeps sisr.log open; the rest is gone, and nothing else depends on it.
+            // A program left running may keep a log open; the rest is gone, and nothing else depends on it.
         }
     }
 
     // Undocumented but present in user32 since Windows XP; returns 32000 on timeout.
     [LibraryImport("user32.dll", EntryPoint = "MessageBoxTimeoutW", StringMarshalling = StringMarshalling.Utf16)]
     private static partial int MessageBoxTimeout(IntPtr owner, string text, string caption, uint type, ushort language, uint milliseconds);
-
-    /// <summary>
-    /// SISR lives outside Arcadia's install directory; if Arcadia didn't get to stop it (e.g. it
-    /// was killed), stop it before uninstalling so no orphaned SISR keeps holding the controller.
-    /// </summary>
-    private static void QuitSisr()
-    {
-        // QuitAsync times out after 3 s and reports failure instead of throwing.
-        using var http = new HttpClient();
-        new SisrApiClient(http, SisrHost.ApiPort).QuitAsync().GetAwaiter().GetResult();
-    }
 }

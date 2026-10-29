@@ -6,7 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Arcadia.App.ViewModels;
 
-/// <summary>The right end of the header: clock, Steam Controller (SISR) status and the Arcadia update symbol.</summary>
+/// <summary>The right end of the header: clock, Steam Controller status and the Arcadia update symbol.</summary>
 public partial class StatusBarViewModel : ViewModelBase
 {
     private readonly ControllerSupportService _controllerSupport;
@@ -36,12 +36,12 @@ public partial class StatusBarViewModel : ViewModelBase
         UpdateArcadiaUpdateState();
     }
 
-    /// <summary>Steam Controller (SISR) is on and has status messages; the header shows the worst one's symbol.</summary>
+    /// <summary>The Steam Controller's emulation has status messages; the header shows the worst one's symbol.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
     public partial bool HasControllerStatus { get; private set; }
 
-    /// <summary>All of them are only information (e.g. SISR paused for a game): the blue i.</summary>
+    /// <summary>All of them are only information : the blue i.</summary>
     [ObservableProperty]
     public partial bool IsControllerStatusInfo { get; private set; }
 
@@ -52,10 +52,6 @@ public partial class StatusBarViewModel : ViewModelBase
     [ObservableProperty]
     public partial string ControllerStatusText { get; private set; } = string.Empty;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
-    public partial bool HasSisrUpdate { get; private set; }
-
     /// <summary>A newer Arcadia is on GitHub; shown as an update symbol in the header.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
@@ -64,13 +60,13 @@ public partial class StatusBarViewModel : ViewModelBase
     [ObservableProperty]
     public partial string ArcadiaUpdateText { get; private set; } = string.Empty;
 
-    /// <summary>SISR is starting, or Pan sets up the emulation (#242), and the controller isn't emulated yet; a spinner in the header.</summary>
+    /// <summary>Pan sets up the emulation (#242), and the controller isn't emulated yet; a spinner in the header.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
     public partial bool IsControllerStarting { get; private set; }
 
     /// <summary>Something stands left of the search chip, so a divider separates it (owner, 2026-10-21).</summary>
-    public bool HasAnyStatus => IsControllerStarting || HasControllerStatus || HasSisrUpdate || HasArcadiaUpdate;
+    public bool HasAnyStatus => IsControllerStarting || HasControllerStatus || HasArcadiaUpdate;
 
     [ObservableProperty]
     public partial string Clock { get; private set; } = string.Empty;
@@ -101,10 +97,9 @@ public partial class StatusBarViewModel : ViewModelBase
     private void UpdateControllerSupportState()
     {
         var support = _controllerSupport;
-        HasSisrUpdate = support.Enabled && support.AvailableUpdate is not null;
         // With the switch "Controller-Wächter (Pan)" off nothing is needed, so a missing part is no problem then (#242).
-        var panOff = !support.StartsSisr && !support.Settings.PanEnabled;
-        IsControllerStarting = (support.Enabled && support.State == SisrState.Starting) || (!panOff && _pan.State == PanEmulationState.SettingUp);
+        var panOff = !support.Settings.PanEnabled;
+        IsControllerStarting = !panOff && _pan.State == PanEmulationState.SettingUp;
         IReadOnlyList<HealthIssue> issues = panOff ? [] : support.Issues;
         var panProblem = !panOff && _pan.HasProblem;
         var worst = issues.Count > 0 ? issues.Max(i => i.Severity) : HealthSeverity.Info;
@@ -112,7 +107,7 @@ public partial class StatusBarViewModel : ViewModelBase
         HasControllerStatus = issues.Count > 0 || panProblem;
         IsControllerStatusInfo = !panProblem && worst == HealthSeverity.Info;
         IsControllerStatusError = worst == HealthSeverity.Error || _pan.State == PanEmulationState.Stopped && panProblem;
-        var owner = support.Enabled ? "Steam Controller (SISR)" : "Steam Controller";
+        const string owner = "Steam Controller";
         var panSuffix = panProblem ? $" – {PanNotRunningText}" : string.Empty;
         ControllerStatusText = (issues.Count, panProblem) switch
         {

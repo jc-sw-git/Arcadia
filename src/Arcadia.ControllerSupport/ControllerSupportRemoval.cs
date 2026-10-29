@@ -16,9 +16,8 @@ public sealed record InstalledParts(bool Sisr, bool Viiper, bool Usbip, bool Hid
 
 /// <summary>
 /// Removes the controller emulation's drivers and SISR, when Arcadia is uninstalled and the user agrees to the one
-/// question "Treiber für die Controller-Emulation auch entfernen?" (#243 part B2). SISR and VIIPER go here, as SISR's
-/// own <c>uninstall.ps1</c> would (install and data folders, shortcuts, uninstall entry), with SISR's Steam marker and
-/// Steam's CEF flag, which exist only for SISR; until #214 removes SISR. usbip-win2 and HidHide go in Pan's
+/// question "Treiber für die Controller-Emulation auch entfernen?" (#243 part B2). SISR and VIIPER go here as "SISR
+/// entfernen" in the settings removes them (<see cref="SisrInstallation"/>, #214). usbip-win2 and HidHide go in Pan's
 /// <c>--uninstall --remove-drivers</c>, inside its one UAC prompt and after Pan undid its own HidHide entries.
 /// </summary>
 public static class ControllerSupportRemoval
@@ -28,18 +27,6 @@ public static class ControllerSupportRemoval
     private static string SisrDirectory => Path.Combine(LocalAppData, "SISR");
 
     private static string ViiperExecutable => Path.Combine(LocalAppData, "VIIPER", "viiper.exe");
-
-    /// <summary>
-    /// What SISR and VIIPER leave in the roaming profile: SISR's WebView2 data lands in a folder
-    /// named after its exe ("SISR.exe"), VIIPER keeps its key file in "VIIPER" (seen on the
-    /// owner's PC, 2026-10-16). "SISR" is what SISR's own uninstaller removes.
-    /// </summary>
-    public static IReadOnlyList<string> DataDirectories { get; } =
-    [
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SISR"),
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SISR.exe"),
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VIIPER"),
-    ];
 
     /// <summary>What is installed of the controller emulation, for the question at Arcadia's uninstall.</summary>
     [SupportedOSPlatform("windows")]
@@ -81,48 +68,25 @@ public static class ControllerSupportRemoval
     }
 
     /// <summary>
-    /// Removes SISR and VIIPER (<see cref="FindInstalledParts"/>); the drivers go with Pan's uninstall. Best effort: a
-    /// step that fails is logged and skipped. Returns within a few seconds.
+    /// Removes SISR and VIIPER (<see cref="FindInstalledParts"/>) as "SISR entfernen" does (<see cref="SisrInstallation"/>);
+    /// the drivers go with Pan's uninstall. Best effort: what fails is logged and skipped. Returns within a few seconds.
     /// </summary>
     [SupportedOSPlatform("windows")]
     public static void Remove(Action<string> log)
     {
         // Ordered by what matters most, because Velopack may end the uninstall hook before the slow steps are done.
-        StopProcesses("SISR");
+        // Arcadia's own viiper.exe has to end before its folder goes; SISR and its VIIPER stop in Remove, by path.
         StopProcesses("viiper");
 
-        var sisrExe = Path.Combine(SisrDirectory, "SISR.exe");
-        Step(log, "SISR-Ordner", () => DeleteDirectory(SisrDirectory));
-        foreach (var data in DataDirectories)
+        var steam = SteamInstallation.Find();
+        // Arcadia goes too, so its own viiper.exe no longer needs VIIPER's key folder.
+        var sisr = new SisrInstallation(SisrInstallation.DefaultPaths(arcadiaViiper: null), steam, new WindowsSisrSystem());
+        var steamClosed = steam is not null && sisr.Find().HasMarker && CloseSteamForMarker(log);
+        var result = sisr.Remove(steamRunning: SteamInstallation.IsRunning);
+        log(result.Complete ? "Entfernt: SISR und VIIPER" : $"Nicht entfernt: {string.Join(", ", result.NotRemoved)} ({result.Cause})");
+        if (steamClosed)
         {
-            Step(log, $"Daten in {Path.GetFileName(data)}", () => DeleteDirectory(data));
-        }
-        Step(log, "SISR-Verknüpfungen", () =>
-        {
-            var programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
-            File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "SISR.lnk"));
-            File.Delete(Path.Combine(programs, "SISR.lnk"));
-            File.Delete(Path.Combine(programs, "SISR (No Steam).lnk"));
-        });
-        Step(log, "SISR-Deinstallationseintrag", () =>
-            Registry.CurrentUser.DeleteSubKeyTree(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\SISR", throwOnMissingSubKey: false));
-
-        if (SteamInstallation.Find() is { } steam)
-        {
-            // SISR asks Steam for this flag to read the controller layout; nothing else needs it.
-            Step(log, "Steam-CEF-Flag", () => File.Delete(steam.CefDebuggingFlagPath));
-            RemoveMarkersWithSteamClosed(steam, sisrExe, log);
-        }
-
-        if (File.Exists(ViiperExecutable))
-        {
-            Step(log, "VIIPER", () =>
-            {
-                using var uninstall = Process.Start(new ProcessStartInfo(ViiperExecutable, "uninstall --quiet") { CreateNoWindow = true });
-                uninstall?.WaitForExit(TimeSpan.FromSeconds(5));
-            });
-            StopProcesses("viiper");
-            Step(log, "VIIPER-Ordner", () => Directory.Delete(Path.GetDirectoryName(ViiperExecutable)!, recursive: true));
+            steam!.StartSilently();
         }
     }
 
@@ -131,35 +95,23 @@ public static class ControllerSupportRemoval
 
     /// <summary>
     /// Steam rewrites <c>shortcuts.vdf</c> from memory when it exits, so a marker removed while it runs comes back:
-    /// Steam is closed for the removal and started again afterwards (owner, 2026-10-24).
+    /// Steam is closed for the removal and started again afterwards (owner, 2026-10-24). True if Arcadia closed it.
     /// </summary>
     [SupportedOSPlatform("windows")]
-    private static void RemoveMarkersWithSteamClosed(SteamInstallation steam, string sisrExe, Action<string> log)
+    private static bool CloseSteamForMarker(Action<string> log)
     {
-        var wasRunning = SteamInstallation.IsRunning;
-        if (wasRunning && !SteamInstallation.ShutdownAsync(SteamShutdownTimeout, TimeProvider.System).GetAwaiter().GetResult())
+        if (!SteamInstallation.IsRunning)
+        {
+            return false;
+        }
+
+        if (!SteamInstallation.ShutdownAsync(SteamShutdownTimeout, TimeProvider.System).GetAwaiter().GetResult())
         {
             log($"Steam-Eintrag „SISR Marker“ nicht entfernt: Steam war nach {SteamShutdownTimeout.TotalSeconds:0} s noch nicht beendet");
-            return;
+            return false;
         }
 
-        Step(log, "Steam-Eintrag „SISR Marker“", () => RemoveMarkers(steam, sisrExe));
-        if (wasRunning)
-        {
-            steam.StartSilently();
-        }
-    }
-
-    /// <summary>Removes the marker from every account that has one; returns how many had it.</summary>
-    public static int RemoveMarkers(SteamInstallation steam, string sisrExe) =>
-        steam.AllShortcutsPaths().Count(shortcuts => SteamShortcuts.RemoveByExecutable(shortcuts, sisrExe) > 0);
-
-    private static void DeleteDirectory(string path)
-    {
-        if (Directory.Exists(path))
-        {
-            Directory.Delete(path, recursive: true);
-        }
+        return true;
     }
 
     private static void StopProcesses(string name)
@@ -178,19 +130,6 @@ public static class ControllerSupportRemoval
                     // Already gone or not ours to stop.
                 }
             }
-        }
-    }
-
-    private static void Step(Action<string> log, string what, Action action)
-    {
-        try
-        {
-            action();
-            log($"Entfernt: {what}");
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException or FormatException)
-        {
-            log($"Nicht entfernt: {what} ({ex.Message})");
         }
     }
 }

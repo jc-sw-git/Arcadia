@@ -21,6 +21,7 @@ its file.
 | [213-steam-controller-as-xbox-pad-without-sisr.md](213-steam-controller-as-xbox-pad-without-sisr.md) | #213 | Steam Controller as an Xbox controller in every game, without SISR | 13 |
 | [242-steam-controller-copy.md](242-steam-controller-copy.md) | #242 | Steam gets a copy of the Steam Controller (parts A, B and C) | 29 |
 | [297-arcadia-runs-only-with-a-compatible-pan.md](297-arcadia-runs-only-with-a-compatible-pan.md) | #297 | Arcadia runs only with a compatible Pan | 12 |
+| [214-remove-or-keep-sisr.md](214-remove-or-keep-sisr.md) | #214 | Remove SISR on request, or keep it, in the controller settings | 13 |
 | [215-show-the-button-symbols-of-the-controller-in-use.md](215-show-the-button-symbols-of-the-controller-in-use.md) | #215 | Show the button symbols of the controller in use | 8 |
 | [308-pan-hide-warning-loops-with-only-the-puck.md](308-pan-hide-warning-loops-with-only-the-puck.md) | #308 | Pan: hide warning loops with only the puck connected, then emulation stops | 6 |
 
@@ -34,13 +35,14 @@ Charter: –. Time box: –. Findings: –.
 |---|---|
 | T72-1 (mapping), T72-4, T72-6, T72-7, T72-9, T72-12 | `tests/Arcadia.App.Tests/ControllerTypesTests.cs` |
 | T212-2, T212-3, T212-5, T212-6, T212-7, T212-10 | `tests/Arcadia.App.Tests/SteamControllerTests.cs` |
-| T169-1 to T169-8 | `tests/Arcadia.App.Tests/SteamSettingsGroupTests.cs` |
+| T169-1 to T169-5 (T169-6 to T169-8 went with the SISR row, #214) | `tests/Arcadia.App.Tests/SteamSettingsGroupTests.cs` |
 | T180-2, T180-3 | `tests/Arcadia.App.Tests/Window/RingGeometryTests.cs`, `tests/Arcadia.App.Tests/Window/FocusRingTests.cs` |
 | T155-1 to T155-12 | `tests/Arcadia.App.Tests/PageTransitionTests.cs` |
 | T208-1 to T208-3, T209-3 | `tests/Arcadia.App.Tests/PageInterfaceTests.cs` |
 | T209-1, T209-2 | `tests/Arcadia.App.Tests/PageTransitionTests.cs`, `Window/SearchViewTests.cs` |
 | T210-1 to T210-3 | `tests/Arcadia.App.Tests/RoutingTests.cs` |
-| T242-8, T242-10 to T242-16, T242-20 to T242-25 | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `SteamControllerModeTests.cs` |
+| T242-8, T242-10 to T242-16, T242-20 to T242-25 | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `SteamControllerModeTests.cs`, `Window/HoldButtonFillTests.cs` (T242-20, the fill) |
 | T297-1 to T297-8 | `tests/Arcadia.App.Tests/PanUpdateAtStartTests.cs` |
+| T214-1 to T214-8, T214-11; T214-10 | `tests/Arcadia.App.Tests/SisrRemovalTests.cs`; `SteamControllerModeTests.cs` |
 | T215-1 to T215-6 | `tests/Arcadia.App.Tests/Window/ButtonSymbolsTests.cs` |
 | T308-2, T308-3 | `tests/Arcadia.App.Tests/PanEmulationTests.cs` |

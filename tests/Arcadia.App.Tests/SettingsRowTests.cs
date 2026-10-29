@@ -9,18 +9,14 @@ namespace Arcadia.App.Tests;
 /// <summary>What the rows of the settings page offer and how their values step (#15).</summary>
 public sealed class SettingsRowTests
 {
-    /// <summary>SISR as before #213 part B: these tests cover its switch and setup until #214 removes them.</summary>
-    private static readonly StartArguments Sisr = new(Sisr: true);
-
     [AvaloniaFact]
     [Trait("TestCase", "T15-5")]
     public async Task The_footer_names_only_the_buttons_of_the_focused_row()
     {
-        var steam = new FakeSteam { IsSteamRunning = true, HasMarker = false };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr, settings: new AppSettings
+        var steam = new FakeSteam { IsSteamRunning = true, IsPanReady = false };
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: new AppSettings
         {
             ActiveLaunchers = [.. ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id)],
-            SteamControllerSupport = true,
         });
         await arcadia.TickControllerSupportAsync();
         arcadia.Press(UiAction.Settings);
@@ -31,10 +27,10 @@ public sealed class SettingsRowTests
         Assert.Equal(new Footer(Change: true, Activate: "Öffnen"), Footer.Of(settings.FocusedRow!));
 
         arcadia.Press(UiAction.NextTab);
-        await arcadia.WaitUntilAsync(() => settings.Selected.Rows.Any(row => row.Key == "issue:marker-missing"), "die Meldung zum fehlenden Steam-Eintrag");
+        await arcadia.WaitUntilAsync(() => settings.Selected.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung zum fehlenden Pan");
 
         // A problem with its fix: only A, named by the fix.
-        Assert.Equal(new Footer(Change: false, Activate: "Anlegen"), Footer.Of(arcadia.FocusRow("issue:marker-missing")));
+        Assert.Equal(new Footer(Change: false, Activate: "Installieren"), Footer.Of(arcadia.FocusRow("issue:pan-missing")));
 
         // A choice: only ◀▶, A counting on goes without saying.
         Assert.Equal(new Footer(Change: true, Activate: null), Footer.Of(arcadia.FocusRow("mouse-mode")));
@@ -102,23 +98,6 @@ public sealed class SettingsRowTests
         Assert.Equal(!on, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
         arcadia.Press(UiAction.Left);
         Assert.Equal(on, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
-    }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "T15-11")]
-    public async Task Steam_Controller_Kompatibilitaet_switches_with_either_arrow()
-    {
-        var steam = new FakeSteam { IsSteamRunning = true };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, arguments: Sisr);
-        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
-        var sisr = Assert.IsType<SisrRowViewModel>(arcadia.Main.Settings!.FocusedRow);
-
-        foreach (var (arrow, on) in new[] { (UiAction.Right, true), (UiAction.Right, false), (UiAction.Left, true), (UiAction.Left, false) })
-        {
-            arcadia.Press(arrow);
-            await arcadia.WaitOnClockUntilAsync(() => arcadia.Settings.Current.SteamControllerSupport == on && !sisr.IsLocked, $"{arrow} schaltet auf {(on ? "An" : "Aus")}", TimeSpan.FromSeconds(10));
-            Assert.Equal(on, sisr.IsOn);
-        }
     }
 
     /// <summary>What the footer shows for a row: "◀▶ Ändern", and A with its text, or neither.</summary>

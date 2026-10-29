@@ -6,27 +6,15 @@ Agreed with the owner; don't change without asking. Read this before changing th
 - Dependent options sit in the same box as their main switch; on the settings page in the same group right below it,
   indented one step per level (`SettingsRowViewModel.Indent`), greyed out while it is off, keeping their values. Each
   group of the settings page is a box of its own (owner, 2026-10-22).
-- Category "Controller": the group "Steam" comes first and holds everything Steam does to the controllers (#169,
-  owner 2026-10-24): "Steam Controller Kompatibilität" (SISR) with its messages and update, then "Steams
-  Desktop-Belegung ignorieren". The latter is no dependent of the SISR switch (it covers every controller, SISR only
-  the Steam Controller), so it isn't indented; the desktop layout's subtitle starts with "Alle Controller".
-  "Steam Controller Kompatibilität" (owner 2026-10-24): while off or not installed its subtitle says what it is for
-  ("Erlaubt es, den Steam Controller auch in Spielen außerhalb von Steam zu verwenden"), while on a one-line status.
-  Its lamp is green when SISR runs and nothing is wrong, grey when on but resting (paused, starting, no Steam
-  Controller), yellow when a warning below needs the user, red with an error below. Its problems and "SISR aktualisieren"
-  stand right below it, indented.
-  Since #243 (Pan): a missing Pan or usbip driver shows as a warning row with "Installieren" in the Steam group also
-  while the switch is off; the category and the library's header carry the triangle (checked once at start, then
-  while the settings are open). While such a row offers the install, the switch stays a switch and its status points
-  down to it, so there is one install button, not two (owner, 2026-10-26); "Treiber installieren" on the switch only
-  when nothing below offers it (SISR itself missing, until #214). A failed fix shows its error at its own row (the
-  error icon, the message in place of the subtitle with how to go on, the detail panel), not at the switch.
-  Since #243 B2 (refined with the owner): without SISR the switch stands for the controller emulation's parts
-  (usbip-win2, VIIPER, Pan, HidHide). One missing part greys the switch out ("Aus – es fehlt: …"), with one warning row
-  per part below and the reason in the info panel; with every part missing the setting itself offers "Treiber
-  installieren" (one UAC prompt for all) and no part rows. An old HidHide: "HidHide-Version wird nicht unterstützt"
-  with "Aktualisieren". Pan's HidHide states (e.g. "HidHide-Konfiguration ist geöffnet … Bitte schließe sie") are rows
-  too, asked only while the settings are open and gone with them.
+- Category "Controller" (#169, owner 2026-10-24): "Steams Desktop-Belegung ignorieren" is no dependent of Pan's
+  switch (it covers every controller), so it isn't indented; its subtitle starts with "Alle Controller".
+  Since #243 (Pan): a missing Pan or usbip driver shows as a warning row with "Installieren" also while the switch is
+  off; the category and the library's header carry the triangle (checked once at start, then while the settings are
+  open). While such a row offers the install, the switch stays a switch and its status points down to it, so there is
+  one install button, not two (owner, 2026-10-26). A failed fix shows its error at its own row (the error icon, the
+  message in place of the subtitle with how to go on, the detail panel), not at the switch. An old HidHide:
+  "HidHide-Version wird nicht unterstützt" with "Aktualisieren". Pan's HidHide states (e.g. "HidHide-Konfiguration ist
+  geöffnet … Bitte schließe sie") are rows too, asked only while the settings are open and gone with them.
 - Since #242 (designs, section "#242 Pan"): the category starts with the group "PAN", then "STEAM" (only "Steams
   Desktop-Belegung ignorieren", subtitle "Alle Controller: Maus und Tasten, die Steam simuliert, kommen nicht an").
   "Controller-Wächter (Pan)" is a switch (`AppSettings.PanEnabled`, on by default; off: nothing is emulated or hidden,
@@ -45,6 +33,17 @@ Agreed with the owner; don't change without asking. Read this before changing th
   focus moves to the switch. Neither survives a restart of Arcadia (owner, 2026-10-28). "Controller wiederherstellen" stays while Pan is installed,
   also while the switch is off. Steam's launcher page links to the switch. This replaces the B2 rows above where they
   differ (greyed switch "Aus – es fehlt: …").
+- Group "SISR" (#214, designs T214Settings and T214Dialog) below "STEAM", only while SISR or its Steam marker is on the
+  PC: "SISR entfernen" [Entfernen] and, indented, "SISR behalten" [Ausblenden]. Arcadia never starts SISR and removes
+  nothing without the player. With the marker and Steam running, [Entfernen] asks "Steam beenden?" ([A] Weiter, [B]
+  Abbrechen); a Steam game shows "Steam-Spiel läuft" with its name and only "Schließen". While it removes, the dialog
+  "SISR wird entfernt" names the step and can't be closed. Everything gone: the toast "SISR ist vollständig entfernt.",
+  the group goes, the focus moves to the row above. Something left: the row reads "Nicht alles ließ sich entfernen"
+  ("SISR wurde nicht entfernt" when a Steam game, a Steam that won't close or an SISR that won't stop kept everything),
+  the cause in its info panel; [Entfernen] tries again. "SISR behalten" hides the group for good
+  (`AppSettings.KeepSisr`; the factory reset, #146, shows it again); SISR stays as it is. While SISR runs and Pan is on,
+  the warning row "SISR läuft" stands under Pan, also with the group hidden. What goes and why:
+  `docs/controller-support/sisr-removal.md`.
 - Pan's notices (#243 B2): a toast while Arcadia is in front, the overlay notice (where the mouse mode shows its
   label) while a game is in front, so the player sees them in the game too. All Pan notices go this way. A hold the
   player is watching goes on: during the View hold the notice stands below "Zurück zu Arcadia".
@@ -56,24 +55,24 @@ Agreed with the owner; don't change without asking. Read this before changing th
   `--restore`) stands below the problems, indented like them, while Pan is installed. An installed Pan that isn't the bundled one is
   replaced at start without a question (#297, page "Pan wird aktualisiert"; details in `docs/controller-support/pan-setup.md`).
   Steam's launcher page links there (owner 2026-10-24): group "Controller", row "Controller-Einstellungen für Steam",
-  A opens the category with the focus on "Steam Controller Kompatibilität", B goes back to Steam's page. The settings
+  A opens the category with the focus on "Controller-Wächter (Pan)", B goes back to Steam's page. The settings
   stay in "Controller" because they work without Steam's tab too; a category offers such links
   (`SettingsCategoryViewModel.LauncherPageLinks`), so the launcher page doesn't special-case Steam.
 - Settings (#15, owner 2026-10-21 and 2026-10-22): a whole page in place of the library (≡, Enter, the chip); B or ✕ go
   back to the same place. Categories are tabs in the header like the launcher tabs (LB/RB, Shift+Q/E, a
   click; Q/E = LT/RT switch tabs inside a category, e.g. launcher pages, as in the library, owner 2026-10-23), only those with content; a warning or an error of a category shows its symbol beside the name, info nothing.
   Pattern "Leiste" for every category: one column of rows, ▲ ▼ (W/S) move, ◀ ▶ (A/D) change switches and choices at
-  once, A (Space) starts actions; only settings and actions are rows, facts about a setting (e.g. SISR's status,
-  version, drawbacks) are boxes (`InfoSection`) below its description in the info panel. The info panel beside the
+  once, A (Space) starts actions; only settings and actions are rows, facts about a setting (e.g. Pan's status,
+  what a removal takes) are boxes (`InfoSection`) below its description in the info panel. The info panel beside the
   rows explains the focused row, RS (Shift+W/S, the wheel) scrolls it, fades show more; the mouse over a row focuses
   it. ◀ ▶ wrap at the ends of a value range (e.g. Zeigergeschwindigkeit 1 → ◀ → 9; a switch flips with
   either arrow), so an arrow is never greyed out just for standing at an end: a click on a greyed-out arrow fell
   through to the row and changed the value the other way (owner, 2026-10-24). Only a value that can't be taken greys
-  an arrow out (e.g. "Aktiv" for a launcher that isn't installed). A row that can't change now (e.g. while SISR starts) still takes the focus. The footer names the focused row's buttons. Applies at once, no save button. Questions
+  an arrow out (e.g. "Aktiv" for a launcher that isn't installed). A row that can't change now (e.g. while Pan sets up) still takes the focus. The footer names the focused row's buttons. Applies at once, no save button. Questions
   (e.g. "Steam beenden?") stay dialogs over the page; the header's status symbols open their category.
 - Status messages (`HealthIssue`, header, the settings row and category they belong to) have three levels, each with its own
-  symbol: **Info** (round blue i) for intended behaviour in a situation, e.g. SISR paused because other controllers
-  use Steam Input, or a launcher without games; **Warning** (yellow triangle with !) when a function is impaired and the user must act, e.g.
-  Steam not running, usbip driver missing, SISR switched on but no longer installed; **Error** (red X) for lasting
-  failures, e.g. SISR keeps crashing. The header shows the worst level; info alone doesn't make a status unhealthy
+  symbol: **Info** (round blue i) for intended behaviour in a situation, e.g. "Windows-Neustart ausstehend", or a
+  launcher without games; **Warning** (yellow triangle with !) when a function is impaired and the user must act, e.g.
+  Steam not running, usbip driver missing, SISR running beside Pan; **Error** (red X) for lasting
+  failures, e.g. Pan keeps ending at once. The header shows the worst level; info alone doesn't make a status unhealthy
   (owner, 2026-10-21).

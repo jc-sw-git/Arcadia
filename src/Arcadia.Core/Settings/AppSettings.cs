@@ -9,23 +9,24 @@ namespace Arcadia.Core.Settings;
 public sealed record AppSettings
 {
     /// <summary>
-    /// "Steam Controller Kompatibilität": run SISR so the Steam Controller works as
-    /// a system-wide Xbox pad, in Arcadia and in games that were not started through Steam.
-    /// </summary>
-    public bool SteamControllerSupport { get; init; }
-
-    /// <summary>
     /// "Controller-Wächter (Pan)" (#242): Pan hides the real Steam Controller and Arcadia emulates it, for games (Xbox
     /// pad) and for Steam (a copy). Off, nothing is emulated and every program sees the real controllers. On by default,
     /// so it runs as soon as "Treiber installieren" has set up its parts.
     /// </summary>
     public bool PanEnabled { get; init; } = true;
 
-    /// <summary>Per-game override of <see cref="SteamControllerSupport"/>, keyed by <see cref="Game.Key"/>.</summary>
+    /// <summary>
+    /// Per-game Steam Controller mode (<see cref="UsesArcadiaPad"/>), keyed by <see cref="Game.Key"/>; only choices
+    /// that differ from the game's default. Older versions stored "SteamControllerSupport" and "LastSisrUpdateCheck"
+    /// beside it for SISR; they are no properties anymore, so loading ignores them and the next save drops them (#214).
+    /// </summary>
     public Dictionary<string, bool> ControllerSupportOverrides { get; init; } = [];
 
-    /// <summary>When Arcadia last asked GitHub for a newer SISR.</summary>
-    public DateTimeOffset? LastSisrUpdateCheck { get; init; }
+    /// <summary>
+    /// "SISR behalten" (#214): the group "SISR" in the controller settings stays hidden and SISR stays as it is. A factory
+    /// reset (#146) shows the group again; the warning "SISR läuft" under Pan shows anyway.
+    /// </summary>
+    public bool KeepSisr { get; init; }
 
     /// <summary>When Arcadia last installed the usbip driver; a Windows restart is due after that.</summary>
     public DateTimeOffset? UsbipInstalledAt { get; init; }
@@ -105,15 +106,6 @@ public sealed record AppSettings
     }
 
     /// <summary>
-    /// Whether SISR should run while <paramref name="game"/> runs. Without an override it runs for
-    /// every game except those whose launcher says they use Steam Input themselves — running
-    /// SISR there would double every input.
-    /// </summary>
-    /// <param name="gamesUseSteamInput">Whether a launcher's games use Steam Input, by launcher id (<see cref="LauncherRegistry.GamesUseSteamInput"/>).</param>
-    public bool ControllerSupportFor(Game game, Func<string, bool> gamesUseSteamInput) =>
-        SteamControllerSupport && UsesArcadiaPad(game.Key, gamesUseSteamInput);
-
-    /// <summary>
     /// The Steam Controller mode of the game with this key (#213): true = "Arcadia" (Arcadia's Xbox pad), false =
     /// "Steam-Eingabe". Without an override, games whose launcher uses Steam Input (Steam's) start on Steam-Eingabe and
     /// all others on Arcadia (#156). Takes a key, not a game, so a Steam game started directly in Steam counts too when
@@ -128,8 +120,8 @@ public sealed record AppSettings
     /// is stored, so untouched games follow the default if it ever changes.
     /// </summary>
     /// <param name="gamesUseSteamInput">Whether a launcher's games use Steam Input, by launcher id (<see cref="LauncherRegistry.GamesUseSteamInput"/>).</param>
-    public AppSettings WithControllerSupportChoice(Game game, bool useSisr, Func<string, bool> gamesUseSteamInput) =>
-        WithControllerSupportOverride(game, useSisr == !gamesUseSteamInput(game.LauncherId) ? null : useSisr);
+    public AppSettings WithControllerSupportChoice(Game game, bool useArcadiaPad, Func<string, bool> gamesUseSteamInput) =>
+        WithControllerSupportOverride(game, useArcadiaPad == !gamesUseSteamInput(game.LauncherId) ? null : useArcadiaPad);
 
     /// <summary>Null means "use the default" for this game.</summary>
     public bool? ControllerSupportOverrideFor(Game game) =>

@@ -9,8 +9,7 @@ using Microsoft.Win32;
 namespace Arcadia.ControllerSupport;
 
 /// <summary>
-/// The usbip-win2 kernel driver. VIIPER (bundled with SISR) attaches its virtual controllers
-/// through it.
+/// The usbip-win2 kernel driver. Arcadia's VIIPER attaches its virtual controllers through it.
 /// </summary>
 [SupportedOSPlatform("windows")]
 public static class UsbipDriver
@@ -88,8 +87,8 @@ public static class UsbipDriver
 
     /// <summary>
     /// Detaches the controllers VIIPER attached. VIIPER has no detach of its own: the driver drops a
-    /// device when VIIPER's connection closes. This is the safety net for when VIIPER died with SISR
-    /// (Arcadia kills SISR while Steam is down) and a device might be left behind. Returns how many
+    /// device when VIIPER's connection closes. This is the safety net for when Arcadia killed SISR's VIIPER
+    /// (#214) and a device might be left behind. Returns how many
     /// were detached; never throws.
     /// </summary>
     public static async Task<int> DetachViiperDevicesAsync(CancellationToken cancellationToken = default)

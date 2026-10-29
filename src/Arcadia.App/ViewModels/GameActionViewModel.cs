@@ -30,7 +30,7 @@ public interface IGameActionHost
     /// <summary>[A] on the greyed mode: the controller settings on the row that says why (#242).</summary>
     void ShowPanProblem();
 
-    /// <summary>"Xbox Controller (SISR)" or "Steam Input".</summary>
+    /// <summary>"Arcadia" or "Steam-Eingabe".</summary>
     string ControllerModeOf(Game game);
 
     void Play(GameTileViewModel tile);
@@ -186,7 +186,7 @@ public sealed partial class GameActionViewModel : ViewModelBase
             return actions;
         }
 
-        // The Steam Controller mode decides whether SISR pauses when the game starts, so a change applies to the next
+        // The Steam Controller mode decides at the game's start how Pan hands it the controller, so a change applies to the next
         // start only and waits until the game ended (#95). The mouse mode's choice applies at once and stays open.
         if (host.ShowControllerMode)
         {

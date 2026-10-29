@@ -85,16 +85,11 @@
             <Path Classes="statusIcon" Classes.info="{Binding Status.IsControllerStatusInfo}" Classes.error="{Binding Status.IsControllerStatusError}" />
           </Button>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  IsVisible="{Binding Status.HasSisrUpdate}" Command="{Binding OpenControllerSettingsCommand}" ToolTip.Tip="Neue SISR-Version verfügbar">
-            <Path Data="M20 12a8 8 0 1 1 -2.3 -5.6 M20 4v4.5h-4.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
-                  Width="24" Height="24" Stretch="None" />
-          </Button>
-          <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
                   IsVisible="{Binding Status.HasArcadiaUpdate}" Command="{Binding OpenAboutSettingsCommand}" ToolTip.Tip="{Binding Status.ArcadiaUpdateText}">
             <Panel Width="24" Height="24">
               <Path Data="M20 12a8 8 0 1 1 -2.3 -5.6 M20 4v4.5h-4.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
                     Width="24" Height="24" Stretch="None" />
-              <!-- The dot tells Arcadia's own update apart from SISR's. -->
+              <!-- The dot marks it as Arcadia's own update. -->
               <Ellipse Width="8" Height="8" Fill="{StaticResource Accent}" Stroke="{StaticResource Bg}" StrokeThickness="2"
                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-1,-1,0" />
             </Panel>
@@ -1532,7 +1527,7 @@
           </Border>
         </Grid>
 
-        <!-- A dialog of the shown category over the page, e.g. before "SISR installieren" goes on. -->
+        <!-- A dialog of the shown category over the page, e.g. before "SISR entfernen" closes Steam. -->
         <ContentControl Content="{Binding Settings?.Selected.Dialog, TargetNullValue={x:Null}}">
           <ContentControl.DataTemplates>
             <DataTemplate x:DataType="settings:ControllerSettingsViewModel">
@@ -1552,8 +1547,7 @@
                       </Border>
                       <TextBlock Text="Steam-Spiel läuft" IsVisible="{Binding IsGamePrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                       <TextBlock Text="Steam beenden?" IsVisible="{Binding IsSteamStopPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding SteamStartFailedTitle}" IsVisible="{Binding IsSteamStartFailedPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
-                      <TextBlock Text="Steam-Eintrag für SISR anlegen?" IsVisible="{Binding IsMarkerPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+                      <TextBlock Text="SISR wird entfernt" IsVisible="{Binding IsRemovingSisrPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <StackPanel Spacing="14" IsVisible="{Binding IsGamePrompt}">
@@ -1563,75 +1557,46 @@
                           <Run Text=" läuft gerade über Steam." />
                         </TextBlock>
                       </Border>
-                      <TextBlock Classes="promptBody" Text="Für die Installation muss Steam beendet und neu gestartet werden. Beende zuerst das Spiel und versuche es dann erneut." />
+                      <TextBlock Classes="promptBody" Text="{Binding GamePromptText}" />
                     </StackPanel>
                     <StackPanel Spacing="14" IsVisible="{Binding IsSteamStopPrompt}">
-                      <TextBlock Classes="promptBody" Text="Für die Installation muss Steam beendet werden. Arcadia startet Steam danach wieder im Hintergrund." />
-                      <TextBlock Classes="promptBody" Text="{Binding SteamStopDetail}" />
+                      <TextBlock Classes="promptBody" Text="{Binding SteamStopText}" />
+                      <TextBlock Classes="promptBody" Text="{Binding SteamStopDetail}" IsVisible="{Binding HasSteamStopDetail}" />
+                    </StackPanel>
+                    <StackPanel Spacing="18" IsVisible="{Binding IsRemovingSisrPrompt}">
+                      <TextBlock Classes="promptBody" Text="{Binding RemovingSisrText}" />
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                        <TextBlock Text="{Binding RemovingSisrStep}" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                      </StackPanel>
                     </StackPanel>
 
-                    <StackPanel Spacing="14" IsVisible="{Binding IsSteamStartFailedPrompt}">
-                      <TextBlock Classes="promptBody" Text="{Binding SteamStartFailedText}" />
-                      <TextBlock Classes="promptBody" Text="{Binding SteamStartFailedHint}" />
-                    </StackPanel>
-
-                    <StackPanel Spacing="14" IsVisible="{Binding IsMarkerPrompt}">
-                      <TextBlock Classes="promptBody" Text="SISR braucht in Steam einen Eintrag „SISR Marker“ als Nicht-Steam-Spiel. Er erscheint in der Steam-Bibliothek des Kontos. Ohne ihn lässt sich die Funktion nicht nutzen." />
-                      <TextBlock Classes="promptBody" Text="Auf diesem PC gibt es mehrere Steam-Konten. Für welche soll der Eintrag angelegt werden? Mit anderen Konten bleibt die Funktion aus, bis der Eintrag dort angelegt ist." />
-                      <ItemsControl ItemsSource="{Binding MarkerAccounts}">
-                        <ItemsControl.ItemTemplate>
-                          <DataTemplate x:DataType="settings:MarkerAccountViewModel">
-                            <Button Classes="plain settingRow" Classes.focused="{Binding IsFocused}" Classes.done="{Binding HasMarker}"
-                                    Command="{Binding ToggleCommand}">
-                              <StackPanel Orientation="Horizontal" Spacing="16">
-                                <Border Classes="checkbox" Classes.on="{Binding IsChecked}">
-                                  <TextBlock Text="✓" IsVisible="{Binding IsChecked}" />
-                                </Border>
-                                <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <TextBlock Classes="hint" Text="bereits eingerichtet" IsVisible="{Binding HasMarker}" VerticalAlignment="Center" />
-                              </StackPanel>
-                            </Button>
-                          </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                      </ItemsControl>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsMarkerPrompt}">
-                      <Button Classes="plain action primaryAction" Classes.focused="{Binding ConfirmMarkerAccountsItem.IsFocused}"
-                              Command="{Binding ConfirmMarkerAccountsCommand}" IsEnabled="{Binding CanConfirmMarkerAccounts}" Content="Weiter" />
-                      <Button Classes="plain action" Classes.focused="{Binding CancelMarkerAccountsItem.IsFocused}"
-                              Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
-                    </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsGamePrompt}">
-                      <Button Classes="plain action primaryAction" Classes.focused="{Binding RetryInstallItem.IsFocused}"
+                      <Button Classes="plain action primaryAction" Classes.focused="{Binding RetryInstallItem.IsFocused}" IsVisible="{Binding CanRetryGamePrompt}"
                               Command="{Binding RetryInstallCommand}" Content="Erneut versuchen" />
                       <Button Classes="plain action" Classes.focused="{Binding CloseGamePromptItem.IsFocused}"
                               Command="{Binding ClosePromptCommand}" Content="Schließen" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsSteamStopPrompt}">
                       <Button Classes="plain action primaryAction" Classes.focused="{Binding ConfirmSteamStopItem.IsFocused}"
-                              Command="{Binding ConfirmSteamStopCommand}" Content="Steam beenden und installieren" />
+                              Command="{Binding ConfirmSteamStopCommand}" Content="{Binding ConfirmSteamStopText}" />
                       <Button Classes="plain action" Classes.focused="{Binding CancelSteamStopItem.IsFocused}"
                               Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsSteamStartFailedPrompt}">
-                      <Button Classes="plain action primaryAction" Classes.focused="{Binding RetrySteamStartItem.IsFocused}"
-                              Command="{Binding RetrySteamStartCommand}" Content="{Binding SteamStartFailedAction}" />
-                      <Button Classes="plain action" Classes.focused="{Binding CancelSteamStartItem.IsFocused}"
-                              Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
-                    </StackPanel>
 
-                    <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                    <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0" IsVisible="{Binding !IsRemovingSisrPrompt}">
                       <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                         <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Auswählen" />
                         <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding PromptBackText}" />
                       </StackPanel>
                     </Border>
                   </StackPanel>
-                  <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
-                          IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding ClosePromptCommand}">
-                    <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
-                  </Button>
+                  <Panel IsVisible="{Binding !IsRemovingSisrPrompt}">
+                    <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
+                            IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding ClosePromptCommand}">
+                      <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+                    </Button>
+                  </Panel>
                   </Panel>
                 </Border>
               </Panel>

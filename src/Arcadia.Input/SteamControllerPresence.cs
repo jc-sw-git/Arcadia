@@ -1,7 +1,7 @@
 namespace Arcadia.Input;
 
 /// <summary>
-/// Whether a Steam Controller is connected, as SDL sees it (#212), not only while SISR emulates it: the per-game mode
+/// Whether a Steam Controller is connected, as SDL sees it (#212): the per-game mode
 /// in the preview and its button hint follow it. Fed with every poll on the poll thread.
 /// </summary>
 public sealed class SteamControllerPresence

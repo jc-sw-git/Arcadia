@@ -183,7 +183,7 @@ public sealed class PanRows
 
         Main.InstallText = IsInstalling ? "Wird installiert …" : installFailed ? "Erneut versuchen" : "Treiber installieren";
         Main.Update(
-            notHere ? SisrRowMode.Unavailable : allMissing ? SisrRowMode.Install : SisrRowMode.Switch,
+            notHere ? SetupRowMode.Unavailable : allMissing ? SetupRowMode.Install : SetupRowMode.Switch,
             !notHere && !allMissing && IsOn,
             isLocked: IsBusy || (game is not null && !allMissing),
             unavailableText: "Auf diesem System noch nicht verfügbar",
@@ -258,12 +258,12 @@ public sealed class PanRows
     /// <summary>A, ◀ ▶ or a click: installs everything while nothing is set up, else switches; nothing while locked.</summary>
     private void Activate()
     {
-        if (Main.IsLocked || Main.Mode == SisrRowMode.Unavailable)
+        if (Main.IsLocked || Main.Mode == SetupRowMode.Unavailable)
         {
             return;
         }
 
-        if (Main.Mode == SisrRowMode.Install)
+        if (Main.Mode == SetupRowMode.Install)
         {
             _applyFix(HealthFix.InstallDrivers);
             return;

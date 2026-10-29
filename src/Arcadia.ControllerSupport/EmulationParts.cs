@@ -4,7 +4,7 @@ namespace Arcadia.ControllerSupport;
 
 /// <summary>
 /// The parts the controller emulation needs and the rows that say one is missing or can't be used (#243 part B2):
-/// usbip-win2, VIIPER, Pan and HidHide, in that order below "Steam Controller Kompatibilität". While a part is
+/// usbip-win2, VIIPER, Pan and HidHide, in that order below "Controller-Wächter (Pan)". While a part is
 /// missing the switch is greyed out; with every part missing the switch itself offers "Treiber installieren".
 /// </summary>
 public static class EmulationParts
@@ -50,6 +50,14 @@ public static class EmulationParts
         "Der usbip-Treiber wurde aktualisiert und ist erst nach einem Neustart des PCs ganz aktiv. Bis dahin kann der Steam Controller in Spielen kurz aussetzen; Arcadia verbindet ihn dann selbst neu.",
         Summary: "Bis zum Neustart kann der Steam Controller in Spielen aussetzen.");
 
+    /// <summary>
+    /// An SISR runs while Pan is on (#214 decision 5): both take the Steam Controller, so games get input twice or not at
+    /// all. Shown also while the group "SISR" is hidden; Arcadia doesn't stop an SISR the user started.
+    /// </summary>
+    public static HealthIssue SisrRunning { get; } = new("sisr-running", HealthSeverity.Warning, "SISR läuft",
+        "SISR läuft, während Pan an ist. Beide greifen auf den Steam Controller zu, Spiele bekommen dann Eingaben doppelt oder gar nicht. Beende SISR, oder schalte Pan aus, solange du SISR brauchst.",
+        Summary: "Beende SISR, damit Eingaben nicht doppelt ankommen");
+
     /// <summary>True if <paramref name="issue"/> says a part is missing or too old (not how a present part is set).</summary>
     public static bool IsMissingPart(HealthIssue issue) => MissingIds.Contains(issue.Id);
 
@@ -71,6 +79,9 @@ public static class EmulationParts
 
     /// <summary>A row from <see cref="FromHidingCheck"/>: asked while the settings are open, and only valid then.</summary>
     public static bool IsHidingState(HealthIssue issue) => HidingStateIds.Contains(issue.Id);
+
+    /// <summary>Looked at only while the settings are open (Pan's pipe, the process list), so a closed SISR doesn't stay in the header.</summary>
+    public static bool IsSettingsOnly(HealthIssue issue) => IsHidingState(issue) || issue.Id == SisrRunning.Id;
 
     /// <summary>
     /// The row for Pan's answer whether it could hide the Steam Controller now; null when it could or didn't answer.

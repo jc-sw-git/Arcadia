@@ -104,7 +104,6 @@ public sealed class StartTests
 
         Assert.False(status.HasControllerStatus);
         Assert.False(status.IsControllerStarting);
-        Assert.False(status.HasSisrUpdate);
         Assert.False(status.HasArcadiaUpdate);
         Assert.False(status.HasAnyStatus);
     }

@@ -71,8 +71,7 @@ internal sealed class ArcadiaDriver : IDisposable
         Folder = folder;
         Steam = steam;
         Releases = releases;
-        _http = new HttpClient(new FakeNetwork(steam?.Sisr, releases));
-        steam?.Sisr.UseNetwork(_http);
+        _http = new HttpClient(new FakeNetwork(releases));
         _ownsFolder = ownsFolder;
         _files = files;
         _opened = opened ?? [];
@@ -95,9 +94,9 @@ internal sealed class ArcadiaDriver : IDisposable
         var registry = new LauncherRegistry(integrations, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
         ControllerSupport = (steam, files?.ControllerSupport) switch
         {
-            ({ } fake, _) => new ControllerSupportService(Settings, fake.Sisr, _http, time, fake) { Log = AppLog.Write, StartsSisr = arguments.Sisr, GamesUseSteamInput = registry.GamesUseSteamInput },
-            (_, { } steamPc) => new ControllerSupportService(Settings, steamPc.Sisr, _http, time, steamPc) { Log = AppLog.Write, StartsSisr = arguments.Sisr, GamesUseSteamInput = registry.GamesUseSteamInput },
-            _ => new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform()) { Log = AppLog.Write, StartsSisr = arguments.Sisr, GamesUseSteamInput = registry.GamesUseSteamInput },
+            ({ } fake, _) => new ControllerSupportService(Settings, _http, time, fake) { Log = AppLog.Write, GamesUseSteamInput = registry.GamesUseSteamInput, Viiper = fake.Viiper, Sisr = fake.Sisr.Installation() },
+            (_, { } steamPc) => new ControllerSupportService(Settings, _http, time, steamPc) { Log = AppLog.Write, GamesUseSteamInput = registry.GamesUseSteamInput },
+            _ => new ControllerSupportService(Settings, _http, time, new NoControllerSupportPlatform()) { Log = AppLog.Write, GamesUseSteamInput = registry.GamesUseSteamInput },
         };
         Updates = releases is null ? new ArcadiaUpdateService(_http, time) : new ArcadiaUpdateService(_http, time, releases.Manager(folder));
         Updates.Log = AppLog.Write;
@@ -216,7 +215,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>SDL3 with the controllers a test plugs in; read only after <see cref="StartControllers"/>.</summary>
     public FakeSdlGamepads Sdl { get; } = new();
 
-    /// <summary>The XInput devices in Windows' device tree, for telling SISR's virtual pad from a real one (#212).</summary>
+    /// <summary>The XInput devices in Windows' device tree, for telling an emulated pad (SISR's, VIIPER's) from a real one (#212).</summary>
     public List<XusbDevice> XusbDevices { get; } = [];
 
     /// <summary>The disk as the focused game's install folder check sees it.</summary>
@@ -286,7 +285,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>The search, also while a detail page of its hits covers it; null while it is closed.</summary>
     public SearchViewModel? Search => Main.Search;
 
-    /// <summary>Windows, Steam and SISR of the test; null: a PC without them, as on Linux.</summary>
+    /// <summary>Windows and Steam of the test (and what is left of SISR); null: a PC without them, as on Linux.</summary>
     public FakeSteam? Steam { get; }
 
     /// <summary>The releases on GitHub; null: Arcadia runs from bin/, not installed.</summary>
@@ -345,8 +344,6 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>Arcadia closed and started again on the same settings, as the user does after a change.</summary>
     public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null, StartArguments arguments = default)
     {
-        // A test of SISR keeps it across the restart.
-        arguments = arguments with { Sisr = arguments.Sisr || ControllerSupport.StartsSisr };
         var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases, arguments, _files, _opened);
         await restarted.LoadAsync();
         return restarted;
@@ -400,7 +397,7 @@ internal sealed class ArcadiaDriver : IDisposable
         return this;
     }
 
-    /// <summary>The controller support's regular check (every few seconds in the App), e.g. SISR's update or Steam's login.</summary>
+    /// <summary>The controller support's regular check (every few seconds in the App), e.g. a missing part or Steam's login.</summary>
     public async Task TickControllerSupportAsync()
     {
         await Task.Run(() => ControllerSupport.TickAsync());
@@ -409,7 +406,7 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>
     /// Lets time pass on the fake clock until <paramref name="condition"/> holds, for work that waits on the clock off the UI
-    /// thread (Steam starting, SISR coming up); fails the test with <paramref name="what"/> after <paramref name="limit"/>.
+    /// thread (Steam starting, SISR being removed); fails the test with <paramref name="what"/> after <paramref name="limit"/>.
     /// </summary>
     public async Task WaitOnClockUntilAsync(Func<bool> condition, string what, TimeSpan limit)
     {
@@ -581,6 +578,7 @@ internal sealed class ArcadiaDriver : IDisposable
         _http.Dispose();
         if (_ownsFolder)
         {
+            Steam?.Sisr.Dispose();
             try
             {
                 Directory.Delete(Folder, recursive: true);
@@ -620,8 +618,7 @@ internal sealed class ArcadiaDriver : IDisposable
 }
 
 /// <summary>The command line's switches that change what Arcadia shows at the start: <c>--demo</c> and <c>--first-run</c>.</summary>
-/// <param name="Sisr">SISR started as before #213 part B, for its tests until #214 removes it; the App no longer starts it.</param>
-internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false, bool Sisr = false);
+internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false);
 
 /// <summary>
 /// A launcher of the test: <paramref name="Games"/> games of the demo library, or exactly <paramref name="Library"/> where

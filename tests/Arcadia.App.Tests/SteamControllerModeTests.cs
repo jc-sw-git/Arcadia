@@ -1,4 +1,5 @@
 using Arcadia.App.Settings;
+using Arcadia.ControllerSupport;
 using Arcadia.App.Input;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Launchers;
@@ -240,26 +241,28 @@ public sealed class SteamControllerModeTests
         Assert.Equal(1, arcadia.XboxPads.Plugged);
     }
 
-    /// <summary>T213-13: SISR is no longer started, also with the old switch on, and a SISR left running goes at the start.</summary>
+    /// <summary>
+    /// T213-13, T214-10: SISR is never started, and at the start only an
+    /// SISR the older Arcadia started goes; one the user started stays.
+    /// </summary>
     [AvaloniaFact]
     [Trait("TestCase", "T213-13")]
-    public async Task SISR_is_no_longer_started_and_one_left_running_is_stopped()
+    [Trait("TestCase", "T214-10")]
+    public async Task SISR_is_no_longer_started_and_only_the_one_the_older_Arcadia_left_running_is_stopped()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
-        using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings
-        {
-            ActiveLaunchers = [.. ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id)],
-            SteamControllerSupport = true,
-        }, steam: steam);
+        steam.Sisr.WithSisr();
+        var sisrLog = Path.Combine(steam.Sisr.LogDirectory, "sisr.log");
+        steam.Sisr.System.RunSisr(steam.Sisr.SisrExe, id: 5, $"\"{steam.Sisr.SisrExe}\" {SisrInstallation.ArcadiaApiArgument} --log.file \"{sisrLog}\"");
+        steam.Sisr.System.RunSisr(steam.Sisr.SisrExe, id: 6);
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
 
-        steam.Sisr.Start();
-        await arcadia.ControllerSupport.StopReplacedSisrAsync();
-        Assert.False(steam.Sisr.IsRunning);
-
+        await arcadia.ControllerSupport.StopSisrStartedByOldArcadiaAsync();
         await arcadia.TickControllerSupportAsync();
         arcadia.Wait(TimeSpan.FromSeconds(5));
         await arcadia.TickControllerSupportAsync();
-        Assert.Equal(1, steam.Sisr.Starts);
-        Assert.False(steam.Sisr.IsRunning);
+
+        Assert.Equal([5], steam.Sisr.System.Stopped);
+        Assert.Equal([6], steam.Sisr.System.Processes("SISR").Select(process => process.Id));
     }
 }

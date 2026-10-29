@@ -33,7 +33,7 @@ Product rules (by position, extra buttons, what counts): `docs/product/controls.
   accelerometer only after `SdlGamepadSource.UseMotionSensors(true)`; no consumer yet (#111). A touched trackpad
   counts as use in `ControllerActivity`, so the desktop filter drops Steam's trackpad mouse, and for 1 s after the
   finger leaves the pad: Steam's trackpad pointer glides on (owner's PC, 2026-10-25; 150 ms let it jump on release). "Connected" for the
-  per-game mode comes from SDL (`SteamControllerPresence`); until SDL has seen one, what SISR saw counts.
+  per-game mode comes from SDL (`SteamControllerPresence`).
   Started through Steam, Steam's hooks hide the controller from Arcadia; only logged.
 - **Fresh look:** `SteamDesktopInputFilter` asks `IGamepadSource.AnyNow` when the last poll saw no controller in use;
   it calls `SDL_UpdateGamepads` under the source's lock and gives up after 2 ms, so the hook stays fast.

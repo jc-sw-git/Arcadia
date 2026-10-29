@@ -1,5 +1,6 @@
 using Arcadia.App.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace Arcadia.App.ViewModels;
 
@@ -10,13 +11,16 @@ namespace Arcadia.App.ViewModels;
 public sealed partial class ConfirmationViewModel : ViewModelBase
 {
     private readonly Action _confirm;
+    private readonly Action? _close;
 
-    public ConfirmationViewModel(string title, string message, string confirmLabel, Action confirm)
+    /// <param name="close">Closes the dialog after a click on one of its buttons; the main window's own dialog closes itself.</param>
+    public ConfirmationViewModel(string title, string message, string confirmLabel, Action confirm, Action? close = null)
     {
         Title = title;
         Message = message;
         ConfirmLabel = confirmLabel;
         _confirm = confirm;
+        _close = close;
     }
 
     public string Title { get; }
@@ -58,4 +62,16 @@ public sealed partial class ConfirmationViewModel : ViewModelBase
 
     /// <summary>Runs the action, e.g. for a mouse click; the caller closes the dialog.</summary>
     public void Confirm() => _confirm();
+
+    /// <summary>A click on the confirming button of a dialog that closes itself (a settings category's).</summary>
+    [RelayCommand]
+    private void ConfirmAndClose()
+    {
+        _confirm();
+        _close?.Invoke();
+    }
+
+    /// <summary>A click on "Abbrechen" or beside the dialog.</summary>
+    [RelayCommand]
+    private void Cancel() => _close?.Invoke();
 }

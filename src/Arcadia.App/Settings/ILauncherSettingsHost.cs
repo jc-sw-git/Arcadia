@@ -28,6 +28,9 @@ public interface ILauncherSettingsHost
     /// <summary>A launcher's name, keyword or logo changed (#137, #138): tabs, covers and search show it at once.</summary>
     void LauncherLooksChanged();
 
+    /// <summary>A switch for software, tools or soundtracks changed (#141): the tabs show what it adds or hides at once.</summary>
+    void LibraryTypesChanged();
+
     /// <summary>X: reads every active launcher again ("Alle neu einlesen").</summary>
     void RescanLaunchers();
 

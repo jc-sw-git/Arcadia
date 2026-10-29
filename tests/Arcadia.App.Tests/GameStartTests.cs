@@ -1,5 +1,6 @@
 using Arcadia.App.Input;
 using Arcadia.Core.Launchers;
+using Arcadia.Launchers.Abstractions;
 using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;
@@ -85,6 +86,37 @@ public sealed class GameStartTests
         Assert.False(arcadia.Main.IsDetailOpen);
         Assert.False(tile.IsRunningOrStarting);
         Assert.Empty(arcadia.Starts.Keys);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T278-8")]
+    public async Task A_game_its_launcher_doesnt_start_after_an_update_is_started_once_more_then_shows_play_again()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var tile = arcadia.FocusedGame!;
+        var game = tile.Game;
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "der Launcher soll das Spiel starten");
+
+        // The launcher updates the game first, then doesn't start it (Steam, owner's PC 2026-10-28).
+        arcadia.Installs.Set(game, new InstallProgress(InstallPhase.Downloading));
+        await arcadia.FollowInstallsAsync();
+        await arcadia.FollowRunningGamesAsync();
+        arcadia.Installs.Set(game, null);
+        await arcadia.FollowInstallsAsync();
+        await arcadia.FollowRunningGamesAsync();
+
+        arcadia.Time.Advance(RunningGamesTracker.StartAgainAfterInstall + TimeSpan.FromSeconds(1));
+        await arcadia.FollowRunningGamesAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 2, "Arcadia soll das Spiel nach dem Update noch einmal starten");
+        Assert.Equal([game.Key, game.Key], arcadia.Starts.Keys);
+        Assert.True(arcadia.FocusedGame!.IsStarting);
+
+        arcadia.Time.Advance(RunningGamesTracker.StartTimeout + TimeSpan.FromSeconds(1));
+        await arcadia.FollowRunningGamesAsync();
+        Assert.False(arcadia.FocusedGame!.IsRunningOrStarting);
+        Assert.Equal("Spielen", arcadia.FocusedGame.PrimaryActionText);
+        Assert.Equal(2, arcadia.Starts.Keys.Count);
     }
 
     [AvaloniaFact]

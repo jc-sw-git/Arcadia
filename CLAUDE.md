@@ -30,8 +30,7 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
   (CloseMainWindow, not Stop-Process: Arcadia must shut down cleanly).
 - Logs: `%APPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, `Bild:` press to frame, Pan and the emulation),
   `viiper.log` (VIIPER's own log). Settings: `%APPDATA%\Arcadia\settings.json`.
-- Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log:
-  `Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} | ? ProviderName -match '.NET Runtime'`.
+- Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log (command: arcadia-verify skill).
 
 ## Releases
 
@@ -160,13 +159,13 @@ errors land with stack trace in `arcadia.log` and as a toast. No `_ = SomethingA
 
 **Launcher and controller findings** (verified on the owner's PC; read the matching file before
 touching that code, and add new findings there, not here):
-- Steam library, installs, updates, `shortcuts.vdf`: `docs/launchers/steam.md`
+- Steam library, installs, updates, account, running games, `shortcuts.vdf`: `docs/launchers/steam/` (README first, then the topic file)
 - Epic launcher, catalog, install monitor, playtime: `docs/launchers/epic.md`
 - Steam Controller Support (Pan, VIIPER, usbip-win2, SISR): `docs/controller-support/` (README first, then the topic file)
 
 ## Context economy
 
-Every step of a session resends its whole context, so keep it small (owner, 2026-10-23):
+Keep context small, every step resends it (owner, 2026-10-23):
 - `CLAUDE.md` holds only what nearly every task needs. Everything else (a product decision, a finding, a
   workflow detail) goes into the topic file under `docs/` and at most gets a pointer here. Limits: `CLAUDE.md`
   15 KB, every other doc and skill 10 KB (test plan files exempt); the `Doc sizes` CI check enforces them. A file
@@ -193,6 +192,6 @@ Every step of a session resends its whole context, so keep it small (owner, 2026
   yourself that your open PR is still mergeable and resolve conflicts before the owner finds them.
 - Threads work as personas (`docs/personas/`): a fresh quality engineer thread reviews and adds the acceptance
   tests to every code PR; Codex (`AGENTS.md`) reviews only the whole iteration.
-- Opening a PR needs no prior OK (tell the owner the link). Merging, tags/releases, closing issues and posting
-  comments only on the owner's explicit word.
+- Opening a PR needs no OK (tell the owner the link). Link it to its issue, close it when all its PRs are merged
+  (`docs/process/issues-and-prs.md`). Merges, releases, comments only on the owner's word.
 - License: GPL-3.0-only. Third-party notes in `THIRD-PARTY-NOTICES.md`.

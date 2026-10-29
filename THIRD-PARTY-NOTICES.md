@@ -89,6 +89,8 @@ MIT licence (text below).
 | Tmds.DBus.Protocol | Tom Deseyn | https://github.com/tmds/Tmds.DBus |
 | ExCSS | Tyler Brinks | https://github.com/TylerBrinks/ExCSS |
 | Viiper.Client (VIIPER's C# client; drives `viiper.exe` for the Steam Controller's Xbox pad, #213) | Peter Repukat | https://github.com/Alia5/VIIPER |
+| Avalonia.Controls.WebView | AvaloniaUI OÜ | https://github.com/AvaloniaUI/Avalonia |
+| System.Security.Cryptography.ProtectedData | .NET Foundation and Contributors | https://github.com/dotnet/runtime |
 
 Native parts with their own licences:
 

@@ -11,6 +11,7 @@ public static class LibraryToasts
     {
         LibraryNotice.PendingInstallsFinished { Games: var games } => (games.Count == 1 ? $"„{games[0].Title}“ ist jetzt installiert." : $"{games.Count} Spiele sind jetzt installiert.", false),
         LibraryNotice.InstallEnded ended => (InstallEnded(ended), false),
+        LibraryNotice.GameNotStarted notStarted => (GameNotStarted(notStarted), false),
         LibraryNotice.RescanStarted { Launcher: var launcher } => (launcher is null ? "Alle Launcher werden neu eingelesen …" : $"{launcher.DisplayName} wird neu eingelesen …", true),
         LibraryNotice.RescanFinished { Launcher: var launcher } => (RescanFinished(launcher, tabs), false),
         _ => throw new ArgumentOutOfRangeException(nameof(notice), notice, null),
@@ -26,6 +27,18 @@ public static class LibraryToasts
             InstallOutcome.Completed => $"„{title}“ ist jetzt installiert.",
             InstallOutcome.Cancelled => $"Installation von „{title}“ abgebrochen.",
             _ => $"Installation von „{title}“ ist fehlgeschlagen – bitte im Launcher nachsehen.",
+        };
+    }
+
+    private static string GameNotStarted(LibraryNotice.GameNotStarted notStarted)
+    {
+        // A game that left the library meanwhile has no title to quote.
+        var name = notStarted.Title is { } title ? $"„{title}“" : "Das Spiel";
+        return notStarted.Refusal switch
+        {
+            null => $"{name} wurde nicht gestartet.",
+            { Reason: { } reason } => $"{name}: {reason}",
+            _ => $"{name}: {notStarted.Launcher.DisplayName} hat den Start abgebrochen.",
         };
     }
 

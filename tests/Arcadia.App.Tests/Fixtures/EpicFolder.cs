@@ -11,7 +11,7 @@ namespace Arcadia.App.Tests.Fixtures;
 /// </summary>
 internal sealed record EpicApp(string AppName, string Title)
 {
-    public string Namespace => $"ns{AppName}";
+    public string Namespace { get; init; } = $"ns{AppName}";
 
     public string CatalogItemId => $"item{AppName}";
 
@@ -21,6 +21,12 @@ internal sealed record EpicApp(string AppName, string Title)
     public string Version { get; init; } = "1.0.0";
 
     public long InstallSize { get; init; } = 1000;
+
+    /// <summary>The manifest's <c>AppCategories</c>, e.g. <c>engines</c> for an Unreal Engine version (#141).</summary>
+    public string[] Categories { get; init; } = [];
+
+    /// <summary>The game an add-on belongs to, e.g. Fortnite for Unreal Editor for Fortnite (#141); null for a game.</summary>
+    public string? MainGameAppName { get; init; }
 }
 
 /// <summary>
@@ -169,7 +175,7 @@ internal sealed class EpicFolder(string root)
         bIsIncompleteInstall = false,
         DisplayName = app.Title,
         AppName = app.AppName,
-        MainGameAppName = mainGame ?? app.AppName,
+        MainGameAppName = mainGame ?? app.MainGameAppName ?? app.AppName,
         CatalogNamespace = app.Namespace,
         CatalogItemId = app.CatalogItemId,
         AppVersionString = app.Version,
@@ -177,5 +183,6 @@ internal sealed class EpicFolder(string root)
         LaunchExecutable = "Game.exe",
         InstallSize = app.InstallSize,
         bRequiresAuth = true,
+        AppCategories = app.Categories,
     });
 }

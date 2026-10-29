@@ -71,6 +71,17 @@ public sealed class LibraryRefresherTests
     }
 
     [Fact]
+    public void A_hint_or_a_blocked_install_coming_or_going_is_a_change()
+    {
+        var game = GameOf("steam", "a", installed: false);
+        var shown = new LauncherLibrary(KnownLaunchers.Steam, [game]);
+
+        // Steam switched to another account (#83): nothing else of the game changes.
+        Assert.True(LibraryRefresher.HasChanged([shown], [shown with { Games = [game with { Notice = "anderes Konto" }] }]));
+        Assert.True(LibraryRefresher.HasChanged([shown], [shown with { Games = [game with { InstallBlockedReason = "anderes Konto" }] }]));
+    }
+
+    [Fact]
     public void Tells_launchers_apart_even_with_the_same_game_count()
     {
         var epic = new LauncherLibrary(KnownLaunchers.Epic, [GameOf("epic", "a")]);

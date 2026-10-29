@@ -32,6 +32,9 @@ Before code is written, owner and Claude walk through the most likely scenarios 
 - Every issue is a self-contained increment that pays into the epic.
 - Guideline: the context an issue needs (code, docs, logs, discussion) stays below about
   150k tokens. More is a sign to split the issue further; not a hard limit.
+- Every refinement ends with a pass over failure cases (unknown state, crash, restart, interrupted
+  halfway) and a list of assumptions only the owner's PC can prove, each checked by a script before
+  implementation (owner, 2026-10-28; details in the skill).
 - An issue cut this way is implemented without a new refinement; the thread settles open questions
   briefly with the owner instead of starting a new round of questions (retro Iteration 1, #150).
 

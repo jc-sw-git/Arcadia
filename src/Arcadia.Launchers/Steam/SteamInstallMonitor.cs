@@ -5,16 +5,15 @@ using Arcadia.Launchers.Abstractions;
 namespace Arcadia.Launchers.Steam;
 
 /// <summary>
-/// Follows Steam installations, updates and uninstalls through the app manifests, which Steam
-/// rewrites every few seconds while it works (verified on the owner's PC, 2026-10-12):
-/// a new install appears with <c>StateFlags</c> 2 and <c>buildid</c> 0, then 1026 (update required
-/// + started) while it downloads or waits, 1538 (+ paused) when paused, and 4 once done.
-/// <c>BytesDownloaded/BytesToDownload</c> and <c>BytesStaged/BytesToStage</c> give the progress.
-/// Uninstalling an installed game (38 = files missing, for a moment) and cancelling a new install
-/// both delete the manifest.
-/// Steam downloads one app at a time but marks every waiting app the same way. Its content log
-/// (<see cref="SteamContentLog"/>) names the one it works on; without the log, the app whose
-/// bytes moved last counts as downloading.
+/// Follows Steam installations, updates and uninstalls through the app manifests and Steam's content log
+/// (verified on the owner's PC, 2026-10-12 and 2026-10-27): a new install's manifest appears with <c>StateFlags</c> 2
+/// and <c>buildid</c> 0, then 1026 (update required + started) while it downloads or waits, and 4 once done.
+/// Uninstalling an installed game (38 = files missing, for a moment) and cancelling a new install both delete the manifest.
+/// The manifests flag a waiting and a running download alike and get their byte counters only on a state change, so
+/// the content log (<see cref="SteamContentLog"/>), written the moment anything changes, decides what a download does.
+/// A percentage is shown only when it is exact (#278): while a download is stopped (paused, queued) Steam's last bytes
+/// are; while it runs they go stale at once, so a running download has none. Without the log, the manifests decide,
+/// and the app whose bytes moved last counts as downloading.
 /// </summary>
 public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null, TimeProvider? time = null) : IInstallMonitor
 {
@@ -50,7 +49,7 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
 
         foreach (var (appId, tracked) in _active.ToList())
         {
-            if (manifests.TryGetValue(appId, out var manifest) && IsActive(manifest))
+            if (manifests.TryGetValue(appId, out var manifest) && IsActive(manifest, contentLog?.StateOf(manifest.AppId)))
             {
                 continue;
             }
@@ -73,7 +72,7 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
 
         foreach (var (appId, manifest) in manifests)
         {
-            if (!IsActive(manifest))
+            if (!IsActive(manifest, contentLog?.StateOf(manifest.AppId)))
             {
                 continue;
             }
@@ -90,12 +89,15 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
             _active[appId] = tracked;
         }
 
-        var downloading = DownloadingApp(manifests, contentLog);
+        var logNamesRunningApp = contentLog is not null && _active.Keys.Any(a => contentLog.StateOf(manifests[a].AppId)?.IsRunning == true);
+        var downloading = logNamesRunningApp ? null : AppWhoseBytesMovedLast(manifests);
         var active = new Dictionary<string, InstallProgress>(StringComparer.Ordinal);
         foreach (var (appId, tracked) in _active.ToList())
         {
             var manifest = manifests[appId];
-            var progress = ProgressOf(manifest, appId == downloading, contentLog?.StateOf(manifest.AppId)?.IsFinishing == true);
+            var progress = contentLog?.StateOf(manifest.AppId) is { } logged
+                ? ProgressOf(manifest, logged)
+                : ProgressOf(manifest, isDownloading: appId == downloading);
             _active[appId] = tracked with { LastPhase = progress.Phase };
             active[appId] = progress;
         }
@@ -105,29 +107,40 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
         return new InstallSnapshot(active, finished);
     }
 
-    // The content log knows which app Steam works on; the manifests only show whose bytes moved.
-    private string? DownloadingApp(Dictionary<string, SteamManifestState> manifests, SteamContentLog? contentLog)
+    // Without the content log only the manifests' byte counters hint which app Steam works on.
+    private string? AppWhoseBytesMovedLast(Dictionary<string, SteamManifestState> manifests) => _active
+        .Where(a => (manifests[a.Key].Flags & UpdatePaused) == 0 && a.Value.MovedAt is not null)
+        .OrderByDescending(a => a.Value.MovedAt)
+        .Select(a => a.Key)
+        .FirstOrDefault();
+
+    /// <summary>The state of one installation as the content log tells it; the manifest adds uninstalling and bytes.</summary>
+    public static InstallProgress ProgressOf(SteamManifestState manifest, SteamContentState logged)
     {
-        var unpaused = _active.Where(a => (manifests[a.Key].Flags & UpdatePaused) == 0).ToList();
-        if (contentLog is not null
-            && unpaused.FirstOrDefault(a => contentLog.StateOf(manifests[a.Key].AppId)?.IsRunning == true) is { Key: { } running })
+        if ((manifest.Flags & Uninstalling) != 0)
         {
-            return running;
+            return new InstallProgress(InstallPhase.Uninstalling);
         }
 
-        return unpaused
-            .Where(a => a.Value.MovedAt is not null)
-            .OrderByDescending(a => a.Value.MovedAt)
-            .Select(a => a.Key)
-            .FirstOrDefault();
+        // Steam restarted or switched accounts and hasn't picked the download up again (#278 decision 4).
+        if (logged.FromEarlierSession && logged.Phase != SteamDownloadPhase.Done)
+        {
+            return new InstallProgress(InstallPhase.Paused, StoppedFraction(manifest, logged));
+        }
+
+        return logged.Phase switch
+        {
+            SteamDownloadPhase.Paused => new InstallProgress(InstallPhase.Paused, StoppedFraction(manifest, logged)),
+            SteamDownloadPhase.Queued => new InstallProgress(InstallPhase.Queued, StoppedFraction(manifest, logged)),
+            SteamDownloadPhase.Preparing or SteamDownloadPhase.Downloading => new InstallProgress(InstallPhase.Downloading),
+            _ => new InstallProgress(InstallPhase.Finishing),
+        };
     }
 
-    /// <summary>The state of one manifest, as Arcadia reads it.</summary>
+    /// <summary>The state of one manifest when the content log has nothing on the app.</summary>
     /// <param name="isDownloading">Whether Steam works on this app rather than letting it wait.</param>
-    /// <param name="isFinishing">Whether Steam's content log says the files are being verified or moved.</param>
-    public static InstallProgress ProgressOf(SteamManifestState manifest, bool isDownloading, bool isFinishing = false)
+    public static InstallProgress ProgressOf(SteamManifestState manifest, bool isDownloading)
     {
-        var fraction = manifest.Fraction;
         if ((manifest.Flags & Uninstalling) != 0)
         {
             return new InstallProgress(InstallPhase.Uninstalling);
@@ -135,24 +148,44 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
 
         if ((manifest.Flags & UpdatePaused) != 0)
         {
-            return new InstallProgress(InstallPhase.Paused, fraction);
+            return new InstallProgress(InstallPhase.Paused, manifest.Fraction);
         }
 
-        if (isFinishing || (manifest.BytesToDownload > 0 && manifest.BytesDownloaded >= manifest.BytesToDownload))
+        if (manifest.BytesToDownload > 0 && manifest.BytesDownloaded >= manifest.BytesToDownload)
         {
-            return new InstallProgress(InstallPhase.Finishing, fraction);
+            return new InstallProgress(InstallPhase.Finishing);
         }
 
-        return new InstallProgress(isDownloading ? InstallPhase.Downloading : InstallPhase.Queued, fraction);
+        return isDownloading ? new InstallProgress(InstallPhase.Downloading) : new InstallProgress(InstallPhase.Queued, manifest.Fraction);
+    }
+
+    /// <summary>
+    /// The download fraction of a stopped download, as Steam's download page shows it: Steam writes the manifest's
+    /// counters when the download stops and the log's at the last start; both only grow, so the larger is the current
+    /// one. The manifest's count only if it belongs to the same update (the same total).
+    /// </summary>
+    private static double? StoppedFraction(SteamManifestState manifest, SteamContentState logged)
+    {
+        if (logged.DownloadTotal <= 0)
+        {
+            return manifest.Fraction;
+        }
+
+        var downloaded = manifest.BytesToDownload == logged.DownloadTotal
+            ? Math.Max(manifest.BytesDownloaded, logged.DownloadedAtStart)
+            : logged.DownloadedAtStart;
+        return Math.Clamp((double)downloaded / logged.DownloadTotal, 0, 1);
     }
 
     /// <summary>
     /// True while Steam works on the app, and for a new install Steam has accepted but not started
     /// (<c>StateFlags</c> 2 without a build). A pending update Steam hasn't started is no installation.
+    /// The content log knows of a start or resume before the manifest shows it; a stopped download is busy in its manifest.
     /// </summary>
-    public static bool IsActive(SteamManifestState manifest) =>
+    public static bool IsActive(SteamManifestState manifest, SteamContentState? logged = null) =>
         (manifest.Flags & Busy) != 0
-        || ((manifest.Flags & UpdateRequired) != 0 && (manifest.Flags & FullyInstalled) == 0 && manifest.BuildId == 0);
+        || ((manifest.Flags & UpdateRequired) != 0 && (manifest.Flags & FullyInstalled) == 0 && manifest.BuildId == 0)
+        || logged is { IsRunning: true };
 
     /// <summary>Parses the fields of an <c>appmanifest_*.acf</c> the monitor needs; null for a broken file.</summary>
     public static SteamManifestState? ParseState(string? acf)
@@ -240,11 +273,8 @@ public sealed record SteamManifestState(uint AppId, string Name, int Flags, long
     public (long Downloaded, long Staged) Bytes => (BytesDownloaded, BytesStaged);
 
     /// <summary>
-    /// Download and staging (writing the files) together, 0…1; null before Steam knows the size or reports
-    /// any bytes. During an update Steam writes the counters only at the start and the end (Schedule I,
-    /// 2026-10-12), so a 0 would stand still for the whole download.
+    /// The download alone, 0…1, as Steam's download page counts it (#278 decision 3); null before Steam knows the size.
+    /// Steam writes the counters only on a state change, so this is exact only while the download is stopped.
     /// </summary>
-    public double? Fraction => BytesToDownload + BytesToStage is > 0 and var total && BytesDownloaded + BytesStaged > 0
-        ? Math.Clamp((double)(BytesDownloaded + BytesStaged) / total, 0, 1)
-        : null;
+    public double? Fraction => BytesToDownload > 0 ? Math.Clamp((double)BytesDownloaded / BytesToDownload, 0, 1) : null;
 }

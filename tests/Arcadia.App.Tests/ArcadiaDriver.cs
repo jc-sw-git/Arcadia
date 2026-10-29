@@ -9,6 +9,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers;
+using Arcadia.Launchers.Steam.Account;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Demo;
 using Arcadia.Tests.Pads;
@@ -88,9 +89,17 @@ internal sealed class ArcadiaDriver : IDisposable
         Settings = new SettingsService(new SettingsStore(SettingsPath));
         var demo = arguments.Demo || files?.Demo == true;
         var firstRun = new FirstRunSetup(Settings, demo, arguments.FirstRun);
+        // The Steam account (#83) over the fake web API and Steam's fake store pages in Arcadia's browser (the window's
+        // web page, answered by TestBrowser); its sign-in is kept unencrypted in the test's folder.
+        var webPages = new WebPages(time, action => Dispatcher.UIThread.Post(action));
+        SteamAccount = files is null ? null : new SteamOnlineAccount(
+            new SteamWebApi(new HttpClient(files.SteamWeb, disposeHandler: false)),
+            new SteamAccountStore(files.AccountFolder, data => data, data => data),
+            webPages,
+            time);
         IReadOnlyList<ILauncherIntegration> integrations = files is null
             ? Launchers
-            : BuiltInLaunchers.Create(time, demo, folders: files.Folders);
+            : BuiltInLaunchers.Create(time, demo, folders: files.Folders, steamAccount: SteamAccount);
         var registry = new LauncherRegistry(integrations, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
         ControllerSupport = (steam, files?.ControllerSupport) switch
         {
@@ -121,11 +130,19 @@ internal sealed class ArcadiaDriver : IDisposable
             firstRun,
             time,
             FolderCheck);
+        webPages.Attach(Main);
+        if (files is not null)
+        {
+            _ = new Fixtures.TestBrowser(Main, files.SteamWeb);
+        }
+
         _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time, new InputLatency(shown => shown(), line =>
         {
             AppLog.Write(line);
             LatencyLines.Add(line);
         }));
+
+        Main.Session.StartRefused += (_, gameKey) => BroughtToFrontFor.Add(gameKey);
 
         // The controllers as the App reads them (#72), through SDL as the test sets it up.
         _controllers = ControllerInput.Create(Sdl, Main, new DeviceTreeEmulatedPads(() => [.. XusbDevices], AppLog.Write));
@@ -208,6 +225,9 @@ internal sealed class ArcadiaDriver : IDisposable
         await ForGames.TickAsync();
         Dispatcher.UIThread.RunJobs();
     }
+
+    /// <summary>The Steam account of the real Steam integration (#83); null without launcher files.</summary>
+    internal SteamOnlineAccount? SteamAccount { get; }
 
     /// <summary>The lines the controller's presses logged with their time to the frame (#229); the test's frame comes at once.</summary>
     public List<string> LatencyLines { get; } = [];
@@ -498,6 +518,20 @@ internal sealed class ArcadiaDriver : IDisposable
         return PollControllers();
     }
 
+    /// <summary>The games whose aborted start brought Arcadia to the front (#277), as <c>App.axaml.cs</c> does it.</summary>
+    public List<string> BroughtToFrontFor { get; } = [];
+
+    /// <summary>The launcher of a test (<see cref="LauncherSpec.Running"/> set) reports <paramref name="game"/> as running from now.</summary>
+    public void RunInLauncher(Game game) => MonitorOf(game).Run(game.Id, Time.GetUtcNow());
+
+    /// <summary>The launcher of a test (<see cref="LauncherSpec.Running"/> set) aborts the start of <paramref name="game"/> now (#277).</summary>
+    public void RefuseInLauncher(Game game, string? reason, string detail) =>
+        MonitorOf(game).Refuse(new RefusedStart(game.Id, Time.GetUtcNow(), reason, detail));
+
+    private FixedRunningGames MonitorOf(Game game) =>
+        Launchers.Single(launcher => launcher.Launcher.Id == game.LauncherId).RunningGames as FixedRunningGames
+        ?? throw new InvalidOperationException($"{game.LauncherId} reports no running games; give its spec Running: [].");
+
     /// <summary>What the App's timer does every few seconds: asks the launchers which games run.</summary>
     public async Task FollowRunningGamesAsync()
     {
@@ -574,6 +608,7 @@ internal sealed class ArcadiaDriver : IDisposable
     public void Dispose()
     {
         Main.Dispose();
+        SteamAccount?.Dispose();
         _controllers.Dispose();
         _http.Dispose();
         if (_ownsFolder)
@@ -624,8 +659,12 @@ internal readonly record struct StartArguments(bool Demo = false, bool FirstRun 
 /// A launcher of the test: <paramref name="Games"/> games of the demo library, or exactly <paramref name="Library"/> where
 /// a test needs to know every title and date. <paramref name="IsInstalled"/> false: the launcher isn't found.
 /// <paramref name="IsDemo"/>: Arcadia's own demo data (<c>--demo</c>), whose games can't be started and of which one runs.
+/// <paramref name="Options"/>: the launcher's switches for software, tools and soundtracks (#141).
+/// <paramref name="Running"/>: the ids of the games the launcher reports as running.
 /// </summary>
-internal sealed record LauncherSpec(LauncherInfo Launcher, int Games, bool IsInstalled = true, IReadOnlyList<Game>? Library = null, bool IsDemo = false)
+internal sealed record LauncherSpec(
+    LauncherInfo Launcher, int Games, bool IsInstalled = true, IReadOnlyList<Game>? Library = null, bool IsDemo = false,
+    IReadOnlyList<LibraryTypeOption>? Options = null, IReadOnlyList<string>? Running = null)
 {
     public static LauncherSpec With(LauncherInfo launcher, params Game[] library) => new(launcher, library.Length, Library: library);
 }

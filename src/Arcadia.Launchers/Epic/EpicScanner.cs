@@ -8,7 +8,8 @@ namespace Arcadia.Launchers.Epic;
 /// Reads the Epic library: installed games from the install manifests (one JSON file per game in
 /// <c>%PROGRAMDATA%\Epic\EpicGamesLauncher\Data\Manifests\*.item</c>) plus the owned but
 /// uninstalled games from the launcher's catalog cache (<see cref="EpicCatalog"/>). Last played and
-/// pending updates come from the launcher's logs (<see cref="EpicLauncherLog"/>).
+/// pending updates come from the launcher's logs (<see cref="EpicLauncherLog"/>). Unreal Engine (all its versions as one
+/// entry) and launchable add-ons come as tools (#141); the launcher's switch decides whether they are shown.
 /// </summary>
 public sealed class EpicScanner(
     string? manifestDirectory = null,
@@ -113,9 +114,15 @@ public sealed class EpicScanner(
 
         var games = new List<Game>(installed);
         var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        // Epic shows one tile for all engine versions, installed or not (owner, 2026-10-22); not installed, it offers the newest.
+        var hasEngine = installed.Any(game => game.Title == EpicCatalog.UnrealEngineTitle && game.Type == GameType.Tool);
+        var newestEngine = hasEngine ? null
+            : catalog.Where(item => item.IsEngine).MaxBy(item => EngineVersionOf(item.AppName, versionString: null));
         foreach (var item in catalog)
         {
-            if (installedIds.Contains(item.CatalogItemId) || installedApps.Contains(item.AppName) || !seen.Add(item.AppName))
+            if (installedIds.Contains(item.CatalogItemId) || installedApps.Contains(item.AppName) || !seen.Add(item.AppName)
+                || (item.IsEngine && item != newestEngine))
             {
                 continue;
             }
@@ -125,9 +132,11 @@ public sealed class EpicScanner(
                 Id = item.AppName,
                 LauncherId = KnownLaunchers.Epic.Id,
                 Title = item.Title,
+                Type = item.Type,
                 Launch = new LaunchTarget.ProtocolUri(LaunchUri(item.Namespace, item.CatalogItemId, item.AppName)),
                 IsInstalled = false,
-                Install = new LaunchTarget.ProtocolUri(InstallUri(item.Namespace, item.CatalogItemId, item.AppName)),
+                Install = new LaunchTarget.ProtocolUri(item.IsEngine ? EngineLibraryUri : InstallUri(item.Namespace, item.CatalogItemId, item.AppName)),
+                InstallStartsInLauncher = item.IsEngine,
                 OpenInLauncher = new LaunchTarget.ProtocolUri(LibraryUri),
             });
         }
@@ -143,6 +152,7 @@ public sealed class EpicScanner(
         }
 
         var games = new List<Game>();
+        var engines = new List<(Game Game, Version Version)>();
         foreach (var file in Directory.EnumerateFiles(_manifestDirectory, "*.item"))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -160,10 +170,25 @@ public sealed class EpicScanner(
                 continue;
             }
 
-            if (ParseManifest(json, InstallDateOf, installedApps) is { } game)
+            if (ParseEntry(json, InstallDateOf, installedApps) is not { } entry)
             {
-                games.Add(game);
+                continue;
             }
+
+            if (entry.EngineVersion is { } version)
+            {
+                engines.Add((entry.Game, version));
+            }
+            else
+            {
+                games.Add(entry.Game);
+            }
+        }
+
+        // One entry for all installed engine versions; A starts the newest (owner, 2026-10-26), choosing another is #251.
+        if (engines.Count > 0)
+        {
+            games.Add(engines.MaxBy(engine => engine.Version).Game);
         }
 
         return games;
@@ -175,7 +200,11 @@ public sealed class EpicScanner(
     /// </summary>
     /// <param name="installDateOf">Looks up the install date for an install directory; Epic does not store one.</param>
     /// <param name="installedApps">The launcher's last report on installed apps, for pending updates.</param>
-    public static Game? ParseManifest(string json, Func<string, DateTimeOffset?>? installDateOf = null, IReadOnlyDictionary<string, EpicInstalledAppState>? installedApps = null)
+    public static Game? ParseManifest(string json, Func<string, DateTimeOffset?>? installDateOf = null, IReadOnlyDictionary<string, EpicInstalledAppState>? installedApps = null) =>
+        ParseEntry(json, installDateOf, installedApps)?.Game;
+
+    /// <summary>Like <see cref="ParseManifest"/>, with the engine's version for an Unreal Engine version, else null.</summary>
+    private static (Game Game, Version? EngineVersion)? ParseEntry(string json, Func<string, DateTimeOffset?>? installDateOf, IReadOnlyDictionary<string, EpicInstalledAppState>? installedApps)
     {
         JsonDocument document;
         try
@@ -202,9 +231,14 @@ public sealed class EpicScanner(
                 return null;
             }
 
-            // DLC manifests point at their base game; they are not separate library entries.
+            var categories = Categories(root);
+            var isEngine = EpicCatalog.IsEngine(categories, GetString(root, "CatalogNamespace"), title, appName);
+            var isLaunchableAddOn = categories.Contains(EpicCatalog.LaunchableAddOnCategory) || (categories.Contains("addons") && categories.Contains("launchable"));
+
+            // DLC manifests point at their base game; they are not separate library entries. A launchable add-on points
+            // at its game too, but Epic shows it as a tile of its own.
             var mainGame = GetString(root, "MainGameAppName");
-            if (!string.IsNullOrEmpty(mainGame) && !string.Equals(mainGame, appName, StringComparison.Ordinal))
+            if (!isLaunchableAddOn && !string.IsNullOrEmpty(mainGame) && !string.Equals(mainGame, appName, StringComparison.Ordinal))
             {
                 return null;
             }
@@ -220,11 +254,13 @@ public sealed class EpicScanner(
             var launchExecutable = GetString(root, "LaunchExecutable");
             long? installSize = root.TryGetProperty("InstallSize", out var size) && size.TryGetInt64(out var bytes) ? bytes : null;
 
-            return new Game
+            var versionString = GetString(root, "AppVersionString");
+            var game = new Game
             {
                 Id = appName,
                 LauncherId = KnownLaunchers.Epic.Id,
-                Title = title,
+                Title = isEngine ? EpicCatalog.UnrealEngineTitle : title,
+                Type = isEngine || isLaunchableAddOn ? GameType.Tool : GameType.Game,
                 Launch = new LaunchTarget.ProtocolUri(LaunchUri(catalogNamespace, catalogItemId, appName)),
                 OpenInLauncher = new LaunchTarget.ProtocolUri(LibraryUri),
                 InstallDirectory = installLocation,
@@ -233,9 +269,55 @@ public sealed class EpicScanner(
                     : null,
                 InstallSizeBytes = installSize,
                 InstalledAt = installLocation is null ? null : installDateOf?.Invoke(installLocation),
-                UpdateAvailable = HasUpdate(installedApps, appName, GetString(root, "AppVersionString")),
+                UpdateAvailable = HasUpdate(installedApps, appName, versionString),
             };
+            return (game, isEngine ? EngineVersionOf(appName, versionString) : null);
         }
+    }
+
+    /// <summary>
+    /// The engine version of <c>UE_5.4</c>, else the leading numbers of its version string (<c>5.4.2-…</c>); 0 if neither
+    /// says, so a version that does wins.
+    /// </summary>
+    public static Version EngineVersionOf(string appName, string? versionString)
+    {
+        static Version? Leading(string? text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return null;
+            }
+
+            var end = 0;
+            while (end < text.Length && (char.IsAsciiDigit(text[end]) || text[end] == '.'))
+            {
+                end++;
+            }
+
+            var numbers = text[..end].Trim('.');
+            return Version.TryParse(numbers.Contains('.') ? numbers : $"{numbers}.0", out var version) ? version : null;
+        }
+
+        return Leading(appName.StartsWith(EpicCatalog.EngineAppPrefix, StringComparison.Ordinal) ? appName[EpicCatalog.EngineAppPrefix.Length..] : null)
+            ?? Leading(versionString)
+            ?? new Version(0, 0);
+    }
+
+    private static HashSet<string> Categories(JsonElement root)
+    {
+        var categories = new HashSet<string>(StringComparer.Ordinal);
+        if (root.TryGetProperty("AppCategories", out var list) && list.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var category in list.EnumerateArray())
+            {
+                if (category.ValueKind == JsonValueKind.String && category.GetString() is { } name)
+                {
+                    categories.Add(name);
+                }
+            }
+        }
+
+        return categories;
     }
 
     public static string LaunchUri(string catalogNamespace, string catalogItemId, string appName) =>
@@ -246,6 +328,13 @@ public sealed class EpicScanner(
     /// no uninstall link either; games are uninstalled there.
     /// </summary>
     public const string LibraryUri = "com.epicgames.launcher://store/library";
+
+    /// <summary>
+    /// The Unreal Engine tab's library, where Epic installs engine versions and the user picks one. The engine's own
+    /// install link showed no dialog on the owner's PC (2026-10-27: Epic logged "dispatching install", nothing appeared;
+    /// the owner then installed it from this tab).
+    /// </summary>
+    public const string EngineLibraryUri = "com.epicgames.launcher://ue/library";
 
     /// <summary>Opens the launcher's install dialog for the game.</summary>
     public static string InstallUri(string catalogNamespace, string catalogItemId, string appName) =>

@@ -9,11 +9,13 @@
 # Keys are xdotool key names, separated by spaces, as in docs/product/controls.md: w a s d (move), space (A), Escape
 # (B), f (X, search), v (Y, view), r (game menu), Return (settings), q/e (pages), shift+q/shift+e (tabs), 1 … 0 (tab).
 # Build first: dotnet build Arcadia.slnx.
-# Settings and logs go to a fresh folder per run (printed at the end), so runs don't change each other.
+# Settings and logs go to a fresh folder per run (printed at the end), so runs don't change each other; --settings FILE
+# starts that run with a settings.json of your own, e.g. a Steam folder picked by hand (#83).
 set -euo pipefail
 
 out=""
 arguments="--demo"
+settings=""
 wait_ms=15000
 keys=""
 after_keys_ms=500
@@ -21,13 +23,14 @@ keep_running=false
 
 usage() {
     sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
-    echo "Options: --out PATH (required) --arguments '--demo' --wait-ms 15000 --keys 'KEY …' --after-keys-ms 500 --keep-running"
+    echo "Options: --out PATH (required) --arguments '--demo' --settings FILE --wait-ms 15000 --keys 'KEY …' --after-keys-ms 500 --keep-running"
 }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --out) out="$2"; shift 2 ;;
         --arguments) arguments="$2"; shift 2 ;;
+        --settings) settings="$(realpath "$2")"; shift 2 ;;
         --wait-ms) wait_ms="$2"; shift 2 ;;
         --keys) keys="$2"; shift 2 ;;
         --after-keys-ms) after_keys_ms="$2"; shift 2 ;;
@@ -58,6 +61,10 @@ xvfb_pid=$!
 data="$(mktemp -d)"
 export XDG_CONFIG_HOME="$data/config" XDG_DATA_HOME="$data/share"
 mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME"
+if [[ -n "$settings" ]]; then
+    mkdir -p "$XDG_CONFIG_HOME/Arcadia"
+    cp "$settings" "$XDG_CONFIG_HOME/Arcadia/settings.json"
+fi
 
 app_pid=""
 cleanup() {

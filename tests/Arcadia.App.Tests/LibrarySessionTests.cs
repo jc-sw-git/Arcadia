@@ -2,6 +2,7 @@ using System.Reflection;
 using Arcadia.App.Services;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
+using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -54,6 +55,34 @@ public sealed class LibrarySessionTests
         Assert.Equal([new LibraryNotice.RescanStarted(Launcher), new LibraryNotice.RescanFinished(Launcher)], notices);
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T141-3")]
+    public async Task A_type_switched_on_or_off_shows_or_hides_its_entries_at_once_without_reading_the_launcher_again()
+    {
+        var preferences = new LauncherPreferences();
+        LibraryTypeOption tools = new("tools", "Werkzeuge einbeziehen", "", "", [], [GameType.Tool]);
+        Game[] games = [Installed(Launcher, "Alpha", ArcadiaDriver.Now), Installed(Launcher, "Blender", ArcadiaDriver.Now) with { Type = GameType.Tool }];
+        using var setup = new SessionSetup(games, [tools], _ => preferences);
+        var session = setup.Session;
+        await session.LoadAsync();
+        var changes = 0;
+        session.LibrariesChanged += (_, _) => changes++;
+
+        Assert.Equal(["Alpha"], session.LibraryOf(Launcher.Id)!.Games.Select(g => g.Title));
+
+        preferences = preferences.WithLibraryOption("tools", true);
+        session.ShowChosenTypes();
+
+        Assert.Equal(["Alpha", "Blender"], session.LibraryOf(Launcher.Id)!.Games.Select(g => g.Title));
+        Assert.Equal(1, changes);
+
+        preferences = preferences.WithLibraryOption("tools", false);
+        session.ShowChosenTypes();
+
+        Assert.Equal(["Alpha"], session.LibraryOf(Launcher.Id)!.Games.Select(g => g.Title));
+        Assert.Equal(1, setup.Launcher.Scanner.Scans);
+    }
+
     [AvaloniaTheory]
     [Trait("TestCase", "T228-3")]
     [InlineData(false)]
@@ -98,10 +127,10 @@ public sealed class LibrarySessionTests
     /// <summary>A session over one launcher whose games and install reports the test sets, on a fake clock.</summary>
     private sealed class SessionSetup : IDisposable
     {
-        public SessionSetup(IReadOnlyList<Game> games)
+        public SessionSetup(IReadOnlyList<Game> games, IReadOnlyList<LibraryTypeOption>? options = null, Func<string, LauncherPreferences>? preferences = null)
         {
-            var launcher = new ReportingLauncher(games, Monitor);
-            var registry = new LauncherRegistry([launcher], () => [Launcher.Id]);
+            Launcher = new ReportingLauncher(games, Monitor) { LibraryOptions = options ?? [] };
+            var registry = new LauncherRegistry([Launcher], () => [LibrarySessionTests.Launcher.Id], preferences);
             var launchedGames = new LaunchedGames();
             Session = new LibrarySession(
                 new LibraryService(registry, Time),
@@ -114,6 +143,8 @@ public sealed class LibrarySessionTests
         public FakeTimeProvider Time { get; } = new(ArcadiaDriver.Now);
 
         public ReportingMonitor Monitor { get; } = new();
+
+        public ReportingLauncher Launcher { get; }
 
         public LibrarySession Session { get; }
 
@@ -136,7 +167,11 @@ public sealed class LibrarySessionTests
     {
         public LauncherInfo Launcher => LibrarySessionTests.Launcher;
 
-        public ILauncherScanner Scanner { get; } = new FixedScanner(LibrarySessionTests.Launcher, games);
+        public FixedScanner Scanner { get; } = new(LibrarySessionTests.Launcher, games);
+
+        ILauncherScanner ILauncherIntegration.Scanner => Scanner;
+
+        public IReadOnlyList<LibraryTypeOption> LibraryOptions { get; init; } = [];
 
         public ILauncherClient? Client => null;
 

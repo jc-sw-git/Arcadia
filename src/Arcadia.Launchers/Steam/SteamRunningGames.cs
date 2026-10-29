@@ -25,11 +25,13 @@ public interface ISteamAppsRegistry
 
 /// <summary>
 /// Steam's running games, from the registry: Steam sets <c>HKCU\Software\Valve\Steam\Apps\&lt;id&gt;\Running</c> to 1
-/// while a game runs and <c>RunningAppID</c> to the game it started last (see docs/launchers/steam.md). Reading every
+/// while a game runs and <c>RunningAppID</c> to the game it started last (see docs/launchers/steam/running-games.md). Reading every
 /// app's key is too much for each poll, so only a poll after a pause reads them all; the others read RunningAppID and
-/// the games already running. A game that starts meanwhile becomes RunningAppID.
+/// the games already running. A game that starts meanwhile becomes RunningAppID. The starts Steam aborts come from its
+/// console log (<see cref="SteamConsoleLog"/>, #277).
 /// </summary>
-public sealed partial class SteamRunningGames(TimeProvider time, ISteamAppsRegistry? registry = null) : IRunningGamesMonitor
+/// <param name="consoleLog">Steam's console log, or null where it isn't read (tests of the registry alone).</param>
+public sealed partial class SteamRunningGames(TimeProvider time, ISteamAppsRegistry? registry = null, SteamConsoleLog? consoleLog = null) : IRunningGamesMonitor
 {
     /// <summary>Polls further apart than this (Arcadia just started, or the PC slept) read every app again.</summary>
     public static readonly TimeSpan FullReadAfter = TimeSpan.FromSeconds(10);
@@ -64,6 +66,8 @@ public sealed partial class SteamRunningGames(TimeProvider time, ISteamAppsRegis
         _running = running;
         return running.Select(game => new RunningGame(game.Key, game.Value)).ToList();
     }
+
+    public IReadOnlyList<RefusedStart> RefusedStarts() => consoleLog?.ReadRefusals() ?? [];
 
     // Read once per run: Steam may write the key again while the game runs.
     private DateTimeOffset? StartOf(string appId) => _running.TryGetValue(appId, out var known) ? known : _registry.WrittenAt(appId);

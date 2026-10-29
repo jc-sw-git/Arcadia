@@ -15,6 +15,7 @@
         Background="{StaticResource Bg}"
         Foreground="{StaticResource Text}">
 
+  <Panel>
   <!-- The Big Picture layout is designed for 1920×1080 and scaled to the window. -->
   <!-- No clipping: bands reach past the layout into the bars beside it (Theme.axaml, bleed). -->
   <Viewbox Stretch="Uniform" ClipToBounds="False">
@@ -119,7 +120,11 @@
       <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto" IsVisible="{Binding IsLibraryShown}">
         <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
           <TextBlock Text="{Binding LauncherTabs.SelectedTab?.Name, TargetNullValue=''}" FontSize="34" FontWeight="ExtraBold" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding Library.CountText}" FontSize="18" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,8,0,0" />
+          <!-- A panel of its own, so more can follow the count line (e.g. a launcher's notice, #83). -->
+          <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="0,8,0,0">
+            <TextBlock Text="{Binding Library.CountText}" IsVisible="{Binding !Library.Counts.HasParts}" FontSize="18" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+            <views:CountLineView DataContext="{Binding Library.Counts}" IsVisible="{Binding HasParts}" VerticalAlignment="Center" />
+          </StackPanel>
         </StackPanel>
         <Button Grid.Column="1" Classes="plain toolbar" Command="{Binding Library.OpenViewOptionsCommand}" IsVisible="{Binding AreGamesShown}">
           <StackPanel Orientation="Horizontal" Spacing="12">
@@ -179,7 +184,7 @@
               <DockPanel Grid.Row="1" Margin="24,22,24,24">
                 <StackPanel DockPanel.Dock="Bottom" Spacing="10">
                   <!-- One below the other, so a long label ("Zurück ins Spiel" beside the Space key) has the full width. -->
-                  <Button Classes="plain primary" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
+                  <Button Classes="plain primary" Classes.blocked="{Binding IsInstallBlocked}" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
                     <Viewbox StretchDirection="DownOnly">
                       <StackPanel Orientation="Horizontal" Spacing="12">
                         <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" />
@@ -197,9 +202,10 @@
                   <TextBlock IsVisible="{Binding UpdateAvailable}" Classes="actionHint">
                     <Run Text="{Binding LauncherName}" /><Run Text=" installiert das Update ggf. vor dem Start" />
                   </TextBlock>
-                  <TextBlock IsVisible="{Binding ShowInstallBadge}" Classes="actionHint">
+                  <TextBlock IsVisible="{Binding ShowInstallHint}" Classes="actionHint">
                     <Run Text="Die Installation wird in " /><Run Text="{Binding LauncherName}" /><Run Text=" geöffnet" />
                   </TextBlock>
+                  <TextBlock IsVisible="{Binding ShowInstallBlockedHint}" Classes="actionHint" Text="{Binding Game.InstallBlockedReason}" />
                   <TextBlock IsVisible="{Binding ShowLauncherControlsHint}" Classes="actionHint">
                     <Run Text="Pausieren und Abbrechen in " /><Run Text="{Binding LauncherName}" />
                   </TextBlock>
@@ -207,6 +213,11 @@
                 <StackPanel Spacing="20">
                   <StackPanel Spacing="8">
                     <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="ExtraBold" TextWrapping="Wrap" />
+                    <!-- What the entry is, when it is no game (#141): like "Update verfügbar", in the softer text colour. -->
+                    <StackPanel IsVisible="{Binding HasTypeIcon}" Orientation="Horizontal" Spacing="8">
+                      <ctl:LineIcon Icon="{Binding TypeIconKey}" Foreground="{StaticResource TextSoft}" StrokeThickness="2.2" Width="18" Height="18" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding TypeName}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                    </StackPanel>
                     <!-- A status, not a control: plain text, no pill that could pass for a button. -->
                     <StackPanel IsVisible="{Binding UpdateAvailable}" Orientation="Horizontal" Spacing="8">
                       <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" />
@@ -220,6 +231,12 @@
                       <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeJoin="Round" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" />
                       <TextBlock Text="{Binding RunStateText}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
                     </StackPanel>
+                    <!-- E.g. another account in Steam than in Arcadia (#83): an info, like the detail page's notes. -->
+                    <DockPanel IsVisible="{Binding HasNotice}">
+                      <Path DockPanel.Dock="Left" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7.5v5.5M12 16.5v.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.2" StrokeLineCap="Round"
+                            Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Top" Margin="0,2,8,0" />
+                      <TextBlock Text="{Binding Notice}" FontSize="14" Foreground="{StaticResource AccentSoft}" TextWrapping="Wrap" />
+                    </DockPanel>
                   </StackPanel>
                   <StackPanel Spacing="10" IsVisible="{Binding IsInstallActive}">
                     <StackPanel Orientation="Horizontal" Spacing="10">
@@ -308,8 +325,14 @@
                       <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
                       <Grid RowDefinitions="*,Auto" Margin="12">
                         <TextBlock Text="{Binding Monogram}" FontSize="56" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Classes.dim="{Binding !IsInstalled}" />
-                        <TextBlock Grid.Row="1" Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
-                                   TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                        <!-- The kind sits above the title, where no state badge ever is (#141); the title keeps its width. -->
+                        <StackPanel Grid.Row="1" Spacing="8">
+                          <Border Classes="typeBadge" IsVisible="{Binding HasTypeIcon}" ToolTip.Tip="{Binding TypeName}">
+                            <ctl:LineIcon Icon="{Binding TypeIconKey}" />
+                          </Border>
+                          <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                                     TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
                       </Grid>
                       <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Nicht installiert – A installiert">
@@ -462,8 +485,13 @@
                     <Border DockPanel.Dock="Top" Classes="launcherBadge" Width="28" Height="28" CornerRadius="7" HorizontalAlignment="Left">
                       <ctl:LauncherLogo Classes="onCover" Badge="{Binding LauncherBadge}" />
                     </Border>
-                    <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Bottom"
-                               TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                    <StackPanel Spacing="8" VerticalAlignment="Bottom">
+                      <Border Classes="typeBadge" IsVisible="{Binding HasTypeIcon}" ToolTip.Tip="{Binding TypeName}">
+                        <ctl:LineIcon Icon="{Binding TypeIconKey}" />
+                      </Border>
+                      <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                                 TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
                   </DockPanel>
                   <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"
                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="Nicht installiert – ≡ installiert">
@@ -1169,7 +1197,12 @@
                                 <Ellipse Classes="statusDot" Classes.active="{Binding IsLampWorking}" Classes.warning="{Binding IsLampProblem}" Classes.error="{Binding IsLampFailure}" Width="10" Height="10" VerticalAlignment="Center"
                                          IsVisible="{Binding HasLamp}" />
                               </StackPanel>
-                              <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                              <!-- A DockPanel, not a horizontal StackPanel: the subtitle keeps its width and wraps. -->
+                              <DockPanel>
+                                <views:CountLineView DockPanel.Dock="Left" Classes="small" Margin="0,0,8,0" VerticalAlignment="Top" DataContext="{Binding Counts}"
+                                                     IsVisible="{Binding $parent[DockPanel].((settings:SettingsRowViewModel)DataContext)?.HasCounts, TargetNullValue=False}" />
+                                <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                              </DockPanel>
                               <TextBlock Classes="rowProblem" Text="{Binding Problem}" IsVisible="{Binding HasProblem}" />
                             </StackPanel>
                             <ContentControl Grid.Column="2" Content="{Binding}" VerticalAlignment="Center">
@@ -1286,6 +1319,14 @@
               <Grid.DataTemplates>
                 <DataTemplate x:DataType="settings:InfoText">
                   <TextBlock Classes="infoText" ctl:ButtonTextBlock.Text="{Binding Text}" />
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoAvatar">
+                  <StackPanel Orientation="Horizontal" Spacing="16">
+                    <Border Width="72" Height="72" CornerRadius="12" ClipToBounds="True">
+                      <Image Source="{Binding Picture}" Stretch="UniformToFill" />
+                    </Border>
+                    <TextBlock Text="{Binding Name}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="300" />
+                  </StackPanel>
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoHeading">
                   <TextBlock Classes="label" Text="{Binding Text}" Margin="0,8,0,0" />
@@ -1414,7 +1455,8 @@
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
                               <TextBlock Classes="factLabel" Text="{Binding Label}" />
                               <TextBlock Grid.Column="1" Classes="factValue" Classes.muted="{Binding IsMuted}" Classes.good="{Binding IsGood}" Text="{Binding Value}"
-                                         ToolTip.Tip="{Binding Value}" />
+                                         ToolTip.Tip="{Binding Value}" IsVisible="{Binding !HasCounts}" />
+                              <views:CountLineView Grid.Column="1" Classes="small" HorizontalAlignment="Right" DataContext="{Binding Counts}" IsVisible="{Binding $parent[Grid].((settings:InfoFact)DataContext)?.HasCounts, TargetNullValue=False}" />
                             </Grid>
                           </Border>
                         </DataTemplate>
@@ -1530,6 +1572,35 @@
         <!-- A dialog of the shown category over the page, e.g. before "SISR entfernen" closes Steam. -->
         <ContentControl Content="{Binding Settings?.Selected.Dialog, TargetNullValue={x:Null}}">
           <ContentControl.DataTemplates>
+            <!-- A question before something that can't be undone, e.g. signing out of a launcher's account (#83). -->
+            <DataTemplate x:DataType="vm:ConfirmationViewModel">
+              <Panel>
+                <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                        Command="{Binding CancelCommand}" />
+                <Border Width="680" Background="{StaticResource Surface}" CornerRadius="20" Padding="48,40,48,32"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
+                  <StackPanel Spacing="28">
+                    <StackPanel Spacing="12">
+                      <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Message}" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Button Classes="plain action danger" Classes.focused="{Binding IsConfirmFocused}" Content="{Binding ConfirmLabel}"
+                              Command="{Binding ConfirmAndCloseCommand}" />
+                      <Button Classes="plain action" Classes.focused="{Binding IsCancelFocused}" Content="Abbrechen"
+                              Command="{Binding CancelCommand}" />
+                    </StackPanel>
+                    <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                      <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                        <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="Wechseln" />
+                        <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Auswählen" />
+                        <ctl:KeyHint Pad="B" Keys="Esc" Text="Abbrechen" />
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                </Border>
+              </Panel>
+            </DataTemplate>
             <DataTemplate x:DataType="settings:ControllerSettingsViewModel">
               <!-- The page stays dimmed behind it. -->
               <Panel>
@@ -1892,6 +1963,31 @@
         </Border>
       </Panel>
 
+      <!-- A launcher's web page (#83), e.g. Steam's sign-in: shown over everything, or hidden while Arcadia reads a page
+           unseen (the web view is made either way). Nothing can be drawn over the web view itself, so the bars stay free. -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsWebSignInOpen}">
+        <Border Classes="bleedAll" Background="{StaticResource Bg}" />
+        <Grid RowDefinitions="104,*,72">
+          <Grid Margin="80,0" ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="24" VerticalAlignment="Center">
+              <TextBlock Text="{Binding WebPage?.Title}" FontSize="26" FontWeight="ExtraBold" VerticalAlignment="Center" />
+              <!-- Like a browser's address bar: the user sees the page is the launcher's own site. -->
+              <Border Background="{StaticResource SurfaceRaised}" CornerRadius="10" Padding="16,8" VerticalAlignment="Center">
+                <TextBlock Text="{Binding WebPage?.Address}" FontSize="17" Foreground="{StaticResource TextMuted}" />
+              </Border>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="plain dialogClose" VerticalAlignment="Center" ToolTip.Tip="Abbrechen (B)" Command="{Binding CloseWebPageCommand}">
+              <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+            </Button>
+          </Grid>
+          <!-- Where the web page goes; the page itself lies over the window, outside the scaled layout (WebPageView). -->
+          <Border Name="WebPageArea" Grid.Row="1" Margin="80,0" />
+          <StackPanel Grid.Row="2" Margin="80,0" Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <ctl:KeyHint Pad="B" Keys="Esc" Text="Abbrechen" />
+          </StackPanel>
+        </Grid>
+      </Panel>
+
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->
       <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding Toast.IsVisible}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"
               Padding="24,14" Margin="0,0,0,96" HorizontalAlignment="Center" VerticalAlignment="Bottom" BoxShadow="{StaticResource ToastShadow}">
@@ -1899,6 +1995,12 @@
       </Border>
     </Grid>
   </Viewbox>
+
+  <!-- A native web view isn't scaled with the Viewbox (owner's test, 2026-10-27: it kept its 1920×1080 size in a larger
+       window), so it lies over the window and MainWindow.axaml.cs puts it on WebPageArea's place after every layout. -->
+  <views:WebPageHost Name="WebPageView" Page="{Binding WebPage}" HorizontalAlignment="Left" VerticalAlignment="Top"
+                     IsVisible="{Binding IsWebSignInOpen}" />
+  </Panel>
 
   <Window.Styles>
     <Style Selector="TextBlock.label">

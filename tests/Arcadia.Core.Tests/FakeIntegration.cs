@@ -25,6 +25,8 @@ internal sealed class FakeIntegration(LauncherInfo launcher) : ILauncherIntegrat
 
     public ILauncherFolderChoice? FolderChoice { get; init; }
 
+    public IReadOnlyList<LibraryTypeOption> LibraryOptions { get; init; } = [];
+
     /// <summary>Without a choice of the user: every launcher found is active.</summary>
     public static LauncherRegistry Registry(params ILauncherIntegration[] integrations) => new(integrations, () => null);
 
@@ -94,5 +96,15 @@ internal sealed class FakeRunningGames(string launcherId) : IRunningGamesMonitor
     {
         Polls++;
         return [.. Running];
+    }
+
+    /// <summary>The starts the launcher aborted; each is reported once, as a log is read on.</summary>
+    public List<RefusedStart> Refused { get; } = [];
+
+    public IReadOnlyList<RefusedStart> RefusedStarts()
+    {
+        var refused = Refused.ToList();
+        Refused.Clear();
+        return refused;
     }
 }

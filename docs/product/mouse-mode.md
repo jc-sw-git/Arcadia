@@ -34,5 +34,8 @@ Agreed with the owner; don't change without asking. Read this before changing th
   foreground window's process and no other program's window covering Arcadia whole (`MouseModeHost.IsArcadiaActive`),
   not Avalonia's activation, which got out of step beside games. A game in front is a process from a library game's
   folder, or one whose path can't be read (anti-cheat) that started after Arcadia last started a game (owner, 2026-10-20).
+- A launcher's web page opened by controller (#280, e.g. Steam's sign-in) switches the mode on with its keyboard open,
+  also with "Mausmodus: Aus", as the system dialogs of #138 do; after the page it goes off again if it came on for it,
+  and the keyboard closes if the page opened it (owner, 2026-10-27).
 - The log names what is in front only as Arcadia, „Spiel“, „kein Spiel“ or „kein Fenster“, never the program:
   which programs someone uses is private (owner, 2026-10-23, review #66).

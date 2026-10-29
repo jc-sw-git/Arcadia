@@ -11,7 +11,8 @@ Owns finding what is wrong before the owner tests. A fresh thread, so it judges 
      programs and frameworks are checked against `docs/launchers/`, `docs/controller-support/` and the Avalonia
      rules in `CLAUDE.md`, not believed.
   2. **Acceptance tests** for every `E2E: yes` case, written from the test case text, each red once
-     (`docs/testplans/README.md` → Acceptance tests); commits in the same PR.
+     (`docs/testplans/README.md` → Acceptance tests); commits in the same PR. Tests by the implementer are
+     not made red again: read the red-run note in the PR; repeat it only in the cases listed there.
   3. **Visual check** for UI changes (skill `.claude/skills/arcadia-verify`, the designer's checklist).
 - **Delivers:** the tests as commits and a section **Review** in the PR description: findings (bug or
   optional, file, effect), which checks ran, what stays unverified (Windows, hardware). It sends the findings

@@ -49,7 +49,7 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| T304-1 … T304-8, T304-10 (automated) | 2026-10-29 | Claude | PR branch, Debug, Linux cloud container, `dotnet test Arcadia.slnx` (2,561 tests) | ✅ | Windows CI open |
+| T304-1 … T304-8, T304-10 (automated) | 2026-10-29 | Claude | PR branch, Debug, Linux cloud container, `dotnet test Arcadia.slnx` (2,775 tests, after merging the base) | ✅ | Windows CI open |
 | Red once (mutations) | 2026-10-29 | Claude | same; each seen red: auth flag dropped, key-refusal check skipped, usbip on 0.0.0.0, receive counter unchecked, VIIPER-lost check off, Pan without `ServerOf`, teardown of every local port, server dropped after a failed detach | ✅ | – |
 | T304-4 (real server) | 2026-10-29 | Claude | Linux build of the fork at the pinned commit, `--api.require-local-host-auth`: key answers, no key and wrong key refused, encrypted ping round trip | ✅ | Windows run in check step 1 |
 | T304-1, 3, 4, 9, 10, 11 (check-304) | – | owner | Windows, owner's PC | open | |

@@ -71,7 +71,8 @@ Agreed with the owner; don't change without asking. Read this before changing th
   [A] Zurücksetzen, [B] Abbrechen), then every game of the launcher is on "Standard", also those no longer in the
   library, in one write; the row goes, the focus moves to "Steam Controller", no toast. Both rows change only while
   "Controller-Wächter (Pan)" is on (also without a Steam Controller connected); with Pan off they are greyed out but
-  focusable, subtitle "Aus – erst mit dem Controller-Wächter (Pan)", values kept. Also on an inactive or not found
+  focusable, subtitle "Aus – erst mit dem Controller-Wächter (Pan)" (where Pan can't run yet, e.g. Linux: "Auf diesem
+  System noch nicht verfügbar", as Pan's row), values kept. Also on an inactive or not found
   launcher's page. A change applies at a game's next start; a running game keeps its mode. Per game:
   `docs/product/controls.md`.
 - First start (#139, owner 2026-10-11, 2026-10-12 and 2026-10-22): Arcadia never takes a launcher on just because it is

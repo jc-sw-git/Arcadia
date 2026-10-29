@@ -39,6 +39,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private const string ListXAction = "Alle neu einlesen";
     private const string PanOffSubtitle = "Aus – erst mit dem Controller-Wächter (Pan)";
 
+    // As Pan's own row says it, so the rows don't send the user to a switch that can't help (QE review PR #319).
+    private const string PanUnsupportedSubtitle = "Auf diesem System noch nicht verfügbar";
+
     // The question before the reset names this many games, then how many more.
     private const int MaxTitlesInQuestion = 5;
 
@@ -818,10 +821,14 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         var panOn = _host.IsPanOn;
         var settings = _changes.Current;
         var preset = ControllerModes.Of(settings.LauncherUsesArcadiaPad(id, _host.Launchers.GamesUseSteamInput));
-        IReadOnlyList<InfoBlock> panOff = panOn ? [] : [new InfoNote("Einstellbar, sobald der Controller-Wächter (Pan) an ist: Controller → Pan.", HealthSeverity.Info)];
+        var panSupported = _host.IsPanSupported;
+        var panOffSubtitle = panSupported ? PanOffSubtitle : PanUnsupportedSubtitle;
+        IReadOnlyList<InfoBlock> panOff = panOn ? [] : [new InfoNote(panSupported
+            ? "Einstellbar, sobald der Controller-Wächter (Pan) an ist: Controller → Pan."
+            : "Der Controller-Wächter (Pan) läuft auf diesem System noch nicht, und ohne ihn gibt es keinen Steam-Controller-Modus.", HealthSeverity.Info)];
 
         _controllerModeRow.ShowPan();
-        _controllerModeRow.Subtitle = panOn ? "Vorauswahl für die Spiele dieses Launchers" : PanOffSubtitle;
+        _controllerModeRow.Subtitle = panOn ? "Vorauswahl für die Spiele dieses Launchers" : panOffSubtitle;
         _controllerModeRow.Info =
         [
             new InfoText($"So startet ein Spiel aus {name} mit dem Steam Controller, solange du in seinen Details nichts anderes wählst. Spiele mit eigenem Modus behalten ihn."),
@@ -838,7 +845,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             .ToList();
         _resetModesRow.IsEnabled = panOn;
         _resetModesRow.IsDimmed = !panOn;
-        _resetModesRow.Subtitle = !panOn ? PanOffSubtitle : own.Count == 1 ? "1 Spiel hat einen eigenen Modus" : $"{own.Count} Spiele haben einen eigenen Modus";
+        _resetModesRow.Subtitle = !panOn ? panOffSubtitle : own.Count == 1 ? "1 Spiel hat einen eigenen Modus" : $"{own.Count} Spiele haben einen eigenen Modus";
         _resetModesRow.Info =
         [
             new InfoText($"Diese Spiele aus {name} hast du selbst umgestellt. Danach folgen sie wieder der Vorauswahl „{preset}“:"),

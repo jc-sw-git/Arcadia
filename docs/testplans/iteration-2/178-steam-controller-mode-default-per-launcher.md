@@ -28,7 +28,8 @@ gone. Decisions: issue #178 and [launchers.md](../../product/launchers.md); desi
 - [ ] **T178-5** Controller → "Controller-Wächter (Pan)" off, then a launcher's page: both rows greyed out,
       subtitle "Aus – erst mit dem Controller-Wächter (Pan)", the info panel says where to switch Pan on; ▲ ▼ reach
       them, ◀ ▶ and [A] change nothing, no "Ändern" in the footer. Pan on again: both change as before, the values are
-      the old ones. Works without a Steam Controller connected too. · E2E: yes
+      the old ones. Works without a Steam Controller connected too. Where Pan can't run (Linux), Pan switched on: the same,
+      subtitle "Auf diesem System noch nicht verfügbar", no hint to switch Pan on. · E2E: yes
 - [ ] **T178-6** Steam's page no longer has "Controller-Einstellungen für Steam"; "Steam Controller" is its last row
       (without own choices). · E2E: yes
 - [ ] **T178-7** Settings survive a restart (default and own choices). With the `settings.json` of a build before this
@@ -55,5 +56,6 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T178-1 to T178-10 | 2026-10-29 | Claude | PR branch, Debug, Linux cloud container (.NET 10, Avalonia headless) | ✅ `LauncherControllerModeTests`, `Window/LauncherControllerModeViewTests`; each was red once on a deliberate break (listed in the PR) | On the owner's PC |
-| T178-5 | 2026-10-29 | Claude | same, Xvfb, `--demo` | ✅ Pan is unsupported on Linux: both rows greyed out, reachable, subtitle "Aus – erst mit dem Controller-Wächter (Pan)", no "Ändern" in the footer | With Pan on only on the owner's PC |
+| T178-5 | 2026-10-29 | Claude | same, Xvfb, `--demo` | ✅ Pan is unsupported on Linux: both rows greyed out, reachable, subtitle "Aus – erst mit dem Controller-Wächter (Pan)" (since the QE review "Auf diesem System noch nicht verfügbar"), no "Ändern" in the footer | With Pan on only on the owner's PC |
 | T178-3, T178-4 | 2026-10-29 | Claude | same, Xvfb, `--demo`, Pan forced on by a local patch (not committed) | ✅ [A] in the game menu sets an own mode; reset row with count and info list, question with keys Leertaste/Esc, after "Zurücksetzen" the row is gone | On the owner's PC with Pan really on |
+| T178-3, T178-4, T178-5, T178-10 | 2026-10-29 | QE thread, then Claude | PR#319 review round, Linux cloud container, Avalonia headless | ✅ 5 tests added from the QE review (preview and ⧉ cycle, question singular and over five, Pan unsupported, clicks with Pan off), each red once on the break named in the review | – |

@@ -1333,6 +1333,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     bool ILauncherSettingsHost.IsPanOn => IsPanOn;
 
+    bool ILauncherSettingsHost.IsPanSupported => _pan.Status.State != PanEmulationState.Unsupported;
+
     void ILauncherSettingsHost.LauncherLooksChanged() => ApplyLauncherLooks();
 
     void ILauncherSettingsHost.LibraryTypesChanged() => Session.ShowChosenTypes();

@@ -66,6 +66,32 @@ public sealed class LauncherControllerModeViewTests
         Assert.DoesNotContain(launchers.Rows, row => row.Key == "launcher-controller-reset");
     }
 
+    /// <summary>T178-10 with Pan off: the greyed rows take no click, neither the arrows nor "Zurücksetzen" (QE review PR #319).</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T178-10")]
+    public async Task With_Pan_off_a_click_changes_neither_the_default_nor_the_games_own_choices()
+    {
+        var settings = new AppSettings { ActiveLaunchers = ["steam", "gog"], PanEnabled = false }.WithControllerModeChoice("steam:demo-0", true);
+        using var arcadia = await ArcadiaWindow.ShowAsync([new LauncherSpec(KnownLaunchers.Steam, 3), new LauncherSpec(KnownLaunchers.Gog, 3)], settings);
+        arcadia.Press(UiAction.Settings);
+        arcadia.Click(arcadia.LauncherName(arcadia.LauncherRow("steam")));
+        var mode = arcadia.Row("launcher-controller-mode");
+        var reset = arcadia.Row("launcher-controller-reset");
+
+        Assert.Equal(ControllerModes.Steam, arcadia.ValueShown(mode));
+        foreach (var arrow in arcadia.ValueArrows(mode))
+        {
+            arcadia.Click(arrow);
+            Assert.Equal(ControllerModes.Steam, arcadia.ValueShown(mode));
+        }
+
+        arcadia.Click(arcadia.RowButton(mode));
+        arcadia.Click(arcadia.RowButton(reset));
+        Assert.Null(arcadia.LauncherCategory().Dialog);
+        Assert.Empty(arcadia.Arcadia.Settings.Current.Launchers);
+        Assert.Equal(new Dictionary<string, bool> { ["steam:demo-0"] = true }, arcadia.Arcadia.Settings.Current.ControllerSupportOverrides);
+    }
+
     private static Button DialogButton(ArcadiaWindow arcadia, System.Windows.Input.ICommand command) => Assert.Single(
         arcadia.Window.GetVisualDescendants().OfType<Button>(), button => button.Classes.Contains("action") && button.IsEffectivelyVisible && button.Command == command);
 

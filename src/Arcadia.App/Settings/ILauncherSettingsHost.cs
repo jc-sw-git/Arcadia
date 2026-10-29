@@ -46,6 +46,9 @@ public interface ILauncherSettingsHost
     /// </summary>
     bool IsPanOn { get; }
 
+    /// <summary>Pan can run on this system at all (not yet on Linux): otherwise switching it on doesn't help.</summary>
+    bool IsPanSupported { get; }
+
     /// <summary>A short message at the bottom, e.g. why a text wasn't taken.</summary>
     void Notify(string message);
 }

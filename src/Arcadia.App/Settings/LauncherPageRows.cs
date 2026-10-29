@@ -129,5 +129,7 @@ public sealed class LauncherControllerModeRowViewModel(Func<bool> usesArcadiaPad
         Refresh();
     }
 
+    // Not for the press (CanChange guards it already) but for the arrows beside the value, which grey out by
+    // CanDecrease/CanIncrease.
     protected override bool Allows(int value) => isPanOn();
 }

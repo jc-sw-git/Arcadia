@@ -131,6 +131,29 @@ public sealed class LauncherControllerModeTests
         Assert.Equal("Wechselt zu „Arcadia“", arcadia.Detail.Current.GameSettingsRow.Single(action => action.Kind == GameActionKind.ControllerMode).Note);
     }
 
+    /// <summary>T178-3: the preview's value (click) and the context menu (⧉) cycle like the detail page (QE review PR #319).</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T178-3")]
+    public async Task The_preview_and_the_context_menu_cycle_through_the_same_three_values()
+    {
+        using var arcadia = await StartWithSteamControllerAsync();
+        string[] shown = [arcadia.Main.FocusedControllerSupportText];
+        for (var click = 0; click < 3; click++)
+        {
+            arcadia.Click(arcadia.Main.CycleControllerSupportCommand);
+            shown = [.. shown, arcadia.Main.FocusedControllerSupportText];
+        }
+
+        Assert.Equal(["Standard (Steam-Eingabe)", ControllerModes.Arcadia, ControllerModes.Steam, "Standard (Steam-Eingabe)"], shown);
+
+        arcadia.Press(UiAction.Options);
+        var mode = arcadia.Main.GameMenu!.Actions.Single(action => action.Kind == GameActionKind.ControllerMode);
+        Assert.Equal("Wechselt zu „Arcadia“", mode.Note);
+        mode.Invoke();
+        Assert.True(arcadia.Settings.Current.ControllerModeChoiceFor(arcadia.FocusedGame!.Game.Key));
+        Assert.Equal((ControllerModes.Arcadia, "Wechselt zu „Steam-Eingabe“"), (mode.ButtonLabel, mode.Note));
+    }
+
     /// <summary>
     /// T178-4: "Alle Spiele auf die Vorauswahl setzen" shows only while library games have their own mode, counts and lists
     /// them; [A] asks, [B] keeps everything, [A] in the question puts every game of the launcher on "Standard", also one no
@@ -209,6 +232,28 @@ public sealed class LauncherControllerModeTests
         Assert.True(reset.CanActivate);
     }
 
+    /// <summary>
+    /// T178-5 where Pan can't run (Linux): switched on but unsupported, the rows are greyed out as with Pan off (QE review
+    /// PR #319).
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T178-5")]
+    public async Task Where_Pan_cant_run_both_rows_are_greyed_out_although_it_is_switched_on()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, Active("steam", "gog"), arguments: new StartArguments(PanUnsupported: true));
+        await arcadia.TickSteamControllerAsync();
+        Assert.True(arcadia.Settings.Current.PanEnabled);
+        var launchers = arcadia.OpenLauncherSettings();
+
+        var mode = ModeRow(arcadia, launchers, "gog");
+        Assert.True(mode.IsDimmed);
+        Assert.False(mode.CanChange);
+        Assert.Equal("Auf diesem System noch nicht verfügbar", mode.Subtitle);
+        arcadia.Press(UiAction.Right);
+        Assert.Equal(ControllerModes.Arcadia, mode.ValueText);
+        Assert.Empty(arcadia.Settings.Current.Launchers);
+    }
+
     /// <summary>T178-6: the link "Controller-Einstellungen für Steam" (#169) is gone from Steam's page.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T178-6")]
@@ -281,6 +326,32 @@ public sealed class LauncherControllerModeTests
         arcadia.Settings.Update(s => s.WithControllerModeChoice("steam:4000000", false));
         await arcadia.TickSteamControllerAsync();
         Assert.False(arcadia.XboxPad.IsPlugged);
+    }
+
+    /// <summary>
+    /// T178-4: the question names one game in the singular and, with more than five, the first five in order and how many
+    /// more there are (QE review PR #319).
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T178-4")]
+    public async Task The_question_names_one_game_alone_and_at_most_five_of_many()
+    {
+        using var arcadia = await StartWithSteamControllerAsync(Active("steam"), [new LauncherSpec(KnownLaunchers.Steam, 7)]);
+        var titles = arcadia.Main.Session.Libraries.Single().Games.OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase).ToList();
+        arcadia.Settings.Update(s => s.WithControllerModeChoice(titles[0].Key, true));
+        var launchers = arcadia.OpenLauncherSettings();
+        ModeRow(arcadia, launchers, "steam");
+        arcadia.FocusRow(ResetKey);
+        arcadia.Press(UiAction.Accept);
+        Assert.Equal($"1 Spiel aus Steam bekommt wieder „Steam-Eingabe“: {titles[0].Title}. Gilt ab dem nächsten Spielstart.", Assert.IsType<SettingsQuestionViewModel>(launchers.Dialog).Message);
+        arcadia.Press(UiAction.Back);
+
+        arcadia.Settings.Update(s => titles.Aggregate(s, (all, game) => all.WithControllerModeChoice(game.Key, true)));
+        ModeRow(arcadia, launchers, "steam");
+        Assert.Equal("7 Spiele haben einen eigenen Modus", arcadia.FocusRow(ResetKey).Subtitle);
+        arcadia.Press(UiAction.Accept);
+        var named = string.Join(", ", titles.Take(5).Select(game => game.Title));
+        Assert.Equal($"7 Spiele aus Steam bekommen wieder „Steam-Eingabe“: {named} und 2 weitere. Gilt ab dem nächsten Spielstart.", Assert.IsType<SettingsQuestionViewModel>(launchers.Dialog).Message);
     }
 
     /// <summary>From the launcher list to the launcher's page, then ▼ to "Steam Controller".</summary>

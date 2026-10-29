@@ -133,6 +133,8 @@ Every step of a session resends its whole context, so keep it small:
   15 KB, every other doc and skill 10 KB (test plan files exempt); the `Doc sizes` CI check enforces them. A file
   that would grow past its limit is cut into topics in the same PR (a folder with a `README.md` index, like
   `docs/controller-support/`), not trimmed of facts and not given a higher limit.
+- A doc states the current behaviour and the rules, as short as possible and as detailed as necessary: no dates, no
+  who decided, no earlier states, nothing the code already says. A changed fact is updated in place, not appended.
 - Read only the docs of the area you touch (tables above); grep large files instead of reading them whole.
   The test plan is one file per issue: read only that issue's file.
 - Keep tool output short: `dotnet build Arcadia.slnx -v q -clp:ErrorsOnly`, `dotnet test Arcadia.slnx -v q`

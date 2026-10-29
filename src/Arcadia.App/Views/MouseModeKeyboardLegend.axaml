@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:kb="using:Arcadia.App.Keyboard"
+             xmlns:ctl="using:Arcadia.App.Controls"
              x:Class="Arcadia.App.Views.MouseModeKeyboardLegend"
              x:DataType="kb:OnScreenKeyboardViewModel">
 
@@ -9,31 +10,31 @@
   <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
     <StackPanel Orientation="Horizontal" Spacing="26" IsVisible="{Binding UsesController}">
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+        <ctl:PadGlyph Button="D-Pad" />
         <TextBlock Classes="keyboardHint" Text="Tasten wählen" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+        <ctl:PadGlyph Button="A" />
         <TextBlock Classes="keyboardHint" Text="Tippen" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Border Classes="glyph"><TextBlock Text="LS" /></Border>
+        <ctl:PadGlyph Button="LS" />
         <TextBlock Classes="keyboardHint" Text="Mauszeiger" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Border Classes="glyph"><TextBlock Text="RT" /></Border>
+        <ctl:PadGlyph Button="RT" />
         <TextBlock Classes="keyboardHint" Text="Linksklick" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Border Classes="glyph"><TextBlock Text="LT" /></Border>
+        <ctl:PadGlyph Button="LT" />
         <TextBlock Classes="keyboardHint" Text="Rechtsklick" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Border Classes="glyph"><TextBlock Text="RS" /></Border>
+        <ctl:PadGlyph Button="RS" />
         <TextBlock Classes="keyboardHint" Text="Mausrad" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Border Classes="glyph"><TextBlock Text="L3" /></Border>
+        <ctl:PadGlyph Button="L3" />
         <TextBlock Classes="keyboardHint" Text="Langsamer Zeiger" />
       </StackPanel>
     </StackPanel>

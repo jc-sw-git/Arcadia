@@ -8,9 +8,19 @@ Agreed with the owner; don't change without asking. Read this before changing th
   right click = context menu, Menu/☰ = settings (swapped by the owner, 2026-10-17). The context menu stands beside the cover
   after a right click on it, over the preview's "Optionen" button after ⧉, R or a click on that button (owner, 2026-10-21). No "all launchers" tab. No dedicated favourite button.
 - UI texts name a controller button by the symbol on it, not by its name: ⧉ and ≡, not View/Back and Menu/Start
-  (Xbox symbols for now; later those of the controller in use, #72), framed like in the legend also inside a text
+  (written with Xbox's names; drawn with the symbols of the controller in use, see below), framed like in the legend also inside a text
   (`ButtonTextBlock`; in prose other buttons are written in brackets, e.g. "[L3]", "[LS]") (owner, 2026-10-20). Never a
   bare "A" or "B" in a text: `ButtonGlyphTextTests` fails on one in the App's strings (owner, 2026-10-24).
+- Button symbols of the controller in use (#215, owner 2026-10-28): the controller with the last press or stick push
+  past the dead zone decides (stick noise doesn't); before any input the first connected one, with none the keyboard's
+  keys; a controller plugged in changes nothing until used; unplugging the one in use shows the next one's, then the
+  keyboard's. Nothing is stored. By position (A = bottom): Xbox (also generic and unknown) A B X Y LB RB LT RT L3 R3 ⧉ ≡;
+  PlayStation ✕ ○ □ △ L1 R1 L2 R2 L3 R3 with PS5 Create/Options icons, PS4 "Share"/"Options", PS3 "Select"/"Start";
+  Nintendo (Switch Pro, Joy-Con pair) B A Y X (bottom button prints B) L R ZL ZR, LS RS for the stick clicks, − +;
+  GameCube pads show Xbox's (owner, 2026-10-29); Steam Controller A B X Y L1 R1 L2 R2 L3 R3 ⧉ ≡. Monochrome, face buttons round, the rest pills, PlayStation's
+  shapes as vector icons from the theme. Only buttons Arcadia uses have a symbol; Guide, back grips and trackpads come
+  with their first feature (Guide then the controller's own logo, Xbox's when unknown; brand logos are a trademark
+  question first). Choosing the symbols by hand: #291. Texts keep the neutral names; a toast already shown stays.
 - Every button hint follows the input in use (#127, owner 2026-10-21): after a controller button the controller's
   buttons, after a key or a click the keyboard's keys and the mouse (`KeyHint`, `KeyText`; the mouse merely moving
   changes nothing). Controller buttons are round or a pill, keys square with rounded corners, both with a darker
@@ -25,7 +35,7 @@ Agreed with the owner; don't change without asking. Read this before changing th
   position: the bottom face button is A on every controller (Cross, Nintendo's B), the right one B. Guide/PS/Home,
   Capture and the touchpad click do nothing in Arcadia (Steam opens its own menu with Guide/PS). Only what SDL knows
   as a gamepad counts: two Joy-Cons together are one pad; a single Joy-Con, wheels and flight sticks are ignored. No
-  gyro or touchpad yet (#111); the button symbols of the controller in use come with #215. The Steam Controller too,
+  gyro or touchpad yet (#111). The Steam Controller too,
   read directly (#212, owner 2026-10-25): its Steam button and "…" belong to Steam, the back grips do nothing
   (assignable later), each press counts once also while SISR runs.
 - In games the Steam Controller is an Xbox 360 pad from Arcadia (#213, owner 2026-10-25/26); the game never sees

@@ -79,7 +79,8 @@ public sealed class HidHideWireTests
         Assert.Equal(listed, HidingList.IsListedUsbParent(instanceId));
     }
 
-    // The device tree of the owner's PC (2026-10-29): the real puck on Intel's xHCI, Arcadia's copy on VIIPER's bus.
+    // After the device tree of the owner's PC (2026-10-29): the real puck on Intel's xHCI, Arcadia's copy on VIIPER's
+    // bus. The USB ids are the owner's; the HID instances' suffixes and the PCI id's tail are made up.
     private static readonly Dictionary<string, string> OwnersTree = new(StringComparer.OrdinalIgnoreCase)
     {
         [@"HID\VID_28DE&PID_1304&MI_02&COL03\7&30D307B7&0&0002"] = @"USB\VID_28DE&PID_1304&MI_02\6&2F4EFF51&0&0002",

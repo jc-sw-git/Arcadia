@@ -29,7 +29,8 @@ public static class HidingList
     /// The device hangs below a software USB host (<c>ROOT\…</c> as usbip-win2 creates for VIIPER, or <c>SWD\…</c>):
     /// the copy, not the puck. Climbs <paramref name="parentOf"/> past the USB and HID levels to the host. A tree that
     /// can't be read counts as hardware: hiding the copy by mistake costs Steam the copy, not hiding the puck would
-    /// give every input twice.
+    /// give every input twice. Arcadia's <c>PuckDescriptors.IsRealPuck</c> fails the other way (it copies only a puck on
+    /// a PCI or ACPI host), so a puck on another host is hidden but not copied, and the copy doesn't start.
     /// </summary>
     /// <param name="parentOf">The parent's instance id, or null when it can't be read.</param>
     public static bool OnSoftwareHost(string instanceId, Func<string, string?> parentOf)

@@ -15,11 +15,13 @@ warning. Findings: [pan-puck-restart.md](../../controller-support/pan-puck-resta
       nicht verstecken", no "Emulation angehalten", no Pan toast; `pan.log` shows one hide, no new generation.
       · E2E: yes (`PanEmulationTests` in App)
 - [ ] **T308-3** A hide that keeps failing: the row "Steam Controller lässt sich nicht verstecken" stays through the
-      retries (no flicker every 10 s) until it works or the emulation stops. · E2E: yes (`PanEmulationTests` in App
+      retries (no flicker every 10 s) until it works or the emulation stops; after [A] on "Erneut versuchen" the row shows
+      the attempt at once, then the warning again. · E2E: yes (`PanEmulationTests` in App
       and Core; no way to make the real hide fail on purpose after the fix)
 - [ ] **T308-4** After T308-1, switch the Steam Controller on: "Controller #N verbunden: Steam Controller" in
       `arcadia.log`, Arcadia's Xbox pad works in a game on "Arcadia"; switch it off: the pad goes, the emulation keeps
-      running, no warning, no failure counted. · E2E: no (real controller and puck)
+      running, no warning, no failure counted. With the controller on, switch Pan off and on again: while it shows and
+      hides the puck, the mouse pointer doesn't jump and no key arrives (lizard mode). · E2E: no (real controller and puck)
 - [ ] **T308-5** After T308-1 with Steam started: Steam sees the Steam Controller (the copy) and it works in Steam's
       menu; HidHide's configuration client lists only the puck's `7&…` instances, none of the copy's (`4&…`);
       `pan.log` has no "device arrived while hiding, not hidden". · E2E: no (real HidHide and Steam; Pan

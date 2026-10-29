@@ -107,6 +107,9 @@ public sealed class PanEmulation : IVirtualXboxPads
     // Monotonic timestamps; written by "Erneut versuchen" on the UI thread too, so read and written as one long.
     private long _hideRetryAt = long.MinValue;
     private bool _pausedByLoss;
+
+    // "Erneut versuchen" or "Controller wiederherstellen" was pressed: that attempt shows it runs, the automatic ones don't.
+    private volatile bool _retryAsked;
     private volatile bool _gaveUp;
 
     // Steam tries a firmware update through the copy (#242): the puck must stay hidden, also if Arcadia ends meanwhile.
@@ -217,6 +220,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         }
 
         Interlocked.Exchange(ref _hideRetryAt, long.MinValue);
+        _retryAsked = true;
         _log("Pan-Emulation: bisherige Ausfälle zählen nicht mehr");
     }
 
@@ -348,11 +352,14 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
-        if (_status is not { State: PanEmulationState.Paused, Problem: PanEmulationProblem.Hiding })
+        // An automatic retry after a failed hide keeps its warning until it works, or the row would flicker every 10 s
+        // (#308); a retry the player asked for shows at once that it runs (~11 s on the owner's PC).
+        if (_retryAsked || _status is not { State: PanEmulationState.Paused, Problem: PanEmulationProblem.Hiding })
         {
-            // A retry after a failed hide keeps its warning until it works, or the row would flicker every 10 s (#308).
             SetStatus(new(PanEmulationState.SettingUp));
         }
+
+        _retryAsked = false;
 
         uint generation;
         try

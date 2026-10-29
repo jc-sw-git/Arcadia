@@ -31,11 +31,21 @@ Only the puck plugged in, Steam Controller off, Steam closed, Pan on:
   to a hardware host (`HidingList.OnSoftwareHost`: past the USB and HID levels to `ROOT\…`/`SWD\…` = software). A tree
   that can't be read counts as hardware: a copy hidden by mistake costs Steam the copy, a puck not hidden would give
   every input twice.
-- **The warning stays.** A retry after a failed hide keeps the status `Paused`/`Hiding` (no `SettingUp` in between).
+- **The warning stays.** An automatic retry after a failed hide keeps the status `Paused`/`Hiding` (no `SettingUp` in
+  between); one after "Erneut versuchen" or "Controller wiederherstellen" shows `SettingUp`, so the press shows.
+- **Two defaults on purpose.** Pan hides a puck whose host is unknown; Arcadia copies only a puck on a PCI or ACPI
+  host (`PuckDescriptors.IsRealPuck`). A puck on another host (e.g. `VMBUS\`) or with an unreadable tree is therefore
+  hidden but never copied: "Kopie startet nicht", and after 3 failures the emulation stops. Safe both ways (no
+  double input, no copy reading itself), just not working there.
 
-## Still open
+## Still open (#313)
 
-- Pan's own restarts that Arcadia isn't asked about (a device arrival while hiding, a teardown after Arcadia hung)
-  can still be vetoed by Arcadia's handles; a hung Arcadia can't let go. The arrival restart only runs for new puck
-  instance ids (another USB port of a puck without a serial), the teardown retries and `--restore` remain.
-- Event 225 is the quickest way to find a holder; Pan doesn't read the veto itself yet.
+Pan's own restarts, which Arcadia isn't asked about, can still be vetoed by Arcadia's SDL (QE review of PR #310):
+- the teardown after `EmulationStopped` when the client's `Unhide` was rejected (HidHide busy), or after `EndAsync`'s
+  "nicht alles entfernt" branch (`ShowAfterTeardownAsync`, `RetryShowAsync`);
+- the show when a firmware hold ends while Arcadia keeps running;
+- a device arrival while hiding (only for new puck instance ids), and a teardown after Arcadia hung (it can't let go).
+
+The restart then stays pending (`PuckRestartPending`) and the teardown retries it; a running Steam may only see the
+controller again after a replug (not checked on hardware). Event 225 is the quickest way to find a holder; Pan doesn't
+read the veto itself yet.

@@ -33,6 +33,9 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
     /// <summary>What a hide answers (#242): None = hidden.</summary>
     public PanReason HideResult = PanReason.None;
 
+    /// <summary>Windows' answer to the puck restart a hide needs, asked at each hide (#308); null = <see cref="HideResult"/>.</summary>
+    public Func<PanReason>? PuckRestart;
+
     /// <summary>What a check of the hiding generation answers while hidden: None = the hiding holds.</summary>
     public PanReason HidingHolds = PanReason.None;
 
@@ -75,9 +78,10 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
     public Task<PanReason> HideAsync(uint generation, CancellationToken cancellationToken)
     {
         Note($"hide {generation}");
+        var result = PuckRestart?.Invoke() ?? HideResult;
         lock (_lock)
         {
-            if (HideResult == PanReason.None)
+            if (result == PanReason.None)
             {
                 Hidden.Add(generation);
                 HiddenFor = generation;
@@ -90,7 +94,7 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
             TearDown();
         }
 
-        return Task.FromResult(HideResult);
+        return Task.FromResult(result);
     }
 
     /// <summary>The holds for a firmware attempt Arcadia sent, in order (#242).</summary>

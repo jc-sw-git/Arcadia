@@ -51,6 +51,10 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     /// <param name="runningSteamAppId">The Steam game running right now, also one started directly in Steam (#119).</param>
     /// <param name="isSteamInFront">A window of Steam itself is in front; asked on every poll, so it must be cheap.</param>
     /// <param name="gameInFront">The key of the library game in front, or null; asked every 2 s, off the UI thread.</param>
+    /// <param name="readSteamControllers">
+    /// Stops or resumes Arcadia's own reading of the Steam Controller (<c>IGamepadSource.ReadSteamControllers</c>): it lets
+    /// go of the puck while Pan restarts it to hide or show it (#308).
+    /// </param>
     /// <param name="panSupported">Pan can run on this system (Windows); elsewhere nothing is emulated and the mode doesn't show.</param>
     public static SteamControllerForGames Create(
         bool panSupported,
@@ -65,6 +69,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         Func<bool> isMouseModeOn,
         Func<bool> isSteamInFront,
         Func<string?> gameInFront,
+        Action<bool> readSteamControllers,
         PanNotices notices,
         TimeProvider time)
     {
@@ -87,6 +92,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
                 | (padForPresence?.SteamControllerConnected == true ? SteamControllerParts.Controller : SteamControllerParts.None),
             SteamControllerPresent = () => hold.PuckPresent || padForPresence?.SteamControllerConnected == true,
             GameInFront = gameInFront,
+            ReadSteamControllers = readSteamControllers,
         };
         var routing = new SteamControllerRouting(
             activeGames,
@@ -146,8 +152,10 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     public void Retry()
     {
         Pad.ForgetLosses();
-        Emulation.ForgetFailures();
+        Emulation.Retry();
     }
+
+    public bool Retrying => Emulation.Retrying;
 
     /// <summary>Every 2 s, off the UI thread: keeps the emulation, decides anew, then plugs the pad in or out.</summary>
     public async Task TickAsync()

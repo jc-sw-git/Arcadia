@@ -29,6 +29,14 @@ public sealed partial class Guardian
     /// </summary>
     private HiddenFor? _hiddenFor;
 
+    /// <summary>How long Pan waits for the client to let go of the puck before a restart of its own (#308).</summary>
+    public TimeSpan PuckReleaseTimeout { get; init; } = TimeSpan.FromSeconds(2);
+
+    /// <summary>The number of the last <see cref="PanReply.ReleasePuck"/>, and its answer while Pan waits for it; under the lock.</summary>
+    private uint _releaseRequest;
+
+    private TaskCompletionSource? _puckReleased;
+
     private sealed record HiddenFor(uint Generation, string ImagePath, HashSet<string> Instances);
 
     /// <summary>
@@ -198,7 +206,7 @@ public sealed partial class Guardian
                 }
 
                 var reason = ShowCore();
-                if (reason == PanReason.None && !await RestartIfPendingAsync(CancellationToken.None))
+                if (reason == PanReason.None && !await RestartIfPendingAsync(CancellationToken.None, clientLetGo: true))
                 {
                     reason = PanReason.HidingFailed;
                 }
@@ -362,7 +370,7 @@ public sealed partial class Guardian
         if (toHide.Count == 0 && allow is null && !turnOn)
         {
             // Hidden already (a second hide, or the puck's own restart announcing it again).
-            return (await RestartIfPendingAsync(CancellationToken.None) ? PanReason.None : PanReason.HidingFailed, listed);
+            return (await RestartIfPendingAsync(CancellationToken.None, clientLetGo: imagePath is not null) ? PanReason.None : PanReason.HidingFailed, listed);
         }
 
         bool restart;
@@ -411,7 +419,7 @@ public sealed partial class Guardian
         }
 
         _log($"HidHide: {toHide.Count} device(s) hidden, {(allow is null ? "allow list unchanged" : "client allow-listed")}, cloaking {(turnOn ? "turned on" : "was on")}");
-        if (restart && !await RestartIfPendingAsync(CancellationToken.None))
+        if (restart && !await RestartIfPendingAsync(CancellationToken.None, clientLetGo: imagePath is not null))
         {
             return (PanReason.HidingFailed, []);
         }
@@ -528,7 +536,10 @@ public sealed partial class Guardian
     }
 
     /// <summary>Inside the gate: restarts the puck if the journal says so, with a timeout; true when nothing is left pending.</summary>
-    private async Task<bool> RestartIfPendingAsync(CancellationToken cancellationToken)
+    /// <param name="clientLetGo">
+    /// The client's own hide or unhide: it let go of the puck before it asked. Otherwise Pan asks it to first (#308).
+    /// </param>
+    private async Task<bool> RestartIfPendingAsync(CancellationToken cancellationToken, bool clientLetGo)
     {
         lock (_lock)
         {
@@ -538,6 +549,83 @@ public sealed partial class Guardian
             }
         }
 
+        var request = clientLetGo ? null : await AskClientToLetGoAsync(cancellationToken);
+        try
+        {
+            return await RestartPuckAsync(cancellationToken);
+        }
+        finally
+        {
+            if (request is { } number)
+            {
+                Notify?.Invoke(PanMessage.PuckRestart(PanReply.PuckRestarted, number));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Windows refuses to restart a device a program holds open (Kernel-PnP event 225), and Arcadia reads the puck itself:
+    /// a connected client is asked to let go and waited for, at most <see cref="PuckReleaseTimeout"/> (a hung client
+    /// can't answer; the restart is tried anyway). The request number, or null when no client was asked.
+    /// </summary>
+    private async Task<uint?> AskClientToLetGoAsync(CancellationToken cancellationToken)
+    {
+        var notify = Notify;
+        uint request;
+        TaskCompletionSource released;
+        lock (_lock)
+        {
+            if (_client is null || !_helloDone || notify is null)
+            {
+                return null;
+            }
+
+            request = ++_releaseRequest;
+            released = _puckReleased = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        try
+        {
+            notify(PanMessage.PuckRestart(PanReply.ReleasePuck, request));
+            await released.Task.WaitAsync(PuckReleaseTimeout, cancellationToken);
+        }
+        catch (TimeoutException)
+        {
+            _log($"Client didn't let go of the Steam Controller within {PuckReleaseTimeout.TotalSeconds:0.#} s; restarting it anyway");
+        }
+        catch (OperationCanceledException)
+        {
+            // No restart follows: the client reads the puck again.
+            notify(PanMessage.PuckRestart(PanReply.PuckRestarted, request));
+            throw;
+        }
+        finally
+        {
+            lock (_lock)
+            {
+                if (ReferenceEquals(_puckReleased, released))
+                {
+                    _puckReleased = null;
+                }
+            }
+        }
+
+        return request;
+    }
+
+    /// <summary>Under the lock: the client's answer to <see cref="PanReply.ReleasePuck"/>; a late one for an earlier request changes nothing.</summary>
+    private PanMessage PuckReleased(PanMessage message)
+    {
+        if (message.Value == _releaseRequest)
+        {
+            _puckReleased?.TrySetResult();
+        }
+
+        return PanMessage.Of(PanReply.Acknowledged, message.Generation);
+    }
+
+    private async Task<bool> RestartPuckAsync(CancellationToken cancellationToken)
+    {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(_deviceStepTimeout);
         try
@@ -601,7 +689,7 @@ public sealed partial class Guardian
         [
             // The show may first wait for a running hide (its listing and restart are bounded by the device timeout).
             new TeardownStep("show the Steam Controller", token => ShowStepAsync(token, retry), TeardownPlan.StepTimeout + 2 * _deviceStepTimeout),
-            new TeardownStep("restart the Steam Controller", token => RestartStepAsync(token, retry), TeardownPlan.StepTimeout + _deviceStepTimeout),
+            new TeardownStep("restart the Steam Controller", token => RestartStepAsync(token, retry), TeardownPlan.StepTimeout + PuckReleaseTimeout + _deviceStepTimeout),
         ], _log);
     }
 
@@ -630,7 +718,7 @@ public sealed partial class Guardian
         try
         {
             ThrowIfRetryIsMoot(retry);
-            if (!await RestartIfPendingAsync(cancellationToken))
+            if (!await RestartIfPendingAsync(cancellationToken, clientLetGo: false))
             {
                 throw new InvalidOperationException("the Steam Controller was not restarted");
             }

@@ -18,6 +18,9 @@ public interface IPanEmulationView
     /// <summary>"Erneut versuchen": the failures so far no longer count, and the next tick tries again.</summary>
     void Retry();
 
+    /// <summary>The attempt "Erneut versuchen" started hasn't ended yet; a toast tells how it ended (#308).</summary>
+    bool Retrying { get; }
+
     /// <summary>Whether Arcadia may take the Steam Controller over (the question at the start, "Nein", a release).</summary>
     SteamControllerTakeover Takeover { get; }
 
@@ -48,6 +51,8 @@ public sealed class NoPanEmulation : IPanEmulationView
     public void Retry()
     {
     }
+
+    public bool Retrying => false;
 
     public SteamControllerTakeover Takeover { get; } = new(_ => { });
 
@@ -297,7 +302,15 @@ public sealed class PanRows
         {
             // Pan or VIIPER doesn't answer, and no part row says why.
             rows.Add(Row("pan:start-failed", "Emulation startet nicht", status.Reason ?? "Pan antwortet nicht", HealthSeverity.Warning,
-                StartFailedText, "Erneut versuchen", _pan.Retry));
+                StartFailedText, RetryText, _pan.Retry));
+        }
+
+        if (_pan.Retrying && _retried is { } retried && rows.All(row => row.Key != retried) && _rows.TryGetValue(retried, out var kept))
+        {
+            // The attempt sets up anew for a moment, so its problem is gone meanwhile: the pressed row stays, showing
+            // that it runs, until the attempt ends (owner, 2026-10-29); focus doesn't jump either.
+            ShowRetrying(kept);
+            rows.Add(kept);
         }
 
         foreach (var gone in _rows.Keys.Where(key => rows.All(row => row.Key != key)).ToList())
@@ -319,16 +332,16 @@ public sealed class PanRows
             case PanEmulationProblem.Hiding:
                 yield return ("pan:hide-failed", Row("pan:hide-failed", "Steam Controller lässt sich nicht verstecken", "Pan versucht es gleich wieder", HealthSeverity.Warning,
                     "Pan konnte den Steam Controller nicht vor anderen Programmen verstecken, zum Beispiel weil Windows ihn nicht neu verbinden ließ. Solange er nicht versteckt ist, emuliert Arcadia ihn nicht, damit keine Eingabe doppelt ankommt. Pan versucht es alle 10 Sekunden wieder; warum es scheitert, steht in pan.log.",
-                    "Erneut versuchen", _pan.Retry));
+                    RetryText, _pan.Retry));
                 break;
             case PanEmulationProblem.CopyFailed:
                 yield return ("pan:start-failed", Row("pan:start-failed", "Emulation startet nicht", "Arcadia versucht es gleich wieder", HealthSeverity.Warning,
-                    StartFailedText, "Erneut versuchen", _pan.Retry));
+                    StartFailedText, RetryText, _pan.Retry));
                 break;
             case PanEmulationProblem.TooManyFailures:
                 yield return ("pan:stopped", Row("pan:stopped", "Emulation angehalten", "Mehr als 3 Ausfälle in 5 Minuten, Arcadia versucht es nicht mehr von selbst", HealthSeverity.Error,
                     "Die Emulation ist mehrmals kurz hintereinander ausgefallen. Damit Spiele nicht ständig Controller verlieren und wiederbekommen, wartet Arcadia jetzt auf dich. „Erneut versuchen“ startet sie neu. Hilft das nicht, „Controller wiederherstellen“.",
-                    "Erneut versuchen", _pan.Retry));
+                    RetryText, _pan.Retry));
                 break;
             case PanEmulationProblem.CleaningUp:
                 yield return ("pan:cleaning-up", Row("pan:cleaning-up", "Pan räumt noch auf", "Gleich geht es von selbst weiter", HealthSeverity.Info,
@@ -363,15 +376,39 @@ public sealed class PanRows
             _rows[key] = row;
         }
 
-        _run[key] = run;
+        _run[key] = action == RetryText ? () => RetryFrom(key) : run;
         row.Title = title;
         row.Subtitle = subtitle;
         row.Severity = severity;
         row.ActionText = action ?? string.Empty;
         row.IsEnabled = !IsBusy;
+        row.IsWorking = false;
         row.ShowProblem(null);
         row.Info = [new InfoText(text)];
+        if (action == RetryText && _pan.Retrying && _retried == key)
+        {
+            ShowRetrying(row);
+        }
+
         return row;
+    }
+
+    private const string RetryText = "Erneut versuchen";
+
+    /// <summary>The row whose "Erneut versuchen" was pressed last; it shows the attempt while it runs.</summary>
+    private string? _retried;
+
+    private void RetryFrom(string key)
+    {
+        _retried = key;
+        _pan.Retry();
+    }
+
+    private static void ShowRetrying(ActionRowViewModel row)
+    {
+        row.ActionText = "Wird versucht …";
+        row.IsWorking = true;
+        row.IsEnabled = false;
     }
 
     private readonly Dictionary<string, Action?> _run = [];

@@ -40,6 +40,31 @@ public sealed class SdlGamepadSourceTests : IDisposable
         Assert.Equal([pad], _sdl.Closed);
     }
 
+    /// <summary>#308: SDL holds the puck open while it waits for a controller; Pan's puck restart needs it closed first.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-1")]
+    public void Letting_go_of_the_Steam_Controller_switches_SDLs_driver_off_and_updates_at_once_so_SDL_closes_the_puck()
+    {
+        _source.Open();
+
+        _source.ReadSteamControllers(false);
+        _source.ReadSteamControllers(true);
+
+        Assert.Equal(["Steam aus", "Update", "Steam an"], _sdl.Calls);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T308-1")]
+    public void Letting_go_before_SDL_runs_or_after_it_ended_does_nothing()
+    {
+        _source.ReadSteamControllers(false);
+        _source.Open();
+        _source.Close();
+        _source.ReadSteamControllers(true);
+
+        Assert.Empty(_sdl.Calls);
+    }
+
     [Fact]
     public void Steam_s_virtual_pad_and_the_Steam_Deck_are_never_opened()
     {

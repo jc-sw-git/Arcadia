@@ -44,7 +44,8 @@ has it open; HidHide allows one program at a time), `HidingFailed` (Pan's log sa
 - Checks before every hide (R13): installed, version, inverse off, and with cloaking off no device of the user's in
   the hidden list (listed puck entries don't count): turning cloaking on would hide those too.
 - What: only `HidingList` — the puck `HID\VID_28DE&PID_1304&…`, every instance Pan finds present itself
-  (`CM_Get_Device_ID_List`, enumerator `HID`). Other Valve devices stay visible (#248, #249).
+  (`CM_Get_Device_ID_List`, enumerator `HID`), never Arcadia's copy on VIIPER's software host. Other Valve devices
+  stay visible (#248, #249). Who can block the restart, and why Arcadia lets go first: [pan-puck-restart.md](pan-puck-restart.md).
 - Order: list the devices (may wait on the PnP lock), then read and check HidHide, journal (write-ahead), allow list (the client's image path in device form,
   `QueryFullProcessImageNameW(PROCESS_NAME_NATIVE)` on the pipe client's process), hidden list, cloaking on, then the
   puck restart (SetupAPI `DIF_PROPERTYCHANGE`/`DICS_PROPCHANGE` on `USB\VID_28DE&PID_1304\…`, as devcon and

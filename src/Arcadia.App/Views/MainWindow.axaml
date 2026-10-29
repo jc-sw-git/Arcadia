@@ -1261,7 +1261,8 @@
                                       <ctl:KeyHint Pad="{Binding ShortcutPad}" Keys="{Binding ShortcutKeys}" IsDark="{Binding IsFocused}" VerticalAlignment="Center"
                                                    IsVisible="{Binding HasShortcut}" />
                                       <TextBlock Grid.Column="1" Text="{Binding ActionText}" />
-                                      <Path Grid.Column="2" Classes="chevronRight" />
+                                      <Path Grid.Column="2" Classes="chevronRight" IsVisible="{Binding !IsWorking}" />
+                                      <Path Grid.Column="2" Classes="spinner" IsVisible="{Binding IsWorking}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
                                     </Grid>
                                   </Border>
                                 </DataTemplate>

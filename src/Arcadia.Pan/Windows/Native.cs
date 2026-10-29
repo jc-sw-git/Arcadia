@@ -294,6 +294,17 @@ internal static unsafe partial class Native
     [LibraryImport("cfgmgr32.dll", StringMarshalling = StringMarshalling.Utf16)]
     public static partial uint CM_Get_Device_ID_ListW(string filter, char* buffer, uint length, uint flags);
 
+    public const uint CmLocateDevnodeNormal = 0;
+
+    [LibraryImport("cfgmgr32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial uint CM_Locate_DevNodeW(out uint devInst, string deviceId, uint flags);
+
+    [LibraryImport("cfgmgr32.dll")]
+    public static partial uint CM_Get_Parent(out uint parent, uint devInst, uint flags);
+
+    [LibraryImport("cfgmgr32.dll")]
+    public static partial uint CM_Get_Device_IDW(uint devInst, char* buffer, uint length, uint flags);
+
     [LibraryImport("cfgmgr32.dll")]
     public static partial uint CM_Register_Notification(CmNotifyFilter* filter, nint context, delegate* unmanaged<nint, nint, uint, byte*, uint, uint> callback, out nint notification);
 

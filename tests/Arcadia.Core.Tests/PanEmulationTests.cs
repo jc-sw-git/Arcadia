@@ -141,6 +141,169 @@ public sealed class PanEmulationTests
         Assert.Equal([1u, 2u], _pan.Started);
     }
 
+    /// <summary>#308: Windows refuses to restart a puck Arcadia's SDL holds open, so every hide failed with only the puck.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-1")]
+    public async Task Arcadia_lets_go_of_the_puck_while_Pan_restarts_it_to_hide_or_show_it()
+    {
+        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            ReadSteamControllers = on => _events.Add(on ? "reads puck" : "lets go of puck"),
+        };
+
+        await emulation.TickAsync();
+        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
+        Assert.Equal(["started 1", "lets go of puck", "hide 1", "reads puck", "copy attached"], _events);
+
+        _events.Clear();
+        await emulation.ShutdownAsync();
+        Assert.Equal(["copy detached", "lets go of puck", "unhide 1", "reads puck", "stopped 1"], _events);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T308-1")]
+    public async Task Arcadia_reads_the_puck_again_also_after_a_hide_that_failed()
+    {
+        var reads = new List<bool>();
+        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add) { ReadSteamControllers = reads.Add };
+        _pan.HideResult = PanReason.HidingFailed;
+
+        await emulation.TickAsync();
+
+        Assert.Equal([false, true], reads);
+    }
+
+    /// <summary>#308, QE review: Pan's own restarts (teardown, its retry, an arrival) were vetoed by Arcadia's SDL too.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-7")]
+    public void Arcadia_lets_go_of_the_puck_while_Pan_restarts_it_on_its_own()
+    {
+        _ = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            ReadSteamControllers = on => _events.Add(on ? "reads puck" : "lets go of puck"),
+        };
+
+        _pan.RestartPuckItself();
+        // An end without a start (a lost link after the end) and a second announcement change nothing.
+        _pan.EndRestart();
+        _pan.AnnounceRestart();
+        _pan.AnnounceRestart();
+        _pan.EndRestart();
+
+        Assert.Equal(["lets go of puck", "pan restarts puck", "reads puck", "lets go of puck", "reads puck"], _events);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T308-7")]
+    public async Task A_restart_of_Pans_own_that_overlaps_Arcadias_hide_keeps_the_puck_let_go_until_both_are_over()
+    {
+        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            ReadSteamControllers = on => _events.Add(on ? "reads puck" : "lets go of puck"),
+        };
+        // Pan restarts the puck for an arrival while Arcadia's hide runs, and ends after it.
+        _pan.PuckRestart = () =>
+        {
+            _pan.AnnounceRestart();
+            return PanReason.None;
+        };
+
+        await emulation.TickAsync();
+        Assert.Equal(["started 1", "lets go of puck", "hide 1", "copy attached"], _events);
+
+        _pan.EndRestart();
+        Assert.Equal("reads puck", _events[^1]);
+    }
+
+    /// <summary>"Erneut versuchen" pressed while a tick runs: that tick's outcome predates the press and doesn't answer it.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-3")]
+    public async Task Erneut_versuchen_is_answered_only_by_a_tick_that_began_after_the_press()
+    {
+        var notices = new List<string>();
+        _emulation.Notice += notices.Add;
+        _pan.HideResult = PanReason.HidingFailed;
+        _pan.PuckRestart = () =>
+        {
+            _emulation.Retry();
+            return PanReason.HidingFailed;
+        };
+
+        await _emulation.TickAsync();
+        Assert.True(_emulation.Retrying);
+        Assert.Empty(notices);
+
+        _pan.PuckRestart = null;
+        await _emulation.TickAsync();
+        Assert.False(_emulation.Retrying);
+        Assert.Equal([PanEmulation.RetryFailedText], notices);
+    }
+
+    /// <summary>QE recheck of #310 (R3): every attempt the player started ends with a toast, also one with nothing to emulate.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-3")]
+    public async Task Erneut_versuchen_that_finds_no_Steam_Controller_says_so()
+    {
+        var notices = new List<string>();
+        _emulation.Notice += notices.Add;
+        _pan.HideResult = PanReason.HidingFailed;
+        await _emulation.TickAsync();
+
+        _emulation.Retry();
+        _present = false;
+        await _emulation.TickAsync();
+
+        Assert.Equal(PanEmulationState.Ready, State);
+        Assert.Equal([PanEmulation.RetryNoControllerText], notices);
+    }
+
+    /// <summary>QE recheck of #310 (R2): back after a lost hiding by "Erneut versuchen", the toast came twice.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-3")]
+    public async Task Erneut_versuchen_after_a_lost_hiding_says_it_runs_again_once()
+    {
+        var notices = new List<string>();
+        _emulation.Notice += notices.Add;
+        await _emulation.TickAsync();
+        _pan.HidingHolds = PanReason.HidingLost;
+        await _emulation.TickAsync();
+        Assert.Equal([PanEmulation.PausedText], notices);
+        _pan.HidingHolds = PanReason.None;
+
+        _emulation.Retry();
+        await _emulation.TickAsync();
+
+        Assert.Equal(PanEmulationState.Running, State);
+        Assert.Equal([PanEmulation.PausedText, PanEmulation.RunningAgainText], notices);
+    }
+
+    /// <summary>#308: the warning disappeared for each retry and came back ~6 s later, over and over.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-3")]
+    public async Task A_hide_that_keeps_failing_keeps_its_warning_through_the_retries_without_a_moment_of_setting_up()
+    {
+        var states = new List<PanEmulationState>();
+        _emulation.Changed += () => states.Add(State);
+        _pan.HideResult = PanReason.HidingFailed;
+
+        await _emulation.TickAsync();
+        for (var retry = 0; retry < 2; retry++)
+        {
+            _time.Advance(PanEmulation.HideRetry);
+            await _emulation.TickAsync();
+        }
+
+        Assert.Equal(3, _pan.Started.Count);
+        Assert.Equal([PanEmulationState.SettingUp, PanEmulationState.Paused], states);
+        Assert.Equal(PanEmulationProblem.Hiding, _emulation.Status.Problem);
+
+        // Once it works, the row says so.
+        _pan.HideResult = PanReason.None;
+        _time.Advance(PanEmulation.HideRetry);
+        await _emulation.TickAsync();
+        Assert.Equal(PanEmulationState.Running, State);
+    }
+
     [Fact]
     [Trait("TestCase", "T242-6")]
     public async Task A_copy_that_fails_to_come_up_shows_the_puck_again_and_counts_as_a_failure()

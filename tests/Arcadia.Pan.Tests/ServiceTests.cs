@@ -249,7 +249,18 @@ public sealed class ServiceTests : IDisposable
                 Assert.True(new HidHideDriver().GetCloaking(), "Pan turned cloaking on");
             }
 
+            // A hide that changed HidHide restarts the puck in the teardown; Pan asks the (hung) client to let go first and
+            // goes on after its wait (#308).
+            var restart = new List<PanMessage>();
             var notice = await ReadAsync(pipe, ReplyTimeout);
+            while (notice.Reply is PanReply.ReleasePuck or PanReply.PuckRestarted)
+            {
+                restart.Add(notice);
+                notice = await ReadAsync(pipe, ReplyTimeout);
+            }
+
+            Assert.True(restart.Count == 0 || restart.Select(n => (n.Reply, n.Value)).SequenceEqual([(PanReply.ReleasePuck, restart[0].Value), (PanReply.PuckRestarted, restart[0].Value)]),
+                $"the restart's notices come in pairs: {string.Join(", ", restart)}");
             Assert.Equal(PanReply.TornDown, notice.Reply);
             Assert.Equal(PanReason.Hang, notice.Reason);
             Assert.Equal(started.Generation, notice.Generation);

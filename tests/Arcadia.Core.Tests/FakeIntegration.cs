@@ -88,6 +88,8 @@ internal sealed class FakeRunningGames(string launcherId) : IRunningGamesMonitor
 
     public string LauncherId => launcherId;
 
+    public bool ReportsSimulatedGames { get; init; }
+
     public IReadOnlyList<RunningGame> Poll()
     {
         Polls++;

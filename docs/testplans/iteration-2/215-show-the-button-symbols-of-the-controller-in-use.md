@@ -29,3 +29,4 @@ History:
 |---|---|---|---|---|---|
 | T215-1 to T215-6 | 2026-10-28 | Claude | PR branch, Linux container, Avalonia headless, fake SDL pads (acceptance tests) | ✅ | – |
 | T215-7 | 2026-10-28 | Claude | PR branch, Linux container, headless screenshots at 1920 × 1080, scaling 1 (DualSense, DualShock 4, Switch Pro, Steam Controller, 8BitDo) | ✅ icons first a size larger than the letters, reduced to 10 px | – |
+| T215-1 to T215-6 | 2026-10-29 | owner | PR #305, real PC | ❌ search: the arrows beside the hits showed LT/RT with the DualSense and the Switch Pro (plain text, not drawn per controller) | fixed in PR #305; `ButtonGlyphTextTests` now fails on a plain controller button name in a view |

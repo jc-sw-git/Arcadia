@@ -8,7 +8,6 @@ public enum ButtonSymbols
     PlayStation4,
     PlayStation3,
     Nintendo,
-    GameCube,
     SteamController,
 }
 
@@ -34,14 +33,13 @@ public readonly record struct ButtonSymbol(string Text, ButtonIcon Icon, bool Is
 /// </summary>
 public static class ButtonSymbolSets
 {
-    /// <summary>SDL's type of a controller to its printing; generic and unknown pads show Xbox's.</summary>
+    /// <summary>SDL's type of a controller to its printing; generic and unknown pads show Xbox's, and so does the GameCube pad (owner, 2026-10-29).</summary>
     public static ButtonSymbols For(PadType type) => type switch
     {
         PadType.PS5 => ButtonSymbols.PlayStation5,
         PadType.PS4 => ButtonSymbols.PlayStation4,
         PadType.PS3 => ButtonSymbols.PlayStation3,
         PadType.SwitchPro or PadType.JoyConPair or PadType.JoyConLeft or PadType.JoyConRight => ButtonSymbols.Nintendo,
-        PadType.GameCube => ButtonSymbols.GameCube,
         PadType.Steam => ButtonSymbols.SteamController,
         _ => ButtonSymbols.Xbox,
     };
@@ -50,7 +48,6 @@ public static class ButtonSymbolSets
     {
         ButtonSymbols.PlayStation5 or ButtonSymbols.PlayStation4 or ButtonSymbols.PlayStation3 => PlayStation(button, symbols),
         ButtonSymbols.Nintendo => Nintendo(button),
-        ButtonSymbols.GameCube => GameCube(button),
         ButtonSymbols.SteamController => SteamController(button),
         _ => Xbox(button),
     };
@@ -97,19 +94,6 @@ public static class ButtonSymbolSets
         "R3" => Pill("RS"),
         "⧉" => Pill("−"),
         "≡" => Pill("+"),
-        _ => Xbox(button),
-    };
-
-    // The GameCube pad prints A at the bottom, X right, B left (SDL's face style "axby"); it has one Z and no back
-    // button or stick clicks, which keep Xbox's names.
-    private static ButtonSymbol GameCube(string button) => button switch
-    {
-        "B" => Face("X"),
-        "X" => Face("B"),
-        "RB" => Pill("Z"),
-        "LT" => Pill("L"),
-        "RT" => Pill("R"),
-        "≡" => Pill("Start"),
         _ => Xbox(button),
     };
 

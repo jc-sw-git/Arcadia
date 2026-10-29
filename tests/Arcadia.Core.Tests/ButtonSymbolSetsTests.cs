@@ -17,7 +17,7 @@ public sealed class ButtonSymbolSetsTests
     [InlineData(PadType.PS3, ButtonSymbols.PlayStation3)]
     [InlineData(PadType.SwitchPro, ButtonSymbols.Nintendo)]
     [InlineData(PadType.JoyConPair, ButtonSymbols.Nintendo)]
-    [InlineData(PadType.GameCube, ButtonSymbols.GameCube)]
+    [InlineData(PadType.GameCube, ButtonSymbols.Xbox)]
     [InlineData(PadType.Steam, ButtonSymbols.SteamController)]
     public void Each_type_of_controller_shows_its_own_printing(PadType type, ButtonSymbols symbols) =>
         Assert.Equal(symbols, ButtonSymbolSets.For(type));
@@ -28,7 +28,6 @@ public sealed class ButtonSymbolSetsTests
     [InlineData(ButtonSymbols.PlayStation4, "Cross Circle Square Triangle L1 R1 L2 R2 L3 R3 Share Options D-Pad")]
     [InlineData(ButtonSymbols.PlayStation3, "Cross Circle Square Triangle L1 R1 L2 R2 L3 R3 Select Start D-Pad")]
     [InlineData(ButtonSymbols.Nintendo, "B A Y X L R ZL ZR LS RS − + D-Pad")]
-    [InlineData(ButtonSymbols.GameCube, "A X B Y LB Z L R L3 R3 ⧉ Start D-Pad")]
     [InlineData(ButtonSymbols.SteamController, "A B X Y L1 R1 L2 R2 L3 R3 ⧉ ≡ D-Pad")]
     public void The_buttons_Arcadia_uses_get_the_printing_of_the_controller(ButtonSymbols symbols, string printed) =>
         Assert.Equal(printed, string.Join(' ', Buttons.Select(button => Shown(ButtonSymbolSets.Symbol(button, symbols)))));
@@ -38,7 +37,6 @@ public sealed class ButtonSymbolSetsTests
     [InlineData(ButtonSymbols.PlayStation5)]
     [InlineData(ButtonSymbols.PlayStation3)]
     [InlineData(ButtonSymbols.Nintendo)]
-    [InlineData(ButtonSymbols.GameCube)]
     [InlineData(ButtonSymbols.SteamController)]
     public void Face_buttons_are_round_everything_else_a_pill(ButtonSymbols symbols)
     {

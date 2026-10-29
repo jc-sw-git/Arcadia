@@ -48,6 +48,12 @@ not the whole folder.
    then reads PR, issue and test plan file instead of the old thread.
 5. The owner tests only what the rework changed, and merges.
 
+**Marking tests as passed costs no CI run** (owner 2026-10-29): the thread records the owner's results in the
+test plan file and pushes. A push that changes only `docs/testplans/**` skips build and tests (the `build` jobs
+run with all steps skipped, so the required checks still report success) and only the `Testplan` check runs;
+the PR is green again within a minute. That holds only if the commit before was green; anything else in the
+push, or a red or still running predecessor, builds fully (`tools/ci/detect-testplan-only.sh`). 
+
 ## Process metrics (owner 2026-10-27, from Iteration 3)
 
 Few numbers, captured where the work happens, evaluated in each iteration's retro (table in the retro issue).

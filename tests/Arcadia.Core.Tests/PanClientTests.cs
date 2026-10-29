@@ -514,6 +514,33 @@ public sealed class PanClientTests : IAsyncDisposable
         puck.Hold.SetResult();
     }
 
+    /// <summary>
+    /// The owner's debugger showed "Pan antwortet nicht" at every start (#308): the heartbeat waited behind the ~2.5 s hide
+    /// and gave up. While another request runs no heartbeat is queued; Pan's hang watch waits for that request.
+    /// </summary>
+    [Fact]
+    public async Task No_heartbeat_waits_behind_a_request_that_takes_long()
+    {
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        _server.Pause();
+        var check = _client.CheckHidingAsync(generation, CancellationToken.None);
+        await WaitUntil(() => _server.Received(PanCommand.CheckHiding) > 0, "CheckHiding bei Pan");
+
+        for (var i = 0; i < 4; i++)
+        {
+            _client.Pulse();
+            _time.Advance(Guardian.HeartbeatInterval);
+            await Task.Delay(20);
+        }
+
+        _server.Resume();
+        await check;
+        await Task.Delay(300);
+        Assert.Equal(0, _server.Heartbeats);
+        Assert.True(_client.IsConnected);
+    }
+
     /// <summary>HidHide 1.5.230 whose state a test sets; "busy" is its configuration client holding it.</summary>
     private sealed class SettableHidHide : IHidHideDriver
     {

@@ -777,6 +777,13 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
                     continue;
                 }
 
+                if (_requests.CurrentCount == 0)
+                {
+                    // Another request is under way (a hide takes ~2.5 s): Pan's hang watch waits for it, and a heartbeat
+                    // queued behind it would only give up after its timeout, with an exception at every start (#308).
+                    continue;
+                }
+
                 generation = _currentGeneration;
                 pulses = Interlocked.Read(ref _pulses);
                 if (pulses == _sentPulses)

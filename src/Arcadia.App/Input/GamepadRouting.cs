@@ -20,6 +20,7 @@ public sealed class GamepadRouting
     private readonly Func<bool> _isMouseModeOn;
     private readonly SoloButtons _viewAndMenu;
     private readonly SteamControllerPresence _steamController = new();
+    private readonly ControllerInUse _inUse;
     private readonly InputLatency _latency;
 
     // When View or Menu went down: they act only later (on release or after the solo delay), and their time to the frame
@@ -33,6 +34,7 @@ public sealed class GamepadRouting
         _latency = latency;
         _isArcadiaActive = isArcadiaActive;
         _isMouseModeOn = isMouseModeOn;
+        _inUse = new ControllerInUse(time);
         _viewAndMenu = new SoloButtons(GamepadButton.View, GamepadButton.Menu, SoloButtonDelay, time);
         _viewAndMenu.Pressed += Act;
         _viewAndMenu.Released += LetGo;
@@ -43,9 +45,17 @@ public sealed class GamepadRouting
         };
     }
 
-    /// <summary>The controllers are gone for good (<see cref="IGamepadSource.Lost"/>): held buttons are forgotten without acting.</summary>
+    /// <summary>
+    /// The controllers are gone for good (<see cref="IGamepadSource.Lost"/>), or this system has none: held buttons are
+    /// forgotten without acting, and the hints show the keyboard.
+    /// </summary>
     public void Drop()
     {
+        if (_inUse.Drop())
+        {
+            Dispatcher.UIThread.Post(() => _viewModel.SetControllerInUse(null));
+        }
+
         _viewAndMenu.Reset();
         _soloPressedAt.Clear();
         Dispatcher.UIThread.Post(_viewModel.CancelHold);
@@ -58,10 +68,16 @@ public sealed class GamepadRouting
     /// <summary>View or Menu held alone long enough act now.</summary>
     public void Tick() => _viewAndMenu.Tick();
 
-    /// <summary>On every poll of the controllers: <see cref="Tick()"/>, and whether a Steam Controller came or went.</summary>
+    /// <summary>On every poll of the controllers: <see cref="Tick()"/>, which controller is in use, and whether a Steam Controller came or went.</summary>
     public void Tick(IReadOnlyList<GamepadReading> pads)
     {
         Tick();
+        if (_inUse.Note(pads))
+        {
+            var inUse = _inUse.Current;
+            Dispatcher.UIThread.Post(() => _viewModel.SetControllerInUse(inUse));
+        }
+
         if (_steamController.Note(pads))
         {
             var connected = _steamController.IsConnected;

@@ -222,6 +222,12 @@ public partial class App : Application
             _gamepad.ButtonPressed += routing.Press;
             _gamepad.ButtonReleased += routing.Release;
             _gamepad.Lost += routing.Drop;
+            if (_gamepad is NullGamepadSource)
+            {
+                // No controllers on this system: the hints show the keyboard from the start (#215).
+                routing.Drop();
+            }
+
             _gamepad.Start();
 
             var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), "SISR-Überwachung"));

@@ -10,6 +10,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Search;
 using Arcadia.Core.Settings;
+using Arcadia.Input;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -36,6 +37,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     // The page whose options the dialog shows.
     private IPage? _viewOptionsPage;
     private InputKind _input = InputKind.Gamepad;
+
+    // A button, key or click since the start; until then the hints follow whether a controller is connected (#215).
+    private bool _inputSeen;
 
     /// <summary>The page on top when the last page opened or closed.</summary>
     private IPage? _topPage;
@@ -152,6 +156,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     public partial bool UsesController { get; private set; } = true;
 
     partial void OnUsesControllerChanged(bool value) => InputHints.UsesController = value;
+
+    /// <summary>The printing of the controller in use, which the button hints show (#215); Xbox's until a controller tells otherwise.</summary>
+    [ObservableProperty]
+    public partial ButtonSymbols ButtonSymbols { get; private set; } = ButtonSymbols.Xbox;
+
+    partial void OnButtonSymbolsChanged(ButtonSymbols value) => InputHints.Symbols = value;
 
     /// <summary>The Steam Controller mode of the library's focused game: "Arcadia" or "Steam-Eingabe".</summary>
     [ObservableProperty]
@@ -278,7 +288,33 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>The mouse was used: a search opened next shows no on-screen keyboard; an open one keeps it, without the legend.</summary>
     public void NotePointer() => NoteInput(InputKind.Pointer);
 
+    /// <summary>
+    /// The controller in use changed (#215, <see cref="ControllerInUse"/>): the hints show its printing. With none left the
+    /// keyboard is the input in use. Before the first input the hints follow whether a controller is there at all.
+    /// </summary>
+    public void SetControllerInUse(PadType? type)
+    {
+        if (type is { } pad)
+        {
+            ButtonSymbols = ButtonSymbolSets.For(pad);
+            if (!_inputSeen)
+            {
+                ShowInputKind(InputKind.Gamepad);
+            }
+        }
+        else if (_input == InputKind.Gamepad)
+        {
+            ShowInputKind(InputKind.Keyboard);
+        }
+    }
+
     private void NoteInput(InputKind kind)
+    {
+        _inputSeen = true;
+        ShowInputKind(kind);
+    }
+
+    private void ShowInputKind(InputKind kind)
     {
         _input = kind;
         ShowsCloseButtons = kind != InputKind.Gamepad;

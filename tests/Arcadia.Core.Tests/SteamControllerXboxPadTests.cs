@@ -7,7 +7,7 @@ namespace Arcadia.Core.Tests;
 
 public class SteamControllerXboxPadTests
 {
-    private static readonly GamepadReading SteamController = new(7, PadButtons.None, default, default) { IsSteamController = true };
+    private static readonly GamepadReading SteamController = new(7, PadButtons.None, default, default) { Type = PadType.Steam };
     private static readonly GamepadReading XboxPad = new(8, PadButtons.None, default, default);
 
     private readonly FakeTimeProvider _time = new();

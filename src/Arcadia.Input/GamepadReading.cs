@@ -59,8 +59,11 @@ public readonly record struct GamepadReading(int PadId, PadButtons Buttons, Stic
     /// <summary>Only while switched on (<see cref="SdlGamepadSource.UseMotionSensors"/>). No consumer yet (#111).</summary>
     public MotionReading Motion { get; init; }
 
+    /// <summary>SDL's type of the controller: which button symbols the hints show (#215).</summary>
+    public PadType Type { get; init; }
+
     /// <summary>A Steam Controller, read raw (#212); "connected" for the per-game mode follows it.</summary>
-    public bool IsSteamController { get; init; }
+    public bool IsSteamController => Type == PadType.Steam;
 
     public bool IsDown(PadButtons buttons) => (Buttons & buttons) == buttons;
 }

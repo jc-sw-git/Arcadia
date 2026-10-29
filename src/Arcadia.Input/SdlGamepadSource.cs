@@ -214,8 +214,9 @@ public sealed class SdlGamepadSource : IGamepadSource
         }
         catch (Exception ex)
         {
-            // DllNotFoundException, EntryPointNotFoundException, BadImageFormatException or SDL_Init failing.
-            _failed(ex);
+            // DllNotFoundException, EntryPointNotFoundException, BadImageFormatException or SDL_Init failing: the
+            // controllers are gone for good before they came, so the hints show the keyboard (#215).
+            Lose(ex);
             return false;
         }
     }
@@ -425,7 +426,7 @@ public sealed class SdlGamepadSource : IGamepadSource
     }
 
     private GamepadReading Read(uint id, nint handle, PadDevice device) =>
-        SdlPadMapping.ToReading((int)id, _sdl.Read(handle)) with { IsSteamController = device.Type == PadType.Steam };
+        SdlPadMapping.ToReading((int)id, _sdl.Read(handle)) with { Type = device.Type };
 
     private void Disconnect(uint id)
     {

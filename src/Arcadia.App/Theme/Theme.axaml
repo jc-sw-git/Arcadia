@@ -171,6 +171,15 @@
     <BoxShadows x:Key="GlyphEdge">inset 0 -2 0 0 #1B222B</BoxShadows>
     <BoxShadows x:Key="GlyphEdgeDark">inset 0 -2 0 0 #99000000</BoxShadows>
     <BoxShadows x:Key="GlyphButtonEdge">inset 0 -2 0 0 #141A21</BoxShadows>
+    <!-- Button symbols drawn as icons (#215, PadGlyph): PlayStation's shapes and the PS5's Create and Options, in a 16 × 16 box,
+         stroked like the glyphs' letters. Vectors, not font characters: fonts draw ✕ ○ □ △ in different sizes. -->
+    <StreamGeometry x:Key="PadIconCross">M3.5,3.5 L12.5,12.5 M12.5,3.5 L3.5,12.5</StreamGeometry>
+    <StreamGeometry x:Key="PadIconCircle">M2.5,8 A5.5,5.5 0 1 1 13.5,8 A5.5,5.5 0 1 1 2.5,8 Z</StreamGeometry>
+    <StreamGeometry x:Key="PadIconSquare">M3,3 H13 V13 H3 Z</StreamGeometry>
+    <!-- Nearly as tall as wide, so it fills its box like the circle and doesn't look smaller. -->
+    <StreamGeometry x:Key="PadIconTriangle">M8,1.5 L14.5,13.5 H1.5 Z</StreamGeometry>
+    <StreamGeometry x:Key="PadIconCreate">M3,9 V3 M6,10 L10.5,5.5 M7,13 H13</StreamGeometry>
+    <StreamGeometry x:Key="PadIconOptions">M3,4 H13 M3,8 H13 M3,12 H13</StreamGeometry>
     <!-- Dividers between groups in the header. -->
     <SolidColorBrush x:Key="Divider" Color="#2A3440" />
 
@@ -280,6 +289,18 @@
     <Setter Property="FontSize" Value="13" />
     <Setter Property="FontWeight" Value="ExtraBold" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- A symbol drawn as an icon (PadGlyph, #215): as tall as a capital letter of the glyph, monochrome like the letters. -->
+  <Style Selector="Border.glyph > Path">
+    <Setter Property="Width" Value="10" />
+    <Setter Property="Height" Value="10" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
@@ -1629,6 +1650,11 @@
   </Style>
   <Style Selector="Border.glyph.inline > TextBlock">
     <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="Border.glyph.inline > Path, Border.glyph.small > Path">
+    <Setter Property="Width" Value="9" />
+    <Setter Property="Height" Value="9" />
+    <Setter Property="StrokeThickness" Value="1.8" />
   </Style>
   <Style Selector="Border.glyph.small">
     <Setter Property="MinWidth" Value="22" />

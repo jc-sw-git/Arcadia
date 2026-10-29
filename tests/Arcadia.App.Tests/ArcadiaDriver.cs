@@ -467,9 +467,14 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>Starts reading the controllers through <see cref="Sdl"/>, as the App does at its start.</summary>
     public ArcadiaDriver StartControllers()
     {
-        _controllers.Open();
+        // As the App's poll thread: without a usable SDL nothing is polled.
+        if (_controllers.Open())
+        {
+            Dispatcher.UIThread.RunJobs();
+            PollControllers();
+        }
+
         Dispatcher.UIThread.RunJobs();
-        PollControllers();
 
         // As the App's first tick after the start: Pan's emulation comes up (#242), and the mode can be chosen.
         Task.Run(() => ForGames.Emulation.TickAsync()).Wait();

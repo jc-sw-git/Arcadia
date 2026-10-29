@@ -5,7 +5,7 @@ namespace Arcadia.Core.Tests;
 public sealed class SteamControllerPresenceTests
 {
     private static readonly GamepadReading Pad = new(1, PadButtons.None, default, default);
-    private static readonly GamepadReading SteamController = new(2, PadButtons.None, default, default) { IsSteamController = true };
+    private static readonly GamepadReading SteamController = new(2, PadButtons.None, default, default) { Type = PadType.Steam };
 
     [Fact]
     public void Reports_only_changes()

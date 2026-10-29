@@ -30,8 +30,7 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
   (CloseMainWindow, not Stop-Process: Arcadia must shut down cleanly).
 - Logs: `%APPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, `Bild:` press to frame, Pan and the emulation),
   `viiper.log` (VIIPER's own log). Settings: `%APPDATA%\Arcadia\settings.json`.
-- Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log:
-  `Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} | ? ProviderName -match '.NET Runtime'`.
+- Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log (command: arcadia-verify skill).
 
 ## Releases
 

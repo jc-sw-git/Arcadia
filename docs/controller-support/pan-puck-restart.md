@@ -51,5 +51,7 @@ sends `PuckRestarted(n)`, done or not; a lost link counts as that too. The answe
 running one of the client's (its hide waiting for an arrival's restart) it comes late, and Pan's wait runs out after
 Arcadia has let go anyway. A late answer for an older number changes nothing.
 
-Still open: Pan doesn't read the veto itself (event 225 is the quickest way to find a holder), and a program other
-than Arcadia that holds the puck still makes a restart fail; it stays pending and the teardown retries it.
+Still open: Pan doesn't read the veto itself (event 225 is the quickest way to find a holder). `ReleasePuck` lets go
+of SDL only: an arrival's re-hide while the copy runs (a second puck instance, e.g. another USB port) is still vetoed
+by the copy's own handles on the real puck, as is a restart while another program holds the puck. Such a restart stays
+pending and the teardown retries it.

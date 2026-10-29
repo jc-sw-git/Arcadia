@@ -94,6 +94,8 @@ public sealed class PanEmulation : IVirtualXboxPads
     public const string RunningAgainText = "Pan: Controller-Wächter läuft wieder";
     public const string StoppedText = "Pan: Emulation angehalten – sie ist mehrmals kurz hintereinander ausgefallen. „Erneut versuchen“ in den Controller-Einstellungen startet sie neu.";
     public const string RetryFailedText = "Pan: Erneuter Versuch ohne Erfolg. Was fehlt, steht in den Controller-Einstellungen.";
+    public const string RetryNoControllerText = "Pan: Kein Steam Controller verbunden, es gibt nichts zu emulieren.";
+    public const string RetryExcludedText = "Pan: Steam Controller und Puck bleiben ausgenommen.";
 
     private readonly IVirtualXboxPads _pads;
     private readonly IEmulationGuardian _guardian;
@@ -249,7 +251,8 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     /// <summary>
     /// After a tick: an attempt still setting up (Pan cleaning up, the question about the takeover open) goes on; running
-    /// is a success, paused, stopped or unavailable a failure. Anything else (no Steam Controller, excluded) ends it quietly.
+    /// is a success, paused, stopped or unavailable a failure; no Steam Controller or "Nein" to the takeover say so.
+    /// Only switching Pan off meanwhile ends it without a toast: the switch says it.
     /// </summary>
     private void EndRetryOnceDecided()
     {
@@ -263,6 +266,8 @@ public sealed class PanEmulation : IVirtualXboxPads
         {
             PanEmulationState.Running => RunningAgainText,
             PanEmulationState.Paused or PanEmulationState.Stopped or PanEmulationState.Unavailable => RetryFailedText,
+            PanEmulationState.Ready when _status.Problem == PanEmulationProblem.Excluded => RetryExcludedText,
+            PanEmulationState.Ready => RetryNoControllerText,
             _ => null,
         };
         _log($"Pan-Emulation: „Erneut versuchen“ beendet ({state})");
@@ -651,7 +656,11 @@ public sealed class PanEmulation : IVirtualXboxPads
         if (_pausedByLoss)
         {
             _pausedByLoss = false;
-            Notice?.Invoke(RunningAgainText);
+            // "Erneut versuchen" says the same when its tick ends.
+            if (Volatile.Read(ref _retry) != 2)
+            {
+                Notice?.Invoke(RunningAgainText);
+            }
         }
     }
 

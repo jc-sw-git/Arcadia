@@ -20,7 +20,8 @@ warning. After the QE review (owner, 2026-10-29) Pan also asks Arcadia to let go
       retries (no flicker every 10 s) until it works or the emulation stops. [A] on "Erneut versuchen": the row stays,
       reads "Wird versucht …" with a spinner and takes no [A] until the attempt ends, then "Erneut versuchen" again and
       the toast "Pan: Erneuter Versuch ohne Erfolg. …"; if the attempt works, the row goes and the toast says "Pan:
-      Controller-Wächter läuft wieder". The same on "Emulation angehalten". · E2E: yes (`PanEmulationTests` in App
+      Controller-Wächter läuft wieder" (once, also after "Verstecken verloren"); with the Steam Controller unplugged
+      meanwhile it says "Pan: Kein Steam Controller verbunden, …". The same on "Emulation angehalten". · E2E: yes (`PanEmulationTests` in App
       and Core; on hardware a failing hide can be had with HidHide's configuration client open)
 - [ ] **T308-4** After T308-1, switch the Steam Controller on: "Controller #N verbunden: Steam Controller" in
       `arcadia.log`, Arcadia's Xbox pad works in a game on "Arcadia"; switch it off: the pad goes, the emulation keeps

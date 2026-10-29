@@ -239,6 +239,44 @@ public sealed class PanEmulationTests
         Assert.Equal([PanEmulation.RetryFailedText], notices);
     }
 
+    /// <summary>QE recheck of #310 (R3): every attempt the player started ends with a toast, also one with nothing to emulate.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-3")]
+    public async Task Erneut_versuchen_that_finds_no_Steam_Controller_says_so()
+    {
+        var notices = new List<string>();
+        _emulation.Notice += notices.Add;
+        _pan.HideResult = PanReason.HidingFailed;
+        await _emulation.TickAsync();
+
+        _emulation.Retry();
+        _present = false;
+        await _emulation.TickAsync();
+
+        Assert.Equal(PanEmulationState.Ready, State);
+        Assert.Equal([PanEmulation.RetryNoControllerText], notices);
+    }
+
+    /// <summary>QE recheck of #310 (R2): back after a lost hiding by "Erneut versuchen", the toast came twice.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-3")]
+    public async Task Erneut_versuchen_after_a_lost_hiding_says_it_runs_again_once()
+    {
+        var notices = new List<string>();
+        _emulation.Notice += notices.Add;
+        await _emulation.TickAsync();
+        _pan.HidingHolds = PanReason.HidingLost;
+        await _emulation.TickAsync();
+        Assert.Equal([PanEmulation.PausedText], notices);
+        _pan.HidingHolds = PanReason.None;
+
+        _emulation.Retry();
+        await _emulation.TickAsync();
+
+        Assert.Equal(PanEmulationState.Running, State);
+        Assert.Equal([PanEmulation.PausedText, PanEmulation.RunningAgainText], notices);
+    }
+
     /// <summary>#308: the warning disappeared for each retry and came back ~6 s later, over and over.</summary>
     [Fact]
     [Trait("TestCase", "T308-3")]

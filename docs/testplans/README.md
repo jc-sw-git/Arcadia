@@ -103,7 +103,11 @@ Without them the AI-assisted QA process is a story, not evidence.
   the IDs of its test cases as `[Trait("TestCase", "T15-1")]`;
   the iteration's overview lists them under "Acceptance tests".
 - **Red once:** every new acceptance test failed once before the PR because the feature was broken
-  on purpose. The PR names, per test, the change that made it red.
+  on purpose. The PR names, per test, the change that made it red (commit or file).
+  The quality engineer reads that note and repeats the red run only if: the note is missing or vague; the test
+  changed after its red run; the test checks something beside its criterion (e.g. a mock instead of the
+  behaviour); the case is safety-critical (HidHide, VIIPER, firmware, crash); or the quality engineer wrote
+  the test.
 - **Review** per PR (quality engineer): does every test cover the text of its test case IDs, where are the gaps?
 
 ## Template for an issue

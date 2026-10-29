@@ -15,5 +15,11 @@ public interface IRunningGamesMonitor
 {
     string LauncherId { get; }
 
+    /// <summary>
+    /// The games it reports don't really run on this PC (Arcadia's demo data). They show "Läuft" on their tile and
+    /// nothing else: they can't be ended, so they must never lock Pan's switch or steer the Steam Controller (#307).
+    /// </summary>
+    bool ReportsSimulatedGames => false;
+
     IReadOnlyList<RunningGame> Poll();
 }

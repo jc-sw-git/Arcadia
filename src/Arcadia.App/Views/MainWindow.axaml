@@ -1602,7 +1602,7 @@
               </Panel>
             </DataTemplate>
             <!-- A question of a category, e.g. "Alle Spiele auf die Vorauswahl setzen?" on a launcher's page (#178):
-                 [A] answers yes, [B] no; each button names its pad button (design T178Spiel). -->
+                 [A] answers yes, [B] no; each button names its pad button or key (design T178Spiel). -->
             <DataTemplate x:DataType="settings:SettingsQuestionViewModel">
               <Panel>
                 <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
@@ -1612,19 +1612,19 @@
                     <StackPanel Spacing="28">
                       <StackPanel Orientation="Horizontal" Spacing="18">
                         <Border Classes="promptIcon"><TextBlock Text="?" /></Border>
-                        <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="ExtraBold" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="560" />
                       </StackPanel>
                       <TextBlock Classes="promptBody" Text="{Binding Message}" />
                       <StackPanel Orientation="Horizontal" Spacing="12">
                         <Button Classes="plain action primaryAction" Command="{Binding ConfirmCommand}">
                           <StackPanel Orientation="Horizontal" Spacing="10">
-                            <ctl:PadGlyph Button="A" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.UsesController, TargetNullValue=False}" />
+                            <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" />
                             <TextBlock Text="{Binding ConfirmText}" VerticalAlignment="Center" />
                           </StackPanel>
                         </Button>
                         <Button Classes="plain action" Command="{Binding CancelCommand}">
                           <StackPanel Orientation="Horizontal" Spacing="10">
-                            <ctl:PadGlyph Button="B" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.UsesController, TargetNullValue=False}" />
+                            <ctl:KeyHint Pad="B" Keys="Esc" />
                             <TextBlock Text="Abbrechen" VerticalAlignment="Center" />
                           </StackPanel>
                         </Button>

@@ -39,7 +39,8 @@ public sealed class LauncherControllerModeViewTests
         {
             arcadia.Click(arcadia.RowButton(reset));
             var question = Assert.IsType<SettingsQuestionViewModel>(launchers.Dialog);
-            Assert.All(Glyphs(arcadia, question), glyph => Assert.False(glyph.IsEffectivelyVisible, "mit der Maus keine [A]/[B]"));
+            Assert.Empty(Shown<PadGlyph>(arcadia, question));
+            Assert.Equal(["Leertaste", "Esc"], Shown<Border>(arcadia, question).Where(glyph => glyph.Classes.Contains("kbd")).Select(key => ((TextBlock)key.Child!).Text));
             switch (cancel)
             {
                 case "Abbrechen":
@@ -68,6 +69,9 @@ public sealed class LauncherControllerModeViewTests
     private static Button DialogButton(ArcadiaWindow arcadia, System.Windows.Input.ICommand command) => Assert.Single(
         arcadia.Window.GetVisualDescendants().OfType<Button>(), button => button.Classes.Contains("action") && button.IsEffectivelyVisible && button.Command == command);
 
-    private static IEnumerable<PadGlyph> Glyphs(ArcadiaWindow arcadia, SettingsQuestionViewModel question) =>
-        new[] { question.ConfirmCommand, question.CancelCommand }.SelectMany(command => DialogButton(arcadia, command).GetVisualDescendants().OfType<PadGlyph>());
+    // After a click the buttons name the keys, not the controller's buttons (#127).
+    private static IEnumerable<T> Shown<T>(ArcadiaWindow arcadia, SettingsQuestionViewModel question) where T : Visual =>
+        new[] { question.ConfirmCommand, question.CancelCommand }
+            .SelectMany(command => DialogButton(arcadia, command).GetVisualDescendants().OfType<T>())
+            .Where(visual => visual.IsEffectivelyVisible);
 }

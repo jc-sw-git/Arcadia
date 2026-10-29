@@ -41,7 +41,7 @@ gone. Decisions: issue #178 and [launchers.md](../../product/launchers.md); desi
       it gets Arcadia's Xbox pad (`arcadia.log`); a game with its own choice keeps it. · E2E: yes
 - [ ] **T178-10** Mouse only: a click on ◀ / ▶ of "Steam Controller" switches it (greyed out with Pan off: nothing);
       a click on "Zurücksetzen" asks; in the question "Zurücksetzen" and "Abbrechen" are clicked, a click beside it or
-      on ✕ cancels; with the mouse the buttons show no [A]/[B]. · E2E: yes
+      on ✕ cancels; with the mouse the buttons name the keys (Leertaste, Esc), not [A]/[B]. · E2E: yes
 - [ ] **T178-11** Controller → info panel of "Controller-Wächter (Pan)": under "STEAM CONTROLLER" the text says the
       mode is chosen per launcher on its page and changed per game in its details (no fixed "Vorausgewählt ist …").
       · E2E: no (a text to read)
@@ -54,3 +54,6 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
+| T178-1 to T178-10 | 2026-10-29 | Claude | PR branch, Debug, Linux cloud container (.NET 10, Avalonia headless) | ✅ `LauncherControllerModeTests`, `Window/LauncherControllerModeViewTests`; each was red once on a deliberate break (listed in the PR) | On the owner's PC |
+| T178-5 | 2026-10-29 | Claude | same, Xvfb, `--demo` | ✅ Pan is unsupported on Linux: both rows greyed out, reachable, subtitle "Aus – erst mit dem Controller-Wächter (Pan)", no "Ändern" in the footer | With Pan on only on the owner's PC |
+| T178-3, T178-4 | 2026-10-29 | Claude | same, Xvfb, `--demo`, Pan forced on by a local patch (not committed) | ✅ [A] in the game menu sets an own mode; reset row with count and info list, question with keys Leertaste/Esc, after "Zurücksetzen" the row is gone | On the owner's PC with Pan really on |

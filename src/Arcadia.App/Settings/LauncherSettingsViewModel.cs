@@ -580,7 +580,8 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             new InfoText($"Diese Spiele aus {name} hast du selbst umgestellt. Danach folgen sie wieder der Vorauswahl „{preset}“:"),
             new InfoFacts(string.Empty, [.. own.Select(game => new InfoFact(game.Title, ControllerModes.Of(game.Choice!.Value)))]),
             .. panOff,
-            new InfoFootnote("[A] fragt vorher nach. Gilt ab dem nächsten Spielstart."),
+            new InfoText("[A] fragt vorher nach."),
+            new InfoFootnote("Gilt ab dem nächsten Spielstart."),
         ];
         _ownModeTitles = [.. own.Select(game => game.Title)];
         return own.Count > 0;

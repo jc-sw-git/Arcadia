@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Arcadia.Pan;
 
 namespace Arcadia.Pan.Tests;
@@ -162,6 +163,46 @@ public sealed class UsbipServerTests : IDisposable
         Assert.Empty(_journal.File.Load().State.UsbipServers);
         Assert.Empty(_cleanup.Detached);
     }
+
+    [Fact]
+    [Trait("TestCase", "T304-6")]
+    public async Task A_planned_stop_keeps_an_earlier_server_a_teardown_could_not_detach()
+    {
+        var first = Start().Generation;
+        _cleanup.DetachFails = true;
+        await CrashAsync();
+        _cleanup.DetachFails = false;
+        var second = Start().Generation;
+
+        Assert.Equal(PanReply.Stopped, _guardian.HandleNow(PanMessage.Of(PanCommand.EmulationStopped, second)).Reply);
+
+        Assert.Equal([new UsbipServer(first, FakeCleanup.ServerPort, OwnViiper.Pid)], _journal.File.Load().State.UsbipServers);
+        var restarted = new Guardian(new FakeClock(), _journal.File, _cleanup, _log.Add);
+        await restarted.RecoverAsync();
+        Assert.Equal([3], _cleanup.Detached);
+        Assert.Empty(_journal.File.Load().State.UsbipServers);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T304-7")]
+    public void The_Pan_before_304_still_reads_a_journal_written_now_with_all_its_state()
+    {
+        // The update at Arcadia's start may install an older Pan (T297-9): it must keep the generation and what is left
+        // to undo, and only miss the usbip ports.
+        var generation = Start().Generation;
+
+        var old = JsonSerializer.Deserialize<JournalBefore304>(File.ReadAllText(_journal.File.Path))!;
+
+        Assert.Equal(1, old.Version);
+        Assert.Equal(generation, old.Generation);
+        Assert.True(old.Emulating);
+        Assert.Equal(OwnViiper.Pid, Assert.Single(old.HeldProcesses!).Pid);
+        Assert.NotNull(old.HiddenDevices);
+        Assert.NotNull(old.AllowListed);
+    }
+
+    /// <summary>The journal as the Pan before #304 read it (version 1 only, these members; unknown ones ignored).</summary>
+    private sealed record JournalBefore304(int Version, uint Generation, bool Emulating, List<HeldProcess>? HeldProcesses, List<string>? HiddenDevices, List<string>? AllowListed);
 
     [Fact]
     [Trait("TestCase", "T304-7")]

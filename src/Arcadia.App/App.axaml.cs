@@ -184,10 +184,8 @@ public partial class App : Application
             // The Steam Controller as an Xbox pad for games, in the mode of the running games (#213); Steam games started
             // directly in Steam count too (#119). VIIPER is only Arcadia's own build of its fork (#242 part B), started and
             // checked by Arcadia (#304); a build without a pinned one has no VIIPER at all, so no pad and no copy.
-            ViiperXboxPads? viiper = OperatingSystem.IsWindows() && ownViiper is not null
-                ? new ViiperXboxPads(new ViiperServer(ownViiper.Executable, Path.Combine(Core.Diagnostics.LogLocation.DataFolder, "viiper"),
-                    Core.Diagnostics.LogLocation.Directory, new WindowsViiperHost(AppLog.Write), AppLog.Write), AppLog.Write)
-                : null;
+            var viiper = ViiperXboxPads.Own(ownViiper?.Executable, Core.Diagnostics.LogLocation.DataFolder, Core.Diagnostics.LogLocation.Directory,
+                OperatingSystem.IsWindows() ? new WindowsViiperHost(AppLog.Write) : null, AppLog.Write);
             // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
             var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write) : new NoPanTransport(), time, AppLog.Write);
             var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);

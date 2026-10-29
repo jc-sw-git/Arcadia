@@ -57,9 +57,9 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
 
 - `EmulationStarted` is registered after Arcadia's VIIPER is started and before any device goes onto it; Pan takes
   every child of the client named `viiper.exe` (Toolhelp32, parent PID + start time) and holds its handle, so a PID
-  can't be reused under it. It takes the start only if one of them alone listens on the port named (IPv4 and IPv6,
-  `ViiperListeners.OnlyServedBy`); else it lets them go and refuses (`NoForwardingProcess`, `UsbipPortNotServed`).
-  The journal (version 2) keeps that port per generation (`UsbipServers`, #304). Journal `%ProgramData%\Arcadia\Pan\journal.json` (temp +
+  can't be reused under it. It takes the start only if one of them alone listens on the port named, only on 127.0.0.1
+  (IPv4 and IPv6, `ViiperListeners.OnlyServedBy`); else it lets them go and refuses (`NoForwardingProcess`,
+  `UsbipPortNotServed`). The journal keeps that port per generation (`UsbipServers`, #304). Journal `%ProgramData%\Arcadia\Pan\journal.json` (temp +
   write-through + `File.Replace`, `.previous` kept, a broken one moved to `.broken` and reported as
   `JournalUnreadable` → toast) written before `Started` is answered. A journal that parses but makes no sense (a
   null list, an entry without a process, an unknown version) counts as unreadable too. The fallback a load had to
@@ -69,8 +69,11 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
   counts on and never repeats a number a client remembers.
 - Steps, each with a 10 s timeout on a worker, never throwing: detach the usbip ports imported from a journaled server
   port, never another program's (`usbip.exe port` / `detach -p`, from `%ProgramFiles%\USBip`; a server leaves the
-  journal only when all its detaches worked), then end the held forwarding processes. A version 1 journal with an
-  open emulation gets VIIPER's old default port 3241, as that Pan detached it. Each ended process leaves the
+  journal only when all its detaches worked), then end the held forwarding processes. A journal without `UsbipServers`
+  (a Pan from before #304 wrote it) with an open emulation gets VIIPER's old default port 3241, as that Pan detached it.
+- A journal change stays readable by the Pan before: new fields only, same `Version` (an older Pan ignores what it
+  doesn't know). The update at Arcadia's start may install an older Pan (T297-9); one that couldn't read the journal
+  would start its generations at 0 again and lose what is left to undo. Each ended process leaves the
   journal at once (under the guardian's lock, so a step left behind after its timeout can't corrupt it); what failed
   stays listed and goes into the next emulation's teardown (a process the client takes up again is listed once); a
   planned stop lets only the current emulation's processes and server port go and keeps such leftovers.

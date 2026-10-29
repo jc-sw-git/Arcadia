@@ -90,7 +90,7 @@ public sealed class ViiperXboxPadsTests : IDisposable
         { "only one port", host => host.Listening = [new(FakeViiperHost.Pid, IPAddress.Loopback, FakeViiperHost.ApiPort)] },
         { "ends at once", host => host.ExitsAtOnce = true },
         { "no port answers with the key", host => host.Answers[(FakeViiperHost.ApiPort, "key")] = ViiperAnswer.NoAnswer },
-        { "both ports answer", host => host.Answers[(FakeViiperHost.UsbipPort, "key")] = ViiperAnswer.Answered },
+        { "both ports answer", host => host.BothPortsAnswer() },
         { "auth not enforced", host => host.Answers[(FakeViiperHost.ApiPort, "none")] = ViiperAnswer.Answered },
         { "a wrong key taken", host => host.Answers[(FakeViiperHost.ApiPort, "wrong")] = ViiperAnswer.Answered },
         { "no answer without a key", host => host.Answers[(FakeViiperHost.ApiPort, "none")] = ViiperAnswer.NoAnswer },
@@ -157,6 +157,61 @@ public sealed class ViiperXboxPadsTests : IDisposable
         Assert.Throws<InvalidOperationException>(() => server.CheckListeners(running));
     }
 
+    public static TheoryData<int, string> ForeignListeners => new()
+    {
+        { FakeViiperHost.UsbipPort, "127.0.0.1" },
+        { FakeViiperHost.UsbipPort, "::1" },
+        { FakeViiperHost.ApiPort, "0.0.0.0" },
+        { FakeViiperHost.ApiPort, "::" },
+    };
+
+    [Theory]
+    [Trait("TestCase", "T304-5")]
+    [MemberData(nameof(ForeignListeners))]
+    public async Task A_process_on_a_port_of_the_running_VIIPER_stops_every_new_pad_and_copy(int port, string address)
+    {
+        var pads = new ViiperXboxPads(Server(), _log.Add);
+        await pads.PrepareAsync(CancellationToken.None);
+
+        _host.Listening = [.. _host.Listening, new(4711, IPAddress.Parse(address), port)];
+
+        var pad = await Assert.ThrowsAsync<InvalidOperationException>(() => pads.PlugAsync(CancellationToken.None));
+        var copy = await Assert.ThrowsAsync<InvalidOperationException>(() => pads.AddRawDeviceAsync("hidproxy", new Dictionary<string, object?> { ["device"] = "12" }, CancellationToken.None));
+        Assert.Equal("VIIPER lauscht nicht wie erwartet", pad.Message);
+        Assert.Equal("VIIPER lauscht nicht wie erwartet", copy.Message);
+        Assert.Contains(_log, line => line.Contains($"process 4711 listens on port {port} too", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T304-5")]
+    public async Task A_running_VIIPER_whose_port_another_process_took_is_replaced_at_the_next_emulation()
+    {
+        // Pan would refuse every start with that port; a new VIIPER gets new ports from Windows.
+        var pads = new ViiperXboxPads(Server(), _log.Add);
+        await pads.PrepareAsync(CancellationToken.None);
+        var first = _host.Process!;
+        var foreign = new TcpListening(4711, IPAddress.IPv6Loopback, FakeViiperHost.UsbipPort);
+        _host.Listening = [.. _host.Listening, foreign];
+        _host.OnStart = () => _host.Listening = [.. _host.Listening.Where(listener => listener != foreign)];
+
+        Assert.Equal(FakeViiperHost.UsbipPort, await pads.PrepareAsync(CancellationToken.None));
+
+        Assert.True(first.Stopped);
+        Assert.Equal(2, _host.Started.Count);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T304-5")]
+    public async Task A_running_VIIPER_that_still_checks_out_is_used_again()
+    {
+        var pads = new ViiperXboxPads(Server(), _log.Add);
+        await pads.PrepareAsync(CancellationToken.None);
+
+        await pads.PrepareAsync(CancellationToken.None);
+
+        Assert.Single(_host.Started);
+    }
+
     [Fact]
     [Trait("TestCase", "T304-8")]
     public async Task Nothing_goes_onto_a_VIIPER_before_a_start_made_it_ready_not_even_one_already_listening()
@@ -181,6 +236,20 @@ public sealed class ViiperXboxPadsTests : IDisposable
         {
             Assert.Empty(requests);
         }
+    }
+
+    [Fact]
+    [Trait("TestCase", "T304-2")]
+    public async Task Arcadias_VIIPER_is_only_the_pinned_build_next_to_it_and_without_one_there_is_none()
+    {
+        var own = Path.Combine(_folder, "viiper.exe");
+
+        Assert.Null(ViiperXboxPads.Own(null, _folder, _folder, _host, _log.Add));
+        Assert.Null(ViiperXboxPads.Own(own, _folder, _folder, null, _log.Add));
+        await ViiperXboxPads.Own(own, _folder, _folder, _host, _log.Add)!.PrepareAsync(CancellationToken.None);
+        var start = Assert.Single(_host.Started);
+        Assert.Equal(own, start.FileName);
+        Assert.Equal(Path.Combine(_folder, "viiper"), start.Environment["AppData"]);
     }
 
     [Fact]
@@ -272,6 +341,15 @@ public sealed class FakeViiperHost : IViiperHost
     public bool JobObjectFails { get; set; }
     public bool ExitsAtOnce { get; set; }
     public bool ListenersThrow { get; set; }
+    public Action? OnStart { get; set; }
+
+    /// <summary>The usbip port behaves like a second API: the start can't tell which one is VIIPER's.</summary>
+    public void BothPortsAnswer()
+    {
+        Answers[(UsbipPort, "key")] = ViiperAnswer.Answered;
+        Answers[(UsbipPort, "none")] = ViiperAnswer.Refused;
+        Answers[(UsbipPort, "wrong")] = ViiperAnswer.Refused;
+    }
 
     public List<TcpListening> Listening { get; set; } =
         [new(Pid, IPAddress.Loopback, UsbipPort), new(Pid, IPAddress.Loopback, ApiPort), new(7, IPAddress.Any, 445)];
@@ -286,6 +364,7 @@ public sealed class FakeViiperHost : IViiperHost
     public IViiperProcess Start(ProcessStartInfo start)
     {
         Started.Add(start);
+        OnStart?.Invoke();
         var keyFile = ViiperKeyFile.PathIn(start.Environment["AppData"]!);
         KeyAtStart = File.ReadAllText(keyFile);
         _key = ViiperConnection.DeriveKey(KeyAtStart);

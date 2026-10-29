@@ -73,4 +73,15 @@ public sealed class ViiperListenersTests
         Assert.Contains("no held viiper.exe", ViiperListeners.OnlyServedBy([Own(50002)], 50001, [Viiper]));
         Assert.Contains("process 7", ViiperListeners.OnlyServedBy([Own(50001), new(7, IPAddress.IPv6Any, 50001)], 50001, [Viiper]));
     }
+
+    [Theory]
+    [Trait("TestCase", "T304-6")]
+    [InlineData("0.0.0.0")]
+    [InlineData("::")]
+    [InlineData("::1")]
+    public void Pan_takes_no_port_the_held_viiper_also_serves_beyond_127_0_0_1(string address)
+    {
+        Assert.Contains("not only on 127.0.0.1", ViiperListeners.OnlyServedBy([Own(50001), Own(50001, address)], 50001, [Viiper]));
+        Assert.Contains("not only on 127.0.0.1", ViiperListeners.OnlyServedBy([Own(50001, address)], 50001, [Viiper]));
+    }
 }

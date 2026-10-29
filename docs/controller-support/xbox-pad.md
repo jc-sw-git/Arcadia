@@ -21,10 +21,13 @@ no empty layout forced on a marker, no focus bounce. Overview and the other file
   otherwise: a game never sees an idle extra pad. `Wanted` comes from `SteamControllerRouting` (below).
 - `ViiperXboxPads` drives Arcadia's own `viiper.exe` (its build of the VIIPER fork next to Arcadia.exe, #242) with
   VIIPER's MIT client `Viiper.Client` 0.9.0: one bus, one `xbox360` device per plug. A plug-in that fails after the bus
-  was created removes the bus again. `PrepareAsync` (only from the copy's start in `PanEmulation`) starts the server;
-  a plug never starts one, it fails while none runs. No other program's VIIPER is ever used (#304).
+  was created removes the bus again. `PrepareAsync` (at each emulation's start in `PanEmulation`, before Pan learns
+  the port) starts the server, or keeps the running one if its listeners still check out and it answers with its key
+  (else a new one: other ports); a plug never starts one, it fails while none runs. No other program's VIIPER is ever
+  used (#304).
 - `ViiperServer.StartAsync` (#304), every step fail closed (viiper.exe ended, start failed, logged):
-  1. ends a `viiper.exe` left from the same path (`WindowsViiperHost.EndLeftovers`);
+  1. ends a `viiper.exe` left from the same path (`WindowsViiperHost.EndLeftovers`; here, not at Arcadia's start: one
+     is only left if Arcadia died between `Process.Start` and the job assignment);
   2. writes a fresh 32-character key to `<data>\viiper\VIIPER\viiper.key.txt` and starts `viiper.exe server --no-tray
      --usb.addr=127.0.0.1:0 --api.addr=127.0.0.1:0 --api.require-local-host-auth` with `AppData` pointed at
      `<data>\viiper` and every other `VIIPER_*` variable removed, so it reads only Arcadia's key, never the user's;

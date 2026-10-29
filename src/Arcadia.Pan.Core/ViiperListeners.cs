@@ -44,9 +44,16 @@ public static class ViiperListeners
     /// </summary>
     public static string? OnlyServedBy(IReadOnlyCollection<TcpListening> all, int port, IReadOnlyCollection<int> servers)
     {
-        if (!all.Any(listener => listener.Port == port && servers.Contains(listener.Pid)))
+        var own = all.Where(listener => listener.Port == port && servers.Contains(listener.Pid)).ToList();
+        if (own.Count == 0)
         {
             return $"no held viiper.exe listens on port {port}";
+        }
+
+        // Arcadia checks it too; Pan doesn't count on that.
+        if (own.FirstOrDefault(listener => !IPAddress.Loopback.Equals(listener.Address)) is { } open)
+        {
+            return $"viiper.exe listens on {open.Address}:{port}, not only on 127.0.0.1";
         }
 
         return ForeignOn(all, [port], servers);

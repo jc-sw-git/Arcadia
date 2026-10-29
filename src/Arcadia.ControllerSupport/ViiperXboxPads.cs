@@ -14,7 +14,6 @@ namespace Arcadia.ControllerSupport;
 public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IVirtualXboxPadServer
 {
     private static readonly TimeSpan ApiTimeout = TimeSpan.FromSeconds(3);
-    private static readonly TimeSpan PingTimeout = TimeSpan.FromSeconds(2);
 
     private readonly SemaphoreSlim _serverGate = new(1, 1);
     private RunningViiper? _server;
@@ -37,13 +36,22 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
     /// <summary>The usbip port of the VIIPER that runs now, or null; a new one means a new emulation (#304, decision 11).</summary>
     public int? ServerPort => _server is { HasExited: false } running ? running.UsbipPort : null;
 
+    /// <summary>
+    /// Arcadia's own VIIPER, or none (#304): only the pinned build next to Arcadia (<paramref name="ownExecutable"/>, null
+    /// without a pin), never another program's <c>viiper.exe</c>; its key below <paramref name="dataFolder"/>.
+    /// </summary>
+    public static ViiperXboxPads? Own(string? ownExecutable, string dataFolder, string logDirectory, IViiperHost? host, Action<string> log) =>
+        ownExecutable is null || host is null
+            ? null
+            : new ViiperXboxPads(new ViiperServer(ownExecutable, Path.Combine(dataFolder, "viiper"), logDirectory, host, log), log);
+
     public async Task<int> PrepareAsync(CancellationToken cancellationToken)
     {
         await _serverGate.WaitAsync(cancellationToken);
         try
         {
-            if (_server is { HasExited: false } running
-                && await ViiperConnection.PingAsync(running.ApiPort, running.DerivedKey, PingTimeout, cancellationToken) == ViiperAnswer.Answered)
+            // A VIIPER whose port another process took too would be refused by Pan at every start; a new one gets new ports.
+            if (_server is { } running && await server.IsStillTrustedAsync(running, cancellationToken))
             {
                 return running.UsbipPort;
             }

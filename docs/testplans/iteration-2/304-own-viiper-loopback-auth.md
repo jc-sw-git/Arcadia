@@ -28,12 +28,15 @@ No case has a UI flow of its own (the visible part is #242's copy and toasts), s
 - [ ] **T304-5** Fail closed: VIIPER ending at once, not in the job object, a key file that can't be written, a third
       port, another address, another process on a port number, no or two answering ports, a ping without key that
       is answered, a timeout: `viiper.exe` ended, no key file, the start fails with a log line, nothing plugged.
-      · E2E: no (unit tests, one per failure)
+      Another process on a port of the running VIIPER (either family): no new pad or copy, and the next emulation
+      starts a new VIIPER. · E2E: no (unit tests, one per failure)
 - [ ] **T304-6** Pan journals the usbip port of the held `viiper.exe` per generation; a start without a `viiper.exe` of
-      Arcadia's or with a port it doesn't alone serve is refused; a teardown detaches only that port's devices and keeps
-      the entry until all detached; a planned stop drops it. · E2E: no (Pan unit tests)
+      Arcadia's, with a port it doesn't alone serve, or that it serves beyond 127.0.0.1 is refused; a teardown detaches
+      only that port's devices and keeps the entry until all detached; a planned stop drops only its own generation's.
+      · E2E: no (Pan unit tests)
 - [ ] **T304-7** A Pan journal from before #304 with an open emulation detaches what port 3241 served, as that Pan
-      did; an idle one gets no port. · E2E: no (Pan unit tests)
+      did; an idle one gets no port. A journal written now is still read by the Pan from before #304 (same version,
+      generation and pending work kept), as the update at start may install it (T297-9). · E2E: no (Pan unit tests)
 - [ ] **T304-8** VIIPER lost during the copy (killed in Task Manager): the emulation ends and Pan shows the puck; the next
       start names VIIPER's new port to Pan before any device goes on it, and the copy runs again. · E2E: no (integration
       test with fakes; real kill on the owner's PC)
@@ -51,6 +54,7 @@ History:
 |---|---|---|---|---|---|
 | T304-1 … T304-8, T304-10 (automated) | 2026-10-29 | Claude | PR branch, Debug, Linux cloud container, `dotnet test Arcadia.slnx` (2,775 tests, after merging the base) | ✅ | Windows CI open |
 | Red once (mutations) | 2026-10-29 | Claude | same; each seen red: auth flag dropped, key-refusal check skipped, usbip on 0.0.0.0, receive counter unchecked, VIIPER-lost check off, Pan without `ServerOf`, teardown of every local port, server dropped after a failed detach | ✅ | – |
+| QE review round (PR #318) | 2026-10-29 | Claude | same; new tests each seen red: no listener re-check before a pad or copy, first of two answering ports taken, running VIIPER reused without its listeners checked, planned stop dropping every server, Pan taking a listener beyond 127.0.0.1, old journal without 3241, journal version raised | ✅ | – |
 | T304-4 (real server) | 2026-10-29 | Claude | Linux build of the fork at the pinned commit, `--api.require-local-host-auth`: key answers, no key and wrong key refused, encrypted ping round trip | ✅ | Windows run in check step 1 |
 | T304-1, 3, 4, 9, 10, 11 (check-304) | – | owner | Windows, owner's PC | open | |
 | T304-8, T304-12 | – | owner | Windows, owner's PC, Steam Controller with puck, Pan | open | |

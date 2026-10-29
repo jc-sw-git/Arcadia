@@ -20,10 +20,14 @@ public sealed record UsbipServer(uint Generation, int Port, int Pid);
 /// </summary>
 public sealed class JournalState
 {
-    /// <summary>The format: 2 since #304 (the usbip servers); a journal of version 1 is read and taken over.</summary>
+    /// <summary>
+    /// The format. Changes stay additive and the version stays, so the Pan before can still read the journal: the update
+    /// at Arcadia's start may install an older Pan (#297, T297-9), and one that couldn't read it would lose the
+    /// generation and what is left to undo. A field it doesn't know it ignores.
+    /// </summary>
     public int Version { get; set; } = CurrentVersion;
 
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 1;
 
     /// <summary>The last generation handed out; the next emulation gets the one after it, also after a restart.</summary>
     public uint Generation { get; set; }
@@ -38,8 +42,26 @@ public sealed class JournalState
 
     public List<HeldProcess> HeldProcesses { get; set; } = [];
 
-    /// <summary>The usbip servers whose imported devices a teardown still has to detach (#304).</summary>
-    public List<UsbipServer> UsbipServers { get; set; } = [];
+    /// <summary>
+    /// The usbip servers whose imported devices a teardown still has to detach (#304). Missing in a journal written by a
+    /// Pan from before #304 (<see cref="UsbipServersMissing"/>).
+    /// </summary>
+    public List<UsbipServer> UsbipServers
+    {
+        get => _usbipServers;
+        set
+        {
+            _usbipServers = value;
+            _usbipServersWritten = true;
+        }
+    }
+
+    private List<UsbipServer> _usbipServers = [];
+    private bool _usbipServersWritten;
+
+    /// <summary>Read from a journal without the usbip servers: one a Pan from before #304 wrote.</summary>
+    [JsonIgnore]
+    internal bool UsbipServersMissing => !_usbipServersWritten;
 
     /// <summary>The HidHide device instances Pan added (part B); devices the user had hidden before are never listed.</summary>
     public List<string> HiddenDevices { get; set; } = [];
@@ -206,7 +228,7 @@ public sealed class JournalFile(string path)
     /// </summary>
     private static string? Validate(JournalState state)
     {
-        if (state.Version is not (1 or JournalState.CurrentVersion))
+        if (state.Version != JournalState.CurrentVersion)
         {
             return $"unknown journal version {state.Version}";
         }
@@ -246,12 +268,12 @@ public sealed class JournalFile(string path)
     /// </summary>
     private static void TakeOver(JournalState state)
     {
-        if (state.Version == 1 && (state.Emulating || state.HeldProcesses.Count > 0))
+        if (state.UsbipServersMissing)
         {
-            state.UsbipServers.Add(new UsbipServer(state.Generation, UsbipPorts.ViiperPort, Pid: 0));
+            state.UsbipServers = state.Emulating || state.HeldProcesses.Count > 0
+                ? [new UsbipServer(state.Generation, UsbipPorts.ViiperPort, Pid: 0)]
+                : [];
         }
-
-        state.Version = JournalState.CurrentVersion;
     }
 
     private static void MoveAside(string file, string aside)

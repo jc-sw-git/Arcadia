@@ -120,6 +120,26 @@ public sealed class ViiperServer(string executable, string configRoot, string lo
         }
     }
 
+    /// <summary>Whether a running VIIPER may be used for a new emulation: still running, its listeners as checked, and answering with its key.</summary>
+    public async Task<bool> IsStillTrustedAsync(RunningViiper server, CancellationToken cancellationToken)
+    {
+        if (server.HasExited)
+        {
+            return false;
+        }
+
+        try
+        {
+            CheckListeners(server);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
+
+        return await host.PingAsync(server.ApiPort, server.DerivedKey, PingTimeout, cancellationToken) == ViiperAnswer.Answered;
+    }
+
     /// <summary>The detail goes to the log; the message also shows in the settings row.</summary>
     private InvalidOperationException Untrusted(string problem)
     {

@@ -11,6 +11,13 @@ one names the countermeasure that would close it, so a later story can pick it u
   VIIPER just let go. Without the key it can neither read nor forge a frame (session key from key and nonces), so it
   can only make the plug fail. Same-user code could read the key from `viiper.exe`'s memory (or its file in the few
   ms before it is deleted); it could control the user's input anyway.
+- **The usbip port takes any local importer** (#304, QE review of PR #318): usbip has no auth, and the fork's
+  `handleImport` imports a device for any connection, a second time too. The port is in the TCP table, so any local
+  process outside an AppContainer, also of another Windows user, can import the pad or the copy of the puck: read
+  the controller's input and send control requests through the copy. The allow list still drops update traffic, but
+  each dropped message counts for `FirmwareAttemptWatch`, so it can force the firmware hold (puck stays hidden). The
+  LAN case closed with 127.0.0.1. Countermeasure (fork, follow-up): accept an import only from usbip-win2's kernel
+  connection (on Windows the TCP table names PID 4), or refuse a second import of a busid.
 - **VIIPER reuses nonces** (upstream, #304): both directions use the same session key with counters from 0, so two
   frames share a nonce. Anyone who could read loopback traffic (administrators only) could XOR them. Fix upstream:
   one key per direction.

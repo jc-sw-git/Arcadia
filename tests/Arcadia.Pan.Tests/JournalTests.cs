@@ -112,10 +112,10 @@ public class JournalTests
     [InlineData("{\"Version\":1,\"Generation\":7,\"HeldProcesses\":[{\"Pid\":0,\"StartTime\":1,\"ImageName\":\"viiper.exe\"}]}", "incomplete")]
     [InlineData("{\"Version\":1,\"Generation\":7,\"HeldProcesses\":[{\"Pid\":5,\"StartTime\":1}]}", "incomplete")]
     [InlineData("{\"Version\":1,\"Generation\":7,\"AllowListed\":[null]}", "HidHide entry is missing")]
-    [InlineData("{\"Version\":3,\"Generation\":7}", "unknown journal version")]
-    [InlineData("{\"Version\":2,\"Generation\":7,\"UsbipServers\":null}", "a list is missing")]
-    [InlineData("{\"Version\":2,\"Generation\":7,\"UsbipServers\":[{\"Generation\":7,\"Port\":0,\"Pid\":5}]}", "usbip server entry is incomplete")]
-    [InlineData("{\"Version\":2,\"Generation\":7,\"UsbipServers\":[{\"Generation\":7,\"Port\":70000,\"Pid\":5}]}", "usbip server entry is incomplete")]
+    [InlineData("{\"Version\":2,\"Generation\":7}", "unknown journal version")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"UsbipServers\":null}", "a list is missing")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"UsbipServers\":[{\"Generation\":7,\"Port\":0,\"Pid\":5}]}", "usbip server entry is incomplete")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"UsbipServers\":[{\"Generation\":7,\"Port\":70000,\"Pid\":5}]}", "usbip server entry is incomplete")]
     public void A_journal_that_parses_but_makes_no_sense_counts_as_unreadable(string json, string problem)
     {
         // Review point 4: `{"HeldProcesses":null}` deserializes, and HasWork then threw at every start of Pan.

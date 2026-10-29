@@ -41,7 +41,7 @@ Charter: –. Time box: –. Findings: –.
 | T208-1 to T208-3, T209-3 | `tests/Arcadia.App.Tests/PageInterfaceTests.cs` |
 | T209-1, T209-2 | `tests/Arcadia.App.Tests/PageTransitionTests.cs`, `Window/SearchViewTests.cs` |
 | T210-1 to T210-3 | `tests/Arcadia.App.Tests/RoutingTests.cs` |
-| T242-8, T242-10 to T242-16, T242-20 to T242-25 | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `SteamControllerModeTests.cs` |
+| T242-8, T242-10 to T242-16, T242-20 to T242-25 | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `SteamControllerModeTests.cs`, `Window/HoldButtonFillTests.cs` (T242-20, the fill) |
 | T297-1 to T297-8 | `tests/Arcadia.App.Tests/PanUpdateAtStartTests.cs` |
 | T214-1 to T214-8, T214-11; T214-10 | `tests/Arcadia.App.Tests/SisrRemovalTests.cs`; `SteamControllerModeTests.cs` |
 | T215-1 to T215-6 | `tests/Arcadia.App.Tests/Window/ButtonSymbolsTests.cs` |

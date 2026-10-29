@@ -80,7 +80,8 @@ Say in the PR which states you looked at and which you only checked by test.
   plugged in).
 - **Steam shortcuts:** `./tools/dev/Read-SteamShortcuts.ps1` (read-only).
 - **Logs:** `%APPDATA%\Arcadia\logs\arcadia.log`, `viiper.log`.
-- **Crash without log line:** Windows event log, provider `.NET Runtime` (see CLAUDE.md).
+- **Crash without log line:** Windows event log, provider `.NET Runtime`:
+  `Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} | ? ProviderName -match '.NET Runtime'`.
 
 ## 6. What only the owner can check
 

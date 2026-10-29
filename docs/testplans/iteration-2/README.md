@@ -24,6 +24,11 @@ its file.
 | [214-remove-or-keep-sisr.md](214-remove-or-keep-sisr.md) | #214 | Remove SISR on request, or keep it, in the controller settings | 13 |
 | [215-show-the-button-symbols-of-the-controller-in-use.md](215-show-the-button-symbols-of-the-controller-in-use.md) | #215 | Show the button symbols of the controller in use | 8 |
 | [308-pan-hide-warning-loops-with-only-the-puck.md](308-pan-hide-warning-loops-with-only-the-puck.md) | #308 | Pan: hide warning loops with only the puck connected, then emulation stops | 6 |
+| [141-software-tools-and-soundtracks.md](141-software-tools-and-soundtracks.md) | #141 | Software, tools and soundtracks in the library | 12 |
+| [083-steam-sign-in-by-qr-code.md](083-steam-sign-in-by-qr-code.md) | #83 | Steam sign-in by QR code for owned games | 8 |
+| [278-follow-steam-downloads-live.md](278-follow-steam-downloads-live.md) | #278 | Follow Steam's install progress, pauses and account switches live | 8 |
+| [280-steam-sign-in-on-steams-login-page.md](280-steam-sign-in-on-steams-login-page.md) | #280 | Steam sign-in on Steam's own login page | 11 |
+| [277-detect-a-steam-game-start-that-steam-refused.md](277-detect-a-steam-game-start-that-steam-refused.md) | #277 | Detect a Steam game start that Steam refused | 7 |
 | [304-own-viiper-loopback-auth.md](304-own-viiper-loopback-auth.md) | #304 | Run only Arcadia's own VIIPER, on loopback, with Windows-assigned ports and API auth | 12 |
 
 ## Exploratory test
@@ -47,3 +52,9 @@ Charter: –. Time box: –. Findings: –.
 | T214-1 to T214-8, T214-11; T214-10 | `tests/Arcadia.App.Tests/SisrRemovalTests.cs`; `SteamControllerModeTests.cs` |
 | T215-1 to T215-6 | `tests/Arcadia.App.Tests/Window/ButtonSymbolsTests.cs` |
 | T308-2, T308-3 | `tests/Arcadia.App.Tests/PanEmulationTests.cs` |
+| T141-1, T141-3, T141-5, T141-7, T141-8, T141-9 | `tests/Arcadia.App.Tests/EntryTypeTests.cs` |
+| T141-4, T141-7 (drawn) | `tests/Arcadia.App.Tests/Window/EntryTypeViewTests.cs` |
+| T83-1 (faked Steam), T83-2, T83-5, T83-6, T83-7 | `tests/Arcadia.App.Tests/SteamAccountTests.cs` |
+| T277-1, T277-3 to T277-5, T277-7 | `tests/Arcadia.App.Tests/StartRefusedTests.cs` |
+| T278-2 to T278-5 (faked Steam) | `tests/Arcadia.App.Tests/SteamInstallTests.cs` |
+| T278-8 (faked launcher) | `tests/Arcadia.App.Tests/GameStartTests.cs` |

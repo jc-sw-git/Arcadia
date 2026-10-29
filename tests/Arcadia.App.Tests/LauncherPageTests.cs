@@ -316,11 +316,11 @@ public sealed class LauncherPageTests
 
         var rescan = Assert.IsType<ActionRowViewModel>(arcadia.FocusRow("launcher-rescan"));
         Assert.True(rescan.IsEnabled);
-        Assert.Equal("2 Spiele · zuletzt vor 10 Min.", rescan.Subtitle);
+        Assert.Equal(("2 Spiele", "· zuletzt vor 10 Min."), (rescan.Counts?.Tip, rescan.Subtitle));
 
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == "2 Spiele in GOG Galaxy gefunden.", "der Toast nach dem Einlesen");
-        Assert.Equal("2 Spiele · zuletzt gerade eben", rescan.Subtitle);
+        Assert.Equal(("2 Spiele", "· zuletzt gerade eben"), (rescan.Counts?.Tip, rescan.Subtitle));
 
         // The other launchers weren't read.
         arcadia.Press(UiAction.Back);

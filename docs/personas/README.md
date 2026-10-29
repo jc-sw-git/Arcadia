@@ -23,6 +23,15 @@ the thread small and focused.
 4. **Owner's manual test:** in the implementation thread, which fixes the owner's feedback and any open
    review findings in one batch (`docs/testplans/README.md` → Before the merge).
 
+Cost rules (owner, 2026-10-28): each tool call re-reads the thread's whole context, so a long thread gets
+expensive mostly through its size.
+- **One thread per PR.** An issue split into part PRs gets a new implementation thread per part; a thread
+  is not swapped for a fresh one mid-PR.
+- **Concept questioned during implementation:** the implementation thread pauses and asks the coordinator for
+  a short refinement thread; it settles the question in the issue, then implementation continues.
+- **Review findings in one batch:** findings from all sources (quality engineer, other reviewers) are
+  collected and fixed in one round, not one round per source.
+
 Codex reviews only in the acceptance review at the end of the iteration (owner, 2026-10-26), not per PR.
 
 ## Decisions

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Arcadia.App.Keyboard;
 using Arcadia.App.Search;
 using Arcadia.App.ViewModels;
@@ -91,6 +92,10 @@ public sealed class MouseModeHost : IDisposable
     private volatile bool _blockedByGame;
     private bool _optionsBlocked;
 
+    // A web page opened by controller holds the mode on (#280), and opened the keyboard if it wasn't open yet.
+    private bool _heldForWebPage;
+    private bool _keyboardForWebPage;
+
     public MouseModeHost(IGamepadSource gamepad, SettingsService settings, MainWindow window, MainViewModel viewModel, TimeProvider time)
     {
         _gamepad = gamepad;
@@ -143,6 +148,7 @@ public sealed class MouseModeHost : IDisposable
         _gamepad.Lost += OnControllersLost;
         _window.Activated += OnArcadiaActivated;
         _window.Deactivated += OnArcadiaDeactivated;
+        _viewModel.PropertyChanged += OnViewModelChanged;
     }
 
     /// <summary>Gamepad input is the mouse's now, not Arcadia's navigation. Readable from any thread.</summary>
@@ -178,9 +184,45 @@ public sealed class MouseModeHost : IDisposable
         return true;
     }
 
+    /// <summary>
+    /// A launcher's web page opened (#280, e.g. Steam's sign-in): it is used with the mouse and keyboard, so when the
+    /// controller opened it, the mode comes on for it, whatever the settings say, with its keyboard open; after the page
+    /// the mode goes off again if it came on for it (owner, 2026-10-27).
+    /// </summary>
+    private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(MainViewModel.IsWebSignInOpen))
+        {
+            return;
+        }
+
+        if (_viewModel.IsWebSignInOpen && _viewModel.UsesController && !_heldForWebPage)
+        {
+            _heldForWebPage = true;
+            _keyboardForWebPage = !_mode.IsKeyboardOpen;
+            AppLog.Write("Webseite per Controller geöffnet: Mausmodus und Bildschirmtastatur für sie");
+            _mode.HoldForDialog(true);
+            if (_keyboardForWebPage)
+            {
+                _mode.OpenKeyboard();
+            }
+        }
+        else if (!_viewModel.IsWebSignInOpen && _heldForWebPage)
+        {
+            _heldForWebPage = false;
+            if (_keyboardForWebPage)
+            {
+                CloseKeyboard("Webseite zu");
+            }
+
+            _mode.HoldForDialog(false);
+        }
+    }
+
     /// <summary>Call after the gamepad source stopped polling: lets go of a held mouse button or key.</summary>
     public void Dispose()
     {
+        _viewModel.PropertyChanged -= OnViewModelChanged;
         _gamepad.Polled -= OnPolled;
         _gamepad.Lost -= OnControllersLost;
         _foregroundCheck.Stop();

@@ -48,6 +48,27 @@ not the whole folder.
    then reads PR, issue and test plan file instead of the old thread.
 5. The owner tests only what the rework changed, and merges.
 
+**Marking tests as passed costs no CI run** (owner 2026-10-29): the thread records the owner's results in the
+test plan file and pushes. A push that changes only `docs/testplans/**` skips build and tests (the `build` jobs
+run with all steps skipped, so the required checks still report success) and only the `Testplan` check runs;
+the PR is green again within a minute. That holds only if the commit before was green; anything else in the
+push, or a red or still running predecessor, builds fully (`tools/ci/detect-testplan-only.sh`). 
+
+## Process metrics (owner 2026-10-27, from Iteration 3)
+
+Few numbers, captured where the work happens, evaluated in each iteration's retro (table in the retro issue).
+Without them the AI-assisted QA process is a story, not evidence.
+
+1. **Bugs before the merge, by source:** every code PR description has a line `Process metrics: found by QE n,
+   Codex n, owner test n, other n | owner test rounds n`. The QE thread fills in its findings, the implementation
+   thread the rest after the owner's test.
+2. **Bugs after the merge:** issue label `escaped-bug`, the issue names the PR that introduced it. Counted at
+   iteration end, no other effort.
+3. **Rework after the owner's test:** the `owner test rounds` value above (fix batches after the first test).
+4. **Cost per issue:** threads per issue and how many ended over ~150k tokens; counted by the coordinator from
+   the thread list at iteration end. Token numbers only where available without manual work.
+5. **Once, in the Iteration 3 retro:** how many of Iteration 2's Codex findings were real.
+
 ## Course of an iteration
 
 1. **Feature iteration N** (milestone "Iteration N"): implement issues, every PR extends the test plan.
@@ -88,7 +109,11 @@ not the whole folder.
   the IDs of its test cases as `[Trait("TestCase", "T15-1")]`;
   the iteration's overview lists them under "Acceptance tests".
 - **Red once:** every new acceptance test failed once before the PR because the feature was broken
-  on purpose. The PR names, per test, the change that made it red.
+  on purpose. The PR names, per test, the change that made it red (commit or file).
+  The quality engineer reads that note and repeats the red run only if: the note is missing or vague; the test
+  changed after its red run; the test checks something beside its criterion (e.g. a mock instead of the
+  behaviour); the case is safety-critical (HidHide, VIIPER, firmware, crash); or the quality engineer wrote
+  the test.
 - **Review** per PR (quality engineer): does every test cover the text of its test case IDs, where are the gaps?
 
 ## Template for an issue

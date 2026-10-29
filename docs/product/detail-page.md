@@ -21,3 +21,9 @@ Agreed with the owner; don't change without asking. Read this before changing th
   first. The update shows as an icon, and the detail page says below the button that the launcher may update
   first (owner, 2026-10-12). Launchers have no update-only command: Steam ignores `steam://install` for
   installed games and `steam://validate` verifies every file first; Playnite offers no update action either.
+- What A says depends on the entry's type (#141, owner 2026-10-26): "Spielen" for a game, "Tüfteln" for software and
+  tools, "Abrocken" for a soundtrack; the same text on the button, in the context menu and in the button hint. Not
+  installed it says "Installieren". While software or a tool runs, A says "Weiter tüfteln" instead of "Zurück ins
+  Spiel" (owner, 2026-10-27). A soundtrack is handed to its launcher, so it gets no "Startet" or "Läuft" state: Steam
+  plays it and, a moment later, also shows the soundtrack's page, as "In Steam öffnen" does (owner, 2026-10-27; controlling the music
+  from Arcadia is its own story). Its detail page notes "Steam spielt den Soundtrack ab." under the actions.

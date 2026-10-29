@@ -49,7 +49,7 @@ public sealed class LauncherViewTests
         Assert.Equal("Aktiv", arcadia.ValueShown(arcadia.LauncherRow("xbox")));
         Assert.Equal(["gog", "amazon", "xbox"], arcadia.LauncherCategory().LauncherKeys());
         Assert.Equal(["GOG Galaxy", "Amazon Games", "Xbox"], arcadia.Arcadia.TabNames());
-        await arcadia.Arcadia.WaitUntilAsync(() => arcadia.LauncherRow("xbox").Fact("Spiele") == "3 Spiele", "Xbox soll eingelesen werden");
+        await arcadia.Arcadia.WaitUntilAsync(() => arcadia.LauncherRow("xbox").Fact("Einträge") == "3 Spiele", "Xbox soll eingelesen werden");
 
         arcadia.Press(UiAction.Back);
         Assert.Equal(["GOG Galaxy", "Amazon Games", "Xbox"], DrawnTabs(arcadia));

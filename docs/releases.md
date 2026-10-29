@@ -37,8 +37,11 @@
   answers 403). Pushing the tag by hand still works.
 - Every CI run on Windows packs the installer; only pushes to `main` upload it as an artifact (1 day). The account's
   artifact storage is small and counted per hour over the billing month, so deleting doesn't free it at once:
-  `prune-artifacts.yml` keeps only the newest 5 (after each CI run, daily, or by hand), and a failed upload only
-  warns, it doesn't fail the CI (#115).
+  `prune-artifacts.yml` keeps only the newest 5 of each artifact name (after each CI run, daily, or by hand), and a
+  failed upload only warns, it doesn't fail the CI (#115).
+- Every CI run (pull requests too) measures code coverage on Windows and uploads it as `coverage-report` (HTML,
+  7 days); the summary per assembly is on the run's summary page. Locally:
+  `dotnet test Arcadia.slnx --collect:"XPlat Code Coverage"` writes Cobertura XML under each test project's `TestResults/`.
 - Versioning (owner's rule): SemVer, 0.x until the first full release 1.0. Major may break; minor adds only
   non-breaking features; patch only fixes bugs — no features, no intended behaviour change (security aside).
   This matters because third-party plugins are planned.

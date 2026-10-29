@@ -32,6 +32,9 @@ public static class Formatting
         };
     }
 
+    /// <summary>A number of entries with thousands separators: "1.234".</summary>
+    public static string Count(int count) => count.ToString("N0", Culture);
+
     public static string Playtime(TimeSpan? playtime) =>
         playtime is { } value ? $"{Math.Max(1, (int)value.TotalHours)} Std." : "–";
 

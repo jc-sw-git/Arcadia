@@ -102,13 +102,104 @@ public sealed class SteamScannerTests : IDisposable
 
     [Theory]
     [InlineData("228980", "Steamworks Common Redistributables")]
-    [InlineData("243730", "Source SDK Base 2013 Singleplayer")]
     [InlineData("1628350", "Steam Linux Runtime 3.0 (sniper)")]
     [InlineData("2348590", "Proton 8.0")]
-    [InlineData("3637470", "RuneScape: Dragonwilds Early Adopter Soundtrack")]
-    public void Leaves_out_tools(string appId, string name)
+    public void Leaves_out_runtimes_and_redistributables(string appId, string name)
     {
         Assert.Null(SteamScanner.ParseManifest(Manifest(appId, name), _root));
+    }
+
+    [Theory]
+    [InlineData("228980", "Steamworks Common Redistributables", "Tool")]
+    [InlineData("1628350", "Steam Linux Runtime 3.0 (sniper)", "Tool")]
+    public void Leaves_out_runtimes_whatever_type_Steam_gives_them(string appId, string name, string steamType)
+    {
+        var types = new Dictionary<uint, string> { [uint.Parse(appId)] = steamType };
+
+        Assert.Null(SteamScanner.ParseManifest(Manifest(appId, name), _root, appTypes: types));
+    }
+
+    [Theory]
+    [InlineData("243730", "Source SDK Base 2013 Singleplayer", GameType.Tool)]
+    [InlineData("250820", "SteamVR", GameType.Tool)]
+    [InlineData("3637470", "RuneScape: Dragonwilds Early Adopter Soundtrack", GameType.Soundtrack)]
+    [InlineData("431960", "Wallpaper Engine", GameType.Game)]
+    [InlineData("4353420", "Vampire Hunter: Nightrise Demo", GameType.Game)]
+    public void Types_apps_by_id_and_name_without_appinfo(string appId, string name, GameType expected)
+    {
+        Assert.Equal(expected, SteamScanner.ParseManifest(Manifest(appId, name), _root)?.Type);
+    }
+
+    [Theory]
+    [InlineData("Game", GameType.Game)]
+    [InlineData("game", GameType.Game)]
+    [InlineData("Demo", GameType.Game)]
+    [InlineData("Application", GameType.Software)]
+    [InlineData("Tool", GameType.Tool)]
+    [InlineData("Music", GameType.Soundtrack)]
+    public void Types_apps_by_their_type_in_appinfo(string steamType, GameType expected)
+    {
+        var types = new Dictionary<uint, string> { [431960] = steamType };
+
+        Assert.Equal(expected, SteamScanner.ParseManifest(Manifest("431960", "Wallpaper Engine"), _root, appTypes: types)?.Type);
+    }
+
+    [Theory]
+    [InlineData("DLC")]
+    [InlineData("Video")]
+    [InlineData("Config")]
+    [InlineData("")]
+    public void Leaves_out_types_no_library_category_shows(string steamType)
+    {
+        var types = new Dictionary<uint, string> { [431960] = steamType };
+
+        Assert.Null(SteamScanner.ParseManifest(Manifest("431960", "Something"), _root, appTypes: types));
+    }
+
+    [Fact]
+    public void Appinfo_wins_over_the_name()
+    {
+        // A game whose name ends in "Soundtrack" is still a game when Steam says so.
+        var types = new Dictionary<uint, string> { [1145360] = "Game" };
+
+        Assert.Equal(GameType.Game, SteamScanner.ParseManifest(Manifest("1145360", "Hades Soundtrack"), _root, appTypes: types)?.Type);
+    }
+
+    [Fact]
+    public void Finds_a_soundtrack_in_the_music_folder()
+    {
+        var library = Path.Combine(_root, "Lib");
+        var music = Directory.CreateDirectory(Path.Combine(library, "steamapps", "music", "Hades II Soundtrack")).FullName;
+        var types = new Dictionary<uint, string> { [1145350] = "Music" };
+
+        var soundtrack = SteamScanner.ParseManifest(Manifest("1145350", "Hades II Original Soundtrack", "Hades II Soundtrack"), library, appTypes: types);
+
+        Assert.Equal(music, soundtrack?.InstallDirectory);
+    }
+
+    [Fact]
+    public void A_soundtrack_never_takes_its_games_folder_of_the_same_name()
+    {
+        // Real: RuneScape: Dragonwilds' soundtrack is installed as music/RSDragonwilds, its game as common/RSDragonwilds.
+        var library = Path.Combine(_root, "Lib");
+        var music = Directory.CreateDirectory(Path.Combine(library, "steamapps", "music", "RSDragonwilds")).FullName;
+        Directory.CreateDirectory(Path.Combine(library, "steamapps", "common", "RSDragonwilds"));
+        var types = new Dictionary<uint, string> { [3637470] = "Music" };
+
+        var soundtrack = SteamScanner.ParseManifest(Manifest("3637470", "RuneScape: Dragonwilds Early Adopter Soundtrack", "RSDragonwilds"), library, appTypes: types);
+
+        Assert.Equal(music, soundtrack?.InstallDirectory);
+    }
+
+    [Fact]
+    public void A_soundtrack_without_a_music_folder_stays_in_common()
+    {
+        var library = Path.Combine(_root, "Lib");
+        var common = Directory.CreateDirectory(Path.Combine(library, "steamapps", "common", "OST")).FullName;
+
+        var soundtrack = SteamScanner.ParseManifest(Manifest("1145350", "Game Soundtrack", "OST"), library);
+
+        Assert.Equal(common, soundtrack?.InstallDirectory);
     }
 
     [Theory]
@@ -257,10 +348,98 @@ public sealed class SteamScannerTests : IDisposable
     }
 
     [Fact]
+    public async Task Types_the_installed_apps_from_appinfo()
+    {
+        var steam = Path.Combine(_root, "Steam");
+        Write(Path.Combine(steam, "steamapps", "appmanifest_239030.acf"), Manifest("239030", "Papers, Please", "PapersPlease"));
+        Write(Path.Combine(steam, "steamapps", "appmanifest_431960.acf"), Manifest("431960", "Wallpaper Engine", "wallpaper_engine"));
+        Write(Path.Combine(steam, "steamapps", "appmanifest_250820.acf"), Manifest("250820", "SteamVR", "SteamVR"));
+        Write(Path.Combine(steam, "steamapps", "appmanifest_1145350.acf"), Manifest("1145350", "Hades II Soundtrack", "Hades II Soundtrack"));
+        Write(Path.Combine(steam, "steamapps", "appmanifest_1145351.acf"), Manifest("1145351", "Hades II Artbook", "Hades II Artbook"));
+        WriteBytes(Path.Combine(steam, "appcache", "appinfo.vdf"), AppInfoFile.Build(AppInfoFile.V29,
+        [
+            (239030, "Papers, Please", "Game"),
+            (431960, "Wallpaper Engine", "Application"),
+            (250820, "SteamVR", "Tool"),
+            (1145350, "Hades II Soundtrack", "Music"),
+            (1145351, "Hades II Artbook", "Video"),
+        ]));
+
+        var games = await new SteamScanner(() => new SteamInstallation(steam, null)).ScanAsync();
+
+        Assert.Equal(
+            [("Hades II Soundtrack", GameType.Soundtrack), ("Papers, Please", GameType.Game), ("SteamVR", GameType.Tool), ("Wallpaper Engine", GameType.Software)],
+            games.OrderBy(g => g.Title).Select(g => (g.Title, g.Type)));
+    }
+
+    [Fact]
+    public async Task Without_a_readable_appinfo_types_apps_by_name()
+    {
+        var steam = Path.Combine(_root, "Steam");
+        Write(Path.Combine(steam, "steamapps", "appmanifest_431960.acf"), Manifest("431960", "Wallpaper Engine", "wallpaper_engine"));
+        Write(Path.Combine(steam, "steamapps", "appmanifest_1145350.acf"), Manifest("1145350", "Hades II Soundtrack", "Hades II Soundtrack"));
+        Write(Path.Combine(steam, "appcache", "appinfo.vdf"), "not a cache");
+
+        var games = await new SteamScanner(() => new SteamInstallation(steam, null)).ScanAsync();
+
+        Assert.Equal(
+            [("Hades II Soundtrack", GameType.Soundtrack), ("Wallpaper Engine", GameType.Game)],
+            games.OrderBy(g => g.Title).Select(g => (g.Title, g.Type)));
+    }
+
+    [Fact]
+    public async Task Reads_appinfo_again_for_a_new_install()
+    {
+        var steam = Path.Combine(_root, "Steam");
+        var appInfo = Path.Combine(steam, "appcache", "appinfo.vdf");
+        Write(Path.Combine(steam, "steamapps", "appmanifest_239030.acf"), Manifest("239030", "Papers, Please", "PapersPlease"));
+        WriteBytes(appInfo, AppInfoFile.Build(AppInfoFile.V29, [(239030, "Papers, Please", "Game"), (431960, "Wallpaper Engine", "Application")]));
+        var written = File.GetLastWriteTimeUtc(appInfo);
+        var scanner = new SteamScanner(() => new SteamInstallation(steam, null));
+        await scanner.ScanAsync();
+
+        // Steam wrote the app's type before the install; the file itself is unchanged.
+        Write(Path.Combine(steam, "steamapps", "appmanifest_431960.acf"), Manifest("431960", "Wallpaper Engine", "wallpaper_engine"));
+        File.SetLastWriteTimeUtc(appInfo, written);
+        var games = await scanner.ScanAsync();
+
+        Assert.Equal(GameType.Software, games.Single(g => g.Id == "431960").Type);
+    }
+
+    [Fact]
     public async Task Without_steam_the_library_is_empty()
     {
         Assert.Empty(await new SteamScanner(() => null).ScanAsync());
         Assert.Empty(await new SteamScanner(() => new SteamInstallation(Path.Combine(_root, "missing"), null)).ScanAsync());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T141-10")]
+    public void An_unreadable_appinfo_is_logged_once_until_it_was_readable_again()
+    {
+        var path = Path.Combine(_root, "appcache", "appinfo.vdf");
+        var warnings = new List<string>();
+        var cache = new SteamScanner.AppTypeCache(warnings.Add);
+        HashSet<uint> ids = [239030];
+
+        // Missing on every rescan: one warning.
+        Assert.Null(cache.Read(path, ids));
+        Assert.Null(cache.Read(path, ids));
+        Assert.Single(warnings);
+
+        // Readable again, then broken: one more.
+        WriteBytes(path, AppInfoFile.Build(AppInfoFile.V29, [(239030, "Papers, Please", "Game")]));
+        Assert.Equal("Game", cache.Read(path, ids)![239030]);
+        WriteBytes(path, [1, 2, 3]);
+        Assert.Null(cache.Read(path, ids));
+        Assert.Null(cache.Read(path, new HashSet<uint> { 239030, 431960 }));
+        Assert.Equal(2, warnings.Count);
+    }
+
+    private static void WriteBytes(string path, byte[] bytes)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, bytes);
     }
 
     private static string Escape(string path) => path.Replace("\\", "\\\\", StringComparison.Ordinal);

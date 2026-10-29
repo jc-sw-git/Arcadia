@@ -23,11 +23,59 @@ internal sealed class TestLauncher(LauncherSpec spec, DateTimeOffset now, Record
 
     public IInstallMonitor? InstallMonitor { get; } = new TestInstallMonitor(spec.Launcher.Id, installs);
 
-    public IRunningGamesMonitor? RunningGames => null;
+    public IRunningGamesMonitor? RunningGames { get; } = spec.Running is { } running ? new FixedRunningGames(spec.Launcher.Id, running, now) : null;
 
     public IReadOnlyCollection<string> ProgramNames => [];
 
+    public IReadOnlyList<LibraryTypeOption> LibraryOptions => spec.Options ?? [];
+
     public string? Locate() => spec.IsInstalled ? "Test" : null;
+}
+
+/// <summary>
+/// The launcher reports these games as running, since 25 minutes before Arcadia started; a test can start more
+/// (<see cref="Run"/>) and have the launcher abort a start (<see cref="Refuse"/>, #277). Read on the thread pool.
+/// </summary>
+internal sealed class FixedRunningGames(string launcherId, IReadOnlyList<string> gameIds, DateTimeOffset now) : IRunningGamesMonitor
+{
+    private readonly List<RunningGame> _running = [.. gameIds.Select(id => new RunningGame(id, now.AddMinutes(-25)))];
+    private readonly List<RefusedStart> _refused = [];
+
+    public string LauncherId => launcherId;
+
+    public IReadOnlyList<RunningGame> Poll()
+    {
+        lock (_running)
+        {
+            return [.. _running];
+        }
+    }
+
+    public IReadOnlyList<RefusedStart> RefusedStarts()
+    {
+        lock (_refused)
+        {
+            var refused = _refused.ToList();
+            _refused.Clear();
+            return refused;
+        }
+    }
+
+    public void Run(string gameId, DateTimeOffset since)
+    {
+        lock (_running)
+        {
+            _running.Add(new RunningGame(gameId, since));
+        }
+    }
+
+    public void Refuse(RefusedStart refusal)
+    {
+        lock (_refused)
+        {
+            _refused.Add(refusal);
+        }
+    }
 }
 
 /// <summary>

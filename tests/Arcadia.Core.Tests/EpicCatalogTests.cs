@@ -42,6 +42,17 @@ public class EpicCatalogTests
             "releaseInfo": [{ "appId": "UE_5", "platform": ["Windows"] }]
           },
           {
+            "id": "uefn", "namespace": "fn", "title": "Unreal Editor for Fortnite",
+            "categories": [{ "path": "addons" }, { "path": "addons/launchable" }, { "path": "applications" }],
+            "mainGameItem": { "namespace": "fn", "id": "fortnite" },
+            "releaseInfo": [{ "appId": "Fortnite_Studio", "platform": ["Windows"] }]
+          },
+          {
+            "id": "asset", "namespace": "ue", "title": "Paragon: Minions",
+            "categories": [{ "path": "assets" }, { "path": "software" }],
+            "releaseInfo": [{ "appId": "ParagonMinions", "platform": ["Windows"] }]
+          },
+          {
             "id": "noApp", "namespace": "ns7", "title": "Bundle Without App",
             "categories": [{ "path": "games" }],
             "releaseInfo": []
@@ -52,12 +63,32 @@ public class EpicCatalogTests
     private static string Encode(string json) => Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
 
     [Fact]
-    public void Reads_base_games_and_skips_dlc_addons_and_software()
+    public void Reads_base_games_and_skips_dlc_addons_and_assets()
     {
         var items = EpicCatalog.Parse(Encode(Catalog));
 
-        Assert.Equal(["Loop Hero", "Satisfactory"], items.Select(i => i.Title));
+        Assert.Equal(["Loop Hero", "Satisfactory", "Unreal Engine", "Unreal Editor for Fortnite"], items.Select(i => i.Title));
     }
+
+    [Fact]
+    public void Reads_the_engine_and_launchable_addons_as_tools()
+    {
+        var items = EpicCatalog.Parse(Encode(Catalog));
+
+        Assert.Equal(new EpicCatalogItem("ue", "engine", "UE_5", "Unreal Engine", GameType.Tool, IsEngine: true), items.Single(i => i.CatalogItemId == "engine"));
+        Assert.Equal(new EpicCatalogItem("fn", "uefn", "Fortnite_Studio", "Unreal Editor for Fortnite", GameType.Tool), items.Single(i => i.CatalogItemId == "uefn"));
+        Assert.All(items.Where(i => i.Title is "Loop Hero" or "Satisfactory"), i => Assert.Equal(GameType.Game, i.Type));
+    }
+
+    [Theory]
+    [InlineData("engines", "x", "Anything", "App", true)]
+    [InlineData("software", "ue", "Unreal Engine 5", "App", true)]
+    [InlineData("software", "ue", "Paragon: Minions", "App", false)]
+    [InlineData("software", "other", "Unreal Engine fan kit", "App", false)]
+    [InlineData("software", "x", "Anything", "UE_5.4", true)]
+    [InlineData("games", "x", "Anything", "UEFN", false)]
+    public void Knows_the_engine_by_category_namespace_and_name_or_app_name(string category, string ns, string title, string appName, bool isEngine) =>
+        Assert.Equal(isEngine, EpicCatalog.IsEngine(new HashSet<string> { category }, ns, title, appName));
 
     [Fact]
     public void Prefers_the_windows_release()
@@ -100,8 +131,9 @@ public class EpicCatalogTests
 
         var games = EpicScanner.Merge([installed], EpicCatalog.Parse(Encode(Catalog)));
 
-        Assert.Equal(2, games.Count);
+        Assert.Equal(4, games.Count);
         Assert.True(games.Single(g => g.Title == "Loop Hero").IsInstalled);
+        Assert.Equal(GameType.Tool, games.Single(g => g.Title == "Unreal Engine").Type);
 
         var owned = games.Single(g => g.Title == "Satisfactory");
         Assert.False(owned.IsInstalled);

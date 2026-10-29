@@ -1,13 +1,16 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers.Epic;
 
-/// <summary>A game from the Epic launcher's catalog cache.</summary>
+/// <summary>A game, or a tile that is no game (#141), from the Epic launcher's catalog cache.</summary>
 /// <param name="CatalogItemId">Matches <c>CatalogItemId</c> in the install manifests.</param>
 /// <param name="AppName">Epic's app name (<c>releaseInfo[].appId</c>); manifests call it <c>AppName</c>.</param>
-public sealed record EpicCatalogItem(string Namespace, string CatalogItemId, string AppName, string Title);
+/// <param name="Type">A game, or a tool: an engine or a launchable add-on such as Unreal Editor for Fortnite.</param>
+/// <param name="IsEngine">An Unreal Engine version (category <c>engines</c>): all of them are one entry, as Epic shows them.</param>
+public sealed record EpicCatalogItem(string Namespace, string CatalogItemId, string AppName, string Title, GameType Type = GameType.Game, bool IsEngine = false);
 
 /// <summary>
 /// Reads the Epic Games Launcher's catalog cache,
@@ -39,8 +42,9 @@ public static partial class EpicCatalog
     }
 
     /// <summary>
-    /// Returns the games in the cache. Skips add-ons, DLC and editions of another game (items
-    /// whose <c>mainGameItem</c> points elsewhere), non-game items and items without an app.
+    /// Returns the games in the cache, and as tools the tiles Epic shows that are no games (#141): engines and launchable
+    /// add-ons. Skips other add-ons, DLC and editions of another game (items whose <c>mainGameItem</c> points elsewhere),
+    /// digital downloads such as soundtracks, other items and items without an app.
     /// </summary>
     public static IReadOnlyList<EpicCatalogItem> Parse(string base64)
     {
@@ -92,13 +96,18 @@ public static partial class EpicCatalog
         }
 
         var categories = Categories(item);
-        if (!categories.Contains("games") || categories.Contains("addons") || categories.Contains("digitaldownloads"))
+        var isEngine = IsEngine(categories, GetString(item, "namespace"), GetString(item, "title"), AppNameOf(item));
+        var isLaunchableAddOn = categories.Contains(LaunchableAddOnCategory);
+        if (!isEngine && !isLaunchableAddOn
+            && (!categories.Contains("games") || categories.Contains("addons") || categories.Contains("digitaldownloads")))
         {
             return null;
         }
 
-        // Base games carry an empty mainGameItem; DLC, season passes and upgrades name their game.
-        if (item.TryGetProperty("mainGameItem", out var main)
+        // Base games carry an empty mainGameItem; DLC, season passes and upgrades name their game. A launchable add-on
+        // names its game too (Unreal Editor for Fortnite), but Epic shows it as a tile of its own.
+        if (!isLaunchableAddOn
+            && item.TryGetProperty("mainGameItem", out var main)
             && main.ValueKind == JsonValueKind.Object
             && !string.IsNullOrEmpty(GetString(main, "id")))
         {
@@ -114,8 +123,38 @@ public static partial class EpicCatalog
             return null;
         }
 
-        return new EpicCatalogItem(ns, id, appName, RepairTitle(title));
+        return new EpicCatalogItem(
+            ns,
+            id,
+            appName,
+            isEngine ? UnrealEngineTitle : RepairTitle(title),
+            isEngine || isLaunchableAddOn ? GameType.Tool : GameType.Game,
+            isEngine);
     }
+
+    /// <summary>
+    /// An Unreal Engine version: Epic's category <c>engines</c>, or its namespace <c>ue</c> with the engine's name (the
+    /// cache files Unreal Engine under applications and software, not in a category of its own), or an app named
+    /// <c>UE_5.4</c>. Marketplace assets share the namespace but not the name.
+    /// </summary>
+    public static bool IsEngine(IReadOnlySet<string> categories, string? catalogNamespace, string? title, string? appName) =>
+        categories.Contains(EngineCategory)
+        || (catalogNamespace == EngineNamespace && title?.StartsWith(UnrealEngineTitle, StringComparison.OrdinalIgnoreCase) == true)
+        || appName?.StartsWith(EngineAppPrefix, StringComparison.Ordinal) == true;
+
+    /// <summary>Epic names the engine's versions <c>UE_5.4</c>.</summary>
+    public const string EngineAppPrefix = "UE_";
+
+    private const string EngineNamespace = "ue";
+
+    /// <summary>The catalog's and the manifests' category of Unreal Engine's versions.</summary>
+    public const string EngineCategory = "engines";
+
+    /// <summary>The category of add-ons Epic shows as tiles of their own and starts, e.g. Unreal Editor for Fortnite.</summary>
+    public const string LaunchableAddOnCategory = "addons/launchable";
+
+    /// <summary>All engine versions are one entry, named as Epic's tile.</summary>
+    public const string UnrealEngineTitle = "Unreal Engine";
 
     /// <summary>
     /// The cache is ASCII-only: every other character is stored as <c>?</c> ("Batman? Arkham Knight",

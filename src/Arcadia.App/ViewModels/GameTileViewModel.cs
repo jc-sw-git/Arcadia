@@ -38,6 +38,21 @@ public partial class GameTileViewModel : ViewModelBase
 
     public bool IsInstalled => Game.IsInstalled;
 
+    /// <summary>Software, tools and soundtracks show their kind on cover, preview and detail page (#141); games don't.</summary>
+    public bool HasTypeIcon => Game.Type != GameType.Game;
+
+    /// <summary>The resource key of the kind's icon (<see cref="GameTypeTexts.IconKey"/>).</summary>
+    public string TypeIconKey => GameTypeTexts.IconKey(Game.Type);
+
+    /// <summary>"Werkzeug" in the preview.</summary>
+    public string TypeName => GameTypeTexts.Name(Game.Type);
+
+    /// <summary>"WERKZEUG" on the detail page's chip.</summary>
+    public string TypeNameUpper => TypeName.ToUpper(Formatting.Culture);
+
+    /// <summary>A soundtrack is handed to its launcher, which plays it; Arcadia doesn't wait for it to run (#141).</summary>
+    public bool IsSoundtrack => Game.Type == GameType.Soundtrack;
+
     /// <summary>The update icon; a running game shows that it runs instead, its update comes with the next start.</summary>
     public bool UpdateAvailable => Game.IsInstalled && Game.UpdateAvailable && InstallState is null && RunState is null;
 
@@ -45,8 +60,8 @@ public partial class GameTileViewModel : ViewModelBase
         : InstallState is not null ? $"{InstallVerb} …"
         : !Game.IsInstalled ? "Installieren"
         : IsStarting ? "Wird gestartet …"
-        : IsRunning ? "Zurück ins Spiel"
-        : "Spielen";
+        : IsRunning ? GameTypeTexts.ReturnAction(Game.Type)
+        : GameTypeTexts.PrimaryAction(Game.Type);
 
     /// <summary>Whether the game runs, or was handed to its launcher and doesn't run yet (#95); null if neither.</summary>
     [ObservableProperty]
@@ -89,6 +104,7 @@ public partial class GameTileViewModel : ViewModelBase
     /// <summary>The running installation of this game, or null.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsInstallActive), nameof(UpdateAvailable), nameof(ShowInstallBadge), nameof(CanActivate), nameof(PrimaryActionText),
+        nameof(IsInstallBlocked), nameof(ShowInstallHint), nameof(ShowInstallBlockedHint),
         nameof(InstallPercent), nameof(IsInstallIndeterminate), nameof(IsInstallPaused), nameof(IsInstallQueued), nameof(IsInstallSpinning),
         nameof(InstallStatusText), nameof(InstallShortText), nameof(ShowLauncherControlsHint), nameof(ShowRunningBadge), nameof(ShowStartingBadge))]
     public partial InstallProgress? InstallState { get; set; }
@@ -101,8 +117,22 @@ public partial class GameTileViewModel : ViewModelBase
     /// <summary>The "can be installed" badge; replaced by the progress while an installation runs.</summary>
     public bool ShowInstallBadge => !Game.IsInstalled && InstallState is null;
 
-    /// <summary>False while an installation runs, so it can't be requested twice.</summary>
-    public bool CanActivate => InstallState is null;
+    /// <summary>False while an installation runs, so it can't be requested twice, and while it can't be installed now.</summary>
+    public bool CanActivate => InstallState is null && !IsInstallBlocked;
+
+    /// <summary>Not installed, and the launcher can't install it right now (#83: Steam runs with another account).</summary>
+    public bool IsInstallBlocked => !Game.IsInstalled && InstallState is null && Game.InstallBlockedReason is not null;
+
+    /// <summary>"Die Installation wird in … geöffnet" below "Installieren", unless that is blocked.</summary>
+    public bool ShowInstallHint => ShowInstallBadge && !IsInstallBlocked;
+
+    /// <summary>Why it can't be installed, below "Installieren", unless <see cref="Notice"/> already says so.</summary>
+    public bool ShowInstallBlockedHint => IsInstallBlocked && !HasNotice;
+
+    /// <summary>A hint about the game on the preview and the detail page, e.g. another account in the launcher (#83).</summary>
+    public string? Notice => Game.Notice;
+
+    public bool HasNotice => Notice is not null;
 
     public double InstallPercent => (InstallState?.Fraction ?? 0) * 100;
 
@@ -119,6 +149,7 @@ public partial class GameTileViewModel : ViewModelBase
     public string InstallStatusText => InstallState switch
     {
         null => string.Empty,
+        { Phase: InstallPhase.AwaitingConfirmation } when Game.InstallStartsInLauncher => $"Bitte in {LauncherName} starten",
         { Phase: InstallPhase.AwaitingConfirmation } => $"Bitte in {LauncherName} bestätigen",
         { Phase: InstallPhase.Queued, QueuePosition: { } position } => $"In der Warteschlange · Platz {position}",
         { Phase: InstallPhase.Queued } => "In der Warteschlange",
@@ -137,6 +168,7 @@ public partial class GameTileViewModel : ViewModelBase
     public string InstallShortText => InstallState switch
     {
         null => string.Empty,
+        { Phase: InstallPhase.AwaitingConfirmation } when Game.InstallStartsInLauncher => "Wartet",
         { Phase: InstallPhase.AwaitingConfirmation } => "Bestätigen",
         { Phase: InstallPhase.Queued, QueuePosition: { } position } => $"Wartet · {position}",
         { Phase: InstallPhase.Queued } => "Wartet",

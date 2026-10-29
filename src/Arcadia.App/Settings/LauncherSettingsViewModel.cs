@@ -1,11 +1,13 @@
 using System.Globalization;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
+using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Navigation;
 using Arcadia.Core.Search;
 using Arcadia.Core.Settings;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.App.Settings;
 
@@ -25,6 +27,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private const string DropGroup = "NICHT AKTIV · HIERHER VERSCHIEBEN SCHALTET IHN AB";
     private const string GeneralGroup = "ALLGEMEIN";
     private const string LibraryGroup = "BIBLIOTHEK";
+    private const string AccountGroup = "KONTO";
     private const string ListYAction = "Verschieben";
 
     /// <summary>The box with the tabs in miniature beside the list and the page (owner, 2026-10-23).</summary>
@@ -50,7 +53,18 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private readonly ActionRowViewModel _folderRow;
     private readonly ActionRowViewModel _rescanRow;
     private readonly ActionRowViewModel _rescanAllRow;
+    private readonly ActionRowViewModel _accountRow;
+
+    // The account picture shown last, by its file (AvatarOf).
+    private string? _avatarPath;
+    private Avalonia.Media.Imaging.Bitmap? _avatar;
+    private readonly List<(ILauncherAccount Account, EventHandler Handler)> _accounts = [];
+
+    // Ticks while a QR code is shown, so "erneuert vor … s" counts up (owner, 2026-10-27).
     private readonly List<(string LauncherId, ActionRowViewModel Row)> _linkRows = [];
+
+    // A launcher's switches for software, tools and soundtracks (#141), made when its page first shows them.
+    private readonly Dictionary<string, SwitchRowViewModel> _optionRows = new(StringComparer.Ordinal);
 
     private LauncherRowViewModel? _lifted;
 
@@ -140,6 +154,25 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
                 new InfoText("Liest die Spiele aller aktiven Launcher sofort neu ein, etwa nach einer Installation, die Arcadia nicht mitbekommen hat. Sonst liest Arcadia neu ein, wenn es wieder nach vorne kommt."),
             ],
         };
+
+        _accountRow = new ActionRowViewModel("launcher-account", string.Empty, ActivateAccount) { Group = AccountGroup };
+        foreach (var integration in host.Launchers.All)
+        {
+            if (integration.Account is { } account)
+            {
+                var launcherId = integration.Launcher.Id;
+                // The account changes off the UI thread (a code renewed, approved, the games fetched).
+                EventHandler handler = (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    if (_page == launcherId)
+                    {
+                        Refresh();
+                    }
+                });
+                account.StateChanged += handler;
+                _accounts.Add((account, handler));
+            }
+        }
 
         Refresh();
         if (focus is not null && _rows.TryGetValue(focus, out var row))
@@ -299,6 +332,13 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             return false;
         }
 
+        // B drops a sign-in under way and stays on the page (owner, 2026-10-26).
+        if (PageAccount is { State.IsSigningIn: true } account)
+        {
+            account.CancelSignIn();
+            return true;
+        }
+
         ClosePage();
         Focus(_rows[id]);
         return true;
@@ -308,6 +348,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     public override void Leave()
     {
         Editor?.Drop();
+        PageAccount?.CancelSignIn();
         if (_lifted is { } lifted)
         {
             lifted.IsLifted = false;
@@ -381,6 +422,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private void ClosePage()
     {
         Editor?.Drop();
+        PageAccount?.CancelSignIn();
         _page = null;
         Head = null;
         XActionText = ListXAction;
@@ -400,6 +442,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         var next = order[ListFocus.Cycle(order.ToList().IndexOf(id), delta, order.Count)];
         if (next != id)
         {
+            PageAccount?.CancelSignIn();
             _page = next;
             Refresh();
         }
@@ -510,21 +553,238 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
 
         var library = isActive ? _host.LibraryOf(id) : null;
         var scannedAt = _host.ScannedAt(id);
+        var counts = library is { Games.Count: > 0 } && isFound ? TypeCountLine.Of(library.Games) : null;
         _rescanRow.IsEnabled = isActive && isFound;
+        _rescanRow.Counts = counts;
         _rescanRow.Subtitle = (isActive, isFound, library) switch
         {
             (false, _, _) => "Nur für einen aktiven Launcher",
             (true, false, _) => "Nicht gefunden",
             (true, true, null) => "Wird eingelesen …",
-            (true, true, { } shown) when scannedAt is null => GameCount(shown.Games.Count),
-            (true, true, { } shown) => $"{GameCount(shown.Games.Count)} · zuletzt {Ago(scannedAt)}",
+            (true, true, { Games.Count: 0 }) when scannedAt is null => GameCount(0),
+            (true, true, { Games.Count: 0 }) => $"{GameCount(0)} · zuletzt {Ago(scannedAt)}",
+            (true, true, _) when scannedAt is null => null,
+            // After the count line (#141).
+            (true, true, _) => $"· zuletzt {Ago(scannedAt)}",
         };
         _rescanRow.Info =
         [
             new InfoText($"Liest die Spiele von {name} sofort neu ein, etwa nach einer Installation, die Arcadia nicht mitbekommen hat. Sonst liest Arcadia neu ein, wenn es wieder nach vorne kommt."),
         ];
 
-        SetRows([_activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), _rescanRow, .. _linkRows.Where(l => l.LauncherId == id).Select(l => l.Row)]);
+        var optionRows = launchers.LibraryOptions(id).Select(option => OptionRow(id, option)).ToList();
+
+        // First on the page, as the setting that makes the most of the library; only usable while the launcher is active and
+        // found, since without it nothing can be installed. A sign-in stays stored meanwhile (owner, 2026-10-26/27).
+        var account = launchers.Registered(id)?.Account;
+        if (account is not null)
+        {
+            ShowAccount(account, name, isActive, isFound);
+        }
+
+        SetRows([.. account is null ? Array.Empty<SettingsRowViewModel>() : [_accountRow], _activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), .. optionRows, _rescanRow, .. _linkRows.Where(l => l.LauncherId == id).Select(l => l.Row)]);
+    }
+
+    /// <summary>The account of the launcher whose page is shown, while its group "Konto" is there (#83).</summary>
+    private ILauncherAccount? PageAccount =>
+        _page is { } id && _host.Launchers.ActiveIds.Contains(id) && _host.Launchers.IsFound(id) ? _host.Launchers.Registered(id)?.Account : null;
+
+    /// <summary>
+    /// The account's picture, decoded once per file: the info panel is built anew with every change of the account. A file
+    /// that can't be read or isn't an image shows no picture.
+    /// </summary>
+    private Avalonia.Media.Imaging.Bitmap? AvatarOf(string? path)
+    {
+        if (path != _avatarPath)
+        {
+            _avatarPath = path;
+            _avatar = null;
+            if (path is not null)
+            {
+                try
+                {
+                    _avatar = new Avalonia.Media.Imaging.Bitmap(path);
+                }
+                catch (Exception e)
+                {
+                    AppLog.Write($"Avatar nicht lesbar ({e.GetType().Name})");
+                }
+            }
+        }
+
+        return _avatar;
+    }
+
+    /// <summary>
+    /// The row of the launcher's account (#83): signed out "Anmelden"; A opens the launcher's sign-in page over the window,
+    /// B there goes back; signed in it shows the account's name and "Abmelden", which asks first. Disabled while the
+    /// launcher is inactive or missing.
+    /// </summary>
+    private void ShowAccount(ILauncherAccount account, string launcherName, bool isActive, bool isFound)
+    {
+        var state = account.State;
+        var row = _accountRow;
+        row.Title = account.Title;
+        if (!isActive || !isFound)
+        {
+            row.IsEnabled = false;
+            row.ActionText = state.Step == AccountStep.SignedIn ? "Abmelden" : "Anmelden";
+            row.Subtitle = (isActive, state.AccountName) switch
+            {
+                (false, { } accountName) => $"{accountName} · nur bei aktivem {launcherName}",
+                (false, null) => $"Nur bei aktivem {launcherName}",
+                (true, { } accountName) => $"{accountName} · {launcherName} nicht gefunden",
+                (true, null) => $"{launcherName} nicht gefunden",
+            };
+            row.Severity = null;
+            row.Info =
+            [
+                new InfoText(account.About),
+                new InfoNote(isActive
+                    ? $"Anmelden und Abmelden geht erst, wenn Arcadia {launcherName} findet: Ohne {launcherName} lässt sich nichts installieren."
+                    : $"Anmelden und Abmelden geht erst, wenn {launcherName} aktiv ist. Eine gespeicherte Anmeldung bleibt erhalten.", HealthSeverity.Info),
+            ];
+            return;
+        }
+
+        row.IsEnabled = true;
+        (row.ActionText, row.Subtitle) = state.Step switch
+        {
+            AccountStep.SigningIn => ("Abbrechen", $"Anmeldung auf der Seite von {launcherName} …"),
+            AccountStep.Unreachable => ("Erneut versuchen", $"{launcherName} nicht erreichbar – [A] erneut versuchen"),
+            AccountStep.SignedIn => ("Abmelden", state.Problem is not null || state.Notice is not null
+                ? $"{state.AccountName} · {state.Notice ?? FirstSentence(state.Problem!)}"
+                : state.AccountName),
+            _ => ("Anmelden", state.Problem is not null ? FirstSentence(state.Problem) : account.Purpose),
+        };
+        row.Severity = state.Problem is not null ? HealthSeverity.Warning : state.Notice is not null ? HealthSeverity.Info : null;
+
+        List<InfoBlock> info = [];
+        if (state.Problem is { } problem)
+        {
+            info.Add(new InfoNote(problem));
+        }
+
+        if (state.Notice is not null)
+        {
+            info.Add(new InfoNote($"{launcherName} ist momentan mit einem anderen Konto angemeldet als in Arcadia. Arcadia wird so lange keine Installationen starten können. Installierte Spiele könnten ggf. nicht starten oder falsche Spielstände verwenden.", HealthSeverity.Info));
+        }
+
+        switch (state.Step)
+        {
+            case AccountStep.SigningIn:
+                info.Add(new InfoText(account.SignInMethod));
+                info.Add(new InfoText("[B] bricht die Anmeldung ab."));
+                break;
+            case AccountStep.Unreachable:
+                info.Add(new InfoText($"Arcadia konnte die Anmeldeseite von {launcherName} nicht laden. Prüfe die Internetverbindung; [A] versucht es erneut."));
+                break;
+            case AccountStep.SignedIn:
+                if (AvatarOf(state.AvatarPath) is { } avatar)
+                {
+                    info.Add(new InfoAvatar(state.AccountName ?? launcherName, avatar));
+                }
+
+                info.Add(new InfoText($"Angemeldet als {state.AccountName}. Arcadia zeigt neben deinen installierten Spielen auch die Spiele, die im Besitz von {state.AccountName} sind."));
+                info.Add(new InfoFacts("KONTO",
+                [
+                    new InfoFact("Spiele im Konto", state.OwnedGames is { } count ? count.ToString(System.Globalization.CultureInfo.CurrentCulture) : "Noch nicht geladen", IsMuted: state.OwnedGames is null),
+                    new InfoFact("Stand", state.ListedAt is { } at ? Ago(at) : "–", IsMuted: state.ListedAt is null),
+                ]));
+                info.Add(new InfoFootnote("Meldest du dich ab, werden nur noch die installierten Spiele gelistet."));
+                break;
+            default:
+                info.Add(new InfoText(account.About));
+                info.Add(new InfoText(account.SignInMethod));
+                break;
+        }
+
+        row.Info = info;
+    }
+
+    private static string FirstSentence(string text) => text.IndexOf(". ", StringComparison.Ordinal) is var end and > 0 ? text[..end] : text.TrimEnd('.');
+
+    /// <summary>A on the account's row: sign in, drop a sign-in under way, or sign out after asking.</summary>
+    private void ActivateAccount()
+    {
+        if (PageAccount is not { } account)
+        {
+            return;
+        }
+
+        switch (account.State.Step)
+        {
+            case AccountStep.SignedIn:
+                Dialog = new ConfirmationViewModel(
+                    $"Vom {account.Title} abmelden?",
+                    $"Willst du {account.State.AccountName} wirklich in Arcadia abmelden? Arcadia kann dir dann nur noch die Spiele auflisten, die auf diesem PC installiert sind. "
+                        + $"Ob du sie auch starten kannst, hängt von den Lizenzen des Benutzers ab, der in {PageInfo.DisplayName} angemeldet ist.",
+                    "Abmelden",
+                    account.SignOut,
+                    () => Dialog = null);
+                break;
+            case AccountStep.SigningIn:
+                account.CancelSignIn();
+                break;
+            default:
+                account.BeginSignIn();
+                break;
+        }
+    }
+
+    /// <summary>The question before signing out: ◀ ▶ choose, A answers, B keeps the sign-in.</summary>
+    public override void HandleDialog(UiAction action)
+    {
+        if (Dialog is ConfirmationViewModel confirmation && !confirmation.Handle(action))
+        {
+            Dialog = null;
+        }
+    }
+
+    public override void Dispose()
+    {
+        foreach (var (account, handler) in _accounts)
+        {
+            account.StateChanged -= handler;
+        }
+
+        _accounts.Clear();
+        base.Dispose();
+    }
+
+    /// <summary>
+    /// A switch that adds software, tools or soundtracks to the launcher's library (#141), as the launcher offers it. Acts
+    /// at once and is kept in the settings; the tab shows the entries without reading the launcher again.
+    /// </summary>
+    private SwitchRowViewModel OptionRow(string launcherId, Arcadia.Launchers.Abstractions.LibraryTypeOption option)
+    {
+        var key = $"library-option:{launcherId}:{option.Id}";
+        if (!_optionRows.TryGetValue(key, out var row))
+        {
+            row = new SwitchRowViewModel(key, option.Title, () => _host.Launchers.IsOptionOn(launcherId, option.Id), on => SwitchOption(launcherId, option, on))
+            {
+                Group = LibraryGroup,
+                Subtitle = option.Subtitle,
+                Info =
+                [
+                    new InfoText(option.Info),
+                    .. option.Examples.Select(example => new InfoBullet(example)),
+                    new InfoFootnote("Standard: Aus. Wirkt sofort, ohne Speichern."),
+                ],
+            };
+            _optionRows[key] = row;
+        }
+
+        row.Refresh();
+        return row;
+    }
+
+    private void SwitchOption(string launcherId, Arcadia.Launchers.Abstractions.LibraryTypeOption option, bool on)
+    {
+        _changes.Apply(settings => settings.WithLauncherPreferences(launcherId, p => p.WithLibraryOption(option.Id, on)), option.Title);
+        AppLog.Write($"{launcherId}: „{option.Title}“ {(on ? "an" : "aus")}");
+        _host.LibraryTypesChanged();
+        Refresh();
     }
 
     /// <summary>A on "Name im Tab" or "Such-Kürzel": the on-screen keyboard over the text, checked while it is typed.</summary>
@@ -806,7 +1066,6 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         };
 
         var tabNumber = isActive ? place + 1 : (int?)null;
-        var installed = library?.Games.Count(g => g.IsInstalled) ?? 0;
         var integration = launchers.Registered(id);
         var location = launchers.LocationOf(id);
         InfoBlock[] preview = [new InfoTabBar([.. tabs.Select(tab => new InfoTab(tab.Launcher.DisplayName, tab.Badge, tab == row))])];
@@ -823,7 +1082,8 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         [
             library is null
                 ? new InfoFact("Spiele", isActive ? "werden eingelesen" : "nicht eingelesen", IsMuted: true)
-                : new InfoFact("Spiele", library.Games.Count == installed ? GameCount(installed) : $"{GameCount(library.Games.Count)} · {installed} installiert"),
+                : library.Games.Count == 0 ? new InfoFact("Spiele", GameCount(0))
+                : CountsFact(TypeCountLine.Of(library.Games)),
             new InfoFact("Zuletzt eingelesen", Ago(scannedAt), IsMuted: scannedAt is null),
         ]));
         info.Add(new InfoFacts("ORT",
@@ -845,6 +1105,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
 
         row.Show(isActive, isFound, tabNumber, status, notice, preview, info);
     }
+
+    // The same count line as beside the tab's name (#141); the words are the tooltip's.
+    private static InfoFact CountsFact(TypeCountLine counts) => new("Einträge", counts.Tip, Counts: counts);
 
     private static string GameCount(int count) => count == 1 ? "1 Spiel" : $"{count} Spiele";
 

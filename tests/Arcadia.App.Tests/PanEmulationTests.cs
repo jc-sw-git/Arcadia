@@ -112,10 +112,13 @@ public sealed class PanEmulationTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T307-1")]
+    [Trait("TestCase", "T307-2")]
     public async Task A_demo_game_shown_as_running_does_not_lock_the_switch_but_a_real_one_does()
     {
+        // The demo library comes first and its game is on "Steam-Eingabe", so neither the lock text nor the routing
+        // can pick it up by accident.
         using var arcadia = await ArcadiaDriver.StartAsync(
-            [new(KnownLaunchers.Steam, 3), new(KnownLaunchers.Gog, 3, IsDemo: true)],
+            [new(KnownLaunchers.Steam, 3, IsDemo: true), new(KnownLaunchers.Gog, 3)],
             new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
         arcadia.SteamControllerCopy.CanCopy = true;
         arcadia.SteamControllerCopy.PuckPresent = true;
@@ -123,8 +126,9 @@ public sealed class PanEmulationTests
         arcadia.StartControllers();
         await arcadia.TickSteamControllerAsync();
         await arcadia.FollowRunningGamesAsync();
-        arcadia.Press(UiAction.NextTab);
         Assert.Contains(arcadia.PageGames, tile => tile.IsRunning);
+        await arcadia.TickSteamControllerAsync();
+        Assert.True(arcadia.XboxPad.IsPlugged, "das Demo-Spiel auf Steam-Eingabe läuft nicht wirklich");
 
         var controller = OpenControllerSettings(arcadia);
         var pan = Switch(controller);
@@ -132,15 +136,21 @@ public sealed class PanEmulationTests
         Assert.True(pan.CanActivate);
         pan.Activate();
         Assert.False(arcadia.Settings.Current.PanEnabled);
+        await arcadia.TickSteamControllerAsync();
+        Assert.Equal(PanEmulationState.Off, arcadia.ForGames.Status.State);
         Switch(controller).Activate();
         Assert.True(arcadia.Settings.Current.PanEnabled);
+        await arcadia.TickSteamControllerAsync();
+        Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);
 
-        // A game really started from Arcadia still locks it.
-        arcadia.Press(UiAction.Back).Press(UiAction.PreviousTab);
+        // A game really started from Arcadia still locks it, with its own title.
+        arcadia.Press(UiAction.Back).Press(UiAction.NextTab);
         var title = arcadia.Main.Library.FocusedGame!.Title;
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "Steam soll das Spiel starten");
-        Assert.True(Switch(OpenControllerSettings(arcadia)).IsLocked);
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "GOG soll das Spiel starten");
+        pan = Switch(OpenControllerSettings(arcadia));
+        Assert.True(pan.IsLocked);
+        Assert.Equal($"Erst änderbar, wenn „{title}“ beendet ist", pan.Subtitle);
     }
 
     [AvaloniaFact]

@@ -59,6 +59,7 @@ public sealed class RunningGamesTrackerTests
         Assert.Equal(new RunState(RunPhase.Running, Started), tracker.StateOf("gog:witcher"));
         Assert.Null(tracker.RealStateOf("gog:witcher"));
         Assert.Equal(new RunState(RunPhase.Running, Started), tracker.RealStateOf("steam:440"));
+        Assert.Equal(["steam:440"], tracker.ActiveGames);
     }
 
     [Fact]

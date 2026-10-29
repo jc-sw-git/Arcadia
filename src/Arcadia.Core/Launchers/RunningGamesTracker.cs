@@ -74,8 +74,8 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         _simulatedLaunchers.Contains(LauncherIdOf(gameKey)) ? null : StateOf(gameKey);
 
     /// <summary>
-    /// The keys of the games that run or are being started, from any thread: which Steam Controller mode applies (#213)
-    /// is decided off the UI thread.
+    /// The keys of the games that really run or are being started, from any thread: which Steam Controller mode applies
+    /// (#213) is decided off the UI thread. Simulated games (<see cref="RealStateOf"/>) are not in it.
     /// </summary>
     public IReadOnlyCollection<string> ActiveGames => _active;
 
@@ -220,7 +220,9 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         return new RunningChanges(changed, ended);
     }
 
-    private void UpdateActive() => _active = _running.Keys.Union(_starting.Keys, StringComparer.Ordinal).ToList();
+    // Simulated games (demo data) are no game in front of anything: Steam Controller routing must not treat one as running (#307).
+    private void UpdateActive() => _active = _running.Keys.Union(_starting.Keys, StringComparer.Ordinal)
+        .Where(key => !_simulatedLaunchers.Contains(LauncherIdOf(key))).ToList();
 
     private HashSet<string> FallbackLaunchers(IEnumerable<ILauncherIntegration>? enabled = null) =>
         (enabled ?? launchers.Enabled).Where(i => i.RunningGames is null).Select(i => i.Launcher.Id).ToHashSet(StringComparer.Ordinal);

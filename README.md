@@ -8,8 +8,8 @@ keyboard in **desktop mode**.
 > Status: **before the first release (0.x).** Steam and Epic work for real (library,
 > game start, installs, updates); the other launchers exist only as demo data so far.
 > On top of that: detail page, context menu, search across all launchers with an
-> on-screen keyboard, and Steam Controller support. Everything else: see
-> [docs/roadmap.md](docs/roadmap.md).
+> on-screen keyboard, and Steam Controller support. Everything else: see the
+> [issues](https://github.com/jc-sw-git/Arcadia/issues?q=is%3Aissue+label%3Aroadmap).
 >
 > The user interface is German for now; localization is planned.
 >

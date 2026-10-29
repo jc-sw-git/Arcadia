@@ -2,20 +2,16 @@
 
 Arcadia is a game launcher that unites all other launchers: one tab per launcher, Big Picture
 mode fully controllable by gamepad (incl. Steam Controller), desktop mode by mouse/keyboard.
-The repo was formerly "SteamButler" (Rust); that code lives in `legacy/steambutler-rs/` as a
-reference for porting (binary VDF codec, scanner ideas, architecture notes).
 
 - **Designs (source of truth for UI):** https://claude.ai/artifact/8A9qxc67RcsuFmavaqCAuN
   (artboards: library, detail page, search, artwork modal, Spotify, launcher settings,
   localization, appearance, Big Picture settings, desktop mode). Read it before building UI.
-- **Open work:** GitHub issues (label `roadmap`). One epic per area (`type:epic`)
-  → tasks, all linked as GitHub sub-issues. Add new issues as a sub-issue of the matching epic
-  (`gh api -X POST repos/jc-sw-git/Arcadia/issues/<epic>/sub_issues -F sub_issue_id=<issue id, not number>`).
-  Features are `type:story` and start with a `> **Story:**` line. See `docs/roadmap.md`.
-- **Refinement first:** before implementing an issue (own thread per issue unless the owner groups issues), refine
-  it with the owner using the skill `.claude/skills/refinement`; rules in `docs/roadmap.md` → Refinement.
+- **Open work:** GitHub issues (label `roadmap`, next up `prio:next`). One epic per area (`type:epic`), its tasks
+  as GitHub sub-issues (add new ones as a sub-issue of the matching epic). Features are `type:story` and start with a
+  `> **Story:**` line; bugs `bug`; technical work `type:tech-debt`. Milestone `I<n>` = iteration n, its title names
+  the theme, its description the scope.
 - **Language:** everything on GitHub is English (public repo): code, docs, issues, PRs, commits, branches,
-  labels, milestones, release notes, comments. Chat with the owner is German; UI texts too, for now.
+  labels, milestones, release notes, comments. UI texts are German, for now.
 
 ## Build, test, run
 
@@ -52,7 +48,7 @@ For bugs that aren't obvious from the code, or a fix that didn't hold, use the s
 ## Definition of Done
 
 A change (PR) is done when all of this holds. The acceptance review at the end of each iteration checks the whole
-milestone again; this list keeps it small. How a PR and an iteration run: `docs/process/iteration.md`.
+milestone again; this list keeps it small.
 
 - **Builds and tests:** `dotnet build` without warnings, `dotnet test` green, CI green on all platforms.
   New logic in Core/Launchers/Input/ControllerSupport comes with tests, error paths included.
@@ -74,13 +70,11 @@ milestone again; this list keeps it small. How a PR and an iteration run: `docs/
   (`.claude/skills/arcadia-verify`); what was only checked mechanically is said so.
 - **Docs current:** `CLAUDE.md` / `docs/` updated when a fact, rule or workflow changed.
 - **Test plan:** a PR that closes an issue adds that issue's manual tests as its own file in
-  `docs/testplans/iteration-<n>/` (IDs `T<issue>-<n>`, each marked `E2E: yes/no`) and records
-  the test runs done during implementation with their real environment. If nothing new needs a
-  manual test (e.g. a refactoring of features already covered by tests), the issue's section
-  says so in one line with the reason. The `Testplan` CI check fails without the section.
+  `docs/testplans/iteration-<n>/` (IDs `T<issue>-<n>`, each marked `E2E: yes/no`) and records the test runs done
+  during implementation with their real environment; if nothing new needs a manual test, the file says so in one
+  line with the reason. The `Testplan` CI check fails without it.
 - **Tested before merge:** all of the issue's tests (unit, integration, an acceptance test per `E2E: yes` case) are in
-  the same PR before the owner tests; then the owner runs the issue's whole test plan file; feedback
-  is fixed in one batch in the same thread (details: `docs/process/iteration.md`).
+  the same PR before the owner tests it with the issue's test plan file (`docs/testplans/README.md`).
 - **Performant:** no blocking work on the UI thread; code on a hot path (start, scan, library,
   input, running in the background beside a game) stays within the budgets below, measured when touched.
 
@@ -133,7 +127,7 @@ touching that code, and add new findings there, not here):
 
 ## Context economy
 
-Every step of a session resends its whole context, so keep it small (owner, 2026-10-23):
+Every step of a session resends its whole context, so keep it small:
 - `CLAUDE.md` holds only what nearly every task needs. Everything else (a product decision, a finding, a
   workflow detail) goes into the topic file under `docs/` and at most gets a pointer here. Limits: `CLAUDE.md`
   15 KB, every other doc and skill 10 KB (test plan files exempt); the `Doc sizes` CI check enforces them. A file
@@ -144,7 +138,6 @@ Every step of a session resends its whole context, so keep it small (owner, 2026
 - Keep tool output short: `dotnet build Arcadia.slnx -v q -clp:ErrorsOnly`, `dotnet test Arcadia.slnx -v q`
   (or `--filter` for the tests you changed), logs with `grep`/`Select-String` or `tail`, not whole.
 - Screenshots only where a UI change needs looking at, and not repeated for unchanged screens.
-- One thread per PR (an issue split into part PRs gets one per part); after the merge, new work starts in a new thread.
 
 ## Git
 
@@ -156,9 +149,9 @@ Every step of a session resends its whole context, so keep it small (owner, 2026
   debt). Rename generated names such as `claude/project-thread-…` before the first push.
 - **Never** end commit messages with a `Co-Authored-By` trailer.
 - Commit messages: imperative subject, body explains why.
-- At most two open UI PRs at a time (the owner tests them one after the other). After each merge to `main`, check
-  yourself that your open PR is still mergeable and resolve conflicts before the owner finds them.
-- Threads work as personas (`docs/personas/`), which say who reviews what.
-- Opening a PR needs no OK (tell the owner the link). Link it to its issue, close it when all its PRs are merged
-  (`docs/process/issues-and-prs.md`). Merges, releases, comments only on the owner's word.
+- After each merge to `main`, check that your open PR is still mergeable and resolve conflicts before the owner
+  finds them.
+- Opening a PR needs no OK. Link it to its issue, close it when all its PRs are merged
+  (`docs/process/issues-and-prs.md`); the PR gets the sections **Handoff** and **Review** (`docs/personas/README.md`).
+  Merges, releases, comments only on the owner's word.
 - License: GPL-3.0-only. Third-party notes in `THIRD-PARTY-NOTICES.md`.

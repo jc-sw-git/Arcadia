@@ -5,7 +5,7 @@ issue (`<issue, three digits>-<title>.md`, e.g. `015-settings-page.md`) and a `R
 overview with the list of files, the acceptance review, the exploratory test and the acceptance tests.
 It is the only source for all manual tests of that iteration: what is to be tested, who tested what
 and when, what went wrong and what came of it. Whoever tests or extends an issue reads only its file,
-not the whole folder. How a PR and an iteration run: `docs/process/iteration.md`.
+not the whole folder.
 
 ## Rules
 
@@ -16,7 +16,6 @@ not the whole folder. How a PR and an iteration run: `docs/process/iteration.md`
   existing test cases), it still gets a section with one line saying why,
   and names the existing test cases it touches:
   `# #67 Split MainViewModel` → "No new test cases: pure refactoring; touches T41-3 to T41-6."
-  That keeps the history complete, and the acceptance review knows what the refactoring touched.
 - **Test case IDs** are `T<issue>-<running number>`, e.g. `T15-2`. What belongs to no issue
   (the groundwork in Iteration 1) is in `grundgeruest.md` with `G-<n>`. They never change; an
   outdated test case is ~~struck through~~ with a reason, not deleted.
@@ -30,16 +29,17 @@ not the whole folder. How a PR and an iteration run: `docs/process/iteration.md`
   display, mechanical only) go there too, with an honest environment.
 - **Failures** name cause and consequence: the new issue and where it went (fixed in this
   iteration, next iteration, backlog).
-- **The ticks** are set by the owner's full test before the merge (`docs/process/iteration.md` → Before the merge). If the
-  acceptance review at the end of the iteration finds that a later issue changed the behaviour, the
-  test case is open again and retested on the release candidate.
+- **The ticks** are set by the owner's full test of the file before the merge; the thread records them and pushes.
+  A push that changes only `docs/testplans/**` on top of a green commit skips build and tests and runs only the
+  `Testplan` check (`tools/ci/detect-testplan-only.sh`). If the acceptance review at the end of the iteration finds
+  that a later issue changed the behaviour, the test case is open again and retested on the release candidate.
 
-## Acceptance tests (owner 2026-10-24, #184)
+## Acceptance tests
 
 - They live in `tests/Arcadia.App.Tests` and talk only through `ArcadiaDriver` (keys, time, restart)
-  or, for the real window, through `ArcadiaWindow` (click, real key, mouse wheel, layout, pixels, focus ring; #191)
+  or, for the real window, through `ArcadiaWindow` (click, real key, mouse wheel, layout, pixels, focus ring)
   and what view models and window show. Steam and Epic read recreated files with made-up IDs there
-  (`Fixtures/`, `ArcadiaDriver.StartWithLaunchersAsync`, #193); nothing opens a real launcher. Every test carries
+  (`Fixtures/`, `ArcadiaDriver.StartWithLaunchersAsync`); nothing opens a real launcher. Every test carries
   the IDs of its test cases as `[Trait("TestCase", "T15-1")]`;
   the iteration's overview lists them under "Acceptance tests".
 - **Red once:** every new acceptance test failed once before the PR because the feature was broken

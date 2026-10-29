@@ -1,7 +1,6 @@
 # Personas
 
-Every thread works as one persona for one step of the workflow (owner, 2026-10-26; trial for all of
-Iteration 3, compared with Iteration 2 in that iteration's retro). A persona is not a character: it is what a
+Every thread works as one persona for one step of the workflow. A persona is not a character: it is what a
 thread reads, what it delivers, what it doesn't do and when it is done. Reading only what the step needs keeps
 the thread small and focused.
 
@@ -12,27 +11,10 @@ the thread small and focused.
 | Designer | [designer.md](designer.md) | Screen designs |
 | Quality engineer / code reviewer | [quality-engineer.md](quality-engineer.md) | Code review and acceptance tests of a PR; decision reviews |
 
-## Course of an issue
-
-1. **Refinement:** the product manager for a story, the architect for `type:tech-debt`, spikes, CI and pure
-   refactorings. A story with a large technical part stays with the product manager, who reads `architect.md`
-   at the end and adds "Technical cut and risks" to the issue. If a screen needs a design, the refinement
-   asks for a designer; the design flows back into the issue before the refinement ends.
-2. **Implementation:** the architect. Code, unit and integration tests, the issue's test plan file, PR.
-3. **Review and acceptance tests:** a fresh quality engineer thread, in the same PR.
-4. **Owner's manual test:** in the implementation thread, which fixes the owner's feedback and any open
-   review findings in one batch (`docs/process/iteration.md` → Before the merge).
-
-Cost rules (owner, 2026-10-28): each tool call re-reads the thread's whole context, so a long thread gets
-expensive mostly through its size.
-- **One thread per PR.** An issue split into part PRs gets a new implementation thread per part; a thread
-  is not swapped for a fresh one mid-PR.
-- **Concept questioned during implementation:** the implementation thread pauses and asks the coordinator for
-  a short refinement thread; it settles the question in the issue, then implementation continues.
-- **Review findings in one batch:** findings from all sources (quality engineer, other reviewers) are
-  collected and fixed in one round, not one round per source.
-
-Codex reviews only in the acceptance review at the end of the iteration (owner, 2026-10-26), not per PR.
+An issue goes refinement (product manager for a story, architect for tech debt, spikes, CI; a designer when a screen
+is new or changes visibly) → implementation (architect) → review and acceptance tests (quality engineer, in the same
+PR) → the owner's manual test, whose feedback and the open review findings are fixed in one batch. Codex reviews
+only the whole iteration (`AGENTS.md`).
 
 ## Decisions
 
@@ -50,15 +32,4 @@ A thread hands over through GitHub, never through its chat: the next thread read
 before it. After refinement the issue is the handoff. After implementation the PR description gets a short
 section **Handoff**: done, deliberately not done, decisions with reasons, tricky spots, affected test cases.
 
-A thread that finds work for another persona asks the coordinator for a thread, only for the next step of the
-course above or for a designer. It doesn't take over that work itself.
-
-## What the coordinator passes on
-
-1. The persona file and the step (refinement, implementation, review, design, decision review).
-2. The issue; for review, the PR.
-3. Only the area files from the table in `CLAUDE.md` and the issue's test plan file (paths, not read by the
-   coordinator).
-4. Where the previous handoff is.
-5. The result expected, when the thread is done, and who comes next.
-6. Model and effort per the owner's overview.
+A thread that finds work for another persona hands it over the same way; it doesn't take over that work itself.

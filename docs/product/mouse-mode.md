@@ -8,8 +8,8 @@ How Steam's desktop layout and the foreground are detected technically: `docs/co
   saved (Arcadia starts normal). Its buttons are listed in `MouseModeRows.HelpRows`; in it Arcadia ignores gamepad
   navigation.
 - View and Menu therefore act on release, or once held alone 0.2 s (so ≡ held still opens details), and not at all
-  when pressed together (owner, 2026-10-19).
-- "Mausmodus" is one choice of three, so only one way decides (owner, 2026-10-20):
+  when pressed together.
+- "Mausmodus" is one choice of three, so only one way decides:
   - "Aus": all off, the other values kept.
   - "Von Hand": Back + Start; "Mausmodus beenden, wenn Arcadia im Vordergrund ist" optionally ends it when Arcadia
     comes to the front.
@@ -18,19 +18,18 @@ How Steam's desktop layout and the foreground are detected technically: `docs/co
 - "Beenden des Mausmodus in Spielen erzwingen" (only "Von Hand"): "Nein", "Ja" (in a library game in front Back + Start
   doesn't switch it on and a game coming to the front ends it) or "Individuell": a default "Erlaubt"/"Deaktiviert",
   and "Individueller Mausmodus" in each game's preview and detail page: "Standard (erlaubt)" or "Standard
-  (deaktiviert)", naming the default, then "Erlaubt", "Deaktiviert" (owner, 2026-10-20 and 2026-10-21).
+  (deaktiviert)", naming the default, then "Erlaubt", "Deaktiviert".
 - "Bei System-Dialogfenstern einschalten" (under "Mausmodus", for "Von Hand" and "Automatisch", greyed out with "Aus")
   switches it on while a dialog opened from the controller is open (#138).
 - A launcher's web page opened by controller (#280, e.g. Steam's sign-in) switches the mode on with its keyboard open,
   also with "Mausmodus: Aus", as the system dialogs of #138 do; after the page it goes off again if it came on for it,
-  and the keyboard closes if the page opened it (owner, 2026-10-27).
+  and the keyboard closes if the page opened it.
 - Exceptions per process are planned for later.
 
 ## "Zurück zu Arcadia"
 
 Its own setting: View held alone (1–9 s, default 1; no "at once", since a tap of ⧉ moves the mouse mode's keyboard,
-#110) brings Arcadia back from the background, with or without the mouse mode, with a box whose frame fills (owner,
-2026-10-20).
+#110) brings Arcadia back from the background, with or without the mouse mode, with a box whose frame fills.
 
 ## The mouse mode's on-screen keyboard (#110)
 
@@ -46,12 +45,11 @@ Its own setting: View held alone (1–9 s, default 1; no "at once", since a tap 
   the Big Picture layout. Shares the layout last chosen with the search.
 - Closes when a game comes to the front or the mouse mode ends. With Arcadia's search in front, Y doesn't open a second
   keyboard: the search's takes the mouse mode's buttons (≡ = ↵ starts the hit) until B, the search closes or Arcadia
-  leaves the front (owner, 2026-10-22).
+  leaves the front.
 
 ## Steam's desktop layout
 
-"Steams Desktop-Belegung ignorieren" (on; in the settings group "Steam", #169, independent of the mouse mode, owner
-2026-10-20) drops simulated mouse and keys from other programs while a controller is in use; beside a library game
+"Steams Desktop-Belegung ignorieren" (on; in the settings group "Steam", #169, independent of the mouse mode) drops simulated mouse and keys from other programs while a controller is in use; beside a library game
 without the mouse mode only while ⧉ + ≡ are held, and then only keys.
 
 ## What is in front
@@ -59,6 +57,6 @@ without the mouse mode only while ⧉ + ≡ are held, and then only keys.
 - "Arcadia in front" is the foreground window's process with no other program's window covering Arcadia whole
   (`MouseModeHost.IsArcadiaActive`), not Avalonia's activation, which got out of step beside games.
 - A game in front is a process from a library game's folder, or one whose path can't be read (anti-cheat) that
-  started after Arcadia last started a game (owner, 2026-10-20).
+  started after Arcadia last started a game.
 - The log names what is in front only as Arcadia, „Spiel“, „kein Spiel“ or „kein Fenster“, never the program:
-  which programs someone uses is private (owner, 2026-10-23, review #66).
+  which programs someone uses is private.

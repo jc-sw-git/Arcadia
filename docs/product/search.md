@@ -1,6 +1,6 @@
 # Product decisions: Search
 
-Search (#12; owner 2026-10-17, 2026-10-18, 2026-10-19, 2026-10-21 and 2026-10-22).
+Search (#12).
 
 ## Opening and the two layouts
 
@@ -18,7 +18,7 @@ Search (#12; owner 2026-10-17, 2026-10-18, 2026-10-19, 2026-10-21 and 2026-10-22
 - D-pad/left stick type, the right stick picks a hit. LT/RT (or Page Up/Down, the wheel) turn the hits a window at a
   time, as LT/RT turn pages and the detail page; the row wraps round like the detail page, the grid stops at its ends
   like the library and the wheel. A scroll bar shows where the shown hits are: across below the row, down beside the
-  grid (owner, 2026-10-19).
+  grid.
 - X erases (held: repeats), Y space, LB shift and RB AltGr (each: tap on/off, held only while held; one at a time).
 - L3 "Filter und Sortierung": launchers (any number) and the library's sort orders plus relevance, the default; not
   saved. R3 layout menu (all five, the last chosen saved globally).
@@ -28,8 +28,7 @@ Search (#12; owner 2026-10-17, 2026-10-18, 2026-10-19, 2026-10-21 and 2026-10-22
 ## Keyboard
 
 The shared on-screen keyboard (`docs/product/on-screen-keyboard.md`) without ↹ and the edge key; ↵ starts the focused
-hit like ≡, the arrows move the field's caret (up: to the start, down: to the end), "Ausblenden" puts it away like B
-(owner, 2026-10-22).
+hit like ≡, the arrows move the field's caret (up: to the start, down: to the end), "Ausblenden" puts it away like B.
 
 ## Chips, prefix and hits
 

@@ -156,6 +156,12 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>The <c>Game.Key</c> of the library game in front, or null; asked every tick (a short gap mid-game).</summary>
     public Func<string?> GameInFront { get; init; } = () => null;
 
+    /// <summary>
+    /// Stops (false) or resumes Arcadia's own reading of the real puck (SDL, <c>IGamepadSource.ReadSteamControllers</c>).
+    /// A hide or show restarts the puck, and Windows refuses that while any program holds it open, Arcadia too (#308).
+    /// </summary>
+    public Action<bool> ReadSteamControllers { get; init; } = _ => { };
+
     public PanEmulationStatus Status => _status;
 
     /// <summary>Pan hides the puck now, or was asked to hold it for a firmware attempt (#242); any thread.</summary>
@@ -342,7 +348,12 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
-        SetStatus(new(PanEmulationState.SettingUp));
+        if (_status is not { State: PanEmulationState.Paused, Problem: PanEmulationProblem.Hiding })
+        {
+            // A retry after a failed hide keeps its warning until it works, or the row would flicker every 10 s (#308).
+            SetStatus(new(PanEmulationState.SettingUp));
+        }
+
         uint generation;
         try
         {
@@ -378,7 +389,7 @@ public sealed class PanEmulation : IVirtualXboxPads
                 return;
             }
 
-            var hidden = await _guardian.HideAsync(generation, cancellationToken);
+            var hidden = await WithPuckLetGoAsync(() => _guardian.HideAsync(generation, cancellationToken));
             if (hidden != PanReason.None)
             {
                 // The client already asked Pan to undo the rejected hide. Counted: a hide that keeps failing restarts the
@@ -671,7 +682,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         else if (session.Hidden && removed)
         {
             // Not shown (HidHide busy): Pan's teardown after the stop shows it, with its own retries.
-            await _guardian.UnhideAsync(session.Generation, CancellationToken.None);
+            await WithPuckLetGoAsync(() => _guardian.UnhideAsync(session.Generation, CancellationToken.None));
         }
         else if (session.Hidden)
         {
@@ -681,6 +692,23 @@ public sealed class PanEmulation : IVirtualXboxPads
         }
 
         await _guardian.EmulationStoppedAsync(session.Generation, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Pan hides or shows the puck and restarts it: Arcadia lets go of it first, as Windows refuses the restart of a device
+    /// a program holds open (System log, event 225, owner's PC 2026-10-29), and the hide would fail every time (#308).
+    /// </summary>
+    private async Task<T> WithPuckLetGoAsync<T>(Func<Task<T>> restart)
+    {
+        ReadSteamControllers(false);
+        try
+        {
+            return await restart();
+        }
+        finally
+        {
+            ReadSteamControllers(true);
+        }
     }
 
     /// <summary>Pan has undone the emulation itself: the devices go, and a teardown is acknowledged.</summary>

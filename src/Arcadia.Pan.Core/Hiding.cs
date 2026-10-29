@@ -4,6 +4,8 @@ namespace Arcadia.Pan;
 /// The devices Pan may hide (#243 part B): only what Arcadia can emulate, found by Pan itself, never named in a
 /// message. For now the new Steam Controller's wireless puck <c>28DE:1304</c>, every HID instance of it. Other Valve
 /// devices (2015 controller, Triton by cable or Bluetooth, Steam Deck, Index) stay visible until verified (#248, #249).
+/// Arcadia's copy of the puck for Steam (#242) has the same ids, but sits on VIIPER's software USB host: it is never
+/// hidden nor restarted (<see cref="OnSoftwareHost"/>), or Steam would lose the very copy it is meant to use (#308).
 /// </summary>
 public static class HidingList
 {
@@ -19,6 +21,37 @@ public static class HidingList
     public static bool IsListedHid(string instanceId) => instanceId.StartsWith(PuckHidPrefix, StringComparison.OrdinalIgnoreCase);
 
     public static bool IsListedUsbParent(string instanceId) => instanceId.StartsWith(PuckUsbPrefix, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>A device has a few USB and HID levels above it (interface, composite device, hubs); more means the tree is odd.</summary>
+    private const int MaxLevels = 16;
+
+    /// <summary>
+    /// The device hangs below a software USB host (<c>ROOT\…</c> as usbip-win2 creates for VIIPER, or <c>SWD\…</c>):
+    /// the copy, not the puck. Climbs <paramref name="parentOf"/> past the USB and HID levels to the host. A tree that
+    /// can't be read counts as hardware: hiding the copy by mistake costs Steam the copy, not hiding the puck would
+    /// give every input twice.
+    /// </summary>
+    /// <param name="parentOf">The parent's instance id, or null when it can't be read.</param>
+    public static bool OnSoftwareHost(string instanceId, Func<string, string?> parentOf)
+    {
+        var current = instanceId;
+        for (var level = 0; level < MaxLevels; level++)
+        {
+            if (parentOf(current) is not { Length: > 0 } parent)
+            {
+                return false;
+            }
+
+            if (!parent.StartsWith(@"USB\", StringComparison.OrdinalIgnoreCase) && !parent.StartsWith(@"HID\", StringComparison.OrdinalIgnoreCase))
+            {
+                return parent.StartsWith(@"ROOT\", StringComparison.OrdinalIgnoreCase) || parent.StartsWith(@"SWD\", StringComparison.OrdinalIgnoreCase);
+            }
+
+            current = parent;
+        }
+
+        return false;
+    }
 }
 
 /// <summary>A HidHide call failed; <see cref="Reason"/> is what Arcadia is told.</summary>

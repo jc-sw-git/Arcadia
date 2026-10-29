@@ -149,6 +149,65 @@ public sealed class PanEmulationTests
         Assert.False(arcadia.Main.Status.HasControllerStatus);
     }
 
+    /// <summary>
+    /// #308: only the puck plugged in, no Steam Controller on it. Pan hid it every 22 s in vain (Arcadia's SDL held it
+    /// open, so Windows refused the restart) and gave up after a minute. Now Arcadia lets go of it for the hide.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T308-2")]
+    public async Task With_only_the_puck_Pan_hides_it_once_and_the_rows_stay_quiet_for_ten_minutes()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        arcadia.SteamControllerCopy.CanCopy = true;
+        arcadia.SteamControllerCopy.PuckPresent = true;
+        arcadia.StartControllers();
+        await arcadia.TickSteamControllerAsync();
+
+        Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);
+        var letGo = arcadia.Sdl.Calls.IndexOf("Steam aus");
+        Assert.True(letGo >= 0, "Arcadia didn't let go of the puck for the hide");
+        Assert.Equal(["Steam aus", "Update", "Steam an"], arcadia.Sdl.Calls.Skip(letGo).Take(3));
+        var controller = OpenControllerSettings(arcadia);
+
+        for (var tick = 0; tick < 300; tick++)
+        {
+            arcadia.Time.Advance(TimeSpan.FromSeconds(2));
+            await arcadia.TickSteamControllerAsync();
+        }
+
+        Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);
+        Assert.Equal([1u], arcadia.Pan.Hidden);
+        Assert.Empty(RowsBelow(controller));
+        Assert.False(Switch(controller).IsLampProblem);
+        Assert.False(arcadia.XboxPad.IsPlugged);
+        Assert.NotEqual(PanEmulation.StoppedText, arcadia.Main.Toast.Text);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T308-3")]
+    public async Task A_hide_that_keeps_failing_keeps_its_warning_row_through_every_retry()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        arcadia.SteamControllerCopy.CanCopy = true;
+        arcadia.SteamControllerCopy.PuckPresent = true;
+        arcadia.Pan.HideResult = PanReason.HidingFailed;
+        arcadia.StartControllers();
+        await arcadia.TickSteamControllerAsync();
+        var controller = OpenControllerSettings(arcadia);
+        var states = new List<PanEmulationState>();
+        arcadia.ForGames.Changed += () => states.Add(arcadia.ForGames.Status.State);
+
+        for (var tick = 0; tick < 12; tick++)
+        {
+            arcadia.Time.Advance(TimeSpan.FromSeconds(2));
+            await arcadia.TickSteamControllerAsync();
+            Assert.Equal(["pan:hide-failed"], RowsBelow(controller));
+        }
+
+        Assert.True(arcadia.Pan.Started.Count >= 3, $"{arcadia.Pan.Started.Count} attempts");
+        Assert.All(states, state => Assert.Equal(PanEmulationState.Paused, state));
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T242-14")]
     public async Task A_copy_that_keeps_failing_stops_the_emulation_until_Erneut_versuchen()

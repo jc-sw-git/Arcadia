@@ -131,6 +131,18 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
         lock (_lock)
         {
             Updates++;
+            Calls.Add("Update");
+        }
+    }
+
+    /// <summary>Every switch of SDL's Steam Controller driver and every update, in order.</summary>
+    public List<string> Calls { get; } = [];
+
+    public void ReadSteamControllers(bool on)
+    {
+        lock (_lock)
+        {
+            Calls.Add(on ? "Steam an" : "Steam aus");
         }
     }
 

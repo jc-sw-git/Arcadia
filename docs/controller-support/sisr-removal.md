@@ -45,8 +45,8 @@ usbip-win2 stays (Pan needs it), and so do the per-game modes. No step needs adm
   cause, also when only something that alone wouldn't show it is left (the uninstall entry, the CEF flag).
 - Arcadia closes Steam, removes, and starts Steam again also after a failure (`WithSteamClosedAsync`, shared with the
   driver fixes that restart the puck, #296). If Arcadia crashes in between, Steam stays closed; the user starts it.
-- Whether the marker stays gone after a removal with Steam closed and a Steam restart: the check script
-  `Run-Check-214.ps1` with `tools/dev/SisrMarkerCheck` (owner's PC, result pending).
+- The marker stays gone after a removal with Steam closed, a Steam start and another exit (owner's PC, 2026-10-29,
+  check script `Run-Check-214.ps1` with `tools/dev/SisrMarkerCheck`).
 
 ## At start and beside Pan
 

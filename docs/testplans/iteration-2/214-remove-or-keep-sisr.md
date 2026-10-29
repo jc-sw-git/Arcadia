@@ -65,4 +65,4 @@ History:
 |---|---|---|---|---|---|
 | T214-1 to T214-11 | 2026-10-28 | Claude | PR branch, Debug, Linux cloud container; acceptance and unit tests with faked processes and Steam; each acceptance test seen red once (see the PR) | ✅ | Windows CI and owner's PC open |
 | T214-3, -4, -8, -10 | 2026-10-28 | Claude | after the QE review: same container; SISR stopped only after Steam closed, clean-up after the stop, causes shown in the row; new acceptance tests each seen red once (see the PR) | ✅ | Windows CI and owner's PC open |
-| T214-12 | 2026-10-28 | owner | owner's PC, Run-Check-214 | open | removal of the marker depends on it |
+| T214-12 | 2026-10-29 | owner | owner's PC, Windows, Steam with two accounts (marker in one), Run-Check-214 with `SisrMarkerCheck` (Arcadia's `SteamShortcuts.RemoveByExecutable`) | ✅ marker removed with Steam closed, not shown after Steam's start, still gone after Steam exited again | the removal with Steam closed holds; no change |

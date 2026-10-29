@@ -9,13 +9,13 @@ you touch:
 | Online account, sign-in, owned games (#83) | `account.md` |
 | Running games, play stats (#95) | `running-games.md` |
 
-## Shortcuts (2026-10-09)
+## Shortcuts
 
 - Steam shortcut app ids in modern Steam are *not* CRC32(exe+name) — read the stored `appid`.
   `rungameid` = `(appid << 32) | 0x02000000`. Steam writes `shortcuts.vdf` only on exit;
   never write it while Steam runs. `BinaryVdf` round-trips the real file byte for byte.
 
-## Finding Steam (2026-10-23, #138)
+## Finding Steam (#138)
 
 `SteamInstallation.Find` reads `HKCU\Software\Valve\Steam\SteamPath`, else `%ProgramFiles(x86)%\Steam`. A Steam without
 registry entry (e.g. copied to another drive) is picked by hand on Steam's launcher page: the folder must hold

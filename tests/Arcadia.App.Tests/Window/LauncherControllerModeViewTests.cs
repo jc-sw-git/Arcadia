@@ -28,6 +28,7 @@ public sealed class LauncherControllerModeViewTests
 
         // ▶ and ◀ beside the value switch it.
         Assert.Equal(ControllerModes.Steam, arcadia.ValueShown(mode));
+        Assert.All(arcadia.ValueArrows(mode), arrow => Assert.True(arrow.IsEffectivelyEnabled));
         arcadia.Click(arcadia.ValueArrows(mode)[1]);
         Assert.Equal(ControllerModes.Arcadia, arcadia.ValueShown(mode));
         arcadia.Click(arcadia.ValueArrows(mode)[0]);
@@ -79,6 +80,9 @@ public sealed class LauncherControllerModeViewTests
         var reset = arcadia.Row("launcher-controller-reset");
 
         Assert.Equal(ControllerModes.Steam, arcadia.ValueShown(mode));
+
+        // The arrows look as dead as they are (Allows), not clickable.
+        Assert.All(arcadia.ValueArrows(mode), arrow => Assert.False(arrow.IsEffectivelyEnabled));
         foreach (var arrow in arcadia.ValueArrows(mode))
         {
             arcadia.Click(arrow);

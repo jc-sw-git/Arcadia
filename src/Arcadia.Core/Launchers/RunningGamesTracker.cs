@@ -44,6 +44,9 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
 
     private Dictionary<string, Running> _running = new(StringComparer.Ordinal);
 
+    // Launchers whose monitor reports games that don't really run (demo data); set by the poll, read on the UI thread.
+    private volatile IReadOnlySet<string> _simulatedLaunchers = new HashSet<string>();
+
     // A copy for other threads, renewed with every change of the two above.
     private volatile IReadOnlyCollection<string> _active = [];
 
@@ -62,6 +65,13 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         _running.TryGetValue(gameKey, out var running) ? new RunState(RunPhase.Running, running.StartedAt)
         : _starting.TryGetValue(gameKey, out var start) ? new RunState(RunPhase.Starting, start.AskedAt)
         : null;
+
+    /// <summary>
+    /// Whether the game really runs or is being started on this PC. A game a monitor reports as simulated (demo data)
+    /// shows "Läuft" (<see cref="StateOf"/>) but is not in the way of anything (#307).
+    /// </summary>
+    public RunState? RealStateOf(string gameKey) =>
+        _simulatedLaunchers.Contains(LauncherIdOf(gameKey)) ? null : StateOf(gameKey);
 
     /// <summary>
     /// The keys of the games that run or are being started, from any thread: which Steam Controller mode applies (#213)
@@ -111,6 +121,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         var watched = _starting.Keys.Union(_startedFromArcadia).ToHashSet(StringComparer.Ordinal);
         var enabled = launchers.Enabled;
         var monitors = enabled.Where(i => i.RunningGames is not null).Select(i => i.RunningGames!).ToList();
+        _simulatedLaunchers = monitors.Where(m => m.ReportsSimulatedGames).Select(m => m.LauncherId).ToHashSet(StringComparer.Ordinal);
         var byProcess = FallbackLaunchers(enabled);
         var scan = byProcess.Count > 0;
 

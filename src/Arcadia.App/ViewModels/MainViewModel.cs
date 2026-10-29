@@ -946,9 +946,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
-    /// <summary>The title of a game that runs or is being started, for "Erst änderbar, wenn „…“ beendet ist" (#242).</summary>
+    /// <summary>
+    /// The title of a game that really runs or is being started, for "Erst änderbar, wenn „…“ beendet ist" (#242). A demo
+    /// game shown as running never counts: it can't be ended, so Pan would stay locked for good (#307).
+    /// </summary>
     private string? GameInTheWay() =>
-        Session.Libraries.SelectMany(library => library.Games).FirstOrDefault(game => Session.RunStateOf(game.Key) is not null)?.Title;
+        Session.Libraries.SelectMany(library => library.Games).FirstOrDefault(game => Session.RealRunStateOf(game.Key) is not null)?.Title;
 
     /// <summary>SDL sees a Steam Controller or no longer does (#212); the per-game mode shows only while it does (#213).</summary>
     public void SetSteamControllerSeen(bool seen)

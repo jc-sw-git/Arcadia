@@ -15,5 +15,11 @@ public interface IRunningGamesMonitor
 {
     string LauncherId { get; }
 
+    /// <summary>
+    /// The games it reports don't really run on this PC (Arcadia's demo data). They show "Läuft", but nothing waits for
+    /// their end: they can't be ended, so they never keep Pan's switch locked (#307).
+    /// </summary>
+    bool ReportsSimulatedGames => false;
+
     IReadOnlyList<RunningGame> Poll();
 }

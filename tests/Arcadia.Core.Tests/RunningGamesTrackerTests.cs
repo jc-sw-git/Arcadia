@@ -47,6 +47,21 @@ public sealed class RunningGamesTrackerTests
     }
 
     [Fact]
+    public async Task A_game_of_a_monitor_that_reports_simulated_games_shows_as_running_but_is_not_real()
+    {
+        var demo = new FakeRunningGames("gog") { ReportsSimulatedGames = true };
+        demo.Running.Add(new RunningGame("witcher", Started));
+        var tracker = CreateTracker(new FakeIntegration(FakeIntegration.LauncherOf("gog")) { RunningGames = demo });
+        _steam.Running.Add(new RunningGame("440", Started));
+
+        await tracker.PollAsync();
+
+        Assert.Equal(new RunState(RunPhase.Running, Started), tracker.StateOf("gog:witcher"));
+        Assert.Null(tracker.RealStateOf("gog:witcher"));
+        Assert.Equal(new RunState(RunPhase.Running, Started), tracker.RealStateOf("steam:440"));
+    }
+
+    [Fact]
     public async Task The_active_games_are_those_that_run_or_are_being_started_and_follow_every_change()
     {
         var tracker = CreateTracker();

@@ -38,6 +38,8 @@ public sealed class DemoRunningGames(DemoScanner scanner, DateTimeOffset now) : 
 
     public string LauncherId => scanner.Launcher.Id;
 
+    public bool ReportsSimulatedGames => true;
+
     public IReadOnlyList<RunningGame> Poll() => _running ??= scanner.Generate()
         .Where(game => game.IsInstalled)
         .Take(1)

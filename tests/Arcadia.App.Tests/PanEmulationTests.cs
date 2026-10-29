@@ -111,6 +111,39 @@ public sealed class PanEmulationTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T307-1")]
+    public async Task A_demo_game_shown_as_running_does_not_lock_the_switch_but_a_real_one_does()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(
+            [new(KnownLaunchers.Steam, 3), new(KnownLaunchers.Gog, 3, IsDemo: true)],
+            new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        arcadia.SteamControllerCopy.CanCopy = true;
+        arcadia.SteamControllerCopy.PuckPresent = true;
+        arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.StartControllers();
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.FollowRunningGamesAsync();
+        arcadia.Press(UiAction.NextTab);
+        Assert.Contains(arcadia.PageGames, tile => tile.IsRunning);
+
+        var controller = OpenControllerSettings(arcadia);
+        var pan = Switch(controller);
+        Assert.False(pan.IsLocked, "das Demo-Spiel läuft nicht wirklich");
+        Assert.True(pan.CanActivate);
+        pan.Activate();
+        Assert.False(arcadia.Settings.Current.PanEnabled);
+        Switch(controller).Activate();
+        Assert.True(arcadia.Settings.Current.PanEnabled);
+
+        // A game really started from Arcadia still locks it.
+        arcadia.Press(UiAction.Back).Press(UiAction.PreviousTab);
+        var title = arcadia.Main.Library.FocusedGame!.Title;
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "Steam soll das Spiel starten");
+        Assert.True(Switch(OpenControllerSettings(arcadia)).IsLocked);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T242-13")]
     public async Task A_hide_that_fails_pauses_the_emulation_with_its_row_and_Erneut_versuchen_tries_again()
     {

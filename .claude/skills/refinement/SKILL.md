@@ -6,7 +6,7 @@ description: Joint refinement with the owner before work starts on an issue or e
 # Refinement
 
 Adapted from `grilling` and `to-tickets` in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT).
-When it applies (per issue; epics on request) is set in `docs/roadmap.md` → "Refinement".
+The product manager leads for stories, the architect for tech debt, spikes and CI (`docs/personas/`).
 
 ## 1. Read before asking
 
@@ -16,8 +16,8 @@ the owner's.
 
 ## 2. Ask in rounds
 
-Open with a short summary of the issue (owner, 2026-10-26): user story, acceptance criteria, and what else
-matters (dependencies, what existing work already covers). Then the first round.
+Open with a short summary of the issue: user story, acceptance criteria, and what else matters (dependencies,
+what existing work already covers). Then the first round.
 
 Map the work as a tree of decisions: each one opens the decisions that depend on it. A round asks the
 whole **frontier**, every question whose prerequisites are settled. A question that depends on another
@@ -36,8 +36,7 @@ Ask in German (chat), numbered, each with your recommendation, worded so "ja" ac
 
 Keep rounds short (about five questions). After each answer, recompute the frontier.
 
-Before the frontier counts as empty, two passes (owner, 2026-10-28; #242's concept gap was only found in
-review and cost a second implementation):
+Before the frontier counts as empty, two passes:
 
 - **Failure cases:** for every decided behaviour, what happens in an unknown state (e.g. right after
   Arcadia starts), on a crash or hang, on a restart, and when it is interrupted halfway. "Unknown" must

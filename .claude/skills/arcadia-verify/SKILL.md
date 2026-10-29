@@ -5,7 +5,8 @@ description: Run Arcadia and check a change for real — build, start with demo 
 
 # Verify Arcadia changes in the running app
 
-Unit tests don't cover the UI, input or the controller emulation. Check those in the running app.
+`Arcadia.App.Tests` drive the view models and a headless window, but not the real screen, real input, launchers or
+the controller emulation. Check those in the running app.
 
 ## 1. Build cleanly
 
@@ -34,10 +35,12 @@ Say "I'm driving Arcadia for ~1 min, please don't touch it" before running the s
 ```powershell
 ./tools/dev/Screenshot-Arcadia.ps1 -Out $env:TEMP\a.png                      # library
 ./tools/dev/Screenshot-Arcadia.ps1 -Out $env:TEMP\a.png -Keys '{F2}' -AfterKeysMs 1000   # settings
-./tools/dev/Screenshot-Arcadia.ps1 -Out $env:TEMP\a.png -Keys 'e','e','v'      # next tab twice, view dialog
+./tools/dev/Screenshot-Arcadia.ps1 -Out $env:TEMP\a.png -Keys '+e','+e','v'    # next tab twice, view dialog
 ```
 
-Then read the PNG. Keys: arrows, Enter, Esc, Q/E (tabs), PageUp/PageDown (pages), V (view), F2 (settings), F11 (fullscreen).
+Then read the PNG. Keys stand in for the controller as in `docs/product/controls.md`: WASD or arrows move, Space = A,
+Esc = B, F = X, V = Y, Q/E = LT/RT (pages), Shift+Q/E = LB/RB (tabs), 1 … 0 = tab, Enter = ≡ (settings), R = ⧉; F11
+fullscreen. SendKeys writes Shift as `+` (`'+e'`).
 `-WaitMs` must cover startup (window handle exists after ~4–7 s).
 
 ### Linux (cloud threads)

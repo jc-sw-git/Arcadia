@@ -1,50 +1,49 @@
 # Steam gets a copy of the Steam Controller (#242)
 
-Builds on spike #239 ([emulated-steam-controller.md](emulated-steam-controller.md)) and Pan (#243,
-[pan-hiding.md](pan-hiding.md)). Part A: the logic, settings and tests below. Parts B and C (the VIIPER fork, the
-raw puck on Windows, SDL ignoring the copy): [steam-controller-copy-windows.md](steam-controller-copy-windows.md).
-Without a pinned fork build, or off Windows, the App passes `NoSteamControllerCopy` (`CanCopy` false): Pan hides
-nothing and Arcadia's Xbox pad works as in #213.
+While Arcadia emulates, Pan hides the real puck from every program but Arcadia ([pan-hiding.md](pan-hiding.md)) and
+Steam gets a VIIPER device with the puck's descriptors that Arcadia feeds from the raw puck
+([steam-controller-copy-windows.md](steam-controller-copy-windows.md)). Without the pinned VIIPER build, or off Windows,
+the App passes `NoSteamControllerCopy` (`CanCopy` false): Pan hides nothing and only Arcadia's Xbox pad works.
 
 ## Lifecycle (`PanEmulation`)
 
-- One emulation generation per run, under Pan's watch: VIIPER runs (`IVirtualXboxPads.PrepareAsync`, so Pan takes
-  its `viiper.exe` at the registration), `EmulationStarted`, `Hide(generation)`, the copy attaches, then Arcadia's
-  Xbox pad comes and goes inside it as games need. Undone in reverse: pad and copy, `Unhide`, `EmulationStopped`.
-- Hide once at the start (or when the puck arrives) and show at the end (owner's decisions 1, 5, 6): switching a game's
-  mode or starting a game never makes the controller drop out.
-- No hiding, no emulation: a hide that fails (puck didn't restart, HidHide changed nothing) leaves the controller as
-  it is and is tried again after 10 s; a copy that doesn't attach ends the emulation, so Pan shows the puck again.
-- Every tick asks Pan `CheckHiding(generation)`. Pan keeps what it hid for that generation (image path, instances) and
-  answers `HidingLost` (22) when cloaking is off, its client left the allow list or an instance is no longer hidden
-  (HidHide's configuration client, an uninstall). Arcadia then ends pad and copy at once, notices "Pan:
-  Controller-Wächter pausiert. Die echten Controller werden nicht mehr versteckt." and, once it runs again, "Pan:
-  Controller-Wächter läuft wieder".
+- One emulation generation per run, under Pan's watch: VIIPER runs (`IVirtualXboxPads.PrepareAsync`, so Pan takes its
+  `viiper.exe` at the registration), `EmulationStarted`, `Hide(generation)`, the copy attaches, then Arcadia's Xbox
+  pad comes and goes inside it as games need. Undone in reverse: pad and copy, `Unhide`, `EmulationStopped`.
+- Hide once at the start (or when the puck arrives) and show at the end: switching a game's mode or starting a game
+  never makes the controller drop out.
+- No hiding, no emulation: a hide that fails leaves the controller as it is and is tried again after 10 s; a copy
+  that doesn't attach ends the emulation, so Pan shows the puck again. `HideAsync` waits up to 25 s (the puck
+  restarts, ~2.5 s) and can't be cancelled once sent: a half-done hide would leave the puck hidden with nothing in
+  its place. A rejected hide is undone by the client at once.
+- Every tick asks Pan `CheckHiding(generation)`; `HidingLost` (cloaking off, the client off the allow list, an
+  instance no longer hidden) ends pad and copy at once, with the notices "Pan: Controller-Wächter pausiert …" and,
+  once it runs again, "Pan: Controller-Wächter läuft wieder".
 - More than 3 failures in 5 minutes (copy lost or not attaching, the pad giving up) stop it: "Emulation angehalten"
   until "Erneut versuchen" or "Controller wiederherstellen".
-- A teardown by Pan (Arcadia hung) is acknowledged and a new generation starts in the same tick, at most once per tick
-  (a Pan that ends every new generation at once would restart the puck in a loop).
+- A teardown by Pan (Arcadia hung) is acknowledged and a new generation starts in the same tick, at most once per
+  tick (a Pan that ends every new generation at once would restart the puck in a loop).
 - A pad or copy that fails to go leaves the puck hidden: `EmulationStopped` without `Unhide`, so Pan's teardown ends
   the forwarding (`viiper.exe`) before it shows the puck.
-- Consent before every hide (owner's design 2026-10-28, `SteamControllerTakeover`): a hide restarts the puck and
-  would break off an update Steam runs on the real one, and from outside nobody can tell whether one runs. So when
-  Steam runs, Arcadia asks ("Steam Controller und Puck übernehmen?") and hides nothing until "Ja" is held 3 s; without
-  Steam it takes over at once. The consent holds while the emulation runs without a gap (a puck plugged in meanwhile
-  is taken over too: Steam never saw it); every gap (paused, Pan's teardown, a hide that didn't hold, switched off)
-  asks again. "Nein" (held 1 s) and a release for a firmware update hold until Arcadia's next start or the settings
-  row "… übernehmen" (held 3 s, the press is the consent). Meanwhile nothing is emulated, Arcadia's Xbox pad included.
-  Arcadia asks only once Pan can hide (`CheckHiding` first): a question the hide can't follow would come back every
-  tick and teach the player to hold "Ja" by reflex. A take-over only because Steam wasn't running is checked again
-  right before the hide: Steam started meanwhile (e.g. while VIIPER got ready) turns it into the question.
-  Short gap mid-game (owner 2026-10-28): while a library game stays in front, Steam's update window can't be, so a gap
-  under 10 s with the same game in front at every check (every tick, at most 5 s apart) from the check before the gap
-  until the hide is taken over again without asking or coming to the front; checked again with a fresh look right
-  before the hide (VIIPER's start may take seconds). A missed check (Arcadia hung) asks.
-  Open risk: an update offered in Steam's in-game overlay leaves the game in front (checked by the script in
-  [steam-controller-copy-windows.md](steam-controller-copy-windows.md)).
-  A pad still being unplugged stays in the session until it is gone, so the end shows the puck only after it.
-- `HideAsync` waits up to 25 s (the puck restarts, ~2.5 s) and can't be cancelled once sent: a half-done hide would
-  leave the puck hidden with nothing in its place. A rejected hide is undone by the client at once.
+
+## Consent before every hide (`SteamControllerTakeover`)
+
+A hide restarts the puck and would break off a firmware update Steam runs on the real one, and from outside nobody can
+tell whether one runs. So with Steam running Arcadia asks ("Steam Controller und Puck übernehmen?") and hides nothing
+until "Ja" is held 3 s; without Steam it takes over at once (checked again right before the hide: a Steam started
+meanwhile turns it into the question).
+
+- The consent holds while the emulation runs without a gap (a puck plugged in meanwhile is taken over too: Steam never
+  saw it); every gap (paused, Pan's teardown, a hide that didn't hold, switched off) asks again. "Nein" (held 1 s) and
+  a release for a firmware update hold until Arcadia's next start or the settings row "… übernehmen" (held 3 s, the
+  press is the consent). Meanwhile nothing is emulated, Arcadia's Xbox pad included.
+- Arcadia asks only once Pan can hide (`CheckHiding` first): a question the hide can't follow would come back every
+  tick and teach the player to hold "Ja" by reflex.
+- Short gap mid-game: while a library game stays in front, Steam's update window can't be, so a gap under 10 s with
+  the same game in front at every check (every tick, at most 5 s apart) is taken over again without asking, checked
+  once more right before the hide. A missed check (Arcadia hung) asks. Open risk: an update offered in Steam's
+  in-game overlay leaves the game in front.
+- A pad still being unplugged stays in the session until it is gone, so the end shows the puck only after it.
 
 ## Who gets input (`SteamControllerCopyRules`)
 
@@ -57,7 +56,7 @@ nothing and Arcadia's Xbox pad works as in #213.
 
 ## What Steam may send the puck (`SteamControllerCopyFilter`)
 
-Decision 8 (owner: "no bricked Steam Controllers under any circumstances"): an allow list, everything else dropped.
+No bricked Steam Controllers under any circumstances: an allow list, everything else dropped.
 
 | Kind | Types | Passes |
 |---|---|---|
@@ -67,25 +66,20 @@ Decision 8 (owner: "no bricked Steam Controllers under any circumstances"): an a
 | Firmware | `0xB7 0xB8 0xB9` | never; update traffic (below) |
 | Anything else (`FACTORY_RESET` `0x86`, `SET_SERIAL_NUMBER` `0xA9`, `ENABLE_PAIRING` `0xAD`, radio and dongle `0xAF`–`0xB3`, unknown) | — | never |
 
-- Reads (GET_REPORT) always pass: they change nothing.
-- Each dropped type is logged once, with its name and length, never its payload.
+- Reads (GET_REPORT) always pass: they change nothing. Each dropped type is logged once, with its name and length,
+  never its payload.
 - Every drop but the routine ones (`0xA3 0xDC 0xE2 0xED 0xF3`, haptics while the copy rests) raises `UpdateTraffic`:
-  Steam's real update path for the Triton is unverified, so anything unknown counts. `FirmwareAttemptWatch` then
-  brings Arcadia to the front with "Steam will die Firmware aktualisieren": after 5 s without traffic a 25 s
-  countdown runs (new traffic starts it anew); only then can "Controller freigeben" or "Arcadia beenden" (held 1 s)
-  be chosen, as releasing the real puck mid-attempt could hand it the rest of the update. "Steam hat das Update
-  abgebrochen" (held 3 s) is the player's own way out of a misread; "Schließen" (no hold, greyed and focused like the
-  others) closes the dialog and keeps the takeover. While the attempt runs, Pan holds the puck hidden even if Arcadia
-  ends unexpectedly, until Steam is closed (`pan-firmware-hold.md`). `arcadia.log` names every message that counted
-  and how the attempt ended (Steam gave up, or the player said so).
-- Open: whether Steam misses `0xA3` (sent on every slot in the spike), and the real update path (the owner's check
-  script). No bootloader type is known; it would be dropped and counted all the same.
+  Steam's real update path for the Triton is unverified (spike #295), so anything unknown counts.
+  `FirmwareAttemptWatch` then brings Arcadia to the front with "Steam will die Firmware aktualisieren": after 5 s
+  without traffic a 25 s countdown runs (new traffic starts it anew); only then can "Controller freigeben" or
+  "Arcadia beenden" (held 1 s) be chosen, as releasing the real puck mid-attempt could hand it the rest of the update.
+  "Steam hat das Update abgebrochen" (held 3 s) is the player's own way out of a misread; "Schließen" keeps the
+  takeover. While the attempt runs, Pan holds the puck hidden even if Arcadia ends unexpectedly
+  ([pan-firmware-hold.md](pan-firmware-hold.md)). `arcadia.log` names every message that counted and how the attempt
+  ended. No bootloader type is known; it would be dropped and counted all the same.
 - What Windows' class drivers say to any device (HID idle and protocol, CDC line coding and control line state) is
   housekeeping: answered, never passed on, never counted (`SteamReportKind.Housekeeping`). Other CDC requests (a
   break, an encapsulated command), vendor and unknown control requests count.
 
-## UI (designs, section "#242 Pan")
-
-The group "PAN" in the controller settings (`PanRows`), the greyed mode with the triangle, the header's spinner and
-triangle ("Pan läuft nicht"): see `docs/product/settings.md` and `docs/product/controls.md`. Off Windows the
-emulation's state is `Unsupported`: nothing is emulated and the mode doesn't show.
+The settings rows, the greyed mode and the dialogs: `docs/product/settings.md`, `docs/product/controls.md`. Off
+Windows the emulation's state is `Unsupported`: nothing is emulated and the mode doesn't show.

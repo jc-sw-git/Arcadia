@@ -10,6 +10,7 @@ using Arcadia.Launchers.Abstractions;
 using Arcadia.Pan;
 using Arcadia.Tests.Sdl;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 
 namespace Arcadia.App.Tests;
 
@@ -289,35 +290,77 @@ public sealed class PanEmulationTests
         Assert.All(states, state => Assert.Equal(PanEmulationState.Paused, state));
     }
 
-    /// <summary>QE review of #310 (B4): a retry the player asked for shows that it runs; a hide takes ~11 s on hardware.</summary>
+    /// <summary>A retry the player asked for shows that it runs (a hide takes ~11 s on hardware) and how it ended (owner, 2026-10-29).</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T308-3")]
-    public async Task Erneut_versuchen_on_a_failed_hide_shows_the_attempt_and_then_the_warning_again()
+    public async Task Erneut_versuchen_shows_on_its_row_that_it_runs_and_a_toast_says_when_it_failed()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
-        arcadia.SteamControllerCopy.CanCopy = true;
-        arcadia.SteamControllerCopy.PuckPresent = true;
-        arcadia.Pan.HideResult = PanReason.HidingFailed;
-        arcadia.StartControllers();
-        await arcadia.TickSteamControllerAsync();
+        using var arcadia = await HideFailsAsync();
         var controller = OpenControllerSettings(arcadia);
         var states = new List<PanEmulationState>();
         arcadia.ForGames.Changed += () => states.Add(arcadia.ForGames.Status.State);
-
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(r => r.Key == "pan:hide-failed"));
+        Assert.Equal(("Erneut versuchen", false), (row.ActionText, row.IsWorking));
+
         row.Activate();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(("Wird versucht …", true, false), (row.ActionText, row.IsWorking, row.CanActivate));
+
+        // Mid-attempt the emulation sets up anew, which has no warning of its own: the pressed row stays and shows it.
+        (IReadOnlyList<string> Rows, bool Working)? during = null;
+        arcadia.Pan.PuckRestart = () =>
+        {
+            Dispatcher.UIThread.RunJobs();
+            during = (RowsBelow(controller), row.IsWorking);
+            return PanReason.HidingFailed;
+        };
         await arcadia.TickSteamControllerAsync();
 
-        Assert.Equal([PanEmulationState.SettingUp, PanEmulationState.Paused], states);
+        Assert.Equal(PanEmulationState.SettingUp, states.Distinct().Skip(1).First());
+        Assert.Equal(["pan:hide-failed"], during!.Value.Rows);
+        Assert.True(during.Value.Working);
         Assert.Equal(["pan:hide-failed"], RowsBelow(controller));
-        Assert.Equal(2, arcadia.Pan.Started.Count);
+        Assert.Equal(("Erneut versuchen", false, true), (row.ActionText, row.IsWorking, row.CanActivate));
+        Assert.Equal(PanEmulation.RetryFailedText, arcadia.Main.Toast.Text);
+        Assert.False(arcadia.ForGames.Retrying);
 
-        // The automatic retry after it keeps the warning again.
+        // The automatic retry after it keeps the warning, without a toast (the last one is gone after 4 s).
         states.Clear();
         arcadia.Time.Advance(PanEmulation.HideRetry);
         await arcadia.TickSteamControllerAsync();
         Assert.Equal(3, arcadia.Pan.Started.Count);
         Assert.Empty(states);
+        Assert.Null(arcadia.Main.Toast.Text);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T308-3")]
+    public async Task Erneut_versuchen_that_works_ends_with_a_toast_and_the_warning_gone()
+    {
+        using var arcadia = await HideFailsAsync();
+        var controller = OpenControllerSettings(arcadia);
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(r => r.Key == "pan:hide-failed"));
+
+        row.Activate();
+        arcadia.Pan.HideResult = PanReason.None;
+        await arcadia.TickSteamControllerAsync();
+
+        Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);
+        Assert.Empty(RowsBelow(controller));
+        Assert.Equal(PanEmulation.RunningAgainText, arcadia.Main.Toast.Text);
+        Assert.False(arcadia.ForGames.Retrying);
+    }
+
+    /// <summary>Only the puck, and every hide fails: the row "Steam Controller lässt sich nicht verstecken" is up.</summary>
+    private static async Task<ArcadiaDriver> HideFailsAsync()
+    {
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        arcadia.SteamControllerCopy.CanCopy = true;
+        arcadia.SteamControllerCopy.PuckPresent = true;
+        arcadia.Pan.HideResult = PanReason.HidingFailed;
+        arcadia.StartControllers();
+        await arcadia.TickSteamControllerAsync();
+        return arcadia;
     }
 
     [AvaloniaFact]

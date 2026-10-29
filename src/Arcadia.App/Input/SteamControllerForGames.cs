@@ -152,8 +152,10 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     public void Retry()
     {
         Pad.ForgetLosses();
-        Emulation.ForgetFailures();
+        Emulation.Retry();
     }
+
+    public bool Retrying => Emulation.Retrying;
 
     /// <summary>Every 2 s, off the UI thread: keeps the emulation, decides anew, then plugs the pad in or out.</summary>
     public async Task TickAsync()

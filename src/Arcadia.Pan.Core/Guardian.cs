@@ -225,6 +225,12 @@ public sealed partial class Guardian
                 return PanMessage.Of(PanReply.Rejected, reason: PanReason.NotRegistered);
             }
 
+            if (message.Command == PanCommand.PuckReleased)
+            {
+                // Also while stopping: the stop's teardown restarts the puck and waits for this.
+                return PuckReleased(message);
+            }
+
             if (_stopping)
             {
                 return PanMessage.Of(PanReply.Rejected, message.Generation, PanReason.ServiceStopping);
@@ -258,6 +264,8 @@ public sealed partial class Guardian
             var client = _client;
             _client = null;
             _helloDone = false;
+            // A gone client holds nothing any more: a restart waiting for it to let go goes ahead.
+            _puckReleased?.TrySetResult();
             if (_phase != Phase.Emulating)
             {
                 _log($"Client {client.Pid} disconnected");

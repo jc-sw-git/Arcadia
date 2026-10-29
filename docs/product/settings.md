@@ -48,6 +48,9 @@ Agreed with the owner; don't change without asking. Read this before changing th
 - Pan's notices (#243 B2): a toast while Arcadia is in front, the overlay notice (where the mouse mode shows its
   label) while a game is in front, so the player sees them in the game too. All Pan notices go this way. A hold the
   player is watching goes on: during the View hold the notice stands below "Zurück zu Arcadia".
+  "Erneut versuchen" on a Pan row: the row stays while the attempt runs (also when its problem is gone meanwhile),
+  reads "Wird versucht …" with a spinner and can't be pressed; when the attempt ends, a toast says how: "Pan:
+  Controller-Wächter läuft wieder" or "Pan: Erneuter Versuch ohne Erfolg. …" (owner, 2026-10-29, #308).
   "Controller wiederherstellen" (Pan's
   `--restore`) stands below the problems, indented like them, while Pan is installed. An installed Pan that isn't the bundled one is
   replaced at start without a question (#297, page "Pan wird aktualisiert"; details in `docs/controller-support/pan-setup.md`).

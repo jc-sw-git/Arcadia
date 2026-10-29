@@ -32,20 +32,24 @@ Only the puck plugged in, Steam Controller off, Steam closed, Pan on:
   that can't be read counts as hardware: a copy hidden by mistake costs Steam the copy, a puck not hidden would give
   every input twice.
 - **The warning stays.** An automatic retry after a failed hide keeps the status `Paused`/`Hiding` (no `SettingUp` in
-  between); one after "Erneut versuchen" or "Controller wiederherstellen" shows `SettingUp`, so the press shows.
+  between); one after "Erneut versuchen" or "Controller wiederherstellen" shows `SettingUp`. After "Erneut versuchen"
+  the pressed row stays, says "Wird versucht …" with a spinner, and a toast tells the outcome
+  ([settings.md](../product/settings.md)).
 - **Two defaults on purpose.** Pan hides a puck whose host is unknown; Arcadia copies only a puck on a PCI or ACPI
   host (`PuckDescriptors.IsRealPuck`). A puck on another host (e.g. `VMBUS\`) or with an unreadable tree is therefore
   hidden but never copied: "Kopie startet nicht", and after 3 failures the emulation stops. Safe both ways (no
   double input, no copy reading itself), just not working there.
 
-## Still open (#313)
+## Pan's own restarts (#308, QE review)
 
-Pan's own restarts, which Arcadia isn't asked about, can still be vetoed by Arcadia's SDL (QE review of PR #310):
-- the teardown after `EmulationStopped` when the client's `Unhide` was rejected (HidHide busy), or after `EndAsync`'s
-  "nicht alles entfernt" branch (`ShowAfterTeardownAsync`, `RetryShowAsync`);
-- the show when a firmware hold ends while Arcadia keeps running;
-- a device arrival while hiding (only for new puck instance ids), and a teardown after Arcadia hung (it can't let go).
+Pan also restarts the puck without the client asking: the teardown's show (after `EmulationStopped` while hidden, a
+hang, a stop), its retry, the show once a firmware hold ends, and the hide of a new puck instance arriving while hiding.
+Before each, a connected client gets the notice `ReleasePuck(n)`; Arcadia lets go (`PanClient.PuckRestarting`,
+`PanEmulation` counts who wants the puck let go, so an overlap with its own hide reads again only after both) and
+answers `PuckReleased(n)`. Pan waits at most 2 s (`PuckReleaseTimeout`; a hung client can't answer), restarts, and
+sends `PuckRestarted(n)`, done or not; a lost link counts as that too. The answer is a request of its own: behind a
+running one of the client's (its hide waiting for an arrival's restart) it comes late, and Pan's wait runs out after
+Arcadia has let go anyway. A late answer for an older number changes nothing.
 
-The restart then stays pending (`PuckRestartPending`) and the teardown retries it; a running Steam may only see the
-controller again after a replug (not checked on hardware). Event 225 is the quickest way to find a holder; Pan doesn't
-read the veto itself yet.
+Still open: Pan doesn't read the veto itself (event 225 is the quickest way to find a holder), and a program other
+than Arcadia that holds the puck still makes a restart fail; it stays pending and the teardown retries it.

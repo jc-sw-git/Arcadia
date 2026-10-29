@@ -48,6 +48,11 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     private bool _heldForFirmware;
     private DateTimeOffset _beingShownUntil;
     private bool _emulating;
+    // Pan announced a restart of its own (this request number) and hasn't said it's over: a lost link ends it too.
+    private uint? _puckRestart;
+
+    // Raises PuckRestarting and PuckRestarted one at a time, so a late let-go can't follow the restart's end.
+    private readonly Lock _puckEvents = new();
     private long _pulses;
     private long _sentPulses;
     private Task? _keeper;
@@ -63,6 +68,10 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     public event Action<uint, PanReason>? TornDown;
 
     public event Action<string>? Lost;
+
+    public event Action? PuckRestarting;
+
+    public event Action? PuckRestarted;
 
     /// <summary>Connected and spoken: the hello went through.</summary>
     public event Action? Connected;
@@ -605,6 +614,14 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
                     _emulating = false;
                 }
             }
+            else if (message.Reply == PanReply.ReleasePuck)
+            {
+                _puckRestart = message.Value;
+            }
+            else if (message.Reply == PanReply.PuckRestarted)
+            {
+                _puckRestart = null;
+            }
             else
             {
                 pending = _pending;
@@ -616,6 +633,15 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             _log($"Pan: Emulation {message.Generation} von Pan beendet ({message.Reason})");
             TornDown?.Invoke(message.Generation, message.Reason);
         }
+        else if (message.Reply == PanReply.ReleasePuck)
+        {
+            // Off the reader: letting go waits for SDL's lock, and the answer is a request of its own.
+            _ = Task.Run(() => LetGoOfPuckAsync(message.Value), CancellationToken.None);
+        }
+        else if (message.Reply == PanReply.PuckRestarted)
+        {
+            RaisePuckRestarted();
+        }
         else if (pending is null || !pending.TrySetResult(message))
         {
             _log($"Pan: unerwartete Antwort {message}");
@@ -624,11 +650,66 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         return true;
     }
 
+    /// <summary>
+    /// Pan asked to let go of the puck before it restarts it (#308). Never throws: a subscriber's error and an answer that
+    /// doesn't go through are logged; Pan restarts after its own short wait anyway.
+    /// </summary>
+    private async Task LetGoOfPuckAsync(uint request)
+    {
+        _log("Pan startet den Steam Controller neu: Arcadia lässt ihn los");
+        try
+        {
+            lock (_puckEvents)
+            {
+                bool stillAsked;
+                lock (_lock)
+                {
+                    stillAsked = _puckRestart == request;
+                }
+
+                if (stillAsked)
+                {
+                    PuckRestarting?.Invoke();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _log($"Pan: Steam Controller nicht losgelassen: {ex}");
+        }
+
+        try
+        {
+            // Behind a running request it waits at most its own timeout, without dropping the link (RequestAsync).
+            await RequestAsync(PanMessage.Of(PanCommand.PuckReleased, value: request), CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _log($"Pan: Loslassen nicht gemeldet: {ex.Message}");
+        }
+    }
+
+    private void RaisePuckRestarted()
+    {
+        try
+        {
+            lock (_puckEvents)
+            {
+                PuckRestarted?.Invoke();
+            }
+        }
+        catch (Exception ex)
+        {
+            _log($"Pan: Steam Controller nicht wieder gelesen: {ex}");
+        }
+    }
+
     /// <summary>Closes the connection; a reason is logged and raised as <see cref="Lost"/>. Idempotent per link.</summary>
     private void Drop(string? reason, PanLink? only = null)
     {
         PanLink? link;
         bool wasEmulating;
+        bool puckRestarting;
         lock (_lock)
         {
             if (_link is null || (only is not null && !ReferenceEquals(_link, only)))
@@ -644,9 +725,17 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             _pending = null;
             _teardownPending = false;
             _unavailable = reason ?? "Pan ist nicht verbunden";
+            puckRestarting = _puckRestart is not null;
+            _puckRestart = null;
         }
 
         link.Dispose();
+        if (puckRestarting)
+        {
+            // Nobody will say the restart is over: the puck is read again.
+            RaisePuckRestarted();
+        }
+
         if (reason is not null)
         {
             _log($"Pan: {reason}{(wasEmulating ? " – die Emulation wird entfernt" : string.Empty)}");

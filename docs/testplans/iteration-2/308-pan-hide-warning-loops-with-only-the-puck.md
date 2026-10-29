@@ -5,7 +5,9 @@ Arcadia's SDL held the puck's four vendor collections open, waiting for a contro
 5 minutes stopped the emulation. A hide that worked (controller switched on) broke 5 s later: Pan took Arcadia's copy
 for Steam for a new puck, hid it from Steam and restarted the real puck. Now Arcadia lets go of the puck in SDL while
 Pan restarts it, Pan neither hides nor restarts a device on a software USB host (the copy), and a retry keeps its
-warning. Findings: [pan-puck-restart.md](../../controller-support/pan-puck-restart.md).
+warning. After the QE review (owner, 2026-10-29) Pan also asks Arcadia to let go before its own restarts, and
+"Erneut versuchen" shows that it runs and ends with a toast. Findings:
+[pan-puck-restart.md](../../controller-support/pan-puck-restart.md).
 
 - [ ] **T308-1** Only the puck plugged in (Steam Controller off), Steam closed, Pan on, Arcadia started: within a few
       seconds `pan.log` says "Steam Controller hidden for generation N: 13 instance(s)" and nothing like "not
@@ -15,9 +17,11 @@ warning. Findings: [pan-puck-restart.md](../../controller-support/pan-puck-resta
       nicht verstecken", no "Emulation angehalten", no Pan toast; `pan.log` shows one hide, no new generation.
       · E2E: yes (`PanEmulationTests` in App)
 - [ ] **T308-3** A hide that keeps failing: the row "Steam Controller lässt sich nicht verstecken" stays through the
-      retries (no flicker every 10 s) until it works or the emulation stops; after [A] on "Erneut versuchen" the row shows
-      the attempt at once, then the warning again. · E2E: yes (`PanEmulationTests` in App
-      and Core; no way to make the real hide fail on purpose after the fix)
+      retries (no flicker every 10 s) until it works or the emulation stops. [A] on "Erneut versuchen": the row stays,
+      reads "Wird versucht …" with a spinner and takes no [A] until the attempt ends, then "Erneut versuchen" again and
+      the toast "Pan: Erneuter Versuch ohne Erfolg. …"; if the attempt works, the row goes and the toast says "Pan:
+      Controller-Wächter läuft wieder". The same on "Emulation angehalten". · E2E: yes (`PanEmulationTests` in App
+      and Core; on hardware a failing hide can be had with HidHide's configuration client open)
 - [ ] **T308-4** After T308-1, switch the Steam Controller on: "Controller #N verbunden: Steam Controller" in
       `arcadia.log`, Arcadia's Xbox pad works in a game on "Arcadia"; switch it off: the pad goes, the emulation keeps
       running, no warning, no failure counted. With the controller on, switch Pan off and on again: while it shows and
@@ -30,6 +34,11 @@ warning. Findings: [pan-puck-restart.md](../../controller-support/pan-puck-resta
       Pan off once after installing this build; HidHide's configuration client then lists no `VID_28DE&PID_1304`
       entry, Arcadia isn't on its application list, and `journal.json` is empty. · E2E: no (one-off clean-up of the
       owner's state; `HidingTests` cover the show)
+- [ ] **T308-7** Pan's own restart: puck only, Pan hiding (T308-1). Open HidHide's configuration client, switch Pan
+      off in Arcadia, close the configuration client: within ~10 s `pan.log` says "Steam Controller restarted" without
+      "not restarted" or "didn't let go", `arcadia.log` says "Pan startet den Steam Controller neu: Arcadia lässt ihn
+      los", the System log has no new event 225, and Steam (started afterwards) sees the controller. · E2E: no (real
+      HidHide and PnP; Core `PanClientTests` runs it against Pan's real `Guardian`, Pan `HidingTests` the handshake)
 
 History:
 
@@ -37,3 +46,4 @@ History:
 |---|---|---|---|---|---|
 | Logs of the owner's run (puck only, Pan on, `--demo`): `arcadia.log`, `pan.log`, journal, Kernel-PnP and System event logs | 2026-10-29 | Claude (read by Remote Control, nothing changed) | `feat/replace-sisr` 0d81734, owner's PC, Debug build | ❌ every hide vetoed by `dotnet.exe` (event 225, the four `MI_0x&Col03` collections); the one working hide (controller on) hid the copy 5 s later | Root cause, this PR |
 | T308-1 to T308-3 (Core `PanEmulationTests`, App `PanEmulationTests`), SDL's let-go (`SdlGamepadSourceTests`), copy vs. puck (Pan `HidHideWireTests`), all App, Core and Pan tests | 2026-10-29 | Claude | PR branch, Linux cloud container, Avalonia headless | ✅ (each new test ❌ once with the fix taken out: no let-go, no retry status kept, no software host) | – |
+| Pan's own restarts (Pan `HidingTests`, Core `PanClientTests` against the real `Guardian`, Core `PanEmulationTests`), "Erneut versuchen" (App `PanEmulationTests`, Core `PanEmulationTests`), all App, Core and Pan tests | 2026-10-29 | Claude | PR branch after the QE review, Linux cloud container, Avalonia headless | ✅ (each new test ❌ once with its part taken out: Pan never asks, no read after a lost link, emulation not listening, let-go not counted, row without indicator, row not kept, no toast, any tick answers the press) | Spinner on the row only checked by test: Pan's rows don't appear on Linux |

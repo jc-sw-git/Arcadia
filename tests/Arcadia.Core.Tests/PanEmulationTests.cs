@@ -173,6 +173,72 @@ public sealed class PanEmulationTests
         Assert.Equal([false, true], reads);
     }
 
+    /// <summary>#308, QE review: Pan's own restarts (teardown, its retry, an arrival) were vetoed by Arcadia's SDL too.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-7")]
+    public void Arcadia_lets_go_of_the_puck_while_Pan_restarts_it_on_its_own()
+    {
+        _ = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            ReadSteamControllers = on => _events.Add(on ? "reads puck" : "lets go of puck"),
+        };
+
+        _pan.RestartPuckItself();
+        // An end without a start (a lost link after the end) and a second announcement change nothing.
+        _pan.EndRestart();
+        _pan.AnnounceRestart();
+        _pan.AnnounceRestart();
+        _pan.EndRestart();
+
+        Assert.Equal(["lets go of puck", "pan restarts puck", "reads puck", "lets go of puck", "reads puck"], _events);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T308-7")]
+    public async Task A_restart_of_Pans_own_that_overlaps_Arcadias_hide_keeps_the_puck_let_go_until_both_are_over()
+    {
+        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            ReadSteamControllers = on => _events.Add(on ? "reads puck" : "lets go of puck"),
+        };
+        // Pan restarts the puck for an arrival while Arcadia's hide runs, and ends after it.
+        _pan.PuckRestart = () =>
+        {
+            _pan.AnnounceRestart();
+            return PanReason.None;
+        };
+
+        await emulation.TickAsync();
+        Assert.Equal(["started 1", "lets go of puck", "hide 1", "copy attached"], _events);
+
+        _pan.EndRestart();
+        Assert.Equal("reads puck", _events[^1]);
+    }
+
+    /// <summary>"Erneut versuchen" pressed while a tick runs: that tick's outcome predates the press and doesn't answer it.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-3")]
+    public async Task Erneut_versuchen_is_answered_only_by_a_tick_that_began_after_the_press()
+    {
+        var notices = new List<string>();
+        _emulation.Notice += notices.Add;
+        _pan.HideResult = PanReason.HidingFailed;
+        _pan.PuckRestart = () =>
+        {
+            _emulation.Retry();
+            return PanReason.HidingFailed;
+        };
+
+        await _emulation.TickAsync();
+        Assert.True(_emulation.Retrying);
+        Assert.Empty(notices);
+
+        _pan.PuckRestart = null;
+        await _emulation.TickAsync();
+        Assert.False(_emulation.Retrying);
+        Assert.Equal([PanEmulation.RetryFailedText], notices);
+    }
+
     /// <summary>#308: the warning disappeared for each retry and came back ~6 s later, over and over.</summary>
     [Fact]
     [Trait("TestCase", "T308-3")]

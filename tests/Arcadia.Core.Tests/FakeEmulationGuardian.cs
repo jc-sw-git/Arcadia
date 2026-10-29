@@ -60,6 +60,28 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
 
     public event Action<string>? Lost;
 
+    public event Action? PuckRestarting;
+
+    public event Action? PuckRestarted;
+
+    /// <summary>
+    /// Pan restarts the puck on its own (a teardown's show, its retry, an arrival; #308): announces it, asks Windows
+    /// (<see cref="PuckRestart"/>, None if unset) and says it's over. Returns Windows' answer.
+    /// </summary>
+    public PanReason RestartPuckItself()
+    {
+        PuckRestarting?.Invoke();
+        Note("pan restarts puck");
+        var result = PuckRestart?.Invoke() ?? PanReason.None;
+        PuckRestarted?.Invoke();
+        return result;
+    }
+
+    /// <summary>Only the start of <see cref="RestartPuckItself"/>, to overlap it with something else; <see cref="EndRestart"/> ends it.</summary>
+    public void AnnounceRestart() => PuckRestarting?.Invoke();
+
+    public void EndRestart() => PuckRestarted?.Invoke();
+
     public string? Unavailable() => Missing;
 
     public Task<PanReason?> CheckHidingAsync(CancellationToken cancellationToken) => CheckHidingAsync(0, cancellationToken);

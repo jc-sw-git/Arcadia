@@ -68,6 +68,16 @@ public interface IEmulationGuardian
 
     /// <summary>Pan broke off or stopped answering while an emulation ran: the reason, for a toast. Off the UI thread.</summary>
     event Action<string>? Lost;
+
+    /// <summary>
+    /// Pan is about to restart the real puck on its own (a teardown's show, its retry, a device arrival while hiding):
+    /// handlers let go of it before they return, as Windows refuses the restart while Arcadia holds it (#308); then Pan is
+    /// told. Followed by <see cref="PuckRestarted"/>. Off the UI thread.
+    /// </summary>
+    event Action? PuckRestarting;
+
+    /// <summary>Pan's own restart is over (done or not), or Pan was lost meanwhile: read the puck again. Off the UI thread.</summary>
+    event Action? PuckRestarted;
 }
 
 /// <summary>

@@ -30,7 +30,7 @@ public interface IGameActionHost
     /// <summary>[A] on the greyed mode: the controller settings on the row that says why (#242).</summary>
     void ShowPanProblem();
 
-    /// <summary>"Arcadia" or "Steam-Eingabe".</summary>
+    /// <summary>"Standard (…)", "Arcadia" or "Steam-Eingabe" (<see cref="ControllerModes.Of"/>).</summary>
     string ControllerModeOf(Game game);
 
     void Play(GameTileViewModel tile);
@@ -39,7 +39,11 @@ public interface IGameActionHost
 
     void OpenInLauncher(GameTileViewModel tile);
 
-    void ToggleControllerMode(GameTileViewModel tile);
+    /// <summary>Standard → Arcadia → Steam-Eingabe → Standard (#178).</summary>
+    void CycleControllerMode(GameTileViewModel tile);
+
+    /// <summary>The game's mode after the next [A], named as <see cref="ControllerModeOf"/> names it.</summary>
+    string NextControllerModeOf(Game game);
 
     /// <summary>True when the mouse mode is "Von Hand" with "Beenden des Mausmodus in Spielen erzwingen" on "Individuell".</summary>
     bool ShowGameMouseMode { get; }
@@ -200,10 +204,10 @@ public sealed partial class GameActionViewModel : ViewModelBase
                     return;
                 }
 
-                host.ToggleControllerMode(tile);
-                mode!.ShowControllerMode(host.ControllerModeOf(game));
+                host.CycleControllerMode(tile);
+                mode!.ShowControllerMode(host.ControllerModeOf(game), host.NextControllerModeOf(game));
             });
-            mode.ShowControllerMode(host.ControllerModeOf(game));
+            mode.ShowControllerMode(host.ControllerModeOf(game), host.NextControllerModeOf(game));
             mode.IsBroken = host.ControllerModeBroken;
             if (host.ControllerModeBroken)
             {
@@ -250,11 +254,11 @@ public sealed partial class GameActionViewModel : ViewModelBase
         Note = $"Wechselt zu „{GameMouseModes.Of(GameMouseModes.Next(choice), defaultAllowed)}“";
     }
 
-    private void ShowControllerMode(string mode)
+    private void ShowControllerMode(string mode, string next)
     {
         Label = $"Steam Controller: {mode}";
         ButtonLabel = mode;
-        Note = $"Wechselt zu „{(mode == ControllerModes.Steam ? ControllerModes.Arcadia : ControllerModes.Steam)}“";
+        Note = $"Wechselt zu „{next}“";
     }
 }
 
@@ -269,4 +273,17 @@ public static class ControllerModes
 
     /// <summary>Why the mode is greyed out while Pan's emulation is on but doesn't run (#242); [A] leads to the reason.</summary>
     public const string PanNotRunning = "Pan läuft nicht – öffnet die Controller-Einstellungen, die sagen, warum";
+
+    public static string Of(bool useArcadiaPad) => useArcadiaPad ? Arcadia : Steam;
+
+    /// <summary>A game's mode; "Standard" names its launcher's default, e.g. "Standard (Arcadia)" (#178, like the mouse mode's).</summary>
+    public static string Of(bool? choice, bool launcherUsesArcadiaPad) => choice is { } own ? Of(own) : $"Standard ({Of(launcherUsesArcadiaPad)})";
+
+    /// <summary>Standard → Arcadia → Steam-Eingabe → Standard.</summary>
+    public static bool? Next(bool? choice) => choice switch
+    {
+        null => true,
+        true => false,
+        false => null,
+    };
 }

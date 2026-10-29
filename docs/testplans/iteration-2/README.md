@@ -24,6 +24,7 @@ its file.
 | [214-remove-or-keep-sisr.md](214-remove-or-keep-sisr.md) | #214 | Remove SISR on request, or keep it, in the controller settings | 13 |
 | [215-show-the-button-symbols-of-the-controller-in-use.md](215-show-the-button-symbols-of-the-controller-in-use.md) | #215 | Show the button symbols of the controller in use | 8 |
 | [308-pan-hide-warning-loops-with-only-the-puck.md](308-pan-hide-warning-loops-with-only-the-puck.md) | #308 | Pan: hide warning loops with only the puck connected, then emulation stops | 6 |
+| [178-steam-controller-mode-default-per-launcher.md](178-steam-controller-mode-default-per-launcher.md) | #178 | Choose the Steam Controller mode default per launcher | 12 |
 
 ## Exploratory test
 
@@ -35,7 +36,7 @@ Charter: –. Time box: –. Findings: –.
 |---|---|
 | T72-1 (mapping), T72-4, T72-6, T72-7, T72-9, T72-12 | `tests/Arcadia.App.Tests/ControllerTypesTests.cs` |
 | T212-2, T212-3, T212-5, T212-6, T212-7, T212-10 | `tests/Arcadia.App.Tests/SteamControllerTests.cs` |
-| T169-1 to T169-5 (T169-6 to T169-8 went with the SISR row, #214) | `tests/Arcadia.App.Tests/SteamSettingsGroupTests.cs` |
+| T169-1 to T169-3 (T169-4 and T169-5 went with the link, #178; T169-6 to T169-8 with the SISR row, #214) | `tests/Arcadia.App.Tests/SteamSettingsGroupTests.cs` |
 | T180-2, T180-3 | `tests/Arcadia.App.Tests/Window/RingGeometryTests.cs`, `tests/Arcadia.App.Tests/Window/FocusRingTests.cs` |
 | T155-1 to T155-12 | `tests/Arcadia.App.Tests/PageTransitionTests.cs` |
 | T208-1 to T208-3, T209-3 | `tests/Arcadia.App.Tests/PageInterfaceTests.cs` |
@@ -46,3 +47,4 @@ Charter: –. Time box: –. Findings: –.
 | T214-1 to T214-8, T214-11; T214-10 | `tests/Arcadia.App.Tests/SisrRemovalTests.cs`; `SteamControllerModeTests.cs` |
 | T215-1 to T215-6 | `tests/Arcadia.App.Tests/Window/ButtonSymbolsTests.cs` |
 | T308-2, T308-3 | `tests/Arcadia.App.Tests/PanEmulationTests.cs` |
+| T178-1 to T178-9; T178-10 | `tests/Arcadia.App.Tests/LauncherControllerModeTests.cs`; `Window/LauncherControllerModeViewTests.cs` |

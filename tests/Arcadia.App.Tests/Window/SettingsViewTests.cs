@@ -381,7 +381,7 @@ public sealed class SettingsViewTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T92-3")]
-    public async Task A_click_on_the_mode_in_the_preview_switches_it_and_back_to_the_start_value_nothing_is_saved()
+    public async Task A_click_on_the_mode_in_the_preview_cycles_it_and_back_on_Standard_nothing_is_saved()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(
             [new LauncherSpec(KnownLaunchers.Steam, 3), new LauncherSpec(KnownLaunchers.Gog, 3)],
@@ -393,12 +393,15 @@ public sealed class SettingsViewTests
 
         var mode = Assert.Single(arcadia.Window.GetVisualDescendants().OfType<Button>(), button => button.Classes.Contains("modeValue") && button.IsEffectivelyVisible
             && button.Command == arcadia.Arcadia.Main.CycleControllerSupportCommand);
-        Assert.Equal(ControllerModes.Steam, Text(mode));
+        Assert.Equal("Standard (Steam-Eingabe)", Text(mode));
         arcadia.Click(mode);
         Assert.Equal(ControllerModes.Arcadia, Text(mode));
         Assert.Single(arcadia.Arcadia.Settings.Current.ControllerSupportOverrides);
         arcadia.Click(mode);
         Assert.Equal(ControllerModes.Steam, Text(mode));
+        Assert.Single(arcadia.Arcadia.Settings.Current.ControllerSupportOverrides);
+        arcadia.Click(mode);
+        Assert.Equal("Standard (Steam-Eingabe)", Text(mode));
         Assert.Empty(arcadia.Arcadia.Settings.Current.ControllerSupportOverrides);
         Assert.Empty(new SettingsStore(arcadia.Arcadia.SettingsPath).Load().ControllerSupportOverrides);
     }

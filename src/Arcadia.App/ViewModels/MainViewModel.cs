@@ -163,7 +163,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     partial void OnButtonSymbolsChanged(ButtonSymbols value) => InputHints.Symbols = value;
 
-    /// <summary>The Steam Controller mode of the library's focused game: "Arcadia" or "Steam-Eingabe".</summary>
+    /// <summary>The Steam Controller mode of the library's focused game: "Standard (…)", "Arcadia" or "Steam-Eingabe".</summary>
     [ObservableProperty]
     public partial string FocusedControllerSupportText { get; private set; } = string.Empty;
 
@@ -817,6 +817,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         OnPagesChanged();
         UpdateGameMouseModeState();
         UpdatePanState();
+
+        // A launcher's default for the Steam Controller may have changed (#178): the detail page's button names it.
+        if (value is null)
+        {
+            Detail?.RebuildActions();
+        }
     }
 
     partial void OnFirstRunChanged(FirstRunViewModel? value) => OnPagesChanged();
@@ -925,7 +931,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     }
 
     /// <summary>
-    /// Switches the focused game between "Arcadia" and "Steam-Eingabe"; not while it runs (#95). While Pan's emulation
+    /// Switches the focused game on: Standard → Arcadia → Steam-Eingabe (#178); not while it runs (#95). While Pan's emulation
     /// doesn't run it opens the controller settings on the row that says why (#242).
     /// </summary>
     [RelayCommand]
@@ -942,7 +948,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             return;
         }
 
-        _controllerSupport.SetModeFor(game, !_controllerSupport.UsesArcadiaPad(game.Key));
+        _actions.CycleControllerMode(game);
     }
 
     private IPanEmulationView _pan = new NoPanEmulation();
@@ -996,12 +1002,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         UpdateControllerSupportState();
     }
 
+    private bool IsPanOn => _settings.Current.PanEnabled && _pan.Status.State != PanEmulationState.Unsupported;
+
     private void UpdateControllerSupportState()
     {
         // The mode only matters with a Steam Controller; other pads are never emulated (#72, #213). With Pan off nothing
         // is emulated, so there is no mode either (#242).
-        var show = _steamControllerSeenBySdl
-            && _settings.Current.PanEnabled && _pan.Status.State != PanEmulationState.Unsupported;
+        var show = _steamControllerSeenBySdl && IsPanOn;
         if (ShowControllerSupport != show)
         {
             ShowControllerSupport = show;
@@ -1282,6 +1289,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     void ILauncherSettingsHost.RescanLaunchers() => Session.RescanAsync(null).Forget("Launcher neu einlesen");
 
     LauncherLogos ILauncherSettingsHost.Logos => _logos;
+
+    bool ILauncherSettingsHost.IsPanOn => IsPanOn;
 
     void ILauncherSettingsHost.LauncherLooksChanged() => ApplyLauncherLooks();
 

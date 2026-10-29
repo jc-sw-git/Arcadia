@@ -54,10 +54,9 @@ Agreed with the owner; don't change without asking. Read this before changing th
   "Controller wiederherstellen" (Pan's
   `--restore`) stands below the problems, indented like them, while Pan is installed. An installed Pan that isn't the bundled one is
   replaced at start without a question (#297, page "Pan wird aktualisiert"; details in `docs/controller-support/pan-setup.md`).
-  Steam's launcher page links there (owner 2026-10-24): group "Controller", row "Controller-Einstellungen für Steam",
-  A opens the category with the focus on "Controller-Wächter (Pan)", B goes back to Steam's page. The settings
-  stay in "Controller" because they work without Steam's tab too; a category offers such links
-  (`SettingsCategoryViewModel.LauncherPageLinks`), so the launcher page doesn't special-case Steam.
+  Steam's launcher page no longer links there (#178, owner 2026-10-28): each launcher's page has its own group
+  "Controller" with the Steam Controller's default for its games (`docs/product/launchers.md`); Pan's info panel
+  says the mode is chosen there per launcher and changed per game in its details.
 - Settings (#15, owner 2026-10-21 and 2026-10-22): a whole page in place of the library (≡, Enter, the chip); B or ✕ go
   back to the same place. Categories are tabs in the header like the launcher tabs (LB/RB, Shift+Q/E, a
   click; Q/E = LT/RT switch tabs inside a category, e.g. launcher pages, as in the library, owner 2026-10-23), only those with content; a warning or an error of a category shows its symbol beside the name, info nothing.

@@ -46,11 +46,11 @@ public sealed class ControllerSupportTests
         arcadia.PollControllers();
         Assert.True(arcadia.Main.ShowControllerSupport);
         Assert.Equal("Steam", arcadia.SelectedTab?.Name);
-        Assert.Equal(ControllerModes.Steam, arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal("Standard (Steam-Eingabe)", arcadia.Main.FocusedControllerSupportText);
 
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("GOG Galaxy", arcadia.SelectedTab?.Name);
-        Assert.Equal(ControllerModes.Arcadia, arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal("Standard (Arcadia)", arcadia.Main.FocusedControllerSupportText);
     }
 
     [AvaloniaFact]
@@ -69,7 +69,7 @@ public sealed class ControllerSupportTests
         // The context menu names what each choice switches to.
         arcadia.Press(UiAction.Options);
         var menu = arcadia.Main.GameMenu!.Actions;
-        Assert.Equal($"Wechselt zu „{ControllerModes.Steam}“", menu.Single(action => action.Kind == GameActionKind.ControllerMode).Note);
+        Assert.Equal($"Wechselt zu „{ControllerModes.Arcadia}“", menu.Single(action => action.Kind == GameActionKind.ControllerMode).Note);
         Assert.Equal("Wechselt zu „Erlaubt“", menu.Single(action => action.Kind == GameActionKind.MouseMode).Note);
         arcadia.Press(UiAction.Back);
 

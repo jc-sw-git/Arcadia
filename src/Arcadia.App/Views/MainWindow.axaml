@@ -262,7 +262,7 @@
                     <Button Classes="plain modeValue" Classes.broken="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeBroken, TargetNullValue=False}"
                             Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
                             IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
-                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Arcadia“ und „Steam-Eingabe“'}">
+                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Standard“, „Arcadia“ und „Steam-Eingabe“'}">
                       <StackPanel Orientation="Horizontal" Spacing="10">
                         <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
                         <Path Classes="statusIcon small" VerticalAlignment="Center"
@@ -1406,7 +1406,7 @@
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoFacts">
                   <StackPanel Spacing="2">
-                    <TextBlock Classes="label" Text="{Binding Title}" Margin="0,4,0,0" />
+                    <TextBlock Classes="label" Text="{Binding Title}" Margin="0,4,0,0" IsVisible="{Binding Title, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     <ItemsControl ItemsSource="{Binding Facts}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="settings:InfoFact">
@@ -1597,6 +1597,43 @@
                       <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
                     </Button>
                   </Panel>
+                  </Panel>
+                </Border>
+              </Panel>
+            </DataTemplate>
+            <!-- A question of a category, e.g. "Alle Spiele auf die Vorauswahl setzen?" on a launcher's page (#178):
+                 [A] answers yes, [B] no; each button names its pad button (design T178Spiel). -->
+            <DataTemplate x:DataType="settings:SettingsQuestionViewModel">
+              <Panel>
+                <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                        Command="{Binding CancelCommand}" />
+                <Border Classes="prompt" Width="720" HorizontalAlignment="Center" VerticalAlignment="Center">
+                  <Panel>
+                    <StackPanel Spacing="28">
+                      <StackPanel Orientation="Horizontal" Spacing="18">
+                        <Border Classes="promptIcon"><TextBlock Text="?" /></Border>
+                        <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <TextBlock Classes="promptBody" Text="{Binding Message}" />
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Classes="plain action primaryAction" Command="{Binding ConfirmCommand}">
+                          <StackPanel Orientation="Horizontal" Spacing="10">
+                            <ctl:PadGlyph Button="A" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.UsesController, TargetNullValue=False}" />
+                            <TextBlock Text="{Binding ConfirmText}" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Button>
+                        <Button Classes="plain action" Command="{Binding CancelCommand}">
+                          <StackPanel Orientation="Horizontal" Spacing="10">
+                            <ctl:PadGlyph Button="B" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.UsesController, TargetNullValue=False}" />
+                            <TextBlock Text="Abbrechen" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Button>
+                      </StackPanel>
+                    </StackPanel>
+                    <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
+                            IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CancelCommand}">
+                      <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+                    </Button>
                   </Panel>
                 </Border>
               </Panel>

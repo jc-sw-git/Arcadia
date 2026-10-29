@@ -25,8 +25,8 @@ Agreed with the owner; don't change without asking. Read this before changing th
   B (or a click on "Launcher" above its name) goes back to the list with that launcher focused, LT/RT (Q/E, a click on a
   neighbour in the head) turn to the
   launcher before or after it in the list's order, wrapping. Groups "Allgemein": Aktiv, "Name im Tab", "Such-Kürzel",
-  "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only active and found); below them links from other categories,
-  e.g. on Steam's page "Controller" → "Controller-Einstellungen für Steam" (#169, `docs/product/settings.md`). Name and keyword are written with the shared
+  "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only active and found); "Controller" (below). The link
+  "Controller-Einstellungen für Steam" (#169) on Steam's page went with #178. Name and keyword are written with the shared
   on-screen keyboard below the page (without ↹ and the edge key; the search's buttons, ≡/Enter take, B/Esc drop); a
   keyword's keyboard offers only the keys it may hold (lower-case letters and digits); a
   problem (keyword taken, too long) shows in red while typing, taken anyway the old value stays and a toast says
@@ -37,6 +37,19 @@ Agreed with the owner; don't change without asking. Read this before changing th
   the launcher (no choice between automatic and own): the folder is checked when picked and taken only if the launcher
   is there, then it is switched on and read. The mouse mode's "Bei System-Dialogfenstern einschalten" (under "Mausmodus",
   for "Von Hand" and "Automatisch", greyed out with "Aus") switches it on while a dialog opened from the controller is open.
+- Steam Controller default per launcher (#178, owner 2026-10-28/29, designs T178Launcher/T178Spiel): every launcher's page,
+  the same for each, has the group "Controller" with "Steam Controller" (◀ ▶ "Arcadia" / "Steam-Eingabe", subtitle
+  "Vorauswahl für die Spiele dieses Launchers"): the mode its games on "Standard" get. Factory value: the launcher's own
+  (`LauncherInfo.GamesUseSteamInput`: Steam "Steam-Eingabe", all others "Arcadia"), stored only when it differs
+  (`LauncherPreferences.UsesArcadiaPad`), so no launcher is a special case. Below it, indented and only while a game
+  of the launcher's library has its own mode, "Alle Spiele auf die Vorauswahl setzen" (pill "Zurücksetzen", subtitle
+  "N Spiele haben einen eigenen Modus", the info panel lists them); [A] asks ("Alle Spiele auf die Vorauswahl setzen?",
+  [A] Zurücksetzen, [B] Abbrechen), then every game of the launcher is on "Standard", also those no longer in the
+  library, in one write; the row goes, the focus moves to "Steam Controller", no toast. Both rows change only while
+  "Controller-Wächter (Pan)" is on (also without a Steam Controller connected); with Pan off they are greyed out but
+  focusable, subtitle "Aus – erst mit dem Controller-Wächter (Pan)", values kept. Also on an inactive or not found
+  launcher's page. A change applies at a game's next start; a running game keeps its mode. Per game:
+  `docs/product/controls.md`.
 - First start (#139, owner 2026-10-11, 2026-10-12 and 2026-10-22): Arcadia never takes a launcher on just because it is
   installed. While `settings.json` has no `ActiveLaunchers` (also after an update from a version without it), a page
   "Welche Launcher soll Arcadia nutzen?" stands in place of the library, pattern "Leiste": "Gefunden" switched on with

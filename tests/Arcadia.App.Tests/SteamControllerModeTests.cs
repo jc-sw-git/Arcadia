@@ -36,7 +36,7 @@ public sealed class SteamControllerModeTests
         using var arcadia = await StartWithSteamControllerAsync();
         Assert.Equal(1, arcadia.XboxPads.Plugged);
         Assert.Equal("Steam", arcadia.SelectedTab?.Name);
-        Assert.Equal(ControllerModes.Steam, arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal("Standard (Steam-Eingabe)", arcadia.Main.FocusedControllerSupportText);
         var unpluggedAtStart = -1;
         arcadia.Starts.OnStart = _ => unpluggedAtStart = arcadia.XboxPads.Unplugged;
 
@@ -64,7 +64,7 @@ public sealed class SteamControllerModeTests
         using var arcadia = await StartWithSteamControllerAsync();
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("GOG Galaxy", arcadia.SelectedTab?.Name);
-        Assert.Equal(ControllerModes.Arcadia, arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal("Standard (Arcadia)", arcadia.Main.FocusedControllerSupportText);
 
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "GOG soll das Spiel starten");
@@ -72,9 +72,9 @@ public sealed class SteamControllerModeTests
         Assert.True(arcadia.XboxPad.IsPlugged);
         Assert.Equal(0, arcadia.XboxPads.Unplugged);
 
-        // The next game of that launcher, switched to Steam-Eingabe in its preview first.
+        // The next game of that launcher, switched to Steam-Eingabe in its preview first (Standard → Arcadia → Steam-Eingabe).
         arcadia.Press(UiAction.Right);
-        arcadia.Click(arcadia.Main.CycleControllerSupportCommand);
+        arcadia.Click(arcadia.Main.CycleControllerSupportCommand).Click(arcadia.Main.CycleControllerSupportCommand);
         Assert.Equal(ControllerModes.Steam, arcadia.Main.FocusedControllerSupportText);
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 2, "GOG soll das zweite Spiel starten");
@@ -82,18 +82,18 @@ public sealed class SteamControllerModeTests
     }
 
     /// <summary>
-    /// #156: the mode chosen against each launcher's default is stored as before (Steam game "Arcadia" = true, GOG game
-    /// "Steam-Eingabe" = false) and keeps its meaning after a restart, now that the default comes from the launcher.
+    /// #156, #178: a game's own mode is stored as before (Steam game "Arcadia" = true, GOG game "Steam-Eingabe" = false)
+    /// and keeps its meaning after a restart; the other games stay on their launcher's default.
     /// </summary>
     [AvaloniaFact]
-    public async Task A_mode_chosen_against_the_launchers_default_is_stored_as_before_and_kept_after_a_restart()
+    public async Task A_games_own_mode_is_stored_as_before_and_kept_after_a_restart()
     {
         using var arcadia = await StartWithSteamControllerAsync();
         var steamGame = arcadia.Main.Library.FocusedGame!.Game.Key;
         arcadia.Click(arcadia.Main.CycleControllerSupportCommand);
         arcadia.Press(UiAction.NextTab);
         var gogGame = arcadia.Main.Library.FocusedGame!.Game.Key;
-        arcadia.Click(arcadia.Main.CycleControllerSupportCommand);
+        arcadia.Click(arcadia.Main.CycleControllerSupportCommand).Click(arcadia.Main.CycleControllerSupportCommand);
 
         var saved = new SettingsStore(arcadia.SettingsPath).Load().ControllerSupportOverrides;
         Assert.Equal(new Dictionary<string, bool> { [steamGame] = true, [gogGame] = false }, saved);
@@ -106,12 +106,12 @@ public sealed class SteamControllerModeTests
         Assert.Equal(gogGame, restarted.Main.Library.FocusedGame!.Game.Key);
         Assert.Equal(ControllerModes.Steam, restarted.Main.FocusedControllerSupportText);
         restarted.Press(UiAction.Right);
-        Assert.Equal(ControllerModes.Arcadia, restarted.Main.FocusedControllerSupportText); // the next GOG game keeps the default
+        Assert.Equal("Standard (Arcadia)", restarted.Main.FocusedControllerSupportText); // the next GOG game keeps the default
         restarted.Press(UiAction.PreviousTab);
         Assert.Equal(steamGame, restarted.Main.Library.FocusedGame!.Game.Key);
         Assert.Equal(ControllerModes.Arcadia, restarted.Main.FocusedControllerSupportText);
         restarted.Press(UiAction.Right);
-        Assert.Equal(ControllerModes.Steam, restarted.Main.FocusedControllerSupportText);
+        Assert.Equal("Standard (Steam-Eingabe)", restarted.Main.FocusedControllerSupportText);
     }
 
     /// <summary>
@@ -149,7 +149,7 @@ public sealed class SteamControllerModeTests
     public async Task In_a_game_on_Steam_Eingabe_the_copy_passes_input_until_Arcadia_comes_to_the_front()
     {
         using var arcadia = await StartWithSteamControllerAsync();
-        Assert.Equal(ControllerModes.Steam, arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal("Standard (Steam-Eingabe)", arcadia.Main.FocusedControllerSupportText);
 
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "Steam soll das Spiel starten");
@@ -237,7 +237,7 @@ public sealed class SteamControllerModeTests
         arcadia.XboxPads.Missing = null;
         await arcadia.TickSteamControllerAsync();
         Assert.False(arcadia.Main.ControllerModeBroken);
-        Assert.Equal(ControllerModes.Arcadia, arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal("Standard (Arcadia)", arcadia.Main.FocusedControllerSupportText);
         Assert.Equal(1, arcadia.XboxPads.Plugged);
     }
 

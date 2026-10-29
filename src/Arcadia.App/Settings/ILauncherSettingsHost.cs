@@ -37,6 +37,12 @@ public interface ILauncherSettingsHost
     /// <summary>The on-screen keyboard for a text of the settings, in the layout last chosen.</summary>
     OnScreenKeyboardViewModel CreateKeyboard(IKeyboardTarget target);
 
+    /// <summary>
+    /// "Controller-Wächter (Pan)" is on and can run here: only then is there a Steam Controller mode (#242), so only then
+    /// can a launcher's default for it change (#178).
+    /// </summary>
+    bool IsPanOn { get; }
+
     /// <summary>A short message at the bottom, e.g. why a text wasn't taken.</summary>
     void Notify(string message);
 }

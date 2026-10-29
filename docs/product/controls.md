@@ -45,7 +45,10 @@ Agreed with the owner; don't change without asking. Read this before changing th
   held alone longer, as held from then on, ⧉ also while it brings Arcadia back. While Arcadia is in front or the mouse
   mode is on, the game gets a pad at rest. Own hold times and a pause key per game: separate issue.
   Per game the Steam Controller is on "Arcadia" (Arcadia's pad) or "Steam-Eingabe" (no pad of Arcadia's, the game's own
-  Steam configuration); Steam games start on Steam-Eingabe, all others on Arcadia. It shows in preview, detail page and
+  Steam configuration), or on "Standard (Arcadia)" / "Standard (Steam-Eingabe)", which follows its launcher's default
+  and names it (#178, set on the launcher's page, `docs/product/launchers.md`; factory: Steam games Steam-Eingabe,
+  all others Arcadia). [A] (or a click) cycles Standard → Arcadia → Steam-Eingabe → Standard, like "Individueller
+  Mausmodus"; a change applies at the game's next start. It shows in preview, detail page and
   context menu whenever a Steam Controller is connected and "Controller-Wächter (Pan)" is on (#242); off, or off Windows,
   it is gone. While Pan's emulation is on but doesn't run (a part missing, hiding lost, stopped) it is greyed out at
   "Steam-Eingabe" with a triangle, yet focusable: [A] (or a click) opens the controller settings on the row that says

@@ -12,9 +12,10 @@ request or leaves it alone ([sisr-removal.md](sisr-removal.md), #214).
   (desktop layout). `steam://forceinputappid/<appid>` only switches the layout; it does not
   deliver XInput to a foreign process. Restarting Arcadia through Steam was tried and dropped:
   everything Arcadia then starts (e.g. the Epic launcher) keeps "Arcadia" running in Steam.
-- The per-game mode: Steam games start on "Steam-Eingabe", all others on "Arcadia";
-  `AppSettings.ControllerSupportOverrides` stores only deviations (in code the feature keeps its old name,
-  `ControllerSupportService`).
+- The per-game mode: a game's own choice (`AppSettings.ControllerSupportOverrides`, the old name kept so older
+  settings.json files keep their choices) or "Standard", its launcher's default (#178,
+  `LauncherPreferences.UsesArcadiaPad`, else the launcher's own: Steam "Steam-Eingabe", all others "Arcadia"). In code
+  the feature keeps its old name, `ControllerSupportService`.
 - usbip-win2 ≥ 0.9.8.1 is required. Its uninstall entry was renamed between versions
   ("USBip version 0.9.7.7" → "USBip 0.9.8.1"). Updating it replaces the emulated host
   controller; Windows wants a reboot.

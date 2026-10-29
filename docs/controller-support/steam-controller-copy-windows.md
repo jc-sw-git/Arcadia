@@ -55,6 +55,14 @@ raw and VIIPER shows Steam a USB device with the puck's descriptors. Measured de
   count as update traffic. A dropped message is answered done, as the real puck would. A GET_REPORT of an input
   report never reaches the puck: it gets the last report of that id as `ToSteam` let it through (rest while the copy
   rests), or a refusal.
+- Steam's requests to empty slots (#314): every few seconds Steam sends `GET_STRING_ATTRIBUTE` (`0xAE`, report 1)
+  and the GET_REPORT for its answer to a slot without a controller, and `SET_SETTINGS_VALUES` to every slot when the
+  controller connects. The real puck refuses them (Windows error 31, `ERROR_GEN_FAILURE`). Seen in spike #239's proxy
+  log (2026-10-26: interface 3 failed, the controller sat on 2), which passed Steam's bytes on unchanged, so the
+  refusal is the puck's, not the copy's. VIIPER can't stall, so Steam gets an empty answer where the real puck stalls;
+  Steam works either way. How often Steam asks with Pan off isn't compared (needs a USB capture). The bridge logs each
+  kind of refusal once (call, interface, report id, the message or, for a GET_REPORT, the message it answers; error)
+  and the counts when the copy ends.
 - Closing stops every call to the puck first (under the lock the calls take), then closes the stream and the puck;
   then VIIPER's bus is removed. A call to the puck that still runs after the puck closed, or a removal that fails,
   throws, so Pan's teardown ends `viiper.exe` before the puck shows (also for a copy lost while running: no new one

@@ -9,9 +9,9 @@ installed (drivers set up), a Steam Controller or puck connected.
 Automated: `PanEmulationTests` (T307-1, T307-2: real game started through a fake launcher), unit test in
 `RunningGamesTrackerTests`.
 
-- [ ] **T307-1** Start with `--demo`: a game shows "Läuft". Settings → Controller: the row "Controller-Wächter (Pan)" is not
+- [x] **T307-1** Start with `--demo`: a game shows "Läuft". Settings → Controller: the row "Controller-Wächter (Pan)" is not
       greyed out, shows no "Erst änderbar …", and [A] switches Pan off and on again; the emulation follows. · E2E: yes
-- [ ] **T307-2** Without `--demo`, start a game from a real launcher: the row is locked with "Erst änderbar, wenn „…“
+- [x] **T307-2** Without `--demo`, start a game from a real launcher: the row is locked with "Erst änderbar, wenn „…“
       beendet ist" until the game ends. · E2E: yes (acceptance test with a fake launcher; the real launcher by hand)
 
 History:
@@ -19,3 +19,4 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T307-1 | 2026-10-29 | Claude | PR branch, Debug, Linux cloud container, acceptance test (Pan faked); red once by counting demo games as running again; after QE review also red for the demo game steering the Steam Controller | ✅ | owner's PC open |
+| T307-1, T307-2 | 2026-10-29 | Owner | Owner's PC, build of this PR; passed by the owner's word, no details recorded | ✅ | merge |

@@ -21,13 +21,14 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
 
 ## Protocol and identity
 
-- Named pipe `\\.\pipe\ArcadiaPan`, 12-byte messages: kind, protocol version (1), generation, value. Commands Hello,
+- Named pipe `\\.\pipe\ArcadiaPan`, 12-byte messages: kind, protocol version (2 since #304; Pan answers another with
+  `Rejected(WrongProtocolVersion)`), generation, value. Commands Hello,
   EmulationStarted, EmulationStopped, Heartbeat, TeardownAcknowledged, PlannedExit, Hide, Unhide, CheckHiding,
   HoldForFirmware, PuckReleased; replies HelloOk, Started, Stopped, HeartbeatOk, Acknowledged, Hidden, Shown,
   HidingState, Rejected(reason), TornDown(reason, notice), ReleasePuck and PuckRestarted (notices,
   [pan-puck-restart.md](pan-puck-restart.md)), Unsupported, Refused(reason). A command a Pan doesn't know gets `Rejected(NotRegistered)` (a part A Pan:
   `Unsupported` for Hide, Unhide, CheckHiding); the client reads any reply but the expected one as "not supported", on
-  purpose: so new commands stay within version 1.
+  purpose: so new commands stay within a version. `EmulationStarted`'s value is the usbip port of Arcadia's VIIPER (#304).
   Pan takes the first client of the active console session (`ProcessIdToSessionId` ==
   `WTSGetActiveConsoleSessionId`); connections are served side by side, so a second client or one from another session
   gets `Refused` at once. The pipe's DACL: SYSTEM full, Interactive read/write, nobody else;
@@ -54,9 +55,11 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
 
 ## Teardown and journal
 
-- `EmulationStarted` is registered after the pad is plugged (so `viiper.exe` already runs as Arcadia's child; the gap
-  is a few ms); Pan takes every child of the client named `viiper.exe` (Toolhelp32, parent PID + start time) and holds
-  its handle, so a PID can't be reused under it. Journal `%ProgramData%\Arcadia\Pan\journal.json` (temp +
+- `EmulationStarted` is registered after Arcadia's VIIPER is started and before any device goes onto it; Pan takes
+  every child of the client named `viiper.exe` (Toolhelp32, parent PID + start time) and holds its handle, so a PID
+  can't be reused under it. It takes the start only if one of them alone listens on the port named (IPv4 and IPv6,
+  `ViiperListeners.OnlyServedBy`); else it lets them go and refuses (`NoForwardingProcess`, `UsbipPortNotServed`).
+  The journal (version 2) keeps that port per generation (`UsbipServers`, #304). Journal `%ProgramData%\Arcadia\Pan\journal.json` (temp +
   write-through + `File.Replace`, `.previous` kept, a broken one moved to `.broken` and reported as
   `JournalUnreadable` → toast) written before `Started` is answered. A journal that parses but makes no sense (a
   null list, an entry without a process, an unknown version) counts as unreadable too. The fallback a load had to
@@ -64,12 +67,13 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
   so a second load sees the same state; `--restore` hands its load to the recovery anyway. Deleting `journal.json` by
   hand is therefore no reset: delete `.previous` with it. The journal is never deleted: with nothing to undo it still keeps the generation, so a restarted Pan
   counts on and never repeats a number a client remembers.
-- Steps, each with a 10 s timeout on a worker, never throwing: detach usbip ports attached from VIIPER (`usbip.exe port`
-  / `detach -p`, from `%ProgramFiles%\USBip`), then end the held forwarding processes. Each ended process leaves the
+- Steps, each with a 10 s timeout on a worker, never throwing: detach the usbip ports imported from a journaled server
+  port, never another program's (`usbip.exe port` / `detach -p`, from `%ProgramFiles%\USBip`; a server leaves the
+  journal only when all its detaches worked), then end the held forwarding processes. A version 1 journal with an
+  open emulation gets VIIPER's old default port 3241, as that Pan detached it. Each ended process leaves the
   journal at once (under the guardian's lock, so a step left behind after its timeout can't corrupt it); what failed
   stays listed and goes into the next emulation's teardown (a process the client takes up again is listed once); a
-  planned stop lets only the current emulation's processes go and keeps such leftovers. With no `viiper.exe` of the
-  client (another program's VIIPER) a teardown only detaches the ports, logged at start.
+  planned stop lets only the current emulation's processes and server port go and keeps such leftovers.
 - A restarted Pan (crash, reboot, `--restore`) always undoes its journal first: held processes are re-verified by PID +
   start time, the client itself is never killed, "client N still running/gone" is only logged (#244 adds the crash
   report hook).

@@ -37,7 +37,7 @@ public sealed class HidingReviewTests : IDisposable
 
     private JournalState Journal => _journal.File.Load().State;
 
-    private Task<PanMessage> Send(PanCommand command, uint generation = 0) => _guardian.HandleAsync(PanMessage.Of(command, generation));
+    private Task<PanMessage> Send(PanCommand command, uint generation = 0) => _guardian.HandleAsync(PanMessage.Of(command, generation, command == PanCommand.EmulationStarted ? (uint)FakeCleanup.ServerPort : 0u));
 
     private async Task<uint> EmulatingAsync()
     {

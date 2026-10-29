@@ -8,6 +8,9 @@ public class TeardownTests
 
     private static readonly TimeSpan Short = TimeSpan.FromMilliseconds(200);
 
+    /// <summary>The journaled server of Arcadia's VIIPER the tests' devices come from.</summary>
+    private static readonly UsbipServer Ours = new(Generation: 1, FakeCleanup.ServerPort, Pid: 10);
+
     /// <summary>For steps that end at once: a loaded CI runner may take longer than <see cref="Short"/> to start them.</summary>
     private static readonly TimeSpan Ample = TimeSpan.FromSeconds(10);
 
@@ -47,7 +50,7 @@ public class TeardownTests
         var order = new List<string>();
         var ended = 0;
         cleanup.Children = [];
-        var plan = new TeardownPlan(cleanup, journal.HeldProcesses.ToList(), process => { journal.HeldProcesses.Remove(process); ended++; });
+        var plan = new TeardownPlan(cleanup, journal.HeldProcesses.ToList(), process => { journal.HeldProcesses.Remove(process); ended++; }, [Ours], _ => { });
 
         foreach (var step in plan.Steps())
         {
@@ -67,7 +70,7 @@ public class TeardownTests
     {
         var cleanup = new FakeCleanup { EndFails = true };
         var journal = new JournalState { Emulating = true, HeldProcesses = [new(10, 1, "viiper.exe"), new(11, 2, "viiper.exe")] };
-        var plan = new TeardownPlan(cleanup, journal.HeldProcesses.ToList(), process => journal.HeldProcesses.Remove(process));
+        var plan = new TeardownPlan(cleanup, journal.HeldProcesses.ToList(), process => journal.HeldProcesses.Remove(process), [Ours], _ => { });
 
         var results = await TeardownRunner.RunAsync(plan.Steps(), _log.Add);
 
@@ -81,7 +84,7 @@ public class TeardownTests
     {
         var cleanup = new FakeCleanup { Ports = [1], DetachFails = true };
         var journal = new JournalState { Emulating = true, HeldProcesses = [new(10, 1, "viiper.exe")] };
-        var plan = new TeardownPlan(cleanup, journal.HeldProcesses.ToList(), process => journal.HeldProcesses.Remove(process));
+        var plan = new TeardownPlan(cleanup, journal.HeldProcesses.ToList(), process => journal.HeldProcesses.Remove(process), [Ours], _ => { });
 
         var results = await TeardownRunner.RunAsync(plan.Steps(), _log.Add);
 
@@ -89,5 +92,35 @@ public class TeardownTests
         Assert.Contains("port(s) 1 not detached", results[0].Error);
         Assert.Equal(StepOutcome.Ok, results[1].Outcome);
         Assert.Single(cleanup.Ended);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T304-6")]
+    public async Task Only_devices_from_a_journaled_server_are_detached_and_another_programs_VIIPER_keeps_its_own()
+    {
+        // Another program's VIIPER on its default port, with a device of its own imported (port 7).
+        var cleanup = new FakeCleanup { Ports = [2], ImportedFrom = { [UsbipPorts.ViiperPort] = [7] } };
+        var detached = new List<UsbipServer>();
+        var plan = new TeardownPlan(cleanup, [], _ => { }, [Ours], detached.Add);
+
+        var results = await TeardownRunner.RunAsync(plan.Steps(), _log.Add);
+
+        Assert.All(results, result => Assert.Equal(StepOutcome.Ok, result.Outcome));
+        Assert.Equal([2], cleanup.Detached);
+        Assert.Equal([Ours], detached);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T304-6")]
+    public async Task A_server_whose_device_did_not_detach_is_not_reported_and_stays_journaled()
+    {
+        var cleanup = new FakeCleanup { Ports = [2], DetachFails = true };
+        var detached = new List<UsbipServer>();
+        var plan = new TeardownPlan(cleanup, [], _ => { }, [Ours], detached.Add);
+
+        var results = await TeardownRunner.RunAsync(plan.Steps(), _log.Add);
+
+        Assert.Equal(StepOutcome.Failed, results[0].Outcome);
+        Assert.Empty(detached);
     }
 }

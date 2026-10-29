@@ -12,7 +12,18 @@ public sealed class FakeClock : IPanClock
 /// <summary>Records what the teardown does; each call can be made to fail or hang.</summary>
 public sealed class FakeCleanup : IEmulationCleanup
 {
+    /// <summary>The usbip port Arcadia's VIIPER listens on in these tests; every held viiper.exe listens there (#304).</summary>
+    public const int ServerPort = 50123;
+
+    /// <summary>The usbip ports imported from <see cref="ServerPort"/>.</summary>
     public List<int> Ports = [];
+
+    /// <summary>The usbip ports imported from other servers on this machine, by the server's port.</summary>
+    public Dictionary<int, List<int>> ImportedFrom = [];
+
+    /// <summary>Set: the listeners Windows reports instead of the client's viiper.exe children on <see cref="ServerPort"/>.</summary>
+    public List<TcpListening>? ListenersOverride;
+    public bool ListenersThrow;
     public List<int> Detached = [];
     public List<HeldProcess> Children = [];
     public List<HeldProcess> Held = [];
@@ -26,15 +37,22 @@ public sealed class FakeCleanup : IEmulationCleanup
     public bool EndHangs;
     public Exception? EndThrows;
 
-    public async Task<IReadOnlyList<int>> ListLocalViiperPortsAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<int>> ListImportedPortsAsync(int serverPort, CancellationToken cancellationToken)
     {
         if (ListHangs)
         {
             await Task.Delay(Timeout.Infinite, cancellationToken);
         }
 
-        return [.. Ports];
+        lock (Detached)
+        {
+            return serverPort == ServerPort ? [.. Ports] : [.. ImportedFrom.GetValueOrDefault(serverPort) ?? []];
+        }
     }
+
+    public IReadOnlyCollection<TcpListening> Listeners() => ListenersThrow
+        ? throw new System.ComponentModel.Win32Exception(5)
+        : ListenersOverride ?? [.. Children.Where(p => p.ImageName == Guardian.ForwardingImageName).Select(p => new TcpListening(p.Pid, System.Net.IPAddress.Loopback, ServerPort))];
 
     public async Task DetachPortAsync(int port, CancellationToken cancellationToken)
     {
@@ -48,8 +66,15 @@ public sealed class FakeCleanup : IEmulationCleanup
             throw new InvalidOperationException("usbip detach failed");
         }
 
-        lock (Detached) Detached.Add(port);
-        Ports.Remove(port);
+        lock (Detached)
+        {
+            Detached.Add(port);
+            Ports.Remove(port);
+            foreach (var imported in ImportedFrom.Values)
+            {
+                imported.Remove(port);
+            }
+        }
     }
 
     public IReadOnlyList<HeldProcess> TakeChildrenOf(int clientPid, long clientStartTime, string imageName)

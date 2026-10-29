@@ -6,8 +6,8 @@ namespace Arcadia.Pan;
 /// </summary>
 public interface IEmulationCleanup
 {
-    /// <summary>The usbip ports attached from VIIPER on this machine (<see cref="UsbipPorts.FromLocalViiper"/>).</summary>
-    Task<IReadOnlyList<int>> ListLocalViiperPortsAsync(CancellationToken cancellationToken);
+    /// <summary>The usbip ports of the devices imported from the server on this machine's <paramref name="serverPort"/> (<see cref="UsbipPorts.FromLocalServer"/>).</summary>
+    Task<IReadOnlyList<int>> ListImportedPortsAsync(int serverPort, CancellationToken cancellationToken);
 
     Task DetachPortAsync(int port, CancellationToken cancellationToken);
 
@@ -28,6 +28,9 @@ public interface IEmulationCleanup
 
     /// <summary>The process's start time, or null when no process with that id runs.</summary>
     long? StartTimeOf(int pid);
+
+    /// <summary>Every TCP listener on this machine, IPv4 and IPv6 (#304); throws when it can't be read.</summary>
+    IReadOnlyCollection<TcpListening> Listeners();
 }
 
 public enum StepOutcome
@@ -91,13 +94,18 @@ public static class TeardownRunner
 }
 
 /// <summary>
-/// The teardown order (#243): 1. detach the usbip ports VIIPER attached, so the game loses the pad first and keeps no
-/// last state (review point 14); 2. end the forwarding processes Pan holds; 3. and 4. (part B) unhide the real
+/// The teardown order (#243): 1. detach the usbip ports imported from the journaled VIIPER servers (#304), so the game
+/// loses the pad first and keeps no last state (review point 14); another program's VIIPER is never touched; 2. end the
+/// forwarding processes Pan holds; 3. and 4. (part B) unhide the real
 /// controller only once nothing forwards to it, then restart it. Each ended process is reported at once
 /// (<paramref name="ended"/>, which the guardian journals under its lock), so a failed step stays listed and is retried at
 /// the next trigger, and a step left behind after its timeout never touches the journal itself (review, should-fix 9).
+/// A server whose devices are all detached is reported likewise (<paramref name="detached"/>), and only then leaves the
+/// journal.
 /// </summary>
-public sealed class TeardownPlan(IEmulationCleanup cleanup, IReadOnlyList<HeldProcess> held, Action<HeldProcess> ended)
+public sealed class TeardownPlan(
+    IEmulationCleanup cleanup, IReadOnlyList<HeldProcess> held, Action<HeldProcess> ended,
+    IReadOnlyList<UsbipServer> servers, Action<UsbipServer> detached)
 {
     public static readonly TimeSpan StepTimeout = TimeSpan.FromSeconds(10);
 
@@ -110,19 +118,28 @@ public sealed class TeardownPlan(IEmulationCleanup cleanup, IReadOnlyList<HeldPr
     private async Task DetachPortsAsync(CancellationToken cancellationToken)
     {
         var failed = new List<int>();
-        foreach (var port in await cleanup.ListLocalViiperPortsAsync(cancellationToken))
+        foreach (var server in servers)
         {
-            try
+            var before = failed.Count;
+            foreach (var port in await cleanup.ListImportedPortsAsync(server.Port, cancellationToken))
             {
-                await cleanup.DetachPortAsync(port, cancellationToken);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                failed.Add(port);
-                if (failed.Count == 1)
+                try
                 {
-                    LastError = ex.Message;
+                    await cleanup.DetachPortAsync(port, cancellationToken);
                 }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    failed.Add(port);
+                    if (failed.Count == 1)
+                    {
+                        LastError = ex.Message;
+                    }
+                }
+            }
+
+            if (failed.Count == before)
+            {
+                detached(server);
             }
         }
 

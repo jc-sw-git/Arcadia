@@ -30,7 +30,7 @@ More findings, one file per topic (read only the one you touch):
 | Steam's desktop layout and the mouse mode (#64) | [desktop-layout.md](desktop-layout.md) |
 | Steam Input without SISR: overlay helper, raw SDL3, VIIPER from C# (spike #112) | [steam-input-helper.md](steam-input-helper.md) |
 | Every controller through SDL3, the Steam Controller raw, SISR's virtual pad told apart (#72, #212) | [sdl-gamepads.md](sdl-gamepads.md) |
-| The Steam Controller as an Xbox pad for games, without SISR: VIIPER, combos, plugging in and out (#213) | [xbox-pad.md](xbox-pad.md) |
+| The Steam Controller as an Xbox pad for games, without SISR: VIIPER, combos, plugging in and out (#213); Arcadia's own VIIPER on loopback with auth (#304) | [xbox-pad.md](xbox-pad.md) |
 | Hiding the real Steam Controller from Steam and showing it a 1:1 copy: HidHide, puck descriptors, latency (spike #239) | [emulated-steam-controller.md](emulated-steam-controller.md) |
 | Pan, the guardian service: protocol, journal, teardown, setup with one UAC prompt, update, uninstall, `--restore` (#243) | [pan.md](pan.md) |
 | Pan: setup with one UAC prompt (usbip-win2, HidHide), missing parts in the settings, uninstall hook with the drivers, `--restore`, securing the data folder | [pan-setup.md](pan-setup.md) |
@@ -40,5 +40,5 @@ More findings, one file per topic (read only the one you touch):
 | Pan's puck restart: Arcadia's SDL let go first, the copy is never hidden (#308) | [pan-puck-restart.md](pan-puck-restart.md) |
 | Steam gets a copy of the Steam Controller: lifecycle, who gets input, the allow list and the firmware lock (#242) | [steam-controller-copy.md](steam-controller-copy.md) |
 | The copy on Windows: VIIPER fork `hidproxy`, pinned `viiper.exe`, raw puck, bridge, SDL ignoring it (#242 B, C) | [steam-controller-copy-windows.md](steam-controller-copy-windows.md) |
-| Pan: known limits and accepted risks (foreign VIIPER ports, late usbip step, unsigned `Pan.exe`, HidHide races) | [pan-risks.md](pan-risks.md) |
+| Pan: known limits and accepted risks (reused server port, VIIPER nonce reuse, late usbip step, unsigned `Pan.exe`, HidHide races) | [pan-risks.md](pan-risks.md) |
 | Answering the UAC consent prompt by controller through a VIIPER virtual keyboard/mouse (spike #118) | [uac.md](uac.md) |

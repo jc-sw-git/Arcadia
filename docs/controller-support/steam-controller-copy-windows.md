@@ -25,18 +25,19 @@ raw and VIIPER shows Steam a USB device with the puck's descriptors. Measured de
   reads every report exactly once) and cross-builds `viiper.exe`; with `publish` it releases `arcadia-<commit>` with
   the exe, its SHA-256 and the licenses. `src/Arcadia.ControllerSupport/Viiper.targets` pins commit, URL, size and
   hash: the build downloads it into `obj/`, checks it and ships it next to Arcadia.exe; the same pin is compiled into
-  `ViiperRelease`. An empty pin downloads nothing, the App then takes SISR's `viiper.exe` and makes no copy.
+  `ViiperRelease`. An empty pin downloads nothing: the App then has no Xbox pad and no copy (`NoVirtualXboxPads`).
+  The fork's usbip auto-attach goes to 127.0.0.1, the address Arcadia's VIIPER listens on (#304).
 - Arcadia starts VIIPER with `VIIPER_UPDATE_NOTIFY=none`: it would offer an upstream release every hour, which lacks
-  `hidproxy`. The env var, not the flag, as a `viiper.exe` from SISR doesn't know the flag.
+  `hidproxy`.
 - "VIIPER fehlt" → "Installieren" (`ViiperInstallation.InstallAsync`): the pinned file into Arcadia's folder (the
   user's own, no administrator rights), downloaded beside it and moved in only once its hash matched. A
   `viiper.exe` the Xbox pad still runs from is renamed aside first (Windows won't overwrite a running image) and
   deleted once nothing runs from it.
 - The copy needs exactly the pinned build (`ViiperInstallation.IsPinned`, hash cached per size and write time): with
   another `viiper.exe` `CanCopy` is false and Pan hides nothing, and "VIIPER fehlt" offers "Installieren", which
-  replaces it. It also needs the server Arcadia started from that file, as the only process listening on the port
-  (Windows' TCP table, both loopbacks: `localhost` may reach either): otherwise `AddRawDeviceAsync` refuses (another
-  program would get the puck's serial and all of Steam's traffic), so the copy fails and Pan shows the puck.
+  replaces it. It also needs the server Arcadia started from that file (#304, `xbox-pad.md`): `AddRawDeviceAsync`
+  checks its listeners again and opens the raw stream authenticated and encrypted; without that server it refuses
+  (another program would get the puck's serial and all of Steam's traffic), so the copy fails and Pan shows the puck.
 
 ## Arcadia's side (part C)
 

@@ -192,7 +192,7 @@ public sealed class ServiceTests : IDisposable
 
             // T243-10: stopping the service is the teardown: the forwarding process Arcadia started is ended.
             var viiper = StartViiper();
-            var started = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.EmulationStarted));
+            var started = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort));
             Assert.Equal(PanReply.Started, started.Reply);
             Assert.True(started.Generation > generation);
             using (var service = new ServiceController(PanPaths.ServiceName))
@@ -222,7 +222,7 @@ public sealed class ServiceTests : IDisposable
             var hello = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.Hello));
             Assert.Equal(PanReply.HelloOk, hello.Reply);
             var viiper = StartViiper();
-            var started = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.EmulationStarted));
+            var started = await ExchangeAsync(pipe, PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort));
             Assert.Equal(PanReply.Started, started.Reply);
 
             // Part B: the real service reaches HidHide. With HidHide on the runner it hides (no puck there: nothing to

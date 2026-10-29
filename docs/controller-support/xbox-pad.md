@@ -19,12 +19,28 @@ no empty layout forced on a marker, no focus bounce. Overview and the other file
   running, so a combo begun in Arcadia stays Arcadia's.
 - `TickAsync` (every 2 s, `App`) plugs the pad in while a Steam Controller is connected and `Wanted` holds, and out
   otherwise: a game never sees an idle extra pad. `Wanted` comes from `SteamControllerRouting` (below).
-- `ViiperXboxPads` runs `viiper.exe server --no-tray` (Arcadia's own build of its VIIPER fork next to Arcadia.exe, #242;
-  the one an older SISR install left in `%LOCALAPPDATA%\SISR` while no build is pinned) as its own process, log `viiper.log` beside `arcadia.log`, API `localhost:3242`, and drives it with VIIPER's MIT
-  client `Viiper.Client` 0.9.0: one bus, one `xbox360` device per plug. A VIIPER that already answers on the port (another
-  program's) is used, not replaced. A plug-in that fails after the bus was created removes the bus again.
-- `viiper.exe` is in a job object with kill-on-close, so it ends with Arcadia also after a crash; the usbip port it held
-  is cleaned up at the next start.
+- `ViiperXboxPads` drives Arcadia's own `viiper.exe` (its build of the VIIPER fork next to Arcadia.exe, #242) with
+  VIIPER's MIT client `Viiper.Client` 0.9.0: one bus, one `xbox360` device per plug. A plug-in that fails after the bus
+  was created removes the bus again. `PrepareAsync` (only from the copy's start in `PanEmulation`) starts the server;
+  a plug never starts one, it fails while none runs. No other program's VIIPER is ever used (#304).
+- `ViiperServer.StartAsync` (#304), every step fail closed (viiper.exe ended, start failed, logged):
+  1. ends a `viiper.exe` left from the same path (`WindowsViiperHost.EndLeftovers`);
+  2. writes a fresh 32-character key to `<data>\viiper\VIIPER\viiper.key.txt` and starts `viiper.exe server --no-tray
+     --usb.addr=127.0.0.1:0 --api.addr=127.0.0.1:0 --api.require-local-host-auth` with `AppData` pointed at
+     `<data>\viiper` and every other `VIIPER_*` variable removed, so it reads only Arcadia's key, never the user's;
+  3. puts it in the kill-on-close job object (a failed assignment ends it: no VIIPER that could outlive Arcadia);
+  4. waits (10 s) for exactly two listeners of that pid, both on 127.0.0.1, no other process on either port number in
+     IPv4 or IPv6 (`ViiperListeners.OfServer`, Windows' TCP table);
+  5. the API port is the one of the two that answers an authenticated ping; the key file is deleted;
+  6. a ping without key and one with a wrong key must both be refused, else VIIPER runs without auth.
+  Before each later use (plug, raw device) the listeners are checked again (`CheckListeners`).
+- Auth is VIIPER's: PBKDF2 key, HMAC challenge, then ChaCha20-Poly1305 frames (`ViiperConnection`,
+  `ViiperEncryptedStream`, checked against `Viiper.Client`'s internal code and the fork's real server). Arcadia's
+  stream refuses a frame out of sequence. VIIPER uses the same session key and counter start in both directions
+  (nonce reuse upstream); on loopback without admin rights nobody can read the traffic, so it is a residual risk
+  (`pan-risks.md`).
+- `viiper.exe` is in a job object with kill-on-close, so it ends with Arcadia also after a crash; usbip-win2 drops its
+  devices when the connection closes, and Pan's teardown detaches what the journaled server port served (`pan.md`).
 - `IGamepadSource.Lost` (SDL failed for good) calls `Drop`: the game gets a pad at rest at once, and the next tick
   unplugs it.
 - A pad lost (server ended, stream closed, send failed or hung for 1 s) is plugged in again at the next tick; more than 3 losses in

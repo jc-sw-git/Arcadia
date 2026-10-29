@@ -8,6 +8,8 @@ using SteamInputProbe;
 //   SteamInputProbe raw [--seconds 60] [--no-sensors] [--say "s=text"]... [--log file]
 //   SteamInputProbe describe [--json file] [--log file]   (spike #239: USB and HID descriptors of Valve devices)
 //   SteamInputProbe uac [--seconds 1800] [--poll 100] [--log file]   (spike #118: answer UAC with a VIIPER keyboard/mouse)
+//   SteamInputProbe viiper304 --step start|pad|raw --viiper-exe <viiper.exe> --config <dir> [--stopfile file] [--log file]
+//                         (#304: Arcadia's own VIIPER on 127.0.0.1 with its own key, through Arcadia's code)
 if (args.Length == 0 || ProbeOptions.Parse(args) is not { } options)
 {
     Console.WriteLine("usage: SteamInputProbe steam --marker <appid> [options] | raw [options] | describe  (see Program.cs)");
@@ -29,6 +31,7 @@ try
         "steam" => await new SteamPadProbe(options, log).RunAsync(cancel.Token),
         "describe" => new DescribeProbe(log, options.JsonPath).Run(),
         "uac" => await RunUacAsync(options, log, cancel.Token),
+        "viiper304" => await new OwnViiperProbe(options, log).RunAsync(cancel.Token),
         _ => new RawProbe(options, log).Run(cancel.Token),
     };
 }
@@ -59,14 +62,17 @@ internal sealed record ProbeOptions(string Mode, string LogPath)
     public bool Sensors { get; private init; } = true;
     public string? JsonPath { get; private init; }
     public string? StopFile { get; private init; }
+    public string? Step { get; private init; }
+    public string? ViiperPath { get; private init; }
+    public string? ConfigRoot { get; private init; }
     public List<(double At, string Text)> Prompts { get; } = [];
 
     public static ProbeOptions? Parse(string[] args)
     {
         var mode = args[0];
-        if (mode is not ("steam" or "raw" or "describe" or "uac")) return null;
+        if (mode is not ("steam" or "raw" or "describe" or "uac" or "viiper304")) return null;
         var options = new ProbeOptions(mode, Path.Combine(AppContext.BaseDirectory, $"probe-{mode}-{DateTime.Now:HHmmss}.log"));
-        if (mode == "uac") options = options with { Seconds = 1800 }; // the UAC probe waits for the owner; a long default
+        if (mode is "uac" or "viiper304") options = options with { Seconds = 1800 }; // these wait for the owner; a long default
         for (var i = 1; i < args.Length; i++)
         {
             string Next() => i + 1 < args.Length ? args[++i] : throw new ArgumentException($"{args[i]} needs a value");
@@ -87,6 +93,9 @@ internal sealed record ProbeOptions(string Mode, string LogPath)
                 "--json" => options with { JsonPath = Path.GetFullPath(Next()) },
                 "--stopfile" => options with { StopFile = Path.GetFullPath(Next()) },
                 "--say" => options.WithPrompt(Next()),
+                "--step" => options with { Step = Next() },
+                "--viiper-exe" => options with { ViiperPath = Path.GetFullPath(Next()) },
+                "--config" => options with { ConfigRoot = Path.GetFullPath(Next()) },
                 _ => throw new ArgumentException($"unknown option {args[i]}"),
             };
         }

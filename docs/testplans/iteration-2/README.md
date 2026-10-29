@@ -24,6 +24,7 @@ its file.
 | [214-remove-or-keep-sisr.md](214-remove-or-keep-sisr.md) | #214 | Remove SISR on request, or keep it, in the controller settings | 13 |
 | [215-show-the-button-symbols-of-the-controller-in-use.md](215-show-the-button-symbols-of-the-controller-in-use.md) | #215 | Show the button symbols of the controller in use | 8 |
 | [308-pan-hide-warning-loops-with-only-the-puck.md](308-pan-hide-warning-loops-with-only-the-puck.md) | #308 | Pan: hide warning loops with only the puck connected, then emulation stops | 6 |
+| [304-own-viiper-loopback-auth.md](304-own-viiper-loopback-auth.md) | #304 | Run only Arcadia's own VIIPER, on loopback, with Windows-assigned ports and API auth | 12 |
 
 ## Exploratory test
 

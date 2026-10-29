@@ -864,7 +864,7 @@ public sealed partial class Guardian
                 {
                     lock (_lock)
                     {
-                        if (_phase != Phase.Emulating && _journal.HeldProcesses.Count == 0)
+                        if (_phase != Phase.Emulating && _journal.HeldProcesses.Count == 0 && _journal.UsbipServers.Count == 0)
                         {
                             // The teardown that left this is complete now.
                             _journal.Emulating = false;

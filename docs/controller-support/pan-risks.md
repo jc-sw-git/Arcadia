@@ -3,12 +3,17 @@
 What Pan (#243, [pan.md](pan.md)) does not guard against, decided with the owner or by the reviews of PR #245. Each
 one names the countermeasure that would close it, so a later story can pick it up.
 
-- **A teardown detaches every local VIIPER port**, another program's too (QE review point 11). usbip gives no
-  mapping from a port to the process that attached it, so with "Arcadia nutzt ihn mit" (another program's VIIPER)
-  Pan can't tell its ports from the other's. Any process of the console session can trigger a teardown (connect,
-  `EmulationStarted`, drop the pipe): a nuisance for that program, no privilege gain. Pan logs an emulation without a
-  held `viiper.exe`. Accepted as a residual risk (owner, 2026-10-26); it closes with #214: Arcadia then uses only
-  its own `viiper.exe`, never another program's running one, ideally on own ports so Pan knows its ports by number.
+- **A server port reused before the teardown** (#304 closed "a teardown detaches every local VIIPER port"): Pan
+  detaches only devices imported from a journaled `127.0.0.1:<port>`. If Arcadia's VIIPER died and another program's
+  usbip server got the same port from Windows before the teardown ran, its devices there would be detached too. Ports
+  come from Windows' dynamic range and the teardown follows within seconds; a nuisance at most, no privilege gain.
+- **Arcadia's VIIPER: check to use** (#304): between a listener check and a connect another process could take a port
+  VIIPER just let go. Without the key it can neither read nor forge a frame (session key from key and nonces), so it
+  can only make the plug fail. Same-user code could read the key from `viiper.exe`'s memory (or its file in the few
+  ms before it is deleted); it could control the user's input anyway.
+- **VIIPER reuses nonces** (upstream, #304): both directions use the same session key with counters from 0, so two
+  frames share a nonce. Anyone who could read loopback traffic (administrators only) could XOR them. Fix upstream:
+  one key per direction.
 - **A usbip step left behind after its 10 s timeout** keeps running with a cancelled token; usbip.exe itself is killed
   after 5 s. In theory a late `detach -p N` could hit a port the next emulation got under the same number. Ending
   processes is handle-bound and can't hit anything new.

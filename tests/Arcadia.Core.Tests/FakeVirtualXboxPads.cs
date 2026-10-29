@@ -4,7 +4,7 @@ using Arcadia.Input;
 namespace Arcadia.Tests.Pads;
 
 /// <summary>Virtual Xbox pads that record what they get (#213); shared by the unit and the acceptance tests.</summary>
-public sealed class FakeVirtualXboxPads : IVirtualXboxPads
+public sealed class FakeVirtualXboxPads : IVirtualXboxPadServer
 {
     public int Plugged;
     public int Unplugged;
@@ -45,7 +45,13 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
 
     public string? Unavailable() => Missing;
 
-    public Task PrepareAsync(CancellationToken cancellationToken)
+    /// <summary>The usbip port of the server that runs; a test sets it to null for VIIPER lost, or changes it for a new one (#304).</summary>
+    public int? ServerPort { get; set; }
+
+    /// <summary>The port a start of VIIPER gets; each start counts on from here.</summary>
+    public int NextServerPort = 50000;
+
+    public Task<int> PrepareAsync(CancellationToken cancellationToken)
     {
         if (FailPrepare)
         {
@@ -53,8 +59,9 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPads
         }
 
         Prepared++;
+        ServerPort ??= NextServerPort++;
         DuringPrepare?.Invoke();
-        return Task.CompletedTask;
+        return Task.FromResult(ServerPort.Value);
     }
 
     public Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken)

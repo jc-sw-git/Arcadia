@@ -27,7 +27,7 @@ public sealed class GuardianTests : IDisposable
 
     private string Log() { lock (_log) return string.Join("\n", _log); }
 
-    private PanMessage Send(PanCommand command, uint generation = 0) => _guardian.HandleNow(PanMessage.Of(command, generation));
+    private PanMessage Send(PanCommand command, uint generation = 0) => _guardian.HandleNow(PanMessage.Of(command, generation, command == PanCommand.EmulationStarted ? (uint)FakeCleanup.ServerPort : 0u));
 
     private uint Connect(ClientIdentity? client = null)
     {
@@ -283,7 +283,7 @@ public sealed class GuardianTests : IDisposable
     {
         // Review point 3 (reproduced there): `Pan.exe --restore` loads the journal to see whether there is work, then
         // the recovery loads again. The first load moved the torn journal aside, so the second found nothing.
-        var open = new JournalState { Generation = 4, ClientPid = 500, ClientStartTime = 1000, Emulating = true, HeldProcesses = [new(600, 1500, "viiper.exe")] };
+        var open = new JournalState { Generation = 4, ClientPid = 500, ClientStartTime = 1000, Emulating = true, HeldProcesses = [new(600, 1500, "viiper.exe")], UsbipServers = [new(4, FakeCleanup.ServerPort, 600)] };
         _journal.File.Save(open);
         _journal.File.Save(open);   // the previous version lists the open emulation too
         File.WriteAllText(_journal.File.Path, "{ torn");
@@ -302,7 +302,7 @@ public sealed class GuardianTests : IDisposable
     public async Task Recovery_works_from_the_snapshot_it_is_handed()
     {
         // `--restore` looks first and recovers from the same load, whatever the file looks like by then (review follow-up 1).
-        var open = new JournalState { Generation = 4, ClientPid = 500, ClientStartTime = 1000, Emulating = true, HeldProcesses = [new(600, 1500, "viiper.exe")] };
+        var open = new JournalState { Generation = 4, ClientPid = 500, ClientStartTime = 1000, Emulating = true, HeldProcesses = [new(600, 1500, "viiper.exe")], UsbipServers = [new(4, FakeCleanup.ServerPort, 600)] };
         _journal.File.Save(open);
         var before = _journal.File.Load();
         _journal.File.Save(new JournalState { Generation = 4 });   // on disk nothing is open any more
@@ -324,6 +324,7 @@ public sealed class GuardianTests : IDisposable
             ClientStartTime = 1000,
             Emulating = true,
             HeldProcesses = [new(600, 1500, "viiper.exe"), new(700, 1700, "viiper.exe")],
+            UsbipServers = [new(4, FakeCleanup.ServerPort, 700)],
         });
         _cleanup.StartTimes[600] = 9999;   // another process has this id now
         _cleanup.StartTimes[700] = 1700;   // still ours
@@ -429,7 +430,7 @@ public sealed class GuardianTests : IDisposable
         Assert.Equal(PanReason.None, restarted.Register(Arcadia));
         Assert.Equal(PanReply.HelloOk, restarted.HandleNow(PanMessage.Of(PanCommand.Hello)).Reply);
 
-        Assert.Equal(generation + 1, restarted.HandleNow(PanMessage.Of(PanCommand.EmulationStarted)).Generation);
+        Assert.Equal(generation + 1, restarted.HandleNow(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort)).Generation);
     }
 
     [Fact]

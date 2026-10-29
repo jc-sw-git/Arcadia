@@ -100,7 +100,7 @@ public sealed class HidHideTests
         var guardian = new Guardian(new FakeClock(), journal.File, cleanup, _ => { }, hiding: new SteamControllerHiding(new HidHideDriver(), new FakeDevices()));
         guardian.Register(new ClientIdentity(Environment.ProcessId, 1, InConsoleSession: true, NativeImagePath()));
         await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello));
-        var generation = (await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted))).Generation;
+        var generation = (await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort))).Generation;
 
         var hidden = await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation));
 

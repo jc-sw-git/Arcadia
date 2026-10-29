@@ -15,6 +15,12 @@ Who does each step: `docs/personas/README.md`. Test plan format and acceptance t
    one pass (one thread per PR, `docs/personas/README.md` → Cost rules).
 5. The owner tests only what the rework changed, and merges.
 
+**Marking tests as passed costs no CI run** (owner 2026-10-29): the thread records the owner's results in the
+test plan file and pushes. A push that changes only `docs/testplans/**` skips build and tests (the `build` jobs
+run with all steps skipped, so the required checks still report success) and only the `Testplan` check runs;
+the PR is green again within a minute. That holds only if the commit before was green; anything else in the
+push, or a red or still running predecessor, builds fully (`tools/ci/detect-testplan-only.sh`).
+
 ## Course of an iteration
 
 Milestone "Iteration N" (from Iteration 2 with a theme prefix, e.g. `I3`; the milestone description is the scope).

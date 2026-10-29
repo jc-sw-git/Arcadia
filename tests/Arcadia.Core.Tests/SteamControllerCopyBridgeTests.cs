@@ -18,9 +18,10 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
 {
     private const byte Hid = 2;
     private const byte Cdc = 1;
+    private const byte EmptySlot = 3;
     private static readonly TimeSpan Wait = TimeSpan.FromSeconds(5);
 
-    private readonly FakePuck _puck = new([Hid]);
+    private readonly FakePuck _puck = new([Hid, EmptySlot]);
     private readonly List<string> _updates = [];
     private readonly List<string> _log = [];
     private bool _forwarding;
@@ -226,6 +227,43 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
 
     [Fact]
     [Trait("TestCase", "T314-1")]
+    public async Task The_same_refusal_on_another_slot_or_report_gets_its_own_line_and_its_own_count()
+    {
+        _puck.FeatureFailure = new Win32Exception(31);
+        await ControlAsync(1, SetReport(HidReportType.Feature, Hid), [0x01, 0xAE, 0x01]);
+        await ControlAsync(2, SetReport(HidReportType.Feature, EmptySlot), [0x01, 0xAE, 0x01]);
+        await ControlAsync(3, SetReport(HidReportType.Feature, EmptySlot), [0x01, 0xAE, 0x01]);
+        await ControlAsync(4, SetReport(HidReportType.Feature, EmptySlot), [0x02, 0xAE, 0x01]);
+
+        await _bridge.DisposeAsync();
+
+        var refused = Lines("fehlgeschlagen");
+        Assert.Equal(3, refused.Count);
+        Assert.Contains("(Interface 2, Report 0x01,", refused[0]);
+        Assert.Contains("(Interface 3, Report 0x01,", refused[1]);
+        Assert.Contains("(Interface 3, Report 0x02,", refused[2]);
+        var summary = Assert.Single(Lines("vom Puck abgelehnt"));
+        Assert.Contains("(Interface 2, Report 0x01, GET_STRING_ATTRIBUTE (0xAE)) Fehler 31: 1×", summary);
+        Assert.Contains("(Interface 3, Report 0x01, GET_STRING_ATTRIBUTE (0xAE)) Fehler 31: 2×", summary);
+        Assert.Contains("(Interface 3, Report 0x02, GET_STRING_ATTRIBUTE (0xAE)) Fehler 31: 1×", summary);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T314-1")]
+    public async Task A_failed_GET_REPORT_names_only_a_message_that_reached_the_puck()
+    {
+        _puck.FailGetReport = true;
+        await ControlAsync(1, SetReport(HidReportType.Feature), [0x01, 0x83]);
+        // 0xA3 is dropped (answered done): the GET_REPORT after it still reads the answer to 0x83.
+        await ControlAsync(2, SetReport(HidReportType.Feature), [0x01, 0xA3]);
+        await ControlAsync(3, GetReport(64));
+
+        var refused = Assert.Single(Lines("fehlgeschlagen"));
+        Assert.Contains("nach GET_ATTRIBUTES_VALUES (0x83)", refused);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T314-1")]
     public async Task A_copy_the_puck_refused_nothing_logs_no_refusals_when_it_closes()
     {
         await ControlAsync(1, SetReport(HidReportType.Feature), [0x01, 0x83]);
@@ -368,7 +406,7 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
         return report;
     }
 
-    private static byte[] SetReport(HidReportType type) => Setup(0x21, 0x09, (ushort)(((int)type << 8) | 0x01), Hid, 2);
+    private static byte[] SetReport(HidReportType type, byte iface = Hid) => Setup(0x21, 0x09, (ushort)(((int)type << 8) | 0x01), iface, 2);
 
     private static byte[] GetReport(ushort length) => GetReport(HidReportType.Feature, 0x01, length);
 

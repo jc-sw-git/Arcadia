@@ -251,9 +251,10 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
         var data = payload.AsSpan(2 + SetupPacket.Size).ToArray();
         var (kind, type) = SteamControlRequests.Classify(setup, _descriptors.IsHid(iface), IsCdc(iface));
         var passes = _filter.FromSteam(kind, data, _forwarding());
-        if (kind == SteamReportKind.SetFeature && data.Length >= 2)
+        if (kind == SteamReportKind.SetFeature && passes && data.Length >= 2)
         {
-            // The GET_REPORT that follows reads the answer to it: named in the log if that fails.
+            // The GET_REPORT that follows reads the puck's answer to it: named in the log if that fails. A dropped
+            // message never reached the puck, so it can't be what the puck answers.
             _lastMessage[iface] = data[1];
         }
 

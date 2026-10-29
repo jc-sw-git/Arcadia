@@ -6,8 +6,8 @@ GET_REPORT for its answer), and the real puck refuses them, as it would without 
 (call, interface, report id, message, error) instead of one per refusal, and the counts when the copy ends. Needed:
 Windows, a build of this PR, Pan set up, the puck with one Steam Controller (on, connected), Steam installed.
 
-Automated: `SteamControllerCopyBridgeTests` (T314-1: once per kind, a new message or error gets its own line, counts at
-close; red once by logging every refusal again).
+Automated: `SteamControllerCopyBridgeTests` (T314-1: once per kind; another message, error, slot or report id gets its
+own line and count; a failed GET_REPORT names only a message that reached the puck; no summary without refusals).
 
 - [ ] **T314-1** Pan on, Steam running, wait one minute, then close Arcadia. `arcadia.log` has at most a few lines
       "Steam-Controller-Kopie: … an den Puck fehlgeschlagen", each naming interface, report and message, not a pair
@@ -19,4 +19,4 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| T314-1 | 2026-10-29 | Claude | PR branch, Debug, Linux cloud container, unit tests with a fake puck; red once by logging every refusal | ✅ | owner's PC open |
+| T314-1 | 2026-10-29 | Claude | PR branch, Debug, Linux cloud container, unit tests with a fake puck. Each test red once: "once per kind" by logging every refusal; "another message or error" by keying without error or message (QE); "another slot or report" by keying without interface or report id; "names only a message that reached the puck" by remembering dropped messages too; "nothing refused" by logging an empty summary (QE) | ✅ | owner's PC open |

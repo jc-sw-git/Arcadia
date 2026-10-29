@@ -131,6 +131,29 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
         lock (_lock)
         {
             Updates++;
+            Calls.Add("Update");
+            HoldsPuck = _steamDriverOn;
+        }
+    }
+
+    private bool _steamDriverOn = true;
+
+    /// <summary>
+    /// SDL holds the puck open, as its Triton driver does while it waits for a controller (#308): from the start on, and
+    /// until an update after its driver was switched off.
+    /// </summary>
+    public bool HoldsPuck { get; private set; } = true;
+
+    /// <summary>Every switch of SDL's Steam Controller driver and every update, in order.</summary>
+    public List<string> Calls { get; } = [];
+
+    public void ReadSteamControllers(bool on)
+    {
+        lock (_lock)
+        {
+            Calls.Add(on ? "Steam an" : "Steam aus");
+            _steamDriverOn = on;
+            HoldsPuck |= on;
         }
     }
 

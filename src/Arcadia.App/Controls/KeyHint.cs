@@ -7,7 +7,8 @@ using Avalonia.Layout;
 namespace Arcadia.App.Controls;
 
 /// <summary>
-/// A button hint for the input in use (#127): the controller's buttons (<see cref="Pad"/>) or, after a key
+/// A button hint for the input in use (#127): the controller's buttons (<see cref="Pad"/>, drawn with the printing of the
+/// controller in use, #215) or, after a key
 /// press or a click, the keyboard's keys (<see cref="Keys"/>) and a mouse alternative (<see cref="Alt"/>),
 /// followed by <see cref="Text"/>. Several buttons are separated by "|", e.g. "LB|RB". Controller buttons are
 /// round or a pill, keys square (<c>Border.glyph.kbd</c>), so the two inputs look apart (owner, 2026-10-21).
@@ -123,9 +124,9 @@ public sealed class KeyHint : StackPanel
 
     private Border Glyph(string text, bool isKey)
     {
-        var glyph = new Border { Classes = { "glyph" }, Child = new TextBlock { Text = text } };
-        glyph.Classes.Set("kbd", isKey);
-        glyph.Classes.Set("round", !isKey && ButtonText.IsRound(text));
+        Border glyph = isKey
+            ? new Border { Classes = { "glyph", "kbd" }, Child = new TextBlock { Text = text } }
+            : new PadGlyph { Button = text };
         glyph.Classes.Set("dark", IsDark);
         return glyph;
     }

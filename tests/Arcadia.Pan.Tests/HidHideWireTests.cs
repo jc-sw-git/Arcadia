@@ -79,6 +79,40 @@ public sealed class HidHideWireTests
         Assert.Equal(listed, HidingList.IsListedUsbParent(instanceId));
     }
 
+    // After the device tree of the owner's PC (2026-10-29): the real puck on Intel's xHCI, Arcadia's copy on VIIPER's
+    // bus. The USB ids are the owner's; the HID instances' suffixes and the PCI id's tail are made up.
+    private static readonly Dictionary<string, string> OwnersTree = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [@"HID\VID_28DE&PID_1304&MI_02&COL03\7&30D307B7&0&0002"] = @"USB\VID_28DE&PID_1304&MI_02\6&2F4EFF51&0&0002",
+        [@"USB\VID_28DE&PID_1304&MI_02\6&2F4EFF51&0&0002"] = @"USB\VID_28DE&PID_1304\FXB9961802B23",
+        [@"USB\VID_28DE&PID_1304\FXB9961802B23"] = @"USB\ROOT_HUB30\4&C7355C0&0&0",
+        [@"USB\ROOT_HUB30\4&C7355C0&0&0"] = @"PCI\VEN_8086&DEV_7A60&SUBSYS_7D251462&REV_11\3&11583659&0&A0",
+        [@"HID\VID_28DE&PID_1304&MI_02&COL03\4&1A2B3C4D&0&0002"] = @"USB\VID_28DE&PID_1304&MI_02\3&33C446F8&0&0002",
+        [@"USB\VID_28DE&PID_1304&MI_02\3&33C446F8&0&0002"] = @"USB\VID_28DE&PID_1304\2&387D3FEA&0&1",
+        [@"USB\VID_28DE&PID_1304\2&387D3FEA&0&1"] = @"USB\ROOT_HUB30\1&2B53A856&4&0",
+        [@"USB\ROOT_HUB30\1&2B53A856&4&0"] = @"ROOT\USB\0000",
+    };
+
+    [Theory]
+    [Trait("TestCase", "T308-5")]
+    [InlineData(@"HID\VID_28DE&PID_1304&MI_02&COL03\4&1A2B3C4D&0&0002", true)]
+    [InlineData(@"USB\VID_28DE&PID_1304\2&387D3FEA&0&1", true)]
+    [InlineData(@"HID\VID_28DE&PID_1304&MI_02&COL03\7&30D307B7&0&0002", false)]
+    [InlineData(@"USB\VID_28DE&PID_1304\FXB9961802B23", false)]
+    public void Arcadias_copy_on_VIIPERs_bus_is_told_from_the_real_puck(string instanceId, bool copy)
+    {
+        Assert.Equal(copy, HidingList.OnSoftwareHost(instanceId, id => OwnersTree.GetValueOrDefault(id)));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T308-5")]
+    public void A_device_tree_that_cant_be_read_counts_as_the_real_puck_so_it_is_hidden()
+    {
+        Assert.False(HidingList.OnSoftwareHost(@"USB\VID_28DE&PID_1304\FXB9961802B23", _ => null));
+        Assert.False(HidingList.OnSoftwareHost(@"USB\VID_28DE&PID_1304\FXB9961802B23", id => id + @"\USB\deeper"));
+        Assert.True(HidingList.OnSoftwareHost(@"USB\VID_28DE&PID_1304\X", _ => @"SWD\SOMETHING\1"));
+    }
+
     private const string Driver = @"C:\Windows\System32\drivers\HidHide.sys";
 
     [Fact]

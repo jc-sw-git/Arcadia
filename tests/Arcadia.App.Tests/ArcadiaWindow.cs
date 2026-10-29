@@ -59,8 +59,9 @@ internal sealed class ArcadiaWindow : IDisposable
         StartArguments arguments = default)
     {
         var arcadia = await ArcadiaDriver.StartAsync(launchers, settings, steam, arguments: arguments);
-        // The glyphs follow one switch for the whole app; a test before may have left it on the keyboard.
+        // The glyphs follow one switch for the whole app; a test before may have left it on the keyboard or another controller.
         Input.InputHints.UsesController = arcadia.Main.UsesController;
+        Input.InputHints.Symbols = arcadia.Main.ButtonSymbols;
         var window = new MainWindow { DataContext = arcadia.Main, Width = width, Height = height };
         window.SetRenderScaling(scaling);
         window.Show();
@@ -76,6 +77,7 @@ internal sealed class ArcadiaWindow : IDisposable
         Dispatcher.UIThread.RunJobs();
         var restarted = await Arcadia.RestartAsync();
         Input.InputHints.UsesController = restarted.Main.UsesController;
+        Input.InputHints.Symbols = restarted.Main.ButtonSymbols;
         var window = new MainWindow { DataContext = restarted.Main, Width = Window.Width, Height = Window.Height };
         window.Show();
         var shown = new ArcadiaWindow(restarted, window, ownsArcadia: false);
@@ -351,11 +353,19 @@ internal sealed class ArcadiaWindow : IDisposable
         .OrderBy(hint => Bounds(hint).Left)
         .Select(hint => string.Join(' ', hint.Children.Select(child => child switch
         {
-            Border { Child: TextBlock glyph } => glyph.Text,
+            Border glyph => Printed(glyph),
             TextBlock text => text.Text,
             _ => null,
         }).Where(text => !string.IsNullOrEmpty(text))))
         .ToList();
+
+    /// <summary>What a glyph shows: its text, or the name of the icon a controller's symbol is drawn with (#215, e.g. "Cross").</summary>
+    public static string? Printed(Border glyph) => glyph switch
+    {
+        Controls.PadGlyph { Shown: { Icon: not global::Arcadia.Input.ButtonIcon.None } symbol } => symbol.Icon.ToString(),
+        { Child: TextBlock text } => text.Text,
+        _ => null,
+    };
 
     /// <summary>The glyphs (button or key frames) drawn inside <paramref name="within"/>.</summary>
     public static IReadOnlyList<Border> Glyphs(Control within) => within.GetVisualDescendants().OfType<Border>()

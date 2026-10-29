@@ -36,9 +36,27 @@ public sealed class HidingTests : IDisposable
         _journal.Dispose();
     }
 
-    private Guardian NewGuardian(TimeSpan? deviceStepTimeout = null) => new(
+    private Guardian NewGuardian(TimeSpan? deviceStepTimeout = null, TimeSpan? puckReleaseTimeout = null) => new(
         _clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
-        hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: deviceStepTimeout ?? FakeDevices.StepTimeout);
+        hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: deviceStepTimeout ?? FakeDevices.StepTimeout)
+    {
+        // Most tests have no client that answers (AnswerReleases): they wait this out.
+        PuckReleaseTimeout = puckReleaseTimeout ?? TimeSpan.FromMilliseconds(100),
+    };
+
+    /// <summary>The client as Arcadia is: on <see cref="PanReply.ReleasePuck"/> it lets go and says so (#308).</summary>
+    private void AnswerReleases(Guardian guardian, bool answer = true) => guardian.Notify += message =>
+    {
+        if (message.Reply is PanReply.ReleasePuck or PanReply.PuckRestarted)
+        {
+            lock (_devices.Calls) _devices.Calls.Add(message.Reply.ToString());
+        }
+
+        if (answer && message.Reply == PanReply.ReleasePuck)
+        {
+            guardian.HandleAsync(PanMessage.Of(PanCommand.PuckReleased, value: message.Value)).GetAwaiter().GetResult();
+        }
+    };
 
     private void ListenTo(Guardian guardian) => guardian.Notify += message => { lock (_notified) _notified.Add(message); };
 
@@ -391,7 +409,9 @@ public sealed class HidingTests : IDisposable
         await TeardownDoneAsync();
 
         AssertRestored([], [], cloaking: false);
-        Assert.Equal((PanReply.TornDown, PanReason.Hang), (Assert.Single(_notified).Reply, _notified[0].Reason));
+        // A client whose feeder hangs may still read its pipe: it is asked to let go of the puck first (#308).
+        Assert.Equal([PanReply.ReleasePuck, PanReply.PuckRestarted, PanReply.TornDown], _notified.Select(n => n.Reply));
+        Assert.Equal(PanReason.Hang, _notified[2].Reason);
         Assert.Equal(PanReason.WrongGeneration, (await Send(PanCommand.Hide, generation - 1)).Reason);
         Assert.Equal(PanReason.TeardownNotAcknowledged, (await Send(PanCommand.Hide, generation)).Reason);
 
@@ -885,6 +905,71 @@ public sealed class HidingTests : IDisposable
 
         Assert.Equal(PanReason.WrongGeneration, (await _guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation + 1, 1))).Reason);
         Assert.False(Journal.FirmwareHold);
+    }
+
+    /// <summary>#308: Windows refuses the restart of a puck Arcadia's SDL holds; Pan's own restarts ask it to let go first.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-7")]
+    public async Task Pan_asks_the_client_to_let_go_before_it_restarts_the_puck_on_its_own_and_says_when_it_is_over()
+    {
+        AnswerReleases(_guardian);
+        var generation = await HiddenAsync();
+
+        // A new puck instance while hiding (another USB port): hidden, and the puck restarted.
+        _devices.Present = [FakeDevices.Slot2, FakeDevices.Slot3, FakeDevices.Dongle];
+        await _guardian.DevicesArrivedAsync();
+        // The teardown after a stop while hidden shows and restarts it.
+        Assert.Equal(PanReply.Stopped, (await Send(PanCommand.EmulationStopped, generation)).Reply);
+        await TeardownDoneAsync();
+
+        // The client's own hide comes first, unannounced: it let go before it asked.
+        Assert.Equal(["Restart", "ReleasePuck", "Restart", "PuckRestarted", "ReleasePuck", "Restart", "PuckRestarted"], _devices.Calls);
+        var requests = _notified.Where(n => n.Reply == PanReply.ReleasePuck).Select(n => n.Value).ToList();
+        Assert.Equal([1u, 2u], requests);
+        Assert.Equal(requests, _notified.Where(n => n.Reply == PanReply.PuckRestarted).Select(n => n.Value));
+        Assert.DoesNotContain("didn't let go", Log());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T308-7")]
+    public async Task The_clients_own_hide_and_show_are_not_announced_as_it_let_go_itself()
+    {
+        AnswerReleases(_guardian);
+        var generation = await HiddenAsync();
+
+        Assert.Equal(PanReply.Shown, (await Send(PanCommand.Unhide, generation)).Reply);
+
+        Assert.Equal(["Restart", "Restart"], _devices.Calls);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T308-7")]
+    public async Task A_client_that_doesnt_let_go_holds_Pans_restart_up_only_briefly_and_a_late_answer_changes_nothing()
+    {
+        AnswerReleases(_guardian, answer: false);
+        var generation = await HiddenAsync();
+        // An answer to an earlier request (or none at all) doesn't count.
+        Assert.Equal(PanReply.Acknowledged, (await Send(PanCommand.PuckReleased, generation)).Reply);
+
+        Assert.Equal(PanReply.Stopped, (await Send(PanCommand.EmulationStopped, generation)).Reply);
+        await TeardownDoneAsync();
+
+        Assert.Equal(["Restart", "ReleasePuck", "Restart", "PuckRestarted"], _devices.Calls);
+        Assert.Contains("Client didn't let go of the Steam Controller within 0.1 s; restarting it anyway", Log());
+        AssertRestored([], [], cloaking: false);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T308-7")]
+    public async Task Without_a_client_Pan_restarts_the_puck_without_asking()
+    {
+        AnswerReleases(_guardian);
+        await HiddenAsync();
+
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+
+        Assert.Equal(["Restart", "Restart"], _devices.Calls);
     }
 
     private Guardian RetryingGuardian(TimeSpan? pause = null) => new(

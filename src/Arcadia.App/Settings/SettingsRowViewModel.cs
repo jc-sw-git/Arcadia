@@ -307,6 +307,10 @@ public partial class ActionRowViewModel(string key, string title, Action run) : 
     [ObservableProperty]
     public partial bool IsEnabled { get; set; } = true;
 
+    /// <summary>What the action started still runs (e.g. "Wird versucht …"): a spinner in place of the arrow.</summary>
+    [ObservableProperty]
+    public partial bool IsWorking { get; set; }
+
     /// <summary>The action the row is there for, drawn in the accent colour (e.g. "Treiber installieren").</summary>
     [ObservableProperty]
     public partial bool IsPrimary { get; set; }

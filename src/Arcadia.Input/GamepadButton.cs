@@ -63,6 +63,12 @@ public interface IGamepadSource : IDisposable
     /// Callable from any thread; false if it can't look quickly.
     /// </summary>
     bool AnyNow(Func<GamepadReading, bool> test);
+
+    /// <summary>
+    /// Stops (false) or resumes reading the Steam Controller and its puck; stopped, Arcadia holds no handle to them, so
+    /// Windows lets Pan restart the puck when it hides it (#308). Callable from any thread; never throws.
+    /// </summary>
+    void ReadSteamControllers(bool on);
 }
 
 /// <summary>Used where Arcadia ships no SDL (macOS / Linux for now).</summary>
@@ -101,6 +107,10 @@ public sealed class NullGamepadSource : IGamepadSource
     }
 
     public bool AnyNow(Func<GamepadReading, bool> test) => false;
+
+    public void ReadSteamControllers(bool on)
+    {
+    }
 
     public void Dispose()
     {

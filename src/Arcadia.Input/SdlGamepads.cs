@@ -86,6 +86,8 @@ public sealed partial class SdlGamepads : ISdlGamepads
 
     public void Update() => SDL_UpdateGamepads();
 
+    public void ReadSteamControllers(bool on) => SDL_SetHint("SDL_JOYSTICK_HIDAPI_STEAM", on ? "1" : "0");
+
     public SdlPadState Read(nint pad)
     {
         uint buttons = 0;

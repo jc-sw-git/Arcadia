@@ -78,6 +78,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
 
     public RunState? RunStateOf(string gameKey) => _running.StateOf(gameKey);
 
+    /// <summary>Like <see cref="RunStateOf"/>, but null for a game that only seems to run (demo data, #307).</summary>
+    public RunState? RealRunStateOf(string gameKey) => _running.RealStateOf(gameKey);
+
     /// <summary>The library read last of <paramref name="launcherId"/>; null if the launcher isn't active.</summary>
     public LauncherLibrary? LibraryOf(string launcherId) => Libraries.FirstOrDefault(l => l.Launcher.Id == launcherId);
 

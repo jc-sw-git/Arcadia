@@ -50,6 +50,12 @@ public enum PanCommand : byte
     /// after a crash of Arcadia and a restart of Pan; it needs the current generation's emulation.
     /// </summary>
     HoldForFirmware = 10,
+
+    /// <summary>
+    /// Arcadia has let go of the puck after <see cref="PanReply.ReleasePuck"/>; <see cref="PanMessage.Value"/> is that
+    /// notice's request number (#308). Pan answers <see cref="PanReply.Acknowledged"/>.
+    /// </summary>
+    PuckReleased = 11,
 }
 
 /// <summary>Pan's answers; the high bit tells them from commands.</summary>
@@ -82,6 +88,16 @@ public enum PanReply : byte
 
     /// <summary>The answer to <see cref="PanCommand.CheckHiding"/>; <see cref="PanMessage.Value"/> is why Pan can't hide, or <see cref="PanReason.None"/>.</summary>
     HidingState = 0x88,
+
+    /// <summary>
+    /// A notice: Pan is about to restart the puck on its own (a teardown's show, its retry, a device arrival while
+    /// hiding) and asks the client to close its handles first, as Windows refuses the restart of a device a program holds
+    /// (#308). <see cref="PanMessage.Value"/> is the request number the client returns with <see cref="PanCommand.PuckReleased"/>.
+    /// </summary>
+    ReleasePuck = 0x94,
+
+    /// <summary>A notice: the restart announced by <see cref="ReleasePuck"/> (same <see cref="PanMessage.Value"/>) is over, done or not.</summary>
+    PuckRestarted = 0x95,
 }
 
 /// <summary>Why a command was rejected or an emulation torn down.</summary>
@@ -168,6 +184,9 @@ public readonly record struct PanMessage(byte Kind, ushort Version, uint Generat
 
     public static PanMessage Of(PanReply reply, uint generation = 0, PanReason reason = PanReason.None) => new((byte)reply, ProtocolVersion, generation, (uint)reason);
 
+    /// <summary>A notice about Pan's own restart of the puck, with its request number.</summary>
+    public static PanMessage PuckRestart(PanReply notice, uint request) => new((byte)notice, ProtocolVersion, 0, request);
+
     public void Write(Span<byte> buffer)
     {
         buffer[0] = Kind;
@@ -191,6 +210,6 @@ public readonly record struct PanMessage(byte Kind, ushort Version, uint Generat
     }
 
     public override string ToString() => Kind >= 0x80
-        ? $"{Reply}(gen {Generation}{(Value == 0 ? string.Empty : Reply == PanReply.Hidden ? $", {Value} device(s)" : $", {Reason}")})"
-        : $"{Command}(gen {Generation}{(Command == PanCommand.Hello ? $", v{Version}" : string.Empty)})";
+        ? $"{Reply}(gen {Generation}{(Value == 0 ? string.Empty : Reply == PanReply.Hidden ? $", {Value} device(s)" : Reply is PanReply.ReleasePuck or PanReply.PuckRestarted ? $", request {Value}" : $", {Reason}")})"
+        : $"{Command}(gen {Generation}{(Command == PanCommand.Hello ? $", v{Version}" : Command == PanCommand.PuckReleased ? $", request {Value}" : string.Empty)})";
 }

@@ -26,6 +26,12 @@ public interface ISdlGamepads
     /// <summary>Reads the controllers anew between two calls of <see cref="NextDeviceChange"/>.</summary>
     void Update();
 
+    /// <summary>
+    /// Switches SDL's own driver for the Steam Controller and its puck on or off (<c>SDL_JOYSTICK_HIDAPI_STEAM</c>); off,
+    /// SDL closes them at the next <see cref="Update"/>, on, it opens them again.
+    /// </summary>
+    void ReadSteamControllers(bool on);
+
     SdlPadState Read(nint pad);
 
     /// <summary>Rumbles for <paramref name="durationMs"/>, then stops by itself; a pad without motors ignores it.</summary>
@@ -125,6 +131,36 @@ public sealed class SdlGamepadSource : IGamepadSource
         _motionChanged = true;
     }
 
+    /// <summary>
+    /// SDL holds the puck open even without a controller connected, waiting for one, and an open handle makes Windows
+    /// refuse the puck restart Pan's hide needs (#308): off, SDL lets go of every Steam Controller and puck before this
+    /// returns; on, the next poll opens them again. Never throws; a failure is logged.
+    /// </summary>
+    public void ReadSteamControllers(bool on)
+    {
+        try
+        {
+            lock (_sdlLock)
+            {
+                if (!_open)
+                {
+                    return;
+                }
+
+                _sdl.ReadSteamControllers(on);
+                if (!on)
+                {
+                    // SDL closes a device of a driver switched off when it next looks for devices, at the end of an update.
+                    _sdl.Update();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _log($"Controller: Steam Controller in SDL nicht {(on ? "wieder geöffnet" : "losgelassen")}: {ex.Message}");
+        }
+    }
+
     public bool AnyNow(Func<GamepadReading, bool> test)
     {
         if (!_sdlLock.TryEnter(FreshLookWait))
@@ -178,8 +214,9 @@ public sealed class SdlGamepadSource : IGamepadSource
         }
         catch (Exception ex)
         {
-            // DllNotFoundException, EntryPointNotFoundException, BadImageFormatException or SDL_Init failing.
-            _failed(ex);
+            // DllNotFoundException, EntryPointNotFoundException, BadImageFormatException or SDL_Init failing: the
+            // controllers are gone for good before they came, so the hints show the keyboard (#215).
+            Lose(ex);
             return false;
         }
     }
@@ -389,7 +426,7 @@ public sealed class SdlGamepadSource : IGamepadSource
     }
 
     private GamepadReading Read(uint id, nint handle, PadDevice device) =>
-        SdlPadMapping.ToReading((int)id, _sdl.Read(handle)) with { IsSteamController = device.Type == PadType.Steam };
+        SdlPadMapping.ToReading((int)id, _sdl.Read(handle)) with { Type = device.Type };
 
     private void Disconnect(uint id)
     {

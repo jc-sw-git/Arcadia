@@ -462,6 +462,85 @@ public sealed class PanClientTests : IAsyncDisposable
         Assert.True(_client.IsConnected);
     }
 
+    /// <summary>#308, QE review: the teardown after a show that HidHide refused restarted the puck while Arcadia held it.</summary>
+    [Fact]
+    [Trait("TestCase", "T308-7")]
+    public async Task Pan_restarting_the_puck_on_its_own_has_Arcadia_let_go_first_and_read_it_again_after()
+    {
+        var events = new List<string>();
+        void Note(string e) { lock (events) events.Add(e); }
+        _client.PuckRestarting += () => Note("let go");
+        _client.PuckRestarted += () => Note("read again");
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide, new RecordingPuck(events));
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        Assert.Equal(PanReason.None, await _client.HideAsync(generation, CancellationToken.None));
+
+        // HidHide's configuration client is open: Arcadia's show is refused, the teardown after the stop shows it.
+        hidHide.Busy = true;
+        Assert.False(await _client.UnhideAsync(generation, CancellationToken.None));
+        hidHide.Busy = false;
+        await _client.EmulationStoppedAsync(generation, CancellationToken.None);
+        await WaitUntil(() => { lock (events) return events.Count == 4; }, "Neustart von Pan");
+
+        // The hide's own restart isn't announced: Arcadia let go before it asked (PanEmulation).
+        Assert.Equal(["restart", "let go", "restart", "read again"], events);
+        Assert.DoesNotContain("didn't let go", LogText());
+        Assert.Contains("Pan startet den Steam Controller neu: Arcadia lässt ihn los", LogText());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T308-7")]
+    public async Task Arcadia_reads_the_puck_again_when_Pan_is_lost_during_its_own_restart()
+    {
+        var events = new List<string>();
+        void Note(string e) { lock (events) events.Add(e); }
+        _client.PuckRestarting += () => Note("let go");
+        _client.PuckRestarted += () => Note("read again");
+        var puck = new RecordingPuck(events);
+        _server.UseHiding(new SettableHidHide(), puck);
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        Assert.Equal(PanReason.None, await _client.HideAsync(generation, CancellationToken.None));
+
+        puck.Hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await _client.EmulationStoppedAsync(generation, CancellationToken.None);
+        await WaitUntil(() => { lock (events) return events.Count == 3; }, "Neustart von Pan begonnen");
+        _server.Die();
+
+        await WaitUntil(() => { lock (events) return events.Count == 4; }, "wieder gelesen");
+        Assert.Equal(["restart", "let go", "restart", "read again"], events);
+        puck.Hold.SetResult();
+    }
+
+    /// <summary>
+    /// The owner's debugger showed "Pan antwortet nicht" at every start (#308): the heartbeat waited behind the ~2.5 s hide
+    /// and gave up. While another request runs no heartbeat is queued; Pan's hang watch waits for that request.
+    /// </summary>
+    [Fact]
+    public async Task No_heartbeat_waits_behind_a_request_that_takes_long()
+    {
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        _server.Pause();
+        var check = _client.CheckHidingAsync(generation, CancellationToken.None);
+        await WaitUntil(() => _server.Received(PanCommand.CheckHiding) > 0, "CheckHiding bei Pan");
+
+        for (var i = 0; i < 4; i++)
+        {
+            _client.Pulse();
+            _time.Advance(Guardian.HeartbeatInterval);
+            await Task.Delay(20);
+        }
+
+        _server.Resume();
+        await check;
+        await Task.Delay(300);
+        Assert.Equal(0, _server.Heartbeats);
+        Assert.True(_client.IsConnected);
+    }
+
     /// <summary>HidHide 1.5.230 whose state a test sets; "busy" is its configuration client holding it.</summary>
     private sealed class SettableHidHide : IHidHideDriver
     {
@@ -537,6 +616,23 @@ public sealed class PanClientTests : IAsyncDisposable
         public IReadOnlyList<string> PresentHidInstances() => [];
 
         public Task RestartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    /// <summary>A puck whose restarts go into the test's list of events; one can be held until the test lets it finish.</summary>
+    private sealed class RecordingPuck(List<string> events) : ISteamControllerDevices
+    {
+        public TaskCompletionSource? Hold;
+
+        public IReadOnlyList<string> PresentHidInstances() => [@"HID\VID_28DE&PID_1304&MI_02&COL03\8&1A2B3C4D&0&0002"];
+
+        public async Task RestartAsync(CancellationToken cancellationToken)
+        {
+            lock (events) events.Add("restart");
+            if (Hold is { } hold)
+            {
+                await hold.Task.WaitAsync(cancellationToken);
+            }
+        }
     }
 
     private const string ArcadiaImage = @"\Device\HarddiskVolume3\Program Files\Arcadia\Arcadia.exe";
@@ -624,8 +720,8 @@ public sealed class PanClientTests : IAsyncDisposable
         }
 
         /// <summary>A Pan with part B's hiding (#243 B2), on HidHide as the test sets it; before the client connects.</summary>
-        public void UseHiding(IHidHideDriver hidHide) =>
-            Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log, hiding: new SteamControllerHiding(hidHide, new NoPuck()));
+        public void UseHiding(IHidHideDriver hidHide, ISteamControllerDevices? devices = null) =>
+            Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log, hiding: new SteamControllerHiding(hidHide, devices ?? new NoPuck()));
 
                 /// <summary>A restarted Pan: it undoes what its journal lists, then serves again.</summary>
         public void RestartFromJournal()

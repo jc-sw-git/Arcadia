@@ -181,11 +181,12 @@ public sealed unsafe class HidHideDriver : IHidHideDriver
 [SupportedOSPlatform("windows")]
 public sealed unsafe class PuckDevices : ISteamControllerDevices
 {
-    public IReadOnlyList<string> PresentHidInstances() => PresentDevices("HID").Where(HidingList.IsListedHid).ToList();
+    public IReadOnlyList<string> PresentHidInstances() =>
+        PresentDevices("HID").Where(id => HidingList.IsListedHid(id) && !HidingList.OnSoftwareHost(id, ParentOf)).ToList();
 
     public Task RestartAsync(CancellationToken cancellationToken)
     {
-        foreach (var device in PresentDevices("USB").Where(HidingList.IsListedUsbParent))
+        foreach (var device in PresentDevices("USB").Where(id => HidingList.IsListedUsbParent(id) && !HidingList.OnSoftwareHost(id, ParentOf)))
         {
             cancellationToken.ThrowIfCancellationRequested();
             Restart(device);
@@ -226,6 +227,19 @@ public sealed unsafe class PuckDevices : ISteamControllerDevices
         }
 
         throw new InvalidOperationException("device list kept changing");
+    }
+
+    private static string? ParentOf(string instanceId)
+    {
+        const int maxDeviceIdLength = 200;
+        if (Native.CM_Locate_DevNodeW(out var device, instanceId, Native.CmLocateDevnodeNormal) != Native.CrSuccess
+            || Native.CM_Get_Parent(out var parent, device, 0) != Native.CrSuccess)
+        {
+            return null;
+        }
+
+        var buffer = stackalloc char[maxDeviceIdLength + 1];
+        return Native.CM_Get_Device_IDW(parent, buffer, maxDeviceIdLength + 1, 0) == Native.CrSuccess ? new string(buffer) : null;
     }
 
     private static void Restart(string instanceId)

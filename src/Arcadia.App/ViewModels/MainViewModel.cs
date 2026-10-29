@@ -10,6 +10,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Search;
 using Arcadia.Core.Settings;
+using Arcadia.Input;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -36,6 +37,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     // The page whose options the dialog shows.
     private IPage? _viewOptionsPage;
     private InputKind _input = InputKind.Gamepad;
+
+    // A button, key or click since the start; until then the hints follow whether a controller is connected (#215).
+    private bool _inputSeen;
 
     /// <summary>The page on top when the last page opened or closed.</summary>
     private IPage? _topPage;
@@ -152,6 +156,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     public partial bool UsesController { get; private set; } = true;
 
     partial void OnUsesControllerChanged(bool value) => InputHints.UsesController = value;
+
+    /// <summary>The printing of the controller in use, which the button hints show (#215); Xbox's until a controller tells otherwise.</summary>
+    [ObservableProperty]
+    public partial ButtonSymbols ButtonSymbols { get; private set; } = ButtonSymbols.Xbox;
+
+    partial void OnButtonSymbolsChanged(ButtonSymbols value) => InputHints.Symbols = value;
 
     /// <summary>The Steam Controller mode of the library's focused game: "Arcadia" or "Steam-Eingabe".</summary>
     [ObservableProperty]
@@ -278,7 +288,33 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>The mouse was used: a search opened next shows no on-screen keyboard; an open one keeps it, without the legend.</summary>
     public void NotePointer() => NoteInput(InputKind.Pointer);
 
+    /// <summary>
+    /// The controller in use changed (#215, <see cref="ControllerInUse"/>): the hints show its printing. With none left the
+    /// keyboard is the input in use. Before the first input the hints follow whether a controller is there at all.
+    /// </summary>
+    public void SetControllerInUse(PadType? type)
+    {
+        if (type is { } pad)
+        {
+            ButtonSymbols = ButtonSymbolSets.For(pad);
+            if (!_inputSeen)
+            {
+                ShowInputKind(InputKind.Gamepad);
+            }
+        }
+        else if (_input == InputKind.Gamepad)
+        {
+            ShowInputKind(InputKind.Keyboard);
+        }
+    }
+
     private void NoteInput(InputKind kind)
+    {
+        _inputSeen = true;
+        ShowInputKind(kind);
+    }
+
+    private void ShowInputKind(InputKind kind)
     {
         _input = kind;
         ShowsCloseButtons = kind != InputKind.Gamepad;
@@ -946,9 +982,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
-    /// <summary>The title of a game that runs or is being started, for "Erst änderbar, wenn „…“ beendet ist" (#242).</summary>
+    /// <summary>
+    /// The title of a game that really runs or is being started, for "Erst änderbar, wenn „…“ beendet ist" (#242). A demo
+    /// game shown as running never counts: it can't be ended, so Pan would stay locked for good (#307).
+    /// </summary>
     private string? GameInTheWay() =>
-        Session.Libraries.SelectMany(library => library.Games).FirstOrDefault(game => Session.RunStateOf(game.Key) is not null)?.Title;
+        Session.Libraries.SelectMany(library => library.Games).FirstOrDefault(game => Session.RealRunStateOf(game.Key) is not null)?.Title;
 
     /// <summary>SDL sees a Steam Controller or no longer does (#212); the per-game mode shows only while it does (#213).</summary>
     public void SetSteamControllerSeen(bool seen)

@@ -22,9 +22,10 @@ teardown's steps 3 and 4): [pan-hiding.md](pan-hiding.md). Overview: [README](RE
 ## Protocol and identity
 
 - Named pipe `\\.\pipe\ArcadiaPan`, 12-byte messages: kind, protocol version (1), generation, value. Commands Hello,
-  EmulationStarted, EmulationStopped, Heartbeat, TeardownAcknowledged, PlannedExit, Hide, Unhide, CheckHiding; replies
-  HelloOk, Started, Stopped, HeartbeatOk, Acknowledged, Hidden, Shown, HidingState, Rejected(reason), TornDown(reason,
-  notice), Unsupported, Refused(reason). A command a Pan doesn't know gets `Rejected(NotRegistered)` (a part A Pan:
+  EmulationStarted, EmulationStopped, Heartbeat, TeardownAcknowledged, PlannedExit, Hide, Unhide, CheckHiding,
+  HoldForFirmware, PuckReleased; replies HelloOk, Started, Stopped, HeartbeatOk, Acknowledged, Hidden, Shown,
+  HidingState, Rejected(reason), TornDown(reason, notice), ReleasePuck and PuckRestarted (notices,
+  [pan-puck-restart.md](pan-puck-restart.md)), Unsupported, Refused(reason). A command a Pan doesn't know gets `Rejected(NotRegistered)` (a part A Pan:
   `Unsupported` for Hide, Unhide, CheckHiding); the client reads any reply but the expected one as "not supported", on
   purpose: so new commands stay within version 1.
   Pan takes the first client of the active console session (`ProcessIdToSessionId` ==

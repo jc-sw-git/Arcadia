@@ -93,6 +93,9 @@ public sealed class PanEmulation : IVirtualXboxPads
     public const string PausedText = "Pan: Controller-Wächter pausiert. Die echten Controller werden nicht mehr versteckt.";
     public const string RunningAgainText = "Pan: Controller-Wächter läuft wieder";
     public const string StoppedText = "Pan: Emulation angehalten – sie ist mehrmals kurz hintereinander ausgefallen. „Erneut versuchen“ in den Controller-Einstellungen startet sie neu.";
+    public const string RetryFailedText = "Pan: Erneuter Versuch ohne Erfolg. Was fehlt, steht in den Controller-Einstellungen.";
+    public const string RetryNoControllerText = "Pan: Kein Steam Controller verbunden, es gibt nichts zu emulieren.";
+    public const string RetryExcludedText = "Pan: Steam Controller und Puck bleiben ausgenommen.";
 
     private readonly IVirtualXboxPads _pads;
     private readonly IEmulationGuardian _guardian;
@@ -107,6 +110,12 @@ public sealed class PanEmulation : IVirtualXboxPads
     // Monotonic timestamps; written by "Erneut versuchen" on the UI thread too, so read and written as one long.
     private long _hideRetryAt = long.MinValue;
     private bool _pausedByLoss;
+
+    // "Erneut versuchen" or "Controller wiederherstellen" was pressed: that attempt shows it runs, the automatic ones don't.
+    private volatile bool _retryAsked;
+
+    // "Erneut versuchen" (#308): pressed, not seen by a tick yet (1), or tried by a tick that started after the press (2).
+    private int _retry;
     private volatile bool _gaveUp;
 
     // Steam tries a firmware update through the copy (#242): the puck must stay hidden, also if Arcadia ends meanwhile.
@@ -127,6 +136,8 @@ public sealed class PanEmulation : IVirtualXboxPads
         _time = time;
         _log = log;
         Takeover = new SteamControllerTakeover(log, time);
+        guardian.PuckRestarting += OnPanRestartsPuck;
+        guardian.PuckRestarted += OnPanRestartedPuck;
     }
 
     /// <summary>The switch "Controller-Wächter (Pan)"; read on every tick.</summary>
@@ -156,6 +167,12 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>The <c>Game.Key</c> of the library game in front, or null; asked every tick (a short gap mid-game).</summary>
     public Func<string?> GameInFront { get; init; } = () => null;
 
+    /// <summary>
+    /// Stops (false) or resumes Arcadia's own reading of the real puck (SDL, <c>IGamepadSource.ReadSteamControllers</c>).
+    /// A hide or show restarts the puck, and Windows refuses that while any program holds it open, Arcadia too (#308).
+    /// </summary>
+    public Action<bool> ReadSteamControllers { get; init; } = _ => { };
+
     public PanEmulationStatus Status => _status;
 
     /// <summary>Pan hides the puck now, or was asked to hold it for a firmware attempt (#242); any thread.</summary>
@@ -164,7 +181,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>The puck is hidden for this emulation (only when this build has the copy).</summary>
     public bool Hides => _hold.CanCopy;
 
-    /// <summary><see cref="Status"/> changed; any thread.</summary>
+    /// <summary><see cref="Status"/> or <see cref="Retrying"/> changed; any thread.</summary>
     public event Action? Changed;
 
     /// <summary>
@@ -186,7 +203,10 @@ public sealed class PanEmulation : IVirtualXboxPads
 
         try
         {
+            // Only a tick that began after the press answers it; one that ran meanwhile shows the old state.
+            Interlocked.CompareExchange(ref _retry, 2, 1);
             await StepAsync(cancellationToken);
+            EndRetryOnceDecided();
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -211,7 +231,51 @@ public sealed class PanEmulation : IVirtualXboxPads
         }
 
         Interlocked.Exchange(ref _hideRetryAt, long.MinValue);
+        _retryAsked = true;
         _log("Pan-Emulation: bisherige Ausfälle zählen nicht mehr");
+    }
+
+    /// <summary>"Erneut versuchen" was pressed and its attempt hasn't ended: the row shows it runs (#308). Any thread.</summary>
+    public bool Retrying => Volatile.Read(ref _retry) != 0;
+
+    /// <summary>
+    /// "Erneut versuchen": as <see cref="ForgetFailures"/>, and <see cref="Retrying"/> until the attempt has an outcome,
+    /// which a <see cref="Notice"/> then tells (owner, 2026-10-29: a sign that something happens, a toast when done).
+    /// </summary>
+    public void Retry()
+    {
+        ForgetFailures();
+        Interlocked.Exchange(ref _retry, 1);
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// After a tick: an attempt still setting up (Pan cleaning up, the question about the takeover open) goes on; running
+    /// is a success, paused, stopped or unavailable a failure; no Steam Controller or "Nein" to the takeover say so.
+    /// Only switching Pan off meanwhile ends it without a toast: the switch says it.
+    /// </summary>
+    private void EndRetryOnceDecided()
+    {
+        var state = _status.State;
+        if (Volatile.Read(ref _retry) != 2 || state == PanEmulationState.SettingUp || Interlocked.CompareExchange(ref _retry, 0, 2) != 2)
+        {
+            return;
+        }
+
+        var text = state switch
+        {
+            PanEmulationState.Running => RunningAgainText,
+            PanEmulationState.Paused or PanEmulationState.Stopped or PanEmulationState.Unavailable => RetryFailedText,
+            PanEmulationState.Ready when _status.Problem == PanEmulationProblem.Excluded => RetryExcludedText,
+            PanEmulationState.Ready => RetryNoControllerText,
+            _ => null,
+        };
+        _log($"Pan-Emulation: „Erneut versuchen“ beendet ({state})");
+        Changed?.Invoke();
+        if (text is not null)
+        {
+            Notice?.Invoke(text);
+        }
     }
 
     /// <summary>Arcadia's Xbox pad gave up after too many losses: the whole emulation stops until "Erneut versuchen".</summary>
@@ -342,7 +406,15 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
-        SetStatus(new(PanEmulationState.SettingUp));
+        // An automatic retry after a failed hide keeps its warning until it works, or the row would flicker every 10 s
+        // (#308); a retry the player asked for shows at once that it runs (~11 s on the owner's PC).
+        if (_retryAsked || _status is not { State: PanEmulationState.Paused, Problem: PanEmulationProblem.Hiding })
+        {
+            SetStatus(new(PanEmulationState.SettingUp));
+        }
+
+        _retryAsked = false;
+
         uint generation;
         try
         {
@@ -378,7 +450,7 @@ public sealed class PanEmulation : IVirtualXboxPads
                 return;
             }
 
-            var hidden = await _guardian.HideAsync(generation, cancellationToken);
+            var hidden = await WithPuckLetGoAsync(() => _guardian.HideAsync(generation, cancellationToken));
             if (hidden != PanReason.None)
             {
                 // The client already asked Pan to undo the rejected hide. Counted: a hide that keeps failing restarts the
@@ -584,7 +656,11 @@ public sealed class PanEmulation : IVirtualXboxPads
         if (_pausedByLoss)
         {
             _pausedByLoss = false;
-            Notice?.Invoke(RunningAgainText);
+            // "Erneut versuchen" says the same when its tick ends.
+            if (Volatile.Read(ref _retry) != 2)
+            {
+                Notice?.Invoke(RunningAgainText);
+            }
         }
     }
 
@@ -671,7 +747,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         else if (session.Hidden && removed)
         {
             // Not shown (HidHide busy): Pan's teardown after the stop shows it, with its own retries.
-            await _guardian.UnhideAsync(session.Generation, CancellationToken.None);
+            await WithPuckLetGoAsync(() => _guardian.UnhideAsync(session.Generation, CancellationToken.None));
         }
         else if (session.Hidden)
         {
@@ -681,6 +757,79 @@ public sealed class PanEmulation : IVirtualXboxPads
         }
 
         await _guardian.EmulationStoppedAsync(session.Generation, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Pan hides or shows the puck and restarts it: Arcadia lets go of it first, as Windows refuses the restart of a device
+    /// a program holds open (System log, event 225, owner's PC 2026-10-29), and the hide would fail every time (#308).
+    /// </summary>
+    private async Task<T> WithPuckLetGoAsync<T>(Func<Task<T>> restart)
+    {
+        LetGoOfPuck();
+        try
+        {
+            return await restart();
+        }
+        finally
+        {
+            ReadPuckAgain();
+        }
+    }
+
+    // Who wants the puck let go right now (a hide or show of Arcadia's, a restart of Pan's own); read again at 0.
+    private readonly Lock _letGoLock = new();
+    private int _letGo;
+    private bool _panRestartsPuck;
+
+    private void LetGoOfPuck()
+    {
+        lock (_letGoLock)
+        {
+            if (_letGo++ == 0)
+            {
+                ReadSteamControllers(false);
+            }
+        }
+    }
+
+    private void ReadPuckAgain()
+    {
+        lock (_letGoLock)
+        {
+            if (--_letGo == 0)
+            {
+                ReadSteamControllers(true);
+            }
+        }
+    }
+
+    /// <summary>Pan restarts the puck on its own (after a teardown, its retry, an arrival): let go until it's over (#308).</summary>
+    private void OnPanRestartsPuck()
+    {
+        lock (_letGoLock)
+        {
+            if (_panRestartsPuck)
+            {
+                return;
+            }
+
+            _panRestartsPuck = true;
+            LetGoOfPuck();
+        }
+    }
+
+    private void OnPanRestartedPuck()
+    {
+        lock (_letGoLock)
+        {
+            if (!_panRestartsPuck)
+            {
+                return;
+            }
+
+            _panRestartsPuck = false;
+            ReadPuckAgain();
+        }
     }
 
     /// <summary>Pan has undone the emulation itself: the devices go, and a teardown is acknowledged.</summary>

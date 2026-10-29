@@ -127,6 +127,8 @@ public sealed class PuckDescriptors
     /// <summary>
     /// Fail closed (QE review of PR #294): the copy (on usbip-win2's software host) and a device whose place can't be
     /// read are never taken for the real puck, or Arcadia would read its own copy and send Steam's requests back into it.
+    /// Pan's <c>HidingList.OnSoftwareHost</c> fails the other way (an unknown host is hidden as a puck): a puck on such a
+    /// host is hidden but never copied, so the copy doesn't start (docs/controller-support/pan-puck-restart.md).
     /// </summary>
     public static bool IsRealPuck(DeviceHost host) => host == DeviceHost.Hardware;
 

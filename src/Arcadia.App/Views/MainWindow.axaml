@@ -578,7 +578,7 @@
             <Border Grid.Column="1" Name="SortDivider" Classes="divider unneeded" Margin="16,0,20,0" />
             <Button Grid.Column="2" Name="SearchSortButton" Classes="plain toolbar" Command="{Binding OpenFilterCommand}" ToolTip.Tip="Filter und Sortierung (L3)">
               <StackPanel Orientation="Horizontal" Spacing="12">
-                <Border Classes="glyph" IsVisible="{Binding UsesController}"><TextBlock Text="L3" /></Border>
+                <ctl:PadGlyph IsVisible="{Binding UsesController}" Button="L3" />
                 <TextBlock Text="{Binding SortText}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
@@ -598,65 +598,65 @@
               <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding UsesController}">
                 <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding IsKeyboardOut}">
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+                    <ctl:PadGlyph Button="D-Pad" />
                     <TextBlock Classes="hint" Text="Tastatur" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                    <ctl:PadGlyph Button="A" />
                     <TextBlock Classes="hint" Text="Eingeben" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                    <ctl:PadGlyph Button="B" />
                     <TextBlock Classes="hint" Text="Tastatur einfahren" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="RS" /></Border>
+                    <ctl:PadGlyph Button="RS" />
                     <TextBlock Classes="hint" Text="Treffer wählen" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="LT" /></Border><Border Classes="glyph"><TextBlock Text="RT" /></Border>
+                    <ctl:PadGlyph Button="LT" /><ctl:PadGlyph Button="RT" />
                     <TextBlock Classes="hint" Text="Weitere Treffer" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="≡" /></Border>
+                    <ctl:PadGlyph Button="≡" />
                     <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="≡" /></Border>
+                    <ctl:PadGlyph Button="≡" />
                     <TextBlock Classes="hint" Text="halten: Details" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
+                    <ctl:PadGlyph Button="⧉" />
                     <TextBlock Classes="hint" Text="Optionen" />
                   </StackPanel>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding !IsKeyboardOut}">
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+                    <ctl:PadGlyph Button="D-Pad" />
                     <TextBlock Classes="hint" Text="Treffer wählen" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                    <ctl:PadGlyph Button="A" />
                     <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                    <ctl:PadGlyph Button="A" />
                     <TextBlock Classes="hint" Text="halten: Details" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="LT" /></Border><Border Classes="glyph"><TextBlock Text="RT" /></Border>
+                    <ctl:PadGlyph Button="LT" /><ctl:PadGlyph Button="RT" />
                     <TextBlock Classes="hint" Text="Weitere Treffer" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
+                    <ctl:PadGlyph Button="⧉" />
                     <TextBlock Classes="hint" Text="Optionen" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="X" /></Border>
+                    <ctl:PadGlyph Button="X" />
                     <TextBlock Classes="hint" Text="Tastatur" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                    <ctl:PadGlyph Button="B" />
                     <TextBlock Classes="hint" Text="Schließen" />
                   </StackPanel>
                 </StackPanel>
@@ -736,8 +736,8 @@
                     ToolTip.Tip="Bildschirmtastatur ein- oder ausblenden">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <Panel IsVisible="{Binding UsesController}" VerticalAlignment="Center">
-                  <Border Classes="glyph small round" IsVisible="{Binding !IsKeyboardOut}"><TextBlock Text="X" /></Border>
-                  <Border Classes="glyph small round" IsVisible="{Binding IsKeyboardOut}"><TextBlock Text="B" /></Border>
+                  <ctl:PadGlyph Classes="small" IsVisible="{Binding !IsKeyboardOut}" Button="X" />
+                  <ctl:PadGlyph Classes="small" IsVisible="{Binding IsKeyboardOut}" Button="B" />
                 </Panel>
                 <Path Classes="keyboardIcon" Data="M3 6h18v12H3z M7 10h1 M11 10h1 M15 10h1 M8 14h8" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" Width="22" Stretch="Uniform" VerticalAlignment="Center" />
                 <!-- Up while the keyboard is in, down while it's out. -->
@@ -763,7 +763,7 @@
               <!-- The right stick picks a hit; said here as well as in the legend, where it's easily missed. -->
               <Border Grid.Column="1" Classes="stickHint" IsVisible="{Binding ShowsStickHint}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="glyph"><TextBlock Text="RS" /></Border>
+                  <ctl:PadGlyph Button="RS" />
                   <TextBlock Classes="hint" Text="Treffer wählen" />
                 </StackPanel>
               </Border>
@@ -807,13 +807,13 @@
                         Command="{Binding TurnBackCommand}" ToolTip.Tip="Vorherige Treffer (LT, Bild ↑, Mausrad)">
                   <StackPanel Orientation="Horizontal" Spacing="6">
                     <Path Classes="chevron" Data="M15 6l-6 6 6 6" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center" />
-                    <TextBlock Text="LT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
+                    <ctl:KeyText Pad="LT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
                   </StackPanel>
                 </Button>
                 <Button Classes="plain glyphButton carouselNav turnHits" HorizontalAlignment="Right" Margin="0,104,80,0" IsVisible="{Binding CanTurn}"
                         Command="{Binding TurnOnCommand}" ToolTip.Tip="Weitere Treffer (RT, Bild ↓, Mausrad)">
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="RT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
+                    <ctl:KeyText Pad="RT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
                     <Path Classes="chevron" Data="M9 6l6 6-6 6" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center" />
                   </StackPanel>
                 </Button>
@@ -1256,7 +1256,8 @@
                                       <ctl:KeyHint Pad="{Binding ShortcutPad}" Keys="{Binding ShortcutKeys}" IsDark="{Binding IsFocused}" VerticalAlignment="Center"
                                                    IsVisible="{Binding HasShortcut}" />
                                       <TextBlock Grid.Column="1" Text="{Binding ActionText}" />
-                                      <Path Grid.Column="2" Classes="chevronRight" />
+                                      <Path Grid.Column="2" Classes="chevronRight" IsVisible="{Binding !IsWorking}" />
+                                      <Path Grid.Column="2" Classes="spinner" IsVisible="{Binding IsWorking}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
                                     </Grid>
                                   </Border>
                                 </DataTemplate>

@@ -8,7 +8,7 @@ namespace Arcadia.App.Controls;
 
 /// <summary>
 /// Fills a <see cref="TextBlock"/> with a text whose controller buttons are drawn as small badges, as
-/// the legend draws them (<c>Border.glyph.inline</c> in the theme). <c>Text</c> is prose (⧉, ≡ and names in brackets such as "[L3]");
+/// the legend draws them (<see cref="PadGlyph"/>, <c>Border.glyph.inline</c> in the theme), in the printing of the controller in use (#215). <c>Text</c> is prose (⧉, ≡ and names in brackets such as "[L3]");
 /// <c>Buttons</c> is a list of buttons, where names such as A or LB become badges too.
 /// </summary>
 public static class ButtonTextBlock
@@ -40,18 +40,11 @@ public static class ButtonTextBlock
         foreach (var part in ButtonText.Split(text ?? string.Empty, namesToo))
         {
             inlines.Add(part.IsButton
-                ? new InlineUIContainer(new Border { Classes = { "glyph", "inline" }, Child = new TextBlock { Text = part.Text } }.Rounded(part.Text))
+                ? new InlineUIContainer(new PadGlyph { Classes = { "inline" }, Button = part.Text })
                 {
                     BaselineAlignment = BaselineAlignment.Center,
                 }
                 : new Run(part.Text));
         }
-    }
-
-    /// <summary>A, B, X and Y are round, as on the controller.</summary>
-    private static Border Rounded(this Border glyph, string button)
-    {
-        glyph.Classes.Set("round", ButtonText.IsRound(button));
-        return glyph;
     }
 }

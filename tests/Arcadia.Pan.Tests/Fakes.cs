@@ -328,6 +328,10 @@ public sealed class FakeControllers : IControllerDevices
     public bool RestartFails;
     public bool ScanHangs;
 
+    /// <summary>Set: a scan signals <see cref="ScanEntered"/> and waits for it, so a test can act while a hide scans.</summary>
+    public ManualResetEventSlim? ScanBlock;
+    public readonly TaskCompletionSource ScanEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     /// <summary>Instances whose device Windows restarts only once it is reconnected.</summary>
     public HashSet<string> NeedReplug = [];
 
@@ -336,6 +340,12 @@ public sealed class FakeControllers : IControllerDevices
         if (ScanHangs)
         {
             Thread.Sleep(TimeSpan.FromSeconds(5));
+        }
+
+        if (ScanBlock is { } block)
+        {
+            ScanEntered.TrySetResult();
+            block.Wait(TimeSpan.FromSeconds(5));
         }
 
         return Connected.TryGetValue(model, out var scan) ? scan : new ControllerScan(false, []);

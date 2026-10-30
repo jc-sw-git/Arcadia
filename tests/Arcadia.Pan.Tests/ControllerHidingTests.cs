@@ -336,6 +336,27 @@ public sealed class ControllerHidingTests : IDisposable
     }
 
     [Fact]
+    public async Task A_hide_still_scanning_when_the_service_stops_hides_nothing_afterwards()
+    {
+        // QE #337: the stop's teardown found no hiding work (the hide still scanned, nothing journaled yet) and showed
+        // nothing; the hide must not journal and hide the pad afterwards, or it stays hidden while Pan is off.
+        var generation = await EmulatingAsync();
+        using var block = new ManualResetEventSlim();
+        _controllers.ScanBlock = block;
+        var hide = Hide(FakeControllers.DualSense, generation);
+        await _controllers.ScanEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await _guardian.StopAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+        block.Set();
+        var answer = await hide;
+
+        Assert.NotEqual(PanReply.ControllerHidden, answer.Reply);
+        Assert.Empty(_hidHide.Hidden);
+        Assert.False(_hidHide.Cloaking);
+        Assert.False(Journal.HidingHasWork);
+    }
+
+    [Fact]
     public async Task A_new_emulation_takes_over_nothing_until_the_client_asks_again()
     {
         var generation = await AllHiddenAsync();

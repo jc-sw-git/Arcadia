@@ -254,6 +254,31 @@ public sealed class PanUpdateAtStartTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T326-5")]
+    public async Task A_failed_update_from_the_switch_keeps_Pan_off_and_shows_the_error_in_the_panel()
+    {
+        const string error = "Pan --install meldete Fehler 3 – Details stehen in pan.log.";
+        var steam = OldPan();
+        steam.PanUpdateError = error;
+        using var arcadia = await StartAsync(steam, Chosen(panEnabled: false));
+        await arcadia.PanAnsweredAtStartAsync();
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        PanRowViewModel Pan() => Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
+
+        Pan().Activate();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == PanRows.NotUpdatedToast, "der Toast „bleibt aus“");
+
+        Assert.Equal(1, steam.PanUpdates);
+        Assert.False(arcadia.Settings.Current.PanEnabled);
+        Assert.False(arcadia.ControllerSupport.MayTalkToPan, "Arcadia still leaves the old Pan alone");
+        Assert.False(Pan().IsLocked);
+        Assert.Equal(PanRows.UpdateDueSubtitle, Pan().Subtitle);
+        Assert.Equal(PanRows.UpdateDueInfo, Assert.IsType<InfoNote>(Pan().Info[0]).Text);
+        Assert.Contains(Pan().Info.OfType<InfoError>(), block => block.Text == error);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T326-6")]
     public async Task A_firmware_hold_from_before_shows_its_dialog_first_and_A_pressed_earlier_waits_for_it()
     {
@@ -399,6 +424,39 @@ public sealed class PanUpdateAtStartTests
         prompt.SetResult();
         await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der bestätigten Abfrage");
         Assert.Equal(1, steam.PanUpdates);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T326-8")]
+    public async Task While_the_restore_prompt_is_up_no_press_quits_starts_a_second_restore_or_reaches_the_library()
+    {
+        var steam = OldPan();
+        steam.IsPanRunning = true;
+        using var arcadia = await StartAsync(steam);
+        var quit = 0;
+        arcadia.Main.QuitRequested += (_, _) => quit++;
+        var page = await StuckAsync(arcadia);
+        var prompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        steam.PanPromptUp = prompt;
+
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => steam.Restores == 1, "die Windows-Abfrage der Wiederherstellung");
+        Assert.Equal(PanUpdateState.Restoring, page.State);
+        Assert.Equal(PanUpdatePageViewModel.PromptHint, page.Hint);
+
+        arcadia.Press(UiAction.Back).Press(UiAction.Accept).Press(UiAction.Search).Press(UiAction.Settings);
+        page.ConfirmCommand.Execute(null);
+        page.CancelCommand.Execute(null);
+
+        Assert.Equal(0, quit);
+        Assert.Equal(1, steam.Restores);
+        Assert.False(arcadia.Main.IsSettingsOpen);
+        Assert.Same(page, arcadia.Main.PanUpdate);
+
+        prompt.SetResult();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der bestätigten Abfrage");
+        Assert.Equal(1, steam.Restores);
+        Assert.Equal(PanUpdatePageViewModel.RestoredToast, arcadia.Main.Toast.Text);
     }
 
     [AvaloniaFact]

@@ -113,7 +113,7 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     /// <summary>Set, the next update fails with this message (Pan's exit code, a timeout).</summary>
     public string? PanUpdateError { get; set; }
 
-    /// <summary>Set, the next update's Windows prompt stays up until the test completes it (#297: presses while it is up).</summary>
+    /// <summary>Set, the Windows prompt of the next update or restore stays up until the test completes it (#297, #326: presses while it is up).</summary>
     public TaskCompletionSource? PanPromptUp { get; set; }
 
     public async Task<bool> UpdatePanAsync(CancellationToken cancellationToken)
@@ -233,15 +233,20 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     /// <summary>Set, the next restore fails with this message (Pan's exit code 5).</summary>
     public string? RestoreError { get; set; }
 
-    public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken)
+    public async Task<bool> RestoreControllersAsync(CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _restores);
+        if (PanPromptUp is { } prompt)
+        {
+            await prompt.Task.WaitAsync(cancellationToken);
+        }
+
         if (RestoreError is { } error)
         {
             throw new InvalidOperationException(error);
         }
 
-        return Task.FromResult(PromptConfirmed);
+        return PromptConfirmed;
     }
 
     /// <summary>The rows the real platform shows for usbip-win2, Pan and HidHide, as far as this fake sets them.</summary>

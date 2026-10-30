@@ -60,6 +60,16 @@ public enum PanCommand : byte
     /// notice's request number (#308). Pan answers <see cref="PanReply.Acknowledged"/>.
     /// </summary>
     PuckReleased = 11,
+
+    /// <summary>
+    /// Hide every connected controller of one model from every program but the client (#335); <see cref="PanMessage.Value"/>
+    /// is the model (<see cref="ControllerModel.Value"/>). The client has let go of it first, as Pan restarts it. Pan
+    /// answers <see cref="PanReply.ControllerHidden"/> or <see cref="PanReply.Rejected"/>.
+    /// </summary>
+    HideController = 12,
+
+    /// <summary>Show one model again (excluded, or no longer emulated); the others and the puck stay hidden. Answer: <see cref="PanReply.ControllerShown"/>.</summary>
+    ShowController = 13,
 }
 
 /// <summary>Pan's answers; the high bit tells them from commands.</summary>
@@ -102,6 +112,15 @@ public enum PanReply : byte
 
     /// <summary>A notice: the restart announced by <see cref="ReleasePuck"/> (same <see cref="PanMessage.Value"/>) is over, done or not.</summary>
     PuckRestarted = 0x95,
+
+    /// <summary>
+    /// The model is hidden; <see cref="PanMessage.Value"/> is <see cref="PanReason.None"/>, or
+    /// <see cref="PanReason.ControllerNeedsReplug"/> when programs that opened it before keep it until it is reconnected.
+    /// </summary>
+    ControllerHidden = 0x89,
+
+    /// <summary>The model is shown again; <see cref="PanMessage.Value"/> as for <see cref="ControllerHidden"/>.</summary>
+    ControllerShown = 0x8A,
 }
 
 /// <summary>Why a command was rejected or an emulation torn down.</summary>
@@ -172,6 +191,21 @@ public enum PanReason : uint
     /// <c>viiper.exe</c> alone (another process listens on it, in IPv4 or IPv6), or the listeners can't be read (#304).
     /// </summary>
     UsbipPortNotServed = 25,
+
+    /// <summary>No controller of the model is connected.</summary>
+    ControllerNotConnected = 26,
+
+    /// <summary>
+    /// The model can't be hidden: none of its devices is a gamepad HID collection or an XInput interface Pan knows (e.g.
+    /// an Xbox pad on the Xbox Wireless Adapter), it sits on a software host, or it is a Valve device (the puck's own path).
+    /// </summary>
+    ControllerNotHideable = 27,
+
+    /// <summary>The vendor's firmware tool runs (Xbox Accessories, Sony's DualSense updater): nothing of that vendor is hidden meanwhile (#238 D8).</summary>
+    FirmwareToolRuns = 28,
+
+    /// <summary>Hidden or shown, but Windows restarts the device only when it is reconnected (an XInput interface, #335 A3).</summary>
+    ControllerNeedsReplug = 29,
 }
 
 /// <summary>
@@ -224,5 +258,5 @@ public readonly record struct PanMessage(byte Kind, ushort Version, uint Generat
 
     public override string ToString() => Kind >= 0x80
         ? $"{Reply}(gen {Generation}{(Value == 0 ? string.Empty : Reply == PanReply.Hidden ? $", {Value} device(s)" : Reply is PanReply.ReleasePuck or PanReply.PuckRestarted ? $", request {Value}" : $", {Reason}")})"
-        : $"{Command}(gen {Generation}{(Command == PanCommand.Hello ? $", v{Version}" : Command == PanCommand.PuckReleased ? $", request {Value}" : string.Empty)})";
+        : $"{Command}(gen {Generation}{(Command == PanCommand.Hello ? $", v{Version}" : Command == PanCommand.PuckReleased ? $", request {Value}" : Command is PanCommand.HideController or PanCommand.ShowController ? $", {ControllerModel.From(Value)}" : string.Empty)})";
 }

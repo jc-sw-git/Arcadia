@@ -32,6 +32,7 @@ this, is never started any more; Arcadia only removes it on request ([sisr-remov
 | The copy on Windows: VIIPER fork `hidproxy`, the raw puck, the bridge | [steam-controller-copy-windows.md](steam-controller-copy-windows.md) |
 | Pan, the guardian service: identity, generations, heartbeat, teardown, journal | [pan.md](pan.md) |
 | Pan hides the real puck with HidHide and shows it again | [pan-hiding.md](pan-hiding.md) |
+| Pan hides every other controller Arcadia takes over, per model | [pan-hiding-controllers.md](pan-hiding-controllers.md) |
 | Pan's puck restart: who may hold the puck, the copy is never restarted | [pan-puck-restart.md](pan-puck-restart.md) |
 | Pan: setup with one UAC prompt, uninstall, `--restore`, the data folder, exit codes | [pan-setup.md](pan-setup.md) |
 | Pan: the mandatory update at start | [pan-update.md](pan-update.md) |

@@ -56,7 +56,8 @@ milestone again; this list keeps it small.
   unexpected errors are logged with stack trace to `arcadia.log` and shown as a toast.
   Network and process waits have a timeout.
 - **Secure:** no user- or file-supplied string goes unchecked into a process start, path or URI;
-  downloads are verified; no secrets or personal data in logs; admin rights only where unavoidable.
+  downloads are verified; no secrets or personal data in logs; admin rights only where unavoidable;
+  test data and docs use made-up ids, names and paths, never the owner's.
 - **Controller first:** every new flow works with a gamepad alone (no mouse/keyboard), B goes back.
   Anything that can't (e.g. UAC) is named in the PR.
 - **Readable:** names say what things are; methods do one thing; comments explain *why*, not *what*.
@@ -96,11 +97,15 @@ view models (`MainViewModel.Handle(UiAction)` routes to the page on top), not wi
 
 ## Rules that are easy to get wrong
 
-**Product decisions** (agreed with the owner; don't change without asking) are in `docs/product/`, one file per
-area. Read the file of the area you touch before changing it, and add new decisions there, not here:
+**Product decisions** (agreed with the owner; don't change without asking) are in `docs/product/`: the principles
+in its `README.md`, one file per area. Read the file of the area you touch before changing it. A decision that outlives
+its issue or PR goes into the file it fits (a new file only when none fits), not here and not only into the issue;
+before adding it, look for a contradicting decision there or elsewhere and report one to the owner instead of deciding.
+What is needed only to implement an issue or finish a PR stays in that issue or PR.
 
 | Area | File |
 |---|---|
+| Principles: vision, launchers opt-in, feature parity, controllers alike, platforms, performance, plugins | `docs/product/README.md` |
 | Library, page sizes, sorting, header tab strip | `docs/product/library.md` |
 | Buttons and keys (gamepad, WASD), button hints, dialogs | `docs/product/controls.md` |
 | A / game start, detail page, game actions, updates | `docs/product/detail-page.md` |

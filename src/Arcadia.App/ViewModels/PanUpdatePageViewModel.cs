@@ -45,7 +45,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
     public const string StoppingTitle = "Pan wird beendet";
     public const string StoppingText = "Arcadia wartet, bis das alte Pan deine Controller freigegeben hat. Das dauert höchstens 45 Sekunden.";
     public const string StuckTitle = "Controller freigeben";
-    public const string StuckText = "Das alte Pan hat deine Controller nicht freigegeben. Steam Controller oder Puck sind für Spiele womöglich noch unsichtbar.";
+    public const string StuckText = "Das alte Pan hat deine Controller nicht freigegeben. Controller oder Steam Puck sind für Spiele womöglich noch unsichtbar.";
     public const string RestoreHint = "Beim Wiederherstellen fragt Windows nach deiner Erlaubnis.";
     public const string RestoringTitle = "Controller werden wiederhergestellt";
     public const string ManualTitle = "Controller von Hand freigeben";

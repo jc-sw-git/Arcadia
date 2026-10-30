@@ -35,8 +35,10 @@ switch.
 
 ## Category "Controller" (#169, #243, #242, #214; designs, section "#242 Pan")
 
-- Group "PAN" first, then "MAUSMODUS". "Steams Desktop-Belegung ignorieren" is on Steam's launcher page (#315,
-  `docs/product/launchers.md`).
+- Group "PAN" first, then "MAUSMODUS". "Steams Desktop-Steuerung zulassen" is on Steam's launcher page (#315,
+  `docs/product/launchers.md`). While Steam is installed, the last group "STEAM" has "Controller-Einstellungen für
+  Steam" ("Weitere Controller-Einstellungen für Steam.", button "Launcher-Einstellungen"): it opens Steam's launcher
+  page with "Steam Controller" focused; [B] there goes back to the launcher list.
 - "Controller-Wächter (Pan)" is a switch (`AppSettings.PanEnabled`, on by default; off: nothing is emulated or hidden,
   no mode, no warning rows, even with a part missing). Its subtitle and lamp say the state: "An – deine Controller
   werden von Arcadia verwaltet" (green), "Wird eingerichtet …", "Bereit – kein Steam Controller verbunden" (grey),

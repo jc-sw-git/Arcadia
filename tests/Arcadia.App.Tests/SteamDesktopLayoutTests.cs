@@ -8,7 +8,7 @@ using Avalonia.Headless.XUnit;
 namespace Arcadia.App.Tests;
 
 /// <summary>
-/// "Steams Desktop-Belegung ignorieren" on Steam's launcher page (#315): where the row is, what it says, and that it
+/// "Steams Desktop-Steuerung zulassen" on Steam's launcher page (#315): where the row is, what it says, and that it
 /// decides at once what the copy of the Steam Controller passes to Steam, like for every other controller.
 /// </summary>
 public sealed class SteamDesktopLayoutTests
@@ -26,12 +26,15 @@ public sealed class SteamDesktopLayoutTests
         Assert.Equal("steam", launchers.PageLauncherId);
 
         var row = Assert.IsType<SteamDesktopLayoutRowViewModel>(launchers.Rows[^1]);
-        Assert.Equal(("Steams Desktop-Belegung ignorieren", "DESKTOP-STEUERUNG"), (row.Title, row.Group));
+        Assert.Equal(("Steams Desktop-Steuerung zulassen", "DESKTOP-STEUERUNG"), (row.Title, row.Group));
+        // Off by default: allowing Steam's desktop control is the choice, ignoring it the rule.
+        Assert.False(row.IsOn);
         Assert.Equal("Steams Desktop-Steuerung wird momentan ignoriert", row.Subtitle);
         Assert.True(arcadia.Settings.Current.IgnoreSteamDesktopLayout);
 
         arcadia.FocusRow(SteamDesktopLayoutRowViewModel.RowKey);
         arcadia.Press(UiAction.Left);
+        Assert.True(row.IsOn);
         Assert.False(arcadia.Settings.Current.IgnoreSteamDesktopLayout);
         Assert.Equal("Steams Desktop-Steuerung ist momentan aktiviert", row.Subtitle);
         arcadia.Press(UiAction.Accept);
@@ -58,7 +61,7 @@ public sealed class SteamDesktopLayoutTests
 
         arcadia.Press(UiAction.Back).Press(UiAction.NextTab);
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
-        Assert.DoesNotContain(controller.Rows, row => row.Key == SteamDesktopLayoutRowViewModel.RowKey || row.Group == "STEAM");
+        Assert.DoesNotContain(controller.Rows, row => row.Key == SteamDesktopLayoutRowViewModel.RowKey);
     }
 
     [AvaloniaFact]
@@ -195,6 +198,44 @@ public sealed class SteamDesktopLayoutTests
         Assert.True(arcadia.CopyWiring.Forwarding());
         Assert.False(arcadia.XboxPad.ForwardingAllowed());
         Assert.False(arcadia.XboxPad.IsPlugged);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T315-7")]
+    public async Task With_Steam_installed_the_controller_settings_end_with_a_row_that_opens_Steams_page_on_Steam_Controller()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["gog"] });
+        arcadia.OpenLauncherSettings();
+        arcadia.Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows[^1]);
+        Assert.Equal(
+            (ControllerSettingsViewModel.SteamLauncherKey, "STEAM", "Controller-Einstellungen für Steam", "Weitere Controller-Einstellungen für Steam.", "Launcher-Einstellungen"),
+            (row.Key, row.Group, row.Title, row.Subtitle, row.ActionText));
+        Assert.StartsWith("Arcadia hat erkannt, dass du Steam installiert hast.", Assert.IsType<InfoText>(Assert.Single(row.Info)).Text, StringComparison.Ordinal);
+
+        arcadia.FocusRow(ControllerSettingsViewModel.SteamLauncherKey);
+        arcadia.Press(UiAction.Accept);
+        var launchers = Assert.IsType<LauncherSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        Assert.Equal("steam", launchers.PageLauncherId);
+        Assert.Equal(LauncherControllerModeRowViewModel.RowKey, arcadia.Main.Settings.FocusedRow?.Key);
+
+        // B goes back to the launcher list, as from any launcher page.
+        arcadia.Press(UiAction.Back);
+        Assert.Null(launchers.PageLauncherId);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T315-7")]
+    public async Task Without_Steam_installed_the_controller_settings_have_no_group_Steam()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync([new(KnownLaunchers.Gog, 3)], new AppSettings { ActiveLaunchers = ["gog"] });
+        arcadia.OpenLauncherSettings();
+        arcadia.Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+
+        Assert.DoesNotContain(controller.Rows, row => row.Key == ControllerSettingsViewModel.SteamLauncherKey || row.Group == "STEAM");
     }
 
     private static async Task<ArcadiaDriver> StartWithSteamControllerAsync(AppSettings? settings = null)

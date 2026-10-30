@@ -428,6 +428,16 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         Choose(chosen, switchedOff && active.Contains(id) ? id : null);
     }
 
+    /// <summary>Opens a launcher's page with the focus on one of its rows, e.g. from the controller settings.</summary>
+    public void ShowPage(string launcherId, string rowKey)
+    {
+        if (_rows.TryGetValue(launcherId, out var row))
+        {
+            OpenPage(row);
+            FocusRow(rowKey);
+        }
+    }
+
     /// <summary>A or a click on a launcher in the list: its page, the focus on its first row.</summary>
     private void OpenPage(LauncherRowViewModel row)
     {

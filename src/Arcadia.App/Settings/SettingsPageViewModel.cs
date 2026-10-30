@@ -172,6 +172,9 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
     [RelayCommand]
     private void NextCategory() => Cycle(1);
 
+    /// <summary>Opens a category as its tab would, e.g. from a row of another category that leads there.</summary>
+    public void Open(SettingsCategoryViewModel category) => ChooseTab(category);
+
     private void Cycle(int delta) => ChooseTab(Categories[ListFocus.Cycle(Categories.ToList().IndexOf(Selected), delta, Categories.Count)]);
 
     /// <summary>A category's tab is chosen: it opens at its top level, not where it was left.</summary>

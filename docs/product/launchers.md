@@ -32,8 +32,8 @@
   launcher before or after it in the list's order, wrapping.
 - Groups "Allgemein": Aktiv, "Name im Tab", "Such-Kürzel", "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only
   active and found); "Controller" (below). Steam's page no longer links to "Controller-Einstellungen für Steam" (#169
-  went with #178); it ends with the group "Desktop-Steuerung", "Steams Desktop-Belegung ignorieren" (#315; subtitle
-  "Steams Desktop-Steuerung wird momentan ignoriert" / "… ist momentan aktiviert"), there also while Steam is
+  went with #178); it ends with the group "Desktop-Steuerung", "Steams Desktop-Steuerung zulassen" (#315; off by default; subtitle
+  "Steams Desktop-Steuerung ist momentan aktiviert" / "… wird momentan ignoriert"), there also while Steam is
   inactive, since it concerns Steam the program (`docs/product/mouse-mode.md`).
 - Name and keyword are written with the shared on-screen keyboard below the page (without ↹ and the edge key; the
   search's buttons, ≡/Enter take, B/Esc drop). A keyword's keyboard offers only the keys it may hold (lower-case

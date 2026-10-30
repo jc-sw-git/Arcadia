@@ -50,14 +50,14 @@ meanwhile turns it into the question).
 ## Who gets input (`SteamControllerCopyRules`)
 
 - The copy passes input when a game on "Steam-Eingabe" runs, or no game runs and Steam itself is in front
-  (`steam.exe`, `steamwebhelper.exe`; checked at most every 250 ms). With "Steams Desktop-Belegung ignorieren" off
+  (`steam.exe`, `steamwebhelper.exe`; checked at most every 250 ms). With "Steams Desktop-Steuerung zulassen" on
   (#315) it also passes while Arcadia is in front, the mouse mode is on or no game runs: all Steam Controller input
-  goes to the copy except to a game on "Arcadia" (then the Xbox pad). With the setting on, never while Arcadia is in
+  goes to the copy except to a game on "Arcadia" (then the Xbox pad). With the setting off, never while Arcadia is in
   front or the mouse mode is on. Arcadia's pad passes input for a game on "Arcadia", never together with the copy.
   The setting is read on every report; `SteamControllerCopyGate` logs each change ("Kopie für Steam: …").
 - At rest Steam reads a controller at rest: buttons cleared except Steam (`0x10000`) and "…" (`0x10`), triggers,
   sticks, trackpads and gyro zeroed; sequence, IMU timestamp, accelerometer and orientation stay. Battery (`0x43`)
-  and wireless state (`0x46`, `0x79`) always pass. Arcadia's combo ⧉ + ≡ reaches Steam only while the setting is off
+  and wireless state (`0x46`, `0x79`) always pass. Arcadia's combo ⧉ + ≡ reaches Steam only while the setting is on
   (`ComboWithholding`, `SteamControllerCopyRules.CombosKeptFromSteam`).
 
 ## What Steam may send the puck (`SteamControllerCopyFilter`)

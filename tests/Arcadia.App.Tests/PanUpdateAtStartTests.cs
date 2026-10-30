@@ -294,10 +294,10 @@ public sealed class PanUpdateAtStartTests
         PanRowViewModel Pan() => Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
 
         Pan().Activate();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == PanRows.NotUpdatedToast, "der Toast „bleibt aus“");
+        // Not by the toast: the error's own toast ("Unerwarteter Fehler …") is posted to the UI thread and may come last.
+        await arcadia.WaitUntilAsync(() => !Pan().IsLocked, "die Zeile ist wieder frei");
 
         Assert.False(arcadia.Settings.Current.PanEnabled);
-        Assert.False(Pan().IsLocked);
         Assert.Equal(PanRows.UpdateDueSubtitle, Pan().Subtitle);
     }
 

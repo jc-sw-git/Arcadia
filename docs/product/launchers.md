@@ -60,7 +60,7 @@
 
 - Steam's page starts with the group "Konto", the row "Steam-Konto"; while Steam is inactive or missing it stays there,
   disabled, and says why (a sign-in stays stored).
-- Sign-in on Steam's own login page (QR code with the Steam app, or name and password), as Playnite does it; Arcadia
+- Sign-in on Steam's own login page (QR code with the Steam app, or name and password), as comparable products do; Arcadia
   never poses as another client such as Steam's phone app (`docs/launchers/steam/account.md`): A on "Anmelden" opens it over the whole window with its address shown like a
   browser's, scaled to the window; B or ✕ closes it and stays on the launcher page; while it shows, no press reaches
   Arcadia below. Opened by controller, the mouse mode comes on for it (`docs/product/mouse-mode.md`).

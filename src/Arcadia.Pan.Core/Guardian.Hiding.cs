@@ -73,7 +73,7 @@ public sealed partial class Guardian
                 if (hiding)
                 {
                     // Every HID collection of the puck arrives on its own: only a burst that changed something is logged.
-                    var (reason, listed) = await HideCoreAsync(imagePath: null);
+                    var (reason, listed) = await HideCoreAsync(imagePath: null, ArrivalRefused);
                     if (reason != PanReason.None)
                     {
                         _log($"Steam Controller device arrived while hiding, not hidden: {reason}");
@@ -133,7 +133,7 @@ public sealed partial class Guardian
                     }
                 }
 
-                var (reason, listed) = await HideCoreAsync(imagePath);
+                var (reason, listed) = await HideCoreAsync(imagePath, () => Refused(message));
                 _log(reason == PanReason.None
                     ? $"Steam Controller hidden for generation {message.Generation}: {listed.Count} instance(s)"
                     : $"Steam Controller not hidden for generation {message.Generation}: {reason}");
@@ -320,6 +320,13 @@ public sealed partial class Guardian
         return _phase == Phase.TornDown ? PanMessage.Of(PanReply.Rejected, message.Generation, PanReason.TeardownNotAcknowledged) : null;
     }
 
+    /// <summary>Under the lock: <see cref="RefuseHiding"/> as a reason, for a client's hide that waited on the devices.</summary>
+    private PanReason Refused(PanMessage message) =>
+        RefuseHiding(message) is { } refusal ? refusal.Reason is PanReason.None ? PanReason.HidingFailed : refusal.Reason : PanReason.None;
+
+    /// <summary>Under the lock: an arrival hides only while an emulation runs; a stop or teardown shows instead.</summary>
+    private PanReason ArrivalRefused() => _stopping ? PanReason.ServiceStopping : _phase != Phase.Emulating ? PanReason.NotEmulating : PanReason.None;
+
     private void HidingDone()
     {
         lock (_lock)
@@ -335,7 +342,7 @@ public sealed partial class Guardian
     /// (unless <paramref name="imagePath"/> is null: an arrival) and turns cloaking on, each journaled first; then
     /// restarts the puck so programs that have it open lose it. Returns why not, and how many instances are hidden.
     /// </summary>
-    private async Task<(PanReason Reason, IReadOnlyList<string> Listed)> HideCoreAsync(string? imagePath)
+    private async Task<(PanReason Reason, IReadOnlyList<string> Listed)> HideCoreAsync(string? imagePath, Func<PanReason> refused)
     {
         // Listed first: it may wait on Windows' PnP lock, and HidHide's lists must be read right before they are written
         // back, so a change the user makes meanwhile isn't lost.
@@ -352,7 +359,7 @@ public sealed partial class Guardian
 
         // Only listed devices, also if the device list returned something else.
         var listed = present.Where(HidingList.IsListedHid).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var reason = AddToHidHide(listed, imagePath, controllerRestarts: null);
+        var reason = AddToHidHide(listed, imagePath, controllerRestarts: null, refused);
         if (reason != PanReason.None)
         {
             return (reason, []);
@@ -371,9 +378,11 @@ public sealed partial class Guardian
     /// Inside the gate. Adds the instances that aren't hidden yet, the client's allow-list entry (unless
     /// <paramref name="imagePath"/> is null: an arrival) and turns cloaking on, each journaled first. Puck instances
     /// leave a puck restart pending; controller instances (<paramref name="controllerRestarts"/> not null) the HID
-    /// instances in it that were added.
+    /// instances in it that were added. <paramref name="refused"/> is asked under the lock right before the journal is
+    /// written: a teardown that began while the devices were listed found nothing journaled and showed nothing, so
+    /// nothing may be hidden after it (QE of #337).
     /// </summary>
-    private PanReason AddToHidHide(IReadOnlyList<string> instances, string? imagePath, IReadOnlyCollection<string>? controllerRestarts)
+    private PanReason AddToHidHide(IReadOnlyList<string> instances, string? imagePath, IReadOnlyCollection<string>? controllerRestarts, Func<PanReason> refused)
     {
         List<string> ours;
         lock (_lock)
@@ -399,6 +408,12 @@ public sealed partial class Guardian
 
         lock (_lock)
         {
+            if (refused() is not PanReason.None and var refusal)
+            {
+                _log($"Not hiding: {refusal} while the devices were listed");
+                return refusal;
+            }
+
             var before = (Hidden: _journal.HiddenDevices.ToList(), Controllers: _journal.HiddenControllers.ToList(), Restarts: _journal.ControllerRestarts.ToList(),
                 Allowed: _journal.AllowListed.ToList(), _journal.CloakingWasOn, _journal.PuckRestartPending);
             if (controllerRestarts is null)

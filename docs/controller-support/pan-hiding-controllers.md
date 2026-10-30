@@ -16,6 +16,10 @@ every teardown trigger). What the client emulates for them: #238.
 - Only within the current generation's emulation, as `Hide`. The client lets go of the model before it sends either
   (Pan restarts it). A rejected `HideController` with `HidingFailed` may have hidden it already: the client sends
   `ShowController` (`PanClient.HideControllerAsync` does).
+- The client's reply timeout is 35 s: a request may wait behind an arrival's scan, then scan and restart (each step
+  up to 10 s in Pan).
+- A hide that was still listing devices when a teardown or stop began hides nothing: Pan checks the emulation again
+  right before it journals (the puck's hide too).
 - `Unhide` (the puck) and `ShowController` leave everything else hidden; the client's allow-list entry and cloaking go
   back only with the last hidden device.
 

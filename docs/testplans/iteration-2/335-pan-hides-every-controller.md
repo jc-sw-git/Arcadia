@@ -13,7 +13,9 @@ Bluetooth, GameInput.
 - [ ] **T335-1** DualSense (USB) and 8BitDo (dongle) connected, Arcadia starts and takes both over: a probe outside the
       allow list sees neither through XInput, Windows.Gaming.Input, raw HID and SDL3, Steam's controller settings list
       neither; `pan.log` says "Controller 054C:0CE6 hidden" and "Controller 2DC8:310B hidden … only fully taken over
-      once reconnected". After a reconnect of the 8BitDo Steam doesn't list it either. · E2E: no (real HidHide and pads)
+      once reconnected". After a reconnect of the 8BitDo Steam doesn't list it either. Then plug the DualSense into
+      another USB port (a new instance, hidden at its arrival without a restart): Steam doesn't list it; if it does,
+      note it (Steam opened it first). · E2E: no (real HidHide and pads)
 - [ ] **T335-2** As T335-1, then end `Arcadia.exe` in Task Manager: both pads are visible to the probe and Steam again
       within 10 s; HidHide's configuration client lists none of Pan's entries, the user's own entries are still there.
       · E2E: no (Pan, HidHide)

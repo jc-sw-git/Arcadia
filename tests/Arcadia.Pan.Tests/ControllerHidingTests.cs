@@ -131,6 +131,7 @@ public sealed class ControllerHidingTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T335-4")]
     public async Task One_model_shown_again_leaves_the_others_the_puck_and_the_allow_list_hidden()
     {
         var generation = await AllHiddenAsync();
@@ -153,6 +154,7 @@ public sealed class ControllerHidingTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T335-4")]
     public async Task The_last_model_shown_takes_the_allow_list_entry_and_cloaking_back()
     {
         var generation = await EmulatingAsync();
@@ -169,6 +171,7 @@ public sealed class ControllerHidingTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T335-4")]
     public async Task Showing_the_Steam_Controller_leaves_the_controllers_and_the_allow_list_entry()
     {
         var generation = await AllHiddenAsync();
@@ -231,6 +234,7 @@ public sealed class ControllerHidingTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T335-5")]
     public async Task Nothing_of_a_vendor_is_hidden_while_its_firmware_tool_runs_and_the_reason_reaches_the_client()
     {
         var generation = await EmulatingAsync();
@@ -252,6 +256,7 @@ public sealed class ControllerHidingTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T335-5")]
     public async Task An_arrival_while_the_vendors_firmware_tool_runs_is_not_hidden()
     {
         var generation = await EmulatingAsync();

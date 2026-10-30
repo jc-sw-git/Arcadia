@@ -83,7 +83,7 @@ public sealed partial class Guardian
 
                 var instances = scan!.Hideable.Select(instance => instance.InstanceId).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
                 var hid = instances.Where(ControllerList.IsHid).ToList();
-                var reason = AddToHidHide(instances, imagePath, controllerRestarts: hid);
+                var reason = AddToHidHide(instances, imagePath, controllerRestarts: hid, () => Refused(message));
                 if (reason != PanReason.None)
                 {
                     _log($"Controller {model} not hidden for generation {message.Generation}: {reason}");
@@ -92,6 +92,12 @@ public sealed partial class Guardian
 
                 lock (_lock)
                 {
+                    // Taken over only while this emulation still runs: a teardown since forgot the models.
+                    if (Refused(message) is not PanReason.None and var refusal)
+                    {
+                        return PanMessage.Of(PanReply.Rejected, message.Generation, refusal);
+                    }
+
                     _takenOver.Add(model);
                 }
 
@@ -223,7 +229,7 @@ public sealed partial class Guardian
                 var (scanned, scan) = await ScanAsync(_hiding.Controllers, model);
                 var reason = scanned != PanReason.None
                     ? scanned
-                    : AddToHidHide(scan!.Hideable.Select(instance => instance.InstanceId).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), imagePath: null, controllerRestarts: []);
+                    : AddToHidHide(scan!.Hideable.Select(instance => instance.InstanceId).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), imagePath: null, controllerRestarts: [], () => _takenOver.Contains(model) ? ArrivalRefused() : PanReason.NotEmulating);
                 if (reason != PanReason.None)
                 {
                     _log($"Controller {model} arrived while hiding, not hidden: {reason}");

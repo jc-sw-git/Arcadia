@@ -19,6 +19,12 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     /// </summary>
     public static readonly TimeSpan HidingRequestTimeout = TimeSpan.FromSeconds(25);
 
+    /// <summary>
+    /// A controller's hide or show may wait behind an arrival's device scan, then scan and restart itself: three device
+    /// steps of up to 10 s each in Pan (QE of #337), so more than <see cref="HidingRequestTimeout"/>.
+    /// </summary>
+    public static readonly TimeSpan ControllerRequestTimeout = TimeSpan.FromSeconds(35);
+
     /// <summary>A request to Pan (write and reply) that takes longer than this means Pan hangs. Real time; tests widen it.</summary>
     public TimeSpan RequestTimeout { get; init; } = DefaultRequestTimeout;
 
@@ -385,7 +391,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         try
         {
             // Like the Steam Controller's hide: a restart takes a moment, never cancelled halfway.
-            reply = await RequestAsync(PanMessage.Of(command, generation, model.Value), HidingRequestTimeout, CancellationToken.None);
+            reply = await RequestAsync(PanMessage.Of(command, generation, model.Value), ControllerRequestTimeout, CancellationToken.None);
         }
         catch (InvalidOperationException ex)
         {

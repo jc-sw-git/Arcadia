@@ -187,7 +187,10 @@ public partial class App : Application
             var viiper = new ViiperXboxPads(ownViiper?.Executable ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SISR", ViiperRelease.ExecutableName),
                 Core.Diagnostics.LogLocation.Directory, AppLog.Write);
             // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
-            var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write) : new NoPanTransport(), time, AppLog.Write);
+            var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write) : new NoPanTransport(), time, AppLog.Write)
+            {
+                Wanted = () => controllerSupport.MayTalkToPan,
+            };
             var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
             pan.JournalProblem += () => panNotices.Show(PanJournalText);
             controllerSupport.HidingCheck = pan;
@@ -301,7 +304,7 @@ public partial class App : Application
                     Dispatcher.UIThread.Post(() =>
                     {
                         xboxPadTick.Start();
-                        viewModel.StartPanUpdate();
+                        viewModel.PanAnsweredAtStart();
                     });
                 }
 

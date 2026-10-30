@@ -1,16 +1,20 @@
 using Arcadia.App.Input;
+using Arcadia.App.Settings;
 using Arcadia.App.ViewModels;
+using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Settings;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 
 namespace Arcadia.App.Tests;
 
 /// <summary>
-/// Arcadia runs only with the Pan it brings (#297): an installed Pan that differs is replaced at start without a question,
-/// and until that worked or Pan is removed the library can't be reached. Pan's <c>--install</c> and the UAC prompt are
-/// faked (<see cref="FakeSteam.UpdatePanAsync"/>); the real exe and prompt are the manual part
-/// (docs/testplans/iteration-2/297-arcadia-runs-only-with-a-compatible-pan.md).
+/// An installed Pan that isn't this Arcadia's (#297): with Pan on, Arcadia announces the update and runs it only on [A]
+/// (#326); declined or failed, Pan goes off and Arcadia waits until the old Pan has ended, with the restore and the steps
+/// by hand if it doesn't. Pan's <c>--install</c>, <c>--restore</c>, the service and the UAC prompt are faked
+/// (<see cref="FakeSteam"/>); the real exe, service and prompt are the manual part
+/// (docs/testplans/iteration-2/326-announce-the-pan-update-and-let-the-player-decline-it.md).
 /// </summary>
 public sealed class PanUpdateAtStartTests
 {
@@ -23,39 +27,152 @@ public sealed class PanUpdateAtStartTests
         PanEnabled = panEnabled,
     };
 
-    [AvaloniaFact]
-    [Trait("TestCase", "T297-1")]
-    public async Task Another_Pan_is_replaced_at_start_without_a_question_and_then_the_library_shows()
+    private static FakeSteam OldPan() => new() { PanCompatibility = PanCompatibility.UpdateRequired };
+
+    /// <summary>Lets the clock run while the page counts down, until <paramref name="until"/> holds.</summary>
+    private static async Task RunClockUntilAsync(ArcadiaDriver arcadia, Func<bool> until, string what)
     {
-        var steam = new FakeSteam { PanCompatibility = PanCompatibility.UpdateRequired };
+        for (var second = 0; second < 120; second++)
+        {
+            if (until())
+            {
+                return;
+            }
+
+            arcadia.Wait(TimeSpan.FromSeconds(1));
+            await Task.Delay(5);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Assert.Fail($"Nach 120 s auf der Uhr noch nicht eingetreten: {what}");
+    }
+
+    /// <summary>[B] on the notice, the old Pan keeps running: the countdown runs out into stage 1.</summary>
+    private static async Task<PanUpdatePageViewModel> StuckAsync(ArcadiaDriver arcadia)
+    {
+        await arcadia.PanAnsweredAtStartAsync();
+        var page = arcadia.Main.PanUpdate!;
+        arcadia.Press(UiAction.Back);
+        Assert.Equal(PanUpdateState.Stopping, page.State);
+        await RunClockUntilAsync(arcadia, () => page.State == PanUpdateState.Stuck, "Stufe 1 „Controller freigeben“");
+        return page;
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T326-1")]
+    public async Task The_notice_comes_first_and_only_A_starts_the_update_then_the_library_shows()
+    {
+        var steam = OldPan();
         using var arcadia = await StartAsync(steam);
 
         var page = arcadia.Main.PanUpdate;
         Assert.NotNull(page);
-        Assert.Equal(PanUpdatePageViewModel.UpdatingTitle, page.Title);
-        Assert.Contains("dauert deshalb etwas länger", page.Text);
-        Assert.Null(arcadia.Main.Confirmation);
+        Assert.Equal(PanUpdatePageViewModel.NoticeTitle, page.Title);
+        Assert.Equal(PanUpdatePageViewModel.NoticeHint, page.Hint);
+        Assert.Equal("Aktualisieren", page.ConfirmText);
+        Assert.Equal("Ohne Pan weiter", page.CancelText);
 
+        // Pan answered: no prompt opens by itself (#326).
         await arcadia.PanAnsweredAtStartAsync();
+        arcadia.Press(UiAction.Settings).Press(UiAction.Search).Press(UiAction.Right);
+        Assert.Equal(0, steam.PanUpdates);
+        Assert.Equal(PanUpdateState.Notice, page.State);
+        Assert.False(arcadia.Main.IsSettingsOpen);
+
+        arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
 
         Assert.Equal(1, steam.PanUpdates);
         Assert.Equal(PanUpdatePageViewModel.UpdatedToast, arcadia.Main.Toast.Text);
         Assert.False(arcadia.ControllerSupport.IsPanUpdateDue);
+        Assert.True(arcadia.Settings.Current.PanEnabled);
         arcadia.Press(UiAction.Settings);
         Assert.True(arcadia.Main.IsSettingsOpen, "die Bibliothek nimmt Eingaben wieder an");
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T297-2")]
-    public async Task Without_Pan_or_with_the_bundled_one_Arcadia_starts_without_a_page()
+    [Trait("TestCase", "T326-2")]
+    public async Task B_on_the_notice_switches_Pan_off_waits_for_the_old_Pan_and_the_next_start_shows_no_notice()
+    {
+        var steam = OldPan();
+        steam.IsPanRunning = true;
+        AppSettings after;
+        using (var arcadia = await StartAsync(steam))
+        {
+            await arcadia.PanAnsweredAtStartAsync();
+            var page = arcadia.Main.PanUpdate!;
+
+            arcadia.Press(UiAction.Back);
+
+            Assert.Equal(PanUpdateState.Stopping, page.State);
+            Assert.Equal(PanUpdatePageViewModel.StoppingTitle, page.Title);
+            Assert.Equal(45, page.SecondsLeft);
+            Assert.False(arcadia.Settings.Current.PanEnabled);
+            Assert.False(arcadia.ControllerSupport.MayTalkToPan, "Arcadia leaves the old Pan alone");
+            Assert.Equal(0, steam.PanUpdates);
+            // The countdown takes no press: no library, no quit.
+            var quit = 0;
+            arcadia.Main.QuitRequested += (_, _) => quit++;
+            arcadia.Press(UiAction.Back).Press(UiAction.Accept).Press(UiAction.Settings);
+            Assert.Equal(0, quit);
+            Assert.False(arcadia.Main.IsSettingsOpen);
+
+            await RunClockUntilAsync(arcadia, () => page.SecondsLeft <= 40, "der Countdown läuft");
+            steam.IsPanRunning = false;
+            await RunClockUntilAsync(arcadia, () => arcadia.Main.PanUpdate is null, "die Bibliothek, sobald sich das alte Pan beendet hat");
+
+            Assert.Equal(PanUpdatePageViewModel.DeclinedToast, arcadia.Main.Toast.Text);
+            Assert.Equal(0, steam.PanUpdates);
+            after = arcadia.Settings.Current;
+        }
+
+        using var next = await StartAsync(steam, after);
+        Assert.Null(next.Main.PanUpdate);
+        Assert.True(next.ControllerSupport.IsPanUpdateDue, "the settings still offer the update");
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T326-3")]
+    public async Task A_declined_prompt_switches_Pan_off_like_B_and_a_failed_update_says_why()
+    {
+        var declined = OldPan();
+        declined.PromptConfirmed = false;
+        using (var arcadia = await StartAsync(declined))
+        {
+            await arcadia.PanAnsweredAtStartAsync();
+            arcadia.Press(UiAction.Accept);
+            await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek ohne Pan");
+
+            Assert.Equal(PanUpdatePageViewModel.DeclinedToast, arcadia.Main.Toast.Text);
+            Assert.False(arcadia.Settings.Current.PanEnabled);
+            Assert.Null(arcadia.ControllerSupport.PanUpdateError);
+        }
+
+        const string error = "Pan --install meldete Fehler 3 – Details stehen in pan.log.";
+        var failed = OldPan();
+        failed.PanUpdateError = error;
+        using var again = await StartAsync(failed);
+        await again.PanAnsweredAtStartAsync();
+        again.Press(UiAction.Accept);
+        await again.WaitUntilAsync(() => again.Main.PanUpdate is null, "die Bibliothek ohne Pan");
+
+        Assert.Equal(PanUpdatePageViewModel.FailedToast, again.Main.Toast.Text);
+        Assert.False(again.Settings.Current.PanEnabled);
+        again.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(again.Main.Settings!.Selected);
+        var pan = Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
+        Assert.Contains(pan.Info.OfType<InfoError>(), block => block.Text == error);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T326-4")]
+    public async Task Without_Pan_or_with_Pan_off_there_is_no_notice_and_off_the_settings_offer_the_update()
     {
         var none = new FakeSteam { PanCompatibility = PanCompatibility.NotInstalled, IsPanReady = false };
         using (var arcadia = await StartAsync(none))
         {
             await arcadia.PanAnsweredAtStartAsync();
             Assert.Null(arcadia.Main.PanUpdate);
-            Assert.Equal(0, none.PanUpdates);
         }
 
         var same = new FakeSteam();
@@ -65,52 +182,97 @@ public sealed class PanUpdateAtStartTests
             Assert.Null(arcadia.Main.PanUpdate);
             Assert.Equal(0, same.PanUpdates);
         }
+
+        var off = OldPan();
+        using var withOff = await StartAsync(off, Chosen(panEnabled: false));
+        await withOff.PanAnsweredAtStartAsync();
+        Assert.Null(withOff.Main.PanUpdate);
+        Assert.Equal(0, off.PanUpdates);
+        Assert.False(withOff.ControllerSupport.MayTalkToPan);
+
+        withOff.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(withOff.Main.Settings!.Selected);
+        var pan = Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
+        Assert.Equal(PanRows.UpdateDueSubtitle, pan.Subtitle);
+        Assert.Equal(HealthSeverity.Info, pan.Severity);
+        var first = Assert.IsType<InfoNote>(pan.Info[0]);
+        Assert.Equal(PanRows.UpdateDueInfo, first.Text);
+        Assert.True(first.IsInfo);
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T297-3")]
-    public async Task A_Pan_switched_off_in_Arcadia_is_replaced_all_the_same()
+    [Trait("TestCase", "T326-5")]
+    public async Task Switching_Pan_on_with_a_due_update_runs_the_update_first_and_declined_it_stays_off()
     {
-        var steam = new FakeSteam { PanCompatibility = PanCompatibility.UpdateRequired };
+        var steam = OldPan();
+        steam.PromptConfirmed = false;
         using var arcadia = await StartAsync(steam, Chosen(panEnabled: false));
-
-        Assert.NotNull(arcadia.Main.PanUpdate);
         await arcadia.PanAnsweredAtStartAsync();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        PanRowViewModel Pan() => Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
+
+        Pan().Activate();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == PanRows.NotUpdatedToast, "der Toast „bleibt aus“");
         Assert.Equal(1, steam.PanUpdates);
-        Assert.False(arcadia.Settings.Current.PanEnabled, "the update doesn't switch Pan on");
+        Assert.False(arcadia.Settings.Current.PanEnabled);
+        Assert.Equal(PanRows.UpdateDueSubtitle, Pan().Subtitle);
+
+        steam.PromptConfirmed = true;
+        Pan().Activate();
+        await arcadia.WaitUntilAsync(() => arcadia.Settings.Current.PanEnabled, "Pan ist an");
+        Assert.Equal(2, steam.PanUpdates);
+        Assert.Equal(PanUpdatePageViewModel.UpdatedToast, arcadia.Main.Toast.Text);
+        Assert.False(arcadia.ControllerSupport.IsPanUpdateDue);
+        Assert.True(arcadia.ControllerSupport.MayTalkToPan);
+        Assert.NotEqual(PanRows.UpdateDueSubtitle, Pan().Subtitle);
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T297-4")]
-    public async Task The_update_installs_no_driver_and_neither_closes_Steam_nor_waits_for_a_Steam_game()
+    [Trait("TestCase", "T326-5")]
+    public async Task While_the_prompt_of_the_switch_is_up_the_row_says_so_and_cannot_be_switched_again()
     {
-        var steam = new FakeSteam { PanCompatibility = PanCompatibility.UpdateRequired, IsSteamRunning = true, IsUsbipReady = false, HidHideVersion = null };
-        using var arcadia = await StartAsync(steam);
-        arcadia.RunningSteamAppId = 620;
-
+        var prompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var steam = OldPan();
+        steam.PanPromptUp = prompt;
+        using var arcadia = await StartAsync(steam, Chosen(panEnabled: false));
         await arcadia.PanAnsweredAtStartAsync();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        PanRowViewModel Pan() => Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
 
+        Pan().Activate();
+        await arcadia.WaitUntilAsync(() => steam.PanUpdates == 1, "die Windows-Abfrage");
+        Assert.Equal(PanRows.UpdatingSubtitle, Pan().Subtitle);
+        Assert.True(Pan().IsLocked);
+        Pan().Activate();
         Assert.Equal(1, steam.PanUpdates);
-        Assert.Equal(0, steam.DriverInstalls);
-        Assert.True(steam.IsSteamRunning);
-        Assert.False(steam.IsUsbipReady, "a missing driver stays the \"Treiber installieren\" row");
+
+        prompt.SetResult();
+        await arcadia.WaitUntilAsync(() => arcadia.Settings.Current.PanEnabled, "Pan ist an");
+        Assert.False(Pan().IsLocked);
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T297-5")]
-    public async Task A_firmware_hold_from_before_shows_its_dialog_first_and_the_update_runs_after_it()
+    [Trait("TestCase", "T326-6")]
+    public async Task A_firmware_hold_from_before_shows_its_dialog_first_and_A_pressed_earlier_waits_for_it()
     {
-        var steam = new FakeSteam { PanCompatibility = PanCompatibility.UpdateRequired, IsSteamRunning = true };
+        var steam = OldPan();
+        steam.IsSteamRunning = true;
         using var arcadia = await StartAsync(steam);
         arcadia.Pan.HeldForFirmware = true;
+        var page = arcadia.Main.PanUpdate!;
+
+        // [A] before Pan answered: the page waits.
+        arcadia.Press(UiAction.Accept);
+        Assert.Equal(PanUpdateState.Waiting, page.State);
+        Assert.Equal(PanUpdatePageViewModel.UpdatingTitle, page.Title);
+        Assert.Equal(0, steam.PanUpdates);
 
         await arcadia.PanAnsweredAtStartAsync();
         await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Dialog „Steam will die Firmware aktualisieren“");
         var dialog = arcadia.Main.FirmwareAttempt!;
         Assert.Equal(0, steam.PanUpdates);
-        Assert.Equal(PanUpdateState.Waiting, arcadia.Main.PanUpdate!.State);
 
         // Steam stays quiet: it gave up, "Schließen" has the focus and closes the dialog.
         arcadia.Wait(FirmwareWait);
@@ -127,106 +289,136 @@ public sealed class PanUpdateAtStartTests
         Arcadia.ControllerSupport.Copy.FirmwareAttemptWatch.Quiet + Arcadia.ControllerSupport.Copy.FirmwareAttemptWatch.Countdown + TimeSpan.FromSeconds(1);
 
     [AvaloniaFact]
-    [Trait("TestCase", "T297-6")]
-    public async Task A_declined_prompt_keeps_the_library_closed_until_A_tries_again()
+    [Trait("TestCase", "T326-7")]
+    public async Task An_old_Pan_still_running_after_45_s_gets_the_restore_and_a_confirmed_restore_opens_the_library()
     {
-        var steam = new FakeSteam { PanCompatibility = PanCompatibility.UpdateRequired, PromptConfirmed = false };
+        var steam = OldPan();
+        steam.IsPanRunning = true;
         using var arcadia = await StartAsync(steam);
 
-        await arcadia.PanAnsweredAtStartAsync();
-        var page = arcadia.Main.PanUpdate!;
-        await arcadia.WaitUntilAsync(() => page.IsFailed, "die Seite „Pan muss aktualisiert werden“");
-        Assert.Equal(PanUpdatePageViewModel.FailedTitle, page.Title);
-        Assert.Equal(PanUpdatePageViewModel.UpdateDeclined, page.Error);
+        var page = await StuckAsync(arcadia);
 
-        // Nothing below the page takes a press: no settings, no search, no game.
-        arcadia.Press(UiAction.Settings).Press(UiAction.Right).Press(UiAction.Options);
-        Assert.False(arcadia.Main.IsSettingsOpen);
-        Assert.False(arcadia.Main.IsGameMenuOpen);
-        Assert.Same(page, arcadia.Main.PanUpdate);
+        Assert.Equal(PanUpdatePageViewModel.StuckTitle, page.Title);
+        Assert.Equal(PanUpdatePageViewModel.RestoreHint, page.Hint);
+        Assert.Equal("Controller wiederherstellen", page.ConfirmText);
+        Assert.Equal("Arcadia beenden", page.CancelText);
+        Assert.Equal(0, steam.Restores);
 
-        steam.PromptConfirmed = true;
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach dem zweiten Versuch");
-        Assert.Equal(2, steam.PanUpdates);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der Wiederherstellung");
+        Assert.Equal(1, steam.Restores);
+        Assert.Equal(PanUpdatePageViewModel.RestoredToast, arcadia.Main.Toast.Text);
+        Assert.False(arcadia.Settings.Current.PanEnabled);
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T297-7")]
-    public async Task A_failed_update_shows_the_error_and_X_removes_Pan_unless_that_prompt_is_declined_too()
+    [Trait("TestCase", "T326-7")]
+    public async Task A_declined_or_failed_restore_shows_the_steps_by_hand_and_checking_again_opens_the_library_once_Pan_ended()
     {
-        const string error = "Pan --install meldete Fehler 3 – Details stehen in pan.log.";
-        var steam = new FakeSteam { PanCompatibility = PanCompatibility.UpdateRequired, PanUpdateError = error };
+        var steam = OldPan();
+        steam.IsPanRunning = true;
+        steam.PromptConfirmed = true;
         using var arcadia = await StartAsync(steam);
-
-        await arcadia.PanAnsweredAtStartAsync();
-        var page = arcadia.Main.PanUpdate!;
-        await arcadia.WaitUntilAsync(() => page.IsFailed, "die Seite mit dem Fehler");
-        Assert.Equal(error, page.Error);
+        var page = await StuckAsync(arcadia);
 
         steam.PromptConfirmed = false;
-        arcadia.Press(UiAction.Search);
-        await arcadia.WaitUntilAsync(() => page.IsFailed && page.Error == PanUpdatePageViewModel.RemoveDeclined, "die Seite bleibt");
-        Assert.Same(page, arcadia.Main.PanUpdate);
-        Assert.Equal(1, steam.PanUninstalls);
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => page.State == PanUpdateState.ManualCleanup, "Stufe 2 „Controller von Hand freigeben“");
+        Assert.Equal(PanUpdatePageViewModel.ManualTitle, page.Title);
+        Assert.Equal(PanUpdatePageViewModel.RestoreDeclined, page.Error);
+        Assert.True(page.ShowsSteps);
+        Assert.Equal("Erneut prüfen", page.ConfirmText);
 
-        steam.PromptConfirmed = true;
-        arcadia.Press(UiAction.Search);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek ohne Pan");
-        Assert.Equal(2, steam.PanUninstalls);
-        Assert.False(arcadia.Settings.Current.PanEnabled);
-        Assert.Equal(PanUpdatePageViewModel.RemovedToast, arcadia.Main.Toast.Text);
-        Assert.Equal(1, steam.PanUpdates);
+        // Still running: checking again counts down and comes back to the steps.
+        arcadia.Press(UiAction.Accept);
+        Assert.Equal(PanUpdateState.Stopping, page.State);
+        Assert.Null(page.Error);
+        await RunClockUntilAsync(arcadia, () => page.State == PanUpdateState.Stuck, "wieder Stufe 1");
+
+        steam.RestoreError = "Pan --restore meldete Fehler 5";
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => page.State == PanUpdateState.ManualCleanup, "Stufe 2 mit dem Fehler");
+        Assert.Equal("Pan --restore meldete Fehler 5", page.Error);
+
+        // Cleaned up by hand: the old Pan gives up and ends.
+        steam.IsPanRunning = false;
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek");
+        Assert.Equal(PanUpdatePageViewModel.DeclinedToast, arcadia.Main.Toast.Text);
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T297-8")]
-    public async Task B_on_the_failed_page_ends_Arcadia_and_does_nothing_while_the_prompt_is_up()
+    [Trait("TestCase", "T326-7")]
+    public async Task B_ends_Arcadia_at_either_stage()
     {
-        var steam = new FakeSteam { PanCompatibility = PanCompatibility.UpdateRequired, PromptConfirmed = false };
+        var steam = OldPan();
+        steam.IsPanRunning = true;
         using var arcadia = await StartAsync(steam);
         var quit = 0;
         arcadia.Main.QuitRequested += (_, _) => quit++;
+        var page = await StuckAsync(arcadia);
 
-        // Before the update ran (waiting for Pan), B ends nothing.
-        arcadia.Press(UiAction.Back);
-        Assert.Equal(0, quit);
-
-        await arcadia.PanAnsweredAtStartAsync();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate!.IsFailed, "die Seite „Pan muss aktualisiert werden“");
         arcadia.Press(UiAction.Back);
         Assert.Equal(1, quit);
+
+        steam.PromptConfirmed = false;
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => page.State == PanUpdateState.ManualCleanup, "Stufe 2");
+        arcadia.Press(UiAction.Back);
+        Assert.Equal(2, quit);
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T297-8")]
-    public async Task While_the_prompt_is_up_no_press_quits_starts_a_second_update_or_removes_Pan()
+    [Trait("TestCase", "T326-8")]
+    public async Task While_a_prompt_is_up_no_press_quits_starts_a_second_update_or_reaches_the_library()
     {
         var prompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var steam = new FakeSteam { PanCompatibility = PanCompatibility.UpdateRequired, PanPromptUp = prompt };
+        var steam = OldPan();
+        steam.PanPromptUp = prompt;
         using var arcadia = await StartAsync(steam);
         var quit = 0;
         arcadia.Main.QuitRequested += (_, _) => quit++;
 
         await arcadia.PanAnsweredAtStartAsync();
         var page = arcadia.Main.PanUpdate!;
+        arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => steam.PanUpdates == 1, "die Windows-Abfrage der Aktualisierung");
         Assert.Equal(PanUpdateState.Updating, page.State);
-        Assert.True(page.IsAskingWindows);
+        Assert.Equal(PanUpdatePageViewModel.PromptHint, page.Hint);
 
         arcadia.Press(UiAction.Back).Press(UiAction.Accept).Press(UiAction.Search).Press(UiAction.Settings);
-        page.QuitCommand.Execute(null);
-        page.RetryCommand.Execute(null);
-        page.RemoveCommand.Execute(null);
+        page.ConfirmCommand.Execute(null);
+        page.CancelCommand.Execute(null);
 
         Assert.Equal(0, quit);
         Assert.Equal(1, steam.PanUpdates);
-        Assert.Equal(0, steam.PanUninstalls);
+        Assert.True(arcadia.Settings.Current.PanEnabled);
         Assert.False(arcadia.Main.IsSettingsOpen);
         Assert.Same(page, arcadia.Main.PanUpdate);
 
         prompt.SetResult();
         await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der bestätigten Abfrage");
         Assert.Equal(1, steam.PanUpdates);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T297-4")]
+    public async Task The_update_installs_no_driver_and_neither_closes_Steam_nor_waits_for_a_Steam_game()
+    {
+        var steam = OldPan();
+        steam.IsSteamRunning = true;
+        steam.IsUsbipReady = false;
+        steam.HidHideVersion = null;
+        using var arcadia = await StartAsync(steam);
+        arcadia.RunningSteamAppId = 620;
+
+        await arcadia.PanAnsweredAtStartAsync();
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
+
+        Assert.Equal(1, steam.PanUpdates);
+        Assert.Equal(0, steam.DriverInstalls);
+        Assert.True(steam.IsSteamRunning);
+        Assert.False(steam.IsUsbipReady, "a missing driver stays the \"Treiber installieren\" row");
     }
 }

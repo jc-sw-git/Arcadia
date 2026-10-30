@@ -687,25 +687,60 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Removing_Pan_switches_it_off_and_a_declined_prompt_changes_nothing()
+    public void A_declined_update_switches_Pan_off_and_Arcadia_then_leaves_the_old_Pan_alone()
     {
+        // #326: an old Pan without a client gives everything back with its own code and ends itself.
         _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings { PanEnabled = true });
         var settings = new SettingsService(store);
         var service = new ControllerSupportService(settings, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         service.CheckPanAtStart();
+        Assert.True(service.MayTalkToPan, "on, the first hello still reaches Pan: a firmware hold shows first");
 
-        _platform.PanUpdateAnswer = false;
-        Assert.False(await service.RemovePanAsync());
-        Assert.True(service.IsPanUpdateDue);
-        Assert.True(settings.Current.PanEnabled);
+        service.SwitchPanOffForUpdate("Pan --install meldete Fehler 3");
 
-        _platform.PanUpdateAnswer = true;
-        Assert.True(await service.RemovePanAsync());
-        Assert.False(service.IsPanUpdateDue);
         Assert.False(settings.Current.PanEnabled);
-        Assert.Equal(2, _platform.PanUninstalls);
+        Assert.True(service.IsPanUpdateDue, "the switch offers the update again");
+        Assert.False(service.MayTalkToPan);
+        Assert.Equal("Pan --install meldete Fehler 3", service.PanUpdateError);
+    }
+
+    [Fact]
+    public async Task A_done_update_lets_Arcadia_talk_to_Pan_again_and_forgets_the_last_error()
+    {
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        var service = Create();
+        service.CheckPanAtStart();
+        service.SwitchPanOffForUpdate("Fehler 3");
+
+        Assert.True(await service.UpdatePanAsync());
+
+        Assert.True(service.MayTalkToPan);
+        Assert.Null(service.PanUpdateError);
+    }
+
+    [Fact]
+    public void Without_a_due_update_Arcadia_talks_to_Pan_also_while_it_is_off()
+    {
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings { PanEnabled = false });
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        service.CheckPanAtStart();
+
+        Assert.True(service.MayTalkToPan);
+    }
+
+    [Fact]
+    public async Task The_restore_after_the_old_Pan_says_whether_the_prompt_was_confirmed()
+    {
+        var service = Create();
+
+        _platform.RestoreDeclined = true;
+        Assert.False(await service.RestoreAfterOldPanAsync());
+        _platform.RestoreDeclined = false;
+        Assert.True(await service.RestoreAfterOldPanAsync());
+        Assert.Equal(2, _platform.Restores);
     }
 
     // --- SISR, removed on request or kept (#214) ---
@@ -959,14 +994,12 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public Arcadia.ControllerSupport.Pan.PanCompatibility PanCompatibility { get; set; } = Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible;
 
-        /// <summary>What the Pan-only update and the uninstall at start answer (#297): true done, false declined; a set error is thrown.</summary>
+        /// <summary>What the Pan-only update answers (#297): true done, false declined; a set error is thrown.</summary>
         public bool PanUpdateAnswer { get; set; } = true;
 
         public Exception? PanUpdateError { get; set; }
 
         public int PanUpdates { get; private set; }
-
-        public int PanUninstalls { get; private set; }
 
         public Task<bool> UpdatePanAsync(CancellationToken cancellationToken)
         {
@@ -979,18 +1012,6 @@ public sealed class ControllerSupportServiceTests : IDisposable
             if (PanUpdateAnswer)
             {
                 PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible;
-            }
-
-            return Task.FromResult(PanUpdateAnswer);
-        }
-
-        public Task<bool> UninstallPanAsync(CancellationToken cancellationToken)
-        {
-            PanUninstalls++;
-            if (PanUpdateAnswer)
-            {
-                PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.NotInstalled;
-                IsPanReady = false;
             }
 
             return Task.FromResult(PanUpdateAnswer);

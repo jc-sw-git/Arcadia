@@ -216,8 +216,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     public event EventHandler? PanDialogShown;
 
     /// <summary>
-    /// The start page while the installed Pan isn't this Arcadia's (#297): over everything but Pan's dialogs, until Pan
-    /// is updated or removed.
+    /// The start page while the installed Pan isn't this Arcadia's and Pan is on (#297, #326): over everything but Pan's
+    /// dialogs, until Pan is updated, or switched off and the old one has ended.
     /// </summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPanUpdateShown), nameof(IsDialogOpen))]
@@ -225,8 +225,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     public bool IsPanUpdateShown => PanUpdate is not null;
 
-    // Pan answered while one of its dialogs was open: the update runs once that dialog is closed.
+    // [A] and Pan's answer came while one of its dialogs was open: the update runs once that dialog is closed.
     private bool _panUpdateAfterDialog;
+
+    /// <summary>Pan answered its first hello at start (#297): the update waits for that, a firmware hold shows first.</summary>
+    private bool _panAnswered;
 
     /// <summary>A dialog or menu over the page takes the input.</summary>
     public bool IsDialogOpen => IsPanDialogOpen || IsPanUpdateShown || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen || IsWebSignInOpen;
@@ -1127,30 +1130,37 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     void IGameActionsOwner.Confirm(ConfirmationViewModel confirmation) => Confirmation = confirmation;
 
     /// <summary>
-    /// At start, before the window shows (#297): compares the installed Pan with the bundled one and, if they differ,
-    /// shows the update page in place of the library. The update itself waits for <see cref="StartPanUpdate"/>.
+    /// At start, before the window shows (#297): compares the installed Pan with the bundled one and, if they differ and
+    /// Pan is on, shows the notice of the update in place of the library (#326). Switched off, the settings offer it.
     /// </summary>
     public void ShowPanUpdateIfDue()
     {
-        if (!_controllerSupport.CheckPanAtStart())
+        if (!_controllerSupport.CheckPanAtStart() || !_settings.Current.PanEnabled)
         {
             return;
         }
 
-        PanUpdate = new PanUpdatePageViewModel(_controllerSupport, toast =>
+        PanUpdate = new PanUpdatePageViewModel(_controllerSupport, _time, StartPanUpdate, toast =>
         {
             PanUpdate = null;
             Toast.Show(toast);
         }, () => QuitRequested?.Invoke(this, EventArgs.Empty));
     }
 
-    /// <summary>
-    /// Pan has answered once at start, so a firmware hold from before has shown its dialog: the update runs now, or
-    /// after that dialog, so the puck is never released in the middle of Steam's update (#297, decision 7).
-    /// </summary>
-    public void StartPanUpdate()
+    /// <summary>Pan has answered once at start (or never will), so a firmware hold from before has shown its dialog.</summary>
+    public void PanAnsweredAtStart()
     {
-        if (PanUpdate is not { } panUpdate)
+        _panAnswered = true;
+        StartPanUpdate();
+    }
+
+    /// <summary>
+    /// The update runs once [A] was pressed on the notice and Pan answered, and after a firmware dialog, so the puck is
+    /// never released in the middle of Steam's update (#297, decision 7; #326).
+    /// </summary>
+    private void StartPanUpdate()
+    {
+        if (PanUpdate is not { State: PanUpdateState.Waiting } panUpdate || !_panAnswered)
         {
             return;
         }

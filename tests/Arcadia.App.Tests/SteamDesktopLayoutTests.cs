@@ -125,6 +125,78 @@ public sealed class SteamDesktopLayoutTests
         await arcadia.WaitUntilAsync(() => ArcadiaDriver.Log.Contains("Kopie für Steam: gibt Eingaben weiter (Arcadia vorne, Steams Desktop-Belegung aktiv)", StringComparison.Ordinal), "Die Kopie soll ihre Änderung loggen");
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T315-3")]
+    public async Task On_the_desktop_without_a_game_Steam_gets_the_copy_only_while_its_desktop_layout_is_not_ignored()
+    {
+        using var arcadia = await StartWithSteamControllerAsync();
+        SwitchOnSteamsPage(arcadia);
+        Assert.False(arcadia.Settings.Current.IgnoreSteamDesktopLayout);
+
+        arcadia.IsArcadiaInFront = false;
+        Assert.True(arcadia.CopyWiring.Forwarding());
+        Assert.False(arcadia.XboxPad.ForwardingAllowed());
+
+        // ▶ switches it on again, from the controller alone.
+        arcadia.IsArcadiaInFront = true;
+        var launchers = arcadia.OpenLauncherSettings();
+        arcadia.FocusRow("steam");
+        arcadia.Press(UiAction.Accept);
+        arcadia.FocusRow(SteamDesktopLayoutRowViewModel.RowKey);
+        arcadia.Press(UiAction.Right);
+        Assert.True(arcadia.Settings.Current.IgnoreSteamDesktopLayout);
+        arcadia.Press(UiAction.Back).Press(UiAction.Back);
+        Assert.Null(launchers.PageLauncherId);
+
+        arcadia.IsArcadiaInFront = false;
+        Assert.False(arcadia.CopyWiring.Forwarding());
+        Assert.True(arcadia.XboxPad.ForwardingAllowed());
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T315-4")]
+    public async Task Switched_while_a_game_on_Arcadia_runs_the_game_keeps_the_pad_and_only_Arcadia_in_front_follows_the_setting()
+    {
+        using var arcadia = await StartWithSteamControllerAsync(new AppSettings { ActiveLaunchers = ["steam", "gog"], IgnoreSteamDesktopLayout = false });
+        arcadia.Press(UiAction.NextTab);
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "GOG soll das Spiel starten");
+        await arcadia.TickSteamControllerAsync();
+
+        SwitchOnSteamsPage(arcadia);
+        Assert.True(arcadia.Settings.Current.IgnoreSteamDesktopLayout);
+        Assert.False(arcadia.CopyWiring.Forwarding());
+        await arcadia.WaitUntilAsync(() => ArcadiaDriver.Log.Contains("Kopie für Steam: meldet Ruhe (Arcadia vorne, Steams Desktop-Belegung ignoriert)", StringComparison.Ordinal), "Die Kopie soll ihre Änderung loggen");
+
+        arcadia.IsArcadiaInFront = false;
+        Assert.False(arcadia.CopyWiring.Forwarding());
+        Assert.True(arcadia.XboxPad.ForwardingAllowed());
+        Assert.True(arcadia.XboxPad.IsPlugged);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T315-4")]
+    public async Task A_game_on_Steam_Eingabe_gets_the_Steam_Controller_through_the_copy_whatever_the_setting()
+    {
+        using var arcadia = await StartWithSteamControllerAsync();
+        Assert.Equal("Steam", arcadia.SelectedTab?.Name);
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "Steam soll das Spiel starten");
+        await arcadia.TickSteamControllerAsync();
+
+        arcadia.IsArcadiaInFront = false;
+        Assert.True(arcadia.CopyWiring.Forwarding());
+        Assert.False(arcadia.XboxPad.ForwardingAllowed());
+
+        arcadia.IsArcadiaInFront = true;
+        SwitchOnSteamsPage(arcadia);
+        Assert.False(arcadia.Settings.Current.IgnoreSteamDesktopLayout);
+        arcadia.IsArcadiaInFront = false;
+        Assert.True(arcadia.CopyWiring.Forwarding());
+        Assert.False(arcadia.XboxPad.ForwardingAllowed());
+        Assert.False(arcadia.XboxPad.IsPlugged);
+    }
+
     private static async Task<ArcadiaDriver> StartWithSteamControllerAsync(AppSettings? settings = null)
     {
         var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, settings ?? new AppSettings { ActiveLaunchers = ["steam", "gog"] });

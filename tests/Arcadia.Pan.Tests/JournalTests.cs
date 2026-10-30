@@ -34,6 +34,37 @@ public class JournalTests
     }
 
     [Fact]
+    public void A_journal_of_a_Pan_before_the_firmware_hold_is_read_with_all_it_has_to_undo()
+    {
+        // #326: the bundled Pan's --restore undoes the journal an older Pan left, which lacks the fields added since.
+        using var journal = new TempJournal();
+        Directory.CreateDirectory(Path.GetDirectoryName(journal.File.Path)!);
+        File.WriteAllText(journal.File.Path, """
+            {
+              "Version": 1,
+              "Generation": 3,
+              "ClientPid": 1234,
+              "ClientStartTime": 133000000000000000,
+              "Emulating": true,
+              "HeldProcesses": [ { "Pid": 4321, "StartTime": 133000000000000500, "ImageName": "viiper.exe" } ],
+              "HiddenDevices": [ "HID\\VID_28DE&PID_1304&MI_00\\1&2&3" ],
+              "AllowListed": [ "C:\\Arcadia\\Arcadia.exe" ],
+              "CloakingWasOn": false
+            }
+            """);
+
+        var load = journal.File.Load();
+
+        Assert.Null(load.Problem);
+        Assert.True(load.State.HasWork);
+        Assert.True(load.State.HidHideChanged);
+        Assert.Equal(@"HID\VID_28DE&PID_1304&MI_00\1&2&3", Assert.Single(load.State.HiddenDevices));
+        Assert.Equal(@"C:\Arcadia\Arcadia.exe", Assert.Single(load.State.AllowListed));
+        Assert.False(load.State.FirmwareHold);
+        Assert.False(load.State.PuckRestartPending);
+    }
+
+    [Fact]
     public void No_journal_means_nothing_to_undo()
     {
         using var journal = new TempJournal();

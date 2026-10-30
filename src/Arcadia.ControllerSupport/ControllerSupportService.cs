@@ -446,7 +446,7 @@ public sealed class ControllerSupportService(
 
     /// <summary>
     /// Set at start while the installed Pan isn't the bundled one (#297) until it is replaced or removed: Pan's emulation
-    /// waits meanwhile, as the update ends whatever the old Pan runs.
+    /// waits meanwhile, as the update ends whatever the old Pan runs. Declined, it stays set while Pan is off (#326).
     /// </summary>
     public bool IsPanUpdateDue
     {
@@ -457,8 +457,21 @@ public sealed class ControllerSupportService(
     private bool _panUpdateDue;
 
     /// <summary>
+    /// Whether Arcadia may talk to the installed Pan: not to an old one the player didn't update (#326). Left without a
+    /// client, the old Pan undoes what it holds with its own code, whatever protocol it speaks, and ends itself.
+    /// </summary>
+    public bool MayTalkToPan => !IsPanUpdateDue || Settings.PanEnabled;
+
+    /// <summary>Why the last update of Pan failed, for the switch's info panel while it is due (#326); null after a decline.</summary>
+    public string? PanUpdateError { get; private set; }
+
+    /// <summary>The Pan service still runs; an old Pan left alone ends itself unless it couldn't give the controllers back.</summary>
+    public bool IsPanRunning => IsSupportedPlatform && _platform.IsPanRunning;
+
+    /// <summary>
     /// Once at start, before the library shows (#297): reads the bundled and the installed Pan.exe. Not installed: no
-    /// update; installed (also switched off in Arcadia) and not exactly the bundled one: <see cref="IsPanUpdateDue"/>.
+    /// update; installed and not exactly the bundled one: <see cref="IsPanUpdateDue"/>, also while Pan is switched off,
+    /// whose settings then offer the update (#326).
     /// </summary>
     public bool CheckPanAtStart()
     {
@@ -472,7 +485,7 @@ public sealed class ControllerSupportService(
 
         if (compatibility is PanCompatibility.UpdateRequired)
         {
-            Log?.Invoke("Pan: die installierte Version ist nicht die mitgelieferte – Arcadia ersetzt sie vor dem Start");
+            Log?.Invoke("Pan: die installierte Version ist nicht die mitgelieferte – fällig ist ein Update");
         }
         else if (compatibility is PanCompatibility.NotBundled)
         {
@@ -484,7 +497,7 @@ public sealed class ControllerSupportService(
     }
 
     /// <summary>
-    /// The mandatory update at start (#297): only Pan, with one Windows prompt; no driver, no download, Steam may run.
+    /// The update of Pan (#297, #326): only Pan, with one Windows prompt; no driver, no download, Steam may run.
     /// False if the prompt was declined; throws when Pan failed or didn't answer in time (its log says why).
     /// </summary>
     public async Task<bool> UpdatePanAsync(CancellationToken cancellationToken = default)
@@ -496,6 +509,7 @@ public sealed class ControllerSupportService(
         }
 
         IsPanUpdateDue = false;
+        PanUpdateError = null;
         _driversChecked = false;
         Log?.Invoke("Pan aktualisiert");
         OnChanged();
@@ -503,22 +517,30 @@ public sealed class ControllerSupportService(
     }
 
     /// <summary>
-    /// "Pan entfernen" when the update at start fails (#297): Pan's <c>--uninstall</c> without the drivers, one prompt;
-    /// Arcadia then runs without Pan, switched off. False if the prompt was declined.
+    /// The update was declined or failed (#326): Pan goes off, so Arcadia leaves the old Pan alone, and the switch offers
+    /// the update again. <paramref name="error"/> is why it failed, null if the player said no.
     /// </summary>
-    public async Task<bool> RemovePanAsync(CancellationToken cancellationToken = default)
+    public void SwitchPanOffForUpdate(string? error)
     {
-        if (!await WithTimeoutAsync(_platform.UninstallPanAsync, DriversInstallTimeout, "Das Entfernen von Pan", cancellationToken))
+        PanUpdateError = error;
+        UpdateSettings(settings => settings with { PanEnabled = false });
+        Log?.Invoke(error is null ? "Pan nicht aktualisiert, Pan ist ausgeschaltet" : $"Pan-Aktualisierung fehlgeschlagen, Pan ist ausgeschaltet: {error}");
+        OnChanged();
+    }
+
+    /// <summary>
+    /// "Controller wiederherstellen" when the old Pan didn't end after the update was declined (#326): the bundled Pan's
+    /// <c>--restore</c>, one prompt. False if the prompt was declined; throws when it failed.
+    /// </summary>
+    public async Task<bool> RestoreAfterOldPanAsync(CancellationToken cancellationToken = default)
+    {
+        if (!await _platform.RestoreControllersAsync(cancellationToken))
         {
-            Log?.Invoke("Entfernen von Pan in der Windows-Abfrage abgelehnt");
+            Log?.Invoke("Wiederherstellung nach dem alten Pan in der Windows-Abfrage abgelehnt");
             return false;
         }
 
-        IsPanUpdateDue = false;
-        _driversChecked = false;
-        UpdateSettings(settings => settings with { PanEnabled = false });
-        Log?.Invoke("Pan entfernt, Pan ist ausgeschaltet");
-        OnChanged();
+        Log?.Invoke("Controller nach dem alten Pan wiederhergestellt");
         return true;
     }
 

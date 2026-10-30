@@ -29,6 +29,9 @@ public interface IControllerSupportPlatform
     /// <summary>Pan, the guardian service, is installed (#243); without it Arcadia plugs no pad in.</summary>
     bool IsPanReady { get; }
 
+    /// <summary>The Pan service is in any state but stopped (#326); false if it isn't installed.</summary>
+    bool IsPanRunning => false;
+
     /// <summary>Whether the installed Pan is exactly the one Arcadia ships (#297); reads files, so off the UI thread or once at start.</summary>
     PanCompatibility PanCompatibility { get; }
 
@@ -71,8 +74,6 @@ public interface IControllerSupportPlatform
     /// </summary>
     Task<bool> UpdatePanAsync(CancellationToken cancellationToken) => Task.FromResult(false);
 
-    /// <summary>"Pan entfernen" after a failed update (#297): Pan's <c>--uninstall</c> without the drivers; false if declined.</summary>
-    Task<bool> UninstallPanAsync(CancellationToken cancellationToken) => Task.FromResult(false);
 
     /// <summary>Pan's <c>--restore</c>: gives the real controllers back by hand; false if the user declined the Windows prompt.</summary>
     Task<bool> RestoreControllersAsync(CancellationToken cancellationToken);
@@ -110,6 +111,8 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
 
     /// <summary>Installed, and its last run didn't end with an error (then its install repairs it).</summary>
     public bool IsPanReady => OperatingSystem.IsWindows() && PanSetup.IsInstalled && !PanPipeTransport.LastRunFailed();
+
+    public bool IsPanRunning => OperatingSystem.IsWindows() && PanPipeTransport.IsServiceRunning();
 
     public PanCompatibility PanCompatibility => OperatingSystem.IsWindows() ? PanSetup.Compatibility : PanCompatibility.NotInstalled;
 
@@ -160,9 +163,6 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
 
     public Task<bool> UpdatePanAsync(CancellationToken cancellationToken) =>
         OperatingSystem.IsWindows() ? PanSetup.InstallAsync(null, null, cancellationToken) : Task.FromResult(false);
-
-    public Task<bool> UninstallPanAsync(CancellationToken cancellationToken) =>
-        OperatingSystem.IsWindows() ? PanSetup.UninstallAsync(removeDrivers: false, cancellationToken) : Task.FromResult(false);
 
     public async Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken)
     {

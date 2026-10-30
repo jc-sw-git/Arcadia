@@ -35,7 +35,7 @@ this, is never started any more; Arcadia only removes it on request ([sisr-remov
 | Pan hides every other controller Arcadia takes over, per model | [pan-hiding-controllers.md](pan-hiding-controllers.md) |
 | Pan's puck restart: who may hold the puck, the copy is never restarted | [pan-puck-restart.md](pan-puck-restart.md) |
 | Pan: setup with one UAC prompt, uninstall, `--restore`, the data folder, exit codes | [pan-setup.md](pan-setup.md) |
-| Pan: the mandatory update at start | [pan-update.md](pan-update.md) |
+| Pan: the update at start, announced and declinable | [pan-update.md](pan-update.md) |
 | Pan: firmware hold after a crash mid update | [pan-firmware-hold.md](pan-firmware-hold.md) |
 | Pan: known limits and accepted risks | [pan-risks.md](pan-risks.md) |
 | What an older Arcadia left of SISR, "SISR entfernen" / "SISR behalten" | [sisr-removal.md](sisr-removal.md) |

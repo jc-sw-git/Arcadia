@@ -65,8 +65,10 @@ switch.
   Steam Controller, Steam Controller and puck excluded); only switching Pan off meanwhile has none.
 - Pan's notices: a toast while Arcadia is in front, the overlay notice (where the mouse mode shows its label) while a
   game is in front, so the player sees them in the game too. A hold the player is watching goes on: during the View
-  hold the notice stands below "Zurück zu Arcadia". An installed Pan that isn't the bundled one is replaced at start
-  without a question (#297, page "Pan wird aktualisiert", `docs/controller-support/pan-update.md`).
+  hold the notice stands below "Zurück zu Arcadia". An installed Pan that isn't the bundled one is announced at start
+  and updated only on [A] (#297, #326, page "Neue Pan-Version", `docs/controller-support/pan-update.md`); declined,
+  Pan is switched off, and the switch reads "Neue Pan-Version verfügbar" (blue i, a blue box first in its info panel)
+  and updates Pan before it switches on.
 - Group "SISR" (#214, designs T214Settings and T214Dialog) below "STEAM", only while SISR or its Steam marker is on
   the PC: "SISR entfernen" [Entfernen] and, indented, "SISR behalten" [Ausblenden]. Arcadia never starts SISR and
   removes nothing without the player. With the marker and Steam running, [Entfernen] asks "Steam beenden?" ([A]

@@ -181,6 +181,21 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
         }
     }
 
+    /// <summary>The service is in any state but stopped (#326): an old Pan left alone ends itself once it gave everything back.</summary>
+    public static bool IsServiceRunning()
+    {
+        using var service = OpenService();
+        try
+        {
+            return service is not null && service.Status != ServiceControllerStatus.Stopped;
+        }
+        catch (InvalidOperationException)
+        {
+            // Removed meanwhile.
+            return false;
+        }
+    }
+
     private static ServiceController? OpenService()
     {
         if (!ServiceExists())

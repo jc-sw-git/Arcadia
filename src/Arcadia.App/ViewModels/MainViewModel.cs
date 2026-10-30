@@ -1155,7 +1155,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     }
 
     /// <summary>
-    /// The update runs once [A] was pressed on the notice and Pan answered, and after a firmware dialog, so the puck is
+    /// The update (or, after [B], the switch-off) runs once the notice was answered and Pan answered, and after a firmware dialog, so the puck is
     /// never released in the middle of Steam's update (#297, decision 7; #326).
     /// </summary>
     private void StartPanUpdate()

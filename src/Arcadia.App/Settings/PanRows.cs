@@ -214,7 +214,8 @@ public sealed class PanRows
             : RowLamp.Resting);
         Main.Info = [.. installFailed ? [new InfoError(_support.LastError!)] : Array.Empty<InfoBlock>(), .. updateDue ? UpdateInfo() : [], .. MainInfo];
 
-        Restore.IsEnabled = !IsBusy;
+        // Not beside the update's Windows prompt: one prompt at a time.
+        Restore.IsEnabled = !IsBusy && !_updating;
         // A fix that failed marks its row red, not the category: the problem itself is still the same (#243 B2).
         Marker = !IsOn || notHere ? null
             : status.State == PanEmulationState.Stopped ? HealthSeverity.Error

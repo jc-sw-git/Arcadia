@@ -247,6 +247,9 @@ public sealed class PanUpdateAtStartTests
         Assert.True(Pan().IsLocked);
         Pan().Activate();
         Assert.Equal(1, steam.PanUpdates);
+        // No second Windows prompt beside the update's: "Controller wiederherstellen" waits too.
+        var restore = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.RestoreKey));
+        Assert.False(restore.IsEnabled, "Controller wiederherstellen can start a second prompt while the update's is up");
 
         prompt.SetResult();
         await arcadia.WaitUntilAsync(() => arcadia.Settings.Current.PanEnabled, "Pan ist an");
@@ -308,6 +311,24 @@ public sealed class PanUpdateAtStartTests
 
         await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
         Assert.Equal(1, steam.PanUpdates);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T326-6")]
+    public async Task B_pressed_before_Pan_answered_lets_a_firmware_hold_from_before_show_its_dialog_first()
+    {
+        var steam = OldPan();
+        steam.IsSteamRunning = true;
+        steam.IsPanRunning = true;
+        using var arcadia = await StartAsync(steam);
+        arcadia.Pan.HeldForFirmware = true;
+
+        // [B] before Pan's first answer: its hello may still report a hold, whose dialog must come first.
+        arcadia.Press(UiAction.Back);
+        Assert.True(arcadia.ControllerSupport.MayTalkToPan, "Arcadia lets go of the old Pan before its hello could report a firmware hold");
+
+        await arcadia.PanAnsweredAtStartAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Dialog „Steam will die Firmware aktualisieren“");
     }
 
     private static readonly TimeSpan FirmwareWait =

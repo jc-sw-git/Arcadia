@@ -11,7 +11,7 @@ public enum PanUpdateState
     /// <summary>"Neue Pan-Version": [A] updates, [B] goes on without Pan; nothing runs yet (#326).</summary>
     Notice,
 
-    /// <summary>[A] was pressed; the update begins once Pan's own dialogs (a firmware hold) are done.</summary>
+    /// <summary>[A] or [B] was pressed; the update or the switch-off begins once Pan's own dialogs (a firmware hold) are done.</summary>
     Waiting,
     Updating,
 
@@ -32,7 +32,7 @@ public enum PanUpdateState
 /// off and the page waits until the old Pan has given the controllers back and ended, since Arcadia isn't meant to run
 /// beside it; if it doesn't, the page offers the restore and then the steps by hand.
 /// </summary>
-/// <param name="requestStart">[A] on the notice: the owner runs <see cref="Run"/> once Pan's own dialogs are done.</param>
+/// <param name="requestStart">[A] or [B] on the notice: the owner runs <see cref="Run"/> once Pan's own dialogs are done.</param>
 public sealed partial class PanUpdatePageViewModel(ControllerSupportService support, TimeProvider time, Action requestStart, Action<string> done, Action quit)
     : ViewModelBase
 {
@@ -70,6 +70,9 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
         "5. Wähle hier „Erneut prüfen“.",
     ];
 
+    /// <summary>[B] on the notice: once Pan's own dialogs are done, <see cref="Run"/> switches Pan off instead of updating it.</summary>
+    private bool _declining;
+
     /// <summary>The toast once the old Pan has ended: why Pan is off.</summary>
     private string _offToast = DeclinedToast;
 
@@ -90,6 +93,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
     {
         PanUpdateState.Notice => NoticeTitle,
         PanUpdateState.Stopping => StoppingTitle,
+        PanUpdateState.Waiting when _declining => StoppingTitle,
         PanUpdateState.Stuck => StuckTitle,
         PanUpdateState.Restoring => RestoringTitle,
         PanUpdateState.ManualCleanup => ManualTitle,
@@ -100,6 +104,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
     {
         PanUpdateState.Notice => NoticeText,
         PanUpdateState.Stopping => StoppingText,
+        PanUpdateState.Waiting when _declining => StoppingText,
         PanUpdateState.Stuck or PanUpdateState.Restoring => StuckText,
         PanUpdateState.ManualCleanup => ManualText,
         _ => UpdatingText,
@@ -137,10 +142,19 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
 
     public string CancelText => IsNotice ? "Ohne Pan weiter" : "Arcadia beenden";
 
-    /// <summary>Starts the update; on the UI thread, once [A] was pressed and Pan's own dialogs are done.</summary>
+    /// <summary>Starts the update, or the switch-off after [B]; on the UI thread, once Pan's own dialogs are done.</summary>
     public void Run()
     {
-        if (State == PanUpdateState.Waiting)
+        if (State != PanUpdateState.Waiting)
+        {
+            return;
+        }
+
+        if (_declining)
+        {
+            SwitchOff(null, DeclinedToast);
+        }
+        else
         {
             UpdateAsync().Forget("Pan aktualisieren");
         }
@@ -185,7 +199,10 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
         switch (State)
         {
             case PanUpdateState.Notice:
-                SwitchOff(null, DeclinedToast);
+                // Not at once: a firmware hold reported by Pan's first hello needs Pan, so its dialog comes first.
+                _declining = true;
+                State = PanUpdateState.Waiting;
+                requestStart();
                 break;
             case PanUpdateState.Stuck or PanUpdateState.ManualCleanup:
                 quit();

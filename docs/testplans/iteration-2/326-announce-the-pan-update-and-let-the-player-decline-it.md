@@ -26,12 +26,14 @@ is read with all it has to undo).
 - [ ] **T326-4** No Pan installed, or exactly the bundled one: straight into the library. Another Pan, but switched off:
       no notice, no prompt; Einstellungen → Controller: "Controller-Wächter (Pan)" reads "Neue Pan-Version verfügbar"
       with the blue i, its info panel starts with the blue box "Schaltest du den Controller-Wächter ein, …". · E2E: yes
-- [ ] **T326-5** On that switch, [A]: "Pan wird aktualisiert …", the row can't be switched, the prompt opens;
+- [ ] **T326-5** On that switch, [A]: "Pan wird aktualisiert …", the row can't be switched, "Controller wiederherstellen" is
+      greyed out, the prompt opens;
       declined: stays off, toast "Pan: nicht aktualisiert, Controller-Wächter bleibt aus"; confirmed: on, toast "Pan:
       aktualisiert", the emulation starts. · E2E: yes
 - [ ] **T326-6** A firmware hold from before the start (Arcadia ended during "Steam will die Firmware aktualisieren"),
       [A] pressed at once: the page shows "Pan wird aktualisiert" without a prompt, the firmware dialog comes first,
-      the prompt only after it is closed. · E2E: yes
+      the prompt only after it is closed. [B] pressed at once: "Pan wird beendet" without a countdown, the firmware
+      dialog first, the countdown only after it is closed. · E2E: yes
 - [ ] **T326-7** The old Pan doesn't end (e.g. HidHide's Configuration Client open while declining, so its undo can't
       run): after 45 s "Controller freigeben", [A] Controller wiederherstellen, [B] Arcadia beenden. [A] confirmed:
       the library, "Pan: Controller wiederhergestellt, …". [A] declined: "Controller von Hand freigeben" with five
@@ -56,3 +58,4 @@ History:
 | T326-1, T326-2, T326-7 (look) | 2026-10-30 | Claude | PR branch, Debug, real app under Xvfb with `--demo`, keys; Pan faked by a local, uncommitted switch (due update, service never ending, 2 s countdown for the last image), as Linux has no Pan. Looked at: notice, countdown, stage 1, stage 2 with the error. Not looked at: the settings row (Linux shows Pan as unavailable), the real prompt | ✅ | owner's PC open |
 | T326-5, T326-8 (QE) | 2026-10-30 | Claude (QE) | PR branch, Debug, Linux cloud container; two acceptance tests added (a failed update from the switch keeps Pan off with the error in the panel; presses ignored while the restore's prompt is up), each red once by a mutation (error dropped; [B] quitting while restoring) | ✅ | – |
 | T326-4, T326-5 (look) | 2026-10-30 | Claude (QE) | PR branch, Debug, real app under Xvfb with `--demo`, Pan faked by a local, uncommitted switch (supported platform, old Pan installed, update prompt never answered). Looked at: the row with "Neue Pan-Version verfügbar", blue i and blue box first; during the update "Pan wird aktualisiert …", switch locked, prompt hint first in the panel. Found: "Controller wiederherstellen" stays enabled meanwhile | ⚠️ | finding in the PR's Review |
+| T326-5, T326-6 (rework) | 2026-10-30 | Claude | PR branch, Debug, Linux cloud container; the QE's two tests for its findings ([B] before Pan's first answer skipped the firmware hold; "Controller wiederherstellen" enabled beside the update's prompt), red before the fix, green after | ✅ | owner's PC open |

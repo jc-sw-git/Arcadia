@@ -49,6 +49,12 @@ public interface IEmulationGuardian
     Task<bool> UnhideAsync(uint generation, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Hides every connected controller of one model from every program but Arcadia, within this generation's emulation
+    /// (#335); Arcadia has let go of the model first, as Pan restarts it. Never throws but for cancellation before it is sent.
+    /// </summary>
+    Task<ControllerHidingResult> HideControllerAsync(uint generation, Arcadia.Pan.ControllerModel model, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Whether Pan could hide now and, while it hides for <paramref name="generation"/>, whether that hiding still holds
     /// (<see cref="Arcadia.Pan.PanReason.HidingLost"/>); null while Pan isn't connected. Never throws but for cancellation.
     /// </summary>

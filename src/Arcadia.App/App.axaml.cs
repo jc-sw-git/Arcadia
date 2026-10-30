@@ -203,7 +203,7 @@ public partial class App : Application
             var forGames = SteamControllerForGames.Create(
                 OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, Copy, controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId,
                 () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, steamInFront.Now,
-                () => ForegroundGame.InFront(viewModel.Session.GameFolders, launchedGames), _gamepad.ReadSteamControllers, panNotices, time);
+                () => ForegroundGame.InFront(viewModel.Session.GameFolders, launchedGames), _gamepad, panNotices, time);
             pan.Start();
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;
@@ -215,6 +215,8 @@ public partial class App : Application
             viewModel.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
             _gamepad.Polled += xboxPad.Feed;
             _gamepad.Lost += xboxPad.Drop;
+            _gamepad.Polled += forGames.Others.Feed;
+            _gamepad.Lost += forGames.Others.Drop;
             _gamepad.ButtonPressed += routing.Press;
             _gamepad.ButtonReleased += routing.Release;
             _gamepad.Lost += routing.Drop;

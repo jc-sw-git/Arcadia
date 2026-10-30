@@ -154,7 +154,7 @@ internal sealed class ArcadiaDriver : IDisposable
         {
             CopyWiring = wiring;
             return SteamControllerCopy;
-        }, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, _controllers.ReadSteamControllers, PanNotices, time);
+        }, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, _controllers, PanNotices, time);
         XboxPad = ForGames.Pad;
         Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
         Main.ConnectPan(ForGames);
@@ -162,6 +162,8 @@ internal sealed class ArcadiaDriver : IDisposable
         ForGames.Routing.Update();
         _controllers.Polled += XboxPad.Feed;
         _controllers.Lost += XboxPad.Drop;
+        _controllers.Polled += ForGames.Others.Feed;
+        _controllers.Lost += ForGames.Others.Drop;
         _controllers.ButtonPressed += _gamepad.Press;
         _controllers.ButtonReleased += _gamepad.Release;
         _controllers.Lost += _gamepad.Drop;

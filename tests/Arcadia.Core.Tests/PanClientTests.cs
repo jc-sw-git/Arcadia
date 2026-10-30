@@ -109,6 +109,45 @@ public sealed class PanClientTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task An_unwanted_Pan_is_let_go_silently_and_not_reached_again_until_it_is_wanted()
+    {
+        // #326: an old Pan the player didn't update is left alone, so it gives everything back and ends itself.
+        var wanted = true;
+        await using var client = new PanClient(_server, _time, Log) { RequestTimeout = TimeSpan.FromSeconds(10), Wanted = () => Volatile.Read(ref wanted) };
+        var lost = 0;
+        client.Lost += _ => Interlocked.Increment(ref lost);
+        client.Start();
+        await AdvanceUntil(() => client.IsConnected, "verbunden");
+
+        Volatile.Write(ref wanted, false);
+        await AdvanceUntil(() => !client.IsConnected, "getrennt");
+        Assert.Equal(PanClient.LeftAlone, client.Unavailable());
+        Assert.Equal(0, lost);
+        for (var i = 0; i < 5; i++)
+        {
+            _time.Advance(PanClient.Retry);
+            await Task.Delay(20);
+        }
+
+        Assert.False(client.IsConnected);
+
+        Volatile.Write(ref wanted, true);
+        await AdvanceUntil(() => client.IsConnected, "wieder verbunden");
+    }
+
+    [Fact]
+    public async Task Never_wanted_the_first_attempt_ends_without_reaching_Pan()
+    {
+        await using var client = new PanClient(_server, _time, Log) { Wanted = () => false };
+        client.Start();
+
+        await client.FirstAttempt.WaitAsync(Soon);
+
+        Assert.False(client.IsConnected);
+        Assert.Equal(PanClient.LeftAlone, client.Unavailable());
+    }
+
+    [Fact]
     public async Task The_heartbeat_goes_only_while_the_feeder_pulses_and_its_absence_lets_Pan_tear_down()
     {
         await ConnectedAsync();

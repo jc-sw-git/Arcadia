@@ -1,28 +1,41 @@
-# Pan: the mandatory update at start (#297)
+# Pan: the update at start (#297, #326)
 
-Arcadia runs only with its own Pan: compatible = exactly the bundled Pan, no version range.
+Arcadia runs only with its own Pan: compatible = exactly the bundled Pan, no version range. The update is announced
+and runs only when the player confirms; declined, Pan is switched off and Arcadia leaves the old Pan alone.
 
 - Before the window shows, `ControllerSupportService.CheckPanAtStart` compares the SHA-256 of the installed and the
   bundled exe (`PanCompatibilityCheck`; the log line "Pan geprüft in … ms" times it). A newer Pan after an Arcadia
-  downgrade is replaced as well; an unreadable exe or a service without one counts as different. Two small files, so
-  it stays within the start budget when nothing is due.
-- Not installed: no check, no page. Switched off in Arcadia (`PanEnabled`): replaced all the same, and stays off. A
-  build without a bundled Pan (`NotBundled`, a Debug build that skipped it) checks nothing.
-- Different: the page "Pan wird aktualisiert" (`PanUpdatePageViewModel`, `MainViewModel.PanUpdate`) covers everything
-  but Pan's own dialogs; there is no question. Pan's emulation waits meanwhile (`IsPanUpdateDue`), since the update
-  ends whatever the old Pan runs.
-- Firmware hold first: the update waits until Pan answered its first hello (`PanClient.FirstAttempt`, at most 5 s) and
-  the emulation ticked once, so a hold from before the start opens its dialog ([pan-firmware-hold.md](pan-firmware-hold.md));
-  the update starts when that dialog is closed (`MainViewModel.StartPanUpdate`).
+  downgrade counts as different too; an unreadable exe or a service without one counts as different. Two small files,
+  so it stays within the start budget when nothing is due.
+- Not installed: no check, no page. A build without a bundled Pan (`NotBundled`, a Debug build that skipped it)
+  checks nothing. Different: `IsPanUpdateDue`; Pan's emulation waits meanwhile, since the update ends whatever the old
+  Pan runs.
+- **Pan on:** the page "Neue Pan-Version" (`PanUpdatePageViewModel`, `MainViewModel.PanUpdate`) covers everything but
+  Pan's own dialogs and says Windows asks next. [A] "Aktualisieren" starts the update, [B] "Ohne Pan weiter" declines.
+  Nothing below the page takes a press; while a Windows prompt is up or the countdown runs, every press is ignored.
+- **Pan off:** no page. The switch "Controller-Wächter (Pan)" reads "Neue Pan-Version verfügbar" with the blue i and
+  its info panel starts with a blue box; switching it on runs the update first (`PanRows`), and only a confirmed update
+  switches Pan on. Declined or failed, it stays off with the toast "… bleibt aus" (a failure's error in the panel).
+- Firmware hold first: [A] starts the update, and [B] the switch-off, only once Pan answered its first hello (`PanClient.FirstAttempt`, at
+  most 5 s) and the emulation ticked once, so a hold from before the start opens its dialog
+  ([pan-firmware-hold.md](pan-firmware-hold.md)); the update runs when that dialog is closed
+  (`MainViewModel.PanAnsweredAtStart`, `StartPanUpdate`). [A] pressed earlier shows "Pan wird aktualisiert" meanwhile, [B] "Pan wird beendet" without a countdown.
 - Only Pan: `--install --expect-hash` without driver installers, so no download (works offline), no HidHide setup, no
   puck restart; Steam may run and a running Steam game doesn't block it. One UAC prompt, which needs mouse or keyboard
-  until #247.
-- Declined, timed out or failed (Pan's exit code; details in `pan.log`): "Pan muss aktualisiert werden" with the error,
-  [A] Erneut versuchen, [X] Pan entfernen (`--uninstall` without drivers, one prompt; Arcadia then starts with Pan
-  switched off; declined, the page stays), [B] Arcadia beenden. The library can't be reached before the update worked
-  or Pan is removed; while a prompt is up every press is ignored.
+  until #247. Confirmed: library, toast "Pan: aktualisiert".
+- **Declined or failed** ([B], the prompt declined, Pan's exit code; details in `pan.log`):
+  `SwitchPanOffForUpdate` sets `PanEnabled = false` (and the error for the switch's panel), so `MayTalkToPan` is false
+  and `PanClient` (`Wanted`) drops its connection and doesn't reconnect while the update is due and Pan off. Left
+  without a client, the old Pan undoes what it holds with its own code, whatever protocol it speaks, and ends itself
+  after 30 s ([pan.md](pan.md)). The page shows "Pan wird beendet" with a 45 s countdown and opens the library as soon
+  as the service has stopped (`IsPanRunning`), with the toast naming why Pan is off.
+- **Old Pan still running after 45 s** (its undo failed and it keeps retrying): stage 1 "Controller freigeben",
+  [A] "Controller wiederherstellen" runs the bundled Pan's `--restore` (one prompt; it reads an older Pan's journal,
+  `JournalTests`), then the library; [B] ends Arcadia. Declined or failed: stage 2 "Controller von Hand freigeben"
+  with the steps in HidHide's Configuration Client ([pan-hiding.md](pan-hiding.md), last resort), [A] "Erneut prüfen"
+  runs the countdown again, [B] ends Arcadia. "Checked" means the service ended; Arcadia doesn't ask HidHide itself.
 - Pan's `--install` stages the new exe as `Pan.exe.new` and verifies it first, then stops (= full teardown) and
   replaces the old service; if the file swap fails or the new Pan can't be created, configured or started, a half-made
   service goes and the old `Pan.exe` comes back as the service. A rejected or interrupted update changes nothing, and
-  the next start shows the page again. `--install` accepts an older exe over a newer one: it checks only the expected
-  hash, no version. The `.old` backup is removed best-effort after the new service runs.
+  the next start with Pan on shows the page again. `--install` accepts an older exe over a newer one: it checks only
+  the expected hash, no version. The `.old` backup is removed best-effort after the new service runs.

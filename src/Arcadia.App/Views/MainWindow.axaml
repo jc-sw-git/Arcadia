@@ -1718,8 +1718,9 @@
         <views:FirstRunView DataContext="{Binding FirstRun}" />
       </Panel>
 
-      <!-- The installed Pan isn't this Arcadia's (#297): a page over everything but Pan's dialogs, no question, until Pan is
-           updated or removed. Failed, [A] tries again, [X] removes Pan, [B] ends Arcadia. -->
+      <!-- The installed Pan isn't this Arcadia's and Pan is on (#297, #326, artboards T326F01–F09): a page over everything
+           but Pan's dialogs. [A] updates, [B] goes on without Pan, which then waits until the old Pan has ended; if it
+           doesn't, [A] restores the controllers or checks again, [B] ends Arcadia. -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsPanUpdateShown}">
         <!-- Covers the library entirely, in the bars beside the layout too: it isn't there yet for the player. -->
         <Border Classes="bleedAll" Background="{StaticResource Bg}" />
@@ -1729,29 +1730,49 @@
               <Border Classes="promptIcon" IsVisible="{Binding IsBusy}">
                 <Path Classes="spinner" HorizontalAlignment="Center" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
               </Border>
-              <Border Classes="promptIcon warning" IsVisible="{Binding IsFailed}">
+              <Border Classes="promptIcon" IsVisible="{Binding IsNotice}">
+                <TextBlock Text="i" />
+              </Border>
+              <Border Classes="promptIcon warning" IsVisible="{Binding IsWarning}">
                 <TextBlock Text="!" />
               </Border>
               <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
             </StackPanel>
             <TextBlock Classes="promptBody" Text="{Binding Text}" Foreground="{StaticResource Text}" />
-            <TextBlock Classes="promptBody" Text="{x:Static vm:PanUpdatePageViewModel.PromptHint}" IsVisible="{Binding IsAskingWindows}" />
+            <Panel Width="200" Height="200" HorizontalAlignment="Center" IsVisible="{Binding IsCountingDown}">
+              <Path Classes="spinner large"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="{Binding SecondsLeft}" FontSize="52" FontWeight="ExtraBold" HorizontalAlignment="Center" />
+                <TextBlock Text="Sekunden" FontSize="15" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Panel>
+            <ItemsControl ItemsSource="{x:Static vm:PanUpdatePageViewModel.ManualSteps}" IsVisible="{Binding ShowsSteps}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="10" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Classes="promptBody" Text="{Binding}" Foreground="{StaticResource Text}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Classes="promptBody" Text="{Binding Hint}" IsVisible="{Binding HasHint}" />
             <Border Classes="dangerBox" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                 <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.01" Stroke="{StaticResource Danger}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" VerticalAlignment="Top" />
                 <TextBlock Grid.Column="1" Text="{Binding Error}" FontSize="16" TextWrapping="Wrap" />
               </Grid>
             </Border>
-            <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsFailed}">
-              <Button Classes="plain action primaryAction" Content="Erneut versuchen" Command="{Binding RetryCommand}" />
-              <Button Classes="plain action" Content="Pan entfernen" Command="{Binding RemoveCommand}" />
-              <Button Classes="plain action" Content="Arcadia beenden" Command="{Binding QuitCommand}" />
+            <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding HasButtons}">
+              <Button Classes="plain action primaryAction" Content="{Binding ConfirmText}" Command="{Binding ConfirmCommand}" />
+              <Button Classes="plain action" Content="{Binding CancelText}" Command="{Binding CancelCommand}" />
             </StackPanel>
-            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0" IsVisible="{Binding IsFailed}">
+            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0" IsVisible="{Binding HasButtons}">
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Erneut versuchen" />
-                <ctl:KeyHint Pad="X" Keys="F" Text="Pan entfernen" />
-                <ctl:KeyHint Pad="B" Keys="Esc" Text="Arcadia beenden" />
+                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding ConfirmText}" />
+                <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding CancelText}" />
               </StackPanel>
             </Border>
           </StackPanel>

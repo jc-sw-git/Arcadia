@@ -107,18 +107,16 @@ internal sealed class FakeSteam : IControllerSupportPlatform
 
     private int _panUpdates;
 
-    /// <summary>How often "Pan entfernen" ran Pan's <c>--uninstall</c> (#297).</summary>
-    public int PanUninstalls => Volatile.Read(ref _panUninstalls);
-
-    private int _panUninstalls;
-
-    /// <summary>What the Windows prompt of the next update or uninstall answers: true confirmed, false declined.</summary>
+    /// <summary>What the Windows prompt of the next update or restore answers: true confirmed, false declined.</summary>
     public bool PromptConfirmed { get; set; } = true;
 
     /// <summary>Set, the next update fails with this message (Pan's exit code, a timeout).</summary>
     public string? PanUpdateError { get; set; }
 
-    /// <summary>Set, the next update's Windows prompt stays up until the test completes it (#297: presses while it is up).</summary>
+    /// <summary>Set, the next update throws this, as a bug in Arcadia would (not one of Pan's own failures).</summary>
+    public Exception? PanUpdateBug { get; set; }
+
+    /// <summary>Set, the Windows prompt of the next update or restore stays up until the test completes it (#297, #326: presses while it is up).</summary>
     public TaskCompletionSource? PanPromptUp { get; set; }
 
     public async Task<bool> UpdatePanAsync(CancellationToken cancellationToken)
@@ -134,6 +132,11 @@ internal sealed class FakeSteam : IControllerSupportPlatform
             throw new InvalidOperationException(error);
         }
 
+        if (PanUpdateBug is { } bug)
+        {
+            throw bug;
+        }
+
         if (PromptConfirmed)
         {
             PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible;
@@ -142,17 +145,11 @@ internal sealed class FakeSteam : IControllerSupportPlatform
         return PromptConfirmed;
     }
 
-    public Task<bool> UninstallPanAsync(CancellationToken cancellationToken)
-    {
-        Interlocked.Increment(ref _panUninstalls);
-        if (PromptConfirmed)
-        {
-            PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.NotInstalled;
-            IsPanReady = false;
-        }
-
-        return Task.FromResult(PromptConfirmed);
-    }
+    /// <summary>
+    /// The Pan service runs (#326): an old Pan left alone ends itself, so false by default; true keeps it running, as an
+    /// old Pan that couldn't give the controllers back does.
+    /// </summary>
+    public bool IsPanRunning { get; set; }
 
     /// <summary>HidHide's driver version (#243 B2): a supported one unless a test sets another or null (missing).</summary>
     public Version? HidHideVersion { get; set; } = Arcadia.Pan.HidHideRelease.Version;
@@ -236,7 +233,29 @@ internal sealed class FakeSteam : IControllerSupportPlatform
         return Task.FromResult(true);
     }
 
-    public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(true);
+    /// <summary>How often Pan's <c>--restore</c> ran ("Controller wiederherstellen").</summary>
+    public int Restores => Volatile.Read(ref _restores);
+
+    private int _restores;
+
+    /// <summary>Set, the next restore fails with this message (Pan's exit code 5).</summary>
+    public string? RestoreError { get; set; }
+
+    public async Task<bool> RestoreControllersAsync(CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _restores);
+        if (PanPromptUp is { } prompt)
+        {
+            await prompt.Task.WaitAsync(cancellationToken);
+        }
+
+        if (RestoreError is { } error)
+        {
+            throw new InvalidOperationException(error);
+        }
+
+        return PromptConfirmed;
+    }
 
     /// <summary>The rows the real platform shows for usbip-win2, Pan and HidHide, as far as this fake sets them.</summary>
     public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) =>

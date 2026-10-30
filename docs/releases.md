@@ -9,7 +9,8 @@
   The `Velopack` package and the `vpk` tool (`.config/dotnet-tools.json`) share one version.
 - `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`.
 - Pan installs itself to `%ProgramFiles%\Arcadia\Pan` with one UAC prompt; an installed Pan that isn't exactly the
-  bundled one is replaced at start without a question (`docs/controller-support/pan-update.md`). `Pan.exe --restore`
+  bundled one is updated at start once the player confirms; declined, Pan is switched off
+  (`docs/controller-support/pan-update.md`). `Pan.exe --restore`
   (settings: "Controller wiederherstellen") gives the controllers back if the service itself hangs; if Pan can't give
   the Steam Controller back, HidHide's Configuration Client (Start menu, admin) is the user's emergency exit: untick
   the puck and turn hiding off (`docs/controller-support/pan-hiding.md`).

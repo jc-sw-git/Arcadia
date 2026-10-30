@@ -87,7 +87,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _changes = changes;
         _notify = notify;
         _pan = pan;
-        _panRows = new PanRows(support, changes, pan, gameInTheWay, ApplyFix, time ?? TimeProvider.System, action => Dispatcher.UIThread.Post(action));
+        _panRows = new PanRows(support, changes, pan, gameInTheWay, ApplyFix, notify, time ?? TimeProvider.System, action => Dispatcher.UIThread.Post(action));
         _panRows.Switched += Refresh;
         _panRows.TakenOver += () =>
         {

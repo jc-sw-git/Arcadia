@@ -85,6 +85,15 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         get { lock (_lock) return _link is not null && _unavailable is null; }
     }
 
+    /// <summary>
+    /// Whether to talk to Pan at all; false drops the connection and keeps it closed (#326: an old Pan the player didn't
+    /// update is left alone, so it gives everything back with its own code and ends itself).
+    /// </summary>
+    public Func<bool> Wanted { get; init; } = () => true;
+
+    /// <summary>Why the connection stays closed while <see cref="Wanted"/> is false.</summary>
+    public const string LeftAlone = "Pan ist nicht aktualisiert und ausgeschaltet – Arcadia spricht nicht mit ihm";
+
     /// <summary>Starts keeping the connection; the first attempt runs at once.</summary>
     public void Start()
     {
@@ -455,6 +464,16 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         var token = _disposed.Token;
         while (!token.IsCancellationRequested)
         {
+            if (!Wanted())
+            {
+                // Silent: nothing was lost, Arcadia let go on purpose.
+                Drop(null);
+                SetUnavailable(LeftAlone);
+                _firstAttempt.TrySetResult();
+                await Task.Delay(Retry, _time, token);
+                continue;
+            }
+
             if (IsConnected)
             {
                 await Task.Delay(Retry, _time, token);

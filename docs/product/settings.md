@@ -5,7 +5,8 @@
 - A whole page in place of the library (≡, Enter, the chip); B or ✕ go back to the same place. Categories are tabs in
   the header like the launcher tabs (LB/RB, Shift+Q/E, a click; Q/E = LT/RT switch tabs inside a category, e.g.
   launcher pages, as in the library), only those with content; a warning or an error of a category shows its symbol
-  beside the name, info nothing.
+  beside the name, info nothing. Choosing a category's tab opens it at its top level (the launcher list, not the
+  launcher page left there).
 - Pattern "Leiste" for every category: one column of rows, ▲ ▼ (W/S) move, ◀ ▶ (A/D) change switches and choices at
   once, A (Space) starts actions; only settings and actions are rows, facts about a setting (e.g. Pan's status, what a
   removal takes) are boxes (`InfoSection`) below its description in the info panel. The info panel beside the rows

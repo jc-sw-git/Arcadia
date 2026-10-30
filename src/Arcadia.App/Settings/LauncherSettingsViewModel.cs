@@ -358,6 +358,16 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         return true;
     }
 
+    /// <summary>The tab "Launcher" is chosen again: the list, on the launcher whose page was open (owner, 2026-10-30).</summary>
+    public override void ShowTopLevel()
+    {
+        if (_page is { } id)
+        {
+            ClosePage();
+            Focus(_rows[id]);
+        }
+    }
+
     /// <summary>B while a launcher is lifted, or another category: it goes back to where it was; a text being written is dropped.</summary>
     public override void Leave()
     {

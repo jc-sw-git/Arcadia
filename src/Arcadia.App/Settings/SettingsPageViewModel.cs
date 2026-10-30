@@ -23,7 +23,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
         Changes = changes;
         foreach (var category in categories)
         {
-            category.SelectCommand = new RelayCommand(() => Select(category));
+            category.SelectCommand = new RelayCommand(() => ChooseTab(category));
             category.FocusMoved += OnFocusMoved;
             category.PropertyChanged += OnCategoryChanged;
         }
@@ -172,7 +172,18 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
     [RelayCommand]
     private void NextCategory() => Cycle(1);
 
-    private void Cycle(int delta) => Select(Categories[ListFocus.Cycle(Categories.ToList().IndexOf(Selected), delta, Categories.Count)]);
+    private void Cycle(int delta) => ChooseTab(Categories[ListFocus.Cycle(Categories.ToList().IndexOf(Selected), delta, Categories.Count)]);
+
+    /// <summary>A category's tab is chosen: it opens at its top level, not where it was left.</summary>
+    private void ChooseTab(SettingsCategoryViewModel category)
+    {
+        if (category != Selected)
+        {
+            category.ShowTopLevel();
+        }
+
+        Select(category);
+    }
 
     private void Select(SettingsCategoryViewModel category)
     {

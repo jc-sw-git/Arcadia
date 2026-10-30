@@ -1768,7 +1768,8 @@
             <StackPanel Orientation="Horizontal" Spacing="18">
               <Border Classes="promptIcon">
                 <Path Data="M7 7h10a5 5 0 0 1 4.6 7l-1 2.3a2.5 2.5 0 0 1-4.2.5L15 15H9l-1.4 1.8a2.5 2.5 0 0 1-4.2-.5l-1-2.3A5 5 0 0 1 7 7z M8 10v3 M6.5 11.5h3"
-                      Stroke="{StaticResource AccentSoft}" StrokeThickness="1.9" StrokeLineCap="Round" Width="28" Height="28" Stretch="Uniform" />
+                      Stroke="{StaticResource AccentSoft}" StrokeThickness="1.9" StrokeLineCap="Round" Width="28" Stretch="Uniform"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
             </StackPanel>

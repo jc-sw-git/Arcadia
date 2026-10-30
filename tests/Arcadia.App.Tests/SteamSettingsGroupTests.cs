@@ -62,6 +62,25 @@ public sealed class SteamSettingsGroupTests
         Assert.NotEqual(before, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
     }
 
+    [AvaloniaFact]
+    public async Task Coming_back_to_the_launcher_tab_shows_the_list_not_the_page_left()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(WithSteam, steam: new FakeSteam());
+        var launchers = arcadia.OpenLauncherSettings();
+        OpenPageOf(arcadia, launchers, "steam");
+
+        arcadia.Press(UiAction.NextTab).Press(UiAction.PreviousTab);
+        Assert.Same(launchers, arcadia.Main.Settings!.Selected);
+        Assert.Null(launchers.PageLauncherId);
+        Assert.Equal("steam", arcadia.Main.Settings.FocusedRow?.Key);
+
+        // A click on the tab does the same.
+        OpenPageOf(arcadia, launchers, "steam");
+        arcadia.Press(UiAction.NextTab);
+        launchers.SelectCommand!.Execute(null);
+        Assert.Null(launchers.PageLauncherId);
+    }
+
     private static AppSettings Launchers() => new()
     {
         ActiveLaunchers = [.. ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id)],
@@ -72,5 +91,18 @@ public sealed class SteamSettingsGroupTests
     {
         arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
         return Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+    }
+
+    /// <summary>From the launcher list: ▼ to the launcher, A opens its page.</summary>
+    private static void OpenPageOf(ArcadiaDriver arcadia, LauncherSettingsViewModel launchers, string launcherId)
+    {
+        arcadia.Press(UiAction.Up, times: launchers.Rows.Count);
+        for (var row = 0; row < launchers.Rows.Count && arcadia.Main.Settings!.FocusedRow?.Key != launcherId; row++)
+        {
+            arcadia.Press(UiAction.Down);
+        }
+
+        arcadia.Press(UiAction.Accept);
+        Assert.Equal(launcherId, launchers.PageLauncherId);
     }
 }

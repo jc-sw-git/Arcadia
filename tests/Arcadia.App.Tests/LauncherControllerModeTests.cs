@@ -222,10 +222,11 @@ public sealed class LauncherControllerModeTests
         Assert.Equal(new Dictionary<string, bool> { ["gog:demo-0"] = false }, arcadia.Settings.Current.ControllerSupportOverrides);
         Assert.Empty(arcadia.Settings.Current.Launchers);
 
-        // Pan switched on in "Controller": back on the page, both rows can change again.
+        // Pan switched on in "Controller": back on the tab and the page, both rows can change again.
         arcadia.Press(UiAction.NextTab);
         arcadia.Settings.Update(s => s with { PanEnabled = true });
         arcadia.Press(UiAction.PreviousTab);
+        Assert.Same(mode, ModeRow(arcadia, launchers, "gog"));
         Assert.False(mode.IsDimmed);
         Assert.True(mode.CanChange);
         Assert.Equal("Vorauswahl für die Spiele dieses Launchers", mode.Subtitle);

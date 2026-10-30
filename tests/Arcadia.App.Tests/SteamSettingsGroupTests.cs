@@ -112,6 +112,25 @@ public sealed class SteamSettingsGroupTests
         Assert.False(arcadia.Main.IsSettingsOpen);
     }
 
+    [AvaloniaFact]
+    public async Task Coming_back_to_the_launcher_tab_shows_the_list_not_the_page_left()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(WithSteam, steam: new FakeSteam());
+        var launchers = arcadia.OpenLauncherSettings();
+        OpenPageOf(arcadia, launchers, "steam");
+
+        arcadia.Press(UiAction.NextTab).Press(UiAction.PreviousTab);
+        Assert.Same(launchers, arcadia.Main.Settings!.Selected);
+        Assert.Null(launchers.PageLauncherId);
+        Assert.Equal("steam", arcadia.Main.Settings.FocusedRow?.Key);
+
+        // A click on the tab does the same.
+        OpenPageOf(arcadia, launchers, "steam");
+        arcadia.Press(UiAction.NextTab);
+        launchers.SelectCommand!.Execute(null);
+        Assert.Null(launchers.PageLauncherId);
+    }
+
     private static AppSettings Launchers() => new()
     {
         ActiveLaunchers = [.. ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id)],

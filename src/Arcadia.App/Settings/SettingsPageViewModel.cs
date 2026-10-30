@@ -23,7 +23,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
         Changes = changes;
         foreach (var category in categories)
         {
-            category.SelectCommand = new RelayCommand(() => Select(category));
+            category.SelectCommand = new RelayCommand(() => ChooseTab(category));
             category.FocusMoved += OnFocusMoved;
             category.PropertyChanged += OnCategoryChanged;
         }
@@ -187,7 +187,21 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
     [RelayCommand]
     private void NextCategory() => Cycle(1);
 
-    private void Cycle(int delta) => Select(Categories[ListFocus.Cycle(Categories.ToList().IndexOf(Selected), delta, Categories.Count)]);
+    private void Cycle(int delta) => ChooseTab(Categories[ListFocus.Cycle(Categories.ToList().IndexOf(Selected), delta, Categories.Count)]);
+
+    /// <summary>
+    /// A category's tab is chosen: it opens at its top level. A link and the way back of a link keep where it was, so
+    /// B after a link lands on the launcher page it came from.
+    /// </summary>
+    private void ChooseTab(SettingsCategoryViewModel category)
+    {
+        if (category != Selected)
+        {
+            category.ShowTopLevel();
+        }
+
+        Select(category);
+    }
 
     /// <summary>A link on a launcher's page (#169): its category with the row focused; B goes back to the page.</summary>
     private void OpenLink(SettingsCategoryViewModel target, string rowKey)

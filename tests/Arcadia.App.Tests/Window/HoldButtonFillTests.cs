@@ -5,6 +5,7 @@ using Arcadia.Launchers.Abstractions;
 using Arcadia.Tests.Sdl;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 
@@ -54,6 +55,28 @@ public sealed class HoldButtonFillTests
         shown.Settle();
         Assert.InRange(fill.ScaleX, 0.05, 0.6);
         arcadia.LetGo(UiAction.Accept);
+    }
+
+    [AvaloniaFact]
+    public async Task The_controller_symbol_sits_in_the_middle_of_its_circle()
+    {
+        // Owner's finding: the symbol stood at the top of its circle, as a wide shape in a square box draws at the top.
+        using var shown = await ArcadiaWindow.ShowAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, steam: new FakeSteam { IsSteamRunning = true });
+        var arcadia = shown.Arcadia;
+        arcadia.SteamControllerCopy.CanCopy = true;
+        arcadia.SteamControllerCopy.PuckPresent = true;
+        arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.StartControllers();
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.TakeoverConsent is not null, "die Frage „Steam Controller und Puck übernehmen?“");
+        shown.Settle();
+
+        var circle = Assert.Single(shown.Window.GetVisualDescendants().OfType<Border>(), border => border.Classes.Contains("promptIcon") && border.IsEffectivelyVisible);
+        var symbol = Assert.IsType<Avalonia.Controls.Shapes.Path>(circle.Child);
+        var drawn = symbol.RenderedGeometry!.Bounds;
+        var centre = symbol.TranslatePoint(drawn.Center, circle)!.Value;
+        Assert.InRange(centre.X, circle.Bounds.Width / 2 - 1, circle.Bounds.Width / 2 + 1);
+        Assert.InRange(centre.Y, circle.Bounds.Height / 2 - 1, circle.Bounds.Height / 2 + 1);
     }
 
     private static ScaleTransform FillOf(ArcadiaWindow shown, string label)

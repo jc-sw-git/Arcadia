@@ -157,9 +157,10 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
 
     public void Pulse() => Interlocked.Increment(ref _pulses);
 
-    public async Task<uint> EmulationStartedAsync(CancellationToken cancellationToken)
+    public async Task<uint> EmulationStartedAsync(int usbipPort, CancellationToken cancellationToken)
     {
-        var reply = await RequestAsync(PanMessage.Of(PanCommand.EmulationStarted), cancellationToken);
+        var start = PanMessage.Of(PanCommand.EmulationStarted, value: (uint)usbipPort);
+        var reply = await RequestAsync(start, cancellationToken);
         if (reply.Reply == PanReply.Rejected && reply.Reason == PanReason.TeardownNotAcknowledged)
         {
             // A teardown from before this connection (Arcadia was restarted, or reconnected): nothing of ours is left.
@@ -169,7 +170,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
                 throw new InvalidOperationException(CleaningUp);
             }
 
-            reply = await RequestAsync(PanMessage.Of(PanCommand.EmulationStarted), cancellationToken);
+            reply = await RequestAsync(start, cancellationToken);
         }
 
         if (reply.Reply == PanReply.Rejected && reply.Reason == PanReason.SteamControllerBeingShown)

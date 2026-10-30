@@ -48,11 +48,14 @@ failure cases first; what it deliberately doesn't guard against: [pan-risks.md](
   stop or pre-shutdown while emulating → teardown `ServiceStopping`, run while the pipe is still open; its `TornDown`
   notice gets 2 s to go out. While a teardown runs, heartbeats and a new `EmulationStarted` get
   `TeardownNotAcknowledged`, reported as "Pan räumt noch auf" (one loss, not one per tick).
-- `EmulationStarted` is registered after the pad is plugged (`viiper.exe` already runs as Arcadia's child); Pan takes
-  every child of the client named `viiper.exe` (parent PID + start time) and holds its handle, so a PID can't be reused
-  under it, and (#304) journals the usbip port Arcadia's VIIPER serves. Nothing is ever ended by a name lookup alone.
-- Teardown steps, each with a 10 s timeout on a worker, never throwing: detach the journaled usbip ports (`usbip.exe`
-  from `%ProgramFiles%\USBip`), end the held forwarding processes (`TerminateProcess`: VIIPER keeps no state worth
+- `EmulationStarted` comes after Arcadia's VIIPER started and before any device goes on it; Pan takes every child of
+  the client named `viiper.exe` (parent PID + start time) and holds its handle, so a PID can't be reused under it. It
+  takes the start only if one of them alone listens on the usbip port named, only on 127.0.0.1 (IPv4 and IPv6,
+  `ViiperListeners.OnlyServedBy`), else lets them go and refuses (`NoForwardingProcess`, `UsbipPortNotServed`), and
+  journals that port per generation (`UsbipServers`, #304). Nothing is ever ended by a name lookup alone.
+- Teardown steps, each with a 10 s timeout on a worker, never throwing: detach the devices imported from the journaled server
+  ports, never another program's (`usbip.exe` from `%ProgramFiles%\USBip`; a server leaves the journal only when all
+  its detaches worked), end the held forwarding processes (`TerminateProcess`: VIIPER keeps no state worth
   saving), then show the puck. Each ended process leaves the journal at once (under the guardian's lock, so a step
   left behind after its timeout can't corrupt it); what failed stays listed and goes into the next teardown.
 - A restarted Pan (crash, reboot, `--restore`) always undoes its journal first; held processes are re-verified by PID
@@ -72,6 +75,11 @@ unreadable too. A missing journal beside a readable `.previous` counts as that o
 written back at once, so a second load sees the same state: deleting `journal.json` by hand is no reset, delete
 `.previous` with it. The journal is never deleted: with nothing to undo it still keeps the generation, so a restarted
 Pan never repeats a number a client remembers (a reinstalled Pan with the journal gone may).
+
+A journal change stays readable by the Pan before: new fields only, same `Version` (an older Pan ignores what it
+doesn't know). The update at Arcadia's start may install an older Pan (T297-9); one that couldn't read the journal
+would count its generations from 0 again and lose what is left to undo. So a journal without `UsbipServers` is one a
+Pan from before #304 wrote: with an open emulation it gets VIIPER's old default port 3241, as that Pan detached it.
 
 ## Tests
 

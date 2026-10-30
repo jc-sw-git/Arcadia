@@ -1,12 +1,16 @@
 using System.ComponentModel;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
-namespace Arcadia.ControllerSupport;
+namespace Arcadia.Pan;
+
+/// <summary>A process listening on a TCP port: who, on which address (IPv4 or IPv6), on which port.</summary>
+public sealed record TcpListening(int Pid, IPAddress Address, int Port);
 
 /// <summary>
-/// Which processes listen on a TCP port, IPv4 and IPv6 (Windows' TCP table): proof of who serves VIIPER's API on
-/// <c>localhost</c>, which resolves to either loopback (review of PR #294).
+/// Every TCP listener on this machine, IPv4 and IPv6, from Windows' TCP table: which ports Arcadia's <c>viiper.exe</c>
+/// was given, and that nobody else listens on them (#304). Read by Arcadia and by Pan.
 /// </summary>
 [SupportedOSPlatform("windows")]
 public static partial class TcpListeners
@@ -18,19 +22,21 @@ public static partial class TcpListeners
 
     // MIB_TCPROW_OWNER_PID: state, local address, local port, remote address, remote port, owning pid.
     private const int Row4Size = 24;
+    private const int Row4AddressAt = 4;
     private const int Row4PortAt = 8;
     private const int Row4PidAt = 20;
 
     // MIB_TCP6ROW_OWNER_PID: local address (16), scope, local port, remote address (16), scope, remote port, state, pid.
     private const int Row6Size = 56;
+    private const int Row6AddressAt = 0;
     private const int Row6PortAt = 20;
     private const int Row6PidAt = 52;
 
-    /// <summary>The ids of the processes listening on <paramref name="port"/>; throws when Windows won't say.</summary>
-    public static IReadOnlyCollection<int> OwnersOnPort(int port) =>
-        [.. Owners(InterNetwork, port, Row4Size, Row4PortAt, Row4PidAt).Concat(Owners(InterNetworkV6, port, Row6Size, Row6PortAt, Row6PidAt)).Distinct()];
+    /// <summary>All listeners of both families; throws when Windows won't say.</summary>
+    public static IReadOnlyList<TcpListening> All() =>
+        [.. Read(InterNetwork, Row4Size, Row4AddressAt, 4, Row4PortAt, Row4PidAt), .. Read(InterNetworkV6, Row6Size, Row6AddressAt, 16, Row6PortAt, Row6PidAt)];
 
-    private static List<int> Owners(uint family, int port, int rowSize, int portAt, int pidAt)
+    private static List<TcpListening> Read(uint family, int rowSize, int addressAt, int addressLength, int portAt, int pidAt)
     {
         uint size = 0;
         var table = nint.Zero;
@@ -53,20 +59,20 @@ public static partial class TcpListeners
                 table = Marshal.AllocHGlobal((int)size);
             }
 
-            var owners = new List<int>();
+            var listeners = new List<TcpListening>();
             var rows = Marshal.ReadInt32(table);
+            var address = new byte[addressLength];
             for (var row = 0; row < rows; row++)
             {
                 var at = 4 + (row * rowSize);
+                Marshal.Copy(table + at + addressAt, address, 0, addressLength);
                 // The port is in network byte order in the low 16 bits.
                 var raw = (uint)Marshal.ReadInt32(table, at + portAt);
-                if ((((raw & 0xFF) << 8) | ((raw >> 8) & 0xFF)) == port)
-                {
-                    owners.Add(Marshal.ReadInt32(table, at + pidAt));
-                }
+                var port = (int)(((raw & 0xFF) << 8) | ((raw >> 8) & 0xFF));
+                listeners.Add(new(Marshal.ReadInt32(table, at + pidAt), new IPAddress(address), port));
             }
 
-            return owners;
+            return listeners;
         }
         finally
         {

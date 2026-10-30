@@ -12,9 +12,19 @@ would close it, so a later story can pick it up. Don't "fix" one of these in pas
 - **A usbip step left behind after its 10 s timeout** keeps running with a cancelled token; `usbip.exe` itself is
   killed after 5 s. In theory a late `detach -p N` could hit a port the next emulation got under the same number.
   Ending processes is handle-bound and can't hit anything new.
-- **usbip ports (#304):** Pan detaches only the ports its journal names (the port Arcadia's VIIPER serves); another
-  program's VIIPER ports are left alone, and a port Arcadia's VIIPER lost before Pan journaled it stays attached until
-  the next start cleans it up.
+- **A server port reused before the teardown (#304):** Pan detaches only devices imported from a journaled
+  `127.0.0.1:<port>`. Had another program's usbip server got that port from Windows after Arcadia's VIIPER died and
+  before the teardown, its devices there would go too: seconds, a nuisance at most.
+- **Arcadia's VIIPER, check to use (#304):** between a listener check and a connect another process could take a port
+  VIIPER just let go; without the key it can't read or forge a frame, only make the plug fail. Same-user code could
+  read the key from `viiper.exe`'s memory, but it could read the user's input anyway.
+- **The usbip port takes any local importer:** usbip has no auth and VIIPER imports a device for any connection, a
+  second time too. A local process, also another Windows user's, could import
+  the pad or the puck's copy: read the input, and through dropped update messages force the firmware hold. No flash,
+  no privilege gain. Residual risk; a fix would be in VIIPER (import only from usbip-win2's kernel
+  connection, or no second import).
+- **VIIPER reuses nonces:** both directions use one session key with counters from 0. Only someone reading loopback
+  traffic (administrators) could use it. Fix upstream: one key per direction.
 
 ## Hiding
 

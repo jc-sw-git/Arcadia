@@ -11,8 +11,11 @@ public interface IEmulationGuardian
     /// <summary>Why no emulation can start right now (Pan not set up, not answering, wrong protocol), or null.</summary>
     string? Unavailable();
 
-    /// <summary>Registers an emulation; the generation Pan gave it. Throws when Pan refuses or is gone.</summary>
-    Task<uint> EmulationStartedAsync(CancellationToken cancellationToken);
+    /// <summary>
+    /// Registers an emulation served by the VIIPER on <paramref name="usbipPort"/> (#304); the generation Pan gave it.
+    /// Throws when Pan refuses or is gone.
+    /// </summary>
+    Task<uint> EmulationStartedAsync(int usbipPort, CancellationToken cancellationToken);
 
     /// <summary>Arcadia removed its emulation itself. Never throws.</summary>
     Task EmulationStoppedAsync(uint generation, CancellationToken cancellationToken);

@@ -7,13 +7,27 @@ namespace Arcadia.Pan;
 public sealed record HeldProcess(int Pid, long StartTime, string ImageName);
 
 /// <summary>
+/// The VIIPER an emulation's devices came from (#304): its usbip port on <c>127.0.0.1</c>, and the held process that
+/// listened on it. The teardown detaches only devices imported from a journaled port; the entry goes once that worked.
+/// </summary>
+/// <param name="Pid">The held <c>viiper.exe</c>; 0 for an entry carried over from a journal of before #304.</param>
+public sealed record UsbipServer(uint Generation, int Port, int Pid);
+
+/// <summary>
 /// What Pan would have to undo right now, written before each change (#243, review point 8): the client it serves,
 /// the processes it holds, and exactly the HidHide entries it added (part B). Entries the user had before
 /// are never in here, so they are never touched.
 /// </summary>
 public sealed class JournalState
 {
-    public int Version { get; set; } = 1;
+    /// <summary>
+    /// The format. Changes stay additive and the version stays, so the Pan before can still read the journal: the update
+    /// at Arcadia's start may install an older Pan (#297, T297-9), and one that couldn't read it would lose the
+    /// generation and what is left to undo. A field it doesn't know it ignores.
+    /// </summary>
+    public int Version { get; set; } = CurrentVersion;
+
+    public const int CurrentVersion = 1;
 
     /// <summary>The last generation handed out; the next emulation gets the one after it, also after a restart.</summary>
     public uint Generation { get; set; }
@@ -27,6 +41,27 @@ public sealed class JournalState
     public bool Emulating { get; set; }
 
     public List<HeldProcess> HeldProcesses { get; set; } = [];
+
+    /// <summary>
+    /// The usbip servers whose imported devices a teardown still has to detach (#304). Missing in a journal written by a
+    /// Pan from before #304 (<see cref="UsbipServersMissing"/>).
+    /// </summary>
+    public List<UsbipServer> UsbipServers
+    {
+        get => _usbipServers;
+        set
+        {
+            _usbipServers = value;
+            _usbipServersWritten = true;
+        }
+    }
+
+    private List<UsbipServer> _usbipServers = [];
+    private bool _usbipServersWritten;
+
+    /// <summary>Read from a journal without the usbip servers: one a Pan from before #304 wrote.</summary>
+    [JsonIgnore]
+    internal bool UsbipServersMissing => !_usbipServersWritten;
 
     /// <summary>The HidHide device instances Pan added (part B); devices the user had hidden before are never listed.</summary>
     public List<string> HiddenDevices { get; set; } = [];
@@ -55,7 +90,7 @@ public sealed class JournalState
     public bool HidingHasWork => HidHideChanged || PuckRestartPending;
 
     [JsonIgnore]
-    public bool HasWork => Emulating || HeldProcesses.Count > 0 || HidingHasWork;
+    public bool HasWork => Emulating || HeldProcesses.Count > 0 || UsbipServers.Count > 0 || HidingHasWork;
 
     public JournalState Clone() => new()
     {
@@ -65,6 +100,7 @@ public sealed class JournalState
         ClientStartTime = ClientStartTime,
         Emulating = Emulating,
         HeldProcesses = [.. HeldProcesses],
+        UsbipServers = [.. UsbipServers],
         HiddenDevices = [.. HiddenDevices],
         AllowListed = [.. AllowListed],
         CloakingWasOn = CloakingWasOn,
@@ -172,6 +208,8 @@ public sealed class JournalFile(string path)
                 throw new JsonException(invalid);
             }
 
+            TakeOver(state);
+
             problem = null;
             return true;
         }
@@ -190,14 +228,19 @@ public sealed class JournalFile(string path)
     /// </summary>
     private static string? Validate(JournalState state)
     {
-        if (state.Version != 1)
+        if (state.Version != JournalState.CurrentVersion)
         {
             return $"unknown journal version {state.Version}";
         }
 
-        if (state.HeldProcesses is null || state.HiddenDevices is null || state.AllowListed is null)
+        if (state.HeldProcesses is null || state.HiddenDevices is null || state.AllowListed is null || state.UsbipServers is null)
         {
             return "a list is missing";
+        }
+
+        if (state.UsbipServers.Any(server => server is null || server.Port is <= 0 or > 65535 || server.Pid < 0))
+        {
+            return "a usbip server entry is incomplete";
         }
 
         if (state.HeldProcesses.Any(process => process is null || process.Pid <= 0 || process.ImageName is null))
@@ -217,6 +260,20 @@ public sealed class JournalFile(string path)
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// A journal from before #304 doesn't know which ports its emulation used: its teardown detaches what VIIPER's
+    /// default port <see cref="UsbipPorts.ViiperPort"/> served, as that Pan did (decision 10).
+    /// </summary>
+    private static void TakeOver(JournalState state)
+    {
+        if (state.UsbipServersMissing)
+        {
+            state.UsbipServers = state.Emulating || state.HeldProcesses.Count > 0
+                ? [new UsbipServer(state.Generation, UsbipPorts.ViiperPort, Pid: 0)]
+                : [];
+        }
     }
 
     private static void MoveAside(string file, string aside)

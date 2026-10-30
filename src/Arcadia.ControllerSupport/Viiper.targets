@@ -9,8 +9,8 @@
     An empty hash means no fork build is pinned yet: nothing is downloaded and the copy stays off.
   -->
   <PropertyGroup>
-    <ViiperCommit>f1baf515abbaa388a9e5c989d5b4e9ab86e84080</ViiperCommit>
-    <ViiperSha256>6b034d2d0bdb2d82184d1ed79fba30f251e710907e4ee1cb56e5e3d8d9622e39</ViiperSha256>
+    <ViiperCommit>cab6c09a25401e9835dadae186248d53c5ca9320</ViiperCommit>
+    <ViiperSha256>0fe5304a9c321d853b08ad6b6626ebc3937f665b6f114658acfc7c0cd6739f0e</ViiperSha256>
     <ViiperSize>13665280</ViiperSize>
     <ViiperUrl>https://github.com/jc-sw-git/VIIPER/releases/download/arcadia-$(ViiperCommit.Substring(0, $([System.Math]::Min(12, $(ViiperCommit.Length)))))/viiper.exe</ViiperUrl>
     <ViiperDir>$(MSBuildProjectDirectory)/$(BaseIntermediateOutputPath)viiper-$(ViiperCommit)/</ViiperDir>

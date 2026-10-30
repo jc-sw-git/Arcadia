@@ -71,7 +71,7 @@ public sealed class HidingTests : IDisposable
 
     private JournalState Journal => _journal.File.Load().State;
 
-    private Task<PanMessage> Send(PanCommand command, uint generation = 0) => _guardian.HandleAsync(PanMessage.Of(command, generation));
+    private Task<PanMessage> Send(PanCommand command, uint generation = 0) => _guardian.HandleAsync(PanMessage.Of(command, generation, command == PanCommand.EmulationStarted ? (uint)FakeCleanup.ServerPort : 0u));
 
     private async Task<uint> EmulatingAsync(ClientIdentity? client = null)
     {
@@ -611,7 +611,7 @@ public sealed class HidingTests : IDisposable
         var guardian = new Guardian(_clock, _journal.File, _cleanup, _log.Add);
         guardian.Register(Arcadia);
         await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello));
-        var generation = (await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted))).Generation;
+        var generation = (await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort))).Generation;
 
         Assert.Equal(PanReply.Unsupported, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation))).Reply);
         Assert.Equal(PanReply.Unsupported, (await guardian.HandleAsync(PanMessage.Of(PanCommand.CheckHiding))).Reply);
@@ -711,7 +711,7 @@ public sealed class HidingTests : IDisposable
 
         Assert.Equal(PanReason.None, guardian.Register(Arcadia with { Pid = 501 }));
         Assert.Equal(PanReply.HelloOk, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello))).Reply);
-        var early = await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted));
+        var early = await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort));
         Assert.Equal(PanReason.SteamControllerBeingShown, early.Reason);
         Assert.False(guardian.IsEmulating);
 
@@ -719,7 +719,7 @@ public sealed class HidingTests : IDisposable
         await guardian.ShowRetry!;
         Assert.Empty(_hidHide.Hidden);
         Assert.False(_hidHide.Cloaking);
-        Assert.Equal(PanReply.Started, (await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted))).Reply);
+        Assert.Equal(PanReply.Started, (await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort))).Reply);
     }
 
     [Fact]
@@ -841,7 +841,7 @@ public sealed class HidingTests : IDisposable
         Assert.Equal(PanReason.None, guardian.Register(Arcadia with { Pid = 501 }));
         var hello = await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello));
         Assert.Equal(PanReason.HeldForFirmware, hello.Reason);
-        var started = await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted));
+        var started = await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort));
         Assert.Equal(PanReply.Started, started.Reply);
         Assert.Equal(PanReply.Hidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, started.Generation))).Reply);
 
@@ -983,7 +983,7 @@ public sealed class HidingTests : IDisposable
     {
         Assert.Equal(PanReason.None, guardian.Register(client ?? Arcadia));
         Assert.Equal(PanReply.HelloOk, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello))).Reply);
-        var started = await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted));
+        var started = await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort));
         Assert.Equal(PanReply.Started, started.Reply);
         return started.Generation;
     }

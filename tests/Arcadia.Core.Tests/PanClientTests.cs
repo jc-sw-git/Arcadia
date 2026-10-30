@@ -95,9 +95,9 @@ public sealed class PanClientTests : IAsyncDisposable
     {
         await ConnectedAsync();
         Assert.Null(_client.Unavailable());
-        Assert.Contains("Pan: verbunden (Testserver, Protokoll 1, Generation 0)", LogText());
+        Assert.Contains("Pan: verbunden (Testserver, Protokoll 2, Generation 0)", LogText());
 
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
 
         Assert.Equal(1u, generation);
         Assert.True(_client.IsCurrent(generation));
@@ -112,7 +112,7 @@ public sealed class PanClientTests : IAsyncDisposable
     public async Task The_heartbeat_goes_only_while_the_feeder_pulses_and_its_absence_lets_Pan_tear_down()
     {
         await ConnectedAsync();
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
 
         // Alive: pulses every poll, heartbeats every half second, Pan's clock running too.
         for (var i = 0; i < 10; i++)
@@ -144,14 +144,14 @@ public sealed class PanClientTests : IAsyncDisposable
 
         // Arcadia drops its devices, acknowledges, and the next emulation gets a new generation.
         await _client.AcknowledgeTeardownAsync(generation, CancellationToken.None);
-        Assert.Equal(generation + 1, await _client.EmulationStartedAsync(CancellationToken.None));
+        Assert.Equal(generation + 1, await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None));
     }
 
     [Fact]
     public async Task While_Pan_still_tears_down_no_pad_is_possible_and_nothing_counts_as_a_loss()
     {
         await ConnectedAsync();
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
         _client.Pulse();
         await AdvanceUntil(() => _server.Heartbeats == 1, "Heartbeat 1");
 
@@ -166,7 +166,7 @@ public sealed class PanClientTests : IAsyncDisposable
         await AdvanceUntil(() => !_client.IsCurrent(generation), "Heartbeat abgelehnt");
         Assert.Equal(PanClient.CleaningUp, _client.Unavailable());
         Assert.Empty(_tornDown);
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _client.EmulationStartedAsync(CancellationToken.None));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None));
         Assert.Equal(PanClient.CleaningUp, ex.Message);
         Assert.Equal(PanClient.CleaningUp, _client.Unavailable());
 
@@ -175,7 +175,7 @@ public sealed class PanClientTests : IAsyncDisposable
         await WaitUntil(() => _tornDown.Count == 1, "TornDown");
         Assert.Null(_client.Unavailable());
         await _client.AcknowledgeTeardownAsync(generation, CancellationToken.None);
-        Assert.Equal(generation + 1, await _client.EmulationStartedAsync(CancellationToken.None));
+        Assert.Equal(generation + 1, await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None));
     }
 
     [Fact]
@@ -186,7 +186,7 @@ public sealed class PanClientTests : IAsyncDisposable
         await ConnectedAsync();
         _server.Pause();
         using var giveUp = new CancellationTokenSource();
-        var first = _client.EmulationStartedAsync(giveUp.Token);
+        var first = _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, giveUp.Token);
         await AdvanceUntil(() => _server.Cleanup.ChildrenTaken == 1, "Anfrage bei Pan");
         giveUp.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first);
@@ -196,7 +196,7 @@ public sealed class PanClientTests : IAsyncDisposable
         _server.Resume();
         await AdvanceUntil(() => _client.IsConnected, "neu verbunden");
 
-        var next = await _client.EmulationStartedAsync(CancellationToken.None);
+        var next = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
         Assert.Equal(2u, next);
         Assert.DoesNotContain("unerwartete Antwort", LogText());
     }
@@ -210,7 +210,7 @@ public sealed class PanClientTests : IAsyncDisposable
         await WaitUntil(() => _client.Unavailable()?.Contains("anderes Protokoll", StringComparison.Ordinal) == true, "Protokollfehler");
 
         Assert.False(_client.IsConnected);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _client.EmulationStartedAsync(CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None));
     }
 
     [Fact]
@@ -251,10 +251,10 @@ public sealed class PanClientTests : IAsyncDisposable
     public async Task A_Pan_that_stops_answering_counts_as_lost_and_the_emulation_with_it()
     {
         await ConnectedAsync();
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
         _server.Pause();
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _client.EmulationStartedAsync(CancellationToken.None));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None));
 
         Assert.Contains("antwortet nicht", ex.Message);
         Assert.False(_client.IsConnected);
@@ -272,7 +272,7 @@ public sealed class PanClientTests : IAsyncDisposable
     public async Task A_broken_pipe_is_a_loss_and_a_restarted_Pan_goes_on_from_its_journal()
     {
         await ConnectedAsync();
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
 
         // Pan dies: its pipe breaks without a goodbye; the service manager restarts it, and its journal says the
         // emulation was open, so it undoes it before serving anyone.
@@ -286,7 +286,7 @@ public sealed class PanClientTests : IAsyncDisposable
         _time.Advance(PanClient.Retry);
         await ConnectedAsync();
 
-        Assert.Equal(generation + 1, await LoggedAsync(() => _client.EmulationStartedAsync(CancellationToken.None)));
+        Assert.Equal(generation + 1, await LoggedAsync(() => _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None)));
     }
 
     [Fact]
@@ -295,7 +295,7 @@ public sealed class PanClientTests : IAsyncDisposable
         await ConnectedAsync();
         _server.StartReply = PanMessage.Of(PanReply.Rejected, 1, PanReason.SteamControllerBeingShown);
 
-        var refused = await Assert.ThrowsAsync<InvalidOperationException>(() => _client.EmulationStartedAsync(CancellationToken.None));
+        var refused = await Assert.ThrowsAsync<InvalidOperationException>(() => _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None));
 
         // "Pan räumt noch auf" is what keeps the pad from counting a loss (SteamControllerXboxPad.PlugAsync).
         Assert.Equal(PanClient.CleaningUp, refused.Message);
@@ -305,14 +305,14 @@ public sealed class PanClientTests : IAsyncDisposable
         _server.StartReply = null;
         _time.Advance(PanClient.BeingShownWait);
         Assert.Null(_client.Unavailable());
-        Assert.True(_client.IsCurrent(await _client.EmulationStartedAsync(CancellationToken.None)));
+        Assert.True(_client.IsCurrent(await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None)));
     }
 
     [Fact]
     public async Task A_generation_torn_down_on_an_earlier_connection_is_current_again_on_a_Pan_that_counts_anew()
     {
         await ConnectedAsync();
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
         _server.Clock.Advance(Guardian.DefaultHangTimeout);
         _server.Guardian.Tick();
         await WaitUntil(() => _tornDown.Count == 1, "TornDown");
@@ -327,7 +327,7 @@ public sealed class PanClientTests : IAsyncDisposable
         _time.Advance(PanClient.Retry);
         await ConnectedAsync();
 
-        Assert.Equal(generation, await _client.EmulationStartedAsync(CancellationToken.None));
+        Assert.Equal(generation, await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None));
         Assert.False(_client.WasTornDown(generation));
         Assert.True(_client.IsCurrent(generation));
         await _client.EmulationStoppedAsync(generation, CancellationToken.None);
@@ -395,7 +395,7 @@ public sealed class PanClientTests : IAsyncDisposable
         var hidHide = new SettableHidHide();
         _server.UseHiding(hidHide);
         await ConnectedAsync();
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
 
         Assert.Equal(PanReason.None, await _client.HideAsync(generation, CancellationToken.None));
         Assert.True(hidHide.Cloaking);
@@ -418,7 +418,7 @@ public sealed class PanClientTests : IAsyncDisposable
         var hidHide = new SettableHidHide();
         _server.UseHiding(hidHide);
         await ConnectedAsync();
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
 
         // The allow-list entry goes in, then turning cloaking on fails: the hide is rejected with part of it done.
         hidHide.ChangesBeforeFailing = 1;
@@ -436,7 +436,7 @@ public sealed class PanClientTests : IAsyncDisposable
     public async Task Hiding_outside_an_emulation_is_refused_and_a_Pan_without_hiding_cannot_hide()
     {
         await ConnectedAsync();
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
         Assert.Equal(PanReason.HidingFailed, await _client.HideAsync(generation, CancellationToken.None));
         Assert.Contains("Pan zu alt", LogText());
         Assert.True(_client.IsConnected);
@@ -453,7 +453,7 @@ public sealed class PanClientTests : IAsyncDisposable
         _server.Pause();
         var check = _client.CheckHidingAsync(CancellationToken.None);
         await WaitUntil(() => _server.Received(PanCommand.CheckHiding) > 0, "CheckHiding bei Pan");
-        var start = _client.EmulationStartedAsync(CancellationToken.None);
+        var start = _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
 
         _server.Resume();
 
@@ -474,7 +474,7 @@ public sealed class PanClientTests : IAsyncDisposable
         var hidHide = new SettableHidHide();
         _server.UseHiding(hidHide, new RecordingPuck(events));
         await ConnectedAsync();
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
         Assert.Equal(PanReason.None, await _client.HideAsync(generation, CancellationToken.None));
 
         // HidHide's configuration client is open: Arcadia's show is refused, the teardown after the stop shows it.
@@ -501,7 +501,7 @@ public sealed class PanClientTests : IAsyncDisposable
         var puck = new RecordingPuck(events);
         _server.UseHiding(new SettableHidHide(), puck);
         await ConnectedAsync();
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
         Assert.Equal(PanReason.None, await _client.HideAsync(generation, CancellationToken.None));
 
         puck.Hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -522,7 +522,7 @@ public sealed class PanClientTests : IAsyncDisposable
     public async Task No_heartbeat_waits_behind_a_request_that_takes_long()
     {
         await ConnectedAsync();
-        var generation = await _client.EmulationStartedAsync(CancellationToken.None);
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
         _server.Pause();
         var check = _client.CheckHidingAsync(generation, CancellationToken.None);
         await WaitUntil(() => _server.Received(PanCommand.CheckHiding) > 0, "CheckHiding bei Pan");
@@ -822,10 +822,15 @@ public sealed class PanClientTests : IAsyncDisposable
     /// <summary>Nothing to clean up: the client tests look at the protocol, not at processes.</summary>
     private sealed class FakeCleanupForClient : IEmulationCleanup
     {
+        /// <summary>The usbip port the client's viiper.exe listens on (#304).</summary>
+        public const int ViiperPort = 50123;
+
+        private static readonly HeldProcess Viiper = new(900, 1, "viiper.exe");
+
         /// <summary>Set, the teardown's first step waits here: a usbip step that takes its time.</summary>
         public SemaphoreSlim? TeardownGate { get; set; }
 
-        public async Task<IReadOnlyList<int>> ListLocalViiperPortsAsync(CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<int>> ListImportedPortsAsync(int serverPort, CancellationToken cancellationToken)
         {
             if (TeardownGate is { } gate)
             {
@@ -845,8 +850,10 @@ public sealed class PanClientTests : IAsyncDisposable
         public IReadOnlyList<HeldProcess> TakeChildrenOf(int clientPid, long clientStartTime, string imageName)
         {
             Interlocked.Increment(ref _childrenTaken);
-            return [];
+            return [Viiper];
         }
+
+        public IReadOnlyCollection<TcpListening> Listeners() => [new(Viiper.Pid, System.Net.IPAddress.Loopback, ViiperPort)];
 
         public bool TryHold(HeldProcess process) => false;
 

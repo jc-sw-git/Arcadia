@@ -14,7 +14,11 @@ public enum PanCommand : byte
     /// <summary>First message of a client; <see cref="PanMessage.Version"/> is its protocol version.</summary>
     Hello = 1,
 
-    /// <summary>Arcadia starts emulating a controller: Pan takes its forwarding processes and answers with the generation.</summary>
+    /// <summary>
+    /// Arcadia starts emulating a controller: Pan takes its forwarding processes and answers with the generation.
+    /// <see cref="PanMessage.Value"/> is the usbip port of Arcadia's VIIPER on <c>127.0.0.1</c> (#304), which Pan checks
+    /// and journals; its teardown detaches only devices imported from there.
+    /// </summary>
     EmulationStarted = 2,
 
     /// <summary>Arcadia removed its emulation itself; the generation ends.</summary>
@@ -159,6 +163,15 @@ public enum PanReason : uint
     /// ended, and Steam still runs (#242). Arcadia takes it over without asking and shows the firmware dialog.
     /// </summary>
     HeldForFirmware = 23,
+
+    /// <summary><see cref="PanCommand.EmulationStarted"/> without a <c>viiper.exe</c> of the client's to hold (#304).</summary>
+    NoForwardingProcess = 24,
+
+    /// <summary>
+    /// The usbip port of <see cref="PanCommand.EmulationStarted"/> is missing, or not served by the held
+    /// <c>viiper.exe</c> alone (another process listens on it, in IPv4 or IPv6), or the listeners can't be read (#304).
+    /// </summary>
+    UsbipPortNotServed = 25,
 }
 
 /// <summary>
@@ -172,7 +185,7 @@ public readonly record struct PanMessage(byte Kind, ushort Version, uint Generat
     public const int Size = 12;
 
     /// <summary>Raised when the wire format or the meaning of a command changes; both sides must agree on it.</summary>
-    public const ushort ProtocolVersion = 1;
+    public const ushort ProtocolVersion = 2;
 
     public PanCommand Command => (PanCommand)Kind;
 

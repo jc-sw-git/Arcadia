@@ -48,7 +48,25 @@ public sealed partial class TakeoverConsentViewModel : ViewModelBase, IDisposabl
         No = new HoldButtonViewModel("Nein, nicht übernehmen", TimeSpan.FromSeconds(1), () => answer(false), time, post) { IsFocused = true };
     }
 
-    public SteamControllerParts Parts { get; }
+    /// <summary>What is connected; follows the question while it is open (#325).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Title), nameof(Found), nameof(Message), nameof(WarningTitle))]
+    public partial SteamControllerParts Parts { get; private set; }
+
+    /// <summary>
+    /// The question names other parts now. A running hold stops: the player confirms what the dialog shows, not what it
+    /// showed when the hold began.
+    /// </summary>
+    public void Follow(SteamControllerParts parts)
+    {
+        if (parts == Parts)
+        {
+            return;
+        }
+
+        CancelHold();
+        Parts = parts;
+    }
 
     public string Title => Parts switch
     {

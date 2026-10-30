@@ -75,10 +75,13 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
 
     public TakeoverState State => _state;
 
-    /// <summary>What was connected when the player was asked.</summary>
+    /// <summary>What is connected while the player is asked, or was when they answered.</summary>
     public SteamControllerParts Asked { get; private set; }
 
-    /// <summary>The player must be asked now (raised once per question); any thread.</summary>
+    /// <summary>
+    /// The player must be asked now, or the open question names other parts now; any thread. At Arcadia's start SDL
+    /// reports the wireless Steam Controller only after the puck, so a question asked then would name the puck alone.
+    /// </summary>
     public event Action<SteamControllerParts>? ConsentNeeded;
 
     /// <summary><see cref="State"/> changed; any thread.</summary>
@@ -129,6 +132,11 @@ public sealed class SteamControllerTakeover(Action<string> log, TimeProvider? ti
             case TakeoverState.Unknown:
                 Asked = connected;
                 Set(TakeoverState.Asking, $"Steam läuft, Arcadia fragt, ob es übernehmen darf ({connected})");
+                _ask = connected;
+                return false;
+            case TakeoverState.Asking when connected != SteamControllerParts.None && connected != Asked:
+                log($"Pan-Übernahme: die offene Frage nennt jetzt {connected} statt {Asked}");
+                Asked = connected;
                 _ask = connected;
                 return false;
             default:

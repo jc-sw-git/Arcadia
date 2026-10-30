@@ -37,6 +37,8 @@ meanwhile turns it into the question).
   saw it); every gap (paused, Pan's teardown, a hide that didn't hold, switched off) asks again. "Nein" (held 1 s) and
   a release for a firmware update hold until Arcadia's next start or the settings row "… übernehmen" (held 3 s, the
   press is the consent). Meanwhile nothing is emulated, Arcadia's Xbox pad included.
+- The open question follows what is connected (title, chips, warning), as SDL reports the wireless Steam Controller
+  only after the puck at Arcadia's start; a change stops a running hold on "Ja".
 - Arcadia asks only once Pan can hide (`CheckHiding` first): a question the hide can't follow would come back every
   tick and teach the player to hold "Ja" by reflex.
 - Short gap mid-game: while a library game stays in front, Steam's update window can't be, so a gap under 10 s with

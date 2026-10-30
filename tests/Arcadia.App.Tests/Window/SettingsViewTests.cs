@@ -159,7 +159,7 @@ public sealed class SettingsViewTests
         var hold = rows.Single(row => row.Key == "mouse-mode-hold");
         Assert.Contains("unavailable", first.RowButton(hold).Classes);
         Assert.True(first.RowButton(hold).Opacity < 1, "Abhängige Zeile ausgegraut");
-        Assert.DoesNotContain("unavailable", first.RowButton(rows.Single(row => row.Key == "steam-desktop-layout")).Classes);
+        Assert.DoesNotContain("unavailable", first.RowButton(rows.Single(row => row.Key == "mouse-mode")).Classes);
         Assert.Equal("5 Sekunden", first.ValueShown(hold));
 
         // The boxes of "SISR entfernen" (#214) stand under its description in the info panel, in this order; only settings
@@ -232,7 +232,7 @@ public sealed class SettingsViewTests
         var settings = main.Settings!;
         arcadia.Key(Key.E, KeyModifiers.Shift);
         Assert.Equal("Controller", settings.Selected.Name);
-        arcadia.Key(Key.S, times: 2);
+        arcadia.Key(Key.S);
         Assert.Equal("mouse-mode", settings.FocusedRow?.Key);
         arcadia.Key(Key.D);
         Assert.Equal(MouseModeActivation.Automatic, arcadia.Arcadia.Settings.Current.MouseMode.Activation);

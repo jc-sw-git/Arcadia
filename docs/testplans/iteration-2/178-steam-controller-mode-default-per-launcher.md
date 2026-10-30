@@ -49,6 +49,8 @@ gone. Decisions: issue #178 and [launchers.md](../../product/launchers.md); desi
 - [ ] **T178-12** Factory reset (#146) resets the launchers' defaults and the games' own choices. · E2E: no (#146 isn't
       built yet; both live in `settings.json` like every setting it resets, so it is checked with #146)
 
+T178-6: since #315 the group "Desktop-Steuerung" follows "Steam Controller" on Steam's page.
+
 T169-4 and T169-5 (the link on Steam's page) no longer apply: the link went with this issue; their tests were removed.
 
 History:

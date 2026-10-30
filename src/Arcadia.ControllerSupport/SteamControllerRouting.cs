@@ -1,5 +1,6 @@
 using System.Globalization;
 using Arcadia.Core.Launchers;
+using Arcadia.Input;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.ControllerSupport;
@@ -25,18 +26,101 @@ public sealed record SteamControllerRoute(bool PadWanted, bool SteamUsesControll
 public readonly record struct ForegroundNow(bool ArcadiaActive, bool MouseModeOn, bool SteamInFront);
 
 /// <summary>
-/// When the copy Steam sees passes input and when Arcadia's Xbox pad does (#242, decisions 2 and 4; product rules in
-/// <c>docs/product/controls.md</c>). Neither while Arcadia is in front or the mouse mode is on. The copy passes to a game
-/// on "Steam-Eingabe", and to Steam itself in front while no game runs, when the pad rests so Steam gets the full
-/// Steam Controller. Steam's overlay inside a game can't be told from the game and counts as the game.
+/// When the copy Steam sees passes input and when Arcadia's Xbox pad does (#242, decisions 2 and 4; #315; product rules in
+/// <c>docs/product/controls.md</c>). The copy passes to a game on "Steam-Eingabe", and to Steam itself in front while no
+/// game runs, when the pad rests so Steam gets the full Steam Controller. While "Steams Desktop-Belegung ignorieren" is
+/// off, Steam's desktop layout gets the Steam Controller like any other controller: the copy passes also while Arcadia is
+/// in front, the mouse mode is on or no game runs; only a game on "Arcadia" keeps it for the pad. While the setting is on,
+/// neither passes while Arcadia is in front or the mouse mode is on. Steam's overlay inside a game can't be told from the
+/// game and counts as the game. The two never pass at once.
 /// </summary>
 public static class SteamControllerCopyRules
 {
-    public static bool CopyPasses(SteamControllerRoute route, ForegroundNow now) =>
-        !now.ArcadiaActive && !now.MouseModeOn && (route.SteamUsesController || (!route.GameRunning && now.SteamInFront));
+    public static bool CopyPasses(SteamControllerRoute route, ForegroundNow now, bool desktopLayoutIgnored) =>
+        Copy(route, now, desktopLayoutIgnored).Passes;
 
-    public static bool PadPasses(SteamControllerRoute route, ForegroundNow now) =>
-        route.PadWanted && !now.ArcadiaActive && !now.MouseModeOn && !(!route.GameRunning && now.SteamInFront);
+    /// <summary>Whether the copy passes, and why, for the log.</summary>
+    public static (bool Passes, string Why) Copy(SteamControllerRoute route, ForegroundNow now, bool desktopLayoutIgnored)
+    {
+        if (now.ArcadiaActive || now.MouseModeOn)
+        {
+            var who = now.MouseModeOn ? "Mausmodus an" : "Arcadia vorne";
+            return desktopLayoutIgnored ? (false, $"{who}, Steams Desktop-Belegung ignoriert") : (true, $"{who}, Steams Desktop-Belegung aktiv");
+        }
+
+        if (route.SteamUsesController)
+        {
+            return (true, route.Why);
+        }
+
+        if (route.GameRunning)
+        {
+            return (false, route.Why);
+        }
+
+        if (now.SteamInFront)
+        {
+            return (true, "Steam vorne, kein Spiel");
+        }
+
+        return desktopLayoutIgnored ? (false, "kein Spiel, Steams Desktop-Belegung ignoriert") : (true, "kein Spiel, Steams Desktop-Belegung aktiv");
+    }
+
+    /// <summary>
+    /// Which of Arcadia's combos the copy keeps from Steam: ⧉ + ≡ while the mouse mode can be switched and Steam's desktop
+    /// layout is ignored; otherwise Steam gets it as from any other controller (action set switch, Alt+Tab; #315).
+    /// </summary>
+    public static ComboWithholdingOptions CombosKeptFromSteam(bool mouseModeCanSwitch, bool desktopLayoutIgnored) =>
+        new(BackAndStart: mouseModeCanSwitch && desktopLayoutIgnored);
+
+    public static bool PadPasses(SteamControllerRoute route, ForegroundNow now, bool desktopLayoutIgnored) =>
+        route.PadWanted && !now.ArcadiaActive && !now.MouseModeOn && !(!route.GameRunning && (now.SteamInFront || !desktopLayoutIgnored));
+}
+
+/// <summary>
+/// Asks <see cref="SteamControllerCopyRules"/> on every report of the copy and logs each change of its answer (#315), so
+/// the log tells who had the Steam Controller when. Never throws: an error lets nothing pass.
+/// </summary>
+public sealed class SteamControllerCopyGate(Func<SteamControllerRoute?> route, Func<ForegroundNow> now, Func<bool> desktopLayoutIgnored, Action<string> log)
+{
+    // 0 not asked yet, 1 rests, 2 passes; the copy's reader thread asks, so one thread at a time.
+    private int _last;
+
+    public bool Passes()
+    {
+        bool passes;
+        string why;
+        try
+        {
+            if (route() is not { } current)
+            {
+                (passes, why) = (false, "noch nicht entschieden");
+            }
+            else
+            {
+                (passes, why) = SteamControllerCopyRules.Copy(current, now(), desktopLayoutIgnored());
+            }
+        }
+        catch (Exception ex)
+        {
+            (passes, why) = (false, $"Fehler: {ex}");
+        }
+
+        var state = passes ? 2 : 1;
+        if (Interlocked.Exchange(ref _last, state) != state)
+        {
+            try
+            {
+                log($"Kopie für Steam: {(passes ? "gibt Eingaben weiter" : "meldet Ruhe")} ({why})");
+            }
+            catch (Exception)
+            {
+                // The log must not stop the copy.
+            }
+        }
+
+        return passes;
+    }
 }
 
 /// <summary>

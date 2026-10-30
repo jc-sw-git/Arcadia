@@ -68,7 +68,6 @@ public sealed class PanEmulationTests
         Assert.Contains(pan.Info.OfType<InfoSection>(), section => section.Title == "WAS PAN BRAUCHT");
         Assert.Empty(RowsBelow(controller));
         Assert.Contains(controller.Rows, row => row.Key == PanRows.RestoreKey);
-        Assert.Equal("STEAM", controller.Rows.Single(row => row.Key == "steam-desktop-layout").Group);
 
         pan.Activate();
         Assert.False(arcadia.Settings.Current.PanEnabled);

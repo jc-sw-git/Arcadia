@@ -65,6 +65,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private readonly LauncherControllerModeRowViewModel _controllerModeRow;
     private readonly ActionRowViewModel _resetModesRow;
     private readonly ActionRowViewModel _accountRow;
+    private readonly SteamDesktopLayoutRowViewModel _steamDesktopLayoutRow;
 
     // The account picture shown last, by its file (AvatarOf).
     private string? _avatarPath;
@@ -190,6 +191,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         };
 
         _accountRow = new ActionRowViewModel("launcher-account", string.Empty, ActivateAccount) { Group = AccountGroup };
+        _steamDesktopLayoutRow = new SteamDesktopLayoutRowViewModel(changes);
         foreach (var integration in host.Launchers.All)
         {
             if (integration.Account is { } account)
@@ -608,7 +610,22 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         }
 
         SetRows([.. account is null ? Array.Empty<SettingsRowViewModel>() : [_accountRow], _activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), .. optionRows, _rescanRow,
-            _controllerModeRow, .. ownModes ? [_resetModesRow] : Array.Empty<SettingsRowViewModel>()]);
+            _controllerModeRow, .. ownModes ? [_resetModesRow] : Array.Empty<SettingsRowViewModel>(), .. DesktopControlRows(id)]);
+    }
+
+    /// <summary>
+    /// The group "Desktop-Steuerung" on Steam's page (#315). Not the launcher integration's: it is about Steam the program,
+    /// which Arcadia's controller support deals with anyway, so it is there whether Steam's launcher is active or not.
+    /// </summary>
+    private IReadOnlyList<SettingsRowViewModel> DesktopControlRows(string id)
+    {
+        if (id != KnownLaunchers.Steam.Id)
+        {
+            return [];
+        }
+
+        _steamDesktopLayoutRow.Refresh();
+        return [_steamDesktopLayoutRow];
     }
 
     /// <summary>The account of the launcher whose page is shown, while its group "Konto" is there (#83).</summary>

@@ -67,6 +67,9 @@ public sealed record InfoDanger(string Title, string Text) : InfoBlock;
 public sealed record InfoNote(string Text, HealthSeverity Severity = HealthSeverity.Warning) : InfoBlock
 {
     public bool IsInfo => Severity == HealthSeverity.Info;
+
+    /// <summary>A note that must be read before switching, e.g. doubled input with Steam's desktop layout (#315).</summary>
+    public bool IsBold { get; init; }
 }
 
 /// <summary>A fact in a line: what on the left, its value on the right, e.g. "Such-Kürzel  /epic".</summary>

@@ -1402,10 +1402,10 @@
                   </Border>
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoNote">
-                  <Border Classes="infoNote" Classes.info="{Binding IsInfo}">
+                  <Border Classes="infoNote" Classes.info="{Binding IsInfo}" Classes.bold="{Binding IsBold}">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                       <Path Classes="statusIcon" Classes.info="{Binding IsInfo}" VerticalAlignment="Top" />
-                      <TextBlock Grid.Column="1" Text="{Binding Text}" />
+                      <TextBlock Grid.Column="1" Classes="noteText" ctl:ButtonTextBlock.Text="{Binding Text}" />
                     </Grid>
                   </Border>
                 </DataTemplate>

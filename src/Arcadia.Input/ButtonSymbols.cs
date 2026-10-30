@@ -52,7 +52,8 @@ public static class ButtonSymbolSets
         _ => Xbox(button),
     };
 
-    private static ButtonSymbol Xbox(string button) => new(button, ButtonIcon.None, ButtonText.IsRound(button));
+    // Guide is named, not drawn with the controller's logo: brand logos are a trademark question first (#315).
+    private static ButtonSymbol Xbox(string button) => button == "Guide" ? Pill("Guide") : new(button, ButtonIcon.None, ButtonText.IsRound(button));
 
     private static ButtonSymbol PlayStation(string button, ButtonSymbols generation) => button switch
     {
@@ -64,6 +65,7 @@ public static class ButtonSymbolSets
         "RB" => Pill("R1"),
         "LT" => Pill("L2"),
         "RT" => Pill("R2"),
+        "Guide" => Pill("PS"),
         "⧉" => generation switch
         {
             ButtonSymbols.PlayStation5 => new(string.Empty, ButtonIcon.Create, IsRound: false),
@@ -94,6 +96,7 @@ public static class ButtonSymbolSets
         "R3" => Pill("RS"),
         "⧉" => Pill("−"),
         "≡" => Pill("+"),
+        "Guide" => Pill("Home"),
         _ => Xbox(button),
     };
 
@@ -103,6 +106,7 @@ public static class ButtonSymbolSets
         "RB" => Pill("R1"),
         "LT" => Pill("L2"),
         "RT" => Pill("R2"),
+        "Guide" => Pill("Steam"),
         _ => Xbox(button),
     };
 

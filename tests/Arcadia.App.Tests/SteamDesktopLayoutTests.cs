@@ -81,7 +81,7 @@ public sealed class SteamDesktopLayoutTests
         Assert.Equal(ButtonSymbols.SteamController, note.Symbols);
         Assert.Equal(ButtonSymbols.SteamController, row.Info.OfType<InfoText>().Last().Symbols);
         Assert.Null(row.Info.OfType<InfoText>().First().Symbols);
-        Assert.Contains(texts, text => text.StartsWith("Das ist praktisch, wenn du deinen Controller auch außerhalb von Arcadia nutzt", StringComparison.Ordinal));
+        Assert.Contains(texts, text => text.StartsWith("Das lohnt sich vor allem, wenn du dir in Steam eine eigene Desktop-Belegung eingerichtet hast", StringComparison.Ordinal));
         Assert.StartsWith("Beim Steam Controller können darüber hinaus", note.Text, StringComparison.Ordinal);
     }
 

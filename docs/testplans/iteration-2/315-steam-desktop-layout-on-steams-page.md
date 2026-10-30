@@ -8,7 +8,7 @@ controller alike, with Pan on or off. "On"/"off" below mean "Steams Desktop-Steu
 - [ ] **T315-1** Einstellungen → Launcher → Steam (active or not): the last group "DESKTOP-STEUERUNG" with
       "Steams Desktop-Steuerung zulassen", "Aus", subtitle "Steams Desktop-Steuerung wird momentan ignoriert"; switched
       on: "Steams Desktop-Steuerung ist momentan aktiviert". The info panel has the texts of the issue plus why one would allow
-      it ("Das ist praktisch, wenn du deinen Controller auch außerhalb von Arcadia nutzt …"); the Guide button and [RS]
+      it ("Das lohnt sich vor allem, wenn du dir in Steam eine eigene Desktop-Belegung eingerichtet hast …"); the Guide button and [RS]
       as glyphs of the controller in use (Xbox's without one); the Steam Controller's note as a blue box in bold. The
       glyphs in the blue box and in "Um den Wechsel des Aktionssets (⧉ + ≡) …" are always the Steam Controller's, also
       with a PlayStation or Nintendo controller in use. No other launcher's page has the row; Einstellungen → Controller has no group "STEAM" any more.

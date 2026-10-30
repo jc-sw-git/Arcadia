@@ -42,7 +42,7 @@ No case has a UI flow of its own (the visible part is #242's copy and toasts), s
       test with fakes; real kill on the owner's PC)
 - [ ] **T304-9** The encrypted raw stream stays within T242-18: p99 of a write under 1 ms. · E2E: no (check step 3)
 - [ ] **T304-10** A `viiper.exe` left from Arcadia's own path (e.g. after a hard kill) is ended before the start; a
-      `viiper.exe` from another path is not. · E2E: no (unit test; real in check step 2)
+      `viiper.exe` from another path is not. · E2E: no (unit test)
 - [ ] **T304-11** No Windows Firewall prompt at the first start of Arcadia's VIIPER. · E2E: no (check step 1)
 - [ ] **T304-12** Regression of #242: with Pan and the Steam Controller, a game sees the Xbox pad, Steam the copy;
       Arcadia ended in Task Manager mid-copy, Pan's teardown shows the puck again and `pan.log` names the detached
@@ -56,5 +56,5 @@ History:
 | Red once (mutations) | 2026-10-29 | Claude | same; each seen red: auth flag dropped, key-refusal check skipped, usbip on 0.0.0.0, receive counter unchecked, VIIPER-lost check off, Pan without `ServerOf`, teardown of every local port, server dropped after a failed detach | ✅ | – |
 | QE review round (PR #318) | 2026-10-29 | Claude | same; new tests each seen red: no listener re-check before a pad or copy, first of two answering ports taken, running VIIPER reused without its listeners checked, planned stop dropping every server, Pan taking a listener beyond 127.0.0.1, old journal without 3241, journal version raised | ✅ | – |
 | T304-4 (real server) | 2026-10-29 | Claude | Linux build of the fork at the pinned commit, `--api.require-local-host-auth`: key answers, no key and wrong key refused, encrypted ping round trip | ✅ | Windows run in check step 1 |
-| T304-1, 3, 4, 9, 10, 11 (check-304) | – | owner | Windows, owner's PC | open | |
+| T304-1, 3, 4, 9, 11 (check-304) | 2026-10-30 | owner | Windows 10.0.26200, owner's PC, build of this PR's pinned VIIPER, usbip-win2 | ✅ only `127.0.0.1`, ports from Windows (never 3241/3242), key answered, no key and wrong key refused, key file gone, key in no log, `%APPDATA%\VIIPER` unchanged, no firewall prompt; pad attached from `127.0.0.1` beside another VIIPER on 3241 and seen in `joy.cpl`; raw stream p99 0.232 ms (p50 0.074, max 0.419) | The script's two NOT OKs were its own: its log grep for "password" matched VIIPER's "invalid password" from the wrong-key test, and an aborted first run left its foreign VIIPER on 3241 so the second could not bind (in the first run it stayed up beside Arcadia's). T304-10's own-path case is covered by its unit test only; probe tool removed |
 | T304-8, T304-12 | – | owner | Windows, owner's PC, Steam Controller with puck, Pan | open | |

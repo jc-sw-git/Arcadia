@@ -1,7 +1,8 @@
 # The puck as a USB device, and what Steam does with it (spike #239)
 
 Seen on the owner's PC: new Steam Controller ("Triton") on its wireless puck `28DE:1304`, Windows 11, HidHide 1.5.230,
-usbip-win2. Tools: `tools/dev/SteamInputProbe` (mode `describe`) and `tools/dev/SteamControllerProxy` (the spike's
+usbip-win2. Tools: `SteamInputProbe` (mode `describe`; in git at
+`f938531:tools/dev/SteamInputProbe`) and `tools/dev/SteamControllerProxy` (the spike's
 throwaway proxy). Check scripts and logs: project files `spikes/239/`.
 
 ## The puck

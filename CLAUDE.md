@@ -11,7 +11,8 @@ mode fully controllable by gamepad (incl. Steam Controller), desktop mode by mou
   `> **Story:**` line; bugs `bug`; technical work `type:tech-debt`. Milestone `I<n>` = iteration n, its title names
   the theme, its description the scope.
 - **Language:** everything on GitHub is English (public repo): code, docs, issues, PRs, commits, branches,
-  labels, milestones, release notes, comments. UI texts are German, for now.
+  labels, milestones, release notes, comments. UI texts are German, for now. Other launcher front ends are never
+  named; write "comparable products".
 
 ## Build, test, run
 

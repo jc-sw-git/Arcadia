@@ -34,8 +34,11 @@ public interface ISdlGamepads
 
     SdlPadState Read(nint pad);
 
-    /// <summary>Rumbles for <paramref name="durationMs"/>, then stops by itself; a pad without motors ignores it.</summary>
-    void Rumble(nint pad, ushort strength, uint durationMs);
+    /// <summary>
+    /// Rumbles the low and high frequency motors for <paramref name="durationMs"/>, then stops by itself; a pad without
+    /// motors ignores it.
+    /// </summary>
+    void Rumble(nint pad, ushort low, ushort high, uint durationMs);
 
     /// <summary>Switches gyro and accelerometer on or off.</summary>
     /// <returns>False when the pad has no gyro.</returns>
@@ -66,6 +69,13 @@ public sealed class SdlGamepadSource : IGamepadSource
     private const uint RumbleMs = 150;
     private const ushort RumbleStrength = 30000;
 
+    /// <summary>
+    /// A held rumble (<see cref="HoldRumble"/>) is sent with this duration and renewed after <see cref="HeldRumbleRenewMs"/>:
+    /// SDL has no endless rumble, and should Arcadia stop polling, the motors stop by themselves.
+    /// </summary>
+    private const uint HeldRumbleMs = 2000;
+    private const long HeldRumbleRenewMs = 1000;
+
     /// <summary>How long the low-level hook may wait for a fresh look while the poll thread reads; it must answer fast.</summary>
     private static readonly TimeSpan FreshLookWait = TimeSpan.FromMilliseconds(2);
 
@@ -77,6 +87,11 @@ public sealed class SdlGamepadSource : IGamepadSource
     private readonly GamepadPolls _polls = new();
     private readonly List<GamepadReading> _readings = [];
     private readonly ConcurrentQueue<int> _rumbleRequests = new();
+    private readonly ConcurrentQueue<(int PadId, ushort Low, ushort High)> _heldRumbleRequests = new();
+
+    // Poll thread only: the motors a game holds on, and when they were last sent.
+    private readonly Dictionary<uint, (ushort Low, ushort High, long SentAtMs)> _heldRumbles = [];
+    private readonly List<uint> _renew = [];
 
     // Guards every SDL call: the poll thread and the fresh look of the desktop filter's hook thread.
     private readonly Lock _sdlLock = new();
@@ -85,6 +100,11 @@ public sealed class SdlGamepadSource : IGamepadSource
     private volatile bool _lost;
     private volatile bool _motionWanted;
     private volatile bool _motionChanged;
+
+    // Every controller let go (ReadControllers(false)): no poll reads, and SDL is opened again once it ends.
+    private volatile bool _letGo;
+    private bool _reopen;
+    private bool _steamControllersRead = true;
     private Thread? _thread;
 
     /// <param name="log">Connects and disconnects, for <c>arcadia.log</c>; called on the poll thread.</param>
@@ -121,6 +141,42 @@ public sealed class SdlGamepadSource : IGamepadSource
 
     public void Rumble(int padId) => _rumbleRequests.Enqueue(padId);
 
+    public void HoldRumble(int padId, ushort low, ushort high) => _heldRumbleRequests.Enqueue((padId, low, high));
+
+    /// <summary>
+    /// Off, SDL closes every controller and ends before this returns (the way check A3 of #335 found Windows lets Pan
+    /// restart them); polls pause, so nobody sees the controllers go. On, the next poll starts SDL again and the
+    /// controllers come back as newly connected. Never throws; a failure is logged.
+    /// </summary>
+    public void ReadControllers(bool on)
+    {
+        try
+        {
+            lock (_sdlLock)
+            {
+                if (on)
+                {
+                    _letGo = false;
+                    return;
+                }
+
+                _letGo = true;
+                if (!_open)
+                {
+                    return;
+                }
+
+                CloseUnderLock();
+                _reopen = true;
+                _log("Controller: alle Controller losgelassen, Pan startet einen neu");
+            }
+        }
+        catch (Exception ex)
+        {
+            _log($"Controller: Controller nicht {(on ? "wieder geöffnet" : "losgelassen")}: {ex.Message}");
+        }
+    }
+
     /// <summary>
     /// Switches the gyro and accelerometer of every controller that has them on or off, from the next poll on; off by
     /// default. Only while a feature needs them (#111): they cost the controller's battery. Callable from any thread.
@@ -142,6 +198,7 @@ public sealed class SdlGamepadSource : IGamepadSource
         {
             lock (_sdlLock)
             {
+                _steamControllersRead = on;
                 if (!_open)
                 {
                     return;
@@ -234,8 +291,18 @@ public sealed class SdlGamepadSource : IGamepadSource
             return false;
         }
 
+        if (_letGo)
+        {
+            return true;
+        }
+
         try
         {
+            if (_reopen && !Reopen())
+            {
+                return false;
+            }
+
             ReadControllers(nowMs);
             return true;
         }
@@ -244,6 +311,37 @@ public sealed class SdlGamepadSource : IGamepadSource
             Lose(ex);
             return false;
         }
+    }
+
+    /// <summary>SDL again after every controller was let go; false when it can't start (already reported).</summary>
+    private bool Reopen()
+    {
+        lock (_sdlLock)
+        {
+            if (_letGo || !_reopen)
+            {
+                return true;
+            }
+
+            _reopen = false;
+        }
+
+        if (!Open())
+        {
+            return false;
+        }
+
+        lock (_sdlLock)
+        {
+            if (!_steamControllersRead)
+            {
+                // Init switches SDL's Steam Controller driver on; a hide of the puck may still be under way (#308).
+                _sdl.ReadSteamControllers(false);
+                _sdl.Update();
+            }
+        }
+
+        return true;
     }
 
     private void ReadControllers(long nowMs)
@@ -281,13 +379,60 @@ public sealed class SdlGamepadSource : IGamepadSource
             {
                 if (_pads.TryGetValue((uint)padId, out var pad))
                 {
-                    _sdl.Rumble(pad.Handle, RumbleStrength, RumbleMs);
+                    _sdl.Rumble(pad.Handle, RumbleStrength, RumbleStrength, RumbleMs);
                 }
             }
+
+            HoldRumbles(nowMs);
         }
 
         Polled?.Invoke(_readings);
         _polls.Update(_readings, nowMs);
+    }
+
+    /// <summary>
+    /// A game's rumble on the emulated pad, on the real one: sent when it changes, and renewed before SDL ends it. Under
+    /// the SDL lock.
+    /// </summary>
+    private void HoldRumbles(long nowMs)
+    {
+        while (_heldRumbleRequests.TryDequeue(out var request))
+        {
+            var id = (uint)request.PadId;
+            if (!_pads.TryGetValue(id, out var pad))
+            {
+                continue;
+            }
+
+            _sdl.Rumble(pad.Handle, request.Low, request.High, request.Low == 0 && request.High == 0 ? 0 : HeldRumbleMs);
+            if (request.Low == 0 && request.High == 0)
+            {
+                _heldRumbles.Remove(id);
+            }
+            else
+            {
+                _heldRumbles[id] = (request.Low, request.High, nowMs);
+            }
+        }
+
+        _renew.Clear();
+        foreach (var (id, held) in _heldRumbles)
+        {
+            if (nowMs - held.SentAtMs >= HeldRumbleRenewMs)
+            {
+                _renew.Add(id);
+            }
+        }
+
+        foreach (var id in _renew)
+        {
+            var held = _heldRumbles[id];
+            if (_pads.TryGetValue(id, out var pad))
+            {
+                _sdl.Rumble(pad.Handle, held.Low, held.High, HeldRumbleMs);
+                _heldRumbles[id] = held with { SentAtMs = nowMs };
+            }
+        }
     }
 
     /// <summary>Lets go of every controller and of SDL.</summary>
@@ -295,20 +440,26 @@ public sealed class SdlGamepadSource : IGamepadSource
     {
         lock (_sdlLock)
         {
-            if (!_open)
-            {
-                return;
-            }
-
-            _open = false;
-            foreach (var pad in _pads.Values)
-            {
-                _sdl.Close(pad.Handle);
-            }
-
-            _pads.Clear();
-            _sdl.Quit();
+            CloseUnderLock();
         }
+    }
+
+    private void CloseUnderLock()
+    {
+        if (!_open)
+        {
+            return;
+        }
+
+        _open = false;
+        foreach (var pad in _pads.Values)
+        {
+            _sdl.Close(pad.Handle);
+        }
+
+        _pads.Clear();
+        _heldRumbles.Clear();
+        _sdl.Quit();
     }
 
     public void Dispose()
@@ -426,12 +577,13 @@ public sealed class SdlGamepadSource : IGamepadSource
     }
 
     private GamepadReading Read(uint id, nint handle, PadDevice device) =>
-        SdlPadMapping.ToReading((int)id, _sdl.Read(handle)) with { Type = device.Type };
+        SdlPadMapping.ToReading((int)id, _sdl.Read(handle)) with { Type = device.Type, Device = device };
 
     private void Disconnect(uint id)
     {
         if (_pads.Remove(id, out var pad))
         {
+            _heldRumbles.Remove(id);
             _sdl.Close(pad.Handle);
             _log($"Controller #{id} getrennt: {pad.Device}");
         }

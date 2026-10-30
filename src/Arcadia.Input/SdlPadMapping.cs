@@ -107,6 +107,7 @@ public static class SdlPadMapping
             LeftTouchpad = Touch(state.FirstTouchpad, (state.Buttons & SdlPadState.Bit(SdlPadState.Button.Touchpad)) != 0),
             RightTouchpad = Touch(state.SecondTouchpad, (state.Buttons & SdlPadState.Bit(SdlPadState.Button.Misc2)) != 0),
             Motion = state.Motion,
+            Guide = (state.Buttons & SdlPadState.Bit(SdlPadState.Button.Guide)) != 0,
         };
     }
 

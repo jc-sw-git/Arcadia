@@ -58,6 +58,19 @@ public interface IGamepadSource : IDisposable
     void Rumble(int padId);
 
     /// <summary>
+    /// Keeps the motors of <paramref name="padId"/> running at these strengths (0–65535, low and high frequency) until
+    /// the next call; 0 and 0 stop them. What a game asks of the emulated pad (#238 D5). Callable from any thread.
+    /// </summary>
+    void HoldRumble(int padId, ushort low, ushort high);
+
+    /// <summary>
+    /// Lets go of every controller (false): SDL closes them and ends, so Arcadia holds no handle and Windows lets Pan
+    /// restart a controller it hides or shows (#335, check A3). No poll runs meanwhile. True reads them again from the
+    /// next poll on, each with a new <see cref="GamepadReading.PadId"/>. Callable from any thread; never throws.
+    /// </summary>
+    void ReadControllers(bool on);
+
+    /// <summary>
     /// A fresh look at the controllers between two polls: does one of them pass <paramref name="test"/> right now?
     /// For the desktop filter's hook, which must not miss a press Steam turned into a key before the next poll.
     /// Callable from any thread; false if it can't look quickly.
@@ -103,6 +116,14 @@ public sealed class NullGamepadSource : IGamepadSource
     }
 
     public void Rumble(int padId)
+    {
+    }
+
+    public void HoldRumble(int padId, ushort low, ushort high)
+    {
+    }
+
+    public void ReadControllers(bool on)
     {
     }
 

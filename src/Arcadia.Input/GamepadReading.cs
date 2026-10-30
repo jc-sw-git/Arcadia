@@ -62,6 +62,12 @@ public readonly record struct GamepadReading(int PadId, PadButtons Buttons, Stic
     /// <summary>SDL's type of the controller: which button symbols the hints show (#215).</summary>
     public PadType Type { get; init; }
 
+    /// <summary>The device: name, USB ids (the model Pan hides, #335) and SDL's path.</summary>
+    public PadDevice Device { get; init; }
+
+    /// <summary>Guide / PS / Home / Steam: no function in Arcadia, passed on to games (#238 D6).</summary>
+    public bool Guide { get; init; }
+
     /// <summary>A Steam Controller, read raw (#212); "connected" for the per-game mode follows it.</summary>
     public bool IsSteamController => Type == PadType.Steam;
 

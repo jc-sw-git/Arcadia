@@ -51,13 +51,14 @@ public sealed class LauncherPageViewTests
         Assert.Equal(controller ? ["B", "LT", "RT"] : ["Esc", "Q", "E"], glyphs.OrderBy(glyph => arcadia.Bounds(glyph).Left).Select(glyph => (glyph.Child as TextBlock)?.Text));
         Assert.All(glyphs, glyph => Assert.Equal(controller, glyph.CornerRadius.TopLeft >= (glyph.Bounds.Height / 2) - 0.5));
 
-        // The groups "Allgemein" and "Bibliothek" with their rows.
+        // The groups "Allgemein", "Bibliothek" and "Controller" (#178) with their rows.
         var headings = arcadia.GroupHeadings();
-        Assert.Equal(["ALLGEMEIN", "BIBLIOTHEK"], headings.Select(heading => heading.Text));
+        Assert.Equal(["ALLGEMEIN", "BIBLIOTHEK", "CONTROLLER"], headings.Select(heading => heading.Text));
         var rows = arcadia.Arcadia.Main.Settings!.Selected.Rows;
-        Assert.Equal(["launcher-active", "launcher-name", "launcher-keyword", "launcher-logo", "launcher-rescan"], rows.Select(row => row.Key));
+        Assert.Equal(["launcher-active", "launcher-name", "launcher-keyword", "launcher-logo", "launcher-rescan", "launcher-controller-mode"], rows.Select(row => row.Key));
         Assert.All(rows.Take(4), row => Assert.InRange(arcadia.Bounds(arcadia.RowButton(row)).Top, arcadia.Bounds(headings[0]).Bottom, arcadia.Bounds(headings[1]).Top));
-        Assert.True(arcadia.Bounds(arcadia.RowButton(rows[4])).Top > arcadia.Bounds(headings[1]).Bottom, "„Neu einlesen“ steht unter „Bibliothek“");
+        Assert.InRange(arcadia.Bounds(arcadia.RowButton(rows[4])).Top, arcadia.Bounds(headings[1]).Bottom, arcadia.Bounds(headings[2]).Top);
+        Assert.True(arcadia.Bounds(arcadia.RowButton(rows[5])).Top > arcadia.Bounds(headings[2]).Bottom, "„Steam Controller“ steht unter „Controller“");
 
         switch (how)
         {

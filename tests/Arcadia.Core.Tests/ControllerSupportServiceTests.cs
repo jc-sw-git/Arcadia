@@ -109,7 +109,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var service = Create();
         var games = Enumerable.Range(0, 40).Select(i => SteamGame() with { Id = $"g{i}" }).ToList();
 
-        await Task.WhenAll(games.Select(game => Task.Run(() => service.SetModeFor(game, useArcadiaPad: false))));
+        await Task.WhenAll(games.Select(game => Task.Run(() => service.SetChoiceFor(game, useArcadiaPad: false))));
 
         var saved = new SettingsStore(Path.Combine(_directory, "settings.json")).Load();
         Assert.All(games, game => Assert.False(saved.UsesArcadiaPad(game.Key, Registered.GamesUseSteamInput)));

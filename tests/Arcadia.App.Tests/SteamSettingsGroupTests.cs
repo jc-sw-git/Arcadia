@@ -7,7 +7,7 @@ using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;
 
-/// <summary>The group "Steam" in the category "Controller" and the link to it from Steam's launcher page (#169).</summary>
+/// <summary>The group "Steam" in the category "Controller" (#169); the link to it from Steam's launcher page went with #178.</summary>
 public sealed class SteamSettingsGroupTests
 {
     private static readonly LauncherSpec[] WithSteam =
@@ -60,56 +60,6 @@ public sealed class SteamSettingsGroupTests
         Assert.Same(layout, arcadia.Main.Settings!.FocusedRow);
         arcadia.Press(before ? UiAction.Left : UiAction.Right);
         Assert.NotEqual(before, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
-    }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "T169-4")]
-    [Trait("TestCase", "T169-5")]
-    public async Task Steams_page_links_to_the_group_and_B_comes_back_to_the_link()
-    {
-        using var arcadia = await ArcadiaDriver.StartAsync(WithSteam, steam: new FakeSteam());
-        var launchers = arcadia.OpenLauncherSettings();
-        OpenPageOf(arcadia, launchers, "steam");
-
-        var link = Assert.IsType<ActionRowViewModel>(launchers.Rows[^1]);
-        Assert.Equal(("CONTROLLER", "Controller-Einstellungen für Steam", "Öffnen"), (link.Group, link.Title, link.ActionText));
-        Assert.Contains(link.Info, block => block is InfoText { Text: "[A] springt dorthin, [B] kommt hierher zurück." });
-        arcadia.Press(UiAction.Down, times: launchers.Rows.Count);
-        Assert.Same(link, arcadia.Main.Settings!.FocusedRow);
-
-        // A: the category "Controller" on "Controller-Wächter (Pan)".
-        arcadia.Press(UiAction.Accept);
-        Assert.Equal("Controller", arcadia.Main.Settings.Selected.Name);
-        Assert.Equal("pan", arcadia.Main.Settings.FocusedRow?.Key);
-
-        // B: back on Steam's page, on the link; B again: the list.
-        arcadia.Press(UiAction.Back);
-        Assert.Same(launchers, arcadia.Main.Settings.Selected);
-        Assert.Equal("steam", launchers.PageLauncherId);
-        Assert.Same(link, arcadia.Main.Settings.FocusedRow);
-        arcadia.Press(UiAction.Back);
-        Assert.Null(launchers.PageLauncherId);
-        Assert.True(arcadia.Main.IsSettingsOpen);
-
-        // The other launchers' pages have no link.
-        OpenPageOf(arcadia, launchers, "gog");
-        Assert.DoesNotContain(launchers.Rows, row => row.Key.StartsWith("link:", StringComparison.Ordinal));
-    }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "T169-5")]
-    public async Task After_another_category_was_chosen_B_on_the_link_target_closes_the_settings_as_usual()
-    {
-        using var arcadia = await ArcadiaDriver.StartAsync(WithSteam, steam: new FakeSteam());
-        var launchers = arcadia.OpenLauncherSettings();
-        OpenPageOf(arcadia, launchers, "steam");
-        arcadia.Press(UiAction.Down, times: launchers.Rows.Count).Press(UiAction.Accept);
-        Assert.Equal("Controller", arcadia.Main.Settings!.Selected.Name);
-
-        arcadia.Press(UiAction.NextTab).Press(UiAction.PreviousTab);
-        Assert.Equal("Controller", arcadia.Main.Settings.Selected.Name);
-        arcadia.Press(UiAction.Back);
-        Assert.False(arcadia.Main.IsSettingsOpen);
     }
 
     [AvaloniaFact]

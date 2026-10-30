@@ -448,6 +448,13 @@ public sealed class PanRows
         _ => (issue.ShortText, issue.Detail, issue.Severity),
     };
 
+    /// <summary>What each Steam Controller mode brings, here and on every launcher's page (#178).</summary>
+    public static IReadOnlyList<InfoBlock> ModeCards { get; } =
+    [
+        new InfoCard(ControllerModes.Arcadia, "+ In jedem Spiel, auch ohne Steam\n+ Das Spiel sieht einen Xbox Controller\n− Keine Steam-Belegungen, kein Gyro, keine Trackpads", string.Empty),
+        new InfoCard(ControllerModes.Steam, "+ Belegungen aus Steam, auch Community, Gyro und Trackpads\n− Außerhalb von Steam nur Steams Desktop-Belegung", string.Empty),
+    ];
+
     /// <summary>The switch's info panel (T242Settings).</summary>
     private static readonly InfoBlock[] MainInfo =
     [
@@ -456,9 +463,8 @@ public sealed class PanRows
         new InfoText("Bisher bewacht Pan nur den Steam Controller. Andere Controller folgen."),
         new InfoSection("STEAM CONTROLLER",
         [
-            new InfoText("Von Haus aus funktioniert der Steam Controller nur in Steam als echter Controller. Arcadia betreibt ihn deshalb in zwei Modi, „Steam-Eingabe“ und „Arcadia“, damit er auch außerhalb von Steam funktioniert, zum Beispiel in Spielen aus dem Epic Games Launcher oder dem Xbox Game Pass. Den Modus stellst du pro Spiel ein. Vorausgewählt ist „Steam-Eingabe“ für Spiele aus Steam und „Arcadia“ für alle anderen Launcher."),
-            new InfoCard(ControllerModes.Arcadia, "+ In jedem Spiel, auch ohne Steam\n+ Das Spiel sieht einen Xbox Controller\n− Keine Steam-Belegungen, kein Gyro, keine Trackpads", string.Empty),
-            new InfoCard(ControllerModes.Steam, "+ Belegungen aus Steam, auch Community, Gyro und Trackpads\n− Außerhalb von Steam nur Steams Desktop-Belegung", string.Empty),
+            new InfoText("Von Haus aus funktioniert der Steam Controller nur in Steam als echter Controller. Arcadia betreibt ihn deshalb in zwei Modi, „Steam-Eingabe“ und „Arcadia“, damit er auch außerhalb von Steam funktioniert, zum Beispiel in Spielen aus dem Epic Games Launcher oder dem Xbox Game Pass. Welchen Modus die Spiele eines Launchers bekommen, wählst du auf seiner Seite unter Launcher vor; pro Spiel stellst du ihn in seinen Details um."),
+            .. ModeCards,
             new InfoNote("Solange Arcadia den Steam Controller übernommen hat, hält es Firmware-Updates von Steam auf und gibt ihn dafür frei, sobald Steam aufgegeben hat. Läuft Steam beim Start der Emulation, fragt Arcadia vorher, ob gerade ein Update läuft.", HealthSeverity.Info),
         ]),
         new InfoSection("WAS PAN BRAUCHT",

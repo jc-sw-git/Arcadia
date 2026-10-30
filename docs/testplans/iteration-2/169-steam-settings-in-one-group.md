@@ -1,5 +1,7 @@
 # #169 Group the Steam settings under "Steam"
 
+T169-4 and T169-5 no longer apply: the link on Steam's page went with #178 (owner, 2026-10-28).
+
 - [ ] **T169-1** Einstellungen → Controller: a box "STEAM" comes first with "Steam Controller Kompatibilität", its
       messages and "SISR aktualisieren" if any, then "Steams Desktop-Belegung ignorieren" ("Alle Controller: …").
       After it "MAUSMODUS" and "ZURÜCK ZU ARCADIA"; there is no box "STEAM CONTROLLER" any more. · E2E: yes

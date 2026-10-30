@@ -36,7 +36,8 @@ partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`; Avalonia pit
   - `SettingsPageViewModel` (categories, LB/RB, B), one `SettingsCategoryViewModel` per category; a new category is a
     subclass added in `MainViewModel.ShowSettings`.
   - `LauncherSettingsViewModel` with `LauncherRowViewModel`s and its `ILauncherSettingsHost` (#136), and a page per
-    launcher with `LauncherPageRows` (#137); `ControllerSettingsViewModel` (`PanRows`, `SisrRows`, the Steam prompts as
+    launcher with `LauncherPageRows` (#137), its Steam Controller default `LauncherControllerModeRowViewModel` and the
+    reset's `SettingsQuestionViewModel` as its `Dialog` (#178); `ControllerSettingsViewModel` (`PanRows`, `SisrRows`, the Steam prompts as
     its `Dialog`); `AboutSettingsViewModel`.
   - Rows (`SettingsRowViewModel`): `ChoiceRowViewModel`, `SwitchRowViewModel`, `ActionRowViewModel`,
     `InfoRowViewModel`, `TextRowViewModel` with `TextEditorViewModel` (a text written with the on-screen keyboard and

@@ -28,20 +28,8 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
             category.PropertyChanged += OnCategoryChanged;
         }
 
-        var links = categories
-            .SelectMany(target => target.LauncherPageLinks.Select(link =>
-                (target.Name.ToUpperInvariant(), link, (Action)(() => OpenLink(target, link.TargetRowKey)))))
-            .ToList();
-        foreach (var launchers in categories.OfType<LauncherSettingsViewModel>())
-        {
-            launchers.ShowLinks(links);
-        }
-
         Select(categories.FirstOrDefault(c => c.Dialog is not null) ?? first ?? categories[0]);
     }
-
-    /// <summary>The category a link was followed from, which B goes back to; null when no link led here.</summary>
-    private SettingsCategoryViewModel? _linkedFrom;
 
     public IReadOnlyList<SettingsCategoryViewModel> Categories { get; }
 
@@ -125,9 +113,6 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
                 break;
             case UiAction.Back when category.Back():
                 break;
-            case UiAction.Back when _linkedFrom is { } from:
-                Select(from);
-                break;
             case UiAction.Back or UiAction.Settings:
                 _host.Close(this);
                 break;
@@ -189,10 +174,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
 
     private void Cycle(int delta) => ChooseTab(Categories[ListFocus.Cycle(Categories.ToList().IndexOf(Selected), delta, Categories.Count)]);
 
-    /// <summary>
-    /// A category's tab is chosen: it opens at its top level. A link and the way back of a link keep where it was, so
-    /// B after a link lands on the launcher page it came from.
-    /// </summary>
+    /// <summary>A category's tab is chosen: it opens at its top level, not where it was left.</summary>
     private void ChooseTab(SettingsCategoryViewModel category)
     {
         if (category != Selected)
@@ -203,19 +185,8 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
         Select(category);
     }
 
-    /// <summary>A link on a launcher's page (#169): its category with the row focused; B goes back to the page.</summary>
-    private void OpenLink(SettingsCategoryViewModel target, string rowKey)
-    {
-        var from = Selected;
-        Select(target);
-        target.FocusRow(rowKey);
-        _linkedFrom = from;
-    }
-
     private void Select(SettingsCategoryViewModel category)
     {
-        // Any other way to a category ends the way back of a link.
-        _linkedFrom = null;
         if (Selected == category)
         {
             return;

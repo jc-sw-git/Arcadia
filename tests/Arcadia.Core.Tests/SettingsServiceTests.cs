@@ -183,7 +183,7 @@ public sealed class SettingsServiceTests : IDisposable
         // The UI saves the view while Steam Controller Support saves from the thread pool.
         var pageSizes = new[] { 10, 25, 50, 100 };
         Parallel.Invoke(
-            () => Parallel.ForEach(games, game => service.Update(settings => settings.WithControllerSupportOverride(game, false))),
+            () => Parallel.ForEach(games, game => service.Update(settings => settings.WithControllerModeChoice(game.Key, false))),
             () => Parallel.For(0, 200, i => service.Update(settings => settings with { PreferredPageSize = pageSizes[i % 4], LastTabLauncherId = "steam" })));
 
         var saved = new SettingsStore(SettingsPath).Load();

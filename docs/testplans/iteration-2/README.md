@@ -29,6 +29,7 @@ its file.
 | [278-follow-steam-downloads-live.md](278-follow-steam-downloads-live.md) | #278 | Follow Steam's install progress, pauses and account switches live | 8 |
 | [280-steam-sign-in-on-steams-login-page.md](280-steam-sign-in-on-steams-login-page.md) | #280 | Steam sign-in on Steam's own login page | 11 |
 | [277-detect-a-steam-game-start-that-steam-refused.md](277-detect-a-steam-game-start-that-steam-refused.md) | #277 | Detect a Steam game start that Steam refused | 7 |
+| [178-steam-controller-mode-default-per-launcher.md](178-steam-controller-mode-default-per-launcher.md) | #178 | Choose the Steam Controller mode default per launcher | 12 |
 
 ## Exploratory test
 
@@ -40,7 +41,7 @@ Charter: –. Time box: –. Findings: –.
 |---|---|
 | T72-1 (mapping), T72-4, T72-6, T72-7, T72-9, T72-12 | `tests/Arcadia.App.Tests/ControllerTypesTests.cs` |
 | T212-2, T212-3, T212-5, T212-6, T212-7, T212-10 | `tests/Arcadia.App.Tests/SteamControllerTests.cs` |
-| T169-1 to T169-5 (T169-6 to T169-8 went with the SISR row, #214) | `tests/Arcadia.App.Tests/SteamSettingsGroupTests.cs` |
+| T169-1 to T169-3 (T169-4 and T169-5 went with the link, #178; T169-6 to T169-8 with the SISR row, #214) | `tests/Arcadia.App.Tests/SteamSettingsGroupTests.cs` |
 | T180-2, T180-3 | `tests/Arcadia.App.Tests/Window/RingGeometryTests.cs`, `tests/Arcadia.App.Tests/Window/FocusRingTests.cs` |
 | T155-1 to T155-12 | `tests/Arcadia.App.Tests/PageTransitionTests.cs` |
 | T208-1 to T208-3, T209-3 | `tests/Arcadia.App.Tests/PageInterfaceTests.cs` |
@@ -57,3 +58,4 @@ Charter: –. Time box: –. Findings: –.
 | T277-1, T277-3 to T277-5, T277-7 | `tests/Arcadia.App.Tests/StartRefusedTests.cs` |
 | T278-2 to T278-5 (faked Steam) | `tests/Arcadia.App.Tests/SteamInstallTests.cs` |
 | T278-8 (faked launcher) | `tests/Arcadia.App.Tests/GameStartTests.cs` |
+| T178-1 to T178-9; T178-10 | `tests/Arcadia.App.Tests/LauncherControllerModeTests.cs`; `Window/LauncherControllerModeViewTests.cs` |

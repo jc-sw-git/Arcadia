@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace Arcadia.Launchers.Steam.Account;
 
 /// <summary>
-/// Steam's store web page as Arcadia's browser shows and reads it (#83), the way Playnite signs in to Steam: the user
+/// Steam's store web page as Arcadia's browser shows and reads it (#83), the way comparable products sign in to Steam: the user
 /// signs in on the store's own login page (with its QR code, or a password Arcadia never sees); afterwards every store
 /// page holds the account (<c>data-userinfo</c>) and a web API token (<c>data-store_user_config</c>, <c>webapi_token</c>)
 /// in the element <c>#application_config</c>. That token reads the owned games over the web API.
@@ -13,7 +13,7 @@ internal static class SteamStorePage
 {
     public static readonly Uri LoginPage = new("https://store.steampowered.com/login/?redir=explore%2F");
 
-    /// <summary>A light store page that holds the account and token once signed in (Playnite reads the same).</summary>
+    /// <summary>A light store page that holds the account and token once signed in (comparable products read the same).</summary>
     public static readonly Uri StorePage = new("https://store.steampowered.com/explore/");
 
     /// <summary>The store's own list of what the account owns: apps (incl. soundtracks, tools, DLC) and packages.</summary>

@@ -1,7 +1,7 @@
 # Steam — account (#83, #280)
 
 `Steam/Account/`: sign-in on Steam's own store login page in Arcadia's browser (`IWebPages`, a system web view:
-WebView2 / WebKitGTK, profile in `%APPDATA%\Arcadia\WebView`), the way Playnite does it. Every store page then holds
+WebView2 / WebKitGTK, profile in `%APPDATA%\Arcadia\WebView`), the way comparable products do it. Every store page then holds
 `#application_config` with `data-userinfo` (`logged_in`, `steamid`) and `data-store_user_config` (`webapi_token`, a JWT:
 `sub` = SteamID64, `exp`, about a day); `SteamStorePage` reads both. A new token: reload `store.steampowered.com/explore/`
 unseen (Steam renews its own cookies there); a page signed out or in with another account means the sign-in is gone.

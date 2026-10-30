@@ -1,7 +1,7 @@
 # #280 Steam sign-in on Steam's own login page
 
 #83's sign-in posed as Steam's phone app, and Steam restricted the owner's account right after the merge (2026-10-27).
-Rebuilt the way Playnite does it: A on "Anmelden" opens Steam's own store login page in Arcadia's browser (WebView2,
+Rebuilt the way comparable products do it: A on "Anmelden" opens Steam's own store login page in Arcadia's browser (WebView2,
 profile in `%APPDATA%\Arcadia\WebView`), the user signs in there (QR code in the Steam app, or name and password), and
 Arcadia reads the web API token from the store page. A new token comes from reloading the store page unseen; signing
 out deletes Steam's cookies. #83's test cases T83-1 to T83-8 still apply; T83-1 and T83-2 are covered by the new

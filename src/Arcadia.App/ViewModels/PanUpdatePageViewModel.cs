@@ -64,7 +64,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
     public static IReadOnlyList<string> ManualSteps { get; } =
     [
         "1. Öffne im Startmenü „HidHide Configuration Client“ und erlaube die Windows-Abfrage.",
-        "2. Reiter „Devices“: Entferne die Haken bei Steam Controller und Puck.",
+        "2. Reiter „Devices“: Entferne die Haken bei deinen Controllern und dem Steam Puck.",
         "3. Reiter „Applications“: Entferne Arcadia aus der Liste.",
         "4. Schalte „Enable device hiding“ aus und schließe das Programm.",
         "5. Wähle hier „Erneut prüfen“.",

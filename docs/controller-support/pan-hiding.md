@@ -1,6 +1,7 @@
 # Pan hides the real Steam Controller (#243)
 
-How Pan hides the real puck from every program but Arcadia with HidHide, and shows it again in every teardown. What
+How Pan hides the real puck from every program but Arcadia with HidHide, and shows it again in every teardown; every
+other controller follows the same rules ([pan-hiding-controllers.md](pan-hiding-controllers.md)). What
 HidHide does to Steam: [emulated-steam-controller.md](emulated-steam-controller.md); who may hold the puck during the
 restart: [pan-puck-restart.md](pan-puck-restart.md).
 
@@ -50,9 +51,11 @@ restart: [pan-puck-restart.md](pan-puck-restart.md).
 
 ## Showing again
 
-- Teardown steps 3 and 4, only after ports detached and forwarding ended (otherwise the puck stays hidden and
-  journaled for the next trigger): remove exactly the journaled entries, turn cloaking off only if it was off, each
-  change journaled once made, `PuckRestartPending` written first; then restart the puck.
+- Teardown steps 3 and 4 ("show the hidden controllers", "restart the shown controllers"), only after ports detached
+  and forwarding ended (otherwise the puck stays hidden and journaled for the next trigger): remove exactly the
+  journaled entries, turn cloaking off only if it was off, each change journaled once made, `PuckRestartPending`
+  written first; then restart the puck. `Unhide` removes the allow-list entry and cloaking only when no other
+  controller stays hidden.
 - HidHide changes run one at a time (a gate shared by hide, unhide, arrival, check and the teardown's steps); IOCTLs
   run inline (no PnP lock); device listing and restart have a 10 s timeout and may be left behind.
 - A partial show (HidHide busy, its driver restarting, a failed restart) is retried after 5 s, then every 10 s while
@@ -66,7 +69,8 @@ restart: [pan-puck-restart.md](pan-puck-restart.md).
 - Last resort for the user if Pan can't undo (also in `docs/releases.md`): HidHide's Configuration Client (Start menu,
   admin) unticks the puck, removes Arcadia from the application list and turns hiding off; uninstalling HidHide
   empties its lists. Pan's later undo removes only what is still there.
-- Journal fields: `HiddenDevices`, `AllowListed`, `CloakingWasOn`, `PuckRestartPending`, `FirmwareHold`.
+- Journal fields: `HiddenDevices`, `AllowListed`, `CloakingWasOn`, `PuckRestartPending`, `FirmwareHold`; the other
+  controllers' in [pan-hiding-controllers.md](pan-hiding-controllers.md).
 
 ## Tests
 

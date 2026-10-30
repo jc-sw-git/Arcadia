@@ -12,8 +12,8 @@
   bundled one is updated at start once the player confirms; declined, Pan is switched off
   (`docs/controller-support/pan-update.md`). `Pan.exe --restore`
   (settings: "Controller wiederherstellen") gives the controllers back if the service itself hangs; if Pan can't give
-  the Steam Controller back, HidHide's Configuration Client (Start menu, admin) is the user's emergency exit: untick
-  the puck and turn hiding off (`docs/controller-support/pan-hiding.md`).
+  a controller back, HidHide's Configuration Client (Start menu, admin) is the user's emergency exit: untick the puck
+  and the other controllers and turn hiding off (`docs/controller-support/pan-hiding.md`, `pan-hiding-controllers.md`).
 - Uninstalling (only from Windows; Arcadia offers no "Deinstallieren", and these questions need no controller) asks
   "Treiber für die Controller-Emulation auch entfernen?" (usbip-win2, HidHide, SISR/VIIPER; `ControllerSupportRemoval`)
   and whether `%APPDATA%\Arcadia` goes too; both default to no. Pan goes without a question, with one UAC prompt

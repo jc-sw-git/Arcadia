@@ -19,6 +19,12 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     /// </summary>
     public static readonly TimeSpan HidingRequestTimeout = TimeSpan.FromSeconds(25);
 
+    /// <summary>
+    /// A controller's hide or show may wait behind an arrival's device scan, then scan and restart itself: three device
+    /// steps of up to 10 s each in Pan (QE of #337), so more than <see cref="HidingRequestTimeout"/>.
+    /// </summary>
+    public static readonly TimeSpan ControllerRequestTimeout = TimeSpan.FromSeconds(35);
+
     /// <summary>A request to Pan (write and reply) that takes longer than this means Pan hangs. Real time; tests widen it.</summary>
     public TimeSpan RequestTimeout { get; init; } = DefaultRequestTimeout;
 
@@ -351,6 +357,56 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             _log($"Pan: Unhide ohne Antwort: {ex.Message}");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Hides every connected controller of one model from every program but Arcadia, within this generation's
+    /// emulation (#335). Arcadia lets go of the model first: Pan restarts it. A rejected hide is undone at once. Never
+    /// throws but for cancellation before it is sent.
+    /// </summary>
+    public async Task<ControllerHidingResult> HideControllerAsync(uint generation, ControllerModel model, CancellationToken cancellationToken)
+    {
+        var result = await ControllerRequestAsync(PanCommand.HideController, PanReply.ControllerHidden, generation, model, cancellationToken);
+        if (result.Done || result.Reason != PanReason.HidingFailed)
+        {
+            return result;
+        }
+
+        // Hidden in part, then a step failed (the restart): show it again, as for the Steam Controller (pan-hiding.md).
+        await ShowControllerAsync(generation, model, CancellationToken.None);
+        return result;
+    }
+
+    /// <summary>
+    /// Shows one model again; the others and the Steam Controller stay hidden. Not done: Pan's teardown shows it then.
+    /// Never throws but for cancellation before it is sent.
+    /// </summary>
+    public Task<ControllerHidingResult> ShowControllerAsync(uint generation, ControllerModel model, CancellationToken cancellationToken) =>
+        ControllerRequestAsync(PanCommand.ShowController, PanReply.ControllerShown, generation, model, cancellationToken);
+
+    private async Task<ControllerHidingResult> ControllerRequestAsync(PanCommand command, PanReply done, uint generation, ControllerModel model, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        PanMessage reply;
+        try
+        {
+            // Like the Steam Controller's hide: a restart takes a moment, never cancelled halfway.
+            reply = await RequestAsync(PanMessage.Of(command, generation, model.Value), ControllerRequestTimeout, CancellationToken.None);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _log($"Pan: {command} {model} ohne Antwort: {ex.Message}");
+            return new ControllerHidingResult(false, PanReason.HidingFailed);
+        }
+
+        if (reply.Reply == done)
+        {
+            _log($"Pan: {command} {model} erledigt{(reply.Reason == PanReason.ControllerNeedsReplug ? ", ganz erst nach neuem Verbinden" : string.Empty)}");
+            return new ControllerHidingResult(true, reply.Reason);
+        }
+
+        _log(reply.Reply == PanReply.Unsupported ? "Pan: kann Controller nicht verstecken (Pan zu alt)" : $"Pan: {command} {model} abgelehnt ({reply})");
+        return new ControllerHidingResult(false, reply.Reply == PanReply.Rejected ? reply.Reason : PanReason.HidingFailed);
     }
 
     public async Task PlannedExitAsync()
@@ -841,3 +897,9 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         }
     }
 }
+
+/// <summary>
+/// Pan's answer to a controller's hide or show (#335): whether it was done, and why not, or
+/// <see cref="PanReason.ControllerNeedsReplug"/> when done but programs that opened it before keep it until it is reconnected.
+/// </summary>
+public readonly record struct ControllerHidingResult(bool Done, PanReason Reason);

@@ -73,7 +73,7 @@ public sealed partial class Guardian
                 if (hiding)
                 {
                     // Every HID collection of the puck arrives on its own: only a burst that changed something is logged.
-                    var (reason, listed) = await HideCoreAsync(imagePath: null);
+                    var (reason, listed) = await HideCoreAsync(imagePath: null, ArrivalRefused);
                     if (reason != PanReason.None)
                     {
                         _log($"Steam Controller device arrived while hiding, not hidden: {reason}");
@@ -133,7 +133,7 @@ public sealed partial class Guardian
                     }
                 }
 
-                var (reason, listed) = await HideCoreAsync(imagePath);
+                var (reason, listed) = await HideCoreAsync(imagePath, () => Refused(message));
                 _log(reason == PanReason.None
                     ? $"Steam Controller hidden for generation {message.Generation}: {listed.Count} instance(s)"
                     : $"Steam Controller not hidden for generation {message.Generation}: {reason}");
@@ -205,7 +205,8 @@ public sealed partial class Guardian
                     _hiddenFor = null;
                 }
 
-                var reason = ShowCore();
+                // Controllers still taken over stay hidden, and with them the client's allow-list entry (#335).
+                var reason = ShowCore(ShowScope.SteamController);
                 if (reason == PanReason.None && !await RestartIfPendingAsync(CancellationToken.None, clientLetGo: true))
                 {
                     reason = PanReason.HidingFailed;
@@ -245,7 +246,7 @@ public sealed partial class Guardian
                 return refused;
             }
 
-            ours = [.. _journal.HiddenDevices];
+            ours = [.. _journal.HiddenDevices, .. _journal.HiddenControllers];
             // Asked with the generation it hides for: whether that hiding still holds, not only whether Pan could hide.
             hidden = _hiddenFor is { } h && h.Generation == message.Generation && message.Generation != 0 && _phase == Phase.Emulating ? h : null;
             // Behind an arrival's hide this may wait long; the client's heartbeats wait behind it on the pipe.
@@ -319,6 +320,13 @@ public sealed partial class Guardian
         return _phase == Phase.TornDown ? PanMessage.Of(PanReply.Rejected, message.Generation, PanReason.TeardownNotAcknowledged) : null;
     }
 
+    /// <summary>Under the lock: <see cref="RefuseHiding"/> as a reason, for a client's hide that waited on the devices.</summary>
+    private PanReason Refused(PanMessage message) =>
+        RefuseHiding(message) is { } refusal ? refusal.Reason is PanReason.None ? PanReason.HidingFailed : refusal.Reason : PanReason.None;
+
+    /// <summary>Under the lock: an arrival hides only while an emulation runs; a stop or teardown shows instead.</summary>
+    private PanReason ArrivalRefused() => _stopping ? PanReason.ServiceStopping : _phase != Phase.Emulating ? PanReason.NotEmulating : PanReason.None;
+
     private void HidingDone()
     {
         lock (_lock)
@@ -334,7 +342,7 @@ public sealed partial class Guardian
     /// (unless <paramref name="imagePath"/> is null: an arrival) and turns cloaking on, each journaled first; then
     /// restarts the puck so programs that have it open lose it. Returns why not, and how many instances are hidden.
     /// </summary>
-    private async Task<(PanReason Reason, IReadOnlyList<string> Listed)> HideCoreAsync(string? imagePath)
+    private async Task<(PanReason Reason, IReadOnlyList<string> Listed)> HideCoreAsync(string? imagePath, Func<PanReason> refused)
     {
         // Listed first: it may wait on Windows' PnP lock, and HidHide's lists must be read right before they are written
         // back, so a change the user makes meanwhile isn't lost.
@@ -349,47 +357,86 @@ public sealed partial class Guardian
             return (PanReason.HidingFailed, []);
         }
 
-        List<string> ours;
-        lock (_lock)
-        {
-            ours = [.. _journal.HiddenDevices];
-        }
-
-        var (reason, state, detail) = _hiding.Check(ours);
+        // Only listed devices, also if the device list returned something else.
+        var listed = present.Where(HidingList.IsListedHid).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var reason = AddToHidHide(listed, imagePath, controllerRestarts: null, refused);
         if (reason != PanReason.None)
         {
-            _log($"Not hiding: {detail}");
             return (reason, []);
         }
 
-        // Only listed devices, also if the device list returned something else.
-        var listed = present.Where(HidingList.IsListedHid).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var toHide = listed.Where(id => !SteamControllerHiding.Contains(state!.Hidden, id)).ToList();
+        // Also when nothing changed: the puck's own restart announcing it again finishes a restart still pending.
+        if (!await RestartIfPendingAsync(CancellationToken.None, clientLetGo: imagePath is not null))
+        {
+            return (PanReason.HidingFailed, []);
+        }
+
+        return (PanReason.None, listed);
+    }
+
+    /// <summary>
+    /// Inside the gate. Adds the instances that aren't hidden yet, the client's allow-list entry (unless
+    /// <paramref name="imagePath"/> is null: an arrival) and turns cloaking on, each journaled first. Puck instances
+    /// leave a puck restart pending; controller instances (<paramref name="controllerRestarts"/> not null) the HID
+    /// instances in it that were added. <paramref name="refused"/> is asked under the lock right before the journal is
+    /// written: a teardown that began while the devices were listed found nothing journaled and showed nothing, so
+    /// nothing may be hidden after it (QE of #337).
+    /// </summary>
+    private PanReason AddToHidHide(IReadOnlyList<string> instances, string? imagePath, IReadOnlyCollection<string>? controllerRestarts, Func<PanReason> refused)
+    {
+        List<string> ours;
+        lock (_lock)
+        {
+            ours = [.. _journal.HiddenDevices, .. _journal.HiddenControllers];
+        }
+
+        var (reason, state, detail) = _hiding!.Check(ours);
+        if (reason != PanReason.None)
+        {
+            _log($"Not hiding: {detail}");
+            return reason;
+        }
+
+        var toHide = instances.Where(id => !SteamControllerHiding.Contains(state!.Hidden, id)).ToList();
         var allow = imagePath is not null && !SteamControllerHiding.Contains(state!.Allowed, imagePath) ? imagePath : null;
         var turnOn = !state!.Cloaking;
         if (toHide.Count == 0 && allow is null && !turnOn)
         {
-            // Hidden already (a second hide, or the puck's own restart announcing it again).
-            return (await RestartIfPendingAsync(CancellationToken.None, clientLetGo: imagePath is not null) ? PanReason.None : PanReason.HidingFailed, listed);
+            // Hidden already (a second hide, or a device announcing itself again).
+            return PanReason.None;
         }
 
-        bool restart;
         lock (_lock)
         {
-            var before = (Hidden: _journal.HiddenDevices.ToList(), Allowed: _journal.AllowListed.ToList(), _journal.CloakingWasOn, _journal.PuckRestartPending);
-            _journal.HiddenDevices.AddRange(toHide);
+            if (refused() is not PanReason.None and var refusal)
+            {
+                _log($"Not hiding: {refusal} while the devices were listed");
+                return refusal;
+            }
+
+            var before = (Hidden: _journal.HiddenDevices.ToList(), Controllers: _journal.HiddenControllers.ToList(), Restarts: _journal.ControllerRestarts.ToList(),
+                Allowed: _journal.AllowListed.ToList(), _journal.CloakingWasOn, _journal.PuckRestartPending);
+            if (controllerRestarts is null)
+            {
+                _journal.HiddenDevices.AddRange(toHide);
+                _journal.PuckRestartPending |= toHide.Count > 0 || turnOn;
+            }
+            else
+            {
+                _journal.HiddenControllers.AddRange(toHide);
+                _journal.ControllerRestarts.AddRange(toHide.Where(id => SteamControllerHiding.Contains(controllerRestarts, id) && !SteamControllerHiding.Contains(_journal.ControllerRestarts, id)));
+            }
+
             if (allow is not null)
             {
                 _journal.AllowListed.Add(allow);
             }
 
             _journal.CloakingWasOn ??= state.Cloaking;
-            _journal.PuckRestartPending |= toHide.Count > 0 || turnOn;
-            restart = _journal.PuckRestartPending;
             if (!TrySaveJournal())
             {
-                (_journal.HiddenDevices, _journal.AllowListed, _journal.CloakingWasOn, _journal.PuckRestartPending) = before;
-                return (PanReason.HidingFailed, []);
+                (_journal.HiddenDevices, _journal.HiddenControllers, _journal.ControllerRestarts, _journal.AllowListed, _journal.CloakingWasOn, _journal.PuckRestartPending) = before;
+                return PanReason.HidingFailed;
             }
         }
 
@@ -415,23 +462,29 @@ public sealed partial class Guardian
         {
             // What was journaled is undone by the next show or teardown; removing an entry that never got in is harmless.
             _log($"HidHide not changed: {ex.Message}");
-            return (ex.Reason, []);
+            return ex.Reason;
         }
 
         _log($"HidHide: {toHide.Count} device(s) hidden, {(allow is null ? "allow list unchanged" : "client allow-listed")}, cloaking {(turnOn ? "turned on" : "was on")}");
-        if (restart && !await RestartIfPendingAsync(CancellationToken.None, clientLetGo: imagePath is not null))
-        {
-            return (PanReason.HidingFailed, []);
-        }
+        return PanReason.None;
+    }
 
-        return (PanReason.None, listed);
+    /// <summary>What a show shows: the puck, and which of the controllers (#335).</summary>
+    private readonly record struct ShowScope(bool Puck, Func<string, bool> Controller)
+    {
+        public static readonly ShowScope All = new(true, _ => true);
+        public static readonly ShowScope SteamController = new(true, _ => false);
+        public static readonly ShowScope Controllers = new(false, _ => true);
+
+        public static ShowScope Model(ControllerModel model) => new(false, id => ControllerList.IsOfModel(id, model));
     }
 
     /// <summary>
-    /// Inside the gate. Removes exactly the journaled entries from HidHide (the user's stay) and turns cloaking off if
-    /// it was off before, each change journaled once made, with the restart journaled as pending first.
+    /// Inside the gate. Removes exactly the journaled entries of <paramref name="scope"/> from HidHide (the user's stay);
+    /// once nothing of Pan's stays hidden, also its allow-list entry, and cloaking goes off if it was off. Each change is
+    /// journaled once made, with the restarts journaled as pending first.
     /// </summary>
-    private PanReason ShowCore()
+    private PanReason ShowCore(ShowScope scope)
     {
         JournalState journal;
         lock (_lock)
@@ -439,7 +492,12 @@ public sealed partial class Guardian
             journal = _journal.Clone();
         }
 
-        if (journal.HiddenDevices.Count == 0 && journal.AllowListed.Count == 0 && journal.CloakingWasOn is null)
+        var puck = scope.Puck ? journal.HiddenDevices : [];
+        var controllers = journal.HiddenControllers.Where(scope.Controller).ToList();
+        var shown = puck.Concat(controllers).ToList();
+        // The allow list and cloaking serve every hidden device: they go back only with the last one.
+        var last = shown.Count == journal.HiddenDevices.Count + journal.HiddenControllers.Count;
+        if (shown.Count == 0 && (!last || journal.AllowListed.Count == 0 && journal.CloakingWasOn is null))
         {
             return PanReason.None;
         }
@@ -453,17 +511,19 @@ public sealed partial class Guardian
         var hidHide = _hiding.HidHide;
         try
         {
-            // Undone through the driver whatever its version reads as: the lists hide the puck as long as the driver runs.
+            // Undone through the driver whatever its version reads as: the lists hide the devices as long as the driver runs.
             lock (_lock)
             {
-                _journal.PuckRestartPending = true;
+                // A teardown with only controllers hidden leaves the puck alone; Steam never lost it.
+                _journal.PuckRestartPending |= scope.Puck && (puck.Count > 0 || journal.HiddenControllers.Count == 0);
+                _journal.ControllerRestarts.AddRange(controllers.Where(id => ControllerList.IsHid(id) && !SteamControllerHiding.Contains(_journal.ControllerRestarts, id)));
                 SaveJournal();
             }
 
-            if (journal.HiddenDevices.Count > 0)
+            if (shown.Count > 0)
             {
                 var hidden = hidHide.GetHiddenDevices();
-                var kept = SteamControllerHiding.Without(hidden, journal.HiddenDevices);
+                var kept = SteamControllerHiding.Without(hidden, shown);
                 if (kept.Count != hidden.Count)
                 {
                     hidHide.SetHiddenDevices(kept);
@@ -471,12 +531,13 @@ public sealed partial class Guardian
 
                 lock (_lock)
                 {
-                    _journal.HiddenDevices = SteamControllerHiding.Without(_journal.HiddenDevices, journal.HiddenDevices);
+                    _journal.HiddenDevices = SteamControllerHiding.Without(_journal.HiddenDevices, shown);
+                    _journal.HiddenControllers = SteamControllerHiding.Without(_journal.HiddenControllers, shown);
                     SaveJournal();
                 }
             }
 
-            if (journal.AllowListed.Count > 0)
+            if (last && journal.AllowListed.Count > 0)
             {
                 var allowed = hidHide.GetAllowedApplications();
                 var kept = SteamControllerHiding.Without(allowed, journal.AllowListed);
@@ -492,7 +553,7 @@ public sealed partial class Guardian
                 }
             }
 
-            if (journal.CloakingWasOn is { } wasOn)
+            if (last && journal.CloakingWasOn is { } wasOn)
             {
                 if (!wasOn)
                 {
@@ -506,7 +567,8 @@ public sealed partial class Guardian
                 }
             }
 
-            _log($"HidHide: {journal.HiddenDevices.Count} device(s) shown, {journal.AllowListed.Count} allow-list entr(ies) removed, cloaking {(journal.CloakingWasOn == false ? "turned off" : "left on")}");
+            _log($"HidHide: {puck.Count} Steam Controller and {controllers.Count} controller device(s) shown, "
+                + (last ? $"{journal.AllowListed.Count} allow-list entr(ies) removed, cloaking {(journal.CloakingWasOn == false ? "turned off" : "left on")}" : "the rest stays hidden"));
             return PanReason.None;
         }
         catch (HidHideException ex) when (ex.Reason == PanReason.HidHideMissing && !hidHide.IsServiceRegistered())
@@ -528,6 +590,12 @@ public sealed partial class Guardian
         lock (_lock)
         {
             _journal.HiddenDevices = [];
+            if (restart)
+            {
+                _journal.ControllerRestarts.AddRange(_journal.HiddenControllers.Where(id => ControllerList.IsHid(id) && !SteamControllerHiding.Contains(_journal.ControllerRestarts, id)));
+            }
+
+            _journal.HiddenControllers = [];
             _journal.AllowListed = [];
             _journal.CloakingWasOn = null;
             _journal.PuckRestartPending |= restart;
@@ -671,36 +739,40 @@ public sealed partial class Guardian
             return [];
         }
 
-        if (HeldForFirmware())
-        {
-            var held = new StepResult("show the Steam Controller", StepOutcome.Failed, "held: Steam tried a firmware update through the copy and still runs; shown once Steam is closed");
-            _log($"Teardown: {held}");
-            return [held];
-        }
-
         if (!forwardingGone)
         {
-            var skipped = new StepResult("show the Steam Controller", StepOutcome.Failed, "skipped: the forwarding may still run; it stays hidden until the next teardown");
+            var skipped = new StepResult("show the hidden controllers", StepOutcome.Failed, "skipped: the forwarding may still run; they stay hidden until the next teardown");
             _log($"Teardown: {skipped}");
             return [skipped];
         }
 
-        return await TeardownRunner.RunAsync(
+        // The firmware hold is the puck's: every other controller is shown anyway (#335).
+        var held = HeldForFirmware();
+        var scope = held ? ShowScope.Controllers : ShowScope.All;
+        var results = await TeardownRunner.RunAsync(
         [
             // The show may first wait for a running hide (its listing and restart are bounded by the device timeout).
-            new TeardownStep("show the Steam Controller", token => ShowStepAsync(token, retry), TeardownPlan.StepTimeout + 2 * _deviceStepTimeout),
-            new TeardownStep("restart the Steam Controller", token => RestartStepAsync(token, retry), TeardownPlan.StepTimeout + PuckReleaseTimeout + _deviceStepTimeout),
+            new TeardownStep("show the hidden controllers", token => ShowStepAsync(scope, token, retry), TeardownPlan.StepTimeout + 2 * _deviceStepTimeout),
+            new TeardownStep("restart the shown controllers", token => RestartStepAsync(scope, token, retry), TeardownPlan.StepTimeout + PuckReleaseTimeout + 2 * _deviceStepTimeout),
         ], _log);
+        if (held)
+        {
+            var hold = new StepResult("show the Steam Controller", StepOutcome.Failed, "held: Steam tried a firmware update through the copy and still runs; shown once Steam is closed");
+            _log($"Teardown: {hold}");
+            results = [.. results, hold];
+        }
+
+        return results;
     }
 
-    private async Task ShowStepAsync(CancellationToken cancellationToken, bool retry)
+    private async Task ShowStepAsync(ShowScope scope, CancellationToken cancellationToken, bool retry)
     {
         // A cancelled wait (step timed out behind a stuck hide) changes nothing.
         await _hidingGate.WaitAsync(cancellationToken);
         try
         {
             ThrowIfRetryIsMoot(retry);
-            var reason = ShowCore();
+            var reason = ShowCore(scope);
             if (reason != PanReason.None)
             {
                 throw new InvalidOperationException($"HidHide not restored ({reason})");
@@ -712,15 +784,21 @@ public sealed partial class Guardian
         }
     }
 
-    private async Task RestartStepAsync(CancellationToken cancellationToken, bool retry)
+    private async Task RestartStepAsync(ShowScope scope, CancellationToken cancellationToken, bool retry)
     {
         await _hidingGate.WaitAsync(cancellationToken);
         try
         {
             ThrowIfRetryIsMoot(retry);
-            if (!await RestartIfPendingAsync(cancellationToken, clientLetGo: false))
+            var controllers = await RestartControllersAsync(_ => true, cancellationToken);
+            if (scope.Puck && !await RestartIfPendingAsync(cancellationToken, clientLetGo: false))
             {
                 throw new InvalidOperationException("the Steam Controller was not restarted");
+            }
+
+            if (controllers is null)
+            {
+                throw new InvalidOperationException("the controllers were not restarted");
             }
         }
         finally
@@ -835,7 +913,14 @@ public sealed partial class Guardian
                     _retryShowing = true;
                 }
 
-                if (HeldForFirmware())
+                bool controllersLeft;
+                lock (_lock)
+                {
+                    controllersLeft = _journal.HiddenControllers.Count > 0 || _journal.ControllerRestarts.Count > 0;
+                }
+
+                var held = HeldForFirmware();
+                if (held && !controllersLeft)
                 {
                     // Not a failed show: it waits for Steam to close, as long as that takes.
                     lock (_lock)
@@ -860,6 +945,13 @@ public sealed partial class Guardian
                     }
                 }
 
+                if (held && results.Count(r => r.Outcome != StepOutcome.Ok) == 1)
+                {
+                    // The controllers are shown; the Steam Controller waits for Steam to close, as long as that takes.
+                    attempt = -1;
+                    continue;
+                }
+
                 if (results.All(r => r.Outcome == StepOutcome.Ok))
                 {
                     lock (_lock)
@@ -872,7 +964,7 @@ public sealed partial class Guardian
                         }
                     }
 
-                    _log($"Steam Controller shown on retry {attempt + 1}");
+                    _log($"Hidden controllers shown on retry {attempt + 1}");
                     return;
                 }
 
@@ -881,12 +973,12 @@ public sealed partial class Guardian
                     if (!_journal.HidHideChanged && attempt + 1 >= ShowRetryDelays.Count)
                     {
                         // Shown; only the restart fails, which Windows does by replug: no use repeating it every few minutes.
-                        _log("Steam Controller shown, its restart needs a replug; tried again at the next trigger");
+                        _log("Controllers shown, a restart still fails; tried again at the next trigger");
                         return;
                     }
                 }
 
-                _log($"Steam Controller still not shown on retry {attempt + 1}; trying again in {ShowRetryDelays[Math.Min(attempt + 1, ShowRetryDelays.Count - 1)].TotalSeconds:0} s");
+                _log($"Hidden controllers still not shown on retry {attempt + 1}; trying again in {ShowRetryDelays[Math.Min(attempt + 1, ShowRetryDelays.Count - 1)].TotalSeconds:0} s");
             }
         }
         catch (OperationCanceledException)

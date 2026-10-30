@@ -115,14 +115,16 @@ public static class ServiceHost
         {
             // Steam in any session: a firmware hold keeps the Steam Controller hidden while it runs (#242).
             SteamRuns = SteamRuns,
+            // The vendors' firmware tools: no controller of theirs is hidden while one runs (#238 D8).
+            ProcessRuns = ProcessRuns,
         };
         _guardian = guardian;
         guardian.UnplannedEnd += end => log.Write($"Unplanned end: {end.Reason}, generation {end.Generation}, client {end.ClientPid}, emulating {end.WasEmulating} (crash report: #244)");
         log.Write($"Pan {typeof(ServiceHost).Assembly.GetName().Version} starting (protocol {PanMessage.ProtocolVersion})");
         await guardian.RecoverAsync();
         Report(Native.ServiceRunning);
-        // A puck plugged in while Pan hides is hidden too (part B); without the watch, at the next hide.
-        using var arrivals = DeviceArrivalWatch.Start(guardian.DevicesArrivedAsync, log.Write);
+        // A puck or taken-over controller plugged in while Pan hides is hidden too (part B, #335); without the watch, at the next hide.
+        using var arrivals = DeviceArrivalWatch.Start(guardian.DevicesArrivedAsync, guardian.ControllerArrivedAsync, log.Write);
 
         using var stop = consoleStop is { } console ? CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token, console) : CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token);
         using var serve = new CancellationTokenSource();
@@ -216,14 +218,16 @@ public static class ServiceHost
         Native.SetServiceStatus(_statusHandle, ref _status);
     }
 
-    private static bool SteamRuns()
+    private static bool SteamRuns() => ProcessRuns("steam");
+
+    private static bool ProcessRuns(string name)
     {
-        var steam = System.Diagnostics.Process.GetProcessesByName("steam");
-        foreach (var process in steam)
+        var processes = System.Diagnostics.Process.GetProcessesByName(name);
+        foreach (var process in processes)
         {
             process.Dispose();
         }
 
-        return steam.Length > 0;
+        return processes.Length > 0;
     }
 }

@@ -191,6 +191,8 @@ public sealed partial class Guardian
         PanCommand.Hide => HideAsync(message),
         PanCommand.Unhide => UnhideAsync(message),
         PanCommand.CheckHiding => CheckHidingAsync(message),
+        PanCommand.HideController => HideControllerAsync(message),
+        PanCommand.ShowController => ShowControllerAsync(message),
         _ => Task.FromResult(Handle(message)),
     };
 
@@ -493,6 +495,7 @@ public sealed partial class Guardian
             return PanMessage.Of(PanReply.Stopped, _generation);
         }
 
+        ForgetTakenOver();
         // Arcadia removed its emulation itself: let go of its processes, nothing to undo. What an earlier teardown
         // couldn't end is none of this emulation's and stays for the next one.
         foreach (var process in _journal.HeldProcesses.Where(process => !_leftovers.Contains(process)))
@@ -614,6 +617,7 @@ public sealed partial class Guardian
     private void BeginTeardown(PanReason reason, bool notify, bool unplanned)
     {
         _phase = Phase.TornDown;
+        ForgetTakenOver();
         _teardown = TearDownAsync(reason, notify, unplanned);
     }
 

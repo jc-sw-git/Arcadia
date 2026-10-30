@@ -10,7 +10,7 @@ namespace Arcadia.Pan.Windows;
 [SupportedOSPlatform("windows")]
 public static class WindowsHiding
 {
-    public static SteamControllerHiding Create() => new(new HidHideDriver(), new PuckDevices());
+    public static SteamControllerHiding Create() => new(new HidHideDriver(), new PuckDevices(), new ControllerDevices());
 }
 
 /// <summary>
@@ -195,7 +195,7 @@ public sealed unsafe class PuckDevices : ISteamControllerDevices
         return Task.CompletedTask;
     }
 
-    private static List<string> PresentDevices(string enumerator)
+    internal static List<string> PresentDevices(string enumerator)
     {
         const uint flags = Native.CmGetIdListFilterEnumerator | Native.CmGetIdListFilterPresent;
         for (var attempt = 0; attempt < 3; attempt++)
@@ -229,7 +229,7 @@ public sealed unsafe class PuckDevices : ISteamControllerDevices
         throw new InvalidOperationException("device list kept changing");
     }
 
-    private static string? ParentOf(string instanceId)
+    internal static string? ParentOf(string instanceId)
     {
         const int maxDeviceIdLength = 200;
         if (Native.CM_Locate_DevNodeW(out var device, instanceId, Native.CmLocateDevnodeNormal) != Native.CrSuccess
@@ -242,7 +242,8 @@ public sealed unsafe class PuckDevices : ISteamControllerDevices
         return Native.CM_Get_Device_IDW(parent, buffer, maxDeviceIdLength + 1, 0) == Native.CrSuccess ? new string(buffer) : null;
     }
 
-    private static void Restart(string instanceId)
+    /// <exception cref="InvalidOperationException">Windows restarts it only once it is reconnected.</exception>
+    internal static void Restart(string instanceId)
     {
         var set = Native.SetupDiCreateDeviceInfoList(null, 0);
         if (set == -1)
@@ -286,46 +287,156 @@ public sealed unsafe class PuckDevices : ISteamControllerDevices
 }
 
 /// <summary>
-/// Windows' notification when a HID device interface arrives, filtered to the puck's (no polling). The callback runs
+/// Every other controller's devices (#335) through the plug and play manager. What a game reads: the HID collections
+/// (keyboard and mouse ones aside, which HidHide doesn't filter and games don't read) and the XInput interfaces
+/// (<c>xusb22</c>, classes <c>XnaComposite</c> and <c>XboxComposite</c>), which HidHide filters as well.
+/// </summary>
+[SupportedOSPlatform("windows")]
+public sealed unsafe class ControllerDevices : IControllerDevices
+{
+    private static readonly string[] XInputClasses = ["XnaComposite", "XboxComposite"];
+
+    /// <summary>A HID collection of the generic desktop page's joystick or gamepad usage: what SDL and games take for a controller.</summary>
+    private static readonly string[] GamepadCollections = ["HID_DEVICE_UP:0001_U:0004", "HID_DEVICE_UP:0001_U:0005"];
+
+    public ControllerScan Scan(ControllerModel model)
+    {
+        var connected = false;
+        var gamepad = false;
+        var hideable = new List<ControllerInstance>();
+        foreach (var id in PuckDevices.PresentDevices("HID").Where(id => ControllerList.IsOfModel(id, model)))
+        {
+            connected = true;
+            if (HidingList.OnSoftwareHost(id, PuckDevices.ParentOf) || Property(id, Native.CmDrpClass).FirstOrDefault() is "Keyboard" or "Mouse")
+            {
+                continue;
+            }
+
+            hideable.Add(new ControllerInstance(id, ControllerInterface.Hid));
+            gamepad |= Property(id, Native.CmDrpCompatibleIds).Any(compatible => GamepadCollections.Contains(compatible, StringComparer.OrdinalIgnoreCase));
+        }
+
+        foreach (var id in PuckDevices.PresentDevices("USB").Where(id => ControllerList.IsOfModel(id, model)))
+        {
+            connected = true;
+            if (!HidingList.OnSoftwareHost(id, PuckDevices.ParentOf) && XInputClasses.Contains(Property(id, Native.CmDrpClass).FirstOrDefault(), StringComparer.OrdinalIgnoreCase))
+            {
+                hideable.Add(new ControllerInstance(id, ControllerInterface.XInput));
+                gamepad = true;
+            }
+        }
+
+        // A model without a gamepad collection (a wheel's pedals, a headset's buttons) isn't a controller Pan hides.
+        return new ControllerScan(connected, gamepad ? hideable : []);
+    }
+
+    public Task<IReadOnlyList<string>> RestartAsync(IReadOnlyList<string> hidInstances, CancellationToken cancellationToken)
+    {
+        var replug = new List<string>();
+        // The device a collection belongs to: its USB interface (or the USB device), or its Bluetooth device.
+        foreach (var device in hidInstances.GroupBy(id => PuckDevices.ParentOf(id) ?? string.Empty, StringComparer.OrdinalIgnoreCase))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (device.Key.Length == 0)
+            {
+                // Unplugged meanwhile: it announces itself anew when it comes back.
+                continue;
+            }
+
+            try
+            {
+                PuckDevices.Restart(device.Key);
+            }
+            catch (InvalidOperationException)
+            {
+                replug.AddRange(device);
+            }
+        }
+
+        return Task.FromResult<IReadOnlyList<string>>(replug);
+    }
+
+    /// <summary>A string or multi-string property of the device; empty when it can't be read.</summary>
+    private static List<string> Property(string instanceId, uint property)
+    {
+        if (Native.CM_Locate_DevNodeW(out var device, instanceId, Native.CmLocateDevnodeNormal) != Native.CrSuccess)
+        {
+            return [];
+        }
+
+        uint length = 0;
+        Native.CM_Get_DevNode_Registry_PropertyW(device, property, out _, null, ref length, 0);
+        if (length == 0)
+        {
+            return [];
+        }
+
+        var buffer = new char[length / sizeof(char) + 1];
+        fixed (char* chars = buffer)
+        {
+            if (Native.CM_Get_DevNode_Registry_PropertyW(device, property, out _, chars, ref length, 0) != Native.CrSuccess)
+            {
+                return [];
+            }
+        }
+
+        return new string(buffer).Split('\0', StringSplitOptions.RemoveEmptyEntries).ToList();
+    }
+}
+
+/// <summary>
+/// Windows' notification when a HID or XInput device interface arrives (no polling): the puck's go to the puck's hide,
+/// every other model's to the controllers' (#335), which ignores models the client hasn't taken over. The callback runs
 /// on a system thread and must return at once, so it only queues the guardian's work.
 /// </summary>
 [SupportedOSPlatform("windows")]
 public sealed unsafe class DeviceArrivalWatch : IDisposable
 {
-    private static Func<Task>? _arrived;
-    private nint _notification;
+    private static Func<Task>? _puckArrived;
+    private static Func<ControllerModel, Task>? _controllerArrived;
+    private readonly List<nint> _notifications;
 
-    private DeviceArrivalWatch(nint notification) => _notification = notification;
+    private DeviceArrivalWatch(List<nint> notifications) => _notifications = notifications;
 
-    /// <summary>Registers the notification; null (logged) if Windows refuses, so Pan runs on without it.</summary>
-    public static DeviceArrivalWatch? Start(Func<Task> arrived, Action<string> log)
+    /// <summary>Registers the notifications; null (logged) if Windows refuses both, so Pan runs on without them.</summary>
+    public static DeviceArrivalWatch? Start(Func<Task> puckArrived, Func<ControllerModel, Task> controllerArrived, Action<string> log)
     {
-        _arrived = arrived;
-        var filter = new Native.CmNotifyFilter
+        _puckArrived = puckArrived;
+        _controllerArrived = controllerArrived;
+        var notifications = new List<nint>();
+        foreach (var (guid, name) in new[] { (Native.HidInterface, "HID"), (Native.XusbInterface, "XInput") })
         {
-            Size = (uint)sizeof(Native.CmNotifyFilter),
-            FilterType = Native.CmNotifyFilterTypeDeviceInterface,
-            ClassGuid = Native.HidInterface,
-        };
-        var result = Native.CM_Register_Notification(&filter, 0, &OnEvent, out var notification);
-        if (result != Native.CrSuccess)
-        {
-            log($"Device arrivals not watched (CONFIGRET 0x{result:X}): a Steam Controller plugged in while hiding is hidden at the next hide");
-            return null;
+            var filter = new Native.CmNotifyFilter
+            {
+                Size = (uint)sizeof(Native.CmNotifyFilter),
+                FilterType = Native.CmNotifyFilterTypeDeviceInterface,
+                ClassGuid = guid,
+            };
+
+            var result = Native.CM_Register_Notification(&filter, 0, &OnEvent, out var notification);
+            if (result == Native.CrSuccess)
+            {
+                notifications.Add(notification);
+            }
+            else
+            {
+                log($"{name} device arrivals not watched (CONFIGRET 0x{result:X}): a controller plugged in while hiding is hidden at the next hide");
+            }
         }
 
-        return new DeviceArrivalWatch(notification);
+        return notifications.Count == 0 ? null : new DeviceArrivalWatch(notifications);
     }
 
     public void Dispose()
     {
-        if (_notification != 0)
+        foreach (var notification in _notifications)
         {
-            Native.CM_Unregister_Notification(_notification);
-            _notification = 0;
+            Native.CM_Unregister_Notification(notification);
         }
 
-        _arrived = null;
+        _notifications.Clear();
+        _puckArrived = null;
+        _controllerArrived = null;
     }
 
     [UnmanagedCallersOnly]
@@ -336,9 +447,16 @@ public sealed unsafe class DeviceArrivalWatch : IDisposable
             if (action == Native.CmNotifyActionDeviceInterfaceArrival && eventDataSize > Native.CmNotifyEventSymbolicLinkOffset + 2)
             {
                 var link = new string((char*)(eventData + Native.CmNotifyEventSymbolicLinkOffset));
-                if (link.Contains(HidingList.PuckInterfaceMarker, StringComparison.OrdinalIgnoreCase) && _arrived is { } arrived)
+                if (link.Contains(HidingList.PuckInterfaceMarker, StringComparison.OrdinalIgnoreCase))
                 {
-                    Task.Run(arrived);
+                    if (_puckArrived is { } puckArrived)
+                    {
+                        Task.Run(puckArrived);
+                    }
+                }
+                else if (ControllerModel.Of(link) is { } model && ControllerList.MayTakeOver(model) && _controllerArrived is { } controllerArrived)
+                {
+                    Task.Run(() => controllerArrived(model));
                 }
             }
         }

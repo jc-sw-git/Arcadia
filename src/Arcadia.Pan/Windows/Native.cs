@@ -288,6 +288,15 @@ internal static unsafe partial class Native
     /// <summary>GUID_DEVINTERFACE_HID.</summary>
     public static readonly Guid HidInterface = new("4d1e55b2-f16f-11cf-88cb-001111000030");
 
+    /// <summary>GUID_DEVINTERFACE_XUSB_DEVICE: an XInput pad's interface (<c>xusb22</c>), which has no HID interface of its own.</summary>
+    public static readonly Guid XusbInterface = new("ec87f1e3-c13b-4100-b5f7-8b84d54260cb");
+
+    public const uint CmDrpCompatibleIds = 0x3;
+    public const uint CmDrpClass = 0x8;
+
+    [LibraryImport("cfgmgr32.dll")]
+    public static partial uint CM_Get_DevNode_Registry_PropertyW(uint devInst, uint property, out uint type, void* buffer, ref uint length, uint flags);
+
     [LibraryImport("cfgmgr32.dll", StringMarshalling = StringMarshalling.Utf16)]
     public static partial uint CM_Get_Device_ID_List_SizeW(out uint length, string filter, uint flags);
 

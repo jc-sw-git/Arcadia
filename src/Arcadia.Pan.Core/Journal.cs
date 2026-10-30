@@ -66,6 +66,15 @@ public sealed class JournalState
     /// <summary>The HidHide device instances Pan added (part B); devices the user had hidden before are never listed.</summary>
     public List<string> HiddenDevices { get; set; } = [];
 
+    /// <summary>
+    /// The HidHide device instances Pan added for controllers other than the puck (#335): their HID collections and XInput
+    /// interfaces. Missing in a journal of a Pan before #335, which reads this one ignoring them.
+    /// </summary>
+    public List<string> HiddenControllers { get; set; } = [];
+
+    /// <summary>Controller HID instances whose device still has to be restarted after a hide or show (#335).</summary>
+    public List<string> ControllerRestarts { get; set; } = [];
+
     /// <summary>The allow-list entries Pan added: the client's image path, unless the user had listed it already.</summary>
     public List<string> AllowListed { get; set; } = [];
 
@@ -83,11 +92,11 @@ public sealed class JournalState
 
     /// <summary>HidHide holds a change of Pan's: entries it added, or cloaking it turned on.</summary>
     [JsonIgnore]
-    public bool HidHideChanged => HiddenDevices.Count > 0 || AllowListed.Count > 0 || CloakingWasOn is not null;
+    public bool HidHideChanged => HiddenDevices.Count > 0 || HiddenControllers.Count > 0 || AllowListed.Count > 0 || CloakingWasOn is not null;
 
     /// <summary>Pan hides, or has a HidHide change or a restart left to undo or finish.</summary>
     [JsonIgnore]
-    public bool HidingHasWork => HidHideChanged || PuckRestartPending;
+    public bool HidingHasWork => HidHideChanged || PuckRestartPending || ControllerRestarts.Count > 0;
 
     [JsonIgnore]
     public bool HasWork => Emulating || HeldProcesses.Count > 0 || UsbipServers.Count > 0 || HidingHasWork;
@@ -102,6 +111,8 @@ public sealed class JournalState
         HeldProcesses = [.. HeldProcesses],
         UsbipServers = [.. UsbipServers],
         HiddenDevices = [.. HiddenDevices],
+        HiddenControllers = [.. HiddenControllers],
+        ControllerRestarts = [.. ControllerRestarts],
         AllowListed = [.. AllowListed],
         CloakingWasOn = CloakingWasOn,
         PuckRestartPending = PuckRestartPending,
@@ -233,7 +244,8 @@ public sealed class JournalFile(string path)
             return $"unknown journal version {state.Version}";
         }
 
-        if (state.HeldProcesses is null || state.HiddenDevices is null || state.AllowListed is null || state.UsbipServers is null)
+        if (state.HeldProcesses is null || state.HiddenDevices is null || state.AllowListed is null || state.UsbipServers is null
+            || state.HiddenControllers is null || state.ControllerRestarts is null)
         {
             return "a list is missing";
         }
@@ -248,7 +260,8 @@ public sealed class JournalFile(string path)
             return "a held process entry is incomplete";
         }
 
-        if (state.HiddenDevices.Any(string.IsNullOrEmpty) || state.AllowListed.Any(string.IsNullOrEmpty))
+        if (state.HiddenDevices.Any(string.IsNullOrEmpty) || state.AllowListed.Any(string.IsNullOrEmpty)
+            || state.HiddenControllers.Any(string.IsNullOrEmpty) || state.ControllerRestarts.Any(string.IsNullOrEmpty))
         {
             return "a HidHide entry is missing";
         }
@@ -257,6 +270,12 @@ public sealed class JournalFile(string path)
         if (state.HiddenDevices.Any(device => !HidingList.IsListedHid(device)))
         {
             return "a hidden device is not one Pan hides";
+        }
+
+        if (state.HiddenControllers.Any(device => !ControllerList.IsControllerInstance(device))
+            || state.ControllerRestarts.Any(device => !ControllerList.IsControllerInstance(device) || !ControllerList.IsHid(device)))
+        {
+            return "a hidden controller is not one Pan hides";
         }
 
         return null;

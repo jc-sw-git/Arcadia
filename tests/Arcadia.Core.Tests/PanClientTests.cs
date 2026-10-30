@@ -481,6 +481,73 @@ public sealed class PanClientTests : IAsyncDisposable
         Assert.True(_client.IsConnected);
     }
 
+    [Fact]
+    [Trait("TestCase", "T335-4")]
+    public async Task Arcadia_hides_two_controllers_and_shows_one_again_while_the_other_stays_hidden()
+    {
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide, controllers: new TwoControllers());
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
+
+        Assert.Equal(new ControllerHidingResult(true, PanReason.None), await _client.HideControllerAsync(generation, TwoControllers.DualSense, CancellationToken.None));
+        Assert.Equal(new ControllerHidingResult(true, PanReason.ControllerNeedsReplug), await _client.HideControllerAsync(generation, TwoControllers.XInputPad, CancellationToken.None));
+        Assert.Equal(new ControllerHidingResult(true, PanReason.ControllerNeedsReplug), await _client.ShowControllerAsync(generation, TwoControllers.XInputPad, CancellationToken.None));
+
+        Assert.Equal([TwoControllers.DualSenseHid], hidHide.GetHiddenDevices());
+        Assert.Contains(ArcadiaImage, hidHide.Allowed);
+        Assert.True(hidHide.Cloaking);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T335-5")]
+    public async Task A_controller_is_not_hidden_while_its_vendors_firmware_tool_runs_and_Arcadia_hears_why()
+    {
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide, controllers: new TwoControllers(), processRuns: name => name == "FWupdater");
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
+
+        Assert.Equal(new ControllerHidingResult(false, PanReason.FirmwareToolRuns), await _client.HideControllerAsync(generation, TwoControllers.DualSense, CancellationToken.None));
+
+        Assert.Empty(hidHide.GetHiddenDevices());
+        Assert.Contains("abgelehnt", LogText());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T335-4")]
+    public async Task A_rejected_controller_hide_is_undone_at_once()
+    {
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide, controllers: new TwoControllers { RestartFails = true });
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
+
+        Assert.Equal(new ControllerHidingResult(false, PanReason.HidingFailed), await _client.HideControllerAsync(generation, TwoControllers.DualSense, CancellationToken.None));
+
+        // Shown again by the client's undo; its restart is left to the teardown.
+        Assert.Empty(hidHide.GetHiddenDevices());
+        Assert.DoesNotContain(ArcadiaImage, hidHide.Allowed);
+    }
+
+    /// <summary>A DualSense by USB and an XInput pad (#335), each with the devices a game reads.</summary>
+    private sealed class TwoControllers : IControllerDevices
+    {
+        public static readonly ControllerModel DualSense = new(0x054C, 0x0CE6);
+        public static readonly ControllerModel XInputPad = new(0x2DC8, 0x310B);
+        public const string DualSenseHid = @"HID\VID_054C&PID_0CE6&MI_03\7&2B7F&0&0000";
+
+        public bool RestartFails;
+
+        public ControllerScan Scan(ControllerModel model) =>
+            model == DualSense ? new(true, [new(DualSenseHid, ControllerInterface.Hid)])
+            : model == XInputPad ? new(true, [new(@"USB\VID_2DC8&PID_310B&MI_00\7&5E6F&0&0000", ControllerInterface.XInput)])
+            : new(false, []);
+
+        public Task<IReadOnlyList<string>> RestartAsync(IReadOnlyList<string> hidInstances, CancellationToken cancellationToken) =>
+            RestartFails ? throw new InvalidOperationException("device not opened") : Task.FromResult<IReadOnlyList<string>>([]);
+    }
+
     /// <summary>QE review point 8 of PR #264: a check holds the client's request lock; a start meanwhile waits for it.</summary>
     [Fact]
     [Trait("TestCase", "T242-6")]
@@ -759,8 +826,11 @@ public sealed class PanClientTests : IAsyncDisposable
         }
 
         /// <summary>A Pan with part B's hiding (#243 B2), on HidHide as the test sets it; before the client connects.</summary>
-        public void UseHiding(IHidHideDriver hidHide, ISteamControllerDevices? devices = null) =>
-            Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log, hiding: new SteamControllerHiding(hidHide, devices ?? new NoPuck()));
+        public void UseHiding(IHidHideDriver hidHide, ISteamControllerDevices? devices = null, IControllerDevices? controllers = null, Func<string, bool>? processRuns = null) =>
+            Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log, hiding: new SteamControllerHiding(hidHide, devices ?? new NoPuck(), controllers))
+            {
+                ProcessRuns = processRuns ?? (_ => false),
+            };
 
                 /// <summary>A restarted Pan: it undoes what its journal lists, then serves again.</summary>
         public void RestartFromJournal()

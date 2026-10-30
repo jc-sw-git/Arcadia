@@ -18,7 +18,8 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
 - `ViiperXboxPads` runs Arcadia's own `viiper.exe` (the pinned fork build next to Arcadia.exe,
   [steam-controller-copy-windows.md](steam-controller-copy-windows.md)) as its own process, bound to the loopback with
   its own key (#304; a VIIPER another program runs is never used), log `viiper.log` beside `arcadia.log`, and drives it
-  with VIIPER's MIT client `Viiper.Client`: one bus, one `xbox360` device per plug. A plug-in that fails after the bus
+  with VIIPER's MIT client `Viiper.Client`: one bus, one `xbox360` device per plug, each bus id used once per run
+  (`ViiperBusIds`, #331, below). A plug-in that fails after the bus
   was created removes the bus again. `PrepareAsync` (each emulation's start, before Pan learns the port) starts it, or
   keeps the running one while its listeners check out and it answers with its key; a plug never starts one.
 - `ViiperServer.StartAsync`, every step fail closed (VIIPER ended, start failed, logged): end a `viiper.exe` left from
@@ -40,6 +41,17 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
   restart the pad comes back by itself.
 - Unplugging logs the delay from an SDL poll to the state being with VIIPER (mean and maximum); the SDL poll itself
   adds up to 8 ms before that.
+
+## usbip-win2 attaches a removed device again (#331)
+
+- A device whose usbip connection ends without `usbip detach` (Arcadia removed it from VIIPER, VIIPER ended) is
+  attached again by usbip-win2's driver itself: first after ~30 s, then with growing delays, up to 20 tries (its
+  `ReattachFirstDelay`, `ReattachMaxAttempts`). It asks for the same server port and bus id.
+- VIIPER gives a new bus the lowest free id, so the next pad or copy on the same VIIPER had the removed device's id and
+  the retry attached it a second time: Steam listed the Steam Controller and the Xbox pad twice (owner's PC, usbip-win2
+  0.9.8.1, `usbip port` showed each bus id once from `localhost` and once from `127.0.0.1`).
+- So Arcadia names every bus itself (`ViiperBusIds`): never 0, never twice in a run, from a random start (Arcadia
+  started again may get its old port from Windows). A retry for an old id finds nothing and gives up.
 
 ## Per-game mode
 

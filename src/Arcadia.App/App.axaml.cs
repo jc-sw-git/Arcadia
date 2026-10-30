@@ -182,10 +182,10 @@ public partial class App : Application
             _gamepad.Polled += routing.Tick;
 
             // The Steam Controller as an Xbox pad for games, in the mode of the running games (#213); Steam games started
-            // directly in Steam count too (#119). VIIPER is Arcadia's own build of its fork (#242 part B); a build without
-            // a pinned one takes the one SISR installed, if there is one.
-            var viiper = new ViiperXboxPads(ownViiper?.Executable ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SISR", ViiperRelease.ExecutableName),
-                Core.Diagnostics.LogLocation.Directory, AppLog.Write);
+            // directly in Steam count too (#119). VIIPER is only Arcadia's own build of its fork (#242 part B), started and
+            // checked by Arcadia (#304); a build without a pinned one has no VIIPER at all, so no pad and no copy.
+            var viiper = ViiperXboxPads.Own(ownViiper?.Executable, Core.Diagnostics.LogLocation.DataFolder, Core.Diagnostics.LogLocation.Directory,
+                OperatingSystem.IsWindows() ? new WindowsViiperHost(AppLog.Write) : null, AppLog.Write);
             // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
             var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write) : new NoPanTransport(), time, AppLog.Write)
             {
@@ -196,12 +196,12 @@ public partial class App : Application
             controllerSupport.HidingCheck = pan;
             var steamPlatform = new ControllerSupportPlatform();
             // The copy of the Steam Controller for Steam needs the VIIPER fork (#242 parts B and C); without it Pan hides nothing.
-            ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && ownViiper is not null
+            ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && viiper is not null && ownViiper is not null
                 ? new ViiperSteamControllerCopy(viiper, ownViiper, wiring, AppLog.Write)
                 : new NoSteamControllerCopy();
             var steamInFront = new SteamInFront(time);
             var forGames = SteamControllerForGames.Create(
-                OperatingSystem.IsWindows(), viiper, pan, Copy, controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId,
+                OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, Copy, controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId,
                 () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, steamInFront.Now,
                 () => ForegroundGame.InFront(viewModel.Session.GameFolders, launchedGames), _gamepad.ReadSteamControllers, panNotices, time);
             pan.Start();

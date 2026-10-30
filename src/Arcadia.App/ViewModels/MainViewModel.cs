@@ -1178,11 +1178,20 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>"Arcadia jetzt beenden" in a dialog; the App closes the window, as its close button would.</summary>
     public event EventHandler? QuitRequested;
 
-    /// <summary>Steam runs and the real puck was visible: Pan asks before it hides (#242, owner's design 2026-10-28).</summary>
+    /// <summary>
+    /// Steam runs and the real puck was visible: Pan asks before it hides (#242, owner's design 2026-10-28). An open
+    /// question follows what is connected (#325).
+    /// </summary>
     public void ShowTakeoverConsent(SteamControllerParts parts)
     {
         if (_pan.Takeover.State != TakeoverState.Asking)
         {
+            return;
+        }
+
+        if (TakeoverConsent is { } open)
+        {
+            open.Follow(parts);
             return;
         }
 

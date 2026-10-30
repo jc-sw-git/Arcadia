@@ -22,7 +22,7 @@ public sealed class WindowsCleanup(Action<string> log) : IEmulationCleanup
     /// <summary>usbip.exe from usbip-win2's default install folder; without it there are no ports to detach.</summary>
     public static string UsbipExecutable => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "USBip", "usbip.exe");
 
-    public async Task<IReadOnlyList<int>> ListLocalViiperPortsAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<int>> ListImportedPortsAsync(int serverPort, CancellationToken cancellationToken)
     {
         if (!File.Exists(UsbipExecutable))
         {
@@ -30,8 +30,10 @@ public sealed class WindowsCleanup(Action<string> log) : IEmulationCleanup
         }
 
         var listing = await RunUsbipAsync(["port"], cancellationToken);
-        return UsbipPorts.FromLocalViiper(listing);
+        return UsbipPorts.FromLocalServer(listing, serverPort);
     }
+
+    public IReadOnlyCollection<TcpListening> Listeners() => TcpListeners.All();
 
     public async Task DetachPortAsync(int port, CancellationToken cancellationToken)
     {

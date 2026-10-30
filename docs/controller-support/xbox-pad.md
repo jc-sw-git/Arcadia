@@ -19,9 +19,17 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
   [steam-controller-copy-windows.md](steam-controller-copy-windows.md)) as its own process, bound to the loopback with
   its own key (#304; a VIIPER another program runs is never used), log `viiper.log` beside `arcadia.log`, and drives it
   with VIIPER's MIT client `Viiper.Client`: one bus, one `xbox360` device per plug. A plug-in that fails after the bus
-  was created removes the bus again.
-- `viiper.exe` is in a job object with kill-on-close, so it ends with Arcadia also after a crash; the usbip port it
-  held is cleaned up at the next start (and by Pan's teardown, [pan.md](pan.md)).
+  was created removes the bus again. `PrepareAsync` (each emulation's start, before Pan learns the port) starts it, or
+  keeps the running one while its listeners check out and it answers with its key; a plug never starts one.
+- `ViiperServer.StartAsync`, every step fail closed (VIIPER ended, start failed, logged): end a `viiper.exe` left from
+  the same path; write a fresh key below Arcadia's data folder and start `viiper.exe` with `--usb.addr=127.0.0.1:0
+  --api.addr=127.0.0.1:0 --api.require-local-host-auth`, `AppData` pointed there and other `VIIPER_*` variables
+  removed; job object; wait for exactly two listeners of its own, only on 127.0.0.1, nobody else on either number
+  (IPv4 and IPv6); the API is the one port answering with the key; delete the key file; a ping without key and one
+  with a wrong key must be refused. Before each pad or copy the listeners are checked again. Auth and encryption are
+  VIIPER's (`ViiperConnection`, checked against `Viiper.Client`'s own code and the fork's real server).
+- `viiper.exe` is in a job object with kill-on-close, so it ends with Arcadia also after a crash; usbip-win2 drops its
+  devices when the connection closes, and Pan's teardown detaches what the journaled port served ([pan.md](pan.md)).
 - `IGamepadSource.Lost` (SDL failed for good) calls `Drop`: the game gets a pad at rest at once, and the next tick
   unplugs it.
 - A pad lost (server ended, stream closed, send failed or hung for 1 s) is plugged in again at the next tick; more

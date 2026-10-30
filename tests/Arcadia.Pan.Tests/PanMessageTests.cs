@@ -22,6 +22,6 @@ public class PanMessageTests
         Assert.Equal(PanReply.TornDown, reply.Reply);
         Assert.Equal(PanReason.Hang, reply.Reason);
         Assert.Equal("TornDown(gen 3, Hang)", reply.ToString());
-        Assert.Equal("Hello(gen 0, v1)", PanMessage.Of(PanCommand.Hello).ToString());
+        Assert.Equal("Hello(gen 0, v2)", PanMessage.Of(PanCommand.Hello).ToString());
     }
 }

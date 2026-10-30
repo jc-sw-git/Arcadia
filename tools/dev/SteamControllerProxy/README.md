@@ -19,5 +19,6 @@ go test ./cmd/steamproxy239                            # the platform-independen
 Go 1.26 builds it after `go mod edit -go=1.26` (VIIPER asks for 1.27.2 but needs nothing newer).
 The patch keeps VIIPER from repeating the last input report when the real device sent none within `bInterval`.
 
-Inputs: `descriptors.json` from `SteamInputProbe describe --json` (the real puck's descriptors, without serial number;
-the proxy reads that from the device). Runner on the owner's PC: `Run-Checks-239-2.ps1` (project files, `spikes/239/`).
+Inputs: `descriptors.json` with the real puck's descriptors, without serial number (the proxy reads that from the
+device); `SteamInputProbe describe --json` writes it (in git at `f938531:tools/dev/SteamInputProbe`). Runner on the
+owner's PC: `Run-Checks-239-2.ps1` (project files, `spikes/239/`).

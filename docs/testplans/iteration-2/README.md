@@ -30,6 +30,7 @@ its file.
 | [280-steam-sign-in-on-steams-login-page.md](280-steam-sign-in-on-steams-login-page.md) | #280 | Steam sign-in on Steam's own login page | 11 |
 | [277-detect-a-steam-game-start-that-steam-refused.md](277-detect-a-steam-game-start-that-steam-refused.md) | #277 | Detect a Steam game start that Steam refused | 7 |
 | [178-steam-controller-mode-default-per-launcher.md](178-steam-controller-mode-default-per-launcher.md) | #178 | Choose the Steam Controller mode default per launcher | 12 |
+| [304-own-viiper-loopback-auth.md](304-own-viiper-loopback-auth.md) | #304 | Run only Arcadia's own VIIPER, on loopback, with Windows-assigned ports and API auth | 12 |
 | [326-announce-the-pan-update-and-let-the-player-decline-it.md](326-announce-the-pan-update-and-let-the-player-decline-it.md) | #326 | Announce the Pan update before the Windows prompt opens, and let the player decline it | 11 |
 
 ## Exploratory test

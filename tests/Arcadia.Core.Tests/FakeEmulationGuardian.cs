@@ -163,7 +163,10 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
         return Task.FromResult(true);
     }
 
-    public Task<uint> EmulationStartedAsync(CancellationToken cancellationToken)
+    /// <summary>The usbip port each start named, in order (#304).</summary>
+    public List<int> StartedPorts { get; } = [];
+
+    public Task<uint> EmulationStartedAsync(int usbipPort, CancellationToken cancellationToken)
     {
         if (Missing is not null)
         {
@@ -180,6 +183,7 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
             _current = ++_generation;
             _emulating = true;
             Started.Add(_current);
+            StartedPorts.Add(usbipPort);
             Note($"started {_current}");
             return Task.FromResult(_current);
         }

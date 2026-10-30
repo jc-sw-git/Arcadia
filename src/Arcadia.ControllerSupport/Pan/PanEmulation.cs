@@ -97,7 +97,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     public const string RetryNoControllerText = "Pan: Kein Steam Controller verbunden, es gibt nichts zu emulieren.";
     public const string RetryExcludedText = "Pan: Steam Controller und Puck bleiben ausgenommen.";
 
-    private readonly IVirtualXboxPads _pads;
+    private readonly IVirtualXboxPadServer _pads;
     private readonly IEmulationGuardian _guardian;
     private readonly ISteamControllerHold _hold;
     private readonly TimeProvider _time;
@@ -128,7 +128,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     private bool _holdFromBeforeNoted;
     private string? _lastLogged;
 
-    public PanEmulation(IVirtualXboxPads pads, IEmulationGuardian guardian, ISteamControllerHold hold, TimeProvider time, Action<string> log)
+    public PanEmulation(IVirtualXboxPadServer pads, IEmulationGuardian guardian, ISteamControllerHold hold, TimeProvider time, Action<string> log)
     {
         _pads = pads;
         _guardian = guardian;
@@ -416,11 +416,13 @@ public sealed class PanEmulation : IVirtualXboxPads
         _retryAsked = false;
 
         uint generation;
+        int usbipPort;
         try
         {
-            // VIIPER first: Pan takes the client's viiper.exe at the registration, to end it if Arcadia hangs.
-            await _pads.PrepareAsync(cancellationToken);
-            generation = await _guardian.EmulationStartedAsync(cancellationToken);
+            // VIIPER first: Pan takes the client's viiper.exe at the registration, to end it if Arcadia hangs, and journals
+            // its usbip port, so its teardown detaches exactly that server's devices (#304).
+            usbipPort = await _pads.PrepareAsync(cancellationToken);
+            generation = await _guardian.EmulationStartedAsync(usbipPort, cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -437,7 +439,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
-        var session = new Session(generation);
+        var session = new Session(generation, usbipPort);
         if (Hides)
         {
             // What is in front now, not at the tick's start: VIIPER's start may have taken seconds.
@@ -628,6 +630,16 @@ public sealed class PanEmulation : IVirtualXboxPads
                 await StartAsync(cancellationToken);
             }
 
+            return;
+        }
+
+        if (_pads.ServerPort != session.UsbipPort)
+        {
+            // VIIPER ended (or was replaced) under the emulation: Pan knows only the old server's port, so this emulation
+            // ends first, and the next start tells Pan the new one before any device goes onto it (#304, decision 11).
+            _log($"Pan-Emulation {session.Generation}: VIIPER verloren");
+            await EndAsync(session, "VIIPER verloren");
+            Failed(new(PanEmulationState.Paused, PanEmulationProblem.CopyFailed, Reason: "VIIPER verloren"));
             return;
         }
 
@@ -920,11 +932,14 @@ public sealed class PanEmulation : IVirtualXboxPads
     }
 
     /// <summary>One generation: what Arcadia plugged in within it. Its pads are taken out together when it ends.</summary>
-    private sealed class Session(uint generation)
+    private sealed class Session(uint generation, int usbipPort)
     {
         private readonly List<GuardedPad> _pads = [];
 
         public uint Generation { get; } = generation;
+
+        /// <summary>The usbip port of the VIIPER Pan journaled for this generation; devices go only onto that server.</summary>
+        public int UsbipPort { get; } = usbipPort;
 
         public bool Hidden { get; set; }
 

@@ -238,7 +238,7 @@ public sealed partial class Guardian
 
             return message.Command switch
             {
-                PanCommand.EmulationStarted => StartEmulation(),
+                PanCommand.EmulationStarted => StartEmulation((int)Math.Min(message.Value, int.MaxValue)),
                 PanCommand.EmulationStopped => WithGeneration(message, StopEmulation),
                 PanCommand.Heartbeat => WithGeneration(message, Heartbeat),
                 PanCommand.TeardownAcknowledged => Acknowledge(message.Generation),
@@ -346,7 +346,7 @@ public sealed partial class Guardian
         }
     }
 
-    private PanMessage StartEmulation()
+    private PanMessage StartEmulation(int usbipPort)
     {
         if (_phase == Phase.TornDown)
         {
@@ -366,6 +366,17 @@ public sealed partial class Guardian
 
         var client = _client!;
         var held = _cleanup.TakeChildrenOf(client.Pid, client.StartTime, ForwardingImageName);
+        if (ServerOf(held, usbipPort) is not { } served)
+        {
+            // Nothing to journal for this start: what the client runs isn't what its teardown could undo exactly.
+            foreach (var process in held)
+            {
+                _cleanup.Release(process);
+            }
+
+            return PanMessage.Of(PanReply.Rejected, _generation, held.Count == 0 ? PanReason.NoForwardingProcess : PanReason.UsbipPortNotServed);
+        }
+
         // What an incomplete teardown left (a process that wouldn't end) stays listed and is retried with this one. A
         // process the client took up again is this emulation's now, listed once.
         var leftovers = _journal.HeldProcesses.Where(process => !held.Contains(process)).ToList();
@@ -374,12 +385,14 @@ public sealed partial class Guardian
             _log($"{leftovers.Count} process(es) of the last emulation still to end; kept for the next teardown");
         }
 
+        var leftoverServers = _journal.UsbipServers.ToList();
         _generation++;
         _journal.Generation = _generation;
         _journal.ClientPid = client.Pid;
         _journal.ClientStartTime = client.StartTime;
         _journal.Emulating = true;
         _journal.HeldProcesses = [.. leftovers, .. held];
+        _journal.UsbipServers = [.. leftoverServers, new UsbipServer(_generation, usbipPort, served.Pid)];
         try
         {
             // Written before the reply: once Arcadia emulates, the journal already says what to undo.
@@ -395,21 +408,55 @@ public sealed partial class Guardian
 
             _journal.Emulating = false;
             _journal.HeldProcesses = leftovers;
+            _journal.UsbipServers = leftoverServers;
             return PanMessage.Of(PanReply.Rejected, _generation, PanReason.JournalUnreadable);
         }
 
         _phase = Phase.Emulating;
         _leftovers = [.. leftovers];
         _lastHeartbeatMs = _clock.UnbiasedMilliseconds;
+        _log($"Emulation generation {_generation} started by client {client.Pid}, holding {held.Count} process(es), usbip port {usbipPort}");
+        return PanMessage.Of(PanReply.Started, _generation);
+    }
+
+    /// <summary>
+    /// The held process serving <paramref name="usbipPort"/>, when it alone listens there (#304): no other process on
+    /// that port number in IPv4 or IPv6, so a teardown detaching what that port served detaches only the client's
+    /// devices. Null (logged) otherwise.
+    /// </summary>
+    private HeldProcess? ServerOf(IReadOnlyList<HeldProcess> held, int usbipPort)
+    {
         if (held.Count == 0)
         {
-            // Another program's VIIPER ("Arcadia nutzt ihn mit"): nothing of the client's to end; a teardown detaches
-            // every local VIIPER port, that program's too (review, should-fix 11).
-            _log($"Emulation generation {_generation}: no {ForwardingImageName} of client {client.Pid} found; a teardown will only detach the usbip ports");
+            _log($"Emulation refused: no {ForwardingImageName} of client {_client?.Pid} to hold");
+            return null;
         }
 
-        _log($"Emulation generation {_generation} started by client {client.Pid}, holding {held.Count} process(es)");
-        return PanMessage.Of(PanReply.Started, _generation);
+        if (usbipPort is <= 0 or > 65535)
+        {
+            _log("Emulation refused: no usbip port given");
+            return null;
+        }
+
+        IReadOnlyCollection<TcpListening> listeners;
+        try
+        {
+            listeners = _cleanup.Listeners();
+        }
+        catch (Exception ex)
+        {
+            _log($"Emulation refused: listeners not readable ({ex.Message})");
+            return null;
+        }
+
+        if (ViiperListeners.OnlyServedBy(listeners, usbipPort, [.. held.Select(process => process.Pid)]) is { } problem)
+        {
+            _log($"Emulation refused: {problem}");
+            return null;
+        }
+
+        var server = listeners.First(listener => listener.Port == usbipPort).Pid;
+        return held.First(process => process.Pid == server);
     }
 
     private PanMessage WithGeneration(PanMessage message, Func<PanMessage> handle)
@@ -455,6 +502,8 @@ public sealed partial class Guardian
 
         _journal.Emulating = false;
         _journal.HeldProcesses = _journal.HeldProcesses.Where(_leftovers.Contains).ToList();
+        // Arcadia removed its devices itself; a server an earlier teardown couldn't finish stays for the next one.
+        _journal.UsbipServers = _journal.UsbipServers.Where(server => server.Generation != _generation).ToList();
         if (_journal.HeldProcesses.Count > 0)
         {
             _log($"{_journal.HeldProcesses.Count} process(es) of an earlier emulation still to end at the next teardown");
@@ -576,13 +625,15 @@ public sealed partial class Guardian
         JournalState journal;
         int clientPid;
         List<HeldProcess> held;
+        List<UsbipServer> servers;
         lock (_lock)
         {
             generation = _generation;
             journal = _journal;
             clientPid = journal.ClientPid;
-            // Under the lock: a step left behind after its timeout may still remove from the list.
+            // Under the lock: a step left behind after its timeout may still remove from the lists.
             held = journal.HeldProcesses.ToList();
+            servers = journal.UsbipServers.ToList();
         }
 
         if (unplanned)
@@ -590,7 +641,7 @@ public sealed partial class Guardian
             UnplannedEnd?.Invoke(new UnplannedEnd(reason, generation, clientPid, journal.Emulating));
         }
 
-        var plan = new TeardownPlan(_cleanup, held, ProcessEnded);
+        var plan = new TeardownPlan(_cleanup, held, ProcessEnded, servers, ServerDetached);
         var results = (await TeardownRunner.RunAsync(plan.Steps(), _log)).ToList();
         var forwardingGone = results.All(r => r.Outcome == StepOutcome.Ok);
         results.AddRange(await ShowAfterTeardownAsync(forwardingGone));
@@ -634,6 +685,16 @@ public sealed partial class Guardian
         lock (_lock)
         {
             _journal.HeldProcesses.Remove(process);
+            SaveJournal();
+        }
+    }
+
+    /// <summary>A teardown step detached all a server's devices: off the journal at once, so a retry skips it.</summary>
+    private void ServerDetached(UsbipServer server)
+    {
+        lock (_lock)
+        {
+            _journal.UsbipServers.Remove(server);
             SaveJournal();
         }
     }

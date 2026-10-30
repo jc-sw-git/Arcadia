@@ -63,6 +63,34 @@ public sealed class PanEmulationTests
     }
 
     [Fact]
+    [Trait("TestCase", "T304-8")]
+    public async Task A_VIIPER_lost_under_the_emulation_ends_it_and_the_next_start_names_the_new_port_before_any_device()
+    {
+        await _emulation.TickAsync();
+        await _emulation.PlugAsync(CancellationToken.None);
+        Assert.Equal([50000], _pan.StartedPorts);
+        _events.Clear();
+
+        // viiper.exe ended: Pan knows only its port, so nothing may go onto a new server within this generation.
+        _pads.ServerPort = null;
+        await _emulation.TickAsync();
+
+        Assert.Equal(["pad unplugged", "copy detached", "unhide 1", "stopped 1"], _events);
+        Assert.Contains("Pan-Emulation 1: VIIPER verloren", _log);
+        _events.Clear();
+
+        for (var tick = 0; tick < 5 && _pan.Started.Count < 2; tick++)
+        {
+            _time.Advance(TimeSpan.FromSeconds(10));
+            await _emulation.TickAsync();
+        }
+
+        Assert.Equal([50000, 50001], _pan.StartedPorts);
+        Assert.Equal(["started 2", "hide 2", "copy attached"], _events);
+        Assert.Equal(PanEmulationState.Running, State);
+    }
+
+    [Fact]
     [Trait("TestCase", "T242-9")]
     public async Task At_exit_pad_and_copy_go_before_the_puck_is_shown_then_the_emulation_ends_and_Pan_hears_the_planned_exit()
     {
@@ -593,6 +621,39 @@ public sealed class PanEmulationTests
         await emulation.TickAsync();
         Assert.Equal(PanEmulationState.Running, emulation.Status.State);
         Assert.Equal([1u], _pan.Hidden);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T325-1")]
+    public async Task An_open_question_follows_what_is_connected_and_hides_nothing_meanwhile()
+    {
+        // At Arcadia's start SDL reports the wireless Steam Controller only after the puck.
+        var connected = SteamControllerParts.Puck;
+        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            SteamControllerPresent = () => _present,
+            SteamRuns = () => true,
+            Connected = () => connected,
+            Enabled = () => _enabled,
+        };
+        var asked = new List<SteamControllerParts>();
+        emulation.Takeover.ConsentNeeded += asked.Add;
+
+        await emulation.TickAsync();
+        connected = SteamControllerParts.Controller | SteamControllerParts.Puck;
+        await emulation.TickAsync();
+        await emulation.TickAsync();
+
+        Assert.Equal([SteamControllerParts.Puck, SteamControllerParts.Controller | SteamControllerParts.Puck], asked);
+        Assert.Equal(SteamControllerParts.Controller | SteamControllerParts.Puck, emulation.Takeover.Asked);
+        Assert.Equal(TakeoverState.Asking, emulation.Takeover.State);
+        Assert.Empty(_pan.Started);
+
+        // Nothing reported for a moment (puck re-enumerating): the question keeps what it named.
+        connected = SteamControllerParts.None;
+        await emulation.TickAsync();
+        Assert.Equal(2, asked.Count);
+        Assert.Equal(SteamControllerParts.Controller | SteamControllerParts.Puck, emulation.Takeover.Asked);
     }
 
     [Fact]

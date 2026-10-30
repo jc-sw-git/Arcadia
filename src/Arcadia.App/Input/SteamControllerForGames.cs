@@ -58,7 +58,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     /// <param name="panSupported">Pan can run on this system (Windows); elsewhere nothing is emulated and the mode doesn't show.</param>
     public static SteamControllerForGames Create(
         bool panSupported,
-        IVirtualXboxPads pads,
+        IVirtualXboxPadServer pads,
         IEmulationGuardian guardian,
         Func<SteamControllerCopyWiring, ISteamControllerHold> copy,
         ControllerSupportService controllerSupport,

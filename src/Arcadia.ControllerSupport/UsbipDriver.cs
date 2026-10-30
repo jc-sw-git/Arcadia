@@ -105,7 +105,7 @@ public static class UsbipDriver
         }
 
         var detached = 0;
-        foreach (var port in UsbipPorts.FromLocalViiper(listing))
+        foreach (var port in UsbipPorts.FromLocalServer(listing, UsbipPorts.ViiperPort))
         {
             if (await RunAsync(usbip, ["detach", "-p", port.ToString(System.Globalization.CultureInfo.InvariantCulture)], cancellationToken) is not null)
             {

@@ -1003,6 +1003,12 @@ public sealed class PanEmulation : IVirtualXboxPads
 
         public bool TakenAway => session.Ended || !guardian.IsCurrent(session.Generation);
 
+        public event Action<Arcadia.Input.XboxRumble>? Rumbled
+        {
+            add => pad.Rumbled += value;
+            remove => pad.Rumbled -= value;
+        }
+
         /// <summary>A pad the emulation took out takes nothing more (its VIIPER device is gone).</summary>
         public Task SendAsync(Arcadia.Input.XboxPadState state, CancellationToken cancellationToken) =>
             Volatile.Read(ref _disposed) == 1 ? Task.CompletedTask : pad.SendAsync(state, cancellationToken);

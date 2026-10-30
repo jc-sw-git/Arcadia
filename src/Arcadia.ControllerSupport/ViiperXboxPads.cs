@@ -226,6 +226,17 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
             this.stream = stream;
             this.serverEnded = serverEnded;
             stream.OnDisconnect = () => _broken = true;
+            stream.OnOutput = ReadOutputAsync;
+        }
+
+        public event Action<XboxRumble>? Rumbled;
+
+        /// <summary>VIIPER's output of an Xbox 360 pad: the two motors, one byte each (large, then small).</summary>
+        private async Task ReadOutputAsync(Stream output)
+        {
+            var motors = new byte[2];
+            await output.ReadExactlyAsync(motors);
+            Rumbled?.Invoke(new XboxRumble(motors[0], motors[1]));
         }
 
         public bool IsConnected => !_broken && !serverEnded();
@@ -256,6 +267,7 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
         public async ValueTask DisposeAsync()
         {
             stream.OnDisconnect = null;
+            stream.OnOutput = null;
             try
             {
                 await stream.DisposeAsync();

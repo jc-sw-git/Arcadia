@@ -50,7 +50,8 @@ Arcadia reads the real puck raw and VIIPER shows Steam a USB device with the puc
   the GET_REPORT for its answer to a slot without a controller, and `SET_SETTINGS_VALUES` to every slot when the
   controller connects. The real puck refuses them (Windows error 31, `ERROR_GEN_FAILURE`), with or without the copy;
   Steam gets an empty answer where the real puck stalls and works either way. The bridge logs each kind of refusal
-  once (call, interface, report id, message, error) and the counts when the copy ends.
+  once (call, interface, report id, message, error) and the counts when the copy ends. At rest Steam sends the copy
+  the same as the controller by cable: `SET_SETTINGS_VALUES` every 3.0 s, nothing else (USB capture on the owner's PC).
 - Closing stops every call to the puck first (under the lock the calls take), then closes the stream and the puck;
   then VIIPER's bus is removed. A call to the puck that still runs after the puck closed, or a removal that fails,
   throws, so Pan's teardown ends `viiper.exe` before the puck shows. A write to VIIPER that hangs over 1 s (VIIPER

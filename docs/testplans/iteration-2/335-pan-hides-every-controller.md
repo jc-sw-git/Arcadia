@@ -35,4 +35,4 @@ History:
 |---|---|---|---|---|---|
 | A1–A5 | 2026-10-30 | owner | check script v3 and probe, Windows 11, HidHide 1.5.230 | ✅ A1, A4, A5 (DS4, DualSense) · ❌ A2, A3 for XInput pads, adaptive triggers, Switch 2 Pro unseen | Results in #238; XInput restart reported as replug (this PR), slot and kinds go to #238 |
 | T335-4, T335-5 | 2026-10-30 | Claude | branch `feat/pan-hides-every-controller-335`, Linux container, fakes | ✅ | – |
-| real driver | 2026-10-30 | Claude | Windows CI runner, HidHide 1.5.230, made-up instance ids | see the PR's CI run | – |
+| real driver | 2026-10-30 | Claude | PR #337 at 6b4f310, Windows CI runner (Server 2025), HidHide 1.5.230, made-up instance ids | ✅ `HidHideTests` hide and show a HID collection and an XInput interface, HidHide as before | – |

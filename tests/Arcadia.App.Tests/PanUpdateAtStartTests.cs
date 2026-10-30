@@ -282,6 +282,26 @@ public sealed class PanUpdateAtStartTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T326-5")]
+    public async Task An_unexpected_error_in_the_update_from_the_switch_still_leaves_the_row_off_and_unlocked()
+    {
+        var steam = OldPan();
+        steam.PanUpdateBug = new NullReferenceException("Fehler im Test");
+        using var arcadia = await StartAsync(steam, Chosen(panEnabled: false));
+        await arcadia.PanAnsweredAtStartAsync();
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        PanRowViewModel Pan() => Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
+
+        Pan().Activate();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == PanRows.NotUpdatedToast, "der Toast „bleibt aus“");
+
+        Assert.False(arcadia.Settings.Current.PanEnabled);
+        Assert.False(Pan().IsLocked);
+        Assert.Equal(PanRows.UpdateDueSubtitle, Pan().Subtitle);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T326-6")]
     public async Task A_firmware_hold_from_before_shows_its_dialog_first_and_A_pressed_earlier_waits_for_it()
     {

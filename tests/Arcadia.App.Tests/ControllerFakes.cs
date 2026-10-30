@@ -113,6 +113,9 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     /// <summary>Set, the next update fails with this message (Pan's exit code, a timeout).</summary>
     public string? PanUpdateError { get; set; }
 
+    /// <summary>Set, the next update throws this, as a bug in Arcadia would (not one of Pan's own failures).</summary>
+    public Exception? PanUpdateBug { get; set; }
+
     /// <summary>Set, the Windows prompt of the next update or restore stays up until the test completes it (#297, #326: presses while it is up).</summary>
     public TaskCompletionSource? PanPromptUp { get; set; }
 
@@ -127,6 +130,11 @@ internal sealed class FakeSteam : IControllerSupportPlatform
         if (PanUpdateError is { } error)
         {
             throw new InvalidOperationException(error);
+        }
+
+        if (PanUpdateBug is { } bug)
+        {
+            throw bug;
         }
 
         if (PromptConfirmed)

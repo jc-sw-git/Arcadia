@@ -318,9 +318,15 @@ public sealed class PanRows
                 _support.SwitchPanOffForUpdate(null);
             }
         }
-        catch (Exception ex) when (ex is InvalidOperationException or TimeoutException)
+        catch (Exception ex)
         {
-            // Pan's own failures come as these with their text: shown in the info panel.
+            // Pan's own failures come as these with their text, shown in the info panel; anything else is a bug,
+            // logged with its stack, and the row still says that Pan stays off.
+            if (ex is not (InvalidOperationException or TimeoutException))
+            {
+                AppErrors.Report(ex, "Pan aktualisieren");
+            }
+
             _support.SwitchPanOffForUpdate(ex.Message);
             updated = false;
         }

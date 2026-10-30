@@ -596,6 +596,39 @@ public sealed class PanEmulationTests
     }
 
     [Fact]
+    [Trait("TestCase", "T325-1")]
+    public async Task An_open_question_follows_what_is_connected_and_hides_nothing_meanwhile()
+    {
+        // At Arcadia's start SDL reports the wireless Steam Controller only after the puck.
+        var connected = SteamControllerParts.Puck;
+        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            SteamControllerPresent = () => _present,
+            SteamRuns = () => true,
+            Connected = () => connected,
+            Enabled = () => _enabled,
+        };
+        var asked = new List<SteamControllerParts>();
+        emulation.Takeover.ConsentNeeded += asked.Add;
+
+        await emulation.TickAsync();
+        connected = SteamControllerParts.Controller | SteamControllerParts.Puck;
+        await emulation.TickAsync();
+        await emulation.TickAsync();
+
+        Assert.Equal([SteamControllerParts.Puck, SteamControllerParts.Controller | SteamControllerParts.Puck], asked);
+        Assert.Equal(SteamControllerParts.Controller | SteamControllerParts.Puck, emulation.Takeover.Asked);
+        Assert.Equal(TakeoverState.Asking, emulation.Takeover.State);
+        Assert.Empty(_pan.Started);
+
+        // Nothing reported for a moment (puck re-enumerating): the question keeps what it named.
+        connected = SteamControllerParts.None;
+        await emulation.TickAsync();
+        Assert.Equal(2, asked.Count);
+        Assert.Equal(SteamControllerParts.Controller | SteamControllerParts.Puck, emulation.Takeover.Asked);
+    }
+
+    [Fact]
     [Trait("TestCase", "T242-21")]
     public async Task No_leaves_the_controller_alone_until_the_settings_row_takes_it_over()
     {

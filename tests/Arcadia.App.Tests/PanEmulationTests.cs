@@ -496,6 +496,43 @@ public sealed class PanEmulationTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T325-2")]
+    public async Task The_open_question_names_the_Steam_Controller_as_soon_as_SDL_reports_it_and_a_running_hold_stops()
+    {
+        // Arcadia's start: the puck is there, SDL hasn't reported the wireless Steam Controller yet.
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam { IsSteamRunning = true });
+        arcadia.SteamControllerCopy.CanCopy = true;
+        arcadia.SteamControllerCopy.PuckPresent = true;
+        arcadia.StartControllers();
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.TakeoverConsent is not null, "die Frage „Puck übernehmen?“");
+        var consent = arcadia.Main.TakeoverConsent!;
+        Assert.Equal("Puck übernehmen?", consent.Title);
+
+        // "Ja" is being held when the controller shows up: the hold stops, as the dialog now names more.
+        arcadia.Press(UiAction.Left).PressDown(UiAction.Accept);
+        Assert.True(consent.Yes.IsHolding);
+        arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.PollControllers();
+        await arcadia.TickSteamControllerAsync();
+
+        Assert.Same(consent, arcadia.Main.TakeoverConsent);
+        Assert.Equal("Steam Controller und Puck übernehmen?", consent.Title);
+        Assert.Equal(["Steam Controller", "Puck", "Steam läuft"], consent.Found);
+        Assert.Equal("Erst prüfen: Führt Steam gerade ein Firmware-Update des Steam Controllers oder Pucks aus?", consent.WarningTitle);
+        Assert.False(consent.Yes.IsHolding, "der Halt von vorher zählt nicht für das, was der Dialog jetzt nennt");
+        Assert.Equal(TakeoverState.Asking, arcadia.ForGames.Takeover.State);
+        Assert.Empty(arcadia.Pan.Hidden);
+        arcadia.LetGo(UiAction.Accept);
+
+        // A new hold of 3 s takes over what the dialog names.
+        arcadia.Hold(UiAction.Accept, ThreeSecondHold);
+        Assert.Null(arcadia.Main.TakeoverConsent);
+        await arcadia.TickSteamControllerAsync();
+        Assert.Single(arcadia.Pan.Hidden);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T242-21")]
     public async Task After_Nein_the_Steam_Controller_is_left_alone_until_the_settings_row_is_held_for_3_seconds()
     {

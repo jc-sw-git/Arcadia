@@ -852,7 +852,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
 
-        // "Launcher-Einstellungen" in the controller settings: straight to Steam's page with "Steam Controller" focused (#315).
+        // "Steam-Einstellungen" in the controller settings: straight to Steam's page with "Steam Controller" focused (#315).
         void OpenSteamControllerSettings()
         {
             Settings?.Open(launchers);

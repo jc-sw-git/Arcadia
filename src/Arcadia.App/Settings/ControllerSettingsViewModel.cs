@@ -107,7 +107,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         {
             Group = SteamGroup,
             Subtitle = "Weitere Controller-Einstellungen für Steam.",
-            ActionText = "Launcher-Einstellungen",
+            ActionText = "Steam-Einstellungen",
             Info =
             [
                 new InfoText("Arcadia hat erkannt, dass du Steam installiert hast. In den Launcher-Einstellungen für Steam findest du noch weitere Einstellungsmöglichkeiten für Controller in Zusammenhang mit Steam. Unter anderem zum Steam Controller und ob die Steam Desktop-Steuerung wieder zugelassen werden soll."),

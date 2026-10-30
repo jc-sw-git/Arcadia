@@ -211,7 +211,7 @@ public sealed class SteamDesktopLayoutTests
 
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows[^1]);
         Assert.Equal(
-            (ControllerSettingsViewModel.SteamLauncherKey, "STEAM", "Controller-Einstellungen für Steam", "Weitere Controller-Einstellungen für Steam.", "Launcher-Einstellungen"),
+            (ControllerSettingsViewModel.SteamLauncherKey, "STEAM", "Controller-Einstellungen für Steam", "Weitere Controller-Einstellungen für Steam.", "Steam-Einstellungen"),
             (row.Key, row.Group, row.Title, row.Subtitle, row.ActionText));
         Assert.StartsWith("Arcadia hat erkannt, dass du Steam installiert hast.", Assert.IsType<InfoText>(Assert.Single(row.Info)).Text, StringComparison.Ordinal);
 

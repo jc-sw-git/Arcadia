@@ -29,7 +29,7 @@ controller alike, with Pan on or off. "On"/"off" below mean "Steams Desktop-Steu
 - [ ] **T315-6** A `settings.json` from before keeps its meaning ("ignorieren" on there shows "zulassen" off; one
       without the value: off). Factory reset (#146) sets it off. · E2E: no (stored value: `SettingsServiceTests`; #146 isn't built yet, checked with #146)
 - [ ] **T315-7** Steam installed: Einstellungen → Controller ends with the group "STEAM", row "Controller-Einstellungen
-      für Steam", subtitle "Weitere Controller-Einstellungen für Steam.", button "Launcher-Einstellungen"; its info
+      für Steam", subtitle "Weitere Controller-Einstellungen für Steam.", button "Steam-Einstellungen"; its info
       panel: "Arcadia hat erkannt, dass du Steam installiert hast. …". [A] (or a click) opens Steam's launcher page with
       "Steam Controller" focused; [B] goes to the launcher list. Steam not installed: no group "STEAM". · E2E: yes
 

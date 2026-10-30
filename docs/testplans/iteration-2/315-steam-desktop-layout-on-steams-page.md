@@ -7,9 +7,11 @@ controller alike, with Pan on or off. "On"/"off" below mean "Steams Desktop-Steu
 
 - [ ] **T315-1** Einstellungen → Launcher → Steam (active or not): the last group "DESKTOP-STEUERUNG" with
       "Steams Desktop-Steuerung zulassen", "Aus", subtitle "Steams Desktop-Steuerung wird momentan ignoriert"; switched
-      on: "Steams Desktop-Steuerung ist momentan aktiviert". The info panel has the five texts of the issue, the Guide
-      button and [RS] as glyphs of the controller in use (Xbox's without one), the Steam Controller's note as a blue box
-      in bold. No other launcher's page has the row; Einstellungen → Controller has no group "STEAM" any more.
+      on: "Steams Desktop-Steuerung ist momentan aktiviert". The info panel has the texts of the issue plus why one would allow
+      it ("Das ist praktisch, wenn du deinen Controller auch außerhalb von Arcadia nutzt …"); the Guide button and [RS]
+      as glyphs of the controller in use (Xbox's without one); the Steam Controller's note as a blue box in bold. The
+      glyphs in the blue box and in "Um den Wechsel des Aktionssets (⧉ + ≡) …" are always the Steam Controller's, also
+      with a PlayStation or Nintendo controller in use. No other launcher's page has the row; Einstellungen → Controller has no group "STEAM" any more.
       Controller alone: ▼ reaches it, ◀ ▶ and [A] switch it, [B] goes back. · E2E: yes
 - [ ] **T315-2** Steam running, setting off, Pan on and off, with a Steam Controller and another controller: in front
       of Arcadia, on the desktop and in the mouse mode no controller triggers Steam's desktop layout (trackpad or Guide
@@ -42,3 +44,4 @@ History:
 | T315-1, T315-3, T315-4 | 2026-10-30 | Claude (QE) | same, Debug, Linux cloud container | ✅ three more acceptance tests in `SteamDesktopLayoutTests` (desktop without a game with ▶, switched during a game on "Arcadia" with "meldet Ruhe" in the log, game on "Steam-Eingabe" both ways), each red once against a mutated rule (pad ignores the setting, gate never ignores it, copy rests for "Steam-Eingabe" while off); full suite green | On the owner's PC |
 | T315-1 | 2026-10-30 | Claude (QE) | same, Xvfb 1920×1080, `--demo`, keys by xdotool | ✅ last row focused, ring whole, "An"/"Aus" with both subtitles, info panel with glyphs and bold blue box; "⧉ + ≡" breaks between the two glyphs at a line end (review finding) | — |
 | T315-1, T315-7 | 2026-10-30 | Claude | same, Debug, Linux cloud container, Avalonia headless | ✅ renamed and inverted row, new row "Controller-Einstellungen für Steam" (`SteamDesktopLayoutTests`); the jump was red once without the focus on "Steam Controller" | On the owner's PC |
+| T315-1 | 2026-10-30 | Claude | same, Avalonia headless | ✅ fixed Steam Controller glyphs in the blue box and the last text (`ButtonSymbolsTests`, `SteamDesktopLayoutTests`); red once with the fixed printing ignored | With a PlayStation controller on the owner's PC |

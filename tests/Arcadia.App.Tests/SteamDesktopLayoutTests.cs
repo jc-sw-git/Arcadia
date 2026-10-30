@@ -1,5 +1,6 @@
 using Arcadia.App.Input;
 using Arcadia.App.Settings;
+using Arcadia.Input;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
 using Arcadia.Tests.Sdl;
@@ -76,6 +77,11 @@ public sealed class SteamDesktopLayoutTests
         Assert.Contains(texts, text => text.StartsWith("Um den Wechsel des Aktionssets (⧉ + ≡)", StringComparison.Ordinal));
         var note = Assert.Single(row.Info.OfType<InfoNote>());
         Assert.True(note.IsInfo && note.IsBold);
+        // Only about the Steam Controller: its buttons, whichever controller is in use; the text for all controllers follows it.
+        Assert.Equal(ButtonSymbols.SteamController, note.Symbols);
+        Assert.Equal(ButtonSymbols.SteamController, row.Info.OfType<InfoText>().Last().Symbols);
+        Assert.Null(row.Info.OfType<InfoText>().First().Symbols);
+        Assert.Contains(texts, text => text.StartsWith("Das ist praktisch, wenn du deinen Controller auch außerhalb von Arcadia nutzt", StringComparison.Ordinal));
         Assert.StartsWith("Beim Steam Controller können darüber hinaus", note.Text, StringComparison.Ordinal);
     }
 

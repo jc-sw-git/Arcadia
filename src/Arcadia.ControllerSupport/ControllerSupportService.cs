@@ -187,8 +187,14 @@ public sealed class ControllerSupportService(
         _shutdown.Cancel();
     }
 
-    /// <summary>Per game: true = "Arcadia", false = "Steam-Eingabe".</summary>
-    public void SetModeFor(Game game, bool useArcadiaPad) => UpdateSettings(settings => settings.WithControllerSupportChoice(game, useArcadiaPad, GamesUseSteamInput));
+    /// <summary>The game's own mode: true = "Arcadia", false = "Steam-Eingabe", null = "Standard", its launcher's default (#178).</summary>
+    public bool? ChoiceFor(Game game) => Settings.ControllerModeChoiceFor(game.Key);
+
+    /// <summary>The mode games of this launcher on "Standard" get (<see cref="AppSettings.LauncherUsesArcadiaPad"/>).</summary>
+    public bool LauncherUsesArcadiaPad(string launcherId) => Settings.LauncherUsesArcadiaPad(launcherId, GamesUseSteamInput);
+
+    /// <summary>Sets the game's own mode; null puts it on "Standard".</summary>
+    public void SetChoiceFor(Game game, bool? useArcadiaPad) => UpdateSettings(settings => settings.WithControllerModeChoice(game.Key, useArcadiaPad));
 
     /// <summary>
     /// Called periodically: the parts are checked once at start and after every action, then only while the settings

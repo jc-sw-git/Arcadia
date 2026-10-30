@@ -10,16 +10,21 @@ namespace Arcadia.Core.Settings;
 /// <param name="LibraryOptions">
 /// The ids of the launcher's <see cref="Arcadia.Launchers.Abstractions.LibraryTypeOption"/>s the user switched on (#141); null: none.
 /// </param>
+/// <param name="UsesArcadiaPad">
+/// The Steam Controller mode its games on "Standard" get (#178): true = "Arcadia", false = "Steam-Eingabe"; null for the
+/// launcher's own (<see cref="AppSettings.LauncherUsesArcadiaPad"/>).
+/// </param>
 public sealed record LauncherPreferences(
     string? Name = null,
     string? Keyword = null,
     string? LogoFile = null,
     string? Folder = null,
-    IReadOnlyList<string>? LibraryOptions = null)
+    IReadOnlyList<string>? LibraryOptions = null,
+    bool? UsesArcadiaPad = null)
 {
     /// <summary>Nothing changed: the entry can go.</summary>
     [System.Text.Json.Serialization.JsonIgnore]
-    public bool IsEmpty => Name is null && Keyword is null && LogoFile is null && Folder is null && LibraryOptions is null or [];
+    public bool IsEmpty => Name is null && Keyword is null && LogoFile is null && Folder is null && UsesArcadiaPad is null && LibraryOptions is null or [];
 
     /// <summary>The switched-on options, never null (a hand-edited file may hold null).</summary>
     [System.Text.Json.Serialization.JsonIgnore]

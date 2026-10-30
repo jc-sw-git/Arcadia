@@ -401,9 +401,18 @@ public sealed class GameActions : IGameActionHost
         }
     }
 
-    /// <summary>"Arcadia" or "Steam-Eingabe"; while Pan's emulation doesn't run always "Steam-Eingabe", as that is what the game gets.</summary>
+    /// <summary>
+    /// "Standard (…)", "Arcadia" or "Steam-Eingabe"; while Pan's emulation doesn't run always "Steam-Eingabe", as that is
+    /// what the game gets.
+    /// </summary>
     public string ControllerModeOf(Game game) =>
-        !_owner.ControllerModeBroken && _controllerSupport.UsesArcadiaPad(game.Key) ? ControllerModes.Arcadia : ControllerModes.Steam;
+        _owner.ControllerModeBroken ? ControllerModes.Steam : ControllerModes.Of(_controllerSupport.ChoiceFor(game), _controllerSupport.LauncherUsesArcadiaPad(game.LauncherId));
+
+    /// <summary>Standard → Arcadia → Steam-Eingabe → Standard (#178); applies at the game's next start.</summary>
+    public void CycleControllerMode(Game game) => _controllerSupport.SetChoiceFor(game, ControllerModes.Next(_controllerSupport.ChoiceFor(game)));
+
+    string IGameActionHost.NextControllerModeOf(Game game) =>
+        ControllerModes.Of(ControllerModes.Next(_controllerSupport.ChoiceFor(game)), _controllerSupport.LauncherUsesArcadiaPad(game.LauncherId));
 
     bool IGameActionHost.ShowControllerMode => _owner.ShowControllerMode;
 
@@ -418,8 +427,7 @@ public sealed class GameActions : IGameActionHost
     void IGameActionHost.OpenInLauncher(GameTileViewModel tile) =>
         HandOver(tile, tile.Game.OpenInLauncher, $"{tile.LauncherName} wird geöffnet …", $"Demo-Spiel: Hier würde jetzt {tile.LauncherName} geöffnet.");
 
-    void IGameActionHost.ToggleControllerMode(GameTileViewModel tile) =>
-        _controllerSupport.SetModeFor(tile.Game, !_controllerSupport.UsesArcadiaPad(tile.Game.Key));
+    void IGameActionHost.CycleControllerMode(GameTileViewModel tile) => CycleControllerMode(tile.Game);
 
     void IGameActionHost.Uninstall(GameTileViewModel tile)
     {

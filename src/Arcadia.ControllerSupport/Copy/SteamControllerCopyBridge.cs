@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.ComponentModel;
 using System.Diagnostics;
 using Arcadia.Input;
 
@@ -37,6 +38,9 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
     private readonly List<Thread> _readers = [];
     private readonly CopyLatency _latency = new();
     private readonly Dictionary<(byte Interface, byte Id), byte[]> _shown = [];
+    private readonly Dictionary<byte, byte> _lastMessage = [];
+    private readonly Dictionary<(PuckCall Call, string Error), int> _refusals = [];
+    private readonly Lock _refusalsLock = new();
     private readonly TimeSpan _sendTimeout;
     private Timer? _sendWatch;
     private long _sendingSince;
@@ -131,6 +135,11 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
         }
 
         _log($"Steam-Controller-Kopie beendet; Verzögerung Puck → VIIPER: {_latency.Summary()}");
+        if (RefusalSummary() is { } refusals)
+        {
+            _log($"Steam-Controller-Kopie: vom Puck abgelehnt: {refusals}");
+        }
+
         _stop.Dispose();
         if (!callsEnded || !puckClosed)
         {
@@ -226,7 +235,7 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
         var kind = _descriptors.IsHid(iface) ? SteamReportKind.Output : SteamReportKind.Other;
         if (_filter.FromSteam(kind, report, _forwarding()))
         {
-            ToPuck(() => _puck.WriteOutput(iface, report), "Ausgabe");
+            ToPuck(() => _puck.WriteOutput(iface, report), OutputCall(iface, report));
         }
     }
 
@@ -242,16 +251,23 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
         var data = payload.AsSpan(2 + SetupPacket.Size).ToArray();
         var (kind, type) = SteamControlRequests.Classify(setup, _descriptors.IsHid(iface), IsCdc(iface));
         var passes = _filter.FromSteam(kind, data, _forwarding());
+        if (kind == SteamReportKind.SetFeature && passes && data.Length >= 2)
+        {
+            // The GET_REPORT that follows reads the puck's answer to it: named in the log if that fails. A dropped
+            // message never reached the puck, so it can't be what the puck answers.
+            _lastMessage[iface] = data[1];
+        }
+
         switch (kind)
         {
             case SteamReportKind.GetReport:
                 Reply(iface, sequence, GetReport(iface, type, (byte)setup.Value, setup.Length));
                 break;
             case SteamReportKind.SetFeature when passes:
-                Reply(iface, sequence, ToPuck(() => _puck.SetFeature(iface, data), "Feature-Report") ? [] : null);
+                Reply(iface, sequence, ToPuck(() => _puck.SetFeature(iface, data), FeatureCall(iface, data)) ? [] : null);
                 break;
             case SteamReportKind.Output when passes:
-                Reply(iface, sequence, ToPuck(() => _puck.WriteOutput(iface, data), "Ausgabe") ? [] : null);
+                Reply(iface, sequence, ToPuck(() => _puck.WriteOutput(iface, data), OutputCall(iface, data)) ? [] : null);
                 break;
             case SteamReportKind.SetFeature or SteamReportKind.Output or SteamReportKind.Housekeeping:
                 // Dropped by the allow list, or Windows' own business: Steam sees it done, as with the real puck.
@@ -298,11 +314,18 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
 
         var report = new byte[Math.Clamp((int)length, 1, HidProxyFrames.MaxPayload - 16)];
         var read = 0;
-        return ToPuck(() => read = _puck.GetReport(iface, type, id, report), "GET_REPORT") ? report[..Math.Min(read, report.Length)] : null;
+        var after = _lastMessage.TryGetValue(iface, out var message) ? $"nach {SteamControllerMessages.NameOfFeature(message)}" : null;
+        var call = new PuckCall($"GET_REPORT {type}", iface, id, after);
+        return ToPuck(() => read = _puck.GetReport(iface, type, id, report), call) ? report[..Math.Min(read, report.Length)] : null;
     }
 
+    private static PuckCall FeatureCall(byte iface, byte[] data) =>
+        new("Feature-Report", iface, data.Length >= 1 ? data[0] : (byte)0, data.Length >= 2 ? SteamControllerMessages.NameOfFeature(data[1]) : null);
+
+    private static PuckCall OutputCall(byte iface, byte[] data) => new("Ausgabe", iface, data.Length >= 1 ? data[0] : (byte)0, null);
+
     /// <summary>A call to the puck on Steam's behalf; never once the copy is closing. False when it failed.</summary>
-    private bool ToPuck(Action call, string what)
+    private bool ToPuck(Action call, PuckCall what)
     {
         lock (_toPuck)
         {
@@ -318,9 +341,40 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
             }
             catch (Exception ex)
             {
-                _log($"Steam-Controller-Kopie: {what} an den Puck fehlgeschlagen: {ex.Message}");
+                Refused(what, ex);
                 return false;
             }
+        }
+    }
+
+    /// <summary>
+    /// Logs the first refusal of each kind and only counts the same one after that (#314): Steam asks the puck's empty
+    /// slots every few seconds, which the real puck refuses as it would without the copy, and a line each time would
+    /// bury the log. A new request, slot or error still gets its line; <see cref="DisposeAsync"/> logs the counts.
+    /// </summary>
+    private void Refused(PuckCall call, Exception ex)
+    {
+        var error = ex is Win32Exception win32 ? $"Fehler {win32.NativeErrorCode}" : ex.GetType().Name;
+        int count;
+        lock (_refusalsLock)
+        {
+            count = _refusals[(call, error)] = _refusals.GetValueOrDefault((call, error)) + 1;
+        }
+
+        if (count == 1)
+        {
+            _log($"Steam-Controller-Kopie: {call} an den Puck fehlgeschlagen ({error}: {ex.Message}); weitere gleiche werden nur gezählt");
+        }
+    }
+
+    /// <summary>"Feature-Report (Interface 3, …) Fehler 31: 85×; …", or null when the puck refused nothing.</summary>
+    private string? RefusalSummary()
+    {
+        lock (_refusalsLock)
+        {
+            return _refusals.Count == 0
+                ? null
+                : string.Join("; ", _refusals.OrderBy(r => r.Key.Call.Interface).Select(r => $"{r.Key.Call} {r.Key.Error}: {r.Value}×"));
         }
     }
 
@@ -385,6 +439,16 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
             return false;
         }
     }
+}
+
+/// <summary>
+/// A call to the puck on Steam's behalf as the log names it (#314): never the payload, which can hold the serial number.
+/// </summary>
+/// <param name="Message">The feature message it sends, or for a GET_REPORT the one it reads the answer to.</param>
+internal readonly record struct PuckCall(string What, byte Interface, byte ReportId, string? Message)
+{
+    public override string ToString() =>
+        $"{What} (Interface {Interface}, Report 0x{ReportId:X2}{(Message is null ? "" : $", {Message}")})";
 }
 
 /// <summary>

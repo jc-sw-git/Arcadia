@@ -31,8 +31,8 @@
   name) goes back to the list with that launcher focused. LT/RT (Q/E, a click on a neighbour in the head) turn to the
   launcher before or after it in the list's order, wrapping.
 - Groups "Allgemein": Aktiv, "Name im Tab", "Such-Kürzel", "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only
-  active and found); below them links from other categories, e.g. on Steam's page "Controller" →
-  "Controller-Einstellungen für Steam" (#169, `docs/product/settings.md`).
+  active and found); "Controller" (below). Steam's page no longer links to "Controller-Einstellungen für Steam" (#169
+  went with #178).
 - Name and keyword are written with the shared on-screen keyboard below the page (without ↹ and the edge key; the
   search's buttons, ≡/Enter take, B/Esc drop). A keyword's keyboard offers only the keys it may hold (lower-case
   letters and digits). A problem (keyword taken, too long) shows in red while typing; taken anyway, the old value
@@ -55,6 +55,23 @@
   launchable add-ons such as Unreal Editor for Fortnite), counted as Werkzeug; Epic's soundtracks (`digitaldownloads`)
   stay out.
 - "Neu einlesen" and "Launcher-Details" ("Einträge") show the library's count line (`docs/product/library.md`).
+
+## Steam Controller default (#178)
+
+- Every launcher's page, the same for each, has the group "Controller" with "Steam Controller" (◀ ▶ "Arcadia" /
+  "Steam-Eingabe", subtitle "Vorauswahl für die Spiele dieses Launchers"): the mode its games on "Standard" get
+  (designs T178Launcher/T178Spiel). Factory value: the launcher's own (`LauncherInfo.GamesUseSteamInput`: Steam
+  "Steam-Eingabe", all others "Arcadia"), stored only when it differs (`LauncherPreferences.UsesArcadiaPad`), so no
+  launcher is a special case. Per game: `docs/product/controls.md`.
+- Below it, indented and only while a game of the launcher's library has its own mode, "Alle Spiele auf die
+  Vorauswahl setzen" (pill "Zurücksetzen", subtitle "N Spiele haben einen eigenen Modus", the info panel lists them).
+  [A] asks ("Alle Spiele auf die Vorauswahl setzen?", [A] Zurücksetzen, [B] Abbrechen), then every game of the launcher
+  is on "Standard", also those no longer in the library, in one write; the row goes, the focus moves to "Steam
+  Controller", no toast.
+- Both rows change only while "Controller-Wächter (Pan)" is on (also without a Steam Controller connected); with Pan
+  off they are greyed out but focusable, subtitle "Aus – erst mit dem Controller-Wächter (Pan)" (where Pan can't run
+  yet, e.g. Linux: "Auf diesem System noch nicht verfügbar", as Pan's row), values kept. Also on an inactive or not
+  found launcher's page. A change applies at a game's next start; a running game keeps its mode.
 
 ## Steam account (#83)
 

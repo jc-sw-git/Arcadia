@@ -141,18 +141,6 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         Task.Run(() => _support.RefreshAsync()).Forget("Einstellungen aktualisieren");
     }
 
-    /// <summary>Steam's page points here too: Steam decides how the controllers behave outside its games (#169).</summary>
-    public override IReadOnlyList<SettingsLink> LauncherPageLinks => PanLinks;
-
-    private static readonly IReadOnlyList<SettingsLink> PanLinks =
-    [
-        new(KnownLaunchers.Steam.Id, "Controller-Einstellungen für Steam", "Controller-Wächter (Pan) und Steams Desktop-Belegung", PanRows.MainKey,
-        [
-            new InfoText("Was Steam mit deinen Controllern macht, stellst du unter Controller ein: ob Pan den Steam Controller vor Steam versteckt und Steam eine Kopie zeigt, damit er in jedem Spiel funktioniert, und ob Arcadia Steams Desktop-Belegung für alle Controller ignoriert."),
-            new InfoText("[A] springt dorthin, [B] kommt hierher zurück."),
-        ]),
-    ];
-
     public PromptButtonViewModel RetryInstallItem => _retryInstall;
 
     public PromptButtonViewModel CloseGamePromptItem => _closeGamePrompt;

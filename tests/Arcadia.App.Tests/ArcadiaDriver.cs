@@ -150,7 +150,7 @@ internal sealed class ArcadiaDriver : IDisposable
         _running = running;
         PanNotices = new PanNotices(Main.Toast, () => IsArcadiaInFront, OverlayNotices.Add);
         ControllerSupport.HidingCheck = Pan;
-        ForGames = SteamControllerForGames.Create(panSupported: true, XboxPads, Pan, wiring =>
+        ForGames = SteamControllerForGames.Create(panSupported: !arguments.PanUnsupported, XboxPads, Pan, wiring =>
         {
             CopyWiring = wiring;
             return SteamControllerCopy;
@@ -653,7 +653,8 @@ internal sealed class ArcadiaDriver : IDisposable
 }
 
 /// <summary>The command line's switches that change what Arcadia shows at the start: <c>--demo</c> and <c>--first-run</c>.</summary>
-internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false);
+/// <param name="PanUnsupported">Pan can't run on this system, as on Linux (#242).</param>
+internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false, bool PanUnsupported = false);
 
 /// <summary>
 /// A launcher of the test: <paramref name="Games"/> games of the demo library, or exactly <paramref name="Library"/> where

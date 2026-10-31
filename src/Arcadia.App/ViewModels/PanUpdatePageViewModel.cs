@@ -43,7 +43,9 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
     public const string UpdatingText = "Diese Arcadia-Version braucht eine neue Version von Pan, deinem Controller-Wächter.";
     public const string PromptHint = "Bitte bestätige die Windows-Abfrage. Sie lässt sich bisher nur mit Maus oder Tastatur beantworten.";
     public const string StoppingTitle = "Pan wird beendet";
-    public const string StoppingText = "Arcadia wartet, bis das alte Pan deine Controller freigegeben hat. Das dauert höchstens 45 Sekunden.";
+    public const string StoppingText = "Arcadia wartet, bis das alte Pan deine Controller freigegeben hat. Das dauert meist etwa 30\u00A0Sekunden.";
+    /// <summary>Above the countdown number: the text names the usual 30 s, the ring the upper bound (#340).</summary>
+    public const string CountdownCaption = "noch höchstens";
     public const string StuckTitle = "Controller freigeben";
     public const string StuckText = "Das alte Pan hat deine Controller nicht freigegeben. Controller oder Steam Puck sind für Spiele womöglich noch unsichtbar.";
     public const string RestoreHint = "Beim Wiederherstellen fragt Windows nach deiner Erlaubnis.";

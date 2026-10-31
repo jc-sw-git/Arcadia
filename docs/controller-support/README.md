@@ -28,7 +28,7 @@ this, is never started any more; Arcadia only removes it on request ([sisr-remov
 | Every controller through SDL3, the Steam Controller raw, emulated pads told apart | [sdl-gamepads.md](sdl-gamepads.md) |
 | The Steam Controller as an Xbox pad for games: VIIPER, combos, plugging in and out, per-game mode | [xbox-pad.md](xbox-pad.md) |
 | Steam's desktop layout and the mouse mode, what "Arcadia in front" means | [desktop-layout.md](desktop-layout.md) |
-| The puck as a USB device, what Steam sends it, what HidHide does (spike #239) | [emulated-steam-controller.md](emulated-steam-controller.md) |
+| The puck and the Triton by cable as USB devices, what Steam sends them, what HidHide does (spikes #239, #249) | [emulated-steam-controller.md](emulated-steam-controller.md) |
 | Steam gets a copy of the Steam Controller: lifecycle, consent, who gets input, the allow list | [steam-controller-copy.md](steam-controller-copy.md) |
 | The copy on Windows: VIIPER fork `hidproxy`, the raw puck, the bridge | [steam-controller-copy-windows.md](steam-controller-copy-windows.md) |
 | Pan, the guardian service: identity, generations, heartbeat, teardown, journal | [pan.md](pan.md) |

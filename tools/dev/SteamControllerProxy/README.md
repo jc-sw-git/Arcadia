@@ -16,7 +16,9 @@ GOOS=windows GOARCH=amd64 go build -trimpath -o steamproxy239.exe ./cmd/steampro
 go test ./cmd/steamproxy239                            # the platform-independent parts, on any OS
 ```
 
-Go 1.26 builds it after `go mod edit -go=1.26` (VIIPER asks for 1.27.2 but needs nothing newer).
+Go 1.26 builds it after `go mod edit -go=1.26 && go mod tidy` (VIIPER asks for 1.27.2 but needs nothing newer).
+`-device vid_28de&pid_1302` copies the Triton by cable instead (#249); a device with one interface has no `&mi_` in
+its HID paths and counts as interface 0.
 The patch keeps VIIPER from repeating the last input report when the real device sent none within `bInterval`.
 
 Inputs: `descriptors.json` with the real puck's descriptors, without serial number (the proxy reads that from the

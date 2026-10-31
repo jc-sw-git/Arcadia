@@ -94,6 +94,33 @@ public sealed class EveryControllerForGamesTests
         await pad.WaitForAsync(state => state.Buttons == Back);
     }
 
+    /// <summary>
+    /// T238-3 "with each pad": Back + Start from the second pad reach neither its game pad nor the first one (QE review of
+    /// #338). ⧉ held passes as held by the rule in docs/product/controls.md, so it isn't asserted here.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T238-3")]
+    public async Task Back_and_Start_never_reach_the_game_from_the_second_pad_either()
+    {
+        using var arcadia = await StartInBackgroundAsync(pads: [DualSense, KnownPads.EightBitDoUltimate2]);
+        var eightBitDo = arcadia.Sdl.IdOf(KnownPads.EightBitDoUltimate2);
+        var pad = arcadia.XboxPads.All[1];
+
+        arcadia.Sdl.Hold(eightBitDo, B.Back, B.Start);
+        for (var i = 0; i < 50; i++)
+        {
+            arcadia.PollControllers();
+        }
+
+        arcadia.Sdl.Hold(eightBitDo);
+        arcadia.PollControllers().PollControllers();
+        arcadia.Sdl.Hold(eightBitDo, B.South);
+        arcadia.PollControllers();
+        await pad.WaitForAsync(state => state.Buttons == A);
+        Assert.DoesNotContain(pad.Sent, state => (state.Buttons & (Back | Start)) != 0);
+        Assert.All(arcadia.XboxPads.All[0].Sent, state => Assert.Equal(XboxPadState.Neutral, state));
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T238-4")]
     public async Task With_Arcadia_in_front_or_the_mouse_mode_on_every_pad_rests()

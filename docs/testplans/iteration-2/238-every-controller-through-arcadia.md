@@ -46,4 +46,5 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T238-1, -3 to -7, -12 (fakes) | 2026-10-31 | Claude | branch `feat/emulate-every-controller-238` (part 1), Linux container, Avalonia headless, fake SDL, Pan and VIIPER | ✅ 7 acceptance tests, 14 `TakenOverControllersTests`; full suite green (Core 2156, Pan 279, App 466) | Mutation check: dropping the rejection check from "hidden" turns T238-7 and T238-12 red, dropping the D2 condition T238-6 |
+| T238-3, -4 (fakes), QE review | 2026-10-31 | Claude (QE) | branch `feat/emulate-every-controller-238` at 265c32e, Linux container, Avalonia headless, fakes | ✅ 8 acceptance tests incl. the new T238-3 test for the second pad; full suite green (Core 2156, App 466) | Red once: without `ComboWithholding` in `Feed` both T238-3 tests fail, without the rest while Arcadia is in front T238-4 fails |
 | real pads, Pan, VIIPER | – | – | – | not run: no Windows with pads in the cloud container | owner's test of part 1 |

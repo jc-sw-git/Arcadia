@@ -457,10 +457,31 @@ public sealed class ControllerSupportService(
     private bool _panUpdateDue;
 
     /// <summary>
-    /// Whether Arcadia may talk to the installed Pan: not to an old one the player didn't update (#326). Left without a
-    /// client, the old Pan undoes what it holds with its own code, whatever protocol it speaks, and ends itself.
+    /// Pan's <c>--install</c> runs, or ran and failed and Pan isn't switched off yet: <c>--install</c> stops the old
+    /// service and waits for it to end, so a client that reconnects would start it again and fail the update.
     /// </summary>
-    public bool MayTalkToPan => !IsPanUpdateDue || Settings.PanEnabled;
+    public bool IsPanUpdating
+    {
+        get => Volatile.Read(ref _panUpdating);
+        private set => Volatile.Write(ref _panUpdating, value);
+    }
+
+    private bool _panUpdating;
+
+    public const string PanUpdatingReason = "Pan wird aktualisiert – Arcadia verbindet sich erst danach wieder";
+    public const string OldPanOffReason = "Pan ist nicht aktualisiert und ausgeschaltet – Arcadia spricht nicht mit ihm";
+
+    /// <summary>
+    /// Why Arcadia doesn't talk to the installed Pan, null if it may. Not while the update runs (see
+    /// <see cref="IsPanUpdating"/>), and not to an old one the player didn't update (#326): left without a client, the
+    /// old Pan undoes what it holds with its own code, whatever protocol it speaks, and ends itself.
+    /// </summary>
+    public string? WhyPanIsLeftAlone =>
+        IsPanUpdating ? PanUpdatingReason
+        : IsPanUpdateDue && !Settings.PanEnabled ? OldPanOffReason
+        : null;
+
+    public bool MayTalkToPan => WhyPanIsLeftAlone is null;
 
     /// <summary>Why the last update of Pan failed, for the switch's info panel while it is due (#326); null after a decline.</summary>
     public string? PanUpdateError { get; private set; }
@@ -498,10 +519,14 @@ public sealed class ControllerSupportService(
 
     /// <summary>
     /// The update of Pan (#297, #326): only Pan, with one Windows prompt; no driver, no download, Steam may run.
-    /// False if the prompt was declined; throws when Pan failed or didn't answer in time (its log says why).
+    /// False if the prompt was declined; throws when Pan failed or didn't answer in time (its log says why). Arcadia
+    /// doesn't talk to Pan from the start of the update until it succeeded or, declined or failed, until
+    /// <see cref="SwitchPanOffForUpdate"/>: in between a reconnecting client would start the old Pan again.
     /// </summary>
     public async Task<bool> UpdatePanAsync(CancellationToken cancellationToken = default)
     {
+        IsPanUpdating = true;
+        OnChanged();
         if (!await WithTimeoutAsync(_platform.UpdatePanAsync, DriversInstallTimeout, "Die Aktualisierung von Pan", cancellationToken))
         {
             Log?.Invoke("Pan-Aktualisierung in der Windows-Abfrage abgelehnt");
@@ -509,6 +534,7 @@ public sealed class ControllerSupportService(
         }
 
         IsPanUpdateDue = false;
+        IsPanUpdating = false;
         PanUpdateError = null;
         _driversChecked = false;
         Log?.Invoke("Pan aktualisiert");
@@ -524,6 +550,8 @@ public sealed class ControllerSupportService(
     {
         PanUpdateError = error;
         UpdateSettings(settings => settings with { PanEnabled = false });
+        // Only now: with Pan off, the old Pan stays left alone (MayTalkToPan) once the update no longer holds it.
+        IsPanUpdating = false;
         Log?.Invoke(error is null ? "Pan nicht aktualisiert, Pan ist ausgeschaltet" : $"Pan-Aktualisierung fehlgeschlagen, Pan ist ausgeschaltet: {error}");
         OnChanged();
     }

@@ -13,6 +13,7 @@ public sealed class PanClientTests : IAsyncDisposable
 {
     // Real time, generous: on the CI runner these tests share the machine with Pan.Tests' `dotnet publish`.
     private static readonly TimeSpan Soon = TimeSpan.FromSeconds(30);
+    private const string LeftAlone = "Pan wird aktualisiert";
 
     private readonly FakeTimeProvider _time = new();
     private readonly List<string> _log = [];
@@ -113,7 +114,7 @@ public sealed class PanClientTests : IAsyncDisposable
     {
         // #326: an old Pan the player didn't update is left alone, so it gives everything back and ends itself.
         var wanted = true;
-        await using var client = new PanClient(_server, _time, Log) { RequestTimeout = TimeSpan.FromSeconds(10), Wanted = () => Volatile.Read(ref wanted) };
+        await using var client = new PanClient(_server, _time, Log) { RequestTimeout = TimeSpan.FromSeconds(10), WhyLeftAlone = () => Volatile.Read(ref wanted) ? null : LeftAlone };
         var lost = 0;
         client.Lost += _ => Interlocked.Increment(ref lost);
         client.Start();
@@ -121,7 +122,7 @@ public sealed class PanClientTests : IAsyncDisposable
 
         Volatile.Write(ref wanted, false);
         await AdvanceUntil(() => !client.IsConnected, "getrennt");
-        Assert.Equal(PanClient.LeftAlone, client.Unavailable());
+        Assert.Equal(LeftAlone, client.Unavailable());
         Assert.Equal(0, lost);
         for (var i = 0; i < 5; i++)
         {
@@ -138,13 +139,13 @@ public sealed class PanClientTests : IAsyncDisposable
     [Fact]
     public async Task Never_wanted_the_first_attempt_ends_without_reaching_Pan()
     {
-        await using var client = new PanClient(_server, _time, Log) { Wanted = () => false };
+        await using var client = new PanClient(_server, _time, Log) { WhyLeftAlone = () => LeftAlone };
         client.Start();
 
         await client.FirstAttempt.WaitAsync(Soon);
 
         Assert.False(client.IsConnected);
-        Assert.Equal(PanClient.LeftAlone, client.Unavailable());
+        Assert.Equal(LeftAlone, client.Unavailable());
     }
 
     [Fact]
@@ -709,7 +710,7 @@ public sealed class PanClientTests : IAsyncDisposable
     {
         public IReadOnlyList<string> PresentHidInstances() => [];
 
-        public Task RestartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task RestartAsync(IReadOnlyCollection<ListedDevice>? only, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public IReadOnlyList<string> PresentBootloaders() => [];
     }
@@ -723,7 +724,7 @@ public sealed class PanClientTests : IAsyncDisposable
 
         public IReadOnlyList<string> PresentBootloaders() => [];
 
-        public async Task RestartAsync(CancellationToken cancellationToken)
+        public async Task RestartAsync(IReadOnlyCollection<ListedDevice>? only, CancellationToken cancellationToken)
         {
             lock (events) events.Add("restart");
             if (Hold is { } hold)

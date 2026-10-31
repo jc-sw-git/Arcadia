@@ -1,26 +1,44 @@
 namespace Arcadia.Pan;
 
 /// <summary>
+/// One kind of Steam Controller device Pan hides: its HID instances, the USB device a restart restarts, and the part of
+/// a HID interface's symbolic link that names it, to pick its arrivals out cheaply.
+/// </summary>
+public sealed record ListedDevice(string Name, string HidPrefix, string UsbPrefix, string InterfaceMarker)
+{
+    public bool IsHid(string instanceId) => instanceId.StartsWith(HidPrefix, StringComparison.OrdinalIgnoreCase);
+
+    public bool IsUsbParent(string instanceId) => instanceId.StartsWith(UsbPrefix, StringComparison.OrdinalIgnoreCase);
+}
+
+/// <summary>
 /// The devices Pan may hide (#243 part B): only what Arcadia can emulate, found by Pan itself, never named in a
-/// message. For now the new Steam Controller's wireless puck <c>28DE:1304</c>, every HID instance of it. Other Valve
-/// devices (2015 controller, Triton by cable or Bluetooth, Steam Deck, Index) stay visible until verified (#248, #249).
-/// Arcadia's copy of the puck for Steam (#242) has the same ids, but sits on VIIPER's software USB host: it is never
+/// message. The new Steam Controller on its wireless puck <c>28DE:1304</c> and by cable <c>28DE:1302</c> (#345), every
+/// HID instance of each. Other Valve devices (2015 controller, Triton by Bluetooth, Steam Deck, Index) stay visible
+/// until verified (#248, #342).
+/// Arcadia's copy for Steam (#242) has the same ids, but sits on VIIPER's software USB host: it is never
 /// hidden nor restarted (<see cref="OnSoftwareHost"/>), or Steam would lose the very copy it is meant to use (#308).
 /// </summary>
 public static class HidingList
 {
-    /// <summary>Instance ids of the puck's HID collections start with this (all its interfaces and collections).</summary>
-    public const string PuckHidPrefix = @"HID\VID_28DE&PID_1304&";
+    /// <summary>The puck: a composite USB device, so its HID instances carry <c>&amp;MI_</c>; a restart restarts the composite parent.</summary>
+    public static readonly ListedDevice Puck = new("puck", @"HID\VID_28DE&PID_1304&", @"USB\VID_28DE&PID_1304\", "VID_28DE&PID_1304");
 
-    /// <summary>The puck as USB device (the composite parent, not one of its <c>&amp;MI_</c> interfaces): what a restart restarts.</summary>
-    public const string PuckUsbPrefix = @"USB\VID_28DE&PID_1304\";
+    /// <summary>The Steam Controller by cable (spike #249): one HID interface, so no <c>&amp;MI_</c>; three collections.</summary>
+    public static readonly ListedDevice Cable = new("cable", @"HID\VID_28DE&PID_1302&", @"USB\VID_28DE&PID_1302\", "VID_28DE&PID_1302");
 
-    /// <summary>The part of a HID interface's symbolic link that names the puck, to pick its arrivals out cheaply.</summary>
-    public const string PuckInterfaceMarker = "VID_28DE&PID_1304";
+    public static IReadOnlyList<ListedDevice> Devices { get; } = [Puck, Cable];
 
-    public static bool IsListedHid(string instanceId) => instanceId.StartsWith(PuckHidPrefix, StringComparison.OrdinalIgnoreCase);
+    public static bool IsListedHid(string instanceId) => DeviceOf(instanceId) is not null;
 
-    public static bool IsListedUsbParent(string instanceId) => instanceId.StartsWith(PuckUsbPrefix, StringComparison.OrdinalIgnoreCase);
+    public static bool IsListedUsbParent(string instanceId) => Devices.Any(device => device.IsUsbParent(instanceId));
+
+    /// <summary>Whether a HID interface's symbolic link names a listed device.</summary>
+    public static bool IsListedInterface(string symbolicLink) =>
+        Devices.Any(device => symbolicLink.Contains(device.InterfaceMarker, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The listed device a HID instance id belongs to, or null.</summary>
+    public static ListedDevice? DeviceOf(string hidInstanceId) => Devices.FirstOrDefault(device => device.IsHid(hidInstanceId));
 
     /// <summary>
     /// The bootloaders a Valve device restarts into to be flashed (#295): <c>28DE:1005</c> the Steam Controller by
@@ -128,7 +146,10 @@ public interface ISteamControllerDevices
     IReadOnlyList<string> PresentHidInstances();
 
     /// <summary>Restarts the listed USB devices, so Windows announces them again and open handles to them close.</summary>
-    Task RestartAsync(CancellationToken cancellationToken);
+    /// <param name="only">
+    /// Only these kinds (a cable that arrived while the puck's copy holds the puck, #345), or null for every listed device.
+    /// </param>
+    Task RestartAsync(IReadOnlyCollection<ListedDevice>? only, CancellationToken cancellationToken);
 
     /// <summary>The instance ids of the Valve bootloaders (<see cref="HidingList.IsBootloader"/>) connected now: a firmware update is being flashed.</summary>
     IReadOnlyList<string> PresentBootloaders();

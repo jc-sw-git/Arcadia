@@ -177,16 +177,17 @@ public sealed unsafe class HidHideDriver : IHidHideDriver
     }
 }
 
-/// <summary>The puck's devices through the plug and play manager; a restart is what <c>pnputil /restart-device</c> and devcon do.</summary>
+/// <summary>The Steam Controller's devices (puck and cable) through the plug and play manager; a restart is what <c>pnputil /restart-device</c> and devcon do.</summary>
 [SupportedOSPlatform("windows")]
 public sealed unsafe class PuckDevices : ISteamControllerDevices
 {
     public IReadOnlyList<string> PresentHidInstances() =>
         PresentDevices("HID").Where(id => HidingList.IsListedHid(id) && !HidingList.OnSoftwareHost(id, ParentOf)).ToList();
 
-    public Task RestartAsync(CancellationToken cancellationToken)
+    public Task RestartAsync(IReadOnlyCollection<ListedDevice>? only, CancellationToken cancellationToken)
     {
-        foreach (var device in PresentDevices("USB").Where(id => HidingList.IsListedUsbParent(id) && !HidingList.OnSoftwareHost(id, ParentOf)))
+        var kinds = only ?? HidingList.Devices;
+        foreach (var device in PresentDevices("USB").Where(id => kinds.Any(kind => kind.IsUsbParent(id)) && !HidingList.OnSoftwareHost(id, ParentOf)))
         {
             cancellationToken.ThrowIfCancellationRequested();
             Restart(device);
@@ -553,7 +554,7 @@ public sealed unsafe class DeviceArrivalWatch : IDisposable
             if (action == Native.CmNotifyActionDeviceInterfaceArrival && eventDataSize > Native.CmNotifyEventSymbolicLinkOffset + 2)
             {
                 var link = new string((char*)(eventData + Native.CmNotifyEventSymbolicLinkOffset));
-                if (link.Contains(HidingList.PuckInterfaceMarker, StringComparison.OrdinalIgnoreCase))
+                if (HidingList.IsListedInterface(link))
                 {
                     if (_puckArrived is { } puckArrived)
                     {

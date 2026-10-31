@@ -142,6 +142,12 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>Attaching the copy waits this long at most: a hanging attach would hold the gate and stop every tick.</summary>
     public static readonly TimeSpan AttachTimeout = TimeSpan.FromSeconds(10);
 
+    /// <summary>
+    /// After the copy followed the controller (#345), how long it waits for the new device to come back from Pan's
+    /// restart before it copies whatever is there (a cable unplugged right away, for instance).
+    /// </summary>
+    public static readonly TimeSpan FollowWait = TimeSpan.FromSeconds(10);
+
     /// <summary>Pan can run on this system at all (Windows).</summary>
     public bool Supported { get; init; } = true;
 
@@ -606,28 +612,54 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>False when the copy failed and the emulation ended with it.</summary>
     private async Task<bool> KeepCopyAsync(Session session, CancellationToken cancellationToken)
     {
+        if (session.Copy is { IsConnected: true } copied && _hold.Connected is { } now && now != copied.Connection)
+        {
+            // The controller was plugged in by cable after it was switched off on the puck (#345): the copy follows it.
+            session.Copy = null;
+            if (!await RemoveCopyAsync(session, copied) || !await FollowAsync(session, now, cancellationToken))
+            {
+                return false;
+            }
+        }
+
         if (session.Copy is { IsConnected: false } lost)
         {
             session.Copy = null;
-            if (!await DisposeQuietlyAsync(lost, "Kopie entfernen"))
+            if (!await RemoveCopyAsync(session, lost))
             {
-                // Its forwarding isn't confirmed stopped: no new copy beside it; Pan's teardown ends viiper.exe first.
-                session.LeftBehind = true;
-                await EndAsync(session, "Kopie lässt sich nicht sauber entfernen");
-                Failed(new(PanEmulationState.Paused, PanEmulationProblem.CopyFailed, Reason: "Kopie lässt sich nicht sauber entfernen"));
                 return false;
             }
 
-            if (_hold.PuckPresent)
+            // Asked after the removal, which makes the hold look again: the device that left may have taken the controller
+            // to the other one (the cable unplugged moves it to the puck, #345), which is no failure; with neither there,
+            // the copy comes back with the controller.
+            var connected = _hold.Connected;
+            if (connected == lost.Connection)
             {
                 _log("Pan-Emulation: Kopie für Steam verloren");
                 NoteFailure();
             }
+            else if (connected is { } other && !await FollowAsync(session, other, cancellationToken))
+            {
+                return false;
+            }
         }
 
-        if (session.Copy is not null || !_hold.PuckPresent)
+        if (session.Copy is not null || _hold.Connected is not { } connection)
         {
             return true;
+        }
+
+        if (session.Following is { } following)
+        {
+            if (connection != following.To && _time.GetElapsedTime(following.Since) < FollowWait)
+            {
+                // Pan's restart takes the new device away for a moment, and only the device left behind is listed meanwhile:
+                // a copy of that one now would be followed back again a tick later.
+                return true;
+            }
+
+            session.Following = null;
         }
 
         try
@@ -636,7 +668,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             using var attach = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
             try
             {
-                session.Copy = await _hold.AttachAsync(attach.Token);
+                session.Copy = await _hold.AttachAsync(connection, attach.Token);
             }
             catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
             {
@@ -654,6 +686,43 @@ public sealed class PanEmulation : IVirtualXboxPads
             Failed(new(PanEmulationState.Paused, PanEmulationProblem.CopyFailed, Reason: ex.Message));
             return false;
         }
+    }
+
+    /// <summary>False when a copy that failed to go ended the emulation (its forwarding isn't confirmed stopped).</summary>
+    private async Task<bool> RemoveCopyAsync(Session session, ISteamControllerCopy copy)
+    {
+        if (await DisposeQuietlyAsync(copy, "Kopie entfernen"))
+        {
+            return true;
+        }
+
+        // Its forwarding isn't confirmed stopped: no new copy beside it; Pan's teardown ends viiper.exe first.
+        session.LeftBehind = true;
+        await EndAsync(session, "Kopie lässt sich nicht sauber entfernen");
+        Failed(new(PanEmulationState.Paused, PanEmulationProblem.CopyFailed, Reason: "Kopie lässt sich nicht sauber entfernen"));
+        return false;
+    }
+
+    /// <summary>
+    /// The Steam Controller is now on the other device (#345). Before its copy attaches, Pan hides it once more, with
+    /// Arcadia letting go: Pan hides a device that arrives on its own, but the copy must not hold it open before Pan's
+    /// restart, or the restart is vetoed and Steam may keep a handle it opened in between. A hide refused ends the
+    /// emulation, so Steam has the real controller rather than a copy beside it. False then.
+    /// </summary>
+    private async Task<bool> FollowAsync(Session session, SteamControllerConnection now, CancellationToken cancellationToken)
+    {
+        _log($"Pan-Emulation: Steam Controller jetzt {(now == SteamControllerConnection.Cable ? "am Kabel" : "am Puck")}, die Kopie folgt");
+        var hidden = await WithPuckLetGoAsync(() => _guardian.HideAsync(session.Generation, cancellationToken));
+        if (hidden == PanReason.None)
+        {
+            session.Following = (now, _time.GetTimestamp());
+            return true;
+        }
+
+        _log($"Pan-Emulation {session.Generation}: Steam Controller nach dem Wechsel nicht versteckt ({hidden})");
+        await EndAsync(session, $"Steam Controller nach dem Wechsel nicht versteckt ({hidden})");
+        Failed(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, hidden, $"Verstecken nach dem Wechsel: {hidden}"));
+        return false;
     }
 
     private async Task EndIfRunningAsync(string why)
@@ -862,6 +931,9 @@ public sealed class PanEmulation : IVirtualXboxPads
         public PanReason PuckRejection { get; set; }
 
         public ISteamControllerCopy? Copy { get; set; }
+
+        /// <summary>The device the copy follows the controller to (#345), and since when; null when it isn't following.</summary>
+        public (SteamControllerConnection To, long Since)? Following { get; set; }
 
         public bool Ended { get; private set; }
 

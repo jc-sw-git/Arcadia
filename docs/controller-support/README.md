@@ -35,6 +35,7 @@ this, is never started any more; Arcadia only removes it on request ([sisr-remov
 | Pan hides the real puck with HidHide and shows it again | [pan-hiding.md](pan-hiding.md) |
 | Pan hides every other controller Arcadia takes over, per model | [pan-hiding-controllers.md](pan-hiding-controllers.md) |
 | Every other controller as an emulated pad for games: hide, plug, let go of SDL, kinds and their packets, D7/D8 lists, "Controller zuordnen" | [every-controller.md](every-controller.md) |
+| Latency of the emulated pads: 1 ms reads while pads get states for a game, sending on the reading thread, what `arcadia.log` measures (D9) | [pad-latency.md](pad-latency.md) |
 | Pan removes the stale device entries Arcadia's emulated devices leave in Windows | [pan-stale-devices.md](pan-stale-devices.md) |
 | Pan's puck restart: who may hold the puck, the copy is never restarted | [pan-puck-restart.md](pan-puck-restart.md) |
 | Pan: setup with one UAC prompt, uninstall, `--restore`, the data folder, exit codes | [pan-setup.md](pan-setup.md) |

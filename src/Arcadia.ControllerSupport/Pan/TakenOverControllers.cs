@@ -1,4 +1,3 @@
-using System.Threading.Channels;
 using Arcadia.Input;
 using Arcadia.Launchers;
 using Arcadia.Pan;
@@ -19,8 +18,9 @@ public sealed record ControllerWaitingForTool(string Name, ControllerModel Model
 /// the controller. A controller is emulated only while it is hidden, never both (D7).
 /// </summary>
 /// <remarks>
-/// <see cref="Feed"/> runs on the poll thread and hands each controller's newest state to its sender task through a
-/// one-slot channel, as <see cref="SteamControllerXboxPad"/> does. Hiding and plugging happen in <see cref="KeepAsync"/>,
+/// <see cref="Feed"/> runs on the gamepad source's reading thread, on every read (every 1 ms while pads get states, #238
+/// D9), and sends each controller's new state to its pad from there (<see cref="PadForwarder{TState}"/>), as
+/// <see cref="SteamControllerXboxPad"/> does; a VIIPER write that ends at once thus runs under <c>_lock</c>. Hiding and plugging happen in <see cref="KeepAsync"/>,
 /// which <see cref="PanEmulation"/> calls under its gate each tick its emulation runs.
 /// </remarks>
 public sealed class TakenOverControllers
@@ -47,8 +47,6 @@ public sealed class TakenOverControllers
     /// <summary>Pan's heartbeat while SDL is let go: no poll pulses then, and a hide with its restart takes seconds.</summary>
     private static readonly TimeSpan PulseWhileLetGo = TimeSpan.FromMilliseconds(250);
 
-    private static readonly TimeSpan SendTimeout = TimeSpan.FromSeconds(1);
-
     private readonly TimeProvider _time;
     private readonly Action<string> _log;
     private readonly Lock _lock = new();
@@ -66,6 +64,7 @@ public sealed class TakenOverControllers
     private IReadOnlyList<ControllerWaitingForTool> _waiting = [];
     private IReadOnlyList<ConnectedModel> _connected = [];
     private bool _connectedChanged;
+    private bool _forwarding;
 
     public TakenOverControllers(TimeProvider time, Action<string> log)
     {
@@ -87,6 +86,12 @@ public sealed class TakenOverControllers
 
     /// <summary>Pan's heartbeat (<see cref="IEmulationGuardian.Pulse"/>), kept up while the controllers are let go.</summary>
     public Action Pulse { get; init; } = () => { };
+
+    /// <summary>
+    /// Called on the reading thread when it changes: true while a plugged pad gets the controller's states (not resting
+    /// for Arcadia in front or the mouse mode), so the source reads every millisecond only then (<see cref="FastReads"/>).
+    /// </summary>
+    public Action<bool> Forwarding { get; init; } = _ => { };
 
     /// <summary>A game set a pad's motors: the controller with this <see cref="GamepadReading.PadId"/> rumbles so (0, 0 stops).</summary>
     public Action<int, XboxRumble> Rumble { get; init; } = (_, _) => { };
@@ -151,12 +156,14 @@ public sealed class TakenOverControllers
 
     private static ControllerModel Model(GamepadReading reading) => new(reading.Device.Vendor, reading.Device.Product);
 
-    /// <summary>Every poll of the gamepad source, on its thread. Never throws.</summary>
+    /// <summary>Every read of the gamepad source (<see cref="IGamepadSource.Sampled"/>), on its thread. Never throws.</summary>
     public void Feed(IReadOnlyList<GamepadReading> pads)
     {
         var allowed = ForwardingAllowed();
         var combos = Combos();
-        List<(int PadId, XboxRumble? Motors, PadLight? Light)> feedbackAgain = [];
+        // Made only when needed: this runs every millisecond while pads get states.
+        List<(int PadId, XboxRumble? Motors, PadLight? Light)>? feedbackAgain = null;
+        var forwarding = false;
         lock (_lock)
         {
             foreach (var controller in _controllers)
@@ -180,7 +187,7 @@ public sealed class TakenOverControllers
                 {
                     // SDL started again (a let-go for Pan's hide) and its new handle neither rumbles nor keeps the
                     // light bar: a game that set them once would otherwise lose them until it changes them.
-                    feedbackAgain.Add((reading.PadId, controller.Rumbling, controller.Lit));
+                    (feedbackAgain ??= []).Add((reading.PadId, controller.Rumbling, controller.Lit));
                 }
 
                 controller.PadId = reading.PadId;
@@ -188,6 +195,7 @@ public sealed class TakenOverControllers
                 // Filtered on every poll, also while nothing is forwarded, so a combo begun in Arcadia stays Arcadia's.
                 var buttons = controller.Withholding.Filter(reading.Buttons, combos);
                 controller.Offer(allowed ? VirtualPadState.From(reading, buttons) : VirtualPadState.Neutral, _time.GetTimestamp());
+                forwarding |= allowed && controller.Pad is not null;
             }
 
             if (_rereadAt == long.MinValue || _time.GetElapsedTime(_rereadAt) >= RereadGrace)
@@ -203,7 +211,8 @@ public sealed class TakenOverControllers
         }
 
         PublishConnected();
-        foreach (var (padId, motors, light) in feedbackAgain)
+        NoteForwarding(forwarding);
+        foreach (var (padId, motors, light) in feedbackAgain ?? [])
         {
             if (motors is { } rumbling)
             {
@@ -214,6 +223,15 @@ public sealed class TakenOverControllers
             {
                 Light(padId, lit);
             }
+        }
+    }
+
+    private void NoteForwarding(bool forwarding)
+    {
+        if (forwarding != _forwarding)
+        {
+            _forwarding = forwarding;
+            Forwarding(forwarding);
         }
     }
 
@@ -229,6 +247,7 @@ public sealed class TakenOverControllers
         }
 
         PublishConnected();
+        NoteForwarding(false);
     }
 
     /// <summary>
@@ -293,18 +312,6 @@ public sealed class TakenOverControllers
         }
     }
 
-    /// <summary>Arcadia exits: the sender tasks end (the pads go with the emulation).</summary>
-    public void Shutdown()
-    {
-        lock (_lock)
-        {
-            foreach (var controller in _controllers.Concat(_gone))
-            {
-                controller.Complete();
-            }
-        }
-    }
-
     private Controller? Find(string key)
     {
         foreach (var controller in _controllers)
@@ -339,7 +346,7 @@ public sealed class TakenOverControllers
     {
         var model = Model(reading);
         var defaultKind = PadKinds.Default(reading.Device);
-        var controller = new Controller(key, model, reading.Device.DisplayName, defaultKind, _nextOrder++, _time, OwnPads)
+        var controller = new Controller(key, model, reading.Device.DisplayName, defaultKind, _nextOrder++, _time, OwnPads, _log)
         {
             Kind = ControllerLayouts.KindFor(LayoutOf(model), defaultKind),
         };
@@ -374,7 +381,6 @@ public sealed class TakenOverControllers
 
         foreach (var controller in gone)
         {
-            controller.Complete();
             await UnplugAsync(controller, "getrennt");
         }
     }
@@ -684,7 +690,7 @@ public sealed class TakenOverControllers
             _log($"Controller für Spiele: Abstecken fehlgeschlagen: {ex.Message}");
         }
 
-        _log($"Controller für Spiele: {PadKinds.DisplayName(pad.Kind)} für \"{controller.Name}\" abgesteckt ({why}); {controller.Delays}");
+        _log($"Controller für Spiele: {PadKinds.DisplayName(pad.Kind)} für \"{controller.Name}\" abgesteckt ({why}); Verzögerung Lesen → VIIPER {controller.Delays.Summary()}");
     }
 
     /// <summary>Motion sensors on while a plugged pad carries motion; only changes are passed on.</summary>
@@ -819,14 +825,13 @@ public sealed class TakenOverControllers
     }
 
     /// <summary>One connected controller and its pad.</summary>
-    private sealed class Controller(string key, ControllerModel model, string name, PadKind defaultKind, long order, TimeProvider time, OwnPadModels ownPads)
+    private sealed class Controller(string key, ControllerModel model, string name, PadKind defaultKind, long order, TimeProvider time, OwnPadModels ownPads, Action<string> log)
     {
-        private readonly Channel<(VirtualPadState State, long PolledAt)> _states =
-            Channel.CreateBounded<(VirtualPadState, long)>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
+        private readonly PadForwarder<VirtualPadState> _forwarder = new(
+            time, delays => log($"Controller für Spiele: \"{name}\": Verzögerung Lesen → VIIPER {delays}"));
 
         private VirtualPadState _lastOffered;
         private volatile IVirtualPad? _pad;
-        private Task? _sender;
         private volatile int _padId;
         private readonly Lock _rumbleLock = new();
         private XboxRumble? _rumbling;
@@ -859,10 +864,11 @@ public sealed class TakenOverControllers
 
         public IVirtualPad? Pad => _pad;
 
-        public DelayStats Delays;
+        /// <summary>From a read to VIIPER having taken the state, since the pad was plugged (D9).</summary>
+        public LatencyStats Delays => _forwarder.Delays;
 
         /// <summary>Under the owner's lock: only changes go to the pad, VIIPER keeps the last state.</summary>
-        public void Offer(VirtualPadState state, long polledAt)
+        public void Offer(VirtualPadState state, long readAt)
         {
             if (Kind == PadKind.Xbox360)
             {
@@ -876,7 +882,7 @@ public sealed class TakenOverControllers
             }
 
             _lastOffered = state;
-            _states.Writer.TryWrite((state, polledAt));
+            _forwarder.Send(state, readAt);
         }
 
         /// <summary>The motors the game set last, while not (0, 0); read on the poll thread, set on VIIPER's.</summary>
@@ -895,7 +901,6 @@ public sealed class TakenOverControllers
 
         public void Plug(IVirtualPad pad, Action<int, XboxRumble> rumble, Action<int, PadLight> light)
         {
-            Delays = default;
             Rumbling = null;
             Lit = null;
             pad.Fed += feedback =>
@@ -913,16 +918,14 @@ public sealed class TakenOverControllers
                 }
             };
             _pad = pad;
-            _sender ??= Task.Run(SendLoopAsync, CancellationToken.None);
-
-            // What the controller holds right now, since the pad missed it.
-            _states.Writer.TryWrite((_lastOffered, time.GetTimestamp()));
+            _forwarder.Plug((state, cancellationToken) => pad.IsConnected ? pad.SendAsync(state, cancellationToken) : Task.CompletedTask);
         }
 
         public IVirtualPad? TakePad()
         {
             Rumbling = null;
             Lit = null;
+            _forwarder.Unplug();
             var pad = Interlocked.Exchange(ref _pad, null);
             if (pad is not null)
             {
@@ -935,54 +938,11 @@ public sealed class TakenOverControllers
         /// <summary>The emulation took the pad out itself.</summary>
         public void ForgetPad()
         {
+            _forwarder.Unplug();
             if (Interlocked.Exchange(ref _pad, null) is { } pad)
             {
                 ownPads.Unplugged(pad.Kind);
             }
         }
-
-        public void Complete() => _states.Writer.TryComplete();
-
-        private async Task SendLoopAsync()
-        {
-            await foreach (var (state, polledAt) in _states.Reader.ReadAllAsync())
-            {
-                if (_pad is not { IsConnected: true } pad)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    // A write that hangs counts as a lost pad, like one that fails; the next tick plugs a new one in.
-                    using var timeout = new CancellationTokenSource(SendTimeout);
-                    await pad.SendAsync(state, timeout.Token);
-                    Delays.Add(time.GetElapsedTime(polledAt));
-                }
-                catch (Exception)
-                {
-                    // The pad reports itself lost now.
-                }
-            }
-        }
-    }
-
-    /// <summary>From a poll to the state being with VIIPER.</summary>
-    private struct DelayStats
-    {
-        private int _count;
-        private double _sumMs;
-        private double _maxMs;
-
-        public void Add(TimeSpan delay)
-        {
-            _count++;
-            _sumMs += delay.TotalMilliseconds;
-            _maxMs = Math.Max(_maxMs, delay.TotalMilliseconds);
-        }
-
-        public override readonly string ToString() => _count == 0
-            ? "nichts gesendet"
-            : $"{_count} Zustände gesendet, Verzögerung im Mittel {_sumMs / _count:0.0} ms, höchstens {_maxMs:0.0} ms";
     }
 }

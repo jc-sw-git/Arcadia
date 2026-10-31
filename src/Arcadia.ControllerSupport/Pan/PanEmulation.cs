@@ -142,6 +142,12 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>Attaching the copy waits this long at most: a hanging attach would hold the gate and stop every tick.</summary>
     public static readonly TimeSpan AttachTimeout = TimeSpan.FromSeconds(10);
 
+    /// <summary>
+    /// After the copy followed the controller (#345), how long it waits for the new device to come back from Pan's
+    /// restart before it copies whatever is there (a cable unplugged right away, for instance).
+    /// </summary>
+    public static readonly TimeSpan FollowWait = TimeSpan.FromSeconds(10);
+
     /// <summary>Pan can run on this system at all (Windows).</summary>
     public bool Supported { get; init; } = true;
 
@@ -640,9 +646,21 @@ public sealed class PanEmulation : IVirtualXboxPads
             }
         }
 
-        if (session.Copy is not null || _hold.Connected is null)
+        if (session.Copy is not null || _hold.Connected is not { } connection)
         {
             return true;
+        }
+
+        if (session.Following is { } following)
+        {
+            if (connection != following.To && _time.GetElapsedTime(following.Since) < FollowWait)
+            {
+                // Pan's restart takes the new device away for a moment, and only the device left behind is listed meanwhile:
+                // a copy of that one now would be followed back again a tick later.
+                return true;
+            }
+
+            session.Following = null;
         }
 
         try
@@ -651,7 +669,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             using var attach = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
             try
             {
-                session.Copy = await _hold.AttachAsync(attach.Token);
+                session.Copy = await _hold.AttachAsync(connection, attach.Token);
             }
             catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
             {
@@ -698,6 +716,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         var hidden = await WithPuckLetGoAsync(() => _guardian.HideAsync(session.Generation, cancellationToken));
         if (hidden == PanReason.None)
         {
+            session.Following = (now, _time.GetTimestamp());
             return true;
         }
 
@@ -913,6 +932,9 @@ public sealed class PanEmulation : IVirtualXboxPads
         public PanReason PuckRejection { get; set; }
 
         public ISteamControllerCopy? Copy { get; set; }
+
+        /// <summary>The device the copy follows the controller to (#345), and since when; null when it isn't following.</summary>
+        public (SteamControllerConnection To, long Since)? Following { get; set; }
 
         public bool Ended { get; private set; }
 

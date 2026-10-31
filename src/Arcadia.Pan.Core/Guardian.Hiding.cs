@@ -416,11 +416,11 @@ public sealed partial class Guardian
 
             var before = (Hidden: _journal.HiddenDevices.ToList(), Controllers: _journal.HiddenControllers.ToList(), Restarts: _journal.ControllerRestarts.ToList(),
                 Allowed: _journal.AllowListed.ToList(), _journal.CloakingWasOn, _journal.PuckRestartPending);
-            var restartOnlyBefore = _restartOnly;
+            HashSet<ListedDevice>? restartOnlyBefore = _restartOnly is null ? null : [.. _restartOnly];
             if (controllerRestarts is null)
             {
                 _journal.HiddenDevices.AddRange(toHide);
-                NarrowPendingRestart(toHide, allLevels: turnOn || allow is not null);
+                NarrowPendingRestart(toHide, allDevices: turnOn);
             }
             else
             {
@@ -626,12 +626,12 @@ public sealed partial class Guardian
 
     /// <summary>
     /// Under the lock: a restart is pending for the devices of <paramref name="added"/>, or for every listed device when
-    /// <paramref name="allLevels"/> (cloaking or the allow list changed, which concerns every device) or a restart for
-    /// all was pending already.
+    /// <paramref name="allDevices"/> (cloaking turned on, which concerns every device) or a restart for all was pending
+    /// already. An allow-list entry alone restarts nothing, as before #345.
     /// </summary>
-    private void NarrowPendingRestart(IReadOnlyList<string> added, bool allLevels)
+    private void NarrowPendingRestart(IReadOnlyList<string> added, bool allDevices)
     {
-        if (allLevels)
+        if (allDevices)
         {
             _journal.PuckRestartPending = true;
             _restartOnly = null;

@@ -156,4 +156,51 @@ public sealed class SteamControllerByCableTests
         Assert.Contains("Kopie für Steam verloren", Log());
         Assert.Equal(2, _copy.Attached);
     }
+
+    [Fact]
+    public async Task While_Pan_restarts_the_cable_the_copy_waits_for_it_rather_than_copying_the_empty_puck()
+    {
+        await _emulation.TickAsync();
+        _copy.Connected = SteamControllerConnection.Cable;
+        // Pan's restart takes the cable away for a moment: only the puck is listed meanwhile.
+        _pan.PuckRestart = () =>
+        {
+            _copy.Connected = SteamControllerConnection.Puck;
+            return PanReason.None;
+        };
+
+        await _emulation.TickAsync();
+        _pan.PuckRestart = null;
+        await _emulation.TickAsync();
+
+        Assert.Equal(1, _copy.Attached);
+        Assert.Equal(1, _copy.Detached);
+
+        _copy.Connected = SteamControllerConnection.Cable;
+        await _emulation.TickAsync();
+
+        Assert.Equal(2, _copy.Attached);
+        Assert.Equal(SteamControllerConnection.Cable, _copy.Current!.Connection);
+        Assert.Single(_log, line => line.Contains("die Kopie folgt", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_device_that_doesnt_come_back_is_given_up_after_the_wait()
+    {
+        await _emulation.TickAsync();
+        _copy.Connected = SteamControllerConnection.Cable;
+        _pan.PuckRestart = () =>
+        {
+            _copy.Connected = SteamControllerConnection.Puck;
+            return PanReason.None;
+        };
+        await _emulation.TickAsync();
+        _pan.PuckRestart = null;
+
+        _time.Advance(PanEmulation.FollowWait);
+        await _emulation.TickAsync();
+
+        Assert.Equal(2, _copy.Attached);
+        Assert.Equal(SteamControllerConnection.Puck, _copy.Current!.Connection);
+    }
 }

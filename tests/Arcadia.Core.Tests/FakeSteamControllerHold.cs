@@ -40,7 +40,7 @@ public sealed class FakeSteamControllerHold : ISteamControllerHold
     /// <summary>Attaching never finishes until it is cancelled (a hanging VIIPER).</summary>
     public bool HangAttach;
 
-    public async Task<ISteamControllerCopy> AttachAsync(CancellationToken cancellationToken)
+    public async Task<ISteamControllerCopy> AttachAsync(SteamControllerConnection wanted, CancellationToken cancellationToken)
     {
         if (FailAttach is { } failure)
         {
@@ -52,9 +52,9 @@ public sealed class FakeSteamControllerHold : ISteamControllerHold
             await Task.Delay(Timeout.Infinite, cancellationToken);
         }
 
-        if (Connected is not { } connection)
+        if (Connected is not { } connection || connection != wanted)
         {
-            throw new InvalidOperationException("no Steam Controller connected");
+            throw new InvalidOperationException($"no Steam Controller connected by {wanted}");
         }
 
         Attached++;

@@ -41,11 +41,8 @@ public sealed class ViiperSteamControllerCopy(ViiperXboxPads viiper, ViiperInsta
         }
     }
 
-    public async Task<ISteamControllerCopy> AttachAsync(CancellationToken cancellationToken)
+    public async Task<ISteamControllerCopy> AttachAsync(SteamControllerConnection connection, CancellationToken cancellationToken)
     {
-        // Asked afresh: the cached answer may be a second old, and the controller may just have changed devices.
-        var connection = await Task.Run(WindowsPuck.Present, cancellationToken)
-            ?? throw new InvalidOperationException("Kein Steam Controller angeschlossen, weder am Puck noch am Kabel");
         var descriptors = PuckDescriptors.Of(connection);
         var puck = await Task.Run(() => WindowsPuck.Open(descriptors), cancellationToken);
         if (puck.PucksFound > 1)

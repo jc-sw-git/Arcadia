@@ -156,4 +156,17 @@ public sealed class CableHidingTests : IDisposable
         Assert.Empty(_hidHide.Hidden);
         Assert.Empty(_devices.RestartScopes);
     }
+
+    [Fact]
+    public async Task An_allow_list_entry_added_again_alone_restarts_nothing()
+    {
+        var generation = await HiddenAsync();
+        var restarts = _devices.RestartScopes.Count;
+        _hidHide.Allowed.Clear();
+
+        Assert.Equal(PanReply.Hidden, (await Send(PanCommand.Hide, generation)).Reply);
+
+        Assert.Contains(ArcadiaImage, _hidHide.Allowed);
+        Assert.Equal(restarts, _devices.RestartScopes.Count);
+    }
 }

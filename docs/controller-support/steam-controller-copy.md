@@ -17,8 +17,9 @@ the App passes `NoSteamControllerCopy` (`CanCopy` false): Pan hides nothing and 
   only one plugged in switched off is `1302`. When the controller changes devices (cable unplugged: it goes to the
   puck; switched off and plugged in by cable) the copy follows: the old copy goes, Pan hides once more with Arcadia
   letting go (so the new device is restarted before the copy opens it), then the new copy attaches. A move is no
-  copy failure; a hide refused then ends the emulation, so Steam gets the real controller. The puck stays hidden
-  while the cable is copied.
+  copy failure; a hide refused then ends the emulation, so Steam gets the real controller. For up to 10 s
+  (`FollowWait`) only the new device is copied, as Pan's restart takes it away for a moment. The puck stays hidden
+  while the cable is copied, so a second controller on the puck is hidden without a copy (two controllers: #342).
 - No hiding, no emulation: a hide that fails leaves the controller as it is and is tried again after 10 s; a copy
   that doesn't attach ends the emulation, so Pan shows the puck again. `HideAsync` waits up to 25 s (the puck
   restarts, ~2.5 s) and can't be cancelled once sent: a half-done hide would leave the puck hidden with nothing in

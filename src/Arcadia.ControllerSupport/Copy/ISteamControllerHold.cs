@@ -22,10 +22,10 @@ public interface ISteamControllerHold
     SteamControllerConnection? Connected { get; }
 
     /// <summary>
-    /// Attaches the copy of the device <see cref="Connected"/> names; throws when that fails. The copy goes when it is
-    /// disposed.
+    /// Attaches the copy of <paramref name="connection"/> (as <see cref="Connected"/> named it); throws when that fails,
+    /// also when that device is gone meanwhile. The copy goes when it is disposed.
     /// </summary>
-    Task<ISteamControllerCopy> AttachAsync(CancellationToken cancellationToken);
+    Task<ISteamControllerCopy> AttachAsync(SteamControllerConnection connection, CancellationToken cancellationToken);
 }
 
 /// <summary>One attached copy; disposing it detaches it, after which nothing forwards to the real puck any more.</summary>
@@ -45,6 +45,6 @@ public sealed class NoSteamControllerCopy : ISteamControllerHold
 
     public SteamControllerConnection? Connected => null;
 
-    public Task<ISteamControllerCopy> AttachAsync(CancellationToken cancellationToken) =>
+    public Task<ISteamControllerCopy> AttachAsync(SteamControllerConnection connection, CancellationToken cancellationToken) =>
         throw new NotSupportedException("Diese Arcadia-Version kann den Steam Controller noch nicht für Steam kopieren");
 }

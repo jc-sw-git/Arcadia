@@ -408,6 +408,30 @@ public sealed class PanUpdateAtStartTests
         Assert.Equal(2, quit);
     }
 
+    [AvaloniaTheory]
+    [Trait("TestCase", "T354-1")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task While_the_update_runs_Arcadia_leaves_Pan_alone_and_after_it_talks_only_to_the_new_one(bool succeeds)
+    {
+        // #354: --install stops the old service and waits for it; a reconnecting client restarted it and the update failed.
+        var prompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var steam = OldPan();
+        steam.PanPromptUp = prompt;
+        steam.PanUpdateError = succeeds ? null : "Pan --install meldete Fehler 3 – Details stehen in pan.log.";
+        using var arcadia = await StartAsync(steam);
+        await arcadia.PanAnsweredAtStartAsync();
+        Assert.True(arcadia.ControllerSupport.MayTalkToPan, "before [A] Pan's first hello still goes through");
+
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => steam.PanUpdates == 1, "die Windows-Abfrage der Aktualisierung");
+        Assert.Equal(ControllerSupportService.PanUpdatingReason, arcadia.ControllerSupport.WhyPanIsLeftAlone);
+
+        prompt.SetResult();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate?.State != PanUpdateState.Updating, "das Ende der Aktualisierung");
+        Assert.Equal(succeeds ? null : ControllerSupportService.OldPanOffReason, arcadia.ControllerSupport.WhyPanIsLeftAlone);
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T326-8")]
     public async Task While_a_prompt_is_up_no_press_quits_starts_a_second_update_or_reaches_the_library()

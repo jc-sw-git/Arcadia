@@ -265,4 +265,35 @@ public sealed class EveryControllerForGamesTests
         Assert.Contains("1 054C:0CE6", arcadia.Pan.ControllerHides);
         await steamControllerPad.WaitForAsync(state => state == XboxPadState.Neutral);
     }
+
+    /// <summary>
+    /// #315 for every controller: Steam sees a DualSense only through Arcadia's pad, so with Steam's desktop control
+    /// allowed the pad passes in front of Arcadia and in the mouse mode, Back + Start included (Steam's action set switch).
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T238-4")]
+    public async Task With_Steams_desktop_control_allowed_the_pads_pass_to_Steam_in_front_of_Arcadia_and_in_the_mouse_mode()
+    {
+        using var arcadia = await StartInBackgroundAsync(pads: DualSense);
+        arcadia.Settings.Update(settings => settings with { IgnoreSteamDesktopLayout = false });
+        var dualSense = arcadia.Sdl.IdOf(DualSense);
+        var pad = arcadia.XboxPads.Current!;
+
+        arcadia.IsArcadiaInFront = true;
+        arcadia.Sdl.Hold(dualSense, B.South);
+        arcadia.PollControllers();
+        await pad.WaitForAsync(state => state.Buttons == A);
+
+        arcadia.Sdl.Hold(dualSense);
+        arcadia.PollControllers();
+        arcadia.IsArcadiaInFront = false;
+        arcadia.IsMouseModeOn = true;
+        arcadia.Sdl.Hold(dualSense, B.Back, B.Start);
+        for (var i = 0; i < 20; i++)
+        {
+            arcadia.PollControllers();
+        }
+
+        await pad.WaitForAsync(state => state.Buttons == (Back | Start));
+    }
 }

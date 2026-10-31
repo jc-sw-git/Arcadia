@@ -49,7 +49,8 @@
   in #238's later parts), one per controller, in the order they connected. The same rules as for the Steam Controller
   below: Back + Start never reaches the game, ⧉ and ≡ alone a little later (held, as held), rest while Arcadia is in
   front or the mouse mode is on. Unlike the Steam Controller's pad, they also pass while Steam itself is in front: Steam sees
-  only them. Guide/PS/Home passes on (Steam's overlay, the Game Bar); a game's rumble reaches the real controller.
+  only them. With "Steams Desktop-Steuerung zulassen" on they pass in front of Arcadia and in the mouse mode too, ⧉ + ≡
+  included, as the copy does (`mouse-mode.md`). Guide/PS/Home passes on (Steam's overlay, the Game Bar); a game's rumble reaches the real controller.
 - Never both: a controller Pan can't hide reaches games directly and isn't emulated (the settings list it, see
   `settings.md`). An XInput pad (an Xbox pad, 8BitDo in XInput mode) is hidden at once from programs that open it later,
   but Steam and a running game keep the real one until it is reconnected; it is emulated only from then on.

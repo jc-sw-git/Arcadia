@@ -89,11 +89,16 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             () => settings.Current.IgnoreSteamDesktopLayout,
             Services.AppLog.Write);
         var hold = copy(new SteamControllerCopyWiring(filter, gate.Passes, copyCombos.Current));
+        var othersForSteam = new CombosFromSettings(settings, toSteam: true);
+        var othersForGames = new CombosFromSettings(settings, toSteam: false);
         var others = new TakenOverControllers(time, Services.AppLog.Write)
         {
             // Unlike the Steam Controller's pad, also while Steam is in front: Steam sees only these pads now.
-            ForwardingAllowed = () => !isArcadiaActive() && !isMouseModeOn(),
-            Combos = new CombosFromSettings(settings, toSteam: false).Current,
+            ForwardingAllowed = () => SteamControllerCopyRules.OtherControllerPasses(
+                new ForegroundNow(isArcadiaActive(), isMouseModeOn(), SteamInFront: false), settings.Current.IgnoreSteamDesktopLayout),
+            Combos = () => SteamControllerCopyRules.OtherControllerOnlyForSteam(new ForegroundNow(isArcadiaActive(), isMouseModeOn(), SteamInFront: false))
+                ? othersForSteam.Current()
+                : othersForGames.Current(),
             ReadControllers = on =>
             {
                 gamepad.ReadControllers(on);

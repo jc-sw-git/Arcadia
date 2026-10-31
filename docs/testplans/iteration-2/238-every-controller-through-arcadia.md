@@ -18,8 +18,9 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
 - [ ] **T238-3** Back + Start with each pad in a running game: Arcadia reacts, the game's input log never shows it; a
       short ⧉ reaches the game as a tap; ⧉ held brings Arcadia back and the game sees ⧉ held (after 100 ms).
       · E2E: yes (`EveryControllerForGamesTests`)
-- [ ] **T238-4** Arcadia in front, then the mouse mode on: the game reads rest from every pad. · E2E: yes
-      (`EveryControllerForGamesTests`)
+- [ ] **T238-4** Arcadia in front, then the mouse mode on: the game reads rest from every pad. With "Steams
+      Desktop-Steuerung zulassen" on, Steam's desktop layout works with the DualSense in front of Arcadia and in the
+      mouse mode, ⧉ + ≡ switches Steam's action set. · E2E: yes (`EveryControllerForGamesTests`)
 - [ ] **T238-5** Rumble in a game reaches DualSense, 8BitDo and Steam Controller and stops with the game's rumble; Guide /
       PS opens Steam's overlay or the Game Bar. Touchpad, gyro and adaptive triggers: part 2. · E2E: no (real
       hardware); the path from the pad's output to SDL with fakes in `EveryControllerForGamesTests`
@@ -49,4 +50,5 @@ History:
 | T238-1, -3 to -7, -12 (fakes) | 2026-10-31 | Claude | branch `feat/emulate-every-controller-238` (part 1), Linux container, Avalonia headless, fake SDL, Pan and VIIPER | ✅ 7 acceptance tests, 14 `TakenOverControllersTests`; full suite green (Core 2156, Pan 279, App 466) | Mutation check: dropping the rejection check from "hidden" turns T238-7 and T238-12 red, dropping the D2 condition T238-6 |
 | T238-3, -4 (fakes), QE review | 2026-10-31 | Claude (QE) | branch `feat/emulate-every-controller-238` at 265c32e, Linux container, Avalonia headless, fakes | ✅ 8 acceptance tests incl. the new T238-3 test for the second pad; full suite green (Core 2156, App 466) | Red once: without `ComboWithholding` in `Feed` both T238-3 tests fail, without the rest while Arcadia is in front T238-4 fails |
 | QE findings 1–3 | 2026-10-31 | Claude | branch `feat/emulate-every-controller-238` after 0b406a3, Linux container; QE's probe `checks/338/` with Viiper.Client 0.9.0 over loopback | ✅ with the read's token cancelled `DisposeAsync` returns (without: hangs); new tests for the firmware tool retry and the Steam Controller's pad at rest, each red once without its fix | – |
+| T238-4 with desktop control (fakes) | 2026-10-31 | Claude | branch `feat/emulate-every-controller-238` after the merge of `feat/replace-sisr` (#315), Linux container, Avalonia headless, fakes | ✅ new acceptance test; red once each without the pass rule and without Steam's combos | – |
 | real pads, Pan, VIIPER | – | – | – | not run: no Windows with pads in the cloud container | owner's test of part 1 |

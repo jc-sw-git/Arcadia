@@ -28,8 +28,10 @@ controllers taken over. Product rules: `docs/product/controls.md`, the settings 
 - The poll thread feeds `Feed`: per controller a one-slot channel (the newest state wins) and a sender with a 1 s
   timeout; a hung send counts as a lost pad. `ComboWithholding` filters on every poll (Back + Start, ⧉/≡), Guide is
   passed (`XboxPadState.From(…, withGuide: true)`).
-- Neutral while Arcadia is in front or the mouse mode is on; unlike the Steam Controller's pad also while Steam is in
-  front.
+- Neutral while Arcadia is in front or the mouse mode is on, unless Steam's desktop control is allowed
+  (`SteamControllerCopyRules.OtherControllerPasses`): then they pass there, with the copy's combos for Steam
+  (`CombosKeptFromSteam`), since Steam sees these controllers only through the pads. Unlike the Steam Controller's
+  pad, they also pass while Steam is in front.
 - Rumble: VIIPER's output report (2 bytes, large/small motor) raises `IVirtualXboxPad.Rumbled`; Arcadia holds the
   rumble on the real controller with `HoldRumble` (2 s, renewed every second while it lasts, 0 stops it). Unplugging a
   pad stops it. The report is read with the pad's own token, cancelled before `ViiperDevice.DisposeAsync`: that waits

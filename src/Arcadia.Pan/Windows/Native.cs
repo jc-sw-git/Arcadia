@@ -325,12 +325,33 @@ internal static unsafe partial class Native
     public static partial uint CM_Get_DevNode_Registry_PropertyW(uint devInst, uint property, out uint type, void* buffer, ref uint length, uint flags);
 
     [LibraryImport("cfgmgr32.dll", StringMarshalling = StringMarshalling.Utf16)]
-    public static partial uint CM_Get_Device_ID_List_SizeW(out uint length, string filter, uint flags);
+    public static partial uint CM_Get_Device_ID_List_SizeW(out uint length, string? filter, uint flags);
 
     [LibraryImport("cfgmgr32.dll", StringMarshalling = StringMarshalling.Utf16)]
-    public static partial uint CM_Get_Device_ID_ListW(string filter, char* buffer, uint length, uint flags);
+    public static partial uint CM_Get_Device_ID_ListW(string? filter, char* buffer, uint length, uint flags);
 
     public const uint CmLocateDevnodeNormal = 0;
+
+    /// <summary>CM_LOCATE_DEVNODE_PHANTOM: also a device that isn't plugged in (#347).</summary>
+    public const uint CmLocateDevnodePhantom = 1;
+
+    /// <summary>DEVPROPKEY.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DevPropKey
+    {
+        public Guid FormatId;
+        public uint PropertyId;
+    }
+
+    /// <summary>DEVPKEY_Device_LastKnownParent: the parent of a device that isn't plugged in.</summary>
+    public static readonly DevPropKey LastKnownParent = new() { FormatId = new("83da6326-97a6-4088-9453-a1923f573b29"), PropertyId = 10 };
+
+    [LibraryImport("cfgmgr32.dll")]
+    public static partial uint CM_Get_DevNode_PropertyW(uint devInst, in DevPropKey key, out uint type, void* buffer, ref uint length, uint flags);
+
+    /// <summary>Removes a devnode, plugged in or not, and can't be cancelled (#347).</summary>
+    [LibraryImport("cfgmgr32.dll")]
+    public static partial uint CM_Uninstall_DevNode(uint devInst, uint flags);
 
     [LibraryImport("cfgmgr32.dll", StringMarshalling = StringMarshalling.Utf16)]
     public static partial uint CM_Locate_DevNodeW(out uint devInst, string deviceId, uint flags);

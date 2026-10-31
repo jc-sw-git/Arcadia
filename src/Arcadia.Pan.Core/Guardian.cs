@@ -318,6 +318,7 @@ public sealed partial class Guardian
     public async Task StopAsync()
     {
         Task? teardown;
+        Task? staleCleanup;
         lock (_lock)
         {
             _stopping = true;
@@ -335,12 +336,15 @@ public sealed partial class Guardian
             }
 
             teardown = _teardown;
+            staleCleanup = _staleCleanup;
         }
 
         if (teardown is not null)
         {
             await teardown;
         }
+
+        await StopStaleCleanupAsync(staleCleanup);
     }
 
     private PanMessage StartEmulation(int usbipPort)
@@ -358,6 +362,13 @@ public sealed partial class Guardian
         if (_retryShowing || _teardown is { IsCompleted: false })
         {
             // Its forwarding would run while a retry or a teardown after a stop makes the real controller visible.
+            return PanMessage.Of(PanReply.Rejected, _generation, PanReason.SteamControllerBeingShown);
+        }
+
+        if (StaleCleanupRunning())
+        {
+            // A removal can't be cancelled and removes present devnodes too (#347): the new copy waits until it returned.
+            // The client says "Pan räumt noch auf" and counts no pad loss for it.
             return PanMessage.Of(PanReply.Rejected, _generation, PanReason.SteamControllerBeingShown);
         }
 
@@ -510,6 +521,7 @@ public sealed partial class Guardian
         SaveJournal();
         _phase = Phase.Idle;
         _log($"Emulation generation {_generation} stopped by the client");
+        ScheduleStaleCleanup("emulation stopped");
         return PanMessage.Of(PanReply.Stopped, _generation);
     }
 
@@ -606,6 +618,8 @@ public sealed partial class Guardian
                 _leftovers = [];
                 SaveJournal();
                 _log($"Teardown of generation {generation} complete ({reason})");
+                // Not on a stop: no PnP work starts while the service stops or Windows shuts down.
+                ScheduleStaleCleanup($"teardown, {reason}");
             }
             else
             {

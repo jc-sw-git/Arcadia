@@ -433,6 +433,28 @@ public sealed class PanUpdateAtStartTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T354-1")]
+    public async Task Declined_the_update_keeps_Pan_left_alone_until_Pan_is_off()
+    {
+        // #354, the third way out: a declined Windows prompt must not let the client back to the old Pan before Pan is off.
+        var prompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var steam = OldPan();
+        steam.PanPromptUp = prompt;
+        steam.PromptConfirmed = false;
+        using var arcadia = await StartAsync(steam);
+        await arcadia.PanAnsweredAtStartAsync();
+
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => steam.PanUpdates == 1, "die Windows-Abfrage der Aktualisierung");
+        Assert.Equal(ControllerSupportService.PanUpdatingReason, arcadia.ControllerSupport.WhyPanIsLeftAlone);
+
+        prompt.SetResult();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate?.State != PanUpdateState.Updating, "das Ende der Aktualisierung");
+        Assert.False(arcadia.ControllerSupport.IsPanUpdating);
+        Assert.Equal(ControllerSupportService.OldPanOffReason, arcadia.ControllerSupport.WhyPanIsLeftAlone);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T326-8")]
     public async Task While_a_prompt_is_up_no_press_quits_starts_a_second_update_or_reaches_the_library()
     {

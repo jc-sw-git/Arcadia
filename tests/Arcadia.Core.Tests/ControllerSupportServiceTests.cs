@@ -754,6 +754,25 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Declined_the_update_Arcadia_leaves_Pan_alone_until_it_is_switched_off()
+    {
+        // #354: between the declined prompt and the switch-off, a reconnecting client would reach the old Pan.
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings { PanEnabled = true });
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        service.CheckPanAtStart();
+        _platform.PanUpdateAnswer = false;
+
+        Assert.False(await service.UpdatePanAsync());
+        Assert.Equal(ControllerSupportService.PanUpdatingReason, service.WhyPanIsLeftAlone);
+
+        service.SwitchPanOffForUpdate(null);
+        Assert.False(service.IsPanUpdating);
+        Assert.Equal(ControllerSupportService.OldPanOffReason, service.WhyPanIsLeftAlone);
+    }
+
+    [Fact]
     public void Without_a_due_update_Arcadia_talks_to_Pan_also_while_it_is_off()
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));

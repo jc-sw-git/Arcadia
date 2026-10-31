@@ -64,9 +64,10 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </ScrollViewer>
-            <!-- Only where the rows can still scroll towards; the panel's surface colour, as the info panel's fades. -->
-            <Border Name="FadeTop" Classes="listFade" Background="{StaticResource InfoFadeTop}" VerticalAlignment="Top" Height="56" IsHitTestVisible="False" />
-            <Border Name="FadeBottom" Classes="listFade" Background="{StaticResource InfoFadeBottom}" VerticalAlignment="Bottom" Height="72" IsHitTestVisible="False" />
+            <!-- Only where the rows can still scroll towards; the panel's surface colour, as the info panel's fades. They reach
+                 over the scroller's padding (the room for the focus ring), else a cut row shows unfaded in that strip. -->
+            <Border Name="FadeTop" Classes="listFade" Background="{StaticResource InfoFadeTop}" VerticalAlignment="Top" Height="56" Margin="0,-6,0,0" IsHitTestVisible="False" />
+            <Border Name="FadeBottom" Classes="listFade" Background="{StaticResource InfoFadeBottom}" VerticalAlignment="Bottom" Height="72" Margin="0,0,0,-6" IsHitTestVisible="False" />
           </Panel>
 
           <TextBlock Classes="layoutsHint" Text="{x:Static settings:ControllerLayoutsViewModel.Hint}" />

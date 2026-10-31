@@ -84,8 +84,9 @@ reason; `WaitingForTool` those whose vendor's firmware tool runs (Xbox Zubehör,
   A pad of another kind than chosen is unplugged at the next tick and the chosen one plugged (the game sees it change once).
 - "Nicht übernehmen": the model is never hidden, starts no emulation on its own and isn't named in the D7/D8 rows. A
   hidden one has its pads unplugged first, then Arcadia lets go of every controller and Pan shows it
-  (`ShowController`, [pan-hiding-controllers.md](pan-hiding-controllers.md)). A show Pan refuses leaves it hidden and
-  emulated (the controller keeps working in games) until it reconnects or the emulation starts anew.
+  (`ShowController`, [pan-hiding-controllers.md](pan-hiding-controllers.md)). A show Pan refuses gets no pad either: Pan
+  answers `HidingFailed` also when it showed the model and only the restart failed, so a pad could make two. Taken
+  over again, the model is hidden anew; still hidden, a reconnect or "Controller wiederherstellen" frees it.
 - `Connected` lists one entry per connected model (excluded ones too) for the modal, also while Pan is off.
 
 ## Not done yet

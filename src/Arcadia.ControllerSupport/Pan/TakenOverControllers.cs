@@ -434,19 +434,18 @@ public sealed class TakenOverControllers
     /// <summary>
     /// The choices of "Controller zuordnen" (D3a), each tick: a pad of another kind than chosen goes (the next step plugs
     /// the chosen one, so the game sees it change once), and a model the player doesn't let Pan take over is shown
-    /// again, its pads unplugged first, so a game never sees both. A show Pan refuses leaves the model hidden and
-    /// emulated as before (the controller keeps working in games), until it reconnects or the emulation starts anew.
+    /// again, its pads unplugged first, so a game never sees both. A show Pan refuses gets no pad either: Pan may have
+    /// shown it already and only failed to restart it, so a pad could make two (QE review of #350).
     /// </summary>
     private async Task ApplyLayoutsAsync(uint generation, IEmulationGuardian guardian, CancellationToken cancellationToken)
     {
         List<(Controller Controller, string Why)> stale = [];
-        List<(ControllerModel Model, List<string> Keys)> toShow = [];
+        List<ControllerModel> toShow = [];
         lock (_lock)
         {
             foreach (var group in _controllers.GroupBy(controller => controller.Model))
             {
                 var layout = LayoutOf(group.Key);
-                var keys = group.Select(controller => controller.Key).ToList();
                 var show = false;
                 if (layout is { IsTakenOver: false } && _models.TryGetValue(group.Key, out var state))
                 {
@@ -456,10 +455,10 @@ public sealed class TakenOverControllers
                         // over again, it is tried anew.
                         _models.Remove(group.Key);
                     }
-                    else if (keys.Any(key => !state.ShowRefusedKeys.Contains(key)))
+                    else
                     {
                         show = true;
-                        toShow.Add((group.Key, keys));
+                        toShow.Add(group.Key);
                     }
                 }
 
@@ -487,31 +486,26 @@ public sealed class TakenOverControllers
 
         await WhileLetGoAsync(async () =>
         {
-            foreach (var (model, keys) in toShow)
+            foreach (var model in toShow)
             {
                 var result = await guardian.ShowControllerAsync(generation, model, cancellationToken);
-                RecordShow(model, keys, result);
+                RecordShow(model, result);
             }
         });
     }
 
-    private void RecordShow(ControllerModel model, List<string> keys, ControllerHidingResult result)
+    private void RecordShow(ControllerModel model, ControllerHidingResult result)
     {
         lock (_lock)
         {
-            if (result.Done)
-            {
-                _models.Remove(model);
-            }
-            else if (_models.TryGetValue(model, out var state))
-            {
-                state.ShowRefusedKeys.UnionWith(keys);
-            }
+            // Refused too: Pan answers HidingFailed also when it took the model off HidHide's list and only the
+            // restart failed. Counted as not hidden, so no pad is plugged, and taken over again it is hidden anew.
+            _models.Remove(model);
         }
 
         _log(result.Done
             ? $"Controller für Spiele: {model} nicht übernommen, wieder sichtbar{(result.Reason == PanReason.ControllerNeedsReplug ? " (Programme, die ihn offen hatten, sehen ihn erst nach neuem Verbinden)" : string.Empty)}"
-            : $"Controller für Spiele: {model} lässt sich nicht wieder zeigen ({result.Reason}), bleibt emuliert bis zum neuen Verbinden");
+            : $"Controller für Spiele: {model} nicht sicher wieder gezeigt ({result.Reason}), kein Pad; ist er im Spiel stumm, hilft neu verbinden oder „Controller wiederherstellen“");
     }
 
     /// <summary>Under the lock: a model not tried yet, a rejected one reconnected, or one whose firmware tool's wait is up.</summary>
@@ -822,12 +816,6 @@ public sealed class TakenOverControllers
 
         /// <summary>Hidden, but these controllers are held by whoever had them until they reconnect (A3).</summary>
         public HashSet<string> ReplugPending { get; } = [];
-
-        /// <summary>
-        /// "Nicht übernehmen", but Pan refused to show it with these controllers connected: only another one, or one
-        /// reconnected, tries again; meanwhile it stays emulated.
-        /// </summary>
-        public HashSet<string> ShowRefusedKeys { get; } = [];
     }
 
     /// <summary>One connected controller and its pad.</summary>

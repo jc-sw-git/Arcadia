@@ -618,10 +618,13 @@ public sealed class TakenOverControllersTests
         Assert.Empty(_pan.ControllerShows);
     }
 
-    /// <summary>Robust: a controller Pan can't show again keeps working in games as its pad, rather than reaching them not at all.</summary>
+    /// <summary>
+    /// QE review of #350: Pan answers HidingFailed also when it showed the model and only its restart failed, so a pad
+    /// could make two. No pad then, and taken over again, the model is hidden anew.
+    /// </summary>
     [Fact]
     [Trait("TestCase", "T238-13")]
-    public async Task A_show_Pan_refuses_keeps_the_controller_emulated_until_it_reconnects()
+    public async Task A_show_Pan_refuses_plugs_no_pad_and_taken_over_again_the_model_is_hidden_anew()
     {
         _pan.ControllerShow = _ => new ControllerHidingResult(false, PanReason.HidingFailed);
         _others.Feed([GameCube]);
@@ -629,22 +632,17 @@ public sealed class TakenOverControllersTests
 
         Choose(GameCubeModel, ControllerLayout.NotTakenOver);
         await _emulation.TickAsync();
+        await _emulation.TickAsync();
 
-        Assert.Equal(1, _others.Plugged);
-        Assert.Contains("Controller für Spiele: 057E:0337 lässt sich nicht wieder zeigen (HidingFailed), bleibt emuliert bis zum neuen Verbinden", _log);
+        Assert.Equal(0, _others.Plugged);
+        Assert.Equal([$"1 {GameCubeModel}"], _pan.ControllerShows);
+        Assert.Contains(_log, line => line.StartsWith("Controller für Spiele: 057E:0337 nicht sicher wieder gezeigt (HidingFailed), kein Pad", StringComparison.Ordinal));
 
         _events.Clear();
+        _layouts.Clear();
         await _emulation.TickAsync();
-        Assert.Empty(_events);
-
-        // Reconnected: tried again, and shown now.
-        _pan.ControllerShow = null;
-        _others.Feed([]);
-        _time.Advance(TimeSpan.FromSeconds(2));
-        _others.Feed([GameCube with { Device = GameCube.Device with { Path = "hid-gamecube-again" } }]);
-        await _emulation.TickAsync();
-        Assert.Equal([$"1 {GameCubeModel}", $"1 {GameCubeModel}"], _pan.ControllerShows);
-        Assert.Equal(0, _others.Plugged);
+        Assert.Equal(["let go of controllers", $"hide {GameCubeModel}", "read controllers", "pad plugged"], _events);
+        Assert.Equal(1, _others.Plugged);
     }
 
     [Fact]

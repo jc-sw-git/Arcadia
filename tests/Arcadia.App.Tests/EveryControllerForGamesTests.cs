@@ -440,13 +440,22 @@ public sealed class EveryControllerForGamesTests
         var layouts = OpenLayouts(arcadia, controller);
         Assert.Equal(["Nintendo GameCube Controller: Xbox 360 Controller"], Shown(layouts));
 
-        arcadia.Sdl.Plug(DualSense);
+        // Two DualSense controllers are one row: the layout is the model's (D3b).
+        var firstDualSense = arcadia.Sdl.Plug(DualSense);
+        var secondDualSense = arcadia.Sdl.Plug(DualSense);
+        arcadia.PollControllers();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(["Nintendo GameCube Controller: Xbox 360 Controller", "DualSense Wireless Controller: DualSense"], Shown(layouts));
+
+        // One of them goes: the row stays for the other.
+        arcadia.Sdl.Unplug(firstDualSense);
+        arcadia.Time.Advance(TakenOverControllers.RereadGrace);
         arcadia.PollControllers();
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(["Nintendo GameCube Controller: Xbox 360 Controller", "DualSense Wireless Controller: DualSense"], Shown(layouts));
 
         arcadia.Sdl.Unplug(arcadia.Sdl.IdOf(GameCube));
-        arcadia.Sdl.Unplug(arcadia.Sdl.IdOf(DualSense));
+        arcadia.Sdl.Unplug(secondDualSense);
         arcadia.Time.Advance(TakenOverControllers.RereadGrace);
         arcadia.PollControllers();
         Dispatcher.UIThread.RunJobs();

@@ -15,8 +15,9 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
       · E2E: no (real pads, HidHide); the flow with fakes in `EveryControllerForGamesTests`
 - [ ] **T238-2** As T238-1 with the DualSense by Bluetooth, switched on while the game runs: the game sees one new pad,
       never two. · E2E: no (real pads)
-- [ ] **T238-3** Back + Start and ⧉ held with each pad in a running game: Arcadia reacts, the game's input log shows
-      neither combo; a short ⧉ reaches the game. · E2E: yes (`EveryControllerForGamesTests`)
+- [ ] **T238-3** Back + Start with each pad in a running game: Arcadia reacts, the game's input log never shows it; a
+      short ⧉ reaches the game as a tap; ⧉ held brings Arcadia back and the game sees ⧉ held (after 100 ms).
+      · E2E: yes (`EveryControllerForGamesTests`)
 - [ ] **T238-4** Arcadia in front, then the mouse mode on: the game reads rest from every pad. · E2E: yes
       (`EveryControllerForGamesTests`)
 - [ ] **T238-5** Rumble in a game reaches DualSense, 8BitDo and Steam Controller and stops with the game's rumble; Guide /

@@ -13,9 +13,10 @@ public sealed record ControllerWaitingForTool(string Name, ControllerModel Model
 
 /// <summary>
 /// Every controller but the Steam Controller, for games (#238): within Pan's emulation, Pan hides each model Arcadia
-/// reads (#335), and Arcadia plugs one virtual Xbox 360 pad per controller, in the order they connected, and feeds it
-/// what the controller does, without Arcadia's combos, at rest while Arcadia is in front or the mouse mode is on. A
-/// game's rumble goes back to the controller. A controller is emulated only while it is hidden, never both (D7).
+/// reads (#335), and Arcadia plugs one virtual pad per controller, of the controller's own kind where VIIPER has it
+/// (<see cref="PadKinds.Default"/>), in the order they connected, and feeds it what the controller does, without
+/// Arcadia's combos, at rest while Arcadia is in front or the mouse mode is on. A game's rumble and light bar go back to
+/// the controller. A controller is emulated only while it is hidden, never both (D7).
 /// </summary>
 /// <remarks>
 /// <see cref="Feed"/> runs on the poll thread and hands each controller's newest state to its sender task through a
@@ -59,6 +60,7 @@ public sealed class TakenOverControllers
     private long _nextOrder;
     private long _rereadAt = long.MinValue;
     private uint _generation;
+    private bool _motionSensorsOn;
     private volatile bool _gaveUp;
     private IReadOnlyList<ControllerNotHidden> _notHidden = [];
     private IReadOnlyList<ControllerWaitingForTool> _waiting = [];
@@ -86,6 +88,15 @@ public sealed class TakenOverControllers
 
     /// <summary>A game set a pad's motors: the controller with this <see cref="GamepadReading.PadId"/> rumbles so (0, 0 stops).</summary>
     public Action<int, XboxRumble> Rumble { get; init; } = (_, _) => { };
+
+    /// <summary>A game set a PlayStation pad's light bar: the controller with this <see cref="GamepadReading.PadId"/> shows it.</summary>
+    public Action<int, PadLight> Light { get; init; } = (_, _) => { };
+
+    /// <summary>
+    /// The controllers' gyro and accelerometer on (true) while a plugged pad carries motion, off once none does: they
+    /// cost battery. Called from the tick.
+    /// </summary>
+    public Action<bool> MotionSensors { get; init; } = _ => { };
 
     /// <summary>The pads were lost too often: Arcadia stops until "Erneut versuchen" (a toast with this text).</summary>
     public event Action<string>? GaveUp;
@@ -128,7 +139,7 @@ public sealed class TakenOverControllers
     {
         var allowed = ForwardingAllowed();
         var combos = Combos();
-        List<(int PadId, XboxRumble Motors)> rumbleAgain = [];
+        List<(int PadId, XboxRumble? Motors, PadLight? Light)> feedbackAgain = [];
         lock (_lock)
         {
             foreach (var controller in _controllers)
@@ -148,18 +159,18 @@ public sealed class TakenOverControllers
                 var key = KeyOf(reading);
                 var controller = Find(key) ?? Add(key, reading);
                 controller.Seen = true;
-                if (controller.PadId != reading.PadId && controller.Rumbling is { } motors)
+                if (controller.PadId != reading.PadId && (controller.Rumbling is not null || controller.Lit is not null))
                 {
-                    // SDL started again (a let-go for Pan's hide) and its new handle doesn't rumble: a game that set
-                    // its motors once and left them on would otherwise feel nothing until it changes them.
-                    rumbleAgain.Add((reading.PadId, motors));
+                    // SDL started again (a let-go for Pan's hide) and its new handle neither rumbles nor keeps the
+                    // light bar: a game that set them once would otherwise lose them until it changes them.
+                    feedbackAgain.Add((reading.PadId, controller.Rumbling, controller.Lit));
                 }
 
                 controller.PadId = reading.PadId;
 
                 // Filtered on every poll, also while nothing is forwarded, so a combo begun in Arcadia stays Arcadia's.
                 var buttons = controller.Withholding.Filter(reading.Buttons, combos);
-                controller.Offer(allowed ? XboxPadState.From(reading, buttons, withGuide: true) : XboxPadState.Neutral, _time.GetTimestamp());
+                controller.Offer(allowed ? VirtualPadState.From(reading, buttons) : VirtualPadState.Neutral, _time.GetTimestamp());
             }
 
             if (_rereadAt == long.MinValue || _time.GetElapsedTime(_rereadAt) >= RereadGrace)
@@ -174,9 +185,17 @@ public sealed class TakenOverControllers
             }
         }
 
-        foreach (var (padId, motors) in rumbleAgain)
+        foreach (var (padId, motors, light) in feedbackAgain)
         {
-            Rumble(padId, motors);
+            if (motors is { } rumbling)
+            {
+                Rumble(padId, rumbling);
+            }
+
+            if (light is { } lit)
+            {
+                Light(padId, lit);
+            }
         }
     }
 
@@ -211,6 +230,7 @@ public sealed class TakenOverControllers
             await UnplugGoneAsync();
             await HideNewModelsAsync(generation, guardian, cancellationToken);
             await KeepPadsAsync(pads, cancellationToken);
+            KeepMotionSensors();
             Publish();
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -238,6 +258,7 @@ public sealed class TakenOverControllers
         }
 
         ForgetModels();
+        KeepMotionSensors();
         Publish();
     }
 
@@ -295,7 +316,7 @@ public sealed class TakenOverControllers
 
     private Controller Add(string key, GamepadReading reading)
     {
-        var controller = new Controller(key, Model(reading), reading.Device.DisplayName, _nextOrder++, _time);
+        var controller = new Controller(key, Model(reading), reading.Device.DisplayName, PadKinds.Default(reading.Device), _nextOrder++, _time);
         _controllers.Add(controller);
         return controller;
     }
@@ -305,7 +326,7 @@ public sealed class TakenOverControllers
     {
         var controller = _controllers[index];
         _controllers.RemoveAt(index);
-        controller.Offer(XboxPadState.Neutral, _time.GetTimestamp());
+        controller.Offer(VirtualPadState.Neutral, _time.GetTimestamp());
         _gone.Add(controller);
         foreach (var model in _models.Values)
         {
@@ -451,7 +472,7 @@ public sealed class TakenOverControllers
         {
             foreach (var controller in _controllers)
             {
-                controller.Offer(XboxPadState.Neutral, _time.GetTimestamp());
+                controller.Offer(VirtualPadState.Neutral, _time.GetTimestamp());
             }
         }
     }
@@ -492,9 +513,9 @@ public sealed class TakenOverControllers
 
             try
             {
-                var pad = await pads.PlugAsync(cancellationToken);
-                controller.Plug(pad, Rumble);
-                _log($"Controller für Spiele: Xbox-Pad für \"{controller.Name}\" ({controller.Model}) angesteckt");
+                var pad = await pads.PlugAsync(controller.Kind, cancellationToken);
+                controller.Plug(pad, Rumble, Light);
+                _log($"Controller für Spiele: {PadKinds.DisplayName(controller.Kind)} für \"{controller.Name}\" ({controller.Model}) angesteckt");
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -537,7 +558,23 @@ public sealed class TakenOverControllers
             _log($"Controller für Spiele: Abstecken fehlgeschlagen: {ex.Message}");
         }
 
-        _log($"Controller für Spiele: Xbox-Pad für \"{controller.Name}\" abgesteckt ({why}); {controller.Delays}");
+        _log($"Controller für Spiele: {PadKinds.DisplayName(controller.Kind)} für \"{controller.Name}\" abgesteckt ({why}); {controller.Delays}");
+    }
+
+    /// <summary>Motion sensors on while a plugged pad carries motion; only changes are passed on.</summary>
+    private void KeepMotionSensors()
+    {
+        bool wanted;
+        lock (_lock)
+        {
+            wanted = _controllers.Any(controller => controller.Pad is { } pad && PadKinds.HasMotion(pad.Kind));
+        }
+
+        if (wanted != _motionSensorsOn)
+        {
+            _motionSensorsOn = wanted;
+            MotionSensors(wanted);
+        }
     }
 
     private void NoteLoss()
@@ -636,23 +673,27 @@ public sealed class TakenOverControllers
     }
 
     /// <summary>One connected controller and its pad.</summary>
-    private sealed class Controller(string key, ControllerModel model, string name, long order, TimeProvider time)
+    private sealed class Controller(string key, ControllerModel model, string name, PadKind kind, long order, TimeProvider time)
     {
-        private readonly Channel<(XboxPadState State, long PolledAt)> _states =
-            Channel.CreateBounded<(XboxPadState, long)>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
+        private readonly Channel<(VirtualPadState State, long PolledAt)> _states =
+            Channel.CreateBounded<(VirtualPadState, long)>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
 
-        private XboxPadState _lastOffered;
-        private volatile IVirtualXboxPad? _pad;
+        private VirtualPadState _lastOffered;
+        private volatile IVirtualPad? _pad;
         private Task? _sender;
         private volatile int _padId;
         private readonly Lock _rumbleLock = new();
         private XboxRumble? _rumbling;
+        private PadLight? _lit;
 
         public string Key { get; } = key;
 
         public ControllerModel Model { get; } = model;
 
         public string Name { get; } = name;
+
+        /// <summary>The kind its pad is (#238 D3b).</summary>
+        public PadKind Kind { get; } = kind;
 
         public long Order { get; } = order;
 
@@ -667,12 +708,12 @@ public sealed class TakenOverControllers
             set => _padId = value;
         }
 
-        public IVirtualXboxPad? Pad => _pad;
+        public IVirtualPad? Pad => _pad;
 
         public DelayStats Delays;
 
         /// <summary>Under the owner's lock: only changes go to the pad, VIIPER keeps the last state.</summary>
-        public void Offer(XboxPadState state, long polledAt)
+        public void Offer(VirtualPadState state, long polledAt)
         {
             if (state == _lastOffered)
             {
@@ -690,14 +731,31 @@ public sealed class TakenOverControllers
             private set { lock (_rumbleLock) _rumbling = value; }
         }
 
-        public void Plug(IVirtualXboxPad pad, Action<int, XboxRumble> rumble)
+        /// <summary>The light bar's colour the game set last; read on the poll thread, set on VIIPER's.</summary>
+        public PadLight? Lit
+        {
+            get { lock (_rumbleLock) return _lit; }
+            private set { lock (_rumbleLock) _lit = value; }
+        }
+
+        public void Plug(IVirtualPad pad, Action<int, XboxRumble> rumble, Action<int, PadLight> light)
         {
             Delays = default;
             Rumbling = null;
-            pad.Rumbled += motors =>
+            Lit = null;
+            pad.Fed += feedback =>
             {
-                Rumbling = motors == default ? null : motors;
-                rumble(PadId, motors);
+                if (feedback.Rumble is { } motors)
+                {
+                    Rumbling = motors == default ? null : motors;
+                    rumble(PadId, motors);
+                }
+
+                if (feedback.Light is { } colour && colour != Lit)
+                {
+                    Lit = colour;
+                    light(PadId, colour);
+                }
             };
             _pad = pad;
             _sender ??= Task.Run(SendLoopAsync, CancellationToken.None);
@@ -706,9 +764,10 @@ public sealed class TakenOverControllers
             _states.Writer.TryWrite((_lastOffered, time.GetTimestamp()));
         }
 
-        public IVirtualXboxPad? TakePad()
+        public IVirtualPad? TakePad()
         {
             Rumbling = null;
+            Lit = null;
             return Interlocked.Exchange(ref _pad, null);
         }
 

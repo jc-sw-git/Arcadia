@@ -208,7 +208,7 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
         lock (_lock)
         {
             var id = _open[pad];
-            if (_plugged.GetValueOrDefault(id).Type != PadType.Steam)
+            if (_plugged.GetValueOrDefault(id).Type is not (PadType.Steam or PadType.PS4 or PadType.PS5 or PadType.SwitchPro))
             {
                 return false;
             }
@@ -231,6 +231,17 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
         lock (_lock)
         {
             Rumbles.Add(low == high ? $"pad {_open[pad]}: {low} for {durationMs} ms" : $"pad {_open[pad]}: {low}/{high} for {durationMs} ms");
+        }
+    }
+
+    /// <summary>Every light bar colour set, as "pad id: r,g,b".</summary>
+    public List<string> Lights { get; } = [];
+
+    public void SetLight(nint pad, byte red, byte green, byte blue)
+    {
+        lock (_lock)
+        {
+            Lights.Add($"pad {_open[pad]}: {red},{green},{blue}");
         }
     }
 
@@ -260,6 +271,9 @@ internal static class KnownPads
     public static readonly PadDevice DualSense = new("DualSense Wireless Controller", 0x054C, 0x0CE6, PadType.PS5, StickDeviceType.Gamepad);
     public static readonly PadDevice DualShock4 = new("PS4 Controller", 0x054C, 0x09CC, PadType.PS4, StickDeviceType.Gamepad);
     public static readonly PadDevice SwitchPro = new("Nintendo Switch Pro Controller", 0x057E, 0x2009, PadType.SwitchPro, StickDeviceType.Gamepad);
+    public static readonly PadDevice DualSenseEdge = new("DualSense Edge Wireless Controller", 0x054C, 0x0DF2, PadType.PS5, StickDeviceType.Gamepad);
+    public static readonly PadDevice Switch2Pro = new("Nintendo Switch 2 Pro Controller", 0x057E, 0x2069, PadType.SwitchPro, StickDeviceType.Gamepad);
+    public static readonly PadDevice GameCube = new("Nintendo GameCube Controller", 0x057E, 0x0337, PadType.GameCube, StickDeviceType.Gamepad);
     public static readonly PadDevice JoyConPair = new("Nintendo Switch Joy-Con (L/R)", 0x057E, 0x2008, PadType.JoyConPair, StickDeviceType.Gamepad);
     public static readonly PadDevice JoyConLeft = new("Nintendo Switch Joy-Con (L)", 0x057E, 0x2006, PadType.JoyConLeft, StickDeviceType.Gamepad);
     public static readonly PadDevice SteamVirtual = new("Steam Virtual Gamepad", 0x28DE, 0x11FF, PadType.Xbox360, StickDeviceType.Gamepad);

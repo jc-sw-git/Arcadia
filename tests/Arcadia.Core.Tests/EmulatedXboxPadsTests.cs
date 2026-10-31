@@ -105,4 +105,22 @@ public sealed class EmulatedXboxPadsTests
         Assert.False(pads.IsCopy(puck));
         Assert.Contains(log, line => line.Contains("kaputt", StringComparison.Ordinal));
     }
+
+    /// <summary>
+    /// #238 part 2: Arcadia's own DualSense, DualShock 4 and Switch 2 Pro pads carry the real ids; their place on the
+    /// software host keeps them out, so a controller never counts twice and its pad never feeds itself.
+    /// </summary>
+    [Theory]
+    [InlineData(0x054C, 0x0CE6, PadType.PS5)]
+    [InlineData(0x054C, 0x09CC, PadType.PS4)]
+    [InlineData(0x057E, 0x2069, PadType.SwitchPro)]
+    public void Arcadias_own_PlayStation_and_Switch_pads_are_ignored_and_the_real_ones_read(ushort vendor, ushort product, PadType type)
+    {
+        var ownPath = @"\\?\hid#own-pad";
+        var pads = new DeviceTreeEmulatedPads(() => [], _ => { }, path => path == ownPath);
+        var pad = new PadDevice("Pad", vendor, product, type, StickDeviceType.Gamepad);
+
+        Assert.Equal("virtueller Controller, z. B. Arcadias für ein Spiel", GamepadDevices.WhyIgnored(pad with { Path = ownPath }, pads));
+        Assert.Null(GamepadDevices.WhyIgnored(pad with { Path = @"\\?\hid#real-pad" }, pads));
+    }
 }

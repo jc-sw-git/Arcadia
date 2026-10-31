@@ -10,12 +10,17 @@ public readonly record struct XusbDevice(bool OnSoftwareHost, int? Slot);
 /// Recognises emulated Xbox pads by their place in the device tree (#212). The XInput slot ties SDL's pad
 /// (<c>XInput#n</c>) to a device; when the slots can't be read, a pad counts as emulated only if every XInput device
 /// whose slot is unknown is emulated, so a real pad is never lost to a guess (it would rather count twice).
-/// The copy of the Steam Controller's puck (#242) is told by SDL's HID path, which leads to its device.
+/// The copy of the Steam Controller's puck (#242) and Arcadia's own PlayStation and Switch 2 Pro pads (#238) are told by
+/// SDL's HID path, which leads to their device.
 /// </summary>
 /// <param name="onSoftwareHost">Whether the device behind a HID path is on a software host (<see cref="DeviceTree.InterfaceOnSoftwareHost"/>).</param>
 public sealed class DeviceTreeEmulatedPads(Func<IReadOnlyList<XusbDevice>> listDevices, Action<string> log, Func<string, bool>? onSoftwareHost = null) : IEmulatedPads
 {
-    public bool IsCopy(PadDevice device)
+    public bool IsCopy(PadDevice device) => OnSoftwareHostByPath(device);
+
+    public bool IsVirtualHidPad(PadDevice device) => OnSoftwareHostByPath(device);
+
+    private bool OnSoftwareHostByPath(PadDevice device)
     {
         if (onSoftwareHost is null || device.XInputSlot is not null || device.Path.Length == 0)
         {
@@ -29,7 +34,7 @@ public sealed class DeviceTreeEmulatedPads(Func<IReadOnlyList<XusbDevice>> listD
         catch (Exception ex)
         {
             // Called on the poll thread while a pad connects; reading it is the safe side (it would rather count twice).
-            log($"Controller: Geräteliste von Windows nicht lesbar, der Steam Controller gilt als echt: {ex.Message}");
+            log($"Controller: Geräteliste von Windows nicht lesbar, {device.Name} gilt als echt: {ex.Message}");
             return false;
         }
     }

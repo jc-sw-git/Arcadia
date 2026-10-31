@@ -109,6 +109,8 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             },
             Pulse = guardian.Pulse,
             Rumble = (padId, motors) => Rumble(gamepad, padId, motors),
+            Light = gamepad.SetLight,
+            MotionSensors = gamepad.UseMotionSensors,
         };
         var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
         {

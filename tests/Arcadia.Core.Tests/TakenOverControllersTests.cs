@@ -25,6 +25,8 @@ public sealed class TakenOverControllersTests
     private readonly List<string> _events = [];
     private readonly List<string> _log = [];
     private readonly List<string> _rumbles = [];
+    private readonly List<string> _lights = [];
+    private readonly List<bool> _motion = [];
     private readonly List<bool> _reads = [];
     private readonly FakeVirtualXboxPads _pads = new();
     private readonly FakeEmulationGuardian _pan = new();
@@ -50,6 +52,8 @@ public sealed class TakenOverControllersTests
                 _reads.Add(on);
             },
             Rumble = (padId, motors) => { lock (_rumbles) _rumbles.Add($"{padId}: {motors.Large}/{motors.Small}"); },
+            Light = (padId, light) => { lock (_lights) _lights.Add($"{padId}: {light.Red},{light.Green},{light.Blue}"); },
+            MotionSensors = _motion.Add,
             ProcessRuns = name => name == _runningTool,
         };
         _emulation = new PanEmulation(_pads, _pan, _copy, _time, Log)
@@ -84,7 +88,8 @@ public sealed class TakenOverControllersTests
         Assert.Empty(_pan.Hidden);
         Assert.False(_emulation.SteamControllerTakenOver);
         Assert.Equal(2, _others.Plugged);
-        Assert.Contains("Controller für Spiele: Xbox-Pad für \"DualSense Wireless Controller\" (054C:0CE6) angesteckt", _log);
+        Assert.Contains("Controller für Spiele: DualSense für \"DualSense Wireless Controller\" (054C:0CE6) angesteckt", _log);
+        Assert.Contains("Controller für Spiele: Xbox 360 Controller für \"8BitDo Ultimate 2 Wireless Controller for PC\" (2DC8:310B) angesteckt", _log);
 
         // Once hidden, a model isn't hidden again; Pan hides its new instances itself.
         _events.Clear();
@@ -337,6 +342,92 @@ public sealed class TakenOverControllersTests
         _pads.All[0].Rumble(0, 0);
         _others.Feed([DualSense with { PadId = 12 }]);
         Assert.Equal(["1: 255/10", "11: 255/10", "11: 0/0"], _rumbles);
+    }
+
+    /// <summary>#238 part 2 (D3, D3b): a controller's own kind where VIIPER has it, an Xbox 360 pad otherwise.</summary>
+    [Fact]
+    [Trait("TestCase", "T238-1")]
+    public async Task Each_controller_gets_a_pad_of_its_own_kind_and_one_without_a_1_to_1_kind_an_Xbox_360_pad()
+    {
+        var switch2 = Reading(4, KnownPads.Switch2Pro with { Path = "hid-switch2" });
+        var gameCube = Reading(5, KnownPads.GameCube with { Path = "hid-gamecube" });
+        _others.Feed([DualSense, EightBitDo, switch2, gameCube]);
+
+        await _emulation.TickAsync();
+
+        Assert.Equal([PadKind.DualSense, PadKind.Xbox360, PadKind.Switch2Pro, PadKind.Xbox360], _pads.All.Select(pad => pad.Kind));
+    }
+
+    /// <summary>D6: what the emulated kind has passes on, the touchpad, motion and mute of a DualSense included.</summary>
+    [Fact]
+    public async Task A_DualSense_passes_its_touchpad_motion_and_extra_buttons_to_its_pad()
+    {
+        _others.Feed([DualSense]);
+        await _emulation.TickAsync();
+        var motion = new MotionReading(true, new SensorAxes(1, 2, 3), new SensorAxes(0, 9.8f, 0));
+        var touched = DualSense with
+        {
+            Guide = true,
+            Extra = ExtraButtons.Misc1,
+            LeftTouchpad = new TouchpadReading(true, 0.5, -0.5, Clicked: true),
+            Motion = motion,
+        };
+
+        _others.Feed([touched]);
+
+        var state = await WaitForStateAsync(_pads.All[0], state => state.Motion.IsOn);
+        Assert.True(state.Guide);
+        Assert.Equal(ExtraButtons.Misc1, state.Extra);
+        Assert.Equal(new TouchpadReading(true, 0.5, -0.5, true), state.Touchpad);
+        Assert.Equal(motion, state.Motion);
+    }
+
+    /// <summary>A5: the light bar a game sets reaches the controller, also after SDL started again.</summary>
+    [Fact]
+    public async Task A_games_light_bar_reaches_the_controller_and_carries_over_to_its_new_id()
+    {
+        _others.Feed([DualSense]);
+        await _emulation.TickAsync();
+
+        _pads.All[0].Light(255, 0, 64);
+        _pads.All[0].Light(255, 0, 64);
+        _others.Feed([DualSense with { PadId = 11 }]);
+
+        Assert.Equal(["1: 255,0,64", "11: 255,0,64"], _lights);
+    }
+
+    /// <summary>The controllers' motion sensors cost battery: on only while a pad carries motion.</summary>
+    [Fact]
+    public async Task Motion_sensors_are_on_only_while_a_pad_that_carries_motion_is_plugged()
+    {
+        _others.Feed([EightBitDo]);
+        await _emulation.TickAsync();
+        Assert.Empty(_motion);
+
+        _others.Feed([EightBitDo, DualSense]);
+        await _emulation.TickAsync();
+        await _emulation.TickAsync();
+        Assert.Equal([true], _motion);
+
+        _time.Advance(TakenOverControllers.RereadGrace);
+        _others.Feed([EightBitDo]);
+        await _emulation.TickAsync();
+        Assert.Equal([true, false], _motion);
+    }
+
+    private static async Task<VirtualPadState> WaitForStateAsync(FakeVirtualXboxPads.FakePad pad, Func<VirtualPadState, bool> test)
+    {
+        for (var i = 0; i < 200; i++)
+        {
+            if (pad.States is [.., var last] && test(last))
+            {
+                return last;
+            }
+
+            await Task.Delay(10);
+        }
+
+        throw new Xunit.Sdk.XunitException("never sent");
     }
 
     [Fact]

@@ -61,8 +61,9 @@ public interface ISdlGamepads
 /// </summary>
 /// <remarks>
 /// Polled every <see cref="PollIntervalMs"/>, like XInput before: the repeat of held directions and the mouse mode's
-/// pointer need a steady clock anyway. Missing or failing SDL ends only the controller input: it is reported once
-/// through the error callback, and keyboard and mouse keep working.
+/// pointer need a steady clock anyway. While emulated pads are forwarded (<see cref="ReadFast"/>) it reads every
+/// millisecond in between for <see cref="Sampled"/> (<see cref="ReadPacing"/>, #238 D9). Missing or failing SDL ends
+/// only the controller input: it is reported once through the error callback, and keyboard and mouse keep working.
 /// </remarks>
 public sealed class SdlGamepadSource : IGamepadSource
 {
@@ -104,6 +105,7 @@ public sealed class SdlGamepadSource : IGamepadSource
     private volatile bool _lost;
     private volatile bool _motionWanted;
     private volatile bool _motionChanged;
+    private volatile bool _fastWanted;
 
     // Every controller let go (ReadControllers(false)): no poll reads, and SDL is opened again once it ends.
     private volatile bool _letGo;
@@ -130,6 +132,8 @@ public sealed class SdlGamepadSource : IGamepadSource
 
     public event Action<IReadOnlyList<GamepadReading>>? Polled;
 
+    public event Action<IReadOnlyList<GamepadReading>>? Sampled;
+
     public event Action? Lost;
 
     public void Start()
@@ -148,6 +152,8 @@ public sealed class SdlGamepadSource : IGamepadSource
     public void HoldRumble(int padId, ushort low, ushort high) => _heldRumbleRequests.Enqueue((padId, low, high));
 
     public void SetLight(int padId, PadLight light) => _lightRequests.Enqueue((padId, light));
+
+    public void ReadFast(bool on) => _fastWanted = on;
 
     /// <summary>
     /// Off, SDL closes every controller and ends before this returns (the way check A3 of #335 found Windows lets Pan
@@ -286,12 +292,14 @@ public sealed class SdlGamepadSource : IGamepadSource
     }
 
     /// <summary>
-    /// One poll: who came or went, what every controller reports, and their button events. A failing native call or
-    /// handler of <see cref="Polled"/> must not end Arcadia: the controllers stop for good instead (<see cref="Lost"/>).
+    /// One read: who came or went, what every controller reports (<see cref="Sampled"/>), and on a poll also
+    /// <see cref="Polled"/> and the button events. A failing native call or handler must not end Arcadia: the
+    /// controllers stop for good instead (<see cref="Lost"/>).
     /// </summary>
     /// <param name="nowMs">A clock in milliseconds; only differences count.</param>
+    /// <param name="pollDue">False for a read between two polls, only for <see cref="Sampled"/> (<see cref="ReadPacing"/>).</param>
     /// <returns>False once the controllers are lost; there is nothing more to poll.</returns>
-    public bool Poll(long nowMs)
+    public bool Poll(long nowMs, bool pollDue = true)
     {
         if (_lost)
         {
@@ -310,7 +318,7 @@ public sealed class SdlGamepadSource : IGamepadSource
                 return false;
             }
 
-            ReadControllers(nowMs);
+            ReadControllers(nowMs, pollDue);
             return true;
         }
         catch (Exception ex)
@@ -351,7 +359,7 @@ public sealed class SdlGamepadSource : IGamepadSource
         return true;
     }
 
-    private void ReadControllers(long nowMs)
+    private void ReadControllers(long nowMs, bool pollDue)
     {
         lock (_sdlLock)
         {
@@ -400,8 +408,12 @@ public sealed class SdlGamepadSource : IGamepadSource
             }
         }
 
-        Polled?.Invoke(_readings);
-        _polls.Update(_readings, nowMs);
+        Sampled?.Invoke(_readings);
+        if (pollDue)
+        {
+            Polled?.Invoke(_readings);
+            _polls.Update(_readings, nowMs);
+        }
     }
 
     /// <summary>
@@ -505,17 +517,48 @@ public sealed class SdlGamepadSource : IGamepadSource
         }
 
         var clock = Stopwatch.StartNew();
+        using var wait = PreciseWait.Create();
+        var pacing = new ReadPacing(_log, HighPriority, ProcessorTime, Environment.ProcessorCount);
+        if (!wait.IsPrecise && OperatingSystem.IsWindows())
+        {
+            _log("Controller: kein hochauflösender Timer, schnelles Lesen wartet mit Thread.Sleep");
+        }
+
         try
         {
-            while (!_stop.IsCancellationRequested && Poll(clock.ElapsedMilliseconds))
+            while (!_stop.IsCancellationRequested)
             {
-                Thread.Sleep(PollIntervalMs);
+                // While every controller is let go nothing is read or forwarded: such a pause is no gap between reads.
+                var pollDue = pacing.StartRead(clock.Elapsed, _fastWanted && !_letGo);
+                if (!Poll(clock.ElapsedMilliseconds, pollDue))
+                {
+                    break;
+                }
+
+                if (pacing.IsFast)
+                {
+                    wait.Wait(pacing.Wait(clock.Elapsed));
+                }
+                else
+                {
+                    Thread.Sleep(PollIntervalMs);
+                }
             }
         }
         finally
         {
+            pacing.Stop(clock.Elapsed);
             Close();
         }
+    }
+
+    private static void HighPriority(bool on) =>
+        Thread.CurrentThread.Priority = on ? ThreadPriority.Highest : ThreadPriority.Normal;
+
+    private static TimeSpan ProcessorTime()
+    {
+        using var process = Process.GetCurrentProcess();
+        return process.TotalProcessorTime;
     }
 
     /// <summary>

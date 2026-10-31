@@ -42,8 +42,14 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
       `TakenOverControllersTests`
 - [ ] **T238-10** Reboot while pads are hidden (hard reset): after login every pad is visible to games.
       · E2E: no (reboot)
-- [ ] **T238-11** Latency and CPU in `arcadia.log` after a 10-minute session with each pad within D9. Part 4.
-      · E2E: no (real hardware)
+- [x] **T238-11** A game runs 10 minutes with DualSense (USB), 8BitDo (dongle) and the Steam Controller (mode
+      „Arcadia“) in use beside each other, the DualSense's gyro on (a game with DualSense support, or Steam's
+      controller test). `arcadia.log` says "Arcadia liest alle 1 ms" while the game gets a pad's states, and "liest wieder
+      alle 8 ms" once Arcadia is in front (pads at rest) or the last pad goes. In the summaries (after 10 minutes and when the pad goes): per pad "Verzögerung Lesen →
+      VIIPER" and "Abstand der Lesevorgänge" give half the gap's mean plus the pad's mean ≤ 1 ms and the gap's max plus
+      the pad's max ≤ 4 ms; "CPU Arcadia" ≤ 1 % aller Kerne. Arcadia's own input (menu, mouse mode) feels as before.
+      · E2E: no (real hardware, timer); pacing, forwarding and the switch in `ReadPacingTests`, `PadForwarderTests`,
+      `TakenOverControllersTests`, `SdlGamepadSourceTests`
 - [ ] **T238-12** Xbox Zubehör open at Arcadia's start: the Xbox pad isn't hidden, the warning row "Xbox Zubehör ist
       geöffnet" says why; closed, the row goes and the pad is taken over within 10 s. With the real tool, check the
       process name Pan looks for. · E2E: yes (`EveryControllerForGamesTests`, fake Pan answer); the real tool by hand
@@ -83,3 +89,6 @@ History:
 | QE findings of #350 (fakes) | 2026-10-31 | Claude | branch `feat/assign-controllers-238`, Linux container, Avalonia headless, fakes | ✅ a show Pan refuses gives the model no pad and leaves it taken over anew later (`TakenOverControllersTests` red once without the fix); two controllers of one model are one row, also after one goes; the bottom fade covers a cut row at open (looked at in the capture); full suite green (Core 2219, Pan 284, App 483) | – |
 | T238-13 apply on A (fakes) | 2026-10-31 | Claude | branch `feat/assign-controllers-238`, Linux container, Avalonia headless, fakes | ✅ owner's finding (every ◀ ▶ replaced the pad, across "Nicht übernehmen" restarted the real controller): the acceptance test tries layouts, ticks and B without any pad change or show, then A on [Übernehmen] below the rows applies both at once (A on a row steps on); red once with a store per step; ring around [Übernehmen] looked at in its capture | – |
 | T238-13 on hardware | 2026-10-31 | owner | Windows 11, owner's PC, branch `feat/assign-controllers-238` at 0eaae00, DualSense and further controllers | ✅ passed. First round: every ◀ ▶ applied at once, so trying layouts replaced the pad and restarted the real controller, with Steam announcing each | Applied only with [Übernehmen] (0eaae00) |
+| T238-11 pacing and forwarding (fakes) | 2026-10-31 | Claude | branch `feat/forward-latency-238` (part 4), Linux container, fakes and fake clock | ✅ 22 tests (`ReadPacingTests`, `PadForwarderTests`, `LatencyStatsTests`, the switch in `TakenOverControllersTests` and `SteamControllerXboxPadTests`, `Sampled` in `SdlGamepadSourceTests`); full suite green. Red once each: fast reads also while the pads rest (QE finding), a fallback wait cut to 0 ms (QE finding), without the one-slot wait behind a slow send. Not run: real pads, the Windows timer, CPU | owner's T238-11 on Windows |
+| Latency check script (`checks/238-latency/`, v2) and `arcadia.log` | 2026-10-31 | owner, evaluated by Claude | Windows 11, owner's PC, branch `feat/forward-latency-238` at 4d9fb28 (Debug), DualSense USB, 8BitDo Ultimate 2 dongle, Steam Controller (puck, mode „Arcadia“), a game in the background, ~1 min per pad | ✅ real controller → emulated pad as a game reads it: DualSense (HID, exact) mean 0.80 ms, p99 1.60, max 3.04 (238 changes); 8BitDo (XInput, probe polls 1 kHz, so ±1 ms) mean 1.11, p99 1.56, max 2.17 (274); Steam Controller presses mean 1.14, p99 2.08, max 2.44 (105; releases not measurable: the probe merged SDL's two entries of the puck). Log: read → VIIPER mean 46–85 µs, p99 ≤ 140 µs; read gap mean 1.2–1.4 ms, p99 1.7–2.0 ms, steady-state max 10–21 ms (rare); CPU 0.13–0.37 % of all cores; copy puck → VIIPER mean 37 µs, p99 130 µs. Not run: the 10-minute session | Gaps over SDL's let-go for a hide no longer counted (they showed up to 0.95 s); 10-minute T238-11 still open |
+| T238-11 | 2026-10-31 | owner | as the latency check above | ✅ passed on the owner's word with the ~1-minute runs per pad instead of 10 minutes | – |

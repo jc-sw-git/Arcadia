@@ -160,9 +160,9 @@ internal sealed class ArcadiaDriver : IDisposable
         Main.ConnectPan(ForGames);
         ControllerSupport.PanHoldsPuck = () => ForGames.Emulation.HidesPuck;
         ForGames.Routing.Update();
-        _controllers.Polled += XboxPad.Feed;
+        _controllers.Sampled += XboxPad.Feed;
         _controllers.Lost += XboxPad.Drop;
-        _controllers.Polled += ForGames.Others.Feed;
+        _controllers.Sampled += ForGames.Others.Feed;
         _controllers.Lost += ForGames.Others.Drop;
         _controllers.ButtonPressed += _gamepad.Press;
         _controllers.ButtonReleased += _gamepad.Release;

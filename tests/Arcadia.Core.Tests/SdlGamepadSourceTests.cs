@@ -65,6 +65,32 @@ public sealed class SdlGamepadSourceTests : IDisposable
         Assert.Empty(_sdl.Calls);
     }
 
+    /// <summary>#238 D9: a read between two polls feeds the emulated pads only; Arcadia's own input keeps its 8 ms clock.</summary>
+    [Fact]
+    [Trait("TestCase", "T238-11")]
+    public void A_read_between_polls_reaches_Sampled_with_the_newest_state_but_neither_Polled_nor_the_button_events()
+    {
+        var sampled = new List<IReadOnlyList<GamepadReading>>();
+        _source.Sampled += pads => sampled.Add([.. pads]);
+        _source.Open();
+        var pad = _sdl.Plug(KnownPads.DualSense);
+        _source.Poll(0);
+        _sdl.Hold(pad, B.South);
+
+        _source.Poll(1, pollDue: false);
+
+        Assert.Equal(2, sampled.Count);
+        Assert.True(sampled[^1][0].Buttons.HasFlag(PadButtons.A));
+        Assert.Single(_polls);
+        Assert.Empty(_events);
+
+        _source.Poll(8);
+
+        Assert.Equal(3, sampled.Count);
+        Assert.Equal(2, _polls.Count);
+        Assert.Equal(["+A"], _events);
+    }
+
     [Fact]
     public void Steam_s_virtual_pad_and_the_Steam_Deck_are_never_opened()
     {

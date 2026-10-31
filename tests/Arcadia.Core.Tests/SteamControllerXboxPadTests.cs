@@ -16,6 +16,7 @@ public class SteamControllerXboxPadTests
     private readonly List<string> _rumbles = [];
     private bool _wanted = true;
     private bool _forwarding = true;
+    private readonly List<bool> _fast = [];
     private readonly SteamControllerXboxPad _pad;
 
     public SteamControllerXboxPadTests()
@@ -26,10 +27,30 @@ public class SteamControllerXboxPadTests
             ForwardingAllowed = () => _forwarding,
             Combos = () => new ComboWithholdingOptions(BackAndStart: true),
             Rumble = (padId, motors) => { lock (_rumbles) _rumbles.Add($"{padId}: {motors.Large}/{motors.Small}"); },
+            Forwarding = _fast.Add,
         };
     }
 
     private string Log() { lock (_log) return string.Join("\n", _log); }
+
+    /// <summary>#238 D9, QE finding of #353: 1 ms reads only while the pad gets the Steam Controller's states.</summary>
+    [Fact]
+    [Trait("TestCase", "T238-11")]
+    public async Task Fast_reads_are_wanted_only_while_the_plugged_pad_gets_the_Steam_Controllers_states()
+    {
+        _pad.Feed([SteamController]);
+        await _pad.TickAsync();
+        _pad.Feed([SteamController]);
+        Assert.Equal([true], _fast);
+
+        _forwarding = false;
+        _pad.Feed([SteamController]);
+        _forwarding = true;
+        _pad.Feed([SteamController]);
+        _pad.Feed([XboxPad]);
+
+        Assert.Equal([true, false, true, false], _fast);
+    }
 
     [Fact]
     public async Task The_pad_is_plugged_in_only_while_a_Steam_Controller_is_connected_and_wanted()

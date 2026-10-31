@@ -36,7 +36,8 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
     private readonly Lock _toPuck = new();
     private readonly Lock _toSteam = new();
     private readonly List<Thread> _readers = [];
-    private readonly CopyLatency _latency = new();
+    // From a puck report read to it written to VIIPER (T242-18, budget: p99 under 1 ms).
+    private readonly LatencyStats _latency = new();
     private readonly Dictionary<(byte Interface, byte Id), byte[]> _shown = [];
     private readonly Dictionary<byte, byte> _lastMessage = [];
     private readonly Dictionary<(PuckCall Call, string Error), int> _refusals = [];
@@ -449,57 +450,4 @@ internal readonly record struct PuckCall(string What, byte Interface, byte Repor
 {
     public override string ToString() =>
         $"{What} (Interface {Interface}, Report 0x{ReportId:X2}{(Message is null ? "" : $", {Message}")})";
-}
-
-/// <summary>
-/// The delay from a puck report read to it written to VIIPER (T242-18, budget: p99 under 1 ms): the last 8192 reports,
-/// summarised every 10 minutes and when the copy ends.
-/// </summary>
-public sealed class CopyLatency
-{
-    private const int Window = 8192;
-    private static readonly long Every = Stopwatch.Frequency * 600;
-
-    private readonly double[] _microseconds = new double[Window];
-    private readonly Lock _lock = new();
-    private long _count;
-    private long _lastSummary = Stopwatch.GetTimestamp();
-
-    public void Add(TimeSpan delay)
-    {
-        lock (_lock)
-        {
-            _microseconds[_count++ % Window] = delay.TotalMicroseconds;
-        }
-    }
-
-    /// <summary>True once every 10 minutes.</summary>
-    public bool Due()
-    {
-        var now = Stopwatch.GetTimestamp();
-        var last = Interlocked.Read(ref _lastSummary);
-        return now - last >= Every && Interlocked.CompareExchange(ref _lastSummary, now, last) == last;
-    }
-
-    /// <summary>"n …, p50 … µs, p99 … µs, max … µs" over the window.</summary>
-    public string Summary()
-    {
-        double[] sorted;
-        long count;
-        lock (_lock)
-        {
-            count = _count;
-            sorted = _microseconds[..(int)Math.Min(count, Window)];
-        }
-
-        if (sorted.Length == 0)
-        {
-            return "keine Berichte";
-        }
-
-        Array.Sort(sorted);
-        return FormattableString.Invariant($"n {count}, p50 {Percentile(sorted, 0.50):0} µs, p99 {Percentile(sorted, 0.99):0} µs, max {sorted[^1]:0} µs");
-    }
-
-    private static double Percentile(double[] sorted, double p) => sorted[Math.Min(sorted.Length - 1, (int)(sorted.Length * p))];
 }

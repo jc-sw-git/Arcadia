@@ -98,8 +98,10 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         var hold = copy(new SteamControllerCopyWiring(filter, gate.Passes, copyCombos.Current));
         var othersForSteam = new CombosFromSettings(settings, toSteam: true);
         var othersForGames = new CombosFromSettings(settings, toSteam: false);
+        var fastReads = new FastReads(gamepad.ReadFast);
         var others = new TakenOverControllers(time, Services.AppLog.Write)
         {
+            Forwarding = fastReads.Others,
             // Unlike the Steam Controller's pad, also while Steam is in front: Steam sees only these pads now.
             ForwardingAllowed = () => SteamControllerCopyRules.OtherControllerPasses(
                 new ForegroundNow(isArcadiaActive(), isMouseModeOn(), SteamInFront: false), settings.Current.IgnoreSteamDesktopLayout),
@@ -119,6 +121,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             Light = gamepad.SetLight,
             OwnPads = ownPads ?? new OwnPadModels(),
             MotionSensors = gamepad.UseMotionSensors,
+            LayoutOf = model => ControllerLayouts.Find(settings.Current.ControllerLayouts, model),
         };
         var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
         {
@@ -144,6 +147,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             Combos = combos.Current,
             FeedAlive = guardian.Pulse,
             Rumble = (padId, motors) => Rumble(gamepad, padId, motors),
+            Forwarding = fastReads.SteamController,
         };
         padForPresence = pad;
         pad.GaveUp += text =>
@@ -196,6 +200,10 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     public IReadOnlyList<ControllerNotHidden> NotHidden => Others.NotHidden;
 
     public IReadOnlyList<ControllerWaitingForTool> WaitingForTool => Others.WaitingForTool;
+
+    public IReadOnlyList<ConnectedModel> ConnectedModels => Others.Connected;
+
+    public bool SteamControllerConnected => Pad.SteamControllerConnected;
 
     public event Action? Changed
     {

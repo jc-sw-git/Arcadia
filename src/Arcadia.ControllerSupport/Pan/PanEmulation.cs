@@ -327,7 +327,6 @@ public sealed class PanEmulation : IVirtualXboxPads
                 await EndAsync(session, "Arcadia wird beendet");
             }
 
-            Others?.Shutdown();
             await _pads.ShutdownAsync();
             await _guardian.PlannedExitAsync();
         }

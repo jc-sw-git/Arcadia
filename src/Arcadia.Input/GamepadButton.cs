@@ -47,6 +47,18 @@ public interface IGamepadSource : IDisposable
     event Action<IReadOnlyList<GamepadReading>>? Polled;
 
     /// <summary>
+    /// Raised on every read of the controllers, on the poll thread: with every poll, and every millisecond in between
+    /// while <see cref="ReadFast"/> is on. For forwarding to emulated pads (#238 D9); the list is only valid during the call.
+    /// </summary>
+    event Action<IReadOnlyList<GamepadReading>>? Sampled;
+
+    /// <summary>
+    /// Reads every millisecond at high priority (true) while emulated pads are forwarded, so a report reaches the game
+    /// with the least delay (#238 D9); false back to the polls alone. Callable from any thread; takes effect at the next read.
+    /// </summary>
+    void ReadFast(bool on);
+
+    /// <summary>
     /// Raised once, on the poll thread, when the controllers stop for good after an error: whatever is held is to be
     /// dropped, not released (a released A would start a game), as no poll will let go of it.
     /// </summary>
@@ -115,6 +127,16 @@ public sealed class NullGamepadSource : IGamepadSource
     {
         add { }
         remove { }
+    }
+
+    public event Action<IReadOnlyList<GamepadReading>>? Sampled
+    {
+        add { }
+        remove { }
+    }
+
+    public void ReadFast(bool on)
+    {
     }
 
     public event Action? Lost

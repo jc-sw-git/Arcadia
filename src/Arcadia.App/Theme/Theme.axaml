@@ -1427,6 +1427,54 @@
     <Setter Property="CornerRadius" Value="10" />
     <Setter Property="Padding" Value="20,16" />
   </Style>
+  <!-- "Controller zuordnen" (#238 D3a, designs T238Modal). -->
+  <Style Selector="Path.layoutsIcon">
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+    <Setter Property="StrokeThickness" Value="1.9" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.valuePill.layoutPill">
+    <Setter Property="Width" Value="340" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+  </Style>
+  <Style Selector="TextBlock.rowSubtitle">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="TextBlock.valueText.notTakenOver">
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+  </Style>
+  <Style Selector="TextBlock.valueText.locked">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Path.lockIcon">
+    <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
+    <Setter Property="StrokeThickness" Value="2.2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Stretch" Value="Uniform" />
+  </Style>
+  <Style Selector="TextBlock.layoutLockNote">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="LineHeight" Value="22" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Margin" Value="0,8,0,4" />
+  </Style>
+  <Style Selector="TextBlock.layoutsHint">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
   <Style Selector="TextBlock.promptBody">
     <Setter Property="FontSize" Value="18" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />

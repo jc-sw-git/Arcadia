@@ -27,9 +27,9 @@ Steam; the other controllers stay taken over. Product rules: `docs/product/contr
 
 ## Forwarding
 
-- The poll thread feeds `Feed`: per controller a one-slot channel (the newest state wins) and a sender with a 1 s
-  timeout; a hung send counts as a lost pad. `ComboWithholding` filters on every poll (Back + Start, ⧉/≡), Guide is
-  passed (`XboxPadState.From(…, withGuide: true)`).
+- Every read of the gamepad source feeds `Feed` (`IGamepadSource.Sampled`), and each new state goes to the pad from
+  that thread (`PadForwarder`, [pad-latency.md](pad-latency.md)); a send slower than 1 s counts as a lost pad. `ComboWithholding` filters
+  on every read (Back + Start, ⧉/≡), Guide is passed (`XboxPadState.From(…, withGuide: true)`).
 - Neutral while Arcadia is in front or the mouse mode is on, unless Steam's desktop control is allowed
   (`SteamControllerCopyRules.OtherControllerPasses`): then they pass there, with the copy's combos for Steam
   (`CombosKeptFromSteam`), since Steam sees these controllers only through the pads. Unlike the Steam Controller's
@@ -76,9 +76,26 @@ While the emulation runs, `NotHidden` lists every controller Pan rejected or tha
 reason; `WaitingForTool` those whose vendor's firmware tool runs (Xbox Zubehör, DualSense-Firmware-Updater).
 `PanRows` turns them into the info row "… lässt sich nicht verstecken" and one warning row per tool.
 
+## Controller zuordnen (part 3, D3a)
+
+- `AppSettings.ControllerLayouts`: per model ("054C:0CE6") a kind's name or "NotTakenOver"; read by
+  `ControllerLayouts.Find`, which ignores anything else in the file. `TakenOverControllers.LayoutOf` reads it each tick.
+- A kind is used only where the model may be it (`ControllerLayouts.Choices`: the Edge only for an Edge), else its own.
+  A pad of another kind than chosen is unplugged at the next tick and the chosen one plugged (the game sees it change once).
+  The modal stores only on [Übernehmen], all changes in one save, so trying layouts never replaces pads or shows and hides.
+- "Nicht übernehmen": the model is never hidden, starts no emulation on its own and isn't named in the D7/D8 rows. A
+  hidden one has its pads unplugged first, then Arcadia lets go of every controller and Pan shows it
+  (`ShowController`, [pan-hiding-controllers.md](pan-hiding-controllers.md)). A show Pan refuses gets no pad either: Pan
+  answers `HidingFailed` also when it showed the model and only the restart failed, so a pad could make two. Taken
+  over again, the model is hidden anew; still hidden, a reconnect or "Controller wiederherstellen" frees it.
+- `Connected` lists one entry per connected model (excluded ones too) for the modal, also while Pan is off.
+
+## Latency (D9)
+
+Reads every 1 ms while pads get states for a game, sends on the reading thread, logs per pad: [pad-latency.md](pad-latency.md).
+
 ## Not done yet
 
-The "Controller zuordnen" modal (part 3) and the latency budget (D9, part 4) follow in #238's later parts. Not
-verified on hardware yet: the button bits of the Switch 2 Pro's C and the Edge's paddles as SDL maps them, the
+Not verified on hardware yet: the button bits of the Switch 2 Pro's C and the Edge's paddles as SDL maps them, the
 Switch 2 Pro's stick calibration with VIIPER's zeroed flash. Not detected: VIIPER refusing another pad (no free slot). `ReleaseForFirmware` ends
 the whole emulation, so the other controllers' pads are replugged too.

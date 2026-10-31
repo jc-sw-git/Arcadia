@@ -55,6 +55,12 @@ public interface IEmulationGuardian
     Task<ControllerHidingResult> HideControllerAsync(uint generation, Arcadia.Pan.ControllerModel model, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Shows one model again within this generation's emulation, the rest stays hidden (#238 D3a "Nicht übernehmen");
+    /// Arcadia has let go of the model first, as Pan restarts it. Never throws but for cancellation before it is sent.
+    /// </summary>
+    Task<ControllerHidingResult> ShowControllerAsync(uint generation, Arcadia.Pan.ControllerModel model, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Whether Pan could hide now and, while it hides for <paramref name="generation"/>, whether that hiding still holds
     /// (<see cref="Arcadia.Pan.PanReason.HidingLost"/>); null while Pan isn't connected. Never throws but for cancellation.
     /// </summary>

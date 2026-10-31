@@ -6,8 +6,8 @@ mode fully controllable by gamepad (incl. Steam Controller), desktop mode by mou
 - **Designs (source of truth for UI):** https://claude.ai/artifact/8A9qxc67RcsuFmavaqCAuN
   (artboards: library, detail page, search, artwork modal, Spotify, launcher settings,
   localization, appearance, Big Picture settings, desktop mode). Read it before building UI.
-- **Open work:** GitHub issues (label `roadmap`, next up `prio:next`). One epic per area (`type:epic`), its tasks
-  as GitHub sub-issues (add new ones as a sub-issue of the matching epic). Features are `type:story` and start with a
+- **Open work:** GitHub issues (label `roadmap`, next up `prio:next`), grouped by area with an `area:*` label (no
+  epic issues). Parts cut from a large issue are its sub-issues. Features are `type:story` and start with a
   `> **Story:**` line; bugs `bug`; technical work `type:tech-debt`. Milestone `I<n>` = iteration n, its title names
   the theme, its description the scope.
 - **Language:** everything on GitHub is English (public repo): code, docs, issues, PRs, commits, branches,

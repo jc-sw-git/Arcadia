@@ -28,7 +28,7 @@ every teardown trigger). What the client emulates for them: [every-controller.md
 - `ControllerDevices.Scan`: the model's present devices on a hardware host (`HidingList.OnSoftwareHost`, never VIIPER's
   pads): every HID collection but those of class `Keyboard`/`Mouse` (HidHide doesn't filter them, games don't read
   them), and every USB device of class `XnaComposite` or `XboxComposite` (the XInput interface, driver `xusb22`).
-  Only if one of them is a gamepad: a HID collection with `HID_DEVICE_UP:0001_U:0004`/`0005`, or an XInput interface.
+  Only if one of them is a gamepad: a HID collection with `HID_DEVICE_UP:0001_U:0004`/`0005` among its hardware ids (its compatible ids are empty), or an XInput interface.
 - Model ids are read from USB (`VID_054C&PID_0CE6`), Bluetooth (`VID&0002054C_PID&0CE6`) and Bluetooth LE
   (`VID&02045E_PID&0B13`) ids.
 - The XInput interface must be hidden too: XInput, Windows.Gaming.Input and SDL read an XInput pad through it, not its

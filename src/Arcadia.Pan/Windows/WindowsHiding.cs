@@ -313,7 +313,10 @@ public sealed unsafe class ControllerDevices : IControllerDevices
             }
 
             hideable.Add(new ControllerInstance(id, ControllerInterface.Hid));
-            gamepad |= Property(id, Native.CmDrpCompatibleIds).Any(compatible => GamepadCollections.Contains(compatible, StringComparer.OrdinalIgnoreCase));
+            // Windows lists a collection's usage among its hardware ids; the compatible ids of a HID collection are empty
+            // (a DualSense by USB on the owner's PC). Both are read, in case a driver puts it there.
+            gamepad |= Property(id, Native.CmDrpHardwareId).Concat(Property(id, Native.CmDrpCompatibleIds))
+                .Any(hardwareId => GamepadCollections.Contains(hardwareId, StringComparer.OrdinalIgnoreCase));
         }
 
         foreach (var id in PuckDevices.PresentDevices("USB").Where(id => ControllerList.IsOfModel(id, model)))

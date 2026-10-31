@@ -190,7 +190,7 @@ public partial class App : Application
             // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
             var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write) : new NoPanTransport(), time, AppLog.Write)
             {
-                Wanted = () => controllerSupport.MayTalkToPan,
+                WhyLeftAlone = () => controllerSupport.WhyPanIsLeftAlone,
             };
             var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
             pan.JournalProblem += () => panNotices.Show(PanJournalText);

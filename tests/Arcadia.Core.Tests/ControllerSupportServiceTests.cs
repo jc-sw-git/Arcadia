@@ -720,6 +720,39 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Assert.Null(service.PanUpdateError);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task While_the_update_runs_Arcadia_leaves_Pan_alone_so_it_does_not_restart_the_old_service(bool succeeds)
+    {
+        // --install stops the old service and waits for it to end; a client that reconnected restarted it 90 ms later,
+        // and --install gave up after 90 s with exit code 3.
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings { PanEnabled = true });
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        service.CheckPanAtStart();
+        string? whyDuringUpdate = null;
+        _platform.WhilePanUpdates = () => whyDuringUpdate = service.WhyPanIsLeftAlone;
+        _platform.PanUpdateError = succeeds ? null : new InvalidOperationException("Pan --install meldete Fehler 3");
+
+        if (succeeds)
+        {
+            Assert.True(await service.UpdatePanAsync());
+            Assert.True(service.MayTalkToPan, "the new Pan is talked to at once");
+        }
+        else
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdatePanAsync());
+            Assert.Equal(ControllerSupportService.PanUpdatingReason, service.WhyPanIsLeftAlone);
+            service.SwitchPanOffForUpdate("Pan --install meldete Fehler 3");
+            Assert.Equal(ControllerSupportService.OldPanOffReason, service.WhyPanIsLeftAlone);
+        }
+
+        Assert.Equal(ControllerSupportService.PanUpdatingReason, whyDuringUpdate);
+        Assert.False(service.IsPanUpdating);
+    }
+
     [Fact]
     public void Without_a_due_update_Arcadia_talks_to_Pan_also_while_it_is_off()
     {
@@ -1001,9 +1034,13 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public int PanUpdates { get; private set; }
 
+        /// <summary>Runs while Pan's <c>--install</c> would, to see what Arcadia does meanwhile.</summary>
+        public Action? WhilePanUpdates { get; set; }
+
         public Task<bool> UpdatePanAsync(CancellationToken cancellationToken)
         {
             PanUpdates++;
+            WhilePanUpdates?.Invoke();
             if (PanUpdateError is { } error)
             {
                 throw error;

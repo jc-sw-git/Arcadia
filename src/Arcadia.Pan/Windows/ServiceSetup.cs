@@ -259,7 +259,7 @@ public static class ServiceSetup
         {
             DeleteTree(PanPaths.DataDirectory, log);
             DeleteIfEmpty(Path.GetDirectoryName(PanPaths.DataDirectory)!, log);
-        }, log);
+        }, log, () => Restore.RemoveStaleDevicesAsync(log));
         if (outcome != UninstallOutcome.RestoreIncomplete)
         {
             DeleteTree(PanPaths.InstallDirectory, log);

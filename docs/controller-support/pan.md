@@ -3,6 +3,8 @@
 Pan gives the real controllers back to every program when Arcadia ends unexpectedly or hangs: it ends the forwarding
 (`viiper.exe`, usbip ports) and shows the real puck again ([pan-hiding.md](pan-hiding.md)). It was designed with
 failure cases first; what it deliberately doesn't guard against: [pan-risks.md](pan-risks.md).
+Once nothing emulates, it removes the stale device entries Arcadia's emulated devices leave in Windows
+([pan-stale-devices.md](pan-stale-devices.md)).
 
 ## Pieces
 

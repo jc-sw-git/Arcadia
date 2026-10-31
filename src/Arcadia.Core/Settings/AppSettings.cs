@@ -26,6 +26,13 @@ public sealed record AppSettings
     public Dictionary<string, bool> ControllerSupportOverrides { get; init; } = [];
 
     /// <summary>
+    /// "Controller zuordnen" (#238 D3a): the layout the player chose per controller model, keyed by its USB ids
+    /// ("054C:0CE6"), the value a kind's name ("DualSense") or "NotTakenOver". A model without an entry keeps its own
+    /// kind (D3b). Read by <c>ControllerLayouts</c>, which ignores what it doesn't know.
+    /// </summary>
+    public Dictionary<string, string> ControllerLayouts { get; init; } = [];
+
+    /// <summary>
     /// "SISR behalten" (#214): the group "SISR" in the controller settings stays hidden and SISR stays as it is. A factory
     /// reset (#146) shows the group again; the warning "SISR läuft" under Pan shows anyway.
     /// </summary>

@@ -119,6 +119,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             Light = gamepad.SetLight,
             OwnPads = ownPads ?? new OwnPadModels(),
             MotionSensors = gamepad.UseMotionSensors,
+            LayoutOf = model => ControllerLayouts.Find(settings.Current.ControllerLayouts, model),
         };
         var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
         {
@@ -196,6 +197,8 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     public IReadOnlyList<ControllerNotHidden> NotHidden => Others.NotHidden;
 
     public IReadOnlyList<ControllerWaitingForTool> WaitingForTool => Others.WaitingForTool;
+
+    public IReadOnlyList<ConnectedModel> ConnectedModels => Others.Connected;
 
     public event Action? Changed
     {

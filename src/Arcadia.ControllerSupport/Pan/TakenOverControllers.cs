@@ -64,6 +64,8 @@ public sealed class TakenOverControllers
     private volatile bool _gaveUp;
     private IReadOnlyList<ControllerNotHidden> _notHidden = [];
     private IReadOnlyList<ControllerWaitingForTool> _waiting = [];
+    private IReadOnlyList<ConnectedModel> _connected = [];
+    private bool _connectedChanged;
 
     public TakenOverControllers(TimeProvider time, Action<string> log)
     {
@@ -101,10 +103,16 @@ public sealed class TakenOverControllers
     /// </summary>
     public Action<bool> MotionSensors { get; init; } = _ => { };
 
+    /// <summary>
+    /// The player's choice for a model in "Controller zuordnen" (#238 D3a), or null for its default (D3b). Read each tick
+    /// and by <see cref="AnyConnected"/>, so a change applies at the next tick.
+    /// </summary>
+    public Func<ControllerModel, ControllerLayout?> LayoutOf { get; init; } = _ => null;
+
     /// <summary>The pads were lost too often: Arcadia stops until "Erneut versuchen" (a toast with this text).</summary>
     public event Action<string>? GaveUp;
 
-    /// <summary><see cref="NotHidden"/> or <see cref="WaitingForTool"/> changed; off the UI thread.</summary>
+    /// <summary><see cref="NotHidden"/>, <see cref="WaitingForTool"/> or <see cref="Connected"/> changed; off the UI thread.</summary>
     public event Action? Changed;
 
     /// <summary>A controller Arcadia may take over is connected: Pan's emulation starts for it, also without a Steam Controller (D2).</summary>
@@ -112,9 +120,15 @@ public sealed class TakenOverControllers
     {
         get
         {
-            lock (_lock) return _controllers.Count > 0;
+            lock (_lock) return _controllers.Any(controller => IsTakenOver(controller.Model));
         }
     }
+
+    /// <summary>
+    /// The models connected now, in the order they connected, one entry per model, those not taken over included: the
+    /// rows of "Controller zuordnen". Kept while Pan is off too, as the gamepad source feeds them.
+    /// </summary>
+    public IReadOnlyList<ConnectedModel> Connected => Volatile.Read(ref _connected);
 
     /// <summary>The connected controllers that reach games directly as Pan couldn't hide them (D7).</summary>
     public IReadOnlyList<ControllerNotHidden> NotHidden => Volatile.Read(ref _notHidden);
@@ -188,6 +202,7 @@ public sealed class TakenOverControllers
             }
         }
 
+        PublishConnected();
         foreach (var (padId, motors, light) in feedbackAgain)
         {
             if (motors is { } rumbling)
@@ -212,6 +227,8 @@ public sealed class TakenOverControllers
                 RemoveAt(i);
             }
         }
+
+        PublishConnected();
     }
 
     /// <summary>
@@ -231,6 +248,7 @@ public sealed class TakenOverControllers
             }
 
             await UnplugGoneAsync();
+            await ApplyLayoutsAsync(generation, guardian, cancellationToken);
             await HideNewModelsAsync(generation, guardian, cancellationToken);
             await KeepPadsAsync(pads, cancellationToken);
             KeepMotionSensors();
@@ -319,8 +337,14 @@ public sealed class TakenOverControllers
 
     private Controller Add(string key, GamepadReading reading)
     {
-        var controller = new Controller(key, Model(reading), reading.Device.DisplayName, PadKinds.Default(reading.Device), _nextOrder++, _time, OwnPads);
+        var model = Model(reading);
+        var defaultKind = PadKinds.Default(reading.Device);
+        var controller = new Controller(key, model, reading.Device.DisplayName, defaultKind, _nextOrder++, _time, OwnPads)
+        {
+            Kind = ControllerLayouts.KindFor(LayoutOf(model), defaultKind),
+        };
         _controllers.Add(controller);
+        _connectedChanged = true;
         return controller;
     }
 
@@ -329,6 +353,7 @@ public sealed class TakenOverControllers
     {
         var controller = _controllers[index];
         _controllers.RemoveAt(index);
+        _connectedChanged = true;
         controller.Offer(VirtualPadState.Neutral, _time.GetTimestamp());
         _gone.Add(controller);
         foreach (var model in _models.Values)
@@ -362,7 +387,7 @@ public sealed class TakenOverControllers
             toHide = [.. _controllers
                 .GroupBy(controller => controller.Model)
                 .Select(group => (group.Key, group.Select(controller => controller.Key).ToList()))
-                .Where(model => NeedsHide(model.Key, model.Item2))];
+                .Where(model => IsTakenOver(model.Key) && NeedsHide(model.Key, model.Item2))];
         }
 
         if (toHide.Count == 0)
@@ -370,19 +395,29 @@ public sealed class TakenOverControllers
             return;
         }
 
-        // Pan restarts what it hides: Arcadia lets go of every controller first, and the pads rest meanwhile (after the
-        // let-go, so no poll offers a held state again).
-        ReadControllers(false);
-        RestAllPads();
-        using var pulsing = new CancellationTokenSource();
-        var pulse = PulseAsync(pulsing.Token);
-        try
+        await WhileLetGoAsync(async () =>
         {
             foreach (var (model, keys) in toHide)
             {
                 var result = await guardian.HideControllerAsync(generation, model, cancellationToken);
                 Record(model, keys, result);
             }
+        });
+    }
+
+    /// <summary>
+    /// Pan restarts what it hides or shows: Arcadia lets go of every controller first, and the pads rest meanwhile (after
+    /// the let-go, so no poll offers a held state again); Pan's heartbeat goes on.
+    /// </summary>
+    private async Task WhileLetGoAsync(Func<Task> requests)
+    {
+        ReadControllers(false);
+        RestAllPads();
+        using var pulsing = new CancellationTokenSource();
+        var pulse = PulseAsync(pulsing.Token);
+        try
+        {
+            await requests();
         }
         finally
         {
@@ -391,6 +426,92 @@ public sealed class TakenOverControllers
             lock (_lock) _rereadAt = _time.GetTimestamp();
             ReadControllers(true);
         }
+    }
+
+    /// <summary>Under the lock or not: whether the player left the model to Pan (anything but "Nicht übernehmen").</summary>
+    private bool IsTakenOver(ControllerModel model) => LayoutOf(model) is not { IsTakenOver: false };
+
+    /// <summary>
+    /// The choices of "Controller zuordnen" (D3a), each tick: a pad of another kind than chosen goes (the next step plugs
+    /// the chosen one, so the game sees it change once), and a model the player doesn't let Pan take over is shown
+    /// again, its pads unplugged first, so a game never sees both. A show Pan refuses leaves the model hidden and
+    /// emulated as before (the controller keeps working in games), until it reconnects or the emulation starts anew.
+    /// </summary>
+    private async Task ApplyLayoutsAsync(uint generation, IEmulationGuardian guardian, CancellationToken cancellationToken)
+    {
+        List<(Controller Controller, string Why)> stale = [];
+        List<(ControllerModel Model, List<string> Keys)> toShow = [];
+        lock (_lock)
+        {
+            foreach (var group in _controllers.GroupBy(controller => controller.Model))
+            {
+                var layout = LayoutOf(group.Key);
+                var keys = group.Select(controller => controller.Key).ToList();
+                var show = false;
+                if (layout is { IsTakenOver: false } && _models.TryGetValue(group.Key, out var state))
+                {
+                    if (state.Rejection is not null)
+                    {
+                        // Not hidden: nothing to show, and the D7/D8 rows don't name what the player excluded. Taken
+                        // over again, it is tried anew.
+                        _models.Remove(group.Key);
+                    }
+                    else if (keys.Any(key => !state.ShowRefusedKeys.Contains(key)))
+                    {
+                        show = true;
+                        toShow.Add((group.Key, keys));
+                    }
+                }
+
+                foreach (var controller in group)
+                {
+                    var kind = ControllerLayouts.KindFor(layout, controller.DefaultKind);
+                    controller.Kind = kind;
+                    if (controller.Pad is { } pad && (show || pad.Kind != kind))
+                    {
+                        stale.Add((controller, show ? "nicht übernehmen" : $"Layout {PadKinds.DisplayName(kind)}"));
+                    }
+                }
+            }
+        }
+
+        foreach (var (controller, why) in stale)
+        {
+            await UnplugAsync(controller, why);
+        }
+
+        if (toShow.Count == 0)
+        {
+            return;
+        }
+
+        await WhileLetGoAsync(async () =>
+        {
+            foreach (var (model, keys) in toShow)
+            {
+                var result = await guardian.ShowControllerAsync(generation, model, cancellationToken);
+                RecordShow(model, keys, result);
+            }
+        });
+    }
+
+    private void RecordShow(ControllerModel model, List<string> keys, ControllerHidingResult result)
+    {
+        lock (_lock)
+        {
+            if (result.Done)
+            {
+                _models.Remove(model);
+            }
+            else if (_models.TryGetValue(model, out var state))
+            {
+                state.ShowRefusedKeys.UnionWith(keys);
+            }
+        }
+
+        _log(result.Done
+            ? $"Controller für Spiele: {model} nicht übernommen, wieder sichtbar{(result.Reason == PanReason.ControllerNeedsReplug ? " (Programme, die ihn offen hatten, sehen ihn erst nach neuem Verbinden)" : string.Empty)}"
+            : $"Controller für Spiele: {model} lässt sich nicht wieder zeigen ({result.Reason}), bleibt emuliert bis zum neuen Verbinden");
     }
 
     /// <summary>Under the lock: a model not tried yet, a rejected one reconnected, or one whose firmware tool's wait is up.</summary>
@@ -569,7 +690,7 @@ public sealed class TakenOverControllers
             _log($"Controller für Spiele: Abstecken fehlgeschlagen: {ex.Message}");
         }
 
-        _log($"Controller für Spiele: {PadKinds.DisplayName(controller.Kind)} für \"{controller.Name}\" abgesteckt ({why}); {controller.Delays}");
+        _log($"Controller für Spiele: {PadKinds.DisplayName(pad.Kind)} für \"{controller.Name}\" abgesteckt ({why}); {controller.Delays}");
     }
 
     /// <summary>Motion sensors on while a plugged pad carries motion; only changes are passed on.</summary>
@@ -621,6 +742,26 @@ public sealed class TakenOverControllers
         }
     }
 
+    /// <summary>After a controller came or went: the models for "Controller zuordnen", <see cref="Changed"/>. Outside the lock.</summary>
+    private void PublishConnected()
+    {
+        lock (_lock)
+        {
+            if (!_connectedChanged)
+            {
+                return;
+            }
+
+            _connectedChanged = false;
+            Volatile.Write(ref _connected, [.. _controllers
+                .OrderBy(controller => controller.Order)
+                .DistinctBy(controller => controller.Model)
+                .Select(controller => new ConnectedModel(controller.Model, controller.Name, controller.DefaultKind))]);
+        }
+
+        Changed?.Invoke();
+    }
+
     /// <summary>The lists for the settings (D7, D8), from the controllers connected now; <see cref="Changed"/> when they differ.</summary>
     private void Publish()
     {
@@ -632,7 +773,7 @@ public sealed class TakenOverControllers
             waiting = [];
             foreach (var controller in _controllers.OrderBy(controller => controller.Order))
             {
-                if (!_models.TryGetValue(controller.Model, out var state))
+                if (!IsTakenOver(controller.Model) || !_models.TryGetValue(controller.Model, out var state))
                 {
                     continue;
                 }
@@ -681,10 +822,16 @@ public sealed class TakenOverControllers
 
         /// <summary>Hidden, but these controllers are held by whoever had them until they reconnect (A3).</summary>
         public HashSet<string> ReplugPending { get; } = [];
+
+        /// <summary>
+        /// "Nicht übernehmen", but Pan refused to show it with these controllers connected: only another one, or one
+        /// reconnected, tries again; meanwhile it stays emulated.
+        /// </summary>
+        public HashSet<string> ShowRefusedKeys { get; } = [];
     }
 
     /// <summary>One connected controller and its pad.</summary>
-    private sealed class Controller(string key, ControllerModel model, string name, PadKind kind, long order, TimeProvider time, OwnPadModels ownPads)
+    private sealed class Controller(string key, ControllerModel model, string name, PadKind defaultKind, long order, TimeProvider time, OwnPadModels ownPads)
     {
         private readonly Channel<(VirtualPadState State, long PolledAt)> _states =
             Channel.CreateBounded<(VirtualPadState, long)>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
@@ -703,8 +850,11 @@ public sealed class TakenOverControllers
 
         public string Name { get; } = name;
 
-        /// <summary>The kind its pad is (#238 D3b).</summary>
-        public PadKind Kind { get; } = kind;
+        /// <summary>Its own kind where VIIPER has it (#238 D3b).</summary>
+        public PadKind DefaultKind { get; } = defaultKind;
+
+        /// <summary>The kind its pad is to be (D3a, else <see cref="DefaultKind"/>); set under the owner's lock.</summary>
+        public PadKind Kind { get; set; } = defaultKind;
 
         public long Order { get; } = order;
 
@@ -788,7 +938,7 @@ public sealed class TakenOverControllers
             var pad = Interlocked.Exchange(ref _pad, null);
             if (pad is not null)
             {
-                ownPads.Unplugged(Kind);
+                ownPads.Unplugged(pad.Kind);
             }
 
             return pad;
@@ -797,9 +947,9 @@ public sealed class TakenOverControllers
         /// <summary>The emulation took the pad out itself.</summary>
         public void ForgetPad()
         {
-            if (Interlocked.Exchange(ref _pad, null) is not null)
+            if (Interlocked.Exchange(ref _pad, null) is { } pad)
             {
-                ownPads.Unplugged(Kind);
+                ownPads.Unplugged(pad.Kind);
             }
         }
 

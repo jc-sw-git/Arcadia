@@ -35,6 +35,9 @@ public interface IPanEmulationView
 
     /// <summary>Connected controllers Pan waits with while their vendor's firmware tool runs (#238 D8).</summary>
     IReadOnlyList<ControllerWaitingForTool> WaitingForTool => [];
+
+    /// <summary>The controller models connected now but the Steam Controller, for "Controller zuordnen" (#238 D3a).</summary>
+    IReadOnlyList<ConnectedModel> ConnectedModels => [];
 }
 
 /// <summary>No emulation (tests that don't need one): always off.</summary>

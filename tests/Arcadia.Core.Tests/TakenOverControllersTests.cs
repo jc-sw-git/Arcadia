@@ -36,6 +36,7 @@ public sealed class TakenOverControllersTests
     private bool _steamControllerPresent;
     private bool _forwarding = true;
     private string? _runningTool;
+    private readonly Dictionary<string, string> _layouts = [];
 
     public TakenOverControllersTests()
     {
@@ -54,6 +55,7 @@ public sealed class TakenOverControllersTests
             Light = (padId, light) => { lock (_lights) _lights.Add($"{padId}: {light.Red},{light.Green},{light.Blue}"); },
             MotionSensors = _motion.Add,
             ProcessRuns = name => name == _runningTool,
+            LayoutOf = model => ControllerLayouts.Find(_layouts, model),
         };
         _emulation = new PanEmulation(_pads, _pan, _copy, _time, Log)
         {
@@ -139,9 +141,10 @@ public sealed class TakenOverControllersTests
         _pan.ControllerHide = model => model == EightBitDoModel
             ? new ControllerHidingResult(false, PanReason.ControllerNotHideable)
             : new ControllerHidingResult(true, PanReason.None);
+        _others.Feed([DualSense, EightBitDo]);
+        // Counted from here: the feed told of the connected models already.
         var changes = 0;
         _others.Changed += () => changes++;
-        _others.Feed([DualSense, EightBitDo]);
 
         await _emulation.TickAsync();
         await _emulation.TickAsync();
@@ -512,5 +515,168 @@ public sealed class TakenOverControllersTests
         Assert.Equal([$"1 {DualSenseModel}", $"2 {DualSenseModel}"], _pan.ControllerHides);
         Assert.Equal(1, _others.Plugged);
         Assert.Equal(2, _pads.Plugged);
+    }
+
+    private static readonly ControllerModel GameCubeModel = new(0x057E, 0x0337);
+    private static readonly GamepadReading GameCube = Reading(5, KnownPads.GameCube with { Path = "hid-gamecube" });
+
+    private void Choose(ControllerModel model, ControllerLayout layout) => _layouts[ControllerLayouts.Key(model)] = ControllerLayouts.Value(layout);
+
+    /// <summary>#238 part 3 (D3a): the kind chosen per model, also for one with a 1:1 kind of its own.</summary>
+    [Fact]
+    [Trait("TestCase", "T238-13")]
+    public async Task A_chosen_layout_gives_every_controller_of_the_model_that_kind()
+    {
+        Choose(DualSenseModel, ControllerLayout.Of(PadKind.Xbox360));
+        Choose(GameCubeModel, ControllerLayout.Of(PadKind.Switch2Pro));
+        _others.Feed([DualSense, GameCube, DualSense with { PadId = 7, Device = DualSense.Device with { Path = "hid-dualsense-2" } }]);
+
+        await _emulation.TickAsync();
+
+        Assert.Equal([PadKind.Xbox360, PadKind.Switch2Pro, PadKind.Xbox360], _pads.All.Select(pad => pad.Kind));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T238-13")]
+    public async Task A_new_layout_mid_game_replaces_the_pad_once_and_keeps_the_controller_hidden()
+    {
+        _others.Feed([DualSense, GameCube]);
+        await _emulation.TickAsync();
+        _events.Clear();
+
+        Choose(DualSenseModel, ControllerLayout.Of(PadKind.Xbox360));
+        await _emulation.TickAsync();
+
+        Assert.Equal(1, _pads.Unplugged);
+        Assert.Equal(["pad unplugged", "pad plugged"], _events);
+        Assert.Equal([PadKind.DualSense, PadKind.Xbox360, PadKind.Xbox360], _pads.All.Select(pad => pad.Kind));
+        Assert.Contains(_log, line => line.StartsWith("Controller für Spiele: DualSense für \"DualSense Wireless Controller\" abgesteckt (Layout Xbox 360 Controller)", StringComparison.Ordinal));
+
+        // Applied once: the next tick changes nothing.
+        _events.Clear();
+        await _emulation.TickAsync();
+        Assert.Empty(_events);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T238-13")]
+    public async Task Not_taken_over_unplugs_the_pad_first_then_Pan_shows_the_model_and_taken_over_again_hides_it()
+    {
+        _others.Feed([DualSense, GameCube]);
+        await _emulation.TickAsync();
+        _events.Clear();
+
+        Choose(GameCubeModel, ControllerLayout.NotTakenOver);
+        await _emulation.TickAsync();
+
+        Assert.Equal(["pad unplugged", "let go of controllers", $"show {GameCubeModel}", "read controllers"], _events);
+        Assert.Equal(1, _others.Plugged);
+        Assert.Empty(_others.NotHidden);
+
+        // Left alone from now on: never hidden again while the choice stands.
+        _events.Clear();
+        _others.Feed([DualSense, GameCube]);
+        await _emulation.TickAsync();
+        Assert.Empty(_events);
+
+        _layouts.Clear();
+        await _emulation.TickAsync();
+        Assert.Equal(["let go of controllers", $"hide {GameCubeModel}", "read controllers", "pad plugged"], _events);
+        Assert.Equal(2, _others.Plugged);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T238-13")]
+    public async Task A_model_not_taken_over_is_never_hidden_and_alone_starts_no_emulation()
+    {
+        Choose(GameCubeModel, ControllerLayout.NotTakenOver);
+        _others.Feed([GameCube]);
+
+        Assert.False(_others.AnyConnected);
+        await _emulation.TickAsync();
+        Assert.Empty(_pan.Started);
+
+        _others.Feed([GameCube, DualSense]);
+        await _emulation.TickAsync();
+        Assert.Equal([$"1 {DualSenseModel}"], _pan.ControllerHides);
+        Assert.Equal([PadKind.DualSense], _pads.All.Select(pad => pad.Kind));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T238-13")]
+    public async Task A_model_not_taken_over_isnt_listed_as_not_hideable()
+    {
+        _pan.ControllerHide = model => new ControllerHidingResult(false, PanReason.ControllerNotHideable);
+        _others.Feed([GameCube]);
+        await _emulation.TickAsync();
+        Assert.Single(_others.NotHidden);
+
+        Choose(GameCubeModel, ControllerLayout.NotTakenOver);
+        await _emulation.TickAsync();
+
+        Assert.Empty(_others.NotHidden);
+        Assert.Empty(_pan.ControllerShows);
+    }
+
+    /// <summary>Robust: a controller Pan can't show again keeps working in games as its pad, rather than reaching them not at all.</summary>
+    [Fact]
+    [Trait("TestCase", "T238-13")]
+    public async Task A_show_Pan_refuses_keeps_the_controller_emulated_until_it_reconnects()
+    {
+        _pan.ControllerShow = _ => new ControllerHidingResult(false, PanReason.HidingFailed);
+        _others.Feed([GameCube]);
+        await _emulation.TickAsync();
+
+        Choose(GameCubeModel, ControllerLayout.NotTakenOver);
+        await _emulation.TickAsync();
+
+        Assert.Equal(1, _others.Plugged);
+        Assert.Contains("Controller für Spiele: 057E:0337 lässt sich nicht wieder zeigen (HidingFailed), bleibt emuliert bis zum neuen Verbinden", _log);
+
+        _events.Clear();
+        await _emulation.TickAsync();
+        Assert.Empty(_events);
+
+        // Reconnected: tried again, and shown now.
+        _pan.ControllerShow = null;
+        _others.Feed([]);
+        _time.Advance(TimeSpan.FromSeconds(2));
+        _others.Feed([GameCube with { Device = GameCube.Device with { Path = "hid-gamecube-again" } }]);
+        await _emulation.TickAsync();
+        Assert.Equal([$"1 {GameCubeModel}", $"1 {GameCubeModel}"], _pan.ControllerShows);
+        Assert.Equal(0, _others.Plugged);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T238-13")]
+    public async Task The_Edge_is_offered_only_to_a_real_Edge()
+    {
+        Choose(DualSenseModel, ControllerLayout.Of(PadKind.DualSenseEdge));
+        _others.Feed([DualSense]);
+
+        await _emulation.TickAsync();
+
+        Assert.Equal([PadKind.DualSense], _pads.All.Select(pad => pad.Kind));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T238-13")]
+    public void The_connected_models_are_listed_once_each_in_connection_order_also_those_not_taken_over()
+    {
+        Choose(GameCubeModel, ControllerLayout.NotTakenOver);
+        var changes = 0;
+        _others.Changed += () => changes++;
+
+        _others.Feed([GameCube, DualSense, DualSense with { PadId = 7, Device = DualSense.Device with { Path = "hid-dualsense-2" } }, SteamController]);
+        _others.Feed([GameCube, DualSense, DualSense with { PadId = 7, Device = DualSense.Device with { Path = "hid-dualsense-2" } }, SteamController]);
+
+        Assert.Equal(
+            [new ConnectedModel(GameCubeModel, "Nintendo GameCube Controller", PadKind.Xbox360), new ConnectedModel(DualSenseModel, "DualSense Wireless Controller", PadKind.DualSense)],
+            _others.Connected);
+        Assert.Equal(1, changes);
+
+        _others.Feed([DualSense]);
+        Assert.Equal([DualSenseModel], _others.Connected.Select(model => model.Model));
+        Assert.Equal(2, changes);
     }
 }

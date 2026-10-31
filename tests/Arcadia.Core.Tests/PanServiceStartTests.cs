@@ -19,6 +19,18 @@ public sealed class PanServiceStartTests
         Assert.Equal(PanServiceStartStep.EndedAtOnce, PanServiceStart.Next(running: false, stopped: true, startRequested: true));
     }
 
+    [Theory]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, true)]
+    public void A_start_under_way_when_the_update_begins_never_starts_the_service(bool running, bool stopped, bool startRequested)
+    {
+        // #354: --install stops the old service and waits for it to stay stopped; a start that was already waiting
+        // must not bring it back.
+        Assert.Equal(PanServiceStartStep.LeftAlone, PanServiceStart.Next(running, stopped, startRequested, leftAlone: true));
+    }
+
     [Fact]
     [Trait("TestCase", "T243-44")]
     public void A_Pan_stopped_with_an_error_counts_as_failing_an_idle_stop_does_not()

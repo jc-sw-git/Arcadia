@@ -8,8 +8,10 @@ using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Input;
 using Arcadia.Pan;
+using Arcadia.Tests.Pads;
 using Arcadia.Tests.Sdl;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using B = Arcadia.Input.SdlPadState.Button;
 
 namespace Arcadia.App.Tests;
@@ -211,7 +213,8 @@ public sealed class EveryControllerForGamesTests
 
         Assert.Equal(0, arcadia.XboxPads.Plugged);
         var controller = OpenControllerSettings(arcadia);
-        Assert.Equal(["pan:not-hidden"], RowsBelow(controller));
+        // The info row first, then "Controller zuordnen" (designs T238Settings).
+        Assert.Equal(["pan:not-hidden", PanRows.LayoutsKey], RowsBelow(controller));
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(r => r.Key == "pan:not-hidden"));
         Assert.Equal("2 Controller lassen sich nicht verstecken", row.Title);
         Assert.Equal("Spiele sehen sie direkt, Arcadias Tastenkombinationen kommen dort mit an", row.Subtitle);
@@ -316,5 +319,138 @@ public sealed class EveryControllerForGamesTests
         }
 
         await pad.WaitForAsync(state => state.Buttons == (Back | Start));
+    }
+
+    private static readonly PadDevice GameCube = KnownPads.GameCube with { Path = "hid-gamecube" };
+
+    /// <summary>The settings' focus moved down to the row with this key, as the player does with the D-pad.</summary>
+    private static void FocusDownTo(ArcadiaDriver arcadia, ControllerSettingsViewModel controller, string key)
+    {
+        for (var i = 0; i < 20 && controller.FocusedRow?.Key != key; i++)
+        {
+            arcadia.Press(UiAction.Down);
+        }
+
+        Assert.Equal(key, controller.FocusedRow?.Key);
+    }
+
+    private static ControllerLayoutsViewModel OpenLayouts(ArcadiaDriver arcadia, ControllerSettingsViewModel controller)
+    {
+        FocusDownTo(arcadia, controller, PanRows.LayoutsKey);
+        arcadia.Press(UiAction.Accept);
+        return Assert.IsType<ControllerLayoutsViewModel>(controller.Dialog);
+    }
+
+    private static IReadOnlyList<string> Shown(ControllerLayoutsViewModel layouts) =>
+        [.. layouts.Rows.Select(row => $"{row.Title}: {row.ValueText}{(row.IsLocked ? " (gesperrt)" : string.Empty)}")];
+
+    /// <summary>
+    /// #238 part 3 (D3a, scenario 7): with the gamepad alone the player makes the DualSense an Xbox 360 pad and the
+    /// GameCube controller a Switch 2 Pro, then leaves it to games; each applies at the next tick, B closes, and the
+    /// choices are kept after a restart. The Steam Controller's row can't be changed.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T238-13")]
+    public async Task Controller_zuordnen_gives_each_model_its_layout_or_leaves_it_to_games_with_the_gamepad_alone_and_keeps_it()
+    {
+        using var arcadia = await StartInBackgroundAsync(pads: [DualSense, GameCube, KnownPads.SteamController]);
+        // The first tick plugs the emulation's pads, then the Steam Controller's.
+        var steamControllerPad = arcadia.XboxPads.All[^1];
+        Assert.True(arcadia.ForGames.Pad.IsPlugged);
+        Assert.Equal([PadKind.DualSense, PadKind.Xbox360], PluggedKinds(arcadia, steamControllerPad));
+        var controller = OpenControllerSettings(arcadia);
+
+        FocusDownTo(arcadia, controller, PanRows.LayoutsKey);
+        var info = Assert.Single(controller.FocusedRow!.Info.OfType<InfoFacts>());
+        Assert.Equal("SPIELE SEHEN", info.Title);
+        Assert.Equal(
+            ["Steam Controller (Modus „Arcadia“) → Xbox 360 Controller", "DualSense Wireless Controller → DualSense", "Nintendo GameCube Controller → Xbox 360 Controller"],
+            info.Facts.Select(fact => $"{fact.Label} → {fact.Value}"));
+
+        var layouts = OpenLayouts(arcadia, controller);
+        Assert.Equal(
+            ["Steam Controller (Modus „Arcadia“): Xbox 360 Controller (gesperrt)", "DualSense Wireless Controller: DualSense", "Nintendo GameCube Controller: Xbox 360 Controller"],
+            Shown(layouts));
+        Assert.Equal(["Vorgabe: Xbox 360 Controller", "Vorgabe: DualSense", "Vorgabe: Xbox 360 Controller"], layouts.Rows.Select(row => row.Subtitle));
+
+        // The Steam Controller takes the focus, but ◀ ▶ do nothing there; its note says why.
+        arcadia.Press(UiAction.Right).Press(UiAction.Left);
+        Assert.True(layouts.Rows[0].ShowsLockNote);
+        Assert.False(layouts.CanChange);
+        Assert.Equal("Xbox 360 Controller", layouts.Rows[0].ValueText);
+
+        // DualSense ◀ ◀: DualShock 4, then Xbox 360 Controller.
+        arcadia.Press(UiAction.Down).Press(UiAction.Left, times: 2);
+        Assert.True(layouts.CanChange);
+        Assert.Equal("Xbox 360 Controller", layouts.Rows[1].ValueText);
+        await arcadia.TickSteamControllerAsync();
+        Assert.Equal([PadKind.Xbox360, PadKind.Xbox360], PluggedKinds(arcadia, steamControllerPad));
+
+        // GameCube ▶ ▶ ▶: DualShock 4, DualSense, Switch 2 Pro Controller.
+        arcadia.Press(UiAction.Down).Press(UiAction.Right, times: 3);
+        Assert.Equal("Switch 2 Pro Controller", layouts.Rows[2].ValueText);
+        await arcadia.TickSteamControllerAsync();
+        Assert.Equal([PadKind.Xbox360, PadKind.Switch2Pro], PluggedKinds(arcadia, steamControllerPad));
+
+        // ▶ once more: "Nicht übernehmen". Its pad goes, then Pan shows the real controller to games.
+        arcadia.Press(UiAction.Right);
+        Assert.Equal("Nicht übernehmen", layouts.Rows[2].ValueText);
+        await arcadia.TickSteamControllerAsync();
+        Assert.Equal([PadKind.Xbox360], PluggedKinds(arcadia, steamControllerPad));
+        Assert.Contains("1 057E:0337", arcadia.Pan.ControllerShows);
+        Assert.False(steamControllerPad.IsUnplugged);
+
+        // B closes the modal, not the page; the focus stays on the row, whose panel says what games see now.
+        arcadia.Press(UiAction.Back);
+        Assert.Null(controller.Dialog);
+        Assert.Same(controller, arcadia.Main.Settings?.Selected);
+        Assert.Equal(PanRows.LayoutsKey, controller.FocusedRow?.Key);
+        Assert.Contains(controller.FocusedRow!.Info.OfType<InfoFacts>().Single().Facts,
+            fact => fact is { Label: "Nintendo GameCube Controller", Value: "den echten Controller (nicht übernommen)" });
+
+        using var restarted = await arcadia.RestartAsync();
+        restarted.Sdl.Plug(DualSense);
+        restarted.Sdl.Plug(GameCube);
+        restarted.StartControllers();
+        restarted.IsArcadiaInFront = false;
+        await restarted.TickSteamControllerAsync();
+        restarted.PollControllers();
+        await restarted.TickSteamControllerAsync();
+        Assert.Equal([PadKind.Xbox360], PluggedKinds(restarted, null));
+        Assert.DoesNotContain(restarted.Pan.ControllerHides, hide => hide.EndsWith("057E:0337", StringComparison.Ordinal));
+    }
+
+    /// <summary>The pads plugged now for the other controllers, in the order they were plugged.</summary>
+    private static IReadOnlyList<PadKind> PluggedKinds(ArcadiaDriver arcadia, FakeVirtualXboxPads.FakePad? steamControllerPad) =>
+        [.. arcadia.XboxPads.All.Where(pad => !pad.IsUnplugged && pad != steamControllerPad).Select(pad => pad.Kind)];
+
+    /// <summary>D3a: the row shows only while Pan is on and a controller is connected; the modal closes when it goes.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T238-13")]
+    public async Task Controller_zuordnen_shows_only_while_a_controller_is_connected_and_closes_with_the_last_one()
+    {
+        using var arcadia = await StartInBackgroundAsync();
+        var controller = OpenControllerSettings(arcadia);
+        Assert.DoesNotContain(PanRows.LayoutsKey, RowsBelow(controller));
+
+        arcadia.Sdl.Plug(GameCube);
+        arcadia.PollControllers();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(PanRows.LayoutsKey, RowsBelow(controller));
+        var layouts = OpenLayouts(arcadia, controller);
+        Assert.Equal(["Nintendo GameCube Controller: Xbox 360 Controller"], Shown(layouts));
+
+        arcadia.Sdl.Plug(DualSense);
+        arcadia.PollControllers();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(["Nintendo GameCube Controller: Xbox 360 Controller", "DualSense Wireless Controller: DualSense"], Shown(layouts));
+
+        arcadia.Sdl.Unplug(arcadia.Sdl.IdOf(GameCube));
+        arcadia.Sdl.Unplug(arcadia.Sdl.IdOf(DualSense));
+        arcadia.Time.Advance(TakenOverControllers.RereadGrace);
+        arcadia.PollControllers();
+        Dispatcher.UIThread.RunJobs();
+        Assert.DoesNotContain(PanRows.LayoutsKey, RowsBelow(controller));
+        Assert.Null(controller.Dialog);
     }
 }

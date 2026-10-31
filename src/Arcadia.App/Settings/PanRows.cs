@@ -3,6 +3,7 @@ using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Copy;
 using Arcadia.ControllerSupport.Pan;
+using Arcadia.Input;
 using Arcadia.Pan;
 
 namespace Arcadia.App.Settings;
@@ -38,6 +39,9 @@ public interface IPanEmulationView
 
     /// <summary>The controller models connected now but the Steam Controller, for "Controller zuordnen" (#238 D3a).</summary>
     IReadOnlyList<ConnectedModel> ConnectedModels => [];
+
+    /// <summary>The Steam Controller is connected: "Controller zuordnen" lists it, locked (#238 D3a).</summary>
+    bool SteamControllerConnected => false;
 }
 
 /// <summary>No emulation (tests that don't need one): always off.</summary>
@@ -84,6 +88,7 @@ public sealed class PanRows
 {
     public const string MainKey = "pan";
     public const string RestoreKey = "pan-restore";
+    public const string LayoutsKey = "pan-layouts";
     public const string Group = "PAN";
 
     private const string Admin = "Windows fragt einmal nach Administratorrechten.";
@@ -128,11 +133,24 @@ public sealed class PanRows
                 ]),
             ],
         };
+        Layouts = new ActionRowViewModel(LayoutsKey, ControllerLayoutsViewModel.Title, () => LayoutsRequested?.Invoke())
+        {
+            Group = Group,
+            Indent = 1,
+            Subtitle = "Ändere das Layout deiner angeschlossenen Controller",
+            ActionText = "Zuordnen",
+        };
     }
 
     public PanRowViewModel Main { get; }
 
     public ActionRowViewModel Restore { get; }
+
+    /// <summary>"Controller zuordnen" (#238 D3a): [Zuordnen] opens the modal (<see cref="LayoutsRequested"/>).</summary>
+    public ActionRowViewModel Layouts { get; }
+
+    /// <summary>[Zuordnen] was pressed: the category opens "Controller zuordnen".</summary>
+    public event Action? LayoutsRequested;
 
     /// <summary>The symbol beside the category: the worst row below the switch, or the emulation's problem; null while off.</summary>
     public HealthSeverity? Marker { get; private set; }
@@ -195,7 +213,45 @@ public sealed class PanRows
             : problem || allMissing ? HealthSeverity.Warning
             : null;
         FirstWarningKey = warnings.FirstOrDefault(row => row.Severity > HealthSeverity.Info)?.Key ?? warnings.FirstOrDefault()?.Key;
-        return [Main, .. warnings, .. _support.PanInstalled ? [Restore] : Array.Empty<SettingsRowViewModel>()];
+        var layouts = !notHere && !allMissing && IsOn && UpdateLayouts();
+        return
+        [
+            Main,
+            .. warnings,
+            .. layouts ? [Layouts] : Array.Empty<SettingsRowViewModel>(),
+            .. _support.PanInstalled ? [Restore] : Array.Empty<SettingsRowViewModel>(),
+        ];
+    }
+
+    /// <summary>
+    /// "Controller zuordnen" shows while a controller is connected (D3a); its info panel says what games see of each
+    /// (artboard T238Settings). False: none is connected.
+    /// </summary>
+    private bool UpdateLayouts()
+    {
+        var models = _pan.ConnectedModels;
+        var steamController = _pan.SteamControllerConnected;
+        if (models.Count == 0 && !steamController)
+        {
+            return false;
+        }
+
+        var chosen = _changes.Current.ControllerLayouts;
+        Layouts.IsEnabled = !IsBusy;
+        Layouts.Info =
+        [
+            new InfoText("Pan erlaubt es, deinen angeschlossenen Controllern ein anderes Layout zuzuweisen. Controller wie der DualSense, Xbox Controller oder Nintendo Switch 2 Pro Controller werden von Pan nativ unterstützt, also 1:1 übersetzt, und haben von Haus aus ihr korrektes Layout. Controller, die Pan nicht nativ übersetzen kann (zum Beispiel der GameCube Controller oder Controller anderer Hersteller), werden als Xbox 360 Controller behandelt."),
+            new InfoText("Das Layout zu ändern kann sinnvoll sein, wenn du den GameCube Controller in Spielen verwenden möchtest, die ihn nicht unterstützen, oder wenn dein Controller eines anderen Herstellers wie ein DualSense ein Touchpad oder Gyro hat."),
+            new InfoText("Mit „Nicht übernehmen“ ignoriert Pan dieses Controller-Modell. Seine Eingaben kommen dann direkt im Spiel an, als wäre Pan ausgeschaltet."),
+            new InfoFacts("SPIELE SEHEN",
+            [
+                .. steamController ? [new InfoFact(ControllerLayoutsViewModel.SteamControllerTitle, PadKinds.DisplayName(PadKind.Xbox360))] : Array.Empty<InfoFact>(),
+                .. models.Select(model => ControllerLayouts.Effective(ControllerLayouts.Find(chosen, model.Model), model.DefaultKind) is { IsTakenOver: true } layout
+                    ? new InfoFact(model.Name, ControllerLayouts.DisplayName(layout))
+                    : new InfoFact(model.Name, "den echten Controller (nicht übernommen)", IsMuted: true)),
+            ]),
+        ];
+        return true;
     }
 
     /// <summary>First in the panel, before everything else (artboard T326S01): why switching on asks Windows; why the last update failed.</summary>

@@ -200,6 +200,8 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
 
     public IReadOnlyList<ConnectedModel> ConnectedModels => Others.Connected;
 
+    public bool SteamControllerConnected => Pad.SteamControllerConnected;
+
     public event Action? Changed
     {
         add

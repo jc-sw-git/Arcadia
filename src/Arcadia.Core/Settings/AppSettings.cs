@@ -160,6 +160,22 @@ public sealed record AppSettings
         return this with { ControllerSupportOverrides = choices };
     }
 
+    /// <summary>Sets one model's layout in <see cref="ControllerLayouts"/>; null puts it back on its own kind.</summary>
+    public AppSettings WithControllerLayout(string modelKey, string? layout)
+    {
+        var layouts = new Dictionary<string, string>(ControllerLayouts ?? [], StringComparer.Ordinal);
+        if (layout is null)
+        {
+            layouts.Remove(modelKey);
+        }
+        else
+        {
+            layouts[modelKey] = layout;
+        }
+
+        return this with { ControllerLayouts = layouts };
+    }
+
     /// <summary>
     /// "Alle Spiele auf die Vorauswahl setzen" (#178): every game of the launcher goes back to "Standard", also games no
     /// longer in the library, whose choice would otherwise come back with them.

@@ -66,6 +66,10 @@ public static class ControllerLayouts
     public static PadKind KindFor(ControllerLayout? chosen, PadKind defaultKind) =>
         chosen is { Kind: { } kind } && Choices(defaultKind).Contains(ControllerLayout.Of(kind)) ? kind : defaultKind;
 
+    /// <summary>What a model is now, as the settings show it: "Nicht übernehmen", or the kind its pads are.</summary>
+    public static ControllerLayout Effective(ControllerLayout? chosen, PadKind defaultKind) =>
+        chosen is { IsTakenOver: false } ? ControllerLayout.NotTakenOver : ControllerLayout.Of(KindFor(chosen, defaultKind));
+
     /// <summary>The choice's name as the settings show it.</summary>
     public static string DisplayName(ControllerLayout layout) => layout.Kind is { } kind ? PadKinds.DisplayName(kind) : "Nicht übernehmen";
 }

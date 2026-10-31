@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    #243 part B: a stand-in for Arcadia that talks to Pan like Arcadia does, to hide the Steam Controller and then exit,
+    be killed or freeze before #242 gives Arcadia a caller. Windows only; built with the solution so it keeps compiling,
+    never shipped. Usage: README.md.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Arcadia.PanDevClient</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Arcadia.ControllerSupport\Arcadia.ControllerSupport.csproj" />
+  </ItemGroup>
+
+</Project>

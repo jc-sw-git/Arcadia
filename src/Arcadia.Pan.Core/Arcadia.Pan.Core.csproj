@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    What Pan, Arcadia's guardian service (#243), decides and remembers, without Windows: the protocol over the pipe, the
+    emulation generations and the hang watch, the journal and the teardown order. Shared with Arcadia, which speaks the
+    same protocol, and kept free of dependencies so it compiles into Pan's Native AOT exe.
+  -->
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Arcadia.Pan</RootNamespace>
+  </PropertyGroup>
+
+</Project>

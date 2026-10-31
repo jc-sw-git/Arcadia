@@ -47,6 +47,43 @@ public sealed class RunningGamesTrackerTests
     }
 
     [Fact]
+    public async Task A_game_of_a_monitor_that_reports_simulated_games_shows_as_running_but_is_not_real()
+    {
+        var demo = new FakeRunningGames("gog") { ReportsSimulatedGames = true };
+        demo.Running.Add(new RunningGame("witcher", Started));
+        var tracker = CreateTracker(new FakeIntegration(FakeIntegration.LauncherOf("gog")) { RunningGames = demo });
+        _steam.Running.Add(new RunningGame("440", Started));
+
+        await tracker.PollAsync();
+
+        Assert.Equal(new RunState(RunPhase.Running, Started), tracker.StateOf("gog:witcher"));
+        Assert.Null(tracker.RealStateOf("gog:witcher"));
+        Assert.Equal(new RunState(RunPhase.Running, Started), tracker.RealStateOf("steam:440"));
+        Assert.Equal(["steam:440"], tracker.ActiveGames);
+    }
+
+    [Fact]
+    public async Task The_active_games_are_those_that_run_or_are_being_started_and_follow_every_change()
+    {
+        var tracker = CreateTracker();
+        Assert.Empty(tracker.ActiveGames);
+
+        tracker.Starting("epic:fn");
+        Assert.Equal(["epic:fn"], tracker.ActiveGames);
+
+        _steam.Running.Add(new RunningGame("440", Started));
+        await tracker.PollAsync();
+        Assert.Equal(["epic:fn", "steam:440"], tracker.ActiveGames.Order());
+
+        tracker.StartFailed("epic:fn");
+        Assert.Equal(["steam:440"], tracker.ActiveGames);
+
+        _steam.Running.Clear();
+        await tracker.PollAsync();
+        Assert.Empty(tracker.ActiveGames);
+    }
+
+    [Fact]
     public async Task A_game_started_in_its_launcher_ends_without_bringing_arcadia_back()
     {
         var tracker = CreateTracker();

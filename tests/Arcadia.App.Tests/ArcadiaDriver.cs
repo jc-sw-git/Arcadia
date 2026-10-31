@@ -4,6 +4,7 @@ using Arcadia.Input;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Copy;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
@@ -11,6 +12,7 @@ using Arcadia.Launchers;
 using Arcadia.Launchers.Steam.Account;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Demo;
+using Arcadia.Tests.Pads;
 using Arcadia.Tests.Sdl;
 using Avalonia.Threading;
 using Microsoft.Extensions.Time.Testing;
@@ -49,6 +51,7 @@ internal sealed class ArcadiaDriver : IDisposable
     private readonly List<LaunchTarget> _opened;
     private readonly GamepadRouting _gamepad;
     private readonly SdlGamepadSource _controllers;
+    private readonly RunningGamesTracker _running;
 
     static ArcadiaDriver()
     {
@@ -69,8 +72,7 @@ internal sealed class ArcadiaDriver : IDisposable
         Folder = folder;
         Steam = steam;
         Releases = releases;
-        _http = new HttpClient(new FakeNetwork(steam?.Sisr, releases));
-        steam?.Sisr.UseNetwork(_http);
+        _http = new HttpClient(new FakeNetwork(releases));
         _ownsFolder = ownsFolder;
         _files = files;
         _opened = opened ?? [];
@@ -101,9 +103,9 @@ internal sealed class ArcadiaDriver : IDisposable
         var registry = new LauncherRegistry(integrations, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
         ControllerSupport = (steam, files?.ControllerSupport) switch
         {
-            ({ } fake, _) => new ControllerSupportService(Settings, fake.Sisr, _http, time, fake) { Log = AppLog.Write },
-            (_, { } steamPc) => new ControllerSupportService(Settings, steamPc.Sisr, _http, time, steamPc) { Log = AppLog.Write },
-            _ => new ControllerSupportService(Settings, new NoSisr(_http), _http, time, new NoControllerSupportPlatform()) { Log = AppLog.Write },
+            ({ } fake, _) => new ControllerSupportService(Settings, _http, time, fake) { Log = AppLog.Write, GamesUseSteamInput = registry.GamesUseSteamInput, Viiper = fake.Viiper, Sisr = fake.Sisr.Installation() },
+            (_, { } steamPc) => new ControllerSupportService(Settings, _http, time, steamPc) { Log = AppLog.Write, GamesUseSteamInput = registry.GamesUseSteamInput },
+            _ => new ControllerSupportService(Settings, _http, time, new NoControllerSupportPlatform()) { Log = AppLog.Write, GamesUseSteamInput = registry.GamesUseSteamInput },
         };
         Updates = releases is null ? new ArcadiaUpdateService(_http, time) : new ArcadiaUpdateService(_http, time, releases.Manager(folder));
         Updates.Log = AppLog.Write;
@@ -143,14 +145,88 @@ internal sealed class ArcadiaDriver : IDisposable
         Main.Session.StartRefused += (_, gameKey) => BroughtToFrontFor.Add(gameKey);
 
         // The controllers as the App reads them (#72), through SDL as the test sets it up.
-        _controllers = ControllerInput.Create(Sdl, Main);
-        _controllers.Polled += _ => _gamepad.Tick();
+        _controllers = ControllerInput.Create(Sdl, Main, new DeviceTreeEmulatedPads(() => [.. XusbDevices], AppLog.Write));
+        _controllers.Polled += _gamepad.Tick;
+        _running = running;
+        PanNotices = new PanNotices(Main.Toast, () => IsArcadiaInFront, OverlayNotices.Add);
+        ControllerSupport.HidingCheck = Pan;
+        ForGames = SteamControllerForGames.Create(panSupported: !arguments.PanUnsupported, XboxPads, Pan, wiring =>
+        {
+            CopyWiring = wiring;
+            return SteamControllerCopy;
+        }, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, _controllers, PanNotices, time);
+        XboxPad = ForGames.Pad;
+        Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
+        Main.ConnectPan(ForGames);
+        ControllerSupport.PanHoldsPuck = () => ForGames.Emulation.HidesPuck;
+        ForGames.Routing.Update();
+        _controllers.Polled += XboxPad.Feed;
+        _controllers.Lost += XboxPad.Drop;
+        _controllers.Polled += ForGames.Others.Feed;
+        _controllers.Lost += ForGames.Others.Drop;
         _controllers.ButtonPressed += _gamepad.Press;
         _controllers.ButtonReleased += _gamepad.Release;
         _controllers.Lost += _gamepad.Drop;
+
+        // As the App does before its window shows (#297).
+        Main.ShowPanUpdateIfDue();
     }
 
     public string Folder { get; }
+
+    /// <summary>The virtual Xbox pads VIIPER would plug in for games (#213).</summary>
+    public FakeVirtualXboxPads XboxPads { get; } = new();
+
+    /// <summary>Pan, the guardian the pads stand under (#243); available unless a test takes it away.</summary>
+    public FakeEmulationGuardian Pan { get; } = new();
+
+    /// <summary>
+    /// The copy of the Steam Controller for Steam (#242); like this build, no copy unless a test gives it one with
+    /// <see cref="FakeSteamControllerHold.CanCopy"/> before <see cref="StartControllers"/>.
+    /// </summary>
+    public FakeSteamControllerHold SteamControllerCopy { get; } = new() { CanCopy = false, PuckPresent = false };
+
+    /// <summary>What the App hands the copy (#242): its filter and when it passes input, as a real copy would ask them.</summary>
+    public SteamControllerCopyWiring CopyWiring { get; private set; } = null!;
+
+    /// <summary>A window of Steam itself is in front (#242).</summary>
+    public bool IsSteamInFront { get; set; }
+
+    /// <summary>The library game in front, as <c>ForegroundGame.InFront</c> tells it (a short gap mid-game, #242).</summary>
+    public string? GameInFront { get; set; }
+
+    /// <summary>Notices about Pan and the emulated controller (#243 B2): a toast in front, else the overlay.</summary>
+    public PanNotices PanNotices { get; }
+
+    /// <summary>What the overlay notice showed while Arcadia was in the background (the mouse mode's overlay in the App).</summary>
+    public List<string> OverlayNotices { get; } = [];
+
+    /// <summary>The Steam Controller as an Xbox pad for games; the App ticks it every 2 s, a test with <see cref="TickSteamControllerAsync"/>.</summary>
+    public SteamControllerXboxPad XboxPad { get; }
+
+    /// <summary>The pad and where the Steam Controller goes in games (#213).</summary>
+    public SteamControllerForGames ForGames { get; }
+
+    /// <summary>Steam's <c>RunningAppID</c>: a Steam game started directly in Steam (#119).</summary>
+    public int? RunningSteamAppId { get; set; }
+
+    /// <summary>The App's 2 s tick of the Steam Controller for games: the mode of the running games, then the pad.</summary>
+    /// <summary>
+    /// The App's start once Pan answered its first hello (#297): the tick that opens the dialog of a firmware hold from
+    /// before, then the update, which waits for that dialog.
+    /// </summary>
+    public async Task PanAnsweredAtStartAsync()
+    {
+        await ForGames.Emulation.TickAsync();
+        Dispatcher.UIThread.Post(Main.PanAnsweredAtStart);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    public async Task TickSteamControllerAsync()
+    {
+        await ForGames.TickAsync();
+        Dispatcher.UIThread.RunJobs();
+    }
 
     /// <summary>The Steam account of the real Steam integration (#83); null without launcher files.</summary>
     internal SteamOnlineAccount? SteamAccount { get; }
@@ -160,6 +236,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>SDL3 with the controllers a test plugs in; read only after <see cref="StartControllers"/>.</summary>
     public FakeSdlGamepads Sdl { get; } = new();
+
+    /// <summary>The XInput devices in Windows' device tree, for telling an emulated pad (SISR's, VIIPER's) from a real one (#212).</summary>
+    public List<XusbDevice> XusbDevices { get; } = [];
 
     /// <summary>The disk as the focused game's install folder check sees it.</summary>
     public FakeInstallFolders Folders { get; } = new();
@@ -228,7 +307,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>The search, also while a detail page of its hits covers it; null while it is closed.</summary>
     public SearchViewModel? Search => Main.Search;
 
-    /// <summary>Windows, Steam and SISR of the test; null: a PC without them, as on Linux.</summary>
+    /// <summary>Windows and Steam of the test (and what is left of SISR); null: a PC without them, as on Linux.</summary>
     public FakeSteam? Steam { get; }
 
     /// <summary>The releases on GitHub; null: Arcadia runs from bin/, not installed.</summary>
@@ -269,7 +348,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <paramref name="files"/> instead of the PC's, and waits until the library shows. Without <paramref name="settings"/>,
     /// the launchers the test installed are already chosen.
     /// </summary>
-    public static async Task<ArcadiaDriver> StartWithLaunchersAsync(Fixtures.LauncherFiles files, AppSettings? settings = null)
+    public static async Task<ArcadiaDriver> StartWithLaunchersAsync(Fixtures.LauncherFiles files, AppSettings? settings = null, StartArguments arguments = default)
     {
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
         new SettingsStore(Path.Combine(folder, "settings.json")).Save(settings ?? new AppSettings
@@ -279,7 +358,7 @@ internal sealed class ArcadiaDriver : IDisposable
                 .Select(launcher => launcher.Item1)
                 .ToList(),
         });
-        var driver = new ArcadiaDriver(folder, ownsFolder: true, [], new FakeTimeProvider(Now), new RecordedStarts(), new LauncherInstalls(), steam: null, releases: null, arguments: default, files);
+        var driver = new ArcadiaDriver(folder, ownsFolder: true, [], new FakeTimeProvider(Now), new RecordedStarts(), new LauncherInstalls(), steam: null, releases: null, arguments, files);
         await driver.LoadAsync();
         return driver;
     }
@@ -340,7 +419,7 @@ internal sealed class ArcadiaDriver : IDisposable
         return this;
     }
 
-    /// <summary>The controller support's regular check (every few seconds in the App), e.g. SISR's update or Steam's login.</summary>
+    /// <summary>The controller support's regular check (every few seconds in the App), e.g. a missing part or Steam's login.</summary>
     public async Task TickControllerSupportAsync()
     {
         await Task.Run(() => ControllerSupport.TickAsync());
@@ -349,7 +428,7 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>
     /// Lets time pass on the fake clock until <paramref name="condition"/> holds, for work that waits on the clock off the UI
-    /// thread (Steam starting, SISR coming up); fails the test with <paramref name="what"/> after <paramref name="limit"/>.
+    /// thread (Steam starting, SISR being removed); fails the test with <paramref name="what"/> after <paramref name="limit"/>.
     /// </summary>
     public async Task WaitOnClockUntilAsync(Func<bool> condition, string what, TimeSpan limit)
     {
@@ -407,9 +486,20 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>Starts reading the controllers through <see cref="Sdl"/>, as the App does at its start.</summary>
     public ArcadiaDriver StartControllers()
     {
-        _controllers.Open();
+        // As the App's poll thread: without a usable SDL nothing is polled.
+        if (_controllers.Open())
+        {
+            Dispatcher.UIThread.RunJobs();
+            PollControllers();
+        }
+
         Dispatcher.UIThread.RunJobs();
-        return PollControllers();
+
+        // As the App's first tick after the start: Pan's emulation comes up (#242), and the mode can be chosen.
+        Task.Run(() => ForGames.Emulation.TickAsync()).Wait();
+        ForGames.Routing.Update();
+        Dispatcher.UIThread.RunJobs();
+        return this;
     }
 
     /// <summary>One read of the controllers, as the App does every 8 ms.</summary>
@@ -525,6 +615,7 @@ internal sealed class ArcadiaDriver : IDisposable
         _http.Dispose();
         if (_ownsFolder)
         {
+            Steam?.Sisr.Dispose();
             try
             {
                 Directory.Delete(Folder, recursive: true);
@@ -564,7 +655,8 @@ internal sealed class ArcadiaDriver : IDisposable
 }
 
 /// <summary>The command line's switches that change what Arcadia shows at the start: <c>--demo</c> and <c>--first-run</c>.</summary>
-internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false);
+/// <param name="PanUnsupported">Pan can't run on this system, as on Linux (#242).</param>
+internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false, bool PanUnsupported = false);
 
 /// <summary>
 /// A launcher of the test: <paramref name="Games"/> games of the demo library, or exactly <paramref name="Library"/> where

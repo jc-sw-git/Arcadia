@@ -2,7 +2,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Diagnostics;
+using Arcadia.Pan;
 using Arcadia.Launchers.Steam;
 using Avalonia;
 using Velopack;
@@ -60,45 +62,61 @@ sealed partial class Program
     private const uint QuestionsTimeoutMs = 40_000;
 
     /// <summary>
-    /// Asks whether SISR and what belongs to it, and Arcadia's own files (settings, logos, logs) should go too.
-    /// Both stay when the user says no or doesn't answer in time: SISR may be used without Arcadia, and the files
-    /// bring the settings back with a new installation.
+    /// Asks whether the controller emulation's drivers and SISR (#243 part B2), and Arcadia's own files (settings, logos,
+    /// logs) should go too. Both stay when the user says no or doesn't answer in time: other programs may use the
+    /// drivers, and the files bring the settings back with a new installation.
     /// </summary>
     [SupportedOSPlatform("windows")]
     private static void OnBeforeUninstall(SemanticVersion version)
     {
         var parts = ControllerSupportRemoval.FindInstalledParts();
         var hasData = Directory.Exists(LogLocation.DataFolder);
-        var questions = (parts.Count > 0 ? 1u : 0u) + (hasData ? 1u : 0u);
+        var questions = (parts.Any ? 1u : 0u) + (hasData ? 1u : 0u);
         var timeoutMs = questions == 0 ? 0 : QuestionsTimeoutMs / questions;
 
-        var removeSisr = parts.Count > 0 && AskToRemoveSisr(parts, timeoutMs);
+        var removeParts = parts.Any && Ask(ControllerSupportRemoval.Question(parts, SteamInstallation.IsRunning, timeoutMs / 1000), timeoutMs);
         var removeData = hasData && AskToRemoveData(timeoutMs);
 
-        if (removeSisr)
+        if (removeParts)
         {
             ControllerSupportRemoval.Remove(AppLog.Write);
-        }
-        else
-        {
-            QuitSisr();
         }
 
         if (removeData)
         {
             RemoveData();
         }
+
+        RemovePan(removeDrivers: removeParts && parts.Drivers);
     }
 
-    private static bool AskToRemoveSisr(IReadOnlyList<string> parts, uint timeoutMs)
+    /// <summary>
+    /// Pan goes with Arcadia, always (#243): it exists for Arcadia alone. One UAC prompt, and only when Pan is there or
+    /// the drivers are to go (admin rights only where unavoidable): usbip-win2 and HidHide go in the same prompt, after
+    /// Pan undid its own HidHide entries (#243 part B2). Declined, the service stays (harmless: it idles and stops
+    /// itself) and <c>Pan.exe --uninstall</c> removes it by hand. Capped so Velopack's hook limit holds; Pan, started
+    /// elevated on its own, finishes the drivers' uninstallers even if the hook ends first.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private static void RemovePan(bool removeDrivers)
     {
-        var text = "Arcadia wird deinstalliert.\n\n"
-            + "Soll auch SISR für den Steam Controller mit allem, was dazugehört, entfernt werden?\n\n"
-            + string.Concat(parts.Select(p => $"•  {p}\n"))
-            + "\nAndere Programme, die SISR nutzen, funktionieren danach nicht mehr. "
-            + (SteamInstallation.IsRunning ? "Steam wird dafür kurz beendet und wieder gestartet. " : string.Empty)
-            + $"Ohne Antwort innerhalb von {timeoutMs / 1000} Sekunden bleibt SISR installiert; Arcadia wird trotzdem deinstalliert.";
-        return Ask(text, timeoutMs);
+        if (!PanSetup.IsBundled || (!removeDrivers && !PanSetup.IsInstalled && !Directory.Exists(PanPaths.InstallDirectory)))
+        {
+            return;
+        }
+
+        try
+        {
+            using var limit = new CancellationTokenSource(TimeSpan.FromMilliseconds(QuestionsTimeoutMs));
+            if (!PanSetup.UninstallAsync(removeDrivers, limit.Token).GetAwaiter().GetResult())
+            {
+                AppLog.Write("Pan bleibt installiert: die Windows-Abfrage wurde abgelehnt");
+            }
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or TimeoutException or OperationCanceledException)
+        {
+            AppLog.Write($"Pan konnte nicht entfernt werden: {ex.Message}");
+        }
     }
 
     private static bool AskToRemoveData(uint timeoutMs)
@@ -126,22 +144,11 @@ sealed partial class Program
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            // A SISR left running keeps sisr.log open; the rest is gone, and nothing else depends on it.
+            // A program left running may keep a log open; the rest is gone, and nothing else depends on it.
         }
     }
 
     // Undocumented but present in user32 since Windows XP; returns 32000 on timeout.
     [LibraryImport("user32.dll", EntryPoint = "MessageBoxTimeoutW", StringMarshalling = StringMarshalling.Utf16)]
     private static partial int MessageBoxTimeout(IntPtr owner, string text, string caption, uint type, ushort language, uint milliseconds);
-
-    /// <summary>
-    /// SISR lives outside Arcadia's install directory; if Arcadia didn't get to stop it (e.g. it
-    /// was killed), stop it before uninstalling so no orphaned SISR keeps holding the controller.
-    /// </summary>
-    private static void QuitSisr()
-    {
-        // QuitAsync times out after 3 s and reports failure instead of throwing.
-        using var http = new HttpClient();
-        new SisrApiClient(http, SisrHost.ApiPort).QuitAsync().GetAwaiter().GetResult();
-    }
 }

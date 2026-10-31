@@ -11,7 +11,7 @@
   <UserControl.Resources>
     <DataTemplate x:Key="DetailAction" x:DataType="vm:GameActionViewModel">
       <Button Classes="plain detailAction" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding IsDanger}" Classes.focused="{Binding IsFocused}"
-              IsEnabled="{Binding IsEnabled}" Command="{Binding InvokeCommand}"
+              Classes.broken="{Binding IsBroken}" IsEnabled="{Binding IsEnabled}" Command="{Binding InvokeCommand}"
               ToolTip.Tip="{Binding DisabledReason}" ToolTip.ShowOnDisabled="True">
         <StackPanel Orientation="Horizontal" Spacing="10">
           <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" IsVisible="{Binding IsPrimary}" />
@@ -24,6 +24,7 @@
             <TextBlock Classes="caption" Text="{Binding Caption}" IsVisible="{Binding HasCaption}" />
             <TextBlock Text="{Binding ButtonLabel}" />
           </StackPanel>
+          <Path Classes="statusIcon small" IsVisible="{Binding IsBroken}" VerticalAlignment="Center" />
         </StackPanel>
       </Button>
     </DataTemplate>

@@ -42,6 +42,23 @@ public sealed partial class ButtonGlyphTextTests
         Assert.Empty(bare);
     }
 
+    /// <summary>
+    /// A controller button in a view is drawn by <c>PadGlyph</c>, <c>KeyText</c> or <c>KeyHint</c>, which show the symbols of
+    /// the controller in use (#215); a plain TextBlock keeps Xbox's name on every controller (owner's test, 2026-10-29).
+    /// </summary>
+    [Fact]
+    public void Views_draw_controller_buttons_in_the_printing_of_the_controller_in_use()
+    {
+        var app = Path.Combine(RepoRoot(), "src", "Arcadia.App");
+        var plain = Directory.EnumerateFiles(app, "*.axaml", SearchOption.AllDirectories)
+            .SelectMany(file => File.ReadAllLines(file).Select((line, i) => (file, line, i)))
+            .Where(entry => PlainButtonText().IsMatch(entry.line))
+            .Select(entry => $"{Path.GetFileName(entry.file)}:{entry.i + 1}: {entry.line.Trim()}")
+            .ToList();
+
+        Assert.Empty(plain);
+    }
+
     private static string RepoRoot()
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
@@ -54,6 +71,9 @@ public sealed partial class ButtonGlyphTextTests
 
         throw new InvalidOperationException("Arcadia.slnx not found above the test binaries.");
     }
+
+    [GeneratedRegex(@"<TextBlock[^>]*\bText=""(?:LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y|D-Pad|⧉|≡)""")]
+    private static partial Regex PlainButtonText();
 
     [GeneratedRegex(@"\$?""((?:[^""\\]|\\.)*)""")]
     private static partial Regex StringLiteral();

@@ -1,12 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="Viiper.targets" />
+
   <ItemGroup>
     <ProjectReference Include="..\Arcadia.Core\Arcadia.Core.csproj" />
     <ProjectReference Include="..\Arcadia.Launchers\Arcadia.Launchers.csproj" />
+    <ProjectReference Include="..\Arcadia.Input\Arcadia.Input.csproj" />
+    <ProjectReference Include="..\Arcadia.Pan.Core\Arcadia.Pan.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.12" />
+    <!-- VIIPER's MIT client (https://github.com/Alia5/VIIPER): drives viiper.exe's virtual Xbox 360 pad (#213). -->
+    <PackageReference Include="Viiper.Client" Version="0.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The puck's descriptors as read from the real one in spike #239; the copy enumerates with them (#242). -->
+    <EmbeddedResource Include="Copy\puck-descriptors.json" LogicalName="Arcadia.ControllerSupport.Copy.puck-descriptors.json" />
   </ItemGroup>
 
   <PropertyGroup>

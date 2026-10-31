@@ -1,65 +1,45 @@
 # Steam Controller Support — findings
 
-All verified on the owner's PC, 2026-10-09. Read before touching `src/Arcadia.ControllerSupport`,
-focus handling or anything SISR/usbip related.
+Verified on the owner's PC. Read before touching `src/Arcadia.ControllerSupport`, `src/Arcadia.Pan*`, focus handling
+or anything usbip related; then only the topic file you touch.
 
-- Steam gives the Steam Controller to processes it didn't start only as mouse/keyboard
-  (desktop layout). `steam://forceinputappid/<appid>` only switches the layout; it does not
-  deliver XInput to a foreign process. Restarting Arcadia through Steam was tried and dropped:
-  everything Arcadia then starts (e.g. the Epic launcher) keeps "Arcadia" running in Steam.
-- Therefore Arcadia runs **SISR** (github.com/Alia5/SISR, GPL-3.0, Go) as a separate process
-  from `%LOCALAPPDATA%\SISR` (the official install location — SISR uses the marker shortcut
-  that points to its own exe; a copy elsewhere creates a second marker). Started hidden with
-  `--api.listen-address localhost:47640 --update-notify none --log.file …`, stopped via
-  `POST /api/v1/quit`. Ready = API answers and `/api/v1/devices` shows a `viiper_device`.
-- Default: SISR runs except while a game from the Steam launcher runs (double input);
-  per-game override in `AppSettings.ControllerSupportOverrides`.
-  On 2026-10-18 the owner saw no double input in one Steam game set to "Xbox Controller (SISR)". His guess:
-  SISR takes the controller's input before Steam Input hands it to the game. Unverified and one game only, so the
-  default stays.
-- Everything that starts or stops SISR (periodic tick, game pause and its end, on/off, update, fixes, exit)
-  runs under `ControllerSupportService`'s gate, and only `StartSisr` starts it — after checking there that the
-  support is on and no game has it paused. The state is one `SisrState`; every change goes through `TryMove`,
-  which logs transitions outside the allowed table. Ticks never overlap; GitHub calls have their own timeout.
-- After SISR stops, Steam keeps SISR's layout until the foreground changes — `force-config
-  enforce:false` and `forceinputappid/0` are not enough. Arcadia bounces the focus to the
-  desktop for 150 ms (40 ms is too short; a second Arcadia window doesn't count) and takes it
-  back via `AttachThreadInput`. While SISR starts, `LockSetForegroundWindow` keeps Arcadia in front.
-- usbip-win2 ≥ 0.9.8.1 is required. Its uninstall entry was renamed between versions
-  ("USBip version 0.9.7.7" → "USBip 0.9.8.1"). Updating it replaces the emulated host
-  controller → SISR must restart; Windows wants a reboot.
+Arcadia emulates the Steam Controller itself: it reads the controller raw with SDL3 ([sdl-gamepads.md](sdl-gamepads.md)),
+gives games its own Xbox pad with the per-game mode "Arcadia" / "Steam-Eingabe" ([xbox-pad.md](xbox-pad.md)), every
+other controller a pad of its own ([every-controller.md](every-controller.md)), and
+Pan, an elevated guardian service, hides the real controller from Steam while Steam gets a 1:1 copy
+([pan.md](pan.md), [steam-controller-copy.md](steam-controller-copy.md)). SISR, which an older Arcadia started for
+this, is never started any more; Arcadia only removes it on request ([sisr-removal.md](sisr-removal.md)).
 
-More findings, one file per topic (read only the one you touch):
+- Steam gives the Steam Controller to processes it didn't start only as mouse/keyboard (desktop layout).
+  `steam://forceinputappid/<appid>` only switches the layout; it doesn't deliver XInput to a foreign process.
+  Restarting Arcadia through Steam was tried and dropped: everything Arcadia then starts keeps "Arcadia" running in Steam.
+- Per-game mode "Arcadia" / "Steam-Eingabe" (#178): a game's own choice (`AppSettings.ControllerSupportOverrides`), else
+  its launcher's default (`LauncherPreferences.UsesArcadiaPad`, set on the launcher's page), else the launcher's own
+  (`GamesUseSteamInput`: Steam games Steam-Eingabe, all others Arcadia). Product rule: `docs/product/launchers.md`. In
+  code the feature keeps its old name, `ControllerSupportService`.
+- usbip-win2 ≥ 0.9.8.1 is required; its uninstall entry was renamed between versions ("USBip version 0.9.7.7" →
+  "USBip 0.9.8.1"). Updating it replaces the emulated host controller; Windows wants a reboot.
+- A running Steam game is `HKCU\Software\Valve\Steam\RunningAppID` non-zero, its name from `…\Steam\Apps\<id>\Name`.
+  Fixes that close Steam ask "Steam beenden?" in a modal that re-reads the running game every second, because nothing
+  else reports a game ending.
 
 | Topic | File |
 |---|---|
-| SISR and the Steam Input of other controllers (#124, #143) | [steam-input.md](steam-input.md) |
-| Starting and stopping SISR: Steam ready, marker, VIIPER, exit, usbip installer, first-run setup | [sisr-lifecycle.md](sisr-lifecycle.md) |
-| Steam's desktop layout and the mouse mode (#64) | [desktop-layout.md](desktop-layout.md) |
-| Steam Input without SISR: overlay helper, raw SDL3, VIIPER from C# (spike #112) | [steam-input-helper.md](steam-input-helper.md) |
-| Every other controller through SDL3: which devices, hints, rumble, errors (#72) | [sdl-gamepads.md](sdl-gamepads.md) |
-| Hiding the real Steam Controller from Steam and showing it a 1:1 copy: HidHide, puck descriptors, latency (spike #239) | [emulated-steam-controller.md](emulated-steam-controller.md) |
-| Answering the UAC consent prompt by controller through a VIIPER virtual keyboard/mouse (spike #118) | [uac.md](uac.md) |
-
-## Setup and naming (#85, #92, 2026-10-16)
-
-- In the UI the setting is "Steam Controller Kompatibilität", short "Steam Controller (SISR)".
-  Per game there are two modes: "Xbox Controller (SISR)" (SISR runs) and "Steam Input" (SISR paused).
-  Steam games start on Steam Input, all others on SISR; `ControllerSupportOverrides` stores only deviations.
-  In code the feature keeps its old name (`ControllerSupportService`, `AppSettings.SteamControllerSupport`).
-- The switch is offered only when `ControllerSupportService.Setup` is `Ready`: SISR installed, usbip-win2 ≥
-  0.9.8.1 installed and loaded, Steam's CEF flag `.cef-enable-remote-debugging` in the Steam folder and the
-  "SISR Marker" shortcut (see below).
-  Otherwise "SISR installieren" (`InstallAsync`). Once on, the switch stays even if a part breaks later;
-  the problem shows with its fix. Without Windows or Steam the row is greyed out.
-- Steam reads the CEF flag only when it starts, so `InstallAsync` closes a running Steam first (the
-  settings ask), writes the flag itself, installs what is missing and starts Steam again if it closed it.
-  It refuses while a Steam game runs: `HKCU\Software\Valve\Steam\RunningAppID` is non-zero, the name comes
-  from `…\Steam\Apps\<id>\Name` (the name checked on the owner's PC, 2026-10-16); that writing the flag
-  file is all SISR's own "enable CEF" does is inferred. The settings ask both questions in a modal over the
-  dialog ("Steam-Spiel läuft", "Steam beenden?") that re-reads the running game every second, because
-  nothing else reports a game ending; `LastError` is cleared when the settings open or close.
-- A Steam Controller counts as connected (per-game mode in the preview) only while SISR emulates it
-  (`SisrState.Running`); `WatchAsync` (every 2 s) moves Running ↔ NoController as the controller is switched on or off.
-  Windows' HID list is no use: the wireless dongle shows as a Valve device (`VID_28DE`) even with the
-  controller off (owner's PC, 2026-10-16).
+| Every controller through SDL3, the Steam Controller raw, emulated pads told apart | [sdl-gamepads.md](sdl-gamepads.md) |
+| The Steam Controller as an Xbox pad for games: VIIPER, combos, plugging in and out, per-game mode | [xbox-pad.md](xbox-pad.md) |
+| Steam's desktop layout and the mouse mode, what "Arcadia in front" means | [desktop-layout.md](desktop-layout.md) |
+| The puck and the Triton by cable as USB devices, what Steam sends them, what HidHide does (spikes #239, #249) | [emulated-steam-controller.md](emulated-steam-controller.md) |
+| Steam gets a copy of the Steam Controller: lifecycle, who gets input, the allow list | [steam-controller-copy.md](steam-controller-copy.md) |
+| The copy on Windows: VIIPER fork `hidproxy`, the raw puck, the bridge | [steam-controller-copy-windows.md](steam-controller-copy-windows.md) |
+| Pan, the guardian service: identity, generations, heartbeat, teardown, journal | [pan.md](pan.md) |
+| Pan hides the real puck with HidHide and shows it again | [pan-hiding.md](pan-hiding.md) |
+| Pan hides every other controller Arcadia takes over, per model | [pan-hiding-controllers.md](pan-hiding-controllers.md) |
+| Every other controller as an emulated pad for games: hide, plug, let go of SDL, kinds and their packets, D7/D8 lists, "Controller zuordnen" | [every-controller.md](every-controller.md) |
+| Pan removes the stale device entries Arcadia's emulated devices leave in Windows | [pan-stale-devices.md](pan-stale-devices.md) |
+| Pan's puck restart: who may hold the puck, the copy is never restarted | [pan-puck-restart.md](pan-puck-restart.md) |
+| Pan: setup with one UAC prompt, uninstall, `--restore`, the data folder, exit codes | [pan-setup.md](pan-setup.md) |
+| Pan: the update at start, announced and declinable | [pan-update.md](pan-update.md) |
+| Steam Controller firmware updates: Steam's update path (spike #295), the notice, Pan's bootloader check | [steam-controller-firmware.md](steam-controller-firmware.md) |
+| Pan: known limits and accepted risks | [pan-risks.md](pan-risks.md) |
+| What an older Arcadia left of SISR, "SISR entfernen" / "SISR behalten" | [sisr-removal.md](sisr-removal.md) |
+| Answering the UAC prompt by controller through a VIIPER keyboard (spike #118, story #247) | [uac.md](uac.md) |

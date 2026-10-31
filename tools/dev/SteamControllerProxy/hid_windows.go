@@ -55,11 +55,11 @@ func findCollections(vidPid string) (map[uint8][]*collection, error) {
 		if !strings.Contains(strings.ToLower(path), vidPid) {
 			continue
 		}
-		match := interfaceNumberInPath.FindStringSubmatch(path)
-		if match == nil {
-			continue
+		// A device with one interface (the Triton by cable, #249) has no &mi_ in its paths: it is interface 0.
+		number := uint64(0)
+		if match := interfaceNumberInPath.FindStringSubmatch(path); match != nil {
+			number, _ = strconv.ParseUint(match[1], 16, 8)
 		}
-		number, _ := strconv.ParseUint(match[1], 16, 8)
 		found[uint8(number)] = append(found[uint8(number)], &collection{Path: path, Interface: uint8(number)})
 	}
 	return found, nil

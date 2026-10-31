@@ -9,16 +9,34 @@ namespace Arcadia.Core.Settings;
 public sealed record AppSettings
 {
     /// <summary>
-    /// "Steam Controller Kompatibilität": run SISR so the Steam Controller works as
-    /// a system-wide Xbox pad, in Arcadia and in games that were not started through Steam.
+    /// "Controller-Wächter (Pan)" (#242): Pan hides the real Steam Controller and Arcadia emulates it, for games (Xbox
+    /// pad) and for Steam (a copy). Off, nothing is emulated and every program sees the real controllers. On by default,
+    /// so it runs as soon as "Treiber installieren" has set up its parts.
     /// </summary>
-    public bool SteamControllerSupport { get; init; }
+    public bool PanEnabled { get; init; } = true;
 
-    /// <summary>Per-game override of <see cref="SteamControllerSupport"/>, keyed by <see cref="Game.Key"/>.</summary>
+    /// <summary>
+    /// Each game's own Steam Controller mode (<see cref="UsesArcadiaPad"/>), keyed by <see cref="Game.Key"/>: true =
+    /// "Arcadia", false = "Steam-Eingabe"; a game without an entry is on "Standard" and follows its launcher's default
+    /// (#178). Before #178 only choices that differed from the launcher's fixed default were stored here; they are the
+    /// games' own choices now, so nothing changes for the player. Older versions stored "SteamControllerSupport" and
+    /// "LastSisrUpdateCheck" beside it for SISR; they are no properties anymore, so loading ignores them and the next
+    /// save drops them (#214).
+    /// </summary>
     public Dictionary<string, bool> ControllerSupportOverrides { get; init; } = [];
 
-    /// <summary>When Arcadia last asked GitHub for a newer SISR.</summary>
-    public DateTimeOffset? LastSisrUpdateCheck { get; init; }
+    /// <summary>
+    /// "Controller zuordnen" (#238 D3a): the layout the player chose per controller model, keyed by its USB ids
+    /// ("054C:0CE6"), the value a kind's name ("DualSense") or "NotTakenOver". A model without an entry keeps its own
+    /// kind (D3b). Read by <c>ControllerLayouts</c>, which ignores what it doesn't know.
+    /// </summary>
+    public Dictionary<string, string> ControllerLayouts { get; init; } = [];
+
+    /// <summary>
+    /// "SISR behalten" (#214): the group "SISR" in the controller settings stays hidden and SISR stays as it is. A factory
+    /// reset (#146) shows the group again; the warning "SISR läuft" under Pan shows anyway.
+    /// </summary>
+    public bool KeepSisr { get; init; }
 
     /// <summary>When Arcadia last installed the usbip driver; a Windows restart is due after that.</summary>
     public DateTimeOffset? UsbipInstalledAt { get; init; }
@@ -98,42 +116,76 @@ public sealed record AppSettings
     }
 
     /// <summary>
-    /// Whether SISR should run while <paramref name="game"/> runs. Without an override it runs for
-    /// every game except those from the Steam launcher, which use Steam Input natively — running
-    /// SISR there would double every input.
+    /// The Steam Controller mode of the game with this key (#213): true = "Arcadia" (Arcadia's Xbox pad), false =
+    /// "Steam-Eingabe". The game's own choice, else its launcher's default (<see cref="LauncherUsesArcadiaPad"/>). Takes a
+    /// key, not a game, so a Steam game started directly in Steam counts too when it isn't in the library (#119).
     /// </summary>
-    public bool ControllerSupportFor(Game game) =>
-        SteamControllerSupport
-        && (ControllerSupportOverrides.TryGetValue(game.Key, out var enabled) ? enabled : DefaultControllerSupportFor(game));
-
-    /// <summary>The mode a game starts with: "Steam Input" for Steam games, "Xbox Controller (SISR)" for all others.</summary>
-    public static bool DefaultControllerSupportFor(Game game) => game.LauncherId != KnownLaunchers.Steam.Id;
+    /// <param name="gamesUseSteamInput">Whether a launcher's games use Steam Input, by launcher id (<see cref="LauncherRegistry.GamesUseSteamInput"/>).</param>
+    public bool UsesArcadiaPad(string gameKey, Func<string, bool> gamesUseSteamInput) =>
+        ControllerModeChoiceFor(gameKey) ?? LauncherUsesArcadiaPad(Game.LauncherIdOf(gameKey), gamesUseSteamInput);
 
     /// <summary>
-    /// Sets the mode for <paramref name="game"/>. Only a choice that differs from the game's default
-    /// is stored, so untouched games follow the default if it ever changes.
+    /// The mode a launcher's games on "Standard" get (#178): what the user chose on the launcher's page, else the
+    /// launcher's own (#156): "Steam-Eingabe" for a launcher whose games use Steam Input (Steam's), "Arcadia" for all others.
     /// </summary>
-    public AppSettings WithControllerSupportChoice(Game game, bool useSisr) =>
-        WithControllerSupportOverride(game, useSisr == DefaultControllerSupportFor(game) ? null : useSisr);
+    /// <param name="gamesUseSteamInput">Whether a launcher's games use Steam Input, by launcher id (<see cref="LauncherRegistry.GamesUseSteamInput"/>).</param>
+    public bool LauncherUsesArcadiaPad(string launcherId, Func<string, bool> gamesUseSteamInput) =>
+        PreferencesOf(launcherId).UsesArcadiaPad ?? !gamesUseSteamInput(launcherId);
 
-    /// <summary>Null means "use the default" for this game.</summary>
-    public bool? ControllerSupportOverrideFor(Game game) =>
-        ControllerSupportOverrides.TryGetValue(game.Key, out var enabled) ? enabled : null;
+    /// <summary>
+    /// Sets the launcher's default. The launcher's own is kept as none, so no launcher needs a special case and a launcher
+    /// that changes its own later is followed (#178).
+    /// </summary>
+    /// <param name="gamesUseSteamInput">Whether a launcher's games use Steam Input, by launcher id (<see cref="LauncherRegistry.GamesUseSteamInput"/>).</param>
+    public AppSettings WithLauncherControllerMode(string launcherId, bool useArcadiaPad, Func<string, bool> gamesUseSteamInput) =>
+        WithLauncherPreferences(launcherId, p => p with { UsesArcadiaPad = useArcadiaPad == !gamesUseSteamInput(launcherId) ? null : useArcadiaPad });
 
-    public AppSettings WithControllerSupportOverride(Game game, bool? enabled)
+    /// <summary>The game's own mode; null means "Standard": it follows its launcher's default.</summary>
+    public bool? ControllerModeChoiceFor(string gameKey) =>
+        (ControllerSupportOverrides ?? []).TryGetValue(gameKey, out var arcadia) ? arcadia : null;
+
+    /// <summary>Sets the game's own mode; null puts it on "Standard".</summary>
+    public AppSettings WithControllerModeChoice(string gameKey, bool? useArcadiaPad)
     {
-        var overrides = new Dictionary<string, bool>(ControllerSupportOverrides);
-        if (enabled is { } value)
+        var choices = new Dictionary<string, bool>(ControllerSupportOverrides ?? []);
+        if (useArcadiaPad is { } value)
         {
-            overrides[game.Key] = value;
+            choices[gameKey] = value;
         }
         else
         {
-            overrides.Remove(game.Key);
+            choices.Remove(gameKey);
         }
 
-        return this with { ControllerSupportOverrides = overrides };
+        return this with { ControllerSupportOverrides = choices };
     }
+
+    /// <summary>Sets one model's layout in <see cref="ControllerLayouts"/>; null puts it back on its own kind.</summary>
+    public AppSettings WithControllerLayout(string modelKey, string? layout)
+    {
+        var layouts = new Dictionary<string, string>(ControllerLayouts ?? [], StringComparer.Ordinal);
+        if (layout is null)
+        {
+            layouts.Remove(modelKey);
+        }
+        else
+        {
+            layouts[modelKey] = layout;
+        }
+
+        return this with { ControllerLayouts = layouts };
+    }
+
+    /// <summary>
+    /// "Alle Spiele auf die Vorauswahl setzen" (#178): every game of the launcher goes back to "Standard", also games no
+    /// longer in the library, whose choice would otherwise come back with them.
+    /// </summary>
+    public AppSettings WithoutControllerModeChoices(string launcherId) => this with
+    {
+        ControllerSupportOverrides = (ControllerSupportOverrides ?? [])
+            .Where(choice => Game.LauncherIdOf(choice.Key) != launcherId)
+            .ToDictionary(choice => choice.Key, choice => choice.Value),
+    };
 }
 
 public sealed class SettingsStore(string path)

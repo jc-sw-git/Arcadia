@@ -58,11 +58,42 @@ public interface IGamepadSource : IDisposable
     void Rumble(int padId);
 
     /// <summary>
+    /// Keeps the motors of <paramref name="padId"/> running at these strengths (0–65535, low and high frequency) until
+    /// the next call; 0 and 0 stop them. What a game asks of the emulated pad (#238 D5). Callable from any thread.
+    /// </summary>
+    void HoldRumble(int padId, ushort low, ushort high);
+
+    /// <summary>
+    /// Sets the light bar of <paramref name="padId"/>, if it has one: the colour a game set on its emulated PlayStation
+    /// pad (#238 A5). Callable from any thread.
+    /// </summary>
+    void SetLight(int padId, PadLight light);
+
+    /// <summary>
+    /// Switches the gyro and accelerometer of every controller that has them on or off, from the next poll on: on while
+    /// an emulated pad carries motion (#238). Callable from any thread.
+    /// </summary>
+    void UseMotionSensors(bool on);
+
+    /// <summary>
+    /// Lets go of every controller (false): SDL closes them and ends, so Arcadia holds no handle and Windows lets Pan
+    /// restart a controller it hides or shows (#335, check A3). No poll runs meanwhile. True reads them again from the
+    /// next poll on, each with a new <see cref="GamepadReading.PadId"/>. Callable from any thread; never throws.
+    /// </summary>
+    void ReadControllers(bool on);
+
+    /// <summary>
     /// A fresh look at the controllers between two polls: does one of them pass <paramref name="test"/> right now?
     /// For the desktop filter's hook, which must not miss a press Steam turned into a key before the next poll.
     /// Callable from any thread; false if it can't look quickly.
     /// </summary>
     bool AnyNow(Func<GamepadReading, bool> test);
+
+    /// <summary>
+    /// Stops (false) or resumes reading the Steam Controller and its puck; stopped, Arcadia holds no handle to them, so
+    /// Windows lets Pan restart the puck when it hides it (#308). Callable from any thread; never throws.
+    /// </summary>
+    void ReadSteamControllers(bool on);
 }
 
 /// <summary>Used where Arcadia ships no SDL (macOS / Linux for now).</summary>
@@ -100,7 +131,27 @@ public sealed class NullGamepadSource : IGamepadSource
     {
     }
 
+    public void HoldRumble(int padId, ushort low, ushort high)
+    {
+    }
+
+    public void SetLight(int padId, PadLight light)
+    {
+    }
+
+    public void UseMotionSensors(bool on)
+    {
+    }
+
+    public void ReadControllers(bool on)
+    {
+    }
+
     public bool AnyNow(Func<GamepadReading, bool> test) => false;
+
+    public void ReadSteamControllers(bool on)
+    {
+    }
 
     public void Dispose()
     {

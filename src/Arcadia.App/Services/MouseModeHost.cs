@@ -27,9 +27,8 @@ public sealed class MouseModeHost : IDisposable
     private static readonly TimeSpan ForegroundCheckInterval = TimeSpan.FromMilliseconds(500);
 
     /// <summary>
-    /// Arcadia must stay in the background this long before the mode switches on by itself. Arcadia
-    /// moves the focus away for a moment on purpose (to the desktop and back after SISR stops,
-    /// <see cref="ForegroundGuard.BounceFocusAsync"/>); that must not flash "Mausmodus an" and "aus".
+    /// Arcadia must stay in the background this long before the mode switches on by itself, so a focus change of a
+    /// moment (a dialog of Windows, a window flashing up) doesn't flash "Mausmodus an" and "aus".
     /// </summary>
     private static readonly TimeSpan FocusLossSettleTime = TimeSpan.FromMilliseconds(300);
 
@@ -154,6 +153,9 @@ public sealed class MouseModeHost : IDisposable
 
     /// <summary>Gamepad input is the mouse's now, not Arcadia's navigation. Readable from any thread.</summary>
     public bool IsOn => _mode.IsOn;
+
+    /// <summary>A notice over the screen while Arcadia is in the background (#243, <see cref="Input.PanNotices"/>); UI thread.</summary>
+    public void ShowNotice(string text) => _overlay.ShowNotice(text);
 
     /// <summary>
     /// Arcadia is in front and can be seen: its controller input and View's way back depend on it.

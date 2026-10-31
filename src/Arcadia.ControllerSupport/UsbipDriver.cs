@@ -3,34 +3,21 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.ServiceProcess;
+using Arcadia.Pan;
 using Microsoft.Win32;
 
 namespace Arcadia.ControllerSupport;
 
-/// <summary>Where the usbip-win2 installer comes from and who must have signed it (#29).</summary>
-public static class UsbipRelease
-{
-    /// <summary>
-    /// Checked 2026-10-21 on the 0.9.8.1 installer (GlobalSign EV code signing certificate, valid until 2027-05-03).
-    /// A new publisher needs a look and a change here.
-    /// </summary>
-    public static PublisherPin Publisher { get; } = new("Cloudyne Systems (Scheibling Consulting AB)", "SE", "559171-6567");
-
-    public const string ManualInstallUrl = "https://github.com/vadimgrn/usbip-win2/releases/latest";
-}
-
 /// <summary>
-/// The usbip-win2 kernel driver. VIIPER (bundled with SISR) attaches its virtual controllers
-/// through it.
+/// The usbip-win2 kernel driver. Arcadia's VIIPER attaches its virtual controllers through it.
 /// </summary>
 [SupportedOSPlatform("windows")]
 public static class UsbipDriver
 {
     /// <summary>The minimum version VIIPER's own installer requires.</summary>
-    public static Version MinimumVersion { get; } = new(0, 9, 8, 1);
+    public static Version MinimumVersion => UsbipRelease.MinimumVersion;
 
     private const string ControllerService = "usbip2_ude";
-    private const int ErrorCancelled = 1223;
 
     public static Version? InstalledVersion()
     {
@@ -100,8 +87,8 @@ public static class UsbipDriver
 
     /// <summary>
     /// Detaches the controllers VIIPER attached. VIIPER has no detach of its own: the driver drops a
-    /// device when VIIPER's connection closes. This is the safety net for when VIIPER died with SISR
-    /// (Arcadia kills SISR while Steam is down) and a device might be left behind. Returns how many
+    /// device when VIIPER's connection closes. This is the safety net for when Arcadia killed SISR's VIIPER
+    /// (#214) and a device might be left behind. Returns how many
     /// were detached; never throws.
     /// </summary>
     public static async Task<int> DetachViiperDevicesAsync(CancellationToken cancellationToken = default)
@@ -118,7 +105,7 @@ public static class UsbipDriver
         }
 
         var detached = 0;
-        foreach (var port in UsbipPorts.FromLocalViiper(listing))
+        foreach (var port in UsbipPorts.FromLocalServer(listing, UsbipPorts.ViiperPort))
         {
             if (await RunAsync(usbip, ["detach", "-p", port.ToString(System.Globalization.CultureInfo.InvariantCulture)], cancellationToken) is not null)
             {
@@ -205,13 +192,12 @@ public static class UsbipDriver
     }
 
     /// <summary>
-    /// Downloads the latest usbip-win2 installer, checks that it is signed by <see cref="UsbipRelease.Publisher"/> and runs it
-    /// silently. Windows asks for administrator rights (UAC). The SHA-256 from GitHub only proves the download is what
-    /// GitHub lists; the signature proves who built it, also if the release account was taken over.
+    /// Downloads the latest usbip-win2 installer into Arcadia's temp folder and returns its path. The SHA-256 from
+    /// GitHub proves the download is what GitHub lists; Pan's <c>--install --usbip-installer</c> checks the signature
+    /// (who built it, also if the release account was taken over) and runs it in the one elevated setup step (#243).
+    /// The caller deletes the file.
     /// </summary>
-    /// <returns>False if the user declined the UAC prompt.</returns>
-    /// <exception cref="UntrustedInstallerException">The installer isn't signed by the expected publisher; it wasn't started.</exception>
-    public static async Task<bool> InstallAsync(HttpClient http, CancellationToken cancellationToken = default, IAuthenticode? authenticode = null)
+    public static async Task<string> DownloadInstallerAsync(HttpClient http, CancellationToken cancellationToken = default)
     {
         var release = await new GitHubReleaseClient(http).GetLatestAsync("vadimgrn", "usbip-win2", cancellationToken)
             ?? throw new InvalidOperationException("Die aktuelle usbip-win2-Version konnte nicht ermittelt werden.");
@@ -222,34 +208,6 @@ public static class UsbipDriver
 
         var installer = Path.Combine(Path.GetTempPath(), "Arcadia", asset.Name);
         await VerifiedDownload.DownloadAsync(http, asset, installer, cancellationToken);
-        try
-        {
-            return await InstallerSignature.RunIfTrustedAsync(installer, "Der usbip-win2-Installer", UsbipRelease.Publisher, UsbipRelease.ManualInstallUrl,
-                authenticode ?? new WinTrustAuthenticode(), () => RunInstallerAsync(installer, cancellationToken));
-        }
-        finally
-        {
-            File.Delete(installer);
-        }
-    }
-
-    private static async Task<bool> RunInstallerAsync(string installer, CancellationToken cancellationToken)
-    {
-        try
-        {
-            using var process = Process.Start(new ProcessStartInfo(installer, "/S") { UseShellExecute = true, Verb = "runas" })
-                ?? throw new InvalidOperationException("Der usbip-win2-Installer konnte nicht gestartet werden.");
-            await process.WaitForExitAsync(cancellationToken);
-            if (process.ExitCode != 0)
-            {
-                throw new InvalidOperationException($"Der usbip-win2-Installer meldete Fehler {process.ExitCode}.");
-            }
-
-            return true;
-        }
-        catch (Win32Exception ex) when (ex.NativeErrorCode == ErrorCancelled)
-        {
-            return false;
-        }
+        return installer;
     }
 }

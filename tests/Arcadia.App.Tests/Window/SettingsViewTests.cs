@@ -114,7 +114,9 @@ public sealed class SettingsViewTests
     [Trait("TestCase", "T15-4")]
     public async Task In_Controller_the_D_pad_walks_the_rows_with_their_headings_in_view_values_change_at_once_Aus_dims_and_all_stays_after_a_restart()
     {
-        using var first = await ArcadiaWindow.ShowAsync(steam: new FakeSteam());
+        var steam = new FakeSteam();
+        steam.Sisr.WithSisr();
+        using var first = await ArcadiaWindow.ShowAsync(steam: steam);
         var main = first.Arcadia.Main;
         first.Press(UiAction.Settings).Press(UiAction.NextTab);
         var settings = main.Settings!;
@@ -157,13 +159,14 @@ public sealed class SettingsViewTests
         var hold = rows.Single(row => row.Key == "mouse-mode-hold");
         Assert.Contains("unavailable", first.RowButton(hold).Classes);
         Assert.True(first.RowButton(hold).Opacity < 1, "Abhängige Zeile ausgegraut");
-        Assert.DoesNotContain("unavailable", first.RowButton(rows.Single(row => row.Key == "steam-desktop-layout")).Classes);
+        Assert.DoesNotContain("unavailable", first.RowButton(rows.Single(row => row.Key == "mouse-mode")).Classes);
         Assert.Equal("5 Sekunden", first.ValueShown(hold));
 
-        // The SISR row's boxes stand under its description in the info panel, in this order; only settings and actions are rows.
-        first.Arcadia.FocusRow("sisr");
+        // The boxes of "SISR entfernen" (#214) stand under its description in the info panel, in this order; only settings
+        // and actions are rows.
+        first.Arcadia.FocusRow("sisr-remove");
         var boxes = first.InfoPanel().GetVisualDescendants().OfType<Border>().Where(border => border.Classes.Contains("infoSection") && border.IsEffectivelyVisible).ToList();
-        Assert.Equal(["STATUS", "SO FUNKTIONIERT ES", "NACHTEILE", "SISR-VERSION"], boxes.OrderBy(box => first.Bounds(box).Top).Select(box => box.GetVisualDescendants().OfType<TextBlock>().First().Text));
+        Assert.Equal(["WAS ENTFERNT WIRD", "BLEIBT ERHALTEN"], boxes.OrderBy(box => first.Bounds(box).Top).Select(box => box.GetVisualDescendants().OfType<TextBlock>().First().Text));
         var description = first.InfoPanel().GetVisualDescendants().OfType<TextBlock>().First(text => text.Classes.Contains("infoText") && text.IsEffectivelyVisible);
         Assert.True(first.Bounds(description).Bottom <= first.Bounds(boxes[0]).Top, "Die Boxen stehen unter der Beschreibung");
         Assert.All(rows, row => Assert.IsNotType<InfoRowViewModel>(row));
@@ -229,7 +232,7 @@ public sealed class SettingsViewTests
         var settings = main.Settings!;
         arcadia.Key(Key.E, KeyModifiers.Shift);
         Assert.Equal("Controller", settings.Selected.Name);
-        arcadia.Key(Key.S, times: 2);
+        arcadia.Key(Key.S);
         Assert.Equal("mouse-mode", settings.FocusedRow?.Key);
         arcadia.Key(Key.D);
         Assert.Equal(MouseModeActivation.Automatic, arcadia.Arcadia.Settings.Current.MouseMode.Activation);
@@ -324,7 +327,8 @@ public sealed class SettingsViewTests
     public async Task A_mouse_move_or_a_key_shows_the_X_at_the_top_right_of_each_dialog_which_closes_only_it_and_a_button_hides_it_again()
     {
         var steam = new FakeSteam { IsSteamRunning = true };
-        steam.Sisr.IsInstalled = false;
+        // "SISR entfernen" asks "Steam beenden?" first (#214): the dialog over the settings.
+        steam.Sisr.WithSisr();
         using var arcadia = await ArcadiaWindow.ShowAsync(steam: steam);
         var main = arcadia.Arcadia.Main;
 
@@ -359,8 +363,10 @@ public sealed class SettingsViewTests
         arcadia.Click(arcadia.CloseButton(main.CloseSettingsCommand));
         Assert.False(main.IsSettingsOpen);
 
-        // SISR's dialog over the settings: the ✕ closes the dialog, the settings stay.
-        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab).Press(UiAction.Accept);
+        // The dialog over the settings: the ✕ closes the dialog, the settings stay.
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        arcadia.Arcadia.FocusRow("sisr-remove");
+        arcadia.Press(UiAction.Accept);
         var controller = Assert.IsType<ControllerSettingsViewModel>(main.Settings!.Selected);
         Assert.True(controller.IsSteamStopPrompt);
         Assert.Null(arcadia.VisibleClose(controller.ClosePromptCommand));
@@ -369,32 +375,33 @@ public sealed class SettingsViewTests
         arcadia.Click(arcadia.CloseButton(controller.ClosePromptCommand));
         Assert.Null(main.Settings!.Selected.Dialog);
         Assert.True(main.IsSettingsOpen);
-        Assert.Equal(0, steam.Sisr.Installs);
+        Assert.True(File.Exists(steam.Sisr.SisrExe));
+        Assert.Equal(0, steam.SteamStops);
     }
 
     [AvaloniaFact]
     [Trait("TestCase", "T92-3")]
-    public async Task A_click_on_the_mode_in_the_preview_switches_it_and_back_to_the_start_value_nothing_is_saved()
+    public async Task A_click_on_the_mode_in_the_preview_cycles_it_and_back_on_Standard_nothing_is_saved()
     {
-        var steam = new FakeSteam { IsSteamRunning = true };
         using var arcadia = await ArcadiaWindow.ShowAsync(
             [new LauncherSpec(KnownLaunchers.Steam, 3), new LauncherSpec(KnownLaunchers.Gog, 3)],
-            new AppSettings { ActiveLaunchers = ["steam", "gog"], SteamControllerSupport = true },
-            steam: steam);
-        await arcadia.Arcadia.TickControllerSupportAsync();
-        await arcadia.Arcadia.WaitOnClockUntilAsync(() => arcadia.Arcadia.ControllerSupport.State == SisrState.Running, "SISR läuft", TimeSpan.FromSeconds(10));
-        await arcadia.Arcadia.TickControllerSupportAsync();
-        await arcadia.Arcadia.WaitUntilAsync(() => arcadia.Arcadia.Main.ShowControllerSupport, "der Steam Controller ist erkannt");
+            new AppSettings { ActiveLaunchers = ["steam", "gog"] });
+        arcadia.Arcadia.Sdl.Plug(Arcadia.Tests.Sdl.KnownPads.SteamController);
+        arcadia.Arcadia.StartControllers();
+        Assert.True(arcadia.Arcadia.Main.ShowControllerSupport, "der Steam Controller ist erkannt");
         arcadia.Settle();
 
         var mode = Assert.Single(arcadia.Window.GetVisualDescendants().OfType<Button>(), button => button.Classes.Contains("modeValue") && button.IsEffectivelyVisible
             && button.Command == arcadia.Arcadia.Main.CycleControllerSupportCommand);
-        Assert.Equal(ControllerModes.Steam, Text(mode));
+        Assert.Equal("Standard (Steam-Eingabe)", Text(mode));
         arcadia.Click(mode);
-        Assert.Equal(ControllerModes.Sisr, Text(mode));
+        Assert.Equal(ControllerModes.Arcadia, Text(mode));
         Assert.Single(arcadia.Arcadia.Settings.Current.ControllerSupportOverrides);
         arcadia.Click(mode);
         Assert.Equal(ControllerModes.Steam, Text(mode));
+        Assert.Single(arcadia.Arcadia.Settings.Current.ControllerSupportOverrides);
+        arcadia.Click(mode);
+        Assert.Equal("Standard (Steam-Eingabe)", Text(mode));
         Assert.Empty(arcadia.Arcadia.Settings.Current.ControllerSupportOverrides);
         Assert.Empty(new SettingsStore(arcadia.Arcadia.SettingsPath).Load().ControllerSupportOverrides);
     }

@@ -13,11 +13,10 @@ public sealed class SettingsRowTests
     [Trait("TestCase", "T15-5")]
     public async Task The_footer_names_only_the_buttons_of_the_focused_row()
     {
-        var steam = new FakeSteam { IsSteamRunning = true, HasMarker = false };
+        var steam = new FakeSteam { IsSteamRunning = true, IsPanReady = false };
         using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: new AppSettings
         {
             ActiveLaunchers = [.. ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id)],
-            SteamControllerSupport = true,
         });
         await arcadia.TickControllerSupportAsync();
         arcadia.Press(UiAction.Settings);
@@ -28,16 +27,16 @@ public sealed class SettingsRowTests
         Assert.Equal(new Footer(Change: true, Activate: "Öffnen"), Footer.Of(settings.FocusedRow!));
 
         arcadia.Press(UiAction.NextTab);
-        await arcadia.WaitUntilAsync(() => settings.Selected.Rows.Any(row => row.Key == "issue:marker-missing"), "die Meldung zum fehlenden Steam-Eintrag");
+        await arcadia.WaitUntilAsync(() => settings.Selected.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung zum fehlenden Pan");
 
         // A problem with its fix: only A, named by the fix.
-        Assert.Equal(new Footer(Change: false, Activate: "Anlegen"), Footer.Of(arcadia.FocusRow("issue:marker-missing")));
+        Assert.Equal(new Footer(Change: false, Activate: "Installieren"), Footer.Of(arcadia.FocusRow("issue:pan-missing")));
 
         // A choice: only ◀▶, A counting on goes without saying.
         Assert.Equal(new Footer(Change: true, Activate: null), Footer.Of(arcadia.FocusRow("mouse-mode")));
 
         // A switch: ◀▶ and "A Umschalten".
-        Assert.Equal(new Footer(Change: true, Activate: "Umschalten"), Footer.Of(arcadia.FocusRow("steam-desktop-layout")));
+        Assert.Equal(new Footer(Change: true, Activate: "Umschalten"), Footer.Of(arcadia.FocusRow("mouse-mode-end-in-front")));
 
         // A row that only shows something: neither.
         arcadia.Press(UiAction.NextTab);
@@ -89,33 +88,16 @@ public sealed class SettingsRowTests
         Assert.Equal(1, arcadia.Settings.Current.MouseMode.PointerSpeed);
 
         // A switch ("An" / "Aus") with either arrow.
-        var layout = Assert.IsAssignableFrom<SwitchRowViewModel>(arcadia.FocusRow("steam-desktop-layout"));
-        var on = layout.IsOn;
+        var endInFront = Assert.IsAssignableFrom<SwitchRowViewModel>(arcadia.FocusRow("mouse-mode-end-in-front"));
+        var on = endInFront.IsOn;
         arcadia.Press(UiAction.Right);
-        Assert.Equal(!on, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
+        Assert.Equal(!on, endInFront.IsOn);
         arcadia.Press(UiAction.Right);
-        Assert.Equal(on, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
+        Assert.Equal(on, endInFront.IsOn);
         arcadia.Press(UiAction.Left);
-        Assert.Equal(!on, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
+        Assert.Equal(!on, endInFront.IsOn);
         arcadia.Press(UiAction.Left);
-        Assert.Equal(on, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
-    }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "T15-11")]
-    public async Task Steam_Controller_Kompatibilitaet_switches_with_either_arrow()
-    {
-        var steam = new FakeSteam { IsSteamRunning = true };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
-        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
-        var sisr = Assert.IsType<SisrRowViewModel>(arcadia.Main.Settings!.FocusedRow);
-
-        foreach (var (arrow, on) in new[] { (UiAction.Right, true), (UiAction.Right, false), (UiAction.Left, true), (UiAction.Left, false) })
-        {
-            arcadia.Press(arrow);
-            await arcadia.WaitOnClockUntilAsync(() => arcadia.Settings.Current.SteamControllerSupport == on && !sisr.IsLocked, $"{arrow} schaltet auf {(on ? "An" : "Aus")}", TimeSpan.FromSeconds(10));
-            Assert.Equal(on, sisr.IsOn);
-        }
+        Assert.Equal(on, endInFront.IsOn);
     }
 
     /// <summary>What the footer shows for a row: "◀▶ Ändern", and A with its text, or neither.</summary>

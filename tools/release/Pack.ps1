@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Publishes Arcadia self-contained for win-x64 and packs it with vpk. Output in artifacts\:
-      publish\                     the published program
+      publish\                     the published program (Pan\Pan.exe inside: the guardian service, Native AOT)
       releases\Arcadia-win-Setup.exe        installer (no admin rights, installs to %LOCALAPPDATA%\Arcadia)
       releases\Arcadia-win-Portable.zip     portable build
       releases\Arcadia-<version>-full.nupkg, releases.win.json, …  the update feed
@@ -40,6 +40,14 @@ dotnet publish (Join-Path $root 'src\Arcadia.App\Arcadia.App.csproj') `
     --configuration Release --runtime win-x64 --self-contained `
     -p:Version=$Version --output $publish
 if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
+
+# Pan, the guardian service (#243), rides along in Pan\Pan.exe: Native AOT, so it needs no runtime and extracts nothing.
+# Needs the C++ build tools of Visual Studio (the CI's windows runner has them).
+dotnet publish (Join-Path $root 'src\Arcadia.Pan\Arcadia.Pan.csproj') `
+    --configuration Release --runtime win-x64 `
+    -p:Version=$Version --output (Join-Path $publish 'Pan')
+if ($LASTEXITCODE -ne 0) { throw 'dotnet publish of Pan failed' }
+Get-ChildItem (Join-Path $publish 'Pan') -Exclude 'Pan.exe' | Remove-Item -Force -Recurse
 
 Push-Location $root
 try {

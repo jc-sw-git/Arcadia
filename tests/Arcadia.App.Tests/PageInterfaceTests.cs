@@ -108,7 +108,7 @@ public sealed class PageInterfaceTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
 
-        // Open, the settings watch SISR's setup; disposed, they stop.
+        // Open, the settings watch the emulation's parts; disposed, they stop.
         arcadia.Press(UiAction.Settings);
         Assert.True(arcadia.ControllerSupport.WatchSetup);
         arcadia.Press(UiAction.Settings);

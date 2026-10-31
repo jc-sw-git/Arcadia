@@ -37,6 +37,13 @@ public sealed class MouseMode
     /// <summary>The edge of the screen starts to fill after this, as the ring around a held A does.</summary>
     public static readonly TimeSpan FeedbackDelay = TimeSpan.FromMilliseconds(200);
 
+    /// <summary>
+    /// Back + Start counts only when the second button joins this soon after the first (owner, 2026-10-26, #213; 100 ms halves the delay ⧉ and ≡ get in games): a
+    /// button held alone longer goes to a game as held, so it must not become half of Arcadia's combo later. Only for
+    /// switching on: while the mode is on, a game gets nothing from the controller, and a late ⧉ may still end it.
+    /// </summary>
+    public static readonly TimeSpan ComboWindow = TimeSpan.FromMilliseconds(100);
+
     private const PadButtons Combo = PadButtons.View | PadButtons.Menu;
 
     private readonly Func<MouseModeOptions> _options;
@@ -45,6 +52,9 @@ public sealed class MouseMode
 
     // Controllers whose combination already switched; they must let go before it counts again.
     private readonly HashSet<int> _spentCombos = [];
+
+    // Since when each controller holds View or Menu (the first of the two).
+    private readonly Dictionary<int, long> _comboFirstDown = [];
     private int? _comboPad;
     private long _comboSince;
     private bool _comboFeedback;
@@ -184,6 +194,7 @@ public sealed class MouseMode
 
     private void UpdateCombo(IReadOnlyList<GamepadReading> pads, MouseModeOptions options)
     {
+        NoteComboFirstDown(pads);
         if (_spentCombos.Count > 0)
         {
             _spentCombos.RemoveWhere(padId => !pads.Any(p => p.PadId == padId && p.IsDown(Combo)));
@@ -231,7 +242,7 @@ public sealed class MouseMode
         {
             foreach (var pad in pads)
             {
-                if (pad.IsDown(Combo) && !_spentCombos.Contains(pad.PadId))
+                if (pad.IsDown(Combo) && !_spentCombos.Contains(pad.PadId) && (_isOn || JoinedInTime(pad.PadId)))
                 {
                     _comboPad = pad.PadId;
                     _comboSince = _time.GetTimestamp();
@@ -240,6 +251,31 @@ public sealed class MouseMode
             }
         }
     }
+
+    private void NoteComboFirstDown(IReadOnlyList<GamepadReading> pads)
+    {
+        if (_comboFirstDown.Count > 0)
+        {
+            foreach (var padId in _comboFirstDown.Keys.ToList())
+            {
+                if (!pads.Any(p => p.PadId == padId && (p.Buttons & Combo) != 0))
+                {
+                    _comboFirstDown.Remove(padId);
+                }
+            }
+        }
+
+        foreach (var pad in pads)
+        {
+            if ((pad.Buttons & Combo) != 0)
+            {
+                _comboFirstDown.TryAdd(pad.PadId, _time.GetTimestamp());
+            }
+        }
+    }
+
+    private bool JoinedInTime(int padId) =>
+        !_comboFirstDown.TryGetValue(padId, out var since) || _time.GetElapsedTime(since) <= ComboWindow;
 
     private void CancelCombo()
     {

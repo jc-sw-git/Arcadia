@@ -45,7 +45,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public bool HasProblem => Problem is not null;
 
     /// <summary>
-    /// A lamp beside the title that shows at a glance whether what the row switches on really works, e.g. SISR (owner,
+    /// A lamp beside the title that shows at a glance whether what the row switches on really works, e.g. Pan (owner,
     /// 2026-10-22 and 2026-10-24); null shows none.
     /// </summary>
     [ObservableProperty]
@@ -164,11 +164,14 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     private void Click()
     {
         Point();
-        if (CanActivate)
+        if (CanActivate && ActivatesOnClick)
         {
             Activate();
         }
     }
+
+    /// <summary>False for a row held with the pointer instead (<see cref="HoldRowViewModel"/>): the click's release comes too late.</summary>
+    protected virtual bool ActivatesOnClick => true;
 
     /// <summary>The arrow left of a value: focus, then what ◀ does.</summary>
     [RelayCommand]
@@ -304,11 +307,18 @@ public partial class ActionRowViewModel(string key, string title, Action run) : 
 
     public bool HasAction => ActionText.Length > 0;
 
+    /// <summary>Why the action failed, in place of the subtitle until the next try; null shows the subtitle again.</summary>
+    public void ShowProblem(string? problem) => Problem = problem;
+
     /// <summary>Shown, but not now, e.g. while a search for updates runs.</summary>
     [ObservableProperty]
     public partial bool IsEnabled { get; set; } = true;
 
-    /// <summary>The action the row is there for, drawn in the accent colour (e.g. "SISR installieren").</summary>
+    /// <summary>What the action started still runs (e.g. "Wird versucht …"): a spinner in place of the arrow.</summary>
+    [ObservableProperty]
+    public partial bool IsWorking { get; set; }
+
+    /// <summary>The action the row is there for, drawn in the accent colour (e.g. "Treiber installieren").</summary>
     [ObservableProperty]
     public partial bool IsPrimary { get; set; }
 
@@ -330,6 +340,40 @@ public partial class ActionRowViewModel(string key, string title, Action run) : 
     partial void OnIsEnabledChanged(bool value) => NotifyActionsChanged();
 }
 
+/// <summary>
+/// A row whose action needs [A] held, for a step that must not happen by a stray press (#242, "Steam Controller und Puck
+/// übernehmen", held 3 s): the pill fills while it is held, and letting go earlier does nothing.
+/// </summary>
+public sealed class HoldRowViewModel : ActionRowViewModel, IDisposable
+{
+    public HoldRowViewModel(string key, string title, string actionText, TimeSpan holdTime, Action held, TimeProvider time, Action<Action> post)
+        : base(key, title, () => { })
+    {
+        ActionText = actionText;
+        Hold = new HoldButtonViewModel(actionText, holdTime, held, time, post);
+    }
+
+    public HoldButtonViewModel Hold { get; }
+
+    public override string ActivateText => $"Halten ({Hold.HoldTime.TotalSeconds:0} s): {ActionText}";
+
+    public override void Activate() => Hold.Press();
+
+    protected override bool ActivatesOnClick => false;
+
+    /// <summary>The pointer went down on the row's pill: focus, then held as [A] would be.</summary>
+    public void PressByPointer()
+    {
+        Point();
+        if (CanActivate)
+        {
+            Activate();
+        }
+    }
+
+    public void Dispose() => Hold.Dispose();
+}
+
 /// <summary>A row that only shows something, with more about it in the info panel (e.g. "Nachteile").</summary>
 public partial class InfoRowViewModel(string key, string title) : SettingsRowViewModel(key, title)
 {
@@ -344,7 +388,7 @@ public partial class InfoRowViewModel(string key, string title) : SettingsRowVie
 /// <summary>The colour of a row's lamp (owner, 2026-10-24).</summary>
 public enum RowLamp
 {
-    /// <summary>Grey: on, but resting for now, e.g. SISR paused for a game.</summary>
+    /// <summary>Grey: on, but resting for now, e.g. Pan waiting for the Steam Controller.</summary>
     Resting,
 
     /// <summary>Green: on and ready.</summary>
@@ -353,6 +397,6 @@ public enum RowLamp
     /// <summary>Yellow: a warning below the row needs the user.</summary>
     Problem,
 
-    /// <summary>Red: an error below the row, e.g. SISR keeps crashing.</summary>
+    /// <summary>Red: an error below the row, e.g. Pan keeps crashing.</summary>
     Failure,
 }

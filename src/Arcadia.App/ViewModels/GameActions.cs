@@ -14,8 +14,17 @@ namespace Arcadia.App.ViewModels;
 /// <summary>What <see cref="GameActions"/> needs from the window around it; it knows no pages (#155).</summary>
 public interface IGameActionsOwner
 {
-    /// <summary>True when the Steam Controller mode matters (option on, Steam Controller connected).</summary>
+    /// <summary>True when the Steam Controller mode matters: a Steam Controller is connected.</summary>
     bool ShowControllerMode { get; }
+
+    /// <summary>Pan's emulation is on but doesn't run (#242): a game can't get Arcadia's pad, so the mode is "Steam-Eingabe".</summary>
+    bool ControllerModeBroken { get; }
+
+    /// <summary>The controller settings on the row that says why Pan's emulation doesn't run (#242).</summary>
+    void ShowPanProblem();
+
+    /// <summary>Right before a game starts (it is already starting): the Steam Controller takes the game's mode (#213).</summary>
+    Task BeforeGameStartsAsync(CancellationToken cancellationToken);
 
     /// <summary>True when games show their "Individueller Mausmodus".</summary>
     bool ShowGameMouseMode { get; }
@@ -242,11 +251,11 @@ public sealed class GameActions : IGameActionHost
 
         var progress = new Progress<LaunchStage>(stage => OnLaunchStage(tile, stage));
 
-        // Games that use Steam Input themselves would get every input twice while SISR runs.
+        // A game on "Steam-Eingabe" must find neither Arcadia's pad nor Steam kept from the Steam Controller.
         var result = await _launcher.TryStartAsync(tile.Game, async token =>
         {
             _launchedGames.Starting(tile.Game.Key, await Task.Run(ProcessWatch.RunningProcessIds, token));
-            await _controllerSupport.BeginGameAsync(tile.Game, token);
+            await _owner.BeforeGameStartsAsync(token);
         }, progress);
         if (result.Outcome != LaunchOutcome.Requested)
         {
@@ -392,10 +401,24 @@ public sealed class GameActions : IGameActionHost
         }
     }
 
+    /// <summary>
+    /// "Standard (…)", "Arcadia" or "Steam-Eingabe"; while Pan's emulation doesn't run always "Steam-Eingabe", as that is
+    /// what the game gets.
+    /// </summary>
     public string ControllerModeOf(Game game) =>
-        _controllerSupport.Settings.ControllerSupportFor(game) ? ControllerModes.Sisr : ControllerModes.Steam;
+        _owner.ControllerModeBroken ? ControllerModes.Steam : ControllerModes.Of(_controllerSupport.ChoiceFor(game), _controllerSupport.LauncherUsesArcadiaPad(game.LauncherId));
+
+    /// <summary>Standard → Arcadia → Steam-Eingabe → Standard (#178); applies at the game's next start.</summary>
+    public void CycleControllerMode(Game game) => _controllerSupport.SetChoiceFor(game, ControllerModes.Next(_controllerSupport.ChoiceFor(game)));
+
+    string IGameActionHost.NextControllerModeOf(Game game) =>
+        ControllerModes.Of(ControllerModes.Next(_controllerSupport.ChoiceFor(game)), _controllerSupport.LauncherUsesArcadiaPad(game.LauncherId));
 
     bool IGameActionHost.ShowControllerMode => _owner.ShowControllerMode;
+
+    bool IGameActionHost.ControllerModeBroken => _owner.ControllerModeBroken;
+
+    void IGameActionHost.ShowPanProblem() => _owner.ShowPanProblem();
 
     void IGameActionHost.Play(GameTileViewModel tile) => Start(tile);
 
@@ -404,8 +427,7 @@ public sealed class GameActions : IGameActionHost
     void IGameActionHost.OpenInLauncher(GameTileViewModel tile) =>
         HandOver(tile, tile.Game.OpenInLauncher, $"{tile.LauncherName} wird geöffnet …", $"Demo-Spiel: Hier würde jetzt {tile.LauncherName} geöffnet.");
 
-    void IGameActionHost.ToggleControllerMode(GameTileViewModel tile) =>
-        _controllerSupport.SetModeFor(tile.Game, !_controllerSupport.Settings.ControllerSupportFor(tile.Game));
+    void IGameActionHost.CycleControllerMode(GameTileViewModel tile) => CycleControllerMode(tile.Game);
 
     void IGameActionHost.Uninstall(GameTileViewModel tile)
     {

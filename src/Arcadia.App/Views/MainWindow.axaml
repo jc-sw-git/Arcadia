@@ -76,7 +76,7 @@
 
         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Status.IsControllerStarting}" VerticalAlignment="Center"
-                      ToolTip.Tip="SISR startet und richtet den Steam Controller als Xbox Controller ein">
+                      ToolTip.Tip="Pan versteckt den echten Steam Controller und richtet die emulierten Controller ein">
             <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
             <TextBlock Text="Controller wird eingerichtet …" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
           </StackPanel>
@@ -86,16 +86,11 @@
             <Path Classes="statusIcon" Classes.info="{Binding Status.IsControllerStatusInfo}" Classes.error="{Binding Status.IsControllerStatusError}" />
           </Button>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  IsVisible="{Binding Status.HasSisrUpdate}" Command="{Binding OpenControllerSettingsCommand}" ToolTip.Tip="Neue SISR-Version verfügbar">
-            <Path Data="M20 12a8 8 0 1 1 -2.3 -5.6 M20 4v4.5h-4.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
-                  Width="24" Height="24" Stretch="None" />
-          </Button>
-          <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
                   IsVisible="{Binding Status.HasArcadiaUpdate}" Command="{Binding OpenAboutSettingsCommand}" ToolTip.Tip="{Binding Status.ArcadiaUpdateText}">
             <Panel Width="24" Height="24">
               <Path Data="M20 12a8 8 0 1 1 -2.3 -5.6 M20 4v4.5h-4.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
                     Width="24" Height="24" Stretch="None" />
-              <!-- The dot tells Arcadia's own update apart from SISR's. -->
+              <!-- The dot marks it as Arcadia's own update. -->
               <Ellipse Width="8" Height="8" Fill="{StaticResource Accent}" Stroke="{StaticResource Bg}" StrokeThickness="2"
                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-1,-1,0" />
             </Panel>
@@ -279,11 +274,18 @@
                   </Grid>
                   <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowControllerSupport, TargetNullValue=False}">
                     <TextBlock Classes="label" Text="STEAM CONTROLLER" />
-                    <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10. -->
-                    <Button Classes="plain modeValue" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
+                    <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10.
+                         While Pan's emulation doesn't run it is greyed out with a triangle, and a click leads to why (#242). -->
+                    <Button Classes="plain modeValue" Classes.broken="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeBroken, TargetNullValue=False}"
+                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
                             IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
-                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Xbox Controller (SISR)“ und „Steam Input“'}">
-                      <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
+                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Standard“, „Arcadia“ und „Steam-Eingabe“'}">
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
+                        <Path Classes="statusIcon small" VerticalAlignment="Center"
+                              IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeBroken, TargetNullValue=False}"
+                              ToolTip.Tip="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeUnavailableReason}" />
+                      </StackPanel>
                     </Button>
                   </StackPanel>
                   <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowGameMouseMode, TargetNullValue=False}">
@@ -604,7 +606,7 @@
             <Border Grid.Column="1" Name="SortDivider" Classes="divider unneeded" Margin="16,0,20,0" />
             <Button Grid.Column="2" Name="SearchSortButton" Classes="plain toolbar" Command="{Binding OpenFilterCommand}" ToolTip.Tip="Filter und Sortierung (L3)">
               <StackPanel Orientation="Horizontal" Spacing="12">
-                <Border Classes="glyph" IsVisible="{Binding UsesController}"><TextBlock Text="L3" /></Border>
+                <ctl:PadGlyph IsVisible="{Binding UsesController}" Button="L3" />
                 <TextBlock Text="{Binding SortText}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
@@ -624,65 +626,65 @@
               <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding UsesController}">
                 <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding IsKeyboardOut}">
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+                    <ctl:PadGlyph Button="D-Pad" />
                     <TextBlock Classes="hint" Text="Tastatur" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                    <ctl:PadGlyph Button="A" />
                     <TextBlock Classes="hint" Text="Eingeben" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                    <ctl:PadGlyph Button="B" />
                     <TextBlock Classes="hint" Text="Tastatur einfahren" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="RS" /></Border>
+                    <ctl:PadGlyph Button="RS" />
                     <TextBlock Classes="hint" Text="Treffer wählen" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="LT" /></Border><Border Classes="glyph"><TextBlock Text="RT" /></Border>
+                    <ctl:PadGlyph Button="LT" /><ctl:PadGlyph Button="RT" />
                     <TextBlock Classes="hint" Text="Weitere Treffer" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="≡" /></Border>
+                    <ctl:PadGlyph Button="≡" />
                     <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="≡" /></Border>
+                    <ctl:PadGlyph Button="≡" />
                     <TextBlock Classes="hint" Text="halten: Details" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
+                    <ctl:PadGlyph Button="⧉" />
                     <TextBlock Classes="hint" Text="Optionen" />
                   </StackPanel>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="28" IsVisible="{Binding !IsKeyboardOut}">
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="D-Pad" /></Border>
+                    <ctl:PadGlyph Button="D-Pad" />
                     <TextBlock Classes="hint" Text="Treffer wählen" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                    <ctl:PadGlyph Button="A" />
                     <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="A" /></Border>
+                    <ctl:PadGlyph Button="A" />
                     <TextBlock Classes="hint" Text="halten: Details" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="LT" /></Border><Border Classes="glyph"><TextBlock Text="RT" /></Border>
+                    <ctl:PadGlyph Button="LT" /><ctl:PadGlyph Button="RT" />
                     <TextBlock Classes="hint" Text="Weitere Treffer" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="⧉" /></Border>
+                    <ctl:PadGlyph Button="⧉" />
                     <TextBlock Classes="hint" Text="Optionen" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="X" /></Border>
+                    <ctl:PadGlyph Button="X" />
                     <TextBlock Classes="hint" Text="Tastatur" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph round"><TextBlock Text="B" /></Border>
+                    <ctl:PadGlyph Button="B" />
                     <TextBlock Classes="hint" Text="Schließen" />
                   </StackPanel>
                 </StackPanel>
@@ -762,8 +764,8 @@
                     ToolTip.Tip="Bildschirmtastatur ein- oder ausblenden">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <Panel IsVisible="{Binding UsesController}" VerticalAlignment="Center">
-                  <Border Classes="glyph small round" IsVisible="{Binding !IsKeyboardOut}"><TextBlock Text="X" /></Border>
-                  <Border Classes="glyph small round" IsVisible="{Binding IsKeyboardOut}"><TextBlock Text="B" /></Border>
+                  <ctl:PadGlyph Classes="small" IsVisible="{Binding !IsKeyboardOut}" Button="X" />
+                  <ctl:PadGlyph Classes="small" IsVisible="{Binding IsKeyboardOut}" Button="B" />
                 </Panel>
                 <Path Classes="keyboardIcon" Data="M3 6h18v12H3z M7 10h1 M11 10h1 M15 10h1 M8 14h8" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" Width="22" Stretch="Uniform" VerticalAlignment="Center" />
                 <!-- Up while the keyboard is in, down while it's out. -->
@@ -789,7 +791,7 @@
               <!-- The right stick picks a hit; said here as well as in the legend, where it's easily missed. -->
               <Border Grid.Column="1" Classes="stickHint" IsVisible="{Binding ShowsStickHint}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                  <Border Classes="glyph"><TextBlock Text="RS" /></Border>
+                  <ctl:PadGlyph Button="RS" />
                   <TextBlock Classes="hint" Text="Treffer wählen" />
                 </StackPanel>
               </Border>
@@ -833,13 +835,13 @@
                         Command="{Binding TurnBackCommand}" ToolTip.Tip="Vorherige Treffer (LT, Bild ↑, Mausrad)">
                   <StackPanel Orientation="Horizontal" Spacing="6">
                     <Path Classes="chevron" Data="M15 6l-6 6 6 6" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center" />
-                    <TextBlock Text="LT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
+                    <ctl:KeyText Pad="LT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
                   </StackPanel>
                 </Button>
                 <Button Classes="plain glyphButton carouselNav turnHits" HorizontalAlignment="Right" Margin="0,104,80,0" IsVisible="{Binding CanTurn}"
                         Command="{Binding TurnOnCommand}" ToolTip.Tip="Weitere Treffer (RT, Bild ↓, Mausrad)">
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="RT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
+                    <ctl:KeyText Pad="RT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
                     <Path Classes="chevron" Data="M9 6l6 6-6 6" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center" />
                   </StackPanel>
                 </Button>
@@ -963,15 +965,16 @@
                 <DataTemplate x:DataType="vm:GameActionViewModel">
                   <StackPanel>
                     <Border IsVisible="{Binding StartsGroup}" Height="1" Background="{StaticResource Line}" Margin="8,6" />
-                    <Button Classes="plain menuItem" Classes.focused="{Binding IsFocused}" Classes.danger="{Binding IsDanger}" IsEnabled="{Binding IsEnabled}"
+                    <Button Classes="plain menuItem" Classes.focused="{Binding IsFocused}" Classes.danger="{Binding IsDanger}" Classes.broken="{Binding IsBroken}" IsEnabled="{Binding IsEnabled}"
                             Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.InvokeMenuActionCommand}" CommandParameter="{Binding}">
-                      <Grid ColumnDefinitions="24,*" ColumnSpacing="14">
+                      <Grid ColumnDefinitions="24,*,Auto" ColumnSpacing="14">
                         <Path Classes="icon" Data="{Binding Icon}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
                               Width="24" Height="24" Stretch="None" VerticalAlignment="Top" />
                         <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Label}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
                           <TextBlock Classes="note" Text="{Binding Note}" IsVisible="{Binding HasNote}" />
                         </StackPanel>
+                        <Path Grid.Column="2" Classes="statusIcon small" IsVisible="{Binding IsBroken}" VerticalAlignment="Center" />
                       </Grid>
                     </Button>
                   </StackPanel>
@@ -1219,7 +1222,7 @@
                                     </Grid>
                                   </Border>
                                 </DataTemplate>
-                                <DataTemplate x:DataType="settings:SisrRowViewModel">
+                                <DataTemplate x:DataType="settings:SetupSwitchRowViewModel">
                                   <Panel>
                                     <Border Classes="valuePill" Classes.locked="{Binding IsLocked}" IsVisible="{Binding IsSwitch}">
                                       <Grid ColumnDefinitions="Auto,*,Auto">
@@ -1234,7 +1237,7 @@
                                     </Border>
                                     <!-- Not a button of its own: the whole row is the button, so A on the row installs. -->
                                     <Border Classes="rowAction" Classes.locked="{Binding IsLocked}" IsVisible="{Binding IsInstall}">
-                                      <TextBlock Text="SISR installieren" />
+                                      <TextBlock Text="{Binding InstallText}" />
                                     </Border>
                                   </Panel>
                                 </DataTemplate>
@@ -1264,13 +1267,30 @@
                                     </Grid>
                                   </Border>
                                 </DataTemplate>
+                                <!-- Held with [A] (#242): the pill fills over the hold time; before the action row, which it is too. -->
+                                <DataTemplate x:DataType="settings:HoldRowViewModel">
+                                  <Border Classes="holdPill hold" DataContext="{Binding Hold}" x:DataType="vm:HoldButtonViewModel"
+                                          Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}" Classes.holding="{Binding IsHolding}">
+                                    <Panel>
+                                      <Border Classes="holdClip">
+                                        <Border Classes="holdFill">
+                                          <Border.RenderTransform>
+                                            <ScaleTransform ScaleX="0" />
+                                          </Border.RenderTransform>
+                                        </Border>
+                                      </Border>
+                                      <TextBlock Text="{Binding Label}" />
+                                    </Panel>
+                                  </Border>
+                                </DataTemplate>
                                 <DataTemplate x:DataType="settings:ActionRowViewModel">
                                   <Border Classes="rowGo" Classes.primary="{Binding IsPrimary}" Classes.disabled="{Binding !IsEnabled}" IsVisible="{Binding HasAction}">
                                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                                       <ctl:KeyHint Pad="{Binding ShortcutPad}" Keys="{Binding ShortcutKeys}" IsDark="{Binding IsFocused}" VerticalAlignment="Center"
                                                    IsVisible="{Binding HasShortcut}" />
                                       <TextBlock Grid.Column="1" Text="{Binding ActionText}" />
-                                      <Path Grid.Column="2" Classes="chevronRight" />
+                                      <Path Grid.Column="2" Classes="chevronRight" IsVisible="{Binding !IsWorking}" />
+                                      <Path Grid.Column="2" Classes="spinner" IsVisible="{Binding IsWorking}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
                                     </Grid>
                                   </Border>
                                 </DataTemplate>
@@ -1298,7 +1318,7 @@
             <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="20">
               <Grid.DataTemplates>
                 <DataTemplate x:DataType="settings:InfoText">
-                  <TextBlock Classes="infoText" ctl:ButtonTextBlock.Text="{Binding Text}" />
+                  <TextBlock Classes="infoText" ctl:ButtonTextBlock.Symbols="{Binding Symbols}" ctl:ButtonTextBlock.Text="{Binding Text}" />
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoAvatar">
                   <StackPanel Orientation="Horizontal" Spacing="16">
@@ -1369,11 +1389,23 @@
                   <TextBlock Text="{Binding Text}" FontSize="16" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
                 </DataTemplate>
                 <!-- The launcher settings (#136): a note, the tab strip in miniature, the launcher's head, its facts. -->
+                <!-- A warning that must not be missed (#242): bold, on red. -->
+                <DataTemplate x:DataType="settings:InfoDanger">
+                  <Border Classes="dangerBox strong">
+                    <StackPanel Spacing="10">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.01" Stroke="{StaticResource Danger}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="28" Height="28" Stretch="Uniform" VerticalAlignment="Top" />
+                        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="20" FontWeight="ExtraBold" Foreground="{StaticResource Danger}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                      </Grid>
+                      <TextBlock Text="{Binding Text}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoNote">
-                  <Border Classes="infoNote" Classes.info="{Binding IsInfo}">
+                  <Border Classes="infoNote" Classes.info="{Binding IsInfo}" Classes.bold="{Binding IsBold}">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                       <Path Classes="statusIcon" Classes.info="{Binding IsInfo}" VerticalAlignment="Top" />
-                      <TextBlock Grid.Column="1" Text="{Binding Text}" />
+                      <TextBlock Grid.Column="1" Classes="noteText" ctl:ButtonTextBlock.Symbols="{Binding Symbols}" ctl:ButtonTextBlock.Text="{Binding Text}" />
                     </Grid>
                   </Border>
                 </DataTemplate>
@@ -1415,7 +1447,7 @@
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoFacts">
                   <StackPanel Spacing="2">
-                    <TextBlock Classes="label" Text="{Binding Title}" Margin="0,4,0,0" />
+                    <TextBlock Classes="label" Text="{Binding Title}" Margin="0,4,0,0" IsVisible="{Binding Title, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     <ItemsControl ItemsSource="{Binding Facts}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="settings:InfoFact">
@@ -1537,7 +1569,7 @@
           </Border>
         </Grid>
 
-        <!-- A dialog of the shown category over the page, e.g. before "SISR installieren" goes on. -->
+        <!-- A dialog of the shown category over the page, e.g. before "SISR entfernen" closes Steam. -->
         <ContentControl Content="{Binding Settings?.Selected.Dialog, TargetNullValue={x:Null}}">
           <ContentControl.DataTemplates>
             <!-- A question before something that can't be undone, e.g. signing out of a launcher's account (#83). -->
@@ -1586,8 +1618,7 @@
                       </Border>
                       <TextBlock Text="Steam-Spiel läuft" IsVisible="{Binding IsGamePrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                       <TextBlock Text="Steam beenden?" IsVisible="{Binding IsSteamStopPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding SteamStartFailedTitle}" IsVisible="{Binding IsSteamStartFailedPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
-                      <TextBlock Text="Steam-Eintrag für SISR anlegen?" IsVisible="{Binding IsMarkerPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+                      <TextBlock Text="SISR wird entfernt" IsVisible="{Binding IsRemovingSisrPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <StackPanel Spacing="14" IsVisible="{Binding IsGamePrompt}">
@@ -1597,75 +1628,86 @@
                           <Run Text=" läuft gerade über Steam." />
                         </TextBlock>
                       </Border>
-                      <TextBlock Classes="promptBody" Text="Für die Installation muss Steam beendet und neu gestartet werden. Beende zuerst das Spiel und versuche es dann erneut." />
+                      <TextBlock Classes="promptBody" Text="{Binding GamePromptText}" />
                     </StackPanel>
                     <StackPanel Spacing="14" IsVisible="{Binding IsSteamStopPrompt}">
-                      <TextBlock Classes="promptBody" Text="Für die Installation muss Steam beendet werden. Arcadia startet Steam danach wieder im Hintergrund." />
-                      <TextBlock Classes="promptBody" Text="Danach werden SISR und der usbip-Treiber installiert. Windows fragt dabei einmal nach Administratorrechten." />
+                      <TextBlock Classes="promptBody" Text="{Binding SteamStopText}" />
+                      <TextBlock Classes="promptBody" Text="{Binding SteamStopDetail}" IsVisible="{Binding HasSteamStopDetail}" />
+                    </StackPanel>
+                    <StackPanel Spacing="18" IsVisible="{Binding IsRemovingSisrPrompt}">
+                      <TextBlock Classes="promptBody" Text="{Binding RemovingSisrText}" />
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                        <TextBlock Text="{Binding RemovingSisrStep}" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                      </StackPanel>
                     </StackPanel>
 
-                    <StackPanel Spacing="14" IsVisible="{Binding IsSteamStartFailedPrompt}">
-                      <TextBlock Classes="promptBody" Text="{Binding SteamStartFailedText}" />
-                      <TextBlock Classes="promptBody" Text="{Binding SteamStartFailedHint}" />
-                    </StackPanel>
-
-                    <StackPanel Spacing="14" IsVisible="{Binding IsMarkerPrompt}">
-                      <TextBlock Classes="promptBody" Text="SISR braucht in Steam einen Eintrag „SISR Marker“ als Nicht-Steam-Spiel. Er erscheint in der Steam-Bibliothek des Kontos. Ohne ihn lässt sich die Funktion nicht nutzen." />
-                      <TextBlock Classes="promptBody" Text="Auf diesem PC gibt es mehrere Steam-Konten. Für welche soll der Eintrag angelegt werden? Mit anderen Konten bleibt die Funktion aus, bis der Eintrag dort angelegt ist." />
-                      <ItemsControl ItemsSource="{Binding MarkerAccounts}">
-                        <ItemsControl.ItemTemplate>
-                          <DataTemplate x:DataType="settings:MarkerAccountViewModel">
-                            <Button Classes="plain settingRow" Classes.focused="{Binding IsFocused}" Classes.done="{Binding HasMarker}"
-                                    Command="{Binding ToggleCommand}">
-                              <StackPanel Orientation="Horizontal" Spacing="16">
-                                <Border Classes="checkbox" Classes.on="{Binding IsChecked}">
-                                  <TextBlock Text="✓" IsVisible="{Binding IsChecked}" />
-                                </Border>
-                                <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <TextBlock Classes="hint" Text="bereits eingerichtet" IsVisible="{Binding HasMarker}" VerticalAlignment="Center" />
-                              </StackPanel>
-                            </Button>
-                          </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                      </ItemsControl>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsMarkerPrompt}">
-                      <Button Classes="plain action primaryAction" Classes.focused="{Binding ConfirmMarkerAccountsItem.IsFocused}"
-                              Command="{Binding ConfirmMarkerAccountsCommand}" IsEnabled="{Binding CanConfirmMarkerAccounts}" Content="Weiter" />
-                      <Button Classes="plain action" Classes.focused="{Binding CancelMarkerAccountsItem.IsFocused}"
-                              Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
-                    </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsGamePrompt}">
-                      <Button Classes="plain action primaryAction" Classes.focused="{Binding RetryInstallItem.IsFocused}"
+                      <Button Classes="plain action primaryAction" Classes.focused="{Binding RetryInstallItem.IsFocused}" IsVisible="{Binding CanRetryGamePrompt}"
                               Command="{Binding RetryInstallCommand}" Content="Erneut versuchen" />
                       <Button Classes="plain action" Classes.focused="{Binding CloseGamePromptItem.IsFocused}"
                               Command="{Binding ClosePromptCommand}" Content="Schließen" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsSteamStopPrompt}">
                       <Button Classes="plain action primaryAction" Classes.focused="{Binding ConfirmSteamStopItem.IsFocused}"
-                              Command="{Binding ConfirmSteamStopCommand}" Content="Steam beenden und installieren" />
+                              Command="{Binding ConfirmSteamStopCommand}" Content="{Binding ConfirmSteamStopText}" />
                       <Button Classes="plain action" Classes.focused="{Binding CancelSteamStopItem.IsFocused}"
                               Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsSteamStartFailedPrompt}">
-                      <Button Classes="plain action primaryAction" Classes.focused="{Binding RetrySteamStartItem.IsFocused}"
-                              Command="{Binding RetrySteamStartCommand}" Content="{Binding SteamStartFailedAction}" />
-                      <Button Classes="plain action" Classes.focused="{Binding CancelSteamStartItem.IsFocused}"
-                              Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
-                    </StackPanel>
 
-                    <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                    <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0" IsVisible="{Binding !IsRemovingSisrPrompt}">
                       <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                         <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Auswählen" />
                         <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding PromptBackText}" />
                       </StackPanel>
                     </Border>
                   </StackPanel>
-                  <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
-                          IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding ClosePromptCommand}">
-                    <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
-                  </Button>
+                  <Panel IsVisible="{Binding !IsRemovingSisrPrompt}">
+                    <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
+                            IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding ClosePromptCommand}">
+                      <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+                    </Button>
+                  </Panel>
+                  </Panel>
+                </Border>
+              </Panel>
+            </DataTemplate>
+            <DataTemplate x:DataType="settings:ControllerLayoutsViewModel">
+              <views:ControllerLayoutsView />
+            </DataTemplate>
+            <!-- A question of a category, e.g. "Alle Spiele auf die Vorauswahl setzen?" on a launcher's page (#178):
+                 [A] answers yes, [B] no; each button names its pad button or key (design T178Spiel). -->
+            <DataTemplate x:DataType="settings:SettingsQuestionViewModel">
+              <Panel>
+                <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                        Command="{Binding CancelCommand}" />
+                <Border Classes="prompt" Width="720" HorizontalAlignment="Center" VerticalAlignment="Center">
+                  <Panel>
+                    <StackPanel Spacing="28">
+                      <StackPanel Orientation="Horizontal" Spacing="18">
+                        <Border Classes="promptIcon"><TextBlock Text="?" /></Border>
+                        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="ExtraBold" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="560" />
+                      </StackPanel>
+                      <TextBlock Classes="promptBody" Text="{Binding Message}" />
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Classes="plain action primaryAction" Command="{Binding ConfirmCommand}">
+                          <StackPanel Orientation="Horizontal" Spacing="10">
+                            <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" />
+                            <TextBlock Text="{Binding ConfirmText}" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Button>
+                        <Button Classes="plain action" Command="{Binding CancelCommand}">
+                          <StackPanel Orientation="Horizontal" Spacing="10">
+                            <ctl:KeyHint Pad="B" Keys="Esc" />
+                            <TextBlock Text="Abbrechen" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Button>
+                      </StackPanel>
+                    </StackPanel>
+                    <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
+                            IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CancelCommand}">
+                      <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+                    </Button>
                   </Panel>
                 </Border>
               </Panel>
@@ -1677,6 +1719,152 @@
       <!-- The first start's question which launchers Arcadia uses (#139): over everything but the toast until "Fertig". -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsFirstRunShown}">
         <views:FirstRunView DataContext="{Binding FirstRun}" />
+      </Panel>
+
+      <!-- The installed Pan isn't this Arcadia's and Pan is on (#297, #326, artboards T326F01–F09): a page over everything
+           but Pan's dialogs. [A] updates, [B] goes on without Pan, which then waits until the old Pan has ended; if it
+           doesn't, [A] restores the controllers or checks again, [B] ends Arcadia. -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsPanUpdateShown}">
+        <!-- Covers the library entirely, in the bars beside the layout too: it isn't there yet for the player. -->
+        <Border Classes="bleedAll" Background="{StaticResource Bg}" />
+        <Border Classes="prompt" Width="920" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <StackPanel Spacing="22" DataContext="{Binding PanUpdate}" x:DataType="vm:PanUpdatePageViewModel">
+            <StackPanel Orientation="Horizontal" Spacing="18">
+              <Border Classes="promptIcon" IsVisible="{Binding IsBusy}">
+                <Path Classes="spinner" HorizontalAlignment="Center" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+              </Border>
+              <Border Classes="promptIcon" IsVisible="{Binding IsNotice}">
+                <TextBlock Text="i" />
+              </Border>
+              <Border Classes="promptIcon warning" IsVisible="{Binding IsWarning}">
+                <TextBlock Text="!" />
+              </Border>
+              <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Classes="promptBody" Text="{Binding Text}" Foreground="{StaticResource Text}" />
+            <Panel Width="200" Height="200" HorizontalAlignment="Center" IsVisible="{Binding IsCountingDown}">
+              <Path Classes="spinner large"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="{x:Static vm:PanUpdatePageViewModel.CountdownCaption}" FontSize="15" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding SecondsLeft}" FontSize="52" FontWeight="ExtraBold" HorizontalAlignment="Center" />
+                <TextBlock Text="Sekunden" FontSize="15" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Panel>
+            <ItemsControl ItemsSource="{x:Static vm:PanUpdatePageViewModel.ManualSteps}" IsVisible="{Binding ShowsSteps}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="10" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Classes="promptBody" Text="{Binding}" Foreground="{StaticResource Text}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Classes="promptBody" Text="{Binding Hint}" IsVisible="{Binding HasHint}" />
+            <Border Classes="dangerBox" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                <Path Data="M12 3.5L2.5 20h19z M12 10v4.5 M12 17.2v.01" Stroke="{StaticResource Danger}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" VerticalAlignment="Top" />
+                <TextBlock Grid.Column="1" Text="{Binding Error}" FontSize="16" TextWrapping="Wrap" />
+              </Grid>
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding HasButtons}">
+              <Button Classes="plain action primaryAction" Content="{Binding ConfirmText}" Command="{Binding ConfirmCommand}" />
+              <Button Classes="plain action" Content="{Binding CancelText}" Command="{Binding CancelCommand}" />
+            </StackPanel>
+            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0" IsVisible="{Binding HasButtons}">
+              <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding ConfirmText}" />
+                <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding CancelText}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+      </Panel>
+
+      <!-- Pan's firmware notice (#295; artboard T242Firmware without its wait): over everything, the settings and the
+           first start too. Not clicked away; [B] closes it as "Schließen". -->
+      <Panel Grid.RowSpan="4" IsVisible="{Binding IsPanDialogOpen}">
+        <Border Classes="bleedAll" Background="{StaticResource Scrim}" />
+        <Border Classes="prompt" Width="920" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding FirmwareAttempt, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Panel DataContext="{Binding FirmwareAttempt}" x:DataType="vm:FirmwareAttemptViewModel">
+            <StackPanel Spacing="22" IsVisible="{Binding IsAsking}">
+              <StackPanel Orientation="Horizontal" Spacing="18">
+                <Border Classes="promptIcon warning">
+                  <TextBlock Text="!" />
+                </Border>
+                <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Classes="promptBody" Text="{Binding Message}" Foreground="{StaticResource Text}" />
+              <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,4,0,0">
+                <Button DataContext="{Binding ReleaseButton}" x:DataType="vm:HoldButtonViewModel" Width="300"
+                        Classes="plain hold light" Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}"
+                        Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}">
+                  <Panel>
+                    <Border Classes="holdClip">
+                      <Border Classes="holdFill">
+                        <Border.RenderTransform>
+                          <ScaleTransform ScaleX="0" />
+                        </Border.RenderTransform>
+                      </Border>
+                    </Border>
+                    <TextBlock Text="{Binding Label}" />
+                  </Panel>
+                </Button>
+                <Button DataContext="{Binding QuitButton}" x:DataType="vm:HoldButtonViewModel" Width="260"
+                        Classes="plain hold raised" Classes.three="{Binding HoldsThreeSeconds}" Classes.one="{Binding HoldsOneSecond}"
+                        Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}">
+                  <Panel>
+                    <Border Classes="holdClip">
+                      <Border Classes="holdFill">
+                        <Border.RenderTransform>
+                          <ScaleTransform ScaleX="0" />
+                        </Border.RenderTransform>
+                      </Border>
+                    </Border>
+                    <TextBlock Text="{Binding Label}" />
+                  </Panel>
+                </Button>
+                <Button DataContext="{Binding CloseButton}" x:DataType="vm:HoldButtonViewModel" Width="200"
+                        Classes="plain hold raised" Classes.focused="{Binding IsFocused}">
+                  <TextBlock Text="{Binding Label}" />
+                </Button>
+              </StackPanel>
+              <TextBlock Text="{Binding FocusText}" FontSize="15" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+              <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                  <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="Wechseln" />
+                  <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding Legend}" />
+                  <ctl:KeyHint Pad="B" Keys="Esc" Text="Schließen" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="22" IsVisible="{Binding IsReleased}">
+              <StackPanel Orientation="Horizontal" Spacing="18">
+                <Border Classes="promptIcon">
+                  <Path Data="M5 12.5l4.5 4.5L19 7.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.6" StrokeLineCap="Round" StrokeJoin="Round" Width="28" Height="28" Stretch="Uniform" />
+                </Border>
+                <TextBlock Text="{Binding ReleasedTitle}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Classes="promptBody" Text="{Binding ReleasedText}" Foreground="{StaticResource Text}" />
+              <Border Classes="panStatus">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="DANACH" FontSize="12" FontWeight="ExtraBold" LetterSpacing="1.4" Foreground="{StaticResource TextMuted}" />
+                  <TextBlock Text="{Binding ReleasedNext}" FontSize="17" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+              <Button Classes="plain action focused" Content="OK" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CloseFirmwareNoteCommand}" />
+              <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                  <ctl:KeyHint Pad="A" Keys="Leertaste" Text="OK" />
+                  <ctl:KeyHint Pad="B" Keys="Esc" Text="Schließen" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </Panel>
+        </Border>
       </Panel>
 
       <!-- A launcher's web page (#83), e.g. Steam's sign-in: shown over everything, or hidden while Arcadia reads a page

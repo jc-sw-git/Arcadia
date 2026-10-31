@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    #214: the check the owner runs before the SISR removal is built: does SISR's "SISR Marker" stay gone after
+    Arcadia removes it with Steam closed and Steam starts again? Uses Arcadia's own SteamShortcuts.RemoveByExecutable.
+    Built with the solution so it keeps compiling, never shipped. Driven by Run-Check-214.ps1 (project files, checks/214).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Arcadia.SisrMarkerCheck</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Arcadia.Launchers\Arcadia.Launchers.csproj" />
+  </ItemGroup>
+
+</Project>

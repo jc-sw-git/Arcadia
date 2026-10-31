@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Pan, Arcadia's guardian (#243): a small Windows service that gives the real controllers back to every program
+    when Arcadia ends unexpectedly or hangs. Built as Native AOT (small, no runtime needed, nothing extracted to a
+    temp folder) by tools/release/Pack.ps1 (dotnet publish -r win-x64); a plain build gives the framework-dependent exe the
+    tests drive. The decisions are in Arcadia.Pan.Core, this project holds the Windows adapters and the commands.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Pan</AssemblyName>
+    <RootNamespace>Arcadia.Pan</RootNamespace>
+    <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Product>Arcadia Pan</Product>
+    <AssemblyTitle>Pan - Arcadias Guardian</AssemblyTitle>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Arcadia.Pan.Core\Arcadia.Pan.Core.csproj" />
+  </ItemGroup>
+
+</Project>

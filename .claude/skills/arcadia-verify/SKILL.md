@@ -6,13 +6,13 @@ description: Run Arcadia and check a change for real — build, start with demo 
 # Verify Arcadia changes in the running app
 
 `Arcadia.App.Tests` drive the view models and a headless window, but not the real screen, real input, launchers or
-SISR. Check those in the running app.
+the controller emulation. Check those in the running app.
 
 ## 1. Build cleanly
 
 ```powershell
 Get-Process Arcadia -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null }
-Start-Sleep -Seconds 8   # let Arcadia stop SISR
+Start-Sleep -Seconds 8   # let Arcadia shut down (Pan hears the planned exit)
 dotnet build Arcadia.slnx -v q -nologo
 dotnet test Arcadia.slnx --no-build -nologo
 ```
@@ -79,14 +79,15 @@ Say in the PR which states you looked at and which you only checked by test.
 
 - **Foreground / Steam Controller Support toggle:** `./tools/dev/Trace-Foreground.ps1`
   (toggles the first settings item; expected when switching off: `Arcadia -> explorer -> Arcadia`).
-- **Is the controller emulated?** `./tools/dev/Probe-XInput.ps1` (slot 0 connected while SISR runs) and
-  `Invoke-RestMethod http://127.0.0.1:47640/api/v1/devices`.
+- **Is the controller emulated?** `./tools/dev/Probe-XInput.ps1` (a slot connected while Arcadia's Xbox pad is
+  plugged in).
 - **Steam shortcuts:** `./tools/dev/Read-SteamShortcuts.ps1` (read-only).
-- **Logs:** `%APPDATA%\Arcadia\logs\arcadia.log`, `sisr.log`.
-- **Crash without log line:** Windows event log, provider `.NET Runtime` (see CLAUDE.md).
+- **Logs:** `%APPDATA%\Arcadia\logs\arcadia.log`, `viiper.log`.
+- **Crash without log line:** Windows event log, provider `.NET Runtime`:
+  `Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} | ? ProviderName -match '.NET Runtime'`.
 
 ## 6. What only the owner can check
 
-Physical Steam Controller behaviour (buttons in Arcadia, desktop layout after switching support
-off, behaviour inside games) and real game launches. State clearly what you verified mechanically
+Physical Steam Controller behaviour (buttons in Arcadia, Steam's desktop layout, behaviour inside
+games) and real game launches. State clearly what you verified mechanically
 and what still needs a hands-on test.

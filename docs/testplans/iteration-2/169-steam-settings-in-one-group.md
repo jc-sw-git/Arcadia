@@ -1,10 +1,13 @@
 # #169 Group the Steam settings under "Steam"
 
+T169-4 and T169-5 no longer apply: the link on Steam's page went with #178 (owner, 2026-10-28). T169-2 no longer
+applies and T169-1 lost its last row: "Steams Desktop-Belegung ignorieren" moved to Steam's launcher page (#315, T315-1).
+
 - [ ] **T169-1** Einstellungen → Controller: a box "STEAM" comes first with "Steam Controller Kompatibilität", its
       messages and "SISR aktualisieren" if any, then "Steams Desktop-Belegung ignorieren" ("Alle Controller: …").
       After it "MAUSMODUS" and "ZURÜCK ZU ARCADIA"; there is no box "STEAM CONTROLLER" any more. · E2E: yes
-- [ ] **T169-2** "Steams Desktop-Belegung ignorieren" is not indented and can be switched (◀ ▶), also with
-      "Steam Controller Kompatibilität" off and the mouse mode "Aus". · E2E: yes
+- [ ] ~~**T169-2** "Steams Desktop-Belegung ignorieren" is not indented and can be switched (◀ ▶), also with
+      "Steam Controller Kompatibilität" off and the mouse mode "Aus". · E2E: yes~~ (moved to Steam's page, #315)
 - [ ] **T169-3** Controller only: ▲ ▼ reach every row in the new order, the list scrolls along, B goes back. · E2E: yes
 - [ ] **T169-4** Einstellungen → Launcher → Steam (active or not): at the bottom a box "CONTROLLER" with
       "Controller-Einstellungen für Steam" and "Öffnen"; its info text shows A and B as glyphs. The other launchers'

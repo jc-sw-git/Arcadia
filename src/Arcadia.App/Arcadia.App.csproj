@@ -42,6 +42,19 @@
     <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
 
+  <!--
+    A Debug build on Windows gets Pan\Pan.exe beside Arcadia.dll, as the installer ships it (tools/release/Pack.ps1),
+    so "Treiber installieren" works from the IDE: a single-file, framework-dependent Pan (not AOT, that takes minutes).
+    Skipped when nothing of Pan changed; ArcadiaSkipPan=true skips it altogether.
+  -->
+  <ItemGroup>
+    <PanSource Include="..\Arcadia.Pan\**\*.cs;..\Arcadia.Pan\*.csproj;..\Arcadia.Pan.Core\**\*.cs;..\Arcadia.Pan.Core\*.csproj" Exclude="..\Arcadia.Pan\obj\**;..\Arcadia.Pan\bin\**;..\Arcadia.Pan.Core\obj\**;..\Arcadia.Pan.Core\bin\**" />
+  </ItemGroup>
+  <Target Name="PublishPanForDebug" AfterTargets="Build" Inputs="@(PanSource)" Outputs="$(OutDir)Pan\Pan.exe"
+          Condition="'$(Configuration)' == 'Debug' and $([MSBuild]::IsOSPlatform('Windows')) and '$(DesignTimeBuild)' != 'true' and '$(ArcadiaSkipPan)' != 'true'">
+    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)..\Arcadia.Pan\Arcadia.Pan.csproj&quot; -c Release -r win-x64 --self-contained false -p:PublishAot=false -p:PublishSingleFile=true -o &quot;$(OutDir)Pan&quot; -nologo -v q" />
+  </Target>
+
   <ItemGroup>
     <ProjectReference Include="..\Arcadia.Core\Arcadia.Core.csproj" />
     <ProjectReference Include="..\Arcadia.Launchers\Arcadia.Launchers.csproj" />

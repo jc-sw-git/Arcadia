@@ -11,4 +11,8 @@ namespace Arcadia.Launchers.Abstractions;
 /// where it stands, dark on a light tab and light on a dark one, so it needs no variants; null shows the name's first
 /// letter instead. Use the maker's logo unchanged and as its brand guidelines allow.
 /// </param>
-public sealed record LauncherInfo(string Id, string DisplayName, string SearchKeyword, string? Logo = null);
+/// <param name="GamesUseSteamInput">
+/// The launcher's games read the Steam Controller through Steam Input themselves, as Steam's do (#156). Their Steam
+/// Controller mode then starts on "Steam-Eingabe" instead of "Arcadia"; Arcadia's pad would double their input.
+/// </param>
+public sealed record LauncherInfo(string Id, string DisplayName, string SearchKeyword, string? Logo = null, bool GamesUseSteamInput = false);

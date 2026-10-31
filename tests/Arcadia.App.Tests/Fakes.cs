@@ -179,8 +179,12 @@ internal sealed class RecordedStarts
         }
     }
 
+    /// <summary>Called as the launcher gets the start, before it returns: what a test sees at that moment.</summary>
+    public Action<string>? OnStart { get; set; }
+
     public void Add(string gameKey)
     {
+        OnStart?.Invoke(gameKey);
         lock (_keys)
         {
             _keys.Add(gameKey);
@@ -223,29 +227,11 @@ internal sealed class NoControllerSupportPlatform : IControllerSupportPlatform
 
     public bool IsSteamReady => false;
 
-    public bool IsSteamUp => false;
-
     public bool IsUsbipReady => false;
-
-    public bool IsCefDebuggingEnabled => false;
-
-    public bool EnsureSisrMarker(string sisrExecutable, IReadOnlyCollection<uint>? accountIds = null) => false;
-
-    public IReadOnlyList<MarkerAccount> SisrMarkerAccounts(string sisrExecutable) => [];
-
-    public bool HasSisrMarker(string sisrExecutable) => false;
-
-    public void EnableCefDebugging()
-    {
-    }
 
     public string? RunningSteamGame() => null;
 
     public int? RunningSteamAppId() => null;
-
-    public SteamInputSetting? SteamInputFor(int appId) => null;
-
-    public SteamInputSetting? SteamInputDefaults() => null;
 
     public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken) => Task.FromResult(false);
 
@@ -253,54 +239,17 @@ internal sealed class NoControllerSupportPlatform : IControllerSupportPlatform
     {
     }
 
-    public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(false);
+    public bool IsPanReady => false;
 
-    public void ResetSteamInputLayout()
-    {
-    }
+    public Arcadia.ControllerSupport.Pan.PanCompatibility PanCompatibility => Arcadia.ControllerSupport.Pan.PanCompatibility.NotInstalled;
 
-    public bool AnyRunningFrom(string directory) => false;
+    public Version? HidHideVersion => null;
 
-    public IReadOnlyList<HealthIssue> CheckDependencies(AppSettings settings, DateTimeOffset now) => [];
-}
+    public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(false);
 
-/// <summary>SISR is not installed and nothing tries to start it.</summary>
-internal sealed class NoSisr(HttpClient http) : ISisrHost
-{
-    public SisrApiClient Api { get; } = new(http, 1);
+    public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(false);
 
-    public bool IsInstalled => false;
-
-    public string ExecutablePath => "sisr.exe";
-
-    public Version? InstalledVersion => null;
-
-    public bool IsRunning => false;
-
-    public IReadOnlyList<int> ExternalInstances() => [];
-
-    public void StopExternalInstances()
-    {
-    }
-
-    public Task<Release?> GetLatestReleaseAsync(CancellationToken cancellationToken = default) => Task.FromResult<Release?>(null);
-
-    public Task InstallAsync(Release release, CancellationToken cancellationToken = default) =>
-        throw new InvalidOperationException("Die Abnahmetests installieren kein SISR.");
-
-    public void Start() => throw new InvalidOperationException("Die Abnahmetests starten kein SISR.");
-
-    public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-    public void Kill()
-    {
-    }
-
-    public void MarkInitialSetupDone()
-    {
-    }
-
-    public Task<int> CleanUpViiperAsync(CancellationToken cancellationToken = default) => Task.FromResult(0);
+    public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) => [];
 }
 
 /// <summary>

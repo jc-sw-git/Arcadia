@@ -18,9 +18,9 @@ public sealed record ControllerWaitingForTool(string Name, ControllerModel Model
 /// the controller. A controller is emulated only while it is hidden, never both (D7).
 /// </summary>
 /// <remarks>
-/// <see cref="Feed"/> runs on the gamepad source's reading thread, on every read (every 1 ms while pads are plugged, #238
+/// <see cref="Feed"/> runs on the gamepad source's reading thread, on every read (every 1 ms while pads get states, #238
 /// D9), and sends each controller's new state to its pad from there (<see cref="PadForwarder{TState}"/>), as
-/// <see cref="SteamControllerXboxPad"/> does. Hiding and plugging happen in <see cref="KeepAsync"/>,
+/// <see cref="SteamControllerXboxPad"/> does; a VIIPER write that ends at once thus runs under <c>_lock</c>. Hiding and plugging happen in <see cref="KeepAsync"/>,
 /// which <see cref="PanEmulation"/> calls under its gate each tick its emulation runs.
 /// </remarks>
 public sealed class TakenOverControllers
@@ -64,6 +64,7 @@ public sealed class TakenOverControllers
     private IReadOnlyList<ControllerWaitingForTool> _waiting = [];
     private IReadOnlyList<ConnectedModel> _connected = [];
     private bool _connectedChanged;
+    private bool _forwarding;
 
     public TakenOverControllers(TimeProvider time, Action<string> log)
     {
@@ -85,6 +86,12 @@ public sealed class TakenOverControllers
 
     /// <summary>Pan's heartbeat (<see cref="IEmulationGuardian.Pulse"/>), kept up while the controllers are let go.</summary>
     public Action Pulse { get; init; } = () => { };
+
+    /// <summary>
+    /// Called on the reading thread when it changes: true while a plugged pad gets the controller's states (not resting
+    /// for Arcadia in front or the mouse mode), so the source reads every millisecond only then (<see cref="FastReads"/>).
+    /// </summary>
+    public Action<bool> Forwarding { get; init; } = _ => { };
 
     /// <summary>A game set a pad's motors: the controller with this <see cref="GamepadReading.PadId"/> rumbles so (0, 0 stops).</summary>
     public Action<int, XboxRumble> Rumble { get; init; } = (_, _) => { };
@@ -154,8 +161,9 @@ public sealed class TakenOverControllers
     {
         var allowed = ForwardingAllowed();
         var combos = Combos();
-        // Made only when needed: this runs every millisecond while pads are plugged.
+        // Made only when needed: this runs every millisecond while pads get states.
         List<(int PadId, XboxRumble? Motors, PadLight? Light)>? feedbackAgain = null;
+        var forwarding = false;
         lock (_lock)
         {
             foreach (var controller in _controllers)
@@ -187,6 +195,7 @@ public sealed class TakenOverControllers
                 // Filtered on every poll, also while nothing is forwarded, so a combo begun in Arcadia stays Arcadia's.
                 var buttons = controller.Withholding.Filter(reading.Buttons, combos);
                 controller.Offer(allowed ? VirtualPadState.From(reading, buttons) : VirtualPadState.Neutral, _time.GetTimestamp());
+                forwarding |= allowed && controller.Pad is not null;
             }
 
             if (_rereadAt == long.MinValue || _time.GetElapsedTime(_rereadAt) >= RereadGrace)
@@ -202,6 +211,7 @@ public sealed class TakenOverControllers
         }
 
         PublishConnected();
+        NoteForwarding(forwarding);
         foreach (var (padId, motors, light) in feedbackAgain ?? [])
         {
             if (motors is { } rumbling)
@@ -213,6 +223,15 @@ public sealed class TakenOverControllers
             {
                 Light(padId, lit);
             }
+        }
+    }
+
+    private void NoteForwarding(bool forwarding)
+    {
+        if (forwarding != _forwarding)
+        {
+            _forwarding = forwarding;
+            Forwarding(forwarding);
         }
     }
 
@@ -228,6 +247,7 @@ public sealed class TakenOverControllers
         }
 
         PublishConnected();
+        NoteForwarding(false);
     }
 
     /// <summary>

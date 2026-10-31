@@ -28,7 +28,7 @@ public sealed partial class PreciseWait : IDisposable
     /// <summary>For the thread that waits; one timer per thread.</summary>
     public static PreciseWait Create() => new(OperatingSystem.IsWindows() ? CreateTimer() : 0);
 
-    /// <summary>Returns after about <paramref name="duration"/>; at once for zero or less.</summary>
+    /// <summary>Returns after about <paramref name="duration"/> (at least 1 ms without the timer); at once for zero or less.</summary>
     public void Wait(TimeSpan duration)
     {
         if (duration <= TimeSpan.Zero)
@@ -38,9 +38,15 @@ public sealed partial class PreciseWait : IDisposable
 
         if (_timer == 0 || !OperatingSystem.IsWindows() || !WaitOnTimer(_timer, duration))
         {
-            Thread.Sleep(duration);
+            Thread.Sleep(FallbackSleepMs(duration));
         }
     }
+
+    /// <summary>
+    /// Whole milliseconds, rounded up: <see cref="Thread.Sleep(TimeSpan)"/> cuts a wait under 1 ms to 0, and a reading
+    /// thread at high priority would then spin a core.
+    /// </summary>
+    public static int FallbackSleepMs(TimeSpan duration) => Math.Max(1, (int)Math.Ceiling(duration.TotalMilliseconds));
 
     public void Dispose()
     {

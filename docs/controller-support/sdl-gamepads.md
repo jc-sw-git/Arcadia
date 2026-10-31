@@ -4,7 +4,7 @@ How Arcadia reads Xbox, PlayStation, Nintendo, third-party pads and the Steam Co
 extra buttons, what counts): `docs/product/controls.md`.
 
 - **One source:** `SdlGamepadSource` reads every pad through SDL's gamepad API, polled every 8 ms (the repeat of held
-  directions and the mouse mode need a steady clock); while emulated pads are plugged it also reads every 1 ms in
+  directions and the mouse mode need a steady clock); while emulated pads get states for a game it also reads every 1 ms in
   between for them (`Sampled`, [every-controller.md](pad-latency.md)). `GamepadReading.PadId` is SDL's id of the device, new on every
   connect; `arcadia.log` names it as `Controller #<id>` on connect, disconnect and Back + Start, with SDL's name, type
   and USB ids (no serial number).

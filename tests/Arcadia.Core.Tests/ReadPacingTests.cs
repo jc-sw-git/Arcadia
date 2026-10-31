@@ -63,12 +63,24 @@ public sealed class ReadPacingTests
     }
 
     [Fact]
-    public void The_wait_ends_a_millisecond_after_the_read_began_and_is_none_when_the_read_ran_late()
+    public void The_wait_ends_a_millisecond_after_the_read_began_and_is_short_but_never_none_when_the_read_ran_late()
     {
         _pacing.StartRead(Ms(10), fastWanted: true);
 
         Assert.Equal(Ms(0.8), _pacing.Wait(Ms(10.2)));
-        Assert.True(_pacing.Wait(Ms(11.5)) <= TimeSpan.Zero);
+        Assert.Equal(ReadPacing.MinimumWait, _pacing.Wait(Ms(11.5)));
+    }
+
+    /// <summary>QE finding of #353: without the high-resolution timer, a wait under 1 ms must not become Sleep(0).</summary>
+    [Theory]
+    [InlineData(0.1, 1)]
+    [InlineData(0.9, 1)]
+    [InlineData(1.0, 1)]
+    [InlineData(1.2, 2)]
+    [InlineData(8.0, 8)]
+    public void Without_the_timer_a_wait_sleeps_whole_milliseconds_rounded_up(double milliseconds, int expected)
+    {
+        Assert.Equal(expected, PreciseWait.FallbackSleepMs(Ms(milliseconds)));
     }
 
     [Fact]

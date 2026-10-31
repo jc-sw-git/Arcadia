@@ -105,33 +105,6 @@ public sealed class PanEmulationTests
         Assert.True(_pan.PlannedExit);
     }
 
-    /// <summary>#238 D9: the controllers are read every millisecond only while a pad is plugged in, whoever's it is.</summary>
-    [Fact]
-    [Trait("TestCase", "T238-11")]
-    public async Task Fast_reads_are_wanted_from_the_first_pad_plugged_until_the_last_is_gone_or_the_emulation_ends()
-    {
-        var wanted = new List<bool>();
-        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
-        {
-            Enabled = () => _enabled,
-            PadsPlugged = wanted.Add,
-        };
-        await emulation.TickAsync();
-
-        var xboxPad = await emulation.PlugAsync(CancellationToken.None);
-        var dualSense = await emulation.PlugAsync(PadKind.DualSense, CancellationToken.None);
-        await xboxPad.DisposeAsync();
-        Assert.Equal([true], wanted);
-        await dualSense.DisposeAsync();
-        Assert.Equal([true, false], wanted);
-
-        await emulation.PlugAsync(PadKind.DualSense, CancellationToken.None);
-        _enabled = false;
-        await emulation.TickAsync();
-
-        Assert.Equal([true, false, true, false], wanted);
-    }
-
     [Fact]
     [Trait("TestCase", "T242-5")]
     public async Task Switched_off_it_ends_in_Pans_order_and_nothing_is_emulated()

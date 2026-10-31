@@ -92,7 +92,7 @@ reason; `WaitingForTool` those whose vendor's firmware tool runs (Xbox Zubehör,
 
 ## Latency (D9)
 
-Reads every 1 ms while pads are plugged, sends on the reading thread, logs per pad: [pad-latency.md](pad-latency.md).
+Reads every 1 ms while pads get states for a game, sends on the reading thread, logs per pad: [pad-latency.md](pad-latency.md).
 
 ## Not done yet
 

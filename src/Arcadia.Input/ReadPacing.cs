@@ -3,7 +3,8 @@ namespace Arcadia.Input;
 /// <summary>
 /// How often <see cref="SdlGamepadSource"/> reads the controllers (#238 D9). As a rule every
 /// <see cref="SdlGamepadSource.PollIntervalMs"/>; while emulated pads are forwarded every <see cref="FastInterval"/> at
-/// high priority, so a controller's report waits about a millisecond for its read instead of up to a whole poll.
+/// high priority, so a controller's report waits about a millisecond for its read instead of up to a whole poll. Not
+/// while every pad rests (Arcadia in front, the mouse mode): <c>FastReads</c> asks for it only while states reach a game.
 /// <see cref="IGamepadSource.Polled"/> (Arcadia's own input, the mouse mode) keeps its 8 ms clock either way; only
 /// <see cref="IGamepadSource.Sampled"/> comes with every read.
 /// </summary>
@@ -18,6 +19,9 @@ public sealed class ReadPacing
     public static readonly TimeSpan FastInterval = TimeSpan.FromMilliseconds(1);
     public static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(SdlGamepadSource.PollIntervalMs);
     public static readonly TimeSpan SummaryEvery = TimeSpan.FromMinutes(10);
+
+    /// <summary>Also after a read that took longer than <see cref="FastInterval"/>: a thread at high priority always yields.</summary>
+    public static readonly TimeSpan MinimumWait = TimeSpan.FromMilliseconds(0.1);
 
     // Reads come about every millisecond, a little early or late: a poll a read early beats one a read late.
     private static readonly TimeSpan PollTolerance = FastInterval / 2;
@@ -76,8 +80,11 @@ public sealed class ReadPacing
         return pollDue;
     }
 
-    /// <summary>How long to wait at <paramref name="now"/> before the next read: until a millisecond after the last read began while fast.</summary>
-    public TimeSpan Wait(TimeSpan now) => _fast ? _lastRead + FastInterval - now : PollInterval;
+    /// <summary>
+    /// How long to wait at <paramref name="now"/> before the next read: while fast until a millisecond after the last read
+    /// began, at least <see cref="MinimumWait"/>.
+    /// </summary>
+    public TimeSpan Wait(TimeSpan now) => _fast ? TimeSpan.FromTicks(Math.Max(MinimumWait.Ticks, (_lastRead + FastInterval - now).Ticks)) : PollInterval;
 
     /// <summary>The reading thread ends: a fast stretch is summed up.</summary>
     public void Stop(TimeSpan now)

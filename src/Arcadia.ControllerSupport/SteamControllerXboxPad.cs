@@ -34,6 +34,7 @@ public sealed class SteamControllerXboxPad
     private volatile int _rumbleTarget = -1;
     private XboxPadState _lastFed;
     private volatile bool _gaveUp;
+    private bool _forwarding;
     private string? _lastUnavailable;
 
     public SteamControllerXboxPad(IVirtualXboxPads pads, TimeProvider time, Action<string> log)
@@ -69,6 +70,12 @@ public sealed class SteamControllerXboxPad
     /// </summary>
     public Action<int, XboxRumble>? Rumble { get; init; }
 
+    /// <summary>
+    /// Called on the reading thread when it changes: true while the plugged pad gets the Steam Controller's states, so the
+    /// source reads every millisecond only then (<see cref="FastReads"/>).
+    /// </summary>
+    public Action<bool> Forwarding { get; init; } = _ => { };
+
     /// <summary>Raised once when the pad was lost too often and Arcadia stops plugging it in (shown as a toast).</summary>
     public event Action<string>? GaveUp;
 
@@ -100,6 +107,7 @@ public sealed class SteamControllerXboxPad
         }
 
         var state = XboxPadState.Neutral;
+        var forwarding = false;
         if (steamController is { } reading)
         {
             // Filtered on every poll, also while nothing is forwarded, so a combo begun in Arcadia stays Arcadia's.
@@ -107,13 +115,25 @@ public sealed class SteamControllerXboxPad
             if (ForwardingAllowed())
             {
                 state = XboxPadState.From(reading, buttons);
+                forwarding = _pad is not null;
             }
         }
+
+        NoteForwarding(forwarding);
 
         if (state != _lastFed)
         {
             _lastFed = state;
             _forwarder.Send(state, _time.GetTimestamp());
+        }
+    }
+
+    private void NoteForwarding(bool forwarding)
+    {
+        if (forwarding != _forwarding)
+        {
+            _forwarding = forwarding;
+            Forwarding(forwarding);
         }
     }
 
@@ -210,6 +230,7 @@ public sealed class SteamControllerXboxPad
     public void Drop()
     {
         _steamControllerConnected = false;
+        NoteForwarding(false);
         _steamControllerId = null;
         _rumbleTarget = -1;
         _withholding.Reset();

@@ -29,6 +29,7 @@ public sealed class TakenOverControllersTests
     private readonly List<string> _lights = [];
     private readonly List<bool> _motion = [];
     private readonly List<bool> _reads = [];
+    private readonly List<bool> _fast = [];
     private readonly FakeVirtualXboxPads _pads = new();
     private readonly FakeEmulationGuardian _pan = new();
     private readonly FakeSteamControllerHold _copy = new();
@@ -57,6 +58,7 @@ public sealed class TakenOverControllersTests
             MotionSensors = _motion.Add,
             ProcessRuns = name => name == _runningTool,
             LayoutOf = model => ControllerLayouts.Find(_layouts, model),
+            Forwarding = _fast.Add,
         };
         _emulation = new PanEmulation(_pads, _pan, _copy, _time, Log)
         {
@@ -72,6 +74,27 @@ public sealed class TakenOverControllersTests
 
     private static GamepadReading Reading(int padId, PadDevice device) =>
         new GamepadReading(padId, PadButtons.None, default, default) with { Device = device, Type = device.Type };
+
+    /// <summary>#238 D9, QE finding of #353: 1 ms reads only while a pad gets states, not while it rests for Arcadia in front.</summary>
+    [Fact]
+    [Trait("TestCase", "T238-11")]
+    public async Task Fast_reads_are_wanted_only_while_a_plugged_pad_gets_the_controllers_states()
+    {
+        _others.Feed([DualSense]);
+        Assert.Empty(_fast);
+
+        await _emulation.TickAsync();
+        _others.Feed([DualSense]);
+        Assert.Equal([true], _fast);
+
+        _forwarding = false;
+        _others.Feed([DualSense]);
+        _forwarding = true;
+        _others.Feed([DualSense]);
+        _others.Drop();
+
+        Assert.Equal([true, false, true, false], _fast);
+    }
 
     [Fact]
     [Trait("TestCase", "T238-1")]

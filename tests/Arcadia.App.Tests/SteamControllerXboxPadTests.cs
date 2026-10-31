@@ -26,8 +26,7 @@ public sealed class SteamControllerXboxPadTests
         var arcadia = await ArcadiaDriver.StartAsync();
         var steamController = arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.StartControllers();
-        arcadia.IsArcadiaInFront = false;
-        await arcadia.TickSteamControllerAsync();
+        await arcadia.PlayGameOnArcadiaInFrontAsync();
         return (arcadia, steamController);
     }
 
@@ -121,8 +120,7 @@ public sealed class SteamControllerXboxPadTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Sdl.Plug(KnownPads.XboxSeries);
         arcadia.StartControllers();
-        arcadia.IsArcadiaInFront = false;
-        await arcadia.TickSteamControllerAsync();
+        await arcadia.PlayGameOnArcadiaInFrontAsync();
         Assert.Equal(1, arcadia.XboxPads.Plugged);
         var xboxPad = arcadia.XboxPads.Current!;
 

@@ -64,8 +64,9 @@
   ⧉ + ≡ counts for switching the mouse mode on only when the second button comes within 100 ms of the first,
   everywhere in Arcadia (ending the mode still takes them in any order). So while the mouse mode is not "Aus", ⧉ and ≡
   reach the game a little later: let go within 100 ms, as a 50 ms tap; held alone longer, as held from then on, ⧉ also
-  while it brings Arcadia back. While Arcadia is in front or the mouse mode is on, the game gets a pad at rest. Own
-  hold times and a pause key per game: separate issue.
+  while it brings Arcadia back. The pad passes input only while a game on "Arcadia" is in front (#357); everywhere
+  else (Arcadia, the mouse mode, Steam, a browser, the desktop, no game running) it reports rest. Own hold times and a
+  pause key per game: separate issue.
 - Per game the Steam Controller mode has three values: "Standard (Arcadia)" / "Standard (Steam-Eingabe)" (follows the
   launcher's default, set on the launcher's page, `docs/product/launchers.md`; factory: Steam games Steam-Eingabe,
   all others Arcadia), "Arcadia" (Arcadia's pad) and "Steam-Eingabe" (no pad of Arcadia's, the game's own Steam

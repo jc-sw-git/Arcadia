@@ -14,8 +14,12 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
   (`IGamepadSource.HoldRumble`), and stops when the pad goes. The Steam button is never the pad's Guide: it is Steam's.
 - Back + Start never reaches the game (`ComboWithholding`, Input): ⧉ and ≡ are held back for the 100 ms in which the
   other may still join (`MouseMode.ComboWindow`). The rules are a product decision: `docs/product/controls.md`.
-- While Arcadia is in front or the mouse mode is on, the pad reports rest (`ForwardingAllowed`); the combo filter keeps
-  running, so a combo begun in Arcadia stays Arcadia's.
+- The pad passes input only while a library game on "Arcadia" owns the foreground window and the mouse mode is off
+  (`SteamControllerCopyRules.PadPasses`, #357); otherwise it reports rest (`ForwardingAllowed`). Passing anywhere else
+  let Steam read the Steam Controller through the pad (its glyphs flashed to Xbox icons) right after a switch to
+  Steam. The foreground is read on every poll; `ForegroundOwner` looks up a process's path only when the foreground
+  process changed, and with no foreground window (some switches) the pad rests. `arcadia.log`: "Xbox-Pad: gibt
+  Eingaben weiter" / "meldet Ruhe". The combo filter keeps running, so a combo begun in Arcadia stays Arcadia's.
 - `TickAsync` (every 2 s, `App`) plugs the pad in while a Steam Controller is connected and `Wanted` holds, and out
   otherwise: a game never sees an idle extra pad. `Wanted` comes from `SteamControllerRouting` (below).
 - `ViiperXboxPads` runs Arcadia's own `viiper.exe` (the pinned fork build next to Arcadia.exe,

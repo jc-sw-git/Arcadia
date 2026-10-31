@@ -100,11 +100,11 @@ public sealed class SteamControllerRoutingTests
         { true, false, true, false, false, false, false },
         { true, false, false, true, false, false, false },
         { false, true, false, false, false, false, true },
-        { false, true, false, false, true, false, true },
+        { false, true, false, false, true, false, false },
         { false, true, true, false, false, false, false },
         { false, true, false, true, false, false, false },
         { false, false, false, false, true, true, false },
-        { false, false, false, false, false, false, true },
+        { false, false, false, false, false, false, false },
         { false, false, true, false, true, false, false },
         { false, false, false, true, true, false, false },
     };
@@ -127,10 +127,11 @@ public sealed class SteamControllerRoutingTests
         }
 
         var route = SteamControllerRouting.Decide(games, key => key != "steam:570", driverReady: true);
-        var now = new ForegroundNow(arcadiaActive, mouseMode, steamInFront);
+        // The game on "Arcadia" is in front whenever neither Arcadia nor Steam is.
+        var now = new ForegroundNow(arcadiaActive, mouseMode, steamInFront, GameOnArcadiaInFront: arcadiaGame && !arcadiaActive && !steamInFront);
 
         Assert.Equal(copyPasses, SteamControllerCopyRules.CopyPasses(route, now, desktopLayoutIgnored: true));
-        Assert.Equal(padPasses, SteamControllerCopyRules.PadPasses(route, now, desktopLayoutIgnored: true));
+        Assert.Equal(padPasses, SteamControllerCopyRules.PadPasses(route, now));
     }
 
     public static TheoryData<bool, bool, bool, bool, bool, bool, bool> CopyCasesWithSteamsDesktopLayout => new()
@@ -140,7 +141,7 @@ public sealed class SteamControllerRoutingTests
         { true, false, true, false, false, true, false },
         { true, false, false, true, false, true, false },
         { false, true, false, false, false, false, true },
-        { false, true, false, false, true, false, true },
+        { false, true, false, false, true, false, false },
         { false, true, true, false, false, true, false },
         { false, true, false, true, false, true, false },
         { false, false, false, false, true, true, false },
@@ -168,10 +169,11 @@ public sealed class SteamControllerRoutingTests
         }
 
         var route = SteamControllerRouting.Decide(games, key => key != "steam:570", driverReady: true);
-        var now = new ForegroundNow(arcadiaActive, mouseMode, steamInFront);
+        // The game on "Arcadia" is in front whenever neither Arcadia nor Steam is.
+        var now = new ForegroundNow(arcadiaActive, mouseMode, steamInFront, GameOnArcadiaInFront: arcadiaGame && !arcadiaActive && !steamInFront);
 
         Assert.Equal(copyPasses, SteamControllerCopyRules.CopyPasses(route, now, desktopLayoutIgnored: false));
-        Assert.Equal(padPasses, SteamControllerCopyRules.PadPasses(route, now, desktopLayoutIgnored: false));
+        Assert.Equal(padPasses, SteamControllerCopyRules.PadPasses(route, now));
     }
 
     [Fact]
@@ -183,7 +185,46 @@ public sealed class SteamControllerRoutingTests
 
         Assert.False(SteamControllerCopyRules.CopyPasses(route, desktop, desktopLayoutIgnored: true));
         Assert.True(SteamControllerCopyRules.CopyPasses(route, desktop, desktopLayoutIgnored: false));
-        Assert.False(SteamControllerCopyRules.PadPasses(route, desktop, desktopLayoutIgnored: false));
+        Assert.False(SteamControllerCopyRules.PadPasses(route, desktop));
+    }
+
+    public static TheoryData<string, bool, bool, bool, bool, bool, bool> PadCases => new()
+    {
+        // where, a game on Arcadia runs, Arcadia in front, mouse mode, Steam in front, game on Arcadia in front → pad passes
+        { "game on Arcadia in front", true, false, false, false, true, true },
+        { "Steam in front, game running", true, false, false, true, false, false },
+        { "desktop or browser, game running", true, false, false, false, false, false },
+        { "desktop or browser, no game", false, false, false, false, false, false },
+        { "Steam in front, no game", false, false, false, true, false, false },
+        { "Arcadia in front, game running", true, true, false, false, false, false },
+        { "mouse mode over the game", true, false, true, false, true, false },
+        { "no foreground window, game running", true, false, false, false, false, false },
+        { "game in front before the route knows it runs", false, false, false, false, true, false },
+    };
+
+    [Theory]
+    [MemberData(nameof(PadCases))]
+    [Trait("TestCase", "T357-1")]
+    public void The_pad_passes_input_only_while_a_game_on_Arcadia_is_in_front(
+        string where, bool gameOnArcadiaRuns, bool arcadiaActive, bool mouseMode, bool steamInFront, bool gameInFront, bool padPasses)
+    {
+        var route = SteamControllerRouting.Decide(gameOnArcadiaRuns ? ["epic:a"] : [], _ => true, driverReady: true);
+        var now = new ForegroundNow(arcadiaActive, mouseMode, steamInFront, gameInFront);
+
+        Assert.True(padPasses == SteamControllerCopyRules.PadPasses(route, now), where);
+        foreach (var desktopLayoutIgnored in new[] { true, false })
+        {
+            Assert.False(padPasses && SteamControllerCopyRules.CopyPasses(route, now, desktopLayoutIgnored), $"{where}: pad and copy pass at once");
+        }
+    }
+
+    [Fact]
+    [Trait("TestCase", "T357-1")]
+    public void A_game_on_Steam_Eingabe_in_front_never_gets_the_pad()
+    {
+        var route = SteamControllerRouting.Decide(["steam:570"], _ => false, driverReady: true);
+
+        Assert.False(SteamControllerCopyRules.PadPasses(route, new ForegroundNow(ArcadiaActive: false, MouseModeOn: false, SteamInFront: false, GameOnArcadiaInFront: true)));
     }
 
     [Theory]

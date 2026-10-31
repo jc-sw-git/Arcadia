@@ -37,6 +37,7 @@ its file.
 | [238-every-controller-through-arcadia.md](238-every-controller-through-arcadia.md) | #238 | Pass every controller to games through Arcadia | 13 |
 | [340-pan-stopping-page-names-the-usual-30-seconds.md](340-pan-stopping-page-names-the-usual-30-seconds.md) | #340 | Say on the "Pan wird beendet" page that the old Pan ends after about 30 seconds | 4 |
 | [295-spike-steams-firmware-path.md](295-spike-steams-firmware-path.md) | #295 | Spike: Steam's firmware update path, and what Arcadia guards | 6 |
+| [357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md](357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md) | #357 | Steam Controller: Xbox pad passes input only while a game on "Arcadia" is in front | 4 |
 
 ## Exploratory test
 
@@ -70,4 +71,5 @@ Charter: –. Time box: –. Findings: –.
 | T178-1 to T178-9; T178-10 | `tests/Arcadia.App.Tests/LauncherControllerModeTests.cs`; `Window/LauncherControllerModeViewTests.cs` |
 | T315-1, T315-3, T315-4 | `tests/Arcadia.App.Tests/SteamDesktopLayoutTests.cs` |
 | T335-4, T335-5 | `tests/Arcadia.Pan.Tests/ControllerHidingTests.cs`, `tests/Arcadia.Core.Tests/PanClientTests.cs` |
+| T357-1, T357-2, T357-4 | `tests/Arcadia.Core.Tests/SteamControllerRoutingTests.cs`, `tests/Arcadia.App.Tests/SteamControllerModeTests.cs`, `SteamControllerXboxPadTests.cs` |
 | T238-1, T238-3 to T238-7, T238-12 (fakes) | `tests/Arcadia.App.Tests/EveryControllerForGamesTests.cs`, `tests/Arcadia.Core.Tests/TakenOverControllersTests.cs` |

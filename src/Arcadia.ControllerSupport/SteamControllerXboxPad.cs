@@ -134,6 +134,8 @@ public sealed class SteamControllerXboxPad
         {
             _forwarding = forwarding;
             Forwarding(forwarding);
+            // So the log tells when a game got the Steam Controller through the pad (#357).
+            _log(forwarding ? "Xbox-Pad: gibt Eingaben weiter" : "Xbox-Pad: meldet Ruhe");
         }
     }
 

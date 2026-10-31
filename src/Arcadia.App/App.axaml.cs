@@ -208,10 +208,10 @@ public partial class App : Application
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;
             viewModel.ConnectPan(forGames);
-            controllerSupport.PanHoldsPuck = () => forGames.Emulation.HidesPuck || forGames.FirmwareAttempt.IsActive;
+            controllerSupport.PanHoldsPuck = () => forGames.Emulation.HidesPuck;
             viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
-            // Pan's question before taking the Steam Controller over, or a firmware update Steam tries through the copy (#242):
-            // Arcadia may be behind a game, and the player must answer.
+            // A firmware update Steam tries through the copy (#295): Arcadia is behind Steam's window, and the player is
+            // to read why it fails. Not while a game is in front: a toast says it there (MainViewModel.ShowFirmwareAttempt).
             viewModel.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
             _gamepad.Polled += xboxPad.Feed;
             _gamepad.Lost += xboxPad.Drop;
@@ -286,8 +286,7 @@ public partial class App : Application
                     route = forGames.Routing.Update();
                     if (controllerSupport.IsPanUpdateDue)
                     {
-                        // Pan's hello says whether a firmware attempt from before still holds the puck; its dialog then
-                        // opens with the tick below, ahead of the update (#297).
+                        // Pan's hello says whether its teardown of an earlier Arcadia still runs; the update waits for it (#297).
                         try
                         {
                             await pan.FirstAttempt.WaitAsync(PanFirstAnswerWait, time);

@@ -48,12 +48,7 @@ public enum PanCommand : byte
     /// </summary>
     CheckHiding = 9,
 
-    /// <summary>
-    /// Steam tries a firmware update through the copy (<see cref="PanMessage.Value"/> 1) or no longer does (0), #242: while
-    /// it is held, a teardown keeps the real Steam Controller hidden until Steam no longer runs. Journaled, so it holds
-    /// after a crash of Arcadia and a restart of Pan; it needs the current generation's emulation.
-    /// </summary>
-    HoldForFirmware = 10,
+    // 10 was HoldForFirmware (protocol 2): Steam's updater never reaches the real hardware through the copy (#295).
 
     /// <summary>
     /// Arcadia has let go of the puck after <see cref="PanReply.ReleasePuck"/>; <see cref="PanMessage.Value"/> is that
@@ -177,11 +172,7 @@ public enum PanReason : uint
     /// </summary>
     HidingLost = 22,
 
-    /// <summary>
-    /// With <see cref="PanReply.HelloOk"/>: a firmware attempt held the real Steam Controller hidden when the last client
-    /// ended, and Steam still runs (#242). Arcadia takes it over without asking and shows the firmware dialog.
-    /// </summary>
-    HeldForFirmware = 23,
+    // 23 was HeldForFirmware (protocol 2), dropped with the firmware hold (#295).
 
     /// <summary><see cref="PanCommand.EmulationStarted"/> without a <c>viiper.exe</c> of the client's to hold (#304).</summary>
     NoForwardingProcess = 24,
@@ -206,6 +197,13 @@ public enum PanReason : uint
 
     /// <summary>Hidden or shown, but Windows restarts the device only when it is reconnected (an XInput interface, #335 A3).</summary>
     ControllerNeedsReplug = 29,
+
+    /// <summary>
+    /// A Valve bootloader (<c>28DE:1005</c> controller by cable, <c>28DE:1007</c> puck) is connected or was a moment ago:
+    /// a firmware update is being flashed, and a hide or restart of the puck could cut it off (#295). Not a failure: the
+    /// client tries again at its next tick.
+    /// </summary>
+    BootloaderPresent = 30,
 }
 
 /// <summary>
@@ -219,7 +217,7 @@ public readonly record struct PanMessage(byte Kind, ushort Version, uint Generat
     public const int Size = 12;
 
     /// <summary>Raised when the wire format or the meaning of a command changes; both sides must agree on it.</summary>
-    public const ushort ProtocolVersion = 2;
+    public const ushort ProtocolVersion = 3;
 
     public PanCommand Command => (PanCommand)Kind;
 

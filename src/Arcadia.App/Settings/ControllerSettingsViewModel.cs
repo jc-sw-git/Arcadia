@@ -82,23 +82,17 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <param name="pan">Pan's emulation (#242).</param>
     /// <param name="gameInTheWay">The title of a game that runs or starts: the switch "Controller-Wächter (Pan)" waits for its end.</param>
     /// <param name="notify">Shows a toast, e.g. "SISR ist vollständig entfernt."</param>
-    /// <param name="time">Times the held row "Steam Controller und Puck übernehmen"; tests pass a fake.</param>
     /// <param name="steam">Steam is installed, and opening its launcher page: the group "Steam" at the end leads there.</param>
     public ControllerSettingsViewModel(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay,
-        Action<string> notify, TimeProvider? time = null, (Func<bool> IsInstalled, Action OpenPage)? steam = null)
+        Action<string> notify, (Func<bool> IsInstalled, Action OpenPage)? steam = null)
         : base("Controller", "M7 7h10a5 5 0 0 1 4.6 6.9l-1.3 3.2a2.3 2.3 0 0 1-3.9.6L14.6 16H9.4l-1.8 1.7a2.3 2.3 0 0 1-3.9-.6l-1.3-3.2A5 5 0 0 1 7 7z M8 10v3 M6.5 11.5h3 M16 10.5v.01 M17.5 12.5v.01")
     {
         _support = support;
         _changes = changes;
         _notify = notify;
         _pan = pan;
-        _panRows = new PanRows(support, changes, pan, gameInTheWay, ApplyFix, notify, time ?? TimeProvider.System, action => Dispatcher.UIThread.Post(action));
+        _panRows = new PanRows(support, changes, pan, gameInTheWay, ApplyFix, notify);
         _panRows.Switched += Refresh;
-        _panRows.TakenOver += () =>
-        {
-            Refresh();
-            FocusRow(PanRows.MainKey);
-        };
         _sisrRows = new SisrRows(support, RemoveSisr, KeepSisr);
         _mouseMode = new MouseModeRows(changes);
         _returnWithView = new ReturnWithViewRows(changes);
@@ -133,7 +127,6 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support.Changed += OnSupportChanged;
         _support.SisrRemoved += OnSisrRemoved;
         _pan.Changed += OnPanChanged;
-        _pan.Takeover.Changed += OnPanChanged;
         Refresh();
 
         // Only while the settings are open does the tick recheck the parts, HidHide's state and SISR.
@@ -246,8 +239,6 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support.Changed -= OnSupportChanged;
         _support.SisrRemoved -= OnSisrRemoved;
         _pan.Changed -= OnPanChanged;
-        _pan.Takeover.Changed -= OnPanChanged;
-        _panRows.TakeOver.Dispose();
         _support.ClearError();
     }
 

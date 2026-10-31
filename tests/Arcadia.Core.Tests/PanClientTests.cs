@@ -95,7 +95,7 @@ public sealed class PanClientTests : IAsyncDisposable
     {
         await ConnectedAsync();
         Assert.Null(_client.Unavailable());
-        Assert.Contains("Pan: verbunden (Testserver, Protokoll 2, Generation 0)", LogText());
+        Assert.Contains("Pan: verbunden (Testserver, Protokoll 3, Generation 0)", LogText());
 
         var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
 
@@ -371,18 +371,6 @@ public sealed class PanClientTests : IAsyncDisposable
         Assert.True(_client.IsCurrent(generation));
         await _client.EmulationStoppedAsync(generation, CancellationToken.None);
         Assert.False(_server.Guardian.IsEmulating);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task Back_during_Pans_teardown_the_hold_comes_with_the_acknowledgement()
-    {
-        _server.HelloReply = PanMessage.Of(PanReply.HelloOk, 5, PanReason.TeardownNotAcknowledged);
-        _server.AcknowledgeReply = PanMessage.Of(PanReply.Acknowledged, 5, PanReason.HeldForFirmware);
-
-        await ConnectedAsync();
-
-        Assert.True(_client.HeldForFirmware);
     }
 
     [Fact]
@@ -722,6 +710,8 @@ public sealed class PanClientTests : IAsyncDisposable
         public IReadOnlyList<string> PresentHidInstances() => [];
 
         public Task RestartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public bool BootloaderPresent() => false;
     }
 
     /// <summary>A puck whose restarts go into the test's list of events; one can be held until the test lets it finish.</summary>
@@ -730,6 +720,8 @@ public sealed class PanClientTests : IAsyncDisposable
         public TaskCompletionSource? Hold;
 
         public IReadOnlyList<string> PresentHidInstances() => [@"HID\VID_28DE&PID_1304&MI_02&COL03\8&1A2B3C4D&0&0002"];
+
+        public bool BootloaderPresent() => false;
 
         public async Task RestartAsync(CancellationToken cancellationToken)
         {

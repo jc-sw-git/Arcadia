@@ -739,172 +739,64 @@ public sealed class HidingTests : IDisposable
         Assert.Empty(_hidHide.Hidden);
     }
 
-    /// <summary>Steam tried a firmware update through the copy (#242), then Arcadia crashed: Steam still runs.</summary>
-    private async Task<Guardian> HeldForFirmwareAfterACrashAsync(Func<bool> steamRuns, bool teardownDone = true)
-    {
-        var guardian = new Guardian(_clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
-            hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: FakeDevices.StepTimeout)
-        {
-            ShowRetryDelays = [TimeSpan.FromMilliseconds(20)],
-            SteamRuns = steamRuns,
-        };
-        var generation = await EmulatingAsync(guardian);
-        Assert.Equal(PanReply.Hidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation))).Reply);
-        Assert.Equal(PanReply.Acknowledged, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation, 1))).Reply);
-        Assert.True(Journal.FirmwareHold, "journaled before the reply");
-
-        guardian.ClientGone();
-        if (teardownDone)
-        {
-            await guardian.Teardown!;
-        }
-
-        return guardian;
-    }
-
     [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task Back_while_Pans_teardown_after_the_crash_still_runs_Arcadia_hears_of_the_hold_with_the_acknowledgement()
-    {
-        _cleanup.ListHangs = true;
-        var guardian = await HeldForFirmwareAfterACrashAsync(() => true, teardownDone: false);
-
-        Assert.Equal(PanReason.None, guardian.Register(Arcadia with { Pid = 501 }));
-        var hello = await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello));
-        Assert.Equal(PanReason.TeardownNotAcknowledged, hello.Reason);
-
-        await guardian.Teardown!.WaitAsync(TimeSpan.FromSeconds(30));
-        var acknowledged = await guardian.HandleAsync(PanMessage.Of(PanCommand.TeardownAcknowledged, hello.Generation));
-        Assert.Equal(PanReply.Acknowledged, acknowledged.Reply);
-        Assert.Equal(PanReason.HeldForFirmware, acknowledged.Reason);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task Without_an_emulation_the_client_may_lift_the_hold_and_Pan_shows_the_puck()
-    {
-        var guardian = await HeldForFirmwareAfterACrashAsync(() => true);
-        Assert.Equal(PanReason.None, guardian.Register(Arcadia with { Pid = 501 }));
-        await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello));
-
-        // Only the lift: a hold needs an emulation.
-        Assert.Equal(PanReason.NotEmulating, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, 0, 1))).Reason);
-        Assert.Equal(PanReply.Acknowledged, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, 0, 0))).Reply);
-        Assert.False(Journal.FirmwareHold);
-
-        await guardian.ShowRetry!.WaitAsync(TimeSpan.FromSeconds(30));
-        AssertRestored([], [], cloaking: false);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task Steam_closed_before_Arcadia_is_back_the_hello_reports_no_hold()
-    {
-        var steamRuns = true;
-        var guardian = await HeldForFirmwareAfterACrashAsync(() => steamRuns);
-        steamRuns = false;
-
-        Assert.Equal(PanReason.None, guardian.Register(Arcadia with { Pid = 501 }));
-        Assert.Equal(PanReason.None, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello))).Reason);
-        Assert.False(Journal.FirmwareHold);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task A_crash_mid_firmware_attempt_ends_the_forwarding_but_keeps_the_puck_hidden_until_Steam_is_closed()
-    {
-        var steamRuns = true;
-        var guardian = await HeldForFirmwareAfterACrashAsync(() => steamRuns);
-
-        Assert.Single(_cleanup.Ended);
-        Assert.Equal(2, _hidHide.Hidden.Count);
-        Assert.True(guardian.ShowRetryPending, "Pan stays up for it");
-        Assert.Contains("held: Steam tried a firmware update through the copy and still runs", Log());
-
-        // Waiting is not failing: Pan keeps waiting for Steam to close.
-        await Task.Delay(200);
-        Assert.Equal(2, _hidHide.Hidden.Count);
-
-        steamRuns = false;
-        await guardian.ShowRetry!.WaitAsync(TimeSpan.FromSeconds(30));
-        AssertRestored([], [], cloaking: false);
-        Assert.False(Journal.FirmwareHold);
-        Assert.Contains("Steam is closed: the firmware hold ends", Log());
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task While_held_the_next_Arcadia_hears_of_it_at_hello_and_the_hold_ends_only_when_it_says_so()
-    {
-        var guardian = await HeldForFirmwareAfterACrashAsync(() => true);
-
-        Assert.Equal(PanReason.None, guardian.Register(Arcadia with { Pid = 501 }));
-        var hello = await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello));
-        Assert.Equal(PanReason.HeldForFirmware, hello.Reason);
-        var started = await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort));
-        Assert.Equal(PanReply.Started, started.Reply);
-        Assert.Equal(PanReply.Hidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, started.Generation))).Reply);
-
-        // Mid-attempt not even the client may show it.
-        Assert.Equal(PanReason.HeldForFirmware, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Unhide, started.Generation))).Reason);
-        Assert.Equal(2, _hidHide.Hidden.Count);
-
-        Assert.Equal(PanReply.Acknowledged, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, started.Generation, 0))).Reply);
-        Assert.False(Journal.FirmwareHold);
-        Assert.Equal(PanReply.Shown, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Unhide, started.Generation))).Reply);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task A_hold_the_journal_could_not_keep_still_holds_while_Pan_runs()
-    {
-        var guardian = new Guardian(_clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
-            hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: FakeDevices.StepTimeout)
-        {
-            ShowRetryDelays = [TimeSpan.FromMilliseconds(20)],
-            SteamRuns = () => true,
-        };
-        var generation = await EmulatingAsync(guardian);
-        Assert.Equal(PanReply.Hidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation))).Reply);
-        File.Delete(_journal.File.Path);
-        Directory.CreateDirectory(_journal.File.Path);
-
-        var held = await guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation, 1));
-        Assert.Equal(PanReason.JournalUnreadable, held.Reason);
-
-        guardian.ClientGone();
-        await guardian.Teardown!;
-        Assert.Equal(2, _hidHide.Hidden.Count);
-        Assert.Contains("held: Steam tried a firmware update through the copy and still runs", Log());
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task A_lift_the_journal_could_not_keep_still_lifts_while_Pan_runs()
-    {
-        var guardian = new Guardian(_clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
-            hiding: new SteamControllerHiding(_hidHide, _devices), deviceStepTimeout: FakeDevices.StepTimeout)
-        {
-            SteamRuns = () => true,
-        };
-        var generation = await EmulatingAsync(guardian);
-        Assert.Equal(PanReply.Hidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Hide, generation))).Reply);
-        Assert.Equal(PanReply.Acknowledged, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation, 1))).Reply);
-        File.Delete(_journal.File.Path);
-        Directory.CreateDirectory(_journal.File.Path);
-
-        Assert.Equal(PanReply.Acknowledged, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation, 0))).Reply);
-        Assert.Equal(PanReply.Shown, (await guardian.HandleAsync(PanMessage.Of(PanCommand.Unhide, generation))).Reply);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task A_hold_needs_the_current_emulation()
+    [Trait("TestCase", "T295-1")]
+    public async Task While_a_bootloader_is_connected_Pan_neither_hides_nor_restarts_the_puck()
     {
         var generation = await EmulatingAsync();
+        _devices.Bootloader = true;
 
-        Assert.Equal(PanReason.WrongGeneration, (await _guardian.HandleAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation + 1, 1))).Reason);
-        Assert.False(Journal.FirmwareHold);
+        var hide = await Send(PanCommand.Hide, generation);
+
+        Assert.Equal(PanReply.Rejected, hide.Reply);
+        Assert.Equal(PanReason.BootloaderPresent, hide.Reason);
+        Assert.Empty(_hidHide.Hidden);
+        Assert.Equal(0, _devices.Restarts);
+        Assert.Contains("A Valve bootloader is connected", Log());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T295-1")]
+    public async Task A_few_seconds_after_the_bootloader_is_gone_the_hide_goes_through()
+    {
+        var generation = await EmulatingAsync();
+        _devices.Bootloader = true;
+        Assert.Equal(PanReason.BootloaderPresent, (await Send(PanCommand.Hide, generation)).Reason);
+
+        // The device comes back as itself and may go on with a second stage: the grace keeps the hide off a little longer.
+        _devices.Bootloader = false;
+        Assert.Equal(PanReason.BootloaderPresent, (await Send(PanCommand.Hide, generation)).Reason);
+
+        _clock.Advance(_guardian.BootloaderGrace);
+        Assert.Equal(PanReply.Hidden, (await Send(PanCommand.Hide, generation)).Reply);
+        Assert.Equal(1, _devices.Restarts);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T295-1")]
+    public async Task A_teardown_while_a_bootloader_is_connected_shows_the_puck_but_leaves_its_restart_pending()
+    {
+        var generation = await HiddenAsync();
+        var restarts = _devices.Restarts;
+        _devices.Bootloader = true;
+
+        Assert.Equal(PanReply.Stopped, (await Send(PanCommand.EmulationStopped, generation)).Reply);
+        await _guardian.Teardown!;
+
+        Assert.Empty(_hidHide.Hidden);
+        Assert.Equal(restarts, _devices.Restarts);
+        Assert.True(Journal.PuckRestartPending);
+        Assert.Contains("not restarted: a firmware update is being flashed", Log());
+    }
+
+    [Fact]
+    public async Task A_bootloader_list_that_cannot_be_read_counts_as_flashing()
+    {
+        var generation = await EmulatingAsync();
+        _devices.BootloaderFails = true;
+
+        Assert.Equal(PanReason.BootloaderPresent, (await Send(PanCommand.Hide, generation)).Reason);
+        Assert.Equal(0, _devices.Restarts);
     }
 
     /// <summary>#308: Windows refuses the restart of a puck Arcadia's SDL holds; Pan's own restarts ask it to let go first.</summary>

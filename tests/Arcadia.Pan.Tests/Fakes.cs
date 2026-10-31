@@ -298,6 +298,14 @@ public sealed class FakeDevices : ISteamControllerDevices, IDisposable
         lock (Calls) Calls.Add("Restart");
     }
 
+    /// <summary>A Valve bootloader is connected: Steam's updater flashes a device (#295).</summary>
+    public bool Bootloader;
+
+    /// <summary>Listing the USB devices fails, as Windows' PnP calls may.</summary>
+    public bool BootloaderFails;
+
+    public bool BootloaderPresent() => BootloaderFails ? throw new InvalidOperationException("PnP list failed") : Bootloader;
+
     /// <summary>A restart that took long finishes now (and every later one at once).</summary>
     public void EndRestartHang() => _restartHangEnds.TrySetResult();
 

@@ -9,7 +9,7 @@ public enum SteamMessageKind
     /// <summary>Haptics and rumble: pass only while the copy passes input (decision 7).</summary>
     Haptics,
 
-    /// <summary>A known firmware or flash update message: dropped, and Arcadia tells the user once per run.</summary>
+    /// <summary>A known firmware or flash update message: dropped, and Arcadia tells the player (<see cref="FirmwareAttemptWatch"/>).</summary>
     Firmware,
 
     /// <summary>Everything else: factory reset, serial number, pairing records and every unknown type. Dropped.</summary>
@@ -39,6 +39,9 @@ public static class SteamControllerMessages
         [0x85] = "SET_DEFAULT_DIGITAL_MAPPINGS",
         [0x87] = "SET_SETTINGS_VALUES",
         [0x8E] = "LOAD_DEFAULT_SETTINGS",
+
+        // Steam + Y on the controller (#295): without it the controller doesn't switch off while the copy runs.
+        [0x9F] = "TURN_OFF_CONTROLLER",
         [0xAE] = "GET_STRING_ATTRIBUTE",
         [0xB4] = "DONGLE_GET_WIRELESS_STATE",
         [0xC1] = "SET_AUDIO_MAPPING",
@@ -53,12 +56,13 @@ public static class SteamControllerMessages
     };
 
     /// <summary>
-    /// Feature messages that write the controller's flash with new firmware-like data: the three update messages SDL
-    /// names. Steam's own firmware path for this controller is unverified (no update was offered in #239); whatever
-    /// type it uses, a type not on the allow list never reaches the puck.
+    /// Feature messages that start or write a firmware update: <c>0x90</c> Steam sends to start one (spike #295: the real
+    /// device restarts into its bootloader <c>28DE:1005</c> or <c>1007</c>, and Steam's hardwareupdater.exe flashes it
+    /// there), and the three audio update messages SDL names. Not an SDL name: <c>0x90</c> is named after what it does.
     /// </summary>
     private static readonly Dictionary<byte, string> FirmwareFeatures = new()
     {
+        [0x90] = "REBOOT_INTO_BOOTLOADER",
         [0xB7] = "AUDIO_UPDATE_START",
         [0xB8] = "AUDIO_UPDATE_DATA",
         [0xB9] = "AUDIO_UPDATE_COMPLETE",
@@ -77,13 +81,6 @@ public static class SteamControllerMessages
         [0xB3] = "DONGLE_COMMIT_DEVICE",
     };
 
-    /// <summary>
-    /// Dropped types Steam sent all along in spike #239 without trying an update (<c>0xA3</c> on every slot, four unknown
-    /// ones): they don't count as update traffic (<see cref="FirmwareAttemptWatch"/>), or the dialog would show on
-    /// every run.
-    /// </summary>
-    private static readonly HashSet<byte> RoutineDrops = [0xA3, 0xDC, 0xE2, 0xED, 0xF3];
-
     /// <summary>Output reports of the puck's vendor collection whose report id says they are haptics (SDL: <c>ValveTritonOutReportMessageIDs</c>).</summary>
     private static readonly Dictionary<byte, string> HapticOutputs = new()
     {
@@ -101,9 +98,6 @@ public static class SteamControllerMessages
         : HapticFeatures.ContainsKey(type) ? SteamMessageKind.Haptics
         : FirmwareFeatures.ContainsKey(type) ? SteamMessageKind.Firmware
         : SteamMessageKind.Blocked;
-
-    /// <summary>A dropped feature type Steam sends anyway, not as part of an update.</summary>
-    public static bool IsRoutineDrop(byte type) => RoutineDrops.Contains(type);
 
     /// <summary>What happens with an output report of this id: haptics, or dropped.</summary>
     public static SteamMessageKind OfOutput(byte reportId) =>

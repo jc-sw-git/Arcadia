@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.ControllerSupport.Copy;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
@@ -21,19 +22,14 @@ public sealed class HoldButtonFillTests
     public async Task Letting_go_early_empties_the_fill_at_once()
     {
         // Owner's test of #214: the fill stayed where it was when let go, until the next press.
-        using var shown = await ArcadiaWindow.ShowAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, steam: new FakeSteam { IsSteamRunning = true });
+        using var shown = await FirmwareNoticeAsync();
         var arcadia = shown.Arcadia;
-        arcadia.SteamControllerCopy.CanCopy = true;
-        arcadia.SteamControllerCopy.PuckPresent = true;
-        arcadia.Sdl.Plug(KnownPads.SteamController);
-        arcadia.StartControllers();
-        await arcadia.TickSteamControllerAsync();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.TakeoverConsent is not null, "die Frage „Steam Controller und Puck übernehmen?“");
+        arcadia.Press(UiAction.Left, 2);
         shown.Settle();
-        var fill = FillOf(shown, "Nein, nicht übernehmen");
+        var fill = FillOf(shown, "Controller freigeben");
         Assert.Equal(0, fill.ScaleX);
 
-        // „Nein“ is focused and holds for 1 s: half way, then let go.
+        // „Controller freigeben“ holds for 1 s: half way, then let go.
         arcadia.PressDown(UiAction.Accept);
         shown.Settle();
         Thread.Sleep(TimeSpan.FromMilliseconds(500));
@@ -45,7 +41,7 @@ public sealed class HoldButtonFillTests
         Thread.Sleep(TimeSpan.FromMilliseconds(200));
         shown.Settle();
 
-        Assert.NotNull(arcadia.Main.TakeoverConsent);
+        Assert.False(arcadia.Main.FirmwareAttempt!.IsReleased);
         Assert.Equal(0, fill.ScaleX);
 
         // The next press fills from empty again.
@@ -57,26 +53,20 @@ public sealed class HoldButtonFillTests
         arcadia.LetGo(UiAction.Accept);
     }
 
-    [AvaloniaFact]
-    public async Task The_controller_symbol_sits_in_the_middle_of_its_circle()
+    /// <summary>The notice of a firmware update Steam tried through the copy (#295): its buttons act only when held.</summary>
+    private static async Task<ArcadiaWindow> FirmwareNoticeAsync()
     {
-        // Owner's finding: the symbol stood at the top of its circle, as a wide shape in a square box draws at the top.
-        using var shown = await ArcadiaWindow.ShowAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, steam: new FakeSteam { IsSteamRunning = true });
+        var shown = await ArcadiaWindow.ShowAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, steam: new FakeSteam { IsSteamRunning = true });
         var arcadia = shown.Arcadia;
         arcadia.SteamControllerCopy.CanCopy = true;
         arcadia.SteamControllerCopy.PuckPresent = true;
         arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.StartControllers();
         await arcadia.TickSteamControllerAsync();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.TakeoverConsent is not null, "die Frage „Steam Controller und Puck übernehmen?“");
+        arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, [1, 0x90, 0x00], forwarding: true);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Hinweis „Steam will die Firmware aktualisieren“");
         shown.Settle();
-
-        var circle = Assert.Single(shown.Window.GetVisualDescendants().OfType<Border>(), border => border.Classes.Contains("promptIcon") && border.IsEffectivelyVisible);
-        var symbol = Assert.IsType<Avalonia.Controls.Shapes.Path>(circle.Child);
-        var drawn = symbol.RenderedGeometry!.Bounds;
-        var centre = symbol.TranslatePoint(drawn.Center, circle)!.Value;
-        Assert.InRange(centre.X, circle.Bounds.Width / 2 - 1, circle.Bounds.Width / 2 + 1);
-        Assert.InRange(centre.Y, circle.Bounds.Height / 2 - 1, circle.Bounds.Height / 2 + 1);
+        return shown;
     }
 
     private static ScaleTransform FillOf(ArcadiaWindow shown, string label)

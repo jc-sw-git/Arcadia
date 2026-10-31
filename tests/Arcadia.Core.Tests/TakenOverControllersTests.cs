@@ -33,7 +33,6 @@ public sealed class TakenOverControllersTests
     private readonly PanEmulation _emulation;
     private bool _steamControllerPresent;
     private bool _forwarding = true;
-    private bool _steamRuns;
     private string? _runningTool;
 
     public TakenOverControllersTests()
@@ -55,7 +54,6 @@ public sealed class TakenOverControllersTests
         _emulation = new PanEmulation(_pads, _pan, _copy, _time, Log)
         {
             SteamControllerPresent = () => _steamControllerPresent,
-            SteamRuns = () => _steamRuns,
             Others = _others,
         };
     }
@@ -94,35 +92,32 @@ public sealed class TakenOverControllersTests
 
     [Fact]
     [Trait("TestCase", "T238-6")]
-    public async Task No_to_the_Steam_Controllers_takeover_leaves_it_and_its_puck_to_Steam_and_still_takes_the_others_over()
+    public async Task Released_for_a_firmware_update_the_Steam_Controller_goes_to_Steam_and_the_others_stay_taken_over()
     {
         _steamControllerPresent = true;
-        _steamRuns = true;
         _others.Feed([DualSense]);
         await _emulation.TickAsync();
-        _emulation.Takeover.Answer(takeOver: false);
+        Assert.Equal([1u], _pan.Hidden);
 
+        await _emulation.ReleaseForFirmwareAsync();
         await _emulation.TickAsync();
 
         Assert.Equal(PanEmulationState.Running, _emulation.Status.State);
-        Assert.Empty(_pan.Hidden);
-        Assert.Equal(0, _copy.Attached);
+        Assert.Equal([1u, 2u], _pan.Started);
+        Assert.Equal([1u], _pan.Hidden);
+        Assert.Contains(1u, _pan.Unhidden);
         Assert.False(_emulation.SteamControllerTakenOver);
-        Assert.Equal([$"1 {DualSenseModel}"], _pan.ControllerHides);
-        Assert.Equal(1, _others.Plugged);
+        Assert.Equal([$"1 {DualSenseModel}", $"2 {DualSenseModel}"], _pan.ControllerHides);
     }
 
     [Fact]
-    public async Task A_yes_given_later_hides_the_puck_within_the_running_emulation()
+    public async Task A_Steam_Controller_that_comes_later_is_hidden_within_the_running_emulation()
     {
-        _steamControllerPresent = true;
-        _steamRuns = true;
         _others.Feed([DualSense]);
         await _emulation.TickAsync();
-        Assert.Equal(TakeoverState.Asking, _emulation.Takeover.State);
         Assert.Empty(_pan.Hidden);
 
-        _emulation.Takeover.Answer(takeOver: true);
+        _steamControllerPresent = true;
         await _emulation.TickAsync();
 
         Assert.Equal([1u], _pan.Started);

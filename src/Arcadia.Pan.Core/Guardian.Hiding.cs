@@ -192,13 +192,6 @@ public sealed partial class Guardian
                     }
                 }
 
-                if (HeldForFirmware())
-                {
-                    // Also the client may not show it mid-attempt (#242); it ends the hold first.
-                    _log($"Steam Controller not shown for generation {message.Generation}: held for a firmware attempt while Steam runs");
-                    return PanMessage.Of(PanReply.Rejected, message.Generation, PanReason.HeldForFirmware);
-                }
-
                 // The client sends this once it removed its copy of the controller (#242), so nothing forwards to it.
                 lock (_lock)
                 {
@@ -344,6 +337,11 @@ public sealed partial class Guardian
     /// </summary>
     private async Task<(PanReason Reason, IReadOnlyList<string> Listed)> HideCoreAsync(string? imagePath, Func<PanReason> refused)
     {
+        if (await FlashingAsync())
+        {
+            return (PanReason.BootloaderPresent, []);
+        }
+
         // Listed first: it may wait on Windows' PnP lock, and HidHide's lists must be read right before they are written
         // back, so a change the user makes meanwhile isn't lost.
         IReadOnlyList<string> present;
@@ -694,6 +692,13 @@ public sealed partial class Guardian
 
     private async Task<bool> RestartPuckAsync(CancellationToken cancellationToken)
     {
+        if (await FlashingAsync())
+        {
+            // Left pending: the next show, hide or retry restarts it once the flash is over.
+            _log("Steam Controller not restarted: a firmware update is being flashed");
+            return false;
+        }
+
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(_deviceStepTimeout);
         try
@@ -746,23 +751,13 @@ public sealed partial class Guardian
             return [skipped];
         }
 
-        // The firmware hold is the puck's: every other controller is shown anyway (#335).
-        var held = HeldForFirmware();
-        var scope = held ? ShowScope.Controllers : ShowScope.All;
-        var results = await TeardownRunner.RunAsync(
+        var scope = ShowScope.All;
+        return await TeardownRunner.RunAsync(
         [
             // The show may first wait for a running hide (its listing and restart are bounded by the device timeout).
             new TeardownStep("show the hidden controllers", token => ShowStepAsync(scope, token, retry), TeardownPlan.StepTimeout + 2 * _deviceStepTimeout),
             new TeardownStep("restart the shown controllers", token => RestartStepAsync(scope, token, retry), TeardownPlan.StepTimeout + PuckReleaseTimeout + 2 * _deviceStepTimeout),
         ], _log);
-        if (held)
-        {
-            var hold = new StepResult("show the Steam Controller", StepOutcome.Failed, "held: Steam tried a firmware update through the copy and still runs; shown once Steam is closed");
-            _log($"Teardown: {hold}");
-            results = [.. results, hold];
-        }
-
-        return results;
     }
 
     private async Task ShowStepAsync(ShowScope scope, CancellationToken cancellationToken, bool retry)
@@ -807,48 +802,52 @@ public sealed partial class Guardian
         }
     }
 
-    /// <summary>Whether Steam runs, checked while a firmware hold keeps the controller hidden; the service passes the real one.</summary>
-    public Func<bool> SteamRuns { get; init; } = () => false;
+    /// <summary>How long after a bootloader was last seen Pan still counts the flash as running: the device comes back as itself first and may go on with a second stage.</summary>
+    public TimeSpan BootloaderGrace { get; init; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>Under the lock: when a bootloader was last seen, on the unbiased clock.</summary>
+    private long? _bootloaderSeenMs;
 
     /// <summary>
-    /// The firmware hold applies: Steam still runs. Once Steam is closed nothing can go on with the update, so the hold
-    /// ends (journaled) and the controller may be shown.
+    /// Whether a Valve bootloader is connected or was within <see cref="BootloaderGrace"/> (#295): Steam's updater flashes
+    /// a device in its bootloader, and a hide or a restart of the puck now could cut the update off. A list that can't be
+    /// read counts as flashing, like a hide whose devices can't be listed fails.
     /// </summary>
-    private bool HeldForFirmware()
+    private async Task<bool> FlashingAsync()
     {
-        lock (_lock)
-        {
-            if (!_journal.FirmwareHold)
-            {
-                return false;
-            }
-        }
-
-        bool steamRuns;
+        bool present;
         try
         {
-            steamRuns = SteamRuns();
+            present = await Task.Run(_hiding!.Devices.BootloaderPresent).WaitAsync(_deviceStepTimeout);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            // Unknown counts as running: the controller stays hidden, the retry asks again.
-            _log($"Whether Steam runs not known: {ex.Message}");
-            return true;
+            _log($"Whether a bootloader is connected not known: {ex.Message}");
+            present = true;
         }
 
-        if (steamRuns)
-        {
-            return true;
-        }
-
+        var now = _clock.UnbiasedMilliseconds;
         lock (_lock)
         {
-            _journal.FirmwareHold = false;
-            SaveJournal();
-        }
+            if (present)
+            {
+                if (_bootloaderSeenMs is null)
+                {
+                    _log("A Valve bootloader is connected: a firmware update is being flashed; no hide and no restart of the Steam Controller until it is over");
+                }
 
-        _log("Steam is closed: the firmware hold ends, the Steam Controller may be shown");
-        return false;
+                _bootloaderSeenMs = now;
+                return true;
+            }
+
+            if (_bootloaderSeenMs is { } seen && now - seen < BootloaderGrace.TotalMilliseconds)
+            {
+                return true;
+            }
+
+            _bootloaderSeenMs = null;
+            return false;
+        }
     }
 
     /// <summary>
@@ -913,25 +912,6 @@ public sealed partial class Guardian
                     _retryShowing = true;
                 }
 
-                bool controllersLeft;
-                lock (_lock)
-                {
-                    controllersLeft = _journal.HiddenControllers.Count > 0 || _journal.ControllerRestarts.Count > 0;
-                }
-
-                var held = HeldForFirmware();
-                if (held && !controllersLeft)
-                {
-                    // Not a failed show: it waits for Steam to close, as long as that takes.
-                    lock (_lock)
-                    {
-                        _retryShowing = false;
-                    }
-
-                    attempt = -1;
-                    continue;
-                }
-
                 IReadOnlyList<StepResult> results;
                 try
                 {
@@ -943,13 +923,6 @@ public sealed partial class Guardian
                     {
                         _retryShowing = false;
                     }
-                }
-
-                if (held && results.Count(r => r.Outcome != StepOutcome.Ok) == 1)
-                {
-                    // The controllers are shown; the Steam Controller waits for Steam to close, as long as that takes.
-                    attempt = -1;
-                    continue;
                 }
 
                 if (results.All(r => r.Outcome == StepOutcome.Ok))

@@ -145,7 +145,7 @@ public sealed class EveryControllerForGamesTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T238-6")]
-    public async Task After_Nein_to_the_Steam_Controller_a_DualSense_is_still_taken_over()
+    public async Task After_Controller_freigeben_a_DualSense_is_still_taken_over()
     {
         using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam { IsSteamRunning = true });
         arcadia.SteamControllerCopy.CanCopy = true;
@@ -154,19 +154,16 @@ public sealed class EveryControllerForGamesTests
         arcadia.Sdl.Plug(DualSense);
         arcadia.StartControllers();
         await arcadia.TickSteamControllerAsync();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.TakeoverConsent is not null, "die Frage „Steam Controller und Puck übernehmen?“");
+        Assert.Single(arcadia.Pan.Hidden);
 
-        // "Nein, nicht übernehmen" is focused: held 1 s.
-        arcadia.Hold(UiAction.Accept, TimeSpan.FromMilliseconds(1100));
-        Assert.Null(arcadia.Main.TakeoverConsent);
+        await arcadia.ForGames.ReleaseForFirmwareAsync();
         arcadia.IsArcadiaInFront = false;
         await arcadia.TickSteamControllerAsync();
         arcadia.PollControllers();
         await arcadia.TickSteamControllerAsync();
 
-        Assert.Equal(TakeoverState.Declined, arcadia.ForGames.Takeover.State);
-        Assert.Empty(arcadia.Pan.Hidden);
-        Assert.Contains("1 054C:0CE6", arcadia.Pan.ControllerHides);
+        Assert.Single(arcadia.Pan.Hidden);
+        Assert.Contains("2 054C:0CE6", arcadia.Pan.ControllerHides);
         Assert.Equal(1, arcadia.ForGames.Others.Plugged);
         Assert.False(arcadia.XboxPad.IsPlugged, "kein Pad für den Steam Controller, Steam sieht ihn direkt");
         Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);

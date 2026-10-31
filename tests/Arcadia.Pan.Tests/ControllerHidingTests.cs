@@ -20,7 +20,6 @@ public sealed class ControllerHidingTests : IDisposable
     private readonly FakeControllers _controllers = new();
     private readonly List<string> _log = [];
     private readonly HashSet<string> _running = [];
-    private bool _steamRuns;
     private Guardian _guardian;
 
     public ControllerHidingTests() => _guardian = NewGuardian();
@@ -37,7 +36,6 @@ public sealed class ControllerHidingTests : IDisposable
     {
         PuckReleaseTimeout = TimeSpan.FromMilliseconds(100),
         ProcessRuns = name => { lock (_running) return _running.Contains(name); },
-        SteamRuns = () => _steamRuns,
     };
 
     private string Log() { lock (_log) return string.Join("\n", _log); }
@@ -410,28 +408,6 @@ public sealed class ControllerHidingTests : IDisposable
         await _guardian.ControllerArrivedAsync(FakeControllers.DualSense);
 
         Assert.Equal([FakeDevices.Slot2, FakeDevices.Slot3], _hidHide.Hidden);
-    }
-
-    [Fact]
-    public async Task A_firmware_hold_on_the_puck_keeps_only_the_puck_hidden_and_the_retry_shows_it_once_Steam_closed()
-    {
-        var generation = await AllHiddenAsync();
-        Assert.Equal(PanReply.Acknowledged, (await Send(PanCommand.HoldForFirmware, generation, 1)).Reply);
-        _steamRuns = true;
-
-        _guardian.ClientGone();
-        await TeardownDoneAsync();
-
-        Assert.Equal([FakeDevices.Slot2, FakeDevices.Slot3], _hidHide.Hidden);
-        Assert.Empty(Journal.HiddenControllers);
-        Assert.Equal([ArcadiaImage], _hidHide.Allowed);
-
-        _steamRuns = false;
-        await _guardian.ShowRetry!;
-
-        Assert.Empty(_hidHide.Hidden);
-        Assert.Empty(_hidHide.Allowed);
-        Assert.False(Journal.HidingHasWork);
     }
 
     [Fact]

@@ -113,8 +113,6 @@ public static class ServiceHost
         var cleanup = new WindowsCleanup(log.Write);
         var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath), cleanup, log.Write, hiding: WindowsHiding.Create())
         {
-            // Steam in any session: a firmware hold keeps the Steam Controller hidden while it runs (#242).
-            SteamRuns = SteamRuns,
             // The vendors' firmware tools: no controller of theirs is hidden while one runs (#238 D8).
             ProcessRuns = ProcessRuns,
         };
@@ -217,8 +215,6 @@ public static class ServiceHost
         _status.CheckPoint = state is Native.ServiceStartPending or Native.ServiceStopPending ? ++_status.CheckPoint : 0;
         Native.SetServiceStatus(_statusHandle, ref _status);
     }
-
-    private static bool SteamRuns() => ProcessRuns("steam");
 
     private static bool ProcessRuns(string name)
     {

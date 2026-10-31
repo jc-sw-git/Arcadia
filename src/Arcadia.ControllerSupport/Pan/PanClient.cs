@@ -52,7 +52,6 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     private uint _currentGeneration;
     private uint _tornDownGeneration;
     private bool _teardownPending;
-    private bool _heldForFirmware;
     private DateTimeOffset _beingShownUntil;
     private bool _emulating;
     // Pan announced a restart of its own (this request number) and hasn't said it's over: a lost link ends it too.
@@ -120,46 +119,12 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     }
 
     /// <summary>
-    /// Done once the first try to reach Pan has ended, connected or not: then <see cref="HeldForFirmware"/> says whether a
-    /// firmware attempt from before the start still holds the puck (#297 waits for it before the update).
+    /// Done once the first try to reach Pan has ended, connected or not (#297 waits for it before the update, so the update
+    /// never stops a Pan whose teardown of an earlier Arcadia still runs).
     /// </summary>
     public Task FirstAttempt => _firstAttempt.Task;
 
     private readonly TaskCompletionSource _firstAttempt = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-    public bool HeldForFirmware
-    {
-        get { lock (_lock) return _heldForFirmware; }
-    }
-
-    public async Task<bool> HoldForFirmwareAsync(uint generation, bool hold, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var reply = await RequestAsync(PanMessage.Of(PanCommand.HoldForFirmware, generation, hold ? 1u : 0u), cancellationToken);
-            if (reply.Reply != PanReply.Acknowledged)
-            {
-                _log($"Pan: Firmware-Halt {(hold ? "an" : "aus")} abgelehnt ({reply})");
-                return false;
-            }
-
-            if (!hold)
-            {
-                lock (_lock)
-                {
-                    _heldForFirmware = false;
-                }
-            }
-
-            _log($"Pan: Firmware-Halt {(hold ? "an: der Steam Controller bleibt versteckt, auch wenn Arcadia unerwartet endet" : "aus")}");
-            return true;
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
-        {
-            _log($"Pan: Firmware-Halt {(hold ? "an" : "aus")} nicht gesendet: {ex.Message}");
-            return false;
-        }
-    }
 
     public bool IsCurrent(uint generation)
     {
@@ -242,18 +207,9 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     {
         var reply = await RequestAsync(PanMessage.Of(PanCommand.TeardownAcknowledged, generation), cancellationToken);
         var stillRunning = reply.Reply == PanReply.Rejected && reply.Reason == PanReason.TeardownNotAcknowledged;
-
-        // Back during Pan's teardown after a crash: the hold comes with the acknowledgement, not the hello.
-        var held = reply.Reply == PanReply.Acknowledged && reply.Reason == PanReason.HeldForFirmware;
         lock (_lock)
         {
             _teardownPending = stillRunning;
-            _heldForFirmware |= held;
-        }
-
-        if (held)
-        {
-            _log("Pan: ein Firmware-Versuch über die Kopie hält den Steam Controller versteckt, Steam läuft noch");
         }
 
         if (reply.Reply == PanReply.Rejected && !stillRunning)
@@ -594,16 +550,6 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         {
             _log("Pan: das Journal war nicht lesbar; Pan nutzt die vorherige Fassung oder beginnt leer");
             JournalProblem?.Invoke();
-        }
-
-        lock (_lock)
-        {
-            _heldForFirmware = hello.Reason == PanReason.HeldForFirmware;
-        }
-
-        if (_heldForFirmware)
-        {
-            _log("Pan: ein Firmware-Versuch über die Kopie hält den Steam Controller versteckt, Steam läuft noch");
         }
 
         if (hello.Reason == PanReason.TeardownNotAcknowledged)

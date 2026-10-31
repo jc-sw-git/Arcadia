@@ -198,15 +198,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     public bool IsConfirmationOpen => Confirmation is not null;
 
-    /// <summary>
-    /// Pan's question before taking the Steam Controller over, or its firmware dialog (#242): over everything, the first
-    /// start and the settings included, and [B] doesn't close it.
-    /// </summary>
+    /// <summary>Pan's firmware notice (#295): over everything, the first start and the settings included.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TakeoverConsent), nameof(FirmwareAttempt), nameof(IsPanDialogOpen), nameof(IsDialogOpen))]
+    [NotifyPropertyChangedFor(nameof(FirmwareAttempt), nameof(IsPanDialogOpen), nameof(IsDialogOpen))]
     public partial ViewModelBase? PanDialog { get; private set; }
-
-    public TakeoverConsentViewModel? TakeoverConsent => PanDialog as TakeoverConsentViewModel;
 
     public FirmwareAttemptViewModel? FirmwareAttempt => PanDialog as FirmwareAttemptViewModel;
 
@@ -364,18 +359,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// </summary>
     public void Handle(UiAction action)
     {
-        switch (PanDialog)
+        if (PanDialog is FirmwareAttemptViewModel firmware)
         {
-            case TakeoverConsentViewModel consent:
-                consent.Handle(action);
-                return;
-            case FirmwareAttemptViewModel firmware:
-                if (!firmware.Handle(action))
-                {
-                    ClosePanDialog(firmware);
-                }
+            if (!firmware.Handle(action))
+            {
+                ClosePanDialog(firmware);
+            }
 
-                return;
+            return;
         }
 
         if (PanUpdate is { } panUpdate)
@@ -453,7 +444,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>A button or key was let go.</summary>
     public void Release(UiAction action)
     {
-        (PanDialog as TakeoverConsentViewModel)?.Release(action);
         (PanDialog as FirmwareAttemptViewModel)?.Release(action);
         _actions.Release(action);
         foreach (var page in OpenPages())
@@ -465,7 +455,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
     public void CancelHold()
     {
-        TakeoverConsent?.CancelHold();
         FirmwareAttempt?.CancelHold();
         _actions.CancelHold();
         foreach (var page in OpenPages())
@@ -849,7 +838,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         SettingsCategoryViewModel[] categories =
         [
             launchers,
-            new ControllerSettingsViewModel(_controllerSupport, changes, _pan, GameInTheWay, message => Toast.Show(message), _time,
+            new ControllerSettingsViewModel(_controllerSupport, changes, _pan, GameInTheWay, message => Toast.Show(message),
                 (new Func<bool>(() => Session.Launchers.IsFound(steam)), OpenSteamControllerSettings)),
             new AboutSettingsViewModel(_updates, _updates.InstallAsync),
         ];
@@ -1012,9 +1001,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     {
         _pan = pan;
         pan.Changed += () => Avalonia.Threading.Dispatcher.UIThread.Post(UpdatePanState);
-        pan.Takeover.ConsentNeeded += parts => Avalonia.Threading.Dispatcher.UIThread.Post(() => ShowTakeoverConsent(parts));
-        pan.Takeover.Changed += () => Avalonia.Threading.Dispatcher.UIThread.Post(OnTakeoverChanged);
-        pan.FirmwareAttempt.Started += () => Avalonia.Threading.Dispatcher.UIThread.Post(ShowFirmwareAttempt);
+        pan.FirmwareUpdateTried += () => Avalonia.Threading.Dispatcher.UIThread.Post(ShowFirmwareAttempt);
         UpdatePanState();
     }
 
@@ -1157,7 +1144,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }, () => QuitRequested?.Invoke(this, EventArgs.Empty));
     }
 
-    /// <summary>Pan has answered once at start (or never will), so a firmware hold from before has shown its dialog.</summary>
+    /// <summary>Pan has answered once at start (or never will), so the update doesn't stop a teardown that still runs.</summary>
     public void PanAnsweredAtStart()
     {
         _panAnswered = true;
@@ -1165,8 +1152,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     }
 
     /// <summary>
-    /// The update (or, after [B], the switch-off) runs once the notice was answered and Pan answered, and after a firmware dialog, so the puck is
-    /// never released in the middle of Steam's update (#297, decision 7; #326).
+    /// The update (or, after [B], the switch-off) runs once the notice was answered and Pan answered, and after an open
+    /// firmware notice, one dialog at a time (#297, decision 7; #326).
     /// </summary>
     private void StartPanUpdate()
     {
@@ -1175,7 +1162,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             return;
         }
 
-        if (IsPanDialogOpen || _pan.FirmwareAttempt.IsActive)
+        if (IsPanDialogOpen)
         {
             _panUpdateAfterDialog = true;
             return;
@@ -1188,44 +1175,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>"Arcadia jetzt beenden" in a dialog; the App closes the window, as its close button would.</summary>
     public event EventHandler? QuitRequested;
 
-    /// <summary>
-    /// Steam runs and the real puck was visible: Pan asks before it hides (#242, owner's design 2026-10-28). An open
-    /// question follows what is connected (#325).
-    /// </summary>
-    public void ShowTakeoverConsent(SteamControllerParts parts)
-    {
-        if (_pan.Takeover.State != TakeoverState.Asking)
-        {
-            return;
-        }
-
-        if (TakeoverConsent is { } open)
-        {
-            open.Follow(parts);
-            return;
-        }
-
-        var takeover = _pan.Takeover;
-        TakeoverConsentViewModel? dialog = null;
-        dialog = new TakeoverConsentViewModel(parts, takeOver =>
-        {
-            takeover.Answer(takeOver);
-            ClosePanDialog(dialog!);
-        }, _time, action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
-        ShowPanDialog(dialog);
-    }
-
-    /// <summary>Steam tries a firmware update through the copy: Arcadia holds it until Steam gave up (#242).</summary>
+    /// <summary>Steam tried a firmware update through the copy while no game was in front (#295): the notice says why it failed.</summary>
     public void ShowFirmwareAttempt()
     {
-        if (FirmwareAttempt is not null || !_pan.FirmwareAttempt.IsActive)
+        if (FirmwareAttempt is not null)
         {
             return;
         }
 
         var dialog = new FirmwareAttemptViewModel(
-            _pan.FirmwareAttempt,
-            _pan.Connected,
             _pan.ReleaseForFirmwareAsync,
             () => QuitRequested?.Invoke(this, EventArgs.Empty),
             _time,
@@ -1255,29 +1213,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
-    /// <summary>
-    /// The question went (switched off meanwhile): its dialog goes too. Taken over again in the settings: a toast says so,
-    /// as the row that did it disappears.
-    /// </summary>
-    private void OnTakeoverChanged()
-    {
-        var state = _pan.Takeover.State;
-        if (TakeoverConsent is { } consent && state != TakeoverState.Asking)
-        {
-            ClosePanDialog(consent);
-        }
-
-        if (state == TakeoverState.Granted && _takeover is TakeoverState.Declined or TakeoverState.Released)
-        {
-            var parts = _pan.Takeover.Asked is not SteamControllerParts.None and var asked ? asked : _pan.Connected;
-            Toast.Show($"Pan: {SteamControllerPartsNames.Names(parts)} übernommen");
-        }
-
-        _takeover = state;
-    }
-
-    private TakeoverState _takeover;
-
     /// <summary>"OK" on the note after the release for a firmware update.</summary>
     [RelayCommand]
     private void CloseFirmwareNote()
@@ -1291,14 +1226,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>The pointer went down on a held button (Pan's dialogs, the settings row): held as [A] would be.</summary>
     public void PressHold(HoldButtonViewModel button)
     {
-        switch (PanDialog)
+        if (PanDialog is FirmwareAttemptViewModel firmware)
         {
-            case TakeoverConsentViewModel consent:
-                consent.Press(button);
-                return;
-            case FirmwareAttemptViewModel firmware:
-                firmware.Press(button);
-                return;
+            firmware.Press(button);
+            return;
         }
 
         if (Settings?.Selected.Rows.OfType<HoldRowViewModel>().FirstOrDefault(row => row.Hold == button) is { } row)

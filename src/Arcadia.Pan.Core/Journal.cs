@@ -84,12 +84,6 @@ public sealed class JournalState
     /// <summary>The Steam Controller still has to be restarted, so Windows announces it again (after a hide, unhide or arrival).</summary>
     public bool PuckRestartPending { get; set; }
 
-    /// <summary>
-    /// Steam tried a firmware update through Arcadia's copy (#242): a teardown ends the copy but keeps the real Steam
-    /// Controller hidden while Steam runs, as showing it mid-attempt could hand it the rest of the update.
-    /// </summary>
-    public bool FirmwareHold { get; set; }
-
     /// <summary>HidHide holds a change of Pan's: entries it added, or cloaking it turned on.</summary>
     [JsonIgnore]
     public bool HidHideChanged => HiddenDevices.Count > 0 || HiddenControllers.Count > 0 || AllowListed.Count > 0 || CloakingWasOn is not null;
@@ -116,7 +110,6 @@ public sealed class JournalState
         AllowListed = [.. AllowListed],
         CloakingWasOn = CloakingWasOn,
         PuckRestartPending = PuckRestartPending,
-        FirmwareHold = FirmwareHold,
     };
 }
 

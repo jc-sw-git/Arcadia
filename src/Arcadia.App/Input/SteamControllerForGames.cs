@@ -39,11 +39,17 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
 
     public PanEmulation Emulation { get; }
 
-    /// <summary>What passes between Steam and the real puck; what it drops feeds <see cref="FirmwareAttempt"/>.</summary>
+    /// <summary>What passes between Steam and the real puck; its firmware messages feed <see cref="FirmwareAttempt"/>.</summary>
     public SteamControllerCopyFilter CopyFilter { get; }
 
-    /// <summary>A firmware update Steam tries through the copy; its start opens the firmware dialog.</summary>
+    /// <summary>A firmware update Steam tries through the copy (#295).</summary>
     public FirmwareAttemptWatch FirmwareAttempt { get; }
+
+    /// <summary>Steam tried a firmware update through the copy while no game was in front: the notice opens. Any thread.</summary>
+    public event Action? FirmwareUpdateTried;
+
+    /// <summary>Instead of the notice while a game is in front: Arcadia doesn't come over the game for it.</summary>
+    public const string FirmwareInGameText = "Pan: Steam kann die Firmware nicht aktualisieren, solange Arcadia den Steam Controller verwaltet. Für das Update nach dem Spiel Arcadia beenden.";
 
     /// <param name="pads">The virtual pads; Pan's emulation plugs them in here.</param>
     /// <param name="copy">
@@ -54,7 +60,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     /// <param name="activeGames">The keys of the games that run or are being started (<c>RunningGamesTracker.ActiveGames</c>).</param>
     /// <param name="runningSteamAppId">The Steam game running right now, also one started directly in Steam (#119).</param>
     /// <param name="isSteamInFront">A window of Steam itself is in front; asked on every poll, so it must be cheap.</param>
-    /// <param name="gameInFront">The key of the library game in front, or null; asked every 2 s, off the UI thread.</param>
+    /// <param name="gameInFront">The key of the library game in front, or null; asked when Steam tries a firmware update.</param>
     /// <param name="gamepad">
     /// Arcadia's controllers: it lets go of the puck (<c>ReadSteamControllers</c>, #308) or of every controller
     /// (<c>ReadControllers</c>, #335) while Pan restarts what it hides, and a game's rumble goes back through it (#238 D5).
@@ -116,11 +122,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             Supported = panSupported,
             // While the installed Pan is about to be replaced (#297), nothing starts on it: the update would end it.
             Enabled = () => settings.Current.PanEnabled && !controllerSupport.IsPanUpdateDue,
-            SteamRuns = () => controllerSupport.SteamRuns,
-            Connected = () => (hold.PuckPresent ? SteamControllerParts.Puck : SteamControllerParts.None)
-                | (padForPresence?.SteamControllerConnected == true ? SteamControllerParts.Controller : SteamControllerParts.None),
             SteamControllerPresent = () => hold.PuckPresent || padForPresence?.SteamControllerConnected == true,
-            GameInFront = gameInFront,
             ReadSteamControllers = gamepad.ReadSteamControllers,
         };
         var routing = new SteamControllerRouting(
@@ -161,11 +163,20 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         guardian.Lost += _ => notices.Show(PanLostText);
         var attempt = new FirmwareAttemptWatch(time, Services.AppLog.Write);
         filter.UpdateTraffic += attempt.Traffic;
-        // Pan keeps the puck hidden while Steam tries, also if Arcadia ends meanwhile (owner, 2026-10-28).
-        attempt.Started += () => emulation.HoldForFirmwareAsync(true).Forget("Firmware-Halt bei Pan setzen");
-        attempt.Ended += () => emulation.HoldForFirmwareAsync(false).Forget("Firmware-Halt bei Pan aufheben");
-        emulation.FirmwareHoldFound += () => attempt.Traffic("Firmware-Versuch von vor dem Start von Arcadia");
-        return new SteamControllerForGames(pad, others, routing, emulation, filter, attempt);
+        var forGames = new SteamControllerForGames(pad, others, routing, emulation, filter, attempt);
+        // Off the copy's thread, which must not wait on the look at the foreground window.
+        attempt.Attempted += () => Task.Run(() =>
+        {
+            if (gameInFront() is not null)
+            {
+                notices.Show(FirmwareInGameText);
+            }
+            else
+            {
+                forGames.FirmwareUpdateTried?.Invoke();
+            }
+        }).Forget("Hinweis zum Firmware-Update");
+        return forGames;
     }
 
     private static void Rumble(IGamepadSource gamepad, int padId, XboxRumble motors)
@@ -176,13 +187,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
 
     public PanEmulationStatus Status => Emulation.Status;
 
-    public SteamControllerTakeover Takeover => Emulation.Takeover;
-
-    public SteamControllerParts Connected => Emulation.Connected();
-
     public Task ReleaseForFirmwareAsync() => Emulation.ReleaseForFirmwareAsync();
-
-    public void TakeOverAgain() => Emulation.TakeOverAgain();
 
     public IReadOnlyList<ControllerNotHidden> NotHidden => Others.NotHidden;
 

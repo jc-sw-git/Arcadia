@@ -411,6 +411,20 @@ public sealed class ControllerHidingTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T295-3")]
+    public async Task A_puck_arrival_while_only_other_controllers_are_hidden_leaves_the_puck_to_Steam()
+    {
+        // E.g. the puck back after its own flash, or after "Controller freigeben" while a DualSense stays taken over (#295).
+        var generation = await EmulatingAsync();
+        Assert.Equal(PanReply.ControllerHidden, (await Send(PanCommand.HideController, generation, FakeControllers.DualSense.Value)).Reply);
+
+        await _guardian.DevicesArrivedAsync();
+
+        Assert.DoesNotContain(FakeDevices.Slot2, _hidHide.Hidden);
+        Assert.Equal(0, _puck.Restarts);
+    }
+
+    [Fact]
     public async Task After_a_power_loss_the_restarted_Pan_shows_every_journaled_controller()
     {
         await AllHiddenAsync();

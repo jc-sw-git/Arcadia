@@ -27,8 +27,11 @@ public static class HidingList
     /// cable, <c>28DE:1007</c> the puck, each a USB device with a COM port and the device's own serial.
     /// </summary>
     public static bool IsBootloader(string instanceId) =>
-        instanceId.StartsWith(@"USB\VID_28DE&PID_1005", StringComparison.OrdinalIgnoreCase)
-        || instanceId.StartsWith(@"USB\VID_28DE&PID_1007", StringComparison.OrdinalIgnoreCase);
+        instanceId.StartsWith(@"USB\VID_28DE&PID_1005", StringComparison.OrdinalIgnoreCase) || IsPuckBootloader(instanceId);
+
+    /// <summary>The puck's bootloader, which every restart of the puck passes through for a few seconds (spike #239).</summary>
+    public static bool IsPuckBootloader(string instanceId) =>
+        instanceId.StartsWith(@"USB\VID_28DE&PID_1007", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>A device has a few USB and HID levels above it (interface, composite device, hubs); more means the tree is odd.</summary>
     private const int MaxLevels = 16;
@@ -114,8 +117,8 @@ public interface ISteamControllerDevices
     /// <summary>Restarts the listed USB devices, so Windows announces them again and open handles to them close.</summary>
     Task RestartAsync(CancellationToken cancellationToken);
 
-    /// <summary>Whether a Valve bootloader (<see cref="HidingList.IsBootloader"/>) is connected now: a firmware update is being flashed.</summary>
-    bool BootloaderPresent();
+    /// <summary>The instance ids of the Valve bootloaders (<see cref="HidingList.IsBootloader"/>) connected now: a firmware update is being flashed.</summary>
+    IReadOnlyList<string> PresentBootloaders();
 }
 
 /// <summary>HidHide's state as read before a change.</summary>

@@ -47,7 +47,9 @@ public sealed partial class Guardian
     {
         lock (_lock)
         {
-            if (_hiding is null || _journal.CloakingWasOn is null)
+            // Only while the puck itself is hidden: cloaking is also on while Pan hides only other controllers (#335),
+            // e.g. after "Controller freigeben" (#295), and the puck must then stay Steam's.
+            if (_hiding is null || _journal.CloakingWasOn is null || _hiddenFor is null)
             {
                 return;
             }
@@ -67,7 +69,7 @@ public sealed partial class Guardian
                 bool hiding;
                 lock (_lock)
                 {
-                    hiding = _journal.CloakingWasOn is not null;
+                    hiding = _journal.CloakingWasOn is not null && _hiddenFor is not null;
                 }
 
                 if (hiding)
@@ -337,9 +339,9 @@ public sealed partial class Guardian
     /// </summary>
     private async Task<(PanReason Reason, IReadOnlyList<string> Listed)> HideCoreAsync(string? imagePath, Func<PanReason> refused)
     {
-        if (await FlashingAsync())
+        if (await FlashingAsync() is var flashing and not PanReason.None)
         {
-            return (PanReason.BootloaderPresent, []);
+            return (flashing, []);
         }
 
         // Listed first: it may wait on Windows' PnP lock, and HidHide's lists must be read right before they are written
@@ -692,7 +694,7 @@ public sealed partial class Guardian
 
     private async Task<bool> RestartPuckAsync(CancellationToken cancellationToken)
     {
-        if (await FlashingAsync())
+        if (await FlashingAsync() != PanReason.None)
         {
             // Left pending: the next show, hide or retry restarts it once the flash is over.
             _log("Steam Controller not restarted: a firmware update is being flashed");
@@ -811,8 +813,8 @@ public sealed partial class Guardian
     public TimeSpan BootloaderGrace { get; init; } = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// Every restart of the puck passes a few seconds through its bootloader <c>1007</c> (spike #239): one seen this long
-    /// after Pan's own restart is that, not a flash. Steam can't start a flash meanwhile: a hide leaves it only the copy,
+    /// Every restart of the puck passes a few seconds through its bootloader <c>1007</c> (spike #239): a <c>1007</c> alone,
+    /// seen this long after Pan's own restart, is that, not a flash. The controller's <c>1005</c> by cable never is. Steam can't start a flash meanwhile: a hide leaves it only the copy,
     /// and after a show the player first has to start the update in Steam.
     /// </summary>
     public TimeSpan OwnRestartWindow { get; init; } = TimeSpan.FromSeconds(15);
@@ -822,32 +824,34 @@ public sealed partial class Guardian
     private long? _ownRestartMs;
 
     /// <summary>
-    /// Whether a Valve bootloader is connected or was within <see cref="BootloaderGrace"/> (#295): Steam's updater flashes
-    /// a device in its bootloader, and a hide or a restart of the puck now could cut the update off. A list that can't be
-    /// read counts as flashing, like a hide whose devices can't be listed fails.
+    /// Why Pan may not hide or restart the puck now (#295): <see cref="PanReason.BootloaderPresent"/> while a Valve
+    /// bootloader is connected or was within <see cref="BootloaderGrace"/>, as Steam's updater flashes a device there and
+    /// a hide or restart could cut the update off; <see cref="PanReason.HidingFailed"/> when the devices can't be listed
+    /// (nothing is touched then either, but it is a failure, not an update); else None.
     /// </summary>
-    private async Task<bool> FlashingAsync()
+    private async Task<PanReason> FlashingAsync()
     {
-        bool present;
+        IReadOnlyList<string> present;
         try
         {
-            present = await Task.Run(_hiding!.Devices.BootloaderPresent).WaitAsync(_deviceStepTimeout);
+            present = await Task.Run(_hiding!.Devices.PresentBootloaders).WaitAsync(_deviceStepTimeout);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             _log($"Whether a bootloader is connected not known: {ex.Message}");
-            present = true;
+            return PanReason.HidingFailed;
         }
 
         var now = _clock.UnbiasedMilliseconds;
         lock (_lock)
         {
-            if (present && _bootloaderSeenMs is null && _ownRestartMs is { } restarted && now - restarted < OwnRestartWindow.TotalMilliseconds)
+            if (present.Count > 0 && _bootloaderSeenMs is null && present.All(HidingList.IsPuckBootloader)
+                && _ownRestartMs is { } restarted && now - restarted < OwnRestartWindow.TotalMilliseconds)
             {
-                return false;
+                return PanReason.None;
             }
 
-            if (present)
+            if (present.Count > 0)
             {
                 if (_bootloaderSeenMs is null)
                 {
@@ -855,16 +859,16 @@ public sealed partial class Guardian
                 }
 
                 _bootloaderSeenMs = now;
-                return true;
+                return PanReason.BootloaderPresent;
             }
 
             if (_bootloaderSeenMs is { } seen && now - seen < BootloaderGrace.TotalMilliseconds)
             {
-                return true;
+                return PanReason.BootloaderPresent;
             }
 
             _bootloaderSeenMs = null;
-            return false;
+            return PanReason.None;
         }
     }
 

@@ -807,13 +807,26 @@ public sealed class HidingTests : IDisposable
     }
 
     [Fact]
-    public async Task A_bootloader_list_that_cannot_be_read_counts_as_flashing()
+    public async Task A_bootloader_list_that_cannot_be_read_touches_nothing_and_fails_the_hide()
     {
         var generation = await EmulatingAsync();
         _devices.BootloaderFails = true;
 
-        Assert.Equal(PanReason.BootloaderPresent, (await Send(PanCommand.Hide, generation)).Reason);
+        Assert.Equal(PanReason.HidingFailed, (await Send(PanCommand.Hide, generation)).Reason);
         Assert.Equal(0, _devices.Restarts);
+        Assert.Empty(_hidHide.Hidden);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T295-1")]
+    public async Task The_controllers_bootloader_by_cable_is_a_flash_also_right_after_Pans_own_restart()
+    {
+        var generation = await HiddenAsync();
+        _devices.CableBootloader = true;
+
+        Assert.Equal(PanReason.HidingFailed, (await Send(PanCommand.Unhide, generation)).Reason);
+        Assert.Equal(1, _devices.Restarts);
+        Assert.True(Journal.PuckRestartPending);
     }
 
     /// <summary>#308: Windows refuses the restart of a puck Arcadia's SDL holds; Pan's own restarts ask it to let go first.</summary>

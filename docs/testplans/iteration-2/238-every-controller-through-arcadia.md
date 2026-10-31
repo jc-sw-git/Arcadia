@@ -51,10 +51,12 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
       Controller connected, a game with an input view (Steam's controller test) runs: they arrive as DualSense and Xbox
       360 pad. With the gamepad alone, Controller → "Controller zuordnen" → [A]: the box "SPIELE SEHEN" and the modal
       list each model once (two of a model: one row), the Steam Controller row is locked, takes the focus and shows its
-      note, ◀ ▶ do nothing there. ◀ ◀ on the DualSense: the game sees an Xbox 360 pad within 2 s (it reconnects once);
-      ▶ ▶ ▶ on the other: a Switch 2 Pro; ▶ once more ("Nicht übernehmen"): the game sees the real controller, Steam
-      lists it as the real one, never two. B closes, the focus stays on the row. After a restart of Arcadia the choices
-      hold. With the mouse: ✕ closes, a click on ◀ ▶ changes. · E2E: yes (`EveryControllerForGamesTests`, the drawn
+      note, ◀ ▶ do nothing there. Switching layouts back and forth (also across "Nicht übernehmen") changes nothing in the
+      game or Steam, B closes and the next open shows the old layouts. ◀ ◀ on the DualSense, ▶ ▶ and A (A also steps on)
+      on the other, ▼ to [Übernehmen], A: the modal closes, within 2 s the game sees an Xbox 360 pad and a Switch 2 Pro (each reconnects once). Again ▶ on the
+      other ("Nicht übernehmen"), [Übernehmen]: the game sees the real controller, Steam lists it as the real one, never two. The
+      focus stays on the row. After a restart of Arcadia the choices hold. With the mouse: a click on ◀ ▶ changes,
+      [Übernehmen] applies, ✕ closes without. · E2E: yes (`EveryControllerForGamesTests`, the drawn
       modal in `ControllerLayoutsViewTests`), plus by hand
 - [ ] **T238-14** Each other 1:1 kind at hand (DualShock 4, DualSense Edge, Switch 2 Pro; a Switch 1 Pro or GameCube
       pad as a controller without one): the game sees that kind (a pad without one as an Xbox 360 pad), every button by
@@ -79,3 +81,4 @@ History:
 | T238-1, -5 on hardware (part 2) | 2026-10-31 | owner (check script `Run-Check-238-kinds.ps1`) | Windows 11, owner's PC, branch `feat/emulate-kinds-238` at 5176e67, DualSense USB, 8BitDo Ultimate 2 dongle, Steam's controller test, Castlevania Belmont's Curse | ✅ one DualSense of Arcadia's, no second; buttons, analog triggers, sticks, touchpad (position, click), gyro without drift, PS, mute, light bar colour and rumble from the game on the real DualSense. With the 8BitDo added Steam and Arcadia see one DualSense and one Xbox 360 pad, the virtual DualSense is ignored by Arcadia, but `joy.cpl` shows an empty list while the 8BitDo is on, with or without the DualSense | ⚠️ `joy.cpl` empty as soon as the hidden 8BitDo (XInput) is emulated: a part 1 behaviour, Steam and Arcadia see the pads. T238-14 (DualShock 4, Edge, Switch 2 Pro) not run: no such pad at hand |
 | T238-13 (fakes, part 3) | 2026-10-31 | Claude | branch `feat/assign-controllers-238` (part 3), Linux container, Avalonia headless, fake SDL, Pan and VIIPER | ✅ 2 acceptance tests (each made red once by a mutation: layouts not applied, row always shown), 9 new `TakenOverControllersTests`, `ControllerLayoutsTests`, 2 window tests (rings of first, locked and last row, scroll and fades with 8 models, looked at in their captures); full suite green | The real pads, Pan's show on hardware and the game's view only by hand |
 | QE findings of #350 (fakes) | 2026-10-31 | Claude | branch `feat/assign-controllers-238`, Linux container, Avalonia headless, fakes | ✅ a show Pan refuses gives the model no pad and leaves it taken over anew later (`TakenOverControllersTests` red once without the fix); two controllers of one model are one row, also after one goes; the bottom fade covers a cut row at open (looked at in the capture); full suite green (Core 2219, Pan 284, App 483) | – |
+| T238-13 apply on A (fakes) | 2026-10-31 | Claude | branch `feat/assign-controllers-238`, Linux container, Avalonia headless, fakes | ✅ owner's finding (every ◀ ▶ replaced the pad, across "Nicht übernehmen" restarted the real controller): the acceptance test tries layouts, ticks and B without any pad change or show, then A on [Übernehmen] below the rows applies both at once (A on a row steps on); red once with a store per step; ring around [Übernehmen] looked at in its capture | – |

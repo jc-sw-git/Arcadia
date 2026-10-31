@@ -66,8 +66,10 @@ switch.
   Controller", [Zuordnen]; its info panel ends with the box "SPIELE SEHEN" (each connected model → its layout, or "den
   echten Controller (nicht übernommen)"). [Zuordnen] opens a modal with one row per connected model (its default as
   subtitle "Vorgabe: …"): ▲ ▼ moves, ◀ ▶ cycles Xbox 360 Controller, DualShock 4, DualSense, (DualSense Edge only for
-  an Edge,) Switch 2 Pro Controller, "Nicht übernehmen" (wraps) and applies at once, B closes (✕ with mouse or
-  keyboard). The Steam Controller's row ("Steam Controller (Modus „Arcadia“)") is locked to Xbox 360 Controller and
+  an Edge,) Switch 2 Pro Controller, "Nicht übernehmen" (wraps), as does A on a row, without applying. Below the rows the button
+  [Übernehmen] (▲ ▼ reach it, A or a click) is the only way to apply: all changes once, then it closes. B (✕) closes
+  without them. Not at once: each applied change replaces the pad,
+  and "Nicht übernehmen" and back restart the real controller, which Steam announces each time. The Steam Controller's row ("Steam Controller (Modus „Arcadia“)") is locked to Xbox 360 Controller and
   takes the focus; its note shows while focused (#336 lets it choose). Stored per model (USB ids), for every controller
   of it, kept across restarts; choosing the default stores nothing. The modal closes when the row goes.
 - After "Controller freigeben" for a firmware update, the switch reads "An – Steam Controller und Puck freigegeben, bis

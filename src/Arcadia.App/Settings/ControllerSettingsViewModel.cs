@@ -277,7 +277,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             () => _pan.ConnectedModels,
             () => _pan.SteamControllerConnected,
             model => ControllerLayouts.Find(_changes.Current.ControllerLayouts, model),
-            ChooseLayout,
+            ApplyLayouts,
             CloseLayouts);
         Dialog = Layouts;
         AppLog.Write("Controller zuordnen: geöffnet");
@@ -295,11 +295,19 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         Dialog = Prompt == SettingsPrompt.None ? null : this;
     }
 
-    /// <summary>Applies at the emulation's next tick (every 2 s); the row's info panel shows it at once.</summary>
-    private void ChooseLayout(ControllerModel model, ControllerLayout? layout)
+    /// <summary>
+    /// A in the modal: all changes in one save, so the emulation's next tick (every 2 s) applies them together; the row's
+    /// info panel shows them at once.
+    /// </summary>
+    private void ApplyLayouts(IReadOnlyList<(ControllerModel Model, ControllerLayout? Layout)> changes)
     {
-        _changes.Apply(settings => settings.WithControllerLayout(ControllerLayouts.Key(model), layout is { } chosen ? ControllerLayouts.Value(chosen) : null), "Controller zuordnen");
-        AppLog.Write($"Controller zuordnen: {model} → {(layout is { } shown ? ControllerLayouts.DisplayName(shown) : "Vorgabe")}");
+        _changes.Apply(settings => changes.Aggregate(settings, (current, change) =>
+            current.WithControllerLayout(ControllerLayouts.Key(change.Model), change.Layout is { } chosen ? ControllerLayouts.Value(chosen) : null)), "Controller zuordnen");
+        foreach (var (model, layout) in changes)
+        {
+            AppLog.Write($"Controller zuordnen: {model} → {(layout is { } shown ? ControllerLayouts.DisplayName(shown) : "Vorgabe")}");
+        }
+
         Refresh();
     }
 

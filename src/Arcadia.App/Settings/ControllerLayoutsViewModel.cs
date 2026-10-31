@@ -68,15 +68,18 @@ public sealed partial class ControllerLayoutRowViewModel : ViewModelBase
 
 /// <summary>
 /// The modal "Controller zuordnen" (#238 D3a, designs T238Modal, flow T238F01–F04, F08, F09): one row per connected
-/// controller model, ▲ ▼ moves the focus, ◀ ▶ cycles its layouts and "Nicht übernehmen" (wrapping) and applies at once,
-/// B closes. The Steam Controller is listed locked to Xbox 360 (#336). Rows follow controllers coming and going while it
-/// is open; the focus stays on its model.
+/// controller model and the button [Übernehmen] below them. ▲ ▼ moves the focus; on a row ◀ ▶ (and A forwards) cycle
+/// its layouts and "Nicht übernehmen" (wrapping); A on [Übernehmen] applies the changes; B closes without them. Applied only on A, so trying layouts doesn't replace pads or restart the real controller
+/// (a show and a hide each do) at every step. The Steam Controller is listed locked to Xbox 360 (#336). Rows follow
+/// controllers coming and going while it is open, keeping what was picked; the focus stays on its model.
 /// </summary>
 public sealed partial class ControllerLayoutsViewModel : ViewModelBase
 {
     public const string Title = "Controller zuordnen";
     public const string Text = "Lege fest, welches Controller-Layout deine verbundenen Controller erhalten. Das Layout gilt pro Modell, nicht pro Controller: Alle DualSense Controller bekommen also dasselbe Layout.";
-    public const string Hint = "Die Änderung gilt sofort. Läuft gerade ein Spiel, verbindet sich der Controller dort einmal neu.";
+    public const string Hint = "Erst „Übernehmen“ wendet die Änderungen an. Läuft gerade ein Spiel, verbindet sich der Controller dort einmal neu.";
+    public const string ApplyText = "Übernehmen";
+    private const string ApplyKey = "apply";
     public const string LockNote = "Der Arcadia-Modus für den Steam Controller ist bisher auf das Xbox 360 Layout begrenzt. Ein Update wird das ändern.";
     public const string SteamControllerTitle = "Steam Controller (Modus „Arcadia“)";
     public const string SteamControllerKey = "steam-controller";
@@ -84,21 +87,21 @@ public sealed partial class ControllerLayoutsViewModel : ViewModelBase
     private readonly Func<IReadOnlyList<ConnectedModel>> _models;
     private readonly Func<bool> _steamControllerConnected;
     private readonly Func<ControllerModel, ControllerLayout?> _chosen;
-    private readonly Action<ControllerModel, ControllerLayout?> _choose;
+    private readonly Action<IReadOnlyList<(ControllerModel Model, ControllerLayout? Layout)>> _apply;
     private readonly Action _close;
     private readonly Dictionary<string, ConnectedModel> _byKey = [];
     private int _focus = -1;
 
     /// <param name="models">The models connected now, but the Steam Controller.</param>
     /// <param name="chosen">The stored choice of a model; null: its default.</param>
-    /// <param name="choose">Stores a choice; null puts the model back on its default.</param>
+    /// <param name="apply">Stores the changed choices at once; a null layout puts the model back on its default.</param>
     public ControllerLayoutsViewModel(Func<IReadOnlyList<ConnectedModel>> models, Func<bool> steamControllerConnected,
-        Func<ControllerModel, ControllerLayout?> chosen, Action<ControllerModel, ControllerLayout?> choose, Action close)
+        Func<ControllerModel, ControllerLayout?> chosen, Action<IReadOnlyList<(ControllerModel Model, ControllerLayout? Layout)>> apply, Action close)
     {
         _models = models;
         _steamControllerConnected = steamControllerConnected;
         _chosen = chosen;
-        _choose = choose;
+        _apply = apply;
         _close = close;
         Refresh();
     }
@@ -112,6 +115,17 @@ public sealed partial class ControllerLayoutsViewModel : ViewModelBase
     /// <summary>The footer names ◀ ▶ only where they change something.</summary>
     public bool CanChange => FocusedRow is { IsLocked: false };
 
+    /// <summary>The focus is on [Übernehmen], below the rows.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOnRow))]
+    public partial bool IsApplyFocused { get; private set; }
+
+    /// <summary>The footer names ▲ ▼'s rows, not [Übernehmen].</summary>
+    public bool IsOnRow => !IsApplyFocused;
+
+    /// <summary>Rows, then [Übernehmen].</summary>
+    private int FocusCount => Rows.Count + 1;
+
     /// <summary>The focus moved: the view keeps the row in sight.</summary>
     public event EventHandler? FocusMoved;
 
@@ -120,15 +134,21 @@ public sealed partial class ControllerLayoutsViewModel : ViewModelBase
         switch (action)
         {
             case UiAction.Up:
-                FocusAt(ListFocus.Move(_focus, -1, Rows.Count));
+                FocusAt(ListFocus.Move(_focus, -1, FocusCount));
                 break;
             case UiAction.Down:
-                FocusAt(ListFocus.Move(_focus, 1, Rows.Count));
+                FocusAt(ListFocus.Move(_focus, 1, FocusCount));
                 break;
             case UiAction.Left when FocusedRow is { } row:
                 Step(row, -1);
                 break;
             case UiAction.Right when FocusedRow is { } row:
+                Step(row, 1);
+                break;
+            case UiAction.Accept when IsApplyFocused:
+                Apply();
+                break;
+            case UiAction.Accept when FocusedRow is { } row:
                 Step(row, 1);
                 break;
             case UiAction.Back:
@@ -157,8 +177,12 @@ public sealed partial class ControllerLayoutsViewModel : ViewModelBase
         {
             var key = ControllerLayouts.Key(model.Model);
             _byKey[key] = model;
-            var row = previous.GetValueOrDefault(key) ?? new ControllerLayoutRowViewModel(key, model.Name, Default(model.DefaultKind), isLocked: false, Step, Focus);
-            Show(row, Current(model));
+            if (previous.GetValueOrDefault(key) is not { } row)
+            {
+                row = new ControllerLayoutRowViewModel(key, model.Name, Default(model.DefaultKind), isLocked: false, Step, Focus);
+                Show(row, Current(model));
+            }
+
             rows.Add(row);
         }
 
@@ -171,11 +195,33 @@ public sealed partial class ControllerLayoutsViewModel : ViewModelBase
             }
         }
 
-        FocusAt(ListFocus.Keep(focusedKey, Math.Max(0, _focus), [.. Rows.Select(row => row.Key)]), force: true);
+        FocusAt(ListFocus.Keep(IsApplyFocused ? ApplyKey : focusedKey, Math.Max(0, _focus), [.. Rows.Select(row => row.Key), ApplyKey]), force: true);
     }
 
     [RelayCommand]
     private void Close() => _close();
+
+    /// <summary>Stores what changed, once per model, and closes.</summary>
+    [RelayCommand]
+    private void Apply()
+    {
+        List<(ControllerModel, ControllerLayout?)> changed = [];
+        foreach (var row in Rows)
+        {
+            if (_byKey.TryGetValue(row.Key, out var model) && row.Layout != Current(model))
+            {
+                // The default is stored as no choice: the model follows its own kind (D3b).
+                changed.Add((model.Model, row.Layout == ControllerLayout.Of(model.DefaultKind) ? null : row.Layout));
+            }
+        }
+
+        if (changed.Count > 0)
+        {
+            _apply(changed);
+        }
+
+        _close();
+    }
 
     private static string Default(PadKind kind) => $"Vorgabe: {PadKinds.DisplayName(kind)}";
 
@@ -197,11 +243,7 @@ public sealed partial class ControllerLayoutsViewModel : ViewModelBase
         }
 
         var choices = ControllerLayouts.Choices(model.DefaultKind);
-        var next = choices[ListFocus.Cycle(Math.Max(0, IndexOf(choices, row.Layout)), delta, choices.Count)];
-        Show(row, next);
-
-        // The default is stored as no choice: the model follows its own kind (D3b).
-        _choose(model.Model, next == ControllerLayout.Of(model.DefaultKind) ? null : next);
+        Show(row, choices[ListFocus.Cycle(Math.Max(0, IndexOf(choices, row.Layout)), delta, choices.Count)]);
     }
 
     private static int IndexOf(IReadOnlyList<ControllerLayout> choices, ControllerLayout layout)
@@ -227,6 +269,7 @@ public sealed partial class ControllerLayoutsViewModel : ViewModelBase
             return;
         }
 
+        IsApplyFocused = index == Rows.Count;
         if (FocusedRow is { } previous && previous != row)
         {
             previous.IsFocused = false;

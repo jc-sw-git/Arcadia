@@ -82,6 +82,7 @@ reason; `WaitingForTool` those whose vendor's firmware tool runs (Xbox Zubehör,
   `ControllerLayouts.Find`, which ignores anything else in the file. `TakenOverControllers.LayoutOf` reads it each tick.
 - A kind is used only where the model may be it (`ControllerLayouts.Choices`: the Edge only for an Edge), else its own.
   A pad of another kind than chosen is unplugged at the next tick and the chosen one plugged (the game sees it change once).
+  The modal stores only on [Übernehmen], all changes in one save, so trying layouts never replaces pads or shows and hides.
 - "Nicht übernehmen": the model is never hidden, starts no emulation on its own and isn't named in the D7/D8 rows. A
   hidden one has its pads unplugged first, then Arcadia lets go of every controller and Pan shows it
   (`ShowController`, [pan-hiding-controllers.md](pan-hiding-controllers.md)). A show Pan refuses gets no pad either: Pan

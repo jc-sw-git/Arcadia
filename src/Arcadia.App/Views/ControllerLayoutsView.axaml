@@ -6,8 +6,8 @@
              x:Class="Arcadia.App.Views.ControllerLayoutsView"
              x:DataType="settings:ControllerLayoutsViewModel">
 
-  <!-- "Controller zuordnen" (#238 D3a, designs T238Modal): one row per connected model, ▲ ▼ moves, ◀ ▶ changes and
-       applies at once, B closes. The rows scroll with the focus and fade where more follow (ControllerLayoutsView.axaml.cs). -->
+  <!-- "Controller zuordnen" (#238 D3a, designs T238Modal): one row per connected model and [Übernehmen], ▲ ▼ moves, ◀ ▶
+       or A change a row, A on [Übernehmen] applies, B closes without the changes. The rows scroll with the focus and fade where more follow (ControllerLayoutsView.axaml.cs). -->
   <Panel>
     <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
             Command="{Binding CloseCommand}" />
@@ -71,11 +71,17 @@
           </Panel>
 
           <TextBlock Classes="layoutsHint" Text="{x:Static settings:ControllerLayoutsViewModel.Hint}" />
+          <!-- The only way to apply: A here, or a click (B and ✕ close without the changes). -->
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Button Name="ApplyButton" Classes="plain action primaryAction" Classes.focused="{Binding IsApplyFocused}"
+                    Content="{x:Static settings:ControllerLayoutsViewModel.ApplyText}" Command="{Binding ApplyCommand}" />
+          </StackPanel>
           <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-              <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="Controller" />
+              <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="Auswählen" />
               <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Ändern" IsVisible="{Binding CanChange}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="Schließen" />
+              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Übernehmen" IsVisible="{Binding IsApplyFocused}" />
+              <ctl:KeyHint Pad="B" Keys="Esc" Text="Abbrechen" />
             </StackPanel>
           </Border>
         </StackPanel>

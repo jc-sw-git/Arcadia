@@ -346,8 +346,8 @@ public sealed class EveryControllerForGamesTests
 
     /// <summary>
     /// #238 part 3 (D3a, scenario 7): with the gamepad alone the player makes the DualSense an Xbox 360 pad and the
-    /// GameCube controller a Switch 2 Pro, then leaves it to games; each applies at the next tick, B closes, and the
-    /// choices are kept after a restart. The Steam Controller's row can't be changed.
+    /// GameCube controller a Switch 2 Pro, then leaves it to games; nothing changes while trying layouts or after B, A on
+    /// [Übernehmen] applies at the next tick, and the choices are kept after a restart. The Steam Controller's row can't be changed.
     /// </summary>
     [AvaloniaFact]
     [Trait("TestCase", "T238-13")]
@@ -379,29 +379,48 @@ public sealed class EveryControllerForGamesTests
         Assert.False(layouts.CanChange);
         Assert.Equal("Xbox 360 Controller", layouts.Rows[0].ValueText);
 
-        // DualSense ◀ ◀: DualShock 4, then Xbox 360 Controller.
+        // Trying layouts changes nothing yet: DualSense ◀ ◀ (DualShock 4, Xbox 360 Controller), GameCube ◀ to
+        // "Nicht übernehmen" and ◀ again. B closes without them.
         arcadia.Press(UiAction.Down).Press(UiAction.Left, times: 2);
         Assert.True(layouts.CanChange);
         Assert.Equal("Xbox 360 Controller", layouts.Rows[1].ValueText);
-        await arcadia.TickSteamControllerAsync();
-        Assert.Equal([PadKind.Xbox360, PadKind.Xbox360], PluggedKinds(arcadia, steamControllerPad));
-
-        // GameCube ▶ ▶ ▶: DualShock 4, DualSense, Switch 2 Pro Controller.
-        arcadia.Press(UiAction.Down).Press(UiAction.Right, times: 3);
+        arcadia.Press(UiAction.Down).Press(UiAction.Left).Press(UiAction.Left);
         Assert.Equal("Switch 2 Pro Controller", layouts.Rows[2].ValueText);
+        var padsPlugged = arcadia.XboxPads.All.Count;
+        await arcadia.TickSteamControllerAsync();
+        Assert.Equal(padsPlugged, arcadia.XboxPads.All.Count);
+        Assert.Empty(arcadia.Pan.ControllerShows);
+        arcadia.Press(UiAction.Back);
+        Assert.Null(controller.Dialog);
+        layouts = OpenLayouts(arcadia, controller);
+        Assert.Equal(["DualSense", "Xbox 360 Controller"], layouts.Rows.Skip(1).Select(row => row.ValueText));
+
+        // DualSense ◀ ◀ to Xbox 360 Controller, GameCube ▶ ▶ and A, which steps on too (DualShock 4, DualSense,
+        // Switch 2 Pro Controller); A on [Übernehmen] below the rows applies both at the next tick, each pad replaced once.
+        arcadia.Press(UiAction.Down).Press(UiAction.Left, times: 2);
+        arcadia.Press(UiAction.Down).Press(UiAction.Right, times: 2).Press(UiAction.Accept);
+        Assert.Equal("Switch 2 Pro Controller", layouts.Rows[2].ValueText);
+        Assert.NotNull(controller.Dialog);
+        arcadia.Press(UiAction.Down);
+        Assert.True(layouts.IsApplyFocused);
+        Assert.False(layouts.CanChange);
+        arcadia.Press(UiAction.Left).Press(UiAction.Accept);
+        Assert.Null(controller.Dialog);
         await arcadia.TickSteamControllerAsync();
         Assert.Equal([PadKind.Xbox360, PadKind.Switch2Pro], PluggedKinds(arcadia, steamControllerPad));
+        Assert.Equal(padsPlugged + 2, arcadia.XboxPads.All.Count);
 
-        // ▶ once more: "Nicht übernehmen". Its pad goes, then Pan shows the real controller to games.
-        arcadia.Press(UiAction.Right);
+        // GameCube ▶ once more: "Nicht übernehmen". Its pad goes, then Pan shows the real controller to games.
+        layouts = OpenLayouts(arcadia, controller);
+        arcadia.Press(UiAction.Down, times: 2).Press(UiAction.Right);
         Assert.Equal("Nicht übernehmen", layouts.Rows[2].ValueText);
+        arcadia.Press(UiAction.Down).Press(UiAction.Accept);
         await arcadia.TickSteamControllerAsync();
         Assert.Equal([PadKind.Xbox360], PluggedKinds(arcadia, steamControllerPad));
         Assert.Contains("1 057E:0337", arcadia.Pan.ControllerShows);
         Assert.False(steamControllerPad.IsUnplugged);
 
-        // B closes the modal, not the page; the focus stays on the row, whose panel says what games see now.
-        arcadia.Press(UiAction.Back);
+        // The modal closed, not the page; the focus stays on the row, whose panel says what games see now.
         Assert.Null(controller.Dialog);
         Assert.Same(controller, arcadia.Main.Settings?.Selected);
         Assert.Equal(PanRows.LayoutsKey, controller.FocusedRow?.Key);

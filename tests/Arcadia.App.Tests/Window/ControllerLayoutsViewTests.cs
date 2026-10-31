@@ -109,5 +109,12 @@ public sealed class ControllerLayoutsViewTests
         Assert.DoesNotContain("shown", Fade(arcadia, "FadeBottom").Classes);
         Keep(arcadia, "layouts-many-end");
         RingGeometry.AssertNoRingCutOff(arcadia.Window, () => arcadia.Settle().WaitForTransitions(), "Controller zuordnen, viele");
+
+        // Below the last row: [Übernehmen], the only way to apply.
+        arcadia.Press(UiAction.Down);
+        arcadia.Settle();
+        Assert.True(layouts.IsApplyFocused);
+        arcadia.AssertRingAround(Assert.Single(arcadia.Window.GetVisualDescendants().OfType<Button>(), button => button.Name == "ApplyButton"), "Übernehmen");
+        Keep(arcadia, "layouts-apply");
     }
 }

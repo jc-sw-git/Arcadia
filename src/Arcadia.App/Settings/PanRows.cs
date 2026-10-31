@@ -255,7 +255,7 @@ public sealed class PanRows
     /// <summary>First in the panel, before everything else (artboard T326S01): why switching on asks Windows; why the last update failed.</summary>
     private InfoBlock[] UpdateInfo() =>
         _updating ? [new InfoNote(PanUpdatePageViewModel.PromptHint, HealthSeverity.Info)]
-        : [new InfoNote(UpdateDueInfo, HealthSeverity.Info), .. _support.PanUpdateError is { } error ? [new InfoError(error)] : Array.Empty<InfoBlock>()];
+        : [new InfoNote(UpdateDueInfo, HealthSeverity.Info) { IsBold = true }, .. _support.PanUpdateError is { } error ? [new InfoError(error)] : Array.Empty<InfoBlock>()];
 
     private string Subtitle(PanEmulationStatus status, bool allMissing, bool installFailed, bool problem, string? game, bool excluded, bool updateDue) =>
         (allMissing, IsOn) switch

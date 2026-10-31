@@ -34,6 +34,7 @@ its file.
 | [304-own-viiper-loopback-auth.md](304-own-viiper-loopback-auth.md) | #304 | Run only Arcadia's own VIIPER, on loopback, with Windows-assigned ports and API auth | 12 |
 | [326-announce-the-pan-update-and-let-the-player-decline-it.md](326-announce-the-pan-update-and-let-the-player-decline-it.md) | #326 | Announce the Pan update before the Windows prompt opens, and let the player decline it | 11 |
 | [335-pan-hides-every-controller.md](335-pan-hides-every-controller.md) | #335 | Pan hides every controller Arcadia takes over | 5 |
+| [340-pan-stopping-page-names-the-usual-30-seconds.md](340-pan-stopping-page-names-the-usual-30-seconds.md) | #340 | Say on the "Pan wird beendet" page that the old Pan ends after about 30 seconds | 4 |
 
 ## Exploratory test
 
@@ -53,6 +54,7 @@ Charter: –. Time box: –. Findings: –.
 | T210-1 to T210-3 | `tests/Arcadia.App.Tests/RoutingTests.cs` |
 | T242-8, T242-10 to T242-16, T242-20 to T242-25 | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `SteamControllerModeTests.cs`, `Window/HoldButtonFillTests.cs` (T242-20, the fill) |
 | T297-2 (within T326-4), T297-4; T326-1 to T326-8 | `tests/Arcadia.App.Tests/PanUpdateAtStartTests.cs` |
+| T340-1, T340-2, T340-4 | `tests/Arcadia.App.Tests/Window/PanStoppingViewTests.cs`, `PanUpdateAtStartTests.cs` (within T326-2, T326-4, T326-6) |
 | T214-1 to T214-8, T214-11; T214-10 | `tests/Arcadia.App.Tests/SisrRemovalTests.cs`; `SteamControllerModeTests.cs` |
 | T215-1 to T215-6 | `tests/Arcadia.App.Tests/Window/ButtonSymbolsTests.cs` |
 | T308-2, T308-3 | `tests/Arcadia.App.Tests/PanEmulationTests.cs` |

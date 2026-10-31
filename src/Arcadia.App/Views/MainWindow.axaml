@@ -1742,6 +1742,7 @@
             <Panel Width="200" Height="200" HorizontalAlignment="Center" IsVisible="{Binding IsCountingDown}">
               <Path Classes="spinner large"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
               <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="{x:Static vm:PanUpdatePageViewModel.CountdownCaption}" FontSize="15" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding SecondsLeft}" FontSize="52" FontWeight="ExtraBold" HorizontalAlignment="Center" />
                 <TextBlock Text="Sekunden" FontSize="15" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" />
               </StackPanel>

@@ -76,9 +76,21 @@ While the emulation runs, `NotHidden` lists every controller Pan rejected or tha
 reason; `WaitingForTool` those whose vendor's firmware tool runs (Xbox Zubehör, DualSense-Firmware-Updater).
 `PanRows` turns them into the info row "… lässt sich nicht verstecken" and one warning row per tool.
 
+## Controller zuordnen (part 3, D3a)
+
+- `AppSettings.ControllerLayouts`: per model ("054C:0CE6") a kind's name or "NotTakenOver"; read by
+  `ControllerLayouts.Find`, which ignores anything else in the file. `TakenOverControllers.LayoutOf` reads it each tick.
+- A kind is used only where the model may be it (`ControllerLayouts.Choices`: the Edge only for an Edge), else its own.
+  A pad of another kind than chosen is unplugged at the next tick and the chosen one plugged (the game sees it change once).
+- "Nicht übernehmen": the model is never hidden, starts no emulation on its own and isn't named in the D7/D8 rows. A
+  hidden one has its pads unplugged first, then Arcadia lets go of every controller and Pan shows it
+  (`ShowController`, [pan-hiding-controllers.md](pan-hiding-controllers.md)). A show Pan refuses leaves it hidden and
+  emulated (the controller keeps working in games) until it reconnects or the emulation starts anew.
+- `Connected` lists one entry per connected model (excluded ones too) for the modal, also while Pan is off.
+
 ## Not done yet
 
-The "Controller zuordnen" modal (part 3) and the latency budget (D9, part 4) follow in #238's later parts. Not
+The latency budget (D9) follows in #238's part 4. Not
 verified on hardware yet: the button bits of the Switch 2 Pro's C and the Edge's paddles as SDL maps them, the
 Switch 2 Pro's stick calibration with VIIPER's zeroed flash. Not detected: VIIPER refusing another pad (no free slot). `ReleaseForFirmware` ends
 the whole emulation, so the other controllers' pads are replugged too.

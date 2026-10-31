@@ -61,6 +61,15 @@ switch.
   sobald du … schließt", box "WARTET AUF ÜBERNAHME"), gone once the tool has ended; then, with the blue i, one row for
   the connected controllers Pan couldn't hide: "<Name> lässt sich nicht verstecken" / "<n> Controller lassen sich nicht
   verstecken", box "BETROFFEN" with each name and why. Not shown while Pan is off (the player chose that).
+- "Controller zuordnen" (#238 D3a, designs T238Settings, T238Modal): indented below those rows, above "Controller
+  wiederherstellen", while Pan is on and any controller is connected; subtitle "Ändere das Layout deiner angeschlossenen
+  Controller", [Zuordnen]; its info panel ends with the box "SPIELE SEHEN" (each connected model → its layout, or "den
+  echten Controller (nicht übernommen)"). [Zuordnen] opens a modal with one row per connected model (its default as
+  subtitle "Vorgabe: …"): ▲ ▼ moves, ◀ ▶ cycles Xbox 360 Controller, DualShock 4, DualSense, (DualSense Edge only for
+  an Edge,) Switch 2 Pro Controller, "Nicht übernehmen" (wraps) and applies at once, B closes (✕ with mouse or
+  keyboard). The Steam Controller's row ("Steam Controller (Modus „Arcadia“)") is locked to Xbox 360 Controller and
+  takes the focus; its note shows while focused (#336 lets it choose). Stored per model (USB ids), for every controller
+  of it, kept across restarts; choosing the default stores nothing. The modal closes when the row goes.
 - After "Controller freigeben" for a firmware update, the switch reads "An – Steam Controller und Puck freigegeben, bis
   du Pan aus- und wieder einschaltest" (no triangle, no row below); switching Pan off and on, or a restart of Arcadia,
   takes them over again. While Steam flashes a firmware update, the switch reads "Wird eingerichtet …" (no triangle)

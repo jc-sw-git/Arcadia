@@ -17,6 +17,8 @@ within T326-2 and T326-6; T340-4 within T326-4, the bold style is the one of #31
 - [x] **T340-3** At 200 % Windows scaling the text wraps inside the dialog and nothing is clipped; with the real old
       Pan the library comes after about 30 s, as `pan.log` shows ("No client for 30 s: stopping"). · E2E: no (real
       Pan service and Windows scaling)
+- [x] **T340-4** Another Pan installed, Pan off: Einstellungen → Controller, info panel of "Controller-Wächter (Pan)":
+      the blue box "Schaltest du den Controller-Wächter ein, …" is in bold, as the note on Steam's page. · E2E: yes
 
 History:
 

@@ -76,12 +76,15 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         SteamControllerXboxPad? padForPresence = null;
         SteamControllerRouting? routingForCopy = null;
         var filter = new SteamControllerCopyFilter(time, Services.AppLog.Write);
-        // Its own combo state: the copy reads it on its reader thread, the pad on the polling thread.
-        var copyCombos = new CombosFromSettings(settings);
-        var hold = copy(new SteamControllerCopyWiring(
-            filter,
-            () => routingForCopy is { } route && SteamControllerCopyRules.CopyPasses(route.Current, new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront())),
-            copyCombos.Current));
+        // Its own combo state: the copy reads it on its reader thread, the pad on the polling thread. With Steam's desktop
+        // layout in use, ⧉ + ≡ reaches Steam too, as from any other controller (#315).
+        var copyCombos = new CombosFromSettings(settings, toSteam: true);
+        var gate = new SteamControllerCopyGate(
+            () => routingForCopy?.Current,
+            () => new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront()),
+            () => settings.Current.IgnoreSteamDesktopLayout,
+            Services.AppLog.Write);
+        var hold = copy(new SteamControllerCopyWiring(filter, gate.Passes, copyCombos.Current));
         var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
         {
             Supported = panSupported,
@@ -101,11 +104,11 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             () => emulation.Status.State == PanEmulationState.Running,
             Services.AppLog.Write);
         routingForCopy = routing;
-        var combos = new CombosFromSettings(settings);
+        var combos = new CombosFromSettings(settings, toSteam: false);
         var pad = new SteamControllerXboxPad(emulation, time, Services.AppLog.Write)
         {
             Wanted = () => routing.Current.PadWanted,
-            ForwardingAllowed = () => SteamControllerCopyRules.PadPasses(routing.Current, new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront())),
+            ForwardingAllowed = () => SteamControllerCopyRules.PadPasses(routing.Current, new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront()), settings.Current.IgnoreSteamDesktopLayout),
             Combos = combos.Current,
             FeedAlive = guardian.Pulse,
         };
@@ -200,7 +203,8 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     };
 
     /// <summary>Read on every poll; rebuilt only when the settings changed.</summary>
-    private sealed class CombosFromSettings(SettingsService settings)
+    /// <param name="toSteam">For the copy: while Steam's desktop layout is not ignored, Steam gets ⧉ + ≡ (#315).</param>
+    private sealed class CombosFromSettings(SettingsService settings, bool toSteam)
     {
         private AppSettings? _from;
         private ComboWithholdingOptions _options = new(false);
@@ -211,7 +215,10 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             if (!ReferenceEquals(current, _from))
             {
                 _from = current;
-                _options = new ComboWithholdingOptions(current.MouseMode.Activation != MouseModeActivation.Off);
+                var mouseModeCanSwitch = current.MouseMode.Activation != MouseModeActivation.Off;
+                _options = toSteam
+                    ? SteamControllerCopyRules.CombosKeptFromSteam(mouseModeCanSwitch, current.IgnoreSteamDesktopLayout)
+                    : new ComboWithholdingOptions(mouseModeCanSwitch);
             }
 
             return _options;

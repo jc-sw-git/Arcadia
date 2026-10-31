@@ -264,7 +264,8 @@ public sealed class LauncherControllerModeTests
         var launchers = arcadia.OpenLauncherSettings();
         ModeRow(arcadia, launchers, "steam");
 
-        Assert.Equal(ModeKey, launchers.Rows[^1].Key);
+        // Below the group "Controller" only "Desktop-Steuerung" (#315).
+        Assert.Equal([ModeKey, SteamDesktopLayoutRowViewModel.RowKey], launchers.Rows.TakeLast(2).Select(row => row.Key));
         Assert.DoesNotContain(launchers.Rows, row => row.Title == "Controller-Einstellungen für Steam");
     }
 

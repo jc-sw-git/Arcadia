@@ -30,6 +30,7 @@ its file.
 | [280-steam-sign-in-on-steams-login-page.md](280-steam-sign-in-on-steams-login-page.md) | #280 | Steam sign-in on Steam's own login page | 11 |
 | [277-detect-a-steam-game-start-that-steam-refused.md](277-detect-a-steam-game-start-that-steam-refused.md) | #277 | Detect a Steam game start that Steam refused | 7 |
 | [178-steam-controller-mode-default-per-launcher.md](178-steam-controller-mode-default-per-launcher.md) | #178 | Choose the Steam Controller mode default per launcher | 12 |
+| [315-steam-desktop-layout-on-steams-page.md](315-steam-desktop-layout-on-steams-page.md) | #315 | "Steams Desktop-Steuerung zulassen" on Steam's page, alike for every controller | 7 |
 | [304-own-viiper-loopback-auth.md](304-own-viiper-loopback-auth.md) | #304 | Run only Arcadia's own VIIPER, on loopback, with Windows-assigned ports and API auth | 12 |
 | [326-announce-the-pan-update-and-let-the-player-decline-it.md](326-announce-the-pan-update-and-let-the-player-decline-it.md) | #326 | Announce the Pan update before the Windows prompt opens, and let the player decline it | 11 |
 | [335-pan-hides-every-controller.md](335-pan-hides-every-controller.md) | #335 | Pan hides every controller Arcadia takes over | 5 |
@@ -62,4 +63,5 @@ Charter: –. Time box: –. Findings: –.
 | T278-2 to T278-5 (faked Steam) | `tests/Arcadia.App.Tests/SteamInstallTests.cs` |
 | T278-8 (faked launcher) | `tests/Arcadia.App.Tests/GameStartTests.cs` |
 | T178-1 to T178-9; T178-10 | `tests/Arcadia.App.Tests/LauncherControllerModeTests.cs`; `Window/LauncherControllerModeViewTests.cs` |
+| T315-1, T315-3, T315-4 | `tests/Arcadia.App.Tests/SteamDesktopLayoutTests.cs` |
 | T335-4, T335-5 | `tests/Arcadia.Pan.Tests/ControllerHidingTests.cs`, `tests/Arcadia.Core.Tests/PanClientTests.cs` |

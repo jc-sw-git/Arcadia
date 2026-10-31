@@ -7,7 +7,7 @@ using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;
 
-/// <summary>The group "Steam" in the category "Controller" (#169); the link to it from Steam's launcher page went with #178.</summary>
+/// <summary>The category "Controller" without the group "Steam" (#169, #315); the link to it from Steam's launcher page went with #178.</summary>
 public sealed class SteamSettingsGroupTests
 {
     private static readonly LauncherSpec[] WithSteam =
@@ -26,9 +26,9 @@ public sealed class SteamSettingsGroupTests
 
         var keys = controller.Rows.Select(row => row.Key).ToList();
         // "Controller wiederherstellen" (#243) stands below the switch, indented like its problems, while Pan is installed.
-        Assert.Equal(["pan", "pan-restore", "steam-desktop-layout", "mouse-mode"], keys.Take(4));
+        // "Steams Desktop-Belegung ignorieren" moved to Steam's launcher page (#315).
+        Assert.Equal(["pan", "pan-restore", "mouse-mode"], keys.Take(3));
         Assert.All(controller.Rows.Take(2), row => Assert.Equal("PAN", row.Group));
-        Assert.Equal("STEAM", controller.Rows[2].Group);
         Assert.DoesNotContain(controller.Rows, row => row.Group == "STEAM CONTROLLER");
 
         // ▼ walks the rows in this order, ▲ back; B leaves the settings.
@@ -42,24 +42,6 @@ public sealed class SteamSettingsGroupTests
         Assert.Equal("pan", arcadia.Main.Settings!.FocusedRow?.Key);
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsSettingsOpen);
-    }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "T169-2")]
-    public async Task Steams_desktop_layout_is_no_dependent_and_switches_with_the_mouse_mode_off()
-    {
-        var settings = Launchers() with { MouseMode = new MouseModeSettings { Activation = MouseModeActivation.Off } };
-        using var arcadia = await ArcadiaDriver.StartAsync(settings: settings, steam: new FakeSteam());
-        var controller = OpenController(arcadia);
-        var layout = controller.Rows.Single(row => row.Key == "steam-desktop-layout");
-
-        Assert.Equal(0, layout.Indent);
-        Assert.False(layout.IsDimmed);
-        var before = arcadia.Settings.Current.IgnoreSteamDesktopLayout;
-        arcadia.Press(UiAction.Down, times: 2);
-        Assert.Same(layout, arcadia.Main.Settings!.FocusedRow);
-        arcadia.Press(before ? UiAction.Left : UiAction.Right);
-        Assert.NotEqual(before, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
     }
 
     [AvaloniaFact]
@@ -80,11 +62,6 @@ public sealed class SteamSettingsGroupTests
         launchers.SelectCommand!.Execute(null);
         Assert.Null(launchers.PageLauncherId);
     }
-
-    private static AppSettings Launchers() => new()
-    {
-        ActiveLaunchers = [.. ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id)],
-    };
 
     /// <summary>≡, then RB to "Controller".</summary>
     private static ControllerSettingsViewModel OpenController(ArcadiaDriver arcadia)

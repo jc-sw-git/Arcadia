@@ -19,11 +19,26 @@ public static class ButtonTextBlock
     public static readonly AttachedProperty<string?> ButtonsProperty =
         AvaloniaProperty.RegisterAttached<TextBlock, string?>("Buttons", typeof(ButtonTextBlock));
 
+    /// <summary>A fixed printing for every badge of the text (<see cref="PadGlyph.Symbols"/>); null follows the controller in use.</summary>
+    public static readonly AttachedProperty<ButtonSymbols?> SymbolsProperty =
+        AvaloniaProperty.RegisterAttached<TextBlock, ButtonSymbols?>("Symbols", typeof(ButtonTextBlock));
+
     static ButtonTextBlock()
     {
         TextProperty.Changed.AddClassHandler<TextBlock>((block, change) => Fill(block, change.NewValue as string, namesToo: false));
         ButtonsProperty.Changed.AddClassHandler<TextBlock>((block, change) => Fill(block, change.NewValue as string, namesToo: true));
+        SymbolsProperty.Changed.AddClassHandler<TextBlock>((block, _) =>
+        {
+            foreach (var glyph in (block.Inlines ?? []).OfType<InlineUIContainer>().Select(container => container.Child).OfType<PadGlyph>())
+            {
+                glyph.Symbols = GetSymbols(block);
+            }
+        });
     }
+
+    public static ButtonSymbols? GetSymbols(TextBlock block) => block.GetValue(SymbolsProperty);
+
+    public static void SetSymbols(TextBlock block, ButtonSymbols? value) => block.SetValue(SymbolsProperty, value);
 
     public static string? GetText(TextBlock block) => block.GetValue(TextProperty);
 
@@ -40,7 +55,7 @@ public static class ButtonTextBlock
         foreach (var part in ButtonText.Split(text ?? string.Empty, namesToo))
         {
             inlines.Add(part.IsButton
-                ? new InlineUIContainer(new PadGlyph { Classes = { "inline" }, Button = part.Text })
+                ? new InlineUIContainer(new PadGlyph { Classes = { "inline" }, Button = part.Text, Symbols = GetSymbols(block) })
                 {
                     BaselineAlignment = BaselineAlignment.Center,
                 }

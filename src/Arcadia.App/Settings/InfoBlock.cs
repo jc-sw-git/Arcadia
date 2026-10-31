@@ -11,7 +11,11 @@ namespace Arcadia.App.Settings;
 public abstract record InfoBlock;
 
 /// <summary>A paragraph.</summary>
-public sealed record InfoText(string Text) : InfoBlock;
+public sealed record InfoText(string Text) : InfoBlock
+{
+    /// <summary>A fixed printing for its buttons, for a text about one controller only (#315); null follows the controller in use.</summary>
+    public Arcadia.Input.ButtonSymbols? Symbols { get; init; }
+}
 
 /// <summary>An account's picture and name, e.g. the Steam avatar after the sign-in (#280).</summary>
 public sealed record InfoAvatar(string Name, Avalonia.Media.Imaging.Bitmap Picture) : InfoBlock;
@@ -67,6 +71,12 @@ public sealed record InfoDanger(string Title, string Text) : InfoBlock;
 public sealed record InfoNote(string Text, HealthSeverity Severity = HealthSeverity.Warning) : InfoBlock
 {
     public bool IsInfo => Severity == HealthSeverity.Info;
+
+    /// <summary>A fixed printing for its buttons, for a note about one controller only (#315).</summary>
+    public Arcadia.Input.ButtonSymbols? Symbols { get; init; }
+
+    /// <summary>A note that must be read before switching, e.g. doubled input with Steam's desktop layout (#315).</summary>
+    public bool IsBold { get; init; }
 }
 
 /// <summary>A fact in a line: what on the left, its value on the right, e.g. "Such-Kürzel  /epic".</summary>

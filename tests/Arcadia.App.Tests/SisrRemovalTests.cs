@@ -44,7 +44,9 @@ public sealed class SisrRemovalTests
         await arcadia.TickControllerSupportAsync();
 
         var keys = settings.Rows.Select(row => row.Key).ToList();
-        Assert.Equal(["steam-desktop-layout", SisrRows.RemoveKey, SisrRows.KeepKey], keys.SkipWhile(key => key != "steam-desktop-layout").Take(3));
+        // Right below Pan's rows: "Steams Desktop-Belegung ignorieren" moved to Steam's launcher page (#315).
+        Assert.Equal([SisrRows.RemoveKey, SisrRows.KeepKey], keys.SkipWhile(key => key != SisrRows.RemoveKey).Take(2));
+        Assert.Equal("PAN", settings.Rows[keys.IndexOf(SisrRows.RemoveKey) - 1].Group);
         var keep = settings.Rows.Single(row => row.Key == SisrRows.KeepKey);
         Assert.Equal((SisrRows.Group, 1), (keep.Group, keep.Indent));
         Assert.Equal("Pan ersetzt SISR. Arcadia braucht es nicht mehr.", settings.Rows.Single(row => row.Key == SisrRows.RemoveKey).Subtitle);
@@ -68,7 +70,7 @@ public sealed class SisrRemovalTests
 
         Assert.Equal(SettingsPrompt.None, controller.Prompt);
         Assert.DoesNotContain(controller.Rows, row => row.Group == SisrRows.Group);
-        Assert.Equal("steam-desktop-layout", arcadia.Main.Settings!.FocusedRow?.Key);
+        Assert.Equal(controller.Rows.Last(row => row.Group == "PAN").Key, arcadia.Main.Settings!.FocusedRow?.Key);
         Assert.False(Directory.Exists(Path.GetDirectoryName(steam.Sisr.SisrExe)));
         Assert.False(File.Exists(steam.Sisr.CefFlag));
         Assert.Equal(0, steam.SteamStops + steam.StartRequests);
@@ -111,7 +113,7 @@ public sealed class SisrRemovalTests
         Assert.True(steam.IsSteamRunning);
         Assert.Equal(0, steam.Sisr.Installation().Find().MarkerAccounts);
         Assert.DoesNotContain(controller.Rows, row => row.Group == SisrRows.Group);
-        Assert.Equal("steam-desktop-layout", arcadia.Main.Settings!.FocusedRow?.Key);
+        Assert.Equal(controller.Rows.Last(row => row.Group == "PAN").Key, arcadia.Main.Settings!.FocusedRow?.Key);
     }
 
     [AvaloniaFact]
@@ -251,7 +253,7 @@ public sealed class SisrRemovalTests
 
         Assert.True(arcadia.Settings.Current.KeepSisr);
         Assert.DoesNotContain(controller.Rows, row => row.Group == SisrRows.Group);
-        Assert.Equal("steam-desktop-layout", arcadia.Main.Settings!.FocusedRow?.Key);
+        Assert.Equal(controller.Rows.Last(row => row.Group == "PAN").Key, arcadia.Main.Settings!.FocusedRow?.Key);
         Assert.True(File.Exists(steam.Sisr.SisrExe));
         Assert.Equal(0, steam.SteamStops);
 

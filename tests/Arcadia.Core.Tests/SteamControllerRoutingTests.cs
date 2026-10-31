@@ -129,7 +129,114 @@ public sealed class SteamControllerRoutingTests
         var route = SteamControllerRouting.Decide(games, key => key != "steam:570", driverReady: true);
         var now = new ForegroundNow(arcadiaActive, mouseMode, steamInFront);
 
-        Assert.Equal(copyPasses, SteamControllerCopyRules.CopyPasses(route, now));
-        Assert.Equal(padPasses, SteamControllerCopyRules.PadPasses(route, now));
+        Assert.Equal(copyPasses, SteamControllerCopyRules.CopyPasses(route, now, desktopLayoutIgnored: true));
+        Assert.Equal(padPasses, SteamControllerCopyRules.PadPasses(route, now, desktopLayoutIgnored: true));
+    }
+
+    public static TheoryData<bool, bool, bool, bool, bool, bool, bool> CopyCasesWithSteamsDesktopLayout => new()
+    {
+        // game on Steam-Eingabe, game on Arcadia, Arcadia in front, mouse mode, Steam in front → copy passes, pad passes
+        { true, false, false, false, false, true, false },
+        { true, false, true, false, false, true, false },
+        { true, false, false, true, false, true, false },
+        { false, true, false, false, false, false, true },
+        { false, true, false, false, true, false, true },
+        { false, true, true, false, false, true, false },
+        { false, true, false, true, false, true, false },
+        { false, false, false, false, true, true, false },
+        { false, false, false, false, false, true, false },
+        { false, false, true, false, true, true, false },
+        { false, false, true, false, false, true, false },
+        { false, false, false, true, false, true, false },
+    };
+
+    [Theory]
+    [MemberData(nameof(CopyCasesWithSteamsDesktopLayout))]
+    [Trait("TestCase", "T315-2")]
+    public void With_Steams_desktop_layout_not_ignored_the_copy_passes_everywhere_but_to_a_game_on_Arcadia_and_never_together_with_the_pad(
+        bool steamInputGame, bool arcadiaGame, bool arcadiaActive, bool mouseMode, bool steamInFront, bool copyPasses, bool padPasses)
+    {
+        var games = new List<string>();
+        if (steamInputGame)
+        {
+            games.Add("steam:570");
+        }
+
+        if (arcadiaGame)
+        {
+            games.Add("epic:a");
+        }
+
+        var route = SteamControllerRouting.Decide(games, key => key != "steam:570", driverReady: true);
+        var now = new ForegroundNow(arcadiaActive, mouseMode, steamInFront);
+
+        Assert.Equal(copyPasses, SteamControllerCopyRules.CopyPasses(route, now, desktopLayoutIgnored: false));
+        Assert.Equal(padPasses, SteamControllerCopyRules.PadPasses(route, now, desktopLayoutIgnored: false));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T315-2")]
+    public void Without_the_driver_the_copy_passes_on_the_desktop_only_while_Steams_desktop_layout_is_not_ignored()
+    {
+        var route = SteamControllerRouting.Decide([], _ => true, driverReady: false);
+        var desktop = new ForegroundNow(ArcadiaActive: false, MouseModeOn: false, SteamInFront: false);
+
+        Assert.False(SteamControllerCopyRules.CopyPasses(route, desktop, desktopLayoutIgnored: true));
+        Assert.True(SteamControllerCopyRules.CopyPasses(route, desktop, desktopLayoutIgnored: false));
+        Assert.False(SteamControllerCopyRules.PadPasses(route, desktop, desktopLayoutIgnored: false));
+    }
+
+    [Theory]
+    [InlineData(true, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, false)]
+    [Trait("TestCase", "T315-3")]
+    public void The_copy_keeps_the_combo_from_Steam_only_while_the_mouse_mode_can_switch_and_Steams_desktop_layout_is_ignored(
+        bool mouseModeCanSwitch, bool desktopLayoutIgnored, bool kept)
+    {
+        Assert.Equal(kept, SteamControllerCopyRules.CombosKeptFromSteam(mouseModeCanSwitch, desktopLayoutIgnored).BackAndStart);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T315-4")]
+    public void The_copys_gate_logs_each_change_of_its_answer_once_with_the_reason()
+    {
+        var log = new List<string>();
+        var ignored = true;
+        var arcadiaActive = true;
+        var route = SteamControllerRouting.Decide([], _ => true, driverReady: true);
+        var gate = new SteamControllerCopyGate(() => route, () => new ForegroundNow(arcadiaActive, false, false), () => ignored, log.Add);
+
+        Assert.False(gate.Passes());
+        Assert.False(gate.Passes());
+        ignored = false;
+        Assert.True(gate.Passes());
+        Assert.True(gate.Passes());
+        arcadiaActive = false;
+        Assert.True(gate.Passes());
+
+        Assert.Equal(
+        [
+            "Kopie für Steam: meldet Ruhe (Arcadia vorne, Steams Desktop-Belegung ignoriert)",
+            "Kopie für Steam: gibt Eingaben weiter (Arcadia vorne, Steams Desktop-Belegung aktiv)",
+        ], log);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T315-4")]
+    public void The_copys_gate_lets_nothing_pass_when_asking_fails_or_before_the_route_is_decided()
+    {
+        var log = new List<string>();
+        var undecided = new SteamControllerCopyGate(() => null, () => default, () => false, log.Add);
+        var failing = new SteamControllerCopyGate(
+            () => SteamControllerRouting.Decide([], _ => true, driverReady: true),
+            () => throw new InvalidOperationException("Fenster weg"),
+            () => false,
+            _ => throw new IOException("Log voll"));
+
+        Assert.False(undecided.Passes());
+        Assert.False(failing.Passes());
+        Assert.Equal(["Kopie für Steam: meldet Ruhe (noch nicht entschieden)"], log);
     }
 }

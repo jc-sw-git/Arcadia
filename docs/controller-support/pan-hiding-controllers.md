@@ -2,7 +2,7 @@
 
 How Pan hides the controllers Arcadia takes over besides the Steam Controller, with the same guarantees as for the
 puck ([pan-hiding.md](pan-hiding.md): driver interface, checks, write-ahead journal, the user's entries untouched,
-every teardown trigger). What the client emulates for them: #238.
+every teardown trigger). What the client emulates for them: [every-controller.md](every-controller.md) (#238).
 
 ## Protocol
 

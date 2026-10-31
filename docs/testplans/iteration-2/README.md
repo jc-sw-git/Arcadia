@@ -33,6 +33,7 @@ its file.
 | [304-own-viiper-loopback-auth.md](304-own-viiper-loopback-auth.md) | #304 | Run only Arcadia's own VIIPER, on loopback, with Windows-assigned ports and API auth | 12 |
 | [326-announce-the-pan-update-and-let-the-player-decline-it.md](326-announce-the-pan-update-and-let-the-player-decline-it.md) | #326 | Announce the Pan update before the Windows prompt opens, and let the player decline it | 11 |
 | [335-pan-hides-every-controller.md](335-pan-hides-every-controller.md) | #335 | Pan hides every controller Arcadia takes over | 5 |
+| [238-every-controller-through-arcadia.md](238-every-controller-through-arcadia.md) | #238 | Pass every controller to games through Arcadia | 13 |
 
 ## Exploratory test
 
@@ -63,3 +64,4 @@ Charter: –. Time box: –. Findings: –.
 | T278-8 (faked launcher) | `tests/Arcadia.App.Tests/GameStartTests.cs` |
 | T178-1 to T178-9; T178-10 | `tests/Arcadia.App.Tests/LauncherControllerModeTests.cs`; `Window/LauncherControllerModeViewTests.cs` |
 | T335-4, T335-5 | `tests/Arcadia.Pan.Tests/ControllerHidingTests.cs`, `tests/Arcadia.Core.Tests/PanClientTests.cs` |
+| T238-1, T238-3 to T238-7, T238-12 (fakes) | `tests/Arcadia.App.Tests/EveryControllerForGamesTests.cs`, `tests/Arcadia.Core.Tests/TakenOverControllersTests.cs` |

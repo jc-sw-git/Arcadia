@@ -307,3 +307,58 @@ public sealed class FakeDevices : ISteamControllerDevices, IDisposable
         _restartHangEnds.TrySetResult();
     }
 }
+
+/// <summary>Every other controller (#335): which models are connected with which devices, and a restart that can fail or need a replug.</summary>
+public sealed class FakeControllers : IControllerDevices
+{
+    public static readonly ControllerModel DualSense = new(0x054C, 0x0CE6);
+    public static readonly ControllerModel EightBitDo = new(0x2DC8, 0x310B);
+    public const string DualSenseHid = @"HID\VID_054C&PID_0CE6&MI_03\7&2B7F&0&0000";
+    public const string DualSenseBluetooth = @"HID\{00001124-0000-1000-8000-00805F9B34FB}_VID&0002054C_PID&0CE6\9&1D2E&0&0000";
+    public const string EightBitDoHid = @"HID\VID_2DC8&PID_310B&MI_02\8&3C4D&0&0000";
+    public const string EightBitDoXInput = @"USB\VID_2DC8&PID_310B&MI_00\7&5E6F&0&0000";
+
+    public Dictionary<ControllerModel, ControllerScan> Connected = new()
+    {
+        [DualSense] = new(true, [new(DualSenseHid, ControllerInterface.Hid)]),
+        [EightBitDo] = new(true, [new(EightBitDoHid, ControllerInterface.Hid), new(EightBitDoXInput, ControllerInterface.XInput)]),
+    };
+
+    public List<string> Restarted = [];
+    public bool RestartFails;
+    public bool ScanHangs;
+
+    /// <summary>Set: a scan signals <see cref="ScanEntered"/> and waits for it, so a test can act while a hide scans.</summary>
+    public ManualResetEventSlim? ScanBlock;
+    public readonly TaskCompletionSource ScanEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>Instances whose device Windows restarts only once it is reconnected.</summary>
+    public HashSet<string> NeedReplug = [];
+
+    public ControllerScan Scan(ControllerModel model)
+    {
+        if (ScanHangs)
+        {
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+        }
+
+        if (ScanBlock is { } block)
+        {
+            ScanEntered.TrySetResult();
+            block.Wait(TimeSpan.FromSeconds(5));
+        }
+
+        return Connected.TryGetValue(model, out var scan) ? scan : new ControllerScan(false, []);
+    }
+
+    public Task<IReadOnlyList<string>> RestartAsync(IReadOnlyList<string> hidInstances, CancellationToken cancellationToken)
+    {
+        if (RestartFails)
+        {
+            throw new InvalidOperationException("device not opened");
+        }
+
+        lock (Restarted) Restarted.AddRange(hidInstances);
+        return Task.FromResult<IReadOnlyList<string>>(hidInstances.Where(NeedReplug.Contains).ToList());
+    }
+}

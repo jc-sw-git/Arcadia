@@ -114,7 +114,8 @@ public sealed record HidHideState(IReadOnlyList<string> Hidden, IReadOnlyList<st
 /// The rules for hiding (#243 part B, review point R13), free of Windows: which HidHide versions and states Pan
 /// works with, and which entries are the user's and stay untouched. The guardian journals and applies the changes.
 /// </summary>
-public sealed class SteamControllerHiding(IHidHideDriver hidHide, ISteamControllerDevices devices)
+/// <param name="controllers">Every other controller (#335); without it Pan answers their commands with <see cref="PanReply.Unsupported"/>.</param>
+public sealed class SteamControllerHiding(IHidHideDriver hidHide, ISteamControllerDevices devices, IControllerDevices? controllers = null)
 {
     /// <summary>
     /// The oldest HidHide driver Pan works with: the one of HidHide 1.5.230, verified on the owner's PC (spike #239) and
@@ -129,6 +130,8 @@ public sealed class SteamControllerHiding(IHidHideDriver hidHide, ISteamControll
     public IHidHideDriver HidHide { get; } = hidHide;
 
     public ISteamControllerDevices Devices { get; } = devices;
+
+    public IControllerDevices? Controllers { get; } = controllers;
 
     /// <summary>
     /// Whether Pan may hide now, and HidHide's state if so. Refused: HidHide missing, an unknown version or interface,
@@ -202,7 +205,7 @@ public sealed class SteamControllerHiding(IHidHideDriver hidHide, ISteamControll
         }
 
         var shown = instances.Count(id => !Contains(state.Hidden, id));
-        return shown == 0 ? null : $"{shown} of {instances.Count} Steam Controller instance(s) no longer hidden";
+        return shown == 0 ? null : $"{shown} of {instances.Count} instance(s) no longer hidden";
     }
 
     /// <summary>The entries of <paramref name="list"/> without <paramref name="remove"/>, compared as HidHide does (ignoring case).</summary>

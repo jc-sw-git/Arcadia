@@ -90,17 +90,25 @@ public sealed class PanRows
 
     private const string Admin = "Windows fragt einmal nach Administratorrechten.";
 
+    public const string UpdateDueSubtitle = "Neue Pan-Version verfügbar";
+    public const string UpdatingSubtitle = "Pan wird aktualisiert …";
+    public const string UpdateDueInfo = "Schaltest du den Controller-Wächter ein, wird Pan zuerst aktualisiert. Dabei fragt Windows nach deiner Erlaubnis.";
+    public const string NotUpdatedToast = "Pan: nicht aktualisiert, Controller-Wächter bleibt aus";
+
     private readonly ControllerSupportService _support;
     private readonly SettingsChanges _changes;
     private readonly IPanEmulationView _pan;
     private readonly Func<string?> _gameInTheWay;
     private readonly Action<HealthFix> _applyFix;
+    private readonly Action<string> _notify;
     private readonly Dictionary<string, ActionRowViewModel> _rows = [];
     private readonly HoldRowViewModel _takeOver;
 
+    /// <param name="notify">Shows a toast, e.g. how switching on with a due update ended (#326).</param>
     public PanRows(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay, Action<HealthFix> applyFix,
-        TimeProvider time, Action<Action> post)
+        Action<string> notify, TimeProvider time, Action<Action> post)
     {
+        _notify = notify;
         _support = support;
         _changes = changes;
         _pan = pan;
@@ -156,6 +164,12 @@ public sealed class PanRows
 
     private bool IsOn => _changes.Current.PanEnabled;
 
+    /// <summary>The installed Pan isn't this Arcadia's and Pan is off (#326): switching on updates it first.</summary>
+    private bool IsUpdateDue => _support.IsPanUpdateDue && !IsOn;
+
+    /// <summary>Switching on runs the update now; the Windows prompt is up.</summary>
+    private bool _updating;
+
     private bool IsBusy => _support.BusyText is not null;
 
     private bool IsInstalling => _support.BusyText == ControllerSupportService.DriversBusyText;
@@ -180,26 +194,28 @@ public sealed class PanRows
         }
 
         var problem = warnings.Any(row => row.Severity > HealthSeverity.Info) || status.HasProblem;
+        var updateDue = !notHere && !allMissing && IsUpdateDue;
 
         Main.InstallText = IsInstalling ? "Wird installiert …" : installFailed ? "Erneut versuchen" : "Treiber installieren";
         Main.Update(
             notHere ? SetupRowMode.Unavailable : allMissing ? SetupRowMode.Install : SetupRowMode.Switch,
             !notHere && !allMissing && IsOn,
-            isLocked: IsBusy || (game is not null && !allMissing),
+            isLocked: IsBusy || _updating || (game is not null && !allMissing),
             unavailableText: "Auf diesem System noch nicht verfügbar",
-            status: Subtitle(status, allMissing, installFailed, problem, game, excluded));
+            status: Subtitle(status, allMissing, installFailed, problem, game, excluded, updateDue));
         // A running game would lose its controller mid-game: greyed out like "Auf Werkseinstellungen zurücksetzen".
         Main.IsDimmed = notHere || (game is not null && !allMissing && !IsBusy);
-        Main.Severity = installFailed ? HealthSeverity.Error : null;
-        Main.ShowLamp(notHere || allMissing ? null
+        Main.Severity = installFailed ? HealthSeverity.Error : updateDue && !_updating ? HealthSeverity.Info : null;
+        Main.ShowLamp(notHere || allMissing || updateDue ? null
             : !IsOn ? RowLamp.Resting
             : status.State == PanEmulationState.Stopped ? RowLamp.Failure
             : problem ? RowLamp.Problem
             : status.State == PanEmulationState.Running ? RowLamp.Working
             : RowLamp.Resting);
-        Main.Info = [.. installFailed ? [new InfoError(_support.LastError!)] : Array.Empty<InfoBlock>(), .. MainInfo];
+        Main.Info = [.. installFailed ? [new InfoError(_support.LastError!)] : Array.Empty<InfoBlock>(), .. updateDue ? UpdateInfo() : [], .. MainInfo];
 
-        Restore.IsEnabled = !IsBusy;
+        // Not beside the update's Windows prompt: one prompt at a time.
+        Restore.IsEnabled = !IsBusy && !_updating;
         // A fix that failed marks its row red, not the category: the problem itself is still the same (#243 B2).
         Marker = !IsOn || notHere ? null
             : status.State == PanEmulationState.Stopped ? HealthSeverity.Error
@@ -236,13 +252,19 @@ public sealed class PanRows
         : _pan.Connected is not SteamControllerParts.None and var connected ? connected
         : SteamControllerParts.Controller | SteamControllerParts.Puck;
 
-    private string Subtitle(PanEmulationStatus status, bool allMissing, bool installFailed, bool problem, string? game, bool excluded) =>
+    /// <summary>First in the panel, before everything else (artboard T326S01): why switching on asks Windows; why the last update failed.</summary>
+    private InfoBlock[] UpdateInfo() =>
+        _updating ? [new InfoNote(PanUpdatePageViewModel.PromptHint, HealthSeverity.Info)]
+        : [new InfoNote(UpdateDueInfo, HealthSeverity.Info), .. _support.PanUpdateError is { } error ? [new InfoError(error)] : Array.Empty<InfoBlock>()];
+
+    private string Subtitle(PanEmulationStatus status, bool allMissing, bool installFailed, bool problem, string? game, bool excluded, bool updateDue) =>
         (allMissing, IsOn) switch
         {
             (true, _) when IsInstalling => "Windows fragt einmal nach Administratorrechten",
             (true, _) when installFailed => "Installation abgebrochen – warum, steht im Info-Panel",
             (true, _) => "Pan verwaltet, wie Spiele, Programme und Launcher deine Controller nutzen",
             _ when game is not null => $"Erst änderbar, wenn „{game}“ beendet ist",
+            _ when updateDue => _updating ? UpdatingSubtitle : UpdateDueSubtitle,
             (_, false) => "Aus – Spiele und Launcher sehen deine echten Controller direkt",
             _ when status.State == PanEmulationState.Stopped => "Angehalten – der Grund steht darunter",
             _ when problem => "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.",
@@ -270,8 +292,56 @@ public sealed class PanRows
         }
 
         var on = !IsOn;
+        if (on && _support.IsPanUpdateDue)
+        {
+            UpdateAndSwitchOnAsync().Forget("Pan aktualisieren");
+            return;
+        }
+
         _changes.Apply(settings => settings with { PanEnabled = on }, "Controller-Wächter (Pan)");
         Services.AppLog.Write($"Controller-Wächter (Pan): {(on ? "an" : "aus")}");
+        Switched?.Invoke();
+    }
+
+    /// <summary>An old Pan is never switched on (#326): it is updated first, and only a confirmed update switches Pan on.</summary>
+    private async Task UpdateAndSwitchOnAsync()
+    {
+        _updating = true;
+        Switched?.Invoke();
+        bool updated;
+        try
+        {
+            // Off the UI thread: the elevated start waits for the Windows prompt.
+            updated = await Task.Run(() => _support.UpdatePanAsync(CancellationToken.None));
+            if (!updated)
+            {
+                _support.SwitchPanOffForUpdate(null);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Pan's own failures come as these with their text, shown in the info panel; anything else is a bug,
+            // logged with its stack, and the row still says that Pan stays off.
+            if (ex is not (InvalidOperationException or TimeoutException))
+            {
+                AppErrors.Report(ex, "Pan aktualisieren");
+            }
+
+            _support.SwitchPanOffForUpdate(ex.Message);
+            updated = false;
+        }
+        finally
+        {
+            _updating = false;
+        }
+
+        if (updated)
+        {
+            _changes.Apply(settings => settings with { PanEnabled = true }, "Controller-Wächter (Pan)");
+            Services.AppLog.Write("Controller-Wächter (Pan): aktualisiert und an");
+        }
+
+        _notify(updated ? PanUpdatePageViewModel.UpdatedToast : NotUpdatedToast);
         Switched?.Invoke();
     }
 

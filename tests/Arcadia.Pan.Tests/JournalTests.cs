@@ -34,6 +34,37 @@ public class JournalTests
     }
 
     [Fact]
+    public void A_journal_of_a_Pan_before_the_firmware_hold_is_read_with_all_it_has_to_undo()
+    {
+        // #326: the bundled Pan's --restore undoes the journal an older Pan left, which lacks the fields added since.
+        using var journal = new TempJournal();
+        Directory.CreateDirectory(Path.GetDirectoryName(journal.File.Path)!);
+        File.WriteAllText(journal.File.Path, """
+            {
+              "Version": 1,
+              "Generation": 3,
+              "ClientPid": 1234,
+              "ClientStartTime": 133000000000000000,
+              "Emulating": true,
+              "HeldProcesses": [ { "Pid": 4321, "StartTime": 133000000000000500, "ImageName": "viiper.exe" } ],
+              "HiddenDevices": [ "HID\\VID_28DE&PID_1304&MI_00\\1&2&3" ],
+              "AllowListed": [ "C:\\Arcadia\\Arcadia.exe" ],
+              "CloakingWasOn": false
+            }
+            """);
+
+        var load = journal.File.Load();
+
+        Assert.Null(load.Problem);
+        Assert.True(load.State.HasWork);
+        Assert.True(load.State.HidHideChanged);
+        Assert.Equal(@"HID\VID_28DE&PID_1304&MI_00\1&2&3", Assert.Single(load.State.HiddenDevices));
+        Assert.Equal(@"C:\Arcadia\Arcadia.exe", Assert.Single(load.State.AllowListed));
+        Assert.False(load.State.FirmwareHold);
+        Assert.False(load.State.PuckRestartPending);
+    }
+
+    [Fact]
     public void No_journal_means_nothing_to_undo()
     {
         using var journal = new TempJournal();
@@ -113,6 +144,10 @@ public class JournalTests
     [InlineData("{\"Version\":1,\"Generation\":7,\"HeldProcesses\":[{\"Pid\":5,\"StartTime\":1}]}", "incomplete")]
     [InlineData("{\"Version\":1,\"Generation\":7,\"AllowListed\":[null]}", "HidHide entry is missing")]
     [InlineData("{\"Version\":2,\"Generation\":7}", "unknown journal version")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"HiddenControllers\":null}", "a list is missing")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"HiddenControllers\":[\"HID\\\\VID_28DE&PID_1304&MI_02\\\\8&1\"]}", "a hidden controller is not one Pan hides")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"HiddenControllers\":[\"HID\\\\ConvertedDevice&Col01\\\\5\"]}", "a hidden controller is not one Pan hides")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"ControllerRestarts\":[\"USB\\\\VID_2DC8&PID_310B&MI_00\\\\7\"]}", "a hidden controller is not one Pan hides")]
     [InlineData("{\"Version\":1,\"Generation\":7,\"UsbipServers\":null}", "a list is missing")]
     [InlineData("{\"Version\":1,\"Generation\":7,\"UsbipServers\":[{\"Generation\":7,\"Port\":0,\"Pid\":5}]}", "usbip server entry is incomplete")]
     [InlineData("{\"Version\":1,\"Generation\":7,\"UsbipServers\":[{\"Generation\":7,\"Port\":70000,\"Pid\":5}]}", "usbip server entry is incomplete")]
@@ -145,6 +180,22 @@ public class JournalTests
         Assert.False(load.FromPrevious);
         Assert.Contains("no previous version", load.Problem);
         Assert.False(load.State.HasWork);
+    }
+
+    [Fact]
+    public void A_journal_from_before_335_reads_without_controllers_and_the_controllers_count_as_work()
+    {
+        using var journal = new TempJournal();
+        Directory.CreateDirectory(journal.Folder);
+        File.WriteAllText(journal.File.Path, """{"Version":1,"Generation":4,"HeldProcesses":[],"HiddenDevices":[],"AllowListed":[]}""");
+
+        var load = journal.File.Load();
+
+        Assert.Null(load.Problem);
+        Assert.Empty(load.State.HiddenControllers);
+        Assert.False(load.State.HasWork);
+        Assert.True(new JournalState { HiddenControllers = [@"HID\VID_054C&PID_0CE6&MI_03\7"] }.HidHideChanged);
+        Assert.True(new JournalState { ControllerRestarts = [@"HID\VID_054C&PID_0CE6&MI_03\7"] }.HidingHasWork);
     }
 
     [Fact]

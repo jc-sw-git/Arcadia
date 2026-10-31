@@ -74,7 +74,7 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
         try
         {
             using var timeout = Timeout(cancellationToken);
-            bus = (await client.BusCreateAsync(null, timeout.Token)).BusID;
+            bus = (await client.BusCreateAsync(ViiperBusIds.Next(), timeout.Token)).BusID;
             var device = await client.BusDeviceAddAsync(bus.Value, new DeviceCreateRequest { Type = "xbox360" }, timeout.Token);
             var stream = await client.ConnectDeviceAsync(bus.Value, device.DevID, timeout.Token);
             log($"Xbox-Pad: VIIPER-Controller {device.Vid}:{device.Pid} angesteckt (Bus {bus}, Gerät {device.DevID})");
@@ -107,7 +107,7 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
         try
         {
             using var timeout = Timeout(cancellationToken);
-            bus = (await client.BusCreateAsync(null, timeout.Token)).BusID;
+            bus = (await client.BusCreateAsync(ViiperBusIds.Next(), timeout.Token)).BusID;
             var device = await client.BusDeviceAddAsync(bus.Value, new DeviceCreateRequest { Type = type, DeviceSpecific = deviceSpecific }, timeout.Token);
             stream = await ConnectRawAsync(running, bus.Value, device.DevID, timeout.Token);
             log($"VIIPER: Gerät {type} angesteckt (Bus {bus}, Gerät {device.DevID})");
@@ -272,5 +272,27 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
                 client.Dispose();
             }
         }
+    }
+}
+
+/// <summary>
+/// The bus of every device Arcadia puts on a VIIPER, never one used before in this run (#331). usbip-win2 attaches a
+/// device again by itself when its connection ends without a detach (as when a device is removed from VIIPER), retrying
+/// for up to two hours. With VIIPER's lowest free bus the retry found the next pad or copy under the same bus id, and
+/// Steam listed each twice; a bus id that is never served again leaves the retry nothing to attach.
+/// </summary>
+public static class ViiperBusIds
+{
+    /// <summary>
+    /// A random start: Arcadia started again may get its old usbip port from Windows while the driver still retries a
+    /// device of the run before.
+    /// </summary>
+    private static uint _last = (uint)Random.Shared.Next(0, 1 << 20);
+
+    /// <summary>A bus id not handed out before in this process; never 0, which VIIPER reads as "the lowest free".</summary>
+    public static uint Next()
+    {
+        var next = Interlocked.Increment(ref _last);
+        return next != 0 ? next : Interlocked.Increment(ref _last);
     }
 }

@@ -395,8 +395,8 @@ public sealed class HidingTests : IDisposable
         AssertRestored([UsersPad], [], cloaking: true);
         Assert.Equal(2, _devices.Restarts);
         Assert.False(Journal.HasWork);
-        Assert.Contains("Teardown: show the Steam Controller: ok", Log());
-        Assert.Contains("Teardown: restart the Steam Controller: ok", Log());
+        Assert.Contains("Teardown: show the hidden controllers: ok", Log());
+        Assert.Contains("Teardown: restart the shown controllers: ok", Log());
     }
 
     [Fact]
@@ -451,7 +451,7 @@ public sealed class HidingTests : IDisposable
         _guardian.ClientGone();
         await TeardownDoneAsync();
 
-        Assert.Contains("show the Steam Controller: Failed", Log());
+        Assert.Contains("show the hidden controllers: Failed", Log());
         Assert.Equal(2, Journal.HiddenDevices.Count);
 
         _hidHide.FailOn = null;

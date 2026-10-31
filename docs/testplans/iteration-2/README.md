@@ -32,6 +32,8 @@ its file.
 | [178-steam-controller-mode-default-per-launcher.md](178-steam-controller-mode-default-per-launcher.md) | #178 | Choose the Steam Controller mode default per launcher | 12 |
 | [315-steam-desktop-layout-on-steams-page.md](315-steam-desktop-layout-on-steams-page.md) | #315 | "Steams Desktop-Steuerung zulassen" on Steam's page, alike for every controller | 7 |
 | [304-own-viiper-loopback-auth.md](304-own-viiper-loopback-auth.md) | #304 | Run only Arcadia's own VIIPER, on loopback, with Windows-assigned ports and API auth | 12 |
+| [326-announce-the-pan-update-and-let-the-player-decline-it.md](326-announce-the-pan-update-and-let-the-player-decline-it.md) | #326 | Announce the Pan update before the Windows prompt opens, and let the player decline it | 11 |
+| [335-pan-hides-every-controller.md](335-pan-hides-every-controller.md) | #335 | Pan hides every controller Arcadia takes over | 5 |
 
 ## Exploratory test
 
@@ -50,7 +52,7 @@ Charter: –. Time box: –. Findings: –.
 | T209-1, T209-2 | `tests/Arcadia.App.Tests/PageTransitionTests.cs`, `Window/SearchViewTests.cs` |
 | T210-1 to T210-3 | `tests/Arcadia.App.Tests/RoutingTests.cs` |
 | T242-8, T242-10 to T242-16, T242-20 to T242-25 | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `SteamControllerModeTests.cs`, `Window/HoldButtonFillTests.cs` (T242-20, the fill) |
-| T297-1 to T297-8 | `tests/Arcadia.App.Tests/PanUpdateAtStartTests.cs` |
+| T297-2 (within T326-4), T297-4; T326-1 to T326-8 | `tests/Arcadia.App.Tests/PanUpdateAtStartTests.cs` |
 | T214-1 to T214-8, T214-11; T214-10 | `tests/Arcadia.App.Tests/SisrRemovalTests.cs`; `SteamControllerModeTests.cs` |
 | T215-1 to T215-6 | `tests/Arcadia.App.Tests/Window/ButtonSymbolsTests.cs` |
 | T308-2, T308-3 | `tests/Arcadia.App.Tests/PanEmulationTests.cs` |
@@ -62,3 +64,4 @@ Charter: –. Time box: –. Findings: –.
 | T278-8 (faked launcher) | `tests/Arcadia.App.Tests/GameStartTests.cs` |
 | T178-1 to T178-9; T178-10 | `tests/Arcadia.App.Tests/LauncherControllerModeTests.cs`; `Window/LauncherControllerModeViewTests.cs` |
 | T315-1, T315-3, T315-4 | `tests/Arcadia.App.Tests/SteamDesktopLayoutTests.cs` |
+| T335-4, T335-5 | `tests/Arcadia.Pan.Tests/ControllerHidingTests.cs`, `tests/Arcadia.Core.Tests/PanClientTests.cs` |

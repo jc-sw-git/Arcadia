@@ -109,6 +109,45 @@ public sealed class PanClientTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task An_unwanted_Pan_is_let_go_silently_and_not_reached_again_until_it_is_wanted()
+    {
+        // #326: an old Pan the player didn't update is left alone, so it gives everything back and ends itself.
+        var wanted = true;
+        await using var client = new PanClient(_server, _time, Log) { RequestTimeout = TimeSpan.FromSeconds(10), Wanted = () => Volatile.Read(ref wanted) };
+        var lost = 0;
+        client.Lost += _ => Interlocked.Increment(ref lost);
+        client.Start();
+        await AdvanceUntil(() => client.IsConnected, "verbunden");
+
+        Volatile.Write(ref wanted, false);
+        await AdvanceUntil(() => !client.IsConnected, "getrennt");
+        Assert.Equal(PanClient.LeftAlone, client.Unavailable());
+        Assert.Equal(0, lost);
+        for (var i = 0; i < 5; i++)
+        {
+            _time.Advance(PanClient.Retry);
+            await Task.Delay(20);
+        }
+
+        Assert.False(client.IsConnected);
+
+        Volatile.Write(ref wanted, true);
+        await AdvanceUntil(() => client.IsConnected, "wieder verbunden");
+    }
+
+    [Fact]
+    public async Task Never_wanted_the_first_attempt_ends_without_reaching_Pan()
+    {
+        await using var client = new PanClient(_server, _time, Log) { Wanted = () => false };
+        client.Start();
+
+        await client.FirstAttempt.WaitAsync(Soon);
+
+        Assert.False(client.IsConnected);
+        Assert.Equal(PanClient.LeftAlone, client.Unavailable());
+    }
+
+    [Fact]
     public async Task The_heartbeat_goes_only_while_the_feeder_pulses_and_its_absence_lets_Pan_tear_down()
     {
         await ConnectedAsync();
@@ -442,6 +481,73 @@ public sealed class PanClientTests : IAsyncDisposable
         Assert.True(_client.IsConnected);
     }
 
+    [Fact]
+    [Trait("TestCase", "T335-4")]
+    public async Task Arcadia_hides_two_controllers_and_shows_one_again_while_the_other_stays_hidden()
+    {
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide, controllers: new TwoControllers());
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
+
+        Assert.Equal(new ControllerHidingResult(true, PanReason.None), await _client.HideControllerAsync(generation, TwoControllers.DualSense, CancellationToken.None));
+        Assert.Equal(new ControllerHidingResult(true, PanReason.ControllerNeedsReplug), await _client.HideControllerAsync(generation, TwoControllers.XInputPad, CancellationToken.None));
+        Assert.Equal(new ControllerHidingResult(true, PanReason.ControllerNeedsReplug), await _client.ShowControllerAsync(generation, TwoControllers.XInputPad, CancellationToken.None));
+
+        Assert.Equal([TwoControllers.DualSenseHid], hidHide.GetHiddenDevices());
+        Assert.Contains(ArcadiaImage, hidHide.Allowed);
+        Assert.True(hidHide.Cloaking);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T335-5")]
+    public async Task A_controller_is_not_hidden_while_its_vendors_firmware_tool_runs_and_Arcadia_hears_why()
+    {
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide, controllers: new TwoControllers(), processRuns: name => name == "FWupdater");
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
+
+        Assert.Equal(new ControllerHidingResult(false, PanReason.FirmwareToolRuns), await _client.HideControllerAsync(generation, TwoControllers.DualSense, CancellationToken.None));
+
+        Assert.Empty(hidHide.GetHiddenDevices());
+        Assert.Contains("abgelehnt", LogText());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T335-4")]
+    public async Task A_rejected_controller_hide_is_undone_at_once()
+    {
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide, controllers: new TwoControllers { RestartFails = true });
+        await ConnectedAsync();
+        var generation = await _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
+
+        Assert.Equal(new ControllerHidingResult(false, PanReason.HidingFailed), await _client.HideControllerAsync(generation, TwoControllers.DualSense, CancellationToken.None));
+
+        // Shown again by the client's undo; its restart is left to the teardown.
+        Assert.Empty(hidHide.GetHiddenDevices());
+        Assert.DoesNotContain(ArcadiaImage, hidHide.Allowed);
+    }
+
+    /// <summary>A DualSense by USB and an XInput pad (#335), each with the devices a game reads.</summary>
+    private sealed class TwoControllers : IControllerDevices
+    {
+        public static readonly ControllerModel DualSense = new(0x054C, 0x0CE6);
+        public static readonly ControllerModel XInputPad = new(0x2DC8, 0x310B);
+        public const string DualSenseHid = @"HID\VID_054C&PID_0CE6&MI_03\7&2B7F&0&0000";
+
+        public bool RestartFails;
+
+        public ControllerScan Scan(ControllerModel model) =>
+            model == DualSense ? new(true, [new(DualSenseHid, ControllerInterface.Hid)])
+            : model == XInputPad ? new(true, [new(@"USB\VID_2DC8&PID_310B&MI_00\7&5E6F&0&0000", ControllerInterface.XInput)])
+            : new(false, []);
+
+        public Task<IReadOnlyList<string>> RestartAsync(IReadOnlyList<string> hidInstances, CancellationToken cancellationToken) =>
+            RestartFails ? throw new InvalidOperationException("device not opened") : Task.FromResult<IReadOnlyList<string>>([]);
+    }
+
     /// <summary>QE review point 8 of PR #264: a check holds the client's request lock; a start meanwhile waits for it.</summary>
     [Fact]
     [Trait("TestCase", "T242-6")]
@@ -720,8 +826,11 @@ public sealed class PanClientTests : IAsyncDisposable
         }
 
         /// <summary>A Pan with part B's hiding (#243 B2), on HidHide as the test sets it; before the client connects.</summary>
-        public void UseHiding(IHidHideDriver hidHide, ISteamControllerDevices? devices = null) =>
-            Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log, hiding: new SteamControllerHiding(hidHide, devices ?? new NoPuck()));
+        public void UseHiding(IHidHideDriver hidHide, ISteamControllerDevices? devices = null, IControllerDevices? controllers = null, Func<string, bool>? processRuns = null) =>
+            Guardian = new Guardian(Clock, new JournalFile(Path.Combine(_folder, "journal.json")), _cleanup, _log, hiding: new SteamControllerHiding(hidHide, devices ?? new NoPuck(), controllers))
+            {
+                ProcessRuns = processRuns ?? (_ => false),
+            };
 
                 /// <summary>A restarted Pan: it undoes what its journal lists, then serves again.</summary>
         public void RestartFromJournal()

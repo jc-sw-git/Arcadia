@@ -118,6 +118,23 @@ public sealed class HidingReviewTests : IDisposable
     }
 
     [Fact]
+    public async Task A_puck_hide_still_listing_when_the_service_stops_hides_nothing_afterwards()
+    {
+        // QE #337: as for the other controllers (ControllerHidingTests), through the shared AddToHidHide.
+        var generation = await EmulatingAsync();
+        _devices.WhileListing = () =>
+        {
+            _devices.WhileListing = null;
+            _guardian.StopAsync().Wait(TimeSpan.FromSeconds(5));
+        };
+
+        var answer = await Send(PanCommand.Hide, generation);
+
+        Assert.NotEqual(PanReply.Hidden, answer.Reply);
+        Assert.Empty(_hidHide.Hidden);
+    }
+
+    [Fact]
     public async Task A_HidHide_whose_version_cannot_be_read_but_whose_driver_answers_is_still_restored()
     {
         // E.g. an ImagePath form DriverFile doesn't know, or a HidHide upgrade swapping its driver file: the lists are

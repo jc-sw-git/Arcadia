@@ -115,6 +115,44 @@ public sealed class HidHideTests
         Assert.Equal(before, Snapshot());
     }
 
+    [HidHideFact]
+    public async Task The_guardian_hides_and_shows_controllers_of_both_device_classes_through_the_real_driver()
+    {
+        // #335: a HID collection and an XInput interface (another device class HidHide filters), one model each.
+        using var journal = new TempJournal();
+        var before = Snapshot();
+        var cleanup = new FakeCleanup { Children = [new HeldProcess(600, 1500, Guardian.ForwardingImageName)] };
+        var controllers = new FakeControllers();
+        var guardian = new Guardian(new FakeClock(), journal.File, cleanup, _ => { }, hiding: new SteamControllerHiding(new HidHideDriver(), new FakeDevices(), controllers));
+        guardian.Register(new ClientIdentity(Environment.ProcessId, 1, InConsoleSession: true, NativeImagePath()));
+        await guardian.HandleAsync(PanMessage.Of(PanCommand.Hello));
+        var generation = (await guardian.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort))).Generation;
+
+        Assert.Equal(PanReply.ControllerHidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HideController, generation, FakeControllers.DualSense.Value))).Reply);
+        Assert.Equal(PanReply.ControllerHidden, (await guardian.HandleAsync(PanMessage.Of(PanCommand.HideController, generation, FakeControllers.EightBitDo.Value))).Reply);
+        Assert.Contains(FakeControllers.DualSenseHid, new HidHideDriver().GetHiddenDevices());
+        Assert.Contains(FakeControllers.EightBitDoXInput, new HidHideDriver().GetHiddenDevices());
+
+        Assert.Equal(PanReply.ControllerShown, (await guardian.HandleAsync(PanMessage.Of(PanCommand.ShowController, generation, FakeControllers.DualSense.Value))).Reply);
+        Assert.DoesNotContain(FakeControllers.DualSenseHid, new HidHideDriver().GetHiddenDevices());
+        Assert.Contains(FakeControllers.EightBitDoXInput, new HidHideDriver().GetHiddenDevices());
+
+        guardian.ClientGone();
+        await guardian.Teardown!;
+
+        Assert.Equal(before, Snapshot());
+    }
+
+    [WindowsFact]
+    public void The_controller_scan_answers_for_a_model_that_isnt_connected()
+    {
+        // The runner has no controller; the plug and play manager answers all the same.
+        var scan = new ControllerDevices().Scan(new ControllerModel(0x045E, 0xFFFE));
+
+        Assert.False(scan.Connected);
+        Assert.Empty(scan.Hideable);
+    }
+
     [WindowsFact]
     public void The_device_list_answers_and_names_only_listed_devices()
     {
@@ -125,7 +163,7 @@ public sealed class HidHideTests
     [WindowsFact]
     public void Windows_takes_the_arrival_registration()
     {
-        using var watch = DeviceArrivalWatch.Start(() => Task.CompletedTask, line => Assert.Fail(line));
+        using var watch = DeviceArrivalWatch.Start(() => Task.CompletedTask, _ => Task.CompletedTask, line => Assert.Fail(line));
 
         Assert.NotNull(watch);
     }

@@ -75,4 +75,16 @@ public sealed class GamepadDevicesTests
     {
         public bool IsEmulated(PadDevice device) => isEmulated(device);
     }
+
+    /// <summary>#238: the settings name a controller SDL reads through XInput by its model, not as "XInput Controller #2".</summary>
+    [Theory]
+    [InlineData("XInput Controller #2", 0x2DC8, 0x310B, "8BitDo Ultimate 2")]
+    [InlineData("XInput Controller #1", 0x045E, 0x0B12, "Xbox Controller")]
+    [InlineData("XInput Controller #1", 0x1234, 0x5678, "Xbox-kompatibler Controller")]
+    [InlineData("DualSense Wireless Controller", 0x054C, 0x0CE6, "DualSense Wireless Controller")]
+    public void A_pad_read_through_XInput_is_shown_by_its_model(string sdlName, int vendor, int product, string shown)
+    {
+        var device = new PadDevice(sdlName, (ushort)vendor, (ushort)product, PadType.XboxOne, StickDeviceType.Gamepad);
+        Assert.Equal(shown, device.DisplayName);
+    }
 }

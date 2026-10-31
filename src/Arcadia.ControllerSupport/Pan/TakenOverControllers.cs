@@ -284,7 +284,7 @@ public sealed class TakenOverControllers
 
     private Controller Add(string key, GamepadReading reading)
     {
-        var controller = new Controller(key, Model(reading), reading.Device.Name, _nextOrder++, _time);
+        var controller = new Controller(key, Model(reading), reading.Device.DisplayName, _nextOrder++, _time);
         _controllers.Add(controller);
         return controller;
     }

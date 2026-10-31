@@ -32,17 +32,22 @@ restart: [pan-puck-restart.md](pan-puck-restart.md).
   interface). An IOCTL answered with "invalid function" counts as unsupported.
 - Checks before every hide: installed, version, inverse off, and with cloaking off no device of the user's in the
   hidden list (listed puck entries don't count): turning cloaking on would hide those too.
-- What: only `HidingList` — the puck `HID\VID_28DE&PID_1304&…`, every instance Pan finds present itself
-  (`CM_Get_Device_ID_List`, enumerator `HID`) on a hardware host, never Arcadia's copy on VIIPER's software host
-  ([pan-puck-restart.md](pan-puck-restart.md)). Other Valve devices stay visible.
+- What: only `HidingList` — the puck `HID\VID_28DE&PID_1304&…` and the controller by cable `HID\VID_28DE&PID_1302&…`
+  (#345), every instance Pan finds present itself (`CM_Get_Device_ID_List`, enumerator `HID`) on a hardware host,
+  never Arcadia's copy on VIIPER's software host ([pan-puck-restart.md](pan-puck-restart.md)). Other Valve devices
+  stay visible.
 - Order: list the devices (may wait on the PnP lock), read and check HidHide, journal (write-ahead), allow list (the
-  client's image path in device form), hidden list, cloaking on, then the puck restart (SetupAPI `DIF_PROPERTYCHANGE`
-  on `USB\VID_28DE&PID_1304\…`), so programs that have it open lose it. A restart Windows can only do by replug
-  (`DI_NEEDRESTART`) fails and stays pending.
+  client's image path in device form), hidden list, cloaking on, then the restart (SetupAPI `DIF_PROPERTYCHANGE`
+  on `USB\VID_28DE&PID_1304\…` and `USB\VID_28DE&PID_1302\…`), so programs that have it open lose it. A restart
+  Windows can only do by replug (`DI_NEEDRESTART`) fails and stays pending.
+- The restart covers every listed device, except when only new instances of one device were hidden and nothing else
+  was pending: then only that device (`ListedDevice`, kept in memory; after Pan's start a pending restart is for all).
+  A cable plugged in while the puck's copy runs is restarted alone: the copy's handles would veto the puck's restart,
+  which would stay pending and be tried again on every arrival the cable's own restart causes.
 - Entries that were there before (the user hid the puck, or allow-listed Arcadia) aren't journaled and never removed;
   `CloakingWasOn` keeps what cloaking was before the first hide.
-- Arrival: `CM_Register_Notification` for HID interfaces whose link names `VID_28DE&PID_1304`; while Pan hides, new
-  instances are hidden and the puck restarted. No polling. The puck keeps its instance ids on any USB port (serial
+- Arrival: `CM_Register_Notification` for HID interfaces whose link names `VID_28DE&PID_1304` or `…&PID_1302`; while
+  Pan hides, new instances are hidden and their device restarted. No polling. The puck keeps its instance ids on any USB port (serial
   number), so a replug while hidden needs no new entry.
 - Steam loses the puck at once when Pan hides it and gets it back at once when Pan shows it with a restart; no focus
   change needed (only Steam's desktop trackpad pointer came back after one). While hidden the trackpad still moves the

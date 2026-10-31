@@ -282,14 +282,25 @@ public sealed class FakeDevices : ISteamControllerDevices, IDisposable
         return [.. Present];
     }
 
-    public async Task RestartAsync(CancellationToken cancellationToken)
+    /// <summary>The Steam Controller by cable, plugged in beside the puck (#345).</summary>
+    public const string Cable1 = @"HID\VID_28DE&PID_1302&COL01\8&3C4D5E6F&0&0000";
+    public const string Cable3 = @"HID\VID_28DE&PID_1302&COL03\8&3C4D5E6F&0&0002";
+
+    /// <summary>The kinds each restart was for (null: every listed device), in order.</summary>
+    public List<IReadOnlyCollection<ListedDevice>?> RestartScopes = [];
+
+    /// <summary>A restart that includes the puck fails, as when Arcadia's copy holds it open (#308, #345).</summary>
+    public bool PuckRestartVetoed;
+
+    public async Task RestartAsync(IReadOnlyCollection<ListedDevice>? only, CancellationToken cancellationToken)
     {
         if (RestartHangs)
         {
             await _restartHangEnds.Task.WaitAsync(cancellationToken);
         }
 
-        if (RestartFails)
+        lock (Calls) RestartScopes.Add(only);
+        if (RestartFails || PuckRestartVetoed && (only is null || only.Contains(HidingList.Puck)))
         {
             throw new InvalidOperationException("needs a replug");
         }

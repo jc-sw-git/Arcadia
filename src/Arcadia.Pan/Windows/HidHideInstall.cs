@@ -96,7 +96,7 @@ public static class HidHideInstall
     {
         try
         {
-            await Task.Run(() => new PuckDevices().RestartAsync(CancellationToken.None)).WaitAsync(PuckRestartWait);
+            await Task.Run(() => new PuckDevices().RestartAsync(only: null, CancellationToken.None)).WaitAsync(PuckRestartWait);
             log("Steam Controller restarted for HidHide's filter (if connected)");
         }
         catch (Exception ex) when (ex is TimeoutException or InvalidOperationException or System.ComponentModel.Win32Exception)

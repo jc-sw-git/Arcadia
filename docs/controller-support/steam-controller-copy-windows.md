@@ -8,8 +8,8 @@ Arcadia reads the real puck raw and VIIPER shows Steam a USB device with the puc
 - `jc-sw-git/VIIPER`, branch `arcadia`: upstream VIIPER plus the device type `hidproxy` (`device/hidproxy`, its docs
   in the fork's `docs/devices/hidproxy.md`, what the fork is: `ARCADIA.md`). Kept small so it rebases onto upstream.
 - `hidproxy` takes the device, configuration, string and HID report descriptors and the speed as hex options
-  (`PuckDescriptors.DeviceSpecific`, from `Copy/puck-descriptors.json`; only string 3, the serial number, is the
-  connected puck's, checked to be 1–32 ASCII letters and digits). bcdUSB 2.01 is served as 2.00 (no BOS descriptor).
+  (`PuckDescriptors.DeviceSpecific`, from `Copy/puck-descriptors.json` or `Copy/cable-descriptors.json`; only
+  string 3, the serial number, is the connected device's, checked to be 1–32 ASCII letters and digits). bcdUSB 2.01 is served as 2.00 (no BOS descriptor).
 - No IN repeat: an interrupt IN endpoint without a new report NAKs instead of resending the last one (upstream repeats
   it every interval, so Steam would read each report many times).
 - Answered by VIIPER itself: the standard requests, HID `SET_IDLE`/`SET_PROTOCOL`/`GET_IDLE`/`GET_PROTOCOL` and the
@@ -32,7 +32,9 @@ Arcadia reads the real puck raw and VIIPER shows Steam a USB device with the puc
 
 ## Arcadia's side
 
-- `WindowsPuck` opens the vendor collection (usage page ≥ `0xFF00`) of each HID interface of the real puck by SetupDi,
+- `WindowsPuck` opens the vendor collection (usage page ≥ `0xFF00`) of each HID interface of the real puck, or of the
+  controller by cable (#345: `Copy/cable-descriptors.json`, one HID interface without `&mi_`, taken as interface 0,
+  `PuckDescriptors.PlaceOf`), by SetupDi,
   only a device the device tree places on a hardware (PCI, ACPI) host: the copy is on a software host, and a device
   whose place can't be read is left out too (fail closed, `PuckDescriptors.IsRealPuck`). With several pucks plugged
   in, only one USB device's collections are copied (`PuckDescriptors.OnePuck`, logged). One reader handle (blocking

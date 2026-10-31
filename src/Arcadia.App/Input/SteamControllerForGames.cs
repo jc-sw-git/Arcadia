@@ -129,7 +129,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             Supported = panSupported,
             // While the installed Pan is about to be replaced (#297), nothing starts on it: the update would end it.
             Enabled = () => settings.Current.PanEnabled && !controllerSupport.IsPanUpdateDue,
-            SteamControllerPresent = () => hold.PuckPresent || padForPresence?.SteamControllerConnected == true,
+            SteamControllerPresent = () => hold.Connected is not null || padForPresence?.SteamControllerConnected == true,
             ReadSteamControllers = gamepad.ReadSteamControllers,
         };
         var routing = new SteamControllerRouting(

@@ -710,7 +710,7 @@ public sealed class PanClientTests : IAsyncDisposable
     {
         public IReadOnlyList<string> PresentHidInstances() => [];
 
-        public Task RestartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task RestartAsync(IReadOnlyCollection<ListedDevice>? only, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public IReadOnlyList<string> PresentBootloaders() => [];
     }
@@ -724,7 +724,7 @@ public sealed class PanClientTests : IAsyncDisposable
 
         public IReadOnlyList<string> PresentBootloaders() => [];
 
-        public async Task RestartAsync(CancellationToken cancellationToken)
+        public async Task RestartAsync(IReadOnlyCollection<ListedDevice>? only, CancellationToken cancellationToken)
         {
             lock (events) events.Add("restart");
             if (Hold is { } hold)

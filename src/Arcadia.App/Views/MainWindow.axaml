@@ -1672,6 +1672,9 @@
                 </Border>
               </Panel>
             </DataTemplate>
+            <DataTemplate x:DataType="settings:ControllerLayoutsViewModel">
+              <views:ControllerLayoutsView />
+            </DataTemplate>
             <!-- A question of a category, e.g. "Alle Spiele auf die Vorauswahl setzen?" on a launcher's page (#178):
                  [A] answers yes, [B] no; each button names its pad button or key (design T178Spiel). -->
             <DataTemplate x:DataType="settings:SettingsQuestionViewModel">

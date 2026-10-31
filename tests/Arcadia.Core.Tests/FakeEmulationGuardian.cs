@@ -66,6 +66,21 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
         return Task.FromResult(ControllerHide?.Invoke(model) ?? new ControllerHidingResult(true, PanReason.None));
     }
 
+    /// <summary>What a show of a controller model answers (#238 D3a); unset: shown.</summary>
+    public Func<ControllerModel, ControllerHidingResult>? ControllerShow;
+
+    /// <summary>Every controller show asked for, as "generation model".</summary>
+    public List<string> ControllerShows = [];
+
+    public Task<ControllerHidingResult> ShowControllerAsync(uint generation, ControllerModel model, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_lock) ControllerShows.Add($"{generation} {model}");
+        Note($"show {model}");
+        DuringControllerHide?.Invoke();
+        return Task.FromResult(ControllerShow?.Invoke(model) ?? new ControllerHidingResult(true, PanReason.None));
+    }
+
     /// <summary>Shared with the other fakes, so a test sees the order of everything (e.g. "copy detached" before "unhide 1").</summary>
     public List<string> Events = [];
 

@@ -4,7 +4,7 @@ Pan hides every controller Arcadia reads, and Arcadia gives each one its own emu
 ([every-controller.md](../../controller-support/every-controller.md)). Cut into parts: **part 1** passes every
 controller on as an Xbox 360 pad with combos, rest, Guide, rumble, failure handling and the D7/D8 rows; **part 2** the
 1:1 kinds (DualShock 4, DualSense incl. Edge, Switch 2 Pro) with touchpad, gyro and light bar (T238-1, -5, -14);
-part 3 "Controller zuordnen" (T238-13), part 4 the latency budget (T238-11).
+**part 3** "Controller zuordnen" (T238-13), part 4 the latency budget (T238-11).
 
 T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller.md`) run with this build too.
 
@@ -47,7 +47,17 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
 - [ ] **T238-12** Xbox Zubehör open at Arcadia's start: the Xbox pad isn't hidden, the warning row "Xbox Zubehör ist
       geöffnet" says why; closed, the row goes and the pad is taken over within 10 s. With the real tool, check the
       process name Pan looks for. · E2E: yes (`EveryControllerForGamesTests`, fake Pan answer); the real tool by hand
-- [ ] **T238-13** Assign kinds and exclude in "Controller zuordnen". Part 3. · E2E: yes (fakes), plus by hand
+- [x] **T238-13** DualSense, a controller without a 1:1 kind (Switch 1 Pro or GameCube adapter) and the Steam
+      Controller connected, a game with an input view (Steam's controller test) runs: they arrive as DualSense and Xbox
+      360 pad. With the gamepad alone, Controller → "Controller zuordnen" → [A]: the box "SPIELE SEHEN" and the modal
+      list each model once (two of a model: one row), the Steam Controller row is locked, takes the focus and shows its
+      note, ◀ ▶ do nothing there. Switching layouts back and forth (also across "Nicht übernehmen") changes nothing in the
+      game or Steam, B closes and the next open shows the old layouts. ◀ ◀ on the DualSense, ▶ ▶ and A (A also steps on)
+      on the other, ▼ to [Übernehmen], A: the modal closes, within 2 s the game sees an Xbox 360 pad and a Switch 2 Pro (each reconnects once). Again ▶ on the
+      other ("Nicht übernehmen"), [Übernehmen]: the game sees the real controller, Steam lists it as the real one, never two. The
+      focus stays on the row. After a restart of Arcadia the choices hold. With the mouse: a click on ◀ ▶ changes,
+      [Übernehmen] applies, ✕ closes without. · E2E: yes (`EveryControllerForGamesTests`, the drawn
+      modal in `ControllerLayoutsViewTests`), plus by hand
 - [ ] **T238-14** Each other 1:1 kind at hand (DualShock 4, DualSense Edge, Switch 2 Pro; a Switch 1 Pro or GameCube
       pad as a controller without one): the game sees that kind (a pad without one as an Xbox 360 pad), every button by
       position (Nintendo's lower B is the game's south button), sticks in the right direction, Edge paddles and Fn,
@@ -69,3 +79,7 @@ History:
 | T238-1, -5 part 2 (fakes) | 2026-10-31 | Claude | branch `feat/emulate-kinds-238` (part 2), Linux container, Avalonia headless, fake SDL, Pan and VIIPER | ✅ 2 new or extended acceptance tests (kinds per controller; touchpad, motion, mute and light bar through the App), 4 new `TakenOverControllersTests`, 17 `VirtualPadReportsTests` (packets against the fork's `state.go`, SDL's sensor and HD rumble maths), own pads ignored in `EmulatedXboxPadsTests`; full suite green (Core 2221, Pan 285, App 480) | Red once: with every PS5 pad an Xbox 360 pad T238-1 and T238-5 fail, without the light bar's wiring T238-5 |
 | QE findings of #346 (fakes) | 2026-10-31 | Claude | branch `feat/emulate-kinds-238`, Linux container, fakes | ✅ own pads known while plugged (`OwnPadModels`), counted as Arcadia's when the device tree can't be read; an Xbox 360 pad gets no state for motion alone; each new test red once without its fix | – |
 | T238-1, -5 on hardware (part 2) | 2026-10-31 | owner (check script `Run-Check-238-kinds.ps1`) | Windows 11, owner's PC, branch `feat/emulate-kinds-238` at 5176e67, DualSense USB, 8BitDo Ultimate 2 dongle, Steam's controller test, Castlevania Belmont's Curse | ✅ one DualSense of Arcadia's, no second; buttons, analog triggers, sticks, touchpad (position, click), gyro without drift, PS, mute, light bar colour and rumble from the game on the real DualSense. With the 8BitDo added Steam and Arcadia see one DualSense and one Xbox 360 pad, the virtual DualSense is ignored by Arcadia, but `joy.cpl` shows an empty list while the 8BitDo is on, with or without the DualSense | ⚠️ `joy.cpl` empty as soon as the hidden 8BitDo (XInput) is emulated: a part 1 behaviour, Steam and Arcadia see the pads. T238-14 (DualShock 4, Edge, Switch 2 Pro) not run: no such pad at hand |
+| T238-13 (fakes, part 3) | 2026-10-31 | Claude | branch `feat/assign-controllers-238` (part 3), Linux container, Avalonia headless, fake SDL, Pan and VIIPER | ✅ 2 acceptance tests (each made red once by a mutation: layouts not applied, row always shown), 9 new `TakenOverControllersTests`, `ControllerLayoutsTests`, 2 window tests (rings of first, locked and last row, scroll and fades with 8 models, looked at in their captures); full suite green | The real pads, Pan's show on hardware and the game's view only by hand |
+| QE findings of #350 (fakes) | 2026-10-31 | Claude | branch `feat/assign-controllers-238`, Linux container, Avalonia headless, fakes | ✅ a show Pan refuses gives the model no pad and leaves it taken over anew later (`TakenOverControllersTests` red once without the fix); two controllers of one model are one row, also after one goes; the bottom fade covers a cut row at open (looked at in the capture); full suite green (Core 2219, Pan 284, App 483) | – |
+| T238-13 apply on A (fakes) | 2026-10-31 | Claude | branch `feat/assign-controllers-238`, Linux container, Avalonia headless, fakes | ✅ owner's finding (every ◀ ▶ replaced the pad, across "Nicht übernehmen" restarted the real controller): the acceptance test tries layouts, ticks and B without any pad change or show, then A on [Übernehmen] below the rows applies both at once (A on a row steps on); red once with a store per step; ring around [Übernehmen] looked at in its capture | – |
+| T238-13 on hardware | 2026-10-31 | owner | Windows 11, owner's PC, branch `feat/assign-controllers-238` at 0eaae00, DualSense and further controllers | ✅ passed. First round: every ◀ ▶ applied at once, so trying layouts replaced the pad and restarted the real controller, with Steam announcing each | Applied only with [Übernehmen] (0eaae00) |

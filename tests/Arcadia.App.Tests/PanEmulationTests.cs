@@ -45,8 +45,9 @@ public sealed class PanEmulationTests
     private static PanRowViewModel Switch(ControllerSettingsViewModel controller) =>
         Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
 
+    /// <summary>The status rows below the switch; "Controller zuordnen" (#238) is none, its tests are in <c>EveryControllerForGamesTests</c>.</summary>
     private static IReadOnlyList<string> RowsBelow(ControllerSettingsViewModel controller) =>
-        [.. controller.Rows.Where(row => row.Group == PanRows.Group && row.Indent == 1).Select(row => row.Key)];
+        [.. controller.Rows.Where(row => row.Group == PanRows.Group && row.Indent == 1 && row.Key != PanRows.LayoutsKey).Select(row => row.Key)];
 
     [AvaloniaFact]
     [Trait("TestCase", "T242-11")]

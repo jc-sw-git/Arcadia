@@ -2,6 +2,8 @@ using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
+using Arcadia.Pan;
+using Arcadia.ControllerSupport.Pan;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -93,6 +95,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _pan = pan;
         _panRows = new PanRows(support, changes, pan, gameInTheWay, ApplyFix, notify);
         _panRows.Switched += Refresh;
+        _panRows.LayoutsRequested += OpenLayouts;
         _sisrRows = new SisrRows(support, RemoveSisr, KeepSisr);
         _mouseMode = new MouseModeRows(changes);
         _returnWithView = new ReturnWithViewRows(changes);
@@ -212,8 +215,17 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     private bool IsBusy => _support.BusyText is not null;
 
+    /// <summary>"Controller zuordnen" while it is open (#238 D3a); null otherwise.</summary>
+    public ControllerLayoutsViewModel? Layouts { get; private set; }
+
     public override void HandleDialog(UiAction action)
     {
+        if (Layouts is { } layouts)
+        {
+            layouts.Handle(action);
+            return;
+        }
+
         switch (action)
         {
             case UiAction.Left or UiAction.Up:
@@ -239,6 +251,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support.Changed -= OnSupportChanged;
         _support.SisrRemoved -= OnSisrRemoved;
         _pan.Changed -= OnPanChanged;
+        _panRows.LayoutsRequested -= OpenLayouts;
         _support.ClearError();
     }
 
@@ -252,6 +265,51 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             Refresh();
         }
     });
+
+    private void OpenLayouts()
+    {
+        if (IsBusy || Prompt != SettingsPrompt.None)
+        {
+            return;
+        }
+
+        Layouts = new ControllerLayoutsViewModel(
+            () => _pan.ConnectedModels,
+            () => _pan.SteamControllerConnected,
+            model => ControllerLayouts.Find(_changes.Current.ControllerLayouts, model),
+            ApplyLayouts,
+            CloseLayouts);
+        Dialog = Layouts;
+        AppLog.Write("Controller zuordnen: geöffnet");
+    }
+
+    /// <summary>B, ✕ or a click beside it; also when the row goes (Pan off, no controller left). The focus stays on the row.</summary>
+    private void CloseLayouts()
+    {
+        if (Layouts is null)
+        {
+            return;
+        }
+
+        Layouts = null;
+        Dialog = Prompt == SettingsPrompt.None ? null : this;
+    }
+
+    /// <summary>
+    /// A in the modal: all changes in one save, so the emulation's next tick (every 2 s) applies them together; the row's
+    /// info panel shows them at once.
+    /// </summary>
+    private void ApplyLayouts(IReadOnlyList<(ControllerModel Model, ControllerLayout? Layout)> changes)
+    {
+        _changes.Apply(settings => changes.Aggregate(settings, (current, change) =>
+            current.WithControllerLayout(ControllerLayouts.Key(change.Model), change.Layout is { } chosen ? ControllerLayouts.Value(chosen) : null)), "Controller zuordnen");
+        foreach (var (model, layout) in changes)
+        {
+            AppLog.Write($"Controller zuordnen: {model} → {(layout is { } shown ? ControllerLayouts.DisplayName(shown) : "Vorgabe")}");
+        }
+
+        Refresh();
+    }
 
     /// <summary>[Entfernen]: its Steam marker needs Steam closed, so a running Steam is asked about (or a game named) first.</summary>
     private void RemoveSisr()
@@ -441,6 +499,18 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     {
         var rows = _panRows.Build();
         _rowAboveSisr = rows.LastOrDefault()?.Key;
+        if (Layouts is { } layouts)
+        {
+            if (rows.Contains(_panRows.Layouts))
+            {
+                layouts.Refresh();
+            }
+            else
+            {
+                CloseLayouts();
+            }
+        }
+
         Marker = _panRows.Marker;
         if (IsSteamPrompt && IsBusy)
         {

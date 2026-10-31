@@ -8,7 +8,7 @@ namespace Arcadia.ControllerSupport.Copy;
 public sealed record SteamControllerCopyWiring(SteamControllerCopyFilter Filter, Func<bool> Forwarding, Func<ComboWithholdingOptions> Combos);
 
 /// <summary>
-/// The copy of the puck on Windows (#242 part C): the real puck read raw (<see cref="WindowsPuck"/>) and VIIPER's
+/// The copy of the puck or the controller by cable on Windows (#242 part C, #345): the real device read raw (<see cref="WindowsPuck"/>) and VIIPER's
 /// <c>hidproxy</c> device (the fork's <c>viiper.exe</c>, <see cref="ViiperRelease"/>) on the server of Arcadia's Xbox pads.
 /// </summary>
 [SupportedOSPlatform("windows")]
@@ -19,12 +19,12 @@ public sealed class ViiperSteamControllerCopy(ViiperXboxPads viiper, ViiperInsta
     private static readonly TimeSpan PresenceCache = TimeSpan.FromSeconds(1);
 
     private readonly Lock _presence = new();
-    private (DateTime At, bool Present) _lastPresence;
+    private (DateTime At, SteamControllerConnection? Present) _lastPresence;
 
     /// <summary>Only the fork's <c>viiper.exe</c> knows the copy's device type; another one would make Pan hide in vain.</summary>
     public bool CanCopy => installation.IsPinned();
 
-    public bool PuckPresent
+    public SteamControllerConnection? Connected
     {
         get
         {
@@ -43,18 +43,22 @@ public sealed class ViiperSteamControllerCopy(ViiperXboxPads viiper, ViiperInsta
 
     public async Task<ISteamControllerCopy> AttachAsync(CancellationToken cancellationToken)
     {
-        var puck = await Task.Run(() => WindowsPuck.Open(PuckDescriptors.Triton), cancellationToken);
+        // Asked afresh: the cached answer may be a second old, and the controller may just have changed devices.
+        var connection = await Task.Run(WindowsPuck.Present, cancellationToken)
+            ?? throw new InvalidOperationException("Kein Steam Controller angeschlossen, weder am Puck noch am Kabel");
+        var descriptors = PuckDescriptors.Of(connection);
+        var puck = await Task.Run(() => WindowsPuck.Open(descriptors), cancellationToken);
         if (puck.PucksFound > 1)
         {
-            log($"Steam-Controller-Kopie: {puck.PucksFound} Pucks angesteckt, nur einer wird für Steam kopiert");
+            log($"Steam-Controller-Kopie: {puck.PucksFound} Geräte derselben Art angesteckt, nur eines wird für Steam kopiert");
         }
 
         try
         {
-            var device = await viiper.AddRawDeviceAsync("hidproxy", PuckDescriptors.Triton.DeviceSpecific(puck.Serial), cancellationToken);
-            var bridge = new SteamControllerCopyBridge(puck, device.Stream, wiring.Filter, wiring.Forwarding, wiring.Combos, PuckDescriptors.Triton, log);
+            var device = await viiper.AddRawDeviceAsync("hidproxy", descriptors.DeviceSpecific(puck.Serial), cancellationToken);
+            var bridge = new SteamControllerCopyBridge(puck, device.Stream, wiring.Filter, wiring.Forwarding, wiring.Combos, descriptors, log);
             bridge.Start();
-            return new Copy(bridge, device);
+            return new Copy(bridge, device, connection, ForgetPresence);
         }
         catch
         {
@@ -67,9 +71,20 @@ public sealed class ViiperSteamControllerCopy(ViiperXboxPads viiper, ViiperInsta
     /// The bridge first (nothing reaches the puck any more), then VIIPER's device, also when the bridge couldn't confirm
     /// that; its exception still reaches Pan's emulation, which then tears down in full.
     /// </summary>
-    private sealed class Copy(SteamControllerCopyBridge bridge, ViiperRawDevice device) : ISteamControllerCopy
+    /// <summary>After a copy went, the next question looks again: the device it copied may have just left (#345).</summary>
+    private void ForgetPresence()
+    {
+        lock (_presence)
+        {
+            _lastPresence = default;
+        }
+    }
+
+    private sealed class Copy(SteamControllerCopyBridge bridge, ViiperRawDevice device, SteamControllerConnection connection, Action forgetPresence) : ISteamControllerCopy
     {
         public bool IsConnected => bridge.IsConnected && !device.ServerEnded;
+
+        public SteamControllerConnection Connection => connection;
 
         public async ValueTask DisposeAsync()
         {
@@ -79,7 +94,14 @@ public sealed class ViiperSteamControllerCopy(ViiperXboxPads viiper, ViiperInsta
             }
             finally
             {
-                await device.DisposeAsync();
+                try
+                {
+                    await device.DisposeAsync();
+                }
+                finally
+                {
+                    forgetPresence();
+                }
             }
         }
     }

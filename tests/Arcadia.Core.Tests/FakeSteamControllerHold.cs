@@ -7,7 +7,14 @@ public sealed class FakeSteamControllerHold : ISteamControllerHold
 {
     public bool CanCopy { get; set; } = true;
 
-    public bool PuckPresent { get; set; } = true;
+    public SteamControllerConnection? Connected { get; set; } = SteamControllerConnection.Puck;
+
+    /// <summary>For tests that don't care how it is connected: on the puck, or nothing.</summary>
+    public bool PuckPresent
+    {
+        get => Connected is not null;
+        set => Connected = value ? SteamControllerConnection.Puck : null;
+    }
 
     /// <summary>Attaching throws with this message, as a VIIPER without the copy's device type would.</summary>
     public string? FailAttach;
@@ -45,17 +52,24 @@ public sealed class FakeSteamControllerHold : ISteamControllerHold
             await Task.Delay(Timeout.Infinite, cancellationToken);
         }
 
+        if (Connected is not { } connection)
+        {
+            throw new InvalidOperationException("no Steam Controller connected");
+        }
+
         Attached++;
-        Note("copy attached");
-        Current = new FakeCopy(this);
+        Note(connection == SteamControllerConnection.Cable ? "copy attached (cable)" : "copy attached");
+        Current = new FakeCopy(this, connection);
         return Current;
     }
 
-    public sealed class FakeCopy(FakeSteamControllerHold owner) : ISteamControllerCopy
+    public sealed class FakeCopy(FakeSteamControllerHold owner, SteamControllerConnection connection) : ISteamControllerCopy
     {
         private volatile bool _lost;
 
         public bool IsConnected => !_lost;
+
+        public SteamControllerConnection Connection => connection;
 
         public void Lose() => _lost = true;
 

@@ -84,14 +84,24 @@ public sealed record HidReportSizes(bool UsesIds, IReadOnlyDictionary<byte, int>
     private static Dictionary<byte, int> Bytes(Dictionary<byte, int> bits) => bits.ToDictionary(e => e.Key, e => (e.Value + 7) / 8);
 }
 
+/// <summary>How the Steam Controller is connected: the device Arcadia copies for Steam.</summary>
+public enum SteamControllerConnection
+{
+    /// <summary>The wireless puck <c>28DE:1304</c>.</summary>
+    Puck,
+
+    /// <summary>The controller itself by USB cable <c>28DE:1302</c> (#345).</summary>
+    Cable,
+}
+
 /// <summary>
-/// The descriptors of the Steam Controller's puck <c>28DE:1304</c> as read from the real one in spike #239: the copy
-/// (#242) enumerates with them, so Steam takes it for the puck. Only the serial number is the connected puck's own.
+/// The descriptors of the Steam Controller's puck <c>28DE:1304</c> (spike #239) and of the controller by cable
+/// <c>28DE:1302</c> (spike #249) as read from the real ones: the copy (#242) enumerates with them, so Steam takes it for
+/// the real device. Only the serial number is the connected device's own.
 /// </summary>
 public sealed class PuckDescriptors
 {
     public const ushort Vendor = 0x28DE;
-    public const ushort Product = 0x1304;
 
     private const byte HidClass = 0x03;
     private const int SerialIndex = 3;
@@ -103,18 +113,33 @@ public sealed class PuckDescriptors
     private readonly Dictionary<string, string> _reports;
     private readonly uint _speed;
 
-    private PuckDescriptors(string device, string config, Dictionary<string, string> strings, Dictionary<string, string> reports, uint speed)
+    private PuckDescriptors(SteamControllerConnection connection, string device, string config, Dictionary<string, string> strings, Dictionary<string, string> reports, uint speed)
     {
+        Connection = connection;
         _device = device;
         _config = config;
         _strings = strings;
         _reports = reports;
         _speed = speed;
         InterfaceClasses = ReadInterfaceClasses(Convert.FromHexString(config));
+        // idProduct, little endian at offset 10 of the device descriptor.
+        var deviceBytes = Convert.FromHexString(device);
+        Product = (ushort)(deviceBytes[10] | deviceBytes[11] << 8);
         ReportSizes = reports.ToDictionary(e => byte.Parse(e.Key, System.Globalization.CultureInfo.InvariantCulture), e => HidReportSizes.Parse(Convert.FromHexString(e.Value)));
     }
 
-    public static PuckDescriptors Triton { get; } = Load();
+    /// <summary>The puck <c>28DE:1304</c>: seven interfaces, the HID ones 2–6.</summary>
+    public static PuckDescriptors Triton { get; } = Load(SteamControllerConnection.Puck, "puck-descriptors.json");
+
+    /// <summary>The controller by cable <c>28DE:1302</c>: one HID interface, number 0, so its paths carry no <c>&amp;MI_</c>.</summary>
+    public static PuckDescriptors Cable { get; } = Load(SteamControllerConnection.Cable, "cable-descriptors.json");
+
+    public static PuckDescriptors Of(SteamControllerConnection connection) => connection == SteamControllerConnection.Cable ? Cable : Triton;
+
+    public SteamControllerConnection Connection { get; }
+
+    /// <summary>The USB product id, from the device descriptor.</summary>
+    public ushort Product { get; }
 
     /// <summary>The class of every interface (HID 3, CDC 2 and 10), by interface number.</summary>
     public IReadOnlyDictionary<byte, byte> InterfaceClasses { get; }
@@ -147,6 +172,34 @@ public sealed class PuckDescriptors
         return byDevice.Count == 0 ? [] : [.. byDevice[0].Select(c => (c.Interface, c.Path))];
     }
 
+    /// <summary>
+    /// The device and interface number of a collection's path: the puck's carry <c>&amp;mi_NN</c>; the controller by cable
+    /// has one interface, so its paths carry none and it is interface 0. Null for any other device.
+    /// </summary>
+    public static (SteamControllerConnection Connection, byte Interface)? PlaceOf(string path)
+    {
+        var lower = path.ToLowerInvariant();
+        if (Names(lower, Cable))
+        {
+            return lower.Contains("&mi_", StringComparison.Ordinal) ? null : (SteamControllerConnection.Cable, 0);
+        }
+
+        if (!Names(lower, Triton))
+        {
+            return null;
+        }
+
+        var at = lower.IndexOf("&mi_", StringComparison.Ordinal);
+        return at >= 0 && at + 6 <= lower.Length && byte.TryParse(lower.AsSpan(at + 4, 2), System.Globalization.NumberStyles.HexNumber, null, out var number)
+            ? (SteamControllerConnection.Puck, number)
+            : null;
+
+        // Followed by the next part of the id, so a product id that only starts the same doesn't count.
+        static bool Names(string lower, PuckDescriptors device) =>
+            lower.Contains($"vid_{Vendor:x4}&pid_{device.Product:x4}&", StringComparison.Ordinal)
+            || lower.Contains($"vid_{Vendor:x4}&pid_{device.Product:x4}#", StringComparison.Ordinal);
+    }
+
     /// <summary>A serial number as Windows read it from the puck: letters and digits only, at most 32.</summary>
     public static bool IsValidSerial(string serial) =>
         serial.Length is > 0 and <= MaxSerialLength && serial.All(char.IsAsciiLetterOrDigit);
@@ -170,13 +223,14 @@ public sealed class PuckDescriptors
         };
     }
 
-    private static PuckDescriptors Load()
+    private static PuckDescriptors Load(SteamControllerConnection connection, string file)
     {
-        using var stream = typeof(PuckDescriptors).Assembly.GetManifestResourceStream("Arcadia.ControllerSupport.Copy.puck-descriptors.json")
-            ?? throw new InvalidOperationException("Die Beschreibung des Pucks fehlt in Arcadia");
+        using var stream = typeof(PuckDescriptors).Assembly.GetManifestResourceStream($"Arcadia.ControllerSupport.Copy.{file}")
+            ?? throw new InvalidOperationException($"Die Beschreibung des Steam Controllers fehlt in Arcadia ({file})");
         using var json = JsonDocument.Parse(stream);
         var root = json.RootElement;
         return new PuckDescriptors(
+            connection,
             root.GetProperty("device").GetString()!,
             root.GetProperty("config").GetString()!,
             root.GetProperty("strings").EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetString()!),

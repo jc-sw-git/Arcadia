@@ -320,6 +320,25 @@ public sealed class TakenOverControllersTests
         Assert.Equal(0, _pads.Unplugged);
     }
 
+    /// <summary>QE of #338: the new SDL handle after a let-go doesn't rumble, so a constant rumble is set on it again.</summary>
+    [Fact]
+    public async Task A_games_rumble_carries_over_to_the_controllers_new_id_after_SDL_started_again()
+    {
+        _others.Feed([DualSense]);
+        await _emulation.TickAsync();
+        _pads.All[0].Rumble(255, 10);
+
+        _others.Feed([DualSense with { PadId = 11 }]);
+        _others.Feed([DualSense with { PadId = 11 }]);
+
+        Assert.Equal(["1: 255/10", "11: 255/10"], _rumbles);
+
+        // Stopped by the game: nothing to carry over.
+        _pads.All[0].Rumble(0, 0);
+        _others.Feed([DualSense with { PadId = 12 }]);
+        Assert.Equal(["1: 255/10", "11: 255/10", "11: 0/0"], _rumbles);
+    }
+
     [Fact]
     public async Task While_the_controllers_are_let_go_Pan_still_hears_the_heartbeat()
     {

@@ -128,6 +128,7 @@ public sealed class TakenOverControllers
     {
         var allowed = ForwardingAllowed();
         var combos = Combos();
+        List<(int PadId, XboxRumble Motors)> rumbleAgain = [];
         lock (_lock)
         {
             foreach (var controller in _controllers)
@@ -147,6 +148,13 @@ public sealed class TakenOverControllers
                 var key = KeyOf(reading);
                 var controller = Find(key) ?? Add(key, reading);
                 controller.Seen = true;
+                if (controller.PadId != reading.PadId && controller.Rumbling is { } motors)
+                {
+                    // SDL started again (a let-go for Pan's hide) and its new handle doesn't rumble: a game that set
+                    // its motors once and left them on would otherwise feel nothing until it changes them.
+                    rumbleAgain.Add((reading.PadId, motors));
+                }
+
                 controller.PadId = reading.PadId;
 
                 // Filtered on every poll, also while nothing is forwarded, so a combo begun in Arcadia stays Arcadia's.
@@ -154,18 +162,21 @@ public sealed class TakenOverControllers
                 controller.Offer(allowed ? XboxPadState.From(reading, buttons, withGuide: true) : XboxPadState.Neutral, _time.GetTimestamp());
             }
 
-            if (_rereadAt != long.MinValue && _time.GetElapsedTime(_rereadAt) < RereadGrace)
+            if (_rereadAt == long.MinValue || _time.GetElapsedTime(_rereadAt) >= RereadGrace)
             {
-                return;
-            }
-
-            for (var i = _controllers.Count - 1; i >= 0; i--)
-            {
-                if (!_controllers[i].Seen)
+                for (var i = _controllers.Count - 1; i >= 0; i--)
                 {
-                    RemoveAt(i);
+                    if (!_controllers[i].Seen)
+                    {
+                        RemoveAt(i);
+                    }
                 }
             }
+        }
+
+        foreach (var (padId, motors) in rumbleAgain)
+        {
+            Rumble(padId, motors);
         }
     }
 
@@ -634,6 +645,8 @@ public sealed class TakenOverControllers
         private volatile IVirtualXboxPad? _pad;
         private Task? _sender;
         private volatile int _padId;
+        private readonly Lock _rumbleLock = new();
+        private XboxRumble? _rumbling;
 
         public string Key { get; } = key;
 
@@ -670,10 +683,22 @@ public sealed class TakenOverControllers
             _states.Writer.TryWrite((state, polledAt));
         }
 
+        /// <summary>The motors the game set last, while not (0, 0); read on the poll thread, set on VIIPER's.</summary>
+        public XboxRumble? Rumbling
+        {
+            get { lock (_rumbleLock) return _rumbling; }
+            private set { lock (_rumbleLock) _rumbling = value; }
+        }
+
         public void Plug(IVirtualXboxPad pad, Action<int, XboxRumble> rumble)
         {
             Delays = default;
-            pad.Rumbled += motors => rumble(PadId, motors);
+            Rumbling = null;
+            pad.Rumbled += motors =>
+            {
+                Rumbling = motors == default ? null : motors;
+                rumble(PadId, motors);
+            };
             _pad = pad;
             _sender ??= Task.Run(SendLoopAsync, CancellationToken.None);
 
@@ -681,7 +706,11 @@ public sealed class TakenOverControllers
             _states.Writer.TryWrite((_lastOffered, time.GetTimestamp()));
         }
 
-        public IVirtualXboxPad? TakePad() => Interlocked.Exchange(ref _pad, null);
+        public IVirtualXboxPad? TakePad()
+        {
+            Rumbling = null;
+            return Interlocked.Exchange(ref _pad, null);
+        }
 
         /// <summary>The emulation took the pad out itself.</summary>
         public void ForgetPad() => _pad = null;

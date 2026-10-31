@@ -239,7 +239,16 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
         private async Task ReadOutputAsync(Stream output)
         {
             var motors = new byte[2];
-            await output.ReadExactlyAsync(motors, _reading.Token);
+            try
+            {
+                await output.ReadExactlyAsync(motors, _reading.Token);
+            }
+            catch (OperationCanceledException) when (_reading.IsCancellationRequested)
+            {
+                // The pad is being unplugged: no exception into Viiper.Client's read loop, it ends with the dispose.
+                return;
+            }
+
             Rumbled?.Invoke(new XboxRumble(motors[0], motors[1]));
         }
 

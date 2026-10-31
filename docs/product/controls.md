@@ -45,8 +45,9 @@
 ## Every controller in games (#238)
 
 - While "Controller-Wächter (Pan)" is on, Pan hides every controller Arcadia reads from games and Steam, and each one
-  reaches games as an emulated pad of Arcadia's (an Xbox 360 pad for now; its own kind and the player's choice follow
-  in #238's later parts), one per controller, in the order they connected. The same rules as for the Steam Controller
+  reaches games as an emulated pad of Arcadia's, of its own kind where Arcadia has it (DualShock 4, DualSense,
+  DualSense Edge, Switch 2 Pro; every other controller an Xbox 360 pad; the player's choice follows in #238's part 3),
+  one per controller, in the order they connected. The same rules as for the Steam Controller
   below: Back + Start never reaches the game, ⧉ and ≡ alone a little later (held, as held), rest while Arcadia is in
   front or the mouse mode is on. Unlike the Steam Controller's pad, they also pass while Steam itself is in front: Steam sees
   only them. With "Steams Desktop-Steuerung zulassen" on they pass in front of Arcadia and in the mouse mode too, ⧉ + ≡

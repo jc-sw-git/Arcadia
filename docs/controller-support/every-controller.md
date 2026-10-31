@@ -1,4 +1,4 @@
-# Every other controller as an Xbox pad for games (#238)
+# Every other controller as an emulated pad for games (#238)
 
 `TakenOverControllers` (`src/Arcadia.ControllerSupport/Pan/`) takes every controller Arcadia reads, except the Steam
 Controller (its own pad, [xbox-pad.md](xbox-pad.md)) and what `ControllerList.MayTakeOver` excludes (Steam's virtual
@@ -41,6 +41,32 @@ controllers taken over. Product rules: `docs/product/controls.md`, the settings 
 - A lost pad is replugged; Pan taking it away doesn't count. Three losses in 5 minutes give up (`GaveUp`, a notice),
   "Controller wiederherstellen" and Retry forget them.
 
+## Kinds (part 2, D3)
+
+- `PadKinds.Default`: SDL's type PS4 → DualShock 4, PS5 → DualSense (054C:0DF2 → DualSense Edge), 057E:2069 →
+  Switch 2 Pro; everything else (Switch 1 Pro, GameCube, PS3, XInput pads) → Xbox 360. The pad's kind is fixed when the
+  controller connects.
+- The Xbox 360 pad stays on Viiper.Client's typed stream; the others use VIIPER's raw device stream
+  (`ViiperReportPad`, `VirtualPadReports`): fixed-size packets as in the fork's `device/*/state.go` (DualShock 4 31
+  bytes, DualSense 33, Switch 2 Pro 24 in; feedback 8, 6, 34). The fork (upstream of 2026-10-15 plus `hidproxy`)
+  already has these types.
+- Buttons by position (#72): south is Cross / Nintendo's B. Guide → PS / Home; SDL's misc1 → mute (DualSense) or
+  Capture (Switch 2 Pro), misc2 → C; paddle 1 → Edge L4/R4 or GR/GL, paddle 2 → Edge Fn. A PlayStation trigger's
+  button is set as soon as it moves; the Switch's ZL/ZR past half way.
+- Touchpad: SDL's first finger only, scaled to 1920 × 942 (DS4) or 1920 × 1080 (DualSense); the second finger stays
+  lifted.
+- Motion: SDL's gyro (rad/s) and accelerometer (m/s²) back to the device's counts, so SDL on the host reads the same
+  values: PlayStation axes as SDL's (16 resp. 16.384 counts per °/s, 835.07 per m/s²); Switch 2 Pro the inverse of SDL's
+  swap (x, z, −y), gyro 34.8 rad/s and accelerometer 8 g per 32767. Without motion a pad lies flat (gravity on +Y).
+  The real controllers' sensors are on (`IGamepadSource.UseMotionSensors`) only while such a pad is plugged.
+- Feedback: DualShock 4 rumble and light bar by its flags; DualSense rumble from every report, the light bar only when
+  not black (VIIPER sends zero without the LED flag); Switch 2 Pro HD rumble decoded from SDL's encoding (low band →
+  large motor, high band → small, the stronger side, amplitude max 29000 = 255). The light bar goes to the real
+  controller with `SDL_SetGamepadLED` and is set again after a let-go, like the rumble. Not carried: adaptive triggers
+  and DualSense haptics (VIIPER has no output for them), player LEDs.
+- Arcadia's own pads carry the real ids: `GamepadDevices.WhyIgnored` leaves out a Sony or Nintendo pad whose HID path
+  is on a software host (`IEmulatedPads.IsVirtualHidPad`). Pan never hides devices on a software host.
+
 ## The settings rows (D7, D8)
 
 While the emulation runs, `NotHidden` lists every controller Pan rejected or that waits for a reconnect, with Pan's
@@ -49,6 +75,7 @@ reason; `WaitingForTool` those whose vendor's firmware tool runs (Xbox Zubehör,
 
 ## Not done yet
 
-The pad's own kind (DualShock 4, DualSense, Switch 2 Pro 1:1), the "Controller zuordnen" modal and the latency budget
-(D9) follow in #238's later parts. Not detected: VIIPER refusing another pad (no free slot). `ReleaseForFirmware` ends
+The "Controller zuordnen" modal (part 3) and the latency budget (D9, part 4) follow in #238's later parts. Not
+verified on hardware yet: the button bits of the Switch 2 Pro's C and the Edge's paddles as SDL maps them, the
+Switch 2 Pro's stick calibration with VIIPER's zeroed flash. Not detected: VIIPER refusing another pad (no free slot). `ReleaseForFirmware` ends
 the whole emulation, so the other controllers' pads are replugged too.

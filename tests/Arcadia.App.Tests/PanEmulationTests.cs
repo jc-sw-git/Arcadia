@@ -475,6 +475,22 @@ public sealed class PanEmulationTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T295-2")]
+    public async Task A_firmware_attempt_with_the_library_in_front_brings_Arcadia_to_the_front_once()
+    {
+        using var arcadia = await StartAsync(copy: true, new FakeSteam { IsSteamRunning = true });
+        var shown = 0;
+        arcadia.Main.PanDialogShown += (_, _) => shown++;
+
+        arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, RebootIntoBootloader, forwarding: true);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Hinweis „Steam will die Firmware aktualisieren“");
+        arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, RebootIntoBootloader, forwarding: true);
+
+        // PanDialogShown brings the window back in front of Steam's (App: ForegroundGuard.BringBack).
+        Assert.Equal(1, shown);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T295-2")]
     public async Task A_firmware_attempt_shows_a_notice_that_acts_at_once_and_B_closes_it_keeping_the_controller()
     {
         var shown = 0;

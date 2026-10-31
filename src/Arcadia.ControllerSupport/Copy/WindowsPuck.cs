@@ -7,9 +7,9 @@ using Microsoft.Win32.SafeHandles;
 namespace Arcadia.ControllerSupport.Copy;
 
 /// <summary>
-/// The real puck through Windows' HID API (#242 part C): the vendor collection (usage page <c>FF00</c>) of each HID
-/// interface, found by its ids and its place in the device tree, so the copy (same ids, on usbip-win2's software host)
-/// is never taken for it. Windows won't open the mouse and keyboard collections for reading (spike #239), and Steam
+/// The real puck, or the controller by cable (#345), through Windows' HID API (#242 part C): the vendor collection
+/// (usage page <c>FF00</c>) of each HID interface, found by its ids and its place in the device tree, so the copy (same
+/// ids, on usbip-win2's software host) is never taken for it. Windows won't open the mouse and keyboard collections for reading (spike #239), and Steam
 /// needs only the vendor ones.
 /// </summary>
 /// <remarks>
@@ -49,26 +49,35 @@ public sealed partial class WindowsPuck : IRealPuck
 
     public IReadOnlyCollection<byte> Interfaces => _collections.Keys;
 
-    /// <summary>The real puck's vendor collections are there (Arcadia sees them past HidHide). Never throws.</summary>
-    public static bool Present()
+    /// <summary>
+    /// Which real device's vendor collections are there (Arcadia sees them past HidHide): the controller by cable before
+    /// the puck, as a controller plugged in by cable is never also on the puck (spike #249), while the puck stays plugged
+    /// in with its slots empty. Null when neither is. Never throws.
+    /// </summary>
+    public static SteamControllerConnection? Present()
     {
         try
         {
-            return PuckDescriptors.OnePuck(Find(), out _).Count > 0;
+            var found = Find();
+            return PuckDescriptors.OnePuck(Of(found, SteamControllerConnection.Cable), out _).Count > 0 ? SteamControllerConnection.Cable
+                : PuckDescriptors.OnePuck(Of(found, SteamControllerConnection.Puck), out _).Count > 0 ? SteamControllerConnection.Puck
+                : null;
         }
         catch (Exception)
         {
-            return false;
+            return null;
         }
     }
 
-    /// <summary>Opens every vendor collection of the real puck; throws when there is none or one can't be opened.</summary>
+    /// <summary>Opens every vendor collection of the real device; throws when there is none or one can't be opened.</summary>
     public static WindowsPuck Open(PuckDescriptors descriptors)
     {
-        var found = PuckDescriptors.OnePuck(Find(), out var pucks);
+        var found = PuckDescriptors.OnePuck(Of(Find(), descriptors.Connection), out var pucks);
         if (found.Count == 0)
         {
-            throw new InvalidOperationException("Der Puck des Steam Controllers ist nicht da (oder Arcadia steht nicht auf der Liste von HidHide)");
+            throw new InvalidOperationException(descriptors.Connection == SteamControllerConnection.Cable
+                ? "Der Steam Controller am Kabel ist nicht da (oder Arcadia steht nicht auf der Liste von HidHide)"
+                : "Der Puck des Steam Controllers ist nicht da (oder Arcadia steht nicht auf der Liste von HidHide)");
         }
 
         var collections = new Dictionary<byte, Collection>();
@@ -120,11 +129,15 @@ public sealed partial class WindowsPuck : IRealPuck
         }
     }
 
+    private static IEnumerable<(byte Interface, string Path, string? UsbDevice)> Of(
+        IEnumerable<(byte Interface, string Path, string? UsbDevice, SteamControllerConnection Connection)> found, SteamControllerConnection connection) =>
+        found.Where(c => c.Connection == connection).Select(c => (c.Interface, c.Path, c.UsbDevice));
+
     /// <summary>
-    /// The vendor collections of every real puck, by interface number (<c>&amp;mi_02</c> in the path) and the USB device
-    /// they belong to.
+    /// The vendor collections of every real puck and controller by cable, by interface number (<c>&amp;mi_02</c> in the
+    /// path) and the USB device they belong to.
     /// </summary>
-    private static List<(byte Interface, string Path, string? UsbDevice)> Find()
+    private static List<(byte Interface, string Path, string? UsbDevice, SteamControllerConnection Connection)> Find()
     {
         HidD_GetHidGuid(out var guid);
         var set = SetupDiGetClassDevsW(ref guid, 0, 0, DigcfPresent | DigcfDeviceInterface);
@@ -135,7 +148,7 @@ public sealed partial class WindowsPuck : IRealPuck
 
         try
         {
-            var found = new List<(byte, string, string?)>();
+            var found = new List<(byte, string, string?, SteamControllerConnection)>();
             for (uint index = 0; ; index++)
             {
                 var data = new DeviceInterfaceData { Size = (uint)Marshal.SizeOf<DeviceInterfaceData>() };
@@ -145,10 +158,10 @@ public sealed partial class WindowsPuck : IRealPuck
                 }
 
                 // Only a puck known to sit on a hardware host: one whose place can't be read might be the copy itself.
-                if (PathOf(set, ref data) is { } path && InterfaceOf(path) is { } iface && IsVendorCollection(path)
+                if (PathOf(set, ref data) is { } path && PuckDescriptors.PlaceOf(path) is { } place && IsVendorCollection(path)
                     && PuckDescriptors.IsRealPuck(DeviceTree.HostOfInterface(path)))
                 {
-                    found.Add((iface, path, DeviceTree.UsbDeviceOfInterface(path)));
+                    found.Add((place.Interface, path, DeviceTree.UsbDeviceOfInterface(path), place.Connection));
                 }
             }
         }
@@ -156,21 +169,6 @@ public sealed partial class WindowsPuck : IRealPuck
         {
             SetupDiDestroyDeviceInfoList(set);
         }
-    }
-
-    /// <summary>The interface number of a puck collection's path, or null for any other device.</summary>
-    public static byte? InterfaceOf(string path)
-    {
-        var lower = path.ToLowerInvariant();
-        if (!lower.Contains($"vid_{PuckDescriptors.Vendor:x4}&pid_{PuckDescriptors.Product:x4}", StringComparison.Ordinal))
-        {
-            return null;
-        }
-
-        var at = lower.IndexOf("&mi_", StringComparison.Ordinal);
-        return at >= 0 && at + 6 <= lower.Length && byte.TryParse(lower.AsSpan(at + 4, 2), System.Globalization.NumberStyles.HexNumber, null, out var number)
-            ? number
-            : null;
     }
 
     private static bool IsVendorCollection(string path)

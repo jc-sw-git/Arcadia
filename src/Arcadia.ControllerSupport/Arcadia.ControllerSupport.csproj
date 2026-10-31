@@ -18,6 +18,7 @@
   <ItemGroup>
     <!-- The puck's descriptors as read from the real one in spike #239; the copy enumerates with them (#242). -->
     <EmbeddedResource Include="Copy\puck-descriptors.json" LogicalName="Arcadia.ControllerSupport.Copy.puck-descriptors.json" />
+    <EmbeddedResource Include="Copy\cable-descriptors.json" LogicalName="Arcadia.ControllerSupport.Copy.cable-descriptors.json" />
   </ItemGroup>
 
   <PropertyGroup>

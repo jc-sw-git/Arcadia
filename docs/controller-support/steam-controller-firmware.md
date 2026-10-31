@@ -26,17 +26,17 @@
 - "Controller freigeben" (`PanEmulation.ReleaseForFirmwareAsync`) ends the emulation, so Pan shows the puck, and keeps
   Steam Controller and puck out (`PanEmulationProblem.Excluded`, not a problem) until Pan is switched off and on or
   Arcadia restarts. Every other controller stays taken over (#238 D2).
-- Pan never hides and never restarts the puck while a bootloader is connected and for `Guardian.BootloaderGrace`
-  (5 s) after (`HidingList.IsBootloader`, `ISteamControllerDevices.BootloaderPresent`): a hide or restart then could
-  cut the flash off. The hide is answered `BootloaderPresent`, not counted as a failure; Arcadia tries again after 10 s
+- Pan never hides and never restarts the puck or the controller by cable while a bootloader is connected and for
+  `Guardian.BootloaderGrace` (5 s) after (`HidingList.IsBootloader`, `ISteamControllerDevices.BootloaderPresent`): a
+  hide or restart then could cut the flash off. The hide is answered `BootloaderPresent`, not counted as a failure; Arcadia tries again after 10 s
   and, with no other controller taken over, shows "Steam spielt ein Firmware-Update auf"
   (`PanEmulationProblem.FirmwareUpdate`). A restart stays
   pending (`PuckRestartPending`) for the next show, hide or retry. A device list that can't be read touches
   nothing either but is a failure (`HidingFailed`). A `1007` alone within `Guardian.OwnRestartWindow` (15 s) of Pan's
   own puck restart is the few seconds every restart passes through it
   ([emulated-steam-controller.md](emulated-steam-controller.md)), not a flash; a `1005` always is.
-- A puck that arrives (after its flash, a replug) is hidden only while the puck itself is hidden for Arcadia, not while
-  Pan hides only other controllers: after "Controller freigeben" it stays Steam's.
+- A puck or cable controller that arrives (after its flash, a replug) is hidden only while the Steam Controller is
+  hidden for Arcadia, not while Pan hides only other controllers: after "Controller freigeben" it stays Steam's.
 - "Controller freigeben" with the puck hidden ends the whole emulation; the other controllers are taken over again a
   tick later (a short gap, accepted: the notice comes only with no game in front).
 - Journals of a Pan before protocol 3 may carry `FirmwareHold`; it is ignored.

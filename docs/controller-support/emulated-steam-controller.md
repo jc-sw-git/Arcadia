@@ -24,7 +24,7 @@ throwaway proxy). Check scripts and logs: project files `spikes/239/`.
 - Proof of a real update: Steam's `logs\controller.txt` names the firmware at every connect (`FWTimestamp …` per
   dongle and controller); a changed timestamp means it was flashed.
 - The Triton by cable: [The Triton by cable](#the-triton-by-cable-spike-249). Steam updates the controller only by
-  cable. Pan neither hides nor copies `1302` yet.
+  cable. Pan hides `1302` beside the puck and Arcadia copies it (#345).
 
 ## HidHide and Steam
 

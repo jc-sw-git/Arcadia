@@ -28,6 +28,9 @@ public enum PanServiceStartStep
 
     /// <summary>Started by Arcadia and stopped again: Pan ends at once, and starting it again every 2 s doesn't help.</summary>
     EndedAtOnce,
+
+    /// <summary>Arcadia is to leave Pan alone now (its update began while this start waited): never started (#354).</summary>
+    LeftAlone,
 }
 
 /// <summary>
@@ -39,8 +42,12 @@ public static class PanServiceStart
 {
     /// <param name="running">The service runs.</param>
     /// <param name="stopped">The service is stopped (not pending either way).</param>
-    public static PanServiceStartStep Next(bool running, bool stopped, bool startRequested) =>
-        running ? PanServiceStartStep.Running
+    /// <param name="leftAlone">
+    /// Arcadia is to leave Pan alone: Pan's <c>--install</c> may have stopped the service and waits for it to stay stopped.
+    /// </param>
+    public static PanServiceStartStep Next(bool running, bool stopped, bool startRequested, bool leftAlone = false) =>
+        leftAlone ? PanServiceStartStep.LeftAlone
+        : running ? PanServiceStartStep.Running
         : stopped ? startRequested ? PanServiceStartStep.EndedAtOnce : PanServiceStartStep.Start
         : PanServiceStartStep.Wait;
 
@@ -67,7 +74,8 @@ public interface IPanTransport
 /// the service manager reports for <c>ArcadiaPan</c>; anything else is a squatter and refused.
 /// </summary>
 [SupportedOSPlatform("windows")]
-public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
+/// <param name="whyLeftAlone">Why Arcadia is to leave Pan alone right now, null if not; asked again before each service start.</param>
+public sealed partial class PanPipeTransport(Action<string> log, Func<string?>? whyLeftAlone = null) : IPanTransport
 {
     private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan ServiceStartTimeout = TimeSpan.FromSeconds(10);
@@ -127,8 +135,11 @@ public sealed partial class PanPipeTransport(Action<string> log) : IPanTransport
             while (true)
             {
                 var status = service.Status;
-                switch (PanServiceStart.Next(status == ServiceControllerStatus.Running, status == ServiceControllerStatus.Stopped, startRequested))
+                var leftAlone = whyLeftAlone?.Invoke();
+                switch (PanServiceStart.Next(status == ServiceControllerStatus.Running, status == ServiceControllerStatus.Stopped, startRequested, leftAlone is not null))
                 {
+                    case PanServiceStartStep.LeftAlone:
+                        throw new PanUnavailableException(leftAlone!);
                     case PanServiceStartStep.Running:
                         return;
                     case PanServiceStartStep.Start:

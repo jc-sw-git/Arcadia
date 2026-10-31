@@ -21,7 +21,7 @@ and runs only when the player confirms; declined, Pan is switched off and Arcadi
   is closed first, one dialog at a time (`MainViewModel.PanAnsweredAtStart`, `StartPanUpdate`). [A] pressed earlier shows "Pan wird aktualisiert" meanwhile, [B] "Pan wird beendet" without a countdown.
 - While the update runs, Arcadia doesn't talk to Pan (`ControllerSupportService.IsPanUpdating`, `PanClient.WhyLeftAlone`):
   `--install` stops the old service and waits up to 90 s for it to end, and a reconnecting client would start it again
-  (#354). This holds until the update succeeded or, declined or failed, until `SwitchPanOffForUpdate` switched Pan off.
+  (#354); a service start already under way asks again first (`PanPipeTransport`). This holds until the update succeeded or, declined or failed, until `SwitchPanOffForUpdate` switched Pan off.
 - Only Pan: `--install --expect-hash` without driver installers, so no download (works offline), no HidHide setup, no
   puck restart; Steam may run and a running Steam game doesn't block it. One UAC prompt, which needs mouse or keyboard
   until #247. Confirmed: library, toast "Pan: aktualisiert".

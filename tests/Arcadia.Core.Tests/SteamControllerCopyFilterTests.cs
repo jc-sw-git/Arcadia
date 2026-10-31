@@ -26,9 +26,9 @@ public sealed class SteamControllerCopyFilterTests
     }
 
     /// <summary>The allow list, written out on its own so a change to it shows here as a deliberate second edit.</summary>
-    private static readonly byte[] AllowedFeatureTypes = [0x81, 0x82, 0x83, 0x85, 0x87, 0x8E, 0xAE, 0xB4, 0xC1];
+    private static readonly byte[] AllowedFeatureTypes = [0x81, 0x82, 0x83, 0x85, 0x87, 0x8E, 0x9F, 0xAE, 0xB4, 0xC1];
     private static readonly byte[] HapticFeatureTypes = [0x8F, 0xEA, 0xEB];
-    private static readonly byte[] FirmwareFeatureTypes = [0xB7, 0xB8, 0xB9];
+    private static readonly byte[] FirmwareFeatureTypes = [0x90, 0xB7, 0xB8, 0xB9];
     private static readonly byte[] HapticOutputIds = [0x80, 0x81, 0x82, 0x83, 0x84, 0x85];
 
     public static TheoryData<byte> AllTypes()
@@ -91,8 +91,8 @@ public sealed class SteamControllerCopyFilterTests
     [Trait("TestCase", "T242-1")]
     public void The_types_spike_239_saw_dropped_stay_dropped()
     {
-        // Firmware and bootloader messages, factory reset, serial, pairing records, and Steam's four unknown ones.
-        foreach (var type in new byte[] { 0x86, 0xA9, 0xAD, 0xAF, 0xB0, 0xB7, 0xB8, 0xB9, 0xDC, 0xE2, 0xED, 0xF3 })
+        // Firmware and bootloader messages (0x90 from #295), factory reset, serial, pairing records, and Steam's four unknown ones.
+        foreach (var type in new byte[] { 0x86, 0x90, 0xA9, 0xAD, 0xAF, 0xB0, 0xB7, 0xB8, 0xB9, 0xDC, 0xE2, 0xED, 0xF3 })
         {
             Assert.False(_filter.FromSteam(SteamReportKind.SetFeature, [1, type, 0], forwarding: true), $"0x{type:X2}");
         }
@@ -119,34 +119,42 @@ public sealed class SteamControllerCopyFilterTests
     }
 
     [Fact]
-    [Trait("TestCase", "T242-8")]
-    public void Every_dropped_message_but_the_routine_ones_counts_as_update_traffic_and_each_type_is_logged_once_without_its_payload()
+    [Trait("TestCase", "T295-2")]
+    public void Only_firmware_messages_count_as_an_update_and_each_type_is_logged_once_without_its_payload()
     {
         for (var i = 0; i < 3; i++)
         {
-            _filter.FromSteam(SteamReportKind.SetFeature, [1, 0xB8, 0x10, 0x42, 0x42], forwarding: true);
+            _filter.FromSteam(SteamReportKind.SetFeature, [1, 0x90, 0x10, 0x42, 0x42], forwarding: true);
             _filter.FromSteam(SteamReportKind.SetFeature, [1, 0xDC, 0x00], forwarding: true);
         }
 
         _filter.FromSteam(SteamReportKind.SetFeature, [1, 0x86], forwarding: true);
+        _filter.FromSteam(SteamReportKind.SetFeature, [1, 0xB8, 0x00], forwarding: true);
+        _filter.FromSteam(SteamReportKind.Output, [0x81, 0x00], forwarding: false);
 
         Assert.Equal(
         [
-            "Steam-Controller-Kopie: Firmware-Nachricht AUDIO_UPDATE_DATA (0xB8) verworfen (5 Bytes)",
+            "Steam-Controller-Kopie: Firmware-Nachricht REBOOT_INTO_BOOTLOADER (0x90) verworfen (5 Bytes)",
             "Steam-Controller-Kopie: Nachricht unbekannt (0xDC) verworfen (3 Bytes)",
             "Steam-Controller-Kopie: Nachricht FACTORY_RESET (0x86) verworfen (2 Bytes)",
+            "Steam-Controller-Kopie: Firmware-Nachricht AUDIO_UPDATE_DATA (0xB8) verworfen (3 Bytes)",
         ], _log);
         Assert.DoesNotContain(_log, line => line.Contains("42 42") || line.Contains("0x42"));
 
-        _filter.FromSteam(SteamReportKind.SetFeature, [1, 0xA3, 0x00], forwarding: true);
-        _filter.FromSteam(SteamReportKind.Output, [0x81, 0x00], forwarding: false);
-
-        // 0xDC and 0xA3 Steam sends all along, haptics while resting are dropped as routine: none of them counts.
+        // Unknown and blocked types, haptics while resting: dropped, but no update (#295: 0x9F once raised a false one).
         Assert.Equal(
         [
-            "Nachricht AUDIO_UPDATE_DATA (0xB8)", "Nachricht AUDIO_UPDATE_DATA (0xB8)", "Nachricht AUDIO_UPDATE_DATA (0xB8)",
-            "Nachricht FACTORY_RESET (0x86)",
+            "Nachricht REBOOT_INTO_BOOTLOADER (0x90)", "Nachricht REBOOT_INTO_BOOTLOADER (0x90)", "Nachricht REBOOT_INTO_BOOTLOADER (0x90)",
+            "Nachricht AUDIO_UPDATE_DATA (0xB8)",
         ], _firmware);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T295-4")]
+    public void Turning_the_controller_off_with_Steam_and_Y_reaches_it_and_is_no_update()
+    {
+        Assert.True(_filter.FromSteam(SteamReportKind.SetFeature, [1, 0x9F, 0x00], forwarding: false));
+        Assert.Empty(_firmware);
     }
 
     [Fact]

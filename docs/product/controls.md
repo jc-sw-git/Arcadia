@@ -76,13 +76,16 @@
 - While the copy passes input: Steam gets the Steam Controller for a game on "Steam-Eingabe" and, with no game
   running, while Steam itself is in front; never while Arcadia is in front or the mouse mode is on. Otherwise Steam
   reads a controller at rest except the Steam button and "…" (`SteamControllerCopyRules`).
-- Pan's firmware dialogs (designs T242Zustimmung/T242Firmware): "Steam Controller und Puck übernehmen?" and "Steam
-  will die Firmware aktualisieren" come to the front over everything, can't be clicked away and ignore [B] (no [B]
-  hint): the answer must be deliberate. Their buttons act only when [A] (or the mouse) is held, filling while held:
-  "Ja, übernehmen. Es läuft gerade kein Firmware-Update!" 3 s, "Nein, nicht übernehmen" (focused first) 1 s;
-  "Controller freigeben" and "Arcadia beenden" 1 s, greyed until Steam gave up; "Steam hat das Update abgebrochen"
-  3 s, gone once Steam gave up; "Schließen" acts on a plain press, greyed until then too, and gets the focus once
-  Steam gave up. Only a fresh press counts. The note after the release closes with [A] or [B].
+- Pan's firmware notice (design T242Firmware without its wait, #295): "Steam will die Firmware aktualisieren" comes to
+  the front over everything when Steam tries an update through the copy and no library game is in front (then only a
+  notice over the game: "Pan: Steam kann die Firmware nicht aktualisieren, solange Arcadia den Steam Controller
+  verwaltet. Für das Update nach dem Spiel Arcadia beenden."). Text: "Solange Arcadia Steam Controller und Puck
+  verwaltet, kommt kein Firmware-Update bei ihnen an. Steam meldet deshalb einen Fehler. Für das Update gib die
+  Controller frei oder beende Arcadia, und starte es dann in Steam erneut." Not clicked away. "Controller freigeben"
+  and "Arcadia beenden" act when [A] (or the mouse) is held 1 s, filling while held; "Schließen" (focused first) acts
+  on a plain press, and [B] closes it too. Only a fresh press counts. After the release it says "Steam Controller und
+  Puck freigegeben", how the update goes on and "Damit Arcadia sie wieder übernimmt: Pan in den
+  Controller-Einstellungen aus- und wieder einschalten, oder Arcadia neu starten."; [A] or [B] closes it.
 
 ## Dialogs
 

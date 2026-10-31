@@ -4,8 +4,8 @@
 Controller (its own pad, [xbox-pad.md](xbox-pad.md)) and what `ControllerList.MayTakeOver` excludes (Steam's virtual
 pads, Arcadia's own pads, single Joy-Cons). It runs inside Pan's emulation (`PanEmulation.Others`): the emulation
 starts as soon as a Steam Controller *or* another controller is connected, and `KeepAsync` keeps the others after the
-Steam Controller's pad. The Steam Controller's consent (puck and controller) is its own: "Nein" there leaves the other
-controllers taken over. Product rules: `docs/product/controls.md`, the settings rows: `docs/product/settings.md`.
+Steam Controller's pad. "Controller freigeben" for a firmware update leaves only the Steam Controller and its puck to
+Steam; the other controllers stay taken over. Product rules: `docs/product/controls.md`, the settings rows: `docs/product/settings.md`.
 
 ## Hide, then plug
 

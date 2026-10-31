@@ -36,6 +36,7 @@ its file.
 | [335-pan-hides-every-controller.md](335-pan-hides-every-controller.md) | #335 | Pan hides every controller Arcadia takes over | 5 |
 | [238-every-controller-through-arcadia.md](238-every-controller-through-arcadia.md) | #238 | Pass every controller to games through Arcadia | 13 |
 | [340-pan-stopping-page-names-the-usual-30-seconds.md](340-pan-stopping-page-names-the-usual-30-seconds.md) | #340 | Say on the "Pan wird beendet" page that the old Pan ends after about 30 seconds | 4 |
+| [295-spike-steams-firmware-path.md](295-spike-steams-firmware-path.md) | #295 | Spike: Steam's firmware update path, and what Arcadia guards | 6 |
 
 ## Exploratory test
 
@@ -53,7 +54,8 @@ Charter: –. Time box: –. Findings: –.
 | T208-1 to T208-3, T209-3 | `tests/Arcadia.App.Tests/PageInterfaceTests.cs` |
 | T209-1, T209-2 | `tests/Arcadia.App.Tests/PageTransitionTests.cs`, `Window/SearchViewTests.cs` |
 | T210-1 to T210-3 | `tests/Arcadia.App.Tests/RoutingTests.cs` |
-| T242-8, T242-10 to T242-16, T242-20 to T242-25 | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `SteamControllerModeTests.cs`, `Window/HoldButtonFillTests.cs` (T242-20, the fill) |
+| T242-10 to T242-16 | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `SteamControllerModeTests.cs` |
+| T295-2, T295-3, T295-5, T295-6 | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `EveryControllerForGamesTests.cs`, `Window/HoldButtonFillTests.cs` (the fill) |
 | T297-2 (within T326-4), T297-4; T326-1 to T326-8 | `tests/Arcadia.App.Tests/PanUpdateAtStartTests.cs` |
 | T340-1, T340-2, T340-4 | `tests/Arcadia.App.Tests/Window/PanStoppingViewTests.cs`, `PanUpdateAtStartTests.cs` (within T326-2, T326-4, T326-6) |
 | T214-1 to T214-8, T214-11; T214-10 | `tests/Arcadia.App.Tests/SisrRemovalTests.cs`; `SteamControllerModeTests.cs` |

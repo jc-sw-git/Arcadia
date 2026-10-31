@@ -60,8 +60,28 @@ public class JournalTests
         Assert.True(load.State.HidHideChanged);
         Assert.Equal(@"HID\VID_28DE&PID_1304&MI_00\1&2&3", Assert.Single(load.State.HiddenDevices));
         Assert.Equal(@"C:\Arcadia\Arcadia.exe", Assert.Single(load.State.AllowListed));
-        Assert.False(load.State.FirmwareHold);
         Assert.False(load.State.PuckRestartPending);
+    }
+
+    [Fact]
+    public void A_journal_with_the_dropped_firmware_hold_is_still_read()
+    {
+        // #295: Pan before protocol 3 journaled a firmware hold; a newer Pan ignores it and undoes the rest.
+        using var journal = new TempJournal();
+        Directory.CreateDirectory(Path.GetDirectoryName(journal.File.Path)!);
+        File.WriteAllText(journal.File.Path, """
+            {
+              "Version": 1,
+              "Generation": 3,
+              "HiddenDevices": [ "HID\\VID_28DE&PID_1304&MI_00\\1&2&3" ],
+              "FirmwareHold": true
+            }
+            """);
+
+        var load = journal.File.Load();
+
+        Assert.Null(load.Problem);
+        Assert.Equal(@"HID\VID_28DE&PID_1304&MI_00\1&2&3", Assert.Single(load.State.HiddenDevices));
     }
 
     [Fact]

@@ -38,7 +38,7 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
       once, the notice "Pan: Controller-Wächter pausiert …" shows, and after closing it "Pan: Controller-Wächter läuft
       wieder". Steam's battery and connection state stay current while the copy rests. · E2E: yes (the real HidHide
       client after part C)
-- [ ] **T242-8** Steam Controller taken over, a firmware update started in Steam: nothing reaches the puck, Arcadia
+- [ ] ~~**T242-8**~~ (outdated by #295: the dialog has no wait any more, see T295-2 and T295-3) Steam Controller taken over, a firmware update started in Steam: nothing reaches the puck, Arcadia
       comes to the front (also over the settings) with "Steam will die Firmware aktualisieren"; [B] does nothing;
       "Controller freigeben" and "Arcadia beenden" are greyed while Steam tries, the countdown starts 5 s after the last
       attempt and starts anew with a new one; 25 s later "Steam hat aufgegeben", "Controller freigeben" (held 1 s)
@@ -68,25 +68,25 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
 - [ ] **T242-19** On Linux the mode doesn't show (state `Unsupported`), the Pan switch is greyed and unavailable, the
       pad behaves as before.
       · E2E: no (Linux build by hand)
-- [ ] **T242-20** Steam running, Steam Controller and puck connected, Arcadia started: "Steam Controller und Puck
+- [ ] ~~**T242-20**~~ (outdated by #295: no question, see T295-6) Steam running, Steam Controller and puck connected, Arcadia started: "Steam Controller und Puck
       übernehmen?" lists what was found and "Steam läuft"; "Nein" has the focus; [B], a tap of [A] and letting go
       early do nothing; nothing is hidden (the puck doesn't restart) until "Ja, übernehmen. Es läuft gerade kein Firmware-Update!"
       is held 3 s. Without Steam running, no question: taken over at once. · E2E: yes (the real puck after part C)
-- [ ] **T242-21** "Nein" (held 1 s): Steam keeps the real controller; the switch reads "An – Steam Controller und Puck
+- [ ] ~~**T242-21**~~ (outdated by #295: no "Nein" and no row "… übernehmen", see T295-3) "Nein" (held 1 s): Steam keeps the real controller; the switch reads "An – Steam Controller und Puck
       ausgenommen, siehe unten" without a triangle, the row "Steam Controller und Puck übernehmen" shows its bold red
       warning; holding "Übernehmen" 3 s takes them over without a second question, the toast "Pan: … übernommen"
       shows, the row goes and the focus is on the switch. Arcadia restarted: asked again. · E2E: yes (restart by hand)
-- [ ] **T242-22** Taken over, then a gap: Pan paused (HidHide's configuration client), Pan's teardown, the switch off
+- [ ] ~~**T242-22**~~ (outdated by #295: no question after a gap) Taken over, then a gap: Pan paused (HidHide's configuration client), Pan's teardown, the switch off
       and on: each asks again while Steam runs. The puck unplugged and plugged in again while the emulation runs
       without a gap: taken over without asking. · E2E: yes (the real puck after part C)
-- [ ] **T242-23** In the firmware dialog, "Steam hat das Update abgebrochen" held 3 s frees the choice before the wait
+- [ ] ~~**T242-23**~~ (outdated by #295: no wait to skip, see T295-2) In the firmware dialog, "Steam hat das Update abgebrochen" held 3 s frees the choice before the wait
       is over; "Arcadia beenden" (held 1 s) closes Arcadia. `arcadia.log` names every message that counted as an
       update and whether Steam gave up or the player said so. · E2E: yes
-- [ ] **T242-24** Arcadia ends unexpectedly (killed) while the firmware dialog waits: the puck stays hidden while
+- [ ] ~~**T242-24**~~ (outdated by #295: no firmware hold) Arcadia ends unexpectedly (killed) while the firmware dialog waits: the puck stays hidden while
       Steam runs; Arcadia started again takes the puck over without the consent question, plugs the copy in again and
       shows "Steam will die Firmware aktualisieren" with the wait at once; a retry on the new copy restarts the wait. Steam closed instead: Pan shows the puck. "Schließen" after Steam gave up keeps the controllers taken
       over. · E2E: yes (the kill: the real puck after part C)
-- [ ] **T242-25** Taken over, a library game in front, Steam running. A short gap caused without leaving the game
+- [ ] ~~**T242-25**~~ (outdated by #295: no question after a gap) Taken over, a library game in front, Steam running. A short gap caused without leaving the game
       (e.g. `Restart-Service ArcadiaPan` started by a delayed script): taken over again without the question and
       without Arcadia coming to the front. Switching to another window during the gap, a gap of 10 s or more, or
       Arcadia suspended for 10 s (a delayed script with `PsSuspend`): the question comes. · E2E: yes

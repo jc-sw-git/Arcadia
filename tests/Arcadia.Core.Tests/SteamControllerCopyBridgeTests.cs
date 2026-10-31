@@ -122,13 +122,13 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
     [InlineData(0x40, 0x01)] // vendor, to the device
     [InlineData(0x41, 0x01)] // vendor, to the interface
     [InlineData(0x21, 0x55)] // an unknown HID class request
-    public async Task A_vendor_or_unknown_request_is_refused_and_counts_as_an_update(byte requestType, byte request)
+    public async Task A_vendor_or_unknown_request_is_refused_and_is_no_update(byte requestType, byte request)
     {
         var reply = await ControlAsync(1, Setup(requestType, request, 0, Hid, 0));
 
         Assert.False(reply.Done);
         Assert.Empty(_puck.Features);
-        Assert.Single(_updates);
+        Assert.Empty(_updates);
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
 
     [Fact]
     [Trait("TestCase", "T242-1")]
-    public async Task Data_Steam_sends_to_the_serial_interface_never_reaches_the_puck_and_counts_as_an_update()
+    public async Task Data_Steam_sends_to_the_serial_interface_never_reaches_the_puck()
     {
         _forwarding = true;
         // A haptics id, which would pass on a HID interface: on the serial interface nothing passes.
@@ -156,12 +156,12 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
         await ControlAsync(1, Setup(0x21, 0x0A, 0, Hid, 0));
 
         Assert.Empty(_puck.Outputs);
-        Assert.Single(_updates);
+        Assert.Empty(_updates);
     }
 
     [Fact]
     [Trait("TestCase", "T242-1")]
-    public async Task An_output_report_the_allow_list_doesnt_name_never_reaches_the_puck_and_counts_as_an_update()
+    public async Task An_output_report_the_allow_list_doesnt_name_never_reaches_the_puck()
     {
         _forwarding = true;
         await SendAsync(HidProxyFrames.Output, Hid, [0x42, 0x01, 0x02]);
@@ -169,7 +169,7 @@ public sealed class SteamControllerCopyBridgeTests : IAsyncLifetime
 
         Assert.True(reply.Done);
         Assert.Empty(_puck.Outputs);
-        Assert.Equal(2, _updates.Count);
+        Assert.Empty(_updates);
     }
 
     [Fact]

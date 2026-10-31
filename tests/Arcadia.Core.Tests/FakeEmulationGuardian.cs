@@ -137,35 +137,6 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
         return Task.FromResult(result);
     }
 
-    /// <summary>The holds for a firmware attempt Arcadia sent, in order (#242).</summary>
-    public List<(uint Generation, bool Hold)> FirmwareHolds = [];
-
-    /// <summary>Pan doesn't take a hold or its lift (journal not writable, link gone).</summary>
-    public bool FailHolds;
-
-    /// <summary>What Pan said at the connection: a firmware attempt still holds the puck hidden.</summary>
-    public bool HeldForFirmware { get; set; }
-
-    public Task<bool> HoldForFirmwareAsync(uint generation, bool hold, CancellationToken cancellationToken)
-    {
-        Note($"firmware hold {generation} {hold}");
-        lock (_lock)
-        {
-            FirmwareHolds.Add((generation, hold));
-            if (FailHolds)
-            {
-                return Task.FromResult(false);
-            }
-
-            if (!hold)
-            {
-                HeldForFirmware = false;
-            }
-        }
-
-        return Task.FromResult(true);
-    }
-
     public Task<bool> UnhideAsync(uint generation, CancellationToken cancellationToken)
     {
         Note($"unhide {generation}");

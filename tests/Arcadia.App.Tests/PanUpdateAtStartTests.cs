@@ -307,61 +307,26 @@ public sealed class PanUpdateAtStartTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T326-6")]
-    [Trait("TestCase", "T340-2")]
-    public async Task A_firmware_hold_from_before_shows_its_dialog_first_and_A_pressed_earlier_waits_for_it()
+    public async Task An_open_firmware_notice_comes_first_and_A_pressed_earlier_waits_for_it()
     {
         var steam = OldPan();
         steam.IsSteamRunning = true;
         using var arcadia = await StartAsync(steam);
-        arcadia.Pan.HeldForFirmware = true;
         var page = arcadia.Main.PanUpdate!;
-
-        // [A] before Pan answered: the page waits.
         arcadia.Press(UiAction.Accept);
         Assert.Equal(PanUpdateState.Waiting, page.State);
-        Assert.Equal(PanUpdatePageViewModel.UpdatingTitle, page.Title);
-        Assert.Equal(0, steam.PanUpdates);
 
+        // One dialog at a time: the notice of a firmware attempt (#295) is closed before the update's Windows prompt.
+        arcadia.Main.ShowFirmwareAttempt();
         await arcadia.PanAnsweredAtStartAsync();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Dialog „Steam will die Firmware aktualisieren“");
-        var dialog = arcadia.Main.FirmwareAttempt!;
+        Assert.NotNull(arcadia.Main.FirmwareAttempt);
         Assert.Equal(0, steam.PanUpdates);
 
-        // Steam stays quiet: it gave up, "Schließen" has the focus and closes the dialog.
-        arcadia.Wait(FirmwareWait);
-        Assert.True(dialog.IsReady);
-        Assert.Equal(0, steam.PanUpdates);
         arcadia.Press(UiAction.Accept);
         Assert.Null(arcadia.Main.FirmwareAttempt);
-
         await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
         Assert.Equal(1, steam.PanUpdates);
     }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "T326-6")]
-    [Trait("TestCase", "T340-2")]
-    public async Task B_pressed_before_Pan_answered_lets_a_firmware_hold_from_before_show_its_dialog_first()
-    {
-        var steam = OldPan();
-        steam.IsSteamRunning = true;
-        steam.IsPanRunning = true;
-        using var arcadia = await StartAsync(steam);
-        arcadia.Pan.HeldForFirmware = true;
-
-        // [B] before Pan's first answer: its hello may still report a hold, whose dialog must come first.
-        arcadia.Press(UiAction.Back);
-        var page = arcadia.Main.PanUpdate!;
-        Assert.Equal(PanUpdatePageViewModel.StoppingText, page.Text);
-        Assert.False(page.IsCountingDown, "no ring and no caption before the countdown");
-        Assert.True(arcadia.ControllerSupport.MayTalkToPan, "Arcadia lets go of the old Pan before its hello could report a firmware hold");
-
-        await arcadia.PanAnsweredAtStartAsync();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Dialog „Steam will die Firmware aktualisieren“");
-    }
-
-    private static readonly TimeSpan FirmwareWait =
-        Arcadia.ControllerSupport.Copy.FirmwareAttemptWatch.Quiet + Arcadia.ControllerSupport.Copy.FirmwareAttemptWatch.Countdown + TimeSpan.FromSeconds(1);
 
     [AvaloniaFact]
     [Trait("TestCase", "T326-7")]

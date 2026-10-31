@@ -106,8 +106,8 @@ public sealed class SteamControllerCopyFilter(TimeProvider time, Action<string> 
     private readonly HashSet<string> _logged = [];
 
     /// <summary>
-    /// Steam sent a message the allow list drops and that it doesn't send routinely: maybe part of a firmware update
-    /// (<see cref="FirmwareAttemptWatch"/>). Raised for every such message, with its name; on the copy's thread.
+    /// Steam sent a firmware message (<see cref="SteamMessageKind.Firmware"/>), which the copy drops: it tries an update
+    /// (<see cref="FirmwareAttemptWatch"/>, #295). Raised for every such message, with its name; on the copy's thread.
     /// </summary>
     public event Action<string>? UpdateTraffic;
 
@@ -140,13 +140,13 @@ public sealed class SteamControllerCopyFilter(TimeProvider time, Action<string> 
                 // Windows' own business with the copy: nothing for the puck, and no sign of an update.
                 return false;
             case SteamReportKind.Output when report.Length >= 1:
-                return Decide(SteamControllerMessages.OfOutput(report[0]), $"Ausgabe {SteamControllerMessages.NameOfOutput(report[0])}", report.Length, forwarding, routine: false);
+                return Decide(SteamControllerMessages.OfOutput(report[0]), $"Ausgabe {SteamControllerMessages.NameOfOutput(report[0])}", report.Length, forwarding);
             case SteamReportKind.SetFeature when report.Length >= 2 && report[0] is 1 or 2:
-                return Decide(SteamControllerMessages.OfFeature(report[1]), $"Nachricht {SteamControllerMessages.NameOfFeature(report[1])}", report.Length, forwarding, SteamControllerMessages.IsRoutineDrop(report[1]));
+                return Decide(SteamControllerMessages.OfFeature(report[1]), $"Nachricht {SteamControllerMessages.NameOfFeature(report[1])}", report.Length, forwarding);
             case SteamReportKind.SetFeature:
-                return Decide(SteamMessageKind.Blocked, $"Feature-Report {(report.Length >= 1 ? $"0x{report[0]:X2}" : "leer")}", report.Length, forwarding, routine: false);
+                return Decide(SteamMessageKind.Blocked, $"Feature-Report {(report.Length >= 1 ? $"0x{report[0]:X2}" : "leer")}", report.Length, forwarding);
             default:
-                return Decide(SteamMessageKind.Blocked, kind.ToString(), report.Length, forwarding, routine: false);
+                return Decide(SteamMessageKind.Blocked, kind.ToString(), report.Length, forwarding);
         }
     }
 
@@ -230,7 +230,7 @@ public sealed class SteamControllerCopyFilter(TimeProvider time, Action<string> 
         }
     }
 
-    private bool Decide(SteamMessageKind kind, string what, int length, bool forwarding, bool routine)
+    private bool Decide(SteamMessageKind kind, string what, int length, bool forwarding)
     {
         switch (kind)
         {
@@ -241,18 +241,12 @@ public sealed class SteamControllerCopyFilter(TimeProvider time, Action<string> 
                 return forwarding;
             case SteamMessageKind.Firmware:
                 LogOnce($"Steam-Controller-Kopie: Firmware-{what} verworfen ({length} Bytes)");
-                break;
+                UpdateTraffic?.Invoke(what);
+                return false;
             default:
                 LogOnce($"Steam-Controller-Kopie: {what} verworfen ({length} Bytes)");
-                break;
+                return false;
         }
-
-        if (!routine)
-        {
-            UpdateTraffic?.Invoke(what);
-        }
-
-        return false;
     }
 
     private void LogOnce(string line)

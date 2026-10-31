@@ -217,8 +217,6 @@ public sealed partial class Guardian
                 // The client learns of an open teardown it must acknowledge, and of a journal Pan couldn't read.
                 return _phase == Phase.TornDown
                     ? PanMessage.Of(PanReply.HelloOk, _generation, PanReason.TeardownNotAcknowledged)
-                    : HeldForFirmware()
-                    ? PanMessage.Of(PanReply.HelloOk, _generation, PanReason.HeldForFirmware)
                     : PanMessage.Of(PanReply.HelloOk, _generation, _journalProblem is null ? PanReason.None : PanReason.JournalUnreadable);
             }
 
@@ -245,9 +243,6 @@ public sealed partial class Guardian
                 PanCommand.Heartbeat => WithGeneration(message, Heartbeat),
                 PanCommand.TeardownAcknowledged => Acknowledge(message.Generation),
                 PanCommand.PlannedExit => PlannedExit(),
-                // The lift needs no emulation: a hold from before a crash ends also when the next emulation isn't hidden.
-                PanCommand.HoldForFirmware when message.Value == 0 && _phase != Phase.Emulating => LiftFirmwareHold(),
-                PanCommand.HoldForFirmware => WithGeneration(message, () => HoldForFirmware(message.Value != 0)),
                 _ => PanMessage.Of(PanReply.Rejected, message.Generation, PanReason.NotRegistered),
             };
         }
@@ -518,52 +513,6 @@ public sealed partial class Guardian
         return PanMessage.Of(PanReply.Stopped, _generation);
     }
 
-    /// <summary>Under the lock: journaled before the reply, so a crash right after it already keeps the controller hidden.</summary>
-    private PanMessage HoldForFirmware(bool hold)
-    {
-        if (_phase != Phase.Emulating)
-        {
-            return PanMessage.Of(PanReply.Rejected, _generation, PanReason.NotEmulating);
-        }
-
-        _journal.FirmwareHold = hold;
-        if (!TrySaveJournal())
-        {
-            if (hold)
-            {
-                // Not durable, but in effect while Pan runs, so a crash of Arcadia still keeps the puck hidden; the client
-                // sends it again until it is saved.
-                return PanMessage.Of(PanReply.Rejected, _generation, PanReason.JournalUnreadable);
-            }
-
-            // In effect too: a Pan restarted before the journal is written keeps the puck hidden until Steam closes.
-            _log("Firmware hold lifted, but the journal could not be written: a restarted Pan holds until Steam is closed");
-        }
-
-        _log(hold
-            ? $"Firmware attempt through the copy of generation {_generation}: the Steam Controller stays hidden while Steam runs"
-            : $"Firmware attempt of generation {_generation} over");
-        return PanMessage.Of(PanReply.Acknowledged, _generation);
-    }
-
-    /// <summary>Under the lock, outside an emulation: the player released the puck after Steam gave up.</summary>
-    private PanMessage LiftFirmwareHold()
-    {
-        if (_journal.FirmwareHold)
-        {
-            _journal.FirmwareHold = false;
-            _log(TrySaveJournal()
-                ? "Firmware hold lifted by the client: the Steam Controller may be shown"
-                : "Firmware hold lifted by the client, but the journal could not be written: a restarted Pan holds until Steam is closed");
-            if (_journal.HidingHasWork)
-            {
-                ScheduleShowRetry();
-            }
-        }
-
-        return PanMessage.Of(PanReply.Acknowledged, _generation);
-    }
-
     private PanMessage Heartbeat()
     {
         _lastHeartbeatMs = _clock.UnbiasedMilliseconds;
@@ -585,8 +534,7 @@ public sealed partial class Guardian
 
         _phase = Phase.Idle;
         _log($"Teardown of generation {generation} acknowledged by the client");
-        // A client that came back during the teardown heard of it instead of the hold at its hello.
-        return PanMessage.Of(PanReply.Acknowledged, generation, HeldForFirmware() ? PanReason.HeldForFirmware : PanReason.None);
+        return PanMessage.Of(PanReply.Acknowledged, generation);
     }
 
     private PanMessage PlannedExit()

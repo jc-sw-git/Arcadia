@@ -438,486 +438,52 @@ public sealed class PanEmulationTests
         Assert.Equal([1u, 2u], _pan.Started);
     }
 
-    private PanEmulation WithSteam(Func<bool> steamRuns, SteamControllerParts connected = SteamControllerParts.Controller | SteamControllerParts.Puck) =>
-        new(_pads, _pan, _copy, _time, _log.Add)
-        {
-            SteamControllerPresent = () => _present,
-            SteamRuns = steamRuns,
-            Connected = () => connected,
-            Enabled = () => _enabled,
-            GameInFront = () => _gameInFront,
-        };
-
-    private string? _gameInFront;
-
-    /// <summary>Taken over without Steam, then Steam runs and a game is in front for two checks, 2 s apart.</summary>
-    private async Task<PanEmulation> TakenOverWithAGameInFrontAsync(Action<SteamControllerParts> asked)
-    {
-        var steamRuns = false;
-        var emulation = WithSteam(() => steamRuns);
-        emulation.Takeover.ConsentNeeded += asked;
-        await emulation.TickAsync();
-        steamRuns = true;
-        _gameInFront = "steam:620";
-        foreach (var _ in Enumerable.Range(0, 2))
-        {
-            _time.Advance(TimeSpan.FromSeconds(2));
-            await emulation.TickAsync();
-        }
-
-        return emulation;
-    }
-
     [Fact]
-    [Trait("TestCase", "T242-25")]
-    public async Task A_short_gap_while_the_same_game_stays_in_front_is_taken_over_again_without_asking()
+    [Trait("TestCase", "T295-3")]
+    public async Task Released_for_a_firmware_update_the_puck_is_shown_and_stays_so_until_Pan_is_switched_off_and_on()
     {
-        var asked = 0;
-        var emulation = await TakenOverWithAGameInFrontAsync(_ => asked++);
-
-        _pan.HidingHolds = PanReason.HidingLost;
-        _time.Advance(TimeSpan.FromSeconds(2));
-        await emulation.TickAsync();
-        _pan.HidingHolds = PanReason.None;
-        _time.Advance(TimeSpan.FromSeconds(2));
-        await emulation.TickAsync();
-
-        Assert.Equal(0, asked);
-        Assert.Equal([1u, 2u], _pan.Hidden);
-        Assert.Contains(_log, line => line.Contains("kurze Lücke, während steam:620 vorne blieb", StringComparison.Ordinal));
-    }
-
-    [Theory]
-    [Trait("TestCase", "T242-25")]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task The_short_gap_is_checked_again_right_before_the_hide(bool tooLong)
-    {
-        var asked = 0;
-        var emulation = await TakenOverWithAGameInFrontAsync(_ => asked++);
-        _pan.HidingHolds = PanReason.HidingLost;
-        _time.Advance(TimeSpan.FromSeconds(2));
-        await emulation.TickAsync();
-        _pan.HidingHolds = PanReason.None;
-
-        // VIIPER's start takes a while: the game goes to the back, or the gap grows past 10 s.
-        _pads.DuringPrepare = () =>
-        {
-            if (tooLong)
-            {
-                _time.Advance(TimeSpan.FromSeconds(9));
-            }
-            else
-            {
-                _gameInFront = null;
-            }
-        };
-        _time.Advance(TimeSpan.FromSeconds(2));
-        await emulation.TickAsync();
-
-        Assert.Equal(1, asked);
-        Assert.Equal([1u], _pan.Hidden);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-25")]
-    public async Task After_a_hang_Arcadia_asks_although_the_game_is_in_front_again()
-    {
-        var asked = 0;
-        var emulation = await TakenOverWithAGameInFrontAsync(_ => asked++);
-
-        // Arcadia hung: no check for 8 s, and Pan tore the emulation down meanwhile.
-        _time.Advance(TimeSpan.FromSeconds(8));
-        _pan.TearDown();
-        await emulation.TickAsync();
-
-        Assert.Equal(1, asked);
-        Assert.Equal([1u], _pan.Hidden);
-    }
-
-    [Theory]
-    [Trait("TestCase", "T242-25")]
-    [InlineData(null)]
-    [InlineData("epic:fortnite")]
-    public async Task Anything_else_in_front_during_the_gap_asks(string? meanwhile)
-    {
-        var asked = 0;
-        var emulation = await TakenOverWithAGameInFrontAsync(_ => asked++);
-
-        _pan.HidingHolds = PanReason.HidingLost;
-        _time.Advance(TimeSpan.FromSeconds(2));
-        await emulation.TickAsync();
-        _pan.HidingHolds = PanReason.None;
-        _pan.Hiding = PanReason.HidHideBusy; // the hide comes only once the game is back in front
-        _gameInFront = meanwhile;
-        _time.Advance(TimeSpan.FromSeconds(2));
-        await emulation.TickAsync();
-        _pan.Hiding = PanReason.None;
-        _gameInFront = "steam:620";
-        _time.Advance(TimeSpan.FromSeconds(2));
-        await emulation.TickAsync();
-
-        Assert.Equal(1, asked);
-        Assert.Equal([1u], _pan.Hidden);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-25")]
-    public async Task A_gap_of_10_s_or_more_asks_although_the_game_stayed_in_front()
-    {
-        var asked = 0;
-        var emulation = await TakenOverWithAGameInFrontAsync(_ => asked++);
-
-        _pan.HidingHolds = PanReason.HidingLost;
-        _time.Advance(TimeSpan.FromSeconds(2));
-        await emulation.TickAsync();
-        _pan.HidingHolds = PanReason.None;
-        _pan.Hiding = PanReason.HidHideBusy;
-        foreach (var _ in Enumerable.Range(0, 5))
-        {
-            _time.Advance(TimeSpan.FromSeconds(2));
-            await emulation.TickAsync();
-        }
-
-        _pan.Hiding = PanReason.None;
-        _time.Advance(TimeSpan.FromSeconds(2));
-        await emulation.TickAsync();
-
-        Assert.Equal(1, asked);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-20")]
-    public async Task Without_Steam_running_Arcadia_takes_the_controller_over_without_asking()
-    {
-        var emulation = WithSteam(() => false);
-        var asked = 0;
-        emulation.Takeover.ConsentNeeded += _ => asked++;
-
-        await emulation.TickAsync();
-
-        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
-        Assert.Equal(TakeoverState.Granted, emulation.Takeover.State);
-        Assert.Equal(0, asked);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-20")]
-    public async Task With_Steam_running_nothing_is_hidden_until_the_player_says_no_update_runs()
-    {
-        var emulation = WithSteam(() => true, SteamControllerParts.Puck);
-        var asked = new List<SteamControllerParts>();
-        emulation.Takeover.ConsentNeeded += asked.Add;
-
-        await emulation.TickAsync();
-        await emulation.TickAsync();
-
-        Assert.Equal([SteamControllerParts.Puck], asked);
-        Assert.Empty(_pan.Started);
-        Assert.Equal(PanEmulationProblem.AwaitingConsent, emulation.Status.Problem);
-        Assert.False(emulation.Status.HasProblem);
-
-        emulation.Takeover.Answer(takeOver: true);
-        await emulation.TickAsync();
-        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
-        Assert.Equal([1u], _pan.Hidden);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T325-1")]
-    public async Task An_open_question_follows_what_is_connected_and_hides_nothing_meanwhile()
-    {
-        // At Arcadia's start SDL reports the wireless Steam Controller only after the puck.
-        var connected = SteamControllerParts.Puck;
-        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
-        {
-            SteamControllerPresent = () => _present,
-            SteamRuns = () => true,
-            Connected = () => connected,
-            Enabled = () => _enabled,
-        };
-        var asked = new List<SteamControllerParts>();
-        emulation.Takeover.ConsentNeeded += asked.Add;
-
-        await emulation.TickAsync();
-        connected = SteamControllerParts.Controller | SteamControllerParts.Puck;
-        await emulation.TickAsync();
-        await emulation.TickAsync();
-
-        Assert.Equal([SteamControllerParts.Puck, SteamControllerParts.Controller | SteamControllerParts.Puck], asked);
-        Assert.Equal(SteamControllerParts.Controller | SteamControllerParts.Puck, emulation.Takeover.Asked);
-        Assert.Equal(TakeoverState.Asking, emulation.Takeover.State);
-        Assert.Empty(_pan.Started);
-
-        // Nothing reported for a moment (puck re-enumerating): the question keeps what it named.
-        connected = SteamControllerParts.None;
-        await emulation.TickAsync();
-        Assert.Equal(2, asked.Count);
-        Assert.Equal(SteamControllerParts.Controller | SteamControllerParts.Puck, emulation.Takeover.Asked);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-21")]
-    public async Task No_leaves_the_controller_alone_until_the_settings_row_takes_it_over()
-    {
-        var emulation = WithSteam(() => true);
-        await emulation.TickAsync();
-
-        emulation.Takeover.Answer(takeOver: false);
-        await emulation.TickAsync();
-        _time.Advance(TimeSpan.FromHours(1));
-        await emulation.TickAsync();
-
-        Assert.Empty(_pan.Started);
-        Assert.Equal(PanEmulationProblem.Excluded, emulation.Status.Problem);
-        Assert.False(emulation.Status.HasProblem);
-
-        emulation.TakeOverAgain();
-        await emulation.TickAsync();
-        Assert.Equal([1u], _pan.Hidden);
-    }
-
-    [Theory]
-    [Trait("TestCase", "T242-22")]
-    [InlineData("paused")]
-    [InlineData("teardown")]
-    [InlineData("switched off")]
-    public async Task After_a_gap_with_Steam_running_the_player_is_asked_again(string gap)
-    {
-        var emulation = WithSteam(() => true);
-        var asked = 0;
-        emulation.Takeover.ConsentNeeded += _ => asked++;
-        await emulation.TickAsync();
-        emulation.Takeover.Answer(takeOver: true);
-        await emulation.TickAsync();
-        Assert.Equal([1u], _pan.Hidden);
-
-        switch (gap)
-        {
-            case "paused":
-                _pan.HidingHolds = PanReason.HidingLost;
-                await emulation.TickAsync();
-                _pan.HidingHolds = PanReason.None;
-                break;
-            case "teardown":
-                _pan.TearDown();
-                break;
-            default:
-                _enabled = false;
-                await emulation.TickAsync();
-                _enabled = true;
-                break;
-        }
-
-        await emulation.TickAsync();
-        await emulation.TickAsync();
-
-        Assert.Equal(2, asked);
-        Assert.Equal([1u], _pan.Hidden);
-        Assert.Equal(PanEmulationProblem.AwaitingConsent, emulation.Status.Problem);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-22")]
-    public async Task A_hide_that_failed_after_the_yes_asks_again_before_the_next_one()
-    {
-        var emulation = WithSteam(() => true);
-        var asked = 0;
-        emulation.Takeover.ConsentNeeded += _ => asked++;
-        await emulation.TickAsync();
-        _pan.HideResult = PanReason.HidingLost;
-        emulation.Takeover.Answer(takeOver: true);
-
-        await emulation.TickAsync();
-        _pan.HideResult = PanReason.None;
-        _time.Advance(PanEmulation.HideRetry);
-        await emulation.TickAsync();
-
-        Assert.Equal(2, asked);
-        Assert.Empty(_pan.Hidden);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-22")]
-    public async Task A_controller_that_comes_back_while_the_emulation_runs_without_a_gap_stays_taken_over()
-    {
-        var emulation = WithSteam(() => true);
-        var asked = 0;
-        emulation.Takeover.ConsentNeeded += _ => asked++;
-        await emulation.TickAsync();
-        emulation.Takeover.Answer(takeOver: true);
-        await emulation.TickAsync();
-
-        _copy.PuckPresent = false;
-        _copy.Current!.Lose();
-        await emulation.TickAsync();
-        _copy.PuckPresent = true;
-        await emulation.TickAsync();
-
-        Assert.Equal(1, asked);
-        Assert.Equal([1u], _pan.Hidden);
-        Assert.Equal(2, _copy.Attached);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-8")]
-    public async Task Released_for_a_firmware_update_the_puck_is_shown_and_stays_so_until_the_settings_row()
-    {
-        var emulation = WithSteam(() => false);
-        await emulation.TickAsync();
+        await _emulation.TickAsync();
         _events.Clear();
 
-        await emulation.ReleaseForFirmwareAsync();
-        await emulation.TickAsync();
+        await _emulation.ReleaseForFirmwareAsync();
+        await _emulation.TickAsync();
+        _time.Advance(PanEmulation.HideRetry);
+        await _emulation.TickAsync();
 
         Assert.Equal(["copy detached", "unhide 1", "stopped 1"], _events);
-        Assert.Equal(TakeoverState.Released, emulation.Takeover.State);
-        Assert.Equal(PanEmulationProblem.Excluded, emulation.Status.Problem);
+        Assert.Equal(PanEmulationProblem.Excluded, _emulation.Status.Problem);
+        Assert.False(_emulation.Status.HasProblem);
         Assert.Equal([1u], _pan.Started);
-    }
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task Mid_firmware_attempt_Pan_holds_the_puck_and_closing_Arcadia_leaves_it_hidden()
-    {
-        var emulation = WithSteam(() => false);
-        await emulation.TickAsync();
-        _events.Clear();
 
-        await emulation.HoldForFirmwareAsync(true);
-        await emulation.ShutdownAsync();
-
-        Assert.Equal(["firmware hold 1 True", "copy detached", "stopped 1"], _events);
-        Assert.Empty(_pan.Unhidden);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task Arcadia_beenden_after_the_attempt_lifts_a_hold_Pan_still_has_before_the_puck_is_shown()
-    {
-        var emulation = WithSteam(() => false);
-        await emulation.TickAsync();
-        await emulation.HoldForFirmwareAsync(true);
-        _pan.FailHolds = true;
-        await emulation.HoldForFirmwareAsync(false);
-        _pan.FailHolds = false;
-        _events.Clear();
-
-        await emulation.ShutdownAsync();
-
-        Assert.Equal(["copy detached", "firmware hold 1 False", "unhide 1", "stopped 1"], _events);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task The_end_of_the_attempt_counts_at_once_for_a_quit_that_comes_before_Pan_heard_of_it()
-    {
-        var emulation = WithSteam(() => false);
-        await emulation.TickAsync();
-        await emulation.HoldForFirmwareAsync(true);
-        _events.Clear();
-
-        // The lift and the quit race for the gate; whichever wins, the puck is shown.
-        var lift = emulation.HoldForFirmwareAsync(false);
-        await emulation.ShutdownAsync();
-        await lift;
-
-        Assert.Contains("firmware hold 1 False", _events);
-        Assert.Equal([1u], _pan.Unhidden);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task A_hold_Pan_did_not_take_is_sent_again_at_the_next_tick()
-    {
-        var emulation = WithSteam(() => false);
-        await emulation.TickAsync();
-        _pan.FailHolds = true;
-        await emulation.HoldForFirmwareAsync(true);
-
-        // Not every tick: an old or broken Pan would fill the log.
-        _time.Advance(TimeSpan.FromSeconds(2));
-        await emulation.TickAsync();
-        Assert.Single(_pan.FirmwareHolds);
-
-        _pan.FailHolds = false;
-        _time.Advance(PanEmulation.HoldRetry);
-        await emulation.TickAsync();
-        Assert.Equal([(1u, true), (1u, true)], _pan.FirmwareHolds);
-        _time.Advance(PanEmulation.HoldRetry);
-        await emulation.TickAsync();
-        Assert.Equal(2, _pan.FirmwareHolds.Count);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task The_release_lifts_also_a_hold_Pan_rejected()
-    {
-        var emulation = WithSteam(() => false);
-        await emulation.TickAsync();
-        _pan.FailHolds = true;
-        await emulation.HoldForFirmwareAsync(true);
-        _pan.FailHolds = false;
-
-        await emulation.ReleaseForFirmwareAsync();
-
-        Assert.Equal([(1u, true), (1u, false)], _pan.FirmwareHolds);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task A_hold_from_before_the_start_shows_the_dialog_also_with_Pan_switched_off_and_its_release_lifts_it()
-    {
-        _pan.HeldForFirmware = true;
         _enabled = false;
-        var emulation = WithSteam(() => true);
-        var found = 0;
-        emulation.FirmwareHoldFound += () => found++;
+        await _emulation.TickAsync();
+        _enabled = true;
+        await _emulation.TickAsync();
 
-        await emulation.TickAsync();
-        await emulation.TickAsync();
-        Assert.Equal(1, found);
-
-        await emulation.ReleaseForFirmwareAsync();
-        Assert.Equal([(0u, false)], _pan.FirmwareHolds);
-        Assert.False(_pan.HeldForFirmware);
+        Assert.Equal([1u, 2u], _pan.Started);
+        Assert.Equal(PanEmulationState.Running, State);
+        Assert.True(_emulation.HidesPuck);
     }
 
     [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task A_hold_from_before_the_start_that_Pan_keeps_brings_the_dialog_back_only_once()
+    [Trait("TestCase", "T295-1")]
+    public async Task A_hide_Pan_refuses_while_a_firmware_update_is_flashed_waits_and_is_no_failure()
     {
-        _pan.HeldForFirmware = true;
-        _pan.HideResult = PanReason.HidingLost;
-        var emulation = WithSteam(() => true);
-        var found = 0;
-        emulation.FirmwareHoldFound += () => found++;
-        await emulation.TickAsync();
+        _pan.HideResult = PanReason.BootloaderPresent;
+        for (var i = 0; i <= PanEmulation.MaxFailuresPerWindow + 1; i++)
+        {
+            await _emulation.TickAsync();
+            _time.Advance(PanEmulation.HideRetry);
+        }
 
-        _pan.FailHolds = true;
-        await emulation.HoldForFirmwareAsync(false);
-        await emulation.ReleaseForFirmwareAsync();
-        _time.Advance(TimeSpan.FromMinutes(1));
-        await emulation.TickAsync();
-        await emulation.TickAsync();
+        Assert.Equal(PanEmulationState.SettingUp, State);
+        Assert.Equal(PanEmulationProblem.FirmwareUpdate, _emulation.Status.Problem);
+        Assert.False(_emulation.Status.HasProblem);
+        Assert.Equal(0, _pads.Plugged);
 
-        Assert.Equal(1, found);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-20")]
-    public async Task Steam_starting_while_VIIPER_gets_ready_turns_the_take_over_without_Steam_into_a_question()
-    {
-        var steamRuns = false;
-        var emulation = WithSteam(() => steamRuns);
-        var asked = 0;
-        emulation.Takeover.ConsentNeeded += _ => asked++;
-        _pads.DuringPrepare = () => steamRuns = true;
-
-        await emulation.TickAsync();
-
-        Assert.Empty(_pan.Hidden);
-        Assert.Equal(1, asked);
-        Assert.Equal(TakeoverState.Asking, emulation.Takeover.State);
+        _pan.HideResult = PanReason.None;
+        await _emulation.TickAsync();
+        Assert.Equal(PanEmulationState.Running, State);
     }
 
     [Fact]
@@ -939,62 +505,6 @@ public sealed class PanEmulationTests
         await tick;
         await unplugging;
         Assert.Equal(["pad unplugged", "copy detached", "unhide 1", "stopped 1"], _events);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-20")]
-    public async Task While_Pan_cannot_hide_Arcadia_does_not_ask()
-    {
-        _pan.Hiding = PanReason.HidHideBusy;
-        var emulation = WithSteam(() => true);
-        var asked = 0;
-        emulation.Takeover.ConsentNeeded += _ => asked++;
-
-        await emulation.TickAsync();
-        await emulation.TickAsync();
-
-        Assert.Equal(0, asked);
-        Assert.Equal(PanEmulationProblem.Hiding, emulation.Status.Problem);
-
-        _pan.Hiding = PanReason.None;
-        await emulation.TickAsync();
-        Assert.Equal(1, asked);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task The_release_ends_the_hold_before_the_puck_is_shown()
-    {
-        var emulation = WithSteam(() => false);
-        await emulation.TickAsync();
-        await emulation.HoldForFirmwareAsync(true);
-        _events.Clear();
-
-        await emulation.ReleaseForFirmwareAsync();
-
-        Assert.Equal(["firmware hold 1 False", "copy detached", "unhide 1", "stopped 1"], _events);
-    }
-
-    [Fact]
-    [Trait("TestCase", "T242-24")]
-    public async Task A_hold_from_before_the_start_takes_the_puck_over_without_asking_and_holds_it_for_the_new_generation()
-    {
-        _pan.HeldForFirmware = true;
-        var emulation = WithSteam(() => true);
-        var asked = 0;
-        var found = 0;
-        emulation.Takeover.ConsentNeeded += _ => asked++;
-        emulation.FirmwareHoldFound += () => found++;
-
-        await emulation.TickAsync();
-        await emulation.TickAsync();
-
-        Assert.Equal(0, asked);
-        Assert.Equal(1, found);
-        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
-        Assert.Equal([(1u, true)], _pan.FirmwareHolds);
-        // The copy comes back, so Steam has a device to retry on and the wait sees it.
-        Assert.Contains("copy attached", _events);
     }
 
     [Fact]

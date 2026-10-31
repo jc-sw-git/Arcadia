@@ -61,11 +61,10 @@ switch.
   sobald du … schließt", box "WARTET AUF ÜBERNAHME"), gone once the tool has ended; then, with the blue i, one row for
   the connected controllers Pan couldn't hide: "<Name> lässt sich nicht verstecken" / "<n> Controller lassen sich nicht
   verstecken", box "BETROFFEN" with each name and why. Not shown while Pan is off (the player chose that).
-- After "Nein" in the takeover question, or a release for a firmware update, the switch reads "An – Steam Controller
-  und Puck ausgenommen, siehe unten" (no triangle) and the indented row "Steam Controller und Puck übernehmen" (blue i,
-  "Übernehmen" held 3 s, a bold red warning in its info panel) takes them over again: the press is the consent, the
-  toast "Pan: … übernommen" says so, the row goes and the focus moves to the switch. Neither survives a restart of
-  Arcadia.
+- After "Controller freigeben" for a firmware update, the switch reads "An – Steam Controller und Puck freigegeben, bis
+  du Pan aus- und wieder einschaltest" (no triangle, no row below); switching Pan off and on, or a restart of Arcadia,
+  takes them over again. While Steam flashes a firmware update, the switch reads "Wird eingerichtet …" (no triangle)
+  until Pan may hide again.
 - "Erneut versuchen" on a Pan row (#308): the row stays while the attempt runs (also when its problem is gone
   meanwhile), reads "Wird versucht …" with a spinner and can't be pressed; when the attempt ends, a toast says how:
   "Pan: Controller-Wächter läuft wieder", "Pan: Erneuter Versuch ohne Erfolg. …", or why there is nothing to do (no

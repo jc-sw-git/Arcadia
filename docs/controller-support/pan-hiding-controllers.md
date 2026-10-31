@@ -66,8 +66,7 @@ every teardown trigger). What the client emulates for them: [every-controller.md
 ## Showing again
 
 - Every teardown shows the controllers with the puck (steps "show the hidden controllers", "restart the shown
-  controllers"). A firmware hold keeps only the puck hidden ([pan-firmware-hold.md](pan-firmware-hold.md)); the
-  controllers are shown anyway, the retry waits for Steam only for the puck.
+  controllers").
 - Journal fields: `HiddenControllers` (HID and XInput instances Pan added), `ControllerRestarts` (HID instances still to
   restart). A Pan before #335 reads the journal ignoring them: after such a downgrade it doesn't show the controllers;
   the last resort in `docs/releases.md` covers them.

@@ -195,6 +195,8 @@ public sealed unsafe class PuckDevices : ISteamControllerDevices
         return Task.CompletedTask;
     }
 
+    public IReadOnlyList<string> PresentBootloaders() => [.. PresentDevices("USB").Where(HidingList.IsBootloader)];
+
     internal static List<string> PresentDevices(string enumerator)
     {
         const uint flags = Native.CmGetIdListFilterEnumerator | Native.CmGetIdListFilterPresent;

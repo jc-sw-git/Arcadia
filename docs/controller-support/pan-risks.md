@@ -20,7 +20,7 @@ would close it, so a later story can pick it up. Don't "fix" one of these in pas
   read the key from `viiper.exe`'s memory, but it could read the user's input anyway.
 - **The usbip port takes any local importer:** usbip has no auth and VIIPER imports a device for any connection, a
   second time too. A local process, also another Windows user's, could import
-  the pad or the puck's copy: read the input, and through dropped update messages force the firmware hold. No flash,
+  the pad or the puck's copy: read the input, and through dropped firmware messages raise Arcadia's firmware notice. No flash,
   no privilege gain. Residual risk; a fix would be in VIIPER (import only from usbip-win2's kernel
   connection, or no second import).
 - **VIIPER reuses nonces:** both directions use one session key with counters from 0. Only someone reading loopback

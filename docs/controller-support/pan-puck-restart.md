@@ -23,8 +23,8 @@ with `HidingFailed`. The System log names who held it (Kernel-PnP event 225: pro
   emulation stops. Safe both ways, just not working there.
 - **The warning stays.** An automatic retry after a failed hide keeps the status `Paused`/`Hiding`; one after "Erneut
   versuchen" or "Controller wiederherstellen" shows `SettingUp` (`docs/product/settings.md`).
-- **Pan's own restarts** (the teardown's show, its retry, the show once a firmware hold ends, the hide of a new puck
-  instance arriving while hiding): a connected client first gets the notice `ReleasePuck(n)`; Arcadia lets go
+- **Pan's own restarts** (the teardown's show, its retry, the hide of a new puck instance arriving while hiding; none
+  while a bootloader is connected, [steam-controller-firmware.md](steam-controller-firmware.md)): a connected client first gets the notice `ReleasePuck(n)`; Arcadia lets go
   (`PanClient.PuckRestarting`; `PanEmulation` counts who wants the puck let go, so an overlap with its own hide reads
   again only after both) and answers `PuckReleased(n)`. Pan waits at most 2 s (`PuckReleaseTimeout`; a hung client
   can't answer), restarts, and sends `PuckRestarted(n)`, done or not. A late answer for an older number changes nothing.

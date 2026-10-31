@@ -75,4 +75,5 @@ Check script and logs: project files `checks/249/`. The puck stayed plugged in.
   and Steam updates the real controller ([steam-controller-copy.md](steam-controller-copy.md)). Implementation: #345.
 - Latency of the hop, ~3 min of play: p50 ~75 µs, p95 ~150 µs, p99 ~230 µs.
 - With both `1302` and `1304` hidden, unplugging the cable moved the controller to the puck and Steam saw none.
-  Plugging the cable in again brought no `1302` back (the controller stayed on the puck); Steam saw none either.
+  A controller connected to the puck stays on it when the cable is plugged in (it charges); it becomes `1302` only
+  when plugged in switched off.

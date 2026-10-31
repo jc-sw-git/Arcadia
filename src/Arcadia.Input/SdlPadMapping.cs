@@ -108,7 +108,32 @@ public static class SdlPadMapping
             RightTouchpad = Touch(state.SecondTouchpad, (state.Buttons & SdlPadState.Bit(SdlPadState.Button.Misc2)) != 0),
             Motion = state.Motion,
             Guide = (state.Buttons & SdlPadState.Bit(SdlPadState.Button.Guide)) != 0,
+            Extra = Extra(state.Buttons),
         };
+    }
+
+    private static readonly (SdlPadState.Button From, ExtraButtons To)[] Extras =
+    [
+        (SdlPadState.Button.Misc1, ExtraButtons.Misc1),
+        (SdlPadState.Button.Misc2, ExtraButtons.Misc2),
+        (SdlPadState.Button.LeftPaddle1, ExtraButtons.LeftPaddle1),
+        (SdlPadState.Button.RightPaddle1, ExtraButtons.RightPaddle1),
+        (SdlPadState.Button.LeftPaddle2, ExtraButtons.LeftPaddle2),
+        (SdlPadState.Button.RightPaddle2, ExtraButtons.RightPaddle2),
+    ];
+
+    private static ExtraButtons Extra(uint sdlButtons)
+    {
+        var extra = ExtraButtons.None;
+        foreach (var (from, to) in Extras)
+        {
+            if ((sdlButtons & SdlPadState.Bit(from)) != 0)
+            {
+                extra |= to;
+            }
+        }
+
+        return extra;
     }
 
     private static double Trigger(short value) => Math.Clamp(value / 32767.0, 0, 1);

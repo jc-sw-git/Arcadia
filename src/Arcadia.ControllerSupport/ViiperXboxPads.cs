@@ -94,6 +94,21 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
     }
 
     /// <summary>
+    /// A pad of the kind (#238 D3): the Xbox 360 pad as before, every other kind on VIIPER's raw stream
+    /// (<see cref="VirtualPadReports"/>).
+    /// </summary>
+    public async Task<IVirtualPad> PlugAsync(PadKind kind, CancellationToken cancellationToken)
+    {
+        if (kind == PadKind.Xbox360)
+        {
+            return new XboxPadAsVirtualPad(await PlugAsync(cancellationToken));
+        }
+
+        var device = await AddRawDeviceAsync(VirtualPadReports.DeviceType(kind), [], cancellationToken);
+        return new ViiperReportPad(kind, device);
+    }
+
+    /// <summary>
     /// Adds a device of another type on a bus of its own on the same server, and opens its raw stream, authenticated and
     /// encrypted: the copy of the Steam Controller's puck (#242, type <c>hidproxy</c> of the VIIPER fork). Throws when
     /// that fails; then nothing is left behind. The device goes when the returned one is disposed.

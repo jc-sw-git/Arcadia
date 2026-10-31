@@ -75,7 +75,8 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         Func<string?> gameInFront,
         IGamepadSource gamepad,
         PanNotices notices,
-        TimeProvider time)
+        TimeProvider time,
+        OwnPadModels? ownPads = null)
     {
         SteamControllerXboxPad? padForPresence = null;
         SteamControllerRouting? routingForCopy = null;
@@ -109,6 +110,9 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             },
             Pulse = guardian.Pulse,
             Rumble = (padId, motors) => Rumble(gamepad, padId, motors),
+            Light = gamepad.SetLight,
+            OwnPads = ownPads ?? new OwnPadModels(),
+            MotionSensors = gamepad.UseMotionSensors,
         };
         var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
         {

@@ -10,12 +10,26 @@ public readonly record struct XusbDevice(bool OnSoftwareHost, int? Slot);
 /// Recognises emulated Xbox pads by their place in the device tree (#212). The XInput slot ties SDL's pad
 /// (<c>XInput#n</c>) to a device; when the slots can't be read, a pad counts as emulated only if every XInput device
 /// whose slot is unknown is emulated, so a real pad is never lost to a guess (it would rather count twice).
-/// The copy of the Steam Controller's puck (#242) is told by SDL's HID path, which leads to its device.
+/// The copy of the Steam Controller's puck (#242) and Arcadia's own PlayStation and Switch 2 Pro pads (#238) are told by
+/// SDL's HID path, which leads to their device.
 /// </summary>
 /// <param name="onSoftwareHost">Whether the device behind a HID path is on a software host (<see cref="DeviceTree.InterfaceOnSoftwareHost"/>).</param>
-public sealed class DeviceTreeEmulatedPads(Func<IReadOnlyList<XusbDevice>> listDevices, Action<string> log, Func<string, bool>? onSoftwareHost = null) : IEmulatedPads
+/// <param name="ownPads">Arcadia's own pads plugged in now: where the device tree can't be read, a pad with their ids is taken for one.</param>
+public sealed class DeviceTreeEmulatedPads(
+    Func<IReadOnlyList<XusbDevice>> listDevices,
+    Action<string> log,
+    Func<string, bool>? onSoftwareHost = null,
+    OwnPadModels? ownPads = null) : IEmulatedPads
 {
-    public bool IsCopy(PadDevice device)
+    // Reading a copy as real only shows a puck twice: the safe side.
+    public bool IsCopy(PadDevice device) => OnSoftwareHostByPath(device, unknown: false);
+
+    // Reading Arcadia's own pad as real would give it a pad of its own, and that one another (QE review of #346):
+    // unknown, a pad with the ids of one Arcadia has plugged in counts as Arcadia's.
+    public bool IsVirtualHidPad(PadDevice device) =>
+        OnSoftwareHostByPath(device, unknown: ownPads?.Has(device.Vendor, device.Product) == true);
+
+    private bool OnSoftwareHostByPath(PadDevice device, bool unknown)
     {
         if (onSoftwareHost is null || device.XInputSlot is not null || device.Path.Length == 0)
         {
@@ -29,8 +43,8 @@ public sealed class DeviceTreeEmulatedPads(Func<IReadOnlyList<XusbDevice>> listD
         catch (Exception ex)
         {
             // Called on the poll thread while a pad connects; reading it is the safe side (it would rather count twice).
-            log($"Controller: Geräteliste von Windows nicht lesbar, der Steam Controller gilt als echt: {ex.Message}");
-            return false;
+            log($"Controller: Geräteliste von Windows nicht lesbar, {device.Name} gilt als {(unknown ? "Arcadias eigener" : "echt")}: {ex.Message}");
+            return unknown;
         }
     }
 

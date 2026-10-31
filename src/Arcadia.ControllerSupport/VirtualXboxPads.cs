@@ -2,7 +2,10 @@ using Arcadia.Input;
 
 namespace Arcadia.ControllerSupport;
 
-/// <summary>Plugs virtual Xbox 360 controllers in, which every program sees like a real one (#213).</summary>
+/// <summary>
+/// Plugs virtual Xbox 360 controllers in, which every program sees like a real one (#213), and, where the server has
+/// them, the other kinds of #238 (DualShock 4, DualSense, Switch 2 Pro).
+/// </summary>
 public interface IVirtualXboxPads
 {
     /// <summary>Why no pad can be plugged in (e.g. VIIPER or the usbip driver missing), or null when one can.</summary>
@@ -10,6 +13,9 @@ public interface IVirtualXboxPads
 
     /// <summary>Plugs a new pad in; throws when that fails. The pad goes when it is disposed.</summary>
     Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken);
+
+    /// <summary>Plugs a new pad of this kind in (#238 D3); throws when that fails. The pad goes when it is disposed.</summary>
+    Task<IVirtualPad> PlugAsync(PadKind kind, CancellationToken cancellationToken);
 
     /// <summary>Arcadia exits: whatever is left (VIIPER's server) goes too. Never throws.</summary>
     Task ShutdownAsync();
@@ -63,6 +69,8 @@ public sealed class NoVirtualXboxPads : IVirtualXboxPadServer
     public Task<int> PrepareAsync(CancellationToken cancellationToken) => throw new InvalidOperationException(Unavailable());
 
     public Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken) => throw new InvalidOperationException(Unavailable());
+
+    public Task<IVirtualPad> PlugAsync(PadKind kind, CancellationToken cancellationToken) => throw new InvalidOperationException(Unavailable());
 
     public Task ShutdownAsync() => Task.CompletedTask;
 }

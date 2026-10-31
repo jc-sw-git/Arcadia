@@ -105,4 +105,45 @@ public sealed class EmulatedXboxPadsTests
         Assert.False(pads.IsCopy(puck));
         Assert.Contains(log, line => line.Contains("kaputt", StringComparison.Ordinal));
     }
+
+    /// <summary>
+    /// #238 part 2: Arcadia's own DualSense, DualShock 4 and Switch 2 Pro pads carry the real ids; their place on the
+    /// software host keeps them out, so a controller never counts twice and its pad never feeds itself.
+    /// </summary>
+    [Theory]
+    [InlineData(0x054C, 0x0CE6, PadType.PS5)]
+    [InlineData(0x054C, 0x09CC, PadType.PS4)]
+    [InlineData(0x057E, 0x2069, PadType.SwitchPro)]
+    public void Arcadias_own_PlayStation_and_Switch_pads_are_ignored_and_the_real_ones_read(ushort vendor, ushort product, PadType type)
+    {
+        var ownPath = @"\\?\hid#own-pad";
+        var pads = new DeviceTreeEmulatedPads(() => [], _ => { }, path => path == ownPath);
+        var pad = new PadDevice("Pad", vendor, product, type, StickDeviceType.Gamepad);
+
+        Assert.Equal("virtueller Controller, z. B. Arcadias für ein Spiel", GamepadDevices.WhyIgnored(pad with { Path = ownPath }, pads));
+        Assert.Null(GamepadDevices.WhyIgnored(pad with { Path = @"\\?\hid#real-pad" }, pads));
+    }
+
+    /// <summary>
+    /// QE review of #346: with the device tree unreadable, Arcadia's own DualSense read as real would get a pad of its
+    /// own, and so on. A pad with the ids of one Arcadia has plugged in counts as Arcadia's then; any other stays real.
+    /// </summary>
+    [Fact]
+    public void With_the_device_tree_unreadable_a_pad_with_the_ids_of_one_Arcadia_plugged_counts_as_its_own()
+    {
+        var log = new List<string>();
+        var own = new OwnPadModels();
+        var pads = new DeviceTreeEmulatedPads(() => [], log.Add, _ => throw new InvalidOperationException("kaputt"), own);
+        var dualSense = new PadDevice("DualSense", 0x054C, 0x0CE6, PadType.PS5, StickDeviceType.Gamepad) { Path = @"\\?\hid#pad" };
+
+        Assert.Null(GamepadDevices.WhyIgnored(dualSense, pads));
+
+        own.Plugged(PadKind.DualSense);
+        Assert.NotNull(GamepadDevices.WhyIgnored(dualSense, pads));
+        Assert.Null(GamepadDevices.WhyIgnored(dualSense with { Product = 0x09CC, Type = PadType.PS4 }, pads));
+
+        own.Unplugged(PadKind.DualSense);
+        Assert.Null(GamepadDevices.WhyIgnored(dualSense, pads));
+        Assert.Contains(log, line => line.Contains("Arcadias eigener", StringComparison.Ordinal));
+    }
 }

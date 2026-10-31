@@ -64,6 +64,18 @@ public interface IGamepadSource : IDisposable
     void HoldRumble(int padId, ushort low, ushort high);
 
     /// <summary>
+    /// Sets the light bar of <paramref name="padId"/>, if it has one: the colour a game set on its emulated PlayStation
+    /// pad (#238 A5). Callable from any thread.
+    /// </summary>
+    void SetLight(int padId, PadLight light);
+
+    /// <summary>
+    /// Switches the gyro and accelerometer of every controller that has them on or off, from the next poll on: on while
+    /// an emulated pad carries motion (#238). Callable from any thread.
+    /// </summary>
+    void UseMotionSensors(bool on);
+
+    /// <summary>
     /// Lets go of every controller (false): SDL closes them and ends, so Arcadia holds no handle and Windows lets Pan
     /// restart a controller it hides or shows (#335, check A3). No poll runs meanwhile. True reads them again from the
     /// next poll on, each with a new <see cref="GamepadReading.PadId"/>. Callable from any thread; never throws.
@@ -120,6 +132,14 @@ public sealed class NullGamepadSource : IGamepadSource
     }
 
     public void HoldRumble(int padId, ushort low, ushort high)
+    {
+    }
+
+    public void SetLight(int padId, PadLight light)
+    {
+    }
+
+    public void UseMotionSensors(bool on)
     {
     }
 

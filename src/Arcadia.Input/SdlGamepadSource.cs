@@ -40,6 +40,9 @@ public interface ISdlGamepads
     /// </summary>
     void Rumble(nint pad, ushort low, ushort high, uint durationMs);
 
+    /// <summary>Sets the light bar's colour; a pad without one ignores it.</summary>
+    void SetLight(nint pad, byte red, byte green, byte blue);
+
     /// <summary>Switches gyro and accelerometer on or off.</summary>
     /// <returns>False when the pad has no gyro.</returns>
     bool SetMotionSensors(nint pad, bool on);
@@ -88,6 +91,7 @@ public sealed class SdlGamepadSource : IGamepadSource
     private readonly List<GamepadReading> _readings = [];
     private readonly ConcurrentQueue<int> _rumbleRequests = new();
     private readonly ConcurrentQueue<(int PadId, ushort Low, ushort High)> _heldRumbleRequests = new();
+    private readonly ConcurrentQueue<(int PadId, PadLight Light)> _lightRequests = new();
 
     // Poll thread only: the motors a game holds on, and when they were last sent.
     private readonly Dictionary<uint, (ushort Low, ushort High, long SentAtMs)> _heldRumbles = [];
@@ -143,6 +147,8 @@ public sealed class SdlGamepadSource : IGamepadSource
 
     public void HoldRumble(int padId, ushort low, ushort high) => _heldRumbleRequests.Enqueue((padId, low, high));
 
+    public void SetLight(int padId, PadLight light) => _lightRequests.Enqueue((padId, light));
+
     /// <summary>
     /// Off, SDL closes every controller and ends before this returns (the way check A3 of #335 found Windows lets Pan
     /// restart them); polls pause, so nobody sees the controllers go. On, the next poll starts SDL again and the
@@ -179,7 +185,8 @@ public sealed class SdlGamepadSource : IGamepadSource
 
     /// <summary>
     /// Switches the gyro and accelerometer of every controller that has them on or off, from the next poll on; off by
-    /// default. Only while a feature needs them (#111): they cost the controller's battery. Callable from any thread.
+    /// default. Only while a feature needs them (#111, #238's emulated pads): they cost the controller's battery.
+    /// Callable from any thread.
     /// </summary>
     public void UseMotionSensors(bool on)
     {
@@ -384,6 +391,13 @@ public sealed class SdlGamepadSource : IGamepadSource
             }
 
             HoldRumbles(nowMs);
+            while (_lightRequests.TryDequeue(out var request))
+            {
+                if (_pads.TryGetValue((uint)request.PadId, out var pad))
+                {
+                    _sdl.SetLight(pad.Handle, request.Light.Red, request.Light.Green, request.Light.Blue);
+                }
+            }
         }
 
         Polled?.Invoke(_readings);

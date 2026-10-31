@@ -1,15 +1,17 @@
 # #238 Pass every controller to games through Arcadia
 
 Pan hides every controller Arcadia reads, and Arcadia gives each one its own emulated pad
-([every-controller.md](../../controller-support/every-controller.md)). Cut into parts: **part 1** (this file so far)
-passes every controller on as an Xbox 360 pad with combos, rest, Guide, rumble, failure handling and the D7/D8 rows;
-part 2 the 1:1 kinds (DualShock 4, DualSense, Switch 2 Pro), part 3 "Controller zuordnen" (T238-13), part 4 the
-latency budget (T238-11). Until part 2, read "Arcadia's DualSense" below as "Arcadia's Xbox 360 pad".
+([every-controller.md](../../controller-support/every-controller.md)). Cut into parts: **part 1** passes every
+controller on as an Xbox 360 pad with combos, rest, Guide, rumble, failure handling and the D7/D8 rows; **part 2** the
+1:1 kinds (DualShock 4, DualSense incl. Edge, Switch 2 Pro) with touchpad, gyro and light bar (T238-1, -5, -14);
+part 3 "Controller zuordnen" (T238-13), part 4 the latency budget (T238-11).
 
 T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller.md`) run with this build too.
 
 - [ ] **T238-1** DualSense (USB) and 8BitDo Ultimate 2 (dongle) connected, Arcadia starts: a test game and Steam see
-      exactly one pad of Arcadia's per controller, in connection order, and neither real pad. The 8BitDo (XInput)
+      exactly one pad of Arcadia's per controller, in connection order, and neither real pad: a DualSense and an Xbox
+      360 pad (Steam's controller settings name them; `joy.cpl` may show an empty list while a hidden XInput pad is
+      emulated, which games and launchers don't mind). The 8BitDo (XInput)
       is gone for a few seconds when Pan hides it (port cycle), then emulated without a reconnect by hand; the D7 row
       doesn't name it. Also with the 8BitDo plugged in while Arcadia and Steam run. Note the XInput slot Arcadia's pad
       gets (known limit: the hidden pad keeps slot 0).
@@ -23,8 +25,11 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
       Desktop-Steuerung zulassen" on, Steam's desktop layout works with the DualSense in front of Arcadia and in the
       mouse mode, ⧉ + ≡ switches Steam's action set. · E2E: yes (`EveryControllerForGamesTests`)
 - [ ] **T238-5** Rumble in a game reaches DualSense, 8BitDo and Steam Controller and stops with the game's rumble; Guide /
-      PS opens Steam's overlay or the Game Bar. Touchpad, gyro and adaptive triggers: part 2. · E2E: no (real
-      hardware); the path from the pad's output to SDL with fakes in `EveryControllerForGamesTests`
+      PS opens Steam's overlay or the Game Bar. In a game with native DualSense support (or Steam's controller test):
+      touchpad (position and click), gyro (turning the pad turns the same way, at rest nothing drifts), mute button and
+      the light bar colour the game sets on the real DualSense. Adaptive triggers and haptics are not carried (VIIPER has
+      no output for them). · E2E: no (real hardware); the path from the pad's output to SDL with fakes in
+      `EveryControllerForGamesTests`
 - [ ] **T238-6** "Nein" in the takeover question: Steam Controller and puck stay Steam's, the DualSense is still hidden
       and arrives as Arcadia's pad. · E2E: yes (`EveryControllerForGamesTests`)
 - [ ] **T238-7** A controller Pan can't hide: it reaches the game directly, no pad of Arcadia's; the info row
@@ -43,6 +48,11 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
       geöffnet" says why; closed, the row goes and the pad is taken over within 10 s. With the real tool, check the
       process name Pan looks for. · E2E: yes (`EveryControllerForGamesTests`, fake Pan answer); the real tool by hand
 - [ ] **T238-13** Assign kinds and exclude in "Controller zuordnen". Part 3. · E2E: yes (fakes), plus by hand
+- [ ] **T238-14** Each other 1:1 kind at hand (DualShock 4, DualSense Edge, Switch 2 Pro; a Switch 1 Pro or GameCube
+      pad as a controller without one): the game sees that kind (a pad without one as an Xbox 360 pad), every button by
+      position (Nintendo's lower B is the game's south button), sticks in the right direction, Edge paddles and Fn,
+      Switch 2 Pro C, GL/GR and Capture, gyro and rumble. Arcadia's own pad is never listed as a controller in Arcadia.
+      Kinds not at hand are named in the history. · E2E: no (real hardware); the packets in `VirtualPadReportsTests`
 
 History:
 
@@ -56,3 +66,6 @@ History:
 | QE finding 5 (fakes) | 2026-10-31 | Claude | branch `feat/emulate-every-controller-238`, Linux container, fakes | ✅ a constant rumble carries over to the controller's new SDL id after a let-go; `TakenOverControllersTests` red once without it | – |
 | T238-11 pre-measurement (part 1) | 2026-10-31 | Claude from the owner's `arcadia.log` | Windows 11, owner's PC, branch at 9030a1b, DualSense USB, 8BitDo dongle, short sessions | ⚠️ poll → VIIPER mean 0.1 ms, max 3.9 ms (DualSense, 1750 states), 0.3–0.4 ms (8BitDo); first state after a plug up to 4.2 ms. Not covered: the wait for the 8 ms poll (`Thread.Sleep`), CPU, p99, 10 minutes | Within D9 only for the measured stretch; the fixed poll breaks D9 → part 4 (event-driven forwarding, CPU and p99 per pad) |
 | real pads, Pan, VIIPER | – | – | – | not run: no Windows with pads in the cloud container | owner's test of part 1 |
+| T238-1, -5 part 2 (fakes) | 2026-10-31 | Claude | branch `feat/emulate-kinds-238` (part 2), Linux container, Avalonia headless, fake SDL, Pan and VIIPER | ✅ 2 new or extended acceptance tests (kinds per controller; touchpad, motion, mute and light bar through the App), 4 new `TakenOverControllersTests`, 17 `VirtualPadReportsTests` (packets against the fork's `state.go`, SDL's sensor and HD rumble maths), own pads ignored in `EmulatedXboxPadsTests`; full suite green (Core 2221, Pan 285, App 480) | Red once: with every PS5 pad an Xbox 360 pad T238-1 and T238-5 fail, without the light bar's wiring T238-5 |
+| QE findings of #346 (fakes) | 2026-10-31 | Claude | branch `feat/emulate-kinds-238`, Linux container, fakes | ✅ own pads known while plugged (`OwnPadModels`), counted as Arcadia's when the device tree can't be read; an Xbox 360 pad gets no state for motion alone; each new test red once without its fix | – |
+| T238-1, -5 on hardware (part 2) | 2026-10-31 | owner (check script `Run-Check-238-kinds.ps1`) | Windows 11, owner's PC, branch `feat/emulate-kinds-238` at 5176e67, DualSense USB, 8BitDo Ultimate 2 dongle, Steam's controller test, Castlevania Belmont's Curse | ✅ one DualSense of Arcadia's, no second; buttons, analog triggers, sticks, touchpad (position, click), gyro without drift, PS, mute, light bar colour and rumble from the game on the real DualSense. With the 8BitDo added Steam and Arcadia see one DualSense and one Xbox 360 pad, the virtual DualSense is ignored by Arcadia, but `joy.cpl` shows an empty list while the 8BitDo is on, with or without the DualSense | ⚠️ `joy.cpl` empty as soon as the hidden 8BitDo (XInput) is emulated: a part 1 behaviour, Steam and Arcadia see the pads. T238-14 (DualShock 4, Edge, Switch 2 Pro) not run: no such pad at hand |

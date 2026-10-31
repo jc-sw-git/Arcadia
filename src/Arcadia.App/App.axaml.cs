@@ -214,9 +214,9 @@ public partial class App : Application
             // A firmware update Steam tries through the copy (#295): Arcadia is behind Steam's window, and the player is
             // to read why it fails. Not while a game is in front: a toast says it there (MainViewModel.ShowFirmwareAttempt).
             viewModel.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
-            _gamepad.Polled += xboxPad.Feed;
+            _gamepad.Sampled += xboxPad.Feed;
             _gamepad.Lost += xboxPad.Drop;
-            _gamepad.Polled += forGames.Others.Feed;
+            _gamepad.Sampled += forGames.Others.Feed;
             _gamepad.Lost += forGames.Others.Drop;
             _gamepad.ButtonPressed += routing.Press;
             _gamepad.ButtonReleased += routing.Release;

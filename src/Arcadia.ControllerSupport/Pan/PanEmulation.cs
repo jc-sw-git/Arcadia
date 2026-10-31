@@ -120,6 +120,8 @@ public sealed class PanEmulation : IVirtualXboxPads
     // "Erneut versuchen" (#308): pressed, not seen by a tick yet (1), or tried by a tick that started after the press (2).
     private int _retry;
     private volatile bool _gaveUp;
+    private readonly Lock _padCountLock = new();
+    private int _padsPlugged;
 
     // "Controller freigeben" (#295): Steam Controller and puck stay Steam's until the switch goes off, or Arcadia restarts.
     private volatile bool _released;
@@ -171,6 +173,12 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// A hide or show restarts the puck, and Windows refuses that while any program holds it open, Arcadia too (#308).
     /// </summary>
     public Action<bool> ReadSteamControllers { get; init; } = _ => { };
+
+    /// <summary>
+    /// True once the first pad is plugged in, false once the last is gone: the gamepad source reads every 1 ms only while
+    /// pads are forwarded (#238 D9, <c>IGamepadSource.ReadFast</c>). Called under a lock; must be quick and not throw.
+    /// </summary>
+    public Action<bool> PadsPlugged { get; init; } = _ => { };
 
     public PanEmulationStatus Status => _status;
 
@@ -271,6 +279,20 @@ public sealed class PanEmulation : IVirtualXboxPads
         }
     }
 
+    /// <summary>Pads of every session count: an ended one's pads are counted off when it ends, not when they are gone.</summary>
+    private void PadCountChanged(int change)
+    {
+        lock (_padCountLock)
+        {
+            var before = _padsPlugged;
+            _padsPlugged += change;
+            if ((before > 0) != (_padsPlugged > 0))
+            {
+                PadsPlugged(_padsPlugged > 0);
+            }
+        }
+    }
+
     /// <summary>Arcadia's Xbox pad gave up after too many losses: the whole emulation stops until "Erneut versuchen".</summary>
     public void PadGaveUp()
     {
@@ -321,7 +343,6 @@ public sealed class PanEmulation : IVirtualXboxPads
                 await EndAsync(session, "Arcadia wird beendet");
             }
 
-            Others?.Shutdown();
             await _pads.ShutdownAsync();
             await _guardian.PlannedExitAsync();
         }
@@ -437,7 +458,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
-        var session = new Session(generation, usbipPort);
+        var session = new Session(generation, usbipPort, PadCountChanged);
         if (puckWanted)
         {
             var hidden = await WithPuckLetGoAsync(() => _guardian.HideAsync(generation, cancellationToken));
@@ -848,7 +869,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     }
 
     /// <summary>One generation: what Arcadia plugged in within it. Its pads are taken out together when it ends.</summary>
-    private sealed class Session(uint generation, int usbipPort)
+    private sealed class Session(uint generation, int usbipPort, Action<int> padCountChanged)
     {
         private readonly List<GuardedDevice> _pads = [];
 
@@ -879,13 +900,20 @@ public sealed class PanEmulation : IVirtualXboxPads
                 }
 
                 _pads.Add(pad);
+                padCountChanged(1);
                 return true;
             }
         }
 
         public void Remove(GuardedDevice pad)
         {
-            lock (_pads) _pads.Remove(pad);
+            lock (_pads)
+            {
+                if (_pads.Remove(pad))
+                {
+                    padCountChanged(-1);
+                }
+            }
         }
 
         public List<GuardedDevice> End()
@@ -895,6 +923,7 @@ public sealed class PanEmulation : IVirtualXboxPads
                 Ended = true;
                 var pads = _pads.ToList();
                 _pads.Clear();
+                padCountChanged(-pads.Count);
                 return pads;
             }
         }

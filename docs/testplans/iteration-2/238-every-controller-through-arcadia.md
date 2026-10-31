@@ -42,8 +42,14 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
       `TakenOverControllersTests`
 - [ ] **T238-10** Reboot while pads are hidden (hard reset): after login every pad is visible to games.
       · E2E: no (reboot)
-- [ ] **T238-11** Latency and CPU in `arcadia.log` after a 10-minute session with each pad within D9. Part 4.
-      · E2E: no (real hardware)
+- [ ] **T238-11** A game runs 10 minutes with DualSense (USB), 8BitDo (dongle) and the Steam Controller (mode
+      „Arcadia“) in use beside each other, the DualSense's gyro on (a game with DualSense support, or Steam's
+      controller test). `arcadia.log` says "Arcadia liest alle 1 ms" when the first pad is plugged and "liest wieder alle
+      8 ms" when the last goes. In the summaries (after 10 minutes and when the pad goes): per pad "Verzögerung Lesen →
+      VIIPER" and "Abstand der Lesevorgänge" give half the gap's mean plus the pad's mean ≤ 1 ms and the gap's max plus
+      the pad's max ≤ 4 ms; "CPU Arcadia" ≤ 1 % aller Kerne. Arcadia's own input (menu, mouse mode) feels as before.
+      · E2E: no (real hardware, timer); pacing, forwarding and the switch in `ReadPacingTests`, `PadForwarderTests`,
+      `PanEmulationTests`, `SdlGamepadSourceTests`
 - [ ] **T238-12** Xbox Zubehör open at Arcadia's start: the Xbox pad isn't hidden, the warning row "Xbox Zubehör ist
       geöffnet" says why; closed, the row goes and the pad is taken over within 10 s. With the real tool, check the
       process name Pan looks for. · E2E: yes (`EveryControllerForGamesTests`, fake Pan answer); the real tool by hand
@@ -83,3 +89,4 @@ History:
 | QE findings of #350 (fakes) | 2026-10-31 | Claude | branch `feat/assign-controllers-238`, Linux container, Avalonia headless, fakes | ✅ a show Pan refuses gives the model no pad and leaves it taken over anew later (`TakenOverControllersTests` red once without the fix); two controllers of one model are one row, also after one goes; the bottom fade covers a cut row at open (looked at in the capture); full suite green (Core 2219, Pan 284, App 483) | – |
 | T238-13 apply on A (fakes) | 2026-10-31 | Claude | branch `feat/assign-controllers-238`, Linux container, Avalonia headless, fakes | ✅ owner's finding (every ◀ ▶ replaced the pad, across "Nicht übernehmen" restarted the real controller): the acceptance test tries layouts, ticks and B without any pad change or show, then A on [Übernehmen] below the rows applies both at once (A on a row steps on); red once with a store per step; ring around [Übernehmen] looked at in its capture | – |
 | T238-13 on hardware | 2026-10-31 | owner | Windows 11, owner's PC, branch `feat/assign-controllers-238` at 0eaae00, DualSense and further controllers | ✅ passed. First round: every ◀ ▶ applied at once, so trying layouts replaced the pad and restarted the real controller, with Steam announcing each | Applied only with [Übernehmen] (0eaae00) |
+| T238-11 pacing and forwarding (fakes) | 2026-10-31 | Claude | branch `feat/forward-latency-238` (part 4), Linux container, fakes and fake clock | ✅ 16 tests (`ReadPacingTests`, `PadForwarderTests`, `LatencyStatsTests`, the switch in `PanEmulationTests`, `Sampled` in `SdlGamepadSourceTests`); full suite green. Red once each: without the count-down at the emulation's end, without the one-slot wait behind a slow send. Not run: real pads, the Windows timer, CPU | owner's T238-11 on Windows |

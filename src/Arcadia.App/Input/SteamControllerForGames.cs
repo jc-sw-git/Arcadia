@@ -129,6 +129,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             Enabled = () => settings.Current.PanEnabled && !controllerSupport.IsPanUpdateDue,
             SteamControllerPresent = () => hold.PuckPresent || padForPresence?.SteamControllerConnected == true,
             ReadSteamControllers = gamepad.ReadSteamControllers,
+            PadsPlugged = gamepad.ReadFast,
         };
         var routing = new SteamControllerRouting(
             activeGames,

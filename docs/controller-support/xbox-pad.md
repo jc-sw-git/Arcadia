@@ -5,9 +5,10 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
 
 ## The pad
 
-- `SteamControllerXboxPad` (ControllerSupport) takes every SDL poll (`Feed`, poll thread), keeps only the Steam
-  Controller (`GamepadReading.IsSteamController`) and hands the newest state to a sender task through a one-slot channel
-  (drop oldest), so a slow VIIPER never holds up Arcadia's input. Only changes are sent; VIIPER keeps the last state.
+- `SteamControllerXboxPad` (ControllerSupport) takes every SDL read (`Feed` on `Sampled`), keeps only the Steam
+  Controller (`GamepadReading.IsSteamController`) and sends the new state from that thread (`PadForwarder`, a slow
+  VIIPER never holds up Arcadia's input; [every-controller.md](pad-latency.md)). Only changes are sent;
+  VIIPER keeps the last state.
   Every other controller gets a pad of its own: [every-controller.md](every-controller.md) (#238).
 - A game's rumble on the pad (VIIPER's `Xbox360Output`, two motor bytes) goes back to the Steam Controller through SDL
   (`IGamepadSource.HoldRumble`), and stops when the pad goes. The Steam button is never the pad's Guide: it is Steam's.
@@ -41,8 +42,8 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
   "Controller wiederherstellen" ends VIIPER on purpose and clears the count (`ForgetLosses`). On exit, also for an
   update, the pad and the server go (each step on its own, so a failed unplug still ends the server); after the
   restart the pad comes back by itself.
-- Unplugging logs the delay from an SDL poll to the state being with VIIPER (mean and maximum); the SDL poll itself
-  adds up to 8 ms before that.
+- Unplugging and every 10 minutes log the delay from an SDL read to the state being with VIIPER (n, mean, p50, p99,
+  max); while the pad is plugged SDL reads every 1 ms.
 
 ## usbip-win2 attaches a removed device again (#331)
 

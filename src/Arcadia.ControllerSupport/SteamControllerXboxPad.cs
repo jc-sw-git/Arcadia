@@ -1,4 +1,3 @@
-using System.Threading.Channels;
 using Arcadia.Input;
 
 namespace Arcadia.ControllerSupport;
@@ -10,8 +9,8 @@ namespace Arcadia.ControllerSupport;
 /// extra controller.
 /// </summary>
 /// <remarks>
-/// <see cref="Feed"/> runs on the gamepad's poll thread and only hands the newest state to a sender task, so a slow
-/// VIIPER never holds up Arcadia's input. Plugging in and out happens in <see cref="TickAsync"/>, under one gate.
+/// <see cref="Feed"/> runs on the gamepad's reading thread and sends each new state from there (<see cref="PadForwarder{TState}"/>),
+/// so a state reaches VIIPER without a thread hop and a slow VIIPER still never holds up Arcadia's input. Plugging in and out happens in <see cref="TickAsync"/>, under one gate.
 /// </remarks>
 public sealed class SteamControllerXboxPad
 {
@@ -19,17 +18,13 @@ public sealed class SteamControllerXboxPad
     public const int MaxReplugsPerWindow = 3;
     public static readonly TimeSpan CrashWindow = TimeSpan.FromMinutes(5);
 
-    /// <summary>VIIPER takes a state in well under a millisecond; a write this slow means it is stuck.</summary>
-    private static readonly TimeSpan SendTimeout = TimeSpan.FromSeconds(1);
-
     private readonly IVirtualXboxPads _pads;
     private readonly TimeProvider _time;
     private readonly Action<string> _log;
     private readonly ComboWithholding _withholding;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly List<DateTimeOffset> _losses = [];
-    private readonly Channel<(XboxPadState State, long PolledAt)> _states =
-        Channel.CreateBounded<(XboxPadState, long)>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
+    private readonly PadForwarder<XboxPadState> _forwarder;
 
     private volatile IVirtualXboxPad? _pad;
     private volatile bool _steamControllerConnected;
@@ -38,10 +33,8 @@ public sealed class SteamControllerXboxPad
     // The same, for VIIPER's thread (a game's rumble); -1 while none is connected.
     private volatile int _rumbleTarget = -1;
     private XboxPadState _lastFed;
-    private Task? _sender;
     private volatile bool _gaveUp;
     private string? _lastUnavailable;
-    private DelayStats _delays;
 
     public SteamControllerXboxPad(IVirtualXboxPads pads, TimeProvider time, Action<string> log)
     {
@@ -49,6 +42,10 @@ public sealed class SteamControllerXboxPad
         _time = time;
         _log = log;
         _withholding = new ComboWithholding(time);
+        _forwarder = new PadForwarder<XboxPadState>(
+            time,
+            delays => _log($"Xbox-Pad: Verzögerung Lesen → VIIPER {delays}"),
+            ex => _log($"Xbox-Pad: Senden fehlgeschlagen: {ex.Message}"));
     }
 
     /// <summary>Whether a pad is wanted at all now (read in <see cref="TickAsync"/>): <see cref="SteamControllerRoute.PadWanted"/>.</summary>
@@ -80,7 +77,7 @@ public sealed class SteamControllerXboxPad
     /// <summary>A Steam Controller is connected, as of the last poll.</summary>
     public bool SteamControllerConnected => _steamControllerConnected;
 
-    /// <summary>Every poll of the gamepad source, on its thread. Never throws.</summary>
+    /// <summary>Every read of the gamepad source (<see cref="IGamepadSource.Sampled"/>), on its thread. Never throws.</summary>
     public void Feed(IReadOnlyList<GamepadReading> pads)
     {
         FeedAlive?.Invoke();
@@ -116,7 +113,7 @@ public sealed class SteamControllerXboxPad
         if (state != _lastFed)
         {
             _lastFed = state;
-            _states.Writer.TryWrite((state, _time.GetTimestamp()));
+            _forwarder.Send(state, _time.GetTimestamp());
         }
     }
 
@@ -188,7 +185,6 @@ public sealed class SteamControllerXboxPad
                 await Guarded(async () => await UnplugAsync(pad), "Abstecken");
             }
 
-            _states.Writer.TryComplete();
             await Guarded(_pads.ShutdownAsync, "VIIPER beenden");
         }
         finally
@@ -204,7 +200,7 @@ public sealed class SteamControllerXboxPad
     public void Rest()
     {
         _lastFed = XboxPadState.Neutral;
-        _states.Writer.TryWrite((XboxPadState.Neutral, _time.GetTimestamp()));
+        _forwarder.Send(XboxPadState.Neutral, _time.GetTimestamp());
     }
 
     /// <summary>
@@ -218,7 +214,7 @@ public sealed class SteamControllerXboxPad
         _rumbleTarget = -1;
         _withholding.Reset();
         _lastFed = XboxPadState.Neutral;
-        _states.Writer.TryWrite((XboxPadState.Neutral, _time.GetTimestamp()));
+        _forwarder.Send(XboxPadState.Neutral, _time.GetTimestamp());
     }
 
     private async Task Guarded(Func<Task> step, string what)
@@ -266,7 +262,6 @@ public sealed class SteamControllerXboxPad
             return;
         }
 
-        _delays = default;
         if (Rumble is { } rumble)
         {
             pad.Rumbled += motors =>
@@ -279,15 +274,13 @@ public sealed class SteamControllerXboxPad
         }
 
         _pad = pad;
-        _sender ??= Task.Run(SendLoopAsync, CancellationToken.None);
-
-        // What the controller holds right now, since the pad missed it.
-        _states.Writer.TryWrite((_lastFed, _time.GetTimestamp()));
+        _forwarder.Plug((state, cancellationToken) => pad.IsConnected ? pad.SendAsync(state, cancellationToken) : Task.CompletedTask);
     }
 
     private async Task UnplugAsync(IVirtualXboxPad pad)
     {
         _pad = null;
+        _forwarder.Unplug();
         if (_rumbleTarget is var id and >= 0)
         {
             // A game that rumbled when its pad went would leave the motors running.
@@ -295,7 +288,7 @@ public sealed class SteamControllerXboxPad
         }
 
         await pad.DisposeAsync();
-        _log($"Xbox-Pad: abgesteckt; {_delays}");
+        _log($"Xbox-Pad: abgesteckt; Verzögerung Lesen → VIIPER {_forwarder.Delays.Summary()}");
     }
 
     /// <summary>
@@ -332,48 +325,5 @@ public sealed class SteamControllerXboxPad
 
         _log($"Xbox-Pad: {message}");
         GaveUp?.Invoke(message);
-    }
-
-    private async Task SendLoopAsync()
-    {
-        await foreach (var (state, polledAt) in _states.Reader.ReadAllAsync())
-        {
-            if (_pad is not { IsConnected: true } pad)
-            {
-                continue;
-            }
-
-            try
-            {
-                // A write that hangs counts as a lost pad, like one that fails.
-                using var timeout = new CancellationTokenSource(SendTimeout);
-                await pad.SendAsync(state, timeout.Token);
-                _delays.Add(_time.GetElapsedTime(polledAt));
-            }
-            catch (Exception ex)
-            {
-                // The pad counts as lost now; the next tick plugs a new one in.
-                _log($"Xbox-Pad: Senden fehlgeschlagen: {ex.Message}");
-            }
-        }
-    }
-
-    /// <summary>From a poll to the state being with VIIPER, for the input budget (CLAUDE.md: under 50 ms to a visible move).</summary>
-    private struct DelayStats
-    {
-        private int _count;
-        private double _sumMs;
-        private double _maxMs;
-
-        public void Add(TimeSpan delay)
-        {
-            _count++;
-            _sumMs += delay.TotalMilliseconds;
-            _maxMs = Math.Max(_maxMs, delay.TotalMilliseconds);
-        }
-
-        public override readonly string ToString() => _count == 0
-            ? "nichts gesendet"
-            : $"{_count} Zustände gesendet, Verzögerung im Mittel {_sumMs / _count:0.0} ms, höchstens {_maxMs:0.0} ms";
     }
 }

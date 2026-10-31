@@ -23,7 +23,7 @@ controllers taken over. Product rules: `docs/product/controls.md`, the settings 
   Bluetooth XInput pad and a hub that refuses. The cycled pad is gone after the answer and arrives again as a new
   controller, already hidden.
   Pads are plugged in connection order, so the first controller gets the first slot Arcadia owns.
-- The hidden XInput pad still holds its XInput slot (check A2): Arcadia's pad for it gets the next slot. Known limit.
+- The hidden XInput pad still holds its XInput slot (check A2): Arcadia's pad for it gets the next slot, and `joy.cpl` lists no pad at all while it is emulated (seen on the owner's PC; Steam, launchers and games see the pads). Known limit.
 
 ## Forwarding
 

@@ -14,7 +14,7 @@ and runs only when the player confirms; declined, Pan is switched off and Arcadi
   Pan's own dialogs and says Windows asks next. [A] "Aktualisieren" starts the update, [B] "Ohne Pan weiter" declines.
   Nothing below the page takes a press; while a Windows prompt is up or the countdown runs, every press is ignored.
 - **Pan off:** no page. The switch "Controller-Wächter (Pan)" reads "Neue Pan-Version verfügbar" with the blue i and
-  its info panel starts with a blue box; switching it on runs the update first (`PanRows`), and only a confirmed update
+  its info panel starts with a blue box in bold; switching it on runs the update first (`PanRows`), and only a confirmed update
   switches Pan on. Declined or failed, it stays off with the toast "… bleibt aus" (a failure's error in the panel).
 - Firmware hold first: [A] starts the update, and [B] the switch-off, only once Pan answered its first hello (`PanClient.FirstAttempt`, at
   most 5 s) and the emulation ticked once, so a hold from before the start opens its dialog
@@ -27,8 +27,9 @@ and runs only when the player confirms; declined, Pan is switched off and Arcadi
   `SwitchPanOffForUpdate` sets `PanEnabled = false` (and the error for the switch's panel), so `MayTalkToPan` is false
   and `PanClient` (`Wanted`) drops its connection and doesn't reconnect while the update is due and Pan off. Left
   without a client, the old Pan undoes what it holds with its own code, whatever protocol it speaks, and ends itself
-  after 30 s ([pan.md](pan.md)). The page shows "Pan wird beendet" with a 45 s countdown and opens the library as soon
-  as the service has stopped (`IsPanRunning`), with the toast naming why Pan is off.
+  after 30 s ([pan.md](pan.md)). The page shows "Pan wird beendet" with a 45 s countdown (the text names the usual
+  30 s, the ring "noch höchstens" as the upper bound) and opens the library as soon as the service has stopped
+  (`IsPanRunning`), with the toast naming why Pan is off.
 - **Old Pan still running after 45 s** (its undo failed and it keeps retrying): stage 1 "Controller freigeben",
   [A] "Controller wiederherstellen" runs the bundled Pan's `--restore` (one prompt; it reads an older Pan's journal,
   `JournalTests`), then the library; [B] ends Arcadia. Declined or failed: stage 2 "Controller von Hand freigeben"

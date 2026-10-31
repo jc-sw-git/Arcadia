@@ -92,6 +92,7 @@ public sealed class PanUpdateAtStartTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T326-2")]
+    [Trait("TestCase", "T340-1")]
     public async Task B_on_the_notice_switches_Pan_off_waits_for_the_old_Pan_and_the_next_start_shows_no_notice()
     {
         var steam = OldPan();
@@ -106,6 +107,8 @@ public sealed class PanUpdateAtStartTests
 
             Assert.Equal(PanUpdateState.Stopping, page.State);
             Assert.Equal(PanUpdatePageViewModel.StoppingTitle, page.Title);
+            Assert.Equal(PanUpdatePageViewModel.StoppingText, page.Text);
+            Assert.True(page.IsCountingDown, "the ring with \"noch höchstens\" above the number");
             Assert.Equal(45, page.SecondsLeft);
             Assert.False(arcadia.Settings.Current.PanEnabled);
             Assert.False(arcadia.ControllerSupport.MayTalkToPan, "Arcadia leaves the old Pan alone");
@@ -198,6 +201,7 @@ public sealed class PanUpdateAtStartTests
         var first = Assert.IsType<InfoNote>(pan.Info[0]);
         Assert.Equal(PanRows.UpdateDueInfo, first.Text);
         Assert.True(first.IsInfo);
+        Assert.True(first.IsBold, "the blue box is read before switching Pan on (#340)");
     }
 
     [AvaloniaFact]
@@ -303,6 +307,7 @@ public sealed class PanUpdateAtStartTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T326-6")]
+    [Trait("TestCase", "T340-2")]
     public async Task A_firmware_hold_from_before_shows_its_dialog_first_and_A_pressed_earlier_waits_for_it()
     {
         var steam = OldPan();
@@ -335,6 +340,7 @@ public sealed class PanUpdateAtStartTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T326-6")]
+    [Trait("TestCase", "T340-2")]
     public async Task B_pressed_before_Pan_answered_lets_a_firmware_hold_from_before_show_its_dialog_first()
     {
         var steam = OldPan();
@@ -345,6 +351,9 @@ public sealed class PanUpdateAtStartTests
 
         // [B] before Pan's first answer: its hello may still report a hold, whose dialog must come first.
         arcadia.Press(UiAction.Back);
+        var page = arcadia.Main.PanUpdate!;
+        Assert.Equal(PanUpdatePageViewModel.StoppingText, page.Text);
+        Assert.False(page.IsCountingDown, "no ring and no caption before the countdown");
         Assert.True(arcadia.ControllerSupport.MayTalkToPan, "Arcadia lets go of the old Pan before its hello could report a firmware hold");
 
         await arcadia.PanAnsweredAtStartAsync();

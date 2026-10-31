@@ -71,6 +71,8 @@ Check script and logs: project files `checks/249/`. The puck stayed plugged in.
   unknown `0xDC`, `0xE2`, `0xED` blocked, Steam worked anyway.
 - **Steam offers the copy a firmware update** (not installed, so the update's messages are unknown). Steam logs the
   copy with the real controller's `FWTimestamp`.
+  So an update by cable goes the puck's way: the copy drops it, `FirmwareAttemptWatch` offers "Controller freigeben"
+  and Steam updates the real controller ([steam-controller-copy.md](steam-controller-copy.md)). Implementation: #345.
 - Latency of the hop, ~3 min of play: p50 ~75 µs, p95 ~150 µs, p99 ~230 µs.
 - With both `1302` and `1304` hidden, unplugging the cable moved the controller to the puck and Steam saw none.
   Plugging the cable in again brought no `1302` back (the controller stayed on the puck); Steam saw none either.

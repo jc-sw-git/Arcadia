@@ -485,7 +485,8 @@ public sealed class PanRows
         PanReason.ControllerNeedsReplug => "Windows gibt diesen Controller erst frei, wenn du ihn neu verbindest. Bis dahin sehen Programme, die ihn schon geöffnet haben, ihn direkt.",
         PanReason.ControllerNotHideable => "Pan findet an diesem Controller nichts, was es vor Spielen verstecken kann.",
         PanReason.ControllerNotConnected => "Pan findet diesen Controller nicht unter den Geräten von Windows.",
-        _ => "Windows hat den Controller nicht neu verbunden, deshalb sehen Programme ihn weiter direkt.",
+        // HidingFailed has several causes (a failed restart, an unknown image path, HidHide's errors): no guess at which.
+        _ => "Pan konnte diesen Controller nicht verstecken. Was dabei schiefging, steht in pan.log.",
     };
 
     private const string StartFailedText = "Arcadia konnte die emulierten Controller nicht anlegen. Pan hat die echten Controller deshalb wieder freigegeben, Steam und Spiele sehen sie direkt. Arcadia versucht es beim nächsten Durchlauf von selbst; Details stehen in arcadia.log.";

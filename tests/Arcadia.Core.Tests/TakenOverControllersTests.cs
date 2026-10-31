@@ -34,6 +34,7 @@ public sealed class TakenOverControllersTests
     private bool _steamControllerPresent;
     private bool _forwarding = true;
     private bool _steamRuns;
+    private string? _runningTool;
 
     public TakenOverControllersTests()
     {
@@ -49,6 +50,7 @@ public sealed class TakenOverControllersTests
                 _reads.Add(on);
             },
             Rumble = (padId, motors) => { lock (_rumbles) _rumbles.Add($"{padId}: {motors.Large}/{motors.Small}"); },
+            ProcessRuns = name => name == _runningTool,
         };
         _emulation = new PanEmulation(_pads, _pan, _copy, _time, Log)
         {
@@ -184,6 +186,39 @@ public sealed class TakenOverControllersTests
         Assert.Equal(2, _pan.ControllerHides.Count);
         Assert.Empty(_others.WaitingForTool);
         Assert.Equal(1, _others.Plugged);
+    }
+
+    /// <summary>QE review of #338: each try lets go of every controller, so none is made while the tool still runs.</summary>
+    [Fact]
+    [Trait("TestCase", "T238-12")]
+    public async Task While_the_firmware_tool_still_runs_the_other_controllers_are_never_let_go_of_again()
+    {
+        _pan.ControllerHide = model => model == DualSenseModel
+            ? new ControllerHidingResult(false, PanReason.FirmwareToolRuns)
+            : new ControllerHidingResult(true, PanReason.None);
+        _runningTool = "FWupdater";
+        _others.Feed([DualSense, EightBitDo]);
+        await _emulation.TickAsync();
+        Assert.Equal(1, _others.Plugged);
+
+        for (var i = 0; i < 6; i++)
+        {
+            _time.Advance(TakenOverControllers.FirmwareToolRetry);
+            _others.Feed([DualSense, EightBitDo]);
+            await _emulation.TickAsync();
+        }
+
+        Assert.Equal([false, true], _reads);
+        Assert.Equal(1, _others.Plugged);
+
+        _runningTool = null;
+        _pan.ControllerHide = null;
+        _time.Advance(TakenOverControllers.FirmwareToolRetry);
+        await _emulation.TickAsync();
+
+        Assert.Equal([false, true, false, true], _reads);
+        Assert.Empty(_others.WaitingForTool);
+        Assert.Equal(2, _others.Plugged);
     }
 
     /// <summary>#335 A3: an XInput pad is hidden only from those who open it later; until it reconnects it isn't emulated (D7).</summary>

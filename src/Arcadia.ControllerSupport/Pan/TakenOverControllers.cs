@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using Arcadia.Input;
+using Arcadia.Launchers;
 using Arcadia.Pan;
 
 namespace Arcadia.ControllerSupport.Pan;
@@ -35,6 +36,12 @@ public sealed class TakenOverControllers
     /// stays and a controller waiting for its reconnect (A3) doesn't count as reconnected.
     /// </summary>
     public static readonly TimeSpan RereadGrace = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// Whether a process of this name (without <c>.exe</c>) runs: a model that waits for its vendor's firmware tool (D8)
+    /// is tried again only once the tool has ended. Pan decides; this only spares the let-go while the tool still runs.
+    /// </summary>
+    public Func<string, bool> ProcessRuns { get; init; } = ProcessWatch.IsRunning;
 
     /// <summary>Pan's heartbeat while SDL is let go: no poll pulses then, and a hide with its restart takes seconds.</summary>
     private static readonly TimeSpan PulseWhileLetGo = TimeSpan.FromMilliseconds(250);
@@ -328,9 +335,10 @@ public sealed class TakenOverControllers
             return;
         }
 
-        // Pan restarts what it hides: Arcadia lets go of every controller first, and the pads rest meanwhile.
-        RestAllPads();
+        // Pan restarts what it hides: Arcadia lets go of every controller first, and the pads rest meanwhile (after the
+        // let-go, so no poll offers a held state again).
         ReadControllers(false);
+        RestAllPads();
         using var pulsing = new CancellationTokenSource();
         var pulse = PulseAsync(pulsing.Token);
         try
@@ -361,10 +369,25 @@ public sealed class TakenOverControllers
         return state.Rejection switch
         {
             null => false,
-            PanReason.FirmwareToolRuns => _time.GetElapsedTime(state.TriedAt) >= FirmwareToolRetry,
+            // Asked only once the tool has ended: each try lets go of every controller (QE review of #338).
+            PanReason.FirmwareToolRuns => _time.GetElapsedTime(state.TriedAt) >= FirmwareToolRetry && !FirmwareToolRuns(model),
             // "Steckst du den Controller neu ein, versucht Pan es erneut" (D7).
             _ => keys.Any(key => !state.KeysAtRejection.Contains(key)),
         };
+    }
+
+    private bool FirmwareToolRuns(ControllerModel model)
+    {
+        try
+        {
+            return ControllerList.RunningToolFor(model, ProcessRuns) is not null;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Unknown counts as ended: Pan checks again and refuses while the tool runs.
+            _log($"Controller für Spiele: ob ein Firmware-Tool läuft, ist nicht bekannt: {ex.Message}");
+            return false;
+        }
     }
 
     private void Record(ControllerModel model, List<string> keys, ControllerHidingResult result)

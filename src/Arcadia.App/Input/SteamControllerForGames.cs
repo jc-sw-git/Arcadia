@@ -91,7 +91,14 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             // Unlike the Steam Controller's pad, also while Steam is in front: Steam sees only these pads now.
             ForwardingAllowed = () => !isArcadiaActive() && !isMouseModeOn(),
             Combos = new CombosFromSettings(settings).Current,
-            ReadControllers = gamepad.ReadControllers,
+            ReadControllers = on =>
+            {
+                gamepad.ReadControllers(on);
+                if (!on)
+                {
+                    padForPresence?.Rest();
+                }
+            },
             Pulse = guardian.Pulse,
             Rumble = (padId, motors) => Rumble(gamepad, padId, motors),
         };

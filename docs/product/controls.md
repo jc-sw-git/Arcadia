@@ -45,8 +45,8 @@
 - While "Controller-Wächter (Pan)" is on, Pan hides every controller Arcadia reads from games and Steam, and each one
   reaches games as an emulated pad of Arcadia's (an Xbox 360 pad for now; its own kind and the player's choice follow
   in #238's later parts), one per controller, in the order they connected. The same rules as for the Steam Controller
-  below: Back + Start and ⧉ held never reach the game, ⧉ and ≡ alone a little later, rest while Arcadia is in front or
-  the mouse mode is on. Unlike the Steam Controller's pad, they also pass while Steam itself is in front: Steam sees
+  below: Back + Start never reaches the game, ⧉ and ≡ alone a little later (held, as held), rest while Arcadia is in
+  front or the mouse mode is on. Unlike the Steam Controller's pad, they also pass while Steam itself is in front: Steam sees
   only them. Guide/PS/Home passes on (Steam's overlay, the Game Bar); a game's rumble reaches the real controller.
 - Never both: a controller Pan can't hide reaches games directly and isn't emulated (the settings list it, see
   `settings.md`). An XInput pad (an Xbox pad, 8BitDo in XInput mode) is hidden at once from programs that open it later,

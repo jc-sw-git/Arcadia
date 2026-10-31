@@ -198,6 +198,16 @@ public sealed class SteamControllerXboxPad
     }
 
     /// <summary>
+    /// Arcadia lets go of every controller while Pan restarts one it hides (#238): no poll comes meanwhile, so the game
+    /// gets a pad at rest instead of what the Steam Controller held last. The next poll after the reread feeds it again.
+    /// </summary>
+    public void Rest()
+    {
+        _lastFed = XboxPadState.Neutral;
+        _states.Writer.TryWrite((XboxPadState.Neutral, _time.GetTimestamp()));
+    }
+
+    /// <summary>
     /// The gamepad source stopped for good after an error (<see cref="IGamepadSource.Lost"/>): no poll lets go of what
     /// the Steam Controller held, so the game gets a pad at rest now, and the next tick unplugs it. Poll thread.
     /// </summary>

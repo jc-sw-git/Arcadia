@@ -246,4 +246,23 @@ public sealed class EveryControllerForGamesTests
 
         Assert.Contains($"pad {dualSense}: 65535/0 for 2000 ms", arcadia.Sdl.Rumbles);
     }
+
+    /// <summary>QE review of #338: while Arcadia lets go of every controller for a hide, no poll feeds the Steam Controller's pad.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T238-4")]
+    public async Task While_a_new_controller_is_hidden_the_Steam_Controllers_pad_rests_too()
+    {
+        using var arcadia = await StartInBackgroundAsync(pads: KnownPads.SteamController);
+        var steamControllerPad = arcadia.XboxPads.Current!;
+        arcadia.Sdl.Hold(arcadia.Sdl.IdOf(KnownPads.SteamController), B.North);
+        arcadia.PollControllers();
+        await steamControllerPad.WaitForAsync(state => state.Buttons == 0x8000);
+
+        arcadia.Sdl.Plug(DualSense);
+        arcadia.PollControllers();
+        await arcadia.TickSteamControllerAsync();
+
+        Assert.Contains("1 054C:0CE6", arcadia.Pan.ControllerHides);
+        await steamControllerPad.WaitForAsync(state => state == XboxPadState.Neutral);
+    }
 }

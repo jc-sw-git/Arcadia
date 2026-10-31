@@ -10,7 +10,8 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
 
 - [ ] **T238-1** DualSense (USB) and 8BitDo Ultimate 2 (dongle) connected, Arcadia starts: a test game and Steam see
       exactly one pad of Arcadia's per controller, in connection order, and neither real pad: a DualSense and an Xbox
-      360 pad (Windows' "Game Controllers" dialog, `joy.cpl`, names them). The 8BitDo (XInput)
+      360 pad (Steam's controller settings name them; `joy.cpl` may show an empty list while a hidden XInput pad is
+      emulated, which games and launchers don't mind). The 8BitDo (XInput)
       is gone for a few seconds when Pan hides it (port cycle), then emulated without a reconnect by hand; the D7 row
       doesn't name it. Also with the 8BitDo plugged in while Arcadia and Steam run. Note the XInput slot Arcadia's pad
       gets (known limit: the hidden pad keeps slot 0).

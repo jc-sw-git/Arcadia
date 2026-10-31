@@ -87,7 +87,8 @@ public sealed class SteamControllerTests
         arcadia.Press(UiAction.Left).Press(UiAction.Left);
 
         Assert.Same(first, arcadia.Main.Library.FocusedGame!.Game);
-        Assert.Equal([steamController, xbox], arcadia.Sdl.OpenPads.Order());
+        // By device: Pan hid the Xbox pad meanwhile (#238), and SDL, let go of for that, gave every pad a new id.
+        Assert.Equal([arcadia.Sdl.IdOf(KnownPads.SteamController), arcadia.Sdl.IdOf(KnownPads.Xbox360)], arcadia.Sdl.OpenPads.Order());
     }
 
     [AvaloniaFact]

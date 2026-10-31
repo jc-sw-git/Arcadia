@@ -47,6 +47,7 @@ public sealed class TakenOverControllers
     private readonly List<Controller> _controllers = [];
     private readonly List<Controller> _gone = [];
     private readonly Dictionary<ControllerModel, ModelState> _models = [];
+    private readonly Dictionary<ControllerModel, int> _withoutPath = [];
     private readonly List<DateTimeOffset> _losses = [];
     private long _nextOrder;
     private long _rereadAt = long.MinValue;
@@ -127,6 +128,7 @@ public sealed class TakenOverControllers
                 controller.Seen = false;
             }
 
+            _withoutPath.Clear();
             for (var i = 0; i < pads.Count; i++)
             {
                 var reading = pads[i];
@@ -135,7 +137,8 @@ public sealed class TakenOverControllers
                     continue;
                 }
 
-                var controller = Find(reading) ?? Add(reading);
+                var key = KeyOf(reading);
+                var controller = Find(key) ?? Add(key, reading);
                 controller.Seen = true;
                 controller.PadId = reading.PadId;
 
@@ -242,9 +245,8 @@ public sealed class TakenOverControllers
         }
     }
 
-    private Controller? Find(GamepadReading reading)
+    private Controller? Find(string key)
     {
-        var key = KeyOf(reading);
         foreach (var controller in _controllers)
         {
             if (controller.Key == key)
@@ -258,14 +260,24 @@ public sealed class TakenOverControllers
 
     /// <summary>
     /// What tells a controller apart across SDL starting again (its <see cref="GamepadReading.PadId"/> changes then): SDL's
-    /// path, which names the device; the id where SDL gives no path.
+    /// path, which names the device; where SDL gives none, the model and its place among those of the model. Under the lock.
     /// </summary>
-    private static string KeyOf(GamepadReading reading) =>
-        reading.Device.Path.Length > 0 ? reading.Device.Path : $"#{reading.PadId}";
-
-    private Controller Add(GamepadReading reading)
+    private string KeyOf(GamepadReading reading)
     {
-        var controller = new Controller(KeyOf(reading), Model(reading), reading.Device.Name, _nextOrder++, _time);
+        if (reading.Device.Path.Length > 0)
+        {
+            return reading.Device.Path;
+        }
+
+        var model = Model(reading);
+        var index = _withoutPath.GetValueOrDefault(model);
+        _withoutPath[model] = index + 1;
+        return $"{model}#{index}";
+    }
+
+    private Controller Add(string key, GamepadReading reading)
+    {
+        var controller = new Controller(key, Model(reading), reading.Device.Name, _nextOrder++, _time);
         _controllers.Add(controller);
         return controller;
     }
@@ -538,7 +550,18 @@ public sealed class TakenOverControllers
             waiting = [];
             foreach (var controller in _controllers.OrderBy(controller => controller.Order))
             {
-                if (!_models.TryGetValue(controller.Model, out var state) || state.Rejection is not { } reason)
+                if (!_models.TryGetValue(controller.Model, out var state))
+                {
+                    continue;
+                }
+
+                if (state.ReplugPending.Contains(controller.Key))
+                {
+                    notHidden.Add(new ControllerNotHidden(controller.Name, controller.Model, PanReason.ControllerNeedsReplug));
+                    continue;
+                }
+
+                if (state.Rejection is not { } reason)
                 {
                     continue;
                 }

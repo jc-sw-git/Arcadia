@@ -94,7 +94,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     public const string RunningAgainText = "Pan: Controller-Wächter läuft wieder";
     public const string StoppedText = "Pan: Emulation angehalten – sie ist mehrmals kurz hintereinander ausgefallen. „Erneut versuchen“ in den Controller-Einstellungen startet sie neu.";
     public const string RetryFailedText = "Pan: Erneuter Versuch ohne Erfolg. Was fehlt, steht in den Controller-Einstellungen.";
-    public const string RetryNoControllerText = "Pan: Kein Steam Controller verbunden, es gibt nichts zu emulieren.";
+    public const string RetryNoControllerText = "Pan: Kein Controller verbunden, es gibt nichts zu emulieren.";
     public const string RetryExcludedText = "Pan: Steam Controller und Puck bleiben ausgenommen.";
 
     private readonly IVirtualXboxPadServer _pads;

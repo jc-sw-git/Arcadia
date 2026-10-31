@@ -9,7 +9,8 @@ namespace Arcadia.App.Tests;
 
 /// <summary>
 /// Every common controller through SDL3 (#72), as SDL reports it: by position, the bottom face button confirms on every
-/// one; Steam's virtual pads and the extra buttons do nothing; pads come and go while Arcadia runs.
+/// one; Steam's virtual pads and the extra buttons do nothing; pads come and go while Arcadia runs. Pan hides a controller
+/// at the start (#238), and SDL opens it again under a new number: tests take the number after the start.
 /// </summary>
 public sealed class ControllerTypesTests
 {
@@ -24,8 +25,9 @@ public sealed class ControllerTypesTests
     public async Task Each_controller_moves_with_the_D_pad_and_its_face_buttons_act_by_position(string type)
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        var pad = arcadia.Sdl.Plug(Pad(type));
-        arcadia.StartControllers();
+        arcadia.Sdl.Plug(Pad(type));
+        arcadia.StartControllers().PollControllers();
+        var pad = arcadia.Sdl.IdOf(Pad(type));
         var first = arcadia.Main.Library.FocusedGame!.Game;
 
         arcadia.PressOn(pad, B.DPadRight);
@@ -70,8 +72,9 @@ public sealed class ControllerTypesTests
     public async Task Two_controllers_work_side_by_side_and_one_plugged_in_or_out_while_Arcadia_runs()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        var dualSense = arcadia.Sdl.Plug(KnownPads.DualSense);
-        arcadia.StartControllers();
+        arcadia.Sdl.Plug(KnownPads.DualSense);
+        arcadia.StartControllers().PollControllers();
+        var dualSense = arcadia.Sdl.IdOf(KnownPads.DualSense);
         var first = arcadia.Main.Library.FocusedGame!.Game;
 
         var switchPro = arcadia.Sdl.Plug(KnownPads.SwitchPro);
@@ -94,10 +97,13 @@ public sealed class ControllerTypesTests
     public async Task Steam_s_virtual_pad_and_a_single_Joy_Con_add_no_input_of_their_own()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        var dualSense = arcadia.Sdl.Plug(KnownPads.DualSense);
-        var steamVirtual = arcadia.Sdl.Plug(KnownPads.SteamVirtual);
-        var joyCon = arcadia.Sdl.Plug(KnownPads.JoyConLeft);
-        arcadia.StartControllers();
+        arcadia.Sdl.Plug(KnownPads.DualSense);
+        arcadia.Sdl.Plug(KnownPads.SteamVirtual);
+        arcadia.Sdl.Plug(KnownPads.JoyConLeft);
+        arcadia.StartControllers().PollControllers();
+        var dualSense = arcadia.Sdl.IdOf(KnownPads.DualSense);
+        var steamVirtual = arcadia.Sdl.IdOf(KnownPads.SteamVirtual);
+        var joyCon = arcadia.Sdl.IdOf(KnownPads.JoyConLeft);
         var first = arcadia.Main.Library.FocusedGame!.Game;
 
         arcadia.PressOn(steamVirtual, B.DPadRight).PressOn(joyCon, B.DPadRight);

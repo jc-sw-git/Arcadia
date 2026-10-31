@@ -194,6 +194,7 @@ public sealed class TakenOverControllersTests
         _others.Feed([EightBitDo]);
         await _emulation.TickAsync();
         Assert.Equal(0, _others.Plugged);
+        Assert.Equal([new ControllerNotHidden(KnownPads.EightBitDoUltimate2.Name, EightBitDoModel, PanReason.ControllerNeedsReplug)], _others.NotHidden);
 
         _time.Advance(TakenOverControllers.RereadGrace);
         _others.Feed([]);
@@ -203,6 +204,7 @@ public sealed class TakenOverControllersTests
 
         Assert.Equal(1, _others.Plugged);
         Assert.Single(_pan.ControllerHides);
+        Assert.Empty(_others.NotHidden);
     }
 
     [Fact]

@@ -110,28 +110,36 @@ public sealed class SteamControllerXboxPadTests
         Assert.All(pad.Sent, state => Assert.Equal(XboxPadState.Neutral, state));
     }
 
-    /// <summary>T213-4: only the Steam Controller is emulated; an Xbox pad beside it never reaches the virtual pad.</summary>
+    /// <summary>
+    /// T213-4, superseded by #238 D1: an Xbox pad beside the Steam Controller gets a pad of its own; neither reaches the
+    /// other's pad.
+    /// </summary>
     [AvaloniaFact]
     [Trait("TestCase", "T213-4")]
-    public async Task Other_controllers_are_never_emulated()
+    public async Task Another_controller_gets_its_own_pad_and_never_reaches_the_Steam_Controllers()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        var xbox = arcadia.Sdl.Plug(KnownPads.XboxSeries);
+        arcadia.Sdl.Plug(KnownPads.XboxSeries);
         arcadia.StartControllers();
         arcadia.IsArcadiaInFront = false;
         await arcadia.TickSteamControllerAsync();
-        Assert.Equal(0, arcadia.XboxPads.Plugged);
+        Assert.Equal(1, arcadia.XboxPads.Plugged);
+        var xboxPad = arcadia.XboxPads.Current!;
 
-        var steamController = arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.PollControllers();
         await arcadia.TickSteamControllerAsync();
-        arcadia.Sdl.Hold(xbox, B.South);
+        Assert.Equal(2, arcadia.XboxPads.Plugged);
+        var steamControllerPad = arcadia.XboxPads.Current!;
+        arcadia.Sdl.Hold(arcadia.Sdl.IdOf(KnownPads.XboxSeries), B.South);
         arcadia.PollControllers();
-        arcadia.Sdl.Hold(steamController, B.North);
+        arcadia.Sdl.Hold(arcadia.Sdl.IdOf(KnownPads.SteamController), B.North);
         arcadia.PollControllers();
-        var pad = arcadia.XboxPads.Current!;
-        await pad.WaitForAsync(state => state.Buttons == 0x8000);
-        Assert.DoesNotContain(pad.Sent, state => (state.Buttons & A) != 0);
+
+        await steamControllerPad.WaitForAsync(state => state.Buttons == 0x8000);
+        await xboxPad.WaitForAsync(state => state.Buttons == A);
+        Assert.DoesNotContain(steamControllerPad.Sent, state => (state.Buttons & A) != 0);
+        Assert.DoesNotContain(xboxPad.Sent, state => (state.Buttons & 0x8000) != 0);
     }
 
     /// <summary>T213-5 (automated part): the pad goes with the Steam Controller and comes back with it.</summary>

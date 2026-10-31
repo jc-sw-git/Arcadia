@@ -35,6 +35,12 @@ public interface IPanEmulationView
 
     /// <summary>The row "Steam Controller und Puck übernehmen", held 3 s.</summary>
     void TakeOverAgain();
+
+    /// <summary>Connected controllers Pan couldn't hide, so games see them directly (#238 D7).</summary>
+    IReadOnlyList<ControllerNotHidden> NotHidden => [];
+
+    /// <summary>Connected controllers Pan waits with while their vendor's firmware tool runs (#238 D8).</summary>
+    IReadOnlyList<ControllerWaitingForTool> WaitingForTool => [];
 }
 
 /// <summary>No emulation (tests that don't need one): always off.</summary>
@@ -272,7 +278,7 @@ public sealed class PanRows
             _ => status.State switch
             {
                 PanEmulationState.Running => "An – deine Controller werden von Arcadia verwaltet",
-                PanEmulationState.Ready => "Bereit – kein Steam Controller verbunden",
+                PanEmulationState.Ready => "Bereit – kein Controller verbunden",
                 _ => "Wird eingerichtet …",
             },
         };
@@ -368,6 +374,16 @@ public sealed class PanRows
             }
         }
 
+        // Only while the emulation runs: otherwise every controller reaches games directly anyway, and the rows above say why.
+        if (status.State == PanEmulationState.Running)
+        {
+            rows.AddRange(FirmwareToolRows());
+            if (NotHiddenRow() is { } notHidden)
+            {
+                rows.Add(notHidden);
+            }
+        }
+
         if (status.State == PanEmulationState.Unavailable && !rows.Any(row => row.Severity > HealthSeverity.Info))
         {
             // Pan or VIIPER doesn't answer, and no part row says why.
@@ -420,6 +436,57 @@ public sealed class PanRows
                 break;
         }
     }
+
+    /// <summary>One warning per firmware tool that runs (#238 D8, artboards T238F06–F07); it goes once the tool has ended.</summary>
+    private IEnumerable<ActionRowViewModel> FirmwareToolRows()
+    {
+        foreach (var vendor in _pan.WaitingForTool.GroupBy(waiting => waiting.Model.Vendor))
+        {
+            var (tool, controller, it) = vendor.Key == ControllerList.Sony
+                ? ("DualSense-Firmware-Updater", "den DualSense", "ihn")
+                : ("Xbox Zubehör", "den Xbox Controller", "es");
+            var row = Row($"pan:firmware-tool:{vendor.Key:X4}", $"{tool} ist geöffnet", $"Arcadia übernimmt {controller}, sobald du {it} schließt", HealthSeverity.Warning,
+                $"Mit {tool} aktualisierst du die Firmware {(vendor.Key == ControllerList.Sony ? "deines DualSense" : "deines Xbox Controllers")}. Damit ein Update nicht abbricht, übernimmt Arcadia den Controller erst, wenn {tool} geschlossen ist.",
+                null, null);
+            row.Info = [.. row.Info, new InfoSection("WARTET AUF ÜBERNAHME", [.. vendor.Select(waiting => new InfoText(waiting.Name))])];
+            yield return row;
+        }
+    }
+
+    /// <summary>
+    /// The controllers that reach games directly as Pan couldn't hide them (#238 D7, artboard T238F05): one row with the
+    /// blue i, since there is usually nothing to do.
+    /// </summary>
+    private ActionRowViewModel? NotHiddenRow()
+    {
+        var notHidden = _pan.NotHidden;
+        if (notHidden.Count == 0)
+        {
+            return null;
+        }
+
+        var title = notHidden.Count == 1 ? $"{notHidden[0].Name} lässt sich nicht verstecken" : $"{notHidden.Count} Controller lassen sich nicht verstecken";
+        var row = Row("pan:not-hidden", title, "Spiele sehen sie direkt, Arcadias Tastenkombinationen kommen dort mit an", HealthSeverity.Info,
+            "Pan konnte diese Controller nicht vor Spielen verstecken. Damit keine Eingabe doppelt ankommt, emuliert Arcadia sie nicht: Spiele sehen sie direkt, so als liefe Arcadia nicht.",
+            null, null);
+        row.Info =
+        [
+            .. row.Info,
+            new InfoText("In Arcadia funktionieren sie wie gewohnt. Nur Tastenkombinationen wie „Zurück zu Arcadia“ kommen dabei auch im Spiel an."),
+            new InfoSection("BETROFFEN", [.. notHidden.Select(controller => new InfoCard(controller.Name, NotHiddenReason(controller.Reason), string.Empty))]),
+            new InfoText("Steckst du den Controller neu ein, versucht Pan es erneut. Wer gar keine Emulation möchte, schaltet den Controller-Wächter aus."),
+        ];
+        return row;
+    }
+
+    /// <summary>Why Pan didn't hide a controller, in the player's words (#335's findings A1–A3).</summary>
+    private static string NotHiddenReason(PanReason reason) => reason switch
+    {
+        PanReason.ControllerNeedsReplug => "Windows gibt diesen Controller erst frei, wenn du ihn neu verbindest. Bis dahin sehen Programme, die ihn schon geöffnet haben, ihn direkt.",
+        PanReason.ControllerNotHideable => "Pan findet an diesem Controller nichts, was es vor Spielen verstecken kann.",
+        PanReason.ControllerNotConnected => "Pan findet diesen Controller nicht unter den Geräten von Windows.",
+        _ => "Windows hat den Controller nicht neu verbunden, deshalb sehen Programme ihn weiter direkt.",
+    };
 
     private const string StartFailedText = "Arcadia konnte die emulierten Controller nicht anlegen. Pan hat die echten Controller deshalb wieder freigegeben, Steam und Spiele sehen sie direkt. Arcadia versucht es beim nächsten Durchlauf von selbst; Details stehen in arcadia.log.";
 
@@ -530,7 +597,7 @@ public sealed class PanRows
     [
         new InfoText("Pan ist der Controller-Wächter von Arcadia. Er stellt sicher, dass Arcadia alle Controller im vollen Umfang nutzen kann, und bestimmt, wie andere Launcher, Spiele und Programme mit ihnen umgehen."),
         new InfoText("So funktionieren Arcadias Features wie der Mausmodus oder „Zurück zu Arcadia“ überall, ohne dass andere Launcher ebenfalls darauf reagieren, etwa Steams Desktop-Steuerung. Arcadia wird so zum Kontrollzentrum deiner Controller. Pan überwacht, dass echte und emulierte Controller fehlerfrei zusammenspielen, und gibt deine Controller sofort zurück, falls Arcadia unerwartet beendet wird."),
-        new InfoText("Bisher bewacht Pan nur den Steam Controller. Andere Controller folgen."),
+        new InfoText("Pan versteckt deine echten Controller vor Spielen. Spiele sehen stattdessen für jeden einen emulierten Controller derselben Art, zum Beispiel einen DualSense als DualSense. So kommen Arcadias Tastenkombinationen nie im Spiel an."),
         new InfoSection("STEAM CONTROLLER",
         [
             new InfoText("Von Haus aus funktioniert der Steam Controller nur in Steam als echter Controller. Arcadia betreibt ihn deshalb in zwei Modi, „Steam-Eingabe“ und „Arcadia“, damit er auch außerhalb von Steam funktioniert, zum Beispiel in Spielen aus dem Epic Games Launcher oder dem Xbox Game Pass. Welchen Modus die Spiele eines Launchers bekommen, wählst du auf seiner Seite unter Launcher vor; pro Spiel stellst du ihn in seinen Details um."),

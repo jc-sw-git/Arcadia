@@ -169,10 +169,23 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
 
     public void TakeOverAgain() => Emulation.TakeOverAgain();
 
+    public IReadOnlyList<ControllerNotHidden> NotHidden => Others.NotHidden;
+
+    public IReadOnlyList<ControllerWaitingForTool> WaitingForTool => Others.WaitingForTool;
+
     public event Action? Changed
     {
-        add => Emulation.Changed += value;
-        remove => Emulation.Changed -= value;
+        add
+        {
+            Emulation.Changed += value;
+            Others.Changed += value;
+        }
+
+        remove
+        {
+            Emulation.Changed -= value;
+            Others.Changed -= value;
+        }
     }
 
     /// <summary>"Erneut versuchen" on a stopped emulation: pad and emulation start counting afresh, and the next tick tries again.</summary>

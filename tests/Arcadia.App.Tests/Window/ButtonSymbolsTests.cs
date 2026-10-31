@@ -69,9 +69,11 @@ public sealed class ButtonSymbolsTests
     public async Task The_symbols_follow_each_press_and_stick_noise_switches_nothing()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
-        var xbox = arcadia.Arcadia.Sdl.Plug(KnownPads.EightBitDoUltimate2);
-        var dualSense = arcadia.Arcadia.Sdl.Plug(KnownPads.DualSense);
-        arcadia.Arcadia.StartControllers();
+        arcadia.Arcadia.Sdl.Plug(KnownPads.EightBitDoUltimate2);
+        arcadia.Arcadia.Sdl.Plug(KnownPads.DualSense);
+        arcadia.Arcadia.StartControllers().PollControllers();
+        var xbox = arcadia.Arcadia.Sdl.IdOf(KnownPads.EightBitDoUltimate2);
+        var dualSense = arcadia.Arcadia.Sdl.IdOf(KnownPads.DualSense);
         arcadia.Arcadia.Wait(ControllerInUse.StartGrace);
         arcadia.Settle();
         Assert.Contains("A", ConfirmHints(arcadia));
@@ -144,9 +146,11 @@ public sealed class ButtonSymbolsTests
     public async Task Unplugging_the_controller_in_use_shows_the_next_one_then_the_keyboard()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
-        var switchPro = arcadia.Arcadia.Sdl.Plug(KnownPads.SwitchPro);
-        var dualSense = arcadia.Arcadia.Sdl.Plug(KnownPads.DualSense);
-        arcadia.Arcadia.StartControllers();
+        arcadia.Arcadia.Sdl.Plug(KnownPads.SwitchPro);
+        arcadia.Arcadia.Sdl.Plug(KnownPads.DualSense);
+        arcadia.Arcadia.StartControllers().PollControllers();
+        var switchPro = arcadia.Arcadia.Sdl.IdOf(KnownPads.SwitchPro);
+        var dualSense = arcadia.Arcadia.Sdl.IdOf(KnownPads.DualSense);
         arcadia.Arcadia.Wait(ControllerInUse.StartGrace);
         arcadia.Arcadia.PressOn(dualSense, B.DPadRight);
         arcadia.Settle();
@@ -182,8 +186,9 @@ public sealed class ButtonSymbolsTests
     public async Task On_a_Nintendo_controller_the_bottom_button_shows_B_and_confirms()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
-        var switchPro = arcadia.Arcadia.Sdl.Plug(KnownPads.SwitchPro);
-        arcadia.Arcadia.StartControllers();
+        arcadia.Arcadia.Sdl.Plug(KnownPads.SwitchPro);
+        arcadia.Arcadia.StartControllers().PollControllers();
+        var switchPro = arcadia.Arcadia.Sdl.IdOf(KnownPads.SwitchPro);
         arcadia.Settle();
         var accept = ConfirmGlyphs(arcadia).ToList();
         Assert.NotEmpty(accept);

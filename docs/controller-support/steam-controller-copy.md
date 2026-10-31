@@ -26,27 +26,11 @@ the App passes `NoSteamControllerCopy` (`CanCopy` false): Pan hides nothing and 
 - A pad or copy that fails to go leaves the puck hidden: `EmulationStopped` without `Unhide`, so Pan's teardown ends
   the forwarding (`viiper.exe`) before it shows the puck.
 
-## Consent before every hide (`SteamControllerTakeover`)
+## Firmware updates
 
-A hide restarts the puck and would break off a firmware update Steam runs on the real one, and from outside nobody can
-tell whether one runs. So with Steam running Arcadia asks ("Steam Controller und Puck übernehmen?") and hides nothing
-until "Ja" is held 3 s; without Steam it takes over at once (checked again right before the hide: a Steam started
-meanwhile turns it into the question).
+Arcadia takes Steam Controller and puck over without asking: while the copy runs, no update Steam starts reaches the
+hardware. The notice, "Controller freigeben" and Pan's bootloader check: [steam-controller-firmware.md](steam-controller-firmware.md).
 
-- The consent holds while the emulation runs without a gap (a puck plugged in meanwhile is taken over too: Steam never
-  saw it); every gap (paused, Pan's teardown, a hide that didn't hold, switched off) asks again. "Nein" (held 1 s) and
-  a release for a firmware update hold until Arcadia's next start or the settings row "… übernehmen" (held 3 s, the
-  press is the consent). Meanwhile neither the puck nor the Steam Controller is hidden and the Steam Controller gets no
-  Xbox pad (`PanEmulation.SteamControllerTakenOver`); every other controller is still taken over, so the emulation
-  runs for them (#238 D2). A "Ja" given later hides the puck within that running emulation.
-- The open question follows what is connected (title, chips, warning), as SDL reports the wireless Steam Controller
-  only after the puck at Arcadia's start; a change stops a running hold on "Ja".
-- Arcadia asks only once Pan can hide (`CheckHiding` first): a question the hide can't follow would come back every
-  tick and teach the player to hold "Ja" by reflex.
-- Short gap mid-game: while a library game stays in front, Steam's update window can't be, so a gap under 10 s with
-  the same game in front at every check (every tick, at most 5 s apart) is taken over again without asking, checked
-  once more right before the hide. A missed check (Arcadia hung) asks. Open risk: an update offered in Steam's
-  in-game overlay leaves the game in front.
 - A pad still being unplugged stays in the session until it is gone, so the end shows the puck only after it.
 
 ## Who gets input (`SteamControllerCopyRules`)
@@ -68,26 +52,19 @@ No bricked Steam Controllers under any circumstances: an allow list, everything 
 
 | Kind | Types | Passes |
 |---|---|---|
-| Feature, report id 1 or 2, type at byte 1 | `0x81 0x82 0x83 0x85 0x87 0x8E 0xAE 0xB4 0xC1` | always |
+| Feature, report id 1 or 2, type at byte 1 | `0x81 0x82 0x83 0x85 0x87 0x8E 0x9F 0xAE 0xB4 0xC1` | always |
 | Haptic features | `0x8F 0xEA 0xEB` | only while the copy passes input |
 | Haptic outputs | report ids `0x80`–`0x85` | only while the copy passes input |
-| Firmware | `0xB7 0xB8 0xB9` | never; update traffic (below) |
+| Firmware | `0x90 0xB7 0xB8 0xB9` | never; raises the firmware notice |
 | Anything else (`FACTORY_RESET` `0x86`, `SET_SERIAL_NUMBER` `0xA9`, `ENABLE_PAIRING` `0xAD`, radio and dongle `0xAF`–`0xB3`, unknown) | — | never |
 
 - Reads (GET_REPORT) always pass: they change nothing. Each dropped type is logged once, with its name and length,
   never its payload.
-- Every drop but the routine ones (`0xA3 0xDC 0xE2 0xED 0xF3`, haptics while the copy rests) raises `UpdateTraffic`:
-  Steam's real update path for the Triton is unverified (spike #295), so anything unknown counts.
-  `FirmwareAttemptWatch` then brings Arcadia to the front with "Steam will die Firmware aktualisieren": after 5 s
-  without traffic a 25 s countdown runs (new traffic starts it anew); only then can "Controller freigeben" or
-  "Arcadia beenden" (held 1 s) be chosen, as releasing the real puck mid-attempt could hand it the rest of the update.
-  "Steam hat das Update abgebrochen" (held 3 s) is the player's own way out of a misread; "Schließen" keeps the
-  takeover. While the attempt runs, Pan holds the puck hidden even if Arcadia ends unexpectedly
-  ([pan-firmware-hold.md](pan-firmware-hold.md)). `arcadia.log` names every message that counted and how the attempt
-  ended. No bootloader type is known; it would be dropped and counted all the same.
+- Only firmware messages raise `UpdateTraffic` ([steam-controller-firmware.md](steam-controller-firmware.md)); every
+  other drop is logged and nothing more.
 - What Windows' class drivers say to any device (HID idle and protocol, CDC line coding and control line state) is
-  housekeeping: answered, never passed on, never counted (`SteamReportKind.Housekeeping`). Other CDC requests (a
-  break, an encapsulated command), vendor and unknown control requests count.
+  housekeeping: answered, never passed on (`SteamReportKind.Housekeeping`). Other CDC requests (a break, an
+  encapsulated command), vendor and unknown control requests are refused.
 
 The settings rows, the greyed mode and the dialogs: `docs/product/settings.md`, `docs/product/controls.md`. Off
 Windows the emulation's state is `Unsupported`: nothing is emulated and the mode doesn't show.

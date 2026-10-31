@@ -16,10 +16,9 @@ and runs only when the player confirms; declined, Pan is switched off and Arcadi
 - **Pan off:** no page. The switch "Controller-Wächter (Pan)" reads "Neue Pan-Version verfügbar" with the blue i and
   its info panel starts with a blue box in bold; switching it on runs the update first (`PanRows`), and only a confirmed update
   switches Pan on. Declined or failed, it stays off with the toast "… bleibt aus" (a failure's error in the panel).
-- Firmware hold first: [A] starts the update, and [B] the switch-off, only once Pan answered its first hello (`PanClient.FirstAttempt`, at
-  most 5 s) and the emulation ticked once, so a hold from before the start opens its dialog
-  ([pan-firmware-hold.md](pan-firmware-hold.md)); the update runs when that dialog is closed
-  (`MainViewModel.PanAnsweredAtStart`, `StartPanUpdate`). [A] pressed earlier shows "Pan wird aktualisiert" meanwhile, [B] "Pan wird beendet" without a countdown.
+- Pan answers first: [A] starts the update, and [B] the switch-off, only once Pan answered its first hello (`PanClient.FirstAttempt`, at
+  most 5 s; its teardown of an earlier Arcadia may still run) and the emulation ticked once; an open firmware notice
+  is closed first, one dialog at a time (`MainViewModel.PanAnsweredAtStart`, `StartPanUpdate`). [A] pressed earlier shows "Pan wird aktualisiert" meanwhile, [B] "Pan wird beendet" without a countdown.
 - Only Pan: `--install --expect-hash` without driver installers, so no download (works offline), no HidHide setup, no
   puck restart; Steam may run and a running Steam game doesn't block it. One UAC prompt, which needs mouse or keyboard
   until #247. Confirmed: library, toast "Pan: aktualisiert".

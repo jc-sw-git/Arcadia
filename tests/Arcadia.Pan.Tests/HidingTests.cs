@@ -778,6 +778,7 @@ public sealed class HidingTests : IDisposable
     {
         var generation = await HiddenAsync();
         var restarts = _devices.Restarts;
+        _clock.Advance(_guardian.OwnRestartWindow);
         _devices.Bootloader = true;
 
         Assert.Equal(PanReply.Stopped, (await Send(PanCommand.EmulationStopped, generation)).Reply);
@@ -787,6 +788,22 @@ public sealed class HidingTests : IDisposable
         Assert.Equal(restarts, _devices.Restarts);
         Assert.True(Journal.PuckRestartPending);
         Assert.Contains("not restarted: a firmware update is being flashed", Log());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T295-1")]
+    public async Task The_bootloader_the_puck_passes_through_after_Pans_own_restart_is_no_flash()
+    {
+        var generation = await HiddenAsync();
+        _devices.Bootloader = true;
+
+        // The hide's restart sent the puck through 1007 for a moment: the show right after still restarts it.
+        Assert.Equal(PanReply.Shown, (await Send(PanCommand.Unhide, generation)).Reply);
+        Assert.Equal(2, _devices.Restarts);
+
+        // Long after Pan's last restart, the same bootloader is a flash.
+        _clock.Advance(_guardian.OwnRestartWindow);
+        Assert.Equal(PanReason.BootloaderPresent, (await Send(PanCommand.Hide, generation)).Reason);
     }
 
     [Fact]

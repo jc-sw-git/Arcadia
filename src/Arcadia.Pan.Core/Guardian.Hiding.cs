@@ -699,6 +699,11 @@ public sealed partial class Guardian
             return false;
         }
 
+        lock (_lock)
+        {
+            _ownRestartMs = _clock.UnbiasedMilliseconds;
+        }
+
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(_deviceStepTimeout);
         try
@@ -805,8 +810,16 @@ public sealed partial class Guardian
     /// <summary>How long after a bootloader was last seen Pan still counts the flash as running: the device comes back as itself first and may go on with a second stage.</summary>
     public TimeSpan BootloaderGrace { get; init; } = TimeSpan.FromSeconds(5);
 
-    /// <summary>Under the lock: when a bootloader was last seen, on the unbiased clock.</summary>
+    /// <summary>
+    /// Every restart of the puck passes a few seconds through its bootloader <c>1007</c> (spike #239): one seen this long
+    /// after Pan's own restart is that, not a flash. Steam can't start a flash meanwhile: a hide leaves it only the copy,
+    /// and after a show the player first has to start the update in Steam.
+    /// </summary>
+    public TimeSpan OwnRestartWindow { get; init; } = TimeSpan.FromSeconds(15);
+
+    /// <summary>Under the lock: when a bootloader was last seen, and when Pan last restarted the puck, on the unbiased clock.</summary>
     private long? _bootloaderSeenMs;
+    private long? _ownRestartMs;
 
     /// <summary>
     /// Whether a Valve bootloader is connected or was within <see cref="BootloaderGrace"/> (#295): Steam's updater flashes
@@ -829,6 +842,11 @@ public sealed partial class Guardian
         var now = _clock.UnbiasedMilliseconds;
         lock (_lock)
         {
+            if (present && _bootloaderSeenMs is null && _ownRestartMs is { } restarted && now - restarted < OwnRestartWindow.TotalMilliseconds)
+            {
+                return false;
+            }
+
             if (present)
             {
                 if (_bootloaderSeenMs is null)

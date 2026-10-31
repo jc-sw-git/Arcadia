@@ -62,10 +62,21 @@ public interface IControllerDevices
 
     /// <summary>
     /// Restarts the devices the HID instances belong to (their USB interface or Bluetooth device), so programs holding
-    /// them lose them and Windows announces them again. Returns the instances whose device needs a reconnect for it.
+    /// them lose them and Windows announces them again. Where Windows refuses that in place, a USB device's hub port is
+    /// cycled (<see cref="ControllerList.OnHubPort"/>). Returns the instances whose device needs a reconnect for it.
     /// </summary>
     /// <exception cref="Exception">The devices couldn't be read or restarted; they stay pending.</exception>
     Task<IReadOnlyList<string>> RestartAsync(IReadOnlyList<string> hidInstances, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Reconnects the devices of XInput interfaces, which Windows never restarts in place, by cycling their USB device's
+    /// hub port (<see cref="ControllerList.OnHubPort"/>): programs holding them lose them, and once back they are hidden
+    /// from those programs too. Waits until each is back. Returns the instances it couldn't reconnect (Bluetooth, a
+    /// refusing hub); by default all of them.
+    /// </summary>
+    /// <exception cref="Exception">The devices couldn't be read.</exception>
+    Task<IReadOnlyList<string>> ReconnectAsync(IReadOnlyList<string> xinputInstances, CancellationToken cancellationToken) =>
+        Task.FromResult(xinputInstances);
 }
 
 /// <summary>The rules for taking over controllers other than the puck (#335), free of Windows.</summary>
@@ -89,6 +100,39 @@ public static class ControllerList
     public static bool IsHid(string instanceId) => instanceId.StartsWith(@"HID\", StringComparison.OrdinalIgnoreCase);
 
     public static bool IsOfModel(string instanceId, ControllerModel model) => ControllerModel.Of(instanceId) == model;
+
+    /// <summary>
+    /// The USB device whose hub port Pan cycles when Windows refuses to restart a controller in place (an XInput pad
+    /// another program has open): walking up from <paramref name="device"/>, the node right below a hub, provided it is
+    /// a USB device of the same model. Null otherwise: for a Bluetooth controller that node is the Bluetooth radio, and
+    /// cycling its port would drop every Bluetooth device.
+    /// </summary>
+    public static string? OnHubPort(string device, Func<string, string?> parentOf, Func<string, bool> isHub)
+    {
+        const int deepestNesting = 8;
+        if (ControllerModel.Of(device) is not { } model)
+        {
+            return null;
+        }
+
+        var current = device;
+        for (var depth = 0; depth < deepestNesting; depth++)
+        {
+            if (parentOf(current) is not { } parent)
+            {
+                return null;
+            }
+
+            if (isHub(parent))
+            {
+                return current.StartsWith(@"USB\", StringComparison.OrdinalIgnoreCase) && IsOfModel(current, model) ? current : null;
+            }
+
+            current = parent;
+        }
+
+        return null;
+    }
 
     /// <summary>A vendor's firmware tool (#238 D8): while it runs, Pan hides nothing of that vendor, so an update isn't cut off.</summary>
     public sealed record FirmwareTool(ushort Vendor, string Name, IReadOnlyList<string> ProcessNames);

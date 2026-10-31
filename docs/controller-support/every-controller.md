@@ -19,7 +19,9 @@ controllers taken over. Product rules: `docs/product/controls.md`, the settings 
   (a reconnect), `FirmwareToolRuns` after 10 s once no process of the vendor's tool runs any more
   (`ControllerList.FirmwareTools`): each try lets go of every controller.
 - A pad is plugged only for a hidden controller (never both): not after a rejection, and for `ControllerNeedsReplug`
-  (XInput interfaces are hidden only from programs that open them later) only once that controller reconnected.
+  only once that controller reconnected. Pan reconnects a USB XInput pad itself (port cycle); the reason stays for a
+  Bluetooth XInput pad and a hub that refuses. The cycled pad is gone after the answer and arrives again as a new
+  controller, already hidden.
   Pads are plugged in connection order, so the first controller gets the first slot Arcadia owns.
 - The hidden XInput pad still holds its XInput slot (check A2): Arcadia's pad for it gets the next slot. Known limit.
 

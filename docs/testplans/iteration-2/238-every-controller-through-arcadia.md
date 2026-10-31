@@ -9,9 +9,10 @@ latency budget (T238-11). Until part 2, read "Arcadia's DualSense" below as "Arc
 T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller.md`) run with this build too.
 
 - [ ] **T238-1** DualSense (USB) and 8BitDo Ultimate 2 (dongle) connected, Arcadia starts: a test game and Steam see
-      exactly one pad of Arcadia's per controller, in connection order, and neither real pad. The 8BitDo (XInput) is
-      emulated only after it is reconnected once (Windows restarts its XInput interface only then); until then the
-      D7 row names it. Note the XInput slot Arcadia's pad gets (known limit: the hidden pad keeps slot 0).
+      exactly one pad of Arcadia's per controller, in connection order, and neither real pad. The 8BitDo (XInput)
+      is gone for a few seconds when Pan hides it (port cycle), then emulated without a reconnect by hand; the D7 row
+      doesn't name it. Also with the 8BitDo plugged in while Arcadia and Steam run. Note the XInput slot Arcadia's pad
+      gets (known limit: the hidden pad keeps slot 0).
       · E2E: no (real pads, HidHide); the flow with fakes in `EveryControllerForGamesTests`
 - [ ] **T238-2** As T238-1 with the DualSense by Bluetooth, switched on while the game runs: the game sees one new pad,
       never two. · E2E: no (real pads)
@@ -28,7 +29,7 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
       and arrives as Arcadia's pad. · E2E: yes (`EveryControllerForGamesTests`)
 - [ ] **T238-7** A controller Pan can't hide: it reaches the game directly, no pad of Arcadia's; the info row
       "… lässt sich nicht verstecken" lists it with its reason. Pan off: every pad reaches the game directly and the row
-      is gone. · E2E: yes (`EveryControllerForGamesTests`), by hand with the 8BitDo before its reconnect
+      is gone. · E2E: yes (`EveryControllerForGamesTests`), by hand with any controller the row names
 - [ ] **T238-8** Kill `Arcadia.exe` in Task Manager mid-game: the real pads are back in the game within 10 s.
       · E2E: no (Pan, HidHide)
 - [ ] **T238-9** Kill `viiper.exe` mid-game: the pads come back at the next tick; after 4 kills in 5 minutes the
@@ -51,4 +52,5 @@ History:
 | T238-3, -4 (fakes), QE review | 2026-10-31 | Claude (QE) | branch `feat/emulate-every-controller-238` at 265c32e, Linux container, Avalonia headless, fakes | ✅ 8 acceptance tests incl. the new T238-3 test for the second pad; full suite green (Core 2156, App 466) | Red once: without `ComboWithholding` in `Feed` both T238-3 tests fail, without the rest while Arcadia is in front T238-4 fails |
 | QE findings 1–3 | 2026-10-31 | Claude | branch `feat/emulate-every-controller-238` after 0b406a3, Linux container; QE's probe `checks/338/` with Viiper.Client 0.9.0 over loopback | ✅ with the read's token cancelled `DisposeAsync` returns (without: hangs); new tests for the firmware tool retry and the Steam Controller's pad at rest, each red once without its fix | – |
 | T238-4 with desktop control (fakes) | 2026-10-31 | Claude | branch `feat/emulate-every-controller-238` after the merge of `feat/replace-sisr` (#315), Linux container, Avalonia headless, fakes | ✅ new acceptance test; red once each without the pass rule and without Steam's combos | – |
+| port cycle for T238-1 | 2026-10-31 | owner (check script `Run-Check-338-portcycle.ps1`) | Windows 11, owner's PC, 8BitDo Ultimate 2 dongle on a root hub port, Steam running | ✅ in-place restart refused ("needs a restart"), port cycle accepted, device back after ~4 s and working | Pan reconnects newly hidden XInput pads by port cycle; `ControllerHidingTests` red once without it |
 | real pads, Pan, VIIPER | – | – | – | not run: no Windows with pads in the cloud container | owner's test of part 1 |

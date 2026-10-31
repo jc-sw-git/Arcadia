@@ -52,8 +52,9 @@
   only them. With "Steams Desktop-Steuerung zulassen" on they pass in front of Arcadia and in the mouse mode too, ⧉ + ≡
   included, as the copy does (`mouse-mode.md`). Guide/PS/Home passes on (Steam's overlay, the Game Bar); a game's rumble reaches the real controller.
 - Never both: a controller Pan can't hide reaches games directly and isn't emulated (the settings list it, see
-  `settings.md`). An XInput pad (an Xbox pad, 8BitDo in XInput mode) is hidden at once from programs that open it later,
-  but Steam and a running game keep the real one until it is reconnected; it is emulated only from then on.
+  `settings.md`). An XInput pad (an Xbox pad, 8BitDo in XInput mode) that Steam or a game
+  already opened is reconnected by Pan when it is hidden (gone for a few seconds, then emulated); by Bluetooth that
+  can't be done, so it is emulated only once the player reconnects it.
 
 ## The Steam Controller in games (#213, #242, #178)
 

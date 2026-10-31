@@ -31,9 +31,9 @@ public sealed class ControllerHidingTests : IDisposable
         _journal.Dispose();
     }
 
-    private Guardian NewGuardian() => new(
+    private Guardian NewGuardian(TimeSpan? deviceStepTimeout = null) => new(
         _clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); },
-        hiding: new SteamControllerHiding(_hidHide, _puck, _controllers), deviceStepTimeout: FakeDevices.StepTimeout)
+        hiding: new SteamControllerHiding(_hidHide, _puck, _controllers), deviceStepTimeout: deviceStepTimeout ?? FakeDevices.StepTimeout)
     {
         PuckReleaseTimeout = TimeSpan.FromMilliseconds(100),
         ProcessRuns = name => { lock (_running) return _running.Contains(name); },
@@ -116,6 +116,40 @@ public sealed class ControllerHidingTests : IDisposable
         var again = await Hide(FakeControllers.EightBitDo, generation);
         Assert.Equal(PanReason.None, again.Reason);
         Assert.Equal(2, _hidHide.Hidden.Count);
+    }
+
+    [Fact]
+    public async Task A_freshly_plugged_XInput_pad_is_reconnected_by_its_port_so_nobody_needs_to_replug_it()
+    {
+        // #238: Steam opens a freshly plugged XInput pad within a second, before Pan hides it.
+        _controllers.Reconnectable.Add(FakeControllers.EightBitDoXInput);
+        var generation = await EmulatingAsync();
+
+        var hidden = await Hide(FakeControllers.EightBitDo, generation);
+
+        Assert.Equal(PanReply.ControllerHidden, hidden.Reply);
+        Assert.Equal(PanReason.None, hidden.Reason);
+        Assert.Equal([FakeControllers.EightBitDoXInput], _controllers.Reconnected);
+        Assert.Empty(Journal.ControllerRestarts);
+
+        // Hidden before: not reconnected again.
+        await Hide(FakeControllers.EightBitDo, generation);
+        Assert.Single(_controllers.Reconnected);
+    }
+
+    [Fact]
+    public async Task A_reconnect_without_an_answer_leaves_the_pad_hidden_and_waiting_for_the_players_reconnect()
+    {
+        _controllers.Reconnectable.Add(FakeControllers.EightBitDoXInput);
+        _controllers.ReconnectHangs = true;
+        _guardian = NewGuardian(TimeSpan.FromSeconds(1));
+        var generation = await EmulatingAsync();
+
+        var hidden = await Hide(FakeControllers.EightBitDo, generation);
+
+        Assert.Equal(PanReply.ControllerHidden, hidden.Reply);
+        Assert.Equal(PanReason.ControllerNeedsReplug, hidden.Reason);
+        Assert.Equal([FakeControllers.EightBitDoHid, FakeControllers.EightBitDoXInput], _hidHide.Hidden);
     }
 
     [Fact]
@@ -433,6 +467,47 @@ public sealed class ControllerHidingTests : IDisposable
         var generation = await EmulatingAsync();
 
         Assert.Equal(PanReply.Unsupported, (await Hide(FakeControllers.DualSense, generation)).Reply);
+    }
+}
+
+public sealed class HubPortTests
+{
+    private const string RootHub = @"USB\ROOT_HUB30\4&C7355C0&0&0";
+
+    // The chains as Windows lists them on the owner's PC (8BitDo's dongle) and for a DualSense by USB and by Bluetooth.
+    private static readonly Dictionary<string, string> Parents = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [@"USB\VID_2DC8&PID_310B&MI_00\6&1F8984A7&1&0000"] = @"USB\VID_2DC8&PID_310B\F5FF9E2496",
+        [@"USB\VID_2DC8&PID_310B\F5FF9E2496"] = RootHub,
+        [@"USB\VID_054C&PID_0CE6&MI_03\7&2B7F&0&0003"] = @"USB\VID_054C&PID_0CE6\5&1&0&2",
+        [@"USB\VID_054C&PID_0CE6\5&1&0&2"] = @"USB\VID_05E3&PID_0610\6&2",
+        [@"USB\VID_05E3&PID_0610\6&2"] = RootHub,
+        [@"BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&0002054c_PID&0ce6\9&1"] = @"BTH\MS_BTHPAN\7&1",
+        [@"BTH\MS_BTHPAN\7&1"] = @"USB\VID_8087&PID_0029\5&1",
+        [@"USB\VID_8087&PID_0029\5&1"] = RootHub,
+    };
+
+    private static readonly HashSet<string> Hubs = new(StringComparer.OrdinalIgnoreCase) { RootHub, @"USB\VID_05E3&PID_0610\6&2" };
+
+    private static string? OnHubPort(string device) => ControllerList.OnHubPort(device, id => Parents.GetValueOrDefault(id), Hubs.Contains);
+
+    [Fact]
+    public void An_XInput_interface_is_cycled_at_the_port_of_its_USB_device() =>
+        Assert.Equal(@"USB\VID_2DC8&PID_310B\F5FF9E2496", OnHubPort(@"USB\VID_2DC8&PID_310B&MI_00\6&1F8984A7&1&0000"));
+
+    [Fact]
+    public void Behind_a_hub_the_port_is_the_nearest_hubs() =>
+        Assert.Equal(@"USB\VID_054C&PID_0CE6\5&1&0&2", OnHubPort(@"USB\VID_054C&PID_0CE6&MI_03\7&2B7F&0&0003"));
+
+    [Fact]
+    public void A_Bluetooth_controller_never_cycles_the_radios_port() =>
+        Assert.Null(OnHubPort(@"BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&0002054c_PID&0ce6\9&1"));
+
+    [Fact]
+    public void A_device_without_a_hub_above_it_or_without_a_model_is_not_cycled()
+    {
+        Assert.Null(OnHubPort(@"USB\VID_045E&PID_028E\unplugged"));
+        Assert.Null(OnHubPort(RootHub));
     }
 }
 

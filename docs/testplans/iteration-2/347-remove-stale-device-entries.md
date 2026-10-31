@@ -5,7 +5,7 @@ once after Pan starts, and at Pan's uninstall. Findings: [pan-stale-devices.md](
 Counting the entries by hand: `Run-Check-347.ps1` (survey only: answer its first step, then close it) or Device Manager,
 View → "Show hidden devices", the greyed entries below "USB Host Controller - usbip-win2" … `ROOT\USB\0000`.
 
-- [ ] **T347-1** usbip-win2's host is recognised by its exact hardware id: `Run-Check-347-hostid.ps1` says "OK", the
+- [x] **T347-1** usbip-win2's host is recognised by its exact hardware id: `Run-Check-347-hostid.ps1` says "OK", the
       host `ROOT\USB\0000` lists `ROOT\USBIP_WIN2\UDE`. Real Valve entries (puck, controller by cable, bootloader) and
       entries below other hosts stay. · E2E: no (real device tree; Pan `StaleDevicesTests` cover the classification)
 - [ ] **T347-2** Install this build's Pan (the owner's PC has the leftovers of earlier sessions). Within a few seconds
@@ -39,3 +39,4 @@ History:
 |---|---|---|---|---|---|
 | `Run-Check-347.ps1` (A1–A4) | 2026-10-31 | owner | spike script, owner's PC | ✅ A1, A3, A4; ❌ A2 (`CM_Uninstall_DevNode` removes present devnodes) | Decision 11: only while nothing emulates, presence re-checked |
 | T347-1 to T347-7 (Pan `StaleDevicesTests`, `GuardianStaleDevicesTests`, `UninstallOrderTests`), all App, Core and Pan tests | 2026-10-31 | Claude | PR branch, Linux cloud container | ✅ (each new test ❌ once with its part taken out: no wait for the cleanup, no gate on emulation/journal/stop, no child check, no presence re-check, host not required present, "contains USBIP", uninstall step skipped) | – |
+| T347-1 (`Run-Check-347-hostid.ps1`, reads only) | 2026-10-31 | owner, read by Claude | check script, owner's PC | ✅ `ROOT\USB\0000` has exactly `ROOT\USBIP_WIN2\UDE`; exact id and "contains USBIP" find the same 48 stale entries | – |

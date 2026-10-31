@@ -1,6 +1,6 @@
 ---
 name: refinement
-description: Joint refinement with the owner before work starts on an issue or epic — walk the likely scenarios, edge cases and open decisions in rounds of questions until nothing is left assumed. Use at the start of every issue (own thread per issue unless the owner groups issues; an epic only on request), or when the owner says "refinement" or "grill".
+description: Joint refinement with the owner before work starts on an issue — walk the likely scenarios, edge cases and open decisions in rounds of questions until nothing is left assumed. Use at the start of every issue (own thread per issue unless the owner groups issues), or when the owner says "refinement" or "grill".
 ---
 
 # Refinement
@@ -10,7 +10,7 @@ The product manager leads for stories, the architect for tech debt, spikes and C
 
 ## 1. Read before asking
 
-Read the issue or epic with its comments and sub-issues, the matching designs, and the code it touches.
+Read the issue with its comments and sub-issues, the matching designs, and the code it touches.
 Facts are your job: never ask the owner what a file, log, issue or the code can tell you. Decisions are
 the owner's.
 
@@ -54,13 +54,13 @@ implementing before that.
 Update the issue body in English (it is the source of truth, not the chat): scenarios, decisions with date,
 failure cases, assumptions with their check scripts, out of scope, and acceptance criteria as checkboxes. These become the test plan cases later.
 
-## 4. Epic refinement (only on request): slice into issues
+## 4. Large issue: slice into issues
 
-For an epic, after step 3 cut the agreed scope into issues:
+For an issue too large for one PR, after step 3 cut the agreed scope into issues:
 
-- Each issue is a **vertical slice**: a self-contained increment that pays into the epic and can be
+- Each issue is a **vertical slice**: a self-contained increment that pays into the large issue and can be
   tested on its own. Prefactoring comes first as its own issue.
 - Guideline: the context an issue needs (code to read, docs, logs, discussion) stays under about
   **150k tokens**. More is a sign to split it further. Not a hard limit.
 - Show the slicing as a numbered list (title, what it delivers, blocked by) and let the owner adjust
-  it, then create the issues as sub-issues of the epic (see `CLAUDE.md` → Open work).
+  it, then create the issues as its sub-issues (see `CLAUDE.md` → Open work).

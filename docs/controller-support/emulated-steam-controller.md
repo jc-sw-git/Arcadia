@@ -1,4 +1,4 @@
-# The puck as a USB device, and what Steam does with it (spike #239)
+# The puck and the Triton by cable as USB devices, and what Steam does with them (spikes #239, #249)
 
 Seen on the owner's PC: new Steam Controller ("Triton") on its wireless puck `28DE:1304`, Windows 11, HidHide 1.5.230,
 usbip-win2. Tools: `SteamInputProbe` (mode `describe`; in git at
@@ -23,8 +23,8 @@ throwaway proxy). Check scripts and logs: project files `spikes/239/`.
   Many such cycles left the firmware unchanged. Arcadia and Pan never touch `1007`.
 - Proof of a real update: Steam's `logs\controller.txt` names the firmware at every connect (`FWTimestamp …` per
   dongle and controller); a changed timestamp means it was flashed.
-- The Triton by cable is `28DE:1302`, one HID interface (mouse, keyboard, vendor collection), no COM port. Steam
-  updates the controller only by cable. Pan neither hides nor copies `1302`.
+- The Triton by cable: [The Triton by cable](#the-triton-by-cable-spike-249). Steam updates the controller only by
+  cable. Pan neither hides nor copies `1302` yet.
 
 ## HidHide and Steam
 
@@ -51,5 +51,26 @@ with the usual name and icon, gyro and trackpads in the input test, haptics, and
   the run, so blocking one is unverified.
 - Latency of the whole hop (real report read to the same report read from the copy), 30 s idle, ~8,000 reports: p50
   ~150 µs, p95 ~290 µs, p99 ~600 µs. Against the 50 ms input budget that is nothing.
-- Only the Triton puck with one controller was tried: not a second controller, nor the 2015 Steam Controller; the
-  Triton by cable was only listed.
+- Only one controller on the puck was tried: not a second one (#342), nor the 2015 Steam Controller.
+
+## The Triton by cable (spike #249)
+
+Check script and logs: project files `checks/249/`. The puck stayed plugged in.
+
+- `USB\VID_28DE&PID_1302\<serial>`, full speed, `bcdUSB` 2.01, release `0404`, strings "Valve Software", "Steam
+  Controller". One HID interface, so no `&MI_` in any id: `HID\VID_28DE&PID_1302&COL01…COL03` (mouse `0x40`,
+  keyboard `0x41`, vendor `FF00/1` with the same reports as a puck slot). No COM port. The report descriptor can't be
+  read through the hub either (error 31); hidapi's reconstruction is used.
+- HidHide hides it from Steam completely (hide the three `HID\VID_28DE&PID_1302&…` instances, cloak on, restart the
+  USB device): Steam lists no controller, buttons do nothing in Steam. Unlike the puck, the trackpad doesn't move the
+  pointer while hidden. The restart worked without replug and passed no bootloader `1007`.
+- An allow-listed process keeps reading it: SDL3 saw gyro and accelerometer at ~246 Hz.
+- Steam takes a usbip copy with these descriptors as the controller by cable: trackpad mouse, Steam button,
+  controller list with the usual name and icon, gyro and trackpads in the input test, haptics and a game's own layout.
+  Same traffic as on the puck (`GET_ATTRIBUTES_VALUES`, `SET_SETTINGS_VALUES`, digital mappings, `SET_AUDIO_MAPPING`);
+  unknown `0xDC`, `0xE2`, `0xED` blocked, Steam worked anyway.
+- **Steam offers the copy a firmware update** (not installed, so the update's messages are unknown). Steam logs the
+  copy with the real controller's `FWTimestamp`.
+- Latency of the hop, ~3 min of play: p50 ~75 µs, p95 ~150 µs, p99 ~230 µs.
+- With both `1302` and `1304` hidden, unplugging the cable moved the controller to the puck and Steam saw none.
+  Plugging the cable in again brought no `1302` back (the controller stayed on the puck); Steam saw none either.

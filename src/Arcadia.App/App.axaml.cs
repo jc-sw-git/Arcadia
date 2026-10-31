@@ -174,7 +174,8 @@ public partial class App : Application
             updates.RestartRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
 
 
-            _gamepad = ControllerInput.Create(viewModel);
+            var ownPads = new OwnPadModels();
+            _gamepad = ControllerInput.Create(viewModel, ownPads);
             var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
             viewModel.Dialogs = new SystemDialogs(window, () => viewModel.UsesController, () => mouseMode);
 
@@ -203,7 +204,7 @@ public partial class App : Application
             var forGames = SteamControllerForGames.Create(
                 OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, Copy, controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId,
                 () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, steamInFront.Now,
-                () => ForegroundGame.InFront(viewModel.Session.GameFolders, launchedGames), _gamepad, panNotices, time);
+                () => ForegroundGame.InFront(viewModel.Session.GameFolders, launchedGames), _gamepad, panNotices, time, ownPads);
             pan.Start();
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;

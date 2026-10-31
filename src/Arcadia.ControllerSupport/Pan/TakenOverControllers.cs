@@ -89,6 +89,9 @@ public sealed class TakenOverControllers
     /// <summary>A game set a pad's motors: the controller with this <see cref="GamepadReading.PadId"/> rumbles so (0, 0 stops).</summary>
     public Action<int, XboxRumble> Rumble { get; init; } = (_, _) => { };
 
+    /// <summary>Arcadia's own pads plugged in now, for telling them from real controllers (<see cref="OwnPadModels"/>).</summary>
+    public OwnPadModels OwnPads { get; init; } = new();
+
     /// <summary>A game set a PlayStation pad's light bar: the controller with this <see cref="GamepadReading.PadId"/> shows it.</summary>
     public Action<int, PadLight> Light { get; init; } = (_, _) => { };
 
@@ -316,7 +319,7 @@ public sealed class TakenOverControllers
 
     private Controller Add(string key, GamepadReading reading)
     {
-        var controller = new Controller(key, Model(reading), reading.Device.DisplayName, PadKinds.Default(reading.Device), _nextOrder++, _time);
+        var controller = new Controller(key, Model(reading), reading.Device.DisplayName, PadKinds.Default(reading.Device), _nextOrder++, _time, OwnPads);
         _controllers.Add(controller);
         return controller;
     }
@@ -511,14 +514,22 @@ public sealed class TakenOverControllers
                 return;
             }
 
+            // Known before the pad arrives in SDL, so it is never taken for a real controller (OwnPadModels).
+            OwnPads.Plugged(controller.Kind);
             try
             {
                 var pad = await pads.PlugAsync(controller.Kind, cancellationToken);
                 controller.Plug(pad, Rumble, Light);
                 _log($"Controller für Spiele: {PadKinds.DisplayName(controller.Kind)} für \"{controller.Name}\" ({controller.Model}) angesteckt");
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex)
             {
+                OwnPads.Unplugged(controller.Kind);
+                if (ex is OperationCanceledException)
+                {
+                    throw;
+                }
+
                 _log($"Controller für Spiele: Anstecken fehlgeschlagen: {ex.Message}");
                 if (pads.Unavailable() is null)
                 {
@@ -673,7 +684,7 @@ public sealed class TakenOverControllers
     }
 
     /// <summary>One connected controller and its pad.</summary>
-    private sealed class Controller(string key, ControllerModel model, string name, PadKind kind, long order, TimeProvider time)
+    private sealed class Controller(string key, ControllerModel model, string name, PadKind kind, long order, TimeProvider time, OwnPadModels ownPads)
     {
         private readonly Channel<(VirtualPadState State, long PolledAt)> _states =
             Channel.CreateBounded<(VirtualPadState, long)>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
@@ -715,6 +726,12 @@ public sealed class TakenOverControllers
         /// <summary>Under the owner's lock: only changes go to the pad, VIIPER keeps the last state.</summary>
         public void Offer(VirtualPadState state, long polledAt)
         {
+            if (Kind == PadKind.Xbox360)
+            {
+                // What an Xbox 360 pad lacks: a gyro's every move would otherwise send an unchanged state each poll.
+                state = state with { Extra = ExtraButtons.None, Touchpad = default, Motion = default };
+            }
+
             if (state == _lastOffered)
             {
                 return;
@@ -768,11 +785,23 @@ public sealed class TakenOverControllers
         {
             Rumbling = null;
             Lit = null;
-            return Interlocked.Exchange(ref _pad, null);
+            var pad = Interlocked.Exchange(ref _pad, null);
+            if (pad is not null)
+            {
+                ownPads.Unplugged(Kind);
+            }
+
+            return pad;
         }
 
         /// <summary>The emulation took the pad out itself.</summary>
-        public void ForgetPad() => _pad = null;
+        public void ForgetPad()
+        {
+            if (Interlocked.Exchange(ref _pad, null) is not null)
+            {
+                ownPads.Unplugged(Kind);
+            }
+        }
 
         public void Complete() => _states.Writer.TryComplete();
 

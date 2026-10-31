@@ -74,8 +74,8 @@ public static class VirtualPadReports
 
     private const ushort TouchpadWidth = 1920;
 
-    /// <summary>Accelerometer counts per m/s² of both PlayStation pads (8192 per g), as VIIPER's calibration reports.</summary>
-    private const double PlayStationAccelCountsPerMs2 = 835.07;
+    /// <summary>Accelerometer counts per m/s² of both PlayStation pads: 8192 per g, with SDL's standard gravity.</summary>
+    private const double PlayStationAccelCountsPerMs2 = 8192 / StandardGravity;
 
     private static readonly (PadButtons From, uint To)[] PlayStationButtons =
     [

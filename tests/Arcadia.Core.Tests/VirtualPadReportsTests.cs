@@ -125,7 +125,7 @@ public sealed class VirtualPadReportsTests
         var gyro = (float)(Math.PI / 2);
         var state = VirtualPadState.Neutral with
         {
-            Motion = new MotionReading(true, new SensorAxes(gyro, -gyro, gyro), new SensorAxes(9.81f, 0, -9.81f)),
+            Motion = new MotionReading(true, new SensorAxes(gyro, -gyro, gyro), new SensorAxes(9.80665f, 0, -9.80665f)),
         };
 
         var ds4 = VirtualPadReports.Input(PadKind.DualShock4, state);
@@ -140,7 +140,7 @@ public sealed class VirtualPadReportsTests
     {
         var packet = VirtualPadReports.Input(PadKind.DualSense, VirtualPadState.Neutral);
 
-        Assert.Equal([0, 0, 0, 0, 8189, 0], Shorts(packet, 21, 6));
+        Assert.Equal([0, 0, 0, 0, 8192, 0], Shorts(packet, 21, 6));
     }
 
     [Fact]

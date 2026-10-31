@@ -56,16 +56,19 @@ controllers taken over. Product rules: `docs/product/controls.md`, the settings 
 - Touchpad: SDL's first finger only, scaled to 1920 × 942 (DS4) or 1920 × 1080 (DualSense); the second finger stays
   lifted.
 - Motion: SDL's gyro (rad/s) and accelerometer (m/s²) back to the device's counts, so SDL on the host reads the same
-  values: PlayStation axes as SDL's (16 resp. 16.384 counts per °/s, 835.07 per m/s²); Switch 2 Pro the inverse of SDL's
+  values: PlayStation axes as SDL's (16 resp. 16.384 counts per °/s, 8192 per g); Switch 2 Pro the inverse of SDL's
   swap (x, z, −y), gyro 34.8 rad/s and accelerometer 8 g per 32767. Without motion a pad lies flat (gravity on +Y).
   The real controllers' sensors are on (`IGamepadSource.UseMotionSensors`) only while such a pad is plugged.
-- Feedback: DualShock 4 rumble and light bar by its flags; DualSense rumble from every report, the light bar only when
-  not black (VIIPER sends zero without the LED flag); Switch 2 Pro HD rumble decoded from SDL's encoding (low band →
+- Feedback: DualShock 4 rumble and light bar by its flags; DualSense rumble from every report (VIIPER ignores the rumble flag, so a
+  light-only report with zero motors stops it; SDL always sends both), the light bar only when not black (VIIPER sends
+  zero without the LED flag); Switch 2 Pro HD rumble decoded from SDL's encoding (low band →
   large motor, high band → small, the stronger side, amplitude max 29000 = 255). The light bar goes to the real
   controller with `SDL_SetGamepadLED` and is set again after a let-go, like the rumble. Not carried: adaptive triggers
   and DualSense haptics (VIIPER has no output for them), player LEDs.
 - Arcadia's own pads carry the real ids: `GamepadDevices.WhyIgnored` leaves out a Sony or Nintendo pad whose HID path
-  is on a software host (`IEmulatedPads.IsVirtualHidPad`). Pan never hides devices on a software host.
+  is on a software host (`IEmulatedPads.IsVirtualHidPad`). Where Windows' device tree can't be read, a pad with the ids
+  of one Arcadia has plugged in (`OwnPadModels`) counts as Arcadia's, so pads never feed pads. Pan never hides devices
+  on a software host. The light bar keeps the game's colour after its pad goes.
 
 ## The settings rows (D7, D8)
 

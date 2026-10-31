@@ -415,6 +415,41 @@ public sealed class TakenOverControllersTests
         Assert.Equal([true, false], _motion);
     }
 
+    /// <summary>QE review of #346: Arcadia's own pads are known while plugged, so they are never taken for real controllers.</summary>
+    [Fact]
+    public async Task Arcadias_own_pads_are_known_by_their_ids_while_they_are_plugged()
+    {
+        _others.Feed([DualSense, EightBitDo]);
+        await _emulation.TickAsync();
+
+        Assert.True(_others.OwnPads.Has(0x054C, 0x0CE6));
+
+        _time.Advance(TakenOverControllers.RereadGrace);
+        _others.Feed([EightBitDo]);
+        await _emulation.TickAsync();
+
+        Assert.False(_others.OwnPads.Has(0x054C, 0x0CE6));
+    }
+
+    /// <summary>QE review of #346: a gyro read for another pad doesn't make an Xbox 360 pad's state change on every poll.</summary>
+    [Fact]
+    public async Task An_Xbox_360_pad_gets_no_new_state_when_only_motion_changes()
+    {
+        _others.Feed([EightBitDo]);
+        await _emulation.TickAsync();
+        var pad = _pads.All[0];
+        await Task.Delay(50);
+        var before = pad.States.Count;
+
+        for (var i = 1; i <= 5; i++)
+        {
+            _others.Feed([EightBitDo with { Motion = new MotionReading(true, new SensorAxes(i, 0, 0), default) }]);
+        }
+
+        await Task.Delay(50);
+        Assert.Equal(before, pad.States.Count);
+    }
+
     private static async Task<VirtualPadState> WaitForStateAsync(FakeVirtualXboxPads.FakePad pad, Func<VirtualPadState, bool> test)
     {
         for (var i = 0; i < 200; i++)

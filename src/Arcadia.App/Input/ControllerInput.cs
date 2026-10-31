@@ -14,7 +14,7 @@ public static class ControllerInput
 {
     public const string UnavailableText = "Controller werden nicht erkannt (SDL3 fehlt oder startet nicht). Tastatur und Maus funktionieren – Details stehen in arcadia.log.";
 
-    public static IGamepadSource Create(MainViewModel viewModel)
+    public static IGamepadSource Create(MainViewModel viewModel, OwnPadModels ownPads)
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -27,7 +27,7 @@ public static class ControllerInput
             AppLog.Write("Controller: Arcadia wurde über Steam gestartet; Steam verbirgt den Steam Controller vor Arcadia");
         }
 
-        return Create(new SdlGamepads(), viewModel, new DeviceTreeEmulatedPads(XusbDevices.List, AppLog.Write, DeviceTree.InterfaceOnSoftwareHost));
+        return Create(new SdlGamepads(), viewModel, new DeviceTreeEmulatedPads(XusbDevices.List, AppLog.Write, DeviceTree.InterfaceOnSoftwareHost, ownPads));
     }
 
     public static SdlGamepadSource Create(ISdlGamepads sdl, MainViewModel viewModel, IEmulatedPads? emulated = null) =>

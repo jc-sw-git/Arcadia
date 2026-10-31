@@ -20,14 +20,14 @@ View → "Show hidden devices", the greyed entries below "USB Host Controller - 
 - [x] **T347-4** End Arcadia hard (Task Manager) during an emulation: the teardown runs, then the cleanup; `pan.log`
       names no instance id, a failure only as "Stale entries not removed: n × 28DE:1304: CONFIGRET 0x…". · E2E: yes (Pan
       `GuardianStaleDevicesTests`, `StaleDevicesTests`)
-- [ ] **T347-5** Start Arcadia right after closing it (within 2 s, while Pan cleans up): the pad comes after a short
+- [x] **T347-5** Start Arcadia right after closing it (within 2 s, while Pan cleans up): the pad comes after a short
       "Pan räumt noch auf" without "Emulation angehalten"; `arcadia.log` counts no pad loss. · E2E: yes (Pan
       `GuardianStaleDevicesTests`; the client's wait without a loss is `PanClient.BeingShownWait`, covered by Core
       `PanClientTests`)
-- [ ] **T347-6** Pan's uninstall (settings → Pan entfernen, with drivers): `pan.log`/the uninstall log has "Stale
+- [x] **T347-6** Pan's uninstall (settings → Pan entfernen, with drivers): `pan.log`/the uninstall log has "Stale
       device entries (uninstall)" before the drivers go; afterwards Device Manager shows no greyed copy entries.
       · E2E: no (real uninstall; Pan `UninstallOrderTests` cover the order and that `RestoreIncomplete` skips it)
-- [ ] **T347-7** No cleanup while a Valve bootloader is connected (a firmware update in Steam), while a real controller
+- [x] **T347-7** No cleanup while a Valve bootloader is connected (a firmware update in Steam), while a real controller
       is still hidden, or on Pan's stop (switch Pan off during an emulation): `pan.log` then has no "Stale device
       entries" line, or "not removed (…): a Valve bootloader is connected". · E2E: yes (Pan `GuardianStaleDevicesTests`)
 - Not automated on purpose (decision 11): a device another program plugs in through usbip-win2 during the ~2 s of a
@@ -42,3 +42,4 @@ History:
 | T347-1 (`Run-Check-347-hostid.ps1`, reads only) | 2026-10-31 | owner, read by Claude | check script, owner's PC | ✅ `ROOT\USB\0000` has exactly `ROOT\USBIP_WIN2\UDE`; exact id and "contains USBIP" find the same 48 stale entries | – |
 | T347-2 to T347-4: several sessions with play, one hard end (Task Manager), `pan.log` read by Claude, then `Run-Check-347-hostid.ps1` | 2026-10-31 | owner | PR #349 at 6c13702, owner's PC | ✅ Pan start: 52 removed; after each planned end 26, after the hard end 3; none after a teardown left incomplete (detach failed), caught up at the next; check afterwards: 0 left. ❌ minor: the first hard end's cleanup ran 0.1 s after the detach and found nothing yet | Cleanup after an emulation waits 2 s (`StaleCleanupSettle`) |
 | Rework: QE bug (stop waits unbounded), settle, grouped failure log; new Pan tests `An_emulation_started_while_the_cleanup_waits_to_settle…`, `A_stop_waits_only_so_long…`, `A_stop_ends_a_cleanup_that_waits_to_settle…`; all App, Core and Pan tests | 2026-10-31 | Claude | PR branch merged with `feat/replace-sisr` 72d449e, Linux cloud container | ✅ (each new test ❌ once: settling cleanup blocks the start; stop wait unbounded; settle not cancelled) | – |
+| T347-5 to T347-7 | 2026-10-31 | owner | PR #349 at df0ce79, owner's PC | ✅ accepted by the owner | – |

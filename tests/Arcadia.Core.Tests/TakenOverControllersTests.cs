@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Input;
 using Arcadia.Pan;
@@ -436,8 +437,17 @@ public sealed class TakenOverControllersTests
         _others.Feed([EightBitDo]);
         await _emulation.TickAsync();
         var pad = _pads.All[0];
+
+        // The forwarding runs on its own thread: its first state can take longer than a fixed wait on a slow CI runner.
+        var firstState = Stopwatch.StartNew();
+        while (pad.States.Count == 0 && firstState.Elapsed < TimeSpan.FromSeconds(5))
+        {
+            await Task.Delay(10);
+        }
+
         await Task.Delay(50);
         var before = pad.States.Count;
+        Assert.NotEqual(0, before);
 
         for (var i = 1; i <= 5; i++)
         {

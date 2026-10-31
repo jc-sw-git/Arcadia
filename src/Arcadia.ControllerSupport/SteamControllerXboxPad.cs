@@ -34,6 +34,9 @@ public sealed class SteamControllerXboxPad
     private volatile IVirtualXboxPad? _pad;
     private volatile bool _steamControllerConnected;
     private int? _steamControllerId;
+
+    // The same, for VIIPER's thread (a game's rumble); -1 while none is connected.
+    private volatile int _rumbleTarget = -1;
     private XboxPadState _lastFed;
     private Task? _sender;
     private volatile bool _gaveUp;
@@ -63,6 +66,12 @@ public sealed class SteamControllerXboxPad
     /// <summary>Called on every poll: the thread that feeds the pad is alive (Pan's heartbeat, #243). Must not block.</summary>
     public Action? FeedAlive { get; init; }
 
+    /// <summary>
+    /// A game set the pad's motors (#238 D5): the Steam Controller (by its <see cref="GamepadReading.PadId"/>) rumbles so.
+    /// On VIIPER's thread, must not block; a stop (0, 0) follows when the pad goes.
+    /// </summary>
+    public Action<int, XboxRumble>? Rumble { get; init; }
+
     /// <summary>Raised once when the pad was lost too often and Arcadia stops plugging it in (shown as a toast).</summary>
     public event Action<string>? GaveUp;
 
@@ -89,6 +98,7 @@ public sealed class SteamControllerXboxPad
         if (steamController?.PadId != _steamControllerId)
         {
             _steamControllerId = steamController?.PadId;
+            _rumbleTarget = steamController?.PadId ?? -1;
             _withholding.Reset();
         }
 
@@ -188,6 +198,16 @@ public sealed class SteamControllerXboxPad
     }
 
     /// <summary>
+    /// Arcadia lets go of every controller while Pan restarts one it hides (#238): no poll comes meanwhile, so the game
+    /// gets a pad at rest instead of what the Steam Controller held last. The next poll after the reread feeds it again.
+    /// </summary>
+    public void Rest()
+    {
+        _lastFed = XboxPadState.Neutral;
+        _states.Writer.TryWrite((XboxPadState.Neutral, _time.GetTimestamp()));
+    }
+
+    /// <summary>
     /// The gamepad source stopped for good after an error (<see cref="IGamepadSource.Lost"/>): no poll lets go of what
     /// the Steam Controller held, so the game gets a pad at rest now, and the next tick unplugs it. Poll thread.
     /// </summary>
@@ -195,6 +215,7 @@ public sealed class SteamControllerXboxPad
     {
         _steamControllerConnected = false;
         _steamControllerId = null;
+        _rumbleTarget = -1;
         _withholding.Reset();
         _lastFed = XboxPadState.Neutral;
         _states.Writer.TryWrite((XboxPadState.Neutral, _time.GetTimestamp()));
@@ -246,6 +267,17 @@ public sealed class SteamControllerXboxPad
         }
 
         _delays = default;
+        if (Rumble is { } rumble)
+        {
+            pad.Rumbled += motors =>
+            {
+                if (_rumbleTarget is var id and >= 0)
+                {
+                    rumble(id, motors);
+                }
+            };
+        }
+
         _pad = pad;
         _sender ??= Task.Run(SendLoopAsync, CancellationToken.None);
 
@@ -256,6 +288,12 @@ public sealed class SteamControllerXboxPad
     private async Task UnplugAsync(IVirtualXboxPad pad)
     {
         _pad = null;
+        if (_rumbleTarget is var id and >= 0)
+        {
+            // A game that rumbled when its pad went would leave the motors running.
+            Rumble?.Invoke(id, default);
+        }
+
         await pad.DisposeAsync();
         _log($"Xbox-Pad: abgesteckt; {_delays}");
     }

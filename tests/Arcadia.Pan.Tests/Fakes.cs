@@ -335,6 +335,12 @@ public sealed class FakeControllers : IControllerDevices
     /// <summary>Instances whose device Windows restarts only once it is reconnected.</summary>
     public HashSet<string> NeedReplug = [];
 
+    /// <summary>XInput instances whose USB device's hub port can be cycled; the rest (Bluetooth, a refusing hub) can't.</summary>
+    public HashSet<string> Reconnectable = [];
+
+    public List<string> Reconnected = [];
+    public bool ReconnectHangs;
+
     public ControllerScan Scan(ControllerModel model)
     {
         if (ScanHangs)
@@ -360,5 +366,16 @@ public sealed class FakeControllers : IControllerDevices
 
         lock (Restarted) Restarted.AddRange(hidInstances);
         return Task.FromResult<IReadOnlyList<string>>(hidInstances.Where(NeedReplug.Contains).ToList());
+    }
+
+    public async Task<IReadOnlyList<string>> ReconnectAsync(IReadOnlyList<string> xinputInstances, CancellationToken cancellationToken)
+    {
+        if (ReconnectHangs)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(5), CancellationToken.None);
+        }
+
+        lock (Reconnected) Reconnected.AddRange(xinputInstances.Where(Reconnectable.Contains));
+        return xinputInstances.Where(id => !Reconnectable.Contains(id)).ToList();
     }
 }

@@ -313,7 +313,10 @@ public sealed unsafe class ControllerDevices : IControllerDevices
             }
 
             hideable.Add(new ControllerInstance(id, ControllerInterface.Hid));
-            gamepad |= Property(id, Native.CmDrpCompatibleIds).Any(compatible => GamepadCollections.Contains(compatible, StringComparer.OrdinalIgnoreCase));
+            // Windows lists a collection's usage among its hardware ids; the compatible ids of a HID collection are empty
+            // (a DualSense by USB on the owner's PC). Both are read, in case a driver puts it there.
+            gamepad |= Property(id, Native.CmDrpHardwareId).Concat(Property(id, Native.CmDrpCompatibleIds))
+                .Any(hardwareId => GamepadCollections.Contains(hardwareId, StringComparer.OrdinalIgnoreCase));
         }
 
         foreach (var id in PuckDevices.PresentDevices("USB").Where(id => ControllerList.IsOfModel(id, model)))
@@ -347,6 +350,11 @@ public sealed unsafe class ControllerDevices : IControllerDevices
             {
                 PuckDevices.Restart(device.Key);
             }
+            catch (InvalidOperationException) when (CyclePort(device.Key))
+            {
+                // Windows restarts an XInput pad in place only while no program has it open, and Steam opens a freshly
+                // plugged one within a second; the hub enumerating it anew is the reconnect the player would do.
+            }
             catch (InvalidOperationException)
             {
                 replug.AddRange(device);
@@ -354,6 +362,102 @@ public sealed unsafe class ControllerDevices : IControllerDevices
         }
 
         return Task.FromResult<IReadOnlyList<string>>(replug);
+    }
+
+    public Task<IReadOnlyList<string>> ReconnectAsync(IReadOnlyList<string> xinputInstances, CancellationToken cancellationToken)
+    {
+        var left = new List<string>();
+        foreach (var instance in xinputInstances)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!CyclePort(instance))
+            {
+                left.Add(instance);
+                continue;
+            }
+
+            // Answered once it is gone, not once it is back (about 4 s on the owner's PC): the client reads its
+            // controllers again right after the answer and takes the pad as a new arrival, while every controller
+            // stays let go only for the hide itself.
+            var gone = Stopwatch.StartNew();
+            while (IsPresent(instance) && gone.Elapsed < GoneWait)
+            {
+                // The guardian runs this on the thread pool and waits with its timeout; no await in an unsafe class.
+                cancellationToken.WaitHandle.WaitOne(TimeSpan.FromMilliseconds(100));
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
+
+        return Task.FromResult<IReadOnlyList<string>>(left);
+    }
+
+    private static readonly TimeSpan GoneWait = TimeSpan.FromSeconds(2);
+
+    private static bool IsPresent(string instanceId) => Native.CM_Locate_DevNodeW(out _, instanceId, Native.CmLocateDevnodeNormal) == Native.CrSuccess;
+
+    /// <summary>Cycles the hub port of the USB device <paramref name="device"/> is part of; false if it has none or the hub refused.</summary>
+    private static bool CyclePort(string device)
+    {
+        if (ControllerList.OnHubPort(device, PuckDevices.ParentOf, IsHub) is not { } onPort
+            || PuckDevices.ParentOf(onPort) is not { } hub
+            || NumberProperty(onPort, Native.CmDrpAddress) is not { } port
+            || HubInterface(hub) is not { } hubInterface)
+        {
+            return false;
+        }
+
+        var handle = Native.CreateFileW(hubInterface, Native.GenericRead | Native.GenericWrite, Native.FileShareRead | Native.FileShareWrite, 0, Native.OpenExisting, 0, 0);
+        if (handle == -1)
+        {
+            return false;
+        }
+
+        try
+        {
+            var parameters = new Native.UsbCyclePortParams { ConnectionIndex = port };
+            var size = (uint)sizeof(Native.UsbCyclePortParams);
+            return Native.DeviceIoControl(handle, Native.IoctlUsbHubCyclePort, &parameters, size, &parameters, size, out _, 0);
+        }
+        finally
+        {
+            Native.CloseHandle(handle);
+        }
+    }
+
+    private static bool IsHub(string instanceId) =>
+        Property(instanceId, Native.CmDrpService).FirstOrDefault() is { } service
+        && (service.Equals("USBHUB3", StringComparison.OrdinalIgnoreCase) || service.Equals("usbhub", StringComparison.OrdinalIgnoreCase));
+
+    private static string? HubInterface(string hubInstanceId)
+    {
+        if (Native.CM_Get_Device_Interface_List_SizeW(out var length, Native.UsbHubInterface, hubInstanceId, 0) != Native.CrSuccess || length <= 1)
+        {
+            return null;
+        }
+
+        var buffer = new char[length];
+        fixed (char* chars = buffer)
+        {
+            if (Native.CM_Get_Device_Interface_ListW(Native.UsbHubInterface, hubInstanceId, chars, length, 0) != Native.CrSuccess)
+            {
+                return null;
+            }
+        }
+
+        return new string(buffer).Split('\0', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+    }
+
+    /// <summary>A number (DWORD) property of the device; null when it can't be read.</summary>
+    private static uint? NumberProperty(string instanceId, uint property)
+    {
+        if (Native.CM_Locate_DevNodeW(out var device, instanceId, Native.CmLocateDevnodeNormal) != Native.CrSuccess)
+        {
+            return null;
+        }
+
+        uint value = 0;
+        var length = (uint)sizeof(uint);
+        return Native.CM_Get_DevNode_Registry_PropertyW(device, property, out _, &value, ref length, 0) == Native.CrSuccess ? value : null;
     }
 
     /// <summary>A string or multi-string property of the device; empty when it can't be read.</summary>

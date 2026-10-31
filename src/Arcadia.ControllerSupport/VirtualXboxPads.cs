@@ -43,6 +43,9 @@ public interface IVirtualXboxPad : IAsyncDisposable
 
     /// <summary>What the pad reports from now on; throws when the pad is gone.</summary>
     Task SendAsync(XboxPadState state, CancellationToken cancellationToken);
+
+    /// <summary>A game set the pad's motors (#238 D5); on VIIPER's thread, the handler must not block.</summary>
+    event Action<XboxRumble>? Rumbled;
 }
 
 /// <summary>

@@ -56,6 +56,19 @@ public readonly record struct PadDevice(string Name, ushort Vendor, ushort Produ
             ? slot
             : null;
 
+    /// <summary>
+    /// The name to show the player. Through XInput SDL knows only "XInput Controller #n": a known model gets its own
+    /// name, any other "Xbox-kompatibler Controller".
+    /// </summary>
+    public string DisplayName => !Name.StartsWith("XInput Controller", StringComparison.OrdinalIgnoreCase)
+        ? Name
+        : (Vendor, Product) switch
+        {
+            (0x2DC8, 0x310B) => "8BitDo Ultimate 2",
+            (0x045E, _) => "Xbox Controller",
+            _ => "Xbox-kompatibler Controller",
+        };
+
     /// <summary>For <c>arcadia.log</c>: name, SDL's type and the USB ids.</summary>
     public override string ToString() => $"\"{Name}\" ({Type}, {Vendor:X4}:{Product:X4})";
 }

@@ -291,8 +291,35 @@ internal static unsafe partial class Native
     /// <summary>GUID_DEVINTERFACE_XUSB_DEVICE: an XInput pad's interface (<c>xusb22</c>), which has no HID interface of its own.</summary>
     public static readonly Guid XusbInterface = new("ec87f1e3-c13b-4100-b5f7-8b84d54260cb");
 
+    public const uint CmDrpHardwareId = 0x2;
     public const uint CmDrpCompatibleIds = 0x3;
     public const uint CmDrpClass = 0x8;
+    public const uint CmDrpService = 0x5;
+
+    /// <summary>CM_DRP_ADDRESS: for a USB device, the number of the hub port it is plugged into.</summary>
+    public const uint CmDrpAddress = 0x1D;
+
+    /// <summary>GUID_DEVINTERFACE_USB_HUB: the interface a hub takes its port requests on.</summary>
+    public static readonly Guid UsbHubInterface = new("f18a0e88-c30c-11d0-8815-00a0c906bed8");
+
+    /// <summary>IOCTL_USB_HUB_CYCLE_PORT: the hub drops the port and enumerates its device anew, as if it was replugged.</summary>
+    public const uint IoctlUsbHubCyclePort = 0x220444;
+
+    public const uint GenericWrite = 0x40000000;
+
+    /// <summary>USB_CYCLE_PORT_PARAMS.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct UsbCyclePortParams
+    {
+        public uint ConnectionIndex;
+        public uint StatusReturned;
+    }
+
+    [LibraryImport("cfgmgr32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial uint CM_Get_Device_Interface_List_SizeW(out uint length, in Guid interfaceClass, string deviceId, uint flags);
+
+    [LibraryImport("cfgmgr32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial uint CM_Get_Device_Interface_ListW(in Guid interfaceClass, string deviceId, char* buffer, uint length, uint flags);
 
     [LibraryImport("cfgmgr32.dll")]
     public static partial uint CM_Get_DevNode_Registry_PropertyW(uint devInst, uint property, out uint type, void* buffer, ref uint length, uint flags);

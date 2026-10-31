@@ -73,6 +73,20 @@ public static class SteamControllerCopyRules
     public static ComboWithholdingOptions CombosKeptFromSteam(bool mouseModeCanSwitch, bool desktopLayoutIgnored) =>
         new(BackAndStart: mouseModeCanSwitch && desktopLayoutIgnored);
 
+    /// <summary>
+    /// Whether the pad of a controller other than the Steam Controller passes (#238): Steam sees these controllers only
+    /// through Arcadia's pads, so with Steam's desktop control allowed they pass in front of Arcadia and in the mouse mode
+    /// too, as the copy does (#315); otherwise they rest there.
+    /// </summary>
+    public static bool OtherControllerPasses(ForegroundNow now, bool desktopLayoutIgnored) =>
+        !(now.ArcadiaActive || now.MouseModeOn) || !desktopLayoutIgnored;
+
+    /// <summary>
+    /// The pad of another controller goes only to Steam right now (in front of Arcadia, in the mouse mode): Steam gets the
+    /// combos the copy would (<see cref="CombosKeptFromSteam"/>), otherwise a game's are held back.
+    /// </summary>
+    public static bool OtherControllerOnlyForSteam(ForegroundNow now) => now.ArcadiaActive || now.MouseModeOn;
+
     public static bool PadPasses(SteamControllerRoute route, ForegroundNow now, bool desktopLayoutIgnored) =>
         route.PadWanted && !now.ArcadiaActive && !now.MouseModeOn && !(!route.GameRunning && (now.SteamInFront || !desktopLayoutIgnored));
 }

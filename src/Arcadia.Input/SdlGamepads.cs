@@ -155,7 +155,7 @@ public sealed partial class SdlGamepads : ISdlGamepads
     }
 
     // A pad without motors reports an error; nothing to do about it.
-    public void Rumble(nint pad, ushort strength, uint durationMs) => _ = SDL_RumbleGamepad(pad, strength, strength, durationMs);
+    public void Rumble(nint pad, ushort low, ushort high, uint durationMs) => _ = SDL_RumbleGamepad(pad, low, high, durationMs);
 
     public void Close(nint pad) => SDL_CloseGamepad(pad);
 

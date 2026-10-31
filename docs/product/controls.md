@@ -42,6 +42,20 @@
   controller only (e.g. the Steam Controller's action set in "Steams Desktop-Steuerung zulassen") always shows that
   controller's symbols (`InfoText.Symbols`). Choosing the symbols by hand: #291. Texts keep the neutral names; a toast already shown stays.
 
+## Every controller in games (#238)
+
+- While "Controller-Wächter (Pan)" is on, Pan hides every controller Arcadia reads from games and Steam, and each one
+  reaches games as an emulated pad of Arcadia's (an Xbox 360 pad for now; its own kind and the player's choice follow
+  in #238's later parts), one per controller, in the order they connected. The same rules as for the Steam Controller
+  below: Back + Start never reaches the game, ⧉ and ≡ alone a little later (held, as held), rest while Arcadia is in
+  front or the mouse mode is on. Unlike the Steam Controller's pad, they also pass while Steam itself is in front: Steam sees
+  only them. With "Steams Desktop-Steuerung zulassen" on they pass in front of Arcadia and in the mouse mode too, ⧉ + ≡
+  included, as the copy does (`mouse-mode.md`). Guide/PS/Home passes on (Steam's overlay, the Game Bar); a game's rumble reaches the real controller.
+- Never both: a controller Pan can't hide reaches games directly and isn't emulated (the settings list it, see
+  `settings.md`). An XInput pad (an Xbox pad, 8BitDo in XInput mode) that Steam or a game
+  already opened is reconnected by Pan when it is hidden (gone for a few seconds, then emulated); by Bluetooth that
+  can't be done, so it is emulated only once the player reconnects it.
+
 ## The Steam Controller in games (#213, #242, #178)
 
 - In games the Steam Controller is an Xbox 360 pad from Arcadia; the game never sees Arcadia's combo Back + Start.

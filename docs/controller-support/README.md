@@ -4,7 +4,8 @@ Verified on the owner's PC. Read before touching `src/Arcadia.ControllerSupport`
 or anything usbip related; then only the topic file you touch.
 
 Arcadia emulates the Steam Controller itself: it reads the controller raw with SDL3 ([sdl-gamepads.md](sdl-gamepads.md)),
-gives games its own Xbox pad with the per-game mode "Arcadia" / "Steam-Eingabe" ([xbox-pad.md](xbox-pad.md)), and
+gives games its own Xbox pad with the per-game mode "Arcadia" / "Steam-Eingabe" ([xbox-pad.md](xbox-pad.md)), every
+other controller a pad of its own ([every-controller.md](every-controller.md)), and
 Pan, an elevated guardian service, hides the real controller from Steam while Steam gets a 1:1 copy
 ([pan.md](pan.md), [steam-controller-copy.md](steam-controller-copy.md)). SISR, which an older Arcadia started for
 this, is never started any more; Arcadia only removes it on request ([sisr-removal.md](sisr-removal.md)).
@@ -33,6 +34,7 @@ this, is never started any more; Arcadia only removes it on request ([sisr-remov
 | Pan, the guardian service: identity, generations, heartbeat, teardown, journal | [pan.md](pan.md) |
 | Pan hides the real puck with HidHide and shows it again | [pan-hiding.md](pan-hiding.md) |
 | Pan hides every other controller Arcadia takes over, per model | [pan-hiding-controllers.md](pan-hiding-controllers.md) |
+| Every other controller as an Xbox pad for games: hide, plug, let go of SDL, D7/D8 lists | [every-controller.md](every-controller.md) |
 | Pan's puck restart: who may hold the puck, the copy is never restarted | [pan-puck-restart.md](pan-puck-restart.md) |
 | Pan: setup with one UAC prompt, uninstall, `--restore`, the data folder, exit codes | [pan-setup.md](pan-setup.md) |
 | Pan: the update at start, announced and declinable | [pan-update.md](pan-update.md) |

@@ -36,7 +36,9 @@ meanwhile turns it into the question).
 - The consent holds while the emulation runs without a gap (a puck plugged in meanwhile is taken over too: Steam never
   saw it); every gap (paused, Pan's teardown, a hide that didn't hold, switched off) asks again. "Nein" (held 1 s) and
   a release for a firmware update hold until Arcadia's next start or the settings row "… übernehmen" (held 3 s, the
-  press is the consent). Meanwhile nothing is emulated, Arcadia's Xbox pad included.
+  press is the consent). Meanwhile neither the puck nor the Steam Controller is hidden and the Steam Controller gets no
+  Xbox pad (`PanEmulation.SteamControllerTakenOver`); every other controller is still taken over, so the emulation
+  runs for them (#238 D2). A "Ja" given later hides the puck within that running emulation.
 - The open question follows what is connected (title, chips, warning), as SDL reports the wireless Steam Controller
   only after the puck at Arcadia's start; a change stops a running hold on "Ja".
 - Arcadia asks only once Pan can hide (`CheckHiding` first): a question the hide can't follow would come back every

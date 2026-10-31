@@ -25,6 +25,9 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPadServer
     public bool StallSends;
     public FakePad? Current;
 
+    /// <summary>Every pad plugged in so far, in order.</summary>
+    public List<FakePad> All { get; } = [];
+
     /// <summary>How often VIIPER's server was made ready; <see cref="FailPrepare"/> makes it fail.</summary>
     public int Prepared;
     public bool FailPrepare;
@@ -75,6 +78,7 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPadServer
         Plugged++;
         Note("pad plugged");
         Current = new FakePad(this);
+        lock (All) All.Add(Current);
         return Task.FromResult<IVirtualXboxPad>(Current);
     }
 
@@ -96,6 +100,13 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPadServer
         public bool TakenAway => _takenAway;
 
         public void Lose() => _lost = true;
+
+        public bool IsUnplugged { get; private set; }
+
+        public event Action<XboxRumble>? Rumbled;
+
+        /// <summary>A game sets the pad's motors.</summary>
+        public void Rumble(byte large, byte small) => Rumbled?.Invoke(new XboxRumble(large, small));
 
         /// <summary>Pan tore the emulation down (or is gone): the pad is lost, but on purpose.</summary>
         public void TakeAway()
@@ -163,6 +174,7 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPadServer
             }
 
             owner.Unplugged++;
+            IsUnplugged = true;
             owner.Note("pad unplugged");
             if (owner.FailUnplug)
             {

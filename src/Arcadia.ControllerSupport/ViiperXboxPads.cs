@@ -216,6 +216,10 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
         private readonly string deviceId;
         private readonly ViiperDevice stream;
         private readonly Func<bool> serverEnded;
+
+        // Viiper.Client's DisposeAsync waits for its read loop before it closes the stream, and that loop waits for the
+        // output reader: a read without this token hangs every unplug until the game rumbles (QE review of #338).
+        private readonly CancellationTokenSource _reading = new();
         private volatile bool _broken;
 
         public ViiperXboxPad(ViiperClient client, uint bus, string deviceId, ViiperDevice stream, Func<bool> serverEnded)
@@ -226,6 +230,26 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
             this.stream = stream;
             this.serverEnded = serverEnded;
             stream.OnDisconnect = () => _broken = true;
+            stream.OnOutput = ReadOutputAsync;
+        }
+
+        public event Action<XboxRumble>? Rumbled;
+
+        /// <summary>VIIPER's output of an Xbox 360 pad: the two motors, one byte each (large, then small).</summary>
+        private async Task ReadOutputAsync(Stream output)
+        {
+            var motors = new byte[2];
+            try
+            {
+                await output.ReadExactlyAsync(motors, _reading.Token);
+            }
+            catch (OperationCanceledException) when (_reading.IsCancellationRequested)
+            {
+                // The pad is being unplugged: no exception into Viiper.Client's read loop, it ends with the dispose.
+                return;
+            }
+
+            Rumbled?.Invoke(new XboxRumble(motors[0], motors[1]));
         }
 
         public bool IsConnected => !_broken && !serverEnded();
@@ -256,6 +280,8 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
         public async ValueTask DisposeAsync()
         {
             stream.OnDisconnect = null;
+            stream.OnOutput = null;
+            await _reading.CancelAsync();
             try
             {
                 await stream.DisposeAsync();
@@ -270,6 +296,7 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
             finally
             {
                 client.Dispose();
+                _reading.Dispose();
             }
         }
     }

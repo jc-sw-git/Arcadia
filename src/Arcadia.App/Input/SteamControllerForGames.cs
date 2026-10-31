@@ -20,9 +20,10 @@ namespace Arcadia.App.Input;
 /// </summary>
 public sealed class SteamControllerForGames : Settings.IPanEmulationView
 {
-    private SteamControllerForGames(SteamControllerXboxPad pad, SteamControllerRouting routing, PanEmulation emulation, SteamControllerCopyFilter copyFilter, FirmwareAttemptWatch firmwareAttempt)
+    private SteamControllerForGames(SteamControllerXboxPad pad, TakenOverControllers others, SteamControllerRouting routing, PanEmulation emulation, SteamControllerCopyFilter copyFilter, FirmwareAttemptWatch firmwareAttempt)
     {
         Pad = pad;
+        Others = others;
         Routing = routing;
         Emulation = emulation;
         CopyFilter = copyFilter;
@@ -30,6 +31,9 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     }
 
     public SteamControllerXboxPad Pad { get; }
+
+    /// <summary>Every other controller, hidden by Pan and emulated for games (#238).</summary>
+    public TakenOverControllers Others { get; }
 
     public SteamControllerRouting Routing { get; }
 
@@ -51,9 +55,9 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     /// <param name="runningSteamAppId">The Steam game running right now, also one started directly in Steam (#119).</param>
     /// <param name="isSteamInFront">A window of Steam itself is in front; asked on every poll, so it must be cheap.</param>
     /// <param name="gameInFront">The key of the library game in front, or null; asked every 2 s, off the UI thread.</param>
-    /// <param name="readSteamControllers">
-    /// Stops or resumes Arcadia's own reading of the Steam Controller (<c>IGamepadSource.ReadSteamControllers</c>): it lets
-    /// go of the puck while Pan restarts it to hide or show it (#308).
+    /// <param name="gamepad">
+    /// Arcadia's controllers: it lets go of the puck (<c>ReadSteamControllers</c>, #308) or of every controller
+    /// (<c>ReadControllers</c>, #335) while Pan restarts what it hides, and a game's rumble goes back through it (#238 D5).
     /// </param>
     /// <param name="panSupported">Pan can run on this system (Windows); elsewhere nothing is emulated and the mode doesn't show.</param>
     public static SteamControllerForGames Create(
@@ -69,7 +73,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         Func<bool> isMouseModeOn,
         Func<bool> isSteamInFront,
         Func<string?> gameInFront,
-        Action<bool> readSteamControllers,
+        IGamepadSource gamepad,
         PanNotices notices,
         TimeProvider time)
     {
@@ -85,8 +89,30 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             () => settings.Current.IgnoreSteamDesktopLayout,
             Services.AppLog.Write);
         var hold = copy(new SteamControllerCopyWiring(filter, gate.Passes, copyCombos.Current));
+        var othersForSteam = new CombosFromSettings(settings, toSteam: true);
+        var othersForGames = new CombosFromSettings(settings, toSteam: false);
+        var others = new TakenOverControllers(time, Services.AppLog.Write)
+        {
+            // Unlike the Steam Controller's pad, also while Steam is in front: Steam sees only these pads now.
+            ForwardingAllowed = () => SteamControllerCopyRules.OtherControllerPasses(
+                new ForegroundNow(isArcadiaActive(), isMouseModeOn(), SteamInFront: false), settings.Current.IgnoreSteamDesktopLayout),
+            Combos = () => SteamControllerCopyRules.OtherControllerOnlyForSteam(new ForegroundNow(isArcadiaActive(), isMouseModeOn(), SteamInFront: false))
+                ? othersForSteam.Current()
+                : othersForGames.Current(),
+            ReadControllers = on =>
+            {
+                gamepad.ReadControllers(on);
+                if (!on)
+                {
+                    padForPresence?.Rest();
+                }
+            },
+            Pulse = guardian.Pulse,
+            Rumble = (padId, motors) => Rumble(gamepad, padId, motors),
+        };
         var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
         {
+            Others = others,
             Supported = panSupported,
             // While the installed Pan is about to be replaced (#297), nothing starts on it: the update would end it.
             Enabled = () => settings.Current.PanEnabled && !controllerSupport.IsPanUpdateDue,
@@ -95,13 +121,13 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
                 | (padForPresence?.SteamControllerConnected == true ? SteamControllerParts.Controller : SteamControllerParts.None),
             SteamControllerPresent = () => hold.PuckPresent || padForPresence?.SteamControllerConnected == true,
             GameInFront = gameInFront,
-            ReadSteamControllers = readSteamControllers,
+            ReadSteamControllers = gamepad.ReadSteamControllers,
         };
         var routing = new SteamControllerRouting(
             activeGames,
             controllerSupport.UsesArcadiaPad,
             runningSteamAppId,
-            () => emulation.Status.State == PanEmulationState.Running,
+            () => emulation.SteamControllerTakenOver,
             Services.AppLog.Write);
         routingForCopy = routing;
         var combos = new CombosFromSettings(settings, toSteam: false);
@@ -111,9 +137,15 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             ForwardingAllowed = () => SteamControllerCopyRules.PadPasses(routing.Current, new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront()), settings.Current.IgnoreSteamDesktopLayout),
             Combos = combos.Current,
             FeedAlive = guardian.Pulse,
+            Rumble = (padId, motors) => Rumble(gamepad, padId, motors),
         };
         padForPresence = pad;
         pad.GaveUp += text =>
+        {
+            emulation.PadGaveUp();
+            notices.Show(text);
+        };
+        others.GaveUp += text =>
         {
             emulation.PadGaveUp();
             notices.Show(text);
@@ -122,6 +154,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         controllerSupport.ControllersRestored += (_, _) =>
         {
             pad.ForgetLosses();
+            others.ForgetLosses();
             emulation.ForgetFailures();
         };
         guardian.TornDown += (_, reason) => notices.Show(TornDownText(reason));
@@ -132,7 +165,13 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         attempt.Started += () => emulation.HoldForFirmwareAsync(true).Forget("Firmware-Halt bei Pan setzen");
         attempt.Ended += () => emulation.HoldForFirmwareAsync(false).Forget("Firmware-Halt bei Pan aufheben");
         emulation.FirmwareHoldFound += () => attempt.Traffic("Firmware-Versuch von vor dem Start von Arcadia");
-        return new SteamControllerForGames(pad, routing, emulation, filter, attempt);
+        return new SteamControllerForGames(pad, others, routing, emulation, filter, attempt);
+    }
+
+    private static void Rumble(IGamepadSource gamepad, int padId, XboxRumble motors)
+    {
+        var (low, high) = XboxPadState.RumbleStrengths(motors);
+        gamepad.HoldRumble(padId, low, high);
     }
 
     public PanEmulationStatus Status => Emulation.Status;
@@ -145,16 +184,30 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
 
     public void TakeOverAgain() => Emulation.TakeOverAgain();
 
+    public IReadOnlyList<ControllerNotHidden> NotHidden => Others.NotHidden;
+
+    public IReadOnlyList<ControllerWaitingForTool> WaitingForTool => Others.WaitingForTool;
+
     public event Action? Changed
     {
-        add => Emulation.Changed += value;
-        remove => Emulation.Changed -= value;
+        add
+        {
+            Emulation.Changed += value;
+            Others.Changed += value;
+        }
+
+        remove
+        {
+            Emulation.Changed -= value;
+            Others.Changed -= value;
+        }
     }
 
     /// <summary>"Erneut versuchen" on a stopped emulation: pad and emulation start counting afresh, and the next tick tries again.</summary>
     public void Retry()
     {
         Pad.ForgetLosses();
+        Others.ForgetLosses();
         Emulation.Retry();
     }
 

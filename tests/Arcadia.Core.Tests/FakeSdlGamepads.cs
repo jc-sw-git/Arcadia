@@ -26,6 +26,17 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
 
     public int Updates { get; private set; }
 
+    public int Inits { get; private set; }
+
+    /// <summary>The id SDL gives the device now (it changes when SDL starts again).</summary>
+    public uint IdOf(PadDevice device)
+    {
+        lock (_lock)
+        {
+            return _plugged.First(pair => pair.Value == device).Key;
+        }
+    }
+
     public List<string> Rumbles { get; } = [];
 
     public List<uint> Closed { get; } = [];
@@ -85,6 +96,26 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
         if (InitError is { } error)
         {
             throw error;
+        }
+
+        lock (_lock)
+        {
+            Inits++;
+            if (IsQuit)
+            {
+                // As SDL after SDL_Quit: every pad still plugged in comes again, under a new id.
+                _changes.Clear();
+                foreach (var (old, device) in _plugged.ToList())
+                {
+                    _plugged.Remove(old);
+                    var state = _states.GetValueOrDefault(old);
+                    _states.Remove(old);
+                    var id = _nextId++;
+                    _plugged[id] = device;
+                    _states[id] = state;
+                    _changes.Enqueue((id, true));
+                }
+            }
         }
 
         IsQuit = false;
@@ -195,11 +226,11 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
         }
     }
 
-    public void Rumble(nint pad, ushort strength, uint durationMs)
+    public void Rumble(nint pad, ushort low, ushort high, uint durationMs)
     {
         lock (_lock)
         {
-            Rumbles.Add($"pad {_open[pad]}: {strength} for {durationMs} ms");
+            Rumbles.Add(low == high ? $"pad {_open[pad]}: {low} for {durationMs} ms" : $"pad {_open[pad]}: {low}/{high} for {durationMs} ms");
         }
     }
 

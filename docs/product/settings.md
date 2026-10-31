@@ -41,7 +41,7 @@ switch.
   page with "Steam Controller" focused; [B] there goes back to the launcher list.
 - "Controller-Wächter (Pan)" is a switch (`AppSettings.PanEnabled`, on by default; off: nothing is emulated or hidden,
   no mode, no warning rows, even with a part missing). Its subtitle and lamp say the state: "An – deine Controller
-  werden von Arcadia verwaltet" (green), "Wird eingerichtet …", "Bereit – kein Steam Controller verbunden" (grey),
+  werden von Arcadia verwaltet" (green), "Wird eingerichtet …", "Bereit – kein Controller verbunden" (grey),
   "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter." (yellow), "Angehalten – der Grund steht darunter"
   (red). Every part missing: the row offers "Treiber installieren" ("Wird installiert …", after a failure "Erneut
   versuchen" with the red X and the error in the info panel). While a game runs or starts the switch is greyed out:
@@ -56,6 +56,11 @@ switch.
   "Emulation startet nicht", "Emulation angehalten" with "Erneut versuchen"; "Windows-Neustart ausstehend", "HidHide:
   Neustart ausstehend" and "Pan räumt noch auf" carry the blue i. "Controller wiederherstellen" (Pan's `--restore`)
   stands below the problems, indented like them, while Pan is installed, also while the switch is off.
+- Every other controller (#238, designs T238F05–F07), only while the emulation runs: one warning per firmware tool that
+  runs, "Xbox Zubehör ist geöffnet" / "DualSense-Firmware-Updater ist geöffnet" (subtitle "Arcadia übernimmt den …,
+  sobald du … schließt", box "WARTET AUF ÜBERNAHME"), gone once the tool has ended; then, with the blue i, one row for
+  the connected controllers Pan couldn't hide: "<Name> lässt sich nicht verstecken" / "<n> Controller lassen sich nicht
+  verstecken", box "BETROFFEN" with each name and why. Not shown while Pan is off (the player chose that).
 - After "Nein" in the takeover question, or a release for a firmware update, the switch reads "An – Steam Controller
   und Puck ausgenommen, siehe unten" (no triangle) and the indented row "Steam Controller und Puck übernehmen" (blue i,
   "Übernehmen" held 3 s, a bold red warning in its info panel) takes them over again: the press is the consent, the

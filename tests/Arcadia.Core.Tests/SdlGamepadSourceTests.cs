@@ -383,6 +383,105 @@ public sealed class SdlGamepadSourceTests : IDisposable
         Assert.False(_source.AnyNow(_ => true));
     }
 
+    /// <summary>#238 D6: Guide/PS/Home has no function in Arcadia but is passed on to games, so the reading carries it.</summary>
+    [Fact]
+    public void A_reading_carries_its_device_and_the_Guide_button()
+    {
+        _source.Open();
+        var pad = _sdl.Plug(KnownPads.DualSense);
+        _sdl.Hold(pad, B.Guide);
+        Poll();
+
+        var reading = _polls[^1].Single();
+        Assert.True(reading.Guide);
+        Assert.Equal(KnownPads.DualSense, reading.Device);
+        Assert.Empty(_events);
+    }
+
+    /// <summary>#335 A3: Windows restarts a controller only once nobody holds it, Arcadia included.</summary>
+    [Fact]
+    public void Letting_go_of_every_controller_closes_them_and_SDL_and_pauses_the_polls_until_they_are_read_again()
+    {
+        _source.Open();
+        var dualSense = _sdl.Plug(KnownPads.DualSense);
+        _sdl.Plug(KnownPads.EightBitDoUltimate2);
+        Poll();
+        var polls = _polls.Count;
+
+        _source.ReadControllers(false);
+        Poll();
+        Poll();
+
+        Assert.True(_sdl.IsQuit);
+        Assert.Empty(_sdl.OpenPads);
+        Assert.Contains(dualSense, _sdl.Closed);
+        Assert.Equal(polls, _polls.Count);
+        Assert.False(_source.AnyNow(_ => true));
+
+        _source.ReadControllers(true);
+        Poll();
+
+        Assert.False(_sdl.IsQuit);
+        Assert.Equal(2, _sdl.Inits);
+        Assert.Equal([KnownPads.DualSense, KnownPads.EightBitDoUltimate2], _polls[^1].Select(reading => reading.Device).Order(Comparer<PadDevice>.Create((a, b) => a.Product.CompareTo(b.Product))));
+        Assert.DoesNotContain(_polls[^1], reading => reading.PadId == dualSense);
+    }
+
+    [Fact]
+    public void Reading_again_keeps_the_Steam_Controller_let_go_while_a_hide_of_the_puck_still_wants_it()
+    {
+        _source.Open();
+        _source.ReadSteamControllers(false);
+        _source.ReadControllers(false);
+        _source.ReadControllers(true);
+        _sdl.Calls.Clear();
+
+        Poll();
+
+        Assert.Equal(["Steam aus", "Update"], _sdl.Calls.Take(2));
+    }
+
+    [Fact]
+    public void Letting_go_before_SDL_runs_does_nothing_and_holding_a_pad_still_lets_SDL_start_later()
+    {
+        _source.ReadControllers(false);
+        _source.ReadControllers(true);
+
+        Assert.True(_source.Open());
+        Assert.Equal(1, _sdl.Inits);
+    }
+
+    /// <summary>#238 D5: a game's rumble on the emulated pad reaches the real one, with both motors, until it stops.</summary>
+    [Fact]
+    public void A_held_rumble_goes_to_the_pad_with_both_motors_is_renewed_before_it_ends_and_stops_on_zero()
+    {
+        _source.Open();
+        var pad = _sdl.Plug(KnownPads.DualSense);
+        Poll();
+
+        _source.HoldRumble((int)pad, 1000, 2000);
+        _source.HoldRumble(99, 1000, 2000);
+        Poll();
+        Assert.Equal([$"pad {pad}: 1000/2000 for 2000 ms"], _sdl.Rumbles);
+
+        for (var i = 0; i < 1000 / SdlGamepadSource.PollIntervalMs + 1; i++)
+        {
+            Poll();
+        }
+
+        Assert.Equal([$"pad {pad}: 1000/2000 for 2000 ms", $"pad {pad}: 1000/2000 for 2000 ms"], _sdl.Rumbles);
+
+        _source.HoldRumble((int)pad, 0, 0);
+        Poll();
+        for (var i = 0; i < 1000 / SdlGamepadSource.PollIntervalMs + 1; i++)
+        {
+            Poll();
+        }
+
+        Assert.Equal($"pad {pad}: 0 for 0 ms", _sdl.Rumbles[^1]);
+        Assert.Equal(3, _sdl.Rumbles.Count);
+    }
+
     public void Dispose() => _source.Dispose();
 
     private void Poll()

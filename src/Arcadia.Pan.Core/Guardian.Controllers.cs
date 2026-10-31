@@ -108,9 +108,13 @@ public sealed partial class Guardian
                     return PanMessage.Of(PanReply.Rejected, message.Generation, PanReason.HidingFailed);
                 }
 
-                var xinput = scan.Hideable.Count(instance => instance.Interface == ControllerInterface.XInput && !SteamControllerHiding.Contains(hiddenBefore, instance.InstanceId));
+                var newXInput = scan.Hideable
+                    .Where(instance => instance.Interface == ControllerInterface.XInput && !SteamControllerHiding.Contains(hiddenBefore, instance.InstanceId))
+                    .Select(instance => instance.InstanceId).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                var xinput = await ReconnectControllersAsync(controllers, newXInput);
                 var needsReplug = xinput > 0 || replug.Count > 0;
                 _log($"Controller {model} hidden for generation {message.Generation}: {instances.Count} instance(s)"
+                    + (newXInput.Count > xinput ? $"; {newXInput.Count - xinput} XInput device(s) reconnected" : string.Empty)
                     + (needsReplug ? $"; {xinput + replug.Count} device(s) are only fully taken over once reconnected" : string.Empty));
                 return PanMessage.Of(PanReply.ControllerHidden, message.Generation, needsReplug ? PanReason.ControllerNeedsReplug : PanReason.None);
             }
@@ -298,6 +302,32 @@ public sealed partial class Guardian
         }
 
         return (PanReason.None, scan with { Hideable = hideable });
+    }
+
+    /// <summary>
+    /// Inside the gate: reconnects newly hidden XInput interfaces (#238), so Steam and a running game, which opened a
+    /// freshly plugged pad before Pan hid it, lose the real one. Not journaled: a reconnect that doesn't happen leaves
+    /// the pad hidden from programs that open it later, as before. Returns how many still wait for the player's reconnect.
+    /// </summary>
+    private async Task<int> ReconnectControllersAsync(IControllerDevices controllers, IReadOnlyList<string> xinputInstances)
+    {
+        if (xinputInstances.Count == 0)
+        {
+            return 0;
+        }
+
+        using var timeout = new CancellationTokenSource(_deviceStepTimeout);
+        try
+        {
+            var left = await Task.Run(() => controllers.ReconnectAsync(xinputInstances, timeout.Token), CancellationToken.None).WaitAsync(_deviceStepTimeout);
+            return left.Count;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            await timeout.CancelAsync();
+            _log($"XInput devices not reconnected: {(ex is TimeoutException or OperationCanceledException ? $"no answer within {_deviceStepTimeout.TotalSeconds:0} s" : ex.Message)}");
+            return xinputInstances.Count;
+        }
     }
 
     /// <summary>

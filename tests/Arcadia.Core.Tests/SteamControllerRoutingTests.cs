@@ -198,6 +198,21 @@ public sealed class SteamControllerRoutingTests
         Assert.Equal(kept, SteamControllerCopyRules.CombosKeptFromSteam(mouseModeCanSwitch, desktopLayoutIgnored).BackAndStart);
     }
 
+    [Theory]
+    [InlineData(false, false, true, true)]
+    [InlineData(true, false, true, false)]
+    [InlineData(false, true, true, false)]
+    [InlineData(true, false, false, true)]
+    [InlineData(false, true, false, true)]
+    [Trait("TestCase", "T238-4")]
+    public void Another_controllers_pad_passes_in_front_of_Arcadia_and_in_the_mouse_mode_only_with_Steams_desktop_control(
+        bool arcadiaActive, bool mouseModeOn, bool desktopLayoutIgnored, bool passes)
+    {
+        var now = new ForegroundNow(arcadiaActive, mouseModeOn, SteamInFront: false);
+        Assert.Equal(passes, SteamControllerCopyRules.OtherControllerPasses(now, desktopLayoutIgnored));
+        Assert.Equal(arcadiaActive || mouseModeOn, SteamControllerCopyRules.OtherControllerOnlyForSteam(now));
+    }
+
     [Fact]
     [Trait("TestCase", "T315-4")]
     public void The_copys_gate_logs_each_change_of_its_answer_once_with_the_reason()

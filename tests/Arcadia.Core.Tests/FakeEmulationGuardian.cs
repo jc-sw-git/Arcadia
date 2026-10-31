@@ -48,6 +48,24 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
     public List<uint> Hidden = [];
     public List<uint> Unhidden = [];
 
+    /// <summary>What a hide of a controller model answers (#335); unset: hidden.</summary>
+    public Func<ControllerModel, ControllerHidingResult>? ControllerHide;
+
+    /// <summary>Every controller hide asked for, as "generation model".</summary>
+    public List<string> ControllerHides = [];
+
+    /// <summary>Runs while Pan hides a controller, e.g. to see what Arcadia holds meanwhile.</summary>
+    public Action? DuringControllerHide;
+
+    public Task<ControllerHidingResult> HideControllerAsync(uint generation, ControllerModel model, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_lock) ControllerHides.Add($"{generation} {model}");
+        Note($"hide {model}");
+        DuringControllerHide?.Invoke();
+        return Task.FromResult(ControllerHide?.Invoke(model) ?? new ControllerHidingResult(true, PanReason.None));
+    }
+
     /// <summary>Shared with the other fakes, so a test sees the order of everything (e.g. "copy detached" before "unhide 1").</summary>
     public List<string> Events = [];
 

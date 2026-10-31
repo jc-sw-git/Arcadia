@@ -8,7 +8,9 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
 - `SteamControllerXboxPad` (ControllerSupport) takes every SDL poll (`Feed`, poll thread), keeps only the Steam
   Controller (`GamepadReading.IsSteamController`) and hands the newest state to a sender task through a one-slot channel
   (drop oldest), so a slow VIIPER never holds up Arcadia's input. Only changes are sent; VIIPER keeps the last state.
-  Other controllers are never emulated.
+  Every other controller gets a pad of its own: [every-controller.md](every-controller.md) (#238).
+- A game's rumble on the pad (VIIPER's `Xbox360Output`, two motor bytes) goes back to the Steam Controller through SDL
+  (`IGamepadSource.HoldRumble`), and stops when the pad goes. The Steam button is never the pad's Guide: it is Steam's.
 - Back + Start never reaches the game (`ComboWithholding`, Input): ⧉ and ≡ are held back for the 100 ms in which the
   other may still join (`MouseMode.ComboWindow`). The rules are a product decision: `docs/product/controls.md`.
 - While Arcadia is in front or the mouse mode is on, the pad reports rest (`ForwardingAllowed`); the combo filter keeps
@@ -73,4 +75,4 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
 ## Not seen yet (owner's PC)
 
 - Everything with the real VIIPER: plug-in time, the delay figures, a game seeing exactly one Xbox controller, rumble
-  (not forwarded yet; VIIPER reports it as `Xbox360Output`).
+  reaching the Steam Controller.

@@ -13,6 +13,7 @@ public class SteamControllerXboxPadTests
     private readonly FakeTimeProvider _time = new();
     private readonly FakeVirtualXboxPads _pads = new();
     private readonly List<string> _log = [];
+    private readonly List<string> _rumbles = [];
     private bool _wanted = true;
     private bool _forwarding = true;
     private readonly SteamControllerXboxPad _pad;
@@ -24,6 +25,7 @@ public class SteamControllerXboxPadTests
             Wanted = () => _wanted,
             ForwardingAllowed = () => _forwarding,
             Combos = () => new ComboWithholdingOptions(BackAndStart: true),
+            Rumble = (padId, motors) => { lock (_rumbles) _rumbles.Add($"{padId}: {motors.Large}/{motors.Small}"); },
         };
     }
 
@@ -52,6 +54,33 @@ public class SteamControllerXboxPadTests
         await _pad.TickAsync();
         Assert.Equal(2, _pads.Unplugged);
         Assert.Contains("Xbox-Pad: abgesteckt", Log());
+    }
+
+    /// <summary>#238 D5: a game's rumble on Arcadia's pad reaches the Steam Controller, and stops when the pad goes.</summary>
+    [Fact]
+    public async Task A_games_rumble_reaches_the_Steam_Controller_and_stops_when_the_pad_goes()
+    {
+        _pad.Feed([XboxPad, SteamController]);
+        await _pad.TickAsync();
+
+        _pads.Current!.Rumble(200, 50);
+        _wanted = false;
+        await _pad.TickAsync();
+
+        Assert.Equal(["7: 200/50", "7: 0/0"], _rumbles);
+    }
+
+    /// <summary>The Steam button is Steam's (#212): it reaches Steam through the copy, never as the pad's Guide.</summary>
+    [Fact]
+    public async Task The_Steam_button_never_becomes_the_pads_Guide()
+    {
+        _pad.Feed([SteamController]);
+        await _pad.TickAsync();
+
+        _pad.Feed([SteamController with { Guide = true, Buttons = PadButtons.A }]);
+
+        var sent = await _pads.Current!.WaitForAsync(state => state.Buttons != 0);
+        Assert.Equal(0x1000, sent.Buttons);
     }
 
     [Fact]

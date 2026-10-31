@@ -20,10 +20,11 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     public static readonly TimeSpan HidingRequestTimeout = TimeSpan.FromSeconds(25);
 
     /// <summary>
-    /// A controller's hide or show may wait behind an arrival's device scan, then scan and restart itself: three device
-    /// steps of up to 10 s each in Pan (QE of #337), so more than <see cref="HidingRequestTimeout"/>.
+    /// A controller's hide or show may wait behind an arrival's device scan, then scan, restart and reconnect XInput
+    /// interfaces itself: four device steps of up to 10 s each in Pan (QE of #337, #238), so more than
+    /// <see cref="HidingRequestTimeout"/>.
     /// </summary>
-    public static readonly TimeSpan ControllerRequestTimeout = TimeSpan.FromSeconds(35);
+    public static readonly TimeSpan ControllerRequestTimeout = TimeSpan.FromSeconds(45);
 
     /// <summary>A request to Pan (write and reply) that takes longer than this means Pan hangs. Real time; tests widen it.</summary>
     public TimeSpan RequestTimeout { get; init; } = DefaultRequestTimeout;

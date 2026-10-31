@@ -18,5 +18,6 @@ Budget: added delay from the controller's report to the pad's report mean ≤ 1 
   where it ends; states read meanwhile wait in one slot (the newest wins), so a slow VIIPER never holds up the reads.
 - `arcadia.log`, every 10 minutes and at the end: per pad "Verzögerung Lesen → VIIPER" (read to VIIPER having taken
   it: n, mean, p50, p99, max, from 10 µs buckets), and "Abstand der Lesevorgänge" (the most a report waits for its
-  read) with Arcadia's CPU share over the same stretch. Added delay ≈ half the read gap + the forwarding delay; the
+  read) with Arcadia's CPU share over the same stretch; while SDL is let go for a hide the fast stretch ends, so that pause
+  isn't counted as a gap. Added delay ≈ half the read gap + the forwarding delay; the
   bus side (usbip-win2 to the game) is not measured.

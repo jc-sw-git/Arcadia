@@ -528,7 +528,8 @@ public sealed class SdlGamepadSource : IGamepadSource
         {
             while (!_stop.IsCancellationRequested)
             {
-                var pollDue = pacing.StartRead(clock.Elapsed, _fastWanted);
+                // While every controller is let go nothing is read or forwarded: such a pause is no gap between reads.
+                var pollDue = pacing.StartRead(clock.Elapsed, _fastWanted && !_letGo);
                 if (!Poll(clock.ElapsedMilliseconds, pollDue))
                 {
                     break;

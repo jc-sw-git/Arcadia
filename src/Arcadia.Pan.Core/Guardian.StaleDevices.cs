@@ -80,7 +80,7 @@ public sealed partial class Guardian
         await Task.Yield();
         try
         {
-            if (_hiding is not null && await FlashingAsync())
+            if (_hiding is not null && await FlashingAsync() != PanReason.None)
             {
                 // Steam flashes a controller (#295): no PnP work beside it.
                 _log($"Stale device entries not removed ({trigger}): a Valve bootloader is connected");

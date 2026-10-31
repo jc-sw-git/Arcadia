@@ -35,7 +35,7 @@ public static class Restore
     {
         try
         {
-            if (new PuckDevices().BootloaderPresent())
+            if (new PuckDevices().PresentBootloaders().Count > 0)
             {
                 log("Stale device entries not removed: a Valve bootloader is connected");
                 return;

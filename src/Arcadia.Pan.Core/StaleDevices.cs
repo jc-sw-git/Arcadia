@@ -135,6 +135,15 @@ public static class StaleDeviceCleanup
 
         var parentOf = known.ToDictionary(device => device.InstanceId, device => device.Parent, StringComparer.OrdinalIgnoreCase);
         int removed = 0, failed = 0, kept = 0;
+        // One line per model and error, not per entry: the same failure may repeat on many entries at every trigger.
+        var failures = new Dictionary<string, int>(StringComparer.Ordinal);
+        void Failed(string id, string error)
+        {
+            failed++;
+            var key = $"{StaleDeviceList.ModelOf(id)}: {error}";
+            failures[key] = failures.GetValueOrDefault(key) + 1;
+        }
+
         var stopped = false;
         foreach (var id in stale)
         {
@@ -164,15 +173,13 @@ public static class StaleDeviceCleanup
             }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
-                log($"Stale entry of {StaleDeviceList.ModelOf(id)} not removed: {ex.GetType().Name}");
-                failed++;
+                Failed(id, ex.GetType().Name);
                 continue;
             }
 
             if (result != 0)
             {
-                log($"Stale entry of {StaleDeviceList.ModelOf(id)} not removed: CONFIGRET 0x{result:X}");
-                failed++;
+                Failed(id, $"CONFIGRET 0x{result:X}");
                 continue;
             }
 
@@ -181,6 +188,11 @@ public static class StaleDeviceCleanup
             {
                 siblings.Remove(id);
             }
+        }
+
+        foreach (var (failure, count) in failures)
+        {
+            log($"Stale entries not removed: {count} × {failure}");
         }
 
         return new StaleCleanupResult(stale.Count, removed, failed, kept, stopped);

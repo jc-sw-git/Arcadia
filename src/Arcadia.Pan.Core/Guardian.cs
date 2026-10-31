@@ -344,11 +344,7 @@ public sealed partial class Guardian
             await teardown;
         }
 
-        if (staleCleanup is not null)
-        {
-            // Stops after the entry it is on (_stopping): a removal can't be cancelled.
-            await staleCleanup;
-        }
+        await StopStaleCleanupAsync(staleCleanup);
     }
 
     private PanMessage StartEmulation(int usbipPort)

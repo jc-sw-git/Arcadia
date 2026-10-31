@@ -28,6 +28,7 @@ public sealed class GuardianStaleDevicesAcceptanceTests : IDisposable
     {
         StaleDevices = _store,
         BootloaderGrace = TimeSpan.Zero,
+        StaleCleanupSettle = TimeSpan.FromMilliseconds(50),
         ShowRetryDelays = [TimeSpan.FromMilliseconds(20)],
     };
 
@@ -103,7 +104,7 @@ public sealed class GuardianStaleDevicesAcceptanceTests : IDisposable
 
         var log = Log();
         Assert.True(log.IndexOf("Teardown of generation", StringComparison.Ordinal) < log.IndexOf("Stale device entries (teardown, ClientGone)", StringComparison.Ordinal));
-        Assert.Contains("Stale entry of 045E:028E not removed: CONFIGRET 0x17", log);
+        Assert.Contains("Stale entries not removed: 1 × 045E:028E: CONFIGRET 0x17", log);
         foreach (var id in new[] { FakeStaleDevices.StaleCopy, FakeStaleDevices.StaleInterface, FakeStaleDevices.StaleCollection, FakeStaleDevices.StalePad })
         {
             Assert.DoesNotContain(id, log, StringComparison.OrdinalIgnoreCase);

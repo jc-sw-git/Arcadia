@@ -35,6 +35,7 @@ public sealed class GuardianStaleDevicesTests : IDisposable
     {
         StaleDevices = _store,
         BootloaderGrace = TimeSpan.Zero,
+        StaleCleanupSettle = TimeSpan.FromMilliseconds(50),
     };
 
     private string Log() { lock (_log) return string.Join("\n", _log); }
@@ -222,5 +223,72 @@ public sealed class GuardianStaleDevicesTests : IDisposable
 
         Assert.True(_guardian.StaleCleanup!.IsCompletedSuccessfully);
         Assert.Contains("Stale device entries not listed", Log());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T347-5")]
+    public async Task An_emulation_started_while_the_cleanup_waits_to_settle_starts_at_once_and_drops_it()
+    {
+        var guardian = new Guardian(_clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); })
+        {
+            StaleDevices = _store,
+            StaleCleanupSettle = TimeSpan.FromSeconds(1),
+        };
+        Assert.Equal(PanReason.None, guardian.Register(Arcadia));
+        guardian.HandleNow(PanMessage.Of(PanCommand.Hello));
+        var generation = guardian.HandleNow(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort)).Generation;
+        guardian.HandleNow(PanMessage.Of(PanCommand.EmulationStopped, generation));
+        var settling = guardian.StaleCleanup!;
+
+        var started = guardian.HandleNow(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort));
+        await settling.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Equal(PanReply.Started, started.Reply);
+        Assert.Equal(0, RemovedCount());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T347-7")]
+    public async Task A_stop_waits_only_so_long_for_a_removal_that_hangs_on_windows()
+    {
+        using var hang = new ManualResetEventSlim();
+        using var inRemoval = new ManualResetEventSlim();
+        _store.DuringRemove = _ =>
+        {
+            inRemoval.Set();
+            hang.Wait(TimeSpan.FromSeconds(30));
+        };
+        var guardian = new Guardian(_clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); })
+        {
+            StaleDevices = _store,
+            StaleCleanupStopWait = TimeSpan.FromMilliseconds(200),
+        };
+        guardian.CleanUpStaleDevices("Pan started");
+        Assert.True(inRemoval.Wait(TimeSpan.FromSeconds(10)));
+
+        await guardian.StopAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Contains("still waits on Windows", Log());
+        hang.Set();
+    }
+
+    [Fact]
+    [Trait("TestCase", "T347-7")]
+    public async Task A_stop_ends_a_cleanup_that_waits_to_settle_without_listing()
+    {
+        var guardian = new Guardian(_clock, _journal.File, _cleanup, line => { lock (_log) _log.Add(line); })
+        {
+            StaleDevices = _store,
+            StaleCleanupSettle = TimeSpan.FromMinutes(5),
+        };
+        Assert.Equal(PanReason.None, guardian.Register(Arcadia));
+        guardian.HandleNow(PanMessage.Of(PanCommand.Hello));
+        var generation = guardian.HandleNow(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanup.ServerPort)).Generation;
+        guardian.HandleNow(PanMessage.Of(PanCommand.EmulationStopped, generation));
+
+        await guardian.StopAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(guardian.StaleCleanup!.IsCompletedSuccessfully);
+        Assert.Equal(0, RemovedCount());
     }
 }

@@ -174,7 +174,7 @@ public sealed class StaleDevicesTests
     }
 
     [Fact]
-    [Trait("TestCase", "T347-3")]
+    [Trait("TestCase", "T347-4")]
     public void A_parent_whose_child_failed_stays_until_the_child_is_gone()
     {
         var store = FakeStaleDevices.Typical();
@@ -186,7 +186,7 @@ public sealed class StaleDevicesTests
         Assert.Contains(FakeStaleDevices.StaleInterface, store.Devices.Keys);
         Assert.Contains(FakeStaleDevices.StaleCopy, store.Devices.Keys);
         Assert.DoesNotContain(FakeStaleDevices.StaleInterface, store.Removed);
-        Assert.Contains("Stale entry of 28DE:1304 not removed: CONFIGRET 0x17", _log);
+        Assert.Contains("Stale entries not removed: 1 × 28DE:1304: CONFIGRET 0x17", _log);
         Assert.DoesNotContain(_log, line => line.Contains("4&613", StringComparison.Ordinal));
 
         store.Failing.Clear();

@@ -31,8 +31,8 @@ cfgmgr32:
   can't be read, or ends at a missing host (usbip-win2 uninstalled), keeps the entry.
 - Deepest first. An entry goes only when none of its children is still known: a child that failed would otherwise point
   to a missing parent and never be recognised again.
-- Each entry is checked for presence right before its removal. A failure is logged with model and CONFIGRET, never
-  the instance id (the copy's ids can carry the real puck's serial), and the entry is tried again next time.
+- Each entry is checked for presence right before its removal. Failures are logged once per model and CONFIGRET with
+  their count, never the instance id (the copy's ids can carry the real puck's serial), and tried again next time.
 
 ## When
 
@@ -41,7 +41,9 @@ the journal has nothing to undo (no usbip port, held process, hidden controller 
 stopping:
 
 - after a teardown that completed (`Hang`, `ClientGone`, a stop with the controller hidden), after `EmulationStopped`,
-  and after a show retry that worked;
+  and after a show retry that worked; 2 s later (`StaleCleanupSettle`): Windows unplugs the detached devices a moment
+  after usbip's detach returns, and an entry still present is skipped (seen after a hard end on the owner's PC). An
+  `EmulationStarted` while it waits starts at once and drops it;
 - once after Pan starts, after `RecoverAsync`, not awaited: the pipe takes Arcadia at once (its connect gives up after
   2 s);
 - at `--uninstall`, after the restore and before the drivers go (`UninstallOrder`), while usbip-win2's host still tells
@@ -49,7 +51,7 @@ stopping:
 
 Not while a Valve bootloader is connected (`FlashingAsync`, #295), never on service stop or pre-shutdown. A cleanup
 stops only between two entries, because a removal can't be cancelled: on stop (`StopAsync` waits for the entry it is
-on), when its budget (`StaleCleanupBudget`, 5 s) is spent, or when an `EmulationStarted` comes. That start is answered
+on, at most `StaleCleanupStopWait`, 10 s, as a PnP call may hang), when its budget (`StaleCleanupBudget`, 5 s) is spent, or when an `EmulationStarted` comes. That start is answered
 `Rejected(SteamControllerBeingShown)` until the cleanup returned; the client says "Pan räumt noch auf", waits
 `PanClient.BeingShownWait` and counts no pad loss. What is left goes next time. Silent: one line in `pan.log`
 ("Stale device entries (trigger): n found, n removed, n failed, n kept").

@@ -27,19 +27,26 @@ public class UninstallOrderTests
                 : null,
             () => _steps.Add("stop file log"),
             () => _steps.Add("delete data"),
-            _ => { });
+            _ => { },
+            () =>
+            {
+                _steps.Add("stale devices");
+                return Task.CompletedTask;
+            });
 
     [Fact]
     [Trait("TestCase", "T243-37")]
+    [Trait("TestCase", "T347-6")]
     public async Task The_drivers_go_after_the_undo_and_the_file_log_stops_before_the_data_folder_goes()
     {
         Assert.Equal(UninstallOutcome.Done, await Run(DataFolder.Ours));
 
-        Assert.Equal(["restore", "drivers", "stop file log", "delete data"], _steps);
+        Assert.Equal(["restore", "stale devices", "drivers", "stop file log", "delete data"], _steps);
     }
 
     [Fact]
     [Trait("TestCase", "T243-37")]
+    [Trait("TestCase", "T347-6")]
     public async Task An_incomplete_undo_keeps_the_drivers_so_HidHide_still_hides_a_puck_that_may_be_forwarded()
     {
         Assert.Equal(UninstallOutcome.RestoreIncomplete, await Run(DataFolder.Ours, restored: false));
@@ -53,7 +60,7 @@ public class UninstallOrderTests
     {
         Assert.Equal(UninstallOutcome.DriversLeft, await Run(DataFolder.Ours, driversRemoved: false));
 
-        Assert.Equal(["restore", "drivers"], _steps);
+        Assert.Equal(["restore", "stale devices", "drivers"], _steps);
     }
 
     [Fact]
@@ -71,7 +78,7 @@ public class UninstallOrderTests
     {
         Assert.Equal(UninstallOutcome.Done, await Run(DataFolder.Missing));
 
-        Assert.Equal(["drivers"], _steps);
+        Assert.Equal(["stale devices", "drivers"], _steps);
     }
 
     [Fact]
@@ -79,13 +86,13 @@ public class UninstallOrderTests
     {
         Assert.Equal(UninstallOutcome.Done, await Run(DataFolder.Ours, driversRemoved: null));
 
-        Assert.Equal(["restore", "stop file log", "delete data"], _steps);
+        Assert.Equal(["restore", "stale devices", "stop file log", "delete data"], _steps);
     }
 
     [Fact]
     public void Arcadia_waits_for_a_command_at_least_as_long_as_Pan_s_steps_may_take()
     {
         Assert.True(PanTimeouts.Install >= PanTimeouts.UsbipInstaller + HidHideSetup.Wait + PanTimeouts.PuckRestart + PanTimeouts.ServiceSteps);
-        Assert.True(PanTimeouts.Uninstall >= PanTimeouts.ServiceSteps + 2 * PanTimeouts.DriverUninstaller);
+        Assert.True(PanTimeouts.Uninstall >= PanTimeouts.ServiceSteps + PanTimeouts.StaleDevices + 2 * PanTimeouts.DriverUninstaller);
     }
 }

@@ -24,9 +24,12 @@ public static class PanTimeouts
     /// </summary>
     public static readonly TimeSpan ServiceSteps = TimeSpan.FromMinutes(3);
 
+    /// <summary>The last removal of stale device entries at <c>--uninstall</c> (#347): it stops between two entries after this.</summary>
+    public static readonly TimeSpan StaleDevices = TimeSpan.FromSeconds(30);
+
     public static TimeSpan Install => UsbipInstaller + HidHideInstaller + PuckRestart + ServiceSteps;
 
-    public static TimeSpan Uninstall => ServiceSteps + DriverUninstaller + DriverUninstaller;
+    public static TimeSpan Uninstall => ServiceSteps + StaleDevices + DriverUninstaller + DriverUninstaller;
 
     public static TimeSpan Restore => ServiceSteps;
 }

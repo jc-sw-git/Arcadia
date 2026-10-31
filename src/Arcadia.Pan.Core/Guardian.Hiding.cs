@@ -938,6 +938,11 @@ public sealed partial class Guardian
                     }
 
                     _log($"Hidden controllers shown on retry {attempt + 1}");
+                    lock (_lock)
+                    {
+                        ScheduleStaleCleanup("controllers shown on retry");
+                    }
+
                     return;
                 }
 

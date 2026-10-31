@@ -26,4 +26,27 @@ public static class Restore
         log(complete ? "Restore complete" : $"Restore incomplete; see the lines above. What is left stays in {journal.Path} for the next run");
         return complete;
     }
+
+    /// <summary>
+    /// The last removal of the stale device entries at <c>--uninstall</c> (#347): after the restore, while usbip-win2's
+    /// host is still there to recognise them by. Not while a bootloader is connected (#295). Never throws.
+    /// </summary>
+    public static Task RemoveStaleDevicesAsync(Action<string> log) => Task.Run(() =>
+    {
+        try
+        {
+            if (new PuckDevices().BootloaderPresent())
+            {
+                log("Stale device entries not removed: a Valve bootloader is connected");
+                return;
+            }
+
+            var result = StaleDeviceCleanup.Run(new WindowsStaleDevices(), () => true, PanTimeouts.StaleDevices, log);
+            log($"Stale device entries (uninstall): {result.Found} found, {result.Removed} removed, {result.Failed} failed, {result.Kept} kept");
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            log($"Removing stale device entries failed: {ex.Message}");
+        }
+    });
 }

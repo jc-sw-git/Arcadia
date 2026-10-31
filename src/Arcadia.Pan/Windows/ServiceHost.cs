@@ -115,11 +115,15 @@ public static class ServiceHost
         {
             // The vendors' firmware tools: no controller of theirs is hidden while one runs (#238 D8).
             ProcessRuns = ProcessRuns,
+            // The stale entries Arcadia's emulated devices leave in Windows (#347).
+            StaleDevices = new WindowsStaleDevices(),
         };
         _guardian = guardian;
         guardian.UnplannedEnd += end => log.Write($"Unplanned end: {end.Reason}, generation {end.Generation}, client {end.ClientPid}, emulating {end.WasEmulating} (crash report: #244)");
         log.Write($"Pan {typeof(ServiceHost).Assembly.GetName().Version} starting (protocol {PanMessage.ProtocolVersion})");
         await guardian.RecoverAsync();
+        // Not awaited: the pipe takes Arcadia at once, only a new emulation waits for it (#347). Never faults; the stop awaits it.
+        guardian.CleanUpStaleDevices("Pan started");
         Report(Native.ServiceRunning);
         // A puck or taken-over controller plugged in while Pan hides is hidden too (part B, #335); without the watch, at the next hide.
         using var arrivals = DeviceArrivalWatch.Start(guardian.DevicesArrivedAsync, guardian.ControllerArrivedAsync, log.Write);

@@ -41,26 +41,39 @@ public static class HidingList
     /// a PCI or ACPI host), so a puck on another host is hidden but not copied, and the copy doesn't start.
     /// </summary>
     /// <param name="parentOf">The parent's instance id, or null when it can't be read.</param>
-    public static bool OnSoftwareHost(string instanceId, Func<string, string?> parentOf)
+    public static bool OnSoftwareHost(string instanceId, Func<string, string?> parentOf) =>
+        HostOf(instanceId, parentOf) is { } host && IsSoftwareHost(host);
+
+    /// <summary>
+    /// The host a device hangs below: the first parent past its USB and HID levels (a PCI or ACPI controller, or a
+    /// software host <c>ROOT\…</c>/<c>SWD\…</c>). Null when a parent can't be read or the tree is deeper than
+    /// <see cref="MaxLevels"/>. Also for an entry that isn't plugged in, when <paramref name="parentOf"/> gives the parent
+    /// Windows remembers for it (#347).
+    /// </summary>
+    /// <param name="parentOf">The parent's instance id, or null when it can't be read.</param>
+    public static string? HostOf(string instanceId, Func<string, string?> parentOf)
     {
         var current = instanceId;
         for (var level = 0; level < MaxLevels; level++)
         {
             if (parentOf(current) is not { Length: > 0 } parent)
             {
-                return false;
+                return null;
             }
 
             if (!parent.StartsWith(@"USB\", StringComparison.OrdinalIgnoreCase) && !parent.StartsWith(@"HID\", StringComparison.OrdinalIgnoreCase))
             {
-                return parent.StartsWith(@"ROOT\", StringComparison.OrdinalIgnoreCase) || parent.StartsWith(@"SWD\", StringComparison.OrdinalIgnoreCase);
+                return parent;
             }
 
             current = parent;
         }
 
-        return false;
+        return null;
     }
+
+    public static bool IsSoftwareHost(string instanceId) =>
+        instanceId.StartsWith(@"ROOT\", StringComparison.OrdinalIgnoreCase) || instanceId.StartsWith(@"SWD\", StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>A HidHide call failed; <see cref="Reason"/> is what Arcadia is told.</summary>

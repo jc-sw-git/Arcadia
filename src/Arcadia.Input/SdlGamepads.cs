@@ -157,6 +157,9 @@ public sealed partial class SdlGamepads : ISdlGamepads
     // A pad without motors reports an error; nothing to do about it.
     public void Rumble(nint pad, ushort low, ushort high, uint durationMs) => _ = SDL_RumbleGamepad(pad, low, high, durationMs);
 
+    // A pad without a light bar reports an error; nothing to do about it.
+    public void SetLight(nint pad, byte red, byte green, byte blue) => _ = SDL_SetGamepadLED(pad, red, green, blue);
+
     public void Close(nint pad) => SDL_CloseGamepad(pad);
 
     public void Quit() => SDL_Quit();
@@ -219,6 +222,10 @@ public sealed partial class SdlGamepads : ISdlGamepads
     [LibraryImport(Lib)]
     [return: MarshalAs(UnmanagedType.U1)]
     private static partial bool SDL_RumbleGamepad(nint gamepad, ushort low, ushort high, uint durationMs);
+
+    [LibraryImport(Lib)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    private static partial bool SDL_SetGamepadLED(nint gamepad, byte red, byte green, byte blue);
 
     [LibraryImport(Lib)]
     private static partial int SDL_GetNumGamepadTouchpads(nint gamepad);

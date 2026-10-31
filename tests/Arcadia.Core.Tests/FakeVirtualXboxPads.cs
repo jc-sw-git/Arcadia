@@ -3,7 +3,10 @@ using Arcadia.Input;
 
 namespace Arcadia.Tests.Pads;
 
-/// <summary>Virtual Xbox pads that record what they get (#213); shared by the unit and the acceptance tests.</summary>
+/// <summary>
+/// Virtual pads that record what they get (#213), Xbox 360 and the other kinds of #238; shared by the unit and the
+/// acceptance tests. A pad of any kind records its states also as an Xbox 360 pad would get them (<see cref="FakePad.Sent"/>).
+/// </summary>
 public sealed class FakeVirtualXboxPads : IVirtualXboxPadServer
 {
     public int Plugged;
@@ -67,7 +70,11 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPadServer
         return Task.FromResult(ServerPort.Value);
     }
 
-    public Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken)
+    public Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken) => Task.FromResult<IVirtualXboxPad>(Plug(PadKind.Xbox360));
+
+    public Task<IVirtualPad> PlugAsync(PadKind kind, CancellationToken cancellationToken) => Task.FromResult<IVirtualPad>(Plug(kind));
+
+    private FakePad Plug(PadKind kind)
     {
         if (FailPlug)
         {
@@ -77,9 +84,9 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPadServer
 
         Plugged++;
         Note("pad plugged");
-        Current = new FakePad(this);
+        Current = new FakePad(this, kind);
         lock (All) All.Add(Current);
-        return Task.FromResult<IVirtualXboxPad>(Current);
+        return Current;
     }
 
     public Task ShutdownAsync()
@@ -88,9 +95,12 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPadServer
         return Task.CompletedTask;
     }
 
-    public sealed class FakePad(FakeVirtualXboxPads owner) : IVirtualXboxPad
+    public sealed class FakePad(FakeVirtualXboxPads owner, PadKind kind) : IVirtualXboxPad, IVirtualPad
     {
         private readonly List<XboxPadState> _sent = [];
+        private readonly List<VirtualPadState> _states = [];
+
+        public PadKind Kind => kind;
         private volatile bool _lost;
 
         private volatile bool _takenAway;
@@ -105,8 +115,26 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPadServer
 
         public event Action<XboxRumble>? Rumbled;
 
+        public event Action<PadFeedback>? Fed;
+
         /// <summary>A game sets the pad's motors.</summary>
-        public void Rumble(byte large, byte small) => Rumbled?.Invoke(new XboxRumble(large, small));
+        public void Rumble(byte large, byte small)
+        {
+            Rumbled?.Invoke(new XboxRumble(large, small));
+            Fed?.Invoke(new PadFeedback(new XboxRumble(large, small), null));
+        }
+
+        /// <summary>A game sets the pad's light bar.</summary>
+        public void Light(byte red, byte green, byte blue) => Fed?.Invoke(new PadFeedback(null, new PadLight(red, green, blue)));
+
+        /// <summary>Every state the pad got as a pad of its kind, in order.</summary>
+        public IReadOnlyList<VirtualPadState> States
+        {
+            get
+            {
+                lock (_sent) return [.. _states];
+            }
+        }
 
         /// <summary>Pan tore the emulation down (or is gone): the pad is lost, but on purpose.</summary>
         public void TakeAway()
@@ -132,6 +160,22 @@ public sealed class FakeVirtualXboxPads : IVirtualXboxPadServer
             }
 
             lock (_sent) _sent.Add(state);
+            return Task.CompletedTask;
+        }
+
+        public Task SendAsync(VirtualPadState state, CancellationToken cancellationToken)
+        {
+            if (owner.StallSends)
+            {
+                return StallAsync(cancellationToken);
+            }
+
+            lock (_sent)
+            {
+                _states.Add(state);
+                _sent.Add(XboxPadState.From(state));
+            }
+
             return Task.CompletedTask;
         }
 

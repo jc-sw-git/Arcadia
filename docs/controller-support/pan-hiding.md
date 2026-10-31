@@ -65,7 +65,8 @@ restart: [pan-puck-restart.md](pan-puck-restart.md).
   exit while hidden, Pan's start after a crash or power loss (`RecoverAsync`), `--restore`, uninstall. The undo goes
   through the driver whatever its version reads as; only with HidHide's service and control device gone (uninstalled
   with its lists) the journal drops the entries.
-- Firmware hold: Pan keeps the puck hidden through a crash mid firmware attempt ([pan-firmware-hold.md](pan-firmware-hold.md)).
+- No hide and no puck restart while a Valve bootloader is connected (a firmware update is being flashed):
+  [steam-controller-firmware.md](steam-controller-firmware.md).
 - Last resort for the user if Pan can't undo (also in `docs/releases.md`): HidHide's Configuration Client (Start menu,
   admin) unticks the puck, removes Arcadia from the application list and turns hiding off; uninstalling HidHide
   empties its lists. Pan's later undo removes only what is still there.

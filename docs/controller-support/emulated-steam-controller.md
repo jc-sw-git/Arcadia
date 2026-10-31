@@ -69,10 +69,9 @@ Check script and logs: project files `checks/249/`. The puck stayed plugged in.
   controller list with the usual name and icon, gyro and trackpads in the input test, haptics and a game's own layout.
   Same traffic as on the puck (`GET_ATTRIBUTES_VALUES`, `SET_SETTINGS_VALUES`, digital mappings, `SET_AUDIO_MAPPING`);
   unknown `0xDC`, `0xE2`, `0xED` blocked, Steam worked anyway.
-- **Steam offers the copy a firmware update** (not installed, so the update's messages are unknown). Steam logs the
-  copy with the real controller's `FWTimestamp`.
-  So an update by cable goes the puck's way: the copy drops it, `FirmwareAttemptWatch` offers "Controller freigeben"
-  and Steam updates the real controller ([steam-controller-copy.md](steam-controller-copy.md)). Implementation: #345.
+- **Steam offers the copy a firmware update** (it logs the copy with the real controller's `FWTimestamp`). It starts
+  with feature `0x90`, which the copy drops; the real controller flashes only after "Controller freigeben", in its
+  bootloader `28DE:1005` (#295, [steam-controller-firmware.md](steam-controller-firmware.md)).
 - Latency of the hop, ~3 min of play: p50 ~75 µs, p95 ~150 µs, p99 ~230 µs.
 - With both `1302` and `1304` hidden, unplugging the cable moved the controller to the puck and Steam saw none.
   A controller connected to the puck stays on it when the cable is plugged in (it charges); it becomes `1302` only

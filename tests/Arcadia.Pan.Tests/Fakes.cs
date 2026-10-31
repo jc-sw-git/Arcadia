@@ -298,13 +298,20 @@ public sealed class FakeDevices : ISteamControllerDevices, IDisposable
         lock (Calls) Calls.Add("Restart");
     }
 
-    /// <summary>A Valve bootloader is connected: Steam's updater flashes a device (#295).</summary>
+    /// <summary>The puck's bootloader <c>1007</c> is connected: Steam's updater flashes it, or the puck restarts (#295).</summary>
     public bool Bootloader;
+
+    /// <summary>The controller's bootloader by cable <c>1005</c> is connected: Steam's updater flashes it.</summary>
+    public bool CableBootloader;
+
+    public const string PuckBootloader = @"USB\VID_28DE&PID_1007\8&1A2B3C4D";
+    public const string ControllerBootloader = @"USB\VID_28DE&PID_1005\8&5E6F7A8B";
 
     /// <summary>Listing the USB devices fails, as Windows' PnP calls may.</summary>
     public bool BootloaderFails;
 
-    public bool BootloaderPresent() => BootloaderFails ? throw new InvalidOperationException("PnP list failed") : Bootloader;
+    public IReadOnlyList<string> PresentBootloaders() => BootloaderFails ? throw new InvalidOperationException("PnP list failed")
+        : [.. Bootloader ? [PuckBootloader] : Array.Empty<string>(), .. CableBootloader ? [ControllerBootloader] : Array.Empty<string>()];
 
     /// <summary>A restart that took long finishes now (and every later one at once).</summary>
     public void EndRestartHang() => _restartHangEnds.TrySetResult();

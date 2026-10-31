@@ -26,6 +26,23 @@ public enum PadButtons : ushort
     Y = 0x8000,
 }
 
+/// <summary>
+/// Buttons Arcadia gives no function, passed on to games where the emulated kind has them (#238 D6). By SDL's
+/// position: Misc1 is Capture / Share / the DualSense's mute button, Misc2 the Switch 2 Pro's C button, paddle 1 the
+/// back paddles (DualSense Edge L4/R4, Switch 2 Pro GL/GR), paddle 2 the Edge's Fn buttons.
+/// </summary>
+[Flags]
+public enum ExtraButtons : byte
+{
+    None = 0,
+    Misc1 = 0x01,
+    Misc2 = 0x02,
+    LeftPaddle1 = 0x04,
+    RightPaddle1 = 0x08,
+    LeftPaddle2 = 0x10,
+    RightPaddle2 = 0x20,
+}
+
 /// <summary>How far each trigger is pulled, from 0 (let go) to 1 (fully).</summary>
 public readonly record struct TriggerPosition(double Left, double Right);
 
@@ -67,6 +84,9 @@ public readonly record struct GamepadReading(int PadId, PadButtons Buttons, Stic
 
     /// <summary>Guide / PS / Home / Steam: no function in Arcadia, passed on to games (#238 D6).</summary>
     public bool Guide { get; init; }
+
+    /// <summary>Capture, mute, C and the paddles: no function in Arcadia, passed on to games (#238 D6).</summary>
+    public ExtraButtons Extra { get; init; }
 
     /// <summary>A Steam Controller, read raw (#212); "connected" for the per-game mode follows it.</summary>
     public bool IsSteamController => Type == PadType.Steam;

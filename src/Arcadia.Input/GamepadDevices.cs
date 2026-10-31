@@ -88,6 +88,12 @@ public interface IEmulatedPads
     /// host, with the puck's ids and serial number. Arcadia reads the real puck, so the copy must not count a second time.
     /// </summary>
     bool IsCopy(PadDevice device) => false;
+
+    /// <summary>
+    /// The pad sits on a software USB host (VIIPER over usbip-win2) and is read through HID: Arcadia's own DualShock 4,
+    /// DualSense or Switch 2 Pro pad for a game (#238), which carries the real controller's ids.
+    /// </summary>
+    bool IsVirtualHidPad(PadDevice device) => false;
 }
 
 /// <summary>Where nothing emulates pads (no Windows, the tests by default).</summary>
@@ -105,6 +111,9 @@ public sealed class NoEmulatedPads : IEmulatedPads
 /// </summary>
 public static class GamepadDevices
 {
+    private const ushort SonyVendor = 0x054C;
+    private const ushort NintendoVendor = 0x057E;
+
     /// <param name="emulated">Asked for pads SDL reads through XInput, as an emulated Xbox pad is one, and for Steam Controllers.</param>
     /// <returns>Null to read the device; otherwise why not, for <c>arcadia.log</c>.</returns>
     public static string? WhyIgnored(PadDevice device, IEmulatedPads emulated)
@@ -124,6 +133,11 @@ public static class GamepadDevices
         if (device.Vendor == PadDevice.ValveVendor)
         {
             return "Gerät von Valve, kein Steam Controller";
+        }
+
+        if (device.Vendor is SonyVendor or NintendoVendor && emulated.IsVirtualHidPad(device))
+        {
+            return "virtueller Controller, z. B. Arcadias für ein Spiel";
         }
 
         if (device.XInputSlot is not null && emulated.IsEmulated(device))

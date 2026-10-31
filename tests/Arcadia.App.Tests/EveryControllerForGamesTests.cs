@@ -65,6 +65,30 @@ public sealed class EveryControllerForGamesTests
         Assert.Equal(["1 054C:0CE6", "1 2DC8:310B"], arcadia.Pan.ControllerHides);
         Assert.Equal(2, arcadia.XboxPads.Plugged);
         Assert.Equal(2, arcadia.ForGames.Others.Plugged);
+
+        // Part 2 (D3): the DualSense as a DualSense, the 8BitDo in XInput mode as an Xbox 360 pad.
+        Assert.Equal([PadKind.DualSense, PadKind.Xbox360], arcadia.XboxPads.All.Select(pad => pad.Kind));
+    }
+
+    /// <summary>#238 part 2 (D6, A5): touchpad, gyro and mute pass to the DualSense pad; its light bar comes back.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T238-5")]
+    public async Task A_DualSense_pad_gets_touchpad_and_motion_and_its_light_bar_reaches_the_real_controller()
+    {
+        using var arcadia = await StartInBackgroundAsync(pads: DualSense);
+        var dualSense = arcadia.Sdl.IdOf(DualSense);
+        var pad = arcadia.XboxPads.Current!;
+        arcadia.PollControllers();
+
+        Assert.Contains(dualSense, arcadia.Sdl.MotionOn);
+
+        arcadia.Sdl.Hold(dualSense, B.Misc1, B.Touchpad);
+        arcadia.PollControllers();
+        await pad.WaitForAsync(_ => pad.States is [.., { Extra: ExtraButtons.Misc1, Touchpad.Clicked: true, Motion.IsOn: true }]);
+
+        pad.Light(0, 0, 255);
+        arcadia.PollControllers();
+        Assert.Contains($"pad {dualSense}: 0,0,255", arcadia.Sdl.Lights);
     }
 
     [AvaloniaFact]

@@ -1,4 +1,5 @@
 using Arcadia.ControllerSupport.Copy;
+using Arcadia.Input;
 using Arcadia.Pan;
 
 namespace Arcadia.ControllerSupport.Pan;
@@ -283,10 +284,25 @@ public sealed class PanEmulation : IVirtualXboxPads
     {
         var session = _session ?? throw new InvalidOperationException("Pan-Emulation läuft nicht");
         var pad = await _pads.PlugAsync(cancellationToken);
-        var guarded = new GuardedPad(pad, session, _guardian);
+        var guarded = new GuardedXboxPad(pad, session, _guardian);
         if (!session.Add(guarded))
         {
             // The emulation ended while the pad was plugged in.
+            await pad.DisposeAsync();
+            throw new InvalidOperationException("Pan-Emulation wurde beendet");
+        }
+
+        return guarded;
+    }
+
+    /// <summary>A pad of the kind (#238 D3), taken out with the emulation like the Xbox pad.</summary>
+    public async Task<IVirtualPad> PlugAsync(PadKind kind, CancellationToken cancellationToken)
+    {
+        var session = _session ?? throw new InvalidOperationException("Pan-Emulation läuft nicht");
+        var pad = await _pads.PlugAsync(kind, cancellationToken);
+        var guarded = new GuardedKindPad(pad, session, _guardian);
+        if (!session.Add(guarded))
+        {
             await pad.DisposeAsync();
             throw new InvalidOperationException("Pan-Emulation wurde beendet");
         }
@@ -834,7 +850,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>One generation: what Arcadia plugged in within it. Its pads are taken out together when it ends.</summary>
     private sealed class Session(uint generation, int usbipPort)
     {
-        private readonly List<GuardedPad> _pads = [];
+        private readonly List<GuardedDevice> _pads = [];
 
         public uint Generation { get; } = generation;
 
@@ -853,7 +869,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         /// <summary>A pad that failed to go: it may still be there, so only Pan's teardown may show the puck.</summary>
         public bool LeftBehind { get; set; }
 
-        public bool Add(GuardedPad pad)
+        public bool Add(GuardedDevice pad)
         {
             lock (_pads)
             {
@@ -867,12 +883,12 @@ public sealed class PanEmulation : IVirtualXboxPads
             }
         }
 
-        public void Remove(GuardedPad pad)
+        public void Remove(GuardedDevice pad)
         {
             lock (_pads) _pads.Remove(pad);
         }
 
-        public List<GuardedPad> End()
+        public List<GuardedDevice> End()
         {
             lock (_pads)
             {
@@ -884,29 +900,56 @@ public sealed class PanEmulation : IVirtualXboxPads
         }
     }
 
-    /// <summary>
-    /// Arcadia's Xbox pad within an emulation: gone when the emulation ends or Pan tore it down (no VIIPER failure then),
-    /// and unplugged only once, whoever is first.
-    /// </summary>
-    private sealed class GuardedPad(IVirtualXboxPad pad, Session session, IEmulationGuardian guardian) : IVirtualXboxPad
+    /// <summary>Arcadia's Xbox pad (the Steam Controller's) within an emulation, see <see cref="GuardedDevice"/>.</summary>
+    private sealed class GuardedXboxPad(IVirtualXboxPad pad, Session session, IEmulationGuardian guardian)
+        : GuardedDevice(pad, session, guardian), IVirtualXboxPad
     {
-        private readonly Lock _lock = new();
-        private int _disposed;
-        private Task? _removal;
+        public bool IsConnected => IsCurrent && pad.IsConnected;
 
-        public bool IsConnected => !session.Ended && pad.IsConnected && guardian.IsCurrent(session.Generation);
-
-        public bool TakenAway => session.Ended || !guardian.IsCurrent(session.Generation);
-
-        public event Action<Arcadia.Input.XboxRumble>? Rumbled
+        public event Action<XboxRumble>? Rumbled
         {
             add => pad.Rumbled += value;
             remove => pad.Rumbled -= value;
         }
 
         /// <summary>A pad the emulation took out takes nothing more (its VIIPER device is gone).</summary>
-        public Task SendAsync(Arcadia.Input.XboxPadState state, CancellationToken cancellationToken) =>
-            Volatile.Read(ref _disposed) == 1 ? Task.CompletedTask : pad.SendAsync(state, cancellationToken);
+        public Task SendAsync(XboxPadState state, CancellationToken cancellationToken) =>
+            Disposed ? Task.CompletedTask : pad.SendAsync(state, cancellationToken);
+    }
+
+    /// <summary>The pad of another controller (#238) within an emulation, see <see cref="GuardedDevice"/>.</summary>
+    private sealed class GuardedKindPad(IVirtualPad pad, Session session, IEmulationGuardian guardian)
+        : GuardedDevice(pad, session, guardian), IVirtualPad
+    {
+        public PadKind Kind => pad.Kind;
+
+        public bool IsConnected => IsCurrent && pad.IsConnected;
+
+        public event Action<PadFeedback>? Fed
+        {
+            add => pad.Fed += value;
+            remove => pad.Fed -= value;
+        }
+
+        public Task SendAsync(VirtualPadState state, CancellationToken cancellationToken) =>
+            Disposed ? Task.CompletedTask : pad.SendAsync(state, cancellationToken);
+    }
+
+    /// <summary>
+    /// A pad within an emulation: gone when the emulation ends or Pan tore it down (no VIIPER failure then), and
+    /// unplugged only once, whoever is first.
+    /// </summary>
+    private abstract class GuardedDevice(IAsyncDisposable pad, Session session, IEmulationGuardian guardian) : IAsyncDisposable
+    {
+        private readonly Lock _lock = new();
+        private int _disposed;
+        private Task? _removal;
+
+        protected bool IsCurrent => !session.Ended && guardian.IsCurrent(session.Generation);
+
+        protected bool Disposed => Volatile.Read(ref _disposed) == 1;
+
+        public bool TakenAway => session.Ended || !guardian.IsCurrent(session.Generation);
 
         /// <summary>
         /// Unplugged once; a second caller (the emulation's end) awaits the same removal, so the puck is never shown while

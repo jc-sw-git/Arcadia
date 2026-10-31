@@ -711,7 +711,7 @@ public sealed class PanClientTests : IAsyncDisposable
 
         public Task RestartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public bool BootloaderPresent() => false;
+        public IReadOnlyList<string> PresentBootloaders() => [];
     }
 
     /// <summary>A puck whose restarts go into the test's list of events; one can be held until the test lets it finish.</summary>
@@ -721,7 +721,7 @@ public sealed class PanClientTests : IAsyncDisposable
 
         public IReadOnlyList<string> PresentHidInstances() => [@"HID\VID_28DE&PID_1304&MI_02&COL03\8&1A2B3C4D&0&0002"];
 
-        public bool BootloaderPresent() => false;
+        public IReadOnlyList<string> PresentBootloaders() => [];
 
         public async Task RestartAsync(CancellationToken cancellationToken)
         {

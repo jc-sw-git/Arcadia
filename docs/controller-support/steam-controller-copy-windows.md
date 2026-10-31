@@ -71,12 +71,9 @@ Installer's reinstall, `HidHideRelease.RepairArguments`, not yet run on a real P
 installer restarts the puck, which then is Steam's and may be mid-update. The settings ask "Steam beenden?" (or name a
 running Steam game); `InstallWithSteamClosedAsync` closes Steam, installs, starts it again also after a failure.
 "Neu installieren" is offered only over the very driver it installs (`HidHideRelease.IsPinnedDriver`) and refused
-while Pan hides the puck or a firmware attempt runs (`ControllerSupportService.PanHoldsPuck`). No flash risk either
-way: a flash runs only on the bootloader `1007`.
+while Pan hides the puck (`ControllerSupportService.PanHoldsPuck`). No flash risk either way: a flash runs only on a
+bootloader (`1005`, `1007`).
 
 ## Open (owner's PC)
 
-- Steam's real update path for the Triton and the routine drops: spike #295. Until then the consent modal, the
-  firmware dialog and Pan's hold stay as a precaution.
-- Whether Steam's in-game overlay offers a firmware update (then the short-gap rule skips the question).
 - The real puck's COM port (interface 0) stays Steam's while Pan hides: accepted ([pan-risks.md](pan-risks.md)).

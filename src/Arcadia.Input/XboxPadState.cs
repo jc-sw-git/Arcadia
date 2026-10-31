@@ -25,6 +25,16 @@ public readonly record struct XboxPadState(ushort Buttons, byte LeftTrigger, byt
         Axis(reading.RightStick.X),
         Axis(reading.RightStick.Y));
 
+    /// <summary>A controller emulated as an Xbox 360 pad (#238): Guide passes on (D6), what the pad lacks doesn't.</summary>
+    public static XboxPadState From(VirtualPadState state) => new(
+        (ushort)(((ushort)state.Buttons & XInputButtons) | (state.Guide ? GuideBit : 0)),
+        TriggerByte(state.Triggers.Left),
+        TriggerByte(state.Triggers.Right),
+        Axis(state.LeftStick.X),
+        Axis(state.LeftStick.Y),
+        Axis(state.RightStick.X),
+        Axis(state.RightStick.Y));
+
     /// <summary>A game's rumble on the pad as SDL takes it: each motor from 0–255 to 0–65535.</summary>
     public static (ushort Low, ushort High) RumbleStrengths(XboxRumble rumble) => ((ushort)(rumble.Large * 257), (ushort)(rumble.Small * 257));
 

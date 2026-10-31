@@ -29,17 +29,17 @@ this, is never started any more; Arcadia only removes it on request ([sisr-remov
 | The Steam Controller as an Xbox pad for games: VIIPER, combos, plugging in and out, per-game mode | [xbox-pad.md](xbox-pad.md) |
 | Steam's desktop layout and the mouse mode, what "Arcadia in front" means | [desktop-layout.md](desktop-layout.md) |
 | The puck and the Triton by cable as USB devices, what Steam sends them, what HidHide does (spikes #239, #249) | [emulated-steam-controller.md](emulated-steam-controller.md) |
-| Steam gets a copy of the Steam Controller: lifecycle, consent, who gets input, the allow list | [steam-controller-copy.md](steam-controller-copy.md) |
+| Steam gets a copy of the Steam Controller: lifecycle, who gets input, the allow list | [steam-controller-copy.md](steam-controller-copy.md) |
 | The copy on Windows: VIIPER fork `hidproxy`, the raw puck, the bridge | [steam-controller-copy-windows.md](steam-controller-copy-windows.md) |
 | Pan, the guardian service: identity, generations, heartbeat, teardown, journal | [pan.md](pan.md) |
 | Pan hides the real puck with HidHide and shows it again | [pan-hiding.md](pan-hiding.md) |
 | Pan hides every other controller Arcadia takes over, per model | [pan-hiding-controllers.md](pan-hiding-controllers.md) |
-| Every other controller as an Xbox pad for games: hide, plug, let go of SDL, D7/D8 lists | [every-controller.md](every-controller.md) |
+| Every other controller as an emulated pad for games: hide, plug, let go of SDL, kinds and their packets, D7/D8 lists | [every-controller.md](every-controller.md) |
 | Pan removes the stale device entries Arcadia's emulated devices leave in Windows | [pan-stale-devices.md](pan-stale-devices.md) |
 | Pan's puck restart: who may hold the puck, the copy is never restarted | [pan-puck-restart.md](pan-puck-restart.md) |
 | Pan: setup with one UAC prompt, uninstall, `--restore`, the data folder, exit codes | [pan-setup.md](pan-setup.md) |
 | Pan: the update at start, announced and declinable | [pan-update.md](pan-update.md) |
-| Pan: firmware hold after a crash mid update | [pan-firmware-hold.md](pan-firmware-hold.md) |
+| Steam Controller firmware updates: Steam's update path (spike #295), the notice, Pan's bootloader check | [steam-controller-firmware.md](steam-controller-firmware.md) |
 | Pan: known limits and accepted risks | [pan-risks.md](pan-risks.md) |
 | What an older Arcadia left of SISR, "SISR entfernen" / "SISR behalten" | [sisr-removal.md](sisr-removal.md) |
 | Answering the UAC prompt by controller through a VIIPER keyboard (spike #118, story #247) | [uac.md](uac.md) |

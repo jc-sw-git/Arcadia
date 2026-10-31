@@ -778,6 +778,7 @@ public sealed class HidingTests : IDisposable
     {
         var generation = await HiddenAsync();
         var restarts = _devices.Restarts;
+        _clock.Advance(_guardian.OwnRestartWindow);
         _devices.Bootloader = true;
 
         Assert.Equal(PanReply.Stopped, (await Send(PanCommand.EmulationStopped, generation)).Reply);
@@ -790,13 +791,42 @@ public sealed class HidingTests : IDisposable
     }
 
     [Fact]
-    public async Task A_bootloader_list_that_cannot_be_read_counts_as_flashing()
+    [Trait("TestCase", "T295-1")]
+    public async Task The_bootloader_the_puck_passes_through_after_Pans_own_restart_is_no_flash()
+    {
+        var generation = await HiddenAsync();
+        _devices.Bootloader = true;
+
+        // The hide's restart sent the puck through 1007 for a moment: the show right after still restarts it.
+        Assert.Equal(PanReply.Shown, (await Send(PanCommand.Unhide, generation)).Reply);
+        Assert.Equal(2, _devices.Restarts);
+
+        // Long after Pan's last restart, the same bootloader is a flash.
+        _clock.Advance(_guardian.OwnRestartWindow);
+        Assert.Equal(PanReason.BootloaderPresent, (await Send(PanCommand.Hide, generation)).Reason);
+    }
+
+    [Fact]
+    public async Task A_bootloader_list_that_cannot_be_read_touches_nothing_and_fails_the_hide()
     {
         var generation = await EmulatingAsync();
         _devices.BootloaderFails = true;
 
-        Assert.Equal(PanReason.BootloaderPresent, (await Send(PanCommand.Hide, generation)).Reason);
+        Assert.Equal(PanReason.HidingFailed, (await Send(PanCommand.Hide, generation)).Reason);
         Assert.Equal(0, _devices.Restarts);
+        Assert.Empty(_hidHide.Hidden);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T295-1")]
+    public async Task The_controllers_bootloader_by_cable_is_a_flash_also_right_after_Pans_own_restart()
+    {
+        var generation = await HiddenAsync();
+        _devices.CableBootloader = true;
+
+        Assert.Equal(PanReason.HidingFailed, (await Send(PanCommand.Unhide, generation)).Reason);
+        Assert.Equal(1, _devices.Restarts);
+        Assert.True(Journal.PuckRestartPending);
     }
 
     /// <summary>#308: Windows refuses the restart of a puck Arcadia's SDL holds; Pan's own restarts ask it to let go first.</summary>

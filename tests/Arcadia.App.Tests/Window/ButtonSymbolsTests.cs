@@ -3,6 +3,7 @@ using Arcadia.App.Input;
 using Arcadia.Input;
 using Arcadia.Tests.Sdl;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.VisualTree;
@@ -205,6 +206,32 @@ public sealed class ButtonSymbolsTests
 
     // The footer's hints of A: their symbol, as drawn.
     private static IEnumerable<string?> ConfirmHints(ArcadiaWindow arcadia) => ConfirmGlyphs(arcadia).Select(ArcadiaWindow.Printed);
+
+    /// <summary>T315-1: a text about the Steam Controller alone shows its printing, whichever controller is in use.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T315-1")]
+    public void A_text_with_fixed_symbols_shows_them_whichever_controller_is_in_use()
+    {
+        var fixedFirst = new TextBlock();
+        ButtonTextBlock.SetSymbols(fixedFirst, ButtonSymbols.SteamController);
+        ButtonTextBlock.SetText(fixedFirst, "⧉ + ≡ und [LB]");
+        var fixedLast = new TextBlock();
+        ButtonTextBlock.SetText(fixedLast, "⧉ + ≡ und [LB]");
+        ButtonTextBlock.SetSymbols(fixedLast, ButtonSymbols.SteamController);
+        var following = new TextBlock();
+        ButtonTextBlock.SetText(following, "[LB]");
+
+        foreach (var block in new[] { fixedFirst, fixedLast })
+        {
+            var glyphs = block.Inlines!.OfType<InlineUIContainer>().Select(c => c.Child).OfType<PadGlyph>().ToList();
+            Assert.Equal(3, glyphs.Count);
+            Assert.All(glyphs, glyph => Assert.Equal(ButtonSymbols.SteamController, glyph.Symbols));
+            Assert.Equal("L1", glyphs[^1].Shown?.Text);
+        }
+
+        var free = Assert.IsType<PadGlyph>(Assert.IsType<InlineUIContainer>(Assert.Single(following.Inlines!)).Child);
+        Assert.Null(free.Symbols);
+    }
 
     private static IEnumerable<PadGlyph> ConfirmGlyphs(ArcadiaWindow arcadia) => arcadia.Window.GetVisualDescendants().OfType<KeyHint>()
         .Where(hint => hint.IsEffectivelyVisible && hint.Pad == "A" && arcadia.Bounds(hint).Top > arcadia.Bounds(arcadia.Window.Content as Control ?? arcadia.Window).Bottom - 80)

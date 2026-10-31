@@ -17,6 +17,9 @@ public sealed class PadGlyph : Border
 {
     public static readonly StyledProperty<string?> ButtonProperty = AvaloniaProperty.Register<PadGlyph, string?>(nameof(Button));
 
+    /// <summary>A fixed printing, for a text about one controller only (#315); null follows the controller in use.</summary>
+    public static readonly StyledProperty<ButtonSymbols?> SymbolsProperty = AvaloniaProperty.Register<PadGlyph, ButtonSymbols?>(nameof(Symbols));
+
     private ButtonSymbol? _shown;
 
     public PadGlyph()
@@ -28,6 +31,12 @@ public sealed class PadGlyph : Border
     {
         get => GetValue(ButtonProperty);
         set => SetValue(ButtonProperty, value);
+    }
+
+    public ButtonSymbols? Symbols
+    {
+        get => GetValue(SymbolsProperty);
+        set => SetValue(SymbolsProperty, value);
     }
 
     /// <summary>What the badge shows now, e.g. for a test: the text, or the icon's name.</summary>
@@ -52,7 +61,7 @@ public sealed class PadGlyph : Border
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == ButtonProperty)
+        if (change.Property == ButtonProperty || change.Property == SymbolsProperty)
         {
             Update();
         }
@@ -62,7 +71,7 @@ public sealed class PadGlyph : Border
 
     private void Update()
     {
-        var symbol = ButtonSymbolSets.Symbol(Button ?? string.Empty, InputHints.Symbols);
+        var symbol = ButtonSymbolSets.Symbol(Button ?? string.Empty, Symbols ?? InputHints.Symbols);
         if (symbol == _shown)
         {
             return;

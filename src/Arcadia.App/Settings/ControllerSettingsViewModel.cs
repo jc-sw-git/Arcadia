@@ -40,11 +40,6 @@ public enum SettingsPrompt
 /// </summary>
 public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewModel
 {
-    /// <summary>Everything Steam does to the controllers, in one group (owner, 2026-10-24).</summary>
-    private const string SteamGroup = "STEAM";
-
-    private const string SteamDesktopLayoutKey = "steam-desktop-layout";
-
     private static readonly TimeSpan PromptCheckInterval = TimeSpan.FromSeconds(1);
 
     private readonly ControllerSupportService _support;
@@ -55,7 +50,16 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private readonly SisrRows _sisrRows;
     private readonly MouseModeRows _mouseMode;
     private readonly ReturnWithViewRows _returnWithView;
-    private readonly SwitchRowViewModel _steamDesktopLayout;
+    /// <summary>Steam's controller settings are on its launcher page (#178, #315); the last group leads there.</summary>
+    public const string SteamLauncherKey = "steam-launcher-settings";
+
+    private const string SteamGroup = "STEAM";
+
+    private readonly Func<bool> _steamInstalled;
+    private readonly ActionRowViewModel _steamLauncherRow;
+
+    // The row above SISR's group, as of the last Refresh: the focus goes there when the group goes.
+    private string? _rowAboveSisr;
 
     private readonly PromptButtonViewModel _retryInstall;
     private readonly PromptButtonViewModel _closeGamePrompt;
@@ -79,8 +83,9 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <param name="gameInTheWay">The title of a game that runs or starts: the switch "Controller-Wächter (Pan)" waits for its end.</param>
     /// <param name="notify">Shows a toast, e.g. "SISR ist vollständig entfernt."</param>
     /// <param name="time">Times the held row "Steam Controller und Puck übernehmen"; tests pass a fake.</param>
+    /// <param name="steam">Steam is installed, and opening its launcher page: the group "Steam" at the end leads there.</param>
     public ControllerSettingsViewModel(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay,
-        Action<string> notify, TimeProvider? time = null)
+        Action<string> notify, TimeProvider? time = null, (Func<bool> IsInstalled, Action OpenPage)? steam = null)
         : base("Controller", "M7 7h10a5 5 0 0 1 4.6 6.9l-1.3 3.2a2.3 2.3 0 0 1-3.9.6L14.6 16H9.4l-1.8 1.7a2.3 2.3 0 0 1-3.9-.6l-1.3-3.2A5 5 0 0 1 7 7z M8 10v3 M6.5 11.5h3 M16 10.5v.01 M17.5 12.5v.01")
     {
         _support = support;
@@ -97,22 +102,17 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _sisrRows = new SisrRows(support, RemoveSisr, KeepSisr);
         _mouseMode = new MouseModeRows(changes);
         _returnWithView = new ReturnWithViewRows(changes);
-        _steamDesktopLayout = new SwitchRowViewModel(
-            SteamDesktopLayoutKey,
-            "Steams Desktop-Belegung ignorieren",
-            () => changes.Current.IgnoreSteamDesktopLayout,
-            value => changes.Apply(s => s with { IgnoreSteamDesktopLayout = value }, "Steams Desktop-Belegung ignorieren"))
+        _steamInstalled = steam?.IsInstalled ?? (() => false);
+        _steamLauncherRow = new ActionRowViewModel(SteamLauncherKey, "Controller-Einstellungen für Steam", steam?.OpenPage ?? (() => { }))
         {
             Group = SteamGroup,
-            Subtitle = "Alle Controller: Maus und Tasten, die Steam simuliert, kommen nicht an",
+            Subtitle = "Weitere Controller-Einstellungen für Steam.",
+            ActionText = "Steam-Einstellungen",
             Info =
             [
-                new InfoText("Läuft Steam, macht es außerhalb von Spielen aus manchen Controller-Eingaben selbst Tasten („Desktop-Belegung“): Hältst du ⧉ + ≡, löst Steam mit jedem Controller ein Alt+Tab aus."),
-                new InfoText("Ist die Option an, verwirft Arcadia solche Tasten und Mausbewegungen von Steam, solange ein Controller benutzt wird. Echte Maus und Tastatur wirken weiter. Neben einem Spiel aus der Bibliothek verwirft Arcadia nur Tasten, und nur solange ⧉ + ≡ gehalten werden, damit das Spiel Steams Belegung behält."),
-                new InfoText("Empfohlen, wenn du den Mausmodus benutzt: ⧉ + ≡ schaltet ihn um, und ohne diese Option wechselt Steam dabei zugleich mit Alt+Tab das Fenster."),
+                new InfoText("Arcadia hat erkannt, dass du Steam installiert hast. In den Launcher-Einstellungen für Steam findest du noch weitere Einstellungsmöglichkeiten für Controller in Zusammenhang mit Steam. Unter anderem zum Steam Controller und ob die Steam Desktop-Steuerung wieder zugelassen werden soll."),
             ],
         };
-
         _retryInstall = new PromptButtonViewModel(ContinueSteamStop);
         _closeGamePrompt = new PromptButtonViewModel(ClosePrompt);
         _confirmSteamStop = new PromptButtonViewModel(ConfirmSteamStop);
@@ -286,7 +286,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _changes.Apply(settings => settings with { KeepSisr = true }, "SISR behalten");
         AppLog.Write("SISR behalten: Bereich ausgeblendet");
         Refresh();
-        FocusRow(SteamDesktopLayoutKey);
+        FocusRowAboveSisr();
     }
 
     private void OnSisrRemoved(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
@@ -298,8 +298,16 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
         _notify("SISR ist vollständig entfernt.");
         Refresh();
-        FocusRow(SteamDesktopLayoutKey);
+        FocusRowAboveSisr();
     });
+
+    private void FocusRowAboveSisr()
+    {
+        if (_rowAboveSisr is { } key)
+        {
+            FocusRow(key);
+        }
+    }
 
     /// <summary>Whether the action the prompts are open for closes Steam right now.</summary>
     private bool StopsSteam => _forSisr ? _support.SisrRemovalStopsSteam : _steamStopFix is { } fix && _support.StopsSteamFor(fix);
@@ -441,6 +449,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private void Refresh()
     {
         var rows = _panRows.Build();
+        _rowAboveSisr = rows.LastOrDefault()?.Key;
         Marker = _panRows.Marker;
         if (IsSteamPrompt && IsBusy)
         {
@@ -458,10 +467,10 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         SetRows(
         [
             .. rows,
-            _steamDesktopLayout,
             .. _sisrRows.Build(),
             .. _mouseMode.Rows,
             .. _returnWithView.Rows,
+            .. _steamInstalled() ? [_steamLauncherRow] : Array.Empty<SettingsRowViewModel>(),
         ]);
 
         FocusPromptButton();

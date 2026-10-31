@@ -115,8 +115,10 @@ public sealed record LauncherNeighbour(string Name, LauncherBadge Badge);
 /// mode exist, so otherwise the row is greyed out and keeps its value, yet still takes the focus to say why.
 /// </summary>
 public sealed class LauncherControllerModeRowViewModel(Func<bool> usesArcadiaPad, Action<bool> set, Func<bool> isPanOn)
-    : ChoiceRowViewModel("launcher-controller-mode", "Steam Controller", () => usesArcadiaPad() ? 0 : 1, value => set(value == 0), value => ControllerModes.Of(value == 0), 0, 1)
+    : ChoiceRowViewModel(RowKey, "Steam Controller", () => usesArcadiaPad() ? 0 : 1, value => set(value == 0), value => ControllerModes.Of(value == 0), 0, 1)
 {
+    public const string RowKey = "launcher-controller-mode";
+
     public override bool CanChange => isPanOn();
 
     public override bool CanActivate => isPanOn();

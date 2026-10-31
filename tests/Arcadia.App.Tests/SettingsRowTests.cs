@@ -36,7 +36,7 @@ public sealed class SettingsRowTests
         Assert.Equal(new Footer(Change: true, Activate: null), Footer.Of(arcadia.FocusRow("mouse-mode")));
 
         // A switch: ◀▶ and "A Umschalten".
-        Assert.Equal(new Footer(Change: true, Activate: "Umschalten"), Footer.Of(arcadia.FocusRow("steam-desktop-layout")));
+        Assert.Equal(new Footer(Change: true, Activate: "Umschalten"), Footer.Of(arcadia.FocusRow("mouse-mode-end-in-front")));
 
         // A row that only shows something: neither.
         arcadia.Press(UiAction.NextTab);
@@ -88,16 +88,16 @@ public sealed class SettingsRowTests
         Assert.Equal(1, arcadia.Settings.Current.MouseMode.PointerSpeed);
 
         // A switch ("An" / "Aus") with either arrow.
-        var layout = Assert.IsAssignableFrom<SwitchRowViewModel>(arcadia.FocusRow("steam-desktop-layout"));
-        var on = layout.IsOn;
+        var endInFront = Assert.IsAssignableFrom<SwitchRowViewModel>(arcadia.FocusRow("mouse-mode-end-in-front"));
+        var on = endInFront.IsOn;
         arcadia.Press(UiAction.Right);
-        Assert.Equal(!on, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
+        Assert.Equal(!on, endInFront.IsOn);
         arcadia.Press(UiAction.Right);
-        Assert.Equal(on, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
+        Assert.Equal(on, endInFront.IsOn);
         arcadia.Press(UiAction.Left);
-        Assert.Equal(!on, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
+        Assert.Equal(!on, endInFront.IsOn);
         arcadia.Press(UiAction.Left);
-        Assert.Equal(on, arcadia.Settings.Current.IgnoreSteamDesktopLayout);
+        Assert.Equal(on, endInFront.IsOn);
     }
 
     /// <summary>What the footer shows for a row: "◀▶ Ändern", and A with its text, or neither.</summary>

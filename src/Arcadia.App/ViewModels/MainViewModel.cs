@@ -844,13 +844,23 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private void ShowSettings(Type? first, string? launcherId = null)
     {
         var changes = new SettingsChanges(_settings);
+        var launchers = new LauncherSettingsViewModel(this, changes, _time, launcherId);
+        var steam = KnownLaunchers.Steam.Id;
         SettingsCategoryViewModel[] categories =
         [
-            new LauncherSettingsViewModel(this, changes, _time, launcherId),
-            new ControllerSettingsViewModel(_controllerSupport, changes, _pan, GameInTheWay, message => Toast.Show(message), _time),
+            launchers,
+            new ControllerSettingsViewModel(_controllerSupport, changes, _pan, GameInTheWay, message => Toast.Show(message), _time,
+                (new Func<bool>(() => Session.Launchers.IsFound(steam)), OpenSteamControllerSettings)),
             new AboutSettingsViewModel(_updates, _updates.InstallAsync),
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
+
+        // "Steam-Einstellungen" in the controller settings: straight to Steam's page with "Steam Controller" focused (#315).
+        void OpenSteamControllerSettings()
+        {
+            Settings?.Open(launchers);
+            launchers.ShowPage(steam, LauncherControllerModeRowViewModel.RowKey);
+        }
     }
 
     [RelayCommand]

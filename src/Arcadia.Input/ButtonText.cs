@@ -39,9 +39,9 @@ public static partial class ButtonText
     /// <summary>A, B, X and Y are round on the controller; the other buttons are drawn as a pill.</summary>
     public static bool IsRound(string button) => button is "A" or "B" or "X" or "Y";
 
-    [GeneratedRegex(@"[⧉≡]|\[(?<name>LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y|D-Pad)\]")]
+    [GeneratedRegex(@"[⧉≡]|\[(?<name>LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y|D-Pad|Guide)\]")]
     private static partial Regex Symbols();
 
-    [GeneratedRegex(@"[⧉≡]|\[(?<name>LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y|D-Pad)\]|\bD-Pad\b|\b(?:LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y)\b")]
+    [GeneratedRegex(@"[⧉≡]|\[(?<name>LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y|D-Pad|Guide)\]|\bD-Pad\b|\b(?:LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y)\b")]
     private static partial Regex SymbolsOrNames();
 }

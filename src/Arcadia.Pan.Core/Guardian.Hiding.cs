@@ -416,10 +416,11 @@ public sealed partial class Guardian
 
             var before = (Hidden: _journal.HiddenDevices.ToList(), Controllers: _journal.HiddenControllers.ToList(), Restarts: _journal.ControllerRestarts.ToList(),
                 Allowed: _journal.AllowListed.ToList(), _journal.CloakingWasOn, _journal.PuckRestartPending);
+            var restartOnlyBefore = _restartOnly;
             if (controllerRestarts is null)
             {
                 _journal.HiddenDevices.AddRange(toHide);
-                _journal.PuckRestartPending |= toHide.Count > 0 || turnOn;
+                NarrowPendingRestart(toHide, allLevels: turnOn || allow is not null);
             }
             else
             {
@@ -436,6 +437,7 @@ public sealed partial class Guardian
             if (!TrySaveJournal())
             {
                 (_journal.HiddenDevices, _journal.HiddenControllers, _journal.ControllerRestarts, _journal.AllowListed, _journal.CloakingWasOn, _journal.PuckRestartPending) = before;
+                _restartOnly = restartOnlyBefore;
                 return PanReason.HidingFailed;
             }
         }
@@ -515,7 +517,12 @@ public sealed partial class Guardian
             lock (_lock)
             {
                 // A teardown with only controllers hidden leaves the puck alone; Steam never lost it.
-                _journal.PuckRestartPending |= scope.Puck && (puck.Count > 0 || journal.HiddenControllers.Count == 0);
+                if (scope.Puck && (puck.Count > 0 || journal.HiddenControllers.Count == 0))
+                {
+                    _journal.PuckRestartPending = true;
+                    _restartOnly = null;
+                }
+
                 _journal.ControllerRestarts.AddRange(controllers.Where(id => ControllerList.IsHid(id) && !SteamControllerHiding.Contains(_journal.ControllerRestarts, id)));
                 SaveJournal();
             }
@@ -598,8 +605,53 @@ public sealed partial class Guardian
             _journal.HiddenControllers = [];
             _journal.AllowListed = [];
             _journal.CloakingWasOn = null;
-            _journal.PuckRestartPending |= restart;
+            if (restart)
+            {
+                _journal.PuckRestartPending = true;
+                _restartOnly = null;
+            }
+
             SaveJournal();
+        }
+    }
+
+    /// <summary>
+    /// Under the lock: the kinds of Steam Controller device the pending restart is for, or null for every listed one (also
+    /// after Pan's start: the journal keeps only that a restart is pending). Narrowed when only new instances of one kind
+    /// were hidden, e.g. the cable plugged in while the puck's copy runs (#345): the copy's own handles on the puck would
+    /// veto the puck's restart, the restart would stay pending, and every restart of the cable announcing it again would
+    /// try once more.
+    /// </summary>
+    private HashSet<ListedDevice>? _restartOnly;
+
+    /// <summary>
+    /// Under the lock: a restart is pending for the devices of <paramref name="added"/>, or for every listed device when
+    /// <paramref name="allLevels"/> (cloaking or the allow list changed, which concerns every device) or a restart for
+    /// all was pending already.
+    /// </summary>
+    private void NarrowPendingRestart(IReadOnlyList<string> added, bool allLevels)
+    {
+        if (allLevels)
+        {
+            _journal.PuckRestartPending = true;
+            _restartOnly = null;
+            return;
+        }
+
+        if (added.Count == 0)
+        {
+            return;
+        }
+
+        var kinds = added.Select(HidingList.DeviceOf).OfType<ListedDevice>();
+        if (!_journal.PuckRestartPending)
+        {
+            _journal.PuckRestartPending = true;
+            _restartOnly = [.. kinds];
+        }
+        else
+        {
+            _restartOnly?.UnionWith(kinds);
         }
     }
 
@@ -701,16 +753,22 @@ public sealed partial class Guardian
             return false;
         }
 
+        IReadOnlyCollection<ListedDevice>? only;
         lock (_lock)
         {
-            _ownRestartMs = _clock.UnbiasedMilliseconds;
+            only = _restartOnly?.ToList();
+            if (only is null || only.Contains(HidingList.Puck))
+            {
+                // Only the puck passes its bootloader on a restart; the cable doesn't (spike #249).
+                _ownRestartMs = _clock.UnbiasedMilliseconds;
+            }
         }
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(_deviceStepTimeout);
         try
         {
-            await Task.Run(() => _hiding!.Devices.RestartAsync(timeout.Token), CancellationToken.None).WaitAsync(_deviceStepTimeout, cancellationToken);
+            await Task.Run(() => _hiding!.Devices.RestartAsync(only, timeout.Token), CancellationToken.None).WaitAsync(_deviceStepTimeout, cancellationToken);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -725,6 +783,7 @@ public sealed partial class Guardian
         lock (_lock)
         {
             _journal.PuckRestartPending = false;
+            _restartOnly = null;
             SaveJournal();
         }
 

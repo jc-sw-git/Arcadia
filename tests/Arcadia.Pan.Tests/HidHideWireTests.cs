@@ -65,7 +65,11 @@ public sealed class HidHideWireTests
     [InlineData(@"HID\VID_28DE&PID_13040&MI_02\8&1A2B&0&0000", false)]
     [InlineData(@"USB\VID_28DE&PID_1304\ABCDEF123", false)]
     [InlineData(@"HID\VID_054C&PID_0CE6&MI_03\7&2B7F&0&0000", false)]
-    public void Only_the_pucks_HID_instances_are_listed(string instanceId, bool listed)
+    [InlineData(@"HID\VID_28DE&PID_1302&COL01\8&3C4D&0&0000", true)]
+    [InlineData(@"HID\VID_28DE&PID_1302&COL03\8&3C4D&0&0002", true)]
+    [InlineData(@"HID\VID_28DE&PID_1005\8&3C4D&0&0000", false)]
+    [InlineData(@"USB\VID_28DE&PID_1302\ABCDEF123", false)]
+    public void Only_the_HID_instances_of_puck_and_cable_are_listed(string instanceId, bool listed)
     {
         Assert.Equal(listed, HidingList.IsListedHid(instanceId));
     }
@@ -74,9 +78,29 @@ public sealed class HidHideWireTests
     [InlineData(@"USB\VID_28DE&PID_1304\ABCDEF1234567", true)]
     [InlineData(@"USB\VID_28DE&PID_1304&MI_02\7&1&0&2", false)]
     [InlineData(@"USB\VID_28DE&PID_1205\ABC", false)]
-    public void Only_the_puck_itself_is_restarted(string instanceId, bool listed)
+    [InlineData(@"USB\VID_28DE&PID_1302\ABCDEF1234567", true)]
+    [InlineData(@"USB\VID_28DE&PID_1005\ABCDEF1234567", false)]
+    public void Only_the_puck_and_the_cable_device_themselves_are_restarted(string instanceId, bool listed)
     {
         Assert.Equal(listed, HidingList.IsListedUsbParent(instanceId));
+    }
+
+    [Theory]
+    [InlineData(@"\\?\HID#VID_28DE&PID_1302&Col03#8&3c4d&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}", true)]
+    [InlineData(@"\\?\HID#VID_28DE&PID_1304&MI_02&Col03#8&1a2b&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}", true)]
+    [InlineData(@"\\?\HID#VID_28DE&PID_1005#8&3c4d&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}", false)]
+    [InlineData(@"\\?\HID#VID_054C&PID_0CE6&MI_03#7&2b7f&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}", false)]
+    public void Arrivals_of_puck_and_cable_are_picked_out_by_their_link(string link, bool listed)
+    {
+        Assert.Equal(listed, HidingList.IsListedInterface(link));
+    }
+
+    [Fact]
+    public void Each_HID_instance_belongs_to_its_device()
+    {
+        Assert.Same(HidingList.Cable, HidingList.DeviceOf(@"HID\VID_28DE&PID_1302&COL02\8&3C4D&0&0001"));
+        Assert.Same(HidingList.Puck, HidingList.DeviceOf(@"HID\VID_28DE&PID_1304&MI_03&COL03\8&1A2B&0&0002"));
+        Assert.Null(HidingList.DeviceOf(@"HID\VID_054C&PID_0CE6&MI_03\7&2B7F&0&0000"));
     }
 
     // After the device tree of the owner's PC (2026-10-29): the real puck on Intel's xHCI, Arcadia's copy on VIIPER's

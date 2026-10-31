@@ -155,7 +155,6 @@ Every step of a session resends its whole context, so keep it small:
   an issue, drop the number. Prefixes: `feat` (new or changed feature behaviour), `fix` (bug fix), `ci` (CI only),
   `test` (tests only), `doc` (docs only, agent skills included), `td` (any other product code change, i.e. tech
   debt). Rename generated names such as `claude/project-thread-…` before the first push.
-- **Never** end commit messages with a `Co-Authored-By` trailer.
 - Commit messages: imperative subject, body explains why.
 - After each merge to `main`, check that your open PR is still mergeable and resolve conflicts before the owner
   finds them.

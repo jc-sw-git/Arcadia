@@ -145,13 +145,7 @@ public partial class MainWindow : Window
         InfoScroller.SizeChanged += (_, _) => UpdateInfoFades();
 
         // Coming back from a launcher: games may have been installed or uninstalled there.
-        Activated += async (_, _) =>
-        {
-            if (_viewModel is not null)
-            {
-                await _viewModel.Session.RefreshLibraryAsync();
-            }
-        };
+        Activated += (_, _) => _viewModel?.Session.RefreshLibraryAsync().Forget("Bibliothek aktualisieren");
     }
 
     private void UpdateSortDivider()

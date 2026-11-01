@@ -53,7 +53,10 @@ Its own setting: View held alone (1–9 s, default 1; no "at once", since a tap 
 as `IgnoreSteamDesktopLayout`) applies to every controller alike, with Pan on or off. Off: simulated mouse and keys
 from other programs are dropped while a controller is in use (beside a library game without the mouse mode only while
 ⧉ + ≡ are held, and then only keys), and with Pan Steam's copy of the Steam Controller rests in front of Arcadia and in
-the mouse mode. On: nothing is filtered; with
+the mouse mode. Arcadia can't tell Steam's simulated input from other programs', so "Off" drops every simulated
+input of another process while a controller is in use (held, or let go less than 150 ms ago, 1 s after a trackpad):
+on-screen keyboards, voice control and remote tools too. That is intended; whoever needs them beside a held
+controller switches the setting on. On: nothing is filtered; with
 Pan the copy passes to Steam in front of Arcadia, in the mouse mode and on the desktop, ⧉ + ≡ included, so Steam's
 desktop layout and action set switch work as with other controllers, and input can be doubled (action set "Desktop":
 [A] is also Enter). Only switching the action set can't be kept from the Steam Controller without Pan.

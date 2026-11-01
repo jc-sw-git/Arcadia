@@ -32,7 +32,6 @@
 - The launcher's own window (e.g. Steam's error dialog) stays open; Arcadia doesn't close other programs' windows.
 - The launcher waiting for the player (launch option, EULA, cloud conflict) or updating the game first (Steam's
   `AppError_18`) is no failure. Only an explicit abort ends a start early, never a missing signal.
-- After an aborted start SISR comes back at once (it paused for the game).
 - No warning before a start (e.g. another account's game): the launcher decides.
 
 ## After the end

@@ -110,6 +110,9 @@ public sealed class SdlGamepadSource : IGamepadSource
     // Every controller let go (ReadControllers(false)): no poll reads, and SDL is opened again once it ends.
     private volatile bool _letGo;
     private bool _reopen;
+
+    // Set by the let-go, taken by the next poll: consumers hear once that every button and stick is released (#367).
+    private volatile bool _releaseDue;
     private bool _steamControllersRead = true;
     private Thread? _thread;
 
@@ -157,7 +160,9 @@ public sealed class SdlGamepadSource : IGamepadSource
 
     /// <summary>
     /// Off, SDL closes every controller and ends before this returns (the way check A3 of #335 found Windows lets Pan
-    /// restart them); polls pause, so nobody sees the controllers go. On, the next poll starts SDL again and the
+    /// restart them); the next poll reports every controller once with nothing held, so a button held at that moment
+    /// is released (the mouse mode's mouse button, a hold in Big Picture), then polls pause and nobody sees the
+    /// controllers go. On, the next poll starts SDL again and the
     /// controllers come back as newly connected. Never throws; a failure is logged.
     /// </summary>
     public void ReadControllers(bool on)
@@ -180,6 +185,7 @@ public sealed class SdlGamepadSource : IGamepadSource
 
                 CloseUnderLock();
                 _reopen = true;
+                _releaseDue = true;
                 _log("Controller: alle Controller losgelassen, Pan startet einen neu");
             }
         }
@@ -306,13 +312,19 @@ public sealed class SdlGamepadSource : IGamepadSource
             return false;
         }
 
-        if (_letGo)
-        {
-            return true;
-        }
-
         try
         {
+            if (_releaseDue)
+            {
+                _releaseDue = false;
+                ReportReleased(nowMs);
+            }
+
+            if (_letGo)
+            {
+                return true;
+            }
+
             if (_reopen && !Reopen())
             {
                 return false;
@@ -363,6 +375,12 @@ public sealed class SdlGamepadSource : IGamepadSource
     {
         lock (_sdlLock)
         {
+            // A let-go can come between Poll's look at _letGo and this lock; SDL has ended then.
+            if (!_open)
+            {
+                return;
+            }
+
             while (_sdl.NextDeviceChange(out var id, out var added))
             {
                 if (added)
@@ -414,6 +432,28 @@ public sealed class SdlGamepadSource : IGamepadSource
             Polled?.Invoke(_readings);
             _polls.Update(_readings, nowMs);
         }
+    }
+
+    /// <summary>
+    /// The controllers of the last read, with no button, trigger or stick held, to every consumer: SDL ended at the
+    /// let-go without reporting a release, and the mouse mode and the routing would keep what was held until the
+    /// controllers come back. The same pads, not none, so no consumer takes the let-go for a disconnect.
+    /// </summary>
+    private void ReportReleased(long nowMs)
+    {
+        for (var i = 0; i < _readings.Count; i++)
+        {
+            var held = _readings[i];
+            _readings[i] = new GamepadReading(held.PadId, PadButtons.None, default, default)
+            {
+                Type = held.Type,
+                Device = held.Device,
+            };
+        }
+
+        Sampled?.Invoke(_readings);
+        Polled?.Invoke(_readings);
+        _polls.Update(_readings, nowMs);
     }
 
     /// <summary>

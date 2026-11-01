@@ -10,6 +10,7 @@ its file.
 
 | File | Issue | Title | Test cases |
 |---|---|---|---|
+| [367-letting-go-leaves-held-button-pressed.md](367-letting-go-leaves-held-button-pressed.md) | #367 | Letting go of the controllers leaves a held button pressed | 1 |
 
 ## Exploratory test
 

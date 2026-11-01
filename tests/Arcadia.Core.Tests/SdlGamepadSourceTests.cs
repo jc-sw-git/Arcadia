@@ -441,7 +441,7 @@ public sealed class SdlGamepadSourceTests : IDisposable
         Assert.True(_sdl.IsQuit);
         Assert.Empty(_sdl.OpenPads);
         Assert.Contains(dualSense, _sdl.Closed);
-        Assert.Equal(polls, _polls.Count);
+        Assert.Equal(polls + 1, _polls.Count);
         Assert.False(_source.AnyNow(_ => true));
 
         _source.ReadControllers(true);
@@ -451,6 +451,57 @@ public sealed class SdlGamepadSourceTests : IDisposable
         Assert.Equal(2, _sdl.Inits);
         Assert.Equal([KnownPads.DualSense, KnownPads.EightBitDoUltimate2], _polls[^1].Select(reading => reading.Device).Order(Comparer<PadDevice>.Create((a, b) => a.Product.CompareTo(b.Product))));
         Assert.DoesNotContain(_polls[^1], reading => reading.PadId == dualSense);
+    }
+
+    /// <summary>#367: SDL ends without reporting a release; the mouse mode and the routing must still see one.</summary>
+    [Fact]
+    [Trait("TestCase", "T367-1")]
+    public void Letting_go_reports_every_controller_once_with_nothing_held()
+    {
+        _source.Open();
+        var dualSense = _sdl.Plug(KnownPads.DualSense);
+        _sdl.Set(dualSense, new SdlPadState(SdlPadState.Bit(B.South) | SdlPadState.Bit(B.LeftShoulder), 30000, 0, 0, 0, 0, 30000));
+        Poll();
+        var sampled = new List<IReadOnlyList<GamepadReading>>();
+        _source.Sampled += pads => sampled.Add([.. pads]);
+        _events.Clear();
+
+        _source.ReadControllers(false);
+        Poll();
+        Poll();
+
+        var released = Assert.Single(Assert.Single(sampled));
+        Assert.Equal(released, Assert.Single(_polls[^1]));
+        Assert.Equal((int)dualSense, released.PadId);
+        Assert.Equal(KnownPads.DualSense, released.Device);
+        Assert.Equal(PadButtons.None, released.Buttons);
+        Assert.Equal(default, released.LeftStick);
+        Assert.Equal(default, released.Triggers);
+        Assert.Equal(["-A", "-DPadRight", "-LeftShoulder", "-RightTrigger"], _events.Order());
+    }
+
+    /// <summary>#367: a let-go that comes while a poll is under way must not leave the poll reading an ended SDL.</summary>
+    [Fact]
+    [Trait("TestCase", "T367-1")]
+    public void A_let_go_during_a_poll_keeps_the_poll_off_the_ended_SDL()
+    {
+        _source.Open();
+        _sdl.Plug(KnownPads.DualSense);
+        _source.ReadSteamControllers(false);
+        _source.ReadControllers(false);
+        _source.ReadControllers(true);
+        // The reopen's update runs after Poll looked at the let-go and before it reads the controllers.
+        _sdl.AfterUpdate = () =>
+        {
+            _sdl.AfterUpdate = null;
+            _source.ReadControllers(false);
+        };
+
+        Assert.True(_source.Poll(_now));
+
+        Assert.True(_sdl.IsQuit);
+        Assert.Equal(0, _sdl.UsedAfterQuit);
+        Assert.Empty(_failures);
     }
 
     [Fact]

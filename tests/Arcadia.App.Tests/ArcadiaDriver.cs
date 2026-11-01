@@ -654,4 +654,7 @@ internal sealed record LauncherSpec(
     IReadOnlyList<LibraryTypeOption>? Options = null, IReadOnlyList<string>? Running = null)
 {
     public static LauncherSpec With(LauncherInfo launcher, params Game[] library) => new(launcher, library.Length, Library: library);
+
+    /// <summary>Its demo games can be uninstalled from Arcadia, except Epic's: as the real Epic, only in its own window.</summary>
+    public bool CanUninstall => Launcher.Id != KnownLaunchers.Epic.Id;
 }

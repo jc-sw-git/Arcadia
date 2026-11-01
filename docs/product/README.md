@@ -23,6 +23,9 @@ Decisions that hold across areas; the files beside this one hold the decisions p
 - **Platforms.** Windows x64 today. Long-term goal, not scheduled: Arcadia on Linux (Bazzite, ideally SteamOS) with
   the same feel, control and scope, without notable compromises. macOS is dropped. New code keeps Win32 calls behind
   the existing `OperatingSystem.IsWindows()` seams, and a Windows-only design keeps a Linux path in mind.
+- **Input latency.** The controller emulation (every pad Arcadia gives a game) adds from a controller's report to its
+  emulated pad's at most mean 1 ms, p99 2 ms, max 4 ms; how it is reached and measured:
+  `docs/controller-support/pad-latency.md`.
 - **Performance yardstick.** Beyond the budgets in `CLAUDE.md`: start, focus move and search at least 2x faster than
   comparable products with a similar library and feature set, RAM not higher. Measured in #109 once artwork and metadata exist;
   a measurement that loses to a comparable product becomes a follow-up issue.

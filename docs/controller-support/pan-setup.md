@@ -10,7 +10,8 @@ How Pan ([pan.md](pan.md)) gets onto the PC and off it again. The update at star
   runs the bundled `Pan.exe --install --expect-hash <sha256> [--usbip-installer … --usbip-sha256 …]
   [--hidhide-installer …]` elevated. VIIPER comes with Arcadia (fetched again without UAC if it went missing).
 - Pan (elevated) checks each installer on a copy in its data folder (the user can't swap it after the check): the
-  SHA-256 Arcadia checked at the download (a signature alone lets any older installer of the publisher through) and
+  SHA-256 Arcadia names (the one it checked at the download; it ties the run to that file, but it comes from the
+  unelevated client, so it is no version floor: [pan-risks.md](pan-risks.md)) and
   the Authenticode signature (`UsbipRelease.Publisher`; `HidHideRelease.Publisher` Nefarius Software Solutions e.U.,
   whose EV certificate expired 2025, the signature is timestamped). usbip-win2 runs with Inno Setup's `/VERYSILENT
   /SUPPRESSMSGBOXES /NORESTART /RESTARTEXITCODE=3010` (0 or 3010 = installed; up to 5 min, then left running, never
@@ -20,7 +21,7 @@ How Pan ([pan.md](pan.md)) gets onto the PC and off it again. The update at star
   HidHide filters it without a reboot. A HidHide failure doesn't stop Pan's install (exit code 6; Arcadia names the
   log and the manual download). A supported HidHide already installed is reused.
 - Pan copies itself to `%ProgramFiles%\Arcadia\Pan\Pan.exe`, compares the copy's SHA-256 with the source and the
-  expected hash, and creates the service: quoted image path, auto start, description in the system language, recovery,
+  expected hash, and creates the service: quoted image path, auto start, an English description (Pan runs with `InvariantGlobalization`), recovery,
   90 s pre-shutdown, a DACL under which users start and query but never change. A declined prompt is a failed action
   ("… abgelehnt"); exit code 3 points to `pan.log`.
 - "HidHide antwortet unerwartet" → "Neu installieren": `--install --hidhide-installer … --hidhide-repair` runs the

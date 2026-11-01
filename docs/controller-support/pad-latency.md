@@ -3,8 +3,9 @@
 How a controller's report reaches its emulated pad with the least delay, for every taken-over controller
 ([every-controller.md](every-controller.md)) and the Steam Controller's Xbox pad ([xbox-pad.md](xbox-pad.md)).
 
-Budget: added delay from the controller's report to the pad's report mean ≤ 1 ms, max ≤ 4 ms; Arcadia beside a game
-≤ 1 % CPU of all cores.
+Budget: added delay from the controller's report to the pad's report mean ≤ 1 ms, p99 ≤ 2 ms, max ≤ 4 ms; Arcadia
+beside a game ≤ 1 % CPU of all cores. Common pads themselves take about 13 ms by Bluetooth and half that by cable or
+dongle, so a few added milliseconds are already noticeable.
 - SDL has no call that waits for a report; it reads what arrived when asked. While a plugged pad gets its controller's
   states (`TakenOverControllers.Forwarding`, `SteamControllerXboxPad.Forwarding` → `FastReads` →
   `IGamepadSource.ReadFast`; not while the pads rest for Arcadia in front or the mouse mode) the source reads every

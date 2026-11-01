@@ -55,7 +55,7 @@ Once nothing emulates, it removes the stale device entries Arcadia's emulated de
   takes the start only if one of them alone listens on the usbip port named, only on 127.0.0.1 (IPv4 and IPv6,
   `ViiperListeners.OnlyServedBy`), else lets them go and refuses (`NoForwardingProcess`, `UsbipPortNotServed`), and
   journals that port per generation (`UsbipServers`, #304). Nothing is ever ended by a name lookup alone.
-- Teardown steps, each with a 10 s timeout on a worker, never throwing: detach the devices imported from the journaled server
+- Teardown steps, each with a timeout on a worker (detach and end 10 s each, show 30 s, restart 32 s), never throwing: detach the devices imported from the journaled server
   ports, never another program's (`usbip.exe` from `%ProgramFiles%\USBip`; a server leaves the journal only when all
   its detaches worked), end the held forwarding processes (`TerminateProcess`: VIIPER keeps no state worth
   saving), then show the puck. Each ended process leaves the journal at once (under the guardian's lock, so a step

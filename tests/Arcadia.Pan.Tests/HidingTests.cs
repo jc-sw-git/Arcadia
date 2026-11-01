@@ -341,7 +341,7 @@ public sealed class HidingTests : IDisposable
         _devices.Present = [FakeDevices.Slot2, FakeDevices.Slot3, FakeDevices.Dongle];
         Assert.Equal(PanReply.Hidden, (await Send(PanCommand.Hide, generation)).Reply);
 
-        // The check holds both hides: the instance the second one added, and one only the first one hid.
+        // The check holds both hides: the instance the second one added, and those the first one hid.
         _hidHide.Hidden.Remove(FakeDevices.Dongle);
         Assert.Equal(PanReason.HidingLost, (await Send(PanCommand.CheckHiding, generation)).Reason);
         _hidHide.Hidden.Add(FakeDevices.Dongle);

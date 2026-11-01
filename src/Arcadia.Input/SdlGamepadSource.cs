@@ -489,8 +489,8 @@ public sealed class SdlGamepadSource : IGamepadSource
             };
         }
 
-        Sampled?.Invoke(_readings);
-        Polled?.Invoke(_readings);
+        _sampled.Raise(_readings);
+        _polled.Raise(_readings);
         _polls.LetGo();
     }
 

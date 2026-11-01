@@ -1,5 +1,5 @@
 using Arcadia.Core.Diagnostics;
-using Arcadia.Launchers.Steam;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.ControllerSupport;
 
@@ -65,7 +65,7 @@ public sealed record SisrPaths(
 /// SISR as the old Arcadia (or the user) left it in <c>%LOCALAPPDATA%\SISR</c>, now that Pan replaces it (#214): finds it,
 /// removes it on the player's request and stops only an SISR the old Arcadia started. Arcadia never starts SISR.
 /// </summary>
-public sealed class SisrInstallation(SisrPaths paths, SteamInstallation? steam, ISisrSystem system)
+public sealed class SisrInstallation(SisrPaths paths, ILauncherProgram? steam, ISisrSystem system)
 {
     /// <summary>How the old Arcadia started SISR (<c>SisrHost.Start</c> up to #214); a user's SISR never listens there.</summary>
     public const string ArcadiaApiArgument = "--api.listen-address localhost:47640";
@@ -115,8 +115,8 @@ public sealed class SisrInstallation(SisrPaths paths, SteamInstallation? steam, 
 
     public SisrFound Find() => new(
         Directory.Exists(InstallDirectory),
-        steam?.AllShortcutsPaths().Count(HasMarker) ?? 0,
-        steam is not null && File.Exists(steam.CefDebuggingFlagPath));
+        steam?.ShortcutsTo(Executable) ?? 0,
+        CefDebuggingFlag is { } flag && File.Exists(flag));
 
     /// <summary>Any SISR runs, from wherever: the warning "SISR läuft" under Pan (decision 5).</summary>
     public bool IsAnyRunning => system.Processes("SISR").Count > 0;
@@ -239,7 +239,7 @@ public sealed class SisrInstallation(SisrPaths paths, SteamInstallation? steam, 
 
         if (steam is not null)
         {
-            if (steam.AllShortcutsPaths().Any(HasMarker))
+            if (steam.ShortcutsTo(Executable) > 0)
             {
                 if (steamRunning)
                 {
@@ -248,17 +248,14 @@ public sealed class SisrInstallation(SisrPaths paths, SteamInstallation? steam, 
                 }
                 else
                 {
-                    Step("Steam-Eintrag „SISR Marker“", () =>
-                    {
-                        foreach (var shortcuts in steam.AllShortcutsPaths())
-                        {
-                            SteamShortcuts.RemoveByExecutable(shortcuts, Executable);
-                        }
-                    });
+                    Step("Steam-Eintrag „SISR Marker“", () => steam.RemoveShortcutsTo(Executable));
                 }
             }
 
-            Step("Steams CEF-Debugging", () => DeleteFile(steam.CefDebuggingFlagPath));
+            if (CefDebuggingFlag is { } flag)
+            {
+                Step("Steams CEF-Debugging", () => DeleteFile(flag));
+            }
         }
 
         RemoveViiper(Step);
@@ -295,18 +292,8 @@ public sealed class SisrInstallation(SisrPaths paths, SteamInstallation? steam, 
         }
     }
 
-    private bool HasMarker(string shortcuts)
-    {
-        try
-        {
-            return SteamShortcuts.FindByExecutable(SteamShortcuts.Read(shortcuts), Executable) is not null;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException or InvalidDataException)
-        {
-            // An unreadable file can't be cleaned either; Steam rewrites it.
-            return false;
-        }
-    }
+    /// <summary>The flag SISR set in Steam's folder to reach Steam's browser (CEF remote debugging); null without Steam.</summary>
+    private string? CefDebuggingFlag => steam?.Folder is { } folder ? Path.Combine(folder, ".cef-enable-remote-debugging") : null;
 
     private bool IsFromInstallDirectory(SisrProcess process) => IsInside(process.ExecutablePath, InstallDirectory);
 

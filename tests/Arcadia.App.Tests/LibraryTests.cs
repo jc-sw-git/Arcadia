@@ -3,6 +3,7 @@ using Arcadia.App.Services;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Input;
+using Arcadia.Launchers;
 using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;

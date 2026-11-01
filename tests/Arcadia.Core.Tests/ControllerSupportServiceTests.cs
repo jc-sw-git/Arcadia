@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Net;
 using Arcadia.ControllerSupport;
+using Arcadia.Launchers;
 using Arcadia.Tests.Sisr;
 using Arcadia.Pan;
 using Arcadia.Core.Launchers;
@@ -41,7 +42,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(settings ?? new AppSettings());
-        return new ControllerSupportService(new SettingsService(store), _http, _time, _platform, sisr)
+        return new ControllerSupportService(new SettingsService(store), _http, _time, _platform, sisr, _platform)
         {
             Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper,
         };
@@ -122,7 +123,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         _platform.IsPanReady = false;
 
         await service.RefreshAsync();
@@ -149,7 +150,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var viiper = new FakeViiper();
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper };
 
         await service.RefreshAsync();
         Assert.Equal("viiper-missing", Assert.Single(service.Issues).Id);
@@ -170,7 +171,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var viiper = new FakeViiper { Error = new InvalidOperationException("Prüfsumme von viiper.exe stimmt nicht – Download verworfen.") };
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper };
 
         await service.ApplyFixAsync(HealthFix.InstallDrivers);
 
@@ -535,7 +536,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         _platform.IsPanReady = false;
 
         // The first tick looks once, for the header; closed settings don't look again (registry, service list).
@@ -574,7 +575,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
         var settings = new SettingsService(store);
-        var service = new ControllerSupportService(settings, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(settings, _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         _platform.IsUsbipReady = false;
         _platform.HidHideVersion = null;
         _platform.HidHideInstallError = new InvalidOperationException("Pan ist eingerichtet, HidHide aber nicht");
@@ -751,7 +752,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings { PanEnabled = true });
         var settings = new SettingsService(store);
-        var service = new ControllerSupportService(settings, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(settings, _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         service.CheckPanAtStart();
         Assert.True(service.MayTalkToPan, "on, the first hello still reaches Pan: a firmware hold shows first");
 
@@ -787,7 +788,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings { PanEnabled = true });
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         service.CheckPanAtStart();
         string? whyDuringUpdate = null;
         _platform.WhilePanUpdates = () => whyDuringUpdate = service.WhyPanIsLeftAlone;
@@ -817,7 +818,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings { PanEnabled = true });
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         service.CheckPanAtStart();
         _platform.PanUpdateAnswer = false;
 
@@ -834,7 +835,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings { PanEnabled = false });
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         service.CheckPanAtStart();
 
         Assert.True(service.MayTalkToPan);
@@ -1042,14 +1043,24 @@ public sealed class ControllerSupportServiceTests : IDisposable
             throw new InvalidOperationException($"Unerwartete Anfrage: {request.RequestUri}");
     }
 
-    private sealed class FakePlatform : IControllerSupportPlatform
+    private sealed class FakePlatform : IControllerSupportPlatform, ILauncherProgram
     {
+        // Steam the program, as the controller support asks it.
+        string? ILauncherProgram.Folder => null;
+
+        bool ILauncherProgram.IsRunning => IsSteamRunning;
+
+        bool ILauncherProgram.IsReady => IsSteamReady;
+
+        RunningLauncherGame? ILauncherProgram.RunningGame() => RunningSteamGame() is { } name ? new("0", name) : null;
+
+        Task<bool> ILauncherProgram.CloseAsync(TimeProvider time, CancellationToken cancellationToken) => StopSteamAsync(time, cancellationToken);
+
+        void ILauncherProgram.Start() => StartSteam();
+
         public bool IsSupported { get; set; } = true;
 
-        public bool IsSteamInstalled { get; set; } = true;
-
         public bool IsSteamRunning { get; set; } = true;
-
 
         public bool IsSteamReady => IsSteamRunning;
 
@@ -1071,10 +1082,6 @@ public sealed class ControllerSupportServiceTests : IDisposable
         public int UsbipInstalls { get; private set; }
 
         public string? RunningSteamGame() => SteamGame;
-
-        public int? SteamAppId { get; set; }
-
-        public int? RunningSteamAppId() => SteamAppId;
 
         public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken)
         {

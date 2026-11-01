@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
-using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
@@ -40,7 +39,7 @@ public sealed partial class SteamRunningGames(TimeProvider time, ISteamAppsRegis
     private Dictionary<string, DateTimeOffset?> _running = new(StringComparer.Ordinal);
     private DateTimeOffset? _lastPoll;
 
-    public string LauncherId => KnownLaunchers.Steam.Id;
+    public string LauncherId => SteamIntegration.Info.Id;
 
     public IReadOnlyList<RunningGame> Poll(CancellationToken cancellationToken = default)
     {

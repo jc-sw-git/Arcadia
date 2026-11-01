@@ -3,6 +3,7 @@ using System.Text.Json;
 using Arcadia.ControllerSupport;
 using Arcadia.Tests.Sisr;
 using Arcadia.Core.Settings;
+using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Steam;
 using Velopack;
 using Velopack.Locators;
@@ -16,8 +17,21 @@ namespace Arcadia.App.Tests;
 /// werden geladen"; what an older Arcadia left of SISR is <see cref="Sisr"/> (#214). Read from the thread pool by the
 /// controller support, so every value is volatile.
 /// </summary>
-internal sealed class FakeSteam : IControllerSupportPlatform
+internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
 {
+    // Steam the program, as the controller support asks it.
+    string? ILauncherProgram.Folder => null;
+
+    bool ILauncherProgram.IsRunning => IsSteamRunning;
+
+    bool ILauncherProgram.IsReady => IsSteamReady;
+
+    RunningLauncherGame? ILauncherProgram.RunningGame() => RunningSteamGame() is { } name ? new("0", name) : null;
+
+    Task<bool> ILauncherProgram.CloseAsync(TimeProvider time, CancellationToken cancellationToken) => StopSteamAsync(time, cancellationToken);
+
+    void ILauncherProgram.Start() => StartSteam();
+
     private volatile bool _isWindows = true;
     private volatile bool _isSteamInstalled = true;
     private volatile bool _isSteamRunning;
@@ -59,8 +73,6 @@ internal sealed class FakeSteam : IControllerSupportPlatform
     public string? SteamGame { get => _steamGame; set => _steamGame = value; }
 
     public string? RunningSteamGame() => IsSteamRunning ? SteamGame : null;
-
-    public int? RunningSteamAppId() => null;
 
     private int _steamStops;
 

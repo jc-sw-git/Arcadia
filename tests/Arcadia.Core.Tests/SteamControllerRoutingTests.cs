@@ -14,7 +14,7 @@ public sealed class SteamControllerRoutingTests
     private SteamControllerRouting Create() => new(
         () => _failure is { } failure ? throw failure : _active,
         key => !_onSteamInput.Contains(key),
-        () => _steamAppId,
+        () => _steamAppId is { } appId ? $"steam:{appId}" : null,
         () => _driverReady,
         _log.Add);
 

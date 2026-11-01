@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Helpers for the PC's processes, shared by the launchers, the controller support and the App (#373). -->
+  <PropertyGroup>
+    <!-- Required by the LibraryImport source generator (process paths, foreground window). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+</Project>

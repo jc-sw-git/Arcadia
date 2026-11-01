@@ -7,11 +7,15 @@ The other projects: [README.md](README.md).
 What a launcher is made of, with no dependency on the rest; the future plugin interface for launchers.
 
 - `ILauncherIntegration`: scanner, optional client, install monitor and running games, the launcher's
-  `ProgramNames`, `Locate`, optional `FolderChoice`. `ILauncherFolderChoice`: a folder the user picks when the launcher
+  `ProgramNames`, `Locate`, optional `FolderChoice` and `Program` (`ILauncherProgram`: the launcher's own program,
+  closed and started again for the Steam Controller's drivers, its running game, its folder and its entries of other
+  programs, which SISR's cleanup needs). `ILauncherFolderChoice`: a folder the user picks when the launcher
   isn't found, checked when picked.
 - `ILauncherScanner`, `ILauncherClient`, `IInstallMonitor`, `IRunningGamesMonitor` (also the starts the launcher
   aborted, `RefusedStart`).
-- Models: `Game` with its `GameType`, `LauncherInfo` with its `Logo` path and `GamesUseSteamInput`, `LaunchTarget`.
+- Models: `Game` with its `GameType`, `LauncherInfo` with its `Logo` path, `GamesUseSteamInput` and `OwnsSteamInput`
+  (the launcher whose program holds the Steam Controller: Steam), `LaunchTarget`. `LauncherIds`: the rule for a
+  launcher id (a-z, 0-9, `-`).
 - `LibraryTypeOption`: a launcher's switch for software, tools or soundtracks.
 - `ILauncherAccount`: a sign-in to the launcher's online account for its uninstalled games, shown as group "Konto" on
   its page. `IWebPages`: Arcadia's own browser for a launcher's web pages (a sign-in on its own page), its cookies kept
@@ -21,10 +25,12 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
 
 **Launchers**
 - `LauncherRegistry`: the registered launchers; reads see only the active ones in tab order, `Locate` finds them off
-  the UI thread. `LauncherSelection`: active and inactive launchers from `AppSettings.ActiveLaunchers`.
+  the UI thread. Rejects an integration with a broken id, parts of another launcher or a throwing identity;
+  `SteamInputOwner` is the launcher that owns Steam Input, which the App and the controller support ask instead of
+  naming Steam. `LauncherSelection`: active and inactive launchers from `AppSettings.ActiveLaunchers`.
 - `FirstRunSetup`: the first start's question which launchers are active (#139): due while no list is saved,
   `--first-run`, `--demo`.
-- `KnownLaunchers`, `LauncherNames` (rules for a launcher's own name and keyword), `LogoFile` (a picked logo checked
+- `LauncherNames` (rules for a launcher's own name and keyword), `LogoFile` (a picked logo checked
   by its content; an SVG may not load or run anything).
 
 **Library**

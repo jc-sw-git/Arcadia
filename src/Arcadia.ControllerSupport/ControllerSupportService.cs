@@ -1,9 +1,9 @@
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
-using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Pan;
+using Arcadia.Platform;
 using System.ComponentModel;
 
 namespace Arcadia.ControllerSupport;
@@ -87,6 +87,7 @@ public sealed class ControllerSupportService
     private readonly HttpClient _http;
     private readonly TimeProvider _time;
     private readonly IControllerSupportPlatform _platform;
+    private readonly ILauncherProgram _steam;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private int _ticking;
     private volatile bool _shuttingDown;
@@ -95,13 +96,18 @@ public sealed class ControllerSupportService
     private readonly CancellationTokenSource _shutdown = new();
 
     /// <param name="sisr">What the old Arcadia left of SISR (#214); null on other platforms and in tests without it.</param>
+    /// <param name="steam">
+    /// Steam the program, which holds the Steam Controller: the program of the launcher that owns Steam Input
+    /// (<see cref="LauncherInfo.OwnsSteamInput"/>), closed for a driver install that restarts the puck; null: no Steam.
+    /// </param>
     public ControllerSupportService(SettingsService sharedSettings, HttpClient http, TimeProvider time, IControllerSupportPlatform? platform = null,
-        SisrInstallation? sisr = null)
+        SisrInstallation? sisr = null, ILauncherProgram? steam = null)
     {
         _sharedSettings = sharedSettings;
         _http = http;
         _time = time;
         _platform = platform ?? new ControllerSupportPlatform();
+        _steam = steam ?? NoSteam.Instance;
         Sisr = new SisrLeftovers(this, sisr);
     }
 
@@ -148,7 +154,7 @@ public sealed class ControllerSupportService
     public const string SteamWontCloseText = "Steam ließ sich nicht beenden. Beende Steam selbst und versuche es dann erneut.";
 
     /// <summary>Steam's client runs: it could update the Steam Controller's firmware (#242).</summary>
-    public bool SteamRuns => _platform.IsSteamRunning;
+    public bool SteamRuns => _steam.IsRunning;
 
     public IReadOnlyList<HealthIssue> Issues { get; private set; } = [];
 
@@ -167,7 +173,7 @@ public sealed class ControllerSupportService
     /// <paramref name="fix"/> closes Steam first and starts it again afterwards (#296): it runs HidHide's installer, which
     /// restarts the puck, and Steam must not be updating it then. The settings ask before (or name a running Steam game).
     /// </summary>
-    public bool StopsSteamFor(HealthFix fix) => _platform.IsSteamRunning && RestartsPuck(fix);
+    public bool StopsSteamFor(HealthFix fix) => _steam.IsRunning && RestartsPuck(fix);
 
     private bool RestartsPuck(HealthFix fix) => fix switch
     {
@@ -178,7 +184,7 @@ public sealed class ControllerSupportService
 
     /// <summary>The name of the Steam game that keeps an action from closing Steam, or null.</summary>
     /// <remarks>Read fresh on every call, so the settings notice the game ending.</remarks>
-    public string? SteamGameBlockingInstall() => _platform.IsSteamRunning ? _platform.RunningSteamGame() : null;
+    public string? SteamGameBlockingInstall() => _steam.IsRunning ? _steam.RunningGame()?.Name : null;
 
     /// <summary>
     /// Forgets the message of the last failed action, e.g. when the settings close; it describes
@@ -306,7 +312,7 @@ public sealed class ControllerSupportService
     internal async Task<T> WithSteamClosedAsync<T>(bool needsSteamClosed, string reason, Func<string, string> blocker,
         Func<CancellationToken, Task<T>> work, Func<T, bool> waitForSteam, CancellationToken cancellationToken)
     {
-        if (!needsSteamClosed || !_platform.IsSteamRunning)
+        if (!needsSteamClosed || !_steam.IsRunning)
         {
             return await work(cancellationToken);
         }
@@ -318,7 +324,7 @@ public sealed class ControllerSupportService
 
         var busy = BusyText;
         SetBusyText("Steam wird beendet …");
-        if (!await _platform.StopSteamAsync(_time, cancellationToken))
+        if (!await _steam.CloseAsync(_time, cancellationToken))
         {
             throw new InvalidOperationException(SteamWontCloseText);
         }
@@ -333,13 +339,13 @@ public sealed class ControllerSupportService
         finally
         {
             // Arcadia closed Steam, so it brings it back.
-            _platform.StartSteam();
+            _steam.Start();
         }
 
         if (waitForSteam(result))
         {
             SetBusyText("Steam wird gestartet …");
-            await ProcessWatch.WaitUntilAsync(() => _platform.IsSteamReady, SteamStartTimeout, _time, cancellationToken);
+            await ProcessWatch.WaitUntilAsync(() => _steam.IsReady, SteamStartTimeout, _time, cancellationToken);
         }
 
         return result;
@@ -719,4 +725,24 @@ public sealed class ControllerSupportService
     }
 
     private void OnChanged() => Changed?.Invoke(this, EventArgs.Empty);
+}
+
+/// <summary>No Steam on this PC (or in a test without one): nothing runs, nothing to close.</summary>
+file sealed class NoSteam : ILauncherProgram
+{
+    public static readonly NoSteam Instance = new();
+
+    public string? Folder => null;
+
+    public bool IsRunning => false;
+
+    public bool IsReady => false;
+
+    public RunningLauncherGame? RunningGame() => null;
+
+    public Task<bool> CloseAsync(TimeProvider time, CancellationToken cancellationToken = default) => Task.FromResult(true);
+
+    public void Start()
+    {
+    }
 }

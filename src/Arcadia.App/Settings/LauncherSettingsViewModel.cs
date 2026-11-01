@@ -624,12 +624,13 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     }
 
     /// <summary>
-    /// The group "Desktop-Steuerung" on Steam's page (#315). Not the launcher integration's: it is about Steam the program,
-    /// which Arcadia's controller support deals with anyway, so it is there whether Steam's launcher is active or not.
+    /// The group "Desktop-Steuerung" on Steam's page (#315), the launcher that owns Steam Input. Not the launcher
+    /// integration's: it is about Steam the program, which Arcadia's controller support deals with anyway, so it is there
+    /// whether Steam's launcher is active or not.
     /// </summary>
     private IReadOnlyList<SettingsRowViewModel> DesktopControlRows(string id)
     {
-        if (id != KnownLaunchers.Steam.Id)
+        if (id != _host.Launchers.SteamInputOwner?.Launcher.Id)
         {
             return [];
         }

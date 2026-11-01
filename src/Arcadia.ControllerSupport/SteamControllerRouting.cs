@@ -1,4 +1,3 @@
-using System.Globalization;
 using Arcadia.Core.Launchers;
 using Arcadia.Input;
 using Arcadia.Launchers.Abstractions;
@@ -153,11 +152,12 @@ public sealed class SteamControllerCopyGate(Func<SteamControllerRoute?> route, F
 /// Steam may use the Steam Controller (#213): games started from Arcadia, in their launcher, and Steam games started
 /// directly in Steam, also when they aren't in the library (#119, Steam's <c>RunningAppID</c>).
 /// </summary>
+/// <param name="runningSteamGame">The <c>Game.Key</c> of the game Steam runs right now, also one started directly in Steam, or null.</param>
 /// <remarks>Read by the pad's tick and asked again by <see cref="Update"/> every 2 s and right before a game starts.</remarks>
 public sealed class SteamControllerRouting(
     Func<IReadOnlyCollection<string>> activeGames,
     Func<string, bool> usesArcadiaPad,
-    Func<int?> runningSteamAppId,
+    Func<string?> runningSteamGame,
     Func<bool> driverReady,
     Action<string> log)
 {
@@ -237,9 +237,9 @@ public sealed class SteamControllerRouting(
     private IEnumerable<string> GamesNow()
     {
         var games = activeGames().ToHashSet(StringComparer.Ordinal);
-        if (runningSteamAppId() is { } appId)
+        if (runningSteamGame() is { } key)
         {
-            games.Add(Game.KeyOf(KnownLaunchers.Steam.Id, appId.ToString(CultureInfo.InvariantCulture)));
+            games.Add(key);
         }
 
         return games;

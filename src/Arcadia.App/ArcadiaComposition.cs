@@ -1,4 +1,4 @@
-using Arcadia.App.Input;
+﻿using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
@@ -37,6 +37,9 @@ internal sealed record ArcadiaParts(
     InstallFolderCheck FolderCheck,
     WebPages WebPages)
 {
+    /// <summary>Steam the program, which holds the Steam Controller; null: that of the launcher that owns Steam Input.</summary>
+    public ILauncherProgram? SteamProgram { get; init; }
+
     /// <summary>Opens a launcher's URI or program; null: the system's shell.</summary>
     public Func<LaunchTarget, bool>? Open { get; init; }
 }
@@ -46,7 +49,7 @@ internal sealed record ArcadiaParts(
 /// <param name="HidingCheck">Pan's answer whether it could hide the Steam Controller now (#243 part B2); in the App the same client as <paramref name="Guardian"/>.</param>
 /// <param name="LetGoOfPan">Closes Arcadia's connection to Pan once it must leave Pan alone (#366); in the App the same client as <paramref name="Guardian"/>.</param>
 /// <param name="Copy">Makes the copy of the Steam Controller for Steam (#242) from the wiring the App hands it.</param>
-/// <param name="RunningSteamAppId">Steam's <c>RunningAppID</c>: a Steam game started directly in Steam (#119).</param>
+/// <param name="RunningSteamGame">The key of the game Steam runs, also one started directly in Steam (#119); null: none.</param>
 /// <param name="IsArcadiaActive">Arcadia's window is in front.</param>
 /// <param name="IsSteamInFront">A window of Steam itself is in front (#242).</param>
 /// <param name="GameInFront">The library game in front, or null.</param>
@@ -58,7 +61,7 @@ internal sealed record ControllerWiring(
     IHidingCheck HidingCheck,
     Func<CancellationToken, Task> LetGoOfPan,
     Func<SteamControllerCopyWiring, ISteamControllerHold> Copy,
-    Func<int?> RunningSteamAppId,
+    Func<string?> RunningSteamGame,
     Func<bool> IsArcadiaActive,
     Func<bool> IsMouseModeOn,
     Func<bool> IsSteamInFront,
@@ -121,7 +124,8 @@ internal sealed class ArcadiaComposition
         }
 
         // SISR is replaced by Arcadia's own Xbox pad (#213); Arcadia never starts it and removes it only on request (#214).
-        var controllerSupport = new ControllerSupportService(settings, parts.Http, time, parts.ControllerPlatform, parts.Sisr)
+        var controllerSupport = new ControllerSupportService(settings, parts.Http, time, parts.ControllerPlatform, parts.Sisr,
+            parts.SteamProgram ?? launchers.SteamInputOwner?.Program)
         {
             Log = AppLog.Write,
             GamesUseSteamInput = launchers.GamesUseSteamInput,
@@ -138,7 +142,7 @@ internal sealed class ArcadiaComposition
 
         var main = new MainViewModel(
             new LibraryService(launchers, time) { Log = AppLog.Write },
-            new GameLaunchService(launchers, parts.Open) { Log = AppLog.Write },
+            new GameLaunchService(launchers.ClientOf, parts.Open) { Log = AppLog.Write },
             controllerSupport,
             parts.Updates,
             installTracker,
@@ -169,7 +173,7 @@ internal sealed class ArcadiaComposition
         ControllerSupport.LetGoOfPan = wiring.LetGoOfPan;
         var forGames = SteamControllerForGames.Create(
             wiring.PanSupported, wiring.Pads, wiring.Guardian, wiring.Copy, ControllerSupport, _settings, () => RunningGames.ActiveGames,
-            wiring.RunningSteamAppId, wiring.IsArcadiaActive, wiring.IsMouseModeOn, wiring.IsSteamInFront, wiring.GameInFront, gamepad,
+            wiring.RunningSteamGame, wiring.IsArcadiaActive, wiring.IsMouseModeOn, wiring.IsSteamInFront, wiring.GameInFront, gamepad,
             wiring.Notices, _time, wiring.OwnPads);
         Main.BeforeGameStarts = forGames.BeforeGameStartsAsync;
         Main.ConnectPan(forGames);

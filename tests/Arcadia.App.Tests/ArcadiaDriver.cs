@@ -83,7 +83,7 @@ internal sealed class ArcadiaDriver : IDisposable
         Starts = starts;
         Installs = installs;
         Launchers = launchers.Select(spec => spec.IsDemo
-            ? new DemoIntegration(spec.Launcher, spec.Games, Now)
+            ? new DemoIntegration(spec.Launcher, spec.Games, Now, canUninstall: spec.CanUninstall)
             : (ILauncherIntegration)new TestLauncher(spec, Now, starts, installs)).ToList();
         _pad.ButtonPressed += button => PressButton(button);
         _pad.ButtonReleased += button => ReleaseButton(button);
@@ -111,6 +111,7 @@ internal sealed class ArcadiaDriver : IDisposable
             new NoProcesses(), Updates, Path.Combine(folder, "logos"), FolderCheck, webPages)
         {
             Open = Open,
+            SteamProgram = (ILauncherProgram?)steam ?? files?.ControllerSupport,
         });
         ControllerSupport = _app.ControllerSupport;
         Main = _app.Main;
@@ -136,7 +137,7 @@ internal sealed class ArcadiaDriver : IDisposable
         {
             CopyWiring = wiring;
             return SteamControllerCopy;
-        }, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, PanNotices, latency));
+        }, () => RunningSteamAppId is { } appId ? Game.KeyOf(KnownLaunchers.Steam.Id, appId.ToString(CultureInfo.InvariantCulture)) : null, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, PanNotices, latency));
         XboxPad = ForGames.Pad;
         ForGames.Routing.Update();
     }
@@ -654,4 +655,7 @@ internal sealed record LauncherSpec(
     IReadOnlyList<LibraryTypeOption>? Options = null, IReadOnlyList<string>? Running = null)
 {
     public static LauncherSpec With(LauncherInfo launcher, params Game[] library) => new(launcher, library.Length, Library: library);
+
+    /// <summary>Its demo games can be uninstalled from Arcadia, except Epic's: as the real Epic, only in its own window.</summary>
+    public bool CanUninstall => Launcher.Id != KnownLaunchers.Epic.Id;
 }

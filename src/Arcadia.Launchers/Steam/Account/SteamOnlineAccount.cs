@@ -81,8 +81,8 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         _state = Compose(IsSignedIn ? AccountStep.SignedIn : AccountStep.SignedOut);
     }
 
-    /// <param name="folder">Where the sign-in and the cached games are kept; null: Arcadia's data folder.</param>
-    public static SteamOnlineAccount Create(HttpClient http, IWebPages web, TimeProvider time, string? folder = null) =>
+    /// <param name="folder">Where the sign-in and the cached games are kept: Arcadia's data folder.</param>
+    public static SteamOnlineAccount Create(HttpClient http, IWebPages web, TimeProvider time, string folder) =>
         new(new SteamWebApi(http), SteamAccountStore.CreateDefault(folder), web, time);
 
     public string Title => "Steam-Konto";

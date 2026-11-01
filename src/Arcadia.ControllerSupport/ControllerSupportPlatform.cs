@@ -2,26 +2,15 @@ using System.Diagnostics;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Pan;
 using Arcadia.Core.Settings;
-using Arcadia.Launchers;
-using Arcadia.Launchers.Steam;
+using Arcadia.Platform;
 
 namespace Arcadia.ControllerSupport;
 
-/// <summary>What the controller emulation's setup (drivers, Pan, closing Steam for them) needs from Windows and Steam; replaced in tests.</summary>
+/// <summary>What the controller emulation's setup (drivers, Pan) needs from Windows; replaced in tests. Steam is a launcher program (<c>ILauncherProgram</c>).</summary>
 public interface IControllerSupportPlatform
 {
     /// <summary>The emulation exists only for Windows so far.</summary>
     bool IsSupported { get; }
-
-    bool IsSteamInstalled { get; }
-
-    bool IsSteamRunning { get; }
-
-    /// <summary>
-    /// Steam is back after Arcadia closed it: its process and its web helper run, a user is logged in and the client
-    /// finished that login (it can hang at "loading user data" after the server accepted it).
-    /// </summary>
-    bool IsSteamReady { get; }
 
     /// <summary>usbip-win2 is installed in at least <see cref="UsbipDriver.MinimumVersion"/> and loaded.</summary>
     bool IsUsbipReady { get; }
@@ -43,18 +32,6 @@ public interface IControllerSupportPlatform
     /// HidHide is missing or of an unsupported version, and no uninstall waits for a restart.
     /// </summary>
     bool InstallsHidHide => ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion);
-
-    /// <summary>The name of the Steam game running right now, or null.</summary>
-    string? RunningSteamGame();
-
-    /// <summary>The app id of the Steam game running right now, or null.</summary>
-    int? RunningSteamAppId();
-
-    /// <summary>Asks Steam to exit and waits for it; false if it is still running after the timeout.</summary>
-    Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken);
-
-    /// <summary>Starts Steam minimized to the tray.</summary>
-    void StartSteam();
 
     /// <summary>
     /// Installs or updates what is missing of usbip-win2, HidHide and Pan, with one Windows prompt (#243); false if the
@@ -82,29 +59,10 @@ public interface IControllerSupportPlatform
     IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now);
 }
 
-/// <summary>The real Windows and Steam.</summary>
-/// <param name="locate">Finds Steam; defaults to <see cref="SteamInstallation.Find"/>. The acceptance tests point it at a Steam folder of their own.</param>
-/// <param name="isSteamRunning">Whether Steam runs; defaults to <see cref="SteamInstallation.IsRunning"/>.</param>
-public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate = null, Func<bool>? isSteamRunning = null) : IControllerSupportPlatform
+/// <summary>The real Windows.</summary>
+public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 {
-    private readonly Func<SteamInstallation?> _locate = locate ?? SteamInstallation.Find;
-    private readonly Func<bool> _isSteamRunning = isSteamRunning ?? (() => SteamInstallation.IsRunning);
-
     public bool IsSupported => OperatingSystem.IsWindows();
-
-    private static readonly TimeSpan SteamExitTimeout = TimeSpan.FromSeconds(30);
-
-    public bool IsSteamInstalled => _locate() is not null;
-
-    public bool IsSteamRunning => _isSteamRunning();
-
-    public bool IsSteamReady =>
-        IsSteamUp && _locate() is { } steam
-        && SteamLoginLog.IsLatestLoginComplete(steam.LoginLogPath) is not false;
-
-    private bool IsSteamUp =>
-        _isSteamRunning() && ProcessWatch.IsRunning("steamwebhelper")
-        && _locate() is { ActiveUserId: not (null or 0) };
 
     public bool IsUsbipReady =>
         OperatingSystem.IsWindows() && UsbipDriver.InstalledVersion() is { } version && version >= UsbipDriver.MinimumVersion && UsbipDriver.IsRunning();
@@ -122,15 +80,6 @@ public sealed class ControllerSupportPlatform(Func<SteamInstallation?>? locate =
     private static bool HidHideRemovalPending => OperatingSystem.IsWindows() && HidHideInstallation.IsRemovalPending();
 
     public bool InstallsHidHide => HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending;
-
-    public string? RunningSteamGame() => SteamInstallation.RunningGameName();
-
-    public int? RunningSteamAppId() => SteamInstallation.RunningAppId();
-
-    public async Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken) =>
-        await SteamInstallation.ShutdownAsync(SteamExitTimeout, time, cancellationToken);
-
-    public void StartSteam() => _locate()?.StartSilently();
 
     public async Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
     {

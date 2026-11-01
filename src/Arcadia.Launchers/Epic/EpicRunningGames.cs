@@ -1,5 +1,4 @@
 using System.Text;
-using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers.Epic;
@@ -29,7 +28,7 @@ public sealed class EpicRunningGames(string? logDirectory = null) : IRunningGame
     private long _offset;
     private long _length = -1;
 
-    public string LauncherId => KnownLaunchers.Epic.Id;
+    public string LauncherId => EpicIntegration.Info.Id;
 
     public IReadOnlyList<RunningGame> Poll(CancellationToken cancellationToken = default)
     {

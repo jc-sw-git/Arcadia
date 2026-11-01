@@ -15,4 +15,10 @@ namespace Arcadia.Launchers.Abstractions;
 /// The launcher's games read the Steam Controller through Steam Input themselves, as Steam's do (#156). Their Steam
 /// Controller mode then starts on "Steam-Eingabe" instead of "Arcadia"; Arcadia's pad would double their input.
 /// </param>
-public sealed record LauncherInfo(string Id, string DisplayName, string SearchKeyword, string? Logo = null, bool GamesUseSteamInput = false);
+/// <param name="OwnsSteamInput">
+/// The launcher's program is Steam Input itself and holds the Steam Controller, as Steam does: Arcadia closes it
+/// (<see cref="ILauncherIntegration.Program"/>) for a driver install that restarts the controller, drops its desktop
+/// layout and shows its settings on this launcher's page. At most one launcher should; Arcadia uses the first.
+/// </param>
+public sealed record LauncherInfo(
+    string Id, string DisplayName, string SearchKeyword, string? Logo = null, bool GamesUseSteamInput = false, bool OwnsSteamInput = false);

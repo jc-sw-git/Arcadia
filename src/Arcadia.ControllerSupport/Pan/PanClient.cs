@@ -64,12 +64,22 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     private Task? _keeper;
     private Task? _sender;
 
+    // Which background loops already reported an unexpected error: they retry every few seconds, the toast comes once.
+    private readonly HashSet<string> _reported = [];
+
     public PanClient(IPanTransport transport, TimeProvider time, Action<string> log)
     {
         _transport = transport;
         _time = time;
         _log = log;
+        Unexpected = (error, context) => log($"Unerwarteter Fehler ({context}): {error}");
     }
+
+    /// <summary>
+    /// Called with a context for the log and the toast when a subscriber of an event, or the connection keeper or the
+    /// heartbeat, throws something nobody expected; both loops go on. Logs the error with its stack by default.
+    /// </summary>
+    public Action<Exception, string> Unexpected { get; init; }
 
     public event Action<uint, PanReason>? TornDown;
 
@@ -470,53 +480,69 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         }
     }
 
+    /// <summary>Keeps trying to reach Pan until disposed; an unexpected error costs one attempt, never the keeper.</summary>
     private async Task KeepConnectedAsync()
     {
         var token = _disposed.Token;
         while (!token.IsCancellationRequested)
         {
-            if (WhyLeftAlone() is { } leftAlone)
-            {
-                // Silent: nothing was lost, Arcadia let go on purpose.
-                Drop(null);
-                SetUnavailable(leftAlone);
-                _firstAttempt.TrySetResult();
-                await Task.Delay(Retry, _time, token);
-                continue;
-            }
-
-            if (IsConnected)
-            {
-                await Task.Delay(Retry, _time, token);
-                continue;
-            }
-
-            var wait = Retry;
-            if (_transport.Unavailable() is { } why)
-            {
-                SetUnavailable(why.Reason);
-                _firstAttempt.TrySetResult();
-                await Task.Delay(why.Permanent ? SlowRetry : Retry, _time, token);
-                continue;
-            }
-
+            TimeSpan wait;
             try
             {
-                await ConnectAsync(token);
-            }
-            catch (PanUnavailableException ex)
-            {
-                SetUnavailable(ex.Message);
-                wait = ex.Permanent ? SlowRetry : Retry;
+                wait = await AttemptAsync(token);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                SetUnavailable($"Pan nicht erreichbar: {ex.Message}");
+                ReportUnexpected(ex, "Verbindung zu Pan halten");
+                _firstAttempt.TrySetResult();
+                wait = Retry;
             }
 
-            _firstAttempt.TrySetResult();
             await Task.Delay(wait, _time, token);
         }
+    }
+
+    /// <summary>One look at the connection, connecting if needed; returns how long to wait until the next.</summary>
+    private async Task<TimeSpan> AttemptAsync(CancellationToken token)
+    {
+        if (WhyLeftAlone() is { } leftAlone)
+        {
+            // Silent: nothing was lost, Arcadia let go on purpose.
+            Drop(null);
+            SetUnavailable(leftAlone);
+            _firstAttempt.TrySetResult();
+            return Retry;
+        }
+
+        if (IsConnected)
+        {
+            return Retry;
+        }
+
+        if (_transport.Unavailable() is { } why)
+        {
+            SetUnavailable(why.Reason);
+            _firstAttempt.TrySetResult();
+            return why.Permanent ? SlowRetry : Retry;
+        }
+
+        var wait = Retry;
+        try
+        {
+            await ConnectAsync(token);
+        }
+        catch (PanUnavailableException ex)
+        {
+            SetUnavailable(ex.Message);
+            wait = ex.Permanent ? SlowRetry : Retry;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            SetUnavailable($"Pan nicht erreichbar: {ex.Message}");
+        }
+
+        _firstAttempt.TrySetResult();
+        return wait;
     }
 
     private async Task ConnectAsync(CancellationToken cancellationToken)
@@ -547,7 +573,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         if (hello.Reason == PanReason.JournalUnreadable)
         {
             _log("Pan: das Journal war nicht lesbar; Pan nutzt die vorherige Fassung oder beginnt leer");
-            JournalProblem?.Invoke();
+            Raise(JournalProblem, nameof(JournalProblem), handler => ((Action)handler)());
         }
 
         if (hello.Reason == PanReason.TeardownNotAcknowledged)
@@ -561,7 +587,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         }
 
         _log($"Pan: verbunden ({link.Description}, Protokoll {PanMessage.ProtocolVersion}, Generation {hello.Generation})");
-        Connected?.Invoke();
+        Raise(Connected, nameof(Connected), handler => ((Action)handler)());
     }
 
     /// <summary>The reader never ends silently: a throwing subscriber is logged with its stack and costs the link (DoD: robust).</summary>
@@ -652,7 +678,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         if (message.Reply == PanReply.TornDown)
         {
             _log($"Pan: Emulation {message.Generation} von Pan beendet ({message.Reason})");
-            TornDown?.Invoke(message.Generation, message.Reason);
+            Raise(TornDown, nameof(TornDown), handler => ((Action<uint, PanReason>)handler)(message.Generation, message.Reason));
         }
         else if (message.Reply == PanReply.ReleasePuck)
         {
@@ -762,7 +788,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             _log($"Pan: {reason}{(wasEmulating ? " – die Emulation wird entfernt" : string.Empty)}");
             if (wasEmulating)
             {
-                Lost?.Invoke(reason);
+                Raise(Lost, nameof(Lost), handler => ((Action<string>)handler)(reason));
             }
         }
     }
@@ -789,56 +815,114 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         while (!token.IsCancellationRequested)
         {
             await Task.Delay(Guardian.HeartbeatInterval, _time, token);
-            uint generation;
-            long pulses;
-            lock (_lock)
-            {
-                if (_link is null || !_emulating)
-                {
-                    continue;
-                }
-
-                if (_requests.CurrentCount == 0)
-                {
-                    // Another request is under way (a hide takes ~2.5 s): Pan's hang watch waits for it, and a heartbeat
-                    // queued behind it would only give up after its timeout, with an exception at every start (#308).
-                    continue;
-                }
-
-                generation = _currentGeneration;
-                pulses = Interlocked.Read(ref _pulses);
-                if (pulses == _sentPulses)
-                {
-                    // The feeder didn't move: no heartbeat, Pan will see the silence.
-                    continue;
-                }
-
-                _sentPulses = pulses;
-            }
-
             try
             {
-                var reply = await RequestAsync(PanMessage.Of(PanCommand.Heartbeat, generation), token);
-                if (reply.Reply == PanReply.Rejected)
-                {
-                    _log($"Pan: Heartbeat für Generation {generation} abgelehnt ({reply.Reason})");
-                    lock (_lock)
-                    {
-                        if (_currentGeneration == generation)
-                        {
-                            _emulating = false;
-                        }
-
-                        // Pan is tearing this generation down: the pad is lost once, and no new one until the notice.
-                        _teardownPending |= reply.Reason == PanReason.TeardownNotAcknowledged;
-                    }
-                }
+                await SendHeartbeatAsync(token);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                // Already dropped and logged by RequestAsync.
-                _ = ex;
+                ReportUnexpected(ex, "Heartbeat an Pan");
             }
+        }
+    }
+
+    private async Task SendHeartbeatAsync(CancellationToken token)
+    {
+        uint generation;
+        long pulses;
+        lock (_lock)
+        {
+            if (_link is null || !_emulating)
+            {
+                return;
+            }
+
+            if (_requests.CurrentCount == 0)
+            {
+                // Another request is under way (a hide takes ~2.5 s): Pan's hang watch waits for it, and a heartbeat
+                // queued behind it would only give up after its timeout, with an exception at every start (#308).
+                return;
+            }
+
+            generation = _currentGeneration;
+            pulses = Interlocked.Read(ref _pulses);
+            if (pulses == _sentPulses)
+            {
+                // The feeder didn't move: no heartbeat, Pan will see the silence.
+                return;
+            }
+
+            _sentPulses = pulses;
+        }
+
+        try
+        {
+            var reply = await RequestAsync(PanMessage.Of(PanCommand.Heartbeat, generation), token);
+            if (reply.Reply == PanReply.Rejected)
+            {
+                _log($"Pan: Heartbeat für Generation {generation} abgelehnt ({reply.Reason})");
+                lock (_lock)
+                {
+                    if (_currentGeneration == generation)
+                    {
+                        _emulating = false;
+                    }
+
+                    // Pan is tearing this generation down: the pad is lost once, and no new one until the notice.
+                    _teardownPending |= reply.Reason == PanReason.TeardownNotAcknowledged;
+                }
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Already dropped and logged by RequestAsync.
+            _ = ex;
+        }
+    }
+
+    /// <summary>
+    /// Raises an event to each subscriber on its own: one that throws is reported and must not reach the request or read
+    /// that raised it (a dropped link would otherwise fault an unrelated request).
+    /// </summary>
+    private void Raise(Delegate? handlers, string name, Action<Delegate> call)
+    {
+        foreach (var handler in handlers?.GetInvocationList() ?? [])
+        {
+            try
+            {
+                call(handler);
+            }
+            catch (Exception ex)
+            {
+                _log($"Pan: ein Empfänger von {name} ist fehlgeschlagen");
+                ReportUnexpected(ex, "Pan-Ereignis");
+            }
+        }
+    }
+
+    /// <summary>Logs every time, but reports (toast) once per context: the loops would repeat it every few seconds.</summary>
+    private void ReportUnexpected(Exception error, string context)
+    {
+        bool first;
+        lock (_lock)
+        {
+            first = _reported.Add(context);
+        }
+
+        try
+        {
+            if (first)
+            {
+                Unexpected(error, context);
+            }
+            else
+            {
+                _log($"Pan: wieder unerwarteter Fehler ({context}): {error.Message}");
+            }
+        }
+        catch (Exception)
+        {
+            // Reporting must not end the loop or the request in turn.
         }
     }
 }

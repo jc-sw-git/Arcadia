@@ -35,5 +35,5 @@ public static class ControllerInput
         {
             AppLog.Write($"Controller-Eingabe nicht verfügbar (SDL3): {error}");
             Dispatcher.UIThread.Post(() => viewModel.Toast.Show(UnavailableText));
-        }, emulated);
+        }, emulated, AppErrors.Report);
 }

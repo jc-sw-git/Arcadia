@@ -75,6 +75,28 @@ public sealed class TakenOverControllersTests
     private static GamepadReading Reading(int padId, PadDevice device) =>
         new GamepadReading(padId, PadButtons.None, default, default) with { Device = device, Type = device.Type };
 
+    /// <summary>#370: a throwing setting falls back to its safe value, is reported once, and the reads go on.</summary>
+    [Fact]
+    public void A_throwing_setting_is_reported_once_and_Feed_goes_on_with_its_safe_value()
+    {
+        var reported = new List<string>();
+        var others = new TakenOverControllers(_time, Log)
+        {
+            ForwardingAllowed = () => throw new InvalidOperationException("forwarding broke"),
+            Combos = () => throw new InvalidOperationException("combos broke"),
+            LayoutOf = _ => throw new InvalidOperationException("layout broke"),
+            Unexpected = (error, context) => reported.Add($"{context}: {error.Message}"),
+        };
+
+        others.Feed([DualSense]);
+        others.Feed([DualSense]);
+
+        Assert.Equal(DualSenseModel, Assert.Single(others.Connected).Model);
+        Assert.Equal(
+            ["Controller für Spiele: forwarding broke", "Controller für Spiele: combos broke", "Controller für Spiele: layout broke"],
+            reported);
+    }
+
     /// <summary>#238 D9, QE finding of #353: 1 ms reads only while a pad gets states, not while it rests for Arcadia in front.</summary>
     [Fact]
     [Trait("TestCase", "T238-11")]

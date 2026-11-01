@@ -86,6 +86,10 @@ public sealed class SdlGamepadSource : IGamepadSource
     private readonly ISdlGamepads _sdl;
     private readonly Action<string> _log;
     private readonly Action<Exception> _failed;
+    private readonly GuardedHandlers<GamepadButton> _buttonPressed;
+    private readonly GuardedHandlers<GamepadButton> _buttonReleased;
+    private readonly GuardedHandlers<IReadOnlyList<GamepadReading>> _polled;
+    private readonly GuardedHandlers<IReadOnlyList<GamepadReading>> _sampled;
     private readonly IEmulatedPads _emulated;
     private readonly CancellationTokenSource _stop = new();
     private readonly GamepadPolls _polls = new();
@@ -116,23 +120,57 @@ public sealed class SdlGamepadSource : IGamepadSource
     /// <param name="log">Connects and disconnects, for <c>arcadia.log</c>; called on the poll thread.</param>
     /// <param name="failed">Called once if SDL can't be used, or fails later; the controllers are then off.</param>
     /// <param name="emulated">Tells emulated Xbox pads (SISR's) from real ones; none by default.</param>
-    public SdlGamepadSource(ISdlGamepads sdl, Action<string> log, Action<Exception> failed, IEmulatedPads? emulated = null)
+    /// <param name="unexpected">
+    /// Called once per handler of <see cref="Polled"/>, <see cref="Sampled"/> or a button event that throws, with a
+    /// context for the log and the toast; the controllers keep working. Logs the error with its stack by default.
+    /// </param>
+    public SdlGamepadSource(
+        ISdlGamepads sdl,
+        Action<string> log,
+        Action<Exception> failed,
+        IEmulatedPads? emulated = null,
+        Action<Exception, string>? unexpected = null)
     {
         _sdl = sdl;
         _log = log;
         _failed = failed;
         _emulated = emulated ?? NoEmulatedPads.Instance;
-        _polls.ButtonPressed += button => ButtonPressed?.Invoke(button);
-        _polls.ButtonReleased += button => ButtonReleased?.Invoke(button);
+        unexpected ??= (error, context) => log($"Unerwarteter Fehler ({context}): {error}");
+        _buttonPressed = new(HandlerContext, unexpected, log);
+        _buttonReleased = new(HandlerContext, unexpected, log);
+        _polled = new(HandlerContext, unexpected, log);
+        _sampled = new(HandlerContext, unexpected, log);
+        _polls.ButtonPressed += _buttonPressed.Raise;
+        _polls.ButtonReleased += _buttonReleased.Raise;
     }
 
-    public event Action<GamepadButton>? ButtonPressed;
+    /// <summary>What a throwing handler was doing, in German for the log and the toast.</summary>
+    private const string HandlerContext = "Controller-Eingabe";
 
-    public event Action<GamepadButton>? ButtonReleased;
+    // Each handler on its own (GuardedHandlers): one that throws must not cost every controller (Lose).
+    public event Action<GamepadButton>? ButtonPressed
+    {
+        add => _buttonPressed.Add(value);
+        remove => _buttonPressed.Remove(value);
+    }
 
-    public event Action<IReadOnlyList<GamepadReading>>? Polled;
+    public event Action<GamepadButton>? ButtonReleased
+    {
+        add => _buttonReleased.Add(value);
+        remove => _buttonReleased.Remove(value);
+    }
 
-    public event Action<IReadOnlyList<GamepadReading>>? Sampled;
+    public event Action<IReadOnlyList<GamepadReading>>? Polled
+    {
+        add => _polled.Add(value);
+        remove => _polled.Remove(value);
+    }
+
+    public event Action<IReadOnlyList<GamepadReading>>? Sampled
+    {
+        add => _sampled.Add(value);
+        remove => _sampled.Remove(value);
+    }
 
     public event Action? Lost;
 
@@ -293,8 +331,8 @@ public sealed class SdlGamepadSource : IGamepadSource
 
     /// <summary>
     /// One read: who came or went, what every controller reports (<see cref="Sampled"/>), and on a poll also
-    /// <see cref="Polled"/> and the button events. A failing native call or handler must not end Arcadia: the
-    /// controllers stop for good instead (<see cref="Lost"/>).
+    /// <see cref="Polled"/> and the button events. A failing native call must not end Arcadia: the controllers stop for
+    /// good instead (<see cref="Lost"/>). A throwing handler is reported and the controllers go on (GuardedHandlers).
     /// </summary>
     /// <param name="nowMs">A clock in milliseconds; only differences count.</param>
     /// <param name="pollDue">False for a read between two polls, only for <see cref="Sampled"/> (<see cref="ReadPacing"/>).</param>
@@ -408,10 +446,10 @@ public sealed class SdlGamepadSource : IGamepadSource
             }
         }
 
-        Sampled?.Invoke(_readings);
+        _sampled.Raise(_readings);
         if (pollDue)
         {
-            Polled?.Invoke(_readings);
+            _polled.Raise(_readings);
             _polls.Update(_readings, nowMs);
         }
     }
@@ -544,6 +582,11 @@ public sealed class SdlGamepadSource : IGamepadSource
                     Thread.Sleep(PollIntervalMs);
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            // Pacing or the wait failing on this thread would otherwise end the process; only the controllers stop.
+            Lose(ex);
         }
         finally
         {

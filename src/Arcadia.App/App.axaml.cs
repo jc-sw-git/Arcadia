@@ -191,6 +191,7 @@ public partial class App : Application
             var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write, () => controllerSupport.WhyPanIsLeftAlone) : new NoPanTransport(), time, AppLog.Write)
             {
                 WhyLeftAlone = () => controllerSupport.WhyPanIsLeftAlone,
+                Unexpected = AppErrors.Report,
             };
             var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
             pan.JournalProblem += () => panNotices.Show(PanJournalText);

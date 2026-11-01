@@ -8,3 +8,4 @@ under `LANG=de_DE.UTF-8` (decimal comma), the Windows job under en-US, so a cult
 | Tests | Date | By | Environment | Result | Notes |
 |---|---|---|---|---|---|
 | suite under `LANG=de_DE.UTF-8` and under the container's default (en-US); before the fix 14 red under de-DE (13 in `MouseModeTests`/`ReturnWithViewTests`, 1 in `HidingTests`) | 2026-11-01 | Claude (thread) | Linux cloud container, .NET 10, Debug | pass | de-DE: Pan 330, Core 2276, App 491 green, 11 skipped (Windows only); en-US: none red |
+| suite in CI on e2088a2 | 2026-11-01 | Claude (thread) | GitHub runners: ubuntu-latest with `LANG=de_DE.UTF-8` (output German, so the culture reached .NET), windows-latest en-US | pass | Linux: Pan 331, Core 2292, App 491 green |

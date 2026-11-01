@@ -4,10 +4,12 @@ The built-in launchers; they use only `Arcadia.Launchers.Abstractions` ([core.md
 about the launchers themselves: `docs/launchers/`. The other projects: [README.md](README.md).
 
 **Shared**
-- `BuiltInLaunchers`: the one place a launcher is registered. Integrations: `SteamIntegration` with
-  `SteamFolderChoice`, `EpicIntegration`, `DemoIntegration` (`DemoScanner`: a fictional library per launcher).
+- `BuiltInLaunchers`: the one place a launcher is registered; `KnownLaunchers` its launchers in tab order (Steam and
+  Epic build their own `LauncherInfo`, the others are demo tabs). Integrations: `SteamIntegration` with
+  `SteamFolderChoice` and `SteamProgram`, `EpicIntegration`, `DemoIntegration` (`DemoScanner`: a fictional library per
+  launcher).
 - `DirectLauncherClient`, `GameLaunchService` (every game start, `TryStartAsync` never throws).
-- `ProcessWatch` (also `PathOf(pid)`, the foreground process and the process ids), `SystemProcessTable`.
+- Arcadia's data folder comes in from the App (`BuiltInLaunchers.Create`), as a plugin would get it.
 
 **Epic** (`Epic/`)
 - `EpicScanner` (installed games from the install manifests), `EpicCatalog`, `EpicLauncherLog` (the launcher's log:
@@ -15,7 +17,8 @@ about the launchers themselves: `docs/launchers/`. The other projects: [README.m
   `EpicInstallMonitor`, `EpicRunningGames`.
 
 **Steam** (`Steam/`)
-- `SteamScanner`, `SteamInstallation`, `SteamInstallMonitor`, `SteamRunningGames`.
+- `SteamScanner`, `SteamInstallation`, `SteamInstallMonitor`, `SteamRunningGames`, `SteamProgram` (Steam the
+  program: running, ready, closed and started again, its running game, `shortcuts.vdf` entries).
 - Logs: `SteamContentLog`, `SteamConsoleLog` (starts Steam aborted), `SteamLoginLog`.
 - Files: `TextVdf`, `BinaryVdf`, `SteamAppInfo` (app types from `appinfo.vdf`), `SteamPackageInfo` (the apps of each
   license from `packageinfo.vdf`), `SteamInputSetting` (a game's Steam Input from `localconfig.vdf`), `SteamShortcuts`.

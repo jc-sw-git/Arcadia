@@ -7,7 +7,8 @@ The controller emulation for games and Pan, its guardian service. What was verif
 
 **The emulation and its parts**
 - `ControllerSupportService`: the emulation's parts and their fixes (`HealthIssues.WorstProblem`); in code the
-  feature keeps this old name. `ControllerSupportPlatform`: Windows and Steam, replaced in tests.
+  feature keeps this old name. `ControllerSupportPlatform`: Windows, replaced in tests. Steam comes in as the program
+  of the launcher that owns Steam Input (`ILauncherProgram`); the project doesn't reference `Arcadia.Launchers`.
 - `EmulationParts`: usbip-win2, VIIPER, Pan and HidHide, and the rows that say one is missing. `UsbipDriver`
   (installed version, `MinimumVersion`, the latest installer), `HidHideInstallation` (installed or not, the pinned
   installer), `GitHubReleases.cs` (`GitHubReleaseClient`, `VerifiedDownload`: GitHub's SHA-256 checked).

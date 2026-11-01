@@ -1,9 +1,9 @@
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
-using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Pan;
+using Arcadia.Platform;
 using System.ComponentModel;
 
 namespace Arcadia.ControllerSupport;
@@ -65,15 +65,11 @@ public static class HealthIssues
 
 /// <summary>
 /// The setup around the controller emulation: its parts (usbip-win2, VIIPER, Pan, HidHide) and their install, Pan's
-/// update at start, "Controller wiederherstellen", the per-game Steam Controller mode, and what the old Arcadia left of
-/// SISR (#214): found, removed on request, never started.
+/// update at start, "Controller wiederherstellen" and the per-game Steam Controller mode; what is left of SISR is
+/// <see cref="Sisr"/>.
 /// </summary>
 /// <remarks>Every action runs under one gate with its busy text, so two never cut into each other.</remarks>
-public sealed class ControllerSupportService(
-    SettingsService sharedSettings,
-    HttpClient http,
-    TimeProvider time,
-    IControllerSupportPlatform? platform = null)
+public sealed class ControllerSupportService
 {
     /// <summary>How long Arcadia waits for Steam to come back after it closed it (owner, 2026-10-16).</summary>
     public static readonly TimeSpan SteamStartTimeout = TimeSpan.FromSeconds(60);
@@ -87,7 +83,11 @@ public sealed class ControllerSupportService(
     /// </summary>
     private static readonly TimeSpan DriversInstallTimeout = PanTimeouts.Install + TimeSpan.FromMinutes(3);
 
-    private readonly IControllerSupportPlatform _platform = platform ?? new ControllerSupportPlatform();
+    private readonly SettingsService _sharedSettings;
+    private readonly HttpClient _http;
+    private readonly TimeProvider _time;
+    private readonly IControllerSupportPlatform _platform;
+    private readonly ILauncherProgram _steam;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private int _ticking;
     private volatile bool _shuttingDown;
@@ -95,9 +95,25 @@ public sealed class ControllerSupportService(
     /// <summary>Cancelled when Arcadia exits: ends the actions under the gate and the waits for it.</summary>
     private readonly CancellationTokenSource _shutdown = new();
 
+    /// <param name="sisr">What the old Arcadia left of SISR (#214); null on other platforms and in tests without it.</param>
+    /// <param name="steam">
+    /// Steam the program, which holds the Steam Controller: the program of the launcher that owns Steam Input
+    /// (<see cref="LauncherInfo.OwnsSteamInput"/>), closed for a driver install that restarts the puck; null: no Steam.
+    /// </param>
+    public ControllerSupportService(SettingsService sharedSettings, HttpClient http, TimeProvider time, IControllerSupportPlatform? platform = null,
+        SisrInstallation? sisr = null, ILauncherProgram? steam = null)
+    {
+        _sharedSettings = sharedSettings;
+        _http = http;
+        _time = time;
+        _platform = platform ?? new ControllerSupportPlatform();
+        _steam = steam ?? NoSteam.Instance;
+        Sisr = new SisrLeftovers(this, sisr);
+    }
+
     public event EventHandler? Changed;
 
-    public AppSettings Settings => sharedSettings.Current;
+    public AppSettings Settings => _sharedSettings.Current;
 
     /// <summary>Whether a launcher's games use Steam Input themselves, by launcher id: <see cref="LauncherRegistry.GamesUseSteamInput"/>.</summary>
     public required Func<string, bool> GamesUseSteamInput { get; init; }
@@ -119,8 +135,8 @@ public sealed class ControllerSupportService(
     /// <summary>Arcadia's own <c>viiper.exe</c> (#242 part B); null in tests that don't look at it.</summary>
     public IViiperInstallation? Viiper { get; init; }
 
-    /// <summary>What the old Arcadia (or the user) left of SISR (#214); null on other platforms and in tests without it.</summary>
-    public SisrInstallation? Sisr { get; init; }
+    /// <summary>What the old Arcadia (or the user) left of SISR (#214): the group "SISR" and "SISR entfernen".</summary>
+    public SisrLeftovers Sisr { get; }
 
     /// <summary>Pan hides the puck or holds it for a firmware attempt now (#242): HidHide must not be reinstalled then.</summary>
     public Func<bool>? PanHoldsPuck { get; set; }
@@ -159,7 +175,7 @@ public sealed class ControllerSupportService(
     public const string SteamWontCloseText = "Steam ließ sich nicht beenden. Beende Steam selbst und versuche es dann erneut.";
 
     /// <summary>Steam's client runs: it could update the Steam Controller's firmware (#242).</summary>
-    public bool SteamRuns => _platform.IsSteamRunning;
+    public bool SteamRuns => _steam.IsRunning;
 
     public IReadOnlyList<HealthIssue> Issues { get; private set; } = [];
 
@@ -178,7 +194,7 @@ public sealed class ControllerSupportService(
     /// <paramref name="fix"/> closes Steam first and starts it again afterwards (#296): it runs HidHide's installer, which
     /// restarts the puck, and Steam must not be updating it then. The settings ask before (or name a running Steam game).
     /// </summary>
-    public bool StopsSteamFor(HealthFix fix) => _platform.IsSteamRunning && RestartsPuck(fix);
+    public bool StopsSteamFor(HealthFix fix) => _steam.IsRunning && RestartsPuck(fix);
 
     private bool RestartsPuck(HealthFix fix) => fix switch
     {
@@ -189,7 +205,7 @@ public sealed class ControllerSupportService(
 
     /// <summary>The name of the Steam game that keeps an action from closing Steam, or null.</summary>
     /// <remarks>Read fresh on every call, so the settings notice the game ending.</remarks>
-    public string? SteamGameBlockingInstall() => _platform.IsSteamRunning ? _platform.RunningSteamGame() : null;
+    public string? SteamGameBlockingInstall() => _steam.IsRunning ? _steam.RunningGame()?.Name : null;
 
     /// <summary>
     /// Forgets the message of the last failed action, e.g. when the settings close; it describes
@@ -242,11 +258,7 @@ public sealed class ControllerSupportService(
                 return;
             }
 
-            var sisr = SisrFound;
-            if (WatchSetup)
-            {
-                SisrFound = FindSisr();
-            }
+            var sisrChanged = WatchSetup && Sisr.Refresh(supportedPlatform: true);
 
             // Pan's HidHide states are asked only while the settings are open, so they go with them: "Bitte schließe
             // sie" must not stay in the header after the user closed HidHide's configuration (QE review of PR #264).
@@ -254,7 +266,7 @@ public sealed class ControllerSupportService(
                 ? await CheckEmulationPartsAsync(cancellationToken)
                 : Issues.Where(issue => !EmulationParts.IsSettingsOnly(issue)).ToList();
             _driversChecked = true;
-            if (!issues.SequenceEqual(Issues) || SisrFound != sisr)
+            if (!issues.SequenceEqual(Issues) || sisrChanged)
             {
                 Issues = issues;
                 OnChanged();
@@ -278,7 +290,7 @@ public sealed class ControllerSupportService(
         if (Viiper is { IsInstalled: false } own)
         {
             SetBusyText("VIIPER wird installiert …");
-            await WithTimeoutAsync(token => own.InstallAsync(http, token), InstallTimeout, "Der VIIPER-Download", cancellationToken);
+            await WithTimeoutAsync(token => own.InstallAsync(_http, token), InstallTimeout, "Der VIIPER-Download", cancellationToken);
             Log?.Invoke("VIIPER eingerichtet");
         }
 
@@ -292,7 +304,7 @@ public sealed class ControllerSupportService(
         {
             SetBusyText(DriversBusyText);
             var installed = await WithSteamClosedAsync(_platform.InstallsHidHide, "die Treiber-Installation (der Puck startet dabei neu)", DriverInstallBlocker,
-                token => WithTimeoutAsync(t => _platform.InstallDriversAsync(http, t), DriversInstallTimeout, "Die Treiber-Installation", token),
+                token => WithTimeoutAsync(t => _platform.InstallDriversAsync(_http, t), DriversInstallTimeout, "Die Treiber-Installation", token),
                 waitForSteam: installed => installed, cancellationToken);
             if (!installed)
             {
@@ -304,7 +316,7 @@ public sealed class ControllerSupportService(
             // Also when a later step failed (e.g. HidHide, Pan's exit code 6): the driver came, and with it the restart it wants.
             if (!usbipWasReady && _platform.IsUsbipReady)
             {
-                UpdateSettings(settings => settings with { UsbipInstalledAt = time.GetUtcNow() });
+                UpdateSettings(settings => settings with { UsbipInstalledAt = _time.GetUtcNow() });
             }
         }
 
@@ -318,10 +330,10 @@ public sealed class ControllerSupportService(
     /// it before anything changes. Waits for the restarted Steam when <paramref name="waitForSteam"/> says so, but
     /// doesn't need it to come back in time.
     /// </summary>
-    private async Task<T> WithSteamClosedAsync<T>(bool needsSteamClosed, string reason, Func<string, string> blocker,
+    internal async Task<T> WithSteamClosedAsync<T>(bool needsSteamClosed, string reason, Func<string, string> blocker,
         Func<CancellationToken, Task<T>> work, Func<T, bool> waitForSteam, CancellationToken cancellationToken)
     {
-        if (!needsSteamClosed || !_platform.IsSteamRunning)
+        if (!needsSteamClosed || !_steam.IsRunning)
         {
             return await work(cancellationToken);
         }
@@ -333,7 +345,7 @@ public sealed class ControllerSupportService(
 
         var busy = BusyText;
         SetBusyText("Steam wird beendet …");
-        if (!await _platform.StopSteamAsync(time, cancellationToken))
+        if (!await _steam.CloseAsync(_time, cancellationToken))
         {
             throw new InvalidOperationException(SteamWontCloseText);
         }
@@ -348,13 +360,13 @@ public sealed class ControllerSupportService(
         finally
         {
             // Arcadia closed Steam, so it brings it back.
-            _platform.StartSteam();
+            _steam.Start();
         }
 
         if (waitForSteam(result))
         {
             SetBusyText("Steam wird gestartet …");
-            await ProcessWatch.WaitUntilAsync(() => _platform.IsSteamReady, SteamStartTimeout, time, cancellationToken);
+            await ProcessWatch.WaitUntilAsync(() => _steam.IsReady, SteamStartTimeout, _time, cancellationToken);
         }
 
         return result;
@@ -363,113 +375,6 @@ public sealed class ControllerSupportService(
     /// <summary>Why a driver install that closes Steam can't run now: closing Steam would end <paramref name="game"/>.</summary>
     public static string DriverInstallBlocker(string game) =>
         $"Ein laufendes Steam-Spiel ({game}) wurde erkannt. Beende es zuerst, da Steam für die Installation kurz beendet werden muss.";
-
-    /// <summary>What of SISR is on the PC (#214), as of the last check; null until checked or without <see cref="Sisr"/>.</summary>
-    public SisrFound? SisrFound { get; private set; }
-
-    /// <summary>
-    /// The group "SISR" shows: SISR or its marker is there, or the last "SISR entfernen" left something (a locked key
-    /// folder, the CEF flag) that only its row can name; and the player didn't choose "SISR behalten".
-    /// </summary>
-    public bool ShowsSisrGroup => SisrFound is not null && (SisrFound.ShowsGroup || SisrRemovalCause is not null) && !Settings.KeepSisr;
-
-    /// <summary>"SISR entfernen" has to close Steam first: the marker is there and Steam runs (it writes it back on exit).</summary>
-    public bool SisrRemovalStopsSteam => SisrFound is { HasMarker: true } && _platform.IsSteamRunning;
-
-    /// <summary>Why the last "SISR entfernen" left something, until it runs again; the group row names it.</summary>
-    public string? SisrRemovalCause { get; private set; }
-
-    /// <summary>The last "SISR entfernen" stopped before anything went (<see cref="SisrRemovalCause"/> says why).</summary>
-    public bool SisrRemovedNothing { get; private set; }
-
-    /// <summary>"SISR entfernen" removed everything: the settings show the toast and move the focus.</summary>
-    public event EventHandler? SisrRemoved;
-
-    public const string SisrRemovingText = "SISR wird entfernt …";
-
-    /// <summary>Why "SISR entfernen" can't close Steam now: it would end <paramref name="game"/>.</summary>
-    public static string SisrRemovalBlocker(string game) =>
-        $"„{game}“ läuft gerade über Steam. Beende das Spiel zuerst, dann kann Arcadia SISR entfernen.";
-
-    /// <summary>
-    /// "SISR entfernen" (#214): closes Steam for the marker if it runs (the settings asked), stops SISR, removes what is
-    /// there and starts Steam again, also after a failure. What is left stays in the group with its cause.
-    /// </summary>
-    public Task RemoveSisrAsync(CancellationToken cancellationToken = default) =>
-        RunBusyAsync(SisrRemovingText, async token =>
-        {
-            if (Sisr is not { } sisr)
-            {
-                return;
-            }
-
-            // SISR is stopped inside Remove, so only once Steam is closed: a Steam game or a Steam that won't close
-            // leaves it running for the game that may be using its pad.
-            SisrRemoval result;
-            try
-            {
-                result = await WithSteamClosedAsync(sisr.Find().HasMarker, "„SISR entfernen“", SisrRemovalBlocker,
-                    async t =>
-                    {
-                        SetBusyText(SisrRemovingText);
-                        return await Task.Run(() => sisr.Remove(_platform.IsSteamRunning), t);
-                    },
-                    waitForSteam: _ => true, token);
-            }
-            catch (InvalidOperationException ex)
-            {
-                // A Steam game or a Steam that won't close: the group row says why, like any other cause.
-                SisrRemovalCause = ex.Message;
-                SisrRemovedNothing = true;
-                throw;
-            }
-
-            SisrFound = sisr.Find();
-            SisrRemovalCause = result.Complete && !SisrFound.ShowsGroup ? null : result.Cause ?? SisrInstallation.SteamRunningCause;
-            SisrRemovedNothing = result.Cause == SisrInstallation.StopFailedCause;
-            Log?.Invoke(result.Complete ? "SISR entfernt" : $"SISR nicht ganz entfernt: {string.Join(", ", result.NotRemoved)} ({result.Cause})");
-            if (SisrRemovalCause is null)
-            {
-                SisrRemoved?.Invoke(this, EventArgs.Empty);
-            }
-        }, cancellationToken);
-
-    /// <summary>
-    /// Once at start (#214 decision 6): the old Arcadia kept SISR running across its update, so an SISR it started goes;
-    /// one the user started stays. Never throws.
-    /// </summary>
-    public async Task StopSisrStartedByOldArcadiaAsync(CancellationToken cancellationToken = default)
-    {
-        if (Sisr is not { } sisr)
-        {
-            return;
-        }
-
-        try
-        {
-            if (await Task.Run(() => sisr.StopStartedByOldArcadia(_platform.IsSteamRunning), cancellationToken) is > 0 and var stopped)
-            {
-                Log?.Invoke($"SISR beendet, das die frühere Arcadia-Version gestartet hatte ({stopped})");
-            }
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            Log?.Invoke($"SISR der früheren Arcadia-Version ließ sich nicht beenden: {ex}");
-        }
-    }
-
-    private SisrFound? FindSisr()
-    {
-        try
-        {
-            return Sisr?.Find();
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // Steam or SISR is writing; the last answer stands.
-            return SisrFound;
-        }
-    }
 
     /// <summary>
     /// Set at start while the installed Pan isn't the bundled one (#297) until it is replaced or removed: Pan's emulation
@@ -539,12 +444,12 @@ public sealed class ControllerSupportService(
     /// </summary>
     public bool CheckPanAtStart()
     {
-        var started = time.GetTimestamp();
+        var started = _time.GetTimestamp();
         var compatibility = IsSupportedPlatform ? _platform.PanCompatibility : PanCompatibility.NotInstalled;
         if (compatibility is not PanCompatibility.NotInstalled)
         {
             // On the start path before the window: the time it takes is part of the start budget.
-            Log?.Invoke($"Pan geprüft in {time.GetElapsedTime(started).TotalMilliseconds:0} ms: {compatibility}");
+            Log?.Invoke($"Pan geprüft in {_time.GetElapsedTime(started).TotalMilliseconds:0} ms: {compatibility}");
         }
 
         if (compatibility is PanCompatibility.UpdateRequired)
@@ -709,7 +614,7 @@ public sealed class ControllerSupportService(
 
             // HidHide answering unexpectedly means Pan can't hide: the puck is Steam's, and the installer restarts it.
             var reinstalled = await WithSteamClosedAsync(needsSteamClosed: true, "die HidHide-Installation (der Puck startet dabei neu)", DriverInstallBlocker,
-                ct => WithTimeoutAsync(t => _platform.ReinstallHidHideAsync(http, t), DriversInstallTimeout, "Die HidHide-Installation", ct),
+                ct => WithTimeoutAsync(t => _platform.ReinstallHidHideAsync(_http, t), DriversInstallTimeout, "Die HidHide-Installation", ct),
                 waitForSteam: done => done, token);
             if (!reinstalled)
             {
@@ -725,7 +630,7 @@ public sealed class ControllerSupportService(
     {
         Issues = IsSupportedPlatform ? await CheckEmulationPartsAsync(cancellationToken) : [];
         _panInstalled = CheckPanInstalled();
-        SisrFound = IsSupportedPlatform ? FindSisr() : null;
+        Sisr.Refresh(IsSupportedPlatform);
         OnChanged();
     }
 
@@ -736,7 +641,7 @@ public sealed class ControllerSupportService(
     /// </summary>
     private async Task<IReadOnlyList<HealthIssue>> CheckEmulationPartsAsync(CancellationToken cancellationToken)
     {
-        var issues = _platform.CheckDrivers(Settings, time.GetUtcNow()).ToList();
+        var issues = _platform.CheckDrivers(Settings, _time.GetUtcNow()).ToList();
         if (Viiper is { IsInstalled: false })
         {
             issues.Add(EmulationParts.ViiperMissing);
@@ -753,7 +658,7 @@ public sealed class ControllerSupportService(
 
         // Also while the group "SISR" is hidden ("SISR behalten"): two programs on the Steam Controller break both. With
         // Pan off nothing of Arcadia's takes the controller, so SISR is welcome then.
-        if (WatchSetup && Settings.PanEnabled && Sisr?.IsAnyRunning == true)
+        if (WatchSetup && Settings.PanEnabled && Sisr.IsAnyRunning)
         {
             issues.Add(EmulationParts.SisrRunning);
         }
@@ -772,7 +677,7 @@ public sealed class ControllerSupportService(
     /// Runs an action under the gate with the busy text shown. Exiting Arcadia cancels the token the
     /// action gets (and the wait for the gate), so the shutdown isn't held up by a download or by Steam starting.
     /// </summary>
-    private async Task RunBusyAsync(string text, Func<CancellationToken, Task> action, CancellationToken cancellationToken)
+    internal async Task RunBusyAsync(string text, Func<CancellationToken, Task> action, CancellationToken cancellationToken)
     {
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _shutdown.Token);
         try
@@ -825,7 +730,7 @@ public sealed class ControllerSupportService(
 
     private async Task<T> WithTimeoutAsync<T>(Func<CancellationToken, Task<T>> call, TimeSpan timeout, string what, CancellationToken cancellationToken)
     {
-        using var timer = new CancellationTokenSource(timeout, time);
+        using var timer = new CancellationTokenSource(timeout, _time);
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timer.Token);
         try
         {
@@ -837,7 +742,7 @@ public sealed class ControllerSupportService(
         }
     }
 
-    private void SetBusyText(string text)
+    internal void SetBusyText(string text)
     {
         BusyText = text;
         OnChanged();
@@ -847,7 +752,7 @@ public sealed class ControllerSupportService(
     {
         try
         {
-            sharedSettings.Update(change);
+            _sharedSettings.Update(change);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -859,4 +764,24 @@ public sealed class ControllerSupportService(
     }
 
     private void OnChanged() => Changed?.Invoke(this, EventArgs.Empty);
+}
+
+/// <summary>No Steam on this PC (or in a test without one): nothing runs, nothing to close.</summary>
+file sealed class NoSteam : ILauncherProgram
+{
+    public static readonly NoSteam Instance = new();
+
+    public string? Folder => null;
+
+    public bool IsRunning => false;
+
+    public bool IsReady => false;
+
+    public RunningLauncherGame? RunningGame() => null;
+
+    public Task<bool> CloseAsync(TimeProvider time, CancellationToken cancellationToken = default) => Task.FromResult(true);
+
+    public void Start()
+    {
+    }
 }

@@ -6,6 +6,7 @@ using Arcadia.App.ViewModels;
 using Arcadia.Core.Search;
 using Arcadia.Input;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Net;
 using Arcadia.ControllerSupport;
+using Arcadia.Launchers;
 using Arcadia.Tests.Sisr;
 using Arcadia.Pan;
 using Arcadia.Core.Launchers;
@@ -41,9 +42,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(settings ?? new AppSettings());
-        return new ControllerSupportService(new SettingsService(store), _http, _time, _platform)
+        return new ControllerSupportService(new SettingsService(store), _http, _time, _platform, sisr, _platform)
         {
-            Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper, Sisr = sisr,
+            Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper,
         };
     }
 
@@ -122,7 +123,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         _platform.IsPanReady = false;
 
         await service.RefreshAsync();
@@ -149,7 +150,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var viiper = new FakeViiper();
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper };
 
         await service.RefreshAsync();
         Assert.Equal("viiper-missing", Assert.Single(service.Issues).Id);
@@ -170,7 +171,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var viiper = new FakeViiper { Error = new InvalidOperationException("Prüfsumme von viiper.exe stimmt nicht – Download verworfen.") };
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper };
 
         await service.ApplyFixAsync(HealthFix.InstallDrivers);
 
@@ -535,7 +536,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         _platform.IsPanReady = false;
 
         // The first tick looks once, for the header; closed settings don't look again (registry, service list).
@@ -574,7 +575,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings());
         var settings = new SettingsService(store);
-        var service = new ControllerSupportService(settings, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(settings, _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         _platform.IsUsbipReady = false;
         _platform.HidHideVersion = null;
         _platform.HidHideInstallError = new InvalidOperationException("Pan ist eingerichtet, HidHide aber nicht");
@@ -751,7 +752,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings { PanEnabled = true });
         var settings = new SettingsService(store);
-        var service = new ControllerSupportService(settings, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(settings, _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         service.CheckPanAtStart();
         Assert.True(service.MayTalkToPan, "on, the first hello still reaches Pan: a firmware hold shows first");
 
@@ -787,7 +788,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings { PanEnabled = true });
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         service.CheckPanAtStart();
         string? whyDuringUpdate = null;
         _platform.WhilePanUpdates = () => whyDuringUpdate = service.WhyPanIsLeftAlone;
@@ -817,7 +818,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings { PanEnabled = true });
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         service.CheckPanAtStart();
         _platform.PanUpdateAnswer = false;
 
@@ -834,7 +835,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(new AppSettings { PanEnabled = false });
-        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform, steam: _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
         service.CheckPanAtStart();
 
         Assert.True(service.MayTalkToPan);
@@ -863,11 +864,11 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var service = Create(sisr: pc.Installation());
 
         await service.RefreshAsync();
-        Assert.True(service.ShowsSisrGroup);
+        Assert.True(service.Sisr.ShowsGroup);
 
         var kept = Create(sisr: pc.Installation(), settings: new AppSettings { KeepSisr = true });
         await kept.RefreshAsync();
-        Assert.False(kept.ShowsSisrGroup);
+        Assert.False(kept.Sisr.ShowsGroup);
     }
 
     [Fact]
@@ -879,15 +880,15 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var service = Create(sisr: pc.Installation());
         await service.RefreshAsync();
         var removed = 0;
-        service.SisrRemoved += (_, _) => removed++;
-        Assert.False(service.SisrRemovalStopsSteam);
+        service.Sisr.Removed += (_, _) => removed++;
+        Assert.False(service.Sisr.RemovalStopsSteam);
 
-        await service.RemoveSisrAsync();
+        await service.Sisr.RemoveAsync();
 
         Assert.Null(service.LastError);
-        Assert.Null(service.SisrRemovalCause);
+        Assert.Null(service.Sisr.RemovalCause);
         Assert.Equal(1, removed);
-        Assert.False(service.ShowsSisrGroup);
+        Assert.False(service.Sisr.ShowsGroup);
         Assert.False(File.Exists(pc.SisrExe));
         Assert.False(File.Exists(pc.CefFlag));
         Assert.Equal(0, _platform.SteamStops + _platform.SteamStarts);
@@ -900,15 +901,15 @@ public sealed class ControllerSupportServiceTests : IDisposable
         using var pc = new FakeSisrPc().WithSisr();
         var service = Create(sisr: pc.Installation());
         await service.RefreshAsync();
-        Assert.True(service.SisrRemovalStopsSteam);
+        Assert.True(service.Sisr.RemovalStopsSteam);
 
-        await service.RemoveSisrAsync();
+        await service.Sisr.RemoveAsync();
 
         Assert.Null(service.LastError);
         Assert.Equal(1, _platform.SteamStops);
         Assert.Equal(1, _platform.SteamStarts);
         Assert.Equal(0, pc.Installation().Find().MarkerAccounts);
-        Assert.False(service.ShowsSisrGroup);
+        Assert.False(service.Sisr.ShowsGroup);
     }
 
     [Fact]
@@ -921,23 +922,23 @@ public sealed class ControllerSupportServiceTests : IDisposable
         await service.RefreshAsync();
 
         _platform.SteamGame = "Hades II";
-        await service.RemoveSisrAsync();
-        Assert.Equal(ControllerSupportService.SisrRemovalBlocker("Hades II"), service.LastError);
-        Assert.Equal(service.LastError, service.SisrRemovalCause);
-        Assert.True(service.SisrRemovedNothing);
+        await service.Sisr.RemoveAsync();
+        Assert.Equal(SisrLeftovers.RemovalBlocker("Hades II"), service.LastError);
+        Assert.Equal(service.LastError, service.Sisr.RemovalCause);
+        Assert.True(service.Sisr.RemovedNothing);
 
         _platform.SteamGame = null;
         _platform.SteamRefusesToExit = true;
-        await service.RemoveSisrAsync();
+        await service.Sisr.RemoveAsync();
         Assert.Equal(ControllerSupportService.SteamWontCloseText, service.LastError);
-        Assert.Equal(service.LastError, service.SisrRemovalCause);
+        Assert.Equal(service.LastError, service.Sisr.RemovalCause);
 
         // The game may be using SISR's pad: SISR is stopped only once Steam is closed.
         Assert.Empty(pc.System.Stopped);
         Assert.True(File.Exists(pc.SisrExe));
         Assert.Equal(1, pc.Installation().Find().MarkerAccounts);
         Assert.Equal(0, _platform.SteamStarts);
-        Assert.True(service.ShowsSisrGroup);
+        Assert.True(service.Sisr.ShowsGroup);
     }
 
     [Fact]
@@ -950,10 +951,10 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var service = Create(sisr: pc.Installation());
         await service.RefreshAsync();
 
-        await service.RemoveSisrAsync();
+        await service.Sisr.RemoveAsync();
 
-        Assert.Equal(SisrInstallation.StopFailedCause, service.SisrRemovalCause);
-        Assert.True(service.SisrRemovedNothing);
+        Assert.Equal(SisrInstallation.StopFailedCause, service.Sisr.RemovalCause);
+        Assert.True(service.Sisr.RemovedNothing);
         Assert.True(File.Exists(pc.SisrExe));
         // Steam closed first (SISR is stopped only then) and came back.
         Assert.Equal(1, _platform.SteamStops);
@@ -961,9 +962,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         // Idempotent: once SISR can stop, the next try finishes the job.
         pc.System.Unstoppable.Clear();
-        await service.RemoveSisrAsync();
-        Assert.Null(service.SisrRemovalCause);
-        Assert.False(service.ShowsSisrGroup);
+        await service.Sisr.RemoveAsync();
+        Assert.Null(service.Sisr.RemovalCause);
+        Assert.False(service.Sisr.ShowsGroup);
     }
 
     [Fact]
@@ -975,23 +976,23 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var service = Create(sisr: pc.Installation());
         await service.RefreshAsync();
         var removed = 0;
-        service.SisrRemoved += (_, _) => removed++;
+        service.Sisr.Removed += (_, _) => removed++;
 
         pc.System.HasUninstallEntry = true;
         pc.System.UninstallEntryLocked = true;
-        await service.RemoveSisrAsync();
-        Assert.False(service.SisrFound!.ShowsGroup);
+        await service.Sisr.RemoveAsync();
+        Assert.False(service.Sisr.Found!.ShowsGroup);
 
         // Only SISR's uninstall entry is left; it alone wouldn't show the group, so the cause keeps it.
-        Assert.NotNull(service.SisrRemovalCause);
-        Assert.False(service.SisrRemovedNothing);
-        Assert.True(service.ShowsSisrGroup);
+        Assert.NotNull(service.Sisr.RemovalCause);
+        Assert.False(service.Sisr.RemovedNothing);
+        Assert.True(service.Sisr.ShowsGroup);
         Assert.Equal(0, removed);
 
         pc.System.UninstallEntryLocked = false;
-        await service.RemoveSisrAsync();
-        Assert.Null(service.SisrRemovalCause);
-        Assert.False(service.ShowsSisrGroup);
+        await service.Sisr.RemoveAsync();
+        Assert.Null(service.Sisr.RemovalCause);
+        Assert.False(service.Sisr.ShowsGroup);
         Assert.Equal(1, removed);
     }
 
@@ -1028,7 +1029,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         pc.System.RunSisr(pc.SisrExe, id: 6);
         var service = Create(sisr: pc.Installation());
 
-        await service.StopSisrStartedByOldArcadiaAsync();
+        await service.Sisr.StopStartedByOldArcadiaAsync();
 
         Assert.Equal([5], pc.System.Stopped);
         // Steam runs, so it drops the layout SISR forced; a kill skips SISR's own reset.
@@ -1042,14 +1043,24 @@ public sealed class ControllerSupportServiceTests : IDisposable
             throw new InvalidOperationException($"Unerwartete Anfrage: {request.RequestUri}");
     }
 
-    private sealed class FakePlatform : IControllerSupportPlatform
+    private sealed class FakePlatform : IControllerSupportPlatform, ILauncherProgram
     {
+        // Steam the program, as the controller support asks it.
+        string? ILauncherProgram.Folder => null;
+
+        bool ILauncherProgram.IsRunning => IsSteamRunning;
+
+        bool ILauncherProgram.IsReady => IsSteamReady;
+
+        RunningLauncherGame? ILauncherProgram.RunningGame() => RunningSteamGame() is { } name ? new("0", name) : null;
+
+        Task<bool> ILauncherProgram.CloseAsync(TimeProvider time, CancellationToken cancellationToken) => StopSteamAsync(time, cancellationToken);
+
+        void ILauncherProgram.Start() => StartSteam();
+
         public bool IsSupported { get; set; } = true;
 
-        public bool IsSteamInstalled { get; set; } = true;
-
         public bool IsSteamRunning { get; set; } = true;
-
 
         public bool IsSteamReady => IsSteamRunning;
 
@@ -1071,10 +1082,6 @@ public sealed class ControllerSupportServiceTests : IDisposable
         public int UsbipInstalls { get; private set; }
 
         public string? RunningSteamGame() => SteamGame;
-
-        public int? SteamAppId { get; set; }
-
-        public int? RunningSteamAppId() => SteamAppId;
 
         public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken)
         {

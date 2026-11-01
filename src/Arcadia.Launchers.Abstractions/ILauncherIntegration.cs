@@ -48,6 +48,9 @@ public interface ILauncherIntegration
     /// </summary>
     IReadOnlyList<LibraryTypeOption> LibraryOptions => [];
 
+    /// <summary>The launcher's own program, to close and start it again; null if Arcadia never needs to (#373).</summary>
+    ILauncherProgram? Program => null;
+
     /// <summary>The sign-in to the launcher's online account for its uninstalled games (#83); null if it has none.</summary>
     ILauncherAccount? Account => null;
 }

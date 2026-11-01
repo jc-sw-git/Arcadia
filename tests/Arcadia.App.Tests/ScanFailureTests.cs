@@ -84,7 +84,7 @@ public sealed class ScanFailureTests
     [Trait("TestCase", "T369-1")]
     public async Task The_window_shows_the_failed_state_when_a_tab_without_games_fails_and_the_empty_state_when_it_reads_again()
     {
-        using var window = await ArcadiaWindow.ShowAsync([new LauncherSpec(Core.Launchers.KnownLaunchers.Steam, 0, Library: [])]);
+        using var window = await ArcadiaWindow.ShowAsync([new LauncherSpec(Arcadia.Launchers.KnownLaunchers.Steam, 0, Library: [])]);
         var scanner = (FixedScanner)window.Arcadia.Launchers.Single().Scanner;
         window.OneWithText("Keine Spiele in Steam");
 

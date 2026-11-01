@@ -61,7 +61,7 @@ public sealed class FakeSisrPc : IDisposable
 
     public SisrInstallation Installation(string? arcadiaViiper) => new(
         new SisrPaths(LocalAppData, Roaming, Path.Combine(_root, "Programs"), Path.Combine(_root, "Desktop"), [LogDirectory], arcadiaViiper),
-        new SteamInstallation(SteamRoot, Account),
+        new SteamProgram(() => new SteamInstallation(SteamRoot, Account), () => false),
         System);
 
     public string Shortcuts(uint account)

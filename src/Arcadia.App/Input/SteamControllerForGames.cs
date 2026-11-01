@@ -58,7 +58,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     /// </param>
     /// <param name="controllerSupport">Its "Controller wiederherstellen" ends the pad on purpose (#243).</param>
     /// <param name="activeGames">The keys of the games that run or are being started (<c>RunningGamesTracker.ActiveGames</c>).</param>
-    /// <param name="runningSteamAppId">The Steam game running right now, also one started directly in Steam (#119).</param>
+    /// <param name="runningSteamGame">The key of the game Steam runs right now, also one started directly in Steam (#119), or null.</param>
     /// <param name="isSteamInFront">A window of Steam itself is in front; asked on every poll, so it must be cheap.</param>
     /// <param name="gameInFront">The key of the library game in front, or null; asked on every poll, so it must be cheap.</param>
     /// <param name="gamepad">
@@ -74,7 +74,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         ControllerSupportService controllerSupport,
         SettingsService settings,
         Func<IReadOnlyCollection<string>> activeGames,
-        Func<int?> runningSteamAppId,
+        Func<string?> runningSteamGame,
         Func<bool> isArcadiaActive,
         Func<bool> isMouseModeOn,
         Func<bool> isSteamInFront,
@@ -138,7 +138,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         var routing = new SteamControllerRouting(
             activeGames,
             controllerSupport.UsesArcadiaPad,
-            runningSteamAppId,
+            runningSteamGame,
             () => emulation.SteamControllerTakenOver,
             Services.AppLog.Write);
         routingForCopy = routing;

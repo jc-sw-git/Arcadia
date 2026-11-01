@@ -64,7 +64,8 @@ milestone again; this list keeps it small.
   A developer new to the code understands the change from the diff and `CLAUDE.md`.
 - **Modular:** launcher-specific code stays in its launcher folder; UI and Core don't special-case launchers.
   A launcher is one `ILauncherIntegration`, registered in `BuiltInLaunchers`; built-in launchers use only
-  `Arcadia.Launchers.Abstractions`, as a plugin would.
+  `Arcadia.Launchers.Abstractions` (and `Arcadia.Platform`'s process helpers), as a plugin would; Steam is reached as
+  the launcher that owns Steam Input (`ArchitectureTests`).
 - **Themeable:** no colour, brush or shadow values in views or styles; they are resources in
   `Theme/Theme.axaml`, so a theme (later possibly a plugin) can replace them all in one place.
 - **Verified for real:** UI, input, launcher and Steam Controller changes were run and looked at

@@ -7,12 +7,14 @@ The controller emulation for games and Pan, its guardian service. What was verif
 
 **The emulation and its parts**
 - `ControllerSupportService`: the emulation's parts and their fixes (`HealthIssues.WorstProblem`); in code the
-  feature keeps this old name. `ControllerSupportPlatform`: Windows and Steam, replaced in tests.
+  feature keeps this old name. `ControllerSupportPlatform`: Windows, replaced in tests. Steam comes in as the program
+  of the launcher that owns Steam Input (`ILauncherProgram`); the project doesn't reference `Arcadia.Launchers`.
 - `EmulationParts`: usbip-win2, VIIPER, Pan and HidHide, and the rows that say one is missing. `UsbipDriver`
   (installed version, `MinimumVersion`, the latest installer), `HidHideInstallation` (installed or not, the pinned
   installer), `GitHubReleases.cs` (`GitHubReleaseClient`, `VerifiedDownload`: GitHub's SHA-256 checked).
-- `ControllerSupportRemoval`: what goes at Arcadia's uninstall. `SisrInstallation`/`WindowsSisrSystem`: what an older
-  Arcadia left of SISR, removed on request ([sisr-removal.md](../controller-support/sisr-removal.md)).
+- `ControllerSupportRemoval`: what goes at Arcadia's uninstall. `SisrLeftovers` (`ControllerSupportService.Sisr`): the
+  group "SISR" and "SISR entfernen", run as one of the service's actions; `SisrInstallation`/`WindowsSisrSystem`: what
+  an older Arcadia left of SISR on disk ([sisr-removal.md](../controller-support/sisr-removal.md)).
 
 **VIIPER, the emulated pads**
 - `ViiperRelease` (the fork's build pinned in `Viiper.targets`), `ViiperInstallation` (fetches it next to Arcadia,

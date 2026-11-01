@@ -3,6 +3,7 @@ using Arcadia.App.ViewModels;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Search;
 using Arcadia.Input;
+using Arcadia.Launchers;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;

@@ -69,6 +69,8 @@ its file.
 | [375-close-the-pan-core-test-gaps.md](375-close-the-pan-core-test-gaps.md) | #375 | Close the Pan.Core test gaps the mutation run found | 0 (tests only) |
 | [371-cancellable-monitor-polls.md](371-cancellable-monitor-polls.md) | #371 | Cancellation token for monitor polls; a failing or hanging monitor holds no one | 0 (unit tests) |
 | [369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md](369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md) | #369 | Show a failed scan instead of an empty launcher tab | 3 |
+| [373-decouple-steam-from-core-and-app.md](373-decouple-steam-from-core-and-app.md) | #373 | Decouple Steam from Core, ControllerSupport and App; validate launcher ids | 0 (refactoring) |
+| [374-split-controllersupportservice.md](374-split-controllersupportservice.md) | #374 | Split ControllerSupportService (SISR removal out) and share the composition root with the tests | 0 (refactoring) |
 | [396-pan-hides-controllers-arcadia-cant-see.md](396-pan-hides-controllers-arcadia-cant-see.md) | #396 | Pan hides controllers Arcadia itself can no longer see | 3 |
 
 ## Exploratory test

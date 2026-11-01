@@ -7,7 +7,7 @@ using Arcadia.Core.Library;
 using Arcadia.Core.Search;
 using Arcadia.Core.Settings;
 using Arcadia.Input;
-using Arcadia.Launchers;
+using Arcadia.Platform;
 using Avalonia.Threading;
 
 namespace Arcadia.App.Services;

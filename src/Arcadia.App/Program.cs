@@ -4,8 +4,9 @@ using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Diagnostics;
+using Arcadia.Core.Launchers;
+using Arcadia.Launchers;
 using Arcadia.Pan;
-using Arcadia.Launchers.Steam;
 using Avalonia;
 using Velopack;
 
@@ -113,12 +114,14 @@ sealed partial class Program
         var questions = (parts.Any ? 1u : 0u) + (hasData ? 1u : 0u);
         var timeoutMs = questions == 0 ? 0 : QuestionsTimeoutMs / questions;
 
-        var removeParts = parts.Any && Ask(ControllerSupportRemoval.Question(parts, SteamInstallation.IsRunning, timeoutMs / 1000), timeoutMs);
+        // Steam the program, which SISR left its marker in: the launcher that owns Steam Input.
+        var steam = LauncherRegistry.SteamInputOwnerOf(BuiltInLaunchers.Create(TimeProvider.System, demo: false))?.Program;
+        var removeParts = parts.Any && Ask(ControllerSupportRemoval.Question(parts, steam?.IsRunning == true, timeoutMs / 1000), timeoutMs);
         var removeData = hasData && AskToRemoveData(timeoutMs);
 
         if (removeParts)
         {
-            ControllerSupportRemoval.Remove(AppLog.Write);
+            ControllerSupportRemoval.Remove(steam, AppLog.Write);
         }
 
         if (removeData)

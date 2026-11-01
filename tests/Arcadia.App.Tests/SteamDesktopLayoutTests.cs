@@ -3,6 +3,7 @@ using Arcadia.App.Settings;
 using Arcadia.Input;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
+using Arcadia.Launchers;
 using Arcadia.Tests.Sdl;
 using Avalonia.Headless.XUnit;
 

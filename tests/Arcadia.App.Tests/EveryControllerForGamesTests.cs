@@ -7,6 +7,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Input;
+using Arcadia.Launchers;
 using Arcadia.Pan;
 using Arcadia.Tests.Pads;
 using Arcadia.Tests.Sdl;

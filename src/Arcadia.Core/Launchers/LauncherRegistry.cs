@@ -10,7 +10,7 @@ namespace Arcadia.Core.Launchers;
 public sealed class LauncherRegistry
 {
     private readonly IReadOnlyList<ILauncherIntegration> _all;
-    private readonly IReadOnlyList<string> _ids;
+    private readonly List<string> _ids;
     private readonly Func<IReadOnlyList<string>?> _chosen;
     private readonly Func<string, LauncherPreferences> _preferences;
 
@@ -31,29 +31,43 @@ public sealed class LauncherRegistry
         // A broken integration is left out rather than stopping Arcadia; later it may come from a plugin.
         var accepted = new List<ILauncherIntegration>();
         var rejected = new List<string>();
+        var ids = new List<string>();
         foreach (var integration in integrations)
         {
-            var id = integration.Launcher.Id;
-            if (accepted.Any(i => i.Launcher.Id == id))
+            try
             {
-                rejected.Add($"Launcher „{id}“ ist doppelt registriert.");
+                var id = integration.Launcher.Id;
+                if (LauncherIds.Problem(id) is { } problem)
+                {
+                    rejected.Add(problem);
+                }
+                else if (ids.Contains(id))
+                {
+                    rejected.Add($"Launcher „{id}“ ist doppelt registriert.");
+                }
+                else if (integration.Scanner.Launcher.Id != id
+                    || (integration.Client is { LauncherId: var clientId } && clientId != id)
+                    || (integration.InstallMonitor is { LauncherId: var monitorId } && monitorId != id)
+                    || (integration.RunningGames is { LauncherId: var runningId } && runningId != id))
+                {
+                    // Games, tabs and installs are matched by launcher id; a part with another id would never match.
+                    rejected.Add($"Launcher „{id}“ enthält Teile eines anderen Launchers.");
+                }
+                else
+                {
+                    accepted.Add(integration);
+                    ids.Add(id);
+                }
             }
-            else if (integration.Scanner.Launcher.Id != id
-                || (integration.Client is { LauncherId: var clientId } && clientId != id)
-                || (integration.InstallMonitor is { LauncherId: var monitorId } && monitorId != id)
-                || (integration.RunningGames is { LauncherId: var runningId } && runningId != id))
+            catch (Exception ex)
             {
-                // Games, tabs and installs are matched by launcher id; a part with another id would never match.
-                rejected.Add($"Launcher „{id}“ enthält Teile eines anderen Launchers.");
-            }
-            else
-            {
-                accepted.Add(integration);
+                // A plugin's getter may throw; that plugin is left out, Arcadia starts with the others.
+                rejected.Add($"Launcher {integration.GetType().FullName} ließ sich nicht lesen: {ex}");
             }
         }
 
         _all = accepted;
-        _ids = accepted.Select(i => i.Launcher.Id).ToList();
+        _ids = ids;
         Rejected = rejected;
     }
 
@@ -99,11 +113,14 @@ public sealed class LauncherRegistry
     public IReadOnlyList<string> InactiveIds => LauncherSelection.Inactive(_ids, ActiveIds, IsFound);
 
     /// <summary>The active launchers, in tab order.</summary>
-    public IReadOnlyList<ILauncherIntegration> Enabled => ActiveIds.Select(id => _all.First(i => i.Launcher.Id == id)).ToList();
+    public IReadOnlyList<ILauncherIntegration> Enabled => ActiveIds.Select(id => Registered(id)!).ToList();
 
     /// <summary>The active launcher with this id, or null.</summary>
     public ILauncherIntegration? Find(string launcherId) =>
-        ActiveIds.Contains(launcherId) ? _all.FirstOrDefault(i => i.Launcher.Id == launcherId) : null;
+        ActiveIds.Contains(launcherId) ? Registered(launcherId) : null;
+
+    /// <summary>The client of the active launcher with this id; null if it has none or isn't active.</summary>
+    public ILauncherClient? ClientOf(string launcherId) => Find(launcherId)?.Client;
 
     /// <summary>
     /// Whether the games of this launcher use Steam Input themselves (<see cref="LauncherInfo.GamesUseSteamInput"/>).
@@ -112,8 +129,19 @@ public sealed class LauncherRegistry
     /// </summary>
     public bool GamesUseSteamInput(string launcherId) => Registered(launcherId)?.Launcher.GamesUseSteamInput == true;
 
+    /// <summary>
+    /// The registered launcher that owns Steam Input (<see cref="LauncherInfo.OwnsSteamInput"/>), active or not: the Steam
+    /// Controller belongs to its program whether its tab is shown or not. Null if none is registered.
+    /// </summary>
+    public ILauncherIntegration? SteamInputOwner => SteamInputOwnerOf(_all);
+
+    /// <summary>The first of <paramref name="integrations"/> that owns Steam Input, for uses before or without a registry.</summary>
+    public static ILauncherIntegration? SteamInputOwnerOf(IEnumerable<ILauncherIntegration> integrations) =>
+        integrations.FirstOrDefault(i => i.Launcher.OwnsSteamInput);
+
     /// <summary>The registered launcher with this id, active or not, or null.</summary>
-    public ILauncherIntegration? Registered(string launcherId) => _all.FirstOrDefault(i => i.Launcher.Id == launcherId);
+    /// <remarks>By the id read once at registration, so a plugin's getter isn't asked again.</remarks>
+    public ILauncherIntegration? Registered(string launcherId) => _ids.IndexOf(launcherId) is var index and >= 0 ? _all[index] : null;
 
     /// <summary>
     /// Whether the launcher is installed on this PC, as <see cref="Locate"/> found it last. Before the first search every
@@ -131,18 +159,18 @@ public sealed class LauncherRegistry
     public void Locate()
     {
         var locations = new Dictionary<string, string?>(StringComparer.Ordinal);
-        foreach (var integration in _all)
+        foreach (var (id, integration) in _ids.Zip(_all))
         {
             try
             {
-                UseChosenFolder(integration);
-                locations[integration.Launcher.Id] = integration.Locate();
+                UseChosenFolder(id, integration);
+                locations[id] = integration.Locate();
             }
             catch (Exception ex)
             {
                 // Later a plugin's; one that fails counts as not found rather than stopping the scan of the others.
-                System.Diagnostics.Trace.TraceWarning($"Looking for {integration.Launcher.DisplayName} failed: {ex}");
-                locations[integration.Launcher.Id] = null;
+                System.Diagnostics.Trace.TraceWarning($"Looking for launcher {id} failed: {ex}");
+                locations[id] = null;
             }
         }
 
@@ -153,14 +181,14 @@ public sealed class LauncherRegistry
     /// A folder the user picked for the launcher (#138) is checked again before every search: a folder that no longer holds
     /// the launcher (moved, deleted, or edited by hand in settings.json) gives way to the launcher's own search.
     /// </summary>
-    private void UseChosenFolder(ILauncherIntegration integration)
+    private void UseChosenFolder(string launcherId, ILauncherIntegration integration)
     {
         if (integration.FolderChoice is not { } choice)
         {
             return;
         }
 
-        var folder = _preferences(integration.Launcher.Id).Folder is { } chosen ? choice.Find(chosen) : null;
+        var folder = _preferences(launcherId).Folder is { } chosen ? choice.Find(chosen) : null;
         choice.Use(folder);
     }
 }

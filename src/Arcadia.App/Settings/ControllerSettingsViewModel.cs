@@ -128,7 +128,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         // An old failure describes a moment that is over; the page opens without it.
         _support.ClearError();
         _support.Changed += OnSupportChanged;
-        _support.SisrRemoved += OnSisrRemoved;
+        _support.Sisr.Removed += OnSisrRemoved;
         _pan.Changed += OnPanChanged;
         Refresh();
 
@@ -217,7 +217,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         : "Das dauert nur einen Moment.";
 
     /// <summary>The step "SISR entfernen" is at, e.g. "Steam wird beendet …".</summary>
-    public string RemovingSisrStep => _support.BusyText ?? ControllerSupportService.SisrRemovingText;
+    public string RemovingSisrStep => _support.BusyText ?? SisrLeftovers.RemovingText;
 
     /// <summary>The Steam game named in the game prompt.</summary>
     [ObservableProperty]
@@ -259,7 +259,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support.WatchSetup = false;
         _promptCheck.Stop();
         _support.Changed -= OnSupportChanged;
-        _support.SisrRemoved -= OnSisrRemoved;
+        _support.Sisr.Removed -= OnSisrRemoved;
         _pan.Changed -= OnPanChanged;
         _panRows.LayoutsRequested -= OpenLayouts;
         _support.ClearError();
@@ -369,7 +369,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     }
 
     /// <summary>Whether the action the prompts are open for closes Steam right now.</summary>
-    private bool StopsSteam => _forSisr ? _support.SisrRemovalStopsSteam : _steamStopFix is { } fix && _support.StopsSteamFor(fix);
+    private bool StopsSteam => _forSisr ? _support.Sisr.RemovalStopsSteam : _steamStopFix is { } fix && _support.StopsSteamFor(fix);
 
     /// <summary>The action asks first: it closes Steam, or runs HidHide's installer, after which Arcadia restarts (#396).</summary>
     private bool AsksFirst => StopsSteam || InstallsHidHide;
@@ -400,9 +400,9 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     {
         if (_forSisr)
         {
-            _sisrRemovalStopsSteam = _support.SisrRemovalStopsSteam;
+            _sisrRemovalStopsSteam = _support.Sisr.RemovalStopsSteam;
             ShowPrompt(SettingsPrompt.RemovingSisr);
-            _support.RemoveSisrAsync().Forget("SISR entfernen");
+            _support.Sisr.RemoveAsync().Forget("SISR entfernen");
             return;
         }
 
@@ -534,7 +534,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             Prompt = SettingsPrompt.None;
             _promptCheck.Stop();
         }
-        else if (Prompt == SettingsPrompt.RemovingSisr && !IsBusy && (_support.SisrRemovalCause is not null || _support.LastError is not null || !_support.ShowsSisrGroup))
+        else if (Prompt == SettingsPrompt.RemovingSisr && !IsBusy && (_support.Sisr.RemovalCause is not null || _support.LastError is not null || !_support.Sisr.ShowsGroup))
         {
             // Done: the toast says so, or the group row says what is left and why.
             Prompt = SettingsPrompt.None;

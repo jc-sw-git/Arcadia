@@ -3,6 +3,13 @@
 The App's classes; the other projects: [README.md](README.md). Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4
 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`; Avalonia pitfalls: [avalonia.md](avalonia.md).
 
+## Composition
+
+`ArcadiaComposition` builds the object graph (launchers, `ControllerSupportService`, game trackers, `MainViewModel`,
+then the controllers' routing and `SteamControllerForGames`) for both `App.axaml.cs` and the acceptance tests'
+`ArcadiaDriver`. What only a window or Windows has (timers, `SystemDialogs`, the mouse mode, the Pan pipe, VIIPER)
+`App.axaml.cs` makes and passes in, so a change to the wiring belongs there and reaches the tests by itself.
+
 ## Routing and pages
 
 - `MainViewModel` routes each press to the topmost layer (first start or settings, else a dialog, else the page on
@@ -85,7 +92,8 @@ centred between icon and button), `ScreenEdgeFill`. `Input/GamepadRouting` takes
 
 `Services/MouseModeHost` (wiring, overlay, automation), `Services/ForegroundGame` (also what is in front after a game
 ended, #94), `Services/GameWindow` ("Zurück ins Spiel"), `Services/ForegroundWindow` (its bounds and caret),
-`Services/ForegroundGuard` (Arcadia's window in front of or behind others), `Services/ForegroundOwner` (Steam's window
-or a library game in front, asked on every poll),
+`Services/ForegroundGuard` (Arcadia's window in front of or behind others), `Services/ForegroundOwner` (Steam's window,
+by the programs of the launcher that owns Steam Input, or a library game in front, asked on every poll),
+`Services/SystemProcessTable` (the PC's processes for `ProcessGames`),
 `Views/MouseModeKeyboardWindow` with `Views/MouseModeKeyboardLegend` (the keyboard outside Arcadia, #110),
 `Views/MouseModeOverlay` (own non-activating window, clicks pass outside its region) with `Controls/ScreenEdgeFill`.

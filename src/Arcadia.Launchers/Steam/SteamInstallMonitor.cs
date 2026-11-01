@@ -1,5 +1,4 @@
 using System.Globalization;
-using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers.Steam;
@@ -37,7 +36,7 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
     private string? _contentLogRoot;
     private bool _primed;
 
-    public string LauncherId => KnownLaunchers.Steam.Id;
+    public string LauncherId => SteamIntegration.Info.Id;
 
     public InstallSnapshot Poll(CancellationToken cancellationToken = default)
     {

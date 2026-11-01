@@ -20,7 +20,7 @@ public sealed class GameLaunchTests
     };
 
     private static GameLaunchService ServiceWith(ILauncherClient client, List<string>? log = null) =>
-        new(FakeIntegration.Registry(new FakeIntegration(FakeIntegration.LauncherOf("x")) { Client = client }))
+        new(FakeIntegration.Registry(new FakeIntegration(FakeIntegration.LauncherOf("x")) { Client = client }).ClientOf)
         {
             Log = log is null ? null : log.Add,
         };

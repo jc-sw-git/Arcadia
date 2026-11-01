@@ -1,5 +1,4 @@
 using System.Globalization;
-using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Steam.Account;
 
@@ -60,7 +59,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
     private readonly AppTypeCache _appTypes = new();
     private readonly PackageAppsCache _packageApps = new();
 
-    public LauncherInfo Launcher => KnownLaunchers.Steam;
+    public LauncherInfo Launcher => SteamIntegration.Info;
 
     public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default) =>
         Task.Run(() => Scan(cancellationToken), cancellationToken);
@@ -168,7 +167,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
         return new Game
         {
             Id = owned.AppId.ToString(CultureInfo.InvariantCulture),
-            LauncherId = KnownLaunchers.Steam.Id,
+            LauncherId = SteamIntegration.Info.Id,
             Title = title,
             Type = type,
             IsInstalled = false,
@@ -270,7 +269,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
         return new Game
         {
             Id = appId.ToString(CultureInfo.InvariantCulture),
-            LauncherId = KnownLaunchers.Steam.Id,
+            LauncherId = SteamIntegration.Info.Id,
             Title = name,
             Type = type,
             Launch = new LaunchTarget.ProtocolUri(RunUri(appId)),

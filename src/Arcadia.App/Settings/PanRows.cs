@@ -373,6 +373,13 @@ public sealed class PanRows
             }
         }
 
+        if (_support.HoldsEmulation == ControllerSupportService.RestartPendingText && _support.RestartArcadia is { } restart && ids.Add("pan:restart-pending"))
+        {
+            // Normally gone at once with the restart; it stays only when that failed (its toast), so the player can try again.
+            rows.Add(Row("pan:restart-pending", RestartPendingTitle, RestartPendingSubtitle, HealthSeverity.Info, RestartPendingInfo,
+                RestartText, () => restart("„Arcadia neu starten“ nach der HidHide-Installation")));
+        }
+
         // Only while the emulation runs: otherwise every controller reaches games directly anyway, and the rows above say why.
         if (status.State == PanEmulationState.Running)
         {
@@ -504,6 +511,9 @@ public sealed class PanRows
     public const string NotVisibleText = "Pan hat diese Controller vor anderen Programmen versteckt. Arcadia selbst müsste sie danach weiter sehen, um sie für Steam und Spiele zu kopieren, sieht sie aber seit dem Verstecken nicht mehr. Das passiert, wenn HidHide installiert wurde, während Arcadia lief. Pan hat die Controller deshalb wieder freigegeben: Steam und Spiele sehen sie direkt. Bis Arcadia neu gestartet ist, versteckt Pan nichts mehr.";
     public const string NotVisibleAgainText = "Kommt diese Meldung nach dem Neustart von Arcadia wieder, starte Windows neu.";
     public const string RestartText = "Arcadia neu starten";
+    public const string RestartPendingTitle = "Arcadia startet nach der HidHide-Installation neu";
+    public const string RestartPendingSubtitle = "Bis dahin versteckt Pan keine Controller";
+    public const string RestartPendingInfo = "Erst ein neu gestartetes Arcadia sieht die Controller, die Pan vor anderen Programmen versteckt. Startet Arcadia nicht von selbst neu, starte es hier neu.";
     private const string RestartReason = "„Arcadia neu starten“: Arcadia sieht die versteckten Controller nicht";
 
     /// <summary>Why Pan didn't hide a controller, in the player's words (#335's findings A1–A3).</summary>

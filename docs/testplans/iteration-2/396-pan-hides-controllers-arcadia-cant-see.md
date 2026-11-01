@@ -21,7 +21,9 @@ and a HidHide install from Arcadia is followed by a restart of Arcadia before Pa
       Einstellungen → Controller → "HidHide fehlt" → "Installieren". "HidHide installieren?" says Arcadia restarts
       afterwards; [B] installs nothing. Then [A], confirm the Windows prompt: Arcadia ends and starts again by itself
       within a few seconds; `arcadia.log` has "Arcadia startet neu (nach der HidHide-Installation)" and no
-      "Pan-Emulation … läuft" line between the install and the restart. Afterwards copy and pads work. "Installieren"
+      "Pan-Emulation … läuft" line between the install and the restart. Afterwards copy and pads work. With three or more
+      controller models connected (e.g. DualSense, 8BitDo, Switch Pro), the emulation starts without the warning of
+      T396-1. "Installieren"
       for a part other than HidHide (e.g. Pan missing) asks nothing and restarts nothing. · E2E: yes (App
       `EmulationSetupTests` T396-3; real HidHide, UAC and the restart are manual)
 
@@ -31,3 +33,4 @@ History:
 |---|---|---|---|---|---|
 | Diagnosis | 2026-11-01 | Claude | owner's PC, 0.2.0-rc.1, read-only: `arcadia.log`, `pan.log`, journal, event log | HidHide installed at 18:12:29 while Arcadia (PID 25636) ran; that process saw nothing Pan hid until it ended at 22:35 | This issue |
 | T396-1 to T396-3 (automated) | 2026-11-01 | Claude | branch build, owner's Windows 11 PC, fakes for Pan, HidHide, UAC and controllers | ✅ green; each new acceptance test red once with its part of the fix removed | Real HidHide, UAC, restart and controllers need the owner's test |
+| QE review of #397 | 2026-11-01 | Claude | branch build, owner's Windows 11 PC, fakes | ❌ false alarm with three models hidden in one let-go (QE test red); fixed: the wait starts when the let-go ends; ✅ green | Also: the restart's hold set before the install's ends; the row "Arcadia startet nach der HidHide-Installation neu" offers the restart if it failed |

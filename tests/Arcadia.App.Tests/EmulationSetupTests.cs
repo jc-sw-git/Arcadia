@@ -98,6 +98,27 @@ public sealed class EmulationSetupTests
         await arcadia.WaitUntilAsync(() => steam.DriverInstalls == 1 && arcadia.ControllerSupport.BusyText is null, "installiert");
         await arcadia.WaitUntilAsync(() => arcadia.Restarts.Count == 1, "der Neustart von Arcadia");
         Assert.Equal(ControllerSupportService.RestartPendingText, arcadia.ControllerSupport.HoldsEmulation);
+
+        // Until the restart, Pan hides nothing (here the restart is only counted, as if it had failed).
+        arcadia.SteamControllerCopy.CanCopy = true;
+        arcadia.SteamControllerCopy.PuckPresent = true;
+        arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.StartControllers();
+        for (var tick = 0; tick < 3; tick++)
+        {
+            arcadia.Time.Advance(TimeSpan.FromSeconds(10));
+            await arcadia.TickSteamControllerAsync();
+        }
+
+        Assert.Empty(arcadia.Pan.Hidden);
+        Assert.Equal(ControllerSupportService.RestartPendingText, arcadia.ForGames.Status.Reason);
+
+        // A restart that didn't happen can be asked for again from its row.
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "pan:restart-pending"), "die Zeile „Arcadia startet nach der HidHide-Installation neu“");
+        var pending = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "pan:restart-pending"));
+        Assert.Equal(PanRows.RestartText, pending.ActionText);
+        pending.Activate();
+        Assert.Equal(2, arcadia.Restarts.Count);
     }
 
     [AvaloniaFact]

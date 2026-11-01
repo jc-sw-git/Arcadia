@@ -218,10 +218,10 @@ public sealed class TakenOverControllers
                 var key = KeyOf(reading);
                 var controller = Find(key) ?? Add(key, reading);
                 controller.Seen = true;
-                if (_models.Count > 0 && _models.TryGetValue(controller.Model, out var hidden) && hidden.AwaitingSightSince is { } since
-                    && _rereadAt != long.MinValue && _rereadAt >= since)
+                if (_models.Count > 0 && _models.TryGetValue(controller.Model, out var hidden) && hidden.AwaitingSightSince is not null)
                 {
                     // Read again after the let-go of its hide: Arcadia still sees it past HidHide (#396).
+                    hidden.AwaitsSight = false;
                     hidden.AwaitingSightSince = null;
                 }
                 if (controller.PadId != reading.PadId && (controller.Rumbling is not null || controller.Lit is not null))
@@ -531,7 +531,15 @@ public sealed class TakenOverControllers
         {
             await pulsing.CancelAsync();
             await pulse;
-            lock (_lock) _rereadAt = _time.GetTimestamp();
+            lock (_lock)
+            {
+                _rereadAt = _time.GetTimestamp();
+                foreach (var state in _models.Values.Where(state => state.AwaitsSight && state.AwaitingSightSince is null))
+                {
+                    state.AwaitingSightSince = _rereadAt;
+                }
+            }
+
             ReadControllers(true);
         }
     }
@@ -655,8 +663,9 @@ public sealed class TakenOverControllers
             var state = new ModelState { TriedAt = _time.GetTimestamp() };
             if (result.Done)
             {
-                // Arcadia read these until the let-go before the hide: it must read them again after it (#396).
-                state.AwaitingSightSince = state.TriedAt;
+                // Arcadia read these until the let-go before the hide: it must read them again after it (#396). The wait
+                // starts when the let-go ends (WhileLetGoAsync): Pan hides model after model in it, ~2.5 s each.
+                state.AwaitsSight = true;
                 state.NamesAtHide.AddRange(_controllers.Where(controller => keys.Contains(controller.Key)).Select(controller => controller.Name).Distinct());
                 if (result.Reason == PanReason.ControllerNeedsReplug)
                 {
@@ -941,7 +950,10 @@ public sealed class TakenOverControllers
         /// <summary>Hidden, but these controllers are held by whoever had them until they reconnect (A3).</summary>
         public HashSet<string> ReplugPending { get; } = [];
 
-        /// <summary>When it was hidden, until Arcadia reads one of its controllers again (#396); null once it did.</summary>
+        /// <summary>Hidden, and Arcadia hasn't read one of its controllers since (#396).</summary>
+        public bool AwaitsSight { get; set; }
+
+        /// <summary>When the let-go of its hide ended, while <see cref="AwaitsSight"/>; null before that.</summary>
         public long? AwaitingSightSince { get; set; }
 
         /// <summary>The names of its controllers at the hide, for the warning when they don't come back.</summary>

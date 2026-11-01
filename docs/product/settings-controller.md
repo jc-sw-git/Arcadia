@@ -33,7 +33,8 @@ The page and its status messages: [settings.md](settings.md).
 - Every install that runs HidHide's installer ("Installieren", "Aktualisieren", "Neu installieren", "Treiber
   installieren") asks "HidHide installieren?" first, also without Steam running: Arcadia restarts once afterwards, as
   only a new Arcadia sees what Pan hides; with Steam running the same dialog says Steam closes ("Steam beenden und
-  installieren"). After the install Pan hides nothing until Arcadia has restarted, which it does by itself. No Windows
+  installieren"). After the install Pan hides nothing until Arcadia has restarted, which it does by itself; if that
+  fails, the row "Arcadia startet nach der HidHide-Installation neu" (blue i) offers "Arcadia neu starten". No Windows
   restart is needed for this.
 - Every other controller (#238, designs T238F05–F07), only while the emulation runs: one warning per firmware tool that
   runs, "Xbox Zubehör ist geöffnet" / "DualSense-Firmware-Updater ist geöffnet" (subtitle "Arcadia übernimmt den …,

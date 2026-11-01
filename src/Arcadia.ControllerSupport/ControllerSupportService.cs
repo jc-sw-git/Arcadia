@@ -576,16 +576,18 @@ public sealed class ControllerSupportService
         finally
         {
             _applyingFix = null;
-            _hidHideInstalling = false;
             // A HidHide that came with the fix, newly or again, doesn't let this process see what Pan hides (#396); also
-            // when a later step failed, as long as its version changed.
+            // when a later step failed, as long as its version changed. Pending before the install's hold ends, so no
+            // tick in between finds nothing holding the emulation back (QE review of #397).
             if (runsHidHide && !_shuttingDown && _platform.HidHideVersion is { } now && HidHideRelease.IsSupported(now)
                 && (LastError is null || now != hidHideBefore))
             {
                 _restartPending = true;
                 Log?.Invoke("HidHide installiert: Arcadia startet neu, bevor Pan etwas versteckt");
-                OnChanged();
             }
+
+            _hidHideInstalling = false;
+            OnChanged();
         }
 
         if (_restartPending && RestartArcadia is { } restart)

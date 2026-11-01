@@ -7,9 +7,12 @@ headless, so the real page is checked by hand.
 - [ ] **T372-1** ≡ → Launcher → Steam → "Steam-Konto" → A opens Steam's login page; follow a link on it that leads off
   Steam (e.g. the privacy policy's link to another site, or a social media link in the footer): the page stays where it
   was, the address above it still shows a Steam address, `arcadia.log` says "Browser: <host> gehört nicht zu
-  steampowered.com, steamcommunity.com, nicht geöffnet."; links to other Steam pages (e.g. "Hilfe") open, also those
-  that would open a new window, and no second window appears; B goes back; signing in afterwards works as T280-1 ·
-  E2E: no (real web view and Steam's real page)
+  steampowered.com, steamcommunity.com, nicht geöffnet."; links to other Steam pages (e.g. "Hilfe") open; B goes back;
+  signing in afterwards works as T280-1 · E2E: no (real web view and Steam's real page)
+- [ ] **T372-2** On Steam's login page, follow links that would open a new window (e.g. with the middle mouse button or
+  a link that opens in a new tab): one to another Steam page opens in the same page, one off Steam opens nothing and
+  the page stays as it was; no second window appears in either case and the page never turns white · E2E: no (real web
+  view and Steam's real page)
 
 History:
 

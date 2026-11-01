@@ -165,6 +165,18 @@ public sealed class WebPagesTests
         Assert.Empty(_host.Opened);
     }
 
+    [Fact]
+    public async Task Forgetting_cookies_needs_no_sites()
+    {
+        var pages = Attached();
+        var forget = pages.ForgetAsync([], CancellationToken.None);
+        await OpenedAsync(1);
+
+        _host.Opened[0].Complete(WebPageResult.Done(string.Empty));
+
+        Assert.Null((await forget).Error);
+    }
+
     /// <summary>Pages open on another thread once the one before is done.</summary>
     private async Task OpenedAsync(int count)
     {

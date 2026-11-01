@@ -40,24 +40,29 @@ public sealed class WebPages : IWebPages
     public void Attach(IWebPageHost host) => _host.TrySetResult(host);
 
     public Task<WebPageResult> ShowAsync(string title, Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone, CancellationToken cancellationToken) =>
-        RunAsync(WebPageViewModel.SignIn(title, page, domains, script, isDone), timeout: null, cancellationToken);
+        OpenAsync(WebPageViewModel.SignIn(title, page, domains, script, isDone), timeout: null, cancellationToken);
 
     public Task<WebPageResult> ReadAsync(Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone, CancellationToken cancellationToken) =>
-        RunAsync(WebPageViewModel.Read(page, domains, script, isDone), ReadTimeout, cancellationToken);
+        OpenAsync(WebPageViewModel.Read(page, domains, script, isDone), ReadTimeout, cancellationToken);
 
     public Task<WebPageResult> ForgetAsync(IReadOnlyList<string> domains, CancellationToken cancellationToken) =>
         RunAsync(WebPageViewModel.Forget(domains), ReadTimeout, cancellationToken);
 
     /// <param name="timeout">How long the page may take once open; none for a page the user works on.</param>
-    private async Task<WebPageResult> RunAsync(WebPageViewModel page, TimeSpan? timeout, CancellationToken cancellationToken)
+    /// <summary>A page off its launcher's sites is a launcher's mistake: the browser would cancel its first load anyway, this says why.</summary>
+    private Task<WebPageResult> OpenAsync(WebPageViewModel page, TimeSpan? timeout, CancellationToken cancellationToken)
     {
-        if (page.ForgetDomains.Count == 0 && !page.MayRead(page.Page))
+        if (!page.MayRead(page.Page))
         {
-            // A launcher's mistake: the browser would cancel the first load anyway, this says why.
-            AppLog.Write($"Browser: {page.Page.Host} liegt nicht unter {string.Join(", ", page.Domains)}, nicht geöffnet.");
-            return WebPageResult.Failed("Die Seite gehört nicht zum Launcher.");
+            AppLog.Write($"Browser: {page.Page.Host} gehört nicht zu {string.Join(", ", page.Domains)}, nicht geöffnet.");
+            return Task.FromResult(WebPageResult.Failed("Die Seite gehört nicht zum Launcher."));
         }
 
+        return RunAsync(page, timeout, cancellationToken);
+    }
+
+    private async Task<WebPageResult> RunAsync(WebPageViewModel page, TimeSpan? timeout, CancellationToken cancellationToken)
+    {
         try
         {
             var host = await _host.Task.WaitAsync(HostTimeout, _time, cancellationToken);

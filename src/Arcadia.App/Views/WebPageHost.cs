@@ -104,12 +104,13 @@ public sealed class WebPageHost : Decorator
                 page.Address = WebPageViewModel.AddressOf(address);
             }
         };
-        // A link that would open a window of its own opens in the page instead, under the same rule; a second window
-        // would sit outside Arcadia's, beyond B and the controller.
+        // A link that would open a window of its own opens in the page instead, if it leads to the launcher's sites; a
+        // second window would sit outside Arcadia's, beyond B and the controller. A blank one (window.open() without an
+        // address) would only leave the page white.
         view.NewWindowRequested += (_, e) =>
         {
             e.Handled = true;
-            if (e.Request is { } target && page.MayOpen(target))
+            if (e.Request is { } target && page.MayRead(target))
             {
                 view.Navigate(target);
             }

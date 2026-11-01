@@ -15,6 +15,7 @@ No manual case: every path is reachable only through a consumer that throws, and
 | T370-4 | A throwing `Lost` subscriber doesn't fault the request that dropped the link; the other subscribers hear it | `A_throwing_Lost_handler_does_not_fault_the_request_and_the_other_handlers_still_hear_it` | no |
 | T370-5 | A transport that throws once is reported and the keeper connects on the next attempt | `A_throwing_transport_is_reported_once_and_the_keeper_keeps_trying` | no |
 | T370-6 | The toast hides after its duration through the guarded task; a newer message keeps its own time; sticky stays | `ToastTests` | no |
+| T370-7 | A connect that times out (the pipe's own timeout, not Arcadia closing) costs one attempt; the keeper connects on the next | `A_connect_that_times_out_costs_one_attempt_and_the_keeper_connects_on_the_next` | no |
 
 Only checked by review: the `catch` in the SDL poll thread's run loop (pacing and the wait can't be made to fail from a
 test) and the guarded library refresh on window activation (same `Forget` as the other window events).
@@ -24,3 +25,4 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T370-1 to T370-6, all App and Core tests | 2026-11-01 | Claude | PR branch, Linux cloud container, Avalonia headless | ✅ (T370-1, -3, -4, -5 also ❌ once with the guards broken on purpose) | – |
+| T370-7 (QE review) | 2026-11-01 | Claude | PR branch 066b9f1, Linux cloud container | ❌ `FirstAttempt` never completes: the keeper ends on the timeout | fix in the keeper's catch filters |

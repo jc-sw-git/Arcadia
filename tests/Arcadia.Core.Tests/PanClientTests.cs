@@ -354,6 +354,34 @@ public sealed class PanClientTests : IAsyncDisposable
         Assert.Equal("Verbindung zu Pan halten: transport broke", Assert.Single(reported));
     }
 
+    /// <summary>
+    /// #370 review: the pipe's own connect timeout (2 s) ends in an OperationCanceledException that has nothing to do
+    /// with Arcadia closing; it costs one attempt, not the keeper.
+    /// </summary>
+    [Fact]
+    public async Task A_connect_that_times_out_costs_one_attempt_and_the_keeper_connects_on_the_next()
+    {
+        var transport = new TimingOutOnce(_server);
+        await using var client = new PanClient(transport, _time, Log) { RequestTimeout = TimeSpan.FromSeconds(10) };
+
+        client.Start();
+        await client.FirstAttempt.WaitAsync(Soon);
+        await AdvanceUntil(() => client.IsConnected, "verbunden nach dem Timeout");
+    }
+
+    /// <summary>A transport whose first connect times out like <c>NamedPipeClientStream.ConnectAsync</c> with a timeout token.</summary>
+    private sealed class TimingOutOnce(IPanTransport inner) : IPanTransport
+    {
+        private int _timeouts = 1;
+
+        public (string Reason, bool Permanent)? Unavailable() => inner.Unavailable();
+
+        public Task<PanLink> ConnectAsync(CancellationToken cancellationToken) =>
+            Interlocked.Exchange(ref _timeouts, 0) == 1
+                ? Task.FromException<PanLink>(new OperationCanceledException(new CancellationToken(true)))
+                : inner.ConnectAsync(cancellationToken);
+    }
+
     /// <summary>A transport whose first look throws something no caller expects.</summary>
     private sealed class ThrowingOnce(IPanTransport inner) : IPanTransport
     {

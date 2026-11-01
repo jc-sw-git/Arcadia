@@ -120,7 +120,7 @@ public static class ServiceHost
         };
         _guardian = guardian;
         guardian.UnplannedEnd += end => log.Write($"Unplanned end: {end.Reason}, generation {end.Generation}, client {end.ClientPid}, emulating {end.WasEmulating} (crash report: #244)");
-        log.Write($"Pan {typeof(ServiceHost).Assembly.GetName().Version} starting (protocol {PanMessage.ProtocolVersion})");
+        log.Write($"Pan {typeof(ServiceHost).Assembly.GetName().Version} starting (protocol {PanMessage.ProtocolVersion}, gen-0 budget {Gen0BudgetText()})");
         await guardian.RecoverAsync();
         // Not awaited: the pipe takes Arcadia at once, only a new emulation waits for it (#347). Never faults; the stop awaits it.
         guardian.CleanUpStaleDevices("Pan started");
@@ -219,6 +219,12 @@ public static class ServiceHost
         _status.CheckPoint = state is Native.ServiceStartPending or Native.ServiceStopPending ? ++_status.CheckPoint : 0;
         Native.SetServiceStatus(_statusHandle, ref _status);
     }
+
+    /// <summary>The GC's gen-0 budget in effect, so the log shows that the setting against Pan's memory growth (#360) took.</summary>
+    private static string Gen0BudgetText() =>
+        GC.GetConfigurationVariables().TryGetValue("GCGen0MaxBudget", out var budget) && budget is long bytes
+            ? $"{bytes / (1024.0 * 1024.0):0.0} MB"
+            : "unknown";
 
     private static bool ProcessRuns(string name)
     {

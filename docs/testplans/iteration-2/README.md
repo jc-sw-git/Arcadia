@@ -58,7 +58,9 @@ its file.
 | [325-takeover-dialog-names-the-steam-controller.md](325-takeover-dialog-names-the-steam-controller.md) | #325 | Pan: takeover dialog at Arcadia's start shows only the puck | 2 |
 | [331-steam-lists-controllers-twice.md](331-steam-lists-controllers-twice.md) | #331 | Steam lists the Steam Controller and Arcadia's Xbox pad only once | 3 |
 | [347-remove-stale-device-entries.md](347-remove-stale-device-entries.md) | #347 | Remove the stale device entries Arcadia's emulated devices leave in Windows | 7 |
+| [363-deeply-nested-vdf-files-overflow-the-stack.md](363-deeply-nested-vdf-files-overflow-the-stack.md) | #363 | Deeply nested VDF files overflow the stack and end Arcadia | 5 |
 | [365-docs-after-the-sisr-replacement.md](365-docs-after-the-sisr-replacement.md) | #365 | Docs after the SISR replacement: README, notices, architecture docs, decisions and the latency budget | 0 (docs) |
+| [371-cancellable-monitor-polls.md](371-cancellable-monitor-polls.md) | #371 | Cancellation token for monitor polls; a failing or hanging monitor holds no one | 0 (unit tests) |
 
 ## Exploratory test
 

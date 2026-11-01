@@ -15,6 +15,14 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
     /// <summary>Epic gives up on its install dialog after 10 minutes.</summary>
     public static readonly TimeSpan ConfirmationTimeout = TimeSpan.FromMinutes(10);
 
+    /// <summary>How long a poll waits for a monitor; a launcher folder on a share that went away can hang one.</summary>
+    public static readonly TimeSpan PollDeadline = TimeSpan.FromSeconds(10);
+
+    private readonly MonitorPolls<InstallSnapshot> _monitors = new(time, PollDeadline, (launcherId, ex) => $"Installationen von {launcherId} nicht lesbar: {ex}");
+
+    // What each launcher reported last; a monitor that fails or is late keeps showing it.
+    private readonly Dictionary<string, IReadOnlyDictionary<string, InstallProgress>> _lastActive = new(StringComparer.Ordinal);
+
     // Install dialogs Arcadia opened in a watched launcher that the user hasn't confirmed yet.
     private readonly Dictionary<string, DateTimeOffset> _awaitingConfirmation = new(StringComparer.Ordinal);
 
@@ -23,6 +31,13 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
 
     private Dictionary<string, InstallProgress> _installs = new(StringComparer.Ordinal);
     private bool _polling;
+
+    /// <summary>Where a monitor that failed or didn't answer in time is written, once per failure.</summary>
+    public Action<string>? Log
+    {
+        get => _monitors.Log;
+        set => _monitors.Log = value;
+    }
 
     /// <summary>True while a game handed to an unwatched launcher hasn't shown up installed yet.</summary>
     public bool HasPending => _pending.Count > 0;
@@ -66,6 +81,7 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
     /// <summary>
     /// Asks the watched launchers what their installations are doing. The monitors are read off
     /// the calling thread; a poll that is still running or has no monitors to ask returns null.
+    /// A monitor that throws or misses <see cref="PollDeadline"/> keeps its last progress; the others apply.
     /// </summary>
     /// <returns>The installations that ended since the previous poll, in the order reported.</returns>
     public async Task<IReadOnlyList<InstallResult>?> PollAsync()
@@ -79,7 +95,8 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
         _polling = true;
         try
         {
-            var snapshots = await Task.Run(() => monitors.Select(m => (m.LauncherId, Snapshot: m.Poll())).ToList());
+            var answers = await _monitors.AskAsync(monitors.Select(m => (m.LauncherId, (Func<CancellationToken, InstallSnapshot>)m.Poll)));
+            var snapshots = monitors.Select(m => (m.LauncherId, Snapshot: answers.GetValueOrDefault(m.LauncherId) ?? LastOf(m.LauncherId))).ToList();
             return Apply(snapshots);
         }
         finally
@@ -88,12 +105,16 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
         }
     }
 
+    private InstallSnapshot LastOf(string launcherId) =>
+        new(_lastActive.GetValueOrDefault(launcherId) ?? InstallSnapshot.Empty.Active, InstallSnapshot.Empty.Finished);
+
     private List<InstallResult> Apply(List<(string LauncherId, InstallSnapshot Snapshot)> snapshots)
     {
         var installs = new Dictionary<string, InstallProgress>(StringComparer.Ordinal);
         var results = new List<InstallResult>();
         foreach (var (launcherId, snapshot) in snapshots)
         {
+            _lastActive[launcherId] = snapshot.Active;
             foreach (var (id, progress) in snapshot.Active)
             {
                 var key = Game.KeyOf(launcherId, id);

@@ -42,7 +42,7 @@ public sealed partial class SteamRunningGames(TimeProvider time, ISteamAppsRegis
 
     public string LauncherId => KnownLaunchers.Steam.Id;
 
-    public IReadOnlyList<RunningGame> Poll()
+    public IReadOnlyList<RunningGame> Poll(CancellationToken cancellationToken = default)
     {
         var now = time.GetUtcNow();
         var readAll = _lastPoll is not { } last || now - last > FullReadAfter;

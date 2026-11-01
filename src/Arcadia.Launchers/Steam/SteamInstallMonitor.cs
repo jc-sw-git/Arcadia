@@ -39,10 +39,13 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
 
     public string LauncherId => KnownLaunchers.Steam.Id;
 
-    public InstallSnapshot Poll()
+    public InstallSnapshot Poll(CancellationToken cancellationToken = default)
     {
         var steam = _locate();
-        var manifests = ReadManifests(steam);
+
+        // Manifests are only read, so stopping between libraries (one on a share that went away) leaves nothing half done.
+        var manifests = ReadManifests(steam, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         var contentLog = ReadContentLog(steam);
         var now = _time.GetUtcNow();
         var finished = new Dictionary<string, InstallOutcome>(StringComparer.Ordinal);
@@ -241,7 +244,7 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
         return _contentLog.Update() ? _contentLog : null;
     }
 
-    private static Dictionary<string, SteamManifestState> ReadManifests(SteamInstallation? steam)
+    private static Dictionary<string, SteamManifestState> ReadManifests(SteamInstallation? steam, CancellationToken cancellationToken)
     {
         var manifests = new Dictionary<string, SteamManifestState>(StringComparer.Ordinal);
         if (steam is null)
@@ -251,6 +254,7 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
 
         foreach (var library in SteamScanner.LibraryPaths(steam.RootPath, SteamScanner.ReadText(Path.Combine(steam.RootPath, "steamapps", "libraryfolders.vdf"))))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             foreach (var file in SteamScanner.ManifestFiles(library))
             {
                 // Steam updates its runtimes and redistributables on its own; they are no games to report.

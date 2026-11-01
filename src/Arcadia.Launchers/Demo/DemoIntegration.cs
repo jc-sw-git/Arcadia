@@ -51,7 +51,7 @@ public sealed class DemoRunningGames(DemoScanner scanner, DateTimeOffset now) : 
 
     public bool ReportsSimulatedGames => true;
 
-    public IReadOnlyList<RunningGame> Poll() => _running ??= scanner.Generate()
+    public IReadOnlyList<RunningGame> Poll(CancellationToken cancellationToken = default) => _running ??= scanner.Generate()
         .Where(game => game.IsInstalled)
         .Take(1)
         .Select(game => new RunningGame(game.Id, now.AddMinutes(-25)))

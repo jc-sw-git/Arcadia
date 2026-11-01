@@ -119,7 +119,7 @@ public partial class App : Application
             };
 
             var launchedGames = new LaunchedGames();
-            var installTracker = new InstallTracker(launchers, time);
+            var installTracker = new InstallTracker(launchers, time) { Log = AppLog.Write };
             var runningGames = new RunningGamesTracker(launchers, new ProcessGames(new SystemProcessTable(), launchedGames), time)
             {
                 Log = AppLog.Write,

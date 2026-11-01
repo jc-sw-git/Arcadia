@@ -199,7 +199,7 @@ public sealed class LibrarySessionTests
             }
         }
 
-        public InstallSnapshot Poll()
+        public InstallSnapshot Poll(CancellationToken cancellationToken = default)
         {
             lock (_finished)
             {

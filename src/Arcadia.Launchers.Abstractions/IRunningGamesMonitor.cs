@@ -21,7 +21,13 @@ public interface IRunningGamesMonitor
     /// </summary>
     bool ReportsSimulatedGames => false;
 
-    IReadOnlyList<RunningGame> Poll();
+    /// <summary>
+    /// The games running now. Arcadia waits a few seconds at most: a poll that throws or is late keeps the games it
+    /// reported before, and a late one isn't called again until it returns; its answer is used then.
+    /// </summary>
+    /// <param name="cancellationToken">Ends at Arcadia's deadline. Stop only where the monitor's own state stays whole,
+    /// e.g. before changing it; a canceled poll counts as failed.</param>
+    IReadOnlyList<RunningGame> Poll(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The starts the launcher aborted since the last call (#277), asked right after <see cref="Poll"/> on the same thread.

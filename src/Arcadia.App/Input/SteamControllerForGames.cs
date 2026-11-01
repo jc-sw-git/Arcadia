@@ -143,9 +143,12 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         var pad = new SteamControllerXboxPad(emulation, time, Services.AppLog.Write)
         {
             Wanted = () => routing.Current.PadWanted,
-            ForwardingAllowed = () => SteamControllerCopyRules.PadPasses(
-                routing.Current,
-                new ForegroundNow(isArcadiaActive(), isMouseModeOn(), SteamInFront: false, GameOnArcadiaInFront: gameInFront() is { } key && controllerSupport.UsesArcadiaPad(key))),
+            // The foreground is read on every poll only while a game that can get the pad runs.
+            ForwardingAllowed = () => routing.Current is var route
+                && SteamControllerCopyRules.PadMayPass(route)
+                && SteamControllerCopyRules.PadPasses(
+                    route,
+                    new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront(), GameOnArcadiaInFront: gameInFront() is { } key && controllerSupport.UsesArcadiaPad(key))),
             Combos = combos.Current,
             FeedAlive = guardian.Pulse,
             Rumble = (padId, motors) => Rumble(gamepad, padId, motors),

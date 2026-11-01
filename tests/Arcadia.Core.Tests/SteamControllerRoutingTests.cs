@@ -100,7 +100,7 @@ public sealed class SteamControllerRoutingTests
         { true, false, true, false, false, false, false },
         { true, false, false, true, false, false, false },
         { false, true, false, false, false, false, true },
-        { false, true, false, false, true, false, false },
+        { false, true, false, false, true, true, false },
         { false, true, true, false, false, false, false },
         { false, true, false, true, false, false, false },
         { false, false, false, false, true, true, false },
@@ -141,7 +141,7 @@ public sealed class SteamControllerRoutingTests
         { true, false, true, false, false, true, false },
         { true, false, false, true, false, true, false },
         { false, true, false, false, false, false, true },
-        { false, true, false, false, true, false, false },
+        { false, true, false, false, true, true, false },
         { false, true, true, false, false, true, false },
         { false, true, false, true, false, true, false },
         { false, false, false, false, true, true, false },
@@ -200,6 +200,7 @@ public sealed class SteamControllerRoutingTests
         { "mouse mode over the game", true, false, true, false, true, false },
         { "no foreground window, game running", true, false, false, false, false, false },
         { "game in front before the route knows it runs", false, false, false, false, true, false },
+        { "Steam reported in front together with the game", true, false, false, true, true, false },
     };
 
     [Theory]

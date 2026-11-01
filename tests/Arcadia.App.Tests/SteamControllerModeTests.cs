@@ -134,14 +134,20 @@ public sealed class SteamControllerModeTests
         Assert.False(arcadia.CopyWiring.Forwarding());
         arcadia.IsMouseModeOn = false;
 
-        // A game on "Arcadia" (GOG): Steam gets the copy at rest, also with Steam's window in front.
+        // A game on "Arcadia" (GOG): Steam gets the copy at rest, except with Steam's window in front, where the pad rests (#357).
         arcadia.IsArcadiaInFront = true;
         arcadia.Press(UiAction.NextTab);
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "GOG soll das Spiel starten");
         await arcadia.TickSteamControllerAsync();
         arcadia.IsArcadiaInFront = false;
+        Assert.True(arcadia.CopyWiring.Forwarding());
+        Assert.False(arcadia.XboxPad.ForwardingAllowed());
+
+        arcadia.IsSteamInFront = false;
+        arcadia.GameInFront = arcadia.Starts.Keys[0];
         Assert.False(arcadia.CopyWiring.Forwarding());
+        Assert.True(arcadia.XboxPad.ForwardingAllowed());
     }
 
     /// <summary>T357-2: the pad passes only while the game on "Arcadia" is in front; anywhere else it rests.</summary>
@@ -167,10 +173,11 @@ public sealed class SteamControllerModeTests
         arcadia.GameInFront = arcadia.Starts.Keys[0];
         Assert.True(arcadia.XboxPad.ForwardingAllowed());
 
-        // Alt+Tab to Steam, a browser or the desktop: the game gets nothing.
+        // Alt+Tab to Steam, a browser or the desktop: the game gets nothing; Steam in front gets the copy.
         arcadia.GameInFront = null;
         arcadia.IsSteamInFront = true;
         Assert.False(arcadia.XboxPad.ForwardingAllowed());
+        Assert.True(arcadia.CopyWiring.Forwarding());
         arcadia.IsSteamInFront = false;
         Assert.False(arcadia.XboxPad.ForwardingAllowed());
         Assert.False(arcadia.CopyWiring.Forwarding());

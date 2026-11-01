@@ -18,7 +18,8 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
   (`SteamControllerCopyRules.PadPasses`, #357); otherwise it reports rest (`ForwardingAllowed`). Passing anywhere else
   let Steam read the Steam Controller through the pad (its glyphs flashed to Xbox icons) right after a switch to
   Steam. The foreground is read on every poll; `ForegroundOwner` looks up a process's path only when the foreground
-  process changed, and with no foreground window (some switches) the pad rests. `arcadia.log`: "Xbox-Pad: gibt
+  process changed, and with no foreground window (some switches) the pad rests. It is read only while a game on
+  "Arcadia" runs (`PadMayPass`). With Steam in front during such a game the copy passes instead. `arcadia.log`: "Xbox-Pad: gibt
   Eingaben weiter" / "meldet Ruhe". The combo filter keeps running, so a combo begun in Arcadia stays Arcadia's.
 - `TickAsync` (every 2 s, `App`) plugs the pad in while a Steam Controller is connected and `Wanted` holds, and out
   otherwise: a game never sees an idle extra pad. `Wanted` comes from `SteamControllerRouting` (below).

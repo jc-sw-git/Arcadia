@@ -29,7 +29,7 @@ public readonly record struct ForegroundNow(bool ArcadiaActive, bool MouseModeOn
 /// <summary>
 /// When the copy Steam sees passes input and when Arcadia's Xbox pad does (#242, decisions 2 and 4; #315; #357; product rules in
 /// <c>docs/product/controls.md</c>). The copy passes to a game on "Steam-Eingabe", and to Steam itself in front while no
-/// game runs, when the pad rests so Steam gets the full Steam Controller. While "Steams Desktop-Belegung ignorieren" is
+/// game runs or only games on "Arcadia" run, when the pad rests so Steam gets the full Steam Controller. While "Steams Desktop-Belegung ignorieren" is
 /// off, Steam's desktop layout gets the Steam Controller like any other controller: the copy passes also while Arcadia is
 /// in front, the mouse mode is on or no game runs; only a game on "Arcadia" keeps it for the pad. While the setting is on,
 /// neither passes while Arcadia is in front or the mouse mode is on. Steam's overlay inside a game can't be told from the
@@ -56,7 +56,8 @@ public static class SteamControllerCopyRules
 
         if (route.GameRunning)
         {
-            return (false, route.Why);
+            // Only games on "Arcadia" run here; Steam in front gets the controller, the pad rests there (#357).
+            return now.SteamInFront ? (true, "Steam vorne, Spiele auf Arcadia") : (false, route.Why);
         }
 
         if (now.SteamInFront)
@@ -95,7 +96,10 @@ public static class SteamControllerCopyRules
     /// still says none runs (it is decided every 2 s) rests too: the copy may pass then, and the two never pass at once.
     /// </summary>
     public static bool PadPasses(SteamControllerRoute route, ForegroundNow now) =>
-        route.PadWanted && route.GameRunning && now.GameOnArcadiaInFront && !now.ArcadiaActive && !now.MouseModeOn;
+        PadMayPass(route) && now.GameOnArcadiaInFront && !now.SteamInFront && !now.ArcadiaActive && !now.MouseModeOn;
+
+    /// <summary>A game that can get the pad runs: only then is the foreground worth reading for <see cref="PadPasses"/>.</summary>
+    public static bool PadMayPass(SteamControllerRoute route) => route.PadWanted && route.GameRunning;
 }
 
 /// <summary>

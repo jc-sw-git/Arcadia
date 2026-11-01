@@ -20,6 +20,16 @@
     <AssemblyTitle>Pan - Arcadias Guardian</AssemblyTitle>
   </PropertyGroup>
 
+  <!--
+    Pan runs for hours beside a game, so it keeps its memory small (#360): the GC collects gen 0 after this many bytes.
+    Without it the budget follows the CPU's L3 cache (about half of it, 16 MB with 32 MB of L3), so Pan's heartbeat
+    garbage piled up to that size before the first collection; Pan's live data is tiny and a gen-0 collection of it
+    costs microseconds. Read by Native AOT (a runtime knob) and by the framework-dependent Debug build (runtimeconfig).
+  -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.GC.Gen0MaxBudget" Value="2097152" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Arcadia.Pan.Core\Arcadia.Pan.Core.csproj" />
   </ItemGroup>

@@ -49,7 +49,7 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
                 return null;
             }
 
-            var accounts = Directory.GetDirectories(userData).Where(d => Path.GetFileName(d) != "0").ToList();
+            var accounts = UserDataFolders(userData).Where(d => Path.GetFileName(d) != "0").ToList();
             if (accounts.Count == 1)
             {
                 return accounts[0];
@@ -95,10 +95,27 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
     {
         var userData = Path.Combine(RootPath, "userdata");
         return Directory.Exists(userData)
-            ? Directory.GetDirectories(userData)
+            ? UserDataFolders(userData)
                 .Select(dir => uint.TryParse(Path.GetFileName(dir), NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : 0)
                 .Where(id => id != 0)
             : [];
+    }
+
+    /// <summary>
+    /// The account folders in <c>userdata</c>; none if it can't be read just now, so a passing error costs the account's
+    /// extras (non-Steam games, last played), not the whole Steam library (#369).
+    /// </summary>
+    private static string[] UserDataFolders(string userData)
+    {
+        try
+        {
+            return Directory.GetDirectories(userData);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            System.Diagnostics.Trace.TraceWarning($"Steam userdata unreadable: {e.GetType().Name}: {e.Message}");
+            return [];
+        }
     }
 
     /// <summary>Base of 64-bit Steam ids; the account id is the difference.</summary>

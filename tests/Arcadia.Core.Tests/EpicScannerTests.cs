@@ -148,6 +148,65 @@ public class EpicScannerTests
         Assert.Equal(Version.Parse(expected), EpicScanner.EngineVersionOf(appName, versionString));
     }
 
+    [Theory]
+    [InlineData("219175976", 219175976L)]
+    [InlineData("\"219175976\"", null)]
+    [InlineData("null", null)]
+    [InlineData("{ \"bytes\": 1 }", null)]
+    [InlineData("1.5", null)]
+    public void An_install_size_that_is_no_whole_number_means_no_size(string installSize, long? expected)
+    {
+        var game = EpicScanner.ParseManifest(Manifest.Replace("219175976", installSize, StringComparison.Ordinal));
+
+        Assert.NotNull(game);
+        Assert.Equal(expected, game.InstallSizeBytes);
+    }
+
+    [Fact]
+    public async Task A_broken_manifest_costs_only_its_own_entry()
+    {
+        var folder = Directory.CreateTempSubdirectory("arcadia-epic-").FullName;
+        try
+        {
+            var manifests = Directory.CreateDirectory(Path.Combine(folder, "Manifests")).FullName;
+            File.WriteAllText(Path.Combine(manifests, "a.item"), Manifest.Replace("219175976", "\"123\"", StringComparison.Ordinal).Replace("Loop Hero", "Hand Made", StringComparison.Ordinal).Replace("f7a0ebb44f93430fb1c4388a395eba96", "handmade", StringComparison.Ordinal));
+            File.WriteAllText(Path.Combine(manifests, "b.item"), "{ not json");
+            File.WriteAllText(Path.Combine(manifests, "c.item"), Manifest);
+            var scanner = new EpicScanner(manifests, Path.Combine(folder, "catcache.bin"), folder, new EpicLastPlayedStore(Path.Combine(folder, "last-played.json")));
+
+            var games = await scanner.ScanAsync();
+
+            Assert.Equal(["Hand Made", "Loop Hero"], games.Select(g => g.Title).Order(StringComparer.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task A_locked_manifest_costs_only_its_own_entry()
+    {
+        var folder = Directory.CreateTempSubdirectory("arcadia-epic-").FullName;
+        try
+        {
+            var manifests = Directory.CreateDirectory(Path.Combine(folder, "Manifests")).FullName;
+            var lockedFile = Path.Combine(manifests, "a.item");
+            File.WriteAllText(lockedFile, Manifest.Replace("f7a0ebb44f93430fb1c4388a395eba96", "other", StringComparison.Ordinal));
+            File.WriteAllText(Path.Combine(manifests, "b.item"), Manifest);
+            using var locked = new FileStream(lockedFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            var scanner = new EpicScanner(manifests, Path.Combine(folder, "catcache.bin"), folder, new EpicLastPlayedStore(Path.Combine(folder, "last-played.json")));
+
+            var games = await scanner.ScanAsync();
+
+            Assert.Equal(["f7a0ebb44f93430fb1c4388a395eba96"], games.Select(g => g.Id));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task Shows_all_installed_engine_versions_as_one_entry_that_starts_the_newest()
     {

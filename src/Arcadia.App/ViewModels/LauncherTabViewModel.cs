@@ -15,6 +15,7 @@ public partial class LauncherTabViewModel : ViewModelBase
         Badge = badge;
         Games = library.Games;
         IsFound = library.IsFound;
+        ScanFailed = library.ScanFailed;
         SelectCommand = new RelayCommand(() => select(this));
     }
 
@@ -36,7 +37,11 @@ public partial class LauncherTabViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool IsFound { get; set; }
 
-    public LauncherLibrary Library => new(Launcher, Games, IsFound);
+    /// <summary>Its last scan failed: it shows the games read before, or says so when there are none (#369).</summary>
+    [ObservableProperty]
+    public partial bool ScanFailed { get; set; }
+
+    public LauncherLibrary Library => new(Launcher, Games, IsFound, ScanFailed);
 
     public string Name => Launcher.DisplayName;
 

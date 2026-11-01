@@ -2131,6 +2131,16 @@
             <Ellipse Canvas.Left="129.6" Canvas.Top="103.6" Width="4.8" Height="4.8" Fill="{StaticResource EmptyStateSparkle}" />
             <Path Data="M40 30l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" Fill="{StaticResource EmptyStateSparkle}" />
           </Canvas>
+          <!-- Scan failed (#369): the launcher's logo with an exclamation mark. -->
+          <Canvas IsVisible="{Binding IsScanFailed}">
+            <Border Canvas.Left="62" Canvas.Top="20" Width="76" Height="76" CornerRadius="18" Background="{StaticResource EmptyStateCard}"
+                    BorderBrush="{StaticResource EmptyStateCardLine}" BorderThickness="3">
+              <ctl:LauncherLogo Badge="{Binding Badge}" Width="40" Height="40" />
+            </Border>
+            <Ellipse Canvas.Left="108" Canvas.Top="72" Width="48" Height="48" Fill="{StaticResource EmptyStateLens}" Stroke="{StaticResource EmptyStateLensRim}" StrokeThickness="4" />
+            <Path Data="M132 84v11" Stroke="{StaticResource EmptyStateSparkle}" StrokeThickness="3.5" StrokeLineCap="Round" />
+            <Ellipse Canvas.Left="129.6" Canvas.Top="101.6" Width="4.8" Height="4.8" Fill="{StaticResource EmptyStateSparkle}" />
+          </Canvas>
         </Panel>
       </DataTemplate>
     </Setter>

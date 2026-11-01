@@ -23,6 +23,35 @@ public sealed class GamepadPollsTests
         Assert.Equal(["+A", "-A"], _events);
     }
 
+    /// <summary>#367: the A that started a game, still held when the controllers come back, must not act again.</summary>
+    [Fact]
+    public void After_a_let_go_a_button_still_held_is_no_new_press_until_it_was_up_once()
+    {
+        Poll(0, PadButtons.A | PadButtons.X);
+        _events.Clear();
+        _polls.LetGo();
+        Assert.Equal(["-A", "-X"], _events.Order());
+
+        _events.Clear();
+        Poll(1000, PadButtons.A);
+        Poll(1100, PadButtons.A | PadButtons.B);
+        Poll(1200, PadButtons.B);
+        Poll(1300, PadButtons.A | PadButtons.B);
+
+        Assert.Equal(["+B", "+A"], _events);
+    }
+
+    [Fact]
+    public void A_held_D_pad_doesnt_repeat_after_a_let_go()
+    {
+        Poll(0, PadButtons.DPadRight);
+        _polls.LetGo();
+        Poll(1000, PadButtons.DPadRight);
+        Poll(2000, PadButtons.DPadRight);
+
+        Assert.Equal(["+DPadRight", "-DPadRight"], _events);
+    }
+
     /// <summary>The feel of holding the D-pad: the first repeat after 400 ms, then one every 90 ms (written out, not taken from the code).</summary>
     [Fact]
     public void The_D_pad_repeats_after_400_ms_and_then_every_90_ms()

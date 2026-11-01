@@ -43,6 +43,9 @@ public sealed class GamepadPolls
     private readonly Dictionary<GamepadButton, long> _lastRepeat = [];
     private HashSet<GamepadButton> _previous = [];
 
+    // Released by a let-go while still held (#367): not pressed again before the player let go of them once.
+    private readonly HashSet<GamepadButton> _releasedWhileHeld = [];
+
     public event Action<GamepadButton>? ButtonPressed;
 
     public event Action<GamepadButton>? ButtonReleased;
@@ -52,6 +55,8 @@ public sealed class GamepadPolls
     public void Update(IReadOnlyList<GamepadReading> readings, long nowMs)
     {
         var current = Down(readings);
+        _releasedWhileHeld.IntersectWith(current);
+        current.ExceptWith(_releasedWhileHeld);
         foreach (var button in current)
         {
             if (!_previous.Contains(button))
@@ -78,6 +83,21 @@ public sealed class GamepadPolls
         }
 
         _previous = current;
+    }
+
+    /// <summary>
+    /// Every controller was let go (Pan hides or shows one): what is held is released now, and a button still held
+    /// when the controllers come back is no new press, so the A that started a game doesn't act a second time.
+    /// </summary>
+    public void LetGo()
+    {
+        foreach (var button in _previous)
+        {
+            ButtonReleased?.Invoke(button);
+        }
+
+        _releasedWhileHeld.UnionWith(_previous);
+        _previous = [];
     }
 
     /// <summary>The buttons held on any of the controllers, the sticks as directions.</summary>

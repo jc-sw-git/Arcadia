@@ -317,7 +317,7 @@ public sealed class SdlGamepadSource : IGamepadSource
             if (_releaseDue)
             {
                 _releaseDue = false;
-                ReportReleased(nowMs);
+                ReportReleased();
             }
 
             if (_letGo)
@@ -439,7 +439,7 @@ public sealed class SdlGamepadSource : IGamepadSource
     /// let-go without reporting a release, and the mouse mode and the routing would keep what was held until the
     /// controllers come back. The same pads, not none, so no consumer takes the let-go for a disconnect.
     /// </summary>
-    private void ReportReleased(long nowMs)
+    private void ReportReleased()
     {
         for (var i = 0; i < _readings.Count; i++)
         {
@@ -453,7 +453,7 @@ public sealed class SdlGamepadSource : IGamepadSource
 
         Sampled?.Invoke(_readings);
         Polled?.Invoke(_readings);
-        _polls.Update(_readings, nowMs);
+        _polls.LetGo();
     }
 
     /// <summary>

@@ -398,6 +398,35 @@ public sealed class RunningGamesTrackerTests
         Assert.Equal([new EndedGame("steam:440", StartedFromArcadia: false)], changes?.Ended);
         Assert.Equal(RunPhase.Running, tracker.StateOf("gog:witcher")?.Phase);
         Assert.Single(_log);
+
+        // Once per failure, not every two seconds.
+        await tracker.PollAsync();
+        Assert.Single(_log);
+    }
+
+    [Fact]
+    public async Task A_launcher_that_hangs_keeps_its_games_and_holds_neither_the_poll_nor_the_others()
+    {
+        var blocking = new BlockingRunningGames("gog");
+        var tracker = CreateTracker(new FakeIntegration(FakeIntegration.LauncherOf("gog")) { RunningGames = blocking });
+        blocking.Release.Set();
+        await tracker.PollAsync();
+        Assert.Equal(RunPhase.Running, tracker.StateOf("gog:witcher")?.Phase);
+
+        blocking.Release.Reset();
+        blocking.Entered.Reset();
+        _steam.Running.Add(new RunningGame("440", Started));
+        var poll = tracker.PollAsync();
+        Assert.True(blocking.Entered.Wait(TimeSpan.FromSeconds(10)));
+        Assert.True(SpinWait.SpinUntil(() => _steam.Polls == 2, TimeSpan.FromSeconds(10)));
+        await Task.Delay(100);
+        _time.Advance(RunningGamesTracker.PollDeadline);
+        await poll;
+
+        Assert.Equal(RunPhase.Running, tracker.StateOf("steam:440")?.Phase);
+        Assert.Equal(RunPhase.Running, tracker.StateOf("gog:witcher")?.Phase);
+        Assert.Contains("keine Antwort", Assert.Single(_log));
+        blocking.Release.Set();
     }
 
     [Fact]
@@ -527,7 +556,7 @@ public sealed class RunningGamesTrackerTests
 
         public bool RefusalsFail { get; init; }
 
-        public IReadOnlyList<RunningGame> Poll() =>
+        public IReadOnlyList<RunningGame> Poll(CancellationToken cancellationToken = default) =>
             Fails ? throw new InvalidOperationException("broken plugin") : [new RunningGame("witcher", Started)];
 
         public IReadOnlyList<RefusedStart> RefusedStarts() =>
@@ -542,11 +571,11 @@ public sealed class RunningGamesTrackerTests
 
         public string LauncherId => launcherId;
 
-        public IReadOnlyList<RunningGame> Poll()
+        public IReadOnlyList<RunningGame> Poll(CancellationToken cancellationToken = default)
         {
             Entered.Set();
             Release.Wait(TimeSpan.FromSeconds(10));
-            return [];
+            return [new RunningGame("witcher", Started)];
         }
     }
 }

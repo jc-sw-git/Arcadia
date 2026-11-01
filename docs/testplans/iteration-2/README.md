@@ -64,6 +64,7 @@ its file.
 | [368-sign-in-cleans-up-after-an-error.md](368-sign-in-cleans-up-after-an-error.md) | #368 | B after an unexpected sign-in error leaves the launcher page stuck | 4 |
 | [370-guard-the-remaining-unguarded-paths.md](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths: SDL consumers, Pan's keeper, async void, toast | 7 |
 | [375-close-the-pan-core-test-gaps.md](375-close-the-pan-core-test-gaps.md) | #375 | Close the Pan.Core test gaps the mutation run found | 0 (tests only) |
+| [371-cancellable-monitor-polls.md](371-cancellable-monitor-polls.md) | #371 | Cancellation token for monitor polls; a failing or hanging monitor holds no one | 0 (unit tests) |
 
 ## Exploratory test
 

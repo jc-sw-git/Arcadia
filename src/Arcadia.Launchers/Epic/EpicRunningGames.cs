@@ -31,7 +31,7 @@ public sealed class EpicRunningGames(string? logDirectory = null) : IRunningGame
 
     public string LauncherId => KnownLaunchers.Epic.Id;
 
-    public IReadOnlyList<RunningGame> Poll()
+    public IReadOnlyList<RunningGame> Poll(CancellationToken cancellationToken = default)
     {
         try
         {

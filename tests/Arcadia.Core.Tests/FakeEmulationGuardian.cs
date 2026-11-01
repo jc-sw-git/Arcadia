@@ -130,9 +130,17 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
         return Task.FromResult(generation != 0 && generation == HiddenFor && Hiding == PanReason.None ? HidingHolds : Hiding);
     }
 
-    public Task<PanReason> HideAsync(uint generation, CancellationToken cancellationToken)
+    /// <summary>Awaited before a hide answers: a hide that takes Pan's full 25 s reply timeout.</summary>
+    public Func<CancellationToken, Task>? HideWait;
+
+    public async Task<PanReason> HideAsync(uint generation, CancellationToken cancellationToken)
     {
         Note($"hide {generation}");
+        if (HideWait is { } wait)
+        {
+            await wait(cancellationToken);
+        }
+
         var result = PuckRestart?.Invoke() ?? HideResult;
         lock (_lock)
         {
@@ -149,7 +157,7 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
             TearDown();
         }
 
-        return Task.FromResult(result);
+        return result;
     }
 
     public Task<bool> UnhideAsync(uint generation, CancellationToken cancellationToken)

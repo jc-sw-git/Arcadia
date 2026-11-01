@@ -49,6 +49,28 @@ public sealed class SteamOnlineAccountTests : IDisposable
     }
 
     [Fact]
+    public async Task An_unexpected_error_in_the_sign_in_ends_it_so_B_goes_back_and_a_new_sign_in_works()
+    {
+        var account = Create(new ThrowingWebPages());
+        var failures = new List<Exception>();
+        account.Failed += (_, e) => failures.Add(e);
+
+        account.BeginSignIn();
+        await account.WhenIdleAsync();
+
+        Assert.IsType<InvalidOperationException>(Assert.Single(failures));
+        Assert.Equal(AccountStep.SignedOut, account.State.Step);
+        account.CancelSignIn();
+        Assert.Equal(AccountStep.SignedOut, account.State.Step);
+
+        account.BeginSignIn();
+        await account.WhenIdleAsync();
+        account.CancelSignIn();
+        Assert.Equal(2, failures.Count);
+        Assert.Equal(AccountStep.SignedOut, account.State.Step);
+    }
+
+    [Fact]
     public async Task Sign_in_keeps_the_profiles_avatar_and_sign_out_deletes_it()
     {
         var account = await SignedInAsync();
@@ -512,6 +534,19 @@ public sealed class SteamOnlineAccountTests : IDisposable
         }
 
         Assert.True(condition());
+    }
+
+    /// <summary>A browser whose sign-in page fails with an exception nobody expects (#368).</summary>
+    private sealed class ThrowingWebPages : IWebPages
+    {
+        public Task<WebPageResult> ShowAsync(string title, Uri page, string script, Func<string, bool> isDone, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("Browser kaputt");
+
+        public Task<WebPageResult> ReadAsync(Uri page, string script, Func<string, bool> isDone, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("Browser kaputt");
+
+        public Task<WebPageResult> ForgetAsync(IReadOnlyList<string> domains, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("Browser kaputt");
     }
 
     private sealed class RecordingListener(List<string> lines) : TraceListener

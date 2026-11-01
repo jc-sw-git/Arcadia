@@ -23,8 +23,14 @@ internal sealed class MonitorPolls<TAnswer>(TimeProvider time, TimeSpan deadline
     {
         var asked = monitors.Select(m => (m.LauncherId, Poll: _overdue.Remove(m.LauncherId, out var overdue) ? overdue : Start(m.Ask))).ToList();
 
-        // The deadline only bounds the wait; a monitor that ignores its token keeps running.
-        await Task.WhenAny(Task.WhenAll(asked.Select(a => a.Poll)), Task.Delay(deadline, time)).ConfigureAwait(false);
+        // The deadline only bounds the wait; a monitor that ignores its token keeps running. Answered in time, the
+        // deadline's timer is stopped rather than left to run out every round.
+        using (var waiting = new CancellationTokenSource())
+        {
+            var all = Task.WhenAll(asked.Select(a => a.Poll));
+            await Task.WhenAny(all, Task.Delay(deadline, time, waiting.Token)).ConfigureAwait(false);
+            await waiting.CancelAsync().ConfigureAwait(false);
+        }
 
         var answers = new Dictionary<string, TAnswer>(StringComparer.Ordinal);
         foreach (var (launcherId, poll) in asked)

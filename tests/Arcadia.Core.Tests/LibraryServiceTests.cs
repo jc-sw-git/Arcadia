@@ -22,9 +22,11 @@ public sealed class LibraryServiceTests
         IsInstalled = true,
     };
 
+    private readonly List<string> _log = [];
+
     private LibraryService CreateService() => new(FakeIntegration.Registry(
         new FakeIntegration(KnownLaunchers.Epic) { Scanner = _epic },
-        new FakeIntegration(KnownLaunchers.Gog) { Scanner = _gog }), _time);
+        new FakeIntegration(KnownLaunchers.Gog) { Scanner = _gog }), _time) { Log = _log.Add };
 
     [Fact]
     public async Task A_scan_that_hangs_ends_at_the_deadline_and_the_others_load()
@@ -39,6 +41,7 @@ public sealed class LibraryServiceTests
         Assert.Empty(libraries.Single(l => l.Launcher.Id == "epic").Games);
         Assert.Equal(["chess"], libraries.Single(l => l.Launcher.Id == "gog").Games.Select(g => g.Id));
         Assert.Null(service.ScannedAt("epic"));
+        Assert.Contains("abgebrochen", Assert.Single(_log));
         _epic.Gate!.SetResult();
     }
 

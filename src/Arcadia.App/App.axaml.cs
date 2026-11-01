@@ -135,7 +135,7 @@ public partial class App : Application
 
             var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
             var viewModel = new MainViewModel(
-                new LibraryService(launchers, time),
+                new LibraryService(launchers, time) { Log = AppLog.Write },
                 new GameLaunchService(launchers) { Log = AppLog.Write },
                 controllerSupport,
                 updates,

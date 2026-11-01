@@ -22,6 +22,9 @@ public sealed class LibraryService(LauncherRegistry launchers, TimeProvider? tim
 
     public LauncherRegistry Launchers => launchers;
 
+    /// <summary>Where a scan that failed or missed <see cref="ScanDeadline"/> is written (Arcadia's log file).</summary>
+    public Action<string>? Log { get; set; }
+
     /// <returns>
     /// Every active launcher in tab order, also one without games or one that is no longer found: it keeps its tab, which
     /// says so (#136).
@@ -67,7 +70,9 @@ public sealed class LibraryService(LauncherRegistry launchers, TimeProvider? tim
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             // One broken launcher must not take down the whole library.
-            System.Diagnostics.Trace.TraceWarning($"Scanning {launcher.DisplayName} failed: {ex}");
+            Log?.Invoke(ex is TimeoutException or OperationCanceledException
+                ? $"Einlesen von {launcher.DisplayName} nach {ScanDeadline.TotalSeconds:0} s abgebrochen; der Tab bleibt bis zum nächsten Einlesen leer."
+                : $"Einlesen von {launcher.DisplayName} fehlgeschlagen: {ex}");
             return new LauncherLibrary(launcher, []);
         }
     }

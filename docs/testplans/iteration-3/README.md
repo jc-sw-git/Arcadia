@@ -10,7 +10,6 @@ its file.
 
 | File | Issue | Title | Test cases |
 |---|---|---|---|
-| [366-restore-controllers-beside-emulation.md](366-restore-controllers-beside-emulation.md) | #366 | "Controller wiederherstellen" runs beside Arcadia's own emulation | T366-1 |
 
 ## Exploratory test
 
@@ -20,4 +19,3 @@ Charter: –. Time box: –. Findings: –.
 
 | Test cases | Tests |
 |---|---|
-| T366-1 | App `SteamControllerXboxPadTests.Restoring_the_controllers_while_the_pad_runs_ends_the_emulation_first_and_brings_it_back` |

@@ -26,3 +26,4 @@ History:
 |---|---|---|---|---|---|
 | T370-1 to T370-6, all App and Core tests | 2026-11-01 | Claude | PR branch, Linux cloud container, Avalonia headless | ✅ (T370-1, -3, -4, -5 also ❌ once with the guards broken on purpose) | – |
 | T370-7 (QE review) | 2026-11-01 | Claude | PR branch 066b9f1, Linux cloud container | ❌ `FirstAttempt` never completes: the keeper ends on the timeout | fix in the keeper's catch filters |
+| T370-7 after the fix, all Core and App tests | 2026-11-01 | Claude | PR branch d29bdf0, Linux cloud container, Avalonia headless | ✅ | – |

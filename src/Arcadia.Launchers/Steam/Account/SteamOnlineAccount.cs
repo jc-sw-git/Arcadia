@@ -134,11 +134,41 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         {
             _signInTask = Run(async () =>
             {
-                using (run)
+                try
                 {
                     await SignInAsync(run).ConfigureAwait(false);
                 }
+                finally
+                {
+                    EndSignIn(run);
+                }
             }, "Anmeldung");
+        }
+    }
+
+    /// <summary>
+    /// Lets go of the sign-in <paramref name="run"/> however it ended. The normal exits have already let go; after an
+    /// unexpected exception the run would stay current with its source disposed, so B on the launcher page would throw
+    /// and "Anmeldung läuft" would stay until Arcadia restarts (#368).
+    /// </summary>
+    private void EndSignIn(CancellationTokenSource run)
+    {
+        bool stillCurrent;
+        lock (_lock)
+        {
+            // Cleared before the dispose below, so a cancel or a newer sign-in never touches a disposed source.
+            stillCurrent = _signInRun == run;
+            if (stillCurrent)
+            {
+                _signInRun = null;
+                _state = Compose(IsSignedIn ? AccountStep.SignedIn : AccountStep.SignedOut);
+            }
+        }
+
+        run.Dispose();
+        if (stillCurrent)
+        {
+            StateChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

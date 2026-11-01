@@ -60,7 +60,8 @@ its file.
 | [347-remove-stale-device-entries.md](347-remove-stale-device-entries.md) | #347 | Remove the stale device entries Arcadia's emulated devices leave in Windows | 7 |
 | [363-deeply-nested-vdf-files-overflow-the-stack.md](363-deeply-nested-vdf-files-overflow-the-stack.md) | #363 | Deeply nested VDF files overflow the stack and end Arcadia | 5 |
 | [365-docs-after-the-sisr-replacement.md](365-docs-after-the-sisr-replacement.md) | #365 | Docs after the SISR replacement: README, notices, architecture docs, decisions and the latency budget | 0 (docs) |
-| [370-guard-the-remaining-unguarded-paths.md](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths: SDL consumers, Pan's keeper, async void, toast | 6 |
+| [368-sign-in-cleans-up-after-an-error.md](368-sign-in-cleans-up-after-an-error.md) | #368 | B after an unexpected sign-in error leaves the launcher page stuck | 4 |
+| [370-guard-the-remaining-unguarded-paths.md](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths: SDL consumers, Pan's keeper, async void, toast | 7 |
 
 ## Exploratory test
 

@@ -195,9 +195,6 @@ public static class SteamAppInfo
         private const byte TypeEnd = 0x08;
         private const byte TypeInt64 = 0x0A;
 
-        // Deeper nesting than any real file; stops a crafted file from overflowing the stack.
-        private const int MaxDepth = 64;
-
         private readonly ReadOnlySpan<byte> _data = data;
         private int _position;
 
@@ -207,7 +204,7 @@ public static class SteamAppInfo
 
         public VdfMap Map(int depth = 0)
         {
-            if (depth > MaxDepth)
+            if (depth > VdfMap.MaxDepth)
             {
                 throw new FormatException("Nesting too deep.");
             }

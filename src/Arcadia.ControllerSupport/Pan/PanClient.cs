@@ -383,6 +383,11 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     {
         // Every request ends within its own reply timeout; the margin covers the write before it.
         var free = await _requests.WaitAsync(ControllerRequestTimeout + RequestTimeout, cancellationToken);
+        if (!free)
+        {
+            _log("Pan: eine Anfrage läuft noch – Arcadia lässt trotzdem los");
+        }
+
         try
         {
             Drop(null);

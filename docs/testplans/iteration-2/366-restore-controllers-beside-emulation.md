@@ -8,8 +8,11 @@ erst danach wieder" while the restore runs.
       (e.g. a DualSense) taken over. Bring Arcadia to the front, Einstellungen → Controller → "Controller
       wiederherstellen" with the controller alone, confirm the Windows prompt. While the prompt is up the pad is gone
       (the log line above); after it, both controllers work in Windows (`joy.cpl`) and in the game again within a few
-      seconds, no settings row stays red, no toast about a lost emulation. `pan.log`: the service's teardown ("Client …
-      gone while emulating") comes before "Restore complete". · E2E: yes (App `SteamControllerXboxPadTests` T366-1;
+      seconds, no settings row stays red, no toast about a lost emulation. `pan.log` has the service's teardown
+      ("Client … gone while emulating") and "Restore complete", in either order (Arcadia doesn't wait for the
+      teardown); one "Journal not written: …" may appear when both write the journal at once and is harmless. Then
+      once more, declining the Windows prompt: the pad is gone while the prompt is up and comes back after it, the
+      row shows the decline. · E2E: yes (App `SteamControllerXboxPadTests` T366-1;
       Core `ControllerSupportServiceTests` T366-1, `PanClientTests` with Pan's real `Guardian`; real UAC, HidHide and
       controllers are manual)
 

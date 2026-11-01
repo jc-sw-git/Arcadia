@@ -18,7 +18,7 @@ public sealed class WebPageViewTests
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(width: width, height: height);
         arcadia.Named<WebPageHost>("WebPageView").OpensBrowser = false;
-        ((IWebPageHost)arcadia.Arcadia.Main).Open(WebPageViewModel.SignIn("Bei Steam anmelden", new Uri("https://store.steampowered.com/login/"), "", _ => false));
+        ((IWebPageHost)arcadia.Arcadia.Main).Open(WebPageViewModel.SignIn("Bei Steam anmelden", new Uri("https://store.steampowered.com/login/"), ["steampowered.com"], "", _ => false));
         arcadia.Settle();
 
         var area = arcadia.Bounds(arcadia.Named<Border>("WebPageArea"));

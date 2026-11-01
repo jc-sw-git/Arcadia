@@ -92,7 +92,7 @@ internal sealed class FakeSteamWeb : HttpMessageHandler, IWebPages
         return $"{Part("""{"typ":"JWT","alg":"EdDSA"}""")}.{Part($$"""{"sub":"{{steamId}}","exp":{{expires.ToUnixTimeSeconds()}},"kind":"{{kind}}"}""")}.c2lnbmF0dXJl";
     }
 
-    public async Task<WebPageResult> ShowAsync(string title, Uri page, string script, Func<string, bool> isDone, CancellationToken cancellationToken)
+    public async Task<WebPageResult> ShowAsync(string title, Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone, CancellationToken cancellationToken)
     {
         await Task.Yield();
         lock (_lock)
@@ -109,6 +109,7 @@ internal sealed class FakeSteamWeb : HttpMessageHandler, IWebPages
             }
 
             Assert.Equal(SteamStorePage.LoginPage, page);
+            Assert.Equal(SteamStorePage.Domains, domains);
             while (!IsApproved && !_browserSignedIn)
             {
                 await Task.Delay(1, cancellationToken);
@@ -132,7 +133,7 @@ internal sealed class FakeSteamWeb : HttpMessageHandler, IWebPages
         }
     }
 
-    public async Task<WebPageResult> ReadAsync(Uri page, string script, Func<string, bool> isDone, CancellationToken cancellationToken)
+    public async Task<WebPageResult> ReadAsync(Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone, CancellationToken cancellationToken)
     {
         await Task.Yield();
         if (IsOffline)
@@ -140,6 +141,7 @@ internal sealed class FakeSteamWeb : HttpMessageHandler, IWebPages
             return WebPageResult.Failed("offline");
         }
 
+        Assert.Equal(SteamStorePage.Domains, domains);
         lock (_lock)
         {
             if (page == SteamStorePage.StorePage)

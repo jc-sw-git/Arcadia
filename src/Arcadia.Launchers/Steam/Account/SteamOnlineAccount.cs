@@ -134,11 +134,41 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         {
             _signInTask = Run(async () =>
             {
-                using (run)
+                try
                 {
                     await SignInAsync(run).ConfigureAwait(false);
                 }
+                finally
+                {
+                    EndSignIn(run);
+                }
             }, "Anmeldung");
+        }
+    }
+
+    /// <summary>
+    /// Lets go of the sign-in <paramref name="run"/> however it ended. The normal exits have already let go; after an
+    /// unexpected exception the run would stay current with its source disposed, so B on the launcher page would throw
+    /// and "Anmeldung läuft" would stay until Arcadia restarts (#368).
+    /// </summary>
+    private void EndSignIn(CancellationTokenSource run)
+    {
+        bool stillCurrent;
+        lock (_lock)
+        {
+            // Cleared before the dispose below, so a cancel or a newer sign-in never touches a disposed source.
+            stillCurrent = _signInRun == run;
+            if (stillCurrent)
+            {
+                _signInRun = null;
+                _state = Compose(IsSignedIn ? AccountStep.SignedIn : AccountStep.SignedOut);
+            }
+        }
+
+        run.Dispose();
+        if (stillCurrent)
+        {
+            StateChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -178,7 +208,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         {
             Run(async () =>
             {
-                var forgotten = await web.ForgetAsync(SteamStorePage.CookieDomains, _shutdown.Token).ConfigureAwait(false);
+                var forgotten = await web.ForgetAsync(SteamStorePage.Domains, _shutdown.Token).ConfigureAwait(false);
                 if (forgotten.Error is { } error)
                 {
                     Trace.TraceWarning($"Steam-Konto: Cookies nicht gelöscht ({error})");
@@ -327,7 +357,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         Trace.TraceInformation("Steam-Konto: Anmeldeseite geöffnet");
         var shown = await _web.ShowAsync(
             "Bei Steam anmelden",
-            SteamStorePage.LoginPage, SteamStorePage.AccountScript, page => SteamStorePage.SignInOf(page) is not null, cancellationToken).ConfigureAwait(false);
+            SteamStorePage.LoginPage, SteamStorePage.Domains, SteamStorePage.AccountScript, page => SteamStorePage.SignInOf(page) is not null, cancellationToken).ConfigureAwait(false);
         if (shown.IsCancelled)
         {
             Trace.TraceInformation("Steam-Konto: Anmeldung abgebrochen");
@@ -431,7 +461,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
             return;
         }
 
-        var userData = await _web!.ReadAsync(SteamStorePage.UserDataPage, SteamStorePage.TextScript, text => SteamStorePage.OwnershipOf(text) is not null, cancellationToken).ConfigureAwait(false);
+        var userData = await _web!.ReadAsync(SteamStorePage.UserDataPage, SteamStorePage.Domains, SteamStorePage.TextScript, text => SteamStorePage.OwnershipOf(text) is not null, cancellationToken).ConfigureAwait(false);
         var apps = userData.Text is { } text ? SteamStorePage.OwnershipOf(text) : null;
         IReadOnlyList<SteamOwnedGame> owned;
         IReadOnlyList<uint> packages;
@@ -474,7 +504,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
     /// </summary>
     private async Task<SteamApiResult<string>> NewAccessTokenAsync(SteamSignIn signIn, CancellationToken cancellationToken)
     {
-        var read = await _web!.ReadAsync(SteamStorePage.StorePage, SteamStorePage.AccountScript, page => SteamStorePage.SignInOf(page) is not null, cancellationToken).ConfigureAwait(false);
+        var read = await _web!.ReadAsync(SteamStorePage.StorePage, SteamStorePage.Domains, SteamStorePage.AccountScript, page => SteamStorePage.SignInOf(page) is not null, cancellationToken).ConfigureAwait(false);
         if (read.IsCancelled)
         {
             return new SteamApiError("Store-Seite: abgebrochen", IsCancelled: true);

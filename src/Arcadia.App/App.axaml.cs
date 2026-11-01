@@ -173,7 +173,7 @@ public partial class App : Application
                 : new NoSteamControllerCopy();
             var foreground = new ForegroundOwner(() => viewModel.Session.GameFolders, launchedGames);
             var (_, forGames) = app.ConnectControllers(new ControllerWiring(
-                _gamepad, OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, Copy, steamPlatform.RunningSteamAppId,
+                _gamepad, OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, pan, pan.LetGoAsync, Copy, steamPlatform.RunningSteamAppId,
                 () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, foreground.IsSteam, foreground.GameKey, panNotices, window.Latency)
             {
                 OwnPads = ownPads,

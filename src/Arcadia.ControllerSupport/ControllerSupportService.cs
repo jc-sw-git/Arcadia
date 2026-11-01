@@ -301,7 +301,7 @@ public sealed class ControllerSupportService
     /// first (the caller has asked the user) and started again afterwards, also after a failed, declined or cancelled
     /// <paramref name="work"/>. A Steam game in the way (<paramref name="blocker"/>), or a Steam that won't close, stops
     /// it before anything changes. Waits for the restarted Steam when <paramref name="waitForSteam"/> says so, but
-    /// doesn't need it to come back in _time.
+    /// doesn't need it to come back in time.
     /// </summary>
     internal async Task<T> WithSteamClosedAsync<T>(bool needsSteamClosed, string reason, Func<string, string> blocker,
         Func<CancellationToken, Task<T>> work, Func<T, bool> waitForSteam, CancellationToken cancellationToken)

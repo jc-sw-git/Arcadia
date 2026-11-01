@@ -43,6 +43,7 @@ internal sealed record ArcadiaParts(
 
 /// <summary>What the controllers are wired to: the parts that need SDL, VIIPER, Pan's pipe or a window in the App.</summary>
 /// <param name="PanSupported">Pan can run here (Windows); off, the emulation never starts.</param>
+/// <param name="HidingCheck">Pan's answer whether it could hide the Steam Controller now (#243 part B2); in the App the same client as <paramref name="Guardian"/>.</param>
 /// <param name="LetGoOfPan">Closes Arcadia's connection to Pan once it must leave Pan alone (#366); in the App the same client as <paramref name="Guardian"/>.</param>
 /// <param name="Copy">Makes the copy of the Steam Controller for Steam (#242) from the wiring the App hands it.</param>
 /// <param name="RunningSteamAppId">Steam's <c>RunningAppID</c>: a Steam game started directly in Steam (#119).</param>
@@ -54,6 +55,8 @@ internal sealed record ControllerWiring(
     bool PanSupported,
     IVirtualXboxPadServer Pads,
     IEmulationGuardian Guardian,
+    IHidingCheck HidingCheck,
+    Func<CancellationToken, Task> LetGoOfPan,
     Func<SteamControllerCopyWiring, ISteamControllerHold> Copy,
     Func<int?> RunningSteamAppId,
     Func<bool> IsArcadiaActive,
@@ -162,7 +165,8 @@ internal sealed class ArcadiaComposition
         var routing = new GamepadRouting(Main, wiring.IsArcadiaActive, wiring.IsMouseModeOn, _time, wiring.Latency);
         gamepad.Polled += routing.Tick;
 
-        ControllerSupport.HidingCheck = wiring.Guardian as IHidingCheck;
+        ControllerSupport.HidingCheck = wiring.HidingCheck;
+        ControllerSupport.LetGoOfPan = wiring.LetGoOfPan;
         var forGames = SteamControllerForGames.Create(
             wiring.PanSupported, wiring.Pads, wiring.Guardian, wiring.Copy, ControllerSupport, _settings, () => RunningGames.ActiveGames,
             wiring.RunningSteamAppId, wiring.IsArcadiaActive, wiring.IsMouseModeOn, wiring.IsSteamInFront, wiring.GameInFront, gamepad,

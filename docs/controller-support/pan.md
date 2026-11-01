@@ -55,7 +55,7 @@ Once nothing emulates, it removes the stale device entries Arcadia's emulated de
   takes the start only if one of them alone listens on the usbip port named, only on 127.0.0.1 (IPv4 and IPv6,
   `ViiperListeners.OnlyServedBy`), else lets them go and refuses (`NoForwardingProcess`, `UsbipPortNotServed`), and
   journals that port per generation (`UsbipServers`, #304). Nothing is ever ended by a name lookup alone.
-- Teardown steps, each with a 10 s timeout on a worker, never throwing: detach the devices imported from the journaled server
+- Teardown steps, each with a timeout on a worker (detach and end 10 s each, show 30 s, restart 32 s), never throwing: detach the devices imported from the journaled server
   ports, never another program's (`usbip.exe` from `%ProgramFiles%\USBip`; a server leaves the journal only when all
   its detaches worked), end the held forwarding processes (`TerminateProcess`: VIIPER keeps no state worth
   saving), then show the puck. Each ended process leaves the journal at once (under the guardian's lock, so a step
@@ -86,8 +86,11 @@ Pan from before #304 wrote: with an open emulation it gets VIIPER's old default 
 ## Cost
 
 Release build (Native AOT) on the owner's PC (32 logical cores), Arcadia connected, a game on "Arcadia" for 19 min:
-Pan 0.001 % CPU of all cores (0.003 % without a game), Arcadia 0.30 %, VIIPER 0.26 %. Pan's private working set grows
-about 1 MB a minute from 7 MB and stood at 22 MB after 23 min, over the 20 MB budget (#360). Pan isn't on the input path
+Pan 0.001 % CPU of all cores (0.003 % without a game), Arcadia 0.30 %, VIIPER 0.26 %. Pan's private working set grew
+about 1 MB a minute from 7 MB to 22.1 MB in 23 min and stayed there for the last 4 min: no leak, the GC's gen-0 budget.
+Without a setting it follows the CPU's L3 cache (about half of it: 16 MB with 32 MB of L3), so the heartbeat's small
+garbage piles up to that before the first collection. Pan sets `System.GC.Gen0MaxBudget` to 2 MB in its project (read
+by Native AOT and the Debug build alike; `pan.log`'s start line names the budget in effect). Pan isn't on the input path
 (`Pulse` is an increment; the heartbeat goes every 500 ms from its own task); without Pan nothing is emulated, so
 there is no latency without it to compare: read → VIIPER mean 62 µs, p99 120 µs; read gap mean 1.34 ms, p99 2.0 ms; a
 game reads a press mean 1.05 ms, p99 1.6 ms after the real controller (`checks/238-latency` probe), as in #238.

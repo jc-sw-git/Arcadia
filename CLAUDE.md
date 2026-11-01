@@ -81,7 +81,9 @@ milestone again; this list keeps it small.
 
 Budgets (Release build, owner's PC): start to usable library < 2 s with 1,000 games; gamepad
 input to visible focus move < 50 ms; idle CPU < 1 % with gamepad polling; < 400 MB RAM with
-5,000 games; a rescan never blocks the UI; no measurable cost to a running game.
+5,000 games; a rescan never blocks the UI; no measurable cost to a running game; latency the controller emulation
+adds from a controller's report to its emulated pad: mean ≤ 1 ms, p99 ≤ 2 ms, max ≤ 4 ms
+(`docs/controller-support/pad-latency.md`).
 
 **When criteria conflict**, the higher one wins: 1. security and privacy, 2. robustness and data
 safety, 3. controller first, 4. performance, 5. readability and maintainability, 6. modularity and
@@ -128,7 +130,7 @@ errors land with stack trace in `arcadia.log` and as a toast. No `_ = SomethingA
 touching that code, and add new findings there, not here):
 - Steam library, installs, updates, account, running games, `shortcuts.vdf`: `docs/launchers/steam/` (README first, then the topic file)
 - Epic launcher, catalog, install monitor, playtime: `docs/launchers/epic.md`
-- Steam Controller Support (Pan, VIIPER, usbip-win2, SISR): `docs/controller-support/` (README first, then the topic file)
+- Steam Controller Support (Pan, VIIPER, usbip-win2, HidHide, removing SISR): `docs/controller-support/` (README first, then the topic file)
 
 ## Context economy
 

@@ -50,6 +50,11 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
     /// </summary>
     public static readonly TimeSpan StartAgainAfterInstall = TimeSpan.FromSeconds(10);
 
+    /// <summary>How long a poll waits for a monitor; one that is late keeps its games as they were.</summary>
+    public static readonly TimeSpan PollDeadline = TimeSpan.FromSeconds(10);
+
+    private readonly MonitorPolls<Report> _monitors = new(time, PollDeadline, (launcherId, ex) => $"Laufende Spiele von {launcherId} nicht lesbar: {ex}");
+
     // Games Arcadia handed to their launcher that weren't seen running yet.
     private readonly Dictionary<string, Start> _starting = new(StringComparer.Ordinal);
 
@@ -69,7 +74,17 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
     private bool _polling;
 
     /// <summary>Optional diagnostics sink (Arcadia's log file).</summary>
-    public Action<string>? Log { get; set; }
+    public Action<string>? Log
+    {
+        get => _log;
+        set
+        {
+            _log = value;
+            _monitors.Log = value;
+        }
+    }
+
+    private Action<string>? _log;
 
     /// <summary>Whether the launcher installs (e.g. updates) the game with this key now; asked on the calling thread.</summary>
     public Func<string, bool> IsInstalling { get; init; } = _ => false;
@@ -145,7 +160,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         _polling = true;
         try
         {
-            var (reports, processGames) = await Task.Run(() =>
+            var processScan = Task.Run(() =>
             {
                 if (_newFolders is { } folders)
                 {
@@ -153,8 +168,11 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
                     processes.Watch(folders);
                 }
 
-                return (monitors.Select(Ask).OfType<Report>().ToList(), scan ? processes.Poll(unreadableMayBe) : null);
+                return scan ? processes.Poll(unreadableMayBe) : null;
             });
+            var answers = await _monitors.AskAsync(monitors.Select(m => (m.LauncherId, (Func<CancellationToken, Report>)(token => Ask(m, token)))));
+            var reports = monitors.Select(m => answers.GetValueOrDefault(m.LauncherId)).OfType<Report>().ToList();
+            var processGames = await processScan;
 
             var asked = reports.Select(r => r.LauncherId).ToHashSet(StringComparer.Ordinal);
             var refused = reports.SelectMany(r => r.Refused.Select(refusal => (Key: Game.KeyOf(r.LauncherId, refusal.GameId), Refusal: refusal))).ToList();
@@ -173,20 +191,10 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         }
     }
 
-    private Report? Ask(IRunningGamesMonitor monitor)
+    // Monitors may come from plugins; one whose Poll fails or is late keeps its games as they were (MonitorPolls).
+    private Report Ask(IRunningGamesMonitor monitor, CancellationToken cancellationToken)
     {
-        IReadOnlyList<RunningGame> games;
-        try
-        {
-            games = monitor.Poll();
-        }
-        catch (Exception ex)
-        {
-            // Monitors may come from plugins; one that fails keeps its games as they were.
-            Log?.Invoke($"Laufende Spiele von {monitor.LauncherId} nicht lesbar: {ex}");
-            return null;
-        }
-
+        var games = monitor.Poll(cancellationToken);
         try
         {
             return new Report(monitor.LauncherId, games, monitor.RefusedStarts());

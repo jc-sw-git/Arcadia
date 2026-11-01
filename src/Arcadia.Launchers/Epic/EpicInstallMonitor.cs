@@ -45,8 +45,11 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
 
     public string LauncherId => KnownLaunchers.Epic.Id;
 
-    public InstallSnapshot Poll()
+    public InstallSnapshot Poll(CancellationToken cancellationToken = default)
     {
+        // Reading the log moves its offset, so a poll stops only before it starts.
+        cancellationToken.ThrowIfCancellationRequested();
+
         // The first read only learns the current state; past completions are not news.
         var newEvents = ReadNewLogLines().Select(ParseLogLine).OfType<(string App, EpicInstallEvent Event)>().ToList();
         var finished = new Dictionary<string, InstallOutcome>(StringComparer.Ordinal);

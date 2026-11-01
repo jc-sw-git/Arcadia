@@ -384,6 +384,37 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         await QuietRequestAsync(PanMessage.Of(PanCommand.PlannedExit, _currentGeneration), CancellationToken.None);
     }
 
+    /// <summary>
+    /// Lets go of Pan for a step that must not run beside Arcadia's own requests (#366: <c>--restore</c> while a hide
+    /// could still be journaled): waits until a request under way has its reply or timed out, then closes the
+    /// connection, silently. <see cref="WhyLeftAlone"/> must name a reason before, so the keeper stays away.
+    /// </summary>
+    public async Task LetGoAsync(CancellationToken cancellationToken)
+    {
+        // Every request ends within its own reply timeout; the margin covers the write before it.
+        var free = await _requests.WaitAsync(ControllerRequestTimeout + RequestTimeout, cancellationToken);
+        if (!free)
+        {
+            _log("Pan: eine Anfrage läuft noch – Arcadia lässt trotzdem los");
+        }
+
+        try
+        {
+            Drop(null);
+            if (WhyLeftAlone() is { } leftAlone)
+            {
+                SetUnavailable(leftAlone);
+            }
+        }
+        finally
+        {
+            if (free)
+            {
+                _requests.Release();
+            }
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         await _disposed.CancelAsync();
@@ -550,6 +581,13 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         var link = await _transport.ConnectAsync(cancellationToken);
         lock (_lock)
         {
+            if (WhyLeftAlone() is { } leftAlone)
+            {
+                // Let go while the pipe opened (LetGoAsync, #366): the link must not come up behind its back.
+                link.Dispose();
+                throw new PanUnavailableException(leftAlone, permanent: false);
+            }
+
             _link = link;
             _pending = null;
             // A generation torn down on an earlier connection means nothing to this Pan (it may have restarted and

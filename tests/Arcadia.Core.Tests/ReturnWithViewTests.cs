@@ -17,7 +17,7 @@ public sealed class ReturnWithViewTests
     public ReturnWithViewTests()
     {
         _return = new ReturnWithView(() => _options, () => _arcadiaInFront, _time);
-        _return.HoldStarted += rest => _events.Add($"hold {rest.TotalSeconds:0.0}");
+        _return.HoldStarted += rest => _events.Add(FormattableString.Invariant($"hold {rest.TotalSeconds:0.0}"));
         _return.HoldCancelled += () => _events.Add("cancelled");
         _return.Requested += () => _events.Add("arcadia");
     }

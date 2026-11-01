@@ -106,6 +106,56 @@ public sealed class PanEmulationTests
     }
 
     [Fact]
+    public async Task At_exit_a_tick_in_a_long_hide_is_cancelled_so_the_cleanup_still_runs()
+    {
+        var hiding = new TaskCompletionSource();
+        _pan.HideWait = async cancellationToken =>
+        {
+            hiding.TrySetResult();
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+        };
+        var tick = _emulation.TickAsync();
+        await hiding.Task;
+
+        await _emulation.ShutdownAsync();
+        await tick;
+
+        Assert.True(_pads.ShutDown);
+        Assert.True(_pan.PlannedExit);
+        Assert.DoesNotContain(_log, line => line.Contains("Fehler", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task At_exit_a_tick_that_ignores_the_cancel_doesnt_hold_the_exit_and_nothing_cleans_up_beside_it()
+    {
+        var hiding = new TaskCompletionSource();
+        var neverAnswers = new TaskCompletionSource();
+        _pan.HideWait = _ =>
+        {
+            hiding.TrySetResult();
+            return neverAnswers.Task;
+        };
+        var tick = _emulation.TickAsync();
+        await hiding.Task;
+
+        // The gate's deadline starts after the cancel went out, on another thread: time moves until the exit is through.
+        var shutdown = _emulation.ShutdownAsync();
+        for (var step = 0; step < 500 && !shutdown.IsCompleted; step++)
+        {
+            _time.Advance(PanEmulation.ShutdownGateTimeout);
+            await Task.Delay(20);
+        }
+
+        await shutdown.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.False(_pads.ShutDown);
+        Assert.False(_pan.PlannedExit);
+        Assert.Contains(_log, line => line.Contains("Pan räumt beim Beenden selbst auf", StringComparison.Ordinal));
+        neverAnswers.SetResult();
+        await tick;
+    }
+
+    [Fact]
     [Trait("TestCase", "T242-5")]
     public async Task Switched_off_it_ends_in_Pans_order_and_nothing_is_emulated()
     {

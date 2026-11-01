@@ -69,14 +69,27 @@ internal sealed class FakeMonitor(string launcherId) : IInstallMonitor
 
     public ManualResetEventSlim? Gate { get; init; }
 
-    public int Polls { get; private set; }
+    public bool Fails { get; set; }
+
+    public int Polls => _polls;
+
+    /// <summary>The token of the latest poll.</summary>
+    public CancellationToken Token { get; private set; }
+
+    private int _polls;
 
     public string LauncherId => launcherId;
 
-    public InstallSnapshot Poll()
+    public InstallSnapshot Poll(CancellationToken cancellationToken = default)
     {
-        Polls++;
+        Interlocked.Increment(ref _polls);
+        Token = cancellationToken;
         Gate?.Wait(TimeSpan.FromSeconds(10));
+        if (Fails)
+        {
+            throw new InvalidOperationException("broken plugin");
+        }
+
         return new InstallSnapshot(new Dictionary<string, InstallProgress>(Active), new Dictionary<string, InstallOutcome>(Finished));
     }
 }
@@ -92,7 +105,7 @@ internal sealed class FakeRunningGames(string launcherId) : IRunningGamesMonitor
 
     public bool ReportsSimulatedGames { get; init; }
 
-    public IReadOnlyList<RunningGame> Poll()
+    public IReadOnlyList<RunningGame> Poll(CancellationToken cancellationToken = default)
     {
         Polls++;
         return [.. Running];

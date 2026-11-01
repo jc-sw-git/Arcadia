@@ -18,7 +18,7 @@ public sealed class MouseModeTests
     public MouseModeTests()
     {
         _mode = new MouseMode(_output, () => _options, _time);
-        _mode.HoldStarted += rest => _events.Add($"hold {rest.TotalSeconds:0.0}");
+        _mode.HoldStarted += rest => _events.Add(FormattableString.Invariant($"hold {rest.TotalSeconds:0.0}"));
         _mode.HoldCancelled += () => _events.Add("cancelled");
         _mode.Switched += s => _events.Add($"{(s.IsOn ? "on" : "off")} {(s.IsAutomatic ? "auto" : $"slot {s.PadId}")}{(s.ByGame ? " by game" : string.Empty)}{(s.ForDialog ? " for dialog" : string.Empty)}");
         _mode.Refused += slot => _events.Add($"refused slot {slot}");

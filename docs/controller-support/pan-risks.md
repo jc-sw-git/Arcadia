@@ -7,6 +7,13 @@ would close it, so a later story can pick it up. Don't "fix" one of these in pas
   `%LOCALAPPDATA%\Arcadia` gets SYSTEM code at the next confirmed UAC prompt. `--expect-hash` only closes the window
   between Arcadia's hash and Pan's copy; the hand-off copy of `--uninstall` is likewise only checked against the file
   at the path then. Countermeasure: code signing of `Pan.exe` (#271, `docs/releases.md`).
+- **Installers: "latest" and no version floor in Pan.** Arcadia fetches usbip-win2's latest release, checks GitHub's
+  digest and hands Pan the SHA-256; Pan checks signature and hash. The hash comes from the unelevated client and Pan
+  checks no minimum version (`UsbipRelease.MinimumVersion` is the App's check), so same-user code could have an older
+  signed release installed under its own hash; Pan also copies the named file into its data folder before the check,
+  and the asset's URL and name are not checked. Each needs an elevated `Pan.exe` run, which already gives SYSTEM code
+  (above). Countermeasure with the code signing (#271): the minimum version in Pan, the copy under an admin-only DACL,
+  host and name of the asset checked.
 - **`%ProgramFiles%\Arcadia\Pan`** is trusted as Program Files is: only administrators can write there; a junction
   planted by an administrator is not defended against.
 - **A usbip step left behind after its 10 s timeout** keeps running with a cancelled token; `usbip.exe` itself is
@@ -23,6 +30,12 @@ would close it, so a later story can pick it up. Don't "fix" one of these in pas
   the pad or the puck's copy: read the input, and through dropped firmware messages raise Arcadia's firmware notice. No flash,
   no privilege gain. Residual risk; a fix would be in VIIPER (import only from usbip-win2's kernel
   connection, or no second import).
+- **Pan's pipe takes the first client:** any program of the console session (no administrator rights needed) that
+  connects before Arcadia blocks Pan for Arcadia until its heartbeat stops, and can send `HideController` for
+  controllers Arcadia would take over. A client that never reads blocks Pan's `FlushAsync`; four of them use up the
+  pipe's instances (`MaxInstances`), and Arcadia can't connect. No privilege gain and no data; same-user code can do
+  more than that anyway. Countermeasure: accept only Arcadia's installed and signed exe (code signing); a reply that
+  is written and then closed instead of flushed.
 - **VIIPER reuses nonces:** both directions use one session key with counters from 0. Only someone reading loopback
   traffic (administrators) could use it. Fix upstream: one key per direction.
 

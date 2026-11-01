@@ -1,17 +1,5 @@
 # Third-party software
 
-## SISR — Steam Input System Redirector
-
-Arcadia downloads and runs SISR as a separate program for its "Steam Controller Support".
-SISR is not part of Arcadia's source code and is not modified by Arcadia.
-
-- Author: Peter Repukat (Alia5)
-- License: GPL-3.0
-- Source: https://github.com/Alia5/SISR
-- Installed to: `%LOCALAPPDATA%\SISR`, SISR's own install location (downloaded from the official GitHub releases, SHA-256 verified)
-
-SISR ships with VIIPER (https://github.com/Alia5/VIIPER) and SDL3 (https://libsdl.org), under their own licenses.
-
 ## VIIPER (Arcadia's fork)
 
 Arcadia ships `viiper.exe`, built from its fork of VIIPER with the device type `hidproxy` for the copy of the Steam
@@ -24,11 +12,22 @@ Controller's puck (#242), and runs it as a separate program. The fork's commit a
 
 ## usbip-win2
 
-Installed on request for the Steam Controller Support (SISR/VIIPER need it).
+Installed on request by "Treiber installieren" (downloaded from its official GitHub releases, SHA-256 and signature
+verified) for the controller emulation: VIIPER's emulated pads reach Windows through it. Not part of Arcadia's
+installer and not modified by Arcadia.
 
 - Author: Vadym Hrynchyshyn
 - License: GPL-3.0
 - Source: https://github.com/vadimgrn/usbip-win2
+
+## HidHide
+
+Installed on request by "Treiber installieren" (a pinned version, SHA-256 and signature verified): Pan hides the real
+controllers with it while Arcadia emulates them. Not part of Arcadia's installer and not modified by Arcadia.
+
+- Author: Eric Korff de Gidts; maintained by Nefarius Software Solutions e.U.
+- License: MIT
+- Source: https://github.com/nefarius/HidHide
 
 ## SDL3
 
@@ -91,6 +90,7 @@ MIT licence (text below).
 | Viiper.Client (VIIPER's C# client; drives `viiper.exe` for the Steam Controller's Xbox pad, #213) | Peter Repukat | https://github.com/Alia5/VIIPER |
 | Avalonia.Controls.WebView | AvaloniaUI OÜ | https://github.com/AvaloniaUI/Avalonia |
 | System.Security.Cryptography.ProtectedData | .NET Foundation and Contributors | https://github.com/dotnet/runtime |
+| System.ServiceProcess.ServiceController (starts Pan's service) | .NET Foundation and Contributors | https://github.com/dotnet/runtime |
 
 Native parts with their own licences:
 

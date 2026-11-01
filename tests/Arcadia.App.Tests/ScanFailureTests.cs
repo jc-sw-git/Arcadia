@@ -100,6 +100,27 @@ public sealed class ScanFailureTests
         window.OneWithText("Keine Spiele in Steam");
     }
 
+    [AvaloniaTheory]
+    [Trait("TestCase", "T369-2")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Reading_again_by_hand_while_the_file_is_locked_says_the_games_stay(bool oneLauncher)
+    {
+        using var files = new LauncherFiles();
+        var steam = files.Steam.Install();
+        steam.Write(new SteamApp("9100001", "Sternenhafen"));
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
+
+        using (new FileStream(Path.Combine(steam.Root, "steamapps", "libraryfolders.vdf"), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            // "Neu einlesen" on Steam's page, or "Alle neu einlesen" in the launcher settings.
+            await arcadia.Main.Session.RescanAsync(oneLauncher ? arcadia.SelectedTab!.Launcher : null);
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Assert.Equal("Sternenhafen", arcadia.FocusedGame?.Title);
+            Assert.Equal("Steam konnte nicht neu eingelesen werden; die zuletzt gelesenen Spiele bleiben.", arcadia.Main.Toast.Text);
+        }
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T369-3")]
     public async Task A_broken_Epic_manifest_costs_only_its_own_game()

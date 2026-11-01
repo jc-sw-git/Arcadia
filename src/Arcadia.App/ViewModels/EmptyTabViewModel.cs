@@ -50,7 +50,7 @@ public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action 
     {
         null => "Arcadia zeigt die Spiele deiner Launcher in Tabs. Schalte in den Einstellungen unter „Launcher“ die ein, deren Spiele du hier sehen willst.",
         _ when _isMissing => $"Arcadia findet {tab.Name} auf diesem PC nicht mehr. Ist es deinstalliert, schalte den Launcher in den Einstellungen ab, dann verschwindet dieser Tab.",
-        _ when _isScanFailed => $"Arcadia konnte die Spiele von {tab.Name} gerade nicht lesen, etwa weil eine Datei gesperrt ist oder ein Laufwerk fehlt. Versuch es gleich noch einmal.",
+        _ when _isScanFailed => $"Arcadia konnte die Spiele von {tab.Name} gerade nicht lesen, etwa weil eine seiner Dateien gesperrt ist. Versuch es gleich noch einmal.",
         _ => $"{tab.Name} ist installiert, aber Arcadia hat dort keine Spiele gefunden. Sobald du in {tab.Name} ein Spiel kaufst oder installierst, erscheint es hier.",
     };
 

@@ -89,20 +89,33 @@ public sealed class WebPageHost : Decorator
         };
         view.NavigationStarted += (_, e) =>
         {
-            _loads++;
-            // The launcher's pages and its sign-in only; a link to anything else stays unopened.
-            if (e.Request is { } target && target.Scheme != Uri.UriSchemeHttps && target.Scheme != "about")
+            // The launcher's own sites only (#372): a link to anything else stays unopened, so no other site can show a
+            // sign-in form in Arcadia's window.
+            if (e.Request is { } target && !page.MayOpen(target))
             {
+                AppLog.Write($"Browser: {target.Host} gehört nicht zu {string.Join(", ", page.Domains)}, nicht geöffnet.");
                 e.Cancel = true;
                 return;
             }
 
+            _loads++;
             if (e.Request is { } address)
             {
                 page.Address = WebPageViewModel.AddressOf(address);
             }
         };
-        view.NavigationCompleted += (_, e) => LoadedAsync(page, view, e.IsSuccess).Forget("Webseite lesen");
+        // A link that would open a window of its own opens in the page instead, under the same rule; a second window
+        // would sit outside Arcadia's, beyond B and the controller.
+        view.NewWindowRequested += (_, e) =>
+        {
+            e.Handled = true;
+            if (e.Request is { } target && page.MayOpen(target))
+            {
+                view.Navigate(target);
+            }
+        };
+        view.NavigationCompleted += (_, e) =>
+            LoadedAsync(page, view, e.IsSuccess, e.Request ?? view.Source).Forget("Webseite lesen");
         var started = false;
         view.AdapterCreated += (_, _) =>
         {
@@ -145,7 +158,7 @@ public sealed class WebPageHost : Decorator
         foreach (var cookie in await cookies.GetCookiesAsync())
         {
             var domain = cookie.Domain.TrimStart('.');
-            if (page.ForgetDomains.Any(d => domain.Equals(d, StringComparison.OrdinalIgnoreCase) || domain.EndsWith("." + d, StringComparison.OrdinalIgnoreCase)))
+            if (WebPageViewModel.IsUnder(domain, page.ForgetDomains))
             {
                 cookies.DeleteCookie(cookie);
                 deleted++;
@@ -156,7 +169,7 @@ public sealed class WebPageHost : Decorator
         page.Complete(WebPageResult.Done(string.Empty));
     }
 
-    private async Task LoadedAsync(WebPageViewModel page, NativeWebView view, bool isSuccess)
+    private async Task LoadedAsync(WebPageViewModel page, NativeWebView view, bool isSuccess, Uri? address)
     {
         if (page.Result.IsCompleted || page.ForgetDomains.Count > 0)
         {
@@ -177,6 +190,13 @@ public sealed class WebPageHost : Decorator
         }
 
         _hasLoaded = true;
+
+        // Every navigation off the launcher's sites is cancelled; this holds even if one got past that (a redirect a
+        // browser engine doesn't report): no other site's answer can end the page.
+        if (!page.MayRead(address))
+        {
+            return;
+        }
 
         var load = _loads;
         var text = WebPageViewModel.ScriptText(await view.InvokeScript(page.Script));

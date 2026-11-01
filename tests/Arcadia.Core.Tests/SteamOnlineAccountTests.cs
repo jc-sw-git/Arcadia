@@ -300,7 +300,7 @@ public sealed class SteamOnlineAccountTests : IDisposable
         var reads = _web.StorePageReads;
 
         // Another read of the store page (e.g. in a second Arcadia) replaced the token.
-        await _web.ReadAsync(SteamStorePage.StorePage, SteamStorePage.AccountScript, _ => true, CancellationToken.None);
+        await _web.ReadAsync(SteamStorePage.StorePage, SteamStorePage.Domains, SteamStorePage.AccountScript, _ => true, CancellationToken.None);
         account.RefreshNow();
         await account.WhenIdleAsync();
 

@@ -296,7 +296,14 @@ public sealed class TakenOverControllers
         if (forwarding != _forwarding)
         {
             _forwarding = forwarding;
-            Forwarding(forwarding);
+            try
+            {
+                Forwarding(forwarding);
+            }
+            catch (Exception ex)
+            {
+                ReportOnce(ex, nameof(Forwarding));
+            }
         }
     }
 
@@ -824,7 +831,20 @@ public sealed class TakenOverControllers
                 .Select(controller => new ConnectedModel(controller.Model, controller.Name, controller.DefaultKind))]);
         }
 
-        Changed?.Invoke();
+        RaiseChanged();
+    }
+
+    /// <summary>A throwing subscriber must not cost <see cref="Feed"/> its read, nor the tick its rumble and light.</summary>
+    private void RaiseChanged()
+    {
+        try
+        {
+            Changed?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            ReportOnce(ex, nameof(Changed));
+        }
     }
 
     /// <summary>The lists for the settings (D7, D8), from the controllers connected now; <see cref="Changed"/> when they differ.</summary>
@@ -870,7 +890,7 @@ public sealed class TakenOverControllers
         Volatile.Write(ref _waiting, waiting);
         if (changed)
         {
-            Changed?.Invoke();
+            RaiseChanged();
         }
     }
 

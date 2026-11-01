@@ -590,8 +590,23 @@ public sealed class SdlGamepadSource : IGamepadSource
         }
         finally
         {
-            pacing.Stop(clock.Elapsed);
-            Close();
+            try
+            {
+                pacing.Stop(clock.Elapsed);
+                Close();
+            }
+            catch (Exception ex)
+            {
+                // Ending the thread must not end the process either; Lost is raised only once.
+                if (_lost)
+                {
+                    Report(ex);
+                }
+                else
+                {
+                    Lose(ex);
+                }
+            }
         }
     }
 

@@ -491,7 +491,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             {
                 wait = await AttemptAsync(token);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex) when (ex is not OperationCanceledException || !token.IsCancellationRequested)
             {
                 ReportUnexpected(ex, "Verbindung zu Pan halten");
                 _firstAttempt.TrySetResult();
@@ -536,7 +536,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             SetUnavailable(ex.Message);
             wait = ex.Permanent ? SlowRetry : Retry;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException || !token.IsCancellationRequested)
         {
             SetUnavailable($"Pan nicht erreichbar: {ex.Message}");
         }
@@ -590,7 +590,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         Raise(Connected, nameof(Connected), handler => ((Action)handler)());
     }
 
-    /// <summary>The reader never ends silently: a throwing subscriber is logged with its stack and costs the link (DoD: robust).</summary>
+    /// <summary>The reader never ends silently: an error nobody expected is logged with its stack and costs the link (DoD: robust).</summary>
     private async Task ReadGuardedAsync(PanLink link)
     {
         try
@@ -716,7 +716,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
 
                 if (stillAsked)
                 {
-                    PuckRestarting?.Invoke();
+                    Raise(PuckRestarting, nameof(PuckRestarting), handler => ((Action)handler)());
                 }
             }
         }
@@ -742,7 +742,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         {
             lock (_puckEvents)
             {
-                PuckRestarted?.Invoke();
+                Raise(PuckRestarted, nameof(PuckRestarted), handler => ((Action)handler)());
             }
         }
         catch (Exception ex)
@@ -819,7 +819,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             {
                 await SendHeartbeatAsync(token);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex) when (ex is not OperationCanceledException || !token.IsCancellationRequested)
             {
                 ReportUnexpected(ex, "Heartbeat an Pan");
             }
@@ -873,7 +873,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
                 }
             }
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException || !token.IsCancellationRequested)
         {
             // Already dropped and logged by RequestAsync.
             _ = ex;

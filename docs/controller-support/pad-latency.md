@@ -4,8 +4,8 @@ How a controller's report reaches its emulated pad with the least delay, for eve
 ([every-controller.md](every-controller.md)) and the Steam Controller's Xbox pad ([xbox-pad.md](xbox-pad.md)).
 
 Budget: added delay from the controller's report to the pad's report mean ≤ 1 ms, p99 ≤ 2 ms, max ≤ 4 ms; Arcadia
-beside a game ≤ 1 % CPU of all cores. A measured value up to 20 % over its limit is tolerated (mean 1.2 ms, p99
-2.4 ms, max 4.8 ms); beyond that the budget is broken. It is measured end to end with the `checks/238-latency` probe: a program reading
+beside a game ≤ 1 % CPU of all cores. A measured value up to 10 % over its limit is tolerated (mean 1.1 ms, p99
+2.2 ms, max 4.4 ms); beyond that the budget is broken. It is measured end to end with the `checks/238-latency` probe: a program reading
 both the real controller and its emulated pad, so the bus side counts and the probe's own reading is included.
 `arcadia.log`'s figure (below) is the everyday indicator; it leaves out the bus side.
 - SDL has no call that waits for a report; it reads what arrived when asked. While a plugged pad gets its controller's

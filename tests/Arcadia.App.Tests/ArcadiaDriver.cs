@@ -1,3 +1,4 @@
+using System.Globalization;
 using Arcadia.App.Input;
 using Arcadia.App.Search;
 using Arcadia.Input;
@@ -209,6 +210,21 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>Steam's <c>RunningAppID</c>: a Steam game started directly in Steam (#119).</summary>
     public int? RunningSteamAppId { get; set; }
+
+    /// <summary>
+    /// A game on "Arcadia" runs and is in front (#357), so Arcadia's pad passes input: a made-up Steam game started
+    /// directly in Steam, set to "Arcadia".
+    /// </summary>
+    public async Task PlayGameOnArcadiaInFrontAsync()
+    {
+        const int appId = 4711;
+        var key = Game.KeyOf(KnownLaunchers.Steam.Id, appId.ToString(CultureInfo.InvariantCulture));
+        Settings.Update(settings => settings.WithControllerModeChoice(key, useArcadiaPad: true));
+        RunningSteamAppId = appId;
+        IsArcadiaInFront = false;
+        GameInFront = key;
+        await TickSteamControllerAsync();
+    }
 
     /// <summary>The App's 2 s tick of the Steam Controller for games: the mode of the running games, then the pad.</summary>
     /// <summary>

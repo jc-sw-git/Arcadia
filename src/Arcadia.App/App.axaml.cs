@@ -200,11 +200,10 @@ public partial class App : Application
             ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && viiper is not null && ownViiper is not null
                 ? new ViiperSteamControllerCopy(viiper, ownViiper, wiring, AppLog.Write)
                 : new NoSteamControllerCopy();
-            var steamInFront = new SteamInFront(time);
+            var foreground = new ForegroundOwner(() => viewModel.Session.GameFolders, launchedGames);
             var forGames = SteamControllerForGames.Create(
                 OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, Copy, controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId,
-                () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, steamInFront.Now,
-                () => ForegroundGame.InFront(viewModel.Session.GameFolders, launchedGames), _gamepad, panNotices, time, ownPads);
+                () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, foreground.IsSteam, foreground.GameKey, _gamepad, panNotices, time, ownPads);
             pan.Start();
             var xboxPad = forGames.Pad;
             viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;

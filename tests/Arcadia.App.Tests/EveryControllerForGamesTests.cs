@@ -277,6 +277,7 @@ public sealed class EveryControllerForGamesTests
     public async Task While_a_new_controller_is_hidden_the_Steam_Controllers_pad_rests_too()
     {
         using var arcadia = await StartInBackgroundAsync(pads: KnownPads.SteamController);
+        await arcadia.PlayGameOnArcadiaInFrontAsync();
         var steamControllerPad = arcadia.XboxPads.Current!;
         arcadia.Sdl.Hold(arcadia.Sdl.IdOf(KnownPads.SteamController), B.North);
         arcadia.PollControllers();

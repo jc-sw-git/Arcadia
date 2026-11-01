@@ -60,7 +60,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     /// <param name="activeGames">The keys of the games that run or are being started (<c>RunningGamesTracker.ActiveGames</c>).</param>
     /// <param name="runningSteamAppId">The Steam game running right now, also one started directly in Steam (#119).</param>
     /// <param name="isSteamInFront">A window of Steam itself is in front; asked on every poll, so it must be cheap.</param>
-    /// <param name="gameInFront">The key of the library game in front, or null; asked when Steam tries a firmware update.</param>
+    /// <param name="gameInFront">The key of the library game in front, or null; asked on every poll, so it must be cheap.</param>
     /// <param name="gamepad">
     /// Arcadia's controllers: it lets go of the puck (<c>ReadSteamControllers</c>, #308) or of every controller
     /// (<c>ReadControllers</c>, #335) while Pan restarts what it hides, and a game's rumble goes back through it (#238 D5).
@@ -143,7 +143,12 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         var pad = new SteamControllerXboxPad(emulation, time, Services.AppLog.Write)
         {
             Wanted = () => routing.Current.PadWanted,
-            ForwardingAllowed = () => SteamControllerCopyRules.PadPasses(routing.Current, new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront()), settings.Current.IgnoreSteamDesktopLayout),
+            // The foreground is read on every poll only while a game that can get the pad runs.
+            ForwardingAllowed = () => routing.Current is var route
+                && SteamControllerCopyRules.PadMayPass(route)
+                && SteamControllerCopyRules.PadPasses(
+                    route,
+                    new ForegroundNow(isArcadiaActive(), isMouseModeOn(), isSteamInFront(), GameOnArcadiaInFront: gameInFront() is { } key && controllerSupport.UsesArcadiaPad(key))),
             Combos = combos.Current,
             FeedAlive = guardian.Pulse,
             Rumble = (padId, motors) => Rumble(gamepad, padId, motors),

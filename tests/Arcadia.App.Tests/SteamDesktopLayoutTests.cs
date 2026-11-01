@@ -125,6 +125,7 @@ public sealed class SteamDesktopLayoutTests
         await arcadia.TickSteamControllerAsync();
 
         arcadia.IsArcadiaInFront = false;
+        arcadia.GameInFront = arcadia.Starts.Keys[0];
         Assert.False(arcadia.CopyWiring.Forwarding());
         Assert.True(arcadia.XboxPad.ForwardingAllowed());
 
@@ -157,9 +158,10 @@ public sealed class SteamDesktopLayoutTests
         arcadia.Press(UiAction.Back).Press(UiAction.Back);
         Assert.Null(launchers.PageLauncherId);
 
+        // No game runs: the pad rests on the desktop too (#357).
         arcadia.IsArcadiaInFront = false;
         Assert.False(arcadia.CopyWiring.Forwarding());
-        Assert.True(arcadia.XboxPad.ForwardingAllowed());
+        Assert.False(arcadia.XboxPad.ForwardingAllowed());
     }
 
     [AvaloniaFact]
@@ -178,6 +180,7 @@ public sealed class SteamDesktopLayoutTests
         await arcadia.WaitUntilAsync(() => ArcadiaDriver.Log.Contains("Kopie für Steam: meldet Ruhe (Arcadia vorne, Steams Desktop-Belegung ignoriert)", StringComparison.Ordinal), "Die Kopie soll ihre Änderung loggen");
 
         arcadia.IsArcadiaInFront = false;
+        arcadia.GameInFront = arcadia.Starts.Keys[0];
         Assert.False(arcadia.CopyWiring.Forwarding());
         Assert.True(arcadia.XboxPad.ForwardingAllowed());
         Assert.True(arcadia.XboxPad.IsPlugged);

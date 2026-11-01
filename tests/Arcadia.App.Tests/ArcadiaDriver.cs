@@ -53,6 +53,7 @@ internal sealed class ArcadiaDriver : IDisposable
     private readonly GamepadRouting _gamepad;
     private readonly SdlGamepadSource _controllers;
     private readonly RunningGamesTracker _running;
+    private readonly ArcadiaComposition _app;
 
     static ArcadiaDriver()
     {
@@ -101,78 +102,43 @@ internal sealed class ArcadiaDriver : IDisposable
         IReadOnlyList<ILauncherIntegration> integrations = files is null
             ? Launchers
             : BuiltInLaunchers.Create(time, demo, folders: files.Folders, steamAccount: SteamAccount);
-        var registry = new LauncherRegistry(integrations, firstRun.ChosenLaunchers, id => Settings.Current.PreferencesOf(id));
-        ControllerSupport = (steam, files?.ControllerSupport) switch
-        {
-            ({ } fake, _) => new ControllerSupportService(Settings, _http, time, fake) { Log = AppLog.Write, GamesUseSteamInput = registry.GamesUseSteamInput, Viiper = fake.Viiper, Sisr = fake.Sisr.Installation() },
-            (_, { } steamPc) => new ControllerSupportService(Settings, _http, time, steamPc) { Log = AppLog.Write, GamesUseSteamInput = registry.GamesUseSteamInput },
-            _ => new ControllerSupportService(Settings, _http, time, new NoControllerSupportPlatform()) { Log = AppLog.Write, GamesUseSteamInput = registry.GamesUseSteamInput },
-        };
         Updates = releases is null ? new ArcadiaUpdateService(_http, time) : new ArcadiaUpdateService(_http, time, releases.Manager(folder));
         Updates.Log = AppLog.Write;
         FolderCheck = new InstallFolderCheck(Folders.Exists, action => Dispatcher.UIThread.Post(action));
-        var launchedGames = new LaunchedGames();
-        var installTracker = new InstallTracker(registry, time);
-        var running = new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time)
+        var controllerPlatform = (IControllerSupportPlatform?)steam ?? (IControllerSupportPlatform?)files?.ControllerSupport ?? new NoControllerSupportPlatform();
+        _app = ArcadiaComposition.Build(new ArcadiaParts(
+            Settings, _http, time, firstRun, integrations, controllerPlatform, steam?.Viiper, steam?.Sisr.Installation(),
+            new NoProcesses(), Updates, Path.Combine(folder, "logos"), FolderCheck, webPages)
         {
-            Log = AppLog.Write,
-            IsInstalling = key => installTracker.StateOf(key) is not null,
-        };
-        Main = new MainViewModel(
-            new LibraryService(registry, time),
-            new GameLaunchService(registry, Open) { Log = AppLog.Write },
-            ControllerSupport,
-            Updates,
-            installTracker,
-            running,
-            launchedGames,
-            Settings,
-            new LauncherLogos(Settings, Path.Combine(folder, "logos")),
-            firstRun,
-            time,
-            FolderCheck);
-        webPages.Attach(Main);
+            Open = Open,
+        });
+        ControllerSupport = _app.ControllerSupport;
+        Main = _app.Main;
         if (files is not null)
         {
             _ = new Fixtures.TestBrowser(Main, files.SteamWeb);
         }
 
-        _gamepad = new GamepadRouting(Main, isArcadiaActive: () => IsArcadiaInFront, isMouseModeOn: () => IsMouseModeOn, time, new InputLatency(shown => shown(), line =>
+        var latency = new InputLatency(shown => shown(), line =>
         {
             AppLog.Write(line);
             LatencyLines.Add(line);
-        }));
+        });
 
         Main.Session.StartRefused += (_, gameKey) => BroughtToFrontFor.Add(gameKey);
 
         // The controllers as the App reads them (#72), through SDL as the test sets it up.
         _controllers = ControllerInput.Create(Sdl, Main, new DeviceTreeEmulatedPads(() => [.. XusbDevices], AppLog.Write));
-        _controllers.Polled += _gamepad.Tick;
-        _running = running;
+        _running = _app.RunningGames;
         PanNotices = new PanNotices(Main.Toast, () => IsArcadiaInFront, OverlayNotices.Add);
-        ControllerSupport.HidingCheck = Pan;
-        ControllerSupport.LetGoOfPan = Pan.LetGoAsync;
         Pan.WhyLeftAlone = () => ControllerSupport.WhyPanIsLeftAlone;
-        ForGames = SteamControllerForGames.Create(panSupported: !arguments.PanUnsupported, XboxPads, Pan, wiring =>
+        (_gamepad, ForGames) = _app.ConnectControllers(new ControllerWiring(_controllers, PanSupported: !arguments.PanUnsupported, XboxPads, Pan, wiring =>
         {
             CopyWiring = wiring;
             return SteamControllerCopy;
-        }, ControllerSupport, Settings, () => running.ActiveGames, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, _controllers, PanNotices, time);
+        }, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, PanNotices, latency));
         XboxPad = ForGames.Pad;
-        Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
-        Main.ConnectPan(ForGames);
-        ControllerSupport.PanHoldsPuck = () => ForGames.Emulation.HidesPuck;
         ForGames.Routing.Update();
-        _controllers.Sampled += XboxPad.Feed;
-        _controllers.Lost += XboxPad.Drop;
-        _controllers.Sampled += ForGames.Others.Feed;
-        _controllers.Lost += ForGames.Others.Drop;
-        _controllers.ButtonPressed += _gamepad.Press;
-        _controllers.ButtonReleased += _gamepad.Release;
-        _controllers.Lost += _gamepad.Drop;
-
-        // As the App does before its window shows (#297).
-        Main.ShowPanUpdateIfDue();
     }
 
     public string Folder { get; }

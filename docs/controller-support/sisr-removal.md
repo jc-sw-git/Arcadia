@@ -33,7 +33,7 @@ administrator rights; usbip-win2 stays (Pan needs it), and so do the per-game mo
 5. SISR's VIIPER: a standalone `%LOCALAPPDATA%\VIIPER` goes (its uninstaller with `--quiet`, then the folder) unless a
    `viiper.exe` from there runs; `%APPDATA%\VIIPER` (VIIPER's key file) goes only when no VIIPER is left and none runs.
 
-## Steam closed for the marker (`ControllerSupportService.RemoveSisrAsync`)
+## Steam closed for the marker (`SisrLeftovers.RemoveAsync`)
 
 - With a marker and Steam running, the settings ask "Steam beenden?" first; a running Steam game stops it before
   anything changes ("Steam-Spiel läuft"), and so does a Steam that won't close. SISR is stopped only after Steam closed:

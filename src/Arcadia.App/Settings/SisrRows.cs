@@ -42,14 +42,14 @@ public sealed class SisrRows
     /// <summary>The rows of the group, or none while it is hidden; call on every change of the support or the settings.</summary>
     public IReadOnlyList<SettingsRowViewModel> Build()
     {
-        if (!_support.IsSupportedPlatform || !_support.ShowsSisrGroup || _support.SisrFound is not { } found)
+        if (!_support.IsSupportedPlatform || !_support.Sisr.ShowsGroup || _support.Sisr.Found is not { } found)
         {
             return [];
         }
 
-        var cause = _support.SisrRemovalCause;
+        var cause = _support.Sisr.RemovalCause;
         var busy = _support.BusyText is not null;
-        Remove.Subtitle = cause is not null ? (_support.SisrRemovedNothing ? "SISR wurde nicht entfernt" : "Nicht alles ließ sich entfernen")
+        Remove.Subtitle = cause is not null ? (_support.Sisr.RemovedNothing ? "SISR wurde nicht entfernt" : "Nicht alles ließ sich entfernen")
             : found.Program ? "Pan ersetzt SISR. Arcadia braucht es nicht mehr."
             : "Übrig ist noch ein Eintrag in Steam";
         Remove.Severity = cause is null ? null : HealthSeverity.Warning;

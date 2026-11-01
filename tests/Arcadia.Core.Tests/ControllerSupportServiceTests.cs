@@ -41,9 +41,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
         store.Save(settings ?? new AppSettings());
-        return new ControllerSupportService(new SettingsService(store), _http, _time, _platform)
+        return new ControllerSupportService(new SettingsService(store), _http, _time, _platform, sisr)
         {
-            Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper, Sisr = sisr,
+            Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper,
         };
     }
 
@@ -863,11 +863,11 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var service = Create(sisr: pc.Installation());
 
         await service.RefreshAsync();
-        Assert.True(service.ShowsSisrGroup);
+        Assert.True(service.Sisr.ShowsGroup);
 
         var kept = Create(sisr: pc.Installation(), settings: new AppSettings { KeepSisr = true });
         await kept.RefreshAsync();
-        Assert.False(kept.ShowsSisrGroup);
+        Assert.False(kept.Sisr.ShowsGroup);
     }
 
     [Fact]
@@ -879,15 +879,15 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var service = Create(sisr: pc.Installation());
         await service.RefreshAsync();
         var removed = 0;
-        service.SisrRemoved += (_, _) => removed++;
-        Assert.False(service.SisrRemovalStopsSteam);
+        service.Sisr.Removed += (_, _) => removed++;
+        Assert.False(service.Sisr.RemovalStopsSteam);
 
-        await service.RemoveSisrAsync();
+        await service.Sisr.RemoveAsync();
 
         Assert.Null(service.LastError);
-        Assert.Null(service.SisrRemovalCause);
+        Assert.Null(service.Sisr.RemovalCause);
         Assert.Equal(1, removed);
-        Assert.False(service.ShowsSisrGroup);
+        Assert.False(service.Sisr.ShowsGroup);
         Assert.False(File.Exists(pc.SisrExe));
         Assert.False(File.Exists(pc.CefFlag));
         Assert.Equal(0, _platform.SteamStops + _platform.SteamStarts);
@@ -900,15 +900,15 @@ public sealed class ControllerSupportServiceTests : IDisposable
         using var pc = new FakeSisrPc().WithSisr();
         var service = Create(sisr: pc.Installation());
         await service.RefreshAsync();
-        Assert.True(service.SisrRemovalStopsSteam);
+        Assert.True(service.Sisr.RemovalStopsSteam);
 
-        await service.RemoveSisrAsync();
+        await service.Sisr.RemoveAsync();
 
         Assert.Null(service.LastError);
         Assert.Equal(1, _platform.SteamStops);
         Assert.Equal(1, _platform.SteamStarts);
         Assert.Equal(0, pc.Installation().Find().MarkerAccounts);
-        Assert.False(service.ShowsSisrGroup);
+        Assert.False(service.Sisr.ShowsGroup);
     }
 
     [Fact]
@@ -921,23 +921,23 @@ public sealed class ControllerSupportServiceTests : IDisposable
         await service.RefreshAsync();
 
         _platform.SteamGame = "Hades II";
-        await service.RemoveSisrAsync();
-        Assert.Equal(ControllerSupportService.SisrRemovalBlocker("Hades II"), service.LastError);
-        Assert.Equal(service.LastError, service.SisrRemovalCause);
-        Assert.True(service.SisrRemovedNothing);
+        await service.Sisr.RemoveAsync();
+        Assert.Equal(SisrLeftovers.RemovalBlocker("Hades II"), service.LastError);
+        Assert.Equal(service.LastError, service.Sisr.RemovalCause);
+        Assert.True(service.Sisr.RemovedNothing);
 
         _platform.SteamGame = null;
         _platform.SteamRefusesToExit = true;
-        await service.RemoveSisrAsync();
+        await service.Sisr.RemoveAsync();
         Assert.Equal(ControllerSupportService.SteamWontCloseText, service.LastError);
-        Assert.Equal(service.LastError, service.SisrRemovalCause);
+        Assert.Equal(service.LastError, service.Sisr.RemovalCause);
 
         // The game may be using SISR's pad: SISR is stopped only once Steam is closed.
         Assert.Empty(pc.System.Stopped);
         Assert.True(File.Exists(pc.SisrExe));
         Assert.Equal(1, pc.Installation().Find().MarkerAccounts);
         Assert.Equal(0, _platform.SteamStarts);
-        Assert.True(service.ShowsSisrGroup);
+        Assert.True(service.Sisr.ShowsGroup);
     }
 
     [Fact]
@@ -950,10 +950,10 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var service = Create(sisr: pc.Installation());
         await service.RefreshAsync();
 
-        await service.RemoveSisrAsync();
+        await service.Sisr.RemoveAsync();
 
-        Assert.Equal(SisrInstallation.StopFailedCause, service.SisrRemovalCause);
-        Assert.True(service.SisrRemovedNothing);
+        Assert.Equal(SisrInstallation.StopFailedCause, service.Sisr.RemovalCause);
+        Assert.True(service.Sisr.RemovedNothing);
         Assert.True(File.Exists(pc.SisrExe));
         // Steam closed first (SISR is stopped only then) and came back.
         Assert.Equal(1, _platform.SteamStops);
@@ -961,9 +961,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         // Idempotent: once SISR can stop, the next try finishes the job.
         pc.System.Unstoppable.Clear();
-        await service.RemoveSisrAsync();
-        Assert.Null(service.SisrRemovalCause);
-        Assert.False(service.ShowsSisrGroup);
+        await service.Sisr.RemoveAsync();
+        Assert.Null(service.Sisr.RemovalCause);
+        Assert.False(service.Sisr.ShowsGroup);
     }
 
     [Fact]
@@ -975,23 +975,23 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var service = Create(sisr: pc.Installation());
         await service.RefreshAsync();
         var removed = 0;
-        service.SisrRemoved += (_, _) => removed++;
+        service.Sisr.Removed += (_, _) => removed++;
 
         pc.System.HasUninstallEntry = true;
         pc.System.UninstallEntryLocked = true;
-        await service.RemoveSisrAsync();
-        Assert.False(service.SisrFound!.ShowsGroup);
+        await service.Sisr.RemoveAsync();
+        Assert.False(service.Sisr.Found!.ShowsGroup);
 
         // Only SISR's uninstall entry is left; it alone wouldn't show the group, so the cause keeps it.
-        Assert.NotNull(service.SisrRemovalCause);
-        Assert.False(service.SisrRemovedNothing);
-        Assert.True(service.ShowsSisrGroup);
+        Assert.NotNull(service.Sisr.RemovalCause);
+        Assert.False(service.Sisr.RemovedNothing);
+        Assert.True(service.Sisr.ShowsGroup);
         Assert.Equal(0, removed);
 
         pc.System.UninstallEntryLocked = false;
-        await service.RemoveSisrAsync();
-        Assert.Null(service.SisrRemovalCause);
-        Assert.False(service.ShowsSisrGroup);
+        await service.Sisr.RemoveAsync();
+        Assert.Null(service.Sisr.RemovalCause);
+        Assert.False(service.Sisr.ShowsGroup);
         Assert.Equal(1, removed);
     }
 
@@ -1028,7 +1028,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         pc.System.RunSisr(pc.SisrExe, id: 6);
         var service = Create(sisr: pc.Installation());
 
-        await service.StopSisrStartedByOldArcadiaAsync();
+        await service.Sisr.StopStartedByOldArcadiaAsync();
 
         Assert.Equal([5], pc.System.Stopped);
         // Steam runs, so it drops the layout SISR forced; a kill skips SISR's own reset.

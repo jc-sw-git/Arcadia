@@ -559,7 +559,28 @@ public sealed class SteamOnlineAccountTests : IDisposable
 
         _http.Dispose();
         _web.Dispose();
-        Directory.Delete(_folder, recursive: true);
+        DeleteFolder();
+    }
+
+    /// <summary>
+    /// Dispose cancels the account's background work but doesn't wait for it: a fetch that started after the sign-in
+    /// may still be writing its file (temporary file, then moved) while the folder is deleted, and the delete fails with
+    /// "Directory not empty". It goes again once that write is done.
+    /// </summary>
+    private void DeleteFolder()
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                Directory.Delete(_folder, recursive: true);
+                return;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException && attempt < 50)
+            {
+                Thread.Sleep(20);
+            }
+        }
     }
 
     // A stand-in for DPAPI that still changes every byte.

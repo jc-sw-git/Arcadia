@@ -46,6 +46,9 @@ internal sealed class FakeScanner(LauncherInfo launcher) : ILauncherScanner
 
     public int Scans { get; private set; }
 
+    /// <summary>While set, a scan throws it (#369).</summary>
+    public Exception? Failure { get; set; }
+
     public LauncherInfo Launcher => launcher;
 
     public async Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default)
@@ -56,7 +59,7 @@ internal sealed class FakeScanner(LauncherInfo launcher) : ILauncherScanner
             await gate.Task;
         }
 
-        return Games;
+        return Failure is { } failure ? throw failure : Games;
     }
 }
 

@@ -470,7 +470,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         }
 
         EmptyTab = tab.Count > 0 ? null
-            : EmptyTab is { } shown && shown.Tab == tab && shown.IsMissing == !tab.IsFound ? shown
+            : EmptyTab is { } shown && shown.Tab == tab && shown.IsMissing == !tab.IsFound && shown.IsScanFailed == tab.ScanFailed ? shown
             : new EmptyTabViewModel(tab, () => _host.OpenLauncherSettings(tab.Launcher.Id), () => _host.Rescan(tab.Launcher));
         // The page number is the pager's below the covers (owner, 2026-10-26).
         CountText = EmptyTab?.Summary ?? string.Empty;

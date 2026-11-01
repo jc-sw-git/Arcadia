@@ -14,6 +14,7 @@ public static class LibraryToasts
         LibraryNotice.GameNotStarted notStarted => (GameNotStarted(notStarted), false),
         LibraryNotice.RescanStarted { Launcher: var launcher } => (launcher is null ? "Alle Launcher werden neu eingelesen …" : $"{launcher.DisplayName} wird neu eingelesen …", true),
         LibraryNotice.RescanFinished { Launcher: var launcher } => (RescanFinished(launcher, tabs), false),
+        LibraryNotice.ScanFailed { Launchers: var launchers } => (ScanFailed([.. launchers.Select(l => l.DisplayName)], keptGames: true), false),
         _ => throw new ArgumentOutOfRangeException(nameof(notice), notice, null),
     };
 
@@ -46,7 +47,11 @@ public static class LibraryToasts
     {
         if (launcher is null)
         {
-            return tabs.Items.Count == 0 ? "Weiterhin ist kein Launcher aktiv." : "Alle Launcher sind neu eingelesen.";
+            // A failed launcher is what the player needs to hear of, not that the others were read (#369).
+            var failed = tabs.Items.Where(tab => tab.ScanFailed).ToList();
+            return tabs.Items.Count == 0 ? "Weiterhin ist kein Launcher aktiv."
+                : failed.Count > 0 ? ScanFailed([.. failed.Select(tab => tab.Name)], keptGames: failed.Any(tab => tab.Count > 0))
+                : "Alle Launcher sind neu eingelesen.";
         }
 
         var name = launcher.DisplayName;
@@ -54,8 +59,19 @@ public static class LibraryToasts
         {
             null => $"{name} ist nicht aktiv.",
             { IsFound: false } => $"{name} ist weiterhin nicht zu finden.",
+            { ScanFailed: true, Count: var kept } => ScanFailed([name], keptGames: kept > 0),
             { Count: 0 } => $"Weiterhin keine Spiele in {name}.",
             { Count: var count } => count == 1 ? $"1 Spiel in {name} gefunden." : $"{count} Spiele in {name} gefunden.",
         };
+    }
+
+    /// <summary>
+    /// What a failed scan of <paramref name="names"/> means for the player: whether the games read before stay
+    /// (<paramref name="keptGames"/>) or the tab says itself that it couldn't be read (#369).
+    /// </summary>
+    private static string ScanFailed(IReadOnlyList<string> names, bool keptGames)
+    {
+        var who = $"{string.Join(" und ", names)} konnte{(names.Count == 1 ? string.Empty : "n")}";
+        return keptGames ? $"{who} nicht neu eingelesen werden; die zuletzt gelesenen Spiele bleiben." : $"{who} nicht eingelesen werden.";
     }
 }

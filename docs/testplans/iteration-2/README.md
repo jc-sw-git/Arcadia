@@ -67,6 +67,7 @@ its file.
 | [370-guard-the-remaining-unguarded-paths.md](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths: SDL consumers, Pan's keeper, async void, toast | 7 |
 | [375-close-the-pan-core-test-gaps.md](375-close-the-pan-core-test-gaps.md) | #375 | Close the Pan.Core test gaps the mutation run found | 0 (tests only) |
 | [371-cancellable-monitor-polls.md](371-cancellable-monitor-polls.md) | #371 | Cancellation token for monitor polls; a failing or hanging monitor holds no one | 0 (unit tests) |
+| [369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md](369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md) | #369 | Show a failed scan instead of an empty launcher tab | 3 |
 
 ## Exploratory test
 
@@ -105,3 +106,4 @@ Charter: –. Time box: –. Findings: –.
 | T357-1, T357-2, T357-4 | `tests/Arcadia.Core.Tests/SteamControllerRoutingTests.cs`, `tests/Arcadia.App.Tests/SteamControllerModeTests.cs`, `SteamControllerXboxPadTests.cs` |
 | T238-1, T238-3 to T238-7, T238-12 (fakes) | `tests/Arcadia.App.Tests/EveryControllerForGamesTests.cs`, `tests/Arcadia.Core.Tests/TakenOverControllersTests.cs` |
 | T366-1 | `tests/Arcadia.App.Tests/SteamControllerXboxPadTests.cs`, `tests/Arcadia.Core.Tests/ControllerSupportServiceTests.cs` |
+| T369-1 to T369-3 | `tests/Arcadia.App.Tests/ScanFailureTests.cs` |

@@ -335,7 +335,9 @@ public sealed class GuardianTests : IDisposable
         Assert.Equal(700, Assert.Single(_cleanup.Ended).Pid);
         Assert.Equal([3], _cleanup.Detached);
         Assert.Contains("client 500 (still running)", Log());
+        // Nobody is connected at a recovery: no notice, and the client that still runs ended nothing unplanned.
         Assert.Empty(_unplanned);
+        Assert.Empty(_notified);
         AssertNothingToUndo(4);
 
         // The generation goes on from the journal, so a stale client can't match a new one by accident.
@@ -352,6 +354,75 @@ public sealed class GuardianTests : IDisposable
 
         var end = Assert.Single(_unplanned);
         Assert.Equal((PanReason.ClientGone, 2u, 500), (end.Reason, end.Generation, end.ClientPid));
+    }
+
+    [Fact]
+    public async Task A_client_that_connects_while_the_last_teardown_still_runs_must_wait_for_it()
+    {
+        Connect();
+        var generation = StartEmulation();
+        _cleanup.EndGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        _guardian.ClientGone();
+
+        // The forwarding of the old emulation may still run: nothing new starts beside it.
+        Assert.Equal(PanReason.None, _guardian.Register(Arcadia with { Pid = 501 }));
+        var hello = _guardian.HandleNow(PanMessage.Of(PanCommand.Hello));
+        Assert.Equal((PanReply.HelloOk, generation, PanReason.TeardownNotAcknowledged), (hello.Reply, hello.Generation, hello.Reason));
+        Assert.Equal(PanReason.TeardownNotAcknowledged, Send(PanCommand.EmulationStarted).Reason);
+        Assert.Equal(PanReason.TeardownNotAcknowledged, Send(PanCommand.TeardownAcknowledged, generation).Reason);
+
+        _cleanup.EndGate.SetResult();
+        await TeardownDoneAsync();
+        Assert.Equal(PanReply.Acknowledged, Send(PanCommand.TeardownAcknowledged, generation).Reply);
+        Assert.Equal(generation + 1, StartEmulation());
+    }
+
+    [Fact]
+    public async Task A_client_that_leaves_after_its_finished_teardown_owes_nothing_to_the_next_one()
+    {
+        Connect();
+        var generation = StartEmulation();
+        _clock.Advance(TimeSpan.FromSeconds(4));
+        _guardian.Tick();
+        await TeardownDoneAsync();
+
+        // The hung client goes without acknowledging; the next one starts fresh.
+        _guardian.ClientGone();
+        Assert.Equal(PanReason.None, _guardian.Register(Arcadia with { Pid = 501 }));
+        var hello = _guardian.HandleNow(PanMessage.Of(PanCommand.Hello));
+
+        Assert.Equal(PanReason.None, hello.Reason);
+        Assert.Equal(generation + 1, StartEmulation());
+    }
+
+    [Fact]
+    public async Task A_service_stop_with_nothing_journaled_starts_no_teardown()
+    {
+        await _guardian.StopAsync();
+
+        Assert.Null(_guardian.Teardown);
+        Assert.DoesNotContain("Teardown", Log());
+    }
+
+    [Fact]
+    public async Task A_service_stop_retries_what_the_last_teardown_left_without_a_notice_or_a_crash_report()
+    {
+        Connect();
+        StartEmulation();
+        _cleanup.EndFails = true;
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+        Assert.True(_journal.File.Load().State.HasWork);
+        _cleanup.EndFails = false;
+
+        await _guardian.StopAsync();
+
+        Assert.Contains("incomplete teardown journaled: trying again", Log());
+        Assert.Equal(600, Assert.Single(_cleanup.Ended).Pid);
+        Assert.False(_journal.File.Load().State.HasWork);
+        Assert.Empty(_notified);
+        // Only the client's death counts as unplanned, not the stop's retry of its teardown.
+        Assert.Equal(PanReason.ClientGone, Assert.Single(_unplanned).Reason);
     }
 
     [Fact]

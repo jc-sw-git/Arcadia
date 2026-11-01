@@ -20,6 +20,7 @@ public sealed class HidingTests : IDisposable
     private readonly FakeDevices _devices = new();
     private readonly List<string> _log = [];
     private readonly List<PanMessage> _notified = [];
+    private readonly List<UnplannedEnd> _unplanned = [];
     private Guardian _guardian;
 
     public HidingTests()
@@ -58,7 +59,18 @@ public sealed class HidingTests : IDisposable
         }
     };
 
-    private void ListenTo(Guardian guardian) => guardian.Notify += message => { lock (_notified) _notified.Add(message); };
+    private void ListenTo(Guardian guardian)
+    {
+        guardian.Notify += message => { lock (_notified) _notified.Add(message); };
+        guardian.UnplannedEnd += end => { lock (_unplanned) _unplanned.Add(end); };
+    }
+
+    /// <summary>A teardown the client asked for: nobody is told of it, and no crash report is made.</summary>
+    private void AssertPlannedTeardown()
+    {
+        lock (_notified) Assert.DoesNotContain(_notified, notice => notice.Reply == PanReply.TornDown);
+        lock (_unplanned) Assert.Empty(_unplanned);
+    }
 
     /// <summary>For a test whose devices hang: the guardian gives up on them soon.</summary>
     private void WithDevicesThatMayHang()
@@ -309,6 +321,36 @@ public sealed class HidingTests : IDisposable
     }
 
     [Fact]
+    public async Task A_second_hide_that_no_longer_sees_the_first_ones_instance_still_expects_it_hidden()
+    {
+        // The puck enumerated anew between two hides; what the first hid stays in HidHide and is still checked.
+        var generation = await HiddenAsync();
+        _devices.Present = [FakeDevices.Dongle];
+        Assert.Equal(PanReply.Hidden, (await Send(PanCommand.Hide, generation)).Reply);
+        Assert.Equal(PanReason.None, (await Send(PanCommand.CheckHiding, generation)).Reason);
+
+        _hidHide.Hidden.Remove(FakeDevices.Slot2);
+
+        Assert.Equal(PanReason.HidingLost, (await Send(PanCommand.CheckHiding, generation)).Reason);
+    }
+
+    [Fact]
+    public async Task A_second_hide_in_the_same_emulation_adds_to_what_the_check_expects_hidden()
+    {
+        var generation = await HiddenAsync();
+        _devices.Present = [FakeDevices.Slot2, FakeDevices.Slot3, FakeDevices.Dongle];
+        Assert.Equal(PanReply.Hidden, (await Send(PanCommand.Hide, generation)).Reply);
+
+        // The check holds both hides: the instance the second one added, and those the first one hid.
+        _hidHide.Hidden.Remove(FakeDevices.Dongle);
+        Assert.Equal(PanReason.HidingLost, (await Send(PanCommand.CheckHiding, generation)).Reason);
+        _hidHide.Hidden.Add(FakeDevices.Dongle);
+        Assert.Equal(PanReason.None, (await Send(PanCommand.CheckHiding, generation)).Reason);
+        _hidHide.Hidden.Remove(FakeDevices.Slot3);
+        Assert.Equal(PanReason.HidingLost, (await Send(PanCommand.CheckHiding, generation)).Reason);
+    }
+
+    [Fact]
     public async Task After_an_unhide_a_check_of_that_generation_no_longer_expects_hiding()
     {
         var generation = await HiddenAsync();
@@ -358,6 +400,7 @@ public sealed class HidingTests : IDisposable
         AssertRestored([], [], cloaking: false);
         Assert.False(Journal.HasWork);
         Assert.Contains("stopped by the client with the Steam Controller still hidden", Log());
+        AssertPlannedTeardown();
         Assert.Equal(PanReply.Started, (await Send(PanCommand.EmulationStarted)).Reply);
     }
 
@@ -373,6 +416,7 @@ public sealed class HidingTests : IDisposable
         Assert.Single(_cleanup.Ended);
         AssertRestored([], [], cloaking: false);
         Assert.False(Journal.HasWork);
+        AssertPlannedTeardown();
         Assert.Contains("exits with the Steam Controller still hidden", Log());
     }
 

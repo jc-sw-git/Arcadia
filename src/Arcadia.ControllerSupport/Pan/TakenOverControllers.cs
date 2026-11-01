@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Arcadia.Input;
 using Arcadia.Launchers;
 using Arcadia.Pan;
@@ -66,17 +67,27 @@ public sealed class TakenOverControllers
     private bool _connectedChanged;
     private bool _forwarding;
 
+    // Which of the settings Feed reads already failed: Feed runs every millisecond, the error is reported once.
+    private readonly ConcurrentDictionary<string, bool> _reported = [];
+
     public TakenOverControllers(TimeProvider time, Action<string> log)
     {
         _time = time;
         _log = log;
+        Unexpected = (error, context) => log($"Unerwarteter Fehler ({context}): {error}");
     }
+
+    /// <summary>
+    /// Called once per delegate that throws in <see cref="Feed"/>, with a context for the log and the toast; Feed goes on
+    /// with that delegate's safe value (no forwarding, the default combos and kind, no rumble or light). Logs by default.
+    /// </summary>
+    public Action<Exception, string> Unexpected { get; init; }
 
     /// <summary>Read on every poll: false while Arcadia is in front or the mouse mode is on, then every pad reports rest.</summary>
     public Func<bool> ForwardingAllowed { get; init; } = () => true;
 
     /// <summary>Read on every poll: which of Arcadia's combos are on.</summary>
-    public Func<ComboWithholdingOptions> Combos { get; init; } = () => new ComboWithholdingOptions(BackAndStart: true);
+    public Func<ComboWithholdingOptions> Combos { get; init; } = () => DefaultCombos;
 
     /// <summary>
     /// Lets go of every controller (false) or reads them again (true): Pan restarts a model it hides, and Windows refuses
@@ -159,8 +170,8 @@ public sealed class TakenOverControllers
     /// <summary>Every read of the gamepad source (<see cref="IGamepadSource.Sampled"/>), on its thread. Never throws.</summary>
     public void Feed(IReadOnlyList<GamepadReading> pads)
     {
-        var allowed = ForwardingAllowed();
-        var combos = Combos();
+        var allowed = Read(ForwardingAllowed, false, nameof(ForwardingAllowed));
+        var combos = Read(Combos, DefaultCombos, nameof(Combos));
         // Made only when needed: this runs every millisecond while pads get states.
         List<(int PadId, XboxRumble? Motors, PadLight? Light)>? feedbackAgain = null;
         var forwarding = false;
@@ -214,15 +225,69 @@ public sealed class TakenOverControllers
         NoteForwarding(forwarding);
         foreach (var (padId, motors, light) in feedbackAgain ?? [])
         {
-            if (motors is { } rumbling)
+            try
             {
-                Rumble(padId, rumbling);
-            }
+                if (motors is { } rumbling)
+                {
+                    Rumble(padId, rumbling);
+                }
 
-            if (light is { } lit)
-            {
-                Light(padId, lit);
+                if (light is { } lit)
+                {
+                    Light(padId, lit);
+                }
             }
+            catch (Exception ex)
+            {
+                ReportOnce(ex, "Rumble/Light");
+            }
+        }
+    }
+
+    private static readonly ComboWithholdingOptions DefaultCombos = new(BackAndStart: true);
+
+    /// <summary>A setting <see cref="Feed"/> reads; a throwing one must not end the reads of every controller.</summary>
+    private T Read<T>(Func<T> setting, T fallback, string name)
+    {
+        try
+        {
+            return setting();
+        }
+        catch (Exception ex)
+        {
+            ReportOnce(ex, name);
+            return fallback;
+        }
+    }
+
+    private ControllerLayout? LayoutOrDefault(ControllerModel model)
+    {
+        try
+        {
+            return LayoutOf(model);
+        }
+        catch (Exception ex)
+        {
+            ReportOnce(ex, nameof(LayoutOf));
+            return null;
+        }
+    }
+
+    private void ReportOnce(Exception error, string name)
+    {
+        if (!_reported.TryAdd(name, true))
+        {
+            return;
+        }
+
+        try
+        {
+            Unexpected(error, "Controller für Spiele");
+            _log($"Controller für Spiele: weitere Fehler von {name} werden nicht gemeldet");
+        }
+        catch (Exception)
+        {
+            // Reporting must not end the reads in turn.
         }
     }
 
@@ -231,7 +296,14 @@ public sealed class TakenOverControllers
         if (forwarding != _forwarding)
         {
             _forwarding = forwarding;
-            Forwarding(forwarding);
+            try
+            {
+                Forwarding(forwarding);
+            }
+            catch (Exception ex)
+            {
+                ReportOnce(ex, nameof(Forwarding));
+            }
         }
     }
 
@@ -348,7 +420,7 @@ public sealed class TakenOverControllers
         var defaultKind = PadKinds.Default(reading.Device);
         var controller = new Controller(key, model, reading.Device.DisplayName, defaultKind, _nextOrder++, _time, OwnPads, _log)
         {
-            Kind = ControllerLayouts.KindFor(LayoutOf(model), defaultKind),
+            Kind = ControllerLayouts.KindFor(LayoutOrDefault(model), defaultKind),
         };
         _controllers.Add(controller);
         _connectedChanged = true;
@@ -759,7 +831,20 @@ public sealed class TakenOverControllers
                 .Select(controller => new ConnectedModel(controller.Model, controller.Name, controller.DefaultKind))]);
         }
 
-        Changed?.Invoke();
+        RaiseChanged();
+    }
+
+    /// <summary>A throwing subscriber must not cost <see cref="Feed"/> its read, nor the tick its rumble and light.</summary>
+    private void RaiseChanged()
+    {
+        try
+        {
+            Changed?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            ReportOnce(ex, nameof(Changed));
+        }
     }
 
     /// <summary>The lists for the settings (D7, D8), from the controllers connected now; <see cref="Changed"/> when they differ.</summary>
@@ -805,7 +890,7 @@ public sealed class TakenOverControllers
         Volatile.Write(ref _waiting, waiting);
         if (changed)
         {
-            Changed?.Invoke();
+            RaiseChanged();
         }
     }
 

@@ -10,6 +10,7 @@ its file.
 
 | File | Issue | Title | Test cases |
 |---|---|---|---|
+| [370](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths | T370-1 to T370-6 |
 
 ## Exploratory test
 

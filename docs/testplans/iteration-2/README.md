@@ -63,6 +63,7 @@ its file.
 | [367-letting-go-leaves-held-button-pressed.md](367-letting-go-leaves-held-button-pressed.md) | #367 | Letting go of the controllers leaves a held button pressed | 1 |
 | [372-bind-steam-sign-in-to-steams-hosts.md](372-bind-steam-sign-in-to-steams-hosts.md) | #372 | Bind the Steam sign-in web view to Steam's hosts | 2 |
 | [368-sign-in-cleans-up-after-an-error.md](368-sign-in-cleans-up-after-an-error.md) | #368 | B after an unexpected sign-in error leaves the launcher page stuck | 4 |
+| [370-guard-the-remaining-unguarded-paths.md](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths: SDL consumers, Pan's keeper, async void, toast | 7 |
 | [375-close-the-pan-core-test-gaps.md](375-close-the-pan-core-test-gaps.md) | #375 | Close the Pan.Core test gaps the mutation run found | 0 (tests only) |
 
 ## Exploratory test

@@ -337,6 +337,49 @@ public sealed class SdlGamepadSourceTests : IDisposable
         Assert.Equal(["+A"], _events);
     }
 
+    /// <summary>#370: one broken consumer must not cost every controller for the session.</summary>
+    [Fact]
+    public void A_throwing_Sampled_or_button_handler_is_reported_once_and_the_controllers_keep_working()
+    {
+        var reported = new List<string>();
+        using var source = new SdlGamepadSource(_sdl, _ => { }, _failures.Add, unexpected: (error, context) => reported.Add($"{context}: {error.Message}"));
+        var events = new List<string>();
+        source.Sampled += _ => throw new InvalidOperationException("Sampled broke");
+        source.ButtonPressed += _ => throw new InvalidOperationException("Press broke");
+        source.ButtonPressed += button => events.Add($"+{button}");
+        source.Polled += _ => events.Add("polled");
+        source.Open();
+        var pad = _sdl.Plug(KnownPads.DualSense);
+
+        Assert.True(source.Poll(0));
+        _sdl.Hold(pad, B.South);
+        Assert.True(source.Poll(8));
+        _sdl.Hold(pad);
+        Assert.True(source.Poll(16));
+        _sdl.Hold(pad, B.South);
+        Assert.True(source.Poll(24));
+
+        Assert.Empty(_failures);
+        Assert.Equal(["polled", "polled", "+A", "polled", "polled", "+A"], events);
+        Assert.Equal(["Controller-Eingabe: Sampled broke", "Controller-Eingabe: Press broke"], reported);
+        Assert.False(_sdl.IsQuit);
+    }
+
+    [Fact]
+    public void A_removed_handler_is_no_longer_called()
+    {
+        var calls = 0;
+        void Count(IReadOnlyList<GamepadReading> _) => calls++;
+        _source.Sampled += Count;
+        _source.Open();
+        _source.Poll(0);
+
+        _source.Sampled -= Count;
+        _source.Poll(8);
+
+        Assert.Equal(1, calls);
+    }
+
     [Fact]
     public void Every_handler_of_Lost_runs_even_if_one_throws()
     {

@@ -308,6 +308,91 @@ public sealed class PanClientTests : IAsyncDisposable
         await WaitUntil(() => _client.IsConnected, "wieder verbunden");
     }
 
+    /// <summary>#370: a broken subscriber of Lost is reported; the request that dropped the link fails for its own reason.</summary>
+    [Fact]
+    public async Task A_throwing_Lost_handler_does_not_fault_the_request_and_the_other_handlers_still_hear_it()
+    {
+        var reported = new List<string>();
+        var heard = new List<string>();
+        await using var client = new PanClient(_server, _time, Log)
+        {
+            RequestTimeout = TimeSpan.FromSeconds(10),
+            Unexpected = (error, context) => { lock (reported) reported.Add($"{context}: {error.Message}"); },
+        };
+        client.Lost += _ => throw new ApplicationException("handler broke");
+        client.Lost += reason => { lock (heard) heard.Add(reason); };
+        client.Start();
+        await AdvanceUntil(() => client.IsConnected, "verbunden");
+        await client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
+        _server.Pause();
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None));
+
+        Assert.Contains("antwortet nicht", ex.Message);
+        Assert.Contains("antwortet nicht", Assert.Single(heard));
+        Assert.Equal("Pan-Ereignis: handler broke", Assert.Single(reported));
+        Assert.Contains("ein Empfänger von Lost ist fehlgeschlagen", LogText());
+        _server.Resume();
+    }
+
+    /// <summary>#370: an error nobody expected in one attempt is reported and the keeper tries again, not ends.</summary>
+    [Fact]
+    public async Task A_throwing_transport_is_reported_once_and_the_keeper_keeps_trying()
+    {
+        var reported = new List<string>();
+        var transport = new ThrowingOnce(_server);
+        await using var client = new PanClient(transport, _time, Log)
+        {
+            RequestTimeout = TimeSpan.FromSeconds(10),
+            Unexpected = (error, context) => { lock (reported) reported.Add($"{context}: {error.Message}"); },
+        };
+
+        client.Start();
+        await client.FirstAttempt.WaitAsync(Soon);
+        await AdvanceUntil(() => client.IsConnected, "verbunden nach dem Fehler");
+
+        Assert.Equal("Verbindung zu Pan halten: transport broke", Assert.Single(reported));
+    }
+
+    /// <summary>
+    /// #370 review: the pipe's own connect timeout (2 s) ends in an OperationCanceledException that has nothing to do
+    /// with Arcadia closing; it costs one attempt, not the keeper.
+    /// </summary>
+    [Fact]
+    public async Task A_connect_that_times_out_costs_one_attempt_and_the_keeper_connects_on_the_next()
+    {
+        var transport = new TimingOutOnce(_server);
+        await using var client = new PanClient(transport, _time, Log) { RequestTimeout = TimeSpan.FromSeconds(10) };
+
+        client.Start();
+        await client.FirstAttempt.WaitAsync(Soon);
+        await AdvanceUntil(() => client.IsConnected, "verbunden nach dem Timeout");
+    }
+
+    /// <summary>A transport whose first connect times out like <c>NamedPipeClientStream.ConnectAsync</c> with a timeout token.</summary>
+    private sealed class TimingOutOnce(IPanTransport inner) : IPanTransport
+    {
+        private int _timeouts = 1;
+
+        public (string Reason, bool Permanent)? Unavailable() => inner.Unavailable();
+
+        public Task<PanLink> ConnectAsync(CancellationToken cancellationToken) =>
+            Interlocked.Exchange(ref _timeouts, 0) == 1
+                ? Task.FromException<PanLink>(new OperationCanceledException(new CancellationToken(true)))
+                : inner.ConnectAsync(cancellationToken);
+    }
+
+    /// <summary>A transport whose first look throws something no caller expects.</summary>
+    private sealed class ThrowingOnce(IPanTransport inner) : IPanTransport
+    {
+        private int _throws = 1;
+
+        public (string Reason, bool Permanent)? Unavailable() =>
+            Interlocked.Exchange(ref _throws, 0) == 1 ? throw new InvalidOperationException("transport broke") : inner.Unavailable();
+
+        public Task<PanLink> ConnectAsync(CancellationToken cancellationToken) => inner.ConnectAsync(cancellationToken);
+    }
+
     [Fact]
     public async Task A_broken_pipe_is_a_loss_and_a_restarted_Pan_goes_on_from_its_journal()
     {

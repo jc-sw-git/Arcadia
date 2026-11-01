@@ -10,11 +10,11 @@ namespace Arcadia.Launchers.Steam;
 public static class TextVdf
 {
     /// <summary>Parses a whole file. The root holds the top-level keys, usually exactly one block.</summary>
-    /// <exception cref="FormatException">The text is not valid VDF (unbalanced braces, key without value, open quote).</exception>
+    /// <exception cref="FormatException">The text is not valid VDF (unbalanced braces, key without value, open quote, nested too deep).</exception>
     public static VdfMap Parse(string text)
     {
         var reader = new Reader(text);
-        var root = reader.ReadMap(isRoot: true);
+        var root = reader.ReadMap(depth: 0);
         return root;
     }
 
@@ -23,8 +23,14 @@ public static class TextVdf
         private readonly string _text = text;
         private int _position;
 
-        public VdfMap ReadMap(bool isRoot)
+        public VdfMap ReadMap(int depth)
         {
+            if (depth > VdfMap.MaxDepth)
+            {
+                throw new FormatException($"VDF nested deeper than {VdfMap.MaxDepth} levels.");
+            }
+
+            var isRoot = depth == 0;
             var map = new VdfMap();
             while (true)
             {
@@ -49,7 +55,7 @@ public static class TextVdf
                 switch (value.Kind)
                 {
                     case TokenKind.Open:
-                        map.Add(new(key, ReadMap(isRoot: false)));
+                        map.Add(new(key, ReadMap(depth + 1)));
                         break;
                     case TokenKind.String:
                         map.Add(new(key, value.Text));

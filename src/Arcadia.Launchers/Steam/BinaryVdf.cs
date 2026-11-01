@@ -10,6 +10,13 @@ namespace Arcadia.Launchers.Steam;
 /// </summary>
 public sealed class VdfMap : List<KeyValuePair<string, object>>
 {
+    /// <summary>
+    /// Deeper nesting than any real Steam file. The parsers recurse once per level, so without this limit a
+    /// crafted file would overflow the stack, which no <c>catch</c> survives; above it they throw
+    /// <see cref="FormatException"/> like for any other broken file.
+    /// </summary>
+    internal const int MaxDepth = 64;
+
     public object? this[string key]
     {
         get => Find(key) is { } index ? this[index].Value : null;
@@ -59,10 +66,11 @@ public static class BinaryVdf
     private const byte TypeInt = 0x02;
     private const byte TypeEnd = 0x08;
 
+    /// <exception cref="FormatException">The data is not valid binary VDF (unknown type, truncated, nested too deep).</exception>
     public static VdfMap Parse(ReadOnlySpan<byte> data)
     {
         var position = 0;
-        var root = ReadMap(data, ref position);
+        var root = ReadMap(data, ref position, depth: 0);
         return root;
     }
 
@@ -73,15 +81,21 @@ public static class BinaryVdf
         return stream.ToArray();
     }
 
-    private static VdfMap ReadMap(ReadOnlySpan<byte> data, ref int position)
+    private static VdfMap ReadMap(ReadOnlySpan<byte> data, ref int position, int depth)
     {
+        if (depth > VdfMap.MaxDepth)
+        {
+            throw new FormatException($"VDF nested deeper than {VdfMap.MaxDepth} levels at byte {position}.");
+        }
+
         var map = new VdfMap();
         while (true)
         {
             if (position >= data.Length)
             {
-                // Steam's files end the root without a final 0x08 in some versions.
-                return map;
+                // Steam's files end the root without a final 0x08 in some versions. A nested map cut off is a
+                // truncated file: reading it as complete would let an edit write the rest of the file away.
+                return depth == 0 ? map : throw new FormatException("Unexpected end of VDF data inside a map.");
             }
 
             var type = data[position++];
@@ -93,7 +107,7 @@ public static class BinaryVdf
             var key = ReadString(data, ref position);
             object value = type switch
             {
-                TypeMap => ReadMap(data, ref position),
+                TypeMap => ReadMap(data, ref position, depth + 1),
                 TypeString => ReadString(data, ref position),
                 TypeInt => ReadInt(data, ref position),
                 _ => throw new FormatException($"Unsupported VDF type 0x{type:X2} at byte {position - 1}."),

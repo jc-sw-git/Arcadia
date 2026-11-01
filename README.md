@@ -8,13 +8,11 @@ keyboard in **desktop mode**.
 > Status: **before the first release (0.x).** Steam and Epic work for real (library,
 > game start, installs, updates); the other launchers exist only as demo data so far.
 > On top of that: detail page, context menu, search across all launchers with an
-> on-screen keyboard, and Steam Controller support. Everything else: see the
+> on-screen keyboard, and controller emulation for games (the Steam Controller and every other common pad).
+> Everything else: see the
 > [issues](https://github.com/jc-sw-git/Arcadia/issues?q=is%3Aissue+label%3Aroadmap).
 >
 > The user interface is German for now; localization is planned.
->
-> Arcadia grew out of SteamButler. The old Rust code lives in
-> [`legacy/steambutler-rs`](legacy/steambutler-rs) as a reference for porting.
 
 ## Installation
 
@@ -32,12 +30,16 @@ build Arcadia yourself (see below).
 
 | Project | Purpose |
 |---------|---------|
-| `src/Arcadia.Core` | Platform-independent: model (`Game`, `LauncherInfo`, `LaunchTarget`), sorting, paging including the page size rule, search prefix (`/steam-epic …`) |
-| `src/Arcadia.Launchers` | Scanner per launcher (Steam and Epic real, demo data for the others), game start and installation |
-| `src/Arcadia.Input` | Controller input (XInput on Windows) |
-| `src/Arcadia.ControllerSupport` | "Steam Controller Support": manages SISR (installation, start/stop, updates) and monitors SISR, VIIPER, the usbip driver and Steam |
+| `src/Arcadia.Launchers.Abstractions` | What a launcher integration is made of (`ILauncherIntegration`, `Game`, `LauncherInfo`, `LaunchTarget`); the future plugin interface |
+| `src/Arcadia.Core` | Platform-independent: launcher registry, library, sorting, paging, search, settings, running games |
+| `src/Arcadia.Launchers` | One integration per launcher (Steam and Epic real, demo data for the others), game start and installation |
+| `src/Arcadia.Input` | Controller input for every controller through SDL3, the mouse mode |
+| `src/Arcadia.ControllerSupport` | Controller emulation for games: emulated pads through VIIPER and usbip-win2, Steam's copy of the Steam Controller, the client of Pan |
+| `src/Arcadia.Pan.Core`, `src/Arcadia.Pan` | Pan, the elevated guardian service that hides the real controllers (HidHide) and gives them back if Arcadia ends unexpectedly |
 | `src/Arcadia.App` | Avalonia user interface (MVVM with CommunityToolkit.Mvvm) |
-| `tests/Arcadia.Core.Tests` | xUnit tests for core and scanners |
+| `tests/` | xUnit tests: `Arcadia.Core.Tests` (core, launchers, input, controller support), `Arcadia.Pan.Tests`, `Arcadia.App.Tests` (acceptance tests through the view models) |
+
+Which class does what: [docs/architecture/](docs/architecture/README.md).
 
 ## Build & run
 
@@ -72,22 +74,25 @@ dotnet run --project src/Arcadia.App -- --demo
 
 Mouse: a click selects a game, a double click starts it. On the detail page the mouse wheel scrolls through the games.
 
-## Steam Controller support
+## Controller emulation
 
 Steam passes the Steam Controller on to programs it didn't start itself only as mouse and
-keyboard. When "Steam Controller Support" is switched on in the settings, Arcadia therefore
-runs [SISR](https://github.com/Alia5/SISR): it takes the controller from Steam Input and
-provides it system-wide as an Xbox controller, for Arcadia and for games from other launchers.
+keyboard, and many games know only some controllers. Arcadia therefore reads every controller itself
+and gives games emulated pads, with the setting "Controller-Wächter (Pan)" (on by default):
 
-- Arcadia downloads SISR from GitHub (SHA-256 verified) to `%LOCALAPPDATA%\Arcadia\sisr`, starts it
-  invisibly and quits it with Arcadia.
-- For games from the Steam launcher SISR pauses (otherwise input arrives twice); this can be changed per game.
-- Monitored are SISR, VIIPER, the usbip driver (at least 0.9.8.1), Steam and Steam's
-  debug interface; problems show up as a warning with a fix button.
-- New SISR versions are checked daily and offered as an update.
+- The Steam Controller becomes an Xbox controller in every game of every launcher; per game (or per launcher) the
+  mode "Arcadia" / "Steam-Eingabe" decides whether Arcadia's pad or Steam Input serves it. Steam gets a 1:1 copy of
+  the Steam Controller, so its own features keep working.
+- Every other controller Arcadia takes over gets an emulated pad of its kind ("Controller zuordnen" in the settings).
+- The emulated pads run on [VIIPER](https://github.com/jc-sw-git/VIIPER) (Arcadia's fork, shipped with Arcadia,
+  on loopback only) and the [usbip-win2](https://github.com/vadimgrn/usbip-win2) driver.
+- Pan, Arcadia's guardian service, hides the real controllers from other programs with
+  [HidHide](https://github.com/nefarius/HidHide) while Arcadia emulates them, and gives them back when Arcadia ends,
+  also when it crashes. "Treiber installieren" installs usbip-win2, HidHide and Pan with one UAC prompt.
+- An SISR that an older Arcadia installed is never started; Arcadia removes it on request.
 
-Logs: `%APPDATA%\Arcadia\logs\` (`arcadia.log`, `sisr.log`). Third-party software: see
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+Logs: `%APPDATA%\Arcadia\logs\arcadia.log`, Pan's in `%ProgramData%\Arcadia\Pan\pan.log`. Third-party software:
+see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Contributing
 

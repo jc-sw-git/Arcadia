@@ -42,6 +42,7 @@ its file.
 | [295-spike-steams-firmware-path.md](295-spike-steams-firmware-path.md) | #295 | Spike: Steam's firmware update path, and what Arcadia guards | 6 |
 | [345-hide-and-copy-the-steam-controller-by-cable.md](345-hide-and-copy-the-steam-controller-by-cable.md) | #345 | Hide and copy the Steam Controller by cable | 7 |
 | [357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md](357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md) | #357 | Steam Controller: Xbox pad passes input only while a game on "Arcadia" is in front | 4 |
+| [360-keep-pans-memory-under-20-mb.md](360-keep-pans-memory-under-20-mb.md) | #360 | Pan's memory grows to 22 MB while Arcadia is connected | 0 (T243-21) |
 
 ## Exploratory test
 

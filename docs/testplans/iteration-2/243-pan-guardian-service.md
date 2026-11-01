@@ -74,8 +74,10 @@ the player's side runs in the acceptance tests with a faked Pan (`PanGuardianTes
 - [x] **T243-20** A standard user (second Windows account, not administrator): `sc stop ArcadiaPan` and
       `sc config` are denied, `sc start ArcadiaPan` works; Arcadia in that account connects and emulates. · E2E: no
       (second account)
-- [x] **T243-21** Budget (Release build): Pan idle 0 % CPU and under 20 MB in the Task Manager; while a game runs with
-      the pad, Pan stays under 1 % CPU; `arcadia.log`'s latency line ("Verzögerung im Mittel …") is as without Pan.
+- [ ] **T243-21** Budget (Release build, Arcadia connected for an hour, most of it with a game on "Arcadia" played with the
+      pad): Pan stays under 20 MB in the Task Manager ("Arbeitsspeicher") the whole hour, 0 % CPU without a game and
+      under 1 % with it; a press on the real controller reaches the game as fast as in #238 (`checks/238-latency`
+      probe: mean about 1 ms, p99 under 2 ms; there is no emulation without Pan to compare with).
       · E2E: no (measurement)
 
 ## Part B1: Pan hides the Steam Controller (HidHide)
@@ -231,3 +233,4 @@ History:
 | T243-45 (`ServiceTests`: users read the data folder; a user's full control on it set aside and made anew by the service at its start, logged), T243-34 (`WindowsHidingTests`: HidHide 1.5.230's driver 1.4.181 accepted) | 2026-10-27 | Claude (thread) | Windows CI runner (Server 2025, HidHide 1.5.230), run on f47dc7c: Pan 171/171, Core 976, App 342, none skipped | pass | – |
 | T243-32, T243-34 … T243-36, T243-39 … T243-45 (owner's B2 run after the fixes from their test) | 2026-10-27 | owner | Windows 11, Steam running, Debug build from the IDE with `Pan\Pan.exe` published by the build, commit 7f408c3, Pan reinstalled elevated | pass | ready to merge into `feat/replace-sisr`; T243-33, -37, -38 in the acceptance review |
 | T243-21 (Release, #272: `Run-Check-272.ps1` and the `checks/238-latency` v2 probe, Steam Controller only) | 2026-11-01 | owner, evaluated by Claude | Windows 11, owner's PC (32 logical cores), RC 0.2.0-rc.1 (5c95f46) installed with the Velopack installer, Pan 0.2.0 as Native AOT, Castlevania on "Arcadia" for 19 min | partly | CPU of all cores: Pan 0.003 % without a game, 0.001 % with it; Arcadia 0.14 % / 0.30 %; VIIPER 0.24 % / 0.26 %; no peak beside the game's start, played as usual. Latency (there is no emulation without Pan to compare): read → VIIPER mean 62 µs, p99 120 µs, max 1.9 ms; read gap mean 1.34 ms, p99 2.0 ms, max 12.8 ms (as in #238); game-side presses mean 1.05 ms, p99 1.57 ms, max 1.60 ms (139; 12 matched to the next press at ~199 ms dropped, releases not measurable, both the probe's two SDL entries of the puck). Pan's RAM grows ~1 MB/min, 7 → 22 MB in 23 min: over the 20 MB budget → #360 |
+| T243-21 rewritten (#360: an hour with a game; the latency as the time a press takes to reach the game, since nothing is emulated without Pan); cause of the growth reproduced, `PanMemoryTests` | 2026-11-01 | Claude (thread) | Linux cloud container (33 MB L3), a Native AOT probe allocating small garbage as Pan's heartbeat does: without a setting the GC's gen-0 budget is 17.3 MB and the memory grows by the amount allocated to +17 MB, then stays flat after the first collection (as on the owner's PC); with `System.GC.Gen0MaxBudget` 2 MB it stays at +2 MB with a collection every 2 MB. `PanMemoryTests` seen red with the setting removed. Pan itself only on Windows | pass | the owner's hour on Windows (`Run-Check-360.ps1`) |

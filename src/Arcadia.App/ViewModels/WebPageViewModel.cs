@@ -15,10 +15,11 @@ public sealed partial class WebPageViewModel : ObservableObject
     private readonly Func<string, bool>? _isDone;
     private readonly TaskCompletionSource<WebPageResult> _result = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private WebPageViewModel(string title, Uri page, string script, Func<string, bool>? isDone, bool isShown, IReadOnlyList<string> forgetDomains)
+    private WebPageViewModel(string title, Uri page, IReadOnlyList<string> domains, string script, Func<string, bool>? isDone, bool isShown, IReadOnlyList<string> forgetDomains)
     {
         Title = title;
         Page = page;
+        Domains = domains;
         Script = script;
         _isDone = isDone;
         IsShown = isShown;
@@ -29,11 +30,22 @@ public sealed partial class WebPageViewModel : ObservableObject
     /// <summary>Scheme and host only: the path and query may hold what the page passes on.</summary>
     public static string AddressOf(Uri page) => page.IsAbsoluteUri ? $"{page.Scheme}://{page.Host}" : string.Empty;
 
-    public static WebPageViewModel SignIn(string title, Uri page, string script, Func<string, bool> isDone) => new(title, page, script, isDone, isShown: true, []);
+    public static WebPageViewModel SignIn(string title, Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone) =>
+        new(title, page, domains, script, isDone, isShown: true, []);
 
-    public static WebPageViewModel Read(Uri page, string script, Func<string, bool> isDone) => new(string.Empty, page, script, isDone, isShown: false, []);
+    public static WebPageViewModel Read(Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone) =>
+        new(string.Empty, page, domains, script, isDone, isShown: false, []);
 
-    public static WebPageViewModel Forget(IReadOnlyList<string> domains) => new(string.Empty, new Uri("about:blank"), string.Empty, null, isShown: false, domains);
+    public static WebPageViewModel Forget(IReadOnlyList<string> domains) =>
+        new(string.Empty, new Uri("about:blank"), [], string.Empty, null, isShown: false, domains);
+
+    /// <summary>Whether <paramref name="host"/> is one of <paramref name="domains"/> or a subdomain of one.</summary>
+    public static bool IsUnder(string host, IReadOnlyList<string> domains)
+    {
+        host = host.TrimEnd('.');
+        return domains.Any(domain => host.Equals(domain, StringComparison.OrdinalIgnoreCase)
+            || host.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>The heading above a shown page, e.g. "Bei Steam anmelden".</summary>
     public string Title { get; }
@@ -47,6 +59,19 @@ public sealed partial class WebPageViewModel : ObservableObject
     public partial string Address { get; set; } = string.Empty;
 
     public string Script { get; }
+
+    /// <summary>The launcher's own sites (<see cref="IWebPages.ShowAsync"/>): the only hosts the page opens and reads.</summary>
+    public IReadOnlyList<string> Domains { get; }
+
+    /// <summary>
+    /// Whether the page may go to <paramref name="address"/>: an https address on the launcher's sites, or a blank page
+    /// (<c>about:</c>) the browser opens itself. Anything else stays unopened.
+    /// </summary>
+    public bool MayOpen(Uri address) => address.IsAbsoluteUri && (address.Scheme == "about" || MayRead(address));
+
+    /// <summary>Whether the script may run on <paramref name="address"/>: only an https page on the launcher's sites.</summary>
+    public bool MayRead(Uri? address) =>
+        address is { IsAbsoluteUri: true } && address.Scheme == Uri.UriSchemeHttps && IsUnder(address.IdnHost, Domains);
 
     /// <summary>Shown over the whole window; otherwise loaded unseen.</summary>
     public bool IsShown { get; }

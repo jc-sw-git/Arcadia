@@ -14,14 +14,20 @@ public interface IWebPages
     /// every load <paramref name="script"/> runs; the first result <paramref name="isDone"/> accepts ends it. B ends it as
     /// cancelled.
     /// </summary>
-    Task<WebPageResult> ShowAsync(string title, Uri page, string script, Func<string, bool> isDone, CancellationToken cancellationToken);
+    /// <param name="domains">
+    /// The launcher's own sites, e.g. <c>steampowered.com</c>: the page opens only https addresses on them or their
+    /// subdomains, and the script runs only there. A link anywhere else stays unopened, so no other site can show a
+    /// sign-in form in Arcadia's window or hand back a result.
+    /// </param>
+    Task<WebPageResult> ShowAsync(string title, Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone, CancellationToken cancellationToken);
 
     /// <summary>
     /// Loads <paramref name="page"/> unseen and returns what <paramref name="script"/> gives: the first result
     /// <paramref name="isDone"/> accepts, or a refused one once the page stayed put for a few seconds (a page that passes
-    /// on by script, e.g. to renew a sign-in, loads more than once).
+    /// on by script, e.g. to renew a sign-in, loads more than once). <paramref name="domains"/> as in
+    /// <see cref="ShowAsync"/>.
     /// </summary>
-    Task<WebPageResult> ReadAsync(Uri page, string script, Func<string, bool> isDone, CancellationToken cancellationToken);
+    Task<WebPageResult> ReadAsync(Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone, CancellationToken cancellationToken);
 
     /// <summary>Deletes the cookies of every site under one of <paramref name="domains"/>, e.g. <c>steampowered.com</c>.</summary>
     Task<WebPageResult> ForgetAsync(IReadOnlyList<string> domains, CancellationToken cancellationToken);

@@ -32,6 +32,28 @@ public class TeardownTests
     }
 
     [Fact]
+    public async Task A_cancelled_step_ends_no_further_process()
+    {
+        // A step that timed out is left behind with its token cancelled: it must not go on ending processes.
+        var cleanup = new FakeCleanup();
+        var held = new List<HeldProcess> { new(10, 1, "viiper.exe"), new(11, 2, "viiper.exe") };
+        var plan = new TeardownPlan(cleanup, held, _ => { }, [], _ => { });
+        var end = plan.Steps().Single(step => step.Name == "end forwarding processes");
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => end.Run(new CancellationToken(canceled: true)));
+
+        Assert.Empty(cleanup.Ended);
+    }
+
+    [Fact]
+    public void A_step_result_names_its_error_only_when_it_has_one()
+    {
+        Assert.Equal("detach: ok", new StepResult("detach", StepOutcome.Ok).ToString());
+        Assert.Equal("detach: Failed", new StepResult("detach", StepOutcome.Failed).ToString());
+        Assert.Equal("detach: Failed (busy)", new StepResult("detach", StepOutcome.Failed, "busy").ToString());
+    }
+
+    [Fact]
     public async Task A_step_that_ignores_its_token_is_left_behind_after_its_timeout()
     {
         var results = await TeardownRunner.RunAsync(

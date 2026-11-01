@@ -385,7 +385,7 @@ public sealed class SteamOnlineAccountTests : IDisposable
         var reads = _web.StorePageReads;
 
         // Another read of the store page (e.g. in a second Arcadia) replaced the token.
-        await _web.ReadAsync(SteamStorePage.StorePage, SteamStorePage.AccountScript, _ => true, CancellationToken.None);
+        await _web.ReadAsync(SteamStorePage.StorePage, SteamStorePage.Domains, SteamStorePage.AccountScript, _ => true, CancellationToken.None);
         account.RefreshNow();
         await account.WhenIdleAsync();
 
@@ -602,10 +602,10 @@ public sealed class SteamOnlineAccountTests : IDisposable
     /// <summary>A browser whose sign-in page fails with an exception nobody expects (#368).</summary>
     private sealed class ThrowingWebPages : IWebPages
     {
-        public Task<WebPageResult> ShowAsync(string title, Uri page, string script, Func<string, bool> isDone, CancellationToken cancellationToken) =>
+        public Task<WebPageResult> ShowAsync(string title, Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("Browser kaputt");
 
-        public Task<WebPageResult> ReadAsync(Uri page, string script, Func<string, bool> isDone, CancellationToken cancellationToken) =>
+        public Task<WebPageResult> ReadAsync(Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("Browser kaputt");
 
         public Task<WebPageResult> ForgetAsync(IReadOnlyList<string> domains, CancellationToken cancellationToken) =>
@@ -628,7 +628,7 @@ public sealed class SteamOnlineAccountTests : IDisposable
             }
         }
 
-        public Task<WebPageResult> ShowAsync(string title, Uri page, string script, Func<string, bool> isDone, CancellationToken cancellationToken)
+        public Task<WebPageResult> ShowAsync(string title, Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone, CancellationToken cancellationToken)
         {
             var shown = new TaskCompletionSource<WebPageResult>(TaskCreationOptions.RunContinuationsAsynchronously);
             lock (_shown)
@@ -639,7 +639,7 @@ public sealed class SteamOnlineAccountTests : IDisposable
             return shown.Task;
         }
 
-        public Task<WebPageResult> ReadAsync(Uri page, string script, Func<string, bool> isDone, CancellationToken cancellationToken) =>
+        public Task<WebPageResult> ReadAsync(Uri page, IReadOnlyList<string> domains, string script, Func<string, bool> isDone, CancellationToken cancellationToken) =>
             Task.FromResult(WebPageResult.Failed("nicht im Test"));
 
         public Task<WebPageResult> ForgetAsync(IReadOnlyList<string> domains, CancellationToken cancellationToken) =>

@@ -10,6 +10,8 @@ public sealed class WebPagesTests
 {
     private static readonly Uri Page = new("https://store.steampowered.com/explore/?secret=1");
 
+    private static readonly IReadOnlyList<string> Steam = ["steampowered.com", "steamcommunity.com"];
+
     private readonly FakeTimeProvider _time = new();
     private readonly Host _host = new();
 
@@ -17,7 +19,7 @@ public sealed class WebPagesTests
     public async Task A_page_waits_for_the_window_and_returns_what_its_script_gave()
     {
         var pages = new WebPages(_time, action => action());
-        var read = pages.ReadAsync(Page, "script", _ => true, CancellationToken.None);
+        var read = pages.ReadAsync(Page, Steam, "script", _ => true, CancellationToken.None);
         Assert.False(read.IsCompleted);
 
         pages.Attach(_host);
@@ -35,7 +37,7 @@ public sealed class WebPagesTests
     public async Task An_unseen_page_that_does_not_answer_fails_after_the_timeout_and_closes()
     {
         var pages = Attached();
-        var read = pages.ReadAsync(Page, "script", _ => true, CancellationToken.None);
+        var read = pages.ReadAsync(Page, Steam, "script", _ => true, CancellationToken.None);
 
         _time.Advance(WebPages.ReadTimeout);
         var result = await read;
@@ -48,7 +50,7 @@ public sealed class WebPagesTests
     public async Task Without_a_window_a_page_fails_instead_of_waiting_forever()
     {
         var pages = new WebPages(_time, action => action());
-        var read = pages.ReadAsync(Page, "script", _ => true, CancellationToken.None);
+        var read = pages.ReadAsync(Page, Steam, "script", _ => true, CancellationToken.None);
 
         _time.Advance(WebPages.HostTimeout);
 
@@ -60,7 +62,7 @@ public sealed class WebPagesTests
     {
         var pages = Attached();
         using var cancel = new CancellationTokenSource();
-        var shown = pages.ShowAsync("Bei Steam anmelden", Page, "script", _ => false, cancel.Token);
+        var shown = pages.ShowAsync("Bei Steam anmelden", Page, Steam, "script", _ => false, cancel.Token);
 
         _time.Advance(TimeSpan.FromHours(1));
         Assert.False(shown.IsCompleted);
@@ -76,7 +78,7 @@ public sealed class WebPagesTests
     public async Task Pages_open_one_after_the_other()
     {
         var pages = Attached();
-        var first = pages.ReadAsync(Page, "a", _ => true, CancellationToken.None);
+        var first = pages.ReadAsync(Page, Steam, "a", _ => true, CancellationToken.None);
         var second = pages.ForgetAsync(["steampowered.com"], CancellationToken.None);
         await OpenedAsync(1);
         Assert.Single(_host.Opened);
@@ -107,7 +109,72 @@ public sealed class WebPagesTests
     public void The_address_shows_scheme_and_host_only()
     {
         Assert.Equal("https://store.steampowered.com", WebPageViewModel.AddressOf(Page));
-        Assert.Equal("https://store.steampowered.com", WebPageViewModel.SignIn("t", Page, "s", _ => true).Address);
+        Assert.Equal("https://store.steampowered.com", WebPageViewModel.SignIn("t", Page, Steam, "s", _ => true).Address);
+    }
+
+    [Theory]
+    [InlineData("https://store.steampowered.com/login/")]
+    [InlineData("https://login.steampowered.com/jwt/finalizelogin")]
+    [InlineData("https://steamcommunity.com/login/home/")]
+    [InlineData("https://STORE.SteamPowered.com/explore/")]
+    public void A_page_opens_and_reads_steams_sites_and_their_subdomains(string address)
+    {
+        var page = WebPageViewModel.SignIn("t", Page, Steam, "s", _ => true);
+
+        Assert.True(page.MayOpen(new Uri(address)));
+        Assert.True(page.MayRead(new Uri(address)));
+    }
+
+    [Theory]
+    [InlineData("https://example.com/")]
+    [InlineData("https://steampowered.com.example.com/login/")]
+    [InlineData("https://notsteampowered.com/login/")]
+    [InlineData("https://xn--steampwered-6ib.com/")]
+    [InlineData("http://store.steampowered.com/login/")]
+    [InlineData("file:///C:/Users/someone/fake-login.html")]
+    [InlineData("javascript:alert(1)")]
+    public void A_page_neither_opens_nor_reads_any_other_site(string address)
+    {
+        var page = WebPageViewModel.SignIn("t", Page, Steam, "s", _ => true);
+
+        Assert.False(page.MayOpen(new Uri(address)));
+        Assert.False(page.MayRead(new Uri(address)));
+    }
+
+    [Fact]
+    public void A_blank_page_opens_but_is_never_read()
+    {
+        var page = WebPageViewModel.Read(Page, Steam, "s", _ => true);
+
+        Assert.True(page.MayOpen(new Uri("about:blank")));
+        Assert.False(page.MayRead(new Uri("about:blank")));
+        Assert.False(page.MayRead(null));
+    }
+
+    [Fact]
+    public async Task A_page_off_the_launchers_sites_fails_without_opening()
+    {
+        var pages = Attached();
+        using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+        var shown = await pages.ShowAsync("Bei Steam anmelden", new Uri("https://example.com/login"), Steam, "s", _ => true, stop.Token);
+        var read = await pages.ReadAsync(Page, [], "s", _ => true, stop.Token);
+
+        Assert.NotNull(shown.Error);
+        Assert.NotNull(read.Error);
+        Assert.Empty(_host.Opened);
+    }
+
+    [Fact]
+    public async Task Forgetting_cookies_needs_no_sites()
+    {
+        var pages = Attached();
+        var forget = pages.ForgetAsync([], CancellationToken.None);
+        await OpenedAsync(1);
+
+        _host.Opened[0].Complete(WebPageResult.Done(string.Empty));
+
+        Assert.Null((await forget).Error);
     }
 
     /// <summary>Pages open on another thread once the one before is done.</summary>

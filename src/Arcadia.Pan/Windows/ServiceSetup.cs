@@ -471,7 +471,7 @@ public static class ServiceSetup
     private static bool Exists(string path) => Directory.Exists(path) || File.Exists(path);
 
     /// <summary>A real folder, owned by Administrators or SYSTEM, that nobody else may change (reading is fine).</summary>
-    private static bool IsOurs(string directory, out string problem)
+    internal static bool IsOurs(string directory, out string problem)
     {
         try
         {
@@ -524,7 +524,7 @@ public static class ServiceSetup
 
     /// <summary>A link goes as the link alone; a folder is renamed, which the parent's rights allow whatever its own say.</summary>
     /// <returns>Where it went, or "deleted" for a link.</returns>
-    private static string MoveAside(string directory)
+    internal static string MoveAside(string directory)
     {
         var attributes = File.GetAttributes(directory);
         if (attributes.HasFlag(FileAttributes.ReparsePoint))

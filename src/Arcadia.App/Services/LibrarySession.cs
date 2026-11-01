@@ -408,6 +408,11 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
+        // A tab without games says itself that its scan failed; one that keeps the games read before needs a word (#369).
+        var newlyFailed = libraries
+            .Where(l => l is { ScanFailed: true, Games.Count: > 0 } && !_scanned.Any(s => s.Launcher.Id == l.Launcher.Id && s.ScanFailed))
+            .Select(l => l.Launcher)
+            .ToList();
         _scanned = libraries;
         var launchers = _library.Launchers;
         Libraries = libraries.Select(l => l with { Games = launchers.ShownEntries(l.Launcher.Id, l.Games) }).ToList();
@@ -415,6 +420,10 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         GameFolders = GameFolders.Of(libraries.SelectMany(l => l.Games));
         _running.SetLibrary(libraries.SelectMany(l => l.Games));
         LibrariesChanged?.Invoke(this, EventArgs.Empty);
+        if (newlyFailed.Count > 0)
+        {
+            Noticed?.Invoke(this, new LibraryNotice.ScanFailed(newlyFailed));
+        }
     }
 }
 
@@ -446,4 +455,7 @@ public abstract record LibraryNotice
 
     /// <summary>"Neu einlesen" of <paramref name="Launcher"/>, or of all launchers (null), is done: <see cref="LibrarySession.Libraries"/> hold the result.</summary>
     public sealed record RescanFinished(LauncherInfo? Launcher) : LibraryNotice;
+
+    /// <summary>The scan of <paramref name="Launchers"/> failed; their tabs keep the games read before (#369).</summary>
+    public sealed record ScanFailed(IReadOnlyList<LauncherInfo> Launchers) : LibraryNotice;
 }

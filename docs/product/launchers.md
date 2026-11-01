@@ -16,6 +16,9 @@
   nicht gefunden", "Launcher-Einstellungen" and "Neu einlesen" / "Erneut suchen"). With no launcher active the library
   says "Kein Launcher aktiv" the same way, with only "Launcher-Einstellungen" (nothing to read before one is switched
   on).
+- A launcher whose scan fails (a locked file, a missing drive) keeps the games read before in this session, with one
+  toast when it starts failing; without any, its tab says "… konnte nicht eingelesen werden" with "Erneut versuchen".
+  A single unreadable game file costs only that game. Never "Keine Spiele" for a failed scan.
 - Beside the rows two boxes: "Launcher-Reihenfolge" (the tabs as they will be, the library's selected tab not marked)
   and "Launcher-Details" (head, status message, library, location; no repeat of what row and preview
   show).

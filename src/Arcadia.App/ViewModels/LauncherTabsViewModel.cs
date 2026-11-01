@@ -61,6 +61,7 @@ public sealed partial class LauncherTabsViewModel(Func<LauncherInfo, LauncherBad
 
             Items[index].Games = library.Games;
             Items[index].IsFound = library.IsFound;
+            Items[index].ScanFailed = library.ScanFailed;
             if (index != i)
             {
                 Items.Move(index, i);

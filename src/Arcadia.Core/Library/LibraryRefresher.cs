@@ -92,7 +92,7 @@ public sealed class LibraryRefresher(LibraryService library, TimeProvider time)
     /// </summary>
     public static bool HasChanged(IReadOnlyList<LauncherLibrary> current, IReadOnlyList<LauncherLibrary> scanned)
     {
-        static string Tabs(IEnumerable<LauncherLibrary> libraries) => string.Join('|', libraries.Select(l => $"{l.Launcher.Id}:{l.IsFound}"));
+        static string Tabs(IEnumerable<LauncherLibrary> libraries) => string.Join('|', libraries.Select(l => $"{l.Launcher.Id}:{l.IsFound}:{l.ScanFailed}"));
 
         static string Signature(IEnumerable<LauncherLibrary> libraries) => string.Join('|', libraries
             .SelectMany(l => l.Games.Select(g => $"{l.Launcher.Id}/{g.Key}:{g.IsInstalled}:{g.UpdateAvailable}:{g.InstallDirectory}:{g.LastPlayedAt?.UtcTicks}:{g.Playtime?.Ticks}:{g.InstallBlockedReason}:{g.Notice}"))

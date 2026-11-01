@@ -43,6 +43,7 @@ its file.
 | [345-hide-and-copy-the-steam-controller-by-cable.md](345-hide-and-copy-the-steam-controller-by-cable.md) | #345 | Hide and copy the Steam Controller by cable | 7 |
 | [357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md](357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md) | #357 | Steam Controller: Xbox pad passes input only while a game on "Arcadia" is in front | 4 |
 | [360-keep-pans-memory-under-20-mb.md](360-keep-pans-memory-under-20-mb.md) | #360 | Pan's memory grows to 22 MB while Arcadia is connected | 0 (T243-21) |
+| [369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md](369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md) | #369 | Show a failed scan instead of an empty launcher tab | 3 |
 
 ## Exploratory test
 
@@ -80,3 +81,4 @@ Charter: –. Time box: –. Findings: –.
 | T345-1, T345-3, T345-4, T345-7 | `tests/Arcadia.Pan.Tests/CableHidingTests.cs`, `tests/Arcadia.Core.Tests/SteamControllerByCableTests.cs` |
 | T357-1, T357-2, T357-4 | `tests/Arcadia.Core.Tests/SteamControllerRoutingTests.cs`, `tests/Arcadia.App.Tests/SteamControllerModeTests.cs`, `SteamControllerXboxPadTests.cs` |
 | T238-1, T238-3 to T238-7, T238-12 (fakes) | `tests/Arcadia.App.Tests/EveryControllerForGamesTests.cs`, `tests/Arcadia.Core.Tests/TakenOverControllersTests.cs` |
+| T369-1 to T369-3 | `tests/Arcadia.App.Tests/ScanFailureTests.cs` |

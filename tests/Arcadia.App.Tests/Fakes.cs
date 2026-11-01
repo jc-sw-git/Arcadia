@@ -129,10 +129,13 @@ internal sealed class FixedScanner(LauncherInfo launcher, IReadOnlyList<Game> ga
     /// <summary>How often the launcher was read.</summary>
     public int Scans => Volatile.Read(ref _scans);
 
+    /// <summary>While set, a scan throws it, as a locked or unreachable file does (#369).</summary>
+    public Exception? Failure { get; set; }
+
     public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default)
     {
         Interlocked.Increment(ref _scans);
-        return Task.FromResult<IReadOnlyList<Game>>([.. games]);
+        return Failure is { } failure ? Task.FromException<IReadOnlyList<Game>>(failure) : Task.FromResult<IReadOnlyList<Game>>([.. games]);
     }
 }
 

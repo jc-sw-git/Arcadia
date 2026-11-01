@@ -373,6 +373,29 @@ public sealed class SteamScannerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_locked_library_list_fails_the_scan_instead_of_dropping_the_other_libraries()
+    {
+        var steam = Path.Combine(_root, "Steam");
+        var libraryFolders = Path.Combine(steam, "steamapps", "libraryfolders.vdf");
+        Write(Path.Combine(steam, "steamapps", "appmanifest_239030.acf"), Manifest("239030", "Papers, Please", "PapersPlease"));
+        Write(libraryFolders, "\"libraryfolders\" { }");
+        using var locked = new FileStream(libraryFolders, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        await Assert.ThrowsAsync<IOException>(() => new SteamScanner(() => new SteamInstallation(steam, null)).ScanAsync());
+    }
+
+    [Fact]
+    public async Task A_missing_library_list_reads_steams_own_library()
+    {
+        var steam = Path.Combine(_root, "Steam");
+        Write(Path.Combine(steam, "steamapps", "appmanifest_239030.acf"), Manifest("239030", "Papers, Please", "PapersPlease"));
+
+        var games = await new SteamScanner(() => new SteamInstallation(steam, null)).ScanAsync();
+
+        Assert.Equal(["Papers, Please"], games.Select(g => g.Title));
+    }
+
+    [Fact]
     public async Task Without_a_readable_appinfo_types_apps_by_name()
     {
         var steam = Path.Combine(_root, "Steam");

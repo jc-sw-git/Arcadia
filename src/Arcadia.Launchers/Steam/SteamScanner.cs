@@ -76,7 +76,10 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
             ? ReadPlayStats(ReadText(Path.Combine(userData, "config", "localconfig.vdf")))
             : new Dictionary<uint, SteamPlayStats>();
 
-        var manifests = LibraryPaths(steam.RootPath, ReadText(Path.Combine(steam.RootPath, "steamapps", "libraryfolders.vdf")))
+        // Unlike the other files, an unreadable library list fails the scan (#369): read as missing, every game in the other
+        // libraries would quietly leave the tab.
+        var libraryFolders = Path.Combine(steam.RootPath, "steamapps", "libraryfolders.vdf");
+        var manifests = LibraryPaths(steam.RootPath, File.Exists(libraryFolders) ? File.ReadAllText(libraryFolders) : null)
             .SelectMany(library => ManifestFiles(library).Select(file => (Library: library, File: file)))
             .ToList();
 

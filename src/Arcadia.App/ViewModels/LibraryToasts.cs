@@ -14,6 +14,9 @@ public static class LibraryToasts
         LibraryNotice.GameNotStarted notStarted => (GameNotStarted(notStarted), false),
         LibraryNotice.RescanStarted { Launcher: var launcher } => (launcher is null ? "Alle Launcher werden neu eingelesen …" : $"{launcher.DisplayName} wird neu eingelesen …", true),
         LibraryNotice.RescanFinished { Launcher: var launcher } => (RescanFinished(launcher, tabs), false),
+        LibraryNotice.ScanFailed { Launchers: var launchers } => (
+            $"{string.Join(" und ", launchers.Select(l => l.DisplayName))} konnte{(launchers.Count == 1 ? string.Empty : "n")} nicht neu eingelesen werden; die zuletzt gelesenen Spiele bleiben.",
+            false),
         _ => throw new ArgumentOutOfRangeException(nameof(notice), notice, null),
     };
 
@@ -54,6 +57,7 @@ public static class LibraryToasts
         {
             null => $"{name} ist nicht aktiv.",
             { IsFound: false } => $"{name} ist weiterhin nicht zu finden.",
+            { ScanFailed: true } => $"{name} konnte nicht eingelesen werden.",
             { Count: 0 } => $"Weiterhin keine Spiele in {name}.",
             { Count: var count } => count == 1 ? $"1 Spiel in {name} gefunden." : $"{count} Spiele in {name} gefunden.",
         };

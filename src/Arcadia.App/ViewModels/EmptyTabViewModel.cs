@@ -14,6 +14,11 @@ namespace Arcadia.App.ViewModels;
 /// <param name="rescan">Reads the tab's launcher again; null when no launcher is active.</param>
 public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action openSettings, Action? rescan) : ViewModelBase
 {
+    // The tab's state when it became empty: the library makes a new empty state when it changes, which it can tell only
+    // by comparing with this one (#369).
+    private readonly bool _isMissing = tab is { IsFound: false };
+    private readonly bool _isScanFailed = tab is { IsFound: true, ScanFailed: true };
+
     public LauncherTabViewModel? Tab => tab;
 
     /// <summary>No launcher is active, so there are no tabs at all: empty tabs instead of covers.</summary>
@@ -23,9 +28,12 @@ public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action 
     public bool HasTab => tab is not null;
 
     /// <summary>The launcher isn't installed any more, rather than without games: a question mark instead of covers.</summary>
-    public bool IsMissing => tab is { IsFound: false };
+    public bool IsMissing => _isMissing;
 
-    public bool HasNoGames => tab is { IsFound: true };
+    /// <summary>Its scan failed and no games were read before (#369): it can't tell whether there are any.</summary>
+    public bool IsScanFailed => _isScanFailed;
+
+    public bool HasNoGames => tab is not null && !_isMissing && !_isScanFailed;
 
     /// <summary>The launcher's logo (#138); null when no launcher is active.</summary>
     public Services.LauncherBadge? Badge => tab?.Badge;
@@ -33,22 +41,24 @@ public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action 
     public string Title => tab switch
     {
         null => "Kein Launcher aktiv",
-        { IsFound: false } => $"{tab.Name} nicht gefunden",
+        _ when _isMissing => $"{tab.Name} nicht gefunden",
+        _ when _isScanFailed => $"{tab.Name} konnte nicht eingelesen werden",
         _ => $"Keine Spiele in {tab.Name}",
     };
 
     public string Text => tab switch
     {
         null => "Arcadia zeigt die Spiele deiner Launcher in Tabs. Schalte in den Einstellungen unter „Launcher“ die ein, deren Spiele du hier sehen willst.",
-        { IsFound: false } => $"Arcadia findet {tab.Name} auf diesem PC nicht mehr. Ist es deinstalliert, schalte den Launcher in den Einstellungen ab, dann verschwindet dieser Tab.",
+        _ when _isMissing => $"Arcadia findet {tab.Name} auf diesem PC nicht mehr. Ist es deinstalliert, schalte den Launcher in den Einstellungen ab, dann verschwindet dieser Tab.",
+        _ when _isScanFailed => $"Arcadia konnte die Spiele von {tab.Name} gerade nicht lesen, etwa weil eine Datei gesperrt ist oder ein Laufwerk fehlt. Versuch es gleich noch einmal.",
         _ => $"{tab.Name} ist installiert, aber Arcadia hat dort keine Spiele gefunden. Sobald du in {tab.Name} ein Spiel kaufst oder installierst, erscheint es hier.",
     };
 
     /// <summary>Below the tab's name, where a tab with games counts them.</summary>
-    public string Summary => IsMissing ? "Launcher nicht gefunden" : "Keine Spiele";
+    public string Summary => IsMissing ? "Launcher nicht gefunden" : IsScanFailed ? "Einlesen fehlgeschlagen" : "Keine Spiele";
 
-    /// <summary>A launcher no longer found is looked for again.</summary>
-    public string RescanText => HasNoGames ? "Neu einlesen" : "Erneut suchen";
+    /// <summary>A launcher no longer found is looked for again, a failed scan tried again.</summary>
+    public string RescanText => IsMissing ? "Erneut suchen" : IsScanFailed ? "Erneut versuchen" : "Neu einlesen";
 
     public bool CanRescan => rescan is not null;
 

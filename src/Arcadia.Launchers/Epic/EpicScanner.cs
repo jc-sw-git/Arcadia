@@ -153,24 +153,12 @@ public sealed class EpicScanner(
 
         var games = new List<Game>();
         var engines = new List<(Game Game, Version Version)>();
+        // The folder itself unreadable fails the scan (the library keeps the games read last and says so, #369): without
+        // the manifests every catalog game would look uninstalled.
         foreach (var file in Directory.EnumerateFiles(_manifestDirectory, "*.item"))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            string json;
-            try
-            {
-                json = File.ReadAllText(file);
-            }
-            catch (IOException)
-            {
-                continue;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                continue;
-            }
-
-            if (ParseEntry(json, InstallDateOf, installedApps) is not { } entry)
+            if (ReadManifest(file, installedApps) is not { } entry)
             {
                 continue;
             }
@@ -192,6 +180,20 @@ public sealed class EpicScanner(
         }
 
         return games;
+    }
+
+    /// <summary>One manifest file; null if it is unreadable or not a game, so one broken file costs only its own entry (#369).</summary>
+    private static (Game Game, Version? EngineVersion)? ReadManifest(string file, IReadOnlyDictionary<string, EpicInstalledAppState>? installedApps)
+    {
+        try
+        {
+            return ParseEntry(File.ReadAllText(file), InstallDateOf, installedApps);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException or FormatException)
+        {
+            System.Diagnostics.Trace.TraceWarning($"Epic manifest {Path.GetFileName(file)} skipped: {e.GetType().Name}: {e.Message}");
+            return null;
+        }
     }
 
     /// <summary>
@@ -252,7 +254,10 @@ public sealed class EpicScanner(
             var catalogItemId = GetString(root, "CatalogItemId") ?? string.Empty;
             var installLocation = GetString(root, "InstallLocation");
             var launchExecutable = GetString(root, "LaunchExecutable");
-            long? installSize = root.TryGetProperty("InstallSize", out var size) && size.TryGetInt64(out var bytes) ? bytes : null;
+            // Epic writes a number; anything else (a string, null) means no size rather than a broken manifest.
+            long? installSize = root.TryGetProperty("InstallSize", out var size) && size.ValueKind == JsonValueKind.Number && size.TryGetInt64(out var bytes)
+                ? bytes
+                : null;
 
             var versionString = GetString(root, "AppVersionString");
             var game = new Game

@@ -92,7 +92,9 @@ public sealed partial class FirstRunViewModel : ViewModelBase, IPage
             var row = _rows[id];
             var isFound = found.Contains(id);
             var switchOn = isFound && (wasSearching || !row.IsFound);
-            row.Show(isFound, _launchers.LocationOf(id), libraries.FirstOrDefault(l => l.Launcher.Id == id)?.Games);
+            // A failed scan can't count its games (#369).
+            var library = libraries.FirstOrDefault(l => l.Launcher.Id == id);
+            row.Show(isFound, _launchers.LocationOf(id), library is { ScanFailed: true } ? null : library?.Games);
             if (switchOn)
             {
                 row.IsOn = true;

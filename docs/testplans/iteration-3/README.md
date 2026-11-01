@@ -10,7 +10,6 @@ its file.
 
 | File | Issue | Title | Test cases |
 |---|---|---|---|
-| [368-sign-in-cleans-up-after-an-error.md](368-sign-in-cleans-up-after-an-error.md) | #368 | B after an unexpected sign-in error leaves the launcher page stuck | 1 |
 
 ## Exploratory test
 

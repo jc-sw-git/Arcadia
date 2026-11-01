@@ -11,4 +11,5 @@ Steam Controller's routing, the Steam page's desktop layout group) cover the flo
 | What | Date | Who | Environment | Result | Notes |
 |---|---|---|---|---|---|
 | `dotnet test Arcadia.slnx` | 2026-11-01 | Claude | Linux cloud container, .NET 10 | pass | Core 2,305, App 492, Pan 331 passed |
+| `dotnet test Arcadia.slnx` after the QE review (rebased on #374, `SteamProgramTests`) | 2026-11-01 | Claude | Linux cloud container, .NET 10 | pass | Core 2,309, App 492, Pan 331 passed |
 | Demo start (`--demo`, xvfb), launcher and controller settings opened | 2026-11-01 | Claude | Linux cloud container | pass | 173 demo games, no error in the log; Steam's driver install and SISR removal are Windows-only, so they ran only in the acceptance tests |

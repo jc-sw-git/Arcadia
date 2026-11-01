@@ -3,7 +3,8 @@ namespace Arcadia.Launchers.Abstractions;
 /// <summary>
 /// The launcher's own program on this PC, for the parts of Arcadia that have to close and restart it: the Steam
 /// Controller's drivers can't be installed while the launcher that owns Steam Input runs (<see cref="LauncherInfo.OwnsSteamInput"/>).
-/// Every member is safe to call when the launcher isn't installed; none throws.
+/// Every member is safe to call when the launcher isn't installed; only <see cref="RemoveShortcutsTo"/> throws, when a
+/// list can't be written.
 /// </summary>
 public interface ILauncherProgram
 {

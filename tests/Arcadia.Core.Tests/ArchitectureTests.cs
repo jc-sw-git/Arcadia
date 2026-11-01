@@ -35,14 +35,15 @@ public sealed class ArchitectureTests
         var app = Path.Combine(RepositoryRoot(), "src", "Arcadia.App");
         var offending = Directory.EnumerateFiles(app, "*.cs", SearchOption.AllDirectories)
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-            .Where(file => File.ReadLines(file).Any(line => LauncherNamespaces.Any(ns => line.Contains(ns, StringComparison.Ordinal))))
+            .Where(file => File.ReadLines(file).Any(line => SingleLauncherNames.Any(ns => line.Contains(ns, StringComparison.Ordinal))))
             .Select(file => Path.GetRelativePath(app, file))
             .ToList();
 
         Assert.Empty(offending);
     }
 
-    private static readonly string[] LauncherNamespaces = ["Arcadia.Launchers.Steam", "Arcadia.Launchers.Epic", "Arcadia.Launchers.Demo"];
+    // KnownLaunchers names Steam and Epic too, by their identity.
+    private static readonly string[] SingleLauncherNames = ["Arcadia.Launchers.Steam", "Arcadia.Launchers.Epic", "Arcadia.Launchers.Demo", "KnownLaunchers"];
 
     private static string RepositoryRoot()
     {

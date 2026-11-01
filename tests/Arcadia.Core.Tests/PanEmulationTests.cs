@@ -138,9 +138,14 @@ public sealed class PanEmulationTests
         var tick = _emulation.TickAsync();
         await hiding.Task;
 
+        // The gate's deadline starts after the cancel went out, on another thread: time moves until the exit is through.
         var shutdown = _emulation.ShutdownAsync();
-        await Task.Delay(100);
-        _time.Advance(PanEmulation.ShutdownGateTimeout);
+        for (var step = 0; step < 500 && !shutdown.IsCompleted; step++)
+        {
+            _time.Advance(PanEmulation.ShutdownGateTimeout);
+            await Task.Delay(20);
+        }
+
         await shutdown.WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.False(_pads.ShutDown);

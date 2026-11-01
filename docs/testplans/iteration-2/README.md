@@ -59,6 +59,7 @@ its file.
 | [331-steam-lists-controllers-twice.md](331-steam-lists-controllers-twice.md) | #331 | Steam lists the Steam Controller and Arcadia's Xbox pad only once | 3 |
 | [347-remove-stale-device-entries.md](347-remove-stale-device-entries.md) | #347 | Remove the stale device entries Arcadia's emulated devices leave in Windows | 7 |
 | [363-deeply-nested-vdf-files-overflow-the-stack.md](363-deeply-nested-vdf-files-overflow-the-stack.md) | #363 | Deeply nested VDF files overflow the stack and end Arcadia | 5 |
+| [364-culture-proof-tests.md](364-culture-proof-tests.md) | #364 | Tests fail on a German Windows: culture-dependent formatting in tests and in Pan's log | 0 (the suite) |
 | [365-docs-after-the-sisr-replacement.md](365-docs-after-the-sisr-replacement.md) | #365 | Docs after the SISR replacement: README, notices, architecture docs, decisions and the latency budget | 0 (docs) |
 | [366-restore-controllers-beside-emulation.md](366-restore-controllers-beside-emulation.md) | #366 | "Controller wiederherstellen" runs beside Arcadia's own emulation | 1 |
 | [372-bind-steam-sign-in-to-steams-hosts.md](372-bind-steam-sign-in-to-steams-hosts.md) | #372 | Bind the Steam sign-in web view to Steam's hosts | 2 |

@@ -54,8 +54,12 @@ jobs:
         run: ./tools/ci/Install-HidHide.ps1
       # Coverage is collected on Windows only: it is the platform Arcadia ships for, and only there do the
       # Windows-specific code paths run.
+      # Linux tests under a German culture (decimal comma), Windows under the runner's en-US: a test or log line that
+      # formats numbers with the current culture fails on one of them (#364).
       - name: Test
         if: needs.changes.outputs.skip_build != 'true'
+        env:
+          LANG: ${{ runner.os == 'Linux' && 'de_DE.UTF-8' || '' }}
         run: >-
           dotnet test Arcadia.slnx --configuration Release --no-build
           ${{ runner.os == 'Windows' && '--collect:"XPlat Code Coverage" --results-directory TestResults' || '' }}

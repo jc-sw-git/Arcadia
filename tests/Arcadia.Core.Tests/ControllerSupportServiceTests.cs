@@ -618,6 +618,63 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T366-1")]
+    public async Task Restoring_the_controllers_lets_go_of_Pan_first_and_takes_it_up_again_afterwards()
+    {
+        // #366: --restore runs beside the service; without Arcadia's client nobody makes Pan hide meanwhile.
+        var service = Create();
+        var steps = new List<string>();
+        service.LetGoOfPan = _ =>
+        {
+            steps.Add($"let go, left alone: {service.WhyPanIsLeftAlone}");
+            return Task.CompletedTask;
+        };
+        _platform.OnRestore = () => steps.Add($"restore, left alone: {service.WhyPanIsLeftAlone}");
+
+        await service.RestoreControllersAsync();
+
+        Assert.Equal(
+            [$"let go, left alone: {ControllerSupportService.RestoringReason}", $"restore, left alone: {ControllerSupportService.RestoringReason}"],
+            steps);
+        Assert.True(service.MayTalkToPan, "the emulation comes back after the restore");
+        Assert.False(service.IsRestoringControllers);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task A_declined_or_failed_restore_still_takes_Pan_up_again(bool declined, bool fails)
+    {
+        var service = Create();
+        _platform.RestoreDeclined = declined;
+        if (fails)
+        {
+            _platform.OnRestore = () => throw new InvalidOperationException("Pan konnte nicht alles aufräumen");
+        }
+
+        await service.RestoreControllersAsync();
+
+        Assert.NotNull(service.LastError);
+        Assert.True(service.MayTalkToPan);
+    }
+
+    [Fact]
+    public async Task A_restore_waits_until_Arcadia_has_let_go_of_Pan()
+    {
+        var service = Create();
+        var letGo = new TaskCompletionSource();
+        service.LetGoOfPan = _ => letGo.Task;
+
+        var restore = service.RestoreControllersAsync();
+
+        Assert.Equal(0, _platform.Restores);
+        Assert.False(service.MayTalkToPan);
+        letGo.SetResult();
+        await restore;
+        Assert.Equal(1, _platform.Restores);
+    }
+
+    [Fact]
     public async Task A_declined_restore_prompt_is_reported()
     {
         var service = Create();
@@ -1128,9 +1185,13 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public bool RestoreDeclined { get; set; }
 
+        /// <summary>Runs as the restore starts, to look at the service in that moment.</summary>
+        public Action? OnRestore { get; set; }
+
         public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken)
         {
             Restores++;
+            OnRestore?.Invoke();
             return Task.FromResult(!RestoreDeclined);
         }
 

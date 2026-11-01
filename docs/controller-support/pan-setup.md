@@ -67,8 +67,11 @@ the folder.
 ## Restore, missing parts, exit codes
 
 - "Controller wiederherstellen" (settings, while Pan is installed): `Pan.exe --restore` elevated, for the case the
-  service itself hangs: undoes the journal without the service. The Xbox pad comes back afterwards, also after
-  Arcadia gave up on VIIPER, and the pad Pan ended doesn't count as a VIIPER failure.
+  service itself hangs or a model stays hidden: undoes the journal in a second process, beside a running service.
+  Before it Arcadia lets go of Pan as for an update (`WhyPanIsLeftAlone`, `PanClient.LetGoAsync`: a hide under way
+  gets its answer first), so the service journals no new hide the restore could overwrite; the service's teardown
+  only shows and removes, as the restore does. The Xbox pad comes back afterwards, also after Arcadia gave up on
+  VIIPER, and the pad Pan ended doesn't count as a VIIPER failure.
 - Missing parts (`EmulationParts`): usbip-win2, VIIPER, Pan and HidHide each get a warning row with "Installieren" (an
   old HidHide: "Aktualisieren"; a newer major: no fix); with every part missing the setting itself offers "Treiber
   installieren" (`ControllerSupportService.CheckEmulationPartsAsync`, `CheckDrivers`). While the settings are open and

@@ -489,6 +489,55 @@ public sealed class PanClientTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Letting_go_waits_for_a_hide_under_way_so_a_restore_beside_Pan_loses_no_entry()
+    {
+        // #366 (review S2, Codex F01): --restore builds a second guardian on the same journal beside the service. A hide
+        // the service journaled after the restore read the journal would be lost, so Arcadia lets go only after its reply.
+        var hidHide = new SettableHidHide();
+        _server.UseHiding(hidHide, controllers: new TwoControllers());
+        var leftAlone = false;
+        await using var client = new PanClient(_server, _time, Log) { RequestTimeout = TimeSpan.FromSeconds(10), WhyLeftAlone = () => Volatile.Read(ref leftAlone) ? LeftAlone : null };
+        client.Start();
+        await AdvanceUntil(() => client.IsConnected, "verbunden");
+        var generation = await client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None);
+        using var hold = new ManualResetEventSlim();
+        hidHide.Hold = hold;
+        var hide = client.HideControllerAsync(generation, TwoControllers.DualSense, CancellationToken.None);
+        await WaitUntil(() => hidHide.Holding, "das Verstecken läuft in Pan");
+
+        Volatile.Write(ref leftAlone, true);
+        var letGo = client.LetGoAsync(CancellationToken.None);
+        await Task.Delay(100);
+        Assert.False(letGo.IsCompleted, "the hide under way is answered first");
+        Assert.True(client.IsConnected);
+
+        hidHide.Hold = null;
+        hold.Set();
+        Assert.True((await hide).Done);
+        await letGo.WaitAsync(Soon);
+        Assert.False(client.IsConnected);
+        Assert.Equal(LeftAlone, client.Unavailable());
+
+        // Without a client Pan tears the emulation down and shows the DualSense; then the restore's own guardian.
+        await WaitUntil(() => _server.Guardian.Teardown is { IsCompleted: true }, "Pans Teardown");
+        var restore = new Guardian(_server.Clock, new JournalFile(_server.JournalPath), new FakeCleanupForClient(), Log, hiding: new SteamControllerHiding(hidHide, new NoPuck(), new TwoControllers()));
+        Assert.True(await restore.RecoverAsync());
+        Assert.Empty(hidHide.GetHiddenDevices());
+        Assert.False(hidHide.Cloaking);
+        Assert.False(new JournalFile(_server.JournalPath).Load().State.HidingHasWork);
+
+        var connections = _server.Connections;
+        for (var i = 0; i < 3; i++)
+        {
+            _time.Advance(PanClient.Retry);
+            await Task.Delay(20);
+        }
+
+        Assert.Equal(connections, _server.Connections);
+        Assert.False(client.IsConnected, "left alone until the restore is over");
+    }
+
+    [Fact]
     [Trait("TestCase", "T335-5")]
     public async Task A_controller_is_not_hidden_while_its_vendors_firmware_tool_runs_and_Arcadia_hears_why()
     {
@@ -647,6 +696,11 @@ public sealed class PanClientTests : IAsyncDisposable
         public volatile bool Busy;
         public volatile bool Inverse;
 
+        /// <summary>Set, the next change waits for it: a hide still under way in Pan.</summary>
+        public ManualResetEventSlim? Hold;
+
+        public volatile bool Holding;
+
         /// <summary>How many changes go through before one fails, as with HidHide's driver restarting for a moment; -1: none fails.</summary>
         public int ChangesBeforeFailing = -1;
 
@@ -686,6 +740,12 @@ public sealed class PanClientTests : IAsyncDisposable
 
         private void Change(Action change)
         {
+            if (Hold is { } hold)
+            {
+                Holding = true;
+                hold.Wait(Soon);
+            }
+
             if (ChangesBeforeFailing == 0)
             {
                 ChangesBeforeFailing = -1;
@@ -755,6 +815,9 @@ public sealed class PanClientTests : IAsyncDisposable
         }
 
         public Guardian Guardian { get; private set; }
+
+        /// <summary>The journal file Pan writes, for a second guardian as <c>Pan.exe --restore</c> builds one.</summary>
+        public string JournalPath => Path.Combine(_folder, "journal.json");
 
         /// <summary>The fake machine the guardian cleans up; a test can hold its teardown.</summary>
         public FakeCleanupForClient Cleanup => _cleanup;

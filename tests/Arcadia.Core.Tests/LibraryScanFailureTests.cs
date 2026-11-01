@@ -49,11 +49,13 @@ public sealed class LibraryScanFailureTests
     }
 
     [Fact]
-    public async Task A_cancelled_scan_still_cancels()
+    public async Task A_scanner_that_cancels_itself_counts_as_failed()
     {
         _epic.Failure = new OperationCanceledException();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CreateService().LoadAsync());
+        var libraries = await CreateService().LoadAsync();
+
+        Assert.True(libraries.Single(l => l.Launcher.Id == "epic").ScanFailed);
     }
 
     [Fact]

@@ -39,6 +39,7 @@ public sealed class LibraryServiceTests
         var libraries = await load;
 
         Assert.Empty(libraries.Single(l => l.Launcher.Id == "epic").Games);
+        Assert.True(libraries.Single(l => l.Launcher.Id == "epic").ScanFailed);
         Assert.Equal(["chess"], libraries.Single(l => l.Launcher.Id == "gog").Games.Select(g => g.Id));
         Assert.Null(service.ScannedAt("epic"));
         Assert.Contains("abgebrochen", Assert.Single(_log));

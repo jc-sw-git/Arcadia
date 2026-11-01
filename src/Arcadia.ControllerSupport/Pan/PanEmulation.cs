@@ -25,7 +25,10 @@ public enum PanEmulationState
     /// <summary>The puck is hidden, the copy is up (while it is connected), and Arcadia's Xbox pad may be plugged in.</summary>
     Running,
 
-    /// <summary>On, but Pan can't hide now or the copy didn't come up; it tries again by itself.</summary>
+    /// <summary>
+    /// On, but Pan can't hide now or the copy didn't come up; it tries again by itself. Or Arcadia doesn't see what Pan
+    /// hides (<see cref="PanEmulationProblem.NotVisibleToArcadia"/>) and waits for its restart.
+    /// </summary>
     Paused,
 
     /// <summary>Failed too often in a short time: Arcadia waits for "Erneut versuchen" (or its next start).</summary>
@@ -54,6 +57,12 @@ public enum PanEmulationProblem
 
     /// <summary>Too many failures in <see cref="PanEmulation.FailureWindow"/>.</summary>
     TooManyFailures,
+
+    /// <summary>
+    /// Controllers Arcadia saw before a hide didn't come back for Arcadia itself (#396): HidHide doesn't let this process
+    /// see them, e.g. as it was installed while Arcadia ran. They are shown again; only a restart of Arcadia helps.
+    /// </summary>
+    NotVisibleToArcadia,
 }
 
 /// <param name="Reason">For the log and the row's subtitle: what is missing or failed.</param>
@@ -100,6 +109,11 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     public const string FirmwareUpdateReason = "Steam spielt ein Firmware-Update auf";
 
+    public const string NotVisibleText = "Pan: Arcadia sieht die versteckten Controller nicht mehr und hat sie wieder freigegeben. Starte Arcadia neu, die Controller-Einstellungen bieten das an.";
+
+    /// <summary>The name the Steam Controller has in <see cref="NotVisibleToArcadia"/>.</summary>
+    public const string SteamControllerName = "Steam Controller";
+
     private readonly IVirtualXboxPadServer _pads;
     private readonly IEmulationGuardian _guardian;
     private readonly ISteamControllerHold _hold;
@@ -128,6 +142,10 @@ public sealed class PanEmulation : IVirtualXboxPads
     private volatile bool _released;
     private string? _lastLogged;
 
+    // The controllers that didn't come back for Arcadia after a hide (#396): kept until Arcadia restarts, as nothing
+    // else gives this process HidHide's allow list back.
+    private volatile IReadOnlyList<string>? _notVisible;
+
     public PanEmulation(IVirtualXboxPadServer pads, IEmulationGuardian guardian, ISteamControllerHold hold, TimeProvider time, Action<string> log)
     {
         _pads = pads;
@@ -141,6 +159,15 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     /// <summary>The switch "Controller-Wächter (Pan)"; read on every tick.</summary>
     public Func<bool> Enabled { get; init; } = () => true;
+
+    /// <summary>
+    /// Why nothing may be hidden now, or null; read on every tick. A HidHide install runs or Arcadia restarts after one
+    /// (#396): this process would not see what Pan hides.
+    /// </summary>
+    public Func<string?> HeldBack { get; init; } = () => null;
+
+    /// <summary>The controllers Arcadia saw before a hide and no longer sees since (#396); empty while that didn't happen.</summary>
+    public IReadOnlyList<string> NotVisibleToArcadia => _notVisible ?? [];
 
     /// <summary>Attaching the copy waits this long at most: a hanging attach would hold the gate and stop every tick.</summary>
     public static readonly TimeSpan AttachTimeout = TimeSpan.FromSeconds(10);
@@ -392,6 +419,21 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
+        if (_notVisible is { } notVisible)
+        {
+            // A new emulation would hide them from Arcadia once more: nothing starts until Arcadia restarts.
+            await EndIfRunningAsync("Arcadia sieht die versteckten Controller nicht");
+            SetStatus(NotVisibleStatus(notVisible));
+            return;
+        }
+
+        if (HeldBack() is { } heldBack)
+        {
+            await EndIfRunningAsync(heldBack);
+            SetStatus(new(PanEmulationState.SettingUp, Reason: heldBack));
+            return;
+        }
+
         if (_gaveUp)
         {
             await EndIfRunningAsync("zu viele Ausfälle");
@@ -485,6 +527,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         var session = new Session(generation, usbipPort);
         if (puckWanted)
         {
+            var seenBefore = _hold.Connected is not null;
             var hidden = await WithPuckLetGoAsync(() => _guardian.HideAsync(generation, cancellationToken));
             if (hidden != PanReason.None && !OthersConnected)
             {
@@ -505,7 +548,7 @@ public sealed class PanEmulation : IVirtualXboxPads
                 return;
             }
 
-            PuckHidden(session, hidden);
+            PuckHidden(session, hidden, seenBefore);
         }
 
         _session = session;
@@ -517,7 +560,8 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// After a hide of the puck: hidden, or (other controllers keep the emulation running) the Steam Controller stays
     /// Steam's and the hide is tried again later, counted, as a hide that keeps failing restarts the puck each time.
     /// </summary>
-    private void PuckHidden(Session session, PanReason hidden)
+    /// <param name="seenBefore">Arcadia saw the puck right before the hide: it must see it again soon after (#396).</param>
+    private void PuckHidden(Session session, PanReason hidden, bool seenBefore)
     {
         if (hidden != PanReason.None)
         {
@@ -534,6 +578,7 @@ public sealed class PanEmulation : IVirtualXboxPads
 
         session.Hidden = true;
         session.PuckRejection = PanReason.None;
+        session.AwaitingSightSince = seenBefore ? _time.GetTimestamp() : null;
     }
 
     /// <summary>
@@ -548,8 +593,9 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
+        var seenBefore = _hold.Connected is not null;
         var hidden = await WithPuckLetGoAsync(() => _guardian.HideAsync(session.Generation, cancellationToken));
-        PuckHidden(session, hidden);
+        PuckHidden(session, hidden, seenBefore);
         if (session.Hidden)
         {
             _log($"Pan-Emulation {session.Generation}: Steam Controller versteckt");
@@ -638,6 +684,12 @@ public sealed class PanEmulation : IVirtualXboxPads
         {
             await others.KeepAsync(session.Generation, _guardian, this, cancellationToken);
         }
+
+        if (!await StillVisibleAsync(session))
+        {
+            return;
+        }
+
         if (_pausedByLoss)
         {
             _pausedByLoss = false;
@@ -648,6 +700,50 @@ public sealed class PanEmulation : IVirtualXboxPads
             }
         }
     }
+
+    /// <summary>
+    /// After a hide, Arcadia itself must see the hidden controllers again within <see cref="TakenOverControllers.SightWait"/>:
+    /// it is on HidHide's allow list, and reads them for the copy and the pads. A process HidHide doesn't let through
+    /// (HidHide installed while it ran, owner's PC 2026-11-01) sees nothing, and would otherwise run without copy or pads
+    /// with every controller hidden (#396). Then the emulation ends, Pan shows them, and none starts until a restart.
+    /// False then.
+    /// </summary>
+    private async Task<bool> StillVisibleAsync(Session session)
+    {
+        List<string> notVisible = [];
+        if (session.AwaitingSightSince is { } since && _time.GetElapsedTime(since) >= SightGrace)
+        {
+            // Not before SightGrace: the presence the hold answers with may still be the one from before the hide.
+            if (_hold.Connected is not null)
+            {
+                session.AwaitingSightSince = null;
+            }
+            else if (_time.GetElapsedTime(since) >= TakenOverControllers.SightWait)
+            {
+                notVisible.Add(SteamControllerName);
+            }
+        }
+
+        notVisible.AddRange(Others?.NotVisibleSinceHide ?? []);
+        if (notVisible.Count == 0)
+        {
+            return true;
+        }
+
+        _notVisible = notVisible;
+        _log($"Pan-Emulation {session.Generation}: Arcadia sieht die versteckten Controller nicht mehr ({string.Join(", ", notVisible)}); HidHide lässt diesen Prozess nicht durch, erst ein Neustart von Arcadia hilft");
+        await EndAsync(session, "Arcadia sieht die versteckten Controller nicht");
+        SetStatus(NotVisibleStatus(notVisible));
+        Notice?.Invoke(NotVisibleText);
+        return false;
+    }
+
+    /// <summary>A hide restarts the puck (~2.5 s) and the hold caches its answer for 1 s: no verdict before this.</summary>
+    private static readonly TimeSpan SightGrace = TimeSpan.FromSeconds(1.5);
+
+    private static PanEmulationStatus NotVisibleStatus(IReadOnlyList<string> notVisible) =>
+        // Paused, not stopped: the player can act on it ("Arcadia neu starten"), so a warning, as the owner chose (#396).
+        new(PanEmulationState.Paused, PanEmulationProblem.NotVisibleToArcadia, Reason: $"Arcadia sieht {string.Join(", ", notVisible)} nicht mehr");
 
     /// <summary>False when the copy failed and the emulation ended with it.</summary>
     private async Task<bool> KeepCopyAsync(Session session, CancellationToken cancellationToken)
@@ -969,6 +1065,9 @@ public sealed class PanEmulation : IVirtualXboxPads
 
         /// <summary>Why the puck isn't hidden in an emulation that runs for the other controllers; None when it is or wasn't tried.</summary>
         public PanReason PuckRejection { get; set; }
+
+        /// <summary>When the puck Arcadia saw was hidden, until Arcadia sees it again (#396); null once it did, or it wasn't seen.</summary>
+        public long? AwaitingSightSince { get; set; }
 
         public ISteamControllerCopy? Copy { get; set; }
 

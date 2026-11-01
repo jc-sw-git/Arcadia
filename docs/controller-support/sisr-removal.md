@@ -2,7 +2,7 @@
 
 An older Arcadia installed and started SISR (github.com/Alia5/SISR) to make the Steam Controller an Xbox pad outside
 Steam. Arcadia never starts SISR any more and removes nothing by itself. The settings group "SISR", its texts and
-dialogs: `docs/product/settings.md`.
+dialogs: `docs/product/settings-controller.md`.
 
 ## What Arcadia looks for (`SisrInstallation.Find`)
 

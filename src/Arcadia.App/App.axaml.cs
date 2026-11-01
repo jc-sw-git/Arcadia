@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
@@ -182,6 +183,10 @@ public partial class App : Application
             });
             pan.Start();
             var xboxPad = forGames.Pad;
+            // "Arcadia neu starten" and the restart after a HidHide install (#396): HidHide lets only a new process see
+            // what Pan hides. The new Arcadia waits until this one has exited.
+            controllerSupport.RestartArcadia = reason => Dispatcher.UIThread.Post(() =>
+                RestartSelf(reason, RestartArguments(args, window.IsActive, runningGames.StartedFromArcadia), desktop, message => viewModel.Toast.Show(message)));
             viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
             // A firmware update Steam tries through the copy (#295): Arcadia is behind Steam's window, and the player is
             // to read why it fails. Not while a game is in front: a toast says it there (MainViewModel.ShowFirmwareAttempt).
@@ -307,6 +312,38 @@ public partial class App : Application
 
         base.OnFrameworkInitializationCompleted();
     }
+
+    /// <summary>
+    /// Starts a new Arcadia with <paramref name="arguments"/> that waits for this one's end
+    /// (<see cref="Program.WaitForExitArgument"/>), then exits. Started first: an Arcadia that can't start again stays.
+    /// </summary>
+    private static void RestartSelf(string reason, string[] arguments, IClassicDesktopStyleApplicationLifetime desktop, Action<string> toast)
+    {
+        try
+        {
+            var start = new ProcessStartInfo(Environment.ProcessPath ?? throw new InvalidOperationException("der eigene Pfad ist unbekannt"))
+            {
+                UseShellExecute = false,
+            };
+            foreach (var argument in arguments)
+            {
+                start.ArgumentList.Add(argument);
+            }
+
+            start.ArgumentList.Add(Program.WaitForExitArgument);
+            start.ArgumentList.Add(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            using var restarted = Process.Start(start) ?? throw new InvalidOperationException("Windows hat keinen Prozess gestartet");
+            AppLog.Write($"Arcadia startet neu ({reason})");
+            desktop.Shutdown();
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        {
+            AppLog.Write($"Arcadia startet nicht neu ({reason}): {ex}");
+            toast(RestartFailedText);
+        }
+    }
+
+    public const string RestartFailedText = "Arcadia konnte sich nicht neu starten. Beende Arcadia und starte es dann wieder.";
 
     private static int? DemoGames(string[] args)
     {

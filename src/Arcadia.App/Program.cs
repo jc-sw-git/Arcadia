@@ -40,7 +40,46 @@ sealed partial class Program
             e.SetObserved();
         };
 
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(WaitForEarlierArcadia(args));
+    }
+
+    /// <summary>
+    /// Passed with the process id of the Arcadia that restarts itself (#396): this one starts once that one has exited,
+    /// so the two never talk to Pan at the same time (Pan refuses a second client).
+    /// </summary>
+    public const string WaitForExitArgument = "--wait-for-exit";
+
+    /// <summary>Above the ~7 s an exit takes at most (the emulation's cleanup, Pan's client); then it starts anyway.</summary>
+    private static readonly TimeSpan EarlierArcadiaWait = TimeSpan.FromSeconds(20);
+
+    /// <summary>Waits for the Arcadia named after <see cref="WaitForExitArgument"/>, if any; returns the arguments without it.</summary>
+    private static string[] WaitForEarlierArcadia(string[] args)
+    {
+        var at = Array.IndexOf(args, WaitForExitArgument);
+        if (at < 0)
+        {
+            return args;
+        }
+
+        if (at + 1 < args.Length && int.TryParse(args[at + 1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var id))
+        {
+            try
+            {
+                using var earlier = System.Diagnostics.Process.GetProcessById(id);
+                using var self = System.Diagnostics.Process.GetCurrentProcess();
+                // A reused id that isn't an Arcadia's is no reason to wait.
+                if (earlier.ProcessName == self.ProcessName && !earlier.WaitForExit(EarlierArcadiaWait))
+                {
+                    AppLog.Write($"Die vorige Arcadia (Prozess {id}) läuft nach {EarlierArcadiaWait.TotalSeconds:0} s noch; Arcadia startet trotzdem");
+                }
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+                // Already gone, or not ours to look at: nothing to wait for.
+            }
+        }
+
+        return [.. args.Take(at), .. args.Skip(at + 2)];
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

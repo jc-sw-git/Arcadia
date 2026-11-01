@@ -155,7 +155,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <summary>The dialog over the page, if any.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsRemovingSisrPrompt), nameof(IsQuestionPrompt), nameof(IsWarningPrompt),
-        nameof(PromptBackText), nameof(SteamStopText), nameof(SteamStopDetail), nameof(GamePromptText), nameof(CanRetryGamePrompt), nameof(ConfirmSteamStopText), nameof(RemovingSisrText))]
+        nameof(PromptBackText), nameof(SteamStopTitle), nameof(SteamStopText), nameof(SteamStopDetail), nameof(GamePromptText), nameof(CanRetryGamePrompt), nameof(ConfirmSteamStopText), nameof(RemovingSisrText))]
     public partial SettingsPrompt Prompt { get; private set; }
 
     partial void OnPromptChanged(SettingsPrompt value) => Dialog = value == SettingsPrompt.None ? null : this;
@@ -177,13 +177,23 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     public string PromptBackText => Prompt is SettingsPrompt.ConfirmSteamStop ? "Abbrechen" : "Schließen";
 
-    /// <summary>Why Steam has to close.</summary>
+    /// <summary>The fix the prompt is open for runs HidHide's installer: Arcadia restarts after it (#396).</summary>
+    private bool InstallsHidHide => !_forSisr && _steamStopFix is { } fix && _support.InstallsHidHide(fix);
+
+    public const string HidHideInstallTitle = "HidHide installieren?";
+    public const string HidHideRestartText = "Nach der Installation von HidHide startet Arcadia einmal neu. Erst dann sieht Arcadia die Controller, die Pan vor anderen Programmen versteckt.";
+    private const string SteamClosesText = "Für die Installation muss Steam beendet werden. Arcadia startet Steam danach wieder im Hintergrund.";
+
+    /// <summary>"HidHide installieren?" before HidHide's installer runs, with Steam running or not; else "Steam beenden?".</summary>
+    public string SteamStopTitle => InstallsHidHide ? HidHideInstallTitle : "Steam beenden?";
+
+    /// <summary>Why Steam has to close, or for HidHide's installer that Arcadia restarts afterwards.</summary>
     public string SteamStopText => _forSisr
         ? "Den Eintrag „SISR Marker“ kann Arcadia nur entfernen, solange Steam geschlossen ist. Steam wird dafür kurz beendet und danach wieder gestartet."
-        : "Für die Installation muss Steam beendet werden. Arcadia startet Steam danach wieder im Hintergrund.";
+        : InstallsHidHide ? HidHideRestartText : SteamClosesText;
 
-    /// <summary>For a driver fix, why it restarts the puck; nothing more for "SISR entfernen".</summary>
-    public string SteamStopDetail => _steamStopFix switch
+    /// <summary>For a driver fix, why it restarts the puck (and, for HidHide's installer, that Steam closes); nothing more for "SISR entfernen".</summary>
+    public string SteamStopDetail => (InstallsHidHide && StopsSteam ? SteamClosesText + " " : string.Empty) + _steamStopFix switch
     {
         HealthFix.ReinstallHidHide => "Die Neuinstallation von HidHide startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren. Windows fragt dabei einmal nach Administratorrechten.",
         HealthFix.InstallDrivers => "Die Treiber-Installation startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren. Windows fragt dabei einmal nach Administratorrechten.",
@@ -192,7 +202,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     public bool HasSteamStopDetail => SteamStopDetail.Length > 0;
 
-    public string ConfirmSteamStopText => _forSisr ? "Weiter" : "Steam beenden und installieren";
+    public string ConfirmSteamStopText => _forSisr ? "Weiter" : StopsSteam ? "Steam beenden und installieren" : "Installieren";
 
     /// <summary>What the game prompt asks for, below the game's name.</summary>
     public string GamePromptText => _forSisr
@@ -361,13 +371,16 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <summary>Whether the action the prompts are open for closes Steam right now.</summary>
     private bool StopsSteam => _forSisr ? _support.Sisr.RemovalStopsSteam : _steamStopFix is { } fix && _support.StopsSteamFor(fix);
 
+    /// <summary>The action asks first: it closes Steam, or runs HidHide's installer, after which Arcadia restarts (#396).</summary>
+    private bool AsksFirst => StopsSteam || InstallsHidHide;
+
     /// <summary>
     /// The action closes Steam, so it can't run beside a Steam game; with Steam running it asks first, without it just
-    /// runs. Also "Erneut versuchen".
+    /// runs, unless HidHide's installer runs (it says that Arcadia restarts). Also "Erneut versuchen".
     /// </summary>
     private void ContinueSteamStop()
     {
-        if (!StopsSteam)
+        if (!AsksFirst)
         {
             // Steam was closed meanwhile (or never ran): nothing to ask, no game in the way.
             Run();
@@ -400,7 +413,10 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         }
     }
 
-    /// <summary>A driver fix that restarts the puck while Steam runs (#296) asks "Steam beenden?" (or names a running Steam game).</summary>
+    /// <summary>
+    /// A driver fix that restarts the puck while Steam runs (#296) asks "Steam beenden?" (or names a running Steam game);
+    /// one that runs HidHide's installer asks "HidHide installieren?", as Arcadia restarts after it (#396).
+    /// </summary>
     private void ApplyFix(HealthFix fix)
     {
         if (IsBusy)
@@ -408,7 +424,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             return;
         }
 
-        if (_support.StopsSteamFor(fix))
+        if (_support.StopsSteamFor(fix) || _support.InstallsHidHide(fix))
         {
             _steamStopFix = fix;
             _forSisr = false;
@@ -476,7 +492,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
                 RunningGame = game;
                 break;
             case SettingsPrompt.SteamGameRunning:
-                ShowPrompt(StopsSteam ? SettingsPrompt.ConfirmSteamStop : SettingsPrompt.None);
+                ShowPrompt(AsksFirst ? SettingsPrompt.ConfirmSteamStop : SettingsPrompt.None);
                 break;
             case SettingsPrompt.ConfirmSteamStop when game is not null:
                 RunningGame = game;

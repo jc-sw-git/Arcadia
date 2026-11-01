@@ -732,4 +732,75 @@ public sealed class TakenOverControllersTests
         Assert.Equal([DualSenseModel], _others.Connected.Select(model => model.Model));
         Assert.Equal(2, changes);
     }
+
+    /// <summary>#396: the 8BitDo on the owner's PC, hidden from an Arcadia HidHide didn't let through, gone for good.</summary>
+    [Fact]
+    [Trait("TestCase", "T396-2")]
+    public async Task A_controller_Arcadia_no_longer_reads_after_its_hide_ends_the_emulation_and_is_named()
+    {
+        _others.Feed([EightBitDo]);
+        var name = Assert.Single(_others.Connected).Name;
+        await _emulation.TickAsync();
+        Assert.Equal([$"1 {EightBitDoModel}"], _pan.ControllerHides);
+
+        // SDL reads again after the let-go, but HidHide shows this process nothing.
+        for (var tick = 0; tick < 4; tick++)
+        {
+            _time.Advance(TimeSpan.FromSeconds(2));
+            _others.Feed([]);
+            await _emulation.TickAsync();
+        }
+
+        Assert.Equal((PanEmulationState.Paused, PanEmulationProblem.NotVisibleToArcadia), (_emulation.Status.State, _emulation.Status.Problem));
+        Assert.Equal([name], _emulation.NotVisibleToArcadia);
+        Assert.Equal([1u], _pan.Stopped);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T396-2")]
+    public async Task A_controller_Arcadia_reads_again_after_its_hide_stays_taken_over_also_when_unplugged_later()
+    {
+        _others.Feed([EightBitDo]);
+        await _emulation.TickAsync();
+        _others.Feed([EightBitDo]);
+
+        // Unplugged by the player after it came back: no sign of a blind Arcadia.
+        for (var tick = 0; tick < 4; tick++)
+        {
+            _time.Advance(TimeSpan.FromSeconds(2));
+            _others.Feed([]);
+            await _emulation.TickAsync();
+        }
+
+        Assert.Empty(_emulation.NotVisibleToArcadia);
+        Assert.Empty(_others.NotVisibleSinceHide);
+        Assert.NotEqual(PanEmulationProblem.NotVisibleToArcadia, _emulation.Status.Problem);
+    }
+
+    /// <summary>
+    /// QE #396: Pan's hide takes ~2.5 s per model (pan-hiding.md). Three models hidden in one let-go: the first one's wait
+    /// starts before the other two hides, and the check right after the let-go comes before any read.
+    /// </summary>
+    [Fact]
+    [Trait("TestCase", "T396-2")]
+    public async Task Three_models_hidden_in_one_let_go_that_Arcadia_reads_again_right_after_it_keep_the_emulation_running()
+    {
+        var switchPro = Reading(4, KnownPads.SwitchPro with { Path = "hid-switchpro" });
+        _pan.DuringControllerHide = () => _time.Advance(TimeSpan.FromSeconds(2.5));
+        _others.Feed([DualSense, EightBitDo, switchPro]);
+        await _emulation.TickAsync();
+        Assert.Equal(3, _pan.ControllerHides.Count);
+
+        // Arcadia reads all three again at once after the let-go (as ~0.3 s after a hide on the owner's PC).
+        for (var tick = 0; tick < 3; tick++)
+        {
+            _others.Feed([DualSense, EightBitDo, switchPro]);
+            _time.Advance(TimeSpan.FromSeconds(2));
+            await _emulation.TickAsync();
+        }
+
+        Assert.Empty(_emulation.NotVisibleToArcadia);
+        Assert.NotEqual(PanEmulationProblem.NotVisibleToArcadia, _emulation.Status.Problem);
+        Assert.Empty(_pan.Stopped);
+    }
 }

@@ -53,6 +53,12 @@ restart: [pan-puck-restart.md](pan-puck-restart.md).
   change needed (only Steam's desktop trackpad pointer came back after one). While hidden the trackpad still moves the
   pointer (the controller's own mouse mode when no program drives it), so Arcadia opens the puck with SDL3 right when
   it hides.
+- An Arcadia that ran before HidHide was installed sees nothing Pan hides, though its path is on the allow list
+  (owner's PC, #396; derived from the logs, not from HidHide's source): SDL lost the puck and the 8BitDo after every
+  hide and `WindowsPuck.Present()` found nothing, while every Arcadia started later saw both again ~0.3 s after the
+  hide. No Windows restart is needed, only a new Arcadia. `CheckHiding` can't tell: it only checks the list. So the
+  emulation checks it itself (`PanEmulation.StillVisibleAsync`, `TakenOverControllers.NotVisibleSinceHide`), and
+  after a HidHide install Arcadia restarts before Pan hides anything (`ControllerSupportService.HoldsEmulation`).
 
 ## Showing again
 

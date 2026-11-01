@@ -132,6 +132,8 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             Enabled = () => settings.Current.PanEnabled && !controllerSupport.IsPanUpdateDue,
             SteamControllerPresent = () => hold.Connected is not null || padForPresence?.SteamControllerConnected == true,
             ReadSteamControllers = gamepad.ReadSteamControllers,
+            // A HidHide install runs, or Arcadia restarts after one: this process wouldn't see what Pan hides (#396).
+            HeldBack = () => controllerSupport.HoldsEmulation,
         };
         var routing = new SteamControllerRouting(
             activeGames,
@@ -208,6 +210,8 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     public IReadOnlyList<ControllerWaitingForTool> WaitingForTool => Others.WaitingForTool;
 
     public IReadOnlyList<ConnectedModel> ConnectedModels => Others.Connected;
+
+    public IReadOnlyList<string> NotVisibleToArcadia => Emulation.NotVisibleToArcadia;
 
     public bool SteamControllerConnected => Pad.SteamControllerConnected;
 

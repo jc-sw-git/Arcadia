@@ -116,6 +116,7 @@ What is needed only to implement an issue or finish a PR stays in that issue or 
 | On-screen keyboard | `docs/product/on-screen-keyboard.md` |
 | Mouse mode, "Zurück zu Arcadia", Steam's desktop layout | `docs/product/mouse-mode.md` |
 | Settings page, status messages | `docs/product/settings.md` |
+| Settings category "Controller": Pan's switch and rows, "Controller zuordnen", SISR | `docs/product/settings-controller.md` |
 | Launchers: activate and order, launcher page, first start | `docs/product/launchers.md` |
 | Running games, Arcadia back to the front | `docs/product/running-games.md` |
 | UI texts: wording, length, listing new texts in the PR | `docs/product/ui-texts.md` |

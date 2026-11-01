@@ -71,6 +71,7 @@ its file.
 | [369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md](369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md) | #369 | Show a failed scan instead of an empty launcher tab | 3 |
 | [373-decouple-steam-from-core-and-app.md](373-decouple-steam-from-core-and-app.md) | #373 | Decouple Steam from Core, ControllerSupport and App; validate launcher ids | 0 (refactoring) |
 | [374-split-controllersupportservice.md](374-split-controllersupportservice.md) | #374 | Split ControllerSupportService (SISR removal out) and share the composition root with the tests | 0 (refactoring) |
+| [396-pan-hides-controllers-arcadia-cant-see.md](396-pan-hides-controllers-arcadia-cant-see.md) | #396 | Pan hides controllers Arcadia itself can no longer see | 3 |
 
 ## Exploratory test
 
@@ -110,3 +111,4 @@ Charter: –. Time box: –. Findings: –.
 | T238-1, T238-3 to T238-7, T238-12 (fakes) | `tests/Arcadia.App.Tests/EveryControllerForGamesTests.cs`, `tests/Arcadia.Core.Tests/TakenOverControllersTests.cs` |
 | T366-1 | `tests/Arcadia.App.Tests/SteamControllerXboxPadTests.cs`, `tests/Arcadia.Core.Tests/ControllerSupportServiceTests.cs` |
 | T369-1 to T369-3 | `tests/Arcadia.App.Tests/ScanFailureTests.cs` |
+| T396-1 to T396-3 (fakes) | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `EmulationSetupTests.cs`, `tests/Arcadia.Core.Tests/PanEmulationTests.cs`, `TakenOverControllersTests.cs` |

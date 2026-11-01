@@ -42,6 +42,9 @@ public interface IPanEmulationView
 
     /// <summary>The Steam Controller is connected: "Controller zuordnen" lists it, locked (#238 D3a).</summary>
     bool SteamControllerConnected => false;
+
+    /// <summary>The controllers Arcadia saw before Pan hid them and no longer sees since (#396), by name.</summary>
+    IReadOnlyList<string> NotVisibleToArcadia => [];
 }
 
 /// <summary>No emulation (tests that don't need one): always off.</summary>
@@ -370,6 +373,13 @@ public sealed class PanRows
             }
         }
 
+        if (_support.HoldsEmulation == ControllerSupportService.RestartPendingText && _support.RestartArcadia is { } restart && ids.Add("pan:restart-pending"))
+        {
+            // Normally gone at once with the restart; it stays only when that failed (its toast), so the player can try again.
+            rows.Add(Row("pan:restart-pending", RestartPendingTitle, RestartPendingSubtitle, HealthSeverity.Info, RestartPendingInfo,
+                RestartText, () => restart("„Arcadia neu starten“ nach der HidHide-Installation")));
+        }
+
         // Only while the emulation runs: otherwise every controller reaches games directly anyway, and the rows above say why.
         if (status.State == PanEmulationState.Running)
         {
@@ -425,6 +435,9 @@ public sealed class PanRows
                     "Die Emulation ist mehrmals kurz hintereinander ausgefallen. Damit Spiele nicht ständig Controller verlieren und wiederbekommen, wartet Arcadia jetzt auf dich. „Erneut versuchen“ startet sie neu. Hilft das nicht, „Controller wiederherstellen“.",
                     RetryText, _pan.Retry));
                 break;
+            case PanEmulationProblem.NotVisibleToArcadia:
+                yield return ("pan:not-visible", NotVisibleRow());
+                break;
             case PanEmulationProblem.CleaningUp:
                 yield return ("pan:cleaning-up", Row("pan:cleaning-up", "Pan räumt noch auf", "Gleich geht es von selbst weiter", HealthSeverity.Info,
                     "Pan gibt gerade nach dem letzten Ende der Emulation die echten Controller zurück. Danach richtet Arcadia die Emulation von selbst neu ein; das dauert wenige Sekunden.",
@@ -474,6 +487,34 @@ public sealed class PanRows
         ];
         return row;
     }
+
+    /// <summary>
+    /// Controllers Arcadia saw before Pan hid them and no longer sees since (#396): Pan shows them again, and only a
+    /// restart of Arcadia brings the emulation back. A warning, as the player can act on it (owner, 2026-11-01).
+    /// </summary>
+    private ActionRowViewModel NotVisibleRow()
+    {
+        var restart = _support.RestartArcadia;
+        var row = Row("pan:not-visible", NotVisibleTitle, NotVisibleSubtitle, HealthSeverity.Warning, NotVisibleText,
+            restart is null ? null : RestartText, restart is null ? null : () => restart(RestartReason));
+        row.Info =
+        [
+            .. row.Info,
+            new InfoSection("NICHT MEHR SICHTBAR FÜR ARCADIA", [.. _pan.NotVisibleToArcadia.Select(name => new InfoText(name))]),
+            new InfoText(NotVisibleAgainText),
+        ];
+        return row;
+    }
+
+    public const string NotVisibleTitle = "Arcadia sieht deine Controller nicht mehr";
+    public const string NotVisibleSubtitle = "Pan hat sie wieder freigegeben. Ein Neustart von Arcadia behebt das";
+    public const string NotVisibleText = "Pan hat diese Controller vor anderen Programmen versteckt. Arcadia selbst müsste sie danach weiter sehen, um sie für Steam und Spiele zu kopieren, sieht sie aber seit dem Verstecken nicht mehr. Das passiert, wenn HidHide installiert wurde, während Arcadia lief. Pan hat die Controller deshalb wieder freigegeben: Steam und Spiele sehen sie direkt. Bis Arcadia neu gestartet ist, versteckt Pan nichts mehr.";
+    public const string NotVisibleAgainText = "Kommt diese Meldung nach dem Neustart von Arcadia wieder, starte Windows neu.";
+    public const string RestartText = "Arcadia neu starten";
+    public const string RestartPendingTitle = "Arcadia startet nach der HidHide-Installation neu";
+    public const string RestartPendingSubtitle = "Bis dahin versteckt Pan keine Controller";
+    public const string RestartPendingInfo = "Erst ein neu gestartetes Arcadia sieht die Controller, die Pan vor anderen Programmen versteckt. Startet Arcadia nicht von selbst neu, starte es hier neu.";
+    private const string RestartReason = "„Arcadia neu starten“: Arcadia sieht die versteckten Controller nicht";
 
     /// <summary>Why Pan didn't hide a controller, in the player's words (#335's findings A1–A3).</summary>
     private static string NotHiddenReason(PanReason reason) => reason switch

@@ -24,7 +24,7 @@
   show).
 - An active launcher no longer found is a warning; one without games is information (blue i in its row and note, no
   symbol on the category's tab). "Steam Controller Kompatibilität" has a lamp beside its name while
-  on (colours: `docs/product/settings.md`).
+  on (colours: `docs/product/settings-controller.md`).
 - A status message row shows one short line below its title (`HealthIssue.Summary`), the whole text in the info panel;
   descriptions below a row name stay at one, at most two lines. A row's action is a pill as wide as the value chips,
   filled with the accent while focused.

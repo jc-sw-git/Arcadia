@@ -28,6 +28,14 @@ public sealed class EmulationSetupTests
 
     private const string ProblemText = "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.";
 
+    /// <summary>HidHide's installer runs: the settings say first that Arcadia restarts afterwards (#396); [A] goes on.</summary>
+    private static void ConfirmHidHideInstall(ArcadiaDriver arcadia, ControllerSettingsViewModel controller)
+    {
+        Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);
+        Assert.Equal(ControllerSettingsViewModel.HidHideInstallTitle, controller.SteamStopTitle);
+        arcadia.Press(UiAction.Accept);
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T243-32")]
     public async Task A_missing_HidHide_greys_out_the_switch_and_its_row_installs_it()
@@ -50,12 +58,84 @@ public sealed class EmulationSetupTests
         Assert.Equal("Versteckt die echten Controller vor anderen Programmen", hidHide.Subtitle);
 
         hidHide.Activate();
+        ConfirmHidHideInstall(arcadia, controller);
         await arcadia.WaitUntilAsync(() => controller.Rows.All(row => row.Key != "issue:hidhide-missing"), "die Meldung verschwindet");
 
         Assert.Equal(1, steam.DriverInstalls);
         Assert.Equal(HidHideRelease.Version, steam.HidHideVersion);
         Assert.NotEqual(ProblemText, Switch(controller).Subtitle);
         Assert.Null(controller.Marker);
+    }
+
+    /// <summary>#396: HidHide doesn't let an Arcadia that ran before its install see what Pan hides.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T396-3")]
+    public async Task Before_HidHide_is_installed_the_settings_say_Arcadia_restarts_and_after_it_Arcadia_restarts_before_Pan_hides()
+    {
+        var steam = new FakeSteam { HidHideVersion = null };
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Meldung „HidHide fehlt“");
+        var hidHide = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing"));
+
+        // Also without Steam running, the question comes first; [B] installs nothing.
+        hidHide.Activate();
+        Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);
+        Assert.Equal(ControllerSettingsViewModel.HidHideInstallTitle, controller.SteamStopTitle);
+        Assert.Equal(ControllerSettingsViewModel.HidHideRestartText, controller.SteamStopText);
+        Assert.DoesNotContain("Steam beendet", controller.SteamStopDetail, StringComparison.Ordinal);
+        Assert.Equal("Installieren", controller.ConfirmSteamStopText);
+        Assert.True(controller.ConfirmSteamStopItem.IsFocused);
+        arcadia.Press(UiAction.Back);
+        Assert.Equal(SettingsPrompt.None, controller.Prompt);
+        arcadia.Wait(TimeSpan.FromSeconds(1));
+        Assert.Equal(0, steam.DriverInstalls);
+        Assert.Empty(arcadia.Restarts);
+
+        // [A] installs; HidHide came, so Arcadia restarts, and Pan hides nothing until then.
+        hidHide.Activate();
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => steam.DriverInstalls == 1 && arcadia.ControllerSupport.BusyText is null, "installiert");
+        await arcadia.WaitUntilAsync(() => arcadia.Restarts.Count == 1, "der Neustart von Arcadia");
+        Assert.Equal(ControllerSupportService.RestartPendingText, arcadia.ControllerSupport.HoldsEmulation);
+
+        // Until the restart, Pan hides nothing (here the restart is only counted, as if it had failed).
+        arcadia.SteamControllerCopy.CanCopy = true;
+        arcadia.SteamControllerCopy.PuckPresent = true;
+        arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.StartControllers();
+        for (var tick = 0; tick < 3; tick++)
+        {
+            arcadia.Time.Advance(TimeSpan.FromSeconds(10));
+            await arcadia.TickSteamControllerAsync();
+        }
+
+        Assert.Empty(arcadia.Pan.Hidden);
+        Assert.Equal(ControllerSupportService.RestartPendingText, arcadia.ForGames.Status.Reason);
+
+        // A restart that didn't happen can be asked for again from its row.
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "pan:restart-pending"), "die Zeile „Arcadia startet nach der HidHide-Installation neu“");
+        var pending = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "pan:restart-pending"));
+        Assert.Equal(PanRows.RestartText, pending.ActionText);
+        pending.Activate();
+        Assert.Equal(2, arcadia.Restarts.Count);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T396-3")]
+    public async Task An_install_without_HidHide_s_installer_asks_nothing_and_needs_no_restart()
+    {
+        var steam = new FakeSteam { IsPanReady = false };
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Wächterdienst Pan fehlt“");
+
+        Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-missing")).Activate();
+        Assert.Equal(SettingsPrompt.None, controller.Prompt);
+        await arcadia.WaitUntilAsync(() => steam.DriverInstalls == 1 && arcadia.ControllerSupport.BusyText is null, "Pan installiert");
+
+        Assert.Empty(arcadia.Restarts);
+        Assert.Null(arcadia.ControllerSupport.HoldsEmulation);
     }
 
     [AvaloniaFact]
@@ -70,8 +150,11 @@ public sealed class EmulationSetupTests
         Assert.Contains(controller.Rows, row => row.Key == "issue:hidhide-missing");
 
         Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-missing")).Activate();
+        ConfirmHidHideInstall(arcadia, controller);
         await arcadia.WaitUntilAsync(() => controller.Rows.OfType<ActionRowViewModel>().Any(row => row.HasProblem), "der Fehler an einer Zeile");
 
+        // No HidHide came, so Arcadia doesn't restart.
+        Assert.Empty(arcadia.Restarts);
         // One prompt; Pan came, HidHide didn't: its row stays and carries the error, nothing else does.
         Assert.Equal(1, steam.DriverInstalls);
         Assert.DoesNotContain(controller.Rows, row => row.Key == "issue:pan-missing");
@@ -102,6 +185,7 @@ public sealed class EmulationSetupTests
         Assert.Equal(HealthSeverity.Warning, controller.Marker);
 
         pan.Activate();
+        ConfirmHidHideInstall(arcadia, controller);
         await arcadia.WaitUntilAsync(() => Switch(controller).IsSwitch, "eingerichtet");
 
         Assert.Equal(1, steam.DriverInstalls);
@@ -122,6 +206,7 @@ public sealed class EmulationSetupTests
         await arcadia.WaitUntilAsync(() => Switch(controller).IsInstall, "„Treiber installieren“ an der Einstellung");
 
         Switch(controller).Activate();
+        ConfirmHidHideInstall(arcadia, controller);
         await arcadia.WaitUntilAsync(() => controller.Rows.OfType<ActionRowViewModel>().Any(row => row.HasProblem), "der Fehler an einer Zeile");
 
         // VIIPER needs no Windows prompt and came before it: the rest is three parts with one error, at the first.
@@ -151,6 +236,7 @@ public sealed class EmulationSetupTests
         Assert.Contains("Installiert ist ein älteres HidHide (Treiber 1.2.93), Arcadia braucht HidHide 1.5.230 oder neuer.", row.Info.OfType<InfoText>().Single().Text);
 
         row.Activate();
+        ConfirmHidHideInstall(arcadia, controller);
         await arcadia.WaitUntilAsync(() => controller.Rows.All(r => r.Key != "issue:hidhide-unsupported"), "die Meldung verschwindet");
         Assert.Equal(1, steam.DriverInstalls);
         Assert.Equal(HidHideRelease.Version, steam.HidHideVersion);
@@ -274,6 +360,7 @@ public sealed class EmulationSetupTests
         Assert.Equal("Neu installieren", row.ActionText);
 
         row.Activate();
+        ConfirmHidHideInstall(arcadia, controller);
         await arcadia.WaitUntilAsync(() => steam.HidHideReinstalls == 1, "HidHide wird neu installiert");
         await arcadia.TickControllerSupportAsync();
         await arcadia.WaitUntilAsync(() => controller.Rows.All(r => r.Key != "issue:hidhide-interface"), "die Meldung verschwindet");
@@ -295,7 +382,7 @@ public sealed class EmulationSetupTests
 
         Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-interface")).Activate();
         Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);
-        Assert.StartsWith("Die Neuinstallation von HidHide startet den Puck", controller.SteamStopDetail, StringComparison.Ordinal);
+        Assert.Contains("Die Neuinstallation von HidHide startet den Puck", controller.SteamStopDetail, StringComparison.Ordinal);
         Assert.True(controller.ConfirmSteamStopItem.IsFocused);
 
         arcadia.Press(UiAction.Accept);
@@ -320,7 +407,7 @@ public sealed class EmulationSetupTests
         // [B] cancels: nothing is installed, Steam keeps running.
         hidHide.Activate();
         Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);
-        Assert.StartsWith("Die Treiber-Installation startet den Puck", controller.SteamStopDetail, StringComparison.Ordinal);
+        Assert.Contains("Die Treiber-Installation startet den Puck", controller.SteamStopDetail, StringComparison.Ordinal);
         arcadia.Press(UiAction.Back);
         Assert.Equal(SettingsPrompt.None, controller.Prompt);
         Assert.True(arcadia.Main.IsSettingsOpen);
@@ -388,7 +475,7 @@ public sealed class EmulationSetupTests
 
         steam.SteamGame = null;
         await arcadia.WaitUntilAsync(() => controller.Prompt == SettingsPrompt.ConfirmSteamStop, "„Steam beenden?“ nach dem Spielende");
-        Assert.StartsWith("Die Treiber-Installation startet den Puck", controller.SteamStopDetail, StringComparison.Ordinal);
+        Assert.Contains("Die Treiber-Installation startet den Puck", controller.SteamStopDetail, StringComparison.Ordinal);
         Assert.True(controller.ConfirmSteamStopItem.IsFocused);
         Assert.Equal((0, 0), (steam.DriverInstalls, steam.SteamStops));
 

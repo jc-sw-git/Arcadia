@@ -75,5 +75,5 @@ No bricked Steam Controllers under any circumstances: an allow list, everything 
   housekeeping: answered, never passed on (`SteamReportKind.Housekeeping`). Other CDC requests (a break, an
   encapsulated command), vendor and unknown control requests are refused.
 
-The settings rows, the greyed mode and the dialogs: `docs/product/settings.md`, `docs/product/controls.md`. Off
+The settings rows, the greyed mode and the dialogs: `docs/product/settings-controller.md`, `docs/product/controls.md`. Off
 Windows the emulation's state is `Unsupported`: nothing is emulated and the mode doesn't show.

@@ -585,4 +585,62 @@ public sealed class PanEmulationTests
         Assert.Null(arcadia.Main.FirmwareAttempt);
         Assert.Equal(0, shown);
     }
+
+    /// <summary>
+    /// #396, the owner's PC on 2026-11-01: HidHide installed while Arcadia ran, so this Arcadia sees nothing Pan hides.
+    /// Before, the emulation said it ran, with the Steam Controller hidden and no copy, for hours.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T396-1")]
+    public async Task Controllers_Arcadia_no_longer_sees_after_the_hide_are_shown_again_with_a_warning_that_restarts_Arcadia()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        arcadia.SteamControllerCopy.CanCopy = true;
+        arcadia.SteamControllerCopy.PuckPresent = true;
+        arcadia.Pan.HideWait = _ =>
+        {
+            arcadia.SteamControllerCopy.PuckPresent = false;
+            return Task.CompletedTask;
+        };
+        arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.StartControllers();
+        await arcadia.TickSteamControllerAsync();
+        Assert.Single(arcadia.Pan.Hidden);
+        Assert.Equal(0, arcadia.SteamControllerCopy.Attached);
+
+        for (var tick = 0; tick < 4; tick++)
+        {
+            arcadia.Time.Advance(TimeSpan.FromSeconds(2));
+            await arcadia.TickSteamControllerAsync();
+        }
+
+        Assert.Equal((PanEmulationState.Paused, PanEmulationProblem.NotVisibleToArcadia), (arcadia.ForGames.Status.State, arcadia.ForGames.Status.Problem));
+        Assert.Equal([1u], arcadia.Pan.Unhidden);
+        Assert.Equal(PanEmulation.NotVisibleText, arcadia.Main.Toast.Text);
+
+        var controller = OpenControllerSettings(arcadia);
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "pan:not-visible"), "die Warnung „Arcadia sieht deine Controller nicht mehr“");
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "pan:not-visible"));
+        Assert.Equal(PanRows.NotVisibleTitle, row.Title);
+        Assert.Equal(PanRows.NotVisibleSubtitle, row.Subtitle);
+        Assert.Equal(HealthSeverity.Warning, row.Severity);
+        Assert.Equal(PanRows.RestartText, row.ActionText);
+        var listed = Assert.Single(row.Info.OfType<InfoSection>(), section => section.Title == "NICHT MEHR SICHTBAR FÜR ARCADIA");
+        Assert.Equal([PanEmulation.SteamControllerName], listed.Blocks.OfType<InfoText>().Select(item => item.Text));
+        Assert.Contains(row.Info.OfType<InfoText>(), text => text.Text == PanRows.NotVisibleAgainText);
+        Assert.True(Switch(controller).IsLampProblem);
+        Assert.Equal(HealthSeverity.Warning, controller.Marker);
+
+        row.Activate();
+        await arcadia.WaitUntilAsync(() => arcadia.Restarts.Count == 1, "der Neustart von Arcadia");
+
+        // Until the restart nothing is hidden again: a new emulation would be just as blind.
+        for (var tick = 0; tick < 3; tick++)
+        {
+            arcadia.Time.Advance(TimeSpan.FromSeconds(10));
+            await arcadia.TickSteamControllerAsync();
+        }
+
+        Assert.Single(arcadia.Pan.Hidden);
+    }
 }

@@ -321,6 +321,20 @@ public sealed class HidingTests : IDisposable
     }
 
     [Fact]
+    public async Task A_second_hide_that_no_longer_sees_the_first_ones_instance_still_expects_it_hidden()
+    {
+        // The puck enumerated anew between two hides; what the first hid stays in HidHide and is still checked.
+        var generation = await HiddenAsync();
+        _devices.Present = [FakeDevices.Dongle];
+        Assert.Equal(PanReply.Hidden, (await Send(PanCommand.Hide, generation)).Reply);
+        Assert.Equal(PanReason.None, (await Send(PanCommand.CheckHiding, generation)).Reason);
+
+        _hidHide.Hidden.Remove(FakeDevices.Slot2);
+
+        Assert.Equal(PanReason.HidingLost, (await Send(PanCommand.CheckHiding, generation)).Reason);
+    }
+
+    [Fact]
     public async Task A_second_hide_in_the_same_emulation_adds_to_what_the_check_expects_hidden()
     {
         var generation = await HiddenAsync();

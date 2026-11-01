@@ -122,7 +122,7 @@ public sealed class DataFolderTrustTests : IDisposable
     }
 
     /// <summary>The shape <see cref="ServiceSetup.SecureDataDirectory"/> gives the data folders, with <paramref name="usersRights"/> for Users.</summary>
-    private string Folder(string name, FileSystemRights usersRights = FileSystemRights.ReadAndExecute)
+    private string Folder(string name, FileSystemRights usersRights = FileSystemRights.ReadAndExecute, SecurityIdentifier? owner = null)
     {
         var path = Path.Combine(_root, name);
         var security = new DirectorySecurity();
@@ -131,7 +131,7 @@ public sealed class DataFolderTrustTests : IDisposable
         security.AddAccessRule(new FileSystemAccessRule(LocalSystem, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
         security.AddAccessRule(new FileSystemAccessRule(Administrators, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
         security.AddAccessRule(new FileSystemAccessRule(Users, usersRights, inherit, PropagationFlags.None, AccessControlType.Allow));
-        security.SetOwner(Administrators);
+        security.SetOwner(owner ?? Administrators);
         new DirectoryInfo(path).Create(security);
         return path;
     }
@@ -140,6 +140,17 @@ public sealed class DataFolderTrustTests : IDisposable
     public void An_admin_owned_folder_with_its_own_rules_that_users_may_only_read_is_ours()
     {
         Assert.True(ServiceSetup.IsOurs(Folder("ours"), out var problem), problem);
+    }
+
+    [WindowsAdminFact]
+    public void A_folder_owned_by_a_user_is_not_ours_even_with_the_right_rules()
+    {
+        // Its owner may rewrite the rules at any time: a folder somebody created before Pan must not be trusted.
+        using var identity = WindowsIdentity.GetCurrent();
+        var user = identity.User!;
+
+        Assert.False(ServiceSetup.IsOurs(Folder("user-owned", owner: user), out var problem));
+        Assert.Equal($"is owned by {user}", problem);
     }
 
     [WindowsAdminFact]

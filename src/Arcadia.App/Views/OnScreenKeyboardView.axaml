@@ -40,15 +40,14 @@
               <!-- Backspace, tab, shift, space, AltGr, the right block and the arrows: symbol or icon at the left edge, the name in
                    the middle, the button at the right edge (owner, 2026-10-22). -->
               <ctl:CentredDockPanel IsVisible="{Binding IsLabelled}" Spacing="8" Margin="12,0,10,3">
-                <Border DockPanel.Dock="Right" Classes="glyph small" Classes.round="{Binding IsRoundGlyph}" VerticalAlignment="Center">
-                  <Border.IsVisible>
+                <ctl:PadGlyph DockPanel.Dock="Right" Classes="small" Button="{Binding Glyph}" VerticalAlignment="Center">
+                  <ctl:PadGlyph.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
                       <Binding Path="HasGlyph" />
                       <Binding Path="$parent[UserControl].((kb:OnScreenKeyboardViewModel)DataContext)?.UsesController" TargetNullValue="False" />
                     </MultiBinding>
-                  </Border.IsVisible>
-                  <TextBlock Text="{Binding Glyph}" />
-                </Border>
+                  </ctl:PadGlyph.IsVisible>
+                </ctl:PadGlyph>
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
                   <Path Classes="keyIcon" IsVisible="{Binding IsLayoutKey}" Width="22" Height="22" Stretch="Uniform" StrokeThickness="1.8" VerticalAlignment="Center"
                         Data="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M3 12h18 M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9 M12 3C9.5 5.7 8.4 8.7 8.4 12s1.1 6.3 3.6 9" />
@@ -84,10 +83,8 @@
                   <TextBlock DockPanel.Dock="Left" Classes="keySymbol" Text="{Binding Symbol}" VerticalAlignment="Center" />
                   <TextBlock Classes="keyText" Text="{Binding Text}" VerticalAlignment="Center" />
                 </ctl:CentredDockPanel>
-                <Border Classes="glyph small" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,13"
-                        IsVisible="{Binding $parent[UserControl].((kb:OnScreenKeyboardViewModel)DataContext)?.UsesController, TargetNullValue=False}">
-                  <TextBlock Text="{Binding Glyph}" />
-                </Border>
+                <ctl:PadGlyph Classes="small" Button="{Binding Glyph}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,13"
+                        IsVisible="{Binding $parent[UserControl].((kb:OnScreenKeyboardViewModel)DataContext)?.UsesController, TargetNullValue=False}" />
               </Panel>
             </Panel>
           </Button>

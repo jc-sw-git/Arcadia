@@ -1,6 +1,9 @@
 using System.ComponentModel;
 using System.Net;
 using Arcadia.ControllerSupport;
+using Arcadia.Tests.Sisr;
+using Arcadia.Pan;
+using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers.Steam;
@@ -9,23 +12,23 @@ using Microsoft.Extensions.Time.Testing;
 namespace Arcadia.Core.Tests;
 
 /// <summary>
-/// Start, stop, pause and the periodic check of SISR, against a fake SISR process, a fake SISR API
-/// and fake time: whatever runs in parallel, SISR never runs while the support is off or paused.
+/// The controller emulation's parts (usbip-win2, VIIPER, Pan, HidHide), their fixes with Steam closed when they restart
+/// the puck, Pan's update and removal, and SISR's group (#214), against a fake platform and fake time.
 /// </summary>
 public sealed class ControllerSupportServiceTests : IDisposable
 {
     private readonly FakeTimeProvider _time = new();
-    private readonly FakeSisr _sisr;
-    private readonly FakeSisrApi _api = new();
     private readonly FakePlatform _platform = new();
     private readonly List<string> _log = [];
     private readonly string _directory = Directory.CreateTempSubdirectory("arcadia-sisr-").FullName;
     private readonly HttpClient _http;
 
+    // The built-in launchers as the registry knows them: Steam's games use Steam Input, Epic's don't.
+    private static readonly LauncherRegistry Registered = FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Steam), new FakeIntegration(KnownLaunchers.Epic));
+
     public ControllerSupportServiceTests()
     {
-        _http = new HttpClient(_api);
-        _sisr = new FakeSisr(_http);
+        _http = new HttpClient(new NoNetwork());
     }
 
     public void Dispose()
@@ -34,11 +37,14 @@ public sealed class ControllerSupportServiceTests : IDisposable
         Directory.Delete(_directory, recursive: true);
     }
 
-    private ControllerSupportService Create(bool enabled = true)
+    private ControllerSupportService Create(IViiperInstallation? viiper = null, SisrInstallation? sisr = null, AppSettings? settings = null)
     {
         var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
-        store.Save(new AppSettings { SteamControllerSupport = enabled });
-        return new ControllerSupportService(new SettingsService(store), _sisr, _http, _time, _platform) { Log = Log };
+        store.Save(settings ?? new AppSettings());
+        return new ControllerSupportService(new SettingsService(store), _http, _time, _platform)
+        {
+            Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper, Sisr = sisr,
+        };
     }
 
     private void Log(string line)
@@ -46,14 +52,6 @@ public sealed class ControllerSupportServiceTests : IDisposable
         lock (_log)
         {
             _log.Add(line);
-        }
-    }
-
-    private void AssertNoUnexpectedTransition()
-    {
-        lock (_log)
-        {
-            Assert.DoesNotContain(_log, line => line.Contains("unerwarteter Zustandswechsel"));
         }
     }
 
@@ -84,999 +82,25 @@ public sealed class ControllerSupportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_tick_starts_a_stopped_SISR()
-    {
-        var service = Create();
-
-        await service.TickAsync();
-
-        Assert.Equal(1, _sisr.Starts);
-        Assert.Equal(SisrState.Starting, service.State);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task Switching_on_with_Steam_closed_starts_Steam_before_SISR()
-    {
-        var service = Create(enabled: false);
-        _platform.IsSteamRunning = false;
-
-        Assert.True(await service.SetEnabledAsync(true));
-
-        Assert.Equal(1, _platform.SteamStarts);
-        Assert.Equal(1, _sisr.Starts);
-        Assert.True(service.Enabled);
-    }
-
-    [Fact]
-    public async Task If_Steam_does_not_start_within_a_minute_the_setting_is_off_again()
-    {
-        var service = Create(enabled: false);
-        _platform.IsSteamRunning = false;
-        _platform.SteamWontStart = true;
-
-        var on = service.SetEnabledAsync(true);
-        await AdvanceUntil(() => on.IsCompleted);
-
-        Assert.False(await on);
-        Assert.False(service.Enabled);
-        Assert.Equal(0, _sisr.Starts);
-        Assert.Equal(SisrState.Off, service.State);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task Without_Steam_a_tick_neither_starts_SISR_nor_counts_a_crash()
-    {
-        var service = Create();
-        _platform.IsSteamRunning = false;
-
-        for (var i = 0; i < ControllerSupportService.MaxRestartsPerWindow + 1; i++)
-        {
-            await service.TickAsync();
-        }
-
-        Assert.Equal(0, _sisr.Starts);
-        Assert.Equal(0, _platform.SteamStarts);
-        Assert.Equal(SisrState.Stopped, service.State);
-
-        _platform.IsSteamRunning = true;
-        await service.TickAsync();
-        Assert.Equal(1, _sisr.Starts);
-    }
-
-    [Fact]
-    public async Task Closing_Steam_stops_SISR_and_switching_off_then_leaves_Steam_closed()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        Assert.Equal(SisrState.Running, service.State);
-
-        _platform.IsSteamRunning = false;
-        await service.WatchAsync();
-        Assert.False(_sisr.Running);
-        Assert.Equal(1, _sisr.Kills);
-        Assert.Equal(0, _sisr.Stops);
-        Assert.Equal(SisrState.Stopped, service.State);
-
-        await service.SetEnabledAsync(false);
-
-        Assert.Equal(0, _platform.SteamStarts);
-        Assert.Equal(0, _platform.LayoutResets);
-        Assert.Equal(SisrState.Off, service.State);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task After_SISR_is_killed_leftover_VIIPER_processes_and_devices_are_cleaned_up_and_logged()
-    {
-        var log = new List<string>();
-        var service = Create();
-        service.Log = log.Add;
-        _sisr.Running = true;
-        await service.TickAsync();
-
-        _sisr.ViiperLeftovers = 1;
-        _platform.IsSteamRunning = false;
-        await service.WatchAsync();
-
-        Assert.Equal(1, _sisr.ViiperCleanUps);
-        Assert.Contains(log, line => line.Contains("1 übrig gebliebene VIIPER", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public async Task Stopping_SISR_in_the_background_counts_as_settling()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        Assert.False(service.IsSettling);
-
-        var settlingWhileStopping = false;
-        service.Changed += (_, _) => settlingWhileStopping |= service.State == SisrState.Stopping && service.IsSettling;
-        _platform.IsSteamRunning = false;
-        await service.WatchAsync();
-
-        Assert.True(settlingWhileStopping);
-        Assert.False(service.IsSettling);
-    }
-
-    [Fact]
-    public async Task A_Steam_that_hangs_before_its_login_completes_does_not_lock_the_settings()
-    {
-        var service = Create();
-        _platform.SteamLoginHangs = true;
-
-        await service.TickAsync();
-
-        Assert.Equal(0, _sisr.Starts);
-        Assert.False(service.IsSettling);
-    }
-
-    [Fact]
-    public async Task Switching_off_also_cleans_up_VIIPER()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-
-        await service.SetEnabledAsync(false);
-
-        Assert.Equal(1, _sisr.Stops);
-        Assert.Equal(1, _sisr.ViiperCleanUps);
-    }
-
-    [Fact]
-    public async Task While_Steam_shuts_down_SISR_is_killed_so_its_cleanup_cannot_restart_Steam()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-
-        _platform.SteamNotReady = true;
-        await service.WatchAsync();
-
-        Assert.Equal(1, _sisr.Kills);
-        Assert.Equal(0, _sisr.Stops);
-        Assert.Equal(SisrState.Stopped, service.State);
-    }
-
-    [Fact]
-    public async Task SISR_held_for_Steam_starts_again_with_Steam_even_after_earlier_crashes()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-
-        // Use up the crash budget.
-        for (var i = 0; i < ControllerSupportService.MaxRestartsPerWindow; i++)
-        {
-            _sisr.Running = false;
-            await service.TickAsync();
-            _sisr.Running = true;
-        }
-
-        _platform.IsSteamRunning = false;
-        await service.WatchAsync();
-        _platform.IsSteamRunning = true;
-        var starts = _sisr.Starts;
-        await service.TickAsync();
-
-        Assert.Equal(starts + 1, _sisr.Starts);
-        Assert.NotEqual(SisrState.Failed, service.State);
-    }
-
-    [Fact]
-    public async Task Install_adds_the_marker_while_Steam_is_closed_and_SISR_skips_its_setup()
-    {
-        var service = Create(enabled: false);
-        _sisr.Installed = false;
-
-        await service.InstallAsync();
-
-        Assert.Equal(1, _platform.MarkerChecks);
-        Assert.Contains(_log, line => line.Contains("„SISR Marker“ vorhanden"));
-        Assert.True(_sisr.SetupMarkedDone);
-    }
-
-    [Fact]
-    public async Task Without_its_marker_SISR_is_not_started_and_the_fix_installs_it()
-    {
-        var service = Create();
-        _platform.MarkerPresent = false;
-
-        await service.TickAsync();
-
-        Assert.Equal(0, _sisr.Starts);
-        Assert.Contains(service.Issues, i => i.Fix == HealthFix.CreateMarker);
-
-        // The settings ask before Steam closes, then call the install.
-        await Assert.ThrowsAsync<ArgumentException>(() => service.ApplyFixAsync(HealthFix.CreateMarker));
-        await service.InstallAsync();
-
-        Assert.True(_platform.MarkerPresent);
-        Assert.Equal(1, _platform.SteamStops);
-        Assert.Equal(1, _platform.SteamStarts);
-        Assert.Equal(1, _sisr.Starts);
-    }
-
-    [Fact]
-    public void A_missing_marker_means_SISR_still_needs_installing()
-    {
-        var service = Create(enabled: false);
-        _platform.MarkerPresent = false;
-
-        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
-    }
-
-    [Fact]
-    public async Task The_controller_counts_as_connected_only_while_SISR_emulates_it()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        Assert.True(service.SteamControllerConnected);
-
-        // Only the dongle is left: SISR emulates nothing.
-        _api.Controllers = 0;
-        await service.WatchAsync();
-        Assert.Equal(SisrState.NoController, service.State);
-        Assert.False(service.SteamControllerConnected);
-
-        _api.Controllers = 1;
-        await service.TickAsync();
-        Assert.True(service.SteamControllerConnected);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task Overlapping_ticks_start_SISR_at_most_once()
-    {
-        var service = Create();
-        _sisr.StartLeavesItStopped = true;
-        _sisr.ReleaseLookupGate = new TaskCompletionSource();
-
-        var first = service.TickAsync();
-        var second = service.TickAsync();
-        Assert.True(second.IsCompleted);
-        _sisr.ReleaseLookupGate.SetResult();
-        await first;
-
-        Assert.Equal(1, _sisr.Starts);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task Switching_off_during_a_tick_keeps_SISR_off()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        Assert.Equal(SisrState.Running, service.State);
-
-        // The tick waits for SISR's API; meanwhile the user switches off. The API then doesn't
-        // answer, so the tick would restart SISR to take it over.
-        _api.Gate = new TaskCompletionSource();
-        var tick = service.TickAsync();
-        var off = service.SetEnabledAsync(false);
-        _api.Reachable = false;
-        _api.Gate.SetResult();
-        _api.Gate = null;
-        await Task.WhenAll(tick, off);
-
-        Assert.False(_sisr.Running);
-        Assert.Equal(1, _sisr.Stops);
-        Assert.Equal(0, _sisr.Starts);
-        Assert.Equal(SisrState.Off, service.State);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task SISR_stays_stopped_while_a_game_has_it_paused()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        var game = SteamGame();
-        _platform.RunningDirectories.Add(game.InstallDirectory!);
-
-        await service.BeginGameAsync(game);
-        await service.TickAsync();
-
-        Assert.False(_sisr.Running);
-        Assert.Equal(0, _sisr.Starts);
-        Assert.Equal(SisrState.Paused, service.State);
-        Assert.Equal([game.InstallDirectory!], service.PausedFor);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task The_controller_still_counts_as_connected_while_SISR_is_paused_for_a_game()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        Assert.Equal(SisrState.Running, service.State);
-
-        var game = SteamGame();
-        _platform.RunningDirectories.Add(game.InstallDirectory!);
-        await service.BeginGameAsync(game);
-        Assert.Equal(SisrState.Paused, service.State);
-        Assert.True(service.SteamControllerConnected);
-
-        _platform.RunningDirectories.Clear();
-        await AdvanceUntil(() => _sisr.Starts == 1);
-        Assert.Equal(SisrState.Starting, service.State);
-        Assert.True(service.SteamControllerConnected);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task SISR_runs_again_when_the_game_ends()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        var game = SteamGame();
-        _platform.RunningDirectories.Add(game.InstallDirectory!);
-        await service.BeginGameAsync(game);
-
-        _platform.RunningDirectories.Clear();
-        await AdvanceUntil(() => _sisr.Starts == 1);
-
-        Assert.Empty(service.PausedFor);
-        Assert.Equal(SisrState.Starting, service.State);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    [Trait("TestCase", "T277-1")]
-    public async Task A_start_the_launcher_refused_ends_the_pause_long_before_the_start_timeout()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        var game = SteamGame();
-        var asked = _time.GetUtcNow();
-        await service.BeginGameAsync(game);
-        Assert.Equal(SisrState.Paused, service.State);
-
-        // The game never runs; its launcher refused the start a few seconds after Arcadia asked.
-        _time.Advance(TimeSpan.FromSeconds(3));
-        service.StartRefused(game);
-        for (var i = 0; i < 100 && _sisr.Starts == 0; i++)
-        {
-            _time.Advance(TimeSpan.FromMilliseconds(500));
-            await Task.Delay(1);
-        }
-
-        Assert.Equal(1, _sisr.Starts);
-        Assert.Empty(service.PausedFor);
-        Assert.True(_time.GetUtcNow() - asked < TimeSpan.FromSeconds(30), "SISR soll nicht erst nach den 2 min zurückkommen");
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task A_refusal_of_an_earlier_start_doesnt_end_the_pause_of_the_next_one()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        var game = SteamGame();
-        await service.BeginGameAsync(game);
-        service.StartRefused(game);
-        await AdvanceUntil(() => _sisr.Starts == 1);
-
-        // A again: this start runs.
-        _sisr.Running = true;
-        _platform.RunningDirectories.Add(game.InstallDirectory!);
-        await service.BeginGameAsync(game);
-        _time.Advance(TimeSpan.FromSeconds(5));
-        await Task.Delay(20);
-
-        Assert.Equal(SisrState.Paused, service.State);
-        Assert.Equal([game.InstallDirectory!], service.PausedFor);
-    }
-
-    [Fact]
-    public async Task A_pause_that_ends_after_switching_off_does_not_restart_SISR()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        var game = SteamGame();
-        _platform.RunningDirectories.Add(game.InstallDirectory!);
-        await service.BeginGameAsync(game);
-
-        await service.SetEnabledAsync(false);
-        _platform.RunningDirectories.Clear();
-        await AdvanceUntil(() => service.PausedFor.Count == 0);
-        await Task.Delay(50);
-
-        Assert.False(_sisr.Running);
-        Assert.Equal(0, _sisr.Starts);
-        Assert.Equal(SisrState.Off, service.State);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task Switching_on_again_while_the_game_still_runs_keeps_the_pause()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        var game = SteamGame();
-        _platform.RunningDirectories.Add(game.InstallDirectory!);
-        await service.BeginGameAsync(game);
-
-        await service.SetEnabledAsync(false);
-        await service.SetEnabledAsync(true);
-
-        Assert.False(_sisr.Running);
-        Assert.Equal(SisrState.Paused, service.State);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task A_failing_process_start_is_reported_not_thrown()
-    {
-        var service = Create();
-        _sisr.StartError = new Win32Exception(5, "Zugriff verweigert");
-
-        await service.TickAsync();
-
-        Assert.Equal(SisrState.Stopped, service.State);
-        Assert.Contains("Zugriff verweigert", service.LastError);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task After_three_crashes_in_five_minutes_Arcadia_stops_restarting()
-    {
-        var service = Create();
-        _sisr.StartLeavesItStopped = true;
-
-        for (var i = 0; i < 5; i++)
-        {
-            await service.TickAsync();
-            _time.Advance(TimeSpan.FromSeconds(10));
-        }
-
-        Assert.Equal(ControllerSupportService.MaxRestartsPerWindow, _sisr.Starts);
-        Assert.Equal(SisrState.Failed, service.State);
-        Assert.Contains(service.Issues, i => i.Id == "sisr-crashing" && i.Severity == HealthSeverity.Error);
-
-        // Once the window has passed, Arcadia tries again.
-        _time.Advance(ControllerSupportService.CrashWindow);
-        await service.TickAsync();
-        Assert.Equal(ControllerSupportService.MaxRestartsPerWindow + 1, _sisr.Starts);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task An_unreachable_API_does_not_break_the_tick()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        _api.Reachable = false;
-        await service.TickAsync();
-
-        // A SISR that doesn't answer on Arcadia's port is taken over by restarting it.
-        await service.TickAsync();
-
-        Assert.Equal(1, _sisr.Stops);
-        Assert.Equal(1, _sisr.Starts);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task A_hanging_GitHub_request_times_out_with_a_message()
-    {
-        var service = Create(enabled: false);
-        _sisr.Installed = false;
-        _sisr.ReleaseLookupHangs = true;
-
-        var install = service.InstallAsync();
-        await AdvanceUntil(() => install.IsCompleted);
-        await install;
-
-        Assert.Contains("GitHub", service.LastError);
-        Assert.Null(service.BusyText);
-        Assert.False(service.Enabled);
-        Assert.Equal(SisrState.Off, service.State);
-        Assert.Equal(0, _sisr.Starts);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task A_hanging_GitHub_request_delays_only_its_own_tick()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        _sisr.ReleaseLookupHangs = true;
-
-        var tick = service.TickAsync();
-        await AdvanceUntil(() => tick.IsCompleted);
-        await tick;
-
-        Assert.Equal(SisrState.Running, service.State);
-    }
-
-    [Fact]
-    public async Task A_broken_download_leaves_SISR_off_with_a_message()
-    {
-        var service = Create(enabled: false);
-        _sisr.Installed = false;
-        _sisr.InstallError = new HttpRequestException("Verbindung abgebrochen");
-
-        await service.InstallAsync();
-
-        Assert.Equal("Verbindung abgebrochen", service.LastError);
-        Assert.False(service.Enabled);
-        Assert.Equal(SisrState.Off, service.State);
-        Assert.Equal(0, _sisr.Starts);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task An_usbip_installer_with_the_wrong_signature_leaves_SISR_off_with_the_message()
-    {
-        var service = Create(enabled: false);
-        _platform.IsUsbipReady = false;
-        _platform.UsbipInstallError = new UntrustedInstallerException("Der Installer wurde nicht gestartet. Er ist nicht signiert.");
-
-        await service.InstallAsync();
-
-        Assert.Contains("nicht signiert", service.LastError);
-        Assert.False(service.Enabled);
-        Assert.Equal(SisrState.Off, service.State);
-        Assert.Equal(0, _sisr.Starts);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task Nothing_starts_SISR_after_shutdown()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-
-        await service.ShutdownAsync();
-        await service.TickAsync();
-
-        Assert.False(_sisr.Running);
-        Assert.Equal(0, _sisr.Starts);
-    }
-
-    [Fact]
-    public async Task Exiting_while_SISR_starts_stops_it_even_if_it_ignores_the_quit_request()
-    {
-        var service = Create();
-        _sisr.StopHangs = true;
-        _api.Controllers = 0;
-        await service.TickAsync();
-        Assert.Equal(SisrState.Starting, service.State);
-
-        var shutdown = service.ShutdownAsync();
-        await AdvanceUntil(() => shutdown.IsCompleted);
-        await shutdown;
-
-        Assert.False(_sisr.Running);
-        Assert.Equal(1, _sisr.Kills);
-        Assert.NotEqual(SisrState.Starting, service.State);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task Exiting_ends_the_wait_for_a_starting_SISR()
-    {
-        var service = Create();
-        _api.Controllers = 0;
-        var started = new TaskCompletionSource();
-        service.SisrStarted += (_, _) => started.TrySetResult();
-        await service.TickAsync();
-
-        await service.ShutdownAsync();
-
-        // Without advancing time: the wait for SISR's controllers (up to 10 s) is cancelled, not run out.
-        Assert.Same(started.Task, await Task.WhenAny(started.Task, Task.Delay(TimeSpan.FromSeconds(5))));
-        Assert.False(_sisr.Running);
-    }
-
-    [Fact]
-    public async Task Exiting_cancels_an_action_that_waits_for_Steam()
-    {
-        var service = Create(enabled: false);
-        _platform.IsSteamRunning = false;
-        _platform.SteamWontStart = true;
-        var on = service.SetEnabledAsync(true);
-        await Task.Delay(50);
-        Assert.False(on.IsCompleted);
-
-        await service.ShutdownAsync();
-
-        // The minute Steam may take is not waited for; Arcadia can leave.
-        Assert.Same(on, await Task.WhenAny(on, Task.Delay(TimeSpan.FromSeconds(5))));
-        Assert.Equal(0, _sisr.Starts);
-        Assert.Null(service.BusyText);
-        Assert.Null(service.LastError);
-    }
-
-    [Fact]
-    public async Task Installing_closes_Steam_sets_everything_up_and_switches_on()
-    {
-        var service = Create(enabled: false);
-        _sisr.Installed = false;
-        _platform.IsUsbipReady = false;
-        _platform.IsCefDebuggingEnabled = false;
-        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
-        Assert.True(service.InstallStopsSteam);
-
-        await service.InstallAsync();
-
-        Assert.Null(service.LastError);
-        Assert.Equal(1, _platform.SteamStops);
-        Assert.True(_platform.IsCefDebuggingEnabled);
-        Assert.True(_sisr.Installed);
-        Assert.Equal(1, _platform.UsbipInstalls);
-        Assert.Equal(1, _platform.SteamStarts);
-        Assert.True(service.Enabled);
-        Assert.Equal(1, _sisr.Starts);
-        Assert.Equal(ControllerSupportSetup.Ready, service.Setup);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task Installing_while_Steam_is_closed_leaves_it_closed()
-    {
-        var service = Create(enabled: false);
-        _platform.IsSteamRunning = false;
-        _platform.IsCefDebuggingEnabled = false;
-
-        await service.InstallAsync();
-
-        Assert.Equal(0, _platform.SteamStops);
-        Assert.Equal(0, _platform.SteamStarts);
-        Assert.Equal(0, _platform.UsbipInstalls);
-        Assert.True(_platform.IsCefDebuggingEnabled);
-        Assert.True(service.Enabled);
-    }
-
-    [Fact]
-    public async Task A_running_Steam_game_blocks_the_install_and_is_named()
-    {
-        var service = Create(enabled: false);
-        _sisr.Installed = false;
-        _platform.SteamGame = "Hollow Knight";
-
-        Assert.Contains("Hollow Knight", service.InstallBlocker());
-        await service.InstallAsync();
-
-        Assert.Contains("Ein laufendes Steam-Spiel (Hollow Knight) wurde erkannt", service.LastError);
-        Assert.Equal(0, _platform.SteamStops);
-        Assert.False(_sisr.Installed);
-        Assert.False(service.Enabled);
-    }
-
-    [Fact]
     public void The_blocking_game_is_read_fresh_so_its_end_is_noticed()
     {
-        var service = Create(enabled: false);
+        var service = Create();
         _platform.SteamGame = "Hollow Knight";
         Assert.Equal("Hollow Knight", service.SteamGameBlockingInstall());
 
         _platform.SteamGame = null;
 
         Assert.Null(service.SteamGameBlockingInstall());
-        Assert.Null(service.InstallBlocker());
     }
 
     [Fact]
     public void A_game_counts_only_while_Steam_runs()
     {
-        var service = Create(enabled: false);
+        var service = Create();
         _platform.SteamGame = "Hollow Knight";
         _platform.IsSteamRunning = false;
 
         Assert.Null(service.SteamGameBlockingInstall());
-    }
-
-    [Fact]
-    public async Task ClearError_forgets_the_last_failure()
-    {
-        var service = Create(enabled: false);
-        _platform.SteamRefusesToExit = true;
-        await service.InstallAsync();
-        Assert.NotNull(service.LastError);
-        var changes = 0;
-        service.Changed += (_, _) => changes++;
-
-        service.ClearError();
-
-        Assert.Null(service.LastError);
-        Assert.Equal(1, changes);
-    }
-
-    [Fact]
-    public async Task A_declined_driver_install_starts_Steam_again_and_stays_off()
-    {
-        var service = Create(enabled: false);
-        _platform.IsUsbipReady = false;
-        _platform.UsbipInstallDeclined = true;
-
-        await service.InstallAsync();
-
-        Assert.Contains("abgelehnt", service.LastError);
-        Assert.Equal(1, _platform.SteamStarts);
-        Assert.True(_platform.IsSteamRunning);
-        Assert.False(service.Enabled);
-        Assert.Equal(0, _sisr.Starts);
-        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
-    }
-
-    [Fact]
-    public async Task If_Steam_does_not_exit_nothing_is_installed()
-    {
-        var service = Create(enabled: false);
-        _sisr.Installed = false;
-        _platform.SteamRefusesToExit = true;
-
-        await service.InstallAsync();
-
-        Assert.Contains("Steam ließ sich nicht beenden", service.LastError);
-        Assert.False(_sisr.Installed);
-        Assert.Equal(0, _platform.SteamStarts);
-        Assert.False(service.Enabled);
-    }
-
-    [Fact]
-    public async Task Switching_on_no_longer_installs_anything()
-    {
-        var service = Create(enabled: false);
-        _sisr.Installed = false;
-
-        await service.SetEnabledAsync(true);
-
-        Assert.False(_sisr.Installed);
-        Assert.Equal(0, _sisr.Starts);
-    }
-
-    [Theory]
-    [InlineData(false, true, true, ControllerSupportSetup.UnsupportedPlatform)]
-    [InlineData(true, false, true, ControllerSupportSetup.SteamMissing)]
-    [InlineData(true, true, false, ControllerSupportSetup.NeedsInstall)]
-    [InlineData(true, true, true, ControllerSupportSetup.Ready)]
-    public async Task Setup_says_what_the_settings_offer(bool windows, bool steam, bool sisrInstalled, ControllerSupportSetup expected)
-    {
-        var service = Create(enabled: false);
-        _platform.IsSupported = windows;
-        _platform.IsSteamInstalled = steam;
-        _sisr.Installed = sisrInstalled;
-
-        await service.RefreshAsync();
-
-        Assert.Equal(expected, service.Setup);
-    }
-
-    [Fact]
-    public async Task Switched_on_but_no_longer_installed_is_a_warning_and_another_platform_an_error()
-    {
-        var service = Create();
-        _sisr.Installed = false;
-
-        await service.RefreshAsync();
-
-        Assert.Contains(service.Issues, i => i.Id == "sisr-missing" && i.Severity == HealthSeverity.Warning);
-
-        _platform.IsSupported = false;
-        await service.RefreshAsync();
-
-        Assert.Contains(service.Issues, i => i.Id == "platform" && i.Severity == HealthSeverity.Error);
-    }
-
-    [Fact]
-    public async Task A_tick_while_off_notices_a_change_in_the_setup()
-    {
-        var service = Create(enabled: false);
-        service.WatchSetup = true;
-        _sisr.Installed = false;
-        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
-
-        _sisr.Installed = true;
-        await service.TickAsync();
-
-        Assert.Equal(ControllerSupportSetup.Ready, service.Setup);
-    }
-
-    [Fact]
-    public async Task While_off_and_the_settings_closed_the_tick_leaves_the_setup_alone()
-    {
-        var service = Create(enabled: false);
-        _sisr.Installed = false;
-        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
-
-        _sisr.Installed = true;
-        await service.TickAsync();
-
-        Assert.Equal(ControllerSupportSetup.NeedsInstall, service.Setup);
-    }
-
-    [Fact]
-    public async Task A_missing_marker_is_not_counted_as_SISR_crashing()
-    {
-        var service = Create();
-        _platform.MarkerPresent = false;
-
-        for (var i = 0; i < 5; i++)
-        {
-            await service.TickAsync();
-            _time.Advance(TimeSpan.FromSeconds(10));
-        }
-
-        Assert.Equal(0, _sisr.Starts);
-        Assert.NotEqual(SisrState.Failed, service.State);
-        Assert.DoesNotContain(service.Issues, i => i.Id == "sisr-crashing");
-    }
-
-    [Fact]
-    public async Task Installing_stops_a_running_SISR_before_it_closes_Steam()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        _platform.MarkerPresent = false;
-
-        await service.InstallAsync();
-
-        Assert.Equal(1, _sisr.Stops);
-        Assert.Equal(0, _sisr.Kills);
-        Assert.Equal(1, _platform.SteamStops);
-        Assert.True(_platform.MarkerPresent);
-        Assert.Equal(1, _sisr.Starts);
-    }
-
-    [Fact]
-    public async Task Without_a_known_Steam_account_the_install_says_so_and_stays_off()
-    {
-        var service = Create(enabled: false);
-        _platform.MarkerPresent = false;
-        _platform.NoSteamAccount = true;
-
-        await service.InstallAsync();
-
-        Assert.False(service.Enabled);
-        Assert.Contains("Steam-Konto", service.LastError);
-        // Found out before Steam closes or the driver installs.
-        Assert.Equal(0, _platform.SteamStops);
-        Assert.Equal(0, _platform.UsbipInstalls);
-    }
-
-    [Fact]
-    public async Task A_marker_only_for_another_account_leaves_SISR_off_and_offers_to_add_it()
-    {
-        var service = Create(enabled: false);
-        _platform.MarkerPresent = false;
-        _platform.Accounts.Add(new MarkerAccount(111, "Anna", HasMarker: false));
-        _platform.Accounts.Add(new MarkerAccount(222, "Ben", HasMarker: false));
-
-        await service.InstallAsync(markerAccounts: [222]);
-        await service.RefreshAsync();
-
-        Assert.True(service.Enabled);
-        Assert.Equal(0, _sisr.Starts);
-        Assert.Contains(service.Issues, i => i.Fix == HealthFix.CreateMarker);
-    }
-
-    [Fact]
-    public async Task With_several_accounts_that_all_have_the_marker_the_install_writes_none()
-    {
-        var service = Create(enabled: false);
-        _platform.Accounts.Add(new MarkerAccount(111, "Anna", HasMarker: true));
-        _platform.Accounts.Add(new MarkerAccount(222, "Ben", HasMarker: true));
-
-        await service.InstallAsync();
-
-        Assert.True(service.Enabled);
-        Assert.Equal([], _platform.MarkerWrittenFor);
-    }
-
-    [Fact]
-    public void With_one_Steam_account_nobody_is_asked_about_the_marker()
-    {
-        var service = Create(enabled: false);
-        _platform.Accounts.Add(new MarkerAccount(111, "Anna", HasMarker: false));
-
-        Assert.Empty(service.MarkerAccountsToChoose());
-    }
-
-    [Fact]
-    public void With_several_Steam_accounts_the_user_chooses_until_all_have_the_marker()
-    {
-        var service = Create(enabled: false);
-        _platform.Accounts.Add(new MarkerAccount(111, "Anna", HasMarker: true));
-        _platform.Accounts.Add(new MarkerAccount(222, "Ben", HasMarker: false));
-
-        Assert.Equal(2, service.MarkerAccountsToChoose().Count);
-
-        _platform.Accounts[1] = _platform.Accounts[1] with { HasMarker = true };
-        Assert.Empty(service.MarkerAccountsToChoose());
-    }
-
-    [Fact]
-    public async Task The_install_writes_the_marker_for_the_chosen_accounts()
-    {
-        var service = Create(enabled: false);
-        _platform.MarkerPresent = false;
-        _platform.Accounts.Add(new MarkerAccount(111, "Anna", HasMarker: false));
-        _platform.Accounts.Add(new MarkerAccount(222, "Ben", HasMarker: false));
-
-        await service.InstallAsync(markerAccounts: [222]);
-
-        Assert.Equal([222u], _platform.MarkerWrittenFor);
-        Assert.True(service.Enabled);
-        Assert.Equal([false, true], _platform.Accounts.Select(a => a.HasMarker));
-    }
-
-    [Fact]
-    public async Task A_hanging_Steam_login_does_not_stop_a_running_SISR()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-
-        _platform.SteamLoginHangs = true;
-        await service.WatchAsync();
-        await service.TickAsync();
-
-        Assert.True(_sisr.Running);
-        Assert.Equal(0, _sisr.Kills);
-        Assert.Equal(0, _sisr.Stops);
-    }
-
-    [Fact]
-    public async Task A_Steam_login_that_hangs_for_long_is_shown_with_a_restart()
-    {
-        var service = Create();
-        _platform.SteamLoginHangs = true;
-
-        await service.TickAsync();
-        Assert.DoesNotContain(service.Issues, i => i.Id == "steam-login");
-
-        _time.Advance(TimeSpan.FromSeconds(31));
-        await service.TickAsync();
-
-        Assert.Contains(service.Issues, i => i.Id == "steam-login" && i.Fix == HealthFix.RestartSteam);
-        Assert.Equal(0, _sisr.Starts);
-        Assert.NotEqual(SisrState.Failed, service.State);
-    }
-
-    [Fact]
-    public async Task Restarting_Steam_goes_through_Arcadia_and_brings_SISR_back()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        _platform.IsCefDebuggingEnabled = false;
-
-        await service.ApplyFixAsync(HealthFix.EnableCefDebugging);
-
-        Assert.Equal(1, _sisr.Stops);
-        Assert.Equal(0, _sisr.Kills);
-        Assert.Equal(1, _platform.SteamStops);
-        Assert.Equal(1, _platform.SteamStarts);
-        Assert.True(_platform.IsCefDebuggingEnabled);
-        Assert.Equal(1, _sisr.Starts);
-        Assert.Null(service.LastError);
-    }
-
-    [Fact]
-    public async Task A_failed_switch_on_stays_unseen_until_the_settings_show_it()
-    {
-        var service = Create(enabled: false);
-        _platform.IsSteamRunning = false;
-        _platform.SteamWontStart = true;
-
-        var on = service.SetEnabledAsync(true);
-        await AdvanceUntil(() => on.IsCompleted);
-        Assert.True(service.UnseenSteamStartFailure);
-
-        service.AcknowledgeSteamStartFailure();
-        Assert.False(service.UnseenSteamStartFailure);
     }
 
     [Fact]
@@ -1085,543 +109,897 @@ public sealed class ControllerSupportServiceTests : IDisposable
         var service = Create();
         var games = Enumerable.Range(0, 40).Select(i => SteamGame() with { Id = $"g{i}" }).ToList();
 
-        await Task.WhenAll(games.Select(game => Task.Run(() => service.SetModeFor(game, useSisr: true))));
+        await Task.WhenAll(games.Select(game => Task.Run(() => service.SetChoiceFor(game, useArcadiaPad: false))));
 
         var saved = new SettingsStore(Path.Combine(_directory, "settings.json")).Load();
-        Assert.All(games, game => Assert.True(saved.ControllerSupportFor(game)));
+        Assert.All(games, game => Assert.False(saved.UsesArcadiaPad(game.Key, Registered.GamesUseSteamInput)));
     }
 
-    [Fact]
-    public async Task An_Xbox_pad_that_SISR_emulates_is_no_Steam_Controller()
-    {
-        var service = Create();
-        _api.Controllers = 0;
-        _api.XboxPads = 1;
-        _sisr.Running = true;
-
-        await service.TickAsync();
-
-        Assert.Equal(SisrState.NoController, service.State);
-        Assert.False(service.SteamControllerConnected);
-        Assert.True(_sisr.Running);
-        Assert.Contains(service.Issues, i => i.Id == "sisr-other-controller" && i.Severity == HealthSeverity.Warning && i.Detail.Contains("Xbox 360 Controller"));
-        AssertNoUnexpectedTransition();
-    }
+    // --- Pan, the guardian service (#243) ---
 
     [Fact]
-    public async Task The_warning_names_Steams_controller_type_readably_and_says_the_Steam_Controller_may_fail()
+    public async Task A_missing_Pan_is_a_warning_and_its_fix_installs_the_drivers()
     {
-        var service = Create();
-        _api.XboxPadName = "#controller_xbox360";
-        _api.XboxPads = 1;
-        _sisr.Running = true;
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        _platform.IsPanReady = false;
 
-        await service.TickAsync();
-
-        var issue = Assert.Single(service.Issues, i => i.Id == "sisr-other-controller");
-        Assert.Contains("Xbox 360 Controller", issue.Detail);
-        Assert.DoesNotContain("#controller", issue.Detail);
-        Assert.DoesNotContain("USB-ID", issue.Detail);
-        Assert.Contains("Phantomeingaben", issue.Detail);
-        Assert.DoesNotContain("Steam Input", issue.Detail);
-        Assert.Contains("Erweiterte Controllereinstellungen", issue.Detail);
-        lock (_log)
-        {
-            Assert.Contains(_log, line => line.Contains("#controller_xbox360 (ohne USB-ID)"));
-        }
-    }
-
-    [Fact]
-    public async Task SISR_emulating_another_controller_once_outside_a_game_keeps_running()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-
-        _api.XboxPads = 1;
-        await service.WatchAsync();
-        _api.XboxPads = 0;
-        await service.WatchAsync();
-
-        Assert.True(_sisr.Running);
-        Assert.Equal(0, _sisr.Stops);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task SISR_emulating_another_controller_outside_a_game_pauses_until_Steam_Input_for_Xbox_pads_is_off()
-    {
-        var service = Create();
-        _platform.SteamInputDefault = new SteamInputSetting(null, XboxSupport: true, GenericSupport: false);
-        _sisr.Running = true;
-        await service.TickAsync();
-
-        _api.XboxPadName = "#controller_xbox360";
-        _api.XboxPads = 1;
-        await service.WatchAsync();
-        await service.WatchAsync();
-
-        Assert.False(_sisr.Running);
-        Assert.Equal(SisrState.Paused, service.State);
         await service.RefreshAsync();
-        var issue = Assert.Single(service.Issues, i => i.Id == "sisr-paused-other-controller-type");
+
+        var issue = Assert.Single(service.Issues);
+        Assert.Equal("pan-missing", issue.Id);
         Assert.Equal(HealthSeverity.Warning, issue.Severity);
-        Assert.Equal(HealthFix.RestartSisr, issue.Fix);
-        Assert.Contains("Xbox 360 Controller", issue.Detail);
-        Assert.Contains("Phantomeingaben", issue.Detail);
-        Assert.DoesNotContain("Steam Input", issue.Detail);
+        Assert.Equal(HealthFix.InstallDrivers, issue.Fix);
+        Assert.False(service.PanInstalled);
 
-        // Below the row's title one short line; the whole advice stays in the info panel (owner, 2026-10-22).
-        Assert.Equal("Es wurden weitere Controller erkannt, die Steam-Eingabe in Steam nutzen.", issue.ShortText);
-        await service.TickAsync();
-        Assert.Equal(0, _sisr.Starts);
-
-        _api.XboxPads = 0;
-        _platform.SteamInputDefault = new SteamInputSetting(null, XboxSupport: false, GenericSupport: false);
-        await AdvanceUntil(() => _sisr.Starts == 1);
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
         await service.RefreshAsync();
 
-        Assert.DoesNotContain(service.Issues, i => i.Id == "sisr-paused-other-controller-type");
-        AssertNoUnexpectedTransition();
+        Assert.Null(service.LastError);
+        Assert.Equal(1, _platform.UsbipInstalls);
+        Assert.Empty(service.Issues);
+        Assert.True(service.PanInstalled);
     }
 
     [Fact]
-    public async Task A_pad_under_Steam_Input_pauses_SISR_before_anyone_touches_it()
+    [Trait("TestCase", "T242-27")]
+    public async Task Arcadia_s_own_missing_VIIPER_is_fetched_without_a_Windows_prompt()
     {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
+        var viiper = new FakeViiper();
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper };
 
-        _api.UntouchedXboxPads = 1;
-        await service.WatchAsync();
-        await service.WatchAsync();
-
-        Assert.Equal(SisrState.Paused, service.State);
         await service.RefreshAsync();
-        Assert.Contains(service.Issues, i => i.Id == "sisr-paused-other-controller-type" && i.Detail.Contains("8BitDo Ultimate 2"));
-        AssertNoUnexpectedTransition();
-    }
+        Assert.Equal("viiper-missing", Assert.Single(service.Issues).Id);
 
-    [Fact]
-    public async Task The_pause_names_the_real_pad_rather_than_SISRs_own_pads_that_Steam_took_again()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-
-        _api.XboxPadName = "#controller_xbox360";
-        _api.XboxPads = 1;
-        _api.UntouchedXboxPads = 1;
-        await service.WatchAsync();
-        await service.WatchAsync();
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
         await service.RefreshAsync();
 
-        var issue = Assert.Single(service.Issues, i => i.Id == "sisr-paused-other-controller-type");
-        Assert.StartsWith("SISR wurde pausiert, weil 8BitDo Ultimate 2 Wireless Controller for PC in Steam ebenfalls Steam-Eingabe als Steuerungsmethode verwendet.", issue.Detail);
-        Assert.DoesNotContain("Xbox 360", issue.Detail);
+        Assert.Null(service.LastError);
+        Assert.Equal(1, viiper.Installs);
+        Assert.Equal(0, _platform.UsbipInstalls);
+        Assert.Empty(service.Issues);
     }
 
     [Fact]
-    public async Task Trying_again_while_Steam_Input_still_takes_the_pad_pauses_again()
+    [Trait("TestCase", "T242-27")]
+    public async Task A_VIIPER_download_that_fails_shows_at_its_row()
+    {
+        var viiper = new FakeViiper { Error = new InvalidOperationException("Prüfsumme von viiper.exe stimmt nicht – Download verworfen.") };
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput, Viiper = viiper };
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Contains("Prüfsumme", service.LastError);
+        Assert.Equal(HealthFix.InstallDrivers, service.FailedFix);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T242-26")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Neu_installieren_runs_HidHide_s_installer_through_Pan_and_a_declined_prompt_says_so(bool declined)
     {
         var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        _api.UntouchedXboxPads = 1;
-        await service.WatchAsync();
-        await service.WatchAsync();
-        Assert.Equal(SisrState.Paused, service.State);
+        _platform.IsSteamRunning = false;
+        _platform.HidHideVersion = PinnedHidHideDriver;
+        _platform.HidHideReinstallDeclined = declined;
 
-        await service.ApplyFixAsync(HealthFix.RestartSisr);
-        await AdvanceUntil(() => service.State == SisrState.Running);
-        _time.Advance(TimeSpan.FromSeconds(6));
-        await service.WatchAsync();
-        await service.WatchAsync();
+        await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
 
-        Assert.Equal(SisrState.Paused, service.State);
-        Assert.Equal(1, _sisr.Starts);
-        AssertNoUnexpectedTransition();
+        Assert.Equal(1, _platform.HidHideReinstalls);
+        Assert.Equal(0, _platform.UsbipInstalls);
+        Assert.Equal(declined, service.LastError?.Contains("„Neu installieren“", StringComparison.Ordinal) ?? false);
     }
 
     [Fact]
-    public async Task Trying_again_ends_the_pause_for_another_controller()
+    [Trait("TestCase", "T242-26")]
+    public async Task HidHide_is_not_reinstalled_while_Pan_hides_or_holds_the_puck()
     {
         var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        _api.XboxPads = 1;
-        await service.WatchAsync();
-        await service.WatchAsync();
-        Assert.Equal(SisrState.Paused, service.State);
+        _platform.HidHideVersion = PinnedHidHideDriver;
+        service.PanHoldsPuck = () => true;
 
-        // Steam's setting can't be read here, so only the user ends the pause.
-        _time.Advance(TimeSpan.FromSeconds(30));
-        await Task.Delay(10);
-        Assert.Equal(0, _sisr.Starts);
+        await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
 
-        _api.XboxPads = 0;
-        await service.ApplyFixAsync(HealthFix.RestartSisr);
-        await AdvanceUntil(() => _sisr.Starts == 1);
-        AssertNoUnexpectedTransition();
+        Assert.Equal(0, _platform.HidHideReinstalls);
+        Assert.Equal(ControllerSupportService.HidHideReinstallWhileHiddenText, service.LastError);
     }
 
     [Fact]
-    public async Task SISR_emulating_an_Xbox_pad_in_a_Steam_game_pauses_until_the_game_ends()
+    [Trait("TestCase", "T296-3")]
+    public async Task While_Steam_runs_HidHide_is_reinstalled_with_Steam_closed_and_Steam_starts_again()
     {
         var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        Assert.Equal(SisrState.Running, service.State);
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = PinnedHidHideDriver;
 
-        // The game has Steam Input on for Xbox pads: Steam hands the pad to SISR as soon as it starts.
-        _platform.SteamAppId = 1245620;
-        _platform.SteamGame = "Elden Ring";
-        _api.XboxPads = 1;
-        await service.WatchAsync();
+        await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
 
-        Assert.False(_sisr.Running);
-        Assert.Equal(1, _sisr.Stops);
-        Assert.Equal(1, _platform.LayoutResets);
-        Assert.Equal(SisrState.Paused, service.State);
-        Assert.Empty(service.PausedFor);
-        await service.TickAsync();
-        Assert.Equal(0, _sisr.Starts);
-        Assert.Contains(service.Issues, i => i.Id == "sisr-paused-other-controller" && i.Severity == HealthSeverity.Info && i.Title.Contains("Elden Ring"));
-        lock (_log)
+        Assert.Equal(1, _platform.HidHideReinstalls);
+        Assert.Equal(0, _platform.PuckRestartsWhileSteamRuns);
+        Assert.Equal((1, 1), (_platform.SteamStops, _platform.SteamStarts));
+        Assert.True(_platform.IsSteamRunning);
+        Assert.Null(service.LastError);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T296-1")]
+    [InlineData(HealthFix.InstallDrivers)]
+    [InlineData(HealthFix.ReinstallHidHide)]
+    public async Task A_driver_install_that_restarts_the_puck_runs_only_with_Steam_closed(HealthFix fix)
+    {
+        var service = Create();
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = fix == HealthFix.ReinstallHidHide ? PinnedHidHideDriver : null;
+
+        Assert.True(service.StopsSteamFor(fix));
+        await service.ApplyFixAsync(fix);
+
+        Assert.Equal(1, _platform.UsbipInstalls + _platform.HidHideReinstalls);
+        Assert.Equal(0, _platform.PuckRestartsWhileSteamRuns);
+        Assert.Equal((1, 1), (_platform.SteamStops, _platform.SteamStarts));
+        Assert.Null(service.LastError);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T296-2")]
+    public async Task Without_HidHide_s_installer_Steam_is_neither_closed_nor_asked_about()
+    {
+        var service = Create();
+        _platform.IsSteamRunning = true;
+        _platform.IsUsbipReady = false;
+
+        Assert.False(service.StopsSteamFor(HealthFix.InstallDrivers));
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Equal(1, _platform.UsbipInstalls);
+        Assert.Equal((0, 0), (_platform.SteamStops, _platform.SteamStarts));
+        Assert.Null(service.LastError);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T296-2")]
+    public async Task A_HidHide_whose_removal_waits_for_a_restart_doesn_t_close_Steam()
+    {
+        var service = Create();
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = null;
+        _platform.HidHideRemovalPending = true;
+
+        Assert.False(service.StopsSteamFor(HealthFix.InstallDrivers));
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Equal(1, _platform.UsbipInstalls);
+        Assert.Equal(0, _platform.SteamStops);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T296-5")]
+    [InlineData(HealthFix.InstallDrivers, "declined")]
+    [InlineData(HealthFix.InstallDrivers, "failed")]
+    [InlineData(HealthFix.ReinstallHidHide, "declined")]
+    public async Task Steam_closed_for_a_driver_install_starts_again_when_the_install_fails(HealthFix fix, string outcome)
+    {
+        var service = Create();
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = fix == HealthFix.ReinstallHidHide ? PinnedHidHideDriver : null;
+        _platform.UsbipInstallDeclined = outcome == "declined";
+        _platform.HidHideReinstallDeclined = outcome == "declined";
+        _platform.UsbipInstallError = outcome == "failed" ? new IOException("Download abgebrochen") : null;
+
+        await service.ApplyFixAsync(fix);
+
+        Assert.NotNull(service.LastError);
+        Assert.Equal((1, 1), (_platform.SteamStops, _platform.SteamStarts));
+        Assert.True(_platform.IsSteamRunning);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T296-5")]
+    public async Task Steam_closed_for_a_driver_install_starts_again_when_the_install_is_cancelled()
+    {
+        var service = Create();
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = null;
+        using var cancel = new CancellationTokenSource();
+        _platform.DuringDriverInstall = cancel.Cancel;
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ApplyFixAsync(HealthFix.InstallDrivers, cancel.Token));
+
+        Assert.Equal((1, 1), (_platform.SteamStops, _platform.SteamStarts));
+    }
+
+    [Theory]
+    [Trait("TestCase", "T296-6")]
+    [InlineData(HealthFix.InstallDrivers)]
+    [InlineData(HealthFix.ReinstallHidHide)]
+    public async Task A_Steam_that_won_t_close_stops_the_driver_install_before_anything_is_installed(HealthFix fix)
+    {
+        var service = Create();
+        _platform.IsSteamRunning = true;
+        _platform.SteamRefusesToExit = true;
+        _platform.HidHideVersion = fix == HealthFix.ReinstallHidHide ? PinnedHidHideDriver : null;
+
+        await service.ApplyFixAsync(fix);
+
+        Assert.Equal(ControllerSupportService.SteamWontCloseText, service.LastError);
+        Assert.Equal(0, _platform.UsbipInstalls + _platform.HidHideReinstalls);
+        Assert.Equal(0, _platform.SteamStarts);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T296-4")]
+    public async Task A_running_Steam_game_stops_a_driver_install_that_would_close_Steam()
+    {
+        var service = Create();
+        _platform.IsSteamRunning = true;
+        _platform.SteamGame = "Hollow Knight";
+        _platform.HidHideVersion = null;
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Equal(ControllerSupportService.DriverInstallBlocker("Hollow Knight"), service.LastError);
+        Assert.Equal((0, 0), (_platform.UsbipInstalls, _platform.SteamStops));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T296-1")]
+    public async Task A_Steam_slow_to_come_back_after_a_driver_install_doesn_t_fail_the_install()
+    {
+        var service = Create();
+        _platform.IsSteamRunning = true;
+        _platform.SteamWontStart = true;
+        _platform.HidHideVersion = null;
+
+        var install = service.ApplyFixAsync(HealthFix.InstallDrivers);
+        await AdvanceUntil(() => install.IsCompleted);
+        await install;
+
+        Assert.Null(service.LastError);
+        Assert.Equal(1, _platform.SteamStarts);
+        Assert.Null(service.BusyText);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T242-26")]
+    [InlineData("1.5.0.0")]
+    [InlineData("1.4.180.0")]
+    [InlineData(null)]
+    public async Task HidHide_is_reinstalled_only_over_the_pinned_version(string? installed)
+    {
+        var service = Create();
+        _platform.IsSteamRunning = false;
+        _platform.HidHideVersion = installed is null ? null : Version.Parse(installed);
+
+        await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
+
+        Assert.Equal(0, _platform.HidHideReinstalls);
+        Assert.Contains("andere Version", service.LastError);
+    }
+
+    private static readonly Version PinnedHidHideDriver = new(1, 4, 181, 0);
+
+    private sealed class FakeViiper : IViiperInstallation
+    {
+        public bool IsInstalled { get; private set; }
+
+        public int Installs { get; private set; }
+
+        public Exception? Error { get; init; }
+
+        public Task InstallAsync(HttpClient http, CancellationToken cancellationToken)
         {
-            Assert.Contains(_log, line => line.Contains("Xbox 360 Controller (ohne USB-ID)") && line.Contains("Elden Ring"));
-        }
-
-        _platform.SteamAppId = null;
-        await AdvanceUntil(() => _sisr.Starts == 1);
-        await service.RefreshAsync();
-
-        Assert.DoesNotContain(service.Issues, i => i.Id == "sisr-paused-other-controller");
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task A_Steam_game_on_SISR_with_only_the_Steam_Controller_keeps_SISR_running()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        _platform.SteamAppId = 1245620;
-
-        await service.TickAsync();
-        await service.WatchAsync();
-
-        Assert.True(_sisr.Running);
-        Assert.Equal(SisrState.Running, service.State);
-        Assert.DoesNotContain(service.Issues, i => i.Id.StartsWith("sisr-paused", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public async Task A_pause_for_another_controller_also_lasts_when_a_launched_game_pause_ends_first()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        _platform.SteamAppId = 1245620;
-        _api.XboxPads = 1;
-        await service.WatchAsync();
-        Assert.Equal(SisrState.Paused, service.State);
-
-        // A second game started from Arcadia on "Steam Input" ends while the Steam game still runs.
-        var game = SteamGame();
-        _platform.RunningDirectories.Add(game.InstallDirectory!);
-        await service.BeginGameAsync(game);
-        _platform.RunningDirectories.Clear();
-        await AdvanceUntil(() => service.PausedFor.Count == 0);
-
-        Assert.Equal(0, _sisr.Starts);
-        Assert.Equal(SisrState.Paused, service.State);
-        AssertNoUnexpectedTransition();
-    }
-
-    private static readonly SteamInputSetting SteamInputForAll = new("2", XboxSupport: false, GenericSupport: false);
-
-    private static readonly SteamInputSetting SteamInputOff = new("0", XboxSupport: false, GenericSupport: false);
-
-    [Fact]
-    public async Task A_Steam_game_on_SISR_with_Steam_Input_for_every_controller_pauses_SISR_before_it_starts()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        var game = SteamGame();
-        service.SetModeFor(game, useSisr: true);
-        _platform.SteamInput[1] = SteamInputForAll;
-        _platform.RunningDirectories.Add(game.InstallDirectory!);
-
-        await service.BeginGameAsync(game);
-        await service.RefreshAsync();
-
-        Assert.False(_sisr.Running);
-        Assert.Equal(SisrState.Paused, service.State);
-        Assert.Contains(service.Issues, i => i.Id == "sisr-paused-other-controller" && i.Title.Contains("Steam-Spiel"));
-
-        _platform.RunningDirectories.Clear();
-        await AdvanceUntil(() => _sisr.Starts == 1);
-        await service.RefreshAsync();
-        Assert.DoesNotContain(service.Issues, i => i.Id == "sisr-paused-other-controller");
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task A_Steam_game_on_SISR_without_Steam_Input_keeps_SISR_running()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        var game = SteamGame();
-        service.SetModeFor(game, useSisr: true);
-        _platform.SteamInput[1] = SteamInputOff;
-
-        await service.BeginGameAsync(game);
-
-        Assert.True(_sisr.Running);
-        Assert.Equal(SisrState.Running, service.State);
-        Assert.Empty(service.PausedFor);
-    }
-
-    [Fact]
-    public async Task A_Steam_game_with_Steam_Input_for_every_controller_started_elsewhere_pauses_SISR_before_SISR_takes_a_pad()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-
-        _platform.SteamAppId = 4231820;
-        _platform.SteamGame = "Castlevania: Belmont's Curse";
-        _platform.SteamInput[4231820] = SteamInputForAll;
-        await service.WatchAsync();
-
-        Assert.False(_sisr.Running);
-        Assert.Equal(SisrState.Paused, service.State);
-        lock (_log)
-        {
-            Assert.Contains(_log, line => line.Contains("UseSteamControllerConfig 2") && line.Contains("Castlevania"));
-        }
-
-        _platform.SteamAppId = null;
-        await AdvanceUntil(() => _sisr.Starts == 1);
-        AssertNoUnexpectedTransition();
-    }
-
-    [Fact]
-    public async Task Steams_setting_is_read_once_per_game()
-    {
-        var service = Create();
-        _sisr.Running = true;
-        await service.TickAsync();
-        _platform.SteamAppId = 4231820;
-        _platform.SteamInput[4231820] = SteamInputOff;
-
-        await service.WatchAsync();
-        await service.WatchAsync();
-        await service.WatchAsync();
-
-        Assert.True(_sisr.Running);
-        Assert.Equal(1, _platform.SteamInputReads);
-    }
-
-    private sealed class FakeSisr(HttpClient http) : ISisrHost
-    {
-        public SisrApiClient Api { get; } = new(http, SisrHost.ApiPort);
-
-        public bool Installed { get; set; } = true;
-
-        public bool Running { get; set; }
-
-        /// <summary>The process exits right away (or never appears).</summary>
-        public bool StartLeavesItStopped { get; set; }
-
-        public Exception? StartError { get; set; }
-
-        public Exception? InstallError { get; set; }
-
-        public bool ReleaseLookupHangs { get; set; }
-
-        /// <summary>The process ignores the quit request (a SISR still starting up), so only a kill ends it.</summary>
-        public bool StopHangs { get; set; }
-
-        public TaskCompletionSource? ReleaseLookupGate { get; set; }
-
-        public int Starts { get; private set; }
-
-        public int Stops { get; private set; }
-
-        public int ViiperCleanUps { get; private set; }
-
-        /// <summary>What the next clean-up finds left over (a VIIPER process or an attached device).</summary>
-        public int ViiperLeftovers { get; set; }
-
-        public Task<int> CleanUpViiperAsync(CancellationToken cancellationToken = default)
-        {
-            ViiperCleanUps++;
-            var found = ViiperLeftovers;
-            ViiperLeftovers = 0;
-            return Task.FromResult(found);
-        }
-
-        public bool IsInstalled => Installed;
-
-        public Version? InstalledVersion => Installed ? new Version(1, 0) : null;
-
-        public bool IsRunning => Running;
-
-        public IReadOnlyList<int> ExternalInstances() => [];
-
-        public void StopExternalInstances()
-        {
-        }
-
-        public async Task<Release?> GetLatestReleaseAsync(CancellationToken cancellationToken = default)
-        {
-            if (ReleaseLookupHangs)
+            Installs++;
+            if (Error is not null)
             {
-                await Task.Delay(Timeout.Infinite, cancellationToken);
+                throw Error;
             }
 
-            if (ReleaseLookupGate is { } gate)
-            {
-                await gate.Task;
-            }
-
-            return new Release("v1.0", new Version(1, 0), []);
-        }
-
-        public Task InstallAsync(Release release, CancellationToken cancellationToken = default)
-        {
-            if (InstallError is { } error)
-            {
-                throw error;
-            }
-
-            Installed = true;
+            IsInstalled = true;
             return Task.CompletedTask;
         }
-
-        public void Start()
-        {
-            if (StartError is { } error)
-            {
-                throw error;
-            }
-
-            Starts++;
-            Running = !StartLeavesItStopped;
-        }
-
-        public async Task StopAsync(CancellationToken cancellationToken = default)
-        {
-            if (StopHangs)
-            {
-                await Task.Delay(Timeout.Infinite, cancellationToken);
-            }
-
-            if (Running)
-            {
-                Stops++;
-            }
-
-            Running = false;
-        }
-
-        public int Kills { get; private set; }
-
-        public bool SetupMarkedDone { get; private set; }
-
-        public string ExecutablePath => @"C:\SISR\SISR.exe";
-
-        public void Kill()
-        {
-            Kills++;
-            Running = false;
-        }
-
-        public void MarkInitialSetupDone() => SetupMarkedDone = true;
     }
 
-    /// <summary>SISR's HTTP API: answers like a healthy SISR with one controller, or not at all.</summary>
-    private sealed class FakeSisrApi : HttpMessageHandler
+    [Fact]
+    [Trait("TestCase", "T243-33")]
+    public async Task A_missing_VIIPER_is_a_part_row_and_its_fix_brings_it_without_a_Windows_prompt()
     {
-        public bool Reachable { get; set; } = true;
+        var service = Create(new FakeViiper());
 
-        /// <summary>Steam Controllers SISR emulates; 0 is a dongle without a switched-on controller.</summary>
-        public int Controllers { get; set; } = 1;
+        await service.RefreshAsync();
 
-        /// <summary>Xbox pads SISR emulates as well, because Steam Input is on for them (#124).</summary>
-        public int XboxPads { get; set; }
+        var issue = Assert.Single(service.Issues);
+        Assert.Equal("viiper-missing", issue.Id);
+        Assert.Equal(HealthFix.InstallDrivers, issue.Fix);
 
-        /// <summary>The name SDL gives the Xbox pads; behind Steam Input it can be Steam's untranslated type (#143).</summary>
-        public string XboxPadName { get; set; } = "Xbox 360 Controller";
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+        await service.RefreshAsync();
 
-        /// <summary>Xbox pads Steam Input hands to SISR that nobody touched yet, so SISR doesn't emulate them (#143).</summary>
-        public int UntouchedXboxPads { get; set; }
+        Assert.Null(service.LastError);
+        Assert.Equal(0, _platform.UsbipInstalls);
+        Assert.Empty(service.Issues);
+    }
 
-        private string Devices() => "[" + string.Join(",", Enumerable.Repeat(SteamControllerDevice, Controllers)
-            .Concat(Enumerable.Repeat(XboxPadDevice.Replace("Xbox 360 Controller", XboxPadName, StringComparison.Ordinal), XboxPads))
-            .Concat(Enumerable.Repeat(UntouchedXboxPadDevice, UntouchedXboxPads))) + "]";
+    [Fact]
+    [Trait("TestCase", "T243-32")]
+    public async Task A_missing_HidHide_is_a_part_row_and_the_one_install_brings_it()
+    {
+        var service = Create();
+        _platform.HidHideVersion = null;
 
-        private const string UntouchedXboxPadDevice = """{"real_device":{"id":3,"name":"8BitDo Ultimate 2 Wireless Controller for PC","path":"XInput#1","player_index":2},"steam_virtual_device":{"id":4,"name":"8BitDo Ultimate 2 Wireless Controller for PC","steam_handle":"445232051150315420","player_index":2}}""";
+        await service.RefreshAsync();
 
-        private const string SteamControllerDevice = """{"real_device":{"id":1,"name":"Steam Controller","path":"\\\\?\\HID#VID_28DE&PID_1304&MI_02#8&1&0&0000","player_index":0},"viiper_device":{}}""";
+        var issue = Assert.Single(service.Issues);
+        Assert.Equal("hidhide-missing", issue.Id);
+        Assert.Equal(HealthFix.InstallDrivers, issue.Fix);
+        Assert.Equal("Installieren", issue.FixLabel);
 
-        private const string XboxPadDevice = """{"real_device":{"id":2,"name":"Xbox 360 Controller","path":"XInput#0","player_index":1},"viiper_device":{}}""";
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+        await service.RefreshAsync();
 
-        public TaskCompletionSource? Gate { get; set; }
+        Assert.Null(service.LastError);
+        Assert.Equal(1, _platform.UsbipInstalls);
+        Assert.Equal(Arcadia.Pan.HidHideRelease.Version, _platform.HidHideVersion);
+        Assert.Empty(service.Issues);
+    }
 
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    [Theory]
+    [Trait("TestCase", "T243-34")]
+    [InlineData("1.1.0", "Aktualisieren")]
+    [InlineData("2.0.1", null)]
+    public async Task An_unsupported_HidHide_is_updated_only_when_it_is_older_than_Pan_supports(string version, string? fixLabel)
+    {
+        var service = Create();
+        _platform.HidHideVersion = Version.Parse(version);
+
+        await service.RefreshAsync();
+
+        var issue = Assert.Single(service.Issues);
+        Assert.Equal("hidhide-unsupported", issue.Id);
+        Assert.Equal("HidHide-Version wird nicht unterstützt", issue.Title);
+        Assert.Equal(fixLabel, issue.FixLabel);
+        Assert.Equal(fixLabel is null ? HealthFix.None : HealthFix.InstallDrivers, issue.Fix);
+        Assert.Equal(fixLabel is not null, ControllerSupportPlatform.HidHideNeedsInstaller(_platform.HidHideVersion));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-35")]
+    public async Task While_the_settings_watch_Pan_s_answer_about_hiding_becomes_a_row_and_goes_again()
+    {
+        var service = Create();
+        var pan = new Arcadia.Tests.Pads.FakeEmulationGuardian { Hiding = Arcadia.Pan.PanReason.HidHideBusy };
+        service.HidingCheck = pan;
+
+        // Closed settings don't ask Pan: a pipe round trip and HidHide's lock for nothing.
+        await service.TickAsync();
+        Assert.Empty(service.Issues);
+        Assert.Equal(0, pan.HidingChecks);
+
+        service.WatchSetup = true;
+        await service.TickAsync();
+        var busy = Assert.Single(service.Issues);
+        Assert.Equal("hidhide-busy", busy.Id);
+        Assert.Equal("HidHide-Konfiguration ist geöffnet", busy.Title);
+        Assert.Contains("Bitte schließe sie", busy.Detail);
+
+        pan.Hiding = Arcadia.Pan.PanReason.None;
+        await service.TickAsync();
+        Assert.Empty(service.Issues);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-35")]
+    public async Task Pan_s_answer_about_hiding_goes_with_the_settings_as_nobody_asks_again()
+    {
+        var service = Create();
+        var pan = new Arcadia.Tests.Pads.FakeEmulationGuardian { Hiding = Arcadia.Pan.PanReason.HidHideBusy };
+        service.HidingCheck = pan;
+        service.WatchSetup = true;
+        await service.TickAsync();
+        Assert.Equal(["hidhide-busy"], service.Issues.Select(i => i.Id));
+
+        // The user closes the settings and later HidHide's configuration: the header must not keep "Bitte schließe sie".
+        service.WatchSetup = false;
+        await service.TickAsync();
+
+        Assert.Empty(service.Issues);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-35")]
+    public async Task Pan_is_not_asked_about_hiding_while_HidHide_or_Pan_is_missing()
+    {
+        var service = Create();
+        var pan = new Arcadia.Tests.Pads.FakeEmulationGuardian { Hiding = Arcadia.Pan.PanReason.HidHideBusy };
+        service.HidingCheck = pan;
+        service.WatchSetup = true;
+        _platform.HidHideVersion = null;
+
+        await service.TickAsync();
+        Assert.Equal("hidhide-missing", Assert.Single(service.Issues).Id);
+
+        _platform.HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
+        _platform.IsPanReady = false;
+        await service.TickAsync();
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+        Assert.Equal(0, pan.HidingChecks);
+    }
+
+    [Fact]
+    public async Task The_tick_shows_the_driver_warning_while_the_settings_watch()
+    {
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        _platform.IsPanReady = false;
+
+        // The first tick looks once, for the header; closed settings don't look again (registry, service list).
+        await service.TickAsync();
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+
+        _platform.IsPanReady = true;
+        await service.TickAsync();
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+
+        service.WatchSetup = true;
+        await service.TickAsync();
+        Assert.Empty(service.Issues);
+
+        _platform.IsPanReady = false;
+        await service.TickAsync();
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+    }
+
+    [Fact]
+    public async Task A_missing_Pan_is_a_warning_while_the_option_is_off()
+    {
+        // Owner's test 2026-10-26: the header showed nothing while the switch was off, the settings did.
+        var service = Create();
+        _platform.IsPanReady = false;
+
+        await service.RefreshAsync();
+
+        Assert.Equal("pan-missing", Assert.Single(service.Issues).Id);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T243-32")]
+    public async Task A_usbip_install_whose_HidHide_step_failed_still_records_the_restart_it_wants()
+    {
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings());
+        var settings = new SettingsService(store);
+        var service = new ControllerSupportService(settings, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        _platform.IsUsbipReady = false;
+        _platform.HidHideVersion = null;
+        _platform.HidHideInstallError = new InvalidOperationException("Pan ist eingerichtet, HidHide aber nicht");
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Contains("HidHide aber nicht", service.LastError);
+        Assert.Equal(_time.GetUtcNow(), settings.Current.UsbipInstalledAt);
+    }
+
+    [Fact]
+    public async Task A_declined_driver_prompt_fails_the_fix_visibly()
+    {
+        var service = Create();
+        _platform.IsPanReady = false;
+        _platform.UsbipInstallDeclined = true;
+
+        await service.ApplyFixAsync(HealthFix.InstallDrivers);
+
+        Assert.Contains("abgelehnt", service.LastError);
+        Assert.Equal(HealthFix.InstallDrivers, service.FailedFix);
+        Assert.False(_platform.IsPanReady);
+
+        service.ClearError();
+        Assert.Null(service.FailedFix);
+    }
+
+    [Fact]
+    public async Task Restoring_the_controllers_runs_Pans_restore()
+    {
+        var service = Create();
+        var restored = 0;
+        service.ControllersRestored += (_, _) => restored++;
+
+        await service.RestoreControllersAsync();
+
+        Assert.Null(service.LastError);
+        Assert.Equal(1, _platform.Restores);
+        // The pad may count afresh (T243-40).
+        Assert.Equal(1, restored);
+    }
+
+    [Fact]
+    public async Task A_declined_restore_prompt_is_reported()
+    {
+        var service = Create();
+        _platform.RestoreDeclined = true;
+        var restored = 0;
+        service.ControllersRestored += (_, _) => restored++;
+
+        await service.RestoreControllersAsync();
+
+        Assert.Contains("abgelehnt", service.LastError);
+        Assert.Equal(0, restored);
+    }
+
+    [Theory]
+    [InlineData(Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired, true)]
+    [InlineData(Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible, false)]
+    [InlineData(Arcadia.ControllerSupport.Pan.PanCompatibility.NotInstalled, false)]
+    [InlineData(Arcadia.ControllerSupport.Pan.PanCompatibility.NotBundled, false)]
+    public void Only_a_Pan_that_differs_from_the_bundled_one_makes_the_update_due(Arcadia.ControllerSupport.Pan.PanCompatibility compatibility, bool due)
+    {
+        _platform.PanCompatibility = compatibility;
+        var service = Create();
+
+        Assert.Equal(due, service.CheckPanAtStart());
+        Assert.Equal(due, service.IsPanUpdateDue);
+    }
+
+    [Fact]
+    public void Off_Windows_Pan_is_never_checked()
+    {
+        _platform.IsSupported = false;
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+
+        Assert.False(Create().CheckPanAtStart());
+    }
+
+    [Fact]
+    public async Task The_Pan_update_clears_the_due_flag_only_once_it_is_done()
+    {
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        var service = Create();
+        service.CheckPanAtStart();
+
+        _platform.PanUpdateAnswer = false;
+        Assert.False(await service.UpdatePanAsync());
+        Assert.True(service.IsPanUpdateDue);
+
+        _platform.PanUpdateAnswer = true;
+        Assert.True(await service.UpdatePanAsync());
+        Assert.False(service.IsPanUpdateDue);
+        Assert.Equal(2, _platform.PanUpdates);
+        Assert.Equal(0, _platform.UsbipInstalls);
+    }
+
+    [Fact]
+    public async Task A_failing_Pan_update_throws_and_stays_due()
+    {
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        _platform.PanUpdateError = new InvalidOperationException("Pan --install meldete Fehler 3");
+        var service = Create();
+        service.CheckPanAtStart();
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdatePanAsync());
+
+        Assert.Contains("Fehler 3", error.Message);
+        Assert.True(service.IsPanUpdateDue);
+    }
+
+    [Fact]
+    public void A_declined_update_switches_Pan_off_and_Arcadia_then_leaves_the_old_Pan_alone()
+    {
+        // #326: an old Pan without a client gives everything back with its own code and ends itself.
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings { PanEnabled = true });
+        var settings = new SettingsService(store);
+        var service = new ControllerSupportService(settings, _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        service.CheckPanAtStart();
+        Assert.True(service.MayTalkToPan, "on, the first hello still reaches Pan: a firmware hold shows first");
+
+        service.SwitchPanOffForUpdate("Pan --install meldete Fehler 3");
+
+        Assert.False(settings.Current.PanEnabled);
+        Assert.True(service.IsPanUpdateDue, "the switch offers the update again");
+        Assert.False(service.MayTalkToPan);
+        Assert.Equal("Pan --install meldete Fehler 3", service.PanUpdateError);
+    }
+
+    [Fact]
+    public async Task A_done_update_lets_Arcadia_talk_to_Pan_again_and_forgets_the_last_error()
+    {
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        var service = Create();
+        service.CheckPanAtStart();
+        service.SwitchPanOffForUpdate("Fehler 3");
+
+        Assert.True(await service.UpdatePanAsync());
+
+        Assert.True(service.MayTalkToPan);
+        Assert.Null(service.PanUpdateError);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task While_the_update_runs_Arcadia_leaves_Pan_alone_so_it_does_not_restart_the_old_service(bool succeeds)
+    {
+        // --install stops the old service and waits for it to end; a client that reconnected restarted it 90 ms later,
+        // and --install gave up after 90 s with exit code 3.
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings { PanEnabled = true });
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        service.CheckPanAtStart();
+        string? whyDuringUpdate = null;
+        _platform.WhilePanUpdates = () => whyDuringUpdate = service.WhyPanIsLeftAlone;
+        _platform.PanUpdateError = succeeds ? null : new InvalidOperationException("Pan --install meldete Fehler 3");
+
+        if (succeeds)
         {
-            if (Gate is { } gate)
-            {
-                await gate.Task;
-            }
-
-            if (!Reachable)
-            {
-                throw new HttpRequestException("SISR antwortet nicht");
-            }
-
-            var path = request.RequestUri!.AbsolutePath;
-            var json = path.EndsWith("/devices") ? Devices()
-                : path.EndsWith("/version/info") ? """{"version":"1.0"}"""
-                : path.EndsWith("/steam/status") ? """{"steam_running":true,"cef_debug_enabled":true,"cef_debug_reachable":true,"marker_shortcut_present":true}"""
-                : path.EndsWith("/viiper/ping") ? """{"status":{"version":"1.0"}}"""
-                : "{}";
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json") };
+            Assert.True(await service.UpdatePanAsync());
+            Assert.True(service.MayTalkToPan, "the new Pan is talked to at once");
         }
+        else
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdatePanAsync());
+            Assert.Equal(ControllerSupportService.PanUpdatingReason, service.WhyPanIsLeftAlone);
+            service.SwitchPanOffForUpdate("Pan --install meldete Fehler 3");
+            Assert.Equal(ControllerSupportService.OldPanOffReason, service.WhyPanIsLeftAlone);
+        }
+
+        Assert.Equal(ControllerSupportService.PanUpdatingReason, whyDuringUpdate);
+        Assert.False(service.IsPanUpdating);
+    }
+
+    [Fact]
+    public async Task Declined_the_update_Arcadia_leaves_Pan_alone_until_it_is_switched_off()
+    {
+        // #354: between the declined prompt and the switch-off, a reconnecting client would reach the old Pan.
+        _platform.PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.UpdateRequired;
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings { PanEnabled = true });
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        service.CheckPanAtStart();
+        _platform.PanUpdateAnswer = false;
+
+        Assert.False(await service.UpdatePanAsync());
+        Assert.Equal(ControllerSupportService.PanUpdatingReason, service.WhyPanIsLeftAlone);
+
+        service.SwitchPanOffForUpdate(null);
+        Assert.False(service.IsPanUpdating);
+        Assert.Equal(ControllerSupportService.OldPanOffReason, service.WhyPanIsLeftAlone);
+    }
+
+    [Fact]
+    public void Without_a_due_update_Arcadia_talks_to_Pan_also_while_it_is_off()
+    {
+        var store = new SettingsStore(Path.Combine(_directory, "settings.json"));
+        store.Save(new AppSettings { PanEnabled = false });
+        var service = new ControllerSupportService(new SettingsService(store), _http, _time, _platform) { Log = Log, GamesUseSteamInput = Registered.GamesUseSteamInput };
+        service.CheckPanAtStart();
+
+        Assert.True(service.MayTalkToPan);
+    }
+
+    [Fact]
+    public async Task The_restore_after_the_old_Pan_says_whether_the_prompt_was_confirmed()
+    {
+        var service = Create();
+
+        _platform.RestoreDeclined = true;
+        Assert.False(await service.RestoreAfterOldPanAsync());
+        _platform.RestoreDeclined = false;
+        Assert.True(await service.RestoreAfterOldPanAsync());
+        Assert.Equal(2, _platform.Restores);
+    }
+
+    // --- SISR, removed on request or kept (#214) ---
+
+    [Fact]
+    [Trait("TestCase", "T214-1")]
+    [Trait("TestCase", "T214-6")]
+    public async Task The_group_SISR_shows_while_SISR_is_there_and_goes_with_SISR_behalten()
+    {
+        using var pc = new FakeSisrPc().WithSisr();
+        var service = Create(sisr: pc.Installation());
+
+        await service.RefreshAsync();
+        Assert.True(service.ShowsSisrGroup);
+
+        var kept = Create(sisr: pc.Installation(), settings: new AppSettings { KeepSisr = true });
+        await kept.RefreshAsync();
+        Assert.False(kept.ShowsSisrGroup);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T214-3")]
+    public async Task With_Steam_closed_SISR_entfernen_removes_everything_without_touching_Steam()
+    {
+        using var pc = new FakeSisrPc().WithSisr();
+        _platform.IsSteamRunning = false;
+        var service = Create(sisr: pc.Installation());
+        await service.RefreshAsync();
+        var removed = 0;
+        service.SisrRemoved += (_, _) => removed++;
+        Assert.False(service.SisrRemovalStopsSteam);
+
+        await service.RemoveSisrAsync();
+
+        Assert.Null(service.LastError);
+        Assert.Null(service.SisrRemovalCause);
+        Assert.Equal(1, removed);
+        Assert.False(service.ShowsSisrGroup);
+        Assert.False(File.Exists(pc.SisrExe));
+        Assert.False(File.Exists(pc.CefFlag));
+        Assert.Equal(0, _platform.SteamStops + _platform.SteamStarts);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T214-4")]
+    public async Task With_Steam_running_the_marker_goes_with_Steam_closed_and_Steam_starts_again()
+    {
+        using var pc = new FakeSisrPc().WithSisr();
+        var service = Create(sisr: pc.Installation());
+        await service.RefreshAsync();
+        Assert.True(service.SisrRemovalStopsSteam);
+
+        await service.RemoveSisrAsync();
+
+        Assert.Null(service.LastError);
+        Assert.Equal(1, _platform.SteamStops);
+        Assert.Equal(1, _platform.SteamStarts);
+        Assert.Equal(0, pc.Installation().Find().MarkerAccounts);
+        Assert.False(service.ShowsSisrGroup);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T214-4")]
+    public async Task A_Steam_that_won_t_close_or_a_Steam_game_leaves_SISR_as_it_is()
+    {
+        using var pc = new FakeSisrPc().WithSisr();
+        pc.System.RunSisr(pc.SisrExe, id: 5);
+        var service = Create(sisr: pc.Installation());
+        await service.RefreshAsync();
+
+        _platform.SteamGame = "Hades II";
+        await service.RemoveSisrAsync();
+        Assert.Equal(ControllerSupportService.SisrRemovalBlocker("Hades II"), service.LastError);
+        Assert.Equal(service.LastError, service.SisrRemovalCause);
+        Assert.True(service.SisrRemovedNothing);
+
+        _platform.SteamGame = null;
+        _platform.SteamRefusesToExit = true;
+        await service.RemoveSisrAsync();
+        Assert.Equal(ControllerSupportService.SteamWontCloseText, service.LastError);
+        Assert.Equal(service.LastError, service.SisrRemovalCause);
+
+        // The game may be using SISR's pad: SISR is stopped only once Steam is closed.
+        Assert.Empty(pc.System.Stopped);
+        Assert.True(File.Exists(pc.SisrExe));
+        Assert.Equal(1, pc.Installation().Find().MarkerAccounts);
+        Assert.Equal(0, _platform.SteamStarts);
+        Assert.True(service.ShowsSisrGroup);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T214-8")]
+    public async Task An_SISR_that_won_t_stop_keeps_its_files_names_the_cause_and_Steam_stays()
+    {
+        using var pc = new FakeSisrPc().WithSisr();
+        pc.System.RunSisr(pc.SisrExe, id: 5);
+        pc.System.Unstoppable.Add(5);
+        var service = Create(sisr: pc.Installation());
+        await service.RefreshAsync();
+
+        await service.RemoveSisrAsync();
+
+        Assert.Equal(SisrInstallation.StopFailedCause, service.SisrRemovalCause);
+        Assert.True(service.SisrRemovedNothing);
+        Assert.True(File.Exists(pc.SisrExe));
+        // Steam closed first (SISR is stopped only then) and came back.
+        Assert.Equal(1, _platform.SteamStops);
+        Assert.Equal(1, _platform.SteamStarts);
+
+        // Idempotent: once SISR can stop, the next try finishes the job.
+        pc.System.Unstoppable.Clear();
+        await service.RemoveSisrAsync();
+        Assert.Null(service.SisrRemovalCause);
+        Assert.False(service.ShowsSisrGroup);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T214-8")]
+    public async Task What_is_left_after_program_and_marker_went_keeps_the_group_until_a_retry_removes_it()
+    {
+        using var pc = new FakeSisrPc().WithSisr();
+        _platform.IsSteamRunning = false;
+        var service = Create(sisr: pc.Installation());
+        await service.RefreshAsync();
+        var removed = 0;
+        service.SisrRemoved += (_, _) => removed++;
+
+        pc.System.HasUninstallEntry = true;
+        pc.System.UninstallEntryLocked = true;
+        await service.RemoveSisrAsync();
+        Assert.False(service.SisrFound!.ShowsGroup);
+
+        // Only SISR's uninstall entry is left; it alone wouldn't show the group, so the cause keeps it.
+        Assert.NotNull(service.SisrRemovalCause);
+        Assert.False(service.SisrRemovedNothing);
+        Assert.True(service.ShowsSisrGroup);
+        Assert.Equal(0, removed);
+
+        pc.System.UninstallEntryLocked = false;
+        await service.RemoveSisrAsync();
+        Assert.Null(service.SisrRemovalCause);
+        Assert.False(service.ShowsSisrGroup);
+        Assert.Equal(1, removed);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T214-7")]
+    public async Task SISR_laeuft_shows_under_Pan_while_the_settings_watch_also_with_the_group_hidden_and_not_with_Pan_off()
+    {
+        using var pc = new FakeSisrPc().WithSisr();
+        pc.System.RunSisr(pc.SisrExe);
+        var service = Create(sisr: pc.Installation(), settings: new AppSettings { KeepSisr = true });
+        service.WatchSetup = true;
+
+        await service.TickAsync();
+        Assert.Contains(EmulationParts.SisrRunning, service.Issues);
+
+        // The header doesn't keep it once the settings close; nobody looks at the process list then.
+        service.WatchSetup = false;
+        await service.TickAsync();
+        Assert.DoesNotContain(EmulationParts.SisrRunning, service.Issues);
+
+        var panOff = Create(sisr: pc.Installation(), settings: new AppSettings { PanEnabled = false });
+        panOff.WatchSetup = true;
+        await panOff.TickAsync();
+        Assert.DoesNotContain(EmulationParts.SisrRunning, panOff.Issues);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T214-10")]
+    public async Task At_start_only_an_SISR_the_older_Arcadia_started_is_stopped()
+    {
+        using var pc = new FakeSisrPc().WithSisr();
+        var log = Path.Combine(pc.LogDirectory, "sisr.log");
+        pc.System.RunSisr(pc.SisrExe, id: 5, $"\"{pc.SisrExe}\" {SisrInstallation.ArcadiaApiArgument} --log.file \"{log}\"");
+        pc.System.RunSisr(pc.SisrExe, id: 6);
+        var service = Create(sisr: pc.Installation());
+
+        await service.StopSisrStartedByOldArcadiaAsync();
+
+        Assert.Equal([5], pc.System.Stopped);
+        // Steam runs, so it drops the layout SISR forced; a kill skips SISR's own reset.
+        Assert.Equal(1, pc.System.SteamLayoutResets);
+    }
+
+    /// <summary>Nothing here goes to the network; a request that does is a bug.</summary>
+    private sealed class NoNetwork : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException($"Unerwartete Anfrage: {request.RequestUri}");
     }
 
     private sealed class FakePlatform : IControllerSupportPlatform
     {
-        public HashSet<string> RunningDirectories { get; } = [];
-
         public bool IsSupported { get; set; } = true;
 
         public bool IsSteamInstalled { get; set; } = true;
 
         public bool IsSteamRunning { get; set; } = true;
 
-        /// <summary>steam.exe still runs but Steam goes away: it shuts down, the user is logged out.</summary>
-        public bool SteamNotReady { get; set; }
 
-        /// <summary>Steam is up with a user, but its login never completes ("loading user data").</summary>
-        public bool SteamLoginHangs { get; set; }
-
-        public bool IsSteamUp => IsSteamRunning && !SteamNotReady;
-
-        public bool IsSteamReady => IsSteamUp && !SteamLoginHangs;
+        public bool IsSteamReady => IsSteamRunning;
 
         /// <summary>"Steam starten" does nothing, as with a broken Steam.</summary>
         public bool SteamWontStart { get; set; }
 
-        public int LayoutResets { get; private set; }
-
         public bool IsUsbipReady { get; set; } = true;
-
-        public bool IsCefDebuggingEnabled { get; set; } = true;
 
         public string? SteamGame { get; set; }
 
@@ -1635,29 +1013,11 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public int UsbipInstalls { get; private set; }
 
-        public void EnableCefDebugging() => IsCefDebuggingEnabled = true;
-
         public string? RunningSteamGame() => SteamGame;
 
         public int? SteamAppId { get; set; }
 
         public int? RunningSteamAppId() => SteamAppId;
-
-        /// <summary>Steam Input per Steam app, as Steam's localconfig.vdf has it; missing means unreadable.</summary>
-        public Dictionary<int, SteamInputSetting> SteamInput { get; } = [];
-
-        public int SteamInputReads { get; private set; }
-
-        public SteamInputSetting? SteamInputFor(int appId)
-        {
-            SteamInputReads++;
-            return SteamInput.GetValueOrDefault(appId);
-        }
-
-        /// <summary>Steam Input outside games; null is unreadable.</summary>
-        public SteamInputSetting? SteamInputDefault { get; set; }
-
-        public SteamInputSetting? SteamInputDefaults() => SteamInputDefault;
 
         public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken)
         {
@@ -1679,70 +1039,105 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public Exception? UsbipInstallError { get; set; }
 
-        public Task<bool> InstallUsbipAsync(HttpClient http, CancellationToken cancellationToken)
+        /// <summary>Set, the install sets up usbip-win2 and Pan, then fails as Pan's exit code 6 does (HidHide not installed).</summary>
+        public Exception? HidHideInstallError { get; set; }
+
+        public bool IsPanReady { get; set; } = true;
+
+        public Arcadia.ControllerSupport.Pan.PanCompatibility PanCompatibility { get; set; } = Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible;
+
+        /// <summary>What the Pan-only update answers (#297): true done, false declined; a set error is thrown.</summary>
+        public bool PanUpdateAnswer { get; set; } = true;
+
+        public Exception? PanUpdateError { get; set; }
+
+        public int PanUpdates { get; private set; }
+
+        /// <summary>Runs while Pan's <c>--install</c> would, to see what Arcadia does meanwhile.</summary>
+        public Action? WhilePanUpdates { get; set; }
+
+        public Task<bool> UpdatePanAsync(CancellationToken cancellationToken)
+        {
+            PanUpdates++;
+            WhilePanUpdates?.Invoke();
+            if (PanUpdateError is { } error)
+            {
+                throw error;
+            }
+
+            if (PanUpdateAnswer)
+            {
+                PanCompatibility = Arcadia.ControllerSupport.Pan.PanCompatibility.Compatible;
+            }
+
+            return Task.FromResult(PanUpdateAnswer);
+        }
+
+        /// <summary>HidHide's version (#243 B2); a supported one unless a test takes it away.</summary>
+        public Version? HidHideVersion { get; set; } = Arcadia.Pan.HidHideRelease.Version;
+
+        public int Restores { get; private set; }
+
+        public int HidHideReinstalls { get; private set; }
+
+        public bool HidHideReinstallDeclined { get; set; }
+
+        /// <summary>HidHide's installer ran (and with it the puck's restart) while Steam ran (#296): never should.</summary>
+        public int PuckRestartsWhileSteamRuns { get; private set; }
+
+        /// <summary>HidHide was uninstalled and goes at the next restart: its installer doesn't run until then.</summary>
+        public bool HidHideRemovalPending { get; set; }
+
+        public bool InstallsHidHide => ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending;
+
+        /// <summary>Runs inside the driver install, e.g. to cancel it midway.</summary>
+        public Action? DuringDriverInstall { get; set; }
+
+        public Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken)
+        {
+            HidHideReinstalls++;
+            PuckRestartsWhileSteamRuns += IsSteamRunning ? 1 : 0;
+            return Task.FromResult(!HidHideReinstallDeclined);
+        }
+
+        public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
         {
             UsbipInstalls++;
+            PuckRestartsWhileSteamRuns += IsSteamRunning && InstallsHidHide ? 1 : 0;
+            DuringDriverInstall?.Invoke();
+            cancellationToken.ThrowIfCancellationRequested();
             if (UsbipInstallError is { } error)
             {
                 throw error;
             }
 
             IsUsbipReady = !UsbipInstallDeclined;
+            IsPanReady = !UsbipInstallDeclined;
+            if (HidHideInstallError is { } hidHideError)
+            {
+                throw hidHideError;
+            }
+
+            if (!UsbipInstallDeclined && InstallsHidHide)
+            {
+                HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
+            }
+
             return Task.FromResult(!UsbipInstallDeclined);
         }
 
-        public void ResetSteamInputLayout() => LayoutResets++;
+        public bool RestoreDeclined { get; set; }
 
-        public int MarkerChecks { get; private set; }
-
-        public bool MarkerPresent { get; set; } = true;
-
-        public bool HasSisrMarker(string sisrExecutable) => MarkerPresent;
-
-        /// <summary>No Steam account is known (never logged in), so the marker can't be written.</summary>
-        public bool NoSteamAccount { get; set; }
-
-        /// <summary>The Steam accounts on this PC, the logged-in one first; empty stands for one account whose marker is <see cref="MarkerPresent"/>.</summary>
-        public List<MarkerAccount> Accounts { get; } = [];
-
-        /// <summary>The accounts passed to the last <see cref="EnsureSisrMarker"/>; null when none were chosen.</summary>
-        public IReadOnlyCollection<uint>? MarkerWrittenFor { get; private set; }
-
-        /// <summary>Only while Steam is closed and an account is known, like the real one.</summary>
-        public bool EnsureSisrMarker(string sisrExecutable, IReadOnlyCollection<uint>? accountIds = null)
+        public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken)
         {
-            MarkerChecks++;
-            var written = !IsSteamRunning && !NoSteamAccount;
-            if (!written)
-            {
-                return false;
-            }
-
-            MarkerWrittenFor = accountIds;
-            for (var i = 0; i < Accounts.Count; i++)
-            {
-                if (accountIds?.Contains(Accounts[i].Id) == true)
-                {
-                    Accounts[i] = Accounts[i] with { HasMarker = true };
-                }
-            }
-
-            // SISR reads the marker of the logged-in account, the first one here.
-            MarkerPresent |= accountIds is null || (Accounts.Count > 0 && accountIds.Contains(Accounts[0].Id));
-            return true;
+            Restores++;
+            return Task.FromResult(!RestoreDeclined);
         }
 
-        public IReadOnlyList<MarkerAccount> SisrMarkerAccounts(string sisrExecutable) =>
-            NoSteamAccount ? [] : Accounts.Count > 0 ? Accounts.ToList() : [new MarkerAccount(1, "Anna", MarkerPresent)];
-
-        public bool AnyRunningFrom(string directory)
-        {
-            lock (RunningDirectories)
-            {
-                return RunningDirectories.Contains(directory);
-            }
-        }
-
-        public IReadOnlyList<HealthIssue> CheckDependencies(AppSettings settings, DateTimeOffset now) => [];
+        public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) =>
+        [
+            .. IsPanReady ? Array.Empty<HealthIssue>() : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Test", HealthFix.InstallDrivers, "Installieren")],
+            .. ControllerSupportPlatform.CheckHidHide(HidHideVersion) is { } hidHide ? [hidHide] : Array.Empty<HealthIssue>(),
+        ];
     }
 }

@@ -15,13 +15,18 @@ public static class ForegroundGame
     /// <summary>The <c>Game.Key</c> of the game in front as <see cref="IsInFront"/> tells it, or null.</summary>
     public static string? InFront(GameFolders games, LaunchedGames launched)
     {
-        if (ProcessWatch.ForegroundProcessId() is not { } id || id == Environment.ProcessId)
+        return ProcessWatch.ForegroundProcessId() is { } id ? GameOf(id, ProcessWatch.PathOf(id), games, launched) : null;
+    }
+
+    /// <summary>The <c>Game.Key</c> of the game process <paramref name="processId"/> at <paramref name="path"/> belongs to, as <see cref="InFront"/> tells it.</summary>
+    public static string? GameOf(int processId, string? path, GameFolders games, LaunchedGames launched)
+    {
+        if (processId == Environment.ProcessId)
         {
             return null;
         }
 
-        var path = ProcessWatch.PathOf(id);
-        return path is null ? launched.GameStartedBefore(id) : games.GameOf(path);
+        return path is null ? launched.GameStartedBefore(processId) : games.GameOf(path);
     }
 
     /// <summary>

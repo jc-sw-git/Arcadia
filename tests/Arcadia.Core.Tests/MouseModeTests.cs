@@ -69,6 +69,22 @@ public sealed class MouseModeTests
         Assert.False(_mode.IsOn);
     }
 
+    /// <summary>Owner, 2026-10-26 (#213): a button held alone past the window goes to a game as held, so it starts no combo.</summary>
+    [Theory]
+    [InlineData(PadButtons.Menu, PadButtons.View)]
+    [InlineData(PadButtons.View, PadButtons.Menu)]
+    public void Back_and_Start_count_only_when_the_second_button_joins_within_the_combo_window(PadButtons first, PadButtons second)
+    {
+        HoldFor(first, MouseMode.ComboWindow + Poll + Poll);
+        HoldFor(first | second, HoldTime + Poll);
+        HoldFor(PadButtons.None, Poll);
+        Assert.False(_mode.IsOn);
+
+        HoldFor(first, MouseMode.ComboWindow - Poll - Poll);
+        HoldFor(first | second, HoldTime + Poll);
+        Assert.True(_mode.IsOn);
+    }
+
     [Fact]
     public void Switched_on_by_hand_during_a_dialog_the_mode_stays_on_after_it()
     {

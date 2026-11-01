@@ -58,6 +58,12 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
 
     private Dictionary<string, Running> _running = new(StringComparer.Ordinal);
 
+    // Launchers whose monitor reports games that don't really run (demo data); set by the poll, read on the UI thread.
+    private volatile IReadOnlySet<string> _simulatedLaunchers = new HashSet<string>();
+
+    // A copy for other threads, renewed with every change of the two above.
+    private volatile IReadOnlyCollection<string> _active = [];
+
     // Set on the UI thread, taken over by the next poll on the thread pool, where ProcessGames is used.
     private volatile GameFolders? _newFolders;
     private bool _polling;
@@ -74,6 +80,19 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         : _starting.TryGetValue(gameKey, out var start) ? new RunState(RunPhase.Starting, start.AskedAt)
         : null;
 
+    /// <summary>
+    /// Whether the game really runs or is being started on this PC. A game a monitor reports as simulated (demo data)
+    /// shows "Läuft" (<see cref="StateOf"/>) but is not in the way of anything (#307).
+    /// </summary>
+    public RunState? RealStateOf(string gameKey) =>
+        _simulatedLaunchers.Contains(LauncherIdOf(gameKey)) ? null : StateOf(gameKey);
+
+    /// <summary>
+    /// The keys of the games that really run or are being started, from any thread: which Steam Controller mode applies
+    /// (#213) is decided off the UI thread. Simulated games (<see cref="RealStateOf"/>) are not in it.
+    /// </summary>
+    public IReadOnlyCollection<string> ActiveGames => _active;
+
     /// <summary>The games started from Arcadia that haven't ended; an update restart hands them to the next Arcadia.</summary>
     public IReadOnlyCollection<string> StartedFromArcadia => [.. _starting.Keys.Union(_startedFromArcadia)];
 
@@ -89,10 +108,15 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
     {
         var now = time.GetUtcNow();
         _starting[gameKey] = new Start(now, now, AfterInstall: false);
+        UpdateActive();
     }
 
     /// <summary>The start failed or was refused; the game shows "Spielen" again.</summary>
-    public void StartFailed(string gameKey) => _starting.Remove(gameKey);
+    public void StartFailed(string gameKey)
+    {
+        _starting.Remove(gameKey);
+        UpdateActive();
+    }
 
     /// <summary>
     /// After an update restart: the Arcadia before started <paramref name="gameKey"/>. It counts as started from Arcadia
@@ -111,6 +135,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         var watched = _starting.Keys.Union(_startedFromArcadia).ToHashSet(StringComparer.Ordinal);
         var enabled = launchers.Enabled;
         var monitors = enabled.Where(i => i.RunningGames is not null).Select(i => i.RunningGames!).ToList();
+        _simulatedLaunchers = monitors.Where(m => m.ReportsSimulatedGames).Select(m => m.LauncherId).ToHashSet(StringComparer.Ordinal);
         var byProcess = FallbackLaunchers(enabled);
         var scan = byProcess.Count > 0;
 
@@ -240,6 +265,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         // A game whose launcher was switched off would be awaited for ever.
         _startedFromArcadia.RemoveWhere(key => !enabled.Contains(LauncherIdOf(key)));
         _running = running;
+        UpdateActive();
         return new RunningChanges(changed, ended, notStarted, startAgain);
     }
 
@@ -249,6 +275,10 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
         var askedSecond = start.AskedAt.AddTicks(-(start.AskedAt.UtcTicks % TimeSpan.TicksPerSecond));
         return refused.LastOrDefault(r => r.Key == key && r.Refusal.At >= askedSecond).Refusal;
     }
+
+    // Simulated games (demo data) are no game in front of anything: Steam Controller routing must not treat one as running (#307).
+    private void UpdateActive() => _active = _running.Keys.Union(_starting.Keys, StringComparer.Ordinal)
+        .Where(key => !_simulatedLaunchers.Contains(LauncherIdOf(key))).ToList();
 
     private HashSet<string> FallbackLaunchers(IEnumerable<ILauncherIntegration>? enabled = null) =>
         (enabled ?? launchers.Enabled).Where(i => i.RunningGames is null).Select(i => i.Launcher.Id).ToHashSet(StringComparer.Ordinal);

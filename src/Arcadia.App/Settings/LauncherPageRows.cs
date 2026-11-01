@@ -1,4 +1,5 @@
 using Arcadia.App.Services;
+using Arcadia.App.ViewModels;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -108,3 +109,29 @@ public sealed partial class LauncherPageHeadViewModel(Action<int> turn, Action b
 
 /// <summary>A launcher beside the shown one on its page.</summary>
 public sealed record LauncherNeighbour(string Name, LauncherBadge Badge);
+
+/// <summary>
+/// "Steam Controller" on a launcher's page (#178): the mode its games on "Standard" get. Only while Pan is on does the
+/// mode exist, so otherwise the row is greyed out and keeps its value, yet still takes the focus to say why.
+/// </summary>
+public sealed class LauncherControllerModeRowViewModel(Func<bool> usesArcadiaPad, Action<bool> set, Func<bool> isPanOn)
+    : ChoiceRowViewModel(RowKey, "Steam Controller", () => usesArcadiaPad() ? 0 : 1, value => set(value == 0), value => ControllerModes.Of(value == 0), 0, 1)
+{
+    public const string RowKey = "launcher-controller-mode";
+
+    public override bool CanChange => isPanOn();
+
+    public override bool CanActivate => isPanOn();
+
+    /// <summary>Pan was switched on or off meanwhile: the row is greyed out or not, the footer follows.</summary>
+    public void ShowPan()
+    {
+        IsDimmed = !isPanOn();
+        NotifyActionsChanged();
+        Refresh();
+    }
+
+    // Not for the press (CanChange guards it already) but for the arrows beside the value, which grey out by
+    // CanDecrease/CanIncrease.
+    protected override bool Allows(int value) => isPanOn();
+}

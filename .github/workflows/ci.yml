@@ -45,6 +45,13 @@ jobs:
       - name: Build
         if: needs.changes.outputs.skip_build != 'true'
         run: dotnet build Arcadia.slnx --configuration Release
+      # Pan's hiding (#243 part B) against the real HidHide driver; if it can't be set up there, those tests skip.
+      - name: Install HidHide
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        timeout-minutes: 5
+        shell: pwsh
+        run: ./tools/ci/Install-HidHide.ps1
       # Coverage is collected on Windows only: it is the platform Arcadia ships for, and only there do the
       # Windows-specific code paths run.
       - name: Test

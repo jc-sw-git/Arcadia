@@ -20,7 +20,7 @@ public sealed class SteamInstallation(string rootPath, uint? activeUserId)
 
     /// <summary>
     /// While this empty file exists, Steam opens its local CEF debug interface on its next start.
-    /// SISR needs it to set the controller layout.
+    /// SISR needs it to set the controller layout; "SISR entfernen" deletes it (#214).
     /// </summary>
     public string CefDebuggingFlagPath => Path.Combine(RootPath, ".cef-enable-remote-debugging");
 

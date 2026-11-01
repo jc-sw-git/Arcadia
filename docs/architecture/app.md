@@ -36,8 +36,9 @@ partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`; Avalonia pit
   - `SettingsPageViewModel` (categories, LB/RB, B), one `SettingsCategoryViewModel` per category; a new category is a
     subclass added in `MainViewModel.ShowSettings`.
   - `LauncherSettingsViewModel` with `LauncherRowViewModel`s and its `ILauncherSettingsHost` (#136), and a page per
-    launcher with `LauncherPageRows` (#137); `ControllerSettingsViewModel` with SISR's prompts as its `Dialog`;
-    `AboutSettingsViewModel`.
+    launcher with `LauncherPageRows` (#137), its Steam Controller default `LauncherControllerModeRowViewModel` and the
+    reset's `SettingsQuestionViewModel` as its `Dialog` (#178); `ControllerSettingsViewModel` (`PanRows`, `SisrRows`, the Steam prompts as
+    its `Dialog`); `AboutSettingsViewModel`.
   - Rows (`SettingsRowViewModel`): `ChoiceRowViewModel`, `SwitchRowViewModel`, `ActionRowViewModel`,
     `InfoRowViewModel`, `TextRowViewModel` with `TextEditorViewModel` (a text written with the on-screen keyboard and
     checked while typed). Each has its `Info` as `InfoBlock`s for the info panel, optionally a `Preview` box above it
@@ -51,10 +52,11 @@ partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`; Avalonia pit
 
 `Controls/`: `LauncherLogo` (draws a `LauncherBadge`: logo, picture or letter tile, wherever a launcher is named),
 `ButtonTextBlock` (buttons drawn framed inside a text), `KeyHint`/`KeyText` (a hint or label showing the controller's
-button or the keyboard's key, after `Input/InputHints`), `HoldRing`, `RevealPanel` (the sliding keyboard),
-`SharedWidthRow` and `CollapsingStack` (the shrinking chips), `CentredDockPanel` (a key's name centred between icon
-and button), `ScreenEdgeFill`. `Input/GamepadRouting` takes the controller's buttons to `MainViewModel`, ⧉/≡ through
-`SoloButtons`.
+button or the keyboard's key, after `Input/InputHints`), `PadGlyph` (one controller button in the printing of the
+controller in use, `InputHints.Symbols` from `MainViewModel.ButtonSymbols`, #215), `HoldRing`, `RevealPanel` (the
+sliding keyboard), `SharedWidthRow` and `CollapsingStack` (the shrinking chips), `CentredDockPanel` (a key's name
+centred between icon and button), `ScreenEdgeFill`. `Input/GamepadRouting` takes the controller's buttons to
+`MainViewModel`, ⧉/≡ through `SoloButtons`, and tells it the controller in use (`ControllerInUse`).
 
 ## Services
 

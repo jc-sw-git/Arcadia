@@ -1,0 +1,95 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:settings="using:Arcadia.App.Settings"
+             x:Class="Arcadia.App.Views.ControllerLayoutsView"
+             x:DataType="settings:ControllerLayoutsViewModel">
+
+  <!-- "Controller zuordnen" (#238 D3a, designs T238Modal): one row per connected model and [Übernehmen], ▲ ▼ moves, ◀ ▶
+       or A change a row, A on [Übernehmen] applies, B closes without the changes. The rows scroll with the focus and fade where more follow (ControllerLayoutsView.axaml.cs). -->
+  <Panel>
+    <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+            Command="{Binding CloseCommand}" />
+    <Border Classes="prompt" Width="1080" Margin="0,120,0,0" HorizontalAlignment="Center" VerticalAlignment="Top">
+      <Panel>
+        <StackPanel Spacing="22">
+          <StackPanel Orientation="Horizontal" Spacing="18">
+            <Border Classes="promptIcon">
+              <Path Classes="layoutsIcon" Data="M7 7h10a5 5 0 0 1 4.6 7l-1 2.3a2.5 2.5 0 0 1-4.2.5L15 15H9l-1.4 1.8a2.5 2.5 0 0 1-4.2-.5l-1-2.3A5 5 0 0 1 7 7z M8 10v3 M6.5 11.5h3" />
+            </Border>
+            <TextBlock Text="{x:Static settings:ControllerLayoutsViewModel.Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Classes="promptBody" Text="{x:Static settings:ControllerLayoutsViewModel.Text}" />
+
+          <Panel>
+            <ScrollViewer Name="RowsScroller" MaxHeight="470" VerticalScrollBarVisibility="Hidden" Padding="6" Margin="-6">
+              <ItemsControl Name="LayoutRows" ItemsSource="{Binding Rows}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="6" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="settings:ControllerLayoutRowViewModel">
+                    <Button Classes="plain settingRow pageRow" Classes.focused="{Binding IsFocused}" Command="{Binding PointCommand}">
+                      <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20" MinHeight="48">
+                          <StackPanel Spacing="5" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Title}" FontSize="19" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Classes="rowSubtitle" Text="{Binding Subtitle}" />
+                          </StackPanel>
+                          <Border Grid.Column="1" Classes="valuePill layoutPill" IsVisible="{Binding IsOpen}" VerticalAlignment="Center">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                              <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}">
+                                <Path Classes="chevronLeft" />
+                              </Button>
+                              <TextBlock Grid.Column="1" Classes="valueText" Classes.notTakenOver="{Binding IsNotTakenOver}" Text="{Binding ValueText}" />
+                              <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}">
+                                <Path Classes="chevronRight" />
+                              </Button>
+                            </Grid>
+                          </Border>
+                          <Border Grid.Column="1" Classes="valuePill layoutPill" IsVisible="{Binding IsLocked}" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                              <Path Classes="lockIcon" Data="M7 11h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z M8 11V8a4 4 0 0 1 8 0v3" VerticalAlignment="Center" />
+                              <TextBlock Classes="valueText locked" Text="{Binding ValueText}" />
+                            </StackPanel>
+                          </Border>
+                        </Grid>
+                        <TextBlock Classes="layoutLockNote" Text="{x:Static settings:ControllerLayoutsViewModel.LockNote}" IsVisible="{Binding ShowsLockNote}" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <!-- Only where the rows can still scroll towards; the panel's surface colour, as the info panel's fades. They reach
+                 over the scroller's padding (the room for the focus ring), else a cut row shows unfaded in that strip. -->
+            <Border Name="FadeTop" Classes="listFade" Background="{StaticResource InfoFadeTop}" VerticalAlignment="Top" Height="56" Margin="0,-6,0,0" IsHitTestVisible="False" />
+            <Border Name="FadeBottom" Classes="listFade" Background="{StaticResource InfoFadeBottom}" VerticalAlignment="Bottom" Height="72" Margin="0,0,0,-6" IsHitTestVisible="False" />
+          </Panel>
+
+          <TextBlock Classes="layoutsHint" Text="{x:Static settings:ControllerLayoutsViewModel.Hint}" />
+          <!-- The only way to apply: A here, or a click (B and ✕ close without the changes). -->
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Button Name="ApplyButton" Classes="plain action primaryAction" Classes.focused="{Binding IsApplyFocused}"
+                    Content="{x:Static settings:ControllerLayoutsViewModel.ApplyText}" Command="{Binding ApplyCommand}" />
+          </StackPanel>
+          <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+              <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="Auswählen" />
+              <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Ändern" IsVisible="{Binding CanChange}" />
+              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Übernehmen" IsVisible="{Binding IsApplyFocused}" />
+              <ctl:KeyHint Pad="B" Keys="Esc" Text="Abbrechen" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+        <Button Classes="plain dialogClose" Margin="0,-16,-24,0" ToolTip.Tip="Schließen"
+                IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CloseCommand}">
+          <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+        </Button>
+      </Panel>
+    </Border>
+  </Panel>
+</UserControl>

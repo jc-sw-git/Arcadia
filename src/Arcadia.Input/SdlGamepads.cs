@@ -23,7 +23,10 @@ public sealed partial class SdlGamepads : ISdlGamepads
     private const int AxisRightY = 3;
     private const int AxisLeftTrigger = 4;
     private const int AxisRightTrigger = 5;
-    private const int ButtonsRead = (int)SdlPadState.Button.Touchpad + 1;
+    private const int ButtonsRead = (int)SdlPadState.Button.Misc2 + 1;
+
+    private const int SensorAccel = 1;
+    private const int SensorGyro = 2;
 
     public string Init()
     {
@@ -33,9 +36,10 @@ public sealed partial class SdlGamepads : ISdlGamepads
         // SDL's own HID drivers read PlayStation and Nintendo pads raw, past Steam Input.
         SDL_SetHint("SDL_JOYSTICK_HIDAPI", "1");
 
-        // Valve's devices stay Steam's (and SISR's) until Arcadia reads the Steam Controller itself (#212): SDL
-        // writes settings to a Steam Controller it opens (lizard mode, IMU).
-        SDL_SetHint("SDL_HIDAPI_IGNORE_DEVICES", "0x28de/0x0000");
+        // The Steam Controller raw (#212), beside Steam and SISR. While Arcadia holds it open, SDL keeps its lizard mode
+        // (the controller's own mouse and keys) off; the IMU only goes on when asked. The Steam Deck's controls stay Steam's.
+        SDL_SetHint("SDL_JOYSTICK_HIDAPI_STEAM", "1");
+        SDL_SetHint("SDL_JOYSTICK_HIDAPI_STEAMDECK", "0");
 
         // The report mode of Bluetooth PlayStation pads changes (until they are switched off) only once Arcadia
         // rumbles them; the enhanced mode breaks DirectInput for games without SDL.
@@ -71,13 +75,18 @@ public sealed partial class SdlGamepads : ISdlGamepads
         SDL_GetGamepadVendorForID(id),
         SDL_GetGamepadProductForID(id),
         (PadType)SDL_GetRealGamepadTypeForID(id),
-        (StickDeviceType)SDL_GetJoystickTypeForID(id));
+        (StickDeviceType)SDL_GetJoystickTypeForID(id))
+    {
+        Path = Marshal.PtrToStringUTF8(SDL_GetGamepadPathForID(id)) ?? string.Empty,
+    };
 
     public nint Open(uint id) => SDL_OpenGamepad(id);
 
     public string LastError() => Marshal.PtrToStringUTF8(SDL_GetError()) ?? string.Empty;
 
     public void Update() => SDL_UpdateGamepads();
+
+    public void ReadSteamControllers(bool on) => SDL_SetHint("SDL_JOYSTICK_HIDAPI_STEAM", on ? "1" : "0");
 
     public SdlPadState Read(nint pad)
     {
@@ -97,11 +106,59 @@ public sealed partial class SdlGamepads : ISdlGamepads
             SDL_GetGamepadAxis(pad, AxisRightX),
             SDL_GetGamepadAxis(pad, AxisRightY),
             SDL_GetGamepadAxis(pad, AxisLeftTrigger),
-            SDL_GetGamepadAxis(pad, AxisRightTrigger));
+            SDL_GetGamepadAxis(pad, AxisRightTrigger))
+        {
+            FirstTouchpad = Touch(pad, 0),
+            SecondTouchpad = Touch(pad, 1),
+            Motion = Motion(pad),
+        };
+    }
+
+    public bool SetMotionSensors(nint pad, bool on)
+    {
+        if (!SDL_GamepadHasSensor(pad, SensorGyro))
+        {
+            return false;
+        }
+
+        _ = SDL_SetGamepadSensorEnabled(pad, SensorGyro, on);
+        _ = SDL_SetGamepadSensorEnabled(pad, SensorAccel, on);
+        return true;
+    }
+
+    private static SdlTouch Touch(nint pad, int touchpad)
+    {
+        if (touchpad >= SDL_GetNumGamepadTouchpads(pad)
+            || !SDL_GetGamepadTouchpadFinger(pad, touchpad, 0, out var down, out var x, out var y, out var pressure))
+        {
+            return default;
+        }
+
+        return new SdlTouch(down, x, y, pressure);
+    }
+
+    private static unsafe MotionReading Motion(nint pad)
+    {
+        if (!SDL_GamepadSensorEnabled(pad, SensorGyro))
+        {
+            return default;
+        }
+
+        var gyro = stackalloc float[3];
+        var accel = stackalloc float[3];
+        if (!SDL_GetGamepadSensorData(pad, SensorGyro, gyro, 3) || !SDL_GetGamepadSensorData(pad, SensorAccel, accel, 3))
+        {
+            return default;
+        }
+
+        return new MotionReading(true, new SensorAxes(gyro[0], gyro[1], gyro[2]), new SensorAxes(accel[0], accel[1], accel[2]));
     }
 
     // A pad without motors reports an error; nothing to do about it.
-    public void Rumble(nint pad, ushort strength, uint durationMs) => _ = SDL_RumbleGamepad(pad, strength, strength, durationMs);
+    public void Rumble(nint pad, ushort low, ushort high, uint durationMs) => _ = SDL_RumbleGamepad(pad, low, high, durationMs);
+
+    // A pad without a light bar reports an error; nothing to do about it.
+    public void SetLight(nint pad, byte red, byte green, byte blue) => _ = SDL_SetGamepadLED(pad, red, green, blue);
 
     public void Close(nint pad) => SDL_CloseGamepad(pad);
 
@@ -144,6 +201,9 @@ public sealed partial class SdlGamepads : ISdlGamepads
     private static partial int SDL_GetJoystickTypeForID(uint id);
 
     [LibraryImport(Lib)]
+    private static partial nint SDL_GetGamepadPathForID(uint id);
+
+    [LibraryImport(Lib)]
     private static partial nint SDL_OpenGamepad(uint id);
 
     [LibraryImport(Lib)]
@@ -162,6 +222,34 @@ public sealed partial class SdlGamepads : ISdlGamepads
     [LibraryImport(Lib)]
     [return: MarshalAs(UnmanagedType.U1)]
     private static partial bool SDL_RumbleGamepad(nint gamepad, ushort low, ushort high, uint durationMs);
+
+    [LibraryImport(Lib)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    private static partial bool SDL_SetGamepadLED(nint gamepad, byte red, byte green, byte blue);
+
+    [LibraryImport(Lib)]
+    private static partial int SDL_GetNumGamepadTouchpads(nint gamepad);
+
+    [LibraryImport(Lib)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    private static partial bool SDL_GetGamepadTouchpadFinger(
+        nint gamepad, int touchpad, int finger, [MarshalAs(UnmanagedType.U1)] out bool down, out float x, out float y, out float pressure);
+
+    [LibraryImport(Lib)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    private static partial bool SDL_GamepadHasSensor(nint gamepad, int type);
+
+    [LibraryImport(Lib)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    private static partial bool SDL_SetGamepadSensorEnabled(nint gamepad, int type, [MarshalAs(UnmanagedType.U1)] bool enabled);
+
+    [LibraryImport(Lib)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    private static partial bool SDL_GamepadSensorEnabled(nint gamepad, int type);
+
+    [LibraryImport(Lib)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    private static unsafe partial bool SDL_GetGamepadSensorData(nint gamepad, int type, float* data, int count);
 
     /// <summary>SDL_Event is a 128-byte union; only the type and, for gamepad events, the device id are read.</summary>
     [StructLayout(LayoutKind.Explicit, Size = 128)]

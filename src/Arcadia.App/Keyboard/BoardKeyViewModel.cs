@@ -79,8 +79,6 @@ public sealed partial class BoardKeyViewModel : ViewModelBase
 
     public bool HasGlyph => Glyph is not null;
 
-    public bool IsRoundGlyph => Glyph is { Length: 1 };
-
     /// <summary>What a press types on the shown level; empty where it types nothing.</summary>
     [ObservableProperty]
     public partial string Label { get; set; } = string.Empty;

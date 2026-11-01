@@ -30,15 +30,21 @@ public partial class MouseModeOverlay : Window
     /// <summary>"Mausmodus an/aus" shows this long; then nothing stays.</summary>
     private static readonly TimeSpan LabelTime = TimeSpan.FromSeconds(2);
 
+    /// <summary>A notice (e.g. Pan's, #243) is a sentence or two, read while a game runs: it stays longer.</summary>
+    private static readonly TimeSpan NoticeTime = TimeSpan.FromSeconds(6);
+
     /// <summary>The area at the top centre the label may take (device-independent pixels); the region lets it through.</summary>
     private const double LabelAreaWidth = 1200;
 
-    private const double LabelAreaHeight = 220;
+    private const double LabelAreaHeight = 260;
 
     // Counts what was shown, so a hide timed for something earlier leaves a newer show alone.
     private int _generation;
     private bool _holding;
     private bool _returnHolding;
+
+    // Counts the label's texts, so the timer of a notice shown beside a hold hides only that notice.
+    private int _noticeGeneration;
 
     public MouseModeOverlay()
     {
@@ -98,10 +104,53 @@ public partial class MouseModeOverlay : Window
             Edge.IsVisible = false;
         }
 
+        ShowLabel(text, notice: false);
+        DispatcherTimer.RunOnce(() => DisappearIfStill(generation), LabelTime);
+    }
+
+    /// <summary>
+    /// A notice while Arcadia is in the background (#243 part B2: Pan's, where a toast would go unseen), at the top
+    /// centre for a few seconds. A hold the player is watching goes on (its fill shows how long is left): the notice
+    /// shows beside it and goes by itself (QE review of PR #264).
+    /// </summary>
+    public void ShowNotice(string text)
+    {
+        if (_holding || _returnHolding)
+        {
+            // Below "Zurück zu Arcadia", which stands where the label would.
+            ShowLabel(text, notice: true, belowReturnBox: _returnHolding);
+            var notice = _noticeGeneration;
+            DispatcherTimer.RunOnce(() => HideNoticeIfStill(notice), NoticeTime);
+            return;
+        }
+
+        _holding = false;
+        var generation = ++_generation;
+        HideReturnBox();
+        Edge.Transitions = null;
+        Edge.Classes.Remove("flash");
+        Edge.IsVisible = false;
+        ShowLabel(text, notice: true);
+        DispatcherTimer.RunOnce(() => DisappearIfStill(generation), NoticeTime);
+    }
+
+    private void HideNoticeIfStill(int notice)
+    {
+        // Only this notice: a newer one, or the label of a switch since, stays.
+        if (notice == _noticeGeneration && Label.Classes.Contains("notice"))
+        {
+            Label.IsVisible = false;
+        }
+    }
+
+    private void ShowLabel(string text, bool notice, bool belowReturnBox = false)
+    {
+        _noticeGeneration++;
         LabelText.Text = text;
+        Label.Classes.Set("notice", notice);
+        Label.Classes.Set("belowReturnBox", belowReturnBox);
         Label.IsVisible = true;
         Appear();
-        DispatcherTimer.RunOnce(() => DisappearIfStill(generation), LabelTime);
     }
 
     /// <summary>View is held in the background: "Zurück zu Arcadia", its frame filling over <paramref name="fillTime"/>.</summary>

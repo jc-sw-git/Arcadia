@@ -21,6 +21,9 @@
     <SolidColorBrush x:Key="PromptIcon" Color="#1F3A5C" />
     <SolidColorBrush x:Key="PromptIconWarning" Color="#4A3418" />
     <SolidColorBrush x:Key="PromptGame" Color="#1F2833" />
+    <!-- The firmware warnings of Pan's dialogs and its settings row (#242): a dark red box. -->
+    <SolidColorBrush x:Key="DangerSurface" Color="#2A1618" />
+    <SolidColorBrush x:Key="DangerBorder" Color="#5A2A2D" />
     <SolidColorBrush x:Key="Line" Color="#2A3440" />
     <!-- The line between the rows of a settings group: full in the middle, gone 10 % before the box's edges (owner,
          2026-10-23). -->
@@ -180,6 +183,15 @@
     <BoxShadows x:Key="GlyphEdge">inset 0 -2 0 0 #1B222B</BoxShadows>
     <BoxShadows x:Key="GlyphEdgeDark">inset 0 -2 0 0 #99000000</BoxShadows>
     <BoxShadows x:Key="GlyphButtonEdge">inset 0 -2 0 0 #141A21</BoxShadows>
+    <!-- Button symbols drawn as icons (#215, PadGlyph): PlayStation's shapes and the PS5's Create and Options, in a 16 × 16 box,
+         stroked like the glyphs' letters. Vectors, not font characters: fonts draw ✕ ○ □ △ in different sizes. -->
+    <StreamGeometry x:Key="PadIconCross">M3.5,3.5 L12.5,12.5 M12.5,3.5 L3.5,12.5</StreamGeometry>
+    <StreamGeometry x:Key="PadIconCircle">M2.5,8 A5.5,5.5 0 1 1 13.5,8 A5.5,5.5 0 1 1 2.5,8 Z</StreamGeometry>
+    <StreamGeometry x:Key="PadIconSquare">M3,3 H13 V13 H3 Z</StreamGeometry>
+    <!-- Nearly as tall as wide, so it fills its box like the circle and doesn't look smaller. -->
+    <StreamGeometry x:Key="PadIconTriangle">M8,1.5 L14.5,13.5 H1.5 Z</StreamGeometry>
+    <StreamGeometry x:Key="PadIconCreate">M3,9 V3 M6,10 L10.5,5.5 M7,13 H13</StreamGeometry>
+    <StreamGeometry x:Key="PadIconOptions">M3,4 H13 M3,8 H13 M3,12 H13</StreamGeometry>
     <!-- Dividers between groups in the header. -->
     <SolidColorBrush x:Key="Divider" Color="#2A3440" />
 
@@ -289,6 +301,18 @@
     <Setter Property="FontSize" Value="13" />
     <Setter Property="FontWeight" Value="ExtraBold" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- A symbol drawn as an icon (PadGlyph, #215): as tall as a capital letter of the glyph, monochrome like the letters. -->
+  <Style Selector="Border.glyph > Path">
+    <Setter Property="Width" Value="10" />
+    <Setter Property="Height" Value="10" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
@@ -430,6 +454,15 @@
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
     <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="TextAlignment" Value="Center" />
+  </Style>
+  <!-- A notice during a View hold: below the "Zurück zu Arcadia" box, inside the overlay's label area. -->
+  <Style Selector="Border.mouseModeLabel.belowReturnBox">
+    <Setter Property="Margin" Value="0,148,0,0" />
+  </Style>
+  <!-- A notice over a game (#243, Pan): a sentence or two, smaller than "Mausmodus an". -->
+  <Style Selector="Border.mouseModeLabel.notice > TextBlock">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
   <Style Selector="Border.preview.holding ctl|HoldRing">
     <Setter Property="IsVisible" Value="True" />
@@ -715,6 +748,149 @@
     <Setter Property="Foreground" Value="{StaticResource Danger}" />
   </Style>
 
+  <!-- Buttons that act only when held (#242, Pan's dialogs and its settings row): the fill runs over the hold time and
+       the button acts once it is full; letting go earlier empties it. Each fill needs its own <ScaleTransform ScaleX="0" />. -->
+  <Style Selector="Button.hold">
+    <Setter Property="Height" Value="56" />
+    <Setter Property="CornerRadius" Value="28" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{StaticResource PromptBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.hold TextBlock">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="26,0" />
+  </Style>
+  <Style Selector="Button.hold.small">
+    <Setter Property="Height" Value="48" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="FontSize" Value="16" />
+  </Style>
+  <!-- The answer that is safe to give, light as the focused tab. -->
+  <Style Selector="Button.hold.light">
+    <Setter Property="Background" Value="{StaticResource TextStrong}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource Bg}" />
+  </Style>
+  <Style Selector="Button.hold.raised">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <!-- Shown, but it can't act yet (Steam still tries the update). -->
+  <Style Selector="Button.hold.locked">
+    <Setter Property="Background" Value="{StaticResource SurfaceDisabled}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="Button.hold.holding">
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.hold.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRingGap}" />
+  </Style>
+  <Style Selector=".hold Border.holdClip">
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="CornerRadius" Value="28" />
+  </Style>
+  <Style Selector="Button.hold.small Border.holdClip">
+    <Setter Property="CornerRadius" Value="24" />
+  </Style>
+  <Style Selector="Border.holdPill Border.holdClip">
+    <Setter Property="CornerRadius" Value="23" />
+  </Style>
+  <Style Selector=".hold Border.holdFill">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="RenderTransformOrigin" Value="0%,50%" />
+  </Style>
+  <Style Selector="Button.hold.light Border.holdFill">
+    <Setter Property="Background" Value="{StaticResource TextSoft}" />
+  </Style>
+  <!-- Let go: the fill empties at once. A finished fill animation keeps its value, so ending it doesn't reset it (owner's test of #214). -->
+  <Style Selector=".hold:not(.holding) Border.holdFill">
+    <Style.Animations>
+      <Animation Duration="0:0:0.001" FillMode="Forward">
+        <KeyFrame Cue="100%">
+          <Setter Property="ScaleTransform.ScaleX" Value="0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector=".hold.holding.one Border.holdFill">
+    <Style.Animations>
+      <Animation Duration="0:0:1" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="ScaleTransform.ScaleX" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="ScaleTransform.ScaleX" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector=".hold.holding.three Border.holdFill">
+    <Style.Animations>
+      <Animation Duration="0:0:3" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="ScaleTransform.ScaleX" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="ScaleTransform.ScaleX" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <!-- The pill of a settings row held with [A] ("Steam Controller und Puck übernehmen"): stays dark when focused, so the fill shows. -->
+  <Style Selector="Border.holdPill">
+    <Setter Property="Width" Value="250" />
+    <Setter Property="Height" Value="46" />
+    <Setter Property="CornerRadius" Value="23" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Border.holdPill TextBlock">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.holdPill.holding TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Border.dangerBox">
+    <Setter Property="Background" Value="{StaticResource DangerSurface}" />
+    <Setter Property="BorderBrush" Value="{StaticResource DangerBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="22,16" />
+  </Style>
+  <Style Selector="Border.dangerBox.strong">
+    <Setter Property="BorderBrush" Value="{StaticResource Danger}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="Padding" Value="22,20" />
+  </Style>
+  <Style Selector="Border.panStatus">
+    <Setter Property="Background" Value="{StaticResource SurfaceDisabled}" />
+    <Setter Property="BorderBrush" Value="{StaticResource ChangelogBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="22,18" />
+  </Style>
+  <Style Selector="Border.foundChip">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="16,0" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Background" Value="{StaticResource SurfaceDisabled}" />
+    <Setter Property="BorderBrush" Value="{StaticResource ChangelogBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
   <!-- Buttons on the detail page; the second row is smaller. -->
   <Style Selector="Button.detailAction">
     <Setter Property="Height" Value="56" />
@@ -751,6 +927,10 @@
   </Style>
   <Style Selector="Button.detailAction:disabled">
     <Setter Property="Background" Value="{StaticResource DetailAction}" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <!-- The Steam Controller mode while Pan's emulation doesn't run (#242): greyed out like a disabled one, but focusable. -->
+  <Style Selector="Button.detailAction.broken">
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
   </Style>
   <Style Selector="Button.detailAction.focused /template/ Border#Chrome">
@@ -880,6 +1060,12 @@
   </Style>
   <Style Selector="Button.menuItem:disabled TextBlock.note">
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.menuItem.broken">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.menuItem.broken Path.icon">
+    <Setter Property="Stroke" Value="{StaticResource TextDisabled}" />
   </Style>
 
   <!-- The settings page (#15, pattern "Leiste"): a column of rows, each with its value on the right, and the info panel. -->
@@ -1169,7 +1355,7 @@
   <Style Selector="Button.settingRow.unavailable">
     <Setter Property="Opacity" Value="0.55" />
   </Style>
-  <!-- An action shown inside a setting row, e.g. "SISR installieren"; the row itself is the button. -->
+  <!-- An action shown inside a setting row, e.g. "Installieren"; the row itself is the button. -->
   <Style Selector="Border.rowAction">
     <Setter Property="Height" Value="44" />
     <Setter Property="CornerRadius" Value="22" />
@@ -1241,6 +1427,54 @@
     <Setter Property="CornerRadius" Value="10" />
     <Setter Property="Padding" Value="20,16" />
   </Style>
+  <!-- "Controller zuordnen" (#238 D3a, designs T238Modal). -->
+  <Style Selector="Path.layoutsIcon">
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+    <Setter Property="StrokeThickness" Value="1.9" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.valuePill.layoutPill">
+    <Setter Property="Width" Value="340" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+  </Style>
+  <Style Selector="TextBlock.rowSubtitle">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="TextBlock.valueText.notTakenOver">
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+  </Style>
+  <Style Selector="TextBlock.valueText.locked">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Path.lockIcon">
+    <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
+    <Setter Property="StrokeThickness" Value="2.2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Stretch" Value="Uniform" />
+  </Style>
+  <Style Selector="TextBlock.layoutLockNote">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="LineHeight" Value="22" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Margin" Value="0,8,0,4" />
+  </Style>
+  <Style Selector="TextBlock.layoutsHint">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
   <Style Selector="TextBlock.promptBody">
     <Setter Property="FontSize" Value="18" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
@@ -1250,6 +1484,10 @@
   <Style Selector="Button.modeValue">
     <Setter Property="Padding" Value="0" />
     <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <!-- The Steam Controller mode while Pan's emulation doesn't run (#242): greyed out, the triangle beside it. -->
+  <Style Selector="Button.modeValue.broken TextBlock.value">
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
   </Style>
   <Style Selector="Border.switch">
     <Setter Property="Width" Value="56" />
@@ -1295,28 +1533,7 @@
     <Setter Property="TextAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
-  <!-- A tick box in a prompt, e.g. the Steam accounts that get SISR's marker. -->
-  <Style Selector="Border.checkbox">
-    <Setter Property="Width" Value="30" />
-    <Setter Property="Height" Value="30" />
-    <Setter Property="CornerRadius" Value="8" />
-    <Setter Property="Background" Value="{StaticResource Line}" />
-  </Style>
-  <Style Selector="Border.checkbox.on">
-    <Setter Property="Background" Value="{StaticResource Accent}" />
-  </Style>
-  <Style Selector="Border.checkbox > TextBlock">
-    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
-    <Setter Property="FontSize" Value="18" />
-    <Setter Property="FontWeight" Value="ExtraBold" />
-    <Setter Property="HorizontalAlignment" Value="Center" />
-    <Setter Property="VerticalAlignment" Value="Center" />
-  </Style>
-  <!-- Already set up: stays ticked and can't be unticked. -->
-  <Style Selector="Button.settingRow.done">
-    <Setter Property="Opacity" Value="0.55" />
-  </Style>
-  <!-- Locked while Steam, SISR or VIIPER start or stop: the switch keeps its position but can't be flipped. -->
+  <!-- Locked while Steam, Pan or VIIPER start or stop: the switch keeps its position but can't be flipped. -->
   <Style Selector="Border.switch.locked, Border.rowAction.locked">
     <Setter Property="Opacity" Value="0.35" />
   </Style>
@@ -1341,6 +1558,14 @@
         </KeyFrame>
       </Animation>
     </Style.Animations>
+  </Style>
+
+  <!-- The large one around a countdown (#326). -->
+  <Style Selector="Path.spinner.large">
+    <Setter Property="Data" Value="M100 8a92 92 0 1 1 -92 92" />
+    <Setter Property="StrokeThickness" Value="6" />
+    <Setter Property="Width" Value="200" />
+    <Setter Property="Height" Value="200" />
   </Style>
 
   <!-- The layout is 1920×1080, scaled to the window; a window of another shape leaves bars beside or above and below it
@@ -1574,6 +1799,11 @@
   <Style Selector="Border.glyph.inline > TextBlock">
     <Setter Property="FontSize" Value="13" />
   </Style>
+  <Style Selector="Border.glyph.inline > Path, Border.glyph.small > Path">
+    <Setter Property="Width" Value="9" />
+    <Setter Property="Height" Value="9" />
+    <Setter Property="StrokeThickness" Value="1.8" />
+  </Style>
   <Style Selector="Border.glyph.small">
     <Setter Property="MinWidth" Value="22" />
     <Setter Property="Height" Value="22" />
@@ -1795,7 +2025,7 @@
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Padding" Value="18,16" />
   </Style>
-  <Style Selector="Border.infoNote TextBlock">
+  <Style Selector="Border.infoNote TextBlock.noteText">
     <Setter Property="FontSize" Value="16" />
     <Setter Property="LineHeight" Value="23" />
     <Setter Property="Foreground" Value="{StaticResource NoteText}" />
@@ -1805,8 +2035,11 @@
   <Style Selector="Border.infoNote.info">
     <Setter Property="Background" Value="{StaticResource InfoNoteSurface}" />
   </Style>
-  <Style Selector="Border.infoNote.info TextBlock">
+  <Style Selector="Border.infoNote.info TextBlock.noteText">
     <Setter Property="Foreground" Value="{StaticResource InfoNoteText}" />
+  </Style>
+  <Style Selector="Border.infoNote.bold TextBlock.noteText">
+    <Setter Property="FontWeight" Value="Bold" />
   </Style>
   <Style Selector="Border.miniTabs">
     <Setter Property="Background" Value="{StaticResource Bg}" />

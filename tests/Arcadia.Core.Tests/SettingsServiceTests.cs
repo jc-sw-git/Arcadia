@@ -31,13 +31,34 @@ public sealed class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T214-9")]
+    public void SISR_s_old_settings_are_dropped_with_the_next_save_and_the_modes_per_game_stay()
+    {
+        File.WriteAllText(SettingsPath, """
+            {
+              "SteamControllerSupport": true,
+              "LastSisrUpdateCheck": "2026-10-01T12:00:00+00:00",
+              "ControllerSupportOverrides": { "epic:fortnite": false }
+            }
+            """);
+        var service = new SettingsService(new SettingsStore(SettingsPath));
+
+        service.Update(settings => settings with { KeepSisr = true });
+
+        var saved = File.ReadAllText(SettingsPath);
+        Assert.DoesNotContain("SteamControllerSupport", saved);
+        Assert.DoesNotContain("LastSisrUpdateCheck", saved);
+        Assert.False(new SettingsService(new SettingsStore(SettingsPath)).Current.ControllerSupportOverrides["epic:fortnite"]);
+    }
+
+    [Fact]
     public void Settings_from_before_the_library_view_get_its_defaults()
     {
-        File.WriteAllText(SettingsPath, """{ "SteamControllerSupport": true }""");
+        File.WriteAllText(SettingsPath, """{ "PanEnabled": false }""");
 
         var loaded = new SettingsService(new SettingsStore(SettingsPath)).Current;
 
-        Assert.True(loaded.SteamControllerSupport);
+        Assert.False(loaded.PanEnabled);
         Assert.Equal(SortOrder.Default, loaded.LibrarySort);
         Assert.Equal(PageSizes.Default, loaded.PreferredPageSize);
         Assert.Null(loaded.LastTabLauncherId);
@@ -49,7 +70,7 @@ public sealed class SettingsServiceTests : IDisposable
         // As a newer Arcadia with more sort fields or page sizes would write them.
         File.WriteAllText(SettingsPath, """
             {
-              "SteamControllerSupport": true,
+              "PanEnabled": false,
               "LibrarySort": { "Field": 7, "Direction": 0 },
               "PreferredPageSize": 30,
               "LastTabLauncherId": "gog"
@@ -58,7 +79,7 @@ public sealed class SettingsServiceTests : IDisposable
 
         var loaded = new SettingsService(new SettingsStore(SettingsPath)).Current;
 
-        Assert.True(loaded.SteamControllerSupport);
+        Assert.False(loaded.PanEnabled);
         Assert.Equal(SortOrder.Default, loaded.LibrarySort);
         Assert.Equal(PageSizes.Default, loaded.PreferredPageSize);
         Assert.Equal("gog", loaded.LastTabLauncherId);
@@ -67,7 +88,7 @@ public sealed class SettingsServiceTests : IDisposable
     [Fact]
     public void Mouse_mode_settings_survive_a_restart_and_start_with_the_defaults()
     {
-        File.WriteAllText(SettingsPath, """{ "SteamControllerSupport": true }""");
+        File.WriteAllText(SettingsPath, """{ "PanEnabled": false }""");
         var service = new SettingsService(new SettingsStore(SettingsPath));
         Assert.Equal(MouseModeActivation.Manual, service.Current.MouseMode.Activation);
         Assert.Equal(3, service.Current.MouseMode.HoldSeconds);
@@ -162,7 +183,7 @@ public sealed class SettingsServiceTests : IDisposable
         // The UI saves the view while Steam Controller Support saves from the thread pool.
         var pageSizes = new[] { 10, 25, 50, 100 };
         Parallel.Invoke(
-            () => Parallel.ForEach(games, game => service.Update(settings => settings.WithControllerSupportOverride(game, false))),
+            () => Parallel.ForEach(games, game => service.Update(settings => settings.WithControllerModeChoice(game.Key, false))),
             () => Parallel.For(0, 200, i => service.Update(settings => settings with { PreferredPageSize = pageSizes[i % 4], LastTabLauncherId = "steam" })));
 
         var saved = new SettingsStore(SettingsPath).Load();

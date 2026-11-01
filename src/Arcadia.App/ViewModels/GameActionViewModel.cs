@@ -24,7 +24,13 @@ public interface IGameActionHost
     /// <summary>True when the Steam Controller mode matters (option on, Steam Controller connected).</summary>
     bool ShowControllerMode { get; }
 
-    /// <summary>"Xbox Controller (SISR)" or "Steam Input".</summary>
+    /// <summary>Pan's emulation is on but doesn't run (#242): the mode stays "Steam-Eingabe", greyed out with a triangle.</summary>
+    bool ControllerModeBroken { get; }
+
+    /// <summary>[A] on the greyed mode: the controller settings on the row that says why (#242).</summary>
+    void ShowPanProblem();
+
+    /// <summary>"Standard (…)", "Arcadia" or "Steam-Eingabe" (<see cref="ControllerModes.Of"/>).</summary>
     string ControllerModeOf(Game game);
 
     void Play(GameTileViewModel tile);
@@ -33,7 +39,11 @@ public interface IGameActionHost
 
     void OpenInLauncher(GameTileViewModel tile);
 
-    void ToggleControllerMode(GameTileViewModel tile);
+    /// <summary>Standard → Arcadia → Steam-Eingabe → Standard (#178).</summary>
+    void CycleControllerMode(GameTileViewModel tile);
+
+    /// <summary>The game's mode after the next [A], named as <see cref="ControllerModeOf"/> names it.</summary>
+    string NextControllerModeOf(Game game);
 
     /// <summary>True when the mouse mode is "Von Hand" with "Beenden des Mausmodus in Spielen erzwingen" on "Individuell".</summary>
     bool ShowGameMouseMode { get; }
@@ -105,9 +115,12 @@ public sealed partial class GameActionViewModel : ViewModelBase
     /// Why the action isn't available, for the detail page's tooltip. The focus skips such a button, so only the
     /// mouse can ask (#127); an available button explains itself.
     /// </summary>
-    public string? DisabledReason => IsEnabled ? null : Note;
+    public string? DisabledReason => IsEnabled && !IsBroken ? null : Note;
 
     public bool IsEnabled { get; }
+
+    /// <summary>The Steam Controller mode while Pan's emulation doesn't run (#242): greyed out with a triangle, but focusable.</summary>
+    public bool IsBroken { get; private set; }
 
     public bool IsDanger => Kind == GameActionKind.Uninstall;
 
@@ -179,18 +192,30 @@ public sealed partial class GameActionViewModel : ViewModelBase
             return actions;
         }
 
-        // The Steam Controller mode decides whether SISR pauses when the game starts, so a change applies to the next
+        // The Steam Controller mode decides at the game's start how Pan hands it the controller, so a change applies to the next
         // start only and waits until the game ended (#95). The mouse mode's choice applies at once and stays open.
         if (host.ShowControllerMode)
         {
             GameActionViewModel? mode = null;
-            mode = new(GameActionKind.ControllerMode, string.Empty, null, !tile.IsRunningOrStarting, () =>
+            // Broken, it stays focusable: [A] leads to the row that says why (#242).
+            mode = new(GameActionKind.ControllerMode, string.Empty, null, host.ControllerModeBroken || !tile.IsRunningOrStarting, () =>
             {
-                host.ToggleControllerMode(tile);
-                mode!.ShowControllerMode(host.ControllerModeOf(game));
+                if (host.ControllerModeBroken)
+                {
+                    host.ShowPanProblem();
+                    return;
+                }
+
+                host.CycleControllerMode(tile);
+                mode!.ShowControllerMode(host.ControllerModeOf(game), host.NextControllerModeOf(game));
             });
-            mode.ShowControllerMode(host.ControllerModeOf(game));
-            if (tile.IsRunningOrStarting)
+            mode.ShowControllerMode(host.ControllerModeOf(game), host.NextControllerModeOf(game));
+            mode.IsBroken = host.ControllerModeBroken;
+            if (host.ControllerModeBroken)
+            {
+                mode.Note = ControllerModes.PanNotRunning;
+            }
+            else if (tile.IsRunningOrStarting)
             {
                 mode.Note = NextStartOnly;
             }
@@ -231,17 +256,36 @@ public sealed partial class GameActionViewModel : ViewModelBase
         Note = $"Wechselt zu „{GameMouseModes.Of(GameMouseModes.Next(choice), defaultAllowed)}“";
     }
 
-    private void ShowControllerMode(string mode)
+    private void ShowControllerMode(string mode, string next)
     {
         Label = $"Steam Controller: {mode}";
         ButtonLabel = mode;
-        Note = $"Wechselt zu „{(mode == ControllerModes.Steam ? ControllerModes.Sisr : ControllerModes.Steam)}“";
+        Note = $"Wechselt zu „{next}“";
     }
 }
 
-/// <summary>The names of the two Steam Controller modes (#92).</summary>
+/// <summary>The names of the two Steam Controller modes (#92, renamed with #213).</summary>
 public static class ControllerModes
 {
-    public const string Sisr = "Xbox Controller (SISR)";
-    public const string Steam = "Steam Input";
+    /// <summary>Arcadia's Xbox pad; Steam gets nothing from the Steam Controller.</summary>
+    public const string Arcadia = "Arcadia";
+
+    /// <summary>No pad of Arcadia's; the game's own Steam configuration applies.</summary>
+    public const string Steam = "Steam-Eingabe";
+
+    /// <summary>Why the mode is greyed out while Pan's emulation is on but doesn't run (#242); [A] leads to the reason.</summary>
+    public const string PanNotRunning = "Pan läuft nicht – öffnet die Controller-Einstellungen, die sagen, warum";
+
+    public static string Of(bool useArcadiaPad) => useArcadiaPad ? Arcadia : Steam;
+
+    /// <summary>A game's mode; "Standard" names its launcher's default, e.g. "Standard (Arcadia)" (#178, like the mouse mode's).</summary>
+    public static string Of(bool? choice, bool launcherUsesArcadiaPad) => choice is { } own ? Of(own) : $"Standard ({Of(launcherUsesArcadiaPad)})";
+
+    /// <summary>Standard → Arcadia → Steam-Eingabe → Standard.</summary>
+    public static bool? Next(bool? choice) => choice switch
+    {
+        null => true,
+        true => false,
+        false => null,
+    };
 }

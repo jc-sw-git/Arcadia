@@ -1,7 +1,7 @@
 namespace Arcadia.Core.Diagnostics;
 
 /// <summary>
-/// Where <c>arcadia.log</c> and <c>sisr.log</c> live: <c>%APPDATA%\Arcadia\logs</c>, beside the settings, so all of
+/// Where <c>arcadia.log</c> lives (and <c>sisr.log</c> of the SISR older versions started): <c>%APPDATA%\Arcadia\logs</c>, beside the settings, so all of
 /// Arcadia's own files are in one folder that uninstalling offers to delete (owner, 2026-10-24). Never inside
 /// <c>%LOCALAPPDATA%\Arcadia</c>, Velopack's install folder: its setup takes any file there for an installation
 /// ("bereits installiert") and deletes the folder when the user overwrites or repairs it.
@@ -20,7 +20,7 @@ public static class LogLocation
     /// <summary>
     /// Moves the logs of earlier versions here: up to 0.1.0-rc.1 from the install folder, for a short while on main
     /// from <c>%LOCALAPPDATA%\Arcadia-Logs</c>. An install folder that is empty afterwards goes too, so the setup no
-    /// longer sees an installation. Best effort: a file still open (a SISR that kept running across an update)
+    /// longer sees an installation. Best effort: a file still open (an SISR an older version kept running across an update)
     /// stays and is tried again at the next start.
     /// </summary>
     public static void MoveOldLogs(string localAppData, string dataFolder)

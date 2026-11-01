@@ -4,6 +4,7 @@ using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
+using Arcadia.Core.Library;
 using Arcadia.Core.Navigation;
 using Arcadia.Core.Search;
 using Arcadia.Core.Settings;
@@ -27,6 +28,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private const string DropGroup = "NICHT AKTIV · HIERHER VERSCHIEBEN SCHALTET IHN AB";
     private const string GeneralGroup = "ALLGEMEIN";
     private const string LibraryGroup = "BIBLIOTHEK";
+    private const string ControllerGroup = "CONTROLLER";
     private const string AccountGroup = "KONTO";
     private const string ListYAction = "Verschieben";
 
@@ -35,6 +37,13 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
 
     internal const string OrderPreviewSubtitle = "Eine Vorschau der Reihenfolge, in der die Launcher aufgeführt werden";
     private const string ListXAction = "Alle neu einlesen";
+    private const string PanOffSubtitle = "Aus – erst mit dem Controller-Wächter (Pan)";
+
+    // As Pan's own row says it, so the rows don't send the user to a switch that can't help (QE review PR #319).
+    private const string PanUnsupportedSubtitle = "Auf diesem System noch nicht verfügbar";
+
+    // The question before the reset names this many games, then how many more.
+    private const int MaxTitlesInQuestion = 5;
 
     private readonly ILauncherSettingsHost _host;
     private readonly SettingsChanges _changes;
@@ -53,20 +62,23 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
     private readonly ActionRowViewModel _folderRow;
     private readonly ActionRowViewModel _rescanRow;
     private readonly ActionRowViewModel _rescanAllRow;
+    private readonly LauncherControllerModeRowViewModel _controllerModeRow;
+    private readonly ActionRowViewModel _resetModesRow;
     private readonly ActionRowViewModel _accountRow;
+    private readonly SteamDesktopLayoutRowViewModel _steamDesktopLayoutRow;
 
     // The account picture shown last, by its file (AvatarOf).
     private string? _avatarPath;
     private Avalonia.Media.Imaging.Bitmap? _avatar;
     private readonly List<(ILauncherAccount Account, EventHandler Handler)> _accounts = [];
 
-    // Ticks while a QR code is shown, so "erneuert vor … s" counts up (owner, 2026-10-27).
-    private readonly List<(string LauncherId, ActionRowViewModel Row)> _linkRows = [];
-
     // A launcher's switches for software, tools and soundtracks (#141), made when its page first shows them.
     private readonly Dictionary<string, SwitchRowViewModel> _optionRows = new(StringComparer.Ordinal);
 
     private LauncherRowViewModel? _lifted;
+
+    // The library's games with a mode of their own, as the reset row lists them, for its question (#178).
+    private IReadOnlyList<string> _ownModeTitles = [];
 
     // The launcher whose page is shown (#137); null on the list.
     private string? _page;
@@ -155,7 +167,31 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             ],
         };
 
+        _controllerModeRow = new LauncherControllerModeRowViewModel(
+            () => _changes.Current.LauncherUsesArcadiaPad(_page!, _host.Launchers.GamesUseSteamInput),
+            SetControllerMode,
+            () => _host.IsPanOn)
+        {
+            Group = ControllerGroup,
+        };
+        _resetModesRow = new ActionRowViewModel("launcher-controller-reset", "Alle Spiele auf die Vorauswahl setzen", AskResetControllerModes)
+        {
+            Group = ControllerGroup,
+            Indent = 1,
+            ActionText = "Zurücksetzen",
+        };
+
+        // Pan is switched in the category "Controller": coming back here, the Steam Controller rows follow it.
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(IsSelected) && IsSelected)
+            {
+                Refresh();
+            }
+        };
+
         _accountRow = new ActionRowViewModel("launcher-account", string.Empty, ActivateAccount) { Group = AccountGroup };
+        _steamDesktopLayoutRow = new SteamDesktopLayoutRowViewModel(changes);
         foreach (var integration in host.Launchers.All)
         {
             if (integration.Account is { } account)
@@ -179,26 +215,6 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         {
             Focus(row);
         }
-    }
-
-    /// <summary>
-    /// The rows other categories offer on launcher pages (#169), each in a group named after its category; set once by
-    /// the settings page, which knows all categories.
-    /// </summary>
-    public void ShowLinks(IEnumerable<(string Group, SettingsLink Link, Action Open)> links)
-    {
-        foreach (var (group, link, open) in links)
-        {
-            _linkRows.Add((link.LauncherId, new ActionRowViewModel($"link:{link.TargetRowKey}", link.Title, open)
-            {
-                Group = group,
-                Subtitle = link.Subtitle,
-                ActionText = "Öffnen",
-                Info = link.Info,
-            }));
-        }
-
-        Refresh();
     }
 
     /// <summary>The launcher whose page is shown, or null on the list.</summary>
@@ -344,6 +360,16 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         return true;
     }
 
+    /// <summary>The tab "Launcher" is chosen again: the list, on the launcher whose page was open (owner, 2026-10-30).</summary>
+    public override void ShowTopLevel()
+    {
+        if (_page is { } id)
+        {
+            ClosePage();
+            Focus(_rows[id]);
+        }
+    }
+
     /// <summary>B while a launcher is lifted, or another category: it goes back to where it was; a text being written is dropped.</summary>
     public override void Leave()
     {
@@ -400,6 +426,16 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         }
 
         Choose(chosen, switchedOff && active.Contains(id) ? id : null);
+    }
+
+    /// <summary>Opens a launcher's page with the focus on one of its rows, e.g. from the controller settings.</summary>
+    public void ShowPage(string launcherId, string rowKey)
+    {
+        if (_rows.TryGetValue(launcherId, out var row))
+        {
+            OpenPage(row);
+            FocusRow(rowKey);
+        }
     }
 
     /// <summary>A or a click on a launcher in the list: its page, the focus on its first row.</summary>
@@ -572,6 +608,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             new InfoText($"Liest die Spiele von {name} sofort neu ein, etwa nach einer Installation, die Arcadia nicht mitbekommen hat. Sonst liest Arcadia neu ein, wenn es wieder nach vorne kommt."),
         ];
 
+        var ownModes = ShowControllerRows(id, name, original.GamesUseSteamInput, library);
         var optionRows = launchers.LibraryOptions(id).Select(option => OptionRow(id, option)).ToList();
 
         // First on the page, as the setting that makes the most of the library; only usable while the launcher is active and
@@ -582,7 +619,23 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
             ShowAccount(account, name, isActive, isFound);
         }
 
-        SetRows([.. account is null ? Array.Empty<SettingsRowViewModel>() : [_accountRow], _activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), .. optionRows, _rescanRow, .. _linkRows.Where(l => l.LauncherId == id).Select(l => l.Row)]);
+        SetRows([.. account is null ? Array.Empty<SettingsRowViewModel>() : [_accountRow], _activeRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>(), .. showsFolder ? [_folderRow] : Array.Empty<SettingsRowViewModel>(), .. optionRows, _rescanRow,
+            _controllerModeRow, .. ownModes ? [_resetModesRow] : Array.Empty<SettingsRowViewModel>(), .. DesktopControlRows(id)]);
+    }
+
+    /// <summary>
+    /// The group "Desktop-Steuerung" on Steam's page (#315). Not the launcher integration's: it is about Steam the program,
+    /// which Arcadia's controller support deals with anyway, so it is there whether Steam's launcher is active or not.
+    /// </summary>
+    private IReadOnlyList<SettingsRowViewModel> DesktopControlRows(string id)
+    {
+        if (id != KnownLaunchers.Steam.Id)
+        {
+            return [];
+        }
+
+        _steamDesktopLayoutRow.Refresh();
+        return [_steamDesktopLayoutRow];
     }
 
     /// <summary>The account of the launcher whose page is shown, while its group "Konto" is there (#83).</summary>
@@ -732,12 +785,20 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         }
     }
 
-    /// <summary>The question before signing out: ◀ ▶ choose, A answers, B keeps the sign-in.</summary>
+    /// <summary>
+    /// The question before signing out: ◀ ▶ choose, A answers, B keeps the sign-in. The one before resetting the games'
+    /// modes (#178): A resets, B keeps them.
+    /// </summary>
     public override void HandleDialog(UiAction action)
     {
-        if (Dialog is ConfirmationViewModel confirmation && !confirmation.Handle(action))
+        switch (Dialog)
         {
-            Dialog = null;
+            case ConfirmationViewModel confirmation when !confirmation.Handle(action):
+                Dialog = null;
+                break;
+            case SettingsQuestionViewModel question:
+                question.Handle(action);
+                break;
         }
     }
 
@@ -785,6 +846,96 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel
         AppLog.Write($"{launcherId}: „{option.Title}“ {(on ? "an" : "aus")}");
         _host.LibraryTypesChanged();
         Refresh();
+    }
+
+    /// <summary>
+    /// The group "Controller" (#178): the Steam Controller mode the launcher's games on "Standard" get, and below it, while
+    /// games of its library have a mode of their own, the row that puts them all back on "Standard".
+    /// </summary>
+    /// <returns>Whether a game of the library has a mode of its own, i.e. the reset row shows.</returns>
+    private bool ShowControllerRows(string id, string name, bool gamesUseSteamInput, LauncherLibrary? library)
+    {
+        var panOn = _host.IsPanOn;
+        var settings = _changes.Current;
+        var preset = ControllerModes.Of(settings.LauncherUsesArcadiaPad(id, _host.Launchers.GamesUseSteamInput));
+        var panSupported = _host.IsPanSupported;
+        var panOffSubtitle = panSupported ? PanOffSubtitle : PanUnsupportedSubtitle;
+        IReadOnlyList<InfoBlock> panOff = panOn ? [] : [new InfoNote(panSupported
+            ? "Einstellbar, sobald der Controller-Wächter (Pan) an ist: Controller → Pan."
+            : "Der Controller-Wächter (Pan) läuft auf diesem System noch nicht, und ohne ihn gibt es keinen Steam-Controller-Modus.", HealthSeverity.Info)];
+
+        _controllerModeRow.ShowPan();
+        _controllerModeRow.Subtitle = panOn ? "Vorauswahl für die Spiele dieses Launchers" : panOffSubtitle;
+        _controllerModeRow.Info =
+        [
+            new InfoText($"So startet ein Spiel aus {name} mit dem Steam Controller, solange du in seinen Details nichts anderes wählst. Spiele mit eigenem Modus behalten ihn."),
+            .. panOff,
+            .. PanRows.ModeCards,
+            new InfoFootnote($"{(gamesUseSteamInput ? $"Ab Werk: {ControllerModes.Steam}, weil Spiele aus {name} Steams Belegungen nutzen." : $"Ab Werk: {ControllerModes.Arcadia}.")} Gilt ab dem nächsten Spielstart."),
+        ];
+
+        // Only games of the library count and are listed; the reset clears the missing ones' choices too.
+        var own = (library?.Games ?? [])
+            .Select(game => (game.Title, Choice: settings.ControllerModeChoiceFor(game.Key)))
+            .Where(game => game.Choice is not null)
+            .OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        _resetModesRow.IsEnabled = panOn;
+        _resetModesRow.IsDimmed = !panOn;
+        _resetModesRow.Subtitle = !panOn ? panOffSubtitle : own.Count == 1 ? "1 Spiel hat einen eigenen Modus" : $"{own.Count} Spiele haben einen eigenen Modus";
+        _resetModesRow.Info =
+        [
+            new InfoText($"Diese Spiele aus {name} hast du selbst umgestellt. Danach folgen sie wieder der Vorauswahl „{preset}“:"),
+            new InfoFacts(string.Empty, [.. own.Select(game => new InfoFact(game.Title, ControllerModes.Of(game.Choice!.Value)))]),
+            .. panOff,
+            new InfoText("[A] fragt vorher nach."),
+            new InfoFootnote("Gilt ab dem nächsten Spielstart."),
+        ];
+        _ownModeTitles = [.. own.Select(game => game.Title)];
+        return own.Count > 0;
+    }
+
+    private void SetControllerMode(bool useArcadiaPad)
+    {
+        var id = _page!;
+        _changes.Apply(settings => settings.WithLauncherControllerMode(id, useArcadiaPad, _host.Launchers.GamesUseSteamInput), "Steam Controller");
+        AppLog.Write($"Steam-Controller-Vorauswahl von {id}: {ControllerModes.Of(useArcadiaPad)}");
+        Refresh();
+    }
+
+    /// <summary>[A] on "Alle Spiele auf die Vorauswahl setzen": asks first, since the games' own choices are gone afterwards.</summary>
+    private void AskResetControllerModes()
+    {
+        if (_page is not { } id || !_host.IsPanOn || _ownModeTitles.Count == 0)
+        {
+            return;
+        }
+
+        var name = _host.Launchers.Info(id).DisplayName;
+        var preset = ControllerModes.Of(_changes.Current.LauncherUsesArcadiaPad(id, _host.Launchers.GamesUseSteamInput));
+        Dialog = new SettingsQuestionViewModel(
+            "Alle Spiele auf die Vorauswahl setzen?",
+            $"{ResetGames(_ownModeTitles, name)} wieder „{preset}“: {TitleList(_ownModeTitles)}. Gilt ab dem nächsten Spielstart.",
+            "Zurücksetzen",
+            () => ResetControllerModes(id),
+            () => Dialog = null);
+    }
+
+    private static string ResetGames(IReadOnlyList<string> titles, string launcher) =>
+        titles.Count == 1 ? $"1 Spiel aus {launcher} bekommt" : $"{titles.Count} Spiele aus {launcher} bekommen";
+
+    /// <summary>The first few titles; a long list ends with how many more there are.</summary>
+    private static string TitleList(IReadOnlyList<string> titles) =>
+        titles.Count <= MaxTitlesInQuestion ? string.Join(", ", titles) : $"{string.Join(", ", titles.Take(MaxTitlesInQuestion))} und {titles.Count - MaxTitlesInQuestion} weitere";
+
+    /// <summary>Every game of the launcher back on "Standard", missing ones too, in one write; the focus goes to "Steam Controller".</summary>
+    private void ResetControllerModes(string id)
+    {
+        Dialog = null;
+        _changes.Apply(settings => settings.WithoutControllerModeChoices(id), "Steam Controller");
+        AppLog.Write($"Steam-Controller-Modus aller Spiele von {id} auf die Vorauswahl gesetzt");
+        Refresh();
+        Focus(_controllerModeRow);
     }
 
     /// <summary>A on "Name im Tab" or "Such-Kürzel": the on-screen keyboard over the text, checked while it is typed.</summary>

@@ -51,8 +51,8 @@ public sealed class SettingsTests
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("Controller", settings.Selected.Name);
 
-        // A choice: "Mausmodus" (below the group "Steam") from "Von Hand" one step on with ▶.
-        arcadia.Press(UiAction.Down, times: 2);
+        // A choice: "Mausmodus" (right below Pan) from "Von Hand" one step on with ▶.
+        arcadia.Press(UiAction.Down);
         Assert.Equal("mouse-mode", settings.FocusedRow?.Key);
         Assert.Equal(MouseModeActivation.Manual, arcadia.Settings.Current.MouseMode.Activation);
         arcadia.Press(UiAction.Right);

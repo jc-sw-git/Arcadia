@@ -25,6 +25,10 @@
   <ItemGroup>
     <!-- SDL3 as a test sets it up, shared with the unit tests of the gamepad source. -->
     <Compile Include="..\Arcadia.Core.Tests\FakeSdlGamepads.cs" Link="FakeSdlGamepads.cs" />
+    <Compile Include="..\Arcadia.Core.Tests\FakeVirtualXboxPads.cs" Link="FakeVirtualXboxPads.cs" />
+    <Compile Include="..\Arcadia.Core.Tests\FakeEmulationGuardian.cs" Link="FakeEmulationGuardian.cs" />
+    <Compile Include="..\Arcadia.Core.Tests\FakeSteamControllerHold.cs" Link="FakeSteamControllerHold.cs" />
+    <Compile Include="..\Arcadia.Core.Tests\FakeSisrPc.cs" Link="FakeSisrPc.cs" />
     <!-- Steam's appinfo.vdf as the Steam fixture writes it (#141). -->
     <Compile Include="..\Arcadia.Core.Tests\AppInfoFile.cs" Link="Fixtures\AppInfoFile.cs" />
     <Compile Include="..\Arcadia.Core.Tests\PackageInfoFile.cs" Link="Fixtures\PackageInfoFile.cs" />

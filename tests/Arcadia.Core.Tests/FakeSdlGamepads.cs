@@ -26,9 +26,23 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
 
     public int Updates { get; private set; }
 
+    public int Inits { get; private set; }
+
+    /// <summary>The id SDL gives the device now (it changes when SDL starts again).</summary>
+    public uint IdOf(PadDevice device)
+    {
+        lock (_lock)
+        {
+            return _plugged.First(pair => pair.Value == device).Key;
+        }
+    }
+
     public List<string> Rumbles { get; } = [];
 
     public List<uint> Closed { get; } = [];
+
+    /// <summary>The pads whose gyro and accelerometer are on; only a Steam Controller has them here.</summary>
+    public HashSet<uint> MotionOn { get; } = [];
 
     public IReadOnlyCollection<uint> OpenPads
     {
@@ -60,6 +74,7 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
         {
             _plugged.Remove(id);
             _states.Remove(id);
+            MotionOn.Remove(id);
             _changes.Enqueue((id, false));
         }
     }
@@ -81,6 +96,26 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
         if (InitError is { } error)
         {
             throw error;
+        }
+
+        lock (_lock)
+        {
+            Inits++;
+            if (IsQuit)
+            {
+                // As SDL after SDL_Quit: every pad still plugged in comes again, under a new id.
+                _changes.Clear();
+                foreach (var (old, device) in _plugged.ToList())
+                {
+                    _plugged.Remove(old);
+                    var state = _states.GetValueOrDefault(old);
+                    _states.Remove(old);
+                    var id = _nextId++;
+                    _plugged[id] = device;
+                    _states[id] = state;
+                    _changes.Enqueue((id, true));
+                }
+            }
         }
 
         IsQuit = false;
@@ -127,6 +162,29 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
         lock (_lock)
         {
             Updates++;
+            Calls.Add("Update");
+            HoldsPuck = _steamDriverOn;
+        }
+    }
+
+    private bool _steamDriverOn = true;
+
+    /// <summary>
+    /// SDL holds the puck open, as its Triton driver does while it waits for a controller (#308): from the start on, and
+    /// until an update after its driver was switched off.
+    /// </summary>
+    public bool HoldsPuck { get; private set; } = true;
+
+    /// <summary>Every switch of SDL's Steam Controller driver and every update, in order.</summary>
+    public List<string> Calls { get; } = [];
+
+    public void ReadSteamControllers(bool on)
+    {
+        lock (_lock)
+        {
+            Calls.Add(on ? "Steam an" : "Steam aus");
+            _steamDriverOn = on;
+            HoldsPuck |= on;
         }
     }
 
@@ -139,15 +197,51 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
 
         lock (_lock)
         {
-            return _states.GetValueOrDefault(_open[pad]);
+            var id = _open[pad];
+            var state = _states.GetValueOrDefault(id);
+            return MotionOn.Contains(id) ? state with { Motion = state.Motion with { IsOn = true } } : state;
         }
     }
 
-    public void Rumble(nint pad, ushort strength, uint durationMs)
+    public bool SetMotionSensors(nint pad, bool on)
     {
         lock (_lock)
         {
-            Rumbles.Add($"pad {_open[pad]}: {strength} for {durationMs} ms");
+            var id = _open[pad];
+            if (_plugged.GetValueOrDefault(id).Type is not (PadType.Steam or PadType.PS4 or PadType.PS5 or PadType.SwitchPro))
+            {
+                return false;
+            }
+
+            if (on)
+            {
+                MotionOn.Add(id);
+            }
+            else
+            {
+                MotionOn.Remove(id);
+            }
+
+            return true;
+        }
+    }
+
+    public void Rumble(nint pad, ushort low, ushort high, uint durationMs)
+    {
+        lock (_lock)
+        {
+            Rumbles.Add(low == high ? $"pad {_open[pad]}: {low} for {durationMs} ms" : $"pad {_open[pad]}: {low}/{high} for {durationMs} ms");
+        }
+    }
+
+    /// <summary>Every light bar colour set, as "pad id: r,g,b".</summary>
+    public List<string> Lights { get; } = [];
+
+    public void SetLight(nint pad, byte red, byte green, byte blue)
+    {
+        lock (_lock)
+        {
+            Lights.Add($"pad {_open[pad]}: {red},{green},{blue}");
         }
     }
 
@@ -168,15 +262,24 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
 /// <summary>Controllers as SDL 3.4 describes them (names and USB ids of the real devices).</summary>
 internal static class KnownPads
 {
-    public static readonly PadDevice Xbox360 = new("Xbox 360 Controller", 0x045E, 0x028E, PadType.Xbox360, StickDeviceType.Gamepad);
+    public static readonly PadDevice Xbox360 = new("Xbox 360 Controller", 0x045E, 0x028E, PadType.Xbox360, StickDeviceType.Gamepad) { Path = "XInput#0" };
+
+    /// <summary>SISR's virtual pad (VIIPER over usbip-win2): to SDL exactly a wired Xbox 360 pad (#212, P3).</summary>
+    public static readonly PadDevice SisrXbox360 = Xbox360;
     public static readonly PadDevice XboxSeries = new("Xbox Series X Controller", 0x045E, 0x0B12, PadType.XboxOne, StickDeviceType.Gamepad);
-    public static readonly PadDevice EightBitDoUltimate2 = new("8BitDo Ultimate 2 Wireless Controller for PC", 0x2DC8, 0x310B, PadType.XboxOne, StickDeviceType.Gamepad);
+    public static readonly PadDevice EightBitDoUltimate2 = new("8BitDo Ultimate 2 Wireless Controller for PC", 0x2DC8, 0x310B, PadType.XboxOne, StickDeviceType.Gamepad) { Path = "XInput#1" };
     public static readonly PadDevice DualSense = new("DualSense Wireless Controller", 0x054C, 0x0CE6, PadType.PS5, StickDeviceType.Gamepad);
     public static readonly PadDevice DualShock4 = new("PS4 Controller", 0x054C, 0x09CC, PadType.PS4, StickDeviceType.Gamepad);
     public static readonly PadDevice SwitchPro = new("Nintendo Switch Pro Controller", 0x057E, 0x2009, PadType.SwitchPro, StickDeviceType.Gamepad);
+    public static readonly PadDevice DualSenseEdge = new("DualSense Edge Wireless Controller", 0x054C, 0x0DF2, PadType.PS5, StickDeviceType.Gamepad);
+    public static readonly PadDevice Switch2Pro = new("Nintendo Switch 2 Pro Controller", 0x057E, 0x2069, PadType.SwitchPro, StickDeviceType.Gamepad);
+    public static readonly PadDevice GameCube = new("Nintendo GameCube Controller", 0x057E, 0x0337, PadType.GameCube, StickDeviceType.Gamepad);
     public static readonly PadDevice JoyConPair = new("Nintendo Switch Joy-Con (L/R)", 0x057E, 0x2008, PadType.JoyConPair, StickDeviceType.Gamepad);
     public static readonly PadDevice JoyConLeft = new("Nintendo Switch Joy-Con (L)", 0x057E, 0x2006, PadType.JoyConLeft, StickDeviceType.Gamepad);
     public static readonly PadDevice SteamVirtual = new("Steam Virtual Gamepad", 0x28DE, 0x11FF, PadType.Xbox360, StickDeviceType.Gamepad);
-    public static readonly PadDevice SteamController = new("Steam Controller", 0x28DE, 0x1304, PadType.Steam, StickDeviceType.Gamepad);
+    public static readonly PadDevice SteamController = new("Steam Controller", 0x28DE, 0x1304, PadType.Steam, StickDeviceType.Gamepad)
+    {
+        Path = @"\\?\HID#VID_28DE&PID_1304&MI_02&Col03#7&30d307b7&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}",
+    };
     public static readonly PadDevice Wheel = new("Logitech G29 Driving Force Racing Wheel", 0x046D, 0xC24F, PadType.Standard, StickDeviceType.Wheel);
 }

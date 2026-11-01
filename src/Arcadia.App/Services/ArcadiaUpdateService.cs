@@ -51,7 +51,7 @@ public sealed class ArcadiaUpdateService
     /// <summary>Arguments for the Arcadia that Velopack starts after installing, asked for right before the restart.</summary>
     public Func<string[]>? RestartArguments { get; set; }
 
-    /// <summary>Arcadia is closing to install an update; it comes right back, so SISR keeps running.</summary>
+    /// <summary>Arcadia is closing to install an update; it comes right back, so a running game keeps going.</summary>
     public bool IsRestartingForUpdate { get; private set; }
 
     public bool IsInstalled => _manager.IsInstalled;
@@ -145,7 +145,7 @@ public sealed class ArcadiaUpdateService
 
     /// <summary>
     /// Downloads the available update, closes Arcadia and lets Velopack install it silently and
-    /// start the new version. A running game is not affected: SISR keeps running, and the new
+    /// start the new version. A running game is not affected: the new
     /// Arcadia starts behind the game (see <see cref="RestartArguments"/>).
     /// </summary>
     public async Task InstallAsync()

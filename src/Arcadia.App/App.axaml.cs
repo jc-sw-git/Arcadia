@@ -4,12 +4,15 @@ using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.App.Views;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Copy;
+using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Steam;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -20,9 +23,12 @@ namespace Arcadia.App;
 
 public partial class App : Application
 {
-    /// <summary>How often SISR and its dependencies are checked.</summary>
+    /// <summary>How often the controller emulation's parts are checked.</summary>
     private static readonly TimeSpan ControllerSupportInterval = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan ControllerSupportWatchInterval = TimeSpan.FromSeconds(2);
+
+    // Pan's first answer at start (#297): its hello takes milliseconds; a Pan that hangs mustn't hold the update.
+    private static readonly TimeSpan PanFirstAnswerWait = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan InstallCheckInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan InstallProgressInterval = TimeSpan.FromSeconds(2);
 
@@ -50,13 +56,17 @@ public partial class App : Application
     /// <summary>Set on the restart after an update while Arcadia wasn't in front (e.g. a game was).</summary>
     private const string BackgroundArgument = "--background";
 
-    /// <summary>Hands a SISR pause for a running game over to the Arcadia started after an update.</summary>
+    /// <summary>Passed by Arcadia before #214 on an update restart; dropped, there is no SISR to pause anymore.</summary>
     private const string SisrPausedArgument = "--sisr-paused-for";
 
     /// <summary>Hands a game started from Arcadia over to the Arcadia started after an update, so its end brings Arcadia back (#94).</summary>
     private const string StartedGameArgument = "--started-game";
 
     private IGamepadSource? _gamepad;
+
+    /// <summary>Pan fell back to its previous journal or started empty (#243); its log says what was wrong.</summary>
+
+    private const string PanJournalText = "Pan konnte sein Journal nicht lesen – Details stehen in pan.log unter %ProgramData%\\Arcadia\\Pan";
 
     public override void Initialize()
     {
@@ -96,18 +106,17 @@ public partial class App : Application
                 AppLog.Write(problem);
             }
 
-            var controllerSupport = new ControllerSupportService(settings, SisrHost.CreateDefault(http), http, time)
+            // SISR is replaced by Arcadia's own Xbox pad (#213); Arcadia never starts it and removes it only on request (#214).
+            var ownViiper = ViiperRelease.IsPinned ? ViiperInstallation.NextToArcadia() : null;
+            var controllerSupport = new ControllerSupportService(settings, http, time)
             {
                 Log = AppLog.Write,
+                GamesUseSteamInput = launchers.GamesUseSteamInput,
+                Viiper = ownViiper,
+                Sisr = OperatingSystem.IsWindows()
+                    ? new SisrInstallation(SisrInstallation.DefaultPaths(ownViiper?.Executable), SteamInstallation.Find(), new WindowsSisrSystem())
+                    : null,
             };
-            // After an update restart: SISR kept running, and pauses for running games carry over.
-            for (var i = 0; i < args.Length - 1; i++)
-            {
-                if (args[i] == SisrPausedArgument)
-                {
-                    controllerSupport.ResumePause(args[i + 1]);
-                }
-            }
 
             var launchedGames = new LaunchedGames();
             var installTracker = new InstallTracker(launchers, time);
@@ -138,6 +147,8 @@ public partial class App : Application
                 firstRun,
                 time,
                 new InstallFolderCheck(Directory.Exists, action => Dispatcher.UIThread.Post(action)));
+            // Before the window: an installed Pan that isn't this Arcadia's shows its update page instead of the library (#297).
+            viewModel.ShowPanUpdateIfDue();
             webPages.Attach(viewModel);
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
@@ -158,36 +169,69 @@ public partial class App : Application
             // The mouse mode's overlay is a window too; Arcadia ends with the main window, not the last one.
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
 
-            // The downloaded update installs once Arcadia has exited; closing normally also stops SISR.
-            updates.RestartArguments = () => RestartArguments(args, window.IsActive, controllerSupport.PausedFor, runningGames.StartedFromArcadia);
+            // The downloaded update installs once Arcadia has exited.
+            updates.RestartArguments = () => RestartArguments(args, window.IsActive, runningGames.StartedFromArcadia);
             updates.RestartRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
 
-            var foreground = new ForegroundGuard(window);
-            controllerSupport.SisrStarting += (_, _) => Dispatcher.UIThread.Invoke(foreground.Begin);
-            controllerSupport.SisrStarted += (_, _) => Dispatcher.UIThread.Post(foreground.End);
-            // Tested: Steam keeps SISR's layout after enforce=false + reset until the focus changes.
-            controllerSupport.ControllerReleased += (_, _) => Dispatcher.UIThread.Post(() => foreground.BounceFocusAsync().Forget("Controller freigeben"));
 
-            _gamepad = ControllerInput.Create(viewModel);
+            var ownPads = new OwnPadModels();
+            _gamepad = ControllerInput.Create(viewModel, ownPads);
             var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
             viewModel.Dialogs = new SystemDialogs(window, () => viewModel.UsesController, () => mouseMode);
 
             var routing = new GamepadRouting(viewModel, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, time, window.Latency);
-            _gamepad.Polled += _ => routing.Tick();
+            _gamepad.Polled += routing.Tick;
+
+            // The Steam Controller as an Xbox pad for games, in the mode of the running games (#213); Steam games started
+            // directly in Steam count too (#119). VIIPER is only Arcadia's own build of its fork (#242 part B), started and
+            // checked by Arcadia (#304); a build without a pinned one has no VIIPER at all, so no pad and no copy.
+            var viiper = ViiperXboxPads.Own(ownViiper?.Executable, Core.Diagnostics.LogLocation.DataFolder, Core.Diagnostics.LogLocation.Directory,
+                OperatingSystem.IsWindows() ? new WindowsViiperHost(AppLog.Write) : null, AppLog.Write);
+            // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
+            var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write, () => controllerSupport.WhyPanIsLeftAlone) : new NoPanTransport(), time, AppLog.Write)
+            {
+                WhyLeftAlone = () => controllerSupport.WhyPanIsLeftAlone,
+            };
+            var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
+            pan.JournalProblem += () => panNotices.Show(PanJournalText);
+            controllerSupport.HidingCheck = pan;
+            var steamPlatform = new ControllerSupportPlatform();
+            // The copy of the Steam Controller for Steam needs the VIIPER fork (#242 parts B and C); without it Pan hides nothing.
+            ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && viiper is not null && ownViiper is not null
+                ? new ViiperSteamControllerCopy(viiper, ownViiper, wiring, AppLog.Write)
+                : new NoSteamControllerCopy();
+            var foreground = new ForegroundOwner(() => viewModel.Session.GameFolders, launchedGames);
+            var forGames = SteamControllerForGames.Create(
+                OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, Copy, controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId,
+                () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, foreground.IsSteam, foreground.GameKey, _gamepad, panNotices, time, ownPads);
+            pan.Start();
+            var xboxPad = forGames.Pad;
+            viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;
+            viewModel.ConnectPan(forGames);
+            controllerSupport.PanHoldsPuck = () => forGames.Emulation.HidesPuck;
+            viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
+            // A firmware update Steam tries through the copy (#295): Arcadia is behind Steam's window, and the player is
+            // to read why it fails. Not while a game is in front: a toast says it there (MainViewModel.ShowFirmwareAttempt).
+            viewModel.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
+            _gamepad.Sampled += xboxPad.Feed;
+            _gamepad.Lost += xboxPad.Drop;
+            _gamepad.Sampled += forGames.Others.Feed;
+            _gamepad.Lost += forGames.Others.Drop;
             _gamepad.ButtonPressed += routing.Press;
             _gamepad.ButtonReleased += routing.Release;
             _gamepad.Lost += routing.Drop;
+            if (_gamepad is NullGamepadSource)
+            {
+                // No controllers on this system: the hints show the keyboard from the start (#215).
+                routing.Drop();
+            }
+
             _gamepad.Start();
 
-            var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), "SISR-Überwachung"));
+            var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), "Controller-Überwachung"));
             monitoring.Start();
 
-            // Quick check between ticks: Steam closed (stop SISR before it can start Steam again)
-            // and the Steam Controller switched on or off (preview). Both checks run on the thread
-            // pool: they list processes and read Steam's registry, log and SISR's API; the service's
-            // events are posted to the UI thread by their handlers.
-            var sisrWatch = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.WatchAsync()), "SISR-Überwachung"));
-            sisrWatch.Start();
+            var xboxPadTick = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(forGames.TickAsync), "Xbox-Pad für Spiele"));
 
             // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
             // watch, rescan until the games it handed over are installed.
@@ -232,14 +276,47 @@ public partial class App : Application
 
             Task.Run(async () =>
             {
-                SisrHost.RemoveLegacyCopy();
-                await controllerSupport.TickAsync();
-            }).Forget("SISR-Überwachung");
+                SteamControllerRoute route;
+                try
+                {
+                    // An SISR an older Arcadia started would take the Steam Controller beside Pan (#214 decision 6).
+                    await controllerSupport.StopSisrStartedByOldArcadiaAsync();
+                    await controllerSupport.TickAsync();
+                    await forGames.Emulation.TickAsync();
+                    route = forGames.Routing.Update();
+                    if (controllerSupport.IsPanUpdateDue)
+                    {
+                        // Pan's hello says whether its teardown of an earlier Arcadia still runs; the update waits for it (#297).
+                        try
+                        {
+                            await pan.FirstAttempt.WaitAsync(PanFirstAnswerWait, time);
+                        }
+                        catch (TimeoutException)
+                        {
+                            AppLog.Write("Pan hat beim Start nicht rechtzeitig geantwortet – die Aktualisierung beginnt trotzdem");
+                        }
+
+                        await forGames.Emulation.TickAsync();
+                    }
+                }
+                finally
+                {
+                    // Also when a step above failed: the update page waits for this and must never wait for good (#297).
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        xboxPadTick.Start();
+                        viewModel.PanAnsweredAtStart();
+                    });
+                }
+
+                await xboxPad.TickAsync();
+                AppLog.Write($"Steam Controller in Spielen bereit ({route.Why})");
+            }).Forget("Controller-Überwachung");
 
             desktop.ShutdownRequested += (_, _) =>
             {
                 monitoring.Stop();
-                sisrWatch.Stop();
+                xboxPadTick.Stop();
                 installs.Stop();
                 installProgress.Stop();
                 updateCheck.Stop();
@@ -252,17 +329,11 @@ public partial class App : Application
                 // After the polling stopped: lets go of a mouse button or key the mouse mode still holds.
                 mouseMode.Dispose();
 
-                // SISR belongs to Arcadia: it goes when Arcadia goes. Run off the UI thread to avoid a deadlock.
-                // Except for an update: Arcadia is back in seconds, and a game keeps its controller meanwhile.
-                if (updates.IsRestartingForUpdate)
-                {
-                    AppLog.Write("Neustart für Update: SISR läuft weiter.");
-                }
-                else
-                {
-                    // Its own limit is 3 s before it kills SISR; the rest is for the kill and the clean-up.
-                    Task.Run(() => controllerSupport.ShutdownAsync()).Wait(TimeSpan.FromSeconds(8));
-                }
+                // The Xbox pad goes also for an update: nothing feeds it while Arcadia restarts, and it comes back then.
+                // Pan hears the planned exit with it, so it has nothing to undo.
+                Task.Run(xboxPad.ShutdownAsync).Wait(TimeSpan.FromSeconds(5));
+                Task.Run(() => pan.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(2));
+                controllerSupport.Shutdown();
                 AppLog.Write("Arcadia beendet.");
             };
 
@@ -287,7 +358,7 @@ public partial class App : Application
     }
 
     /// <summary>Arcadia's own arguments for the start after an update, plus the state to carry over.</summary>
-    private static string[] RestartArguments(string[] args, bool inFront, IEnumerable<string> pausedFor, IEnumerable<string> startedGames)
+    private static string[] RestartArguments(string[] args, bool inFront, IEnumerable<string> startedGames)
     {
         var kept = new List<string>();
         for (var i = 0; i < args.Length; i++)
@@ -306,12 +377,6 @@ public partial class App : Application
         if (!inFront)
         {
             kept.Add(BackgroundArgument);
-        }
-
-        foreach (var directory in pausedFor)
-        {
-            kept.Add(SisrPausedArgument);
-            kept.Add(directory);
         }
 
         foreach (var gameKey in startedGames)

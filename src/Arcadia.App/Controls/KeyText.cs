@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.Input;
 using Avalonia;
 using Avalonia.Controls;
 
@@ -6,7 +7,7 @@ namespace Arcadia.App.Controls;
 
 /// <summary>
 /// The label of a button that stands for a controller button, e.g. LB beside the tabs: <see cref="Pad"/> while
-/// the controller is in use, <see cref="Keys"/> after a key press or a click (#127).
+/// the controller is in use, in the printing of the controller in use (#215), <see cref="Keys"/> after a key press or a click (#127).
 /// </summary>
 public sealed class KeyText : TextBlock
 {
@@ -52,5 +53,6 @@ public sealed class KeyText : TextBlock
 
     private void OnInputChanged(object? sender, EventArgs e) => Update();
 
-    private void Update() => Text = InputHints.UsesController ? Pad : Keys;
+    // Only pills stand here (LB, RT, …), so the symbol is always text.
+    private void Update() => Text = InputHints.UsesController ? ButtonSymbolSets.Symbol(Pad ?? string.Empty, InputHints.Symbols).Text : Keys;
 }

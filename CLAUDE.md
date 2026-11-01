@@ -24,11 +24,10 @@ dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all l
 
 - .NET 10 SDK. `Directory.Build.props` sets `TreatWarningsAsErrors` — keep the build warning-free.
 - A running Arcadia locks `bin/` → close it before building: `Get-Process Arcadia | % { $_.CloseMainWindow() }`
-  (CloseMainWindow, not Stop-Process: Arcadia must shut SISR down cleanly).
-- Logs: `%APPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, `Bild:` press to frame, SISR start/stop),
-  `sisr.log` (SISR's own log, overwritten per start). Settings: `%APPDATA%\Arcadia\settings.json`.
-- Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log:
-  `Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} | ? ProviderName -match '.NET Runtime'`.
+  (CloseMainWindow, not Stop-Process: Arcadia must shut down cleanly).
+- Logs: `%APPDATA%\Arcadia\logs\arcadia.log` (keys, gamepad buttons, `Bild:` press to frame, Pan and the emulation),
+  `viiper.log` (VIIPER's own log). Settings: `%APPDATA%\Arcadia\settings.json`.
+- Crashes before the first log line (e.g. XAML/style errors) only show in the Windows event log (command: arcadia-verify skill).
 
 ## Releases
 
@@ -129,7 +128,7 @@ errors land with stack trace in `arcadia.log` and as a toast. No `_ = SomethingA
 touching that code, and add new findings there, not here):
 - Steam library, installs, updates, account, running games, `shortcuts.vdf`: `docs/launchers/steam/` (README first, then the topic file)
 - Epic launcher, catalog, install monitor, playtime: `docs/launchers/epic.md`
-- Steam Controller Support (SISR, usbip-win2, focus handling): `docs/controller-support/` (README first, then the topic file)
+- Steam Controller Support (Pan, VIIPER, usbip-win2, SISR): `docs/controller-support/` (README first, then the topic file)
 
 ## Context economy
 

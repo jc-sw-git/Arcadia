@@ -57,7 +57,7 @@ public sealed partial class SteamRunningGames(TimeProvider time, ISteamAppsRegis
             }
         }
 
-        // RunningAppID alone counts: Arcadia relies on it for SISR already, the Running flag is younger knowledge.
+        // RunningAppID alone counts: Arcadia relies on it for the Steam Controller already, the Running flag is younger knowledge.
         if (_registry.RunningAppId() is { } current)
         {
             running.TryAdd(current, StartOf(current));

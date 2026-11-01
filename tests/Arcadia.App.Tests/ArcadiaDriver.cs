@@ -162,6 +162,11 @@ internal sealed class ArcadiaDriver : IDisposable
         Main.BeforeGameStarts = ForGames.BeforeGameStartsAsync;
         Main.ConnectPan(ForGames);
         ControllerSupport.PanHoldsPuck = () => ForGames.Emulation.HidesPuck;
+        // The App starts a new Arcadia and exits (#396); here the restart is only counted.
+        ControllerSupport.RestartArcadia = reason =>
+        {
+            lock (Restarts) Restarts.Add(reason);
+        };
         ForGames.Routing.Update();
         _controllers.Sampled += XboxPad.Feed;
         _controllers.Lost += XboxPad.Drop;
@@ -179,6 +184,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>The virtual Xbox pads VIIPER would plug in for games (#213).</summary>
     public FakeVirtualXboxPads XboxPads { get; } = new();
+
+    /// <summary>Why Arcadia restarted itself, in order (#396): "Arcadia neu starten", or after a HidHide install.</summary>
+    public List<string> Restarts { get; } = [];
 
     /// <summary>Pan, the guardian the pads stand under (#243); available unless a test takes it away.</summary>
     public FakeEmulationGuardian Pan { get; } = new();

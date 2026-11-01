@@ -1617,7 +1617,7 @@
                         </Panel>
                       </Border>
                       <TextBlock Text="Steam-Spiel läuft" IsVisible="{Binding IsGamePrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
-                      <TextBlock Text="Steam beenden?" IsVisible="{Binding IsSteamStopPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding SteamStopTitle}" IsVisible="{Binding IsSteamStopPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                       <TextBlock Text="SISR wird entfernt" IsVisible="{Binding IsRemovingSisrPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                     </StackPanel>
 

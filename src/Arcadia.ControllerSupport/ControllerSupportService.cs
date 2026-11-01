@@ -131,6 +131,27 @@ public sealed class ControllerSupportService(
     /// </summary>
     public Func<CancellationToken, Task>? LetGoOfPan { get; set; }
 
+    /// <summary>
+    /// Restarts Arcadia, with the reason for the log (#396): "Arcadia neu starten", and after a HidHide install. Set by the
+    /// App; null in tests that don't look at it.
+    /// </summary>
+    public Action<string>? RestartArcadia { get; set; }
+
+    public const string HidHideInstallingText = "HidHide wird installiert";
+    public const string RestartPendingText = "Arcadia startet nach der HidHide-Installation neu";
+
+    /// <summary>
+    /// Why Pan's emulation may hide nothing now, or null (#396): HidHide's installer runs, or ran and Arcadia restarts.
+    /// HidHide doesn't let a process that ran before its install see what it hides, Arcadia included.
+    /// </summary>
+    public string? HoldsEmulation => _restartPending ? RestartPendingText : _hidHideInstalling ? HidHideInstallingText : null;
+
+    private volatile bool _hidHideInstalling;
+    private volatile bool _restartPending;
+
+    /// <summary><paramref name="fix"/> runs HidHide's installer now: the settings say first that Arcadia restarts afterwards (#396).</summary>
+    public bool InstallsHidHide(HealthFix fix) => RestartsPuck(fix);
+
     public const string HidHideReinstallWhileHiddenText =
         "Solange Pan den Steam Controller versteckt, lässt sich HidHide nicht neu installieren. Schalte den Controller-Wächter (Pan) aus und versuche es dann noch einmal.";
 
@@ -640,6 +661,9 @@ public sealed class ControllerSupportService(
     public async Task ApplyFixAsync(HealthFix fix, CancellationToken cancellationToken = default)
     {
         _applyingFix = fix;
+        var runsHidHide = InstallsHidHide(fix);
+        _hidHideInstalling = runsHidHide;
+        var hidHideBefore = _platform.HidHideVersion;
         try
         {
             await RunFixAsync(fix, cancellationToken);
@@ -647,6 +671,21 @@ public sealed class ControllerSupportService(
         finally
         {
             _applyingFix = null;
+            _hidHideInstalling = false;
+            // A HidHide that came with the fix, newly or again, doesn't let this process see what Pan hides (#396); also
+            // when a later step failed, as long as its version changed.
+            if (runsHidHide && !_shuttingDown && _platform.HidHideVersion is { } now && HidHideRelease.IsSupported(now)
+                && (LastError is null || now != hidHideBefore))
+            {
+                _restartPending = true;
+                Log?.Invoke("HidHide installiert: Arcadia startet neu, bevor Pan etwas versteckt");
+                OnChanged();
+            }
+        }
+
+        if (_restartPending && RestartArcadia is { } restart)
+        {
+            restart("nach der HidHide-Installation");
         }
     }
 

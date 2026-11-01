@@ -756,4 +756,109 @@ public sealed class PanEmulationTests
         Assert.Empty(_pads.Current!.Sent);
         Assert.Equal(1, _pads.Unplugged);
     }
+
+    [Fact]
+    [Trait("TestCase", "T396-1")]
+    public async Task A_puck_Arcadia_no_longer_sees_after_the_hide_ends_the_emulation_shows_it_and_nothing_starts_again()
+    {
+        // HidHide installed while Arcadia ran (owner's PC, 2026-11-01): after the hide this process sees no puck at all.
+        _pan.HideWait = _ =>
+        {
+            _copy.PuckPresent = false;
+            return Task.CompletedTask;
+        };
+
+        await _emulation.TickAsync();
+        Assert.Equal(["started 1", "hide 1"], _events);
+
+        _time.Advance(TimeSpan.FromSeconds(2));
+        await _emulation.TickAsync();
+        _time.Advance(TimeSpan.FromSeconds(4));
+        await _emulation.TickAsync();
+
+        Assert.Equal((PanEmulationState.Paused, PanEmulationProblem.NotVisibleToArcadia), (State, _emulation.Status.Problem));
+        Assert.Equal(["started 1", "hide 1", "unhide 1", "stopped 1"], _events);
+        Assert.Equal([PanEmulation.SteamControllerName], _emulation.NotVisibleToArcadia);
+        Assert.Contains(PanEmulation.NotVisibleText, _notices);
+        Assert.NotNull(_emulation.Unavailable());
+
+        // A new emulation would hide it from Arcadia again: none starts, also after "Erneut versuchen".
+        _copy.PuckPresent = true;
+        _emulation.Retry();
+        for (var tick = 0; tick < 5; tick++)
+        {
+            _time.Advance(TimeSpan.FromSeconds(10));
+            await _emulation.TickAsync();
+        }
+
+        Assert.Equal([1u], _pan.Started);
+        Assert.Equal(PanEmulationProblem.NotVisibleToArcadia, _emulation.Status.Problem);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T396-1")]
+    public async Task A_puck_Arcadia_sees_again_after_the_hide_keeps_the_emulation_running()
+    {
+        // As on every Arcadia started after HidHide: the puck is gone for the restart, then back.
+        _pan.HideWait = _ =>
+        {
+            _copy.PuckPresent = false;
+            return Task.CompletedTask;
+        };
+
+        await _emulation.TickAsync();
+        _copy.PuckPresent = true;
+        for (var tick = 0; tick < 5; tick++)
+        {
+            _time.Advance(TimeSpan.FromSeconds(2));
+            await _emulation.TickAsync();
+        }
+
+        Assert.Equal(PanEmulationState.Running, State);
+        Assert.Empty(_emulation.NotVisibleToArcadia);
+        Assert.Empty(_pan.Unhidden);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T396-1")]
+    public async Task A_puck_switched_off_long_after_the_hide_is_no_sign_of_a_blind_Arcadia()
+    {
+        await _emulation.TickAsync();
+        _time.Advance(TimeSpan.FromSeconds(2));
+        await _emulation.TickAsync();
+
+        // Seen again once: whatever happens to it later is the player's doing, not HidHide's.
+        _copy.PuckPresent = false;
+        for (var tick = 0; tick < 5; tick++)
+        {
+            _time.Advance(TimeSpan.FromSeconds(2));
+            await _emulation.TickAsync();
+        }
+
+        Assert.NotEqual(PanEmulationProblem.NotVisibleToArcadia, _emulation.Status.Problem);
+        Assert.Empty(_emulation.NotVisibleToArcadia);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T396-3")]
+    public async Task While_held_back_for_a_HidHide_install_nothing_is_hidden_and_a_running_emulation_ends()
+    {
+        string? heldBack = null;
+        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            SteamControllerPresent = () => _present,
+            HeldBack = () => heldBack,
+        };
+        await emulation.TickAsync();
+        Assert.Equal([1u], _pan.Hidden);
+
+        heldBack = "Arcadia startet nach der HidHide-Installation neu";
+        await emulation.TickAsync();
+        _time.Advance(TimeSpan.FromSeconds(10));
+        await emulation.TickAsync();
+
+        Assert.Equal((PanEmulationState.SettingUp, heldBack), (emulation.Status.State, emulation.Status.Reason));
+        Assert.Equal([1u], _pan.Unhidden);
+        Assert.Equal([1u], _pan.Started);
+    }
 }

@@ -19,7 +19,7 @@ Decisions that hold across areas; the files beside this one hold the decisions p
   every controller for every game.
 - **Pan** is the product name of the controller guardian ("Pan, der Wächter von Arcadia"). UI texts are written as if
   Pan already covered all controllers; the info panel says it covers only the Steam Controller so far
-  ([settings.md](settings.md)).
+  ([settings-controller.md](settings-controller.md)).
 - **Platforms.** Windows x64 today. Long-term goal, not scheduled: Arcadia on Linux (Bazzite, ideally SteamOS) with
   the same feel, control and scope, without notable compromises. macOS is dropped. New code keeps Win32 calls behind
   the existing `OperatingSystem.IsWindows()` seams, and a Windows-only design keeps a Linux path in mind.

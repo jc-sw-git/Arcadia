@@ -69,6 +69,7 @@ its file.
 | [375-close-the-pan-core-test-gaps.md](375-close-the-pan-core-test-gaps.md) | #375 | Close the Pan.Core test gaps the mutation run found | 0 (tests only) |
 | [371-cancellable-monitor-polls.md](371-cancellable-monitor-polls.md) | #371 | Cancellation token for monitor polls; a failing or hanging monitor holds no one | 0 (unit tests) |
 | [369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md](369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md) | #369 | Show a failed scan instead of an empty launcher tab | 3 |
+| [396-pan-hides-controllers-arcadia-cant-see.md](396-pan-hides-controllers-arcadia-cant-see.md) | #396 | Pan hides controllers Arcadia itself can no longer see | 3 |
 
 ## Exploratory test
 
@@ -108,3 +109,4 @@ Charter: –. Time box: –. Findings: –.
 | T238-1, T238-3 to T238-7, T238-12 (fakes) | `tests/Arcadia.App.Tests/EveryControllerForGamesTests.cs`, `tests/Arcadia.Core.Tests/TakenOverControllersTests.cs` |
 | T366-1 | `tests/Arcadia.App.Tests/SteamControllerXboxPadTests.cs`, `tests/Arcadia.Core.Tests/ControllerSupportServiceTests.cs` |
 | T369-1 to T369-3 | `tests/Arcadia.App.Tests/ScanFailureTests.cs` |
+| T396-1 to T396-3 (fakes) | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `EmulationSetupTests.cs`, `tests/Arcadia.Core.Tests/PanEmulationTests.cs`, `TakenOverControllersTests.cs` |

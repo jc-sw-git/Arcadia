@@ -42,6 +42,7 @@ its file.
 | [295-spike-steams-firmware-path.md](295-spike-steams-firmware-path.md) | #295 | Spike: Steam's firmware update path, and what Arcadia guards | 6 |
 | [345-hide-and-copy-the-steam-controller-by-cable.md](345-hide-and-copy-the-steam-controller-by-cable.md) | #345 | Hide and copy the Steam Controller by cable | 7 |
 | [357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md](357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md) | #357 | Steam Controller: Xbox pad passes input only while a game on "Arcadia" is in front | 4 |
+| [364-culture-proof-tests.md](364-culture-proof-tests.md) | #364 | Tests fail on a German Windows: culture-dependent formatting in tests and in Pan's log | 0 (the suite) |
 
 ## Exploratory test
 

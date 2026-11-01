@@ -711,7 +711,8 @@ public sealed partial class Guardian
         }
         catch (TimeoutException)
         {
-            _log($"Client didn't let go of the Steam Controller within {PuckReleaseTimeout.TotalSeconds:0.#} s; restarting it anyway");
+            // pan.log is read by tools: a decimal point, also when Pan.Core runs under a German culture (tests).
+            _log(FormattableString.Invariant($"Client didn't let go of the Steam Controller within {PuckReleaseTimeout.TotalSeconds:0.#} s; restarting it anyway"));
         }
         catch (OperationCanceledException)
         {

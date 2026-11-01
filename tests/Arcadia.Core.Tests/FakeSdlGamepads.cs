@@ -28,6 +28,12 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
 
     public int Inits { get; private set; }
 
+    /// <summary>Calls that looked for devices after <see cref="Quit"/>, which real SDL doesn't survive.</summary>
+    public int UsedAfterQuit { get; private set; }
+
+    /// <summary>Runs inside <see cref="Update"/>, after it: lets a test put something between two steps of a poll.</summary>
+    public Action? AfterUpdate { get; set; }
+
     /// <summary>The id SDL gives the device now (it changes when SDL starts again).</summary>
     public uint IdOf(PadDevice device)
     {
@@ -126,6 +132,11 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
     {
         lock (_lock)
         {
+            if (IsQuit)
+            {
+                UsedAfterQuit++;
+            }
+
             var any = _changes.TryDequeue(out var change);
             (id, added) = change;
             return any;
@@ -165,6 +176,8 @@ internal sealed class FakeSdlGamepads : ISdlGamepads
             Calls.Add("Update");
             HoldsPuck = _steamDriverOn;
         }
+
+        AfterUpdate?.Invoke();
     }
 
     private bool _steamDriverOn = true;

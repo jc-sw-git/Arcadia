@@ -61,6 +61,7 @@ its file.
 | [363-deeply-nested-vdf-files-overflow-the-stack.md](363-deeply-nested-vdf-files-overflow-the-stack.md) | #363 | Deeply nested VDF files overflow the stack and end Arcadia | 5 |
 | [364-culture-proof-tests.md](364-culture-proof-tests.md) | #364 | Tests fail on a German Windows: culture-dependent formatting in tests and in Pan's log | 0 (the suite) |
 | [365-docs-after-the-sisr-replacement.md](365-docs-after-the-sisr-replacement.md) | #365 | Docs after the SISR replacement: README, notices, architecture docs, decisions and the latency budget | 0 (docs) |
+| [367-letting-go-leaves-held-button-pressed.md](367-letting-go-leaves-held-button-pressed.md) | #367 | Letting go of the controllers leaves a held button pressed | 1 |
 | [366-restore-controllers-beside-emulation.md](366-restore-controllers-beside-emulation.md) | #366 | "Controller wiederherstellen" runs beside Arcadia's own emulation | 1 |
 | [372-bind-steam-sign-in-to-steams-hosts.md](372-bind-steam-sign-in-to-steams-hosts.md) | #372 | Bind the Steam sign-in web view to Steam's hosts | 2 |
 | [368-sign-in-cleans-up-after-an-error.md](368-sign-in-cleans-up-after-an-error.md) | #368 | B after an unexpected sign-in error leaves the launcher page stuck | 4 |

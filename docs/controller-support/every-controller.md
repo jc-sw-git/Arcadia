@@ -12,7 +12,10 @@ Steam; the other controllers stay taken over. Product rules: `docs/product/contr
 - Pan hides one **model** (vendor:product) at a time, all its connected instances
   ([pan-hiding-controllers.md](pan-hiding-controllers.md)). Windows refuses the restart while any handle is open, so
   Arcadia lets go of **every** controller first: `IGamepadSource.ReadControllers(false)` closes the pads and quits SDL
-  (a close alone isn't enough, check A3), then all pads rest, the Steam Controller's too. Pan's heartbeat is pulsed
+  (a close alone isn't enough, check A3), then all pads rest, the Steam Controller's too. The next poll reports every
+  controller once with nothing held, so the mouse mode and the routing release what was held (#367). A button still
+  held when the controllers come back is no new press until it was up once. View or Menu tapped in that moment acts
+  as a tap at the let-go. Pan's heartbeat is pulsed
   every 250 ms meanwhile, and SDL is opened again on the next poll. SDL gives the pads new ids then; controllers are keyed by their SDL path (by
   `model#index` without one), and for `RereadGrace` (1 s) after the reread a controller not seen yet isn't dropped.
 - A model is hidden once per emulation generation. A rejected model is tried again when a new instance of it appears

@@ -125,6 +125,12 @@ public sealed class ControllerSupportService(
     /// <summary>Pan hides the puck or holds it for a firmware attempt now (#242): HidHide must not be reinstalled then.</summary>
     public Func<bool>? PanHoldsPuck { get; set; }
 
+    /// <summary>
+    /// Lets go of Pan once <see cref="WhyPanIsLeftAlone"/> names a reason: waits for Arcadia's request still under way
+    /// (a hide), then closes the connection (#366). Null in tests without a Pan client.
+    /// </summary>
+    public Func<CancellationToken, Task>? LetGoOfPan { get; set; }
+
     public const string HidHideReinstallWhileHiddenText =
         "Solange Pan den Steam Controller versteckt, lässt sich HidHide nicht neu installieren. Schalte den Controller-Wächter (Pan) aus und versuche es dann noch einmal.";
 
@@ -468,16 +474,32 @@ public sealed class ControllerSupportService(
 
     private bool _panUpdating;
 
+    /// <summary>
+    /// "Controller wiederherstellen" runs (#366): <c>--restore</c> undoes the journal in a second process beside the
+    /// service, so Arcadia lets go of Pan first. Without a client nobody makes Pan hide anything, so the restore can't
+    /// lose a hide the service journals at the same moment; Pan's teardown of the emulation only shows and removes, as
+    /// the restore does.
+    /// </summary>
+    public bool IsRestoringControllers
+    {
+        get => Volatile.Read(ref _restoringControllers);
+        private set => Volatile.Write(ref _restoringControllers, value);
+    }
+
+    private bool _restoringControllers;
+
     public const string PanUpdatingReason = "Pan wird aktualisiert – Arcadia verbindet sich erst danach wieder";
+    public const string RestoringReason = "Controller werden wiederhergestellt – Arcadia verbindet sich erst danach wieder";
     public const string OldPanOffReason = "Pan ist nicht aktualisiert und ausgeschaltet – Arcadia spricht nicht mit ihm";
 
     /// <summary>
     /// Why Arcadia doesn't talk to the installed Pan, null if it may. Not while the update runs (see
-    /// <see cref="IsPanUpdating"/>), and not to an old one the player didn't update (#326): left without a client, the
+    /// <see cref="IsPanUpdating"/>) or the controllers are restored (<see cref="IsRestoringControllers"/>), and not to an old one the player didn't update (#326): left without a client, the
     /// old Pan undoes what it holds with its own code, whatever protocol it speaks, and ends itself.
     /// </summary>
     public string? WhyPanIsLeftAlone =>
         IsPanUpdating ? PanUpdatingReason
+        : IsRestoringControllers ? RestoringReason
         : IsPanUpdateDue && !Settings.PanEnabled ? OldPanOffReason
         : null;
 
@@ -572,13 +594,32 @@ public sealed class ControllerSupportService(
         return true;
     }
 
-    /// <summary>"Controller wiederherstellen": Pan's <c>--restore</c>, elevated, for when the service itself hangs (#243).</summary>
+    /// <summary>
+    /// "Controller wiederherstellen": Pan's <c>--restore</c>, elevated, for when the service hangs (#243) or a model
+    /// stays hidden. Arcadia's emulation ends and its client lets go first, as for an update, and comes back afterwards
+    /// (#366, see <see cref="IsRestoringControllers"/>).
+    /// </summary>
     public Task RestoreControllersAsync(CancellationToken cancellationToken = default) =>
         RunBusyAsync("Controller werden wiederhergestellt – bitte die Windows-Abfrage bestätigen …", async token =>
         {
-            if (!await _platform.RestoreControllersAsync(token))
+            IsRestoringControllers = true;
+            OnChanged();
+            try
             {
-                throw new InvalidOperationException("Die Wiederherstellung wurde in der Windows-Abfrage abgelehnt.");
+                if (LetGoOfPan is { } letGo)
+                {
+                    await letGo(token);
+                }
+
+                if (!await _platform.RestoreControllersAsync(token))
+                {
+                    throw new InvalidOperationException("Die Wiederherstellung wurde in der Windows-Abfrage abgelehnt.");
+                }
+            }
+            finally
+            {
+                // Declined or failed too: the emulation comes back with the next connection.
+                IsRestoringControllers = false;
             }
 
             Log?.Invoke("Controller über Pan wiederhergestellt");

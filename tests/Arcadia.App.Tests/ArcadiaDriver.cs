@@ -151,6 +151,8 @@ internal sealed class ArcadiaDriver : IDisposable
         _running = running;
         PanNotices = new PanNotices(Main.Toast, () => IsArcadiaInFront, OverlayNotices.Add);
         ControllerSupport.HidingCheck = Pan;
+        ControllerSupport.LetGoOfPan = Pan.LetGoAsync;
+        Pan.WhyLeftAlone = () => ControllerSupport.WhyPanIsLeftAlone;
         ForGames = SteamControllerForGames.Create(panSupported: !arguments.PanUnsupported, XboxPads, Pan, wiring =>
         {
             CopyWiring = wiring;

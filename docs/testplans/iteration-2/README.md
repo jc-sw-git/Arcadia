@@ -60,6 +60,7 @@ its file.
 | [347-remove-stale-device-entries.md](347-remove-stale-device-entries.md) | #347 | Remove the stale device entries Arcadia's emulated devices leave in Windows | 7 |
 | [363-deeply-nested-vdf-files-overflow-the-stack.md](363-deeply-nested-vdf-files-overflow-the-stack.md) | #363 | Deeply nested VDF files overflow the stack and end Arcadia | 5 |
 | [365-docs-after-the-sisr-replacement.md](365-docs-after-the-sisr-replacement.md) | #365 | Docs after the SISR replacement: README, notices, architecture docs, decisions and the latency budget | 0 (docs) |
+| [366-restore-controllers-beside-emulation.md](366-restore-controllers-beside-emulation.md) | #366 | "Controller wiederherstellen" runs beside Arcadia's own emulation | 1 |
 | [372-bind-steam-sign-in-to-steams-hosts.md](372-bind-steam-sign-in-to-steams-hosts.md) | #372 | Bind the Steam sign-in web view to Steam's hosts | 2 |
 | [368-sign-in-cleans-up-after-an-error.md](368-sign-in-cleans-up-after-an-error.md) | #368 | B after an unexpected sign-in error leaves the launcher page stuck | 4 |
 | [370-guard-the-remaining-unguarded-paths.md](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths: SDL consumers, Pan's keeper, async void, toast | 7 |
@@ -103,4 +104,5 @@ Charter: –. Time box: –. Findings: –.
 | T345-1, T345-3, T345-4, T345-7 | `tests/Arcadia.Pan.Tests/CableHidingTests.cs`, `tests/Arcadia.Core.Tests/SteamControllerByCableTests.cs` |
 | T357-1, T357-2, T357-4 | `tests/Arcadia.Core.Tests/SteamControllerRoutingTests.cs`, `tests/Arcadia.App.Tests/SteamControllerModeTests.cs`, `SteamControllerXboxPadTests.cs` |
 | T238-1, T238-3 to T238-7, T238-12 (fakes) | `tests/Arcadia.App.Tests/EveryControllerForGamesTests.cs`, `tests/Arcadia.Core.Tests/TakenOverControllersTests.cs` |
+| T366-1 | `tests/Arcadia.App.Tests/SteamControllerXboxPadTests.cs`, `tests/Arcadia.Core.Tests/ControllerSupportServiceTests.cs` |
 | T369-1 to T369-3 | `tests/Arcadia.App.Tests/ScanFailureTests.cs` |

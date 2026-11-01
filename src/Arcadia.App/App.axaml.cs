@@ -94,37 +94,29 @@ public partial class App : Application
             var demo = args.Contains(DemoArgument, StringComparer.OrdinalIgnoreCase);
             var firstRun = new FirstRunSetup(settings, demo, forced: args.Contains(FirstRunArgument, StringComparer.OrdinalIgnoreCase));
 
-            // The first start asks which launchers are active (#139), the settings change them and their order (#136);
-            // while the question shows, every launcher found is read, so it can count their games. Names, keywords and
-            // folders the user gave launchers apply from their next read (#137, #138).
-            var launchers = new LauncherRegistry(
-                BuiltInLaunchers.Create(time, demo, DemoGames(args), http: http, web: webPages),
-                firstRun.ChosenLaunchers,
-                id => settings.Current.PreferencesOf(id));
-            foreach (var problem in launchers.Rejected)
-            {
-                AppLog.Write(problem);
-            }
-
             // SISR is replaced by Arcadia's own Xbox pad (#213); Arcadia never starts it and removes it only on request (#214).
             var ownViiper = ViiperRelease.IsPinned ? ViiperInstallation.NextToArcadia() : null;
-            var controllerSupport = new ControllerSupportService(settings, http, time)
-            {
-                Log = AppLog.Write,
-                GamesUseSteamInput = launchers.GamesUseSteamInput,
-                Viiper = ownViiper,
-                Sisr = OperatingSystem.IsWindows()
+            var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
+            // Builds the view model before the window: an installed Pan that isn't this Arcadia's shows its update page
+            // instead of the library (#297).
+            var app = ArcadiaComposition.Build(new ArcadiaParts(
+                settings, http, time, firstRun,
+                BuiltInLaunchers.Create(time, demo, DemoGames(args), http: http, web: webPages),
+                ControllerPlatform: null,
+                ownViiper,
+                OperatingSystem.IsWindows()
                     ? new SisrInstallation(SisrInstallation.DefaultPaths(ownViiper?.Executable), SteamInstallation.Find(), new WindowsSisrSystem())
                     : null,
-            };
-
-            var launchedGames = new LaunchedGames();
-            var installTracker = new InstallTracker(launchers, time) { Log = AppLog.Write };
-            var runningGames = new RunningGamesTracker(launchers, new ProcessGames(new SystemProcessTable(), launchedGames), time)
-            {
-                Log = AppLog.Write,
-                IsInstalling = key => installTracker.StateOf(key) is not null,
-            };
+                new SystemProcessTable(),
+                updates,
+                LauncherLogos.DefaultFolder,
+                new InstallFolderCheck(Directory.Exists, action => Dispatcher.UIThread.Post(action)),
+                webPages));
+            var launchers = app.Launchers;
+            var controllerSupport = app.ControllerSupport;
+            var launchedGames = app.LaunchedGames;
+            var runningGames = app.RunningGames;
+            var viewModel = app.Main;
             for (var i = 0; i < args.Length - 1; i++)
             {
                 if (args[i] == StartedGameArgument)
@@ -133,23 +125,6 @@ public partial class App : Application
                 }
             }
 
-            var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
-            var viewModel = new MainViewModel(
-                new LibraryService(launchers, time) { Log = AppLog.Write },
-                new GameLaunchService(launchers) { Log = AppLog.Write },
-                controllerSupport,
-                updates,
-                installTracker,
-                runningGames,
-                launchedGames,
-                settings,
-                new LauncherLogos(settings, LauncherLogos.DefaultFolder),
-                firstRun,
-                time,
-                new InstallFolderCheck(Directory.Exists, action => Dispatcher.UIThread.Post(action)));
-            // Before the window: an installed Pan that isn't this Arcadia's shows its update page instead of the library (#297).
-            viewModel.ShowPanUpdateIfDue();
-            webPages.Attach(viewModel);
             var window = new MainWindow { DataContext = viewModel };
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
             if (args.Contains("--fullscreen", StringComparer.OrdinalIgnoreCase))
@@ -179,11 +154,7 @@ public partial class App : Application
             var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
             viewModel.Dialogs = new SystemDialogs(window, () => viewModel.UsesController, () => mouseMode);
 
-            var routing = new GamepadRouting(viewModel, () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, time, window.Latency);
-            _gamepad.Polled += routing.Tick;
-
-            // The Steam Controller as an Xbox pad for games, in the mode of the running games (#213); Steam games started
-            // directly in Steam count too (#119). VIIPER is only Arcadia's own build of its fork (#242 part B), started and
+            // VIIPER is only Arcadia's own build of its fork (#242 part B), started and
             // checked by Arcadia (#304); a build without a pinned one has no VIIPER at all, so no pad and no copy.
             var viiper = ViiperXboxPads.Own(ownViiper?.Executable, Core.Diagnostics.LogLocation.DataFolder, Core.Diagnostics.LogLocation.Directory,
                 OperatingSystem.IsWindows() ? new WindowsViiperHost(AppLog.Write) : null, AppLog.Write);
@@ -195,39 +166,24 @@ public partial class App : Application
             };
             var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
             pan.JournalProblem += () => panNotices.Show(PanJournalText);
-            controllerSupport.HidingCheck = pan;
-            controllerSupport.LetGoOfPan = pan.LetGoAsync;
             var steamPlatform = new ControllerSupportPlatform();
             // The copy of the Steam Controller for Steam needs the VIIPER fork (#242 parts B and C); without it Pan hides nothing.
             ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && viiper is not null && ownViiper is not null
                 ? new ViiperSteamControllerCopy(viiper, ownViiper, wiring, AppLog.Write)
                 : new NoSteamControllerCopy();
             var foreground = new ForegroundOwner(() => viewModel.Session.GameFolders, launchedGames);
-            var forGames = SteamControllerForGames.Create(
-                OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, Copy, controllerSupport, settings, () => runningGames.ActiveGames, steamPlatform.RunningSteamAppId,
-                () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, foreground.IsSteam, foreground.GameKey, _gamepad, panNotices, time, ownPads);
+            var (_, forGames) = app.ConnectControllers(new ControllerWiring(
+                _gamepad, OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, pan, pan.LetGoAsync, Copy, steamPlatform.RunningSteamAppId,
+                () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, foreground.IsSteam, foreground.GameKey, panNotices, window.Latency)
+            {
+                OwnPads = ownPads,
+            });
             pan.Start();
             var xboxPad = forGames.Pad;
-            viewModel.BeforeGameStarts = forGames.BeforeGameStartsAsync;
-            viewModel.ConnectPan(forGames);
-            controllerSupport.PanHoldsPuck = () => forGames.Emulation.HidesPuck;
             viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
             // A firmware update Steam tries through the copy (#295): Arcadia is behind Steam's window, and the player is
             // to read why it fails. Not while a game is in front: a toast says it there (MainViewModel.ShowFirmwareAttempt).
             viewModel.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
-            _gamepad.Sampled += xboxPad.Feed;
-            _gamepad.Lost += xboxPad.Drop;
-            _gamepad.Sampled += forGames.Others.Feed;
-            _gamepad.Lost += forGames.Others.Drop;
-            _gamepad.ButtonPressed += routing.Press;
-            _gamepad.ButtonReleased += routing.Release;
-            _gamepad.Lost += routing.Drop;
-            if (_gamepad is NullGamepadSource)
-            {
-                // No controllers on this system: the hints show the keyboard from the start (#215).
-                routing.Drop();
-            }
-
             _gamepad.Start();
 
             var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), "Controller-Überwachung"));
@@ -282,7 +238,7 @@ public partial class App : Application
                 try
                 {
                     // An SISR an older Arcadia started would take the Steam Controller beside Pan (#214 decision 6).
-                    await controllerSupport.StopSisrStartedByOldArcadiaAsync();
+                    await controllerSupport.Sisr.StopStartedByOldArcadiaAsync();
                     await controllerSupport.TickAsync();
                     await forGames.Emulation.TickAsync();
                     route = forGames.Routing.Update();

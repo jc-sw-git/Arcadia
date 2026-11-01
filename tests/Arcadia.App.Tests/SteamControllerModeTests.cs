@@ -296,7 +296,7 @@ public sealed class SteamControllerModeTests
         steam.Sisr.System.RunSisr(steam.Sisr.SisrExe, id: 6);
         using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
 
-        await arcadia.ControllerSupport.StopSisrStartedByOldArcadiaAsync();
+        await arcadia.ControllerSupport.Sisr.StopStartedByOldArcadiaAsync();
         await arcadia.TickControllerSupportAsync();
         arcadia.Wait(TimeSpan.FromSeconds(5));
         await arcadia.TickControllerSupportAsync();

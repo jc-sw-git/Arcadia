@@ -296,7 +296,7 @@ public sealed class SisrRemovalTests
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
         // The look runs off the UI thread; its rows come with the next refresh on it.
         await arcadia.WaitUntilAsync(
-            () => arcadia.ControllerSupport.SisrFound is not null && controller.Rows.Any(row => row.Group == SisrRows.Group) == arcadia.ControllerSupport.ShowsSisrGroup,
+            () => arcadia.ControllerSupport.Sisr.Found is not null && controller.Rows.Any(row => row.Group == SisrRows.Group) == arcadia.ControllerSupport.Sisr.ShowsGroup,
             "die Einstellungen haben nach SISR gesehen");
         return controller;
     }

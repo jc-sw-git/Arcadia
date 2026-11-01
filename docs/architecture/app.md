@@ -3,6 +3,13 @@
 The App's classes; the other projects: [README.md](README.md). Avalonia 12 UI (MVVM, CommunityToolkit.Mvvm 8.4
 partial properties), `Theme/Theme.axaml`, `Views/MainWindow.axaml`; Avalonia pitfalls: [avalonia.md](avalonia.md).
 
+## Composition
+
+`ArcadiaComposition` builds the object graph (launchers, `ControllerSupportService`, game trackers, `MainViewModel`,
+then the controllers' routing and `SteamControllerForGames`) for both `App.axaml.cs` and the acceptance tests'
+`ArcadiaDriver`. What only a window or Windows has (timers, `SystemDialogs`, the mouse mode, the Pan pipe, VIIPER)
+`App.axaml.cs` makes and passes in, so a change to the wiring belongs there and reaches the tests by itself.
+
 ## Routing and pages
 
 - `MainViewModel` routes each press to the topmost layer (first start or settings, else a dialog, else the page on

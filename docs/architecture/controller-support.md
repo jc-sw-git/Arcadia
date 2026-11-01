@@ -11,8 +11,9 @@ The controller emulation for games and Pan, its guardian service. What was verif
 - `EmulationParts`: usbip-win2, VIIPER, Pan and HidHide, and the rows that say one is missing. `UsbipDriver`
   (installed version, `MinimumVersion`, the latest installer), `HidHideInstallation` (installed or not, the pinned
   installer), `GitHubReleases.cs` (`GitHubReleaseClient`, `VerifiedDownload`: GitHub's SHA-256 checked).
-- `ControllerSupportRemoval`: what goes at Arcadia's uninstall. `SisrInstallation`/`WindowsSisrSystem`: what an older
-  Arcadia left of SISR, removed on request ([sisr-removal.md](../controller-support/sisr-removal.md)).
+- `ControllerSupportRemoval`: what goes at Arcadia's uninstall. `SisrLeftovers` (`ControllerSupportService.Sisr`): the
+  group "SISR" and "SISR entfernen", run as one of the service's actions; `SisrInstallation`/`WindowsSisrSystem`: what
+  an older Arcadia left of SISR on disk ([sisr-removal.md](../controller-support/sisr-removal.md)).
 
 **VIIPER, the emulated pads**
 - `ViiperRelease` (the fork's build pinned in `Viiper.targets`), `ViiperInstallation` (fetches it next to Arcadia,

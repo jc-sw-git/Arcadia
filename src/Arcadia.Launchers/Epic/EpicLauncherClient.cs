@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Platform;
 using Microsoft.Win32;
 
 namespace Arcadia.Launchers.Epic;

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using Microsoft.Win32;
+using Arcadia.Platform;
 
 namespace Arcadia.Launchers.Steam;
 

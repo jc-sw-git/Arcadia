@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Arcadia.Launchers.Abstractions\Arcadia.Launchers.Abstractions.csproj" />
+    <ProjectReference Include="..\Arcadia.Platform\Arcadia.Platform.csproj" />
   </ItemGroup>
 
   <ItemGroup>

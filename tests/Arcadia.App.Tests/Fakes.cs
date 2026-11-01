@@ -224,23 +224,7 @@ internal sealed class NoControllerSupportPlatform : IControllerSupportPlatform
 {
     public bool IsSupported => false;
 
-    public bool IsSteamInstalled => false;
-
-    public bool IsSteamRunning => false;
-
-    public bool IsSteamReady => false;
-
     public bool IsUsbipReady => false;
-
-    public string? RunningSteamGame() => null;
-
-    public int? RunningSteamAppId() => null;
-
-    public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken) => Task.FromResult(false);
-
-    public void StartSteam()
-    {
-    }
 
     public bool IsPanReady => false;
 

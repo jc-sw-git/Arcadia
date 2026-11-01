@@ -1,30 +1,24 @@
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Settings;
-using Arcadia.Launchers.Steam;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.App.Tests.Fixtures;
 
 /// <summary>
-/// The controller emulation on a Windows PC whose Steam is <paramref name="steam"/>: the real
-/// <see cref="ControllerSupportPlatform"/> finds Steam there. Only what needs Windows is pretended: Steam runs until a
-/// driver fix closes it and comes back logged in; every part of the emulation is ready.
+/// The controller emulation on a Windows PC whose Steam is <paramref name="steam"/>. Only what needs Windows is pretended:
+/// Steam runs until a driver fix closes it and comes back logged in; every part of the emulation is ready.
 /// </summary>
-internal sealed class SteamPc : IControllerSupportPlatform
+internal sealed class SteamPc(SteamFolder steam) : IControllerSupportPlatform, ILauncherProgram
 {
-    private readonly ControllerSupportPlatform _files;
-
-    public SteamPc(SteamFolder steam)
-    {
-        _files = new ControllerSupportPlatform(() => Directory.Exists(steam.Root) ? new SteamInstallation(steam.Root, null) : null, () => IsSteamRunning);
-    }
-
     public bool IsSupported => true;
 
-    public bool IsSteamInstalled => _files.IsSteamInstalled;
+    public string? Folder => Directory.Exists(steam.Root) ? steam.Root : null;
+
+    public bool IsRunning => IsSteamRunning;
+
+    public bool IsReady => IsSteamRunning;
 
     public bool IsSteamRunning { get; private set; } = true;
-
-    public bool IsSteamReady => IsSteamRunning;
 
     public bool IsUsbipReady => true;
 
@@ -37,18 +31,16 @@ internal sealed class SteamPc : IControllerSupportPlatform
     /// <summary>How often Steam was closed for a driver fix.</summary>
     public int SteamStops { get; private set; }
 
-    public string? RunningSteamGame() => null;
+    public RunningLauncherGame? RunningGame() => null;
 
-    public int? RunningSteamAppId() => null;
-
-    public Task<bool> StopSteamAsync(TimeProvider time, CancellationToken cancellationToken)
+    public Task<bool> CloseAsync(TimeProvider time, CancellationToken cancellationToken)
     {
         IsSteamRunning = false;
         SteamStops++;
         return Task.FromResult(true);
     }
 
-    public void StartSteam() => IsSteamRunning = true;
+    public void Start() => IsSteamRunning = true;
 
     /// <summary>The user closed Steam.</summary>
     public void CloseSteam() => IsSteamRunning = false;

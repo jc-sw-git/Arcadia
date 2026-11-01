@@ -12,7 +12,6 @@ using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
-using Arcadia.Launchers.Steam;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -99,13 +98,16 @@ public partial class App : Application
             var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
             // Builds the view model before the window: an installed Pan that isn't this Arcadia's shows its update page
             // instead of the library (#297).
+            var integrations = BuiltInLaunchers.Create(time, demo, DemoGames(args), http: http, web: webPages, dataFolder: Core.Diagnostics.LogLocation.DataFolder);
+            // Steam the program holds the Steam Controller: the launcher that owns Steam Input, active or not.
+            var steamInput = LauncherRegistry.SteamInputOwnerOf(integrations);
             var app = ArcadiaComposition.Build(new ArcadiaParts(
                 settings, http, time, firstRun,
-                BuiltInLaunchers.Create(time, demo, DemoGames(args), http: http, web: webPages, dataFolder: Core.Diagnostics.LogLocation.DataFolder),
+                integrations,
                 ControllerPlatform: null,
                 ownViiper,
                 OperatingSystem.IsWindows()
-                    ? new SisrInstallation(SisrInstallation.DefaultPaths(ownViiper?.Executable), SteamInstallation.Find(), new WindowsSisrSystem())
+                    ? new SisrInstallation(SisrInstallation.DefaultPaths(ownViiper?.Executable), steamInput?.Program, new WindowsSisrSystem())
                     : null,
                 new SystemProcessTable(),
                 updates,
@@ -166,14 +168,14 @@ public partial class App : Application
             };
             var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
             pan.JournalProblem += () => panNotices.Show(PanJournalText);
-            var steamPlatform = new ControllerSupportPlatform();
             // The copy of the Steam Controller for Steam needs the VIIPER fork (#242 parts B and C); without it Pan hides nothing.
             ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && viiper is not null && ownViiper is not null
                 ? new ViiperSteamControllerCopy(viiper, ownViiper, wiring, AppLog.Write)
                 : new NoSteamControllerCopy();
+            string? RunningSteamGame() => steamInput?.Program?.RunningGame() is { } game ? Game.KeyOf(steamInput.Launcher.Id, game.Id) : null;
             var foreground = new ForegroundOwner(() => viewModel.Session.GameFolders, launchedGames, launchers.SteamInputOwner?.ProgramNames ?? []);
             var (_, forGames) = app.ConnectControllers(new ControllerWiring(
-                _gamepad, OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, pan, pan.LetGoAsync, Copy, steamPlatform.RunningSteamAppId,
+                _gamepad, OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, pan, pan.LetGoAsync, Copy, RunningSteamGame,
                 () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, foreground.IsSteam, foreground.GameKey, panNotices, window.Latency)
             {
                 OwnPads = ownPads,

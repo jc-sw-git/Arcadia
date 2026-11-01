@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Versioning;
-using Arcadia.Launchers.Steam;
+using Arcadia.Launchers.Abstractions;
 using Microsoft.Win32;
 
 namespace Arcadia.ControllerSupport;
@@ -71,22 +71,22 @@ public static class ControllerSupportRemoval
     /// Removes SISR and VIIPER (<see cref="FindInstalledParts"/>) as "SISR entfernen" does (<see cref="SisrInstallation"/>);
     /// the drivers go with Pan's uninstall. Best effort: what fails is logged and skipped. Returns within a few seconds.
     /// </summary>
+    /// <param name="steam">Steam the program (the launcher that owns Steam Input), closed for SISR's marker; null: no Steam.</param>
     [SupportedOSPlatform("windows")]
-    public static void Remove(Action<string> log)
+    public static void Remove(ILauncherProgram? steam, Action<string> log)
     {
         // Ordered by what matters most, because Velopack may end the uninstall hook before the slow steps are done.
         // Arcadia's own viiper.exe has to end before its folder goes; SISR and its VIIPER stop in Remove, by path.
         StopProcesses("viiper");
 
-        var steam = SteamInstallation.Find();
         // Arcadia goes too, so its own viiper.exe no longer needs VIIPER's key folder.
         var sisr = new SisrInstallation(SisrInstallation.DefaultPaths(arcadiaViiper: null), steam, new WindowsSisrSystem());
-        var steamClosed = steam is not null && sisr.Find().HasMarker && CloseSteamForMarker(log);
-        var result = sisr.Remove(steamRunning: SteamInstallation.IsRunning);
+        var steamClosed = steam is not null && sisr.Find().HasMarker && CloseSteamForMarker(steam, log);
+        var result = sisr.Remove(steamRunning: steam?.IsRunning == true);
         log(result.Complete ? "Entfernt: SISR und VIIPER" : $"Nicht entfernt: {string.Join(", ", result.NotRemoved)} ({result.Cause})");
         if (steamClosed)
         {
-            steam!.StartSilently();
+            steam!.Start();
         }
     }
 
@@ -98,14 +98,26 @@ public static class ControllerSupportRemoval
     /// Steam is closed for the removal and started again afterwards (owner, 2026-10-24). True if Arcadia closed it.
     /// </summary>
     [SupportedOSPlatform("windows")]
-    private static bool CloseSteamForMarker(Action<string> log)
+    private static bool CloseSteamForMarker(ILauncherProgram steam, Action<string> log)
     {
-        if (!SteamInstallation.IsRunning)
+        if (!steam.IsRunning)
         {
             return false;
         }
 
-        if (!SteamInstallation.ShutdownAsync(SteamShutdownTimeout, TimeProvider.System).GetAwaiter().GetResult())
+        // Shorter than Steam's own exit timeout, so the uninstall hook's limit holds.
+        using var timeout = new CancellationTokenSource(SteamShutdownTimeout);
+        bool closed;
+        try
+        {
+            closed = steam.CloseAsync(TimeProvider.System, timeout.Token).GetAwaiter().GetResult();
+        }
+        catch (OperationCanceledException)
+        {
+            closed = false;
+        }
+
+        if (!closed)
         {
             log($"Steam-Eintrag „SISR Marker“ nicht entfernt: Steam war nach {SteamShutdownTimeout.TotalSeconds:0} s noch nicht beendet");
             return false;

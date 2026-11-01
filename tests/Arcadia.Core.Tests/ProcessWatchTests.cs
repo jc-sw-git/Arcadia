@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Arcadia.Launchers;
+using Arcadia.Platform;
 
 namespace Arcadia.Core.Tests;
 

@@ -133,7 +133,11 @@ public sealed class LauncherRegistry
     /// The registered launcher that owns Steam Input (<see cref="LauncherInfo.OwnsSteamInput"/>), active or not: the Steam
     /// Controller belongs to its program whether its tab is shown or not. Null if none is registered.
     /// </summary>
-    public ILauncherIntegration? SteamInputOwner => _all.FirstOrDefault(i => i.Launcher.OwnsSteamInput);
+    public ILauncherIntegration? SteamInputOwner => SteamInputOwnerOf(_all);
+
+    /// <summary>The first of <paramref name="integrations"/> that owns Steam Input, for uses before or without a registry.</summary>
+    public static ILauncherIntegration? SteamInputOwnerOf(IEnumerable<ILauncherIntegration> integrations) =>
+        integrations.FirstOrDefault(i => i.Launcher.OwnsSteamInput);
 
     /// <summary>The registered launcher with this id, active or not, or null.</summary>
     /// <remarks>By the id read once at registration, so a plugin's getter isn't asked again.</remarks>

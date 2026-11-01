@@ -8,6 +8,7 @@ using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Platform;
 
 namespace Arcadia.App.ViewModels;
 

@@ -7,6 +7,9 @@ namespace Arcadia.Launchers.Abstractions;
 /// </summary>
 public interface ILauncherProgram
 {
+    /// <summary>The launcher's folder on this PC, or null if it isn't installed.</summary>
+    string? Folder { get; }
+
     /// <summary>The launcher's program runs.</summary>
     bool IsRunning { get; }
 
@@ -22,6 +25,21 @@ public interface ILauncherProgram
 
     /// <summary>Starts the launcher in the background (minimised to the tray); does nothing if it isn't installed.</summary>
     void Start();
+
+    /// <summary>
+    /// How many of the launcher's accounts on this PC have an entry in their library that starts <paramref name="executable"/>
+    /// (Steam's non-Steam games); an unreadable list counts as none. None for a launcher without such entries.
+    /// </summary>
+    int ShortcutsTo(string executable) => 0;
+
+    /// <summary>
+    /// Removes the entries that start <paramref name="executable"/> from every account's library. Only while the launcher
+    /// doesn't run: it writes its entries back when it exits.
+    /// </summary>
+    /// <exception cref="IOException">A list couldn't be written.</exception>
+    void RemoveShortcutsTo(string executable)
+    {
+    }
 }
 
 /// <summary>A game the launcher reports as running.</summary>

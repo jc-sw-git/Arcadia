@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace Arcadia.Launchers;
+namespace Arcadia.Platform;
 
 /// <summary>Finds running processes by name or by install directory.</summary>
 public static partial class ProcessWatch

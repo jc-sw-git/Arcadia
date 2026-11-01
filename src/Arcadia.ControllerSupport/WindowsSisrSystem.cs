@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Arcadia.Launchers;
+using Arcadia.Platform;
 using Microsoft.Win32;
 
 namespace Arcadia.ControllerSupport;

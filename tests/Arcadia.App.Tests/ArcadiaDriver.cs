@@ -111,6 +111,7 @@ internal sealed class ArcadiaDriver : IDisposable
             new NoProcesses(), Updates, Path.Combine(folder, "logos"), FolderCheck, webPages)
         {
             Open = Open,
+            SteamProgram = (ILauncherProgram?)steam ?? files?.ControllerSupport,
         });
         ControllerSupport = _app.ControllerSupport;
         Main = _app.Main;
@@ -136,7 +137,7 @@ internal sealed class ArcadiaDriver : IDisposable
         {
             CopyWiring = wiring;
             return SteamControllerCopy;
-        }, () => RunningSteamAppId, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, PanNotices, latency));
+        }, () => RunningSteamAppId is { } appId ? Game.KeyOf(KnownLaunchers.Steam.Id, appId.ToString(CultureInfo.InvariantCulture)) : null, () => IsArcadiaInFront, () => IsMouseModeOn, () => IsSteamInFront, () => GameInFront, PanNotices, latency));
         XboxPad = ForGames.Pad;
         ForGames.Routing.Update();
     }

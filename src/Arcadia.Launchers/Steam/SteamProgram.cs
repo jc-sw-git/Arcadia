@@ -1,5 +1,6 @@
 using System.Globalization;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Platform;
 
 namespace Arcadia.Launchers.Steam;
 
@@ -12,6 +13,8 @@ public sealed class SteamProgram(Func<SteamInstallation?> locate, Func<bool>? is
     private static readonly TimeSpan ExitTimeout = TimeSpan.FromSeconds(30);
 
     private readonly Func<bool> _isRunning = isRunning ?? (() => SteamInstallation.IsRunning);
+
+    public string? Folder => locate()?.RootPath;
 
     public bool IsRunning => _isRunning();
 
@@ -37,4 +40,27 @@ public sealed class SteamProgram(Func<SteamInstallation?> locate, Func<bool>? is
     }
 
     public void Start() => locate()?.StartSilently();
+
+    public int ShortcutsTo(string executable) => locate()?.AllShortcutsPaths().Count(file => HasShortcutTo(file, executable)) ?? 0;
+
+    public void RemoveShortcutsTo(string executable)
+    {
+        foreach (var file in locate()?.AllShortcutsPaths() ?? [])
+        {
+            SteamShortcuts.RemoveByExecutable(file, executable);
+        }
+    }
+
+    private static bool HasShortcutTo(string shortcuts, string executable)
+    {
+        try
+        {
+            return SteamShortcuts.FindByExecutable(SteamShortcuts.Read(shortcuts), executable) is not null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException or InvalidDataException)
+        {
+            // An unreadable file can't be cleaned either; Steam rewrites it.
+            return false;
+        }
+    }
 }

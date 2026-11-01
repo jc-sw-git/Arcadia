@@ -373,6 +373,54 @@ public sealed class ControllerHidingTests : IDisposable
     }
 
     [Fact]
+    public async Task A_running_controller_hide_holds_the_hang_watch_and_releases_it_when_done()
+    {
+        // Its heartbeats wait behind the hide on the pipe: silence then is no hang, but after the hide it is again.
+        var generation = await EmulatingAsync();
+        using var block = new ManualResetEventSlim();
+        _controllers.ScanBlock = block;
+        var hide = Hide(FakeControllers.DualSense, generation);
+        await _controllers.ScanEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        _clock.Advance(TimeSpan.FromSeconds(4));
+
+        _guardian.Tick();
+        Assert.Null(_guardian.Teardown);
+
+        block.Set();
+        Assert.Equal(PanReply.ControllerHidden, (await hide).Reply);
+        // The time the hide took is no silence of the client's: the watch counts from its end.
+        _clock.Advance(TimeSpan.FromSeconds(2.9));
+        _guardian.Tick();
+        Assert.Null(_guardian.Teardown);
+        _clock.Advance(TimeSpan.FromMilliseconds(200));
+        _guardian.Tick();
+        Assert.NotNull(_guardian.Teardown);
+        Assert.Contains("hang", Log());
+        await TeardownDoneAsync();
+    }
+
+    [Fact]
+    public async Task A_show_whose_restart_fails_is_refused_and_left_to_the_teardown()
+    {
+        var generation = await EmulatingAsync();
+        Assert.Equal(PanReply.ControllerHidden, (await Hide(FakeControllers.DualSense, generation)).Reply);
+        _controllers.RestartFails = true;
+
+        var shown = await Show(FakeControllers.DualSense, generation);
+
+        // Programs that had it open would not see it come back: the client hears that, and the teardown tries again.
+        Assert.Equal((PanReply.Rejected, PanReason.HidingFailed), (shown.Reply, shown.Reason));
+        Assert.Contains("its restart failed", Log());
+        Assert.True(Journal.HidingHasWork);
+        _controllers.RestartFails = false;
+        _controllers.Restarted.Clear();
+        _guardian.ClientGone();
+        await TeardownDoneAsync();
+        Assert.Contains(FakeControllers.DualSenseHid, _controllers.Restarted);
+        Assert.False(Journal.HidingHasWork);
+    }
+
+    [Fact]
     public async Task A_hide_still_scanning_when_the_service_stops_hides_nothing_afterwards()
     {
         // QE #337: the stop's teardown found no hiding work (the hide still scanned, nothing journaled yet) and showed

@@ -37,6 +37,9 @@ public sealed class FakeCleanup : IEmulationCleanup
     public bool EndHangs;
     public Exception? EndThrows;
 
+    /// <summary>Set: ending a process waits for it, so a test can act while a teardown runs.</summary>
+    public TaskCompletionSource? EndGate;
+
     public async Task<IReadOnlyList<int>> ListImportedPortsAsync(int serverPort, CancellationToken cancellationToken)
     {
         if (ListHangs)
@@ -100,6 +103,11 @@ public sealed class FakeCleanup : IEmulationCleanup
         if (EndHangs)
         {
             await Task.Delay(Timeout.Infinite, cancellationToken);
+        }
+
+        if (EndGate is { } gate)
+        {
+            await gate.Task.WaitAsync(cancellationToken);
         }
 
         if (EndThrows is not null)

@@ -60,7 +60,9 @@ its file.
 | [347-remove-stale-device-entries.md](347-remove-stale-device-entries.md) | #347 | Remove the stale device entries Arcadia's emulated devices leave in Windows | 7 |
 | [363-deeply-nested-vdf-files-overflow-the-stack.md](363-deeply-nested-vdf-files-overflow-the-stack.md) | #363 | Deeply nested VDF files overflow the stack and end Arcadia | 5 |
 | [365-docs-after-the-sisr-replacement.md](365-docs-after-the-sisr-replacement.md) | #365 | Docs after the SISR replacement: README, notices, architecture docs, decisions and the latency budget | 0 (docs) |
+| [372-bind-steam-sign-in-to-steams-hosts.md](372-bind-steam-sign-in-to-steams-hosts.md) | #372 | Bind the Steam sign-in web view to Steam's hosts | 2 |
 | [368-sign-in-cleans-up-after-an-error.md](368-sign-in-cleans-up-after-an-error.md) | #368 | B after an unexpected sign-in error leaves the launcher page stuck | 4 |
+| [375-close-the-pan-core-test-gaps.md](375-close-the-pan-core-test-gaps.md) | #375 | Close the Pan.Core test gaps the mutation run found | 0 (tests only) |
 | [369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md](369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md) | #369 | Show a failed scan instead of an empty launcher tab | 3 |
 
 ## Exploratory test

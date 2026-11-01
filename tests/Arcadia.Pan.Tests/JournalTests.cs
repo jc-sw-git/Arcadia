@@ -171,6 +171,8 @@ public class JournalTests
     [InlineData("{\"Version\":1,\"Generation\":7,\"UsbipServers\":null}", "a list is missing")]
     [InlineData("{\"Version\":1,\"Generation\":7,\"UsbipServers\":[{\"Generation\":7,\"Port\":0,\"Pid\":5}]}", "usbip server entry is incomplete")]
     [InlineData("{\"Version\":1,\"Generation\":7,\"UsbipServers\":[{\"Generation\":7,\"Port\":70000,\"Pid\":5}]}", "usbip server entry is incomplete")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"UsbipServers\":[{\"Generation\":7,\"Port\":65536,\"Pid\":5}]}", "usbip server entry is incomplete")]
+    [InlineData("{\"Version\":1,\"Generation\":7,\"UsbipServers\":[{\"Generation\":7,\"Port\":3240,\"Pid\":-1}]}", "usbip server entry is incomplete")]
     public void A_journal_that_parses_but_makes_no_sense_counts_as_unreadable(string json, string problem)
     {
         // Review point 4: `{"HeldProcesses":null}` deserializes, and HasWork then threw at every start of Pan.
@@ -225,5 +227,45 @@ public class JournalTests
         Assert.False(state.HasWork);
         state.CloakingWasOn = false;
         Assert.True(state.HasWork);
+    }
+
+    [Theory]
+    [InlineData(1, 0)]
+    [InlineData(65535, 77)]
+    public void A_usbip_server_at_the_edge_of_the_valid_ports_or_without_a_known_process_is_kept(int port, int pid)
+    {
+        // Pid 0: the server a journal from before #304 is given, whose process Pan never knew.
+        using var journal = new TempJournal();
+        Directory.CreateDirectory(journal.Folder);
+        File.WriteAllText(journal.File.Path, $$"""{"Version":1,"Generation":7,"UsbipServers":[{"Generation":7,"Port":{{port}},"Pid":{{pid}}}]}""");
+
+        var load = journal.File.Load();
+
+        Assert.Null(load.Problem);
+        Assert.Equal(new UsbipServer(7, port, pid), Assert.Single(load.State.UsbipServers));
+    }
+
+    [Theory]
+    [InlineData(true, false, true)]
+    [InlineData(false, true, true)]
+    [InlineData(false, false, false)]
+    public void A_journal_from_before_304_detaches_VIIPERs_default_port_when_anything_was_still_open(bool emulating, bool held, bool expectsServer)
+    {
+        // A process an earlier teardown couldn't end still forwards, even with the emulation over.
+        using var journal = new TempJournal();
+        Directory.CreateDirectory(journal.Folder);
+        var processes = held ? """[{"Pid":4321,"StartTime":1,"ImageName":"viiper.exe"}]""" : "[]";
+        File.WriteAllText(journal.File.Path, $$"""{"Version":1,"Generation":3,"Emulating":{{(emulating ? "true" : "false")}},"HeldProcesses":{{processes}}}""");
+
+        var servers = journal.File.Load().State.UsbipServers;
+
+        if (expectsServer)
+        {
+            Assert.Equal(new UsbipServer(3, UsbipPorts.ViiperPort, Pid: 0), Assert.Single(servers));
+        }
+        else
+        {
+            Assert.Empty(servers);
+        }
     }
 }

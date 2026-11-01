@@ -43,7 +43,7 @@ internal sealed class FixedRunningGames(string launcherId, IReadOnlyList<string>
 
     public string LauncherId => launcherId;
 
-    public IReadOnlyList<RunningGame> Poll()
+    public IReadOnlyList<RunningGame> Poll(CancellationToken cancellationToken = default)
     {
         lock (_running)
         {
@@ -116,7 +116,7 @@ internal sealed class TestInstallMonitor(string launcherId, LauncherInstalls ins
 {
     public string LauncherId => launcherId;
 
-    public InstallSnapshot Poll() => installs.Of(launcherId);
+    public InstallSnapshot Poll(CancellationToken cancellationToken = default) => installs.Of(launcherId);
 }
 
 /// <summary>Reads <paramref name="games"/> as they are at each scan: a test may pass a list it changes later, as a launcher's library.</summary>

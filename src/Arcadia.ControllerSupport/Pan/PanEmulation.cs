@@ -106,6 +106,9 @@ public sealed class PanEmulation : IVirtualXboxPads
     private readonly TimeProvider _time;
     private readonly Action<string> _log;
     private readonly SemaphoreSlim _gate = new(1, 1);
+
+    // Cancelled when Arcadia exits: a tick in a long request would hold the gate past the exit's wait.
+    private readonly CancellationTokenSource _exiting = new();
     private readonly List<long> _failures = [];
 
     private volatile Session? _session;
@@ -141,6 +144,12 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     /// <summary>Attaching the copy waits this long at most: a hanging attach would hold the gate and stop every tick.</summary>
     public static readonly TimeSpan AttachTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// How long the exit waits for a running tick to let go of the gate after cancelling it; below the 5 s Arcadia's exit
+    /// waits for the whole cleanup.
+    /// </summary>
+    public static readonly TimeSpan ShutdownGateTimeout = TimeSpan.FromSeconds(3);
 
     /// <summary>
     /// After the copy followed the controller (#345), how long it waits for the new device to come back from Pan's
@@ -195,17 +204,22 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>Every 2 s, off the UI thread: starts, checks and ends the emulation as needed. Never throws.</summary>
     public async Task TickAsync(CancellationToken cancellationToken = default)
     {
-        if (!await _gate.WaitAsync(0, cancellationToken))
+        if (_exiting.IsCancellationRequested || !await _gate.WaitAsync(0, cancellationToken))
         {
             return;
         }
 
+        using var tick = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _exiting.Token);
         try
         {
             // Only a tick that began after the press answers it; one that ran meanwhile shows the old state.
             Interlocked.CompareExchange(ref _retry, 2, 1);
-            await StepAsync(cancellationToken);
+            await StepAsync(tick.Token);
             EndRetryOnceDecided();
+        }
+        catch (OperationCanceledException) when (_exiting.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            // Arcadia exits; ShutdownAsync cleans up.
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -317,9 +331,20 @@ public sealed class PanEmulation : IVirtualXboxPads
     }
 
     /// <summary>Arcadia exits (also for an update): pad and copy go, the puck is shown, VIIPER ends, Pan hears the planned exit.</summary>
+    /// <remarks>
+    /// A tick still running is cancelled first. If it doesn't let go within <see cref="ShutdownGateTimeout"/>, nothing is
+    /// cleaned up here rather than beside it: when Arcadia's process ends without the planned exit, Pan tears the
+    /// emulation down and shows the puck itself (teardown <c>ClientGone</c>, docs/controller-support/pan.md).
+    /// </remarks>
     public async Task ShutdownAsync()
     {
-        await _gate.WaitAsync();
+        await _exiting.CancelAsync();
+        if (!await TryEnterGateAsync(ShutdownGateTimeout))
+        {
+            _log($"Pan-Emulation: ein Durchlauf hält nach {ShutdownGateTimeout.TotalSeconds:0} s noch an; Pan räumt beim Beenden selbst auf.");
+            return;
+        }
+
         try
         {
             if (_session is { } session)
@@ -333,6 +358,21 @@ public sealed class PanEmulation : IVirtualXboxPads
         finally
         {
             _gate.Release();
+        }
+    }
+
+    private async Task<bool> TryEnterGateAsync(TimeSpan timeout)
+    {
+        // A cancelled wait leaves the semaphore's queue, unlike a WaitAsync(timeout) on the returned task.
+        using var expiry = new CancellationTokenSource(timeout, _time);
+        try
+        {
+            await _gate.WaitAsync(expiry.Token);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
         }
     }
 

@@ -4,7 +4,7 @@
   `$f = [IO.File]::Open("<Steam>\steamapps\libraryfolders.vdf", 'Open', 'ReadWrite', 'None')`), start Arcadia: the Steam
   tab says "Steam konnte nicht eingelesen werden" (below the tab name "Einlesen fehlgeschlagen"), not "Keine Spiele".
   With the controller ▶ and A on "Erneut versuchen": the toast says "Steam konnte nicht eingelesen werden.". Release the
-  lock (`$f.Close()`), A again: the games are back. `arcadia.log` has a line "Scanning Steam failed" with the reason. · E2E: yes
+  lock (`$f.Close()`), A again: the games are back. `arcadia.log` has a line "Einlesen von Steam fehlgeschlagen" with the reason. · E2E: yes
 - [ ] **T369-2** With the Steam tab showing games, lock the same file and switch away from Arcadia and back (or "Neu
   einlesen" on Steam's launcher page): the games stay, a toast says "Steam konnte nicht neu eingelesen werden; die zuletzt
   gelesenen Spiele bleiben." once, not again on the next switch. After releasing the lock nothing remains of it. · E2E: yes

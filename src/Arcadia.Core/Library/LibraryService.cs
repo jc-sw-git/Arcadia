@@ -15,11 +15,20 @@ public sealed record LauncherLibrary(LauncherInfo Launcher, IReadOnlyList<Game> 
 /// <summary>Looks for the launchers on this PC and runs the scanners of the active ones.</summary>
 public sealed class LibraryService(LauncherRegistry launchers, TimeProvider? time = null)
 {
+    /// <summary>
+    /// How long one launcher's scan may take; a library on a share that went away would otherwise keep the rescan, and
+    /// with it the install progress, waiting.
+    /// </summary>
+    public static readonly TimeSpan ScanDeadline = TimeSpan.FromSeconds(60);
+
     private readonly TimeProvider _time = time ?? TimeProvider.System;
     private readonly ConcurrentDictionary<string, DateTimeOffset> _scannedAt = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, IReadOnlyList<Game>> _lastRead = new(StringComparer.Ordinal);
 
     public LauncherRegistry Launchers => launchers;
+
+    /// <summary>Where a scan that failed or missed <see cref="ScanDeadline"/> is written (Arcadia's log file).</summary>
+    public Action<string>? Log { get; set; }
 
     /// <returns>
     /// Every active launcher in tab order, also one without games or one that is no longer found: it keeps its tab, which
@@ -54,18 +63,23 @@ public sealed class LibraryService(LauncherRegistry launchers, TimeProvider? tim
             return new LauncherLibrary(launcher, [], IsFound: false);
         }
 
+        using var expiry = new CancellationTokenSource(ScanDeadline, _time);
+        using var scan = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, expiry.Token);
         try
         {
-            var games = await integration.Scanner.ScanAsync(cancellationToken);
+            // WaitAsync: a scanner that ignores its token is left behind rather than waited for.
+            var games = await integration.Scanner.ScanAsync(scan.Token).WaitAsync(ScanDeadline, _time, cancellationToken);
             _scannedAt[launcher.Id] = _time.GetUtcNow();
             _lastRead[launcher.Id] = games;
             return new LauncherLibrary(launcher, games);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
-            // One broken launcher must not take down the whole library, and a passing error (Steam writing a file) must not
-            // empty a tab that showed games a moment ago: it keeps them and is marked as failed.
-            System.Diagnostics.Trace.TraceWarning($"Scanning {launcher.DisplayName} failed: {ex}");
+            // One broken or hanging launcher must not take down the whole library, and a passing error (Steam writing a
+            // file) must not empty a tab that showed games a moment ago: it keeps them and is marked as failed (#369).
+            Log?.Invoke(ex is TimeoutException or OperationCanceledException
+                ? $"Einlesen von {launcher.DisplayName} nach {ScanDeadline.TotalSeconds:0} s abgebrochen; der Tab zeigt bis zum nächsten Einlesen die zuletzt gelesenen Spiele."
+                : $"Einlesen von {launcher.DisplayName} fehlgeschlagen: {ex}");
             return new LauncherLibrary(launcher, _lastRead.GetValueOrDefault(launcher.Id) ?? [], ScanFailed: true);
         }
     }

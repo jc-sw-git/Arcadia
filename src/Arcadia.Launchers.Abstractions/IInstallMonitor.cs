@@ -49,5 +49,11 @@ public interface IInstallMonitor
 {
     string LauncherId { get; }
 
-    InstallSnapshot Poll();
+    /// <summary>
+    /// What the installations are doing now. Arcadia waits a few seconds at most: a poll that throws or is late keeps
+    /// the previous progress on the tiles, and a late one isn't called again until it returns; its answer is used then.
+    /// </summary>
+    /// <param name="cancellationToken">Ends at Arcadia's deadline. Stop only where the monitor's own state stays whole,
+    /// e.g. before changing it; a canceled poll counts as failed.</param>
+    InstallSnapshot Poll(CancellationToken cancellationToken = default);
 }

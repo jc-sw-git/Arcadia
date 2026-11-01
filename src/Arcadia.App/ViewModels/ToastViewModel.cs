@@ -1,3 +1,4 @@
+using Arcadia.App.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Arcadia.App.ViewModels;
@@ -18,19 +19,42 @@ public partial class ToastViewModel(TimeProvider time) : ViewModelBase
     /// <param name="sticky">Stays until the next message, e.g. while a launcher starts.</param>
     public void Show(string message, bool sticky = false)
     {
-        _expiry?.Cancel();
-        _expiry = new CancellationTokenSource();
-        var token = _expiry.Token;
+        StopExpiry();
         Text = message;
         if (sticky)
         {
             return;
         }
 
-        _ = Task.Delay(Duration, time, token).ContinueWith(
-            _ => Text = null,
-            token,
-            TaskContinuationOptions.OnlyOnRanToCompletion,
-            TaskScheduler.FromCurrentSynchronizationContext());
+        var expiry = new CancellationTokenSource();
+        _expiry = expiry;
+        HideLaterAsync(expiry).Forget("Meldung ausblenden");
+    }
+
+    /// <summary>Hides this message after <see cref="Duration"/>, unless a newer one replaced it first.</summary>
+    private async Task HideLaterAsync(CancellationTokenSource expiry)
+    {
+        try
+        {
+            // Back on the caller's (UI) thread afterwards: Text is bound.
+            await Task.Delay(Duration, time, expiry.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (ReferenceEquals(_expiry, expiry))
+        {
+            StopExpiry();
+            Text = null;
+        }
+    }
+
+    private void StopExpiry()
+    {
+        _expiry?.Cancel();
+        _expiry?.Dispose();
+        _expiry = null;
     }
 }

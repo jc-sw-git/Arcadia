@@ -141,4 +141,78 @@ public sealed class InstallTrackerTests
         blocking.Gate.Set();
         Assert.NotNull(await first);
     }
+
+    [Fact]
+    public async Task A_failing_monitor_keeps_its_progress_while_the_others_apply()
+    {
+        var steam = new FakeMonitor("steam");
+        var log = new List<string>();
+        var tracker = TwoLaunchers(steam, log);
+        _epic.Active["a"] = new InstallProgress(InstallPhase.Downloading, 0.2);
+        steam.Active["440"] = new InstallProgress(InstallPhase.Downloading, 0.5);
+        await tracker.PollAsync();
+
+        steam.Fails = true;
+        _epic.Active.Clear();
+        _epic.Finished["a"] = InstallOutcome.Completed;
+        Assert.Equal([new InstallResult("epic:a", InstallOutcome.Completed)], await tracker.PollAsync());
+        await tracker.PollAsync();
+
+        Assert.Null(tracker.StateOf("epic:a"));
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading, 0.5), tracker.StateOf("steam:440"));
+        Assert.Contains("broken plugin", Assert.Single(log));
+
+        steam.Fails = false;
+        steam.Active.Clear();
+        await tracker.PollAsync();
+        Assert.Null(tracker.StateOf("steam:440"));
+        Assert.Equal(2, log.Count);
+    }
+
+    [Fact]
+    public async Task A_hanging_monitor_holds_neither_the_poll_nor_the_others_and_its_late_answer_counts()
+    {
+        var steam = new FakeMonitor("steam") { Gate = new ManualResetEventSlim() };
+        var log = new List<string>();
+        var tracker = TwoLaunchers(steam, log);
+        _epic.Active["a"] = new InstallProgress(InstallPhase.Downloading, 0.2);
+        steam.Active["440"] = new InstallProgress(InstallPhase.Downloading, 0.5);
+
+        var poll = tracker.PollAsync();
+        await WhenAnswered(_epic, steam);
+        _time.Advance(InstallTracker.PollDeadline);
+        await poll;
+
+        Assert.Equal(new InstallProgress(InstallPhase.Downloading, 0.2), tracker.StateOf("epic:a"));
+        Assert.Null(tracker.StateOf("steam:440"));
+        Assert.True(steam.Token.IsCancellationRequested);
+        Assert.Contains("keine Antwort", Assert.Single(log));
+
+        // Still hanging: it isn't asked a second time, and is logged once.
+        poll = tracker.PollAsync();
+        await WhenAnswered(_epic, steam, epicPolls: 2);
+        _time.Advance(InstallTracker.PollDeadline);
+        await poll;
+        Assert.Equal(1, steam.Polls);
+        Assert.Single(log);
+
+        // Its answer, when it comes, is not lost: "since the previous poll" means since the one that hung.
+        steam.Active.Clear();
+        steam.Finished["440"] = InstallOutcome.Completed;
+        steam.Gate.Set();
+        Assert.Equal([new InstallResult("steam:440", InstallOutcome.Completed)], await tracker.PollAsync());
+        Assert.Equal(1, steam.Polls);
+    }
+
+    private InstallTracker TwoLaunchers(FakeMonitor steam, List<string> log) =>
+        new(FakeIntegration.Registry(
+            new FakeIntegration(KnownLaunchers.Epic) { InstallMonitor = _epic },
+            new FakeIntegration(KnownLaunchers.Steam) { InstallMonitor = steam }), _time) { Log = log.Add };
+
+    // The deadline runs on fake time; the monitor that answers must have returned before it is advanced.
+    private static async Task WhenAnswered(FakeMonitor answering, FakeMonitor hanging, int epicPolls = 1)
+    {
+        Assert.True(SpinWait.SpinUntil(() => answering.Polls == epicPolls && hanging.Polls == 1, TimeSpan.FromSeconds(10)));
+        await Task.Delay(100);
+    }
 }

@@ -83,6 +83,15 @@ doesn't know). The update at Arcadia's start may install an older Pan (T297-9); 
 would count its generations from 0 again and lose what is left to undo. So a journal without `UsbipServers` is one a
 Pan from before #304 wrote: with an open emulation it gets VIIPER's old default port 3241, as that Pan detached it.
 
+## Cost
+
+Release build (Native AOT) on the owner's PC (32 logical cores), Arcadia connected, a game on "Arcadia" for 19 min:
+Pan 0.001 % CPU of all cores (0.003 % without a game), Arcadia 0.30 %, VIIPER 0.26 %. Pan's private working set grows
+about 1 MB a minute from 7 MB and stood at 22 MB after 23 min, over the 20 MB budget (#360). Pan isn't on the input path
+(`Pulse` is an increment; the heartbeat goes every 500 ms from its own task); without Pan nothing is emulated, so
+there is no latency without it to compare: read → VIIPER mean 62 µs, p99 120 µs; read gap mean 1.34 ms, p99 2.0 ms; a
+game reads a press mean 1.05 ms, p99 1.6 ms after the real controller (`checks/238-latency` probe), as in #238.
+
 ## Tests
 
 `tests/Arcadia.Pan.Tests` (fake clock and cleanup) and `ServiceTests`, the real service end to end on the Windows CI

@@ -38,6 +38,7 @@ its file.
 | [238-every-controller-through-arcadia.md](238-every-controller-through-arcadia.md) | #238 | Pass every controller to games through Arcadia | 13 |
 | [340-pan-stopping-page-names-the-usual-30-seconds.md](340-pan-stopping-page-names-the-usual-30-seconds.md) | #340 | Say on the "Pan wird beendet" page that the old Pan ends after about 30 seconds | 4 |
 | [354-pan-update-at-start-without-restarting-the-old-pan.md](354-pan-update-at-start-without-restarting-the-old-pan.md) | #354 | Pan update at start fails because Arcadia restarts the old Pan while --install waits for it to stop | 2 |
+| [272-measure-pan-cost-in-a-release-build.md](272-measure-pan-cost-in-a-release-build.md) | #272 | Measure Pan's cost in a Release build (T243-21) | 0 (T243-21) |
 | [295-spike-steams-firmware-path.md](295-spike-steams-firmware-path.md) | #295 | Spike: Steam's firmware update path, and what Arcadia guards | 6 |
 | [345-hide-and-copy-the-steam-controller-by-cable.md](345-hide-and-copy-the-steam-controller-by-cable.md) | #345 | Hide and copy the Steam Controller by cable | 7 |
 | [357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md](357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md) | #357 | Steam Controller: Xbox pad passes input only while a game on "Arcadia" is in front | 4 |

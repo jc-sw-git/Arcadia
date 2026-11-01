@@ -19,8 +19,11 @@ internal static class SteamStorePage
     /// <summary>The store's own list of what the account owns: apps (incl. soundtracks, tools, DLC) and packages.</summary>
     public static readonly Uri UserDataPage = new("https://store.steampowered.com/dynamicstore/userdata/");
 
-    /// <summary>Where Steam keeps the sign-in's cookies; signing out deletes them.</summary>
-    public static readonly IReadOnlyList<string> CookieDomains = ["steampowered.com", "steamcommunity.com"];
+    /// <summary>
+    /// Steam's own sites: the only hosts Arcadia's browser opens and reads for Steam (#372), and where Steam keeps the
+    /// sign-in's cookies (signing out deletes them).
+    /// </summary>
+    public static readonly IReadOnlyList<string> Domains = ["steampowered.com", "steamcommunity.com"];
 
     /// <summary>Returns the two attributes of <c>#application_config</c> as JSON, or an empty string on another page.</summary>
     public const string AccountScript = """

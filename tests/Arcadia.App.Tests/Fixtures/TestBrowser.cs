@@ -40,8 +40,8 @@ internal sealed class TestBrowser
             var result = page.ForgetDomains.Count > 0
                 ? await _steam.ForgetAsync(page.ForgetDomains, closed.Token)
                 : page.IsShown
-                    ? await _steam.ShowAsync(page.Title, page.Page, page.Script, page.Accepts, closed.Token)
-                    : await _steam.ReadAsync(page.Page, page.Script, page.Accepts, closed.Token);
+                    ? await _steam.ShowAsync(page.Title, page.Page, page.Domains, page.Script, page.Accepts, closed.Token)
+                    : await _steam.ReadAsync(page.Page, page.Domains, page.Script, page.Accepts, closed.Token);
             page.Complete(result);
         }
         catch (Exception ex)

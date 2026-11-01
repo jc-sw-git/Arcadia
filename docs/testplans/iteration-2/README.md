@@ -43,6 +43,22 @@ its file.
 | [345-hide-and-copy-the-steam-controller-by-cable.md](345-hide-and-copy-the-steam-controller-by-cable.md) | #345 | Hide and copy the Steam Controller by cable | 7 |
 | [357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md](357-xbox-pad-only-while-a-game-on-arcadia-is-in-front.md) | #357 | Steam Controller: Xbox pad passes input only while a game on "Arcadia" is in front | 4 |
 | [360-keep-pans-memory-under-20-mb.md](360-keep-pans-memory-under-20-mb.md) | #360 | Pan's memory grows to 22 MB while Arcadia is connected | 0 (T243-21) |
+| [112-spike-steam-input-without-sisr.md](112-spike-steam-input-without-sisr.md) | #112 | Spike: own Steam Input helper instead of SISR | 0 (spike) |
+| [156-launcher-states-steam-input.md](156-launcher-states-steam-input.md) | #156 | A launcher says itself whether its games use Steam Input | 0 (refactoring) |
+| [227-check-install-folder-off-ui-thread.md](227-check-install-folder-off-ui-thread.md) | #227 | Check a focused game's install folder off the UI thread | 5 |
+| [228-library-snapshot-session-and-page-lifecycle.md](228-library-snapshot-session-and-page-lifecycle.md) | #228 | Follow-ups to the MainViewModel split: sorted snapshot, UI-free session, page lifecycle | 4 |
+| [229-library-focus-page-and-tab-changes-instant.md](229-library-focus-page-and-tab-changes-instant.md) | #229 | Make focus, page and tab changes in the library feel instant | 3 |
+| [239-spike-emulated-steam-controller.md](239-spike-emulated-steam-controller.md) | #239 | Spike: Emulated Steam Controller for Steam (HidHide + VIIPER proxy) | 0 (spike) |
+| [243-pan-guardian-service.md](243-pan-guardian-service.md) | #243 | Pan, the guardian service (part A) | 45 |
+| [249-spike-steam-controller-by-cable.md](249-spike-steam-controller-by-cable.md) | #249 | Spike: hide and copy the new Steam Controller by cable | 0 (spike) |
+| [270-remove-bundled-pan-after-uninstall.md](270-remove-bundled-pan-after-uninstall.md) | #270 | Remove the bundled Pan.exe that stays behind after uninstalling with the drivers | 6 |
+| [296-restart-the-puck-only-while-steam-is-closed.md](296-restart-the-puck-only-while-steam-is-closed.md) | #296 | Restart the Steam Controller's puck for a driver install only while Steam is closed | 7 |
+| [307-demo-game-does-not-lock-pan.md](307-demo-game-does-not-lock-pan.md) | #307 | A demo game shown as running no longer locks the Pan switch | 2 |
+| [314-steam-requests-to-empty-puck-slots.md](314-steam-requests-to-empty-puck-slots.md) | #314 | Steam's refused requests to the puck no longer flood the log | 2 |
+| [325-takeover-dialog-names-the-steam-controller.md](325-takeover-dialog-names-the-steam-controller.md) | #325 | Pan: takeover dialog at Arcadia's start shows only the puck | 2 |
+| [331-steam-lists-controllers-twice.md](331-steam-lists-controllers-twice.md) | #331 | Steam lists the Steam Controller and Arcadia's Xbox pad only once | 3 |
+| [347-remove-stale-device-entries.md](347-remove-stale-device-entries.md) | #347 | Remove the stale device entries Arcadia's emulated devices leave in Windows | 7 |
+| [365-docs-after-the-sisr-replacement.md](365-docs-after-the-sisr-replacement.md) | #365 | Docs after the SISR replacement: README, notices, architecture docs, decisions and the latency budget | 0 (docs) |
 | [369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md](369-show-a-failed-scan-instead-of-an-empty-launcher-tab.md) | #369 | Show a failed scan instead of an empty launcher tab | 3 |
 
 ## Exploratory test

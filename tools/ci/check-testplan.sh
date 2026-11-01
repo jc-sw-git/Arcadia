@@ -7,6 +7,18 @@ set -euo pipefail
 base="$1"
 head="$2"
 
+# Every issue file is listed in its iteration's README.md, so whoever tests finds it from the index.
+unlisted=()
+for file in docs/testplans/iteration-*/*.md; do
+  name=$(basename "$file")
+  [[ "$name" == README.md ]] && continue
+  grep -qF "]($name)" "$(dirname "$file")/README.md" || unlisted+=("$file")
+done
+if (( ${#unlisted[@]} )); then
+  echo "::error::Not listed in their iteration's README.md: ${unlisted[*]}"
+  exit 1
+fi
+
 # GitHub's closing keywords, e.g. "Closes #23", "fixes #8".
 issues=$(printf '%s' "${PR_BODY:-}" \
   | grep -oiE '\b(close[sd]?|fix(e[sd])?|resolve[sd]?)[[:space:]]+#[0-9]+' \

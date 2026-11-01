@@ -15,6 +15,12 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
     /// <summary>Why Pan can't serve (e.g. "Pan ist nicht eingerichtet"), or null.</summary>
     public string? Missing;
 
+    /// <summary>As <see cref="PanClient.WhyLeftAlone"/>: a reason keeps Arcadia away from Pan, like <see cref="Missing"/>.</summary>
+    public Func<string?> WhyLeftAlone { get; set; } = () => null;
+
+    /// <summary>How often Arcadia let go of Pan (#366: before "Controller wiederherstellen").</summary>
+    public int LetGos;
+
     /// <summary>Every "emulation started" is refused, as Pan does with a wrong generation or a journal it can't write.</summary>
     public bool Refuse;
 
@@ -115,7 +121,20 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
 
     public void EndRestart() => PuckRestarted?.Invoke();
 
-    public string? Unavailable() => Missing;
+    public string? Unavailable() => Missing ?? WhyLeftAlone();
+
+    /// <summary>As <see cref="PanClient.LetGoAsync"/>: the connection closes, so Pan tears the emulation down.</summary>
+    public Task LetGoAsync(CancellationToken cancellationToken)
+    {
+        Note("let go");
+        lock (_lock)
+        {
+            LetGos++;
+            _emulating = false;
+        }
+
+        return Task.CompletedTask;
+    }
 
     public Task<PanReason?> CheckHidingAsync(CancellationToken cancellationToken) => CheckHidingAsync(0, cancellationToken);
 
@@ -225,7 +244,7 @@ public sealed class FakeEmulationGuardian : IEmulationGuardian, IHidingCheck
 
     public bool IsCurrent(uint generation)
     {
-        lock (_lock) return Missing is null && _emulating && _current == generation;
+        lock (_lock) return Unavailable() is null && _emulating && _current == generation;
     }
 
     public bool WasTornDown(uint generation)

@@ -196,6 +196,7 @@ public partial class App : Application
             var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
             pan.JournalProblem += () => panNotices.Show(PanJournalText);
             controllerSupport.HidingCheck = pan;
+            controllerSupport.LetGoOfPan = pan.LetGoAsync;
             var steamPlatform = new ControllerSupportPlatform();
             // The copy of the Steam Controller for Steam needs the VIIPER fork (#242 parts B and C); without it Pan hides nothing.
             ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && viiper is not null && ownViiper is not null

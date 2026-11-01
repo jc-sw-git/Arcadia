@@ -25,7 +25,7 @@ public sealed class ForegroundOwnerTests
     private GameFolders _folders = GameFolders.Of([Game(@"D:\Games\Hollow Peak")]);
     private int? _foreground;
 
-    private ForegroundOwner Create() => new(() => _folders, new LaunchedGames(), () => _foreground, id =>
+    private ForegroundOwner Create() => new(() => _folders, new LaunchedGames(), ["steam.exe", "steamwebhelper.exe"], () => _foreground, id =>
     {
         _pathLookups.Add(id);
         return _paths.GetValueOrDefault(id);

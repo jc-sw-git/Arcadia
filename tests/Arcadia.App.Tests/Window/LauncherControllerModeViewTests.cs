@@ -4,6 +4,7 @@ using Arcadia.App.Settings;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
+using Arcadia.Launchers;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;

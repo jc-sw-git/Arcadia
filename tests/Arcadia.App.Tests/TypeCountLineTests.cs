@@ -2,6 +2,7 @@ using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers;
 using static Arcadia.App.Tests.TestGames;
 
 namespace Arcadia.App.Tests;

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Arcadia.Core\Arcadia.Core.csproj" />
+    <ProjectReference Include="..\Arcadia.Launchers.Abstractions\Arcadia.Launchers.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

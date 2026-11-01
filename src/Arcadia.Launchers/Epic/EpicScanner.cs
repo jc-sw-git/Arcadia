@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers.Epic;
@@ -25,7 +24,7 @@ public sealed class EpicScanner(
     // Epic's rotated logs never change again; only the current one is parsed on every scan.
     private readonly Dictionary<string, (long Length, DateTime Written, EpicLogFacts Facts)> _parsedLogs = new(StringComparer.OrdinalIgnoreCase);
 
-    public LauncherInfo Launcher => KnownLaunchers.Epic;
+    public LauncherInfo Launcher => EpicIntegration.Info;
 
     public Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default) =>
         Task.Run(() => Scan(cancellationToken), cancellationToken);
@@ -130,7 +129,7 @@ public sealed class EpicScanner(
             games.Add(new Game
             {
                 Id = item.AppName,
-                LauncherId = KnownLaunchers.Epic.Id,
+                LauncherId = EpicIntegration.Info.Id,
                 Title = item.Title,
                 Type = item.Type,
                 Launch = new LaunchTarget.ProtocolUri(LaunchUri(item.Namespace, item.CatalogItemId, item.AppName)),
@@ -263,7 +262,7 @@ public sealed class EpicScanner(
             var game = new Game
             {
                 Id = appName,
-                LauncherId = KnownLaunchers.Epic.Id,
+                LauncherId = EpicIntegration.Info.Id,
                 Title = isEngine ? EpicCatalog.UnrealEngineTitle : title,
                 Type = isEngine || isLaunchableAddOn ? GameType.Tool : GameType.Game,
                 Launch = new LaunchTarget.ProtocolUri(LaunchUri(catalogNamespace, catalogItemId, appName)),

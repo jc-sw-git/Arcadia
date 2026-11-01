@@ -7,6 +7,7 @@ using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers;
 using Arcadia.Pan;
 using Arcadia.Tests.Sdl;
 using Avalonia.Headless.XUnit;

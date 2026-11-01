@@ -1,4 +1,4 @@
-using Arcadia.App.Input;
+﻿using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
@@ -138,7 +138,7 @@ internal sealed class ArcadiaComposition
 
         var main = new MainViewModel(
             new LibraryService(launchers, time) { Log = AppLog.Write },
-            new GameLaunchService(launchers, parts.Open) { Log = AppLog.Write },
+            new GameLaunchService(launchers.ClientOf, parts.Open) { Log = AppLog.Write },
             controllerSupport,
             parts.Updates,
             installTracker,

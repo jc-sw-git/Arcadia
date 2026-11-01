@@ -2,6 +2,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers;
 
 namespace Arcadia.Core.Tests;
 

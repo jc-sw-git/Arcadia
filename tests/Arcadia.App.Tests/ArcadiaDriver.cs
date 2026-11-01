@@ -83,7 +83,7 @@ internal sealed class ArcadiaDriver : IDisposable
         Starts = starts;
         Installs = installs;
         Launchers = launchers.Select(spec => spec.IsDemo
-            ? new DemoIntegration(spec.Launcher, spec.Games, Now)
+            ? new DemoIntegration(spec.Launcher, spec.Games, Now, canUninstall: spec.CanUninstall)
             : (ILauncherIntegration)new TestLauncher(spec, Now, starts, installs)).ToList();
         _pad.ButtonPressed += button => PressButton(button);
         _pad.ButtonReleased += button => ReleaseButton(button);

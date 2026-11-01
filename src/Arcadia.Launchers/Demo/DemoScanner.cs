@@ -1,4 +1,3 @@
-using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers.Demo;
@@ -8,7 +7,8 @@ namespace Arcadia.Launchers.Demo;
 /// launcher installed. Enabled with <c>--demo</c>. The data is deterministic per launcher.
 /// </summary>
 /// <param name="withOtherTypes">Adds a few software, tool and soundtrack entries after the games (#141), for <c>--demo</c>.</param>
-public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOffset now, bool withOtherTypes = false) : ILauncherScanner
+/// <param name="canUninstall">False plays a launcher that uninstalls only in its own window, as Epic does.</param>
+public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOffset now, bool withOtherTypes = false, bool canUninstall = true) : ILauncherScanner
 {
     private static readonly (string Title, GameType Type, bool IsInstalled)[] OtherTypes =
     [
@@ -101,8 +101,7 @@ public sealed class DemoScanner(LauncherInfo launcher, int gameCount, DateTimeOf
                 Launch = new LaunchTarget.None(),
                 OpenInLauncher = new LaunchTarget.None(),
 
-                // As the real launchers: Epic can only uninstall in its own window.
-                Uninstall = launcher.Id == KnownLaunchers.Epic.Id ? null : new LaunchTarget.None(),
+                Uninstall = canUninstall ? new LaunchTarget.None() : null,
                 InstallDirectory = Path.Combine("D:", "Games", launcher.DisplayName, title.Replace(":", string.Empty, StringComparison.Ordinal)),
                 InstalledAt = now.AddDays(-installedDaysAgo),
                 LastPlayedAt = playedDaysAgo is { } days ? now.AddDays(-days).AddHours(-random.Next(0, 20)) : null,

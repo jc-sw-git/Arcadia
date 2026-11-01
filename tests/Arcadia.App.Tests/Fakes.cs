@@ -17,7 +17,7 @@ internal sealed class TestLauncher(LauncherSpec spec, DateTimeOffset now, Record
 
     public ILauncherScanner Scanner { get; } = spec.Library is { } library
         ? new FixedScanner(spec.Launcher, library)
-        : new DemoScanner(spec.Launcher, spec.Games, now);
+        : new DemoScanner(spec.Launcher, spec.Games, now, canUninstall: spec.CanUninstall);
 
     public ILauncherClient? Client { get; } = new RecordingClient(spec.Launcher.Id, starts);
 

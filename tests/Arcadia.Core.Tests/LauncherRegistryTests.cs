@@ -59,7 +59,7 @@ public sealed class LauncherRegistryTests
         var enabled = true;
         var client = new FakeClient("epic");
         var registry = FakeIntegration.Registry([new FakeIntegration(KnownLaunchers.Epic) { Client = client }], _ => enabled);
-        var launches = new GameLaunchService(registry);
+        var launches = new GameLaunchService(registry.ClientOf);
 
         await launches.StartAsync(GameOf("epic", "a"));
         Assert.Equal(1, client.Starts);
@@ -106,6 +106,54 @@ public sealed class LauncherRegistryTests
 
         Assert.Equal("steam", Assert.Single(registry.All).Launcher.Id);
         Assert.Equal(4, registry.Rejected.Count);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("my:launcher")]
+    [InlineData("Steam")]
+    [InlineData("itch io")]
+    [InlineData("itch.io")]
+    [InlineData("ünicode")]
+    public void Leaves_out_a_launcher_whose_id_breaks_the_rule(string id)
+    {
+        var registry = FakeIntegration.Registry(new FakeIntegration(FakeIntegration.LauncherOf(id)), new FakeIntegration(KnownLaunchers.Steam));
+
+        Assert.Equal("steam", Assert.Single(registry.All).Launcher.Id);
+        Assert.Single(registry.Rejected);
+    }
+
+    [Theory]
+    [InlineData("itch-io")]
+    [InlineData("gog2")]
+    public void Accepts_lower_case_letters_digits_and_hyphens(string id) =>
+        Assert.Empty(FakeIntegration.Registry(new FakeIntegration(FakeIntegration.LauncherOf(id))).Rejected);
+
+    [Fact]
+    public void Leaves_out_a_launcher_whose_identity_throws_and_starts_with_the_others()
+    {
+        var registry = FakeIntegration.Registry(new ThrowingIntegration(), new FakeIntegration(KnownLaunchers.Epic));
+
+        Assert.Equal("epic", Assert.Single(registry.All).Launcher.Id);
+        Assert.Contains("ließ sich nicht lesen", Assert.Single(registry.Rejected), StringComparison.Ordinal);
+    }
+
+    /// <summary>A plugin whose <see cref="ILauncherIntegration.Launcher"/> throws.</summary>
+    private sealed class ThrowingIntegration : ILauncherIntegration
+    {
+        public LauncherInfo Launcher => throw new InvalidOperationException("broken plugin");
+
+        public ILauncherScanner Scanner => throw new InvalidOperationException("broken plugin");
+
+        public ILauncherClient? Client => null;
+
+        public IInstallMonitor? InstallMonitor => null;
+
+        public IRunningGamesMonitor? RunningGames => null;
+
+        public IReadOnlyCollection<string> ProgramNames => [];
+
+        public string? Locate() => null;
     }
 
     [Fact]

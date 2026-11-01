@@ -101,7 +101,7 @@ public partial class App : Application
             // instead of the library (#297).
             var app = ArcadiaComposition.Build(new ArcadiaParts(
                 settings, http, time, firstRun,
-                BuiltInLaunchers.Create(time, demo, DemoGames(args), http: http, web: webPages),
+                BuiltInLaunchers.Create(time, demo, DemoGames(args), http: http, web: webPages, dataFolder: Core.Diagnostics.LogLocation.DataFolder),
                 ControllerPlatform: null,
                 ownViiper,
                 OperatingSystem.IsWindows()
@@ -171,7 +171,7 @@ public partial class App : Application
             ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && viiper is not null && ownViiper is not null
                 ? new ViiperSteamControllerCopy(viiper, ownViiper, wiring, AppLog.Write)
                 : new NoSteamControllerCopy();
-            var foreground = new ForegroundOwner(() => viewModel.Session.GameFolders, launchedGames);
+            var foreground = new ForegroundOwner(() => viewModel.Session.GameFolders, launchedGames, launchers.SteamInputOwner?.ProgramNames ?? []);
             var (_, forGames) = app.ConnectControllers(new ControllerWiring(
                 _gamepad, OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, pan, pan.LetGoAsync, Copy, steamPlatform.RunningSteamAppId,
                 () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, foreground.IsSteam, foreground.GameKey, panNotices, window.Latency)

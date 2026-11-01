@@ -1,6 +1,7 @@
 using Arcadia.Core.Library;
+using Arcadia.Launchers;
 
-namespace Arcadia.Launchers;
+namespace Arcadia.App.Services;
 
 /// <summary>
 /// The PC's processes for <see cref="ProcessGames"/>. Only on Windows: elsewhere no game runs that Arcadia could start,

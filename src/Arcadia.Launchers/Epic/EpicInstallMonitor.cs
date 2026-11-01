@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers.Epic;
@@ -43,7 +42,7 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
     private string _partialLine = string.Empty;
     private bool _primed;
 
-    public string LauncherId => KnownLaunchers.Epic.Id;
+    public string LauncherId => EpicIntegration.Info.Id;
 
     public InstallSnapshot Poll(CancellationToken cancellationToken = default)
     {

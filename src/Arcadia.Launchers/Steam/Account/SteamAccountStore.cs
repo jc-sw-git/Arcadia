@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text.Json;
-using Arcadia.Core.Diagnostics;
 
 namespace Arcadia.Launchers.Steam.Account;
 
@@ -32,9 +31,10 @@ internal sealed class SteamAccountStore(string folder, Func<byte[], byte[]>? pro
     private readonly Lock _lock = new();
     private SteamSignIn? _inMemory;
 
-    public static SteamAccountStore CreateDefault(string? folder = null) => OperatingSystem.IsWindows()
-        ? new(folder ?? LogLocation.DataFolder, Protect, Unprotect)
-        : new(folder ?? LogLocation.DataFolder, null, null);
+    /// <param name="folder">Arcadia's data folder, handed in by the App.</param>
+    public static SteamAccountStore CreateDefault(string folder) => OperatingSystem.IsWindows()
+        ? new(folder, Protect, Unprotect)
+        : new(folder, null, null);
 
     private string SignInPath => Path.Combine(folder, "steam-account.dat");
 

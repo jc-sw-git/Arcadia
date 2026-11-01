@@ -1,6 +1,7 @@
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Search;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers;
 
 namespace Arcadia.Core.Tests;
 

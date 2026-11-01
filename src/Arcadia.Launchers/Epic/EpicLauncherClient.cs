@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Microsoft.Win32;
 
@@ -40,7 +39,7 @@ public sealed class EpicLauncherClient(TimeProvider time, IEpicLauncherProcesses
 
     private readonly IEpicLauncherProcesses _processes = processes ?? new SystemProcesses();
 
-    public string? LauncherId => KnownLaunchers.Epic.Id;
+    public string? LauncherId => EpicIntegration.Info.Id;
 
     public async Task StartAsync(Game game, IProgress<LaunchStage>? progress = null, CancellationToken cancellationToken = default)
     {

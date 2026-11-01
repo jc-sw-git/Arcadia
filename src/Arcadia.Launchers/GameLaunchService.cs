@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers;
@@ -26,11 +25,12 @@ public enum LaunchOutcome
 public sealed record LaunchResult(LaunchOutcome Outcome, Exception? Error = null);
 
 /// <summary>Routes a start request to the client of the game's launcher.</summary>
+/// <param name="clientOf">The client of the active launcher with this id, or null (none, or not active): the registry's.</param>
 /// <param name="open">
 /// Hands a launch target to the system; defaults to <see cref="DirectLauncherClient.Start"/>. The acceptance tests record
 /// the targets instead, so no launcher opens on the PC that runs them.
 /// </param>
-public sealed class GameLaunchService(LauncherRegistry launchers, Func<LaunchTarget, bool>? open = null)
+public sealed class GameLaunchService(Func<string, ILauncherClient?> clientOf, Func<LaunchTarget, bool>? open = null)
 {
     private readonly Func<LaunchTarget, bool> _open = open ?? DirectLauncherClient.Start;
     private readonly DirectLauncherClient _fallback = new(open);
@@ -41,7 +41,7 @@ public sealed class GameLaunchService(LauncherRegistry launchers, Func<LaunchTar
 
     public Task StartAsync(Game game, IProgress<LaunchStage>? progress = null, CancellationToken cancellationToken = default)
     {
-        var client = launchers.Find(game.LauncherId)?.Client ?? _fallback;
+        var client = clientOf(game.LauncherId) ?? _fallback;
         return client.StartAsync(game, progress, cancellationToken);
     }
 

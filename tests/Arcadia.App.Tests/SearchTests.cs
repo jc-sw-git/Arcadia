@@ -1,5 +1,6 @@
 using Arcadia.App.Input;
 using Arcadia.Core.Launchers;
+using Arcadia.Launchers;
 using Avalonia.Headless.XUnit;
 using static Arcadia.App.Tests.TestGames;
 

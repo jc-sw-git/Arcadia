@@ -23,4 +23,4 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| T370-1 to T370-6, all App and Core tests | 2026-11-01 | Claude | PR branch, Linux cloud container, Avalonia headless | see PR | – |
+| T370-1 to T370-6, all App and Core tests | 2026-11-01 | Claude | PR branch, Linux cloud container, Avalonia headless | ✅ (T370-1, -3, -4, -5 also ❌ once with the guards broken on purpose) | – |

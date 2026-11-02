@@ -10,8 +10,15 @@ ceilings=tools/ci/code-size-ceilings.txt
 failed=0
 
 declare -A ceiling
-while read -r file lines; do
+while read -r file lines rest; do
   [[ -z "$file" || "$file" == \#* ]] && continue
+  lines=${lines%$'\r'}
+  # A malformed line must fail, not slip through as an arithmetic error that leaves the check green.
+  if [[ ! "$lines" =~ ^[0-9]+$ || -n "$rest" ]]; then
+    echo "::error file=$ceilings::Malformed line for $file; expected '<path> <lines>' and nothing else."
+    failed=1
+    continue
+  fi
   ceiling["$file"]=$lines
 done < "$ceilings"
 
@@ -22,7 +29,7 @@ while IFS= read -r file; do
     if [[ -n "${ceiling["$file"]:-}" ]]; then
       echo "::error file=$file::$file has $lines lines, its ceiling is $allowed. Move a concern into its own class instead of raising the ceiling."
     else
-      echo "::error file=$file::$file has $lines lines, more than $limit. Split it by concern (CLAUDE.md → Definition of Done, Readable)."
+      echo "::error file=$file::$file has $lines lines, more than $limit. Split it by concern (CLAUDE.md → Definition of Done, Readable). If it is a listed file that was renamed, move its line in $ceilings."
     fi
     failed=1
   elif [[ -n "${ceiling["$file"]:-}" ]] && (( lines < allowed )); then

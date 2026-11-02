@@ -65,7 +65,9 @@ milestone again; this list keeps it small.
 - **Readable:** names say what things are; methods do one thing; comments explain *why*, not *what*.
   A developer new to the code understands the change from the diff and `CLAUDE.md`. A `.cs` file in `src/` stays
   at or below 600 lines; files above keep a ceiling in `tools/ci/code-size-ceilings.txt` that only goes down
-  (CI check `Code sizes`). A PR that adds to a listed file moves a concern out instead of raising its ceiling.
+  (CI check `Code sizes`). A PR that adds to a listed file moves a concern out instead of raising its ceiling, unless
+  a higher priority wins (e.g. a small security fix): then it raises the ceiling, names the conflict in the PR and files
+  the split as `type:tech-debt`.
 - **Modular:** launcher-specific code stays in its launcher folder; UI and Core don't special-case launchers.
   A launcher is one `ILauncherIntegration`, registered in `BuiltInLaunchers`; built-in launchers use only
   `Arcadia.Launchers.Abstractions` (and `Arcadia.Platform`'s process helpers), as a plugin would; Steam is reached as

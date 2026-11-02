@@ -72,7 +72,7 @@ its file.
 | [373-decouple-steam-from-core-and-app.md](373-decouple-steam-from-core-and-app.md) | #373 | Decouple Steam from Core, ControllerSupport and App; validate launcher ids | 0 (refactoring) |
 | [374-split-controllersupportservice.md](374-split-controllersupportservice.md) | #374 | Split ControllerSupportService (SISR removal out) and share the composition root with the tests | 0 (refactoring) |
 | [396-pan-hides-controllers-arcadia-cant-see.md](396-pan-hides-controllers-arcadia-cant-see.md) | #396 | Pan hides controllers Arcadia itself can no longer see | 3 |
-| [402-pan-off-by-default.md](402-pan-off-by-default.md) | #402 | Pan off by default; "Treiber installieren" also on a fresh install | 3 |
+| [402-pan-off-by-default.md](402-pan-off-by-default.md) | #402 | Pan off by default; "Treiber installieren" also on a fresh install | 5 |
 | [403-spiele-sehen-lists-the-steam-controller.md](403-spiele-sehen-lists-the-steam-controller.md) | #403 | "Spiele sehen" sometimes leaves out the connected Steam Controller | 2 |
 
 ## Exploratory test

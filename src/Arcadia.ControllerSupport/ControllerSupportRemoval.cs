@@ -28,11 +28,14 @@ public static class ControllerSupportRemoval
 
     private static string ViiperExecutable => Path.Combine(LocalAppData, "VIIPER", "viiper.exe");
 
+    /// <summary>Arcadia's own <c>viiper.exe</c> (<see cref="ViiperInstallation.InDataFolder"/>, about 13 MB), kept in the data folder.</summary>
+    private static string OwnViiperDirectory => Path.Combine(Core.Diagnostics.LogLocation.DataFolder, "viiper");
+
     /// <summary>What is installed of the controller emulation, for the question at Arcadia's uninstall.</summary>
     [SupportedOSPlatform("windows")]
     public static InstalledParts FindInstalledParts() => new(
         Sisr: Directory.Exists(SisrDirectory),
-        Viiper: File.Exists(ViiperExecutable),
+        Viiper: File.Exists(ViiperExecutable) || Directory.Exists(OwnViiperDirectory),
         Usbip: UsbipDriver.UninstallCommand() is not null,
         HidHide: HidHideInstallation.InstalledVersion() is not null);
 
@@ -78,6 +81,7 @@ public static class ControllerSupportRemoval
         // Ordered by what matters most, because Velopack may end the uninstall hook before the slow steps are done.
         // Arcadia's own viiper.exe has to end before its folder goes; SISR and its VIIPER stop in Remove, by path.
         StopProcesses("viiper");
+        DeleteOwnViiper(log);
 
         // Arcadia goes too, so its own viiper.exe no longer needs VIIPER's key folder.
         var sisr = new SisrInstallation(SisrInstallation.DefaultPaths(arcadiaViiper: null), steam, new WindowsSisrSystem());
@@ -87,6 +91,22 @@ public static class ControllerSupportRemoval
         if (steamClosed)
         {
             steam!.Start();
+        }
+    }
+
+    private static void DeleteOwnViiper(Action<string> log)
+    {
+        try
+        {
+            if (Directory.Exists(OwnViiperDirectory))
+            {
+                Directory.Delete(OwnViiperDirectory, recursive: true);
+                log("Entfernt: Arcadias VIIPER");
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            log($"Arcadias VIIPER nicht entfernt: {ex.Message}");
         }
     }
 

@@ -28,9 +28,10 @@
   version (`Changelog`).
 - **Release notes** list only PRs that change something for the player: features, fixes, and robustness or security
   work a player is protected by. Docs, process, tests, CI and refactorings without effect are left out. The PR label
-  `no-changelog` does it (`.github/release.yml`); `label-pr-changelog.yml` sets it on PRs from `doc/`, `ci/`, `test/`
-  and `td/` branches when they are opened. The author removes it from a `td/` PR the player notices, and sets it by
-  hand on any other PR that doesn't belong. Before a release the thread reads the generated notes (`gh release view`
+  `no-changelog` does it (`.github/release.yml`); `label-pr-changelog.yml` sets it on PRs from `doc/`, `ci/` and `test/`
+  branches when they are opened. On a `td/` PR the author decides and sets it for a pure refactoring; the handoff
+  says "Release notes: yes/no" for it, so a protection the player benefits from isn't hidden. Any other PR that
+  doesn't belong gets it by hand. Before a release the thread reads the generated notes (`gh release view`
   after the run, or the draft) against this rule and edits the release body. Notes are English; "Was ist neu" shows them.
 - To release, run the workflow "Tag release" on `main` with the version: `tag-release.yml` sets the tag `vX.Y.Z` and
   starts `release.yml`. Claude can start it; its cloud sessions can't push tags (the git proxy answers 403).

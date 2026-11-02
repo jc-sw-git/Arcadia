@@ -255,6 +255,74 @@ public sealed class EmulationSetupTests
         Assert.False(arcadia.Main.Status.HasControllerStatus);
     }
 
+    /// <summary>#402 (QE): Pan starts off, so "Treiber installieren" has to switch it on, or the player has set up Pan for nothing.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T402-2")]
+    public async Task On_a_fresh_install_Treiber_installieren_sets_up_every_part_and_switches_Pan_on()
+    {
+        var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideVersion = null };
+        steam.Viiper.IsInstalled = false;
+        var fresh = new AppSettings { ActiveLaunchers = ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id).ToList() };
+        using var arcadia = await ArcadiaDriver.StartAsync(settings: fresh, steam: steam);
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        await arcadia.WaitUntilAsync(() => Switch(controller).IsInstall, "„Treiber installieren“ an der Einstellung");
+
+        Switch(controller).Activate();
+        ConfirmHidHideInstall(arcadia, controller);
+        await arcadia.WaitUntilAsync(() => Switch(controller).IsSwitch, "eingerichtet");
+
+        Assert.Equal(1, steam.DriverInstalls);
+        Assert.Equal(1, steam.Viiper.Installs);
+        Assert.True(arcadia.Settings.Current.PanEnabled);
+        Assert.True(Switch(controller).IsOn);
+    }
+
+    /// <summary>
+    /// #402 (QE): an update from a version that shipped VIIPER leaves only <c>viiper.exe</c> missing. With Pan on, its
+    /// row says so and "Installieren" fetches it without the Windows prompt; with Pan off, nothing warns.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T402-3")]
+    public async Task After_an_update_without_VIIPER_Pan_on_shows_VIIPER_fehlt_and_Installieren_fetches_only_VIIPER()
+    {
+        var steam = new FakeSteam();
+        steam.Viiper.IsInstalled = false;
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:viiper-missing"), "die Meldung „VIIPER fehlt“");
+        var viiper = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:viiper-missing"));
+        Assert.Equal("VIIPER fehlt", viiper.Title);
+        Assert.Equal("Installieren", viiper.ActionText);
+        Assert.True(Switch(controller).IsOn);
+        Assert.True(arcadia.Main.Status.HasControllerStatus);
+
+        viiper.Activate();
+        await arcadia.WaitUntilAsync(() => controller.Rows.All(row => row.Key != "issue:viiper-missing"), "VIIPER eingerichtet");
+
+        Assert.Equal(1, steam.Viiper.Installs);
+        Assert.Equal(0, steam.DriverInstalls);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T402-3")]
+    public async Task After_an_update_without_VIIPER_Pan_off_stays_a_switch_without_warnings()
+    {
+        var steam = new FakeSteam();
+        steam.Viiper.IsInstalled = false;
+        var off = new AppSettings { ActiveLaunchers = ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id).ToList() };
+        using var arcadia = await ArcadiaDriver.StartAsync(settings: off, steam: steam);
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+
+        await arcadia.WaitUntilAsync(() => Switch(controller).IsSwitch, "der Schalter");
+        Assert.False(Switch(controller).IsOn);
+        Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:", StringComparison.Ordinal));
+        Assert.False(arcadia.Main.Status.HasControllerStatus);
+        Assert.Equal(0, steam.Viiper.Installs);
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T243-34")]
     public async Task An_old_HidHide_gets_its_row_with_Aktualisieren()

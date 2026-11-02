@@ -346,6 +346,47 @@ public sealed class EveryControllerForGamesTests
     private static IReadOnlyList<string> Shown(ControllerLayoutsViewModel layouts) =>
         [.. layouts.Rows.Select(row => $"{row.Title}: {row.ValueText}{(row.IsLocked ? " (gesperrt)" : string.Empty)}")];
 
+    private static IReadOnlyList<string> GamesSee(ControllerSettingsViewModel controller) =>
+        [.. controller.Rows.Single(row => row.Key == PanRows.LayoutsKey).Info.OfType<InfoFacts>().Single().Facts.Select(fact => fact.Label)];
+
+    /// <summary>
+    /// "Spiele sehen" lists the Steam Controller like every other connected controller, also while Arcadia lets go of
+    /// it for Pan (SDL doesn't see it then); once it is really gone, the list drops it without anything else changing.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T403-1")]
+    public async Task Spiele_sehen_keeps_the_Steam_Controller_while_Arcadia_lets_go_of_it_and_drops_it_once_it_is_gone()
+    {
+        using var arcadia = await StartInBackgroundAsync(pads: [DualSense]);
+        var controller = OpenControllerSettings(arcadia);
+        Assert.Equal(["DualSense Wireless Controller"], GamesSee(controller));
+
+        // Switched on while the page is open: listed at once.
+        var steamController = arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.PollControllers();
+        string[] both = [ControllerLayoutsViewModel.SteamControllerTitle, "DualSense Wireless Controller"];
+        Assert.Equal(both, GamesSee(controller));
+
+        // Pan restarts the puck: SDL lets go of it, and a refresh of the list in that moment still names it.
+        arcadia.ForGames.Emulation.ReadSteamControllers(false);
+        arcadia.Sdl.Unplug(steamController);
+        arcadia.PollControllers();
+        Assert.True(arcadia.ForGames.SteamControllerConnected);
+        Assert.Equal(both, GamesSee(controller));
+
+        arcadia.ForGames.Emulation.ReadSteamControllers(true);
+        steamController = arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.PollControllers();
+        Assert.Equal(both, GamesSee(controller));
+
+        // Switched off for real: gone after the grace, with nothing else raising a change.
+        arcadia.Sdl.Unplug(steamController);
+        arcadia.PollControllers();
+        arcadia.Time.Advance(SteamControllerSighting.RereadGrace);
+        arcadia.PollControllers();
+        Assert.Equal(["DualSense Wireless Controller"], GamesSee(controller));
+    }
+
     /// <summary>
     /// #238 part 3 (D3a, scenario 7): with the gamepad alone the player makes the DualSense an Xbox 360 pad and the
     /// GameCube controller a Switch 2 Pro, then leaves it to games; nothing changes while trying layouts or after B, A on
@@ -427,7 +468,7 @@ public sealed class EveryControllerForGamesTests
         Assert.Same(controller, arcadia.Main.Settings?.Selected);
         Assert.Equal(PanRows.LayoutsKey, controller.FocusedRow?.Key);
         Assert.Contains(controller.FocusedRow!.Info.OfType<InfoFacts>().Single().Facts,
-            fact => fact is { Label: "Nintendo GameCube Controller", Value: "den echten Controller (nicht übernommen)" });
+            fact => fact is { Label: "Nintendo GameCube Controller", Value: "Nicht übernommen" });
 
         using var restarted = await arcadia.RestartAsync();
         restarted.Sdl.Plug(DualSense);

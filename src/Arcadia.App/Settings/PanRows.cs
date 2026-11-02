@@ -251,7 +251,7 @@ public sealed class PanRows
                 .. steamController ? [new InfoFact(ControllerLayoutsViewModel.SteamControllerTitle, PadKinds.DisplayName(PadKind.Xbox360))] : Array.Empty<InfoFact>(),
                 .. models.Select(model => ControllerLayouts.Effective(ControllerLayouts.Find(chosen, model.Model), model.DefaultKind) is { IsTakenOver: true } layout
                     ? new InfoFact(model.Name, ControllerLayouts.DisplayName(layout))
-                    : new InfoFact(model.Name, "den echten Controller (nicht übernommen)", IsMuted: true)),
+                    : new InfoFact(model.Name, "Nicht übernommen", IsMuted: true)),
             ]),
         ];
         return true;

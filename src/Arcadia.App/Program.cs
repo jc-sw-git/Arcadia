@@ -137,11 +137,21 @@ sealed partial class Program
         RemovePan(removeDrivers: removeParts && parts.Drivers);
 
         // Windows keeps a loaded driver until the next restart (#407); a new install before then can't set the drivers up.
-        if (removeParts && parts.Drivers && ControllerSupportRemoval.DriverRemovalPending()
-            && ControllerSupportRemoval.RestartNoticeTime(elapsed.Elapsed, UninstallHookLimit) is { } noticeTime)
+        if (removeParts && parts.Drivers && ControllerSupportRemoval.DriverRemovalPending())
         {
-            AppLog.Write("Deinstallation: Windows entfernt die Treiber erst beim nächsten Neustart");
-            Inform(ControllerSupportRemoval.RestartNotice, (uint)noticeTime.TotalMilliseconds);
+            var noticeTime = ControllerSupportRemoval.RestartNoticeTime(elapsed.Elapsed, UninstallHookLimit);
+            // Not into a log folder the player just chose to delete: writing would create it again.
+            if (!removeData)
+            {
+                AppLog.Write(noticeTime is null
+                    ? "Deinstallation: Windows entfernt die Treiber erst beim Neustart; für den Hinweis blieb keine Zeit"
+                    : "Deinstallation: Windows entfernt die Treiber erst beim nächsten Neustart");
+            }
+
+            if (noticeTime is { } time)
+            {
+                Inform(ControllerSupportRemoval.RestartNotice, (uint)time.TotalMilliseconds);
+            }
         }
     }
 

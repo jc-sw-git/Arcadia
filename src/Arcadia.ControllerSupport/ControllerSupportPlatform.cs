@@ -165,7 +165,25 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     public bool FirmwareUpdateRuns =>
         OperatingSystem.IsWindows()
-        && (ControllerList.FirmwareTools.Any(tool => tool.ProcessNames.Any(ProcessWatch.IsRunning)) || ValveBootloaders.Present());
+        && (FirmwareToolRuns() || ValveBootloaders.Present());
+
+    /// <summary>One snapshot of the process list for all the tools' names, not one per name.</summary>
+    private static bool FirmwareToolRuns()
+    {
+        var processes = Process.GetProcesses();
+        try
+        {
+            var running = processes.Select(process => process.ProcessName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return ControllerList.FirmwareTools.Any(tool => tool.ProcessNames.Any(running.Contains));
+        }
+        finally
+        {
+            foreach (var process in processes)
+            {
+                process.Dispose();
+            }
+        }
+    }
 
     public bool SteamControllerPlugged => OperatingSystem.IsWindows() && Copy.WindowsPuck.Present() is not null;
 

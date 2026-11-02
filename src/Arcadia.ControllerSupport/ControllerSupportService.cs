@@ -262,11 +262,13 @@ public sealed class ControllerSupportService
 
             // Pan's HidHide states are asked only while the settings are open, so they go with them: "Bitte schließe
             // sie" must not stay in the header after the user closed HidHide's configuration (QE review of PR #264).
-            var issues = WatchSetup || !_driversChecked
+            var checkParts = WatchSetup || !_driversChecked;
+            var issues = checkParts
                 ? await CheckEmulationPartsAsync(cancellationToken)
                 : Issues.Where(issue => !EmulationParts.IsSettingsOnly(issue)).ToList();
             _driversChecked = true;
-            var installStateChanged = UpdateInstallState(issues);
+            // Process list, device list and HID enumeration: only when the parts are checked, not beside a game.
+            var installStateChanged = checkParts && UpdateInstallState(issues);
             if (!issues.SequenceEqual(Issues) || sisrChanged || installStateChanged)
             {
                 Issues = issues;

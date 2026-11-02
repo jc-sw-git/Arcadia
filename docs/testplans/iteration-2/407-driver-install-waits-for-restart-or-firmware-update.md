@@ -5,7 +5,9 @@ before then meets the half removed driver; an install also restarts the puck and
 firmware update off. "Treiber installieren" is now greyed out in both cases, with a row saying why; it asks "Treiber
 installieren?" before it runs; the uninstall ends with a message to restart the PC. Arcadia also recognises Sony's
 PlayStation Accessories app. Needed for the manual cases: Windows, this build's installer, HidHide installed through
-Arcadia, a Steam Controller with its puck, for T407-5 the PlayStation Accessories app and a DualSense.
+Arcadia, a Steam Controller with its puck, for T407-5 the PlayStation Accessories app and a DualSense. A Steam
+Controller or puck in its bootloader blocks the install the same way as T407-3; it has no manual case, because Steam
+flashes only when it offers an update, for about 20 s (covered by the acceptance test with a faked bootloader).
 
 Automated: `ControllerSupportRemovalTests` (the notice and how long it stays open), `EmulationSetupTests` (both
 blocking rows, the greyed-out button, a row's install during a firmware update, the question with and without a puck),
@@ -19,7 +21,7 @@ blocking rows, the greyed-out button, a row's install during a firmware update, 
       button does nothing. Restart the PC: the row is gone and "Treiber installieren" works. · E2E: yes
 - [ ] **T407-3** On a PC without Arcadia's drivers, open Xbox Zubehör (or PlayStation Accessories): "Treiber
       installieren" is greyed out, below it "Controller-Update wird durchgeführt" – "Treiber kann während eines
-      Firmware-Updates nicht installiert werden"; close the app: within a few seconds the button works again. · E2E: yes
+      Firmware-Updates nicht installiert werden"; close the app: within about ten seconds the button works again. · E2E: yes
 - [ ] **T407-4** [A] on "Treiber installieren": "Treiber installieren?" names usbip-win2, HidHide, VIIPER and Pan, the
       Windows prompt and the recommended restart; the sentence about the puck's restart shows only with a Steam
       Controller or puck plugged in; B closes it and nothing is installed. · E2E: yes

@@ -33,7 +33,7 @@ public sealed class EveryControllerForGamesTests
 
     private static async Task<ArcadiaDriver> StartInBackgroundAsync(FakeSteam? steam = null, bool copy = false, params PadDevice[] pads)
     {
-        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, steam ?? new FakeSteam());
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, steam ?? new FakeSteam());
         arcadia.SteamControllerCopy.CanCopy = copy;
         arcadia.SteamControllerCopy.PuckPresent = copy;
         foreach (var pad in pads)
@@ -174,7 +174,7 @@ public sealed class EveryControllerForGamesTests
     [Trait("TestCase", "T238-6")]
     public async Task After_Controller_freigeben_a_DualSense_is_still_taken_over()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam { IsSteamRunning = true });
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam { IsSteamRunning = true });
         arcadia.SteamControllerCopy.CanCopy = true;
         arcadia.SteamControllerCopy.PuckPresent = true;
         arcadia.Sdl.Plug(KnownPads.SteamController);
@@ -200,7 +200,7 @@ public sealed class EveryControllerForGamesTests
     [Trait("TestCase", "T238-7")]
     public async Task A_controller_Pan_cant_hide_reaches_games_directly_and_one_row_lists_it_with_why()
     {
-        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
         using var _ = arcadia;
         arcadia.Pan.ControllerHide = model => model.Vendor == 0x2DC8
             ? new ControllerHidingResult(true, PanReason.ControllerNeedsReplug)
@@ -235,7 +235,7 @@ public sealed class EveryControllerForGamesTests
     [Trait("TestCase", "T238-12")]
     public async Task While_Xbox_Accessories_runs_the_Xbox_pad_waits_and_a_warning_says_why_until_it_is_closed()
     {
-        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
         using var _ = arcadia;
         arcadia.Pan.ControllerHide = _ => new ControllerHidingResult(false, PanReason.FirmwareToolRuns);
         arcadia.Sdl.Plug(KnownPads.XboxSeries);

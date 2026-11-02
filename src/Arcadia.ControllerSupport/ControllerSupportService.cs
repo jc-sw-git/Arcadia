@@ -280,6 +280,16 @@ public sealed class ControllerSupportService
 
     public const string DriversBusyText = "Treiber werden installiert – bitte die Windows-Abfrage bestätigen …";
 
+    private async Task InstallDriversAndSwitchPanOnAsync(CancellationToken cancellationToken)
+    {
+        await InstallDriversAsync(cancellationToken);
+        // Pan is off on a fresh install (#402): whoever set up its parts wants it, so it runs without another click.
+        if (!Settings.PanEnabled)
+        {
+            UpdateSettings(settings => settings with { PanEnabled = true });
+        }
+    }
+
     /// <summary>
     /// What is missing of the controller emulation (#243): VIIPER (no prompt), then the usbip driver, HidHide and Pan in
     /// one Windows prompt, only if one of them is missing.
@@ -598,7 +608,7 @@ public sealed class ControllerSupportService
 
     private Task RunFixAsync(HealthFix fix, CancellationToken cancellationToken) => fix switch
     {
-        HealthFix.InstallDrivers => RunBusyAsync(DriversBusyText, InstallDriversAsync, cancellationToken),
+        HealthFix.InstallDrivers => RunBusyAsync(DriversBusyText, InstallDriversAndSwitchPanOnAsync, cancellationToken),
         HealthFix.ReinstallHidHide => RunBusyAsync(DriversBusyText, async token =>
         {
             // Pan runs HidHide's installer before it replaces itself: a filter reinstall while the puck is hidden or held

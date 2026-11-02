@@ -2,27 +2,31 @@ using System.Security.Cryptography;
 
 namespace Arcadia.ControllerSupport;
 
-/// <summary>The <c>viiper.exe</c> next to Arcadia: there, the pinned build, and fetched again when it went missing.</summary>
+/// <summary>The <c>viiper.exe</c> in Arcadia's data folder: there, the pinned build, and fetched again when it went missing.</summary>
 public interface IViiperInstallation
 {
     /// <summary>The pinned build is there; another <c>viiper.exe</c> counts as missing, so "Installieren" replaces it.</summary>
     bool IsInstalled { get; }
 
     /// <summary>
-    /// Downloads the pinned build next to Arcadia and checks its SHA-256 (<see cref="VerifiedDownload"/>); no
-    /// administrator rights, as Arcadia's folder is the user's own. Throws when nothing is pinned or the check fails.
+    /// Downloads the pinned build into Arcadia's data folder and checks its SHA-256 (<see cref="VerifiedDownload"/>); no
+    /// administrator rights, as the folder is the user's own. Throws when nothing is pinned or the check fails.
     /// </summary>
     Task InstallAsync(HttpClient http, CancellationToken cancellationToken);
 }
 
-/// <param name="executable">Where <c>viiper.exe</c> lives: next to Arcadia.exe (<see cref="NextToArcadia"/>).</param>
+/// <param name="executable">Where <c>viiper.exe</c> lives: in Arcadia's data folder (<see cref="InDataFolder"/>).</param>
 public sealed class ViiperInstallation(string executable, ReleaseAsset pinned) : IViiperInstallation
 {
     private readonly Lock _hashLock = new();
     private (long Length, DateTime WrittenUtc, bool Pinned)? _lastHash;
 
-    public static ViiperInstallation NextToArcadia() =>
-        new(Path.Combine(AppContext.BaseDirectory, ViiperRelease.ExecutableName), ViiperRelease.Asset);
+    /// <summary>
+    /// <c>%APPDATA%\Arcadia\viiper\viiper.exe</c>, not next to Arcadia.exe: an update replaces Arcadia's program folder,
+    /// and the download must survive it.
+    /// </summary>
+    public static ViiperInstallation InDataFolder(string dataFolder) =>
+        new(Path.Combine(dataFolder, "viiper", ViiperRelease.ExecutableName), ViiperRelease.Asset);
 
     public string Executable => executable;
 
@@ -75,6 +79,7 @@ public sealed class ViiperInstallation(string executable, ReleaseAsset pinned) :
         }
 
         // Downloaded beside it and moved only once checked, so a viiper.exe that failed the check never sits where it runs.
+        Directory.CreateDirectory(Path.GetDirectoryName(executable)!);
         var download = executable + ".download";
         await VerifiedDownload.DownloadAsync(http, pinned, download, cancellationToken);
         MoveRunningAside();

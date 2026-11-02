@@ -269,8 +269,7 @@ public sealed class SisrRemovalTests
         var steam = new FakeSteam();
         steam.Sisr.WithSisr();
         steam.Sisr.System.RunSisr(steam.Sisr.SisrExe);
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: new AppSettings
-        {
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: new AppSettings { PanEnabled = true,
             ActiveLaunchers = [.. ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id)],
             KeepSisr = true,
         });

@@ -23,7 +23,7 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
   Eingaben weiter" / "meldet Ruhe". The combo filter keeps running, so a combo begun in Arcadia stays Arcadia's.
 - `TickAsync` (every 2 s, `App`) plugs the pad in while a Steam Controller is connected and `Wanted` holds, and out
   otherwise: a game never sees an idle extra pad. `Wanted` comes from `SteamControllerRouting` (below).
-- `ViiperXboxPads` runs Arcadia's own `viiper.exe` (the pinned fork build next to Arcadia.exe,
+- `ViiperXboxPads` runs Arcadia's own `viiper.exe` (the pinned fork build in `%APPDATA%\Arcadia\viiper`,
   [steam-controller-copy-windows.md](steam-controller-copy-windows.md)) as its own process, bound to the loopback with
   its own key (#304; a VIIPER another program runs is never used), log `viiper.log` beside `arcadia.log`, and drives it
   with VIIPER's MIT client `Viiper.Client`: one bus, one `xbox360` device per plug, each bus id used once per run

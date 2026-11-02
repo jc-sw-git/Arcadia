@@ -21,7 +21,7 @@ public sealed class SteamDesktopLayoutTests
     [Trait("TestCase", "T315-1")]
     public async Task The_row_is_on_Steams_page_in_its_own_group_also_while_Steam_is_inactive_and_switches_with_the_controller_alone()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["gog"] });
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["gog"] });
         var launchers = arcadia.OpenLauncherSettings();
         arcadia.FocusRow("steam");
         arcadia.Press(UiAction.Accept);
@@ -54,7 +54,7 @@ public sealed class SteamDesktopLayoutTests
     [Trait("TestCase", "T315-1")]
     public async Task The_row_is_on_no_other_launchers_page_and_gone_from_the_controller_settings()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] });
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] });
         var launchers = arcadia.OpenLauncherSettings();
         arcadia.FocusRow("gog");
         arcadia.Press(UiAction.Accept);
@@ -70,7 +70,7 @@ public sealed class SteamDesktopLayoutTests
     [Trait("TestCase", "T315-1")]
     public async Task The_info_panel_names_the_buttons_as_glyphs_and_sets_the_Steam_Controllers_doubled_input_apart_in_bold()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam"] });
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam"] });
         var row = new SteamDesktopLayoutRowViewModel(new SettingsChanges(arcadia.Settings));
 
         var texts = row.Info.OfType<InfoText>().Select(block => block.Text).ToList();
@@ -119,7 +119,7 @@ public sealed class SteamDesktopLayoutTests
     [Trait("TestCase", "T315-4")]
     public async Task A_game_on_Arcadia_keeps_the_pad_whatever_the_setting_and_its_changes_are_logged()
     {
-        using var arcadia = await StartWithSteamControllerAsync(new AppSettings { ActiveLaunchers = ["steam", "gog"], IgnoreSteamDesktopLayout = false });
+        using var arcadia = await StartWithSteamControllerAsync(new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"], IgnoreSteamDesktopLayout = false });
         arcadia.Press(UiAction.NextTab);
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "GOG soll das Spiel starten");
@@ -169,7 +169,7 @@ public sealed class SteamDesktopLayoutTests
     [Trait("TestCase", "T315-4")]
     public async Task Switched_while_a_game_on_Arcadia_runs_the_game_keeps_the_pad_and_only_Arcadia_in_front_follows_the_setting()
     {
-        using var arcadia = await StartWithSteamControllerAsync(new AppSettings { ActiveLaunchers = ["steam", "gog"], IgnoreSteamDesktopLayout = false });
+        using var arcadia = await StartWithSteamControllerAsync(new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"], IgnoreSteamDesktopLayout = false });
         arcadia.Press(UiAction.NextTab);
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count == 1, "GOG soll das Spiel starten");
@@ -214,7 +214,7 @@ public sealed class SteamDesktopLayoutTests
     [Trait("TestCase", "T315-7")]
     public async Task With_Steam_installed_the_controller_settings_end_with_a_row_that_opens_Steams_page_on_Steam_Controller()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["gog"] });
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["gog"] });
         arcadia.OpenLauncherSettings();
         arcadia.Press(UiAction.NextTab);
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
@@ -240,7 +240,7 @@ public sealed class SteamDesktopLayoutTests
     [Trait("TestCase", "T315-7")]
     public async Task Without_Steam_installed_the_controller_settings_have_no_group_Steam()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync([new(KnownLaunchers.Gog, 3)], new AppSettings { ActiveLaunchers = ["gog"] });
+        using var arcadia = await ArcadiaDriver.StartAsync([new(KnownLaunchers.Gog, 3)], new AppSettings { PanEnabled = true, ActiveLaunchers = ["gog"] });
         arcadia.OpenLauncherSettings();
         arcadia.Press(UiAction.NextTab);
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
@@ -250,7 +250,7 @@ public sealed class SteamDesktopLayoutTests
 
     private static async Task<ArcadiaDriver> StartWithSteamControllerAsync(AppSettings? settings = null)
     {
-        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, settings ?? new AppSettings { ActiveLaunchers = ["steam", "gog"] });
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, settings ?? new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] });
         arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.StartControllers();
         await arcadia.TickSteamControllerAsync();

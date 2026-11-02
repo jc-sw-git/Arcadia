@@ -259,6 +259,26 @@ public class ControllerSupportTests
     }
 
     [Fact]
+    public void Pan_is_off_for_new_settings_and_a_saved_choice_is_kept()
+    {
+        Assert.False(new AppSettings().PanEnabled);
+
+        var path = Path.Combine(Path.GetTempPath(), "arcadia-settings-" + Guid.NewGuid() + ".json");
+        try
+        {
+            var store = new SettingsStore(path);
+            store.Save(new AppSettings { PanEnabled = true });
+            Assert.True(new SettingsStore(path).Load().PanEnabled);
+            store.Save(new AppSettings { PanEnabled = false });
+            Assert.False(new SettingsStore(path).Load().PanEnabled);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void Unparsable_settings_yield_defaults_and_are_kept_aside()
     {
         var path = Path.Combine(Path.GetTempPath(), "arcadia-settings-" + Guid.NewGuid() + ".json");
@@ -268,7 +288,7 @@ public class ControllerSupportTests
 
             var loaded = new SettingsStore(path).Load();
 
-            Assert.True(loaded.PanEnabled);
+            Assert.False(loaded.PanEnabled);
             Assert.Equal("{ \"PanEnabled\": fals", File.ReadAllText(path + ".broken"));
         }
         finally

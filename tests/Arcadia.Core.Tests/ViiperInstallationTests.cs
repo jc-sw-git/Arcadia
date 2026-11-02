@@ -62,6 +62,23 @@ public sealed class ViiperInstallationTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T402-3")]
+    public async Task Installieren_creates_the_viiper_folder_in_the_data_folder_on_a_fresh_install()
+    {
+        var installation = ViiperInstallation.InDataFolder(Path.Combine(_directory, "data"));
+        Assert.Equal(Path.Combine(_directory, "data", "viiper", ViiperRelease.ExecutableName), installation.Executable);
+        Assert.False(installation.IsInstalled);
+
+        // The pinned build of the real release isn't downloaded in a test: the folder is the point here.
+        using var http = new HttpClient(new Handler(Build));
+        var own = new ViiperInstallation(installation.Executable, Pinned(Build));
+        await own.InstallAsync(http, CancellationToken.None);
+
+        Assert.True(own.IsInstalled);
+        Assert.True(File.Exists(installation.Executable));
+    }
+
+    [Fact]
     [Trait("TestCase", "T242-27")]
     public async Task Installieren_replaces_a_viiper_exe_that_is_not_the_pinned_build()
     {

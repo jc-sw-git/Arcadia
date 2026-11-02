@@ -95,7 +95,7 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
       shows "HidHide antwortet unerwartet" / "HidHide 1.5.230 neu installieren hilft" with "Neu installieren"; it asks
       Windows once, runs HidHide's installer over the installed one, keeps HidHide's lists and the row goes.
       · E2E: yes (`EmulationSetupTests`; the real reinstall by hand)
-- [ ] **T242-27** `viiper.exe` deleted next to Arcadia.exe (as a virus scanner would): "VIIPER fehlt" with
+- [ ] **T242-27** `viiper.exe` deleted from `%APPDATA%\Arcadia\viiper` (as a virus scanner would): "VIIPER fehlt" with
       "Installieren"; it downloads the pinned build without a Windows prompt, checks its SHA-256 and the copy works
       again. A `viiper.exe` that isn't the pinned one: no copy, Pan hides nothing. · E2E: yes (Core: install, the
       wrong file and the hash check; the real download by hand)

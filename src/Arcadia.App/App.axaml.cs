@@ -95,7 +95,7 @@ public partial class App : Application
             var firstRun = new FirstRunSetup(settings, demo, forced: args.Contains(FirstRunArgument, StringComparer.OrdinalIgnoreCase));
 
             // SISR is replaced by Arcadia's own Xbox pad (#213); Arcadia never starts it and removes it only on request (#214).
-            var ownViiper = ViiperRelease.IsPinned ? ViiperInstallation.NextToArcadia() : null;
+            var ownViiper = ViiperRelease.IsPinned ? ViiperInstallation.InDataFolder(Core.Diagnostics.LogLocation.DataFolder) : null;
             var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
             // Builds the view model before the window: an installed Pan that isn't this Arcadia's shows its update page
             // instead of the library (#297).

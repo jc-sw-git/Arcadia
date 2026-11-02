@@ -8,7 +8,8 @@
   "overwrite" or repair. Arcadia's own files (settings, logos, Epic play times, logs) are all in `%APPDATA%\Arcadia`.
   The `Velopack` package and the `vpk` tool (`.config/dotnet-tools.json`) share one version.
 - `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`.
-- Pan installs itself to `%ProgramFiles%\Arcadia\Pan` with one UAC prompt; an installed Pan that isn't exactly the
+- Pan installs itself to `%ProgramFiles%\Arcadia\Pan` with one UAC prompt; VIIPER is not in the installer, "Treiber installieren"
+  downloads it to `%APPDATA%\Arcadia\viiper` (an update replaces `current`, so nothing the player installs may live there); an installed Pan that isn't exactly the
   bundled one is updated at start once the player confirms; declined, Pan is switched off
   (`docs/controller-support/pan-update.md`). `Pan.exe --restore`
   (settings: "Controller wiederherstellen") gives the controllers back if the service itself hangs; if Pan can't give

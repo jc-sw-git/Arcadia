@@ -28,7 +28,7 @@ public sealed class PanEmulationTests
     /// <param name="copy">This build has the copy for Steam, so Pan hides the puck (#242 parts B and C).</param>
     private static async Task<ArcadiaDriver> StartAsync(bool copy = false, FakeSteam? steam = null)
     {
-        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, steam ?? new FakeSteam());
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, steam ?? new FakeSteam());
         arcadia.SteamControllerCopy.CanCopy = copy;
         arcadia.SteamControllerCopy.PuckPresent = copy;
         arcadia.Sdl.Plug(KnownPads.SteamController);
@@ -120,7 +120,7 @@ public sealed class PanEmulationTests
         // can pick it up by accident.
         using var arcadia = await ArcadiaDriver.StartAsync(
             [new(KnownLaunchers.Steam, 3, IsDemo: true), new(KnownLaunchers.Gog, 3)],
-            new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+            new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
         arcadia.SteamControllerCopy.CanCopy = true;
         arcadia.SteamControllerCopy.PuckPresent = true;
         arcadia.Sdl.Plug(KnownPads.SteamController);
@@ -201,7 +201,7 @@ public sealed class PanEmulationTests
     [Trait("TestCase", "T308-2")]
     public async Task With_only_the_puck_Pan_hides_it_once_and_the_rows_stay_quiet_for_ten_minutes()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
         arcadia.SteamControllerCopy.CanCopy = true;
         arcadia.SteamControllerCopy.PuckPresent = true;
         arcadia.StartControllers();
@@ -235,7 +235,7 @@ public sealed class PanEmulationTests
     [Trait("TestCase", "T308-2")]
     public async Task With_only_the_puck_held_open_by_SDL_Pan_still_hides_it_and_nothing_warns_for_ten_minutes()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
         arcadia.SteamControllerCopy.CanCopy = true;
         arcadia.SteamControllerCopy.PuckPresent = true;
         arcadia.Pan.PuckRestart = () => arcadia.Sdl.HoldsPuck ? PanReason.HidingFailed : PanReason.None;
@@ -269,7 +269,7 @@ public sealed class PanEmulationTests
     [Trait("TestCase", "T308-3")]
     public async Task A_hide_that_keeps_failing_keeps_its_warning_row_through_every_retry()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
         arcadia.SteamControllerCopy.CanCopy = true;
         arcadia.SteamControllerCopy.PuckPresent = true;
         arcadia.Pan.HideResult = PanReason.HidingFailed;
@@ -354,7 +354,7 @@ public sealed class PanEmulationTests
     /// <summary>Only the puck, and every hide fails: the row "Steam Controller lässt sich nicht verstecken" is up.</summary>
     private static async Task<ArcadiaDriver> HideFailsAsync()
     {
-        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
         arcadia.SteamControllerCopy.CanCopy = true;
         arcadia.SteamControllerCopy.PuckPresent = true;
         arcadia.Pan.HideResult = PanReason.HidingFailed;
@@ -594,7 +594,7 @@ public sealed class PanEmulationTests
     [Trait("TestCase", "T396-1")]
     public async Task Controllers_Arcadia_no_longer_sees_after_the_hide_are_shown_again_with_a_warning_that_restarts_Arcadia()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
         arcadia.SteamControllerCopy.CanCopy = true;
         arcadia.SteamControllerCopy.PuckPresent = true;
         arcadia.Pan.HideWait = _ =>

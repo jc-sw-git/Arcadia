@@ -72,6 +72,7 @@ its file.
 | [373-decouple-steam-from-core-and-app.md](373-decouple-steam-from-core-and-app.md) | #373 | Decouple Steam from Core, ControllerSupport and App; validate launcher ids | 0 (refactoring) |
 | [374-split-controllersupportservice.md](374-split-controllersupportservice.md) | #374 | Split ControllerSupportService (SISR removal out) and share the composition root with the tests | 0 (refactoring) |
 | [396-pan-hides-controllers-arcadia-cant-see.md](396-pan-hides-controllers-arcadia-cant-see.md) | #396 | Pan hides controllers Arcadia itself can no longer see | 3 |
+| [402-pan-off-by-default.md](402-pan-off-by-default.md) | #402 | Pan off by default; "Treiber installieren" also on a fresh install | 5 |
 | [403-spiele-sehen-lists-the-steam-controller.md](403-spiele-sehen-lists-the-steam-controller.md) | #403 | "Spiele sehen" sometimes leaves out the connected Steam Controller | 2 |
 
 ## Exploratory test
@@ -113,4 +114,5 @@ Charter: –. Time box: –. Findings: –.
 | T366-1 | `tests/Arcadia.App.Tests/SteamControllerXboxPadTests.cs`, `tests/Arcadia.Core.Tests/ControllerSupportServiceTests.cs` |
 | T369-1 to T369-3 | `tests/Arcadia.App.Tests/ScanFailureTests.cs` |
 | T396-1 to T396-3 (fakes) | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `EmulationSetupTests.cs`, `tests/Arcadia.Core.Tests/PanEmulationTests.cs`, `TakenOverControllersTests.cs` |
+| T402-1, T402-2, T402-3 (VIIPER folder) | `tests/Arcadia.App.Tests/EmulationSetupTests.cs`, `tests/Arcadia.Core.Tests/ViiperInstallationTests.cs`, `tests/Arcadia.Core.Tests/ControllerSupportTests.cs` (default and saved choice) |
 | T403-1 (fakes) | `tests/Arcadia.App.Tests/EveryControllerForGamesTests.cs`, `tests/Arcadia.Core.Tests/SteamControllerSightingTests.cs` |

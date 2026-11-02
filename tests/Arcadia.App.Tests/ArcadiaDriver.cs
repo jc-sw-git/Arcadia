@@ -328,6 +328,7 @@ internal sealed class ArcadiaDriver : IDisposable
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
         new SettingsStore(Path.Combine(folder, "settings.json")).Save(settings ?? new AppSettings
         {
+            PanEnabled = true, // most tests are about Pan's flows; the default (off) has its own tests (#402)
             ActiveLaunchers = launchers.Select(spec => spec.Launcher.Id).ToList(),
         });
         var time = new FakeTimeProvider(Now);
@@ -346,6 +347,7 @@ internal sealed class ArcadiaDriver : IDisposable
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
         new SettingsStore(Path.Combine(folder, "settings.json")).Save(settings ?? new AppSettings
         {
+            PanEnabled = true,
             ActiveLaunchers = new[] { (KnownLaunchers.Steam.Id, files.Folders.SteamRoot), (KnownLaunchers.Epic.Id, files.Folders.Epic.Data) }
                 .Where(launcher => Directory.Exists(launcher.Item2))
                 .Select(launcher => launcher.Item1)

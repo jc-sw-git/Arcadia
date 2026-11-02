@@ -1,0 +1,30 @@
+name: Label PR for changelog
+
+# Release notes list only PRs that change something for the player (docs/releases.md). Branch prefix decides the
+# default: doc/, ci/, test/ and td/ PRs get `no-changelog`; feat/ and fix/ PRs stay in. Runs only when the PR is
+# opened, so an author who removes the label from a td/ PR (a player notices it) is not overruled.
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # Passed via env, never interpolated into the script: the branch name is user input.
+      BRANCH: ${{ github.event.pull_request.head.ref }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Label doc, ci, test and td PRs
+        run: |
+          case "$BRANCH" in
+            doc/*|ci/*|test/*|td/*)
+              gh label create no-changelog --repo "$GITHUB_REPOSITORY" --color ededed \
+                --description "Left out of the release notes" 2>/dev/null || true
+              gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label no-changelog ;;
+          esac

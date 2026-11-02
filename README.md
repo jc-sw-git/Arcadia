@@ -78,7 +78,7 @@ Mouse: a click selects a game, a double click starts it. On the detail page the 
 
 Steam passes the Steam Controller on to programs it didn't start itself only as mouse and
 keyboard, and many games know only some controllers. Arcadia therefore reads every controller itself
-and gives games emulated pads, with the setting "Controller-Wächter (Pan)" (on by default):
+and gives games emulated pads, with the setting "Controller-Wächter (Pan)" (off by default; "Treiber installieren" sets it up and switches it on):
 
 - The Steam Controller becomes an Xbox controller in every game of every launcher; per game (or per launcher) the
   mode "Arcadia" / "Steam-Eingabe" decides whether Arcadia's pad or Steam Input serves it. Steam gets a 1:1 copy of

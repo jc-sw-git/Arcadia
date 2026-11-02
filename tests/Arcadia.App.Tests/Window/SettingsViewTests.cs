@@ -386,7 +386,7 @@ public sealed class SettingsViewTests
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(
             [new LauncherSpec(KnownLaunchers.Steam, 3), new LauncherSpec(KnownLaunchers.Gog, 3)],
-            new AppSettings { ActiveLaunchers = ["steam", "gog"] });
+            new AppSettings { ActiveLaunchers = ["steam", "gog"], PanEnabled = true });
         arcadia.Arcadia.Sdl.Plug(Arcadia.Tests.Sdl.KnownPads.SteamController);
         arcadia.Arcadia.StartControllers();
         Assert.True(arcadia.Arcadia.Main.ShowControllerSupport, "der Steam Controller ist erkannt");

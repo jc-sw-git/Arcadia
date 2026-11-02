@@ -15,8 +15,7 @@ public sealed class SettingsRowTests
     public async Task The_footer_names_only_the_buttons_of_the_focused_row()
     {
         var steam = new FakeSteam { IsSteamRunning = true, IsPanReady = false };
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: new AppSettings
-        {
+        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, settings: new AppSettings { PanEnabled = true,
             ActiveLaunchers = [.. ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id)],
         });
         await arcadia.TickControllerSupportAsync();

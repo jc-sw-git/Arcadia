@@ -1,6 +1,7 @@
 using Arcadia.App.Input;
 using Arcadia.App.Settings;
 using Arcadia.ControllerSupport;
+using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Arcadia.Pan;
 using Arcadia.Tests.Sdl;
@@ -218,6 +219,40 @@ public sealed class EmulationSetupTests
         var pan = Switch(controller);
         Assert.False(pan.HasProblem);
         Assert.Equal(ProblemText, pan.Subtitle);
+    }
+
+    /// <summary>#402: a fresh install has none of Pan's parts, Pan is off, and the one thing shown is the install button.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T402-1")]
+    public async Task A_fresh_install_has_Pan_off_no_warnings_and_the_button_to_install_every_part()
+    {
+        var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideVersion = null };
+        steam.Viiper.IsInstalled = false;
+        var fresh = new AppSettings { ActiveLaunchers = ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id).ToList() };
+        using var arcadia = await ArcadiaDriver.StartAsync(settings: fresh, steam: steam);
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+
+        Assert.False(arcadia.Settings.Current.PanEnabled);
+        await arcadia.WaitUntilAsync(() => Switch(controller).IsInstall, "„Treiber installieren“ an der Einstellung");
+        Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:", StringComparison.Ordinal));
+        Assert.False(arcadia.Main.Status.HasControllerStatus);
+        Assert.Null(controller.Marker);
+    }
+
+    /// <summary>#402: with Pan off and only some parts missing, nothing warns (the warnings belong to Pan being on).</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T402-2")]
+    public async Task With_Pan_off_a_missing_part_shows_no_warning_row_and_no_triangle()
+    {
+        var steam = new FakeSteam { HidHideVersion = null };
+        var off = new AppSettings { ActiveLaunchers = ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id).ToList() };
+        using var arcadia = await ArcadiaDriver.StartAsync(settings: off, steam: steam);
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+
+        Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:", StringComparison.Ordinal));
+        Assert.False(arcadia.Main.Status.HasControllerStatus);
     }
 
     [AvaloniaFact]

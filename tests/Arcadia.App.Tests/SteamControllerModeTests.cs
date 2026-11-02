@@ -22,7 +22,7 @@ public sealed class SteamControllerModeTests
 
     private static async Task<ArcadiaDriver> StartWithSteamControllerAsync(AppSettings? settings = null)
     {
-        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, settings ?? new AppSettings { ActiveLaunchers = ["steam", "gog"] });
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, settings ?? new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] });
         arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.StartControllers();
         await arcadia.TickSteamControllerAsync();
@@ -208,7 +208,7 @@ public sealed class SteamControllerModeTests
     public async Task A_Steam_game_started_directly_in_Steam_takes_the_pad_away_unless_it_is_on_Arcadia()
     {
         var dota = TestGames.Installed(KnownLaunchers.Steam, "Dota 2", ArcadiaDriver.Now.AddDays(-3)) with { Id = "570" };
-        using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Steam, dota)], new AppSettings { ActiveLaunchers = ["steam"] });
+        using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Steam, dota)], new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam"] });
         arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.StartControllers();
         await arcadia.TickSteamControllerAsync();
@@ -242,7 +242,7 @@ public sealed class SteamControllerModeTests
     [Trait("TestCase", "T242-10")]
     public async Task Without_the_driver_the_mode_is_greyed_out_at_Steam_Eingabe_and_leads_to_why()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
+        using var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam());
         arcadia.XboxPads.Missing = "Treiber usbip nicht geladen";
         arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.StartControllers();

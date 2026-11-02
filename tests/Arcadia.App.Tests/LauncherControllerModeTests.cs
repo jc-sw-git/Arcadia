@@ -21,7 +21,7 @@ public sealed class LauncherControllerModeTests
 
     private static readonly LauncherSpec[] SteamAndGog = [new(KnownLaunchers.Steam, 3), new(KnownLaunchers.Gog, 3)];
 
-    private static AppSettings Active(params string[] launchers) => new() { ActiveLaunchers = launchers };
+    private static AppSettings Active(params string[] launchers) => new() { ActiveLaunchers = launchers, PanEnabled = true };
 
     private static async Task<ArcadiaDriver> StartWithSteamControllerAsync(AppSettings? settings = null, IReadOnlyList<LauncherSpec>? launchers = null)
     {

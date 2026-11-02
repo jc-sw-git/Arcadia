@@ -90,6 +90,7 @@ internal sealed class ArcadiaWindow : IDisposable
     {
         ActiveLaunchers = (launchers ?? ArcadiaDriver.DefaultLaunchers).Select(spec => spec.Launcher.Id).ToList(),
         PreferredPageSize = pageSize,
+        PanEnabled = true,
     };
 
     /// <summary>Lets queued UI work and layout finish; transitions have only begun.</summary>

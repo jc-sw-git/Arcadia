@@ -22,7 +22,7 @@ public static class EmulationParts
     ];
 
     public static HealthIssue ViiperMissing { get; } = new("viiper-missing", HealthSeverity.Warning, "VIIPER fehlt",
-        "VIIPER leitet die Signale der emulierten Controller an Spiele und Programme weiter. Es kommt mit Arcadia; fehlt es trotzdem (zum Beispiel weil ein Virenscanner es entfernt hat), lädt „Installieren“ die geprüfte Version neu herunter, ohne Administratorrechte.",
+        "VIIPER leitet die Signale der emulierten Controller an Spiele und Programme weiter. „Installieren“ lädt die geprüfte Version herunter, ohne Administratorrechte.",
         HealthFix.InstallDrivers, "Installieren", Summary: "Leitet die Signale der Controller an Spiele und Programme weiter");
 
     /// <summary>

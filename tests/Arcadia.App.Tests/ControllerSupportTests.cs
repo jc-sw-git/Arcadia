@@ -90,5 +90,6 @@ public sealed class ControllerSupportTests
     private static AppSettings Launchers(params LauncherInfo[] launchers) => new()
     {
         ActiveLaunchers = [.. launchers.Select(launcher => launcher.Id)],
+        PanEnabled = true,
     };
 }

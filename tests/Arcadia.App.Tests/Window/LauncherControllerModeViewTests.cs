@@ -20,7 +20,7 @@ public sealed class LauncherControllerModeViewTests
     [Trait("TestCase", "T178-10")]
     public async Task With_the_mouse_alone_the_arrows_switch_the_default_and_the_question_takes_clicks()
     {
-        var settings = new AppSettings { ActiveLaunchers = ["steam", "gog"] }.WithControllerModeChoice("steam:demo-0", true);
+        var settings = new AppSettings { ActiveLaunchers = ["steam", "gog"], PanEnabled = true }.WithControllerModeChoice("steam:demo-0", true);
         using var arcadia = await ArcadiaWindow.ShowAsync([new LauncherSpec(KnownLaunchers.Steam, 3), new LauncherSpec(KnownLaunchers.Gog, 3)], settings);
         arcadia.Press(UiAction.Settings);
         arcadia.Click(arcadia.LauncherName(arcadia.LauncherRow("steam")));

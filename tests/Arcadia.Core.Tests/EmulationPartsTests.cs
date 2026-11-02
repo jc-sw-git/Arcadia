@@ -79,10 +79,10 @@ public sealed class EmulationPartsTests
 
     [Fact]
     [Trait("TestCase", "T242-27")]
-    public void Missing_VIIPER_says_it_comes_with_Arcadia_and_installs_without_admin_rights()
+    public void Missing_VIIPER_installs_without_admin_rights()
     {
         Assert.Equal("Leitet die Signale der Controller an Spiele und Programme weiter", EmulationParts.ViiperMissing.ShortText);
-        Assert.Contains("Es kommt mit Arcadia", EmulationParts.ViiperMissing.Detail);
+        Assert.Contains("ohne Administratorrechte", EmulationParts.ViiperMissing.Detail);
         Assert.DoesNotContain("SISR", EmulationParts.ViiperMissing.Detail);
         Assert.Equal(HealthFix.InstallDrivers, EmulationParts.ViiperMissing.Fix);
     }

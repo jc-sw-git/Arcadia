@@ -1002,7 +1002,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
     {
         using var pc = new FakeSisrPc().WithSisr();
         pc.System.RunSisr(pc.SisrExe);
-        var service = Create(sisr: pc.Installation(), settings: new AppSettings { KeepSisr = true });
+        var service = Create(sisr: pc.Installation(), settings: new AppSettings { KeepSisr = true, PanEnabled = true });
         service.WatchSetup = true;
 
         await service.TickAsync();

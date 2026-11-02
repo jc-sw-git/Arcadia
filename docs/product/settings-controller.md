@@ -8,7 +8,7 @@ The page and its status messages: [settings.md](settings.md).
   `docs/product/launchers.md`). While Steam is installed, the last group "STEAM" has "Controller-Einstellungen für
   Steam" ("Weitere Controller-Einstellungen für Steam.", button "Steam-Einstellungen"): it opens Steam's launcher
   page with "Steam Controller" focused; [B] there goes back to the launcher list.
-- "Controller-Wächter (Pan)" is a switch (`AppSettings.PanEnabled`, on by default; off: nothing is emulated or hidden,
+- "Controller-Wächter (Pan)" is a switch (`AppSettings.PanEnabled`, off by default: a fresh install has none of Pan's parts, and a saved `settings.json` keeps its value; off: nothing is emulated or hidden,
   no mode, no warning rows, even with a part missing). Its subtitle and lamp say the state: "An – deine Controller
   werden von Arcadia verwaltet" (green), "Wird eingerichtet …", "Bereit – kein Controller verbunden" (grey),
   "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter." (yellow), "Angehalten – der Grund steht darunter"

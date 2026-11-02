@@ -34,7 +34,7 @@ public sealed class ControllerLayoutsViewTests
     {
         var arcadia = await ArcadiaWindow.ShowAsync(
             [new LauncherSpec(KnownLaunchers.Steam, 3), new LauncherSpec(KnownLaunchers.Gog, 3)],
-            new AppSettings { ActiveLaunchers = ["steam", "gog"] }, steam: new FakeSteam());
+            new AppSettings { ActiveLaunchers = ["steam", "gog"], PanEnabled = true }, steam: new FakeSteam());
         foreach (var pad in pads)
         {
             arcadia.Arcadia.Sdl.Plug(pad);

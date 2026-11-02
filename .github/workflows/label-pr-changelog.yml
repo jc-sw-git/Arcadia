@@ -1,8 +1,8 @@
 name: Label PR for changelog
 
 # Release notes list only PRs that change something for the player (docs/releases.md). Branch prefix decides the
-# default: doc/, ci/ and test/ PRs get `no-changelog`; feat/, fix/ and td/ PRs stay in. A td/ PR can be a pure
-# refactoring or a protection the player benefits from, so its author decides and sets the label by hand.
+# default: doc/, ci/ and test/ PRs get `no-changelog`; feat/, fix/ and td/ PRs stay in: refactorings and tech debt change
+# the product too, which matters to plugin authors and contributors.
 on:
   pull_request_target:
     types: [opened]

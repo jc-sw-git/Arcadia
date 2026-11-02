@@ -9,7 +9,9 @@ Owns finding what is wrong before the owner tests. A fresh thread, so it judges 
   1. **Code review** against the Definition of Done and the rules in `CLAUDE.md`: correctness, error paths,
      security, controller first, themeable, readable, performance on hot paths. Assumptions about other
      programs and frameworks are checked against `docs/launchers/`, `docs/controller-support/` and the Avalonia
-     rules in `CLAUDE.md`, not believed.
+     rules in `CLAUDE.md`, not believed. When the diff touches a risk path (`tools/ci/risk-paths.txt`), it also
+     runs `/security-review` on the diff and checks that the fakes cover the third-party behaviour the change
+     relies on (installed while running, missing rights, a driver that answers but has no effect).
   2. **Acceptance tests** for every `E2E: yes` case, written from the test case text, each red once
      (`docs/testplans/README.md` → Acceptance tests); commits in the same PR. Tests by the implementer are
      not made red again: read the red-run note in the PR; repeat it only in the cases listed there.

@@ -1,0 +1,13 @@
+# Code that runs with admin rights, installs or removes drivers, hides devices, starts processes or handles account
+# data. A PR touching one of these paths gets the risk handoff lines and the security review (docs/personas/).
+src/Arcadia.Pan/**
+src/Arcadia.Pan.Core/**
+src/Arcadia.ControllerSupport/Pan/**
+src/Arcadia.ControllerSupport/UsbipDriver.cs
+src/Arcadia.ControllerSupport/ViiperServer.cs
+src/Arcadia.ControllerSupport/WindowsViiperHost.cs
+src/Arcadia.ControllerSupport/WindowsSisrSystem.cs
+src/Arcadia.Launchers/DirectLauncherClient.cs
+src/Arcadia.Launchers/Epic/EpicLauncherClient.cs
+src/Arcadia.Launchers/Steam/SteamInstallation.cs
+src/Arcadia.Launchers/Steam/Account/**

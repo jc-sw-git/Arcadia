@@ -1,0 +1,12 @@
+name: Code sizes
+
+on:
+  pull_request:
+
+jobs:
+  code-sizes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source files stay within their size limits
+        run: tools/ci/check-code-sizes.sh

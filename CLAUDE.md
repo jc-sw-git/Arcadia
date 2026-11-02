@@ -57,11 +57,15 @@ milestone again; this list keeps it small.
   Network and process waits have a timeout.
 - **Secure:** no user- or file-supplied string goes unchecked into a process start, path or URI;
   downloads are verified; no secrets or personal data in logs; admin rights only where unavoidable;
-  test data and docs use made-up ids, names and paths, never the owner's.
+  test data and docs use made-up ids, names and paths, never the owner's. A PR touching a risk path
+  (`tools/ci/risk-paths.txt`: admin rights, drivers, device hiding, process starts, accounts) gets the risk lines
+  in its **Handoff** and a security review (`docs/personas/`).
 - **Controller first:** every new flow works with a gamepad alone (no mouse/keyboard), B goes back.
   Anything that can't (e.g. UAC) is named in the PR.
 - **Readable:** names say what things are; methods do one thing; comments explain *why*, not *what*.
-  A developer new to the code understands the change from the diff and `CLAUDE.md`.
+  A developer new to the code understands the change from the diff and `CLAUDE.md`. A `.cs` file in `src/` stays
+  at or below 600 lines; files above keep a ceiling in `tools/ci/code-size-ceilings.txt` that only goes down
+  (CI check `Code sizes`). A PR that adds to a listed file moves a concern out instead of raising its ceiling.
 - **Modular:** launcher-specific code stays in its launcher folder; UI and Core don't special-case launchers.
   A launcher is one `ILauncherIntegration`, registered in `BuiltInLaunchers`; built-in launchers use only
   `Arcadia.Launchers.Abstractions` (and `Arcadia.Platform`'s process helpers), as a plugin would; Steam is reached as

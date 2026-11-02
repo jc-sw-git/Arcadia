@@ -24,8 +24,9 @@ public static partial class Changelog
             .ToList();
 
     /// <summary>
-    /// The bullet points of a release body, i.e. GitHub's generated "What's Changed" list without
-    /// the "by @user in …" suffix. The install hint and source link above it carry no bullets.
+    /// The bullet points of a release body (tools/release/Write-ReleaseNotes.ps1), without the
+    /// "by @user in …" suffix of GitHub's own notes in older releases. The install hint and source
+    /// link above them and the group headings carry no bullets.
     /// </summary>
     public static IReadOnlyList<string> ParseChanges(string body)
     {

@@ -28,6 +28,26 @@ public class ChangelogTests
     }
 
     [Fact]
+    public void Changes_of_grouped_notes_are_the_entries_of_every_group()
+    {
+        const string grouped = """
+            **Installation:** download and run `Arcadia-win-Setup.exe`.
+
+            ### New and changed
+            * Show the changelog before updating (#70)
+
+            ### Fixes
+            * Sorting by install date puts new games last (#71)
+
+            **Full changelog**: https://github.com/jc-sw-git/Arcadia/compare/v0.1.0...v0.2.0
+            """;
+
+        Assert.Equal(
+            ["Show the changelog before updating (#70)", "Sorting by install date puts new games last (#71)"],
+            Changelog.ParseChanges(grouped));
+    }
+
+    [Fact]
     public void Only_stable_versions_after_the_current_up_to_the_latest_newest_first()
     {
         PublishedRelease Release(string tag, bool pre = false) => new(tag, "* " + tag, null, pre);

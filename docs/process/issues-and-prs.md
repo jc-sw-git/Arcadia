@@ -17,3 +17,7 @@ threads can't use GraphQL. A keyword in a PR into a feature branch links nothing
 - **After every merge:** the thread checks whether all PRs of its issue are merged and closes it if so. Manual cases
   that wait for a later test (e.g. the owner's full test of a feature branch) don't keep it open; they are listed in
   the iteration's acceptance review.
+
+The release notes are built from these links, one entry per issue (`docs/releases.md`): the issue's own title shows
+there, and a PR without a keyword shows under its PR title. A `bug` issue gets the line `Introduced by #N` (the PR or
+issue that brought the bug) as soon as it is known, so a bug that never reached a release stays out of the notes.

@@ -8,7 +8,7 @@ How Pan ([pan.md](pan.md)) gets onto the PC and off it again. The update at star
   the usbip-win2 installer only when the driver is missing or too old (`VerifiedDownload`, GitHub's SHA-256) and
   HidHide's when it is missing or older than supported (pinned in `HidHideRelease`: 1.5.230, URL, SHA-256, size), then
   runs the bundled `Pan.exe --install --expect-hash <sha256> [--usbip-installer … --usbip-sha256 …]
-  [--hidhide-installer …]` elevated. VIIPER is not part of the installer: it is fetched from the Arcadia fork (pinned in `ViiperRelease`, SHA-256) without UAC, first in the same step.
+  [--hidhide-installer …]` elevated. VIIPER is not part of the installer: it is fetched from the Arcadia fork (pinned in `ViiperRelease`, SHA-256) without UAC, first in the same step, into `%APPDATA%\Arcadia\viiper\` (an update replaces the program folder).
 - Pan (elevated) checks each installer on a copy in its data folder (the user can't swap it after the check): the
   SHA-256 Arcadia names (the one it checked at the download; it ties the run to that file, but it comes from the
   unelevated client, so it is no version floor: [pan-risks.md](pan-risks.md)) and

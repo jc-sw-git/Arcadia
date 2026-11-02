@@ -37,7 +37,7 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
     public int? ServerPort => _server is { HasExited: false } running ? running.UsbipPort : null;
 
     /// <summary>
-    /// Arcadia's own VIIPER, or none (#304): only the pinned build next to Arcadia (<paramref name="ownExecutable"/>, null
+    /// Arcadia's own VIIPER, or none (#304): only the pinned build in the data folder (<paramref name="ownExecutable"/>, null
     /// without a pin), never another program's <c>viiper.exe</c>; its key below <paramref name="dataFolder"/>.
     /// </summary>
     public static ViiperXboxPads? Own(string? ownExecutable, string dataFolder, string logDirectory, IViiperHost? host, Action<string> log) =>

@@ -113,4 +113,4 @@ Charter: –. Time box: –. Findings: –.
 | T366-1 | `tests/Arcadia.App.Tests/SteamControllerXboxPadTests.cs`, `tests/Arcadia.Core.Tests/ControllerSupportServiceTests.cs` |
 | T369-1 to T369-3 | `tests/Arcadia.App.Tests/ScanFailureTests.cs` |
 | T396-1 to T396-3 (fakes) | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `EmulationSetupTests.cs`, `tests/Arcadia.Core.Tests/PanEmulationTests.cs`, `TakenOverControllersTests.cs` |
-| T402-1, T402-2 | `tests/Arcadia.App.Tests/EmulationSetupTests.cs`, `tests/Arcadia.Core.Tests/ControllerSupportTests.cs` (default and saved choice) |
+| T402-1, T402-2, T402-3 (VIIPER folder) | `tests/Arcadia.App.Tests/EmulationSetupTests.cs`, `tests/Arcadia.Core.Tests/ViiperInstallationTests.cs`, `tests/Arcadia.Core.Tests/ControllerSupportTests.cs` (default and saved choice) |

@@ -4,7 +4,7 @@
     VIIPER's viiper.exe from Arcadia's fork (https://github.com/jc-sw-git/VIIPER, branch arcadia, #242 part B): upstream
     VIIPER plus the copy's device type "hidproxy". Built by the fork's workflow "Arcadia build" and published as a
     release arcadia-<commit>. Pinned: a new build means a new commit, URL and hash here. The pin is compiled into
-    Arcadia (ViiperRelease); "Treiber installieren" downloads exactly this file next to Arcadia.exe and checks its
+    Arcadia (ViiperRelease); "Treiber installieren" downloads exactly this file into %APPDATA%\Arcadia\viiper (an update replaces the program folder) and checks its
     SHA-256. It is not shipped with the installer: VIIPER is of no use without Pan and its drivers.
     An empty hash means no fork build is pinned yet: nothing is downloaded and the copy stays off.
   -->

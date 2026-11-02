@@ -17,7 +17,7 @@ The controller emulation for games and Pan, its guardian service. What was verif
   an older Arcadia left of SISR on disk ([sisr-removal.md](../controller-support/sisr-removal.md)).
 
 **VIIPER, the emulated pads**
-- `ViiperRelease` (the fork's build pinned in `Viiper.targets`), `ViiperInstallation` (fetches it next to Arcadia,
+- `ViiperRelease` (the fork's build pinned in `Viiper.targets`), `ViiperInstallation` (fetches it into `%APPDATA%\Arcadia\viiper`,
   SHA-256 checked), `ViiperServer`/`WindowsViiperHost` (starts Arcadia's own `viiper.exe` on loopback with a fresh key
   and trusts it only once checked, #304), `ViiperConnection` (handshake, `ViiperEncryptedStream`).
 - `IVirtualXboxPads`/`ViiperXboxPads` (`Viiper.Client`), `VirtualPads.cs` (`IVirtualPad`, `XboxPadAsVirtualPad`),

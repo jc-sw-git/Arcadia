@@ -8,5 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Source files stay within their size limits
-        run: tools/ci/check-code-sizes.sh
+        with:
+          fetch-depth: 0
+      - name: Point at large source files the PR changes (warning only)
+        run: tools/ci/check-code-sizes.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"

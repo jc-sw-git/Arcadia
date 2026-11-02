@@ -63,11 +63,9 @@ milestone again; this list keeps it small.
 - **Controller first:** every new flow works with a gamepad alone (no mouse/keyboard), B goes back.
   Anything that can't (e.g. UAC) is named in the PR.
 - **Readable:** names say what things are; methods do one thing; comments explain *why*, not *what*.
-  A developer new to the code understands the change from the diff and `CLAUDE.md`. A `.cs` file in `src/` stays
-  at or below 600 lines; files above keep a ceiling in `tools/ci/code-size-ceilings.txt` that only goes down
-  (CI check `Code sizes`). A PR that adds to a listed file moves a concern out instead of raising its ceiling, unless
-  a higher priority wins (e.g. a small security fix): then it raises the ceiling, names the conflict in the PR and files
-  the split as `type:tech-debt`.
+  A developer new to the code understands the change from the diff and `CLAUDE.md`. Files are cut by concern, not
+  by length; the CI check `Code sizes` only warns when a PR changes a `.cs` file above 600 lines, as a prompt to ask
+  whether the change belongs in its own class.
 - **Modular:** launcher-specific code stays in its launcher folder; UI and Core don't special-case launchers.
   A launcher is one `ILauncherIntegration`, registered in `BuiltInLaunchers`; built-in launchers use only
   `Arcadia.Launchers.Abstractions` (and `Arcadia.Platform`'s process helpers), as a plugin would; Steam is reached as

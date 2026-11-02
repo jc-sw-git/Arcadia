@@ -138,13 +138,14 @@ public static class ControllerList
     public sealed record FirmwareTool(ushort Vendor, string Name, IReadOnlyList<string> ProcessNames);
 
     /// <summary>
-    /// The tools and their process names (without <c>.exe</c>). The names are what the tools were published with and
-    /// still to be confirmed on the owner's PC (T335-5); a name that never runs only means no wait.
+    /// The tools and their process names (without <c>.exe</c>). <c>PlayStationAccessories</c> is confirmed on the owner's
+    /// PC (#407), the others are what the tools were published with; a name that never runs only means no wait.
     /// </summary>
     public static readonly IReadOnlyList<FirmwareTool> FirmwareTools =
     [
         new(Microsoft, "Xbox Accessories", ["XboxDevices", "XboxAccessories"]),
-        new(Sony, "DualSense firmware updater", ["FWupdater", "FWupdaterDualSense"]),
+        // Sony's current app first; its older DualSense updater may still be installed.
+        new(Sony, "PlayStation Accessories", ["PlayStationAccessories", "FWupdater", "FWupdaterDualSense"]),
     ];
 
     /// <summary>The firmware tool of the model's vendor that runs now, or null; <paramref name="runs"/> asks for one process name.</summary>

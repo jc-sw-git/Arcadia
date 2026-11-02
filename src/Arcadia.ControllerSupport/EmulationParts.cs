@@ -39,8 +39,23 @@ public static class EmulationParts
     /// its setup fails while the old service waits for deletion.
     /// </summary>
     public static HealthIssue HidHideRemovalPending { get; } = new("hidhide-removal-pending", HealthSeverity.Warning, "HidHide: Neustart ausstehend",
-        "HidHide wurde deinstalliert, Windows entfernt es aber erst beim nächsten Neustart des PCs. Danach lässt es sich hier wieder installieren.",
-        Summary: "Windows entfernt HidHide beim nächsten Neustart.");
+        HidHideRemovalPendingText, Summary: "HidHide wurde deinstalliert, Windows entfernt es beim Neustart");
+
+    public const string HidHideRemovalPendingText =
+        "HidHide wurde deinstalliert, Windows entfernt es aber erst beim nächsten Neustart des PCs. Bis dahin lässt es sich nicht neu installieren. Nach dem Neustart bietet Arcadia hier „Installieren“ an.";
+
+    /// <summary>
+    /// "Treiber installieren" waits for the PC's restart (#407): a driver was uninstalled or installed and Windows finishes
+    /// that only at the restart. Kept general on purpose: the reason is often not knowable for sure.
+    /// </summary>
+    public static HealthIssue DriverChangesPending { get; } = new("install-restart-pending", HealthSeverity.Info, "Windows-Neustart ausstehend",
+        "Arcadia hat erkannt, dass noch einige Treiberänderungen ausstehen. Um eine reibungslose Installation der notwendigen Treiber für den Controller-Wächter Pan zu gewährleisten, solltest du daher erst deinen Computer neustarten.",
+        Summary: "Treiberänderungen stehen noch aus");
+
+    /// <summary>"Treiber installieren" waits while a controller's firmware is flashed (#407): the install restarts the puck and controllers.</summary>
+    public static HealthIssue FirmwareUpdateRuns { get; } = new("install-firmware-update", HealthSeverity.Info, "Controller-Update wird durchgeführt",
+        "Um die Sicherheit deiner Controller zu gewährleisten, können die Treiber nicht installiert werden, so lange ein Firmware-Update deiner Controller durchgeführt wird. Schließe das Update erst ab, bevor du die Treiber installierst.",
+        Summary: "Treiber kann während eines Firmware-Updates nicht installiert werden");
 
     /// <summary>
     /// The usbip driver was updated and Windows wants a restart; with SISR gone (#213) there is nothing to restart in

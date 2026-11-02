@@ -180,25 +180,43 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <summary>The fix the prompt is open for runs HidHide's installer: Arcadia restarts after it (#396).</summary>
     private bool InstallsHidHide => !_forSisr && _steamStopFix is { } fix && _support.InstallsHidHide(fix);
 
+    /// <summary>The fix is "Treiber installieren" with every part missing (#407): it always asks first, what it installs.</summary>
+    private bool InstallsEverything => !_forSisr && _steamStopFix == HealthFix.InstallDrivers && EmulationParts.AllMissing(_support.Issues);
+
+    public const string DriversInstallTitle = "Treiber installieren?";
+
+    public const string DriversInstallText = "Arcadia installiert jetzt Treiber und Programme von Drittanbietern: usbip-win2, HidHide und VIIPER, dazu den Wächterdienst Pan. Windows fragt dabei einmal nach Administratorrechten. Nach der Installation ist ein Neustart des PCs empfohlen.";
+
+    public const string PuckRestartText = "Die Treiber-Installation startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren.";
+
     public const string HidHideInstallTitle = "HidHide installieren?";
     public const string HidHideRestartText = "Nach der Installation von HidHide startet Arcadia einmal neu. Erst dann sieht Arcadia die Controller, die Pan vor anderen Programmen versteckt.";
     private const string SteamClosesText = "Für die Installation muss Steam beendet werden. Arcadia startet Steam danach wieder im Hintergrund.";
 
     /// <summary>"HidHide installieren?" before HidHide's installer runs, with Steam running or not; else "Steam beenden?".</summary>
-    public string SteamStopTitle => InstallsHidHide ? HidHideInstallTitle : "Steam beenden?";
+    public string SteamStopTitle => InstallsEverything ? DriversInstallTitle : InstallsHidHide ? HidHideInstallTitle : "Steam beenden?";
 
     /// <summary>Why Steam has to close, or for HidHide's installer that Arcadia restarts afterwards.</summary>
     public string SteamStopText => _forSisr
         ? "Den Eintrag „SISR Marker“ kann Arcadia nur entfernen, solange Steam geschlossen ist. Steam wird dafür kurz beendet und danach wieder gestartet."
+        : InstallsEverything ? DriversInstallText
         : InstallsHidHide ? HidHideRestartText : SteamClosesText;
 
     /// <summary>For a driver fix, why it restarts the puck (and, for HidHide's installer, that Steam closes); nothing more for "SISR entfernen".</summary>
-    public string SteamStopDetail => (InstallsHidHide && StopsSteam ? SteamClosesText + " " : string.Empty) + _steamStopFix switch
+    public string SteamStopDetail => InstallsEverything ? EverythingDetail : (InstallsHidHide && StopsSteam ? SteamClosesText + " " : string.Empty) + _steamStopFix switch
     {
         HealthFix.ReinstallHidHide => "Die Neuinstallation von HidHide startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren. Windows fragt dabei einmal nach Administratorrechten.",
         HealthFix.InstallDrivers => "Die Treiber-Installation startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren. Windows fragt dabei einmal nach Administratorrechten.",
         _ => string.Empty,
     };
+
+    /// <summary>Below "Treiber installieren?": Steam closing, Arcadia's restart after HidHide, and the puck only when one is plugged in (#407).</summary>
+    private string EverythingDetail => string.Join(' ', new[]
+    {
+        StopsSteam ? SteamClosesText : null,
+        InstallsHidHide ? HidHideRestartText : null,
+        _support.SteamControllerPlugged ? PuckRestartText : null,
+    }.OfType<string>());
 
     public bool HasSteamStopDetail => SteamStopDetail.Length > 0;
 
@@ -372,7 +390,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private bool StopsSteam => _forSisr ? _support.Sisr.RemovalStopsSteam : _steamStopFix is { } fix && _support.StopsSteamFor(fix);
 
     /// <summary>The action asks first: it closes Steam, or runs HidHide's installer, after which Arcadia restarts (#396).</summary>
-    private bool AsksFirst => StopsSteam || InstallsHidHide;
+    private bool AsksFirst => StopsSteam || InstallsHidHide || InstallsEverything;
 
     /// <summary>
     /// The action closes Steam, so it can't run beside a Steam game; with Steam running it asks first, without it just
@@ -424,7 +442,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             return;
         }
 
-        if (_support.StopsSteamFor(fix) || _support.InstallsHidHide(fix))
+        if (_support.StopsSteamFor(fix) || _support.InstallsHidHide(fix) || (fix == HealthFix.InstallDrivers && EmulationParts.AllMissing(_support.Issues)))
         {
             _steamStopFix = fix;
             _forSisr = false;

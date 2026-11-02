@@ -28,4 +28,30 @@ public class ControllerSupportRemovalTests
         Assert.DoesNotContain("Administratorrechten", text);
         Assert.DoesNotContain("Steam wird", text);
     }
+
+    [Fact]
+    [Trait("TestCase", "T407-1")]
+    public void The_restart_notice_says_to_restart_before_installing_again()
+    {
+        Assert.Contains("Windows entfernt die Treiber für die Controller-Emulation erst beim nächsten Neustart des PCs ganz", ControllerSupportRemoval.RestartNotice);
+        Assert.Contains("Starte den PC neu, bevor du Arcadia wieder installierst.", ControllerSupportRemoval.RestartNotice);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T407-1")]
+    [InlineData(10, 48)]
+    [InlineData(55, 3)]
+    public void The_restart_notice_stays_open_for_what_is_left_of_the_hook_limit(int elapsedSeconds, int expectedSeconds)
+    {
+        Assert.Equal(TimeSpan.FromSeconds(expectedSeconds), ControllerSupportRemoval.RestartNoticeTime(TimeSpan.FromSeconds(elapsedSeconds), TimeSpan.FromSeconds(60)));
+    }
+
+    [Theory]
+    [Trait("TestCase", "T407-1")]
+    [InlineData(56)]
+    [InlineData(80)]
+    public void Too_close_to_the_hook_limit_no_restart_notice_is_shown(int elapsedSeconds)
+    {
+        Assert.Null(ControllerSupportRemoval.RestartNoticeTime(TimeSpan.FromSeconds(elapsedSeconds), TimeSpan.FromSeconds(60)));
+    }
 }

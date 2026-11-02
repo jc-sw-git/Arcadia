@@ -76,7 +76,7 @@ Steam; the other controllers stay taken over. Product rules: `docs/product/contr
 ## The settings rows (D7, D8)
 
 While the emulation runs, `NotHidden` lists every controller Pan rejected or that waits for a reconnect, with Pan's
-reason; `WaitingForTool` those whose vendor's firmware tool runs (Xbox Zubehör, DualSense-Firmware-Updater).
+reason; `WaitingForTool` those whose vendor's firmware tool runs (Xbox Zubehör, PlayStation Accessories).
 `PanRows` turns them into the info row "… lässt sich nicht verstecken" and one warning row per tool.
 
 ## Controller zuordnen (part 3, D3a)

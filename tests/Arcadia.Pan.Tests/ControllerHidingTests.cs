@@ -299,7 +299,7 @@ public sealed class ControllerHidingTests : IDisposable
         await _guardian.ControllerArrivedAsync(FakeControllers.DualSense);
 
         Assert.DoesNotContain(FakeControllers.DualSenseBluetooth, _hidHide.Hidden);
-        Assert.Contains("DualSense firmware updater runs: not hidden", Log());
+        Assert.Contains("PlayStation Accessories runs: not hidden", Log());
     }
 
     [Fact]
@@ -588,7 +588,8 @@ public sealed class ControllerModelTests
     public void Each_firmware_tool_holds_off_only_its_own_vendor()
     {
         Assert.Equal("Xbox Accessories", ControllerList.RunningToolFor(new(ControllerList.Microsoft, 0x0B12), name => name == "XboxDevices")?.Name);
-        Assert.Equal("DualSense firmware updater", ControllerList.RunningToolFor(new(ControllerList.Sony, 0x0CE6), name => name == "FWupdater")?.Name);
+        Assert.Equal("PlayStation Accessories", ControllerList.RunningToolFor(new(ControllerList.Sony, 0x0CE6), name => name == "FWupdater")?.Name);
+        Assert.Equal("PlayStation Accessories", ControllerList.RunningToolFor(new(ControllerList.Sony, 0x0CE6), name => name == "PlayStationAccessories")?.Name);
         Assert.Null(ControllerList.RunningToolFor(new(ControllerList.Sony, 0x0CE6), name => name == "XboxDevices"));
         Assert.Null(ControllerList.RunningToolFor(new(0x2DC8, 0x310B), _ => true));
     }

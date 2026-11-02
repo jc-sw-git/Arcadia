@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Arcadia.App.Services;
@@ -101,6 +102,9 @@ sealed partial class Program
     /// </summary>
     private const uint QuestionsTimeoutMs = 40_000;
 
+    /// <summary>When Velopack's Update.exe ends the uninstall hook (see <see cref="QuestionsTimeoutMs"/>).</summary>
+    private static readonly TimeSpan UninstallHookLimit = TimeSpan.FromSeconds(60);
+
     /// <summary>
     /// Asks whether the controller emulation's drivers and SISR (#243 part B2), and Arcadia's own files (settings, logos,
     /// logs) should go too. Both stay when the user says no or doesn't answer in time: other programs may use the
@@ -109,6 +113,7 @@ sealed partial class Program
     [SupportedOSPlatform("windows")]
     private static void OnBeforeUninstall(SemanticVersion version)
     {
+        var elapsed = Stopwatch.StartNew();
         var parts = ControllerSupportRemoval.FindInstalledParts();
         var hasData = Directory.Exists(LogLocation.DataFolder);
         var questions = (parts.Any ? 1u : 0u) + (hasData ? 1u : 0u);
@@ -130,6 +135,14 @@ sealed partial class Program
         }
 
         RemovePan(removeDrivers: removeParts && parts.Drivers);
+
+        // Windows keeps a loaded driver until the next restart (#407); a new install before then can't set the drivers up.
+        if (removeParts && parts.Drivers && ControllerSupportRemoval.DriverRemovalPending()
+            && ControllerSupportRemoval.RestartNoticeTime(elapsed.Elapsed, UninstallHookLimit) is { } noticeTime)
+        {
+            AppLog.Write("Deinstallation: Windows entfernt die Treiber erst beim nächsten Neustart");
+            Inform(ControllerSupportRemoval.RestartNotice, (uint)noticeTime.TotalMilliseconds);
+        }
     }
 
     /// <summary>
@@ -176,6 +189,12 @@ sealed partial class Program
         const uint YesNo = 0x4, IconQuestion = 0x20, DefaultNo = 0x100, SetForeground = 0x10000, TopMost = 0x40000;
         const int Yes = 6;
         return MessageBoxTimeout(IntPtr.Zero, text, "Arcadia deinstallieren", YesNo | IconQuestion | DefaultNo | SetForeground | TopMost, 0, timeoutMs) == Yes;
+    }
+
+    private static void Inform(string text, uint timeoutMs)
+    {
+        const uint Ok = 0x0, IconInformation = 0x40, SetForeground = 0x10000, TopMost = 0x40000;
+        MessageBoxTimeout(IntPtr.Zero, text, "Arcadia deinstallieren", Ok | IconInformation | SetForeground | TopMost, 0, timeoutMs);
     }
 
     private static void RemoveData()

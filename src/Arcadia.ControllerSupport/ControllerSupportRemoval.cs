@@ -71,6 +71,32 @@ public static class ControllerSupportRemoval
     }
 
     /// <summary>
+    /// The last message of the uninstall when Windows removes a driver only at the next restart (#407). Without it, a
+    /// player who installs Arcadia again before restarting can't install the drivers until then.
+    /// </summary>
+    public const string RestartNotice = "Arcadia ist deinstalliert.\n\n"
+        + "Windows entfernt die Treiber für die Controller-Emulation erst beim nächsten Neustart des PCs ganz. "
+        + "Starte den PC neu, bevor du Arcadia wieder installierst.";
+
+    /// <summary>A driver the uninstall removed waits for the PC's restart (#407).</summary>
+    [SupportedOSPlatform("windows")]
+    public static bool DriverRemovalPending() => HidHideInstallation.IsRemovalPending() || UsbipDriver.IsRemovalPending();
+
+    /// <summary>
+    /// How long <see cref="RestartNotice"/> stays open: what is left of the uninstall hook's limit, less a margin so
+    /// Velopack doesn't end the hook while the box is open. Null when too little is left to read it.
+    /// </summary>
+    public static TimeSpan? RestartNoticeTime(TimeSpan elapsed, TimeSpan hookLimit)
+    {
+        var left = hookLimit - elapsed - NoticeMargin;
+        return left >= MinimumNoticeTime ? left : null;
+    }
+
+    private static readonly TimeSpan NoticeMargin = TimeSpan.FromSeconds(2);
+
+    private static readonly TimeSpan MinimumNoticeTime = TimeSpan.FromSeconds(3);
+
+    /// <summary>
     /// Removes SISR and VIIPER (<see cref="FindInstalledParts"/>) as "SISR entfernen" does (<see cref="SisrInstallation"/>);
     /// the drivers go with Pan's uninstall. Best effort: what fails is logged and skipped. Returns within a few seconds.
     /// </summary>

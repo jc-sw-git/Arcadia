@@ -110,6 +110,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
                 : othersForGames.Current(),
             ReadControllers = on =>
             {
+                LetGoOrReadAgain(padForPresence, on);
                 gamepad.ReadControllers(on);
                 if (!on)
                 {
@@ -131,7 +132,11 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             // While the installed Pan is about to be replaced (#297), nothing starts on it: the update would end it.
             Enabled = () => settings.Current.PanEnabled && !controllerSupport.IsPanUpdateDue,
             SteamControllerPresent = () => hold.Connected is not null || padForPresence?.SteamControllerConnected == true,
-            ReadSteamControllers = gamepad.ReadSteamControllers,
+            ReadSteamControllers = on =>
+            {
+                LetGoOrReadAgain(padForPresence, on);
+                gamepad.ReadSteamControllers(on);
+            },
             // A HidHide install runs, or Arcadia restarts after one: this process wouldn't see what Pan hides (#396).
             HeldBack = () => controllerSupport.HoldsEmulation,
         };
@@ -195,6 +200,19 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         return forGames;
     }
 
+    // The Steam Controller stays in the settings' lists while Arcadia lets go of it for Pan.
+    private static void LetGoOrReadAgain(SteamControllerXboxPad? pad, bool on)
+    {
+        if (on)
+        {
+            pad?.Sighting.ReadAgain();
+        }
+        else
+        {
+            pad?.Sighting.LetGo();
+        }
+    }
+
     private static void Rumble(IGamepadSource gamepad, int padId, XboxRumble motors)
     {
         var (low, high) = XboxPadState.RumbleStrengths(motors);
@@ -213,7 +231,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
 
     public IReadOnlyList<string> NotVisibleToArcadia => Emulation.NotVisibleToArcadia;
 
-    public bool SteamControllerConnected => Pad.SteamControllerConnected;
+    public bool SteamControllerConnected => Pad.Sighting.Connected;
 
     public event Action? Changed
     {
@@ -221,12 +239,14 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         {
             Emulation.Changed += value;
             Others.Changed += value;
+            Pad.Sighting.Changed += value;
         }
 
         remove
         {
             Emulation.Changed -= value;
             Others.Changed -= value;
+            Pad.Sighting.Changed -= value;
         }
     }
 

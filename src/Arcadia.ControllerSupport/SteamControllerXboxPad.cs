@@ -43,6 +43,7 @@ public sealed class SteamControllerXboxPad
         _time = time;
         _log = log;
         _withholding = new ComboWithholding(time);
+        Sighting = new SteamControllerSighting(time, log);
         _forwarder = new PadForwarder<XboxPadState>(
             time,
             delays => _log($"Xbox-Pad: Verzögerung Lesen → VIIPER {delays}"),
@@ -84,6 +85,9 @@ public sealed class SteamControllerXboxPad
     /// <summary>A Steam Controller is connected, as of the last poll.</summary>
     public bool SteamControllerConnected => _steamControllerConnected;
 
+    /// <summary>Whether the Steam Controller is connected, for the settings: also while Arcadia lets go of it for Pan.</summary>
+    public SteamControllerSighting Sighting { get; }
+
     /// <summary>Every read of the gamepad source (<see cref="IGamepadSource.Sampled"/>), on its thread. Never throws.</summary>
     public void Feed(IReadOnlyList<GamepadReading> pads)
     {
@@ -99,6 +103,7 @@ public sealed class SteamControllerXboxPad
         }
 
         _steamControllerConnected = steamController is not null;
+        Sighting.Seen(steamController is not null);
         if (steamController?.PadId != _steamControllerId)
         {
             _steamControllerId = steamController?.PadId;
@@ -232,6 +237,7 @@ public sealed class SteamControllerXboxPad
     public void Drop()
     {
         _steamControllerConnected = false;
+        Sighting.Lost();
         NoteForwarding(false);
         _steamControllerId = null;
         _rumbleTarget = -1;

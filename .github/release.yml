@@ -1,0 +1,10 @@
+# Configures the notes GitHub generates for a release (release.yml calls generate-notes).
+# The notes list only PRs that change something for the player; the PR label `no-changelog` keeps a PR out.
+# label-pr-changelog.yml sets it on PRs from `doc/`, `ci/` and `test/` branches. Rules: docs/releases.md.
+changelog:
+  exclude:
+    labels:
+      - no-changelog
+  categories:
+    - title: What's changed
+      labels: ['*']

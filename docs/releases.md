@@ -26,6 +26,12 @@
   `--started-game <key>` (their end brings Arcadia back, #94), and `--background` brings the window back behind the
   game instead of in front. "Was ist neu" lists the bullets of every release body between the running and the newest
   version (`Changelog`).
+- **Release notes** list only PRs that change the product: features, fixes, robustness, security, and refactorings or
+  tech debt (they matter to plugin authors and contributors). Docs, process, tests, CI and spikes (findings only) are
+  left out. The PR label `no-changelog` does it (`.github/release.yml`); `label-pr-changelog.yml` sets it on PRs from
+  `doc/`, `ci/` and `test/` branches when they are opened; any other PR that doesn't belong gets it by hand. Before a
+  release the thread reads the generated notes against this rule and edits the release body. Notes are English; "Was
+  ist neu" shows them.
 - To release, run the workflow "Tag release" on `main` with the version: `tag-release.yml` sets the tag `vX.Y.Z` and
   starts `release.yml`. Claude can start it; its cloud sessions can't push tags (the git proxy answers 403).
 - Every CI run on Windows packs the installer; only pushes to `main` upload it as an artifact (1 day). The account's

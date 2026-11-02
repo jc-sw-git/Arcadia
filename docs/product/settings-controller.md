@@ -43,8 +43,8 @@ The page and its status messages: [settings.md](settings.md).
   verstecken", box "BETROFFEN" with each name and why. Not shown while Pan is off (the player chose that).
 - "Controller zuordnen" (#238 D3a, designs T238Settings, T238Modal): indented below those rows, above "Controller
   wiederherstellen", while Pan is on and any controller is connected; subtitle "Ändere das Layout deiner angeschlossenen
-  Controller", [Zuordnen]; its info panel ends with the box "SPIELE SEHEN" (each connected model → its layout, or "den
-  echten Controller (nicht übernommen)"). [Zuordnen] opens a modal with one row per connected model (its default as
+  Controller", [Zuordnen]; its info panel ends with the box "SPIELE SEHEN" (the Steam Controller whenever it is connected,
+  also while Arcadia lets go of it for Pan, then each connected model → its layout, or "Nicht übernommen"). [Zuordnen] opens a modal with one row per connected model (its default as
   subtitle "Vorgabe: …"): ▲ ▼ moves, ◀ ▶ cycles Xbox 360 Controller, DualShock 4, DualSense, (DualSense Edge only for
   an Edge,) Switch 2 Pro Controller, "Nicht übernehmen" (wraps), as does A on a row, without applying. Below the rows the button
   [Übernehmen] (▲ ▼ reach it, A or a click) is the only way to apply: all changes once, then it closes. B (✕) closes

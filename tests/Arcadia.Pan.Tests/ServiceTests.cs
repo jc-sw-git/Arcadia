@@ -281,23 +281,25 @@ public sealed class ServiceTests : IDisposable
         Assert.True(WaitForHandOff(TimeSpan.FromMinutes(3)), "the hand-off copy finished");
         // Without this the test is green when Pan quietly uninstalled in place: only a hand-off leaves the copy, which
         // waits for the reboot to go (QE review of #270).
-        Assert.True(File.Exists(Path.Combine(PanPaths.HandOffDirectory, PanPaths.ExecutableName)), "the uninstall ran in the hand-off copy, which stays until the next boot");
+        Assert.True(File.Exists(HandOffCopy.Executable), "the uninstall ran in the hand-off copy, which stays until the next boot");
         Assert.Contains("1060", Output("sc.exe", "query", PanPaths.ServiceName));
         Assert.False(Directory.Exists(PanPaths.InstallDirectory), "Program Files\\Arcadia\\Pan is gone");
 
         // T422-4: installed again, then its Arcadia goes without an uninstall (the UAC prompt declined): at its next start
         // the service finds no Arcadia and removes itself; its running exe moves into Pan-Uninstall for the next boot.
         Assert.Equal(0, Run(pan, "--install", "--expect-hash", hash));
-        // The pipe opens only after the service looked for Arcadia: until then the stand-in must stay.
+        // The pipe opens once the service runs, so it can be stopped. The pipe opens before the service looks for
+        // Arcadia, so the stand-in goes only while the service is stopped: deleted earlier, a late first look finds no
+        // Arcadia and Pan removes itself under the test's hands (#434).
         await using (await ConnectAsync())
         {
         }
 
-        File.Delete(Path.Combine(_work, "arcadia", ArcadiaInstallations.ExecutableName));
         using (var service = new ServiceController(PanPaths.ServiceName))
         {
             service.Stop();
             service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+            File.Delete(Path.Combine(_work, "arcadia", ArcadiaInstallations.ExecutableName));
             service.Start();
         }
 
@@ -316,25 +318,10 @@ public sealed class ServiceTests : IDisposable
     /// <summary>Waits until no Pan.exe from the hand-off folder runs any more (#270).</summary>
     private static bool WaitForHandOff(TimeSpan timeout)
     {
-        var copy = Path.Combine(PanPaths.HandOffDirectory, PanPaths.ExecutableName);
         var until = DateTime.UtcNow + timeout;
         while (DateTime.UtcNow < until)
         {
-            var running = Process.GetProcessesByName("Pan").Any(process =>
-            {
-                using (process)
-                {
-                    try
-                    {
-                        return string.Equals(process.MainModule?.FileName, copy, StringComparison.OrdinalIgnoreCase);
-                    }
-                    catch (System.ComponentModel.Win32Exception)
-                    {
-                        return false;
-                    }
-                }
-            });
-            if (!running)
+            if (HandOffCopy.RunningId(Environment.ProcessId) is null)
             {
                 return true;
             }

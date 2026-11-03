@@ -15,7 +15,7 @@ public static class ControllerInput
 {
     public const string UnavailableText = "Controller werden nicht erkannt (SDL3 fehlt oder startet nicht). Tastatur und Maus funktionieren – Details stehen in arcadia.log.";
 
-    public static IGamepadSource Create(MainViewModel viewModel, OwnPadModels ownPads)
+    public static IGamepadSource Create(MainViewModel viewModel, OwnPadModels ownPads, TimeProvider time)
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -28,13 +28,14 @@ public static class ControllerInput
             AppLog.Write("Controller: Arcadia wurde über Steam gestartet; Steam verbirgt den Steam Controller vor Arcadia");
         }
 
-        return Create(new SdlGamepads(), viewModel, new DeviceTreeEmulatedPads(XusbDevices.List, AppLog.Write, DeviceTree.InterfaceOnSoftwareHost, ownPads));
+        return Create(new SdlGamepads(), viewModel, time, new DeviceTreeEmulatedPads(XusbDevices.List, AppLog.Write, DeviceTree.InterfaceOnSoftwareHost, ownPads));
     }
 
-    public static SdlGamepadSource Create(ISdlGamepads sdl, MainViewModel viewModel, IEmulatedPads? emulated = null) =>
+    /// <param name="time">The clock of the quiet period of a throwing handler's errors (#399).</param>
+    public static SdlGamepadSource Create(ISdlGamepads sdl, MainViewModel viewModel, TimeProvider time, IEmulatedPads? emulated = null) =>
         new(sdl, AppLog.Write, error =>
         {
             AppLog.Write($"Controller-Eingabe nicht verfügbar (SDL3): {error}");
             Dispatcher.UIThread.Post(() => viewModel.Toast.Show(HealthSeverity.Error, UnavailableText));
-        }, emulated, AppErrors.Report);
+        }, emulated, AppErrors.ReportRepeating, time);
 }

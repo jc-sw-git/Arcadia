@@ -153,7 +153,7 @@ public partial class App : Application
 
 
             var ownPads = new OwnPadModels();
-            _gamepad = ControllerInput.Create(viewModel, ownPads);
+            _gamepad = ControllerInput.Create(viewModel, ownPads, time);
             var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
             viewModel.Dialogs = new SystemDialogs(window, () => viewModel.Input.UsesController, () => mouseMode);
 
@@ -165,7 +165,7 @@ public partial class App : Application
             var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write, () => controllerSupport.WhyPanIsLeftAlone) : new NoPanTransport(), time, AppLog.Write)
             {
                 WhyLeftAlone = () => controllerSupport.WhyPanIsLeftAlone,
-                Unexpected = AppErrors.Report,
+                Unexpected = AppErrors.ReportRepeating,
             };
             var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
             pan.JournalProblem += () => panNotices.Show(HealthSeverity.Error, PanJournalText);

@@ -138,7 +138,7 @@ internal static class Program
                     var ownPath = OwnPath();
                     // The prompt returns at once, so a second --uninstall may start while the copy still works: it must not
                     // run teardown, undo and driver removal a second time beside it (QE review of #270).
-                    if (RunningHandOffCopy() is { } running)
+                    if (HandOffCopy.RunningId(Environment.ProcessId) is { } running)
                     {
                         log.Write($"Not uninstalling: the uninstall in {PanPaths.HandOffDirectory} still runs (process {running})");
                         Console.WriteLine($"An uninstall is already running (process {running}); {PanPaths.LogPath} says how it went.");
@@ -224,35 +224,6 @@ internal static class Program
     {
         using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
         return new System.Security.Principal.WindowsPrincipal(identity).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
-    }
-
-    /// <summary>
-    /// The id of another process running the hand-off copy, or null. Checked by its image path: only administrators can
-    /// start a program from Program Files, so nobody else can fake one (a named mutex could be squatted by any user).
-    /// </summary>
-    private static int? RunningHandOffCopy()
-    {
-        var copy = Path.Combine(PanPaths.HandOffDirectory, PanPaths.ExecutableName);
-        var self = Environment.ProcessId;
-        foreach (var process in System.Diagnostics.Process.GetProcessesByName(Path.GetFileNameWithoutExtension(PanPaths.ExecutableName)))
-        {
-            using (process)
-            {
-                try
-                {
-                    if (process.Id != self && string.Equals(process.MainModule?.FileName, copy, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return process.Id;
-                    }
-                }
-                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
-                {
-                    // Exited meanwhile, or a process this one may not inspect: not the copy, which runs elevated like this one.
-                }
-            }
-        }
-
-        return null;
     }
 
     private static string OwnPath() => Environment.ProcessPath ?? throw new InvalidOperationException("own path unknown");

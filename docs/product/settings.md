@@ -59,3 +59,12 @@ controllers not recognised). Pan's notices take the level of their source. The U
 ## Category "Controller"
 
 Its rows (Pan, the mouse mode, Steam, SISR): [settings-controller.md](settings-controller.md).
+
+## Unexpected errors
+
+An unexpected error is a toast "Unerwarteter Fehler (<context>) – Details stehen in arcadia.log." and a log line with
+stack trace, each time. The places that repeat an error every few seconds or every millisecond (SDL's controller
+events per handler, the controllers for games per delegate, Pan's loops and events per context, #399) toast once per
+streak: a source quiet for 10 minutes toasts its next error again; a steady error toasts once however long it lasts.
+Its repeats reach arcadia.log at most once a minute per source, as one line with the latest message and the count since
+the source's last line, written with that next line (no timer). Nothing of it is kept across a restart.

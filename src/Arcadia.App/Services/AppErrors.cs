@@ -30,6 +30,13 @@ public static class AppErrors
         }
     }
 
+    /// <summary>
+    /// For the places that throttle their repeats (<see cref="Arcadia.Input.RepeatedErrors{TKey}"/>, #399): called with the first
+    /// error of a streak only, reported like any other.
+    /// </summary>
+    /// <param name="streak">How often the error came again since; shown with the toast's entry with #433.</param>
+    public static void ReportRepeating(Exception exception, string context, Arcadia.Input.ErrorStreak streak) => Report(exception, context);
+
     /// <summary>Runs <paramref name="action"/> and reports instead of throwing whatever it throws.</summary>
     public static async Task Guard(Func<Task> action, string context)
     {

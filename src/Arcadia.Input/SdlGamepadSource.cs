@@ -124,25 +124,29 @@ public sealed class SdlGamepadSource : IGamepadSource
     /// <param name="failed">Called once if SDL can't be used, or fails later; the controllers are then off.</param>
     /// <param name="emulated">Tells emulated Xbox pads (SISR's) from real ones; none by default.</param>
     /// <param name="unexpected">
-    /// Called once per handler of <see cref="Polled"/>, <see cref="Sampled"/> or a button event that throws, with a
-    /// context for the log and the toast; the controllers keep working. Logs the error with its stack by default.
+    /// Called with the first error of a streak of a handler of <see cref="Polled"/>, <see cref="Sampled"/> or a button
+    /// event that throws (#399, <see cref="RepeatedErrors{TKey}"/>), with a context for the log and the toast; the
+    /// controllers keep working. Logs the error with its stack by default.
     /// </param>
+    /// <param name="time">The clock of the quiet period and the summary lines of <paramref name="unexpected"/>.</param>
     public SdlGamepadSource(
         ISdlGamepads sdl,
         Action<string> log,
         Action<Exception> failed,
         IEmulatedPads? emulated = null,
-        Action<Exception, string>? unexpected = null)
+        Action<Exception, string, ErrorStreak>? unexpected = null,
+        TimeProvider? time = null)
     {
         _sdl = sdl;
         _log = log;
         _failed = failed;
         _emulated = emulated ?? NoEmulatedPads.Instance;
-        unexpected ??= (error, context) => log($"Unerwarteter Fehler ({context}): {error}");
-        _buttonPressed = new(HandlerContext, unexpected, log);
-        _buttonReleased = new(HandlerContext, unexpected, log);
-        _polled = new(HandlerContext, unexpected, log);
-        _sampled = new(HandlerContext, unexpected, log);
+        unexpected ??= (error, context, _) => log($"Unerwarteter Fehler ({context}): {error}");
+        time ??= TimeProvider.System;
+        _buttonPressed = new(HandlerContext, unexpected, log, time);
+        _buttonReleased = new(HandlerContext, unexpected, log, time);
+        _polled = new(HandlerContext, unexpected, log, time);
+        _sampled = new(HandlerContext, unexpected, log, time);
         _polls.ButtonPressed += _buttonPressed.Raise;
         _polls.ButtonReleased += _buttonReleased.Raise;
     }

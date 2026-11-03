@@ -5,6 +5,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Arcadia.Core.Tests" />
+  </ItemGroup>
+
   <Import Project="Sdl3.targets" />
 
 </Project>

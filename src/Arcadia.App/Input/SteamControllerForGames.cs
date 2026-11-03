@@ -123,7 +123,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             OwnPads = ownPads ?? new OwnPadModels(),
             MotionSensors = gamepad.UseMotionSensors,
             LayoutOf = model => ControllerLayouts.Find(settings.Current.ControllerLayouts, model),
-            Unexpected = Services.AppErrors.Report,
+            Unexpected = Services.AppErrors.ReportRepeating,
         };
         var emulation = new PanEmulation(pads, guardian, hold, time, Services.AppLog.Write)
         {

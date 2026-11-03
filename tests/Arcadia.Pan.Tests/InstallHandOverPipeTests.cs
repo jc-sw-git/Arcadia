@@ -91,6 +91,8 @@ public sealed class InstallHandOverPipeTests
         {
             await arcadia.ConnectAsync(TimeSpan.FromSeconds(10), CancellationToken.None);
             await arcadia.WriteAsync(InstallHandOver.Abort());
+            // As Arcadia does: the pipe stays open until Pan has read the message.
+            arcadia.WaitForPipeDrain();
         }
 
         Assert.Equal(InstallHandOver.Abort(), await receive.WaitAsync(TimeSpan.FromSeconds(10)));

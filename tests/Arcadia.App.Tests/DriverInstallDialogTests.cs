@@ -105,7 +105,8 @@ public sealed class DriverInstallDialogTests
 
         Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey)).Activate();
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitUntilAsync(() => arcadia.Restarts.Count == 1, "der Neustart");
+        // The restart is asked for as the install ends; the step showing it starts right after.
+        await arcadia.WaitUntilAsync(() => arcadia.Restarts.Count == 1 && controller.InstallDialog?.Steps[^1].IsRunning == true, "der Neustart");
 
         var dialog = controller.InstallDialog!;
         Assert.NotNull(dialog);

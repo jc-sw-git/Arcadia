@@ -119,7 +119,25 @@ internal sealed class PanInstallRun : IPanInstallRun
         await _pipe.WriteAsync(InstallHandOver.Go(installers), cancellationToken);
         await _pipe.FlushAsync(cancellationToken);
         _handedOver = true;
+        await WaitUntilPanReadAsync(cancellationToken);
         await _pipe.DisposeAsync();
+    }
+
+    /// <summary>
+    /// Closing the pipe before Pan has taken the client's connection loses the message: Pan's wait for the connection
+    /// then fails as if Arcadia were gone (exit 9). So the pipe stays open until Pan has read it all. Pan reads at once;
+    /// should it not within the limit, the pipe closes anyway and Pan's exit code tells what happened.
+    /// </summary>
+    private async Task WaitUntilPanReadAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Run(_pipe.WaitForPipeDrain, CancellationToken.None).WaitAsync(DriverInstallation.PanConnectTimeout, cancellationToken);
+        }
+        catch (Exception exception) when (exception is IOException or TimeoutException)
+        {
+            // IOException: Pan has read the message and closed its end already.
+        }
     }
 
     public async Task WaitForExitAsync(CancellationToken cancellationToken)

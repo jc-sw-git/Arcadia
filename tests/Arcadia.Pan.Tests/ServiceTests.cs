@@ -466,6 +466,8 @@ public sealed class ServiceTests : IDisposable
         {
             await pipe.ConnectAsync(TimeSpan.FromSeconds(30), CancellationToken.None);
             await pipe.WriteAsync(message);
+            // As Arcadia does: the pipe stays open until Pan has read the message.
+            pipe.WaitForPipeDrain();
         }
 
         Assert.True(process.WaitForExit(TimeSpan.FromMinutes(5)), "Pan finished after the hand-over");

@@ -44,15 +44,18 @@ Before the frontier counts as empty, two passes:
   the concept against these cases before the refinement ends.
 - **Assumptions:** list what the concept assumes about Steam, a launcher or hardware that only the
   owner's PC can prove. Each one gets a step-by-step check script that runs before implementation; the
-  issue says what changes if it fails.
+  issue says what changes if it fails. For logins, services and drivers also the outside view: how does
+  the service see us, do we pose as another client, what happens with missing rights or on abort.
 
 **Done when** the frontier is empty and the owner confirms the shared understanding. Don't start
 implementing before that.
 
 ## 3. Write the result into the issue
 
-Update the issue body in English (it is the source of truth, not the chat): scenarios, decisions with date,
-failure cases, assumptions with their check scripts, out of scope, and acceptance criteria as checkboxes. These become the test plan cases later.
+Update the issue body in English (it is the source of truth, not the chat): scenarios from the player's side as
+Given/When/Then, decisions, failure cases, assumptions with their check scripts, out of scope, and acceptance
+criteria as checkboxes. This is the specification: a designer adds the screens if needed, the owner approves both,
+then the quality engineer derives the test cases from it (`docs/personas/quality-engineer.md`).
 
 ## 4. Large issue: slice into issues
 

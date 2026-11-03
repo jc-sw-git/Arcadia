@@ -7,7 +7,7 @@ stehen in arcadia.log." (text unchanged). "Summary line" = a log line of a repea
 message and the count since the source's previous line. All time is fake (`FakeTimeProvider`); acceptance tests use
 `ArcadiaDriver` with a fake Pan whose heartbeat or connection throws. No new UI, so no controller-only or B case.
 
-**Assumptions the cases make** (implicit in the spec, stated so the implementation can't miss them):
+**Clarified with the owner** (implicit in the spec, stated so the implementation can't miss them):
 - A source quiet for exactly 10:00 toasts again; 9:59 doesn't (the quiet period is "at least 10 minutes").
 - The first error's line (with stack trace) counts as the source's line of that minute: the first summary line comes
   at the earliest one minute after it.

@@ -41,19 +41,35 @@ the folder.
 
 ## Uninstall
 
-- Velopack hook (`Program.OnBeforeUninstall`): one question "Treiber für die Controller-Emulation auch entfernen?"
-  listing what is there (usbip-win2, HidHide, SISR and its VIIPER as in [sisr-removal.md](sisr-removal.md)), default
-  no (other programs may use the drivers; `ControllerSupportRemoval.Question`). Then `Pan.exe --uninstall
-  [--remove-drivers]` elevated, one UAC prompt, no question about Pan itself (it exists for Arcadia alone): stop (=
-  teardown), delete the service, undo the journal, delete both folders and the empty `%ProgramData%\Arcadia` (a file in
-  use goes at the next boot, `MoveFileEx`). Declined: the service stays, idles and stops itself; `Pan.exe --uninstall`
-  by hand removes it.
-- `--remove-drivers` only after the undo is confirmed (`UninstallOrder`: removing HidHide shows the real puck, so an
-  incomplete undo or a data folder that isn't Pan's keeps the drivers, exit 5 or 7) and before the data folder goes:
-  HidHide first (`msiexec /x {GUID} /qn /norestart` from its uninstall entry), then usbip-win2 (its Inno `unins*.exe`,
-  `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART`), 3 min each, 0/3010 = removed; a driver that stays keeps the data
-  folder with `pan.log`. Arcadia's wait per command is the sum of Pan's step budgets (`PanTimeouts`: install ~10 min,
-  uninstall 9 min).
+- Velopack hook (`Program.OnBeforeUninstall`): first Arcadia's own VIIPER goes (`%APPDATA%\Arcadia\viiper`, no admin,
+  whatever the answers; only `viiper.exe` started from there is ended). Then one question "Treiber für die
+  Controller-Emulation auch entfernen?" listing what is there (usbip-win2, HidHide, SISR and its VIIPER as in
+  [sisr-removal.md](sisr-removal.md)), default no (other programs may use the drivers; `ControllerSupportRemoval.Question`).
+  Then `Pan.exe --uninstall [--remove-drivers]` elevated, one UAC prompt, no question about Pan itself (it exists for
+  Arcadia alone), in `UninstallOrder`: record the pending uninstall (`uninstall-pending.json` in the data folder: drivers
+  yes/no, driver attempts), stop (= teardown), undo the journal, delete stale device entries, the drivers if asked,
+  only then delete the service, then both folders and the empty `%ProgramData%\Arcadia` (a file in use goes at the next
+  boot, `MoveFileEx`). A data folder that isn't Pan's gets no marker and keeps the drivers (exit 7).
+- `--remove-drivers` only after the undo is confirmed (removing HidHide shows the real puck): HidHide first
+  (`msiexec /x {GUID} /qn /norestart` from its uninstall entry), then usbip-win2 (its Inno `unins*.exe`,
+  `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART`), 3 min each, 0/3010 = removed. Arcadia's wait per command is the sum of
+  Pan's step budgets (`PanTimeouts`: install ~10 min, uninstall 9 min).
+- **Pending uninstall (#422):** an incomplete undo (exit 5) or a driver that stays (exit 7) keeps the stopped service
+  (auto start) and the marker. At each Windows start the service recovers the journal; once it is empty and no
+  Arcadia is found, it finishes as the marker says: the drivers (each run counts, at most 4 in all: the uninstall and
+  three starts; then it gives up, the drivers stay under Apps and the data folder keeps `pan.log`), its data folder,
+  its own service (deleted while it runs, Windows removes it at the stop), and its running exe, which it moves into
+  `Pan-Uninstall` for deletion at the next boot (scheduling `Pan\Pan.exe` itself would delete a Pan installed again
+  before that boot). A crash or power loss in between: the marker stays, the next start goes on. No notice: the
+  service shows no windows, so a restart the drivers want is not announced.
+- **No Arcadia left (#422):** the service also removes itself, without the drivers, when its journal is empty and no
+  Arcadia is found (the UAC prompt declined, or Velopack ended the hook first). It looks at its start (`SelfRemoval`,
+  `ArcadiaProbe`): Velopack's `AppData\Local\Arcadia\current\Arcadia.exe` in every profile under `ProfileList`, and
+  each `Arcadia.exe` whose bundled Pan ran `--install` (`arcadia-installs.txt`, up to 8; a build without the
+  installer). Twice, 10 s apart, so a Velopack update swapping `current` can't make Pan go; a place it can't read keeps
+  Pan. It only reads attributes there, never writes or deletes in a user's folder. Any Arcadia found cancels a pending
+  uninstall, and `--install` deletes the marker first thing (also while a finish runs: it stops before the drivers and
+  before the service goes). `--console` never removes itself.
 - Hand-off (#270): `--uninstall` from anywhere but `%ProgramFiles%\Arcadia` copies itself to `Pan-Uninstall\Pan.exe`
   there, checks the copy's SHA-256, starts it with the same arguments and exits, so the hook ends in seconds and
   Velopack deletes the bundled exe. The copy schedules itself, `Pan-Uninstall` and the then empty
@@ -78,6 +94,6 @@ the folder.
   Pan and HidHide are there, Arcadia asks Pan `CheckHiding` (25 s reply timeout) and shows its answer as a row.
   Without Pan no pad is plugged in (`GuardedXboxPads.Unavailable`) and the per-game mode is greyed out.
 - Exit codes of `Pan.exe`: 0 done, 3 failed (`pan.log`), 4 data folder not securable (`--install`), 5 restore
-  incomplete (`--restore`, `--uninstall`: what failed stays in the journal, `Pan.exe` stays in Program Files for the
-  next `--restore` or install; Arcadia shows "Pan konnte nicht alles aufräumen …"), 6 Pan installed but HidHide not,
-  7 Pan removed but a driver stayed, 8 unelevated.
+  incomplete (`--restore`, `--uninstall`: what failed stays in the journal; after `--uninstall` the service stays and
+  retries at every start; Arcadia shows "Pan konnte nicht alles aufräumen …"), 6 Pan installed but HidHide not,
+  7 a driver stayed (Pan retries at the next start, or gave up), 8 unelevated.

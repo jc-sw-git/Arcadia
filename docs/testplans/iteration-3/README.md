@@ -11,6 +11,7 @@ its file.
 | File | Issue | Title | Test cases |
 |---|---|---|---|
 | [370](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths | T370-1 to T370-6 |
+| [422](422-pan-finishes-interrupted-uninstall.md) | #422 | Pan finishes an interrupted uninstall and removes itself without Arcadia | T422-1 to T422-10 |
 
 ## Exploratory test
 

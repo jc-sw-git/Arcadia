@@ -31,11 +31,14 @@ public static class ControllerSupportRemoval
     /// <summary>Arcadia's own <c>viiper.exe</c> (<see cref="ViiperInstallation.InDataFolder"/>, about 13 MB), kept in the data folder.</summary>
     private static string OwnViiperDirectory => Path.Combine(Core.Diagnostics.LogLocation.DataFolder, "viiper");
 
-    /// <summary>What is installed of the controller emulation, for the question at Arcadia's uninstall.</summary>
+    /// <summary>
+    /// What is installed of the controller emulation, for the question at Arcadia's uninstall. Arcadia's own VIIPER is
+    /// not asked about: it goes at every uninstall (<see cref="RemoveOwnViiper"/>).
+    /// </summary>
     [SupportedOSPlatform("windows")]
     public static InstalledParts FindInstalledParts() => new(
         Sisr: Directory.Exists(SisrDirectory),
-        Viiper: File.Exists(ViiperExecutable) || Directory.Exists(OwnViiperDirectory),
+        Viiper: File.Exists(ViiperExecutable),
         Usbip: UsbipDriver.UninstallCommand() is not null,
         HidHide: HidHideInstallation.InstalledVersion() is not null);
 
@@ -104,12 +107,7 @@ public static class ControllerSupportRemoval
     [SupportedOSPlatform("windows")]
     public static void Remove(ILauncherProgram? steam, Action<string> log)
     {
-        // Ordered by what matters most, because Velopack may end the uninstall hook before the slow steps are done.
-        // Arcadia's own viiper.exe has to end before its folder goes; SISR and its VIIPER stop in Remove, by path.
-        StopProcesses("viiper");
-        DeleteOwnViiper(log);
-
-        // Arcadia goes too, so its own viiper.exe no longer needs VIIPER's key folder.
+        // SISR and its VIIPER stop in Remove, by path. Arcadia goes too, so its own viiper.exe no longer needs VIIPER's key folder.
         var sisr = new SisrInstallation(SisrInstallation.DefaultPaths(arcadiaViiper: null), steam, new WindowsSisrSystem());
         var steamClosed = steam is not null && sisr.Find().HasMarker && CloseSteamForMarker(steam, log);
         var result = sisr.Remove(steamRunning: steam?.IsRunning == true);
@@ -120,12 +118,19 @@ public static class ControllerSupportRemoval
         }
     }
 
-    private static void DeleteOwnViiper(Action<string> log)
+    /// <summary>
+    /// Arcadia's own VIIPER goes at every uninstall, whatever the player answers (#422): nobody else uses it, and it needs
+    /// no administrator rights. Only processes started from its folder are ended; SISR's VIIPER is a separate install.
+    /// Runs first in the hook, before Velopack may end it.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    public static void RemoveOwnViiper(Action<string> log)
     {
         try
         {
             if (Directory.Exists(OwnViiperDirectory))
             {
+                StopProcessesIn(OwnViiperDirectory);
                 Directory.Delete(OwnViiperDirectory, recursive: true);
                 log("Entfernt: Arcadias VIIPER");
             }
@@ -172,20 +177,26 @@ public static class ControllerSupportRemoval
         return true;
     }
 
-    private static void StopProcesses(string name)
+    private static void StopProcessesIn(string directory)
     {
-        foreach (var process in Process.GetProcessesByName(name))
+        var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory)) + Path.DirectorySeparatorChar;
+        foreach (var process in Process.GetProcessesByName("viiper"))
         {
             using (process)
             {
                 try
                 {
+                    if (process.MainModule?.FileName is not { } file || !file.StartsWith(folder, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
                     process.Kill(entireProcessTree: true);
                     process.WaitForExit(TimeSpan.FromSeconds(2));
                 }
                 catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
                 {
-                    // Already gone or not ours to stop.
+                    // Already gone, or not ours to inspect or stop.
                 }
             }
         }

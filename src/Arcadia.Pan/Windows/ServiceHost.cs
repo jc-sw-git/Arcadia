@@ -121,10 +121,18 @@ public static class ServiceHost
         _guardian = guardian;
         guardian.UnplannedEnd += end => log.Write($"Unplanned end: {end.Reason}, generation {end.Generation}, client {end.ClientPid}, emulating {end.WasEmulating} (crash report: #244)");
         log.Write($"Pan {typeof(ServiceHost).Assembly.GetName().Version} starting (protocol {PanMessage.ProtocolVersion}, gen-0 budget {Gen0BudgetText()})");
-        await guardian.RecoverAsync();
+        var recovered = await guardian.RecoverAsync();
         // Not awaited: the pipe takes Arcadia at once, only a new emulation waits for it (#347). Never faults; the stop awaits it.
         guardian.CleanUpStaleDevices("Pan started");
         Report(Native.ServiceRunning);
+        // A pending uninstall, or no Arcadia left (#422); not for --console, which a developer runs by hand.
+        if (consoleStop is null && await PanUninstall.ShouldFinishAsync(recovered, log.Write))
+        {
+            await guardian.StopAsync();
+            await PanUninstall.FinishInServiceAsync(log);
+            return;
+        }
+
         // A puck or taken-over controller plugged in while Pan hides is hidden too (part B, #335); without the watch, at the next hide.
         using var arrivals = DeviceArrivalWatch.Start(guardian.DevicesArrivedAsync, guardian.ControllerArrivedAsync, log.Write);
 

@@ -16,9 +16,10 @@
   a controller back, HidHide's Configuration Client (Start menu, admin) is the user's emergency exit: untick the puck
   and the other controllers and turn hiding off (`docs/controller-support/pan-hiding.md`, `pan-hiding-controllers.md`).
 - Uninstalling (only from Windows; Arcadia offers no "Deinstallieren", and these questions need no controller) asks
-  "Treiber für die Controller-Emulation auch entfernen?" (usbip-win2, HidHide, SISR/VIIPER; `ControllerSupportRemoval`)
-  and whether `%APPDATA%\Arcadia` goes too; both default to no. Pan goes without a question, with one UAC prompt
-  (`docs/controller-support/pan-setup.md`). Velopack's Update.exe kills the uninstall hook after 60 s
+  "Treiber für die Controller-Emulation auch entfernen?" (usbip-win2, HidHide, SISR and its VIIPER; `ControllerSupportRemoval`)
+  and whether `%APPDATA%\Arcadia` goes too; both default to no. Arcadia's own VIIPER goes always. Pan goes without a
+  question, with one UAC prompt; what it can't finish then (or everything, if the prompt is declined) it finishes
+  itself at the next Windows starts, once it finds no Arcadia (`docs/controller-support/pan-setup.md`). Velopack's Update.exe kills the uninstall hook after 60 s
   (`commands/uninstall.rs` in 1.2.161; its C# docs say 30 s, recheck on updates), so the questions share 40 s and say
   how long they wait; the removal runs the important steps first. Asking without a time limit: #164.
 - `ArcadiaUpdateService` checks GitHub Releases (stable only) every 6 h and on "Nach Updates suchen" in Einstellungen →

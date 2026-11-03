@@ -128,6 +128,7 @@ internal static unsafe partial class Native
     public const uint ErrorCallNotImplemented = 120;
     public const uint ErrorFailedServiceControllerConnect = 1063;
     public const uint ErrorServiceDoesNotExist = 1060;
+    public const uint ErrorServiceMarkedForDelete = 1072;
 
     public const uint ServiceConfigDescription = 1;
     public const uint ServiceConfigFailureActions = 2;

@@ -226,65 +226,43 @@ public static class ServiceSetup
         log("Service started");
     }
 
-    /// <summary>
-    /// Stops the service (its stop is the full teardown), removes it, then goes on in <see cref="UninstallOrder"/>: undoes
-    /// what the journal still lists, removes the drivers if asked, deletes the data folder; a data folder that isn't
-    /// ours is left alone. When something could not be undone, the journal and Pan.exe stay too, so
-    /// <c>Pan.exe --restore</c> (or the next install) can finish it (review point 8).
-    /// </summary>
-    public static async Task<UninstallOutcome> UninstallAsync(DataFolder data, Func<Task<bool>>? removeDrivers, Action stopFileLog, Action<string> log)
+    /// <summary>Stops the installed service, if any; its stop is the full teardown.</summary>
+    public static void StopInstalledService(Action<string> log)
     {
-        using (var manager = OpenManager(Native.ScManagerConnect))
+        using var manager = OpenManager(Native.ScManagerConnect);
+        if (TryOpenService(manager, Native.ServiceStop | Native.ServiceQueryStatus) is not { } service)
         {
-            if (TryOpenService(manager, Native.ServiceStop | Native.ServiceQueryStatus | Native.Delete) is { } service)
-            {
-                using (service)
-                {
-                    Stop(service, log);
-                    if (!Native.DeleteService(service.Handle))
-                    {
-                        throw new Win32Exception();
-                    }
-                }
-
-                log("Service removed");
-            }
-            else
-            {
-                log("Service not installed");
-            }
+            log("Service not installed");
+            return;
         }
 
-        var outcome = await UninstallOrder.RunAsync(data, () => Restore.RunAsync(log), removeDrivers, stopFileLog, () =>
+        using (service)
         {
-            DeleteTree(PanPaths.DataDirectory, log);
-            DeleteIfEmpty(Path.GetDirectoryName(PanPaths.DataDirectory)!, log);
-        }, log, () => Restore.RemoveStaleDevicesAsync(log));
-        if (outcome != UninstallOutcome.RestoreIncomplete)
-        {
-            DeleteTree(PanPaths.InstallDirectory, log);
+            Stop(service, log);
         }
-
-        return outcome;
     }
 
     /// <summary>
-    /// The hand-off copy's last step (#270): it can't delete itself, so Windows deletes it, its <c>Pan-Uninstall</c>
-    /// folder and then <c>%ProgramFiles%\Arcadia</c> at the next boot, in that order. Safe there: only administrators
-    /// can plant anything in Program Files. A folder that isn't empty by then stays (Windows deletes only empty ones),
-    /// so an Arcadia or Pan installed again before the reboot is kept.
+    /// Deletes the service, if any. Windows removes it once it is stopped and nothing holds it open, so the service
+    /// can delete itself while it runs (#422).
     /// </summary>
-    public static void ScheduleHandOffRemoval(string ownPath, Action<string> log)
+    public static void DeleteService(Action<string> log)
     {
-        foreach (var path in new[] { ownPath, PanPaths.HandOffDirectory, PanPaths.ArcadiaProgramFiles })
+        using var manager = OpenManager(Native.ScManagerConnect);
+        if (TryOpenService(manager, Native.Delete) is not { } service)
         {
-            if (!Native.MoveFileExW(path, null, Native.MoveFileDelayUntilReboot))
+            return;
+        }
+
+        using (service)
+        {
+            if (!Native.DeleteService(service.Handle) && Marshal.GetLastPInvokeError() != Native.ErrorServiceMarkedForDelete)
             {
-                log($"{path} could not be scheduled for deletion (error {Marshal.GetLastPInvokeError()}); the next --install or --uninstall removes it");
+                throw new Win32Exception();
             }
         }
 
-        log($"{PanPaths.HandOffDirectory} is deleted at the next boot");
+        log("Service removed");
     }
 
     private static void Stop(ServiceHandle service, Action<string> log)
@@ -552,48 +530,6 @@ public static class ServiceSetup
         }
 
         return aside;
-    }
-
-    /// <summary>The parent folder Pan created for itself goes when nothing else is in it; never anything inside.</summary>
-    private static void DeleteIfEmpty(string directory, Action<string> log)
-    {
-        try
-        {
-            if (Directory.Exists(directory) && !Directory.EnumerateFileSystemEntries(directory).Any())
-            {
-                Directory.Delete(directory, recursive: false);
-                log($"Deleted {directory}");
-            }
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            log($"{directory} not deleted: {ex.Message}");
-        }
-    }
-
-    private static void DeleteTree(string directory, Action<string> log)
-    {
-        if (!Directory.Exists(directory))
-        {
-            return;
-        }
-
-        try
-        {
-            Directory.Delete(directory, recursive: true);
-            log($"Deleted {directory}");
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // Pan.exe itself may be the one running this: Windows deletes it at the next boot.
-            foreach (var file in Directory.EnumerateFiles(directory))
-            {
-                Native.MoveFileExW(file, null, Native.MoveFileDelayUntilReboot);
-            }
-
-            Native.MoveFileExW(directory, null, Native.MoveFileDelayUntilReboot);
-            log($"{directory} is deleted at the next boot ({ex.Message})");
-        }
     }
 
     private static ServiceHandle OpenManager(uint access)

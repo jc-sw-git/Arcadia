@@ -14,8 +14,10 @@ public static class SelfRemoval
     /// <param name="undoComplete">The start's recovery left nothing in the journal.</param>
     /// <param name="look">Looks for Arcadia (<see cref="ArcadiaInstallations.Look"/>).</param>
     /// <param name="wait">Waits <see cref="SecondLookDelay"/>.</param>
+    /// <param name="clientCame">A client connected meanwhile: an Arcadia Pan doesn't know (a build that moved), so Pan stays.</param>
     /// <returns>True when Pan is to finish the uninstall (<see cref="UninstallOrder"/>) instead of serving.</returns>
-    public static async Task<bool> ShouldFinishAsync(bool undoComplete, IPendingUninstallStore marker, Func<ArcadiaPresence> look, Func<Task> wait, Action<string> log)
+    public static async Task<bool> ShouldFinishAsync(
+        bool undoComplete, IPendingUninstallStore marker, Func<ArcadiaPresence> look, Func<Task> wait, Func<bool> clientCame, Action<string> log)
     {
         var pending = marker.Load();
         if (!StillAbsent(look(), pending is not null, marker, log))
@@ -32,6 +34,20 @@ public static class SelfRemoval
         }
 
         await wait();
+        if (clientCame())
+        {
+            if (pending is not null && marker.Delete())
+            {
+                log("A client connected: the pending uninstall is cancelled");
+            }
+            else
+            {
+                log("No Arcadia found, but a client connected: Pan stays");
+            }
+
+            return false;
+        }
+
         if (!StillAbsent(look(), pending is not null, marker, log))
         {
             return false;

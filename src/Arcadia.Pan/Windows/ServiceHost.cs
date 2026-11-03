@@ -132,14 +132,6 @@ public static class ServiceHost
         // Not awaited: the pipe takes Arcadia at once, only a new emulation waits for it (#347). Never faults; the stop awaits it.
         guardian.CleanUpStaleDevices("Pan started");
         Report(Native.ServiceRunning);
-        // A pending uninstall, or no Arcadia left (#422); not for --console, which a developer runs by hand.
-        if (consoleStop is null && await PanUninstall.ShouldFinishAsync(recovered, log.Write))
-        {
-            await guardian.StopAsync();
-            await PanUninstall.FinishInServiceAsync(log);
-            return;
-        }
-
         // A puck or taken-over controller plugged in while Pan hides is hidden too (part B, #335); without the watch, at the next hide.
         using var arrivals = DeviceArrivalWatch.Start(guardian.DevicesArrivedAsync, guardian.ControllerArrivedAsync, log.Write);
 
@@ -149,13 +141,21 @@ public static class ServiceHost
         using var idle = new IdleStop(IdleTimeout, () => guardian.ShowRetryPending, stop.Cancel, log.Write);
         server.ClientPresent += idle.ClientPresent;
         server.ClientAccepted += image => PanUninstall.RecordArcadia(image, log.Write);
+        var clientCame = false;
+        server.ClientPresent += present => clientCame |= present;
         idle.ClientPresent(false);
         var serving = server.RunAsync(serve.Token);
         var watch = WatchAsync(guardian, serve.Token);
-        var stopRequested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using (stop.Token.Register(() => stopRequested.TrySetResult()))
+        // A pending uninstall, or no Arcadia left (#422), with the pipe already open: a client that comes meanwhile
+        // (an Arcadia Pan doesn't know yet) keeps Pan. Not for --console, which a developer runs by hand.
+        var finish = consoleStop is null && await PanUninstall.ShouldFinishAsync(recovered, () => Volatile.Read(ref clientCame), log.Write);
+        if (!finish)
         {
-            await Task.WhenAny(serving, stopRequested.Task);
+            var stopRequested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using (stop.Token.Register(() => stopRequested.TrySetResult()))
+            {
+                await Task.WhenAny(serving, stopRequested.Task);
+            }
         }
 
         // The stop's teardown runs while the client's pipe is still open, so its notice (TornDown, ServiceStopping)
@@ -178,6 +178,12 @@ public static class ServiceHost
         }
         catch (OperationCanceledException)
         {
+        }
+
+        if (finish)
+        {
+            await PanUninstall.FinishInServiceAsync(log);
+            return;
         }
 
         log.Write("Pan stopped");

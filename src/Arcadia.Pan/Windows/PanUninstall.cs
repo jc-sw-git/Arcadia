@@ -68,11 +68,11 @@ public static class PanUninstall
     /// Whether the service, just started and its journal recovered, is to finish an uninstall instead of serving
     /// (<see cref="SelfRemoval"/>). Never throws: in doubt Pan stays.
     /// </summary>
-    public static async Task<bool> ShouldFinishAsync(bool undoComplete, Action<string> log)
+    public static async Task<bool> ShouldFinishAsync(bool undoComplete, Func<bool> clientCame, Action<string> log)
     {
         try
         {
-            return await SelfRemoval.ShouldFinishAsync(undoComplete, Marker, ArcadiaProbe.Look, () => Task.Delay(SelfRemoval.SecondLookDelay), log);
+            return await SelfRemoval.ShouldFinishAsync(undoComplete, Marker, ArcadiaProbe.Look, () => Task.Delay(SelfRemoval.SecondLookDelay), clientCame, log);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -85,8 +85,22 @@ public static class PanUninstall
     /// The service finishes the uninstall as the marker says (without one: without the drivers, as the player never said
     /// yes to them). It is the service, so there is nothing to stop and the journal is recovered already; it deletes its
     /// own service, which Windows removes once this process has stopped, and moves its running exe out of the way.
+    /// Never throws: a failure here would make Windows' recovery restart Pan at once, up to three times, and use up the
+    /// driver attempts meant for three Windows starts in one; the next start tries again instead.
     /// </summary>
     public static async Task FinishInServiceAsync(PanLog log)
+    {
+        try
+        {
+            await FinishAsync(log);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            log.Write($"Finishing the uninstall failed: {ex}; the next Windows start tries again");
+        }
+    }
+
+    private static async Task FinishAsync(PanLog log)
     {
         var marker = Marker;
         var pending = marker.Load() ?? new PendingUninstall(RemoveDrivers: false, DriverAttempts: 0);

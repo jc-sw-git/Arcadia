@@ -22,14 +22,16 @@ How Pan ([pan.md](pan.md)) leaves the PC with Arcadia; the install: [pan-setup.m
   three starts; then it gives up, the drivers stay under Apps and the data folder keeps `pan.log`), its data folder,
   its own service (deleted while it runs, Windows removes it at the stop), and its running exe, which it moves into
   `Pan-Uninstall` for deletion at the next boot (scheduling `Pan\Pan.exe` itself would delete a Pan installed again
-  before that boot). A crash or power loss in between: the marker stays, the next start goes on. No notice: the
+  before that boot). A crash, a power loss or an unexpected error in between: the marker stays, the next start goes on (an error
+  ends the service normally, so Windows' recovery doesn't use up the attempts in one start). No notice: the
   service shows no windows, so a restart the drivers want is not announced.
 - **No Arcadia left (#422):** the service also removes itself, without the drivers, when its journal is empty and no
   Arcadia is found (the UAC prompt declined, or Velopack ended the hook first). It looks at its start (`SelfRemoval`,
   `ArcadiaProbe`): Velopack's `AppData\Local\Arcadia\current\Arcadia.exe` in every profile under `ProfileList`, and
   each `Arcadia.exe` whose bundled Pan ran `--install` or that connected as a client (`arcadia-installs.txt`, up
   to 8, carried over when the data folder is set aside; a build without the installer). Twice, 10 s apart, so a
-  Velopack update swapping `current` can't make Pan go; a place it can't read keeps Pan. It only reads attributes there, never writes or deletes in a user's folder. Any Arcadia found cancels a pending
+  Velopack update swapping `current` can't make Pan go; a place it can't read keeps Pan, and so does a client
+  that connects meanwhile (the pipe is open while Pan looks: an Arcadia it doesn't know). It only reads attributes there, never writes or deletes in a user's folder. Any Arcadia found cancels a pending
   uninstall, and `--install` deletes the marker first thing (also while a finish runs: it stops before the drivers and
   before the service goes). `--console` never removes itself.
 - Hand-off (#270): `--uninstall` from anywhere but `%ProgramFiles%\Arcadia` copies itself to `Pan-Uninstall\Pan.exe`

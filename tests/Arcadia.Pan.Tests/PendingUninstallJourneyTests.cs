@@ -28,7 +28,7 @@ public sealed class PendingUninstallJourneyTests : IDisposable
     private async Task<UninstallOutcome?> WindowsStart(bool undoComplete, bool driversRemoved = true, Action? crashAt = null, params ArcadiaPresence[] looks)
     {
         var next = new Queue<ArcadiaPresence>(looks);
-        if (!await SelfRemoval.ShouldFinishAsync(undoComplete, _marker, () => next.Dequeue(), () => Task.CompletedTask, _ => { }))
+        if (!await SelfRemoval.ShouldFinishAsync(undoComplete, _marker, () => next.Dequeue(), () => Task.CompletedTask, () => false, _ => { }))
         {
             return null;
         }

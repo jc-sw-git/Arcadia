@@ -8,6 +8,8 @@ public class SelfRemovalTests
     private readonly List<string> _log = [];
     private int _waits;
 
+    private bool _clientCame;
+
     private Task<bool> Decide(FakeMarker marker, bool undoComplete, params ArcadiaPresence[] looks)
     {
         var next = new Queue<ArcadiaPresence>(looks);
@@ -15,7 +17,7 @@ public class SelfRemovalTests
         {
             _waits++;
             return Task.CompletedTask;
-        }, _log.Add);
+        }, () => _clientCame, _log.Add);
     }
 
     [Fact]
@@ -84,5 +86,16 @@ public class SelfRemovalTests
     {
         Assert.False(await Decide(new FakeMarker(), undoComplete: false, ArcadiaPresence.Absent));
         Assert.Equal(0, _waits);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T422-10")]
+    public async Task A_client_that_connects_while_Pan_looks_keeps_Pan_as_it_is_an_Arcadia_Pan_doesn_t_know()
+    {
+        _clientCame = true;
+        var marker = new FakeMarker(new(RemoveDrivers: true, 0));
+
+        Assert.False(await Decide(marker, undoComplete: true, ArcadiaPresence.Absent, ArcadiaPresence.Absent));
+        Assert.Null(marker.Load());
     }
 }

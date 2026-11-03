@@ -102,4 +102,4 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T413-1 to T413-24 (unit, VM, window), T413-12, -14, -17, -26 (Pan unit) | 2026-11-03 | Claude (thread) | Debug, Linux cloud container | pass | footer still showed "B Zurück" while running: fixed |
-| T413-25, T413-26 (`InstallHandOverPipeTests`, `ServiceTests` hand-over) | – | – | Windows CI | pending | – |
+| T413-25, T413-26 (`InstallHandOverPipeTests`, `ServiceTests` hand-over: real Pan installed through the pipe) | 2026-11-03 | Claude (thread) | Release, Windows CI runner (cee2435) | pass | – |

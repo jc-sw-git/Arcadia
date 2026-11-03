@@ -53,13 +53,14 @@ the folder.
   HidHide first (`msiexec /x {GUID} /qn /norestart` from its uninstall entry), then usbip-win2 (its Inno `unins*.exe`,
   `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART`), 3 min each, 0/3010 = removed; a driver that stays keeps the data
   folder with `pan.log`. Arcadia's wait per command is the sum of Pan's step budgets (`PanTimeouts`: install ~10 min,
-  uninstall ~9.5 min); the uninstall hook waits at most 40 s, the hand-off below makes that enough.
+  uninstall ~9.5 min); the hook waits for Pan at most 40 s, the hand-off below makes that enough.
 - Hand-off (#270): `--uninstall` from anywhere but `%ProgramFiles%\Arcadia` copies itself to `Pan-Uninstall\Pan.exe`
   there, checks the copy's SHA-256, starts it with the same arguments and exits, so the hook ends in seconds and
   Velopack deletes the bundled exe. The copy schedules itself, `Pan-Uninstall` and the then empty
-  `%ProgramFiles%\Arcadia` for the next boot (safe there, never in the user's folder: a planted junction). Arcadia
-  then sees exit 0 before the copy has removed anything, so exit codes 5 and 7 never reach it; the copy's result stays
-  in `pan.log` (`UninstallHandOff`).
+  `%ProgramFiles%\Arcadia` for the next boot (safe there, never in the user's folder: a planted junction). After a
+  hand-off Arcadia sees exit 0 before the copy has removed anything, so exit codes 5 and 7 never reach it; the copy's
+  result stays in `pan.log` (`UninstallHandOff`). If the copy fails (not creatable, not startable, or a build that isn't
+  a single file), Pan uninstalls in place and Arcadia gets its exit code within the 40 s.
 - An uninstalled HidHide stays until Windows restarts: its service key and driver file remain, so its version still
   reads. `HidHideInstallation.IsRemovalPending` (`DeleteFlag` on the service, or the driver file in
   `PendingFileRenameOperations`) gives the row "HidHide: Neustart ausstehend" without a fix, and Pan isn't asked about

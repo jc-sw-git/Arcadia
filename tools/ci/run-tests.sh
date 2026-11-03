@@ -39,7 +39,7 @@ names=()
 start() {
   local name="$1"
   shift
-  dotnet test "$@" "${common[@]}" > "$work/$name.log" 2>&1 &
+  dotnet test "$@" "${common[@]}" --logger "trx;LogFileName=$work/$name.trx" > "$work/$name.log" 2>&1 &
   pids+=($!)
   names+=("$name")
 }
@@ -52,23 +52,23 @@ done
 
 failed=0
 for i in "${!pids[@]}"; do
+  log="$work/${names[i]}.log"
   if wait "${pids[i]}"; then
-    result=passed
+    echo "::group::${names[i]} passed"
+    cat "$log"
+    echo "::endgroup::"
   else
-    result=FAILED
+    # Shown in full, not folded: the failures are in it, worded in the runner's language.
     failed=1
-  fi
-  echo "::group::${names[i]} $result"
-  cat "$work/${names[i]}.log"
-  echo "::endgroup::"
-  if [[ $result == FAILED ]]; then
-    echo "::error::${names[i]} failed:"
-    grep -E '^\s*(Failed|Error Message|The active test run was aborted)' "$work/${names[i]}.log" | head -40
+    echo "::error::${names[i]} failed"
+    cat "$log"
   fi
 done
 
-# A name the filter doesn't match would drop its test without a word: every method runs at least once.
-app_total=$(cat "$work"/app-shard-*.log | grep -oE 'Total: +[0-9]+' | awk '{ sum += $2 } END { print sum + 0 }')
+# A name the filter doesn't match would drop its test without a word: every method runs at least once. Counted from
+# the result files: the console output is in the runner's language (German on Linux, see ci.yml).
+app_total=$(cat "$work"/app-shard-*.trx 2>/dev/null | grep -oE '<Counters total="[0-9]+"' | grep -oE '[0-9]+' \
+  | awk '{ sum += $1 } END { print sum + 0 }')
 echo "App tests run: $app_total cases of ${#methods[@]} methods."
 if (( failed == 0 && app_total < ${#methods[@]} )); then
   echo "::error::The App test shards ran fewer tests than there are test methods."

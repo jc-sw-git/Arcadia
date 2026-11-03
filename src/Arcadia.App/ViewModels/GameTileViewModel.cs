@@ -54,7 +54,15 @@ public partial class GameTileViewModel : ViewModelBase
     public bool IsSoundtrack => Game.Type == GameType.Soundtrack;
 
     /// <summary>The update icon; a running game shows that it runs instead, its update comes with the next start.</summary>
-    public bool UpdateAvailable => Game.IsInstalled && Game.UpdateAvailable && InstallState is null && RunState is null;
+    public bool UpdateAvailable => Game.IsInstalled && (LauncherReportsUpdate ?? Game.UpdateAvailable) && InstallState is null && RunState is null;
+
+    /// <summary>
+    /// Whether the launcher says now that the game has an update, newer than the scan that made <see cref="Game"/>;
+    /// null if it doesn't tell (#288). Lets the update icon appear and go without a rescan.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UpdateAvailable))]
+    public partial bool? LauncherReportsUpdate { get; set; }
 
     public string PrimaryActionText => InstallState?.Phase == InstallPhase.Uninstalling ? "Wird deinstalliert …"
         : InstallState is not null ? $"{InstallVerb} …"

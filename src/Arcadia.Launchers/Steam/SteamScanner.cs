@@ -21,7 +21,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
 {
     // EAppState bits in the manifest's StateFlags (verified on the owner's PC, 2026-10-12:
     // 4 = installed, 6 = installed with a pending update). Bit 64 (68/70) was only seen on
-    // manifests nobody owns any more (see IsOwnedByNobody); only bit 2 counts as an update.
+    // manifests nobody owns any more (see IsOwnedByNobody). Whether bit 2 is a real update: SteamPendingUpdate.
     private const int UpdateRequired = 2;
     private const int FullyInstalled = 4;
     private const int UpdateRunning = 256;
@@ -279,7 +279,12 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
             InstallSizeBytes = ParseLong(app.GetString("SizeOnDisk")) is > 0 and var size ? size : null,
             InstalledAt = installDateOf?.Invoke(installDirectory),
             LastPlayedAt = lastPlayed,
-            UpdateAvailable = (flags & UpdateRequired) != 0,
+            UpdateAvailable = SteamPendingUpdate.IsPending(
+                flags,
+                ParseLong(app.GetString("buildid")) ?? 0,
+                ParseLong(app.GetString("TargetBuildID")) ?? 0,
+                ParseLong(app.GetString("BytesToDownload")) ?? 0,
+                ParseLong(app.GetString("BytesDownloaded")) ?? 0),
         };
     }
 

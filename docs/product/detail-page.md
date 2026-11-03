@@ -16,7 +16,8 @@
   a null one is shown disabled with the reason, or for uninstall opens the launcher instead.
 - If an update is available, A still says "Spielen" and starts the game; the launcher installs the update
   first. The update shows as an icon, and the detail page says below the button that the launcher may update
-  first. Launchers have no update-only command: Steam ignores `steam://install` for
+  first. Where the launcher's install monitor tells (Steam), the icon and the note appear and go live within a poll,
+  without a rescan and without a toast (#288). Launchers have no update-only command: Steam ignores `steam://install` for
   installed games and `steam://validate` verifies every file first; comparable products offer none either.
 - What A says depends on the entry's type (#141): "Spielen" for a game, "Tüfteln" for software and
   tools, "Abrocken" for a soundtrack; the same text on the button, in the context menu and in the button hint. Not

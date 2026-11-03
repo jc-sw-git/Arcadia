@@ -101,6 +101,23 @@ internal sealed class FixedRunningGames(string launcherId, IReadOnlyList<string>
 internal sealed class LauncherInstalls
 {
     private readonly Dictionary<string, InstallProgress> _active = [];
+    private readonly Dictionary<string, bool> _updates = [];
+
+    /// <summary>Whether the launcher says the installed game has an update (#288); null: it doesn't say.</summary>
+    public void SetUpdate(Game game, bool? update)
+    {
+        lock (_active)
+        {
+            if (update is { } value)
+            {
+                _updates[game.Key] = value;
+            }
+            else
+            {
+                _updates.Remove(game.Key);
+            }
+        }
+    }
 
     public void Set(Game game, InstallProgress? progress)
     {
@@ -123,7 +140,9 @@ internal sealed class LauncherInstalls
         {
             var active = _active.Where(entry => Game.LauncherIdOf(entry.Key) == launcherId)
                 .ToDictionary(entry => entry.Key[(launcherId.Length + 1)..], entry => entry.Value);
-            return new InstallSnapshot(active, new Dictionary<string, InstallOutcome>());
+            var updates = _updates.Where(entry => Game.LauncherIdOf(entry.Key) == launcherId)
+                .ToDictionary(entry => entry.Key[(launcherId.Length + 1)..], entry => entry.Value);
+            return new InstallSnapshot(active, new Dictionary<string, InstallOutcome>(), updates);
         }
     }
 }

@@ -10,6 +10,7 @@ its file.
 
 | File | Issue | Title | Test cases |
 |---|---|---|---|
+| [288](288-steam-update-shown-that-steam-dropped.md) | #288 | Steam: update shown that Steam dropped seconds later | T288-1 to T288-9 |
 | [370](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths | T370-1 to T370-6 |
 | [376](376-ci-hygiene.md) | #376 | CI hygiene: job timeouts, SHA-pinned actions, Dependabot, concurrency, split the App tests | none (CI only) |
 | [399](399-show-repeated-error-again-after-quiet-period.md) | #399 | Show a repeated unexpected error again after a quiet period | T399-1 to T399-17 |

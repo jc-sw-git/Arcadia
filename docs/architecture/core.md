@@ -37,7 +37,7 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
 - `LibraryService`/`LibraryRefresher`: scan and rescan; every active launcher keeps a library, also empty or not
   found, `ScannedAt`. `LibraryTypes`: which types a tab shows by the launcher's switches, counts per type.
 - `GameSorter`, `PageSizes`/`PageWindow`, `Carousel` (detail page neighbours).
-- `InstallTracker`: installs started from Arcadia or in the launcher. `Changelog`: release notes between versions.
+- `InstallTracker`: installs started from Arcadia or in the launcher, and the update state a monitor reports live (#288). `Changelog`: release notes between versions.
 
 **Running games**
 - `RunningGamesTracker`: which games run and which of them Arcadia started; off the UI thread, every 2 s also in the

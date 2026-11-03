@@ -153,7 +153,7 @@ public partial class App : Application
 
 
             var ownPads = new OwnPadModels();
-            _gamepad = ControllerInput.Create(viewModel, ownPads);
+            _gamepad = ControllerInput.Create(viewModel, ownPads, time);
             var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
             viewModel.Dialogs = new SystemDialogs(window, () => viewModel.Input.UsesController, () => mouseMode);
 

@@ -129,7 +129,7 @@ internal sealed class ArcadiaDriver : IDisposable
         Main.Session.StartRefused += (_, gameKey) => BroughtToFrontFor.Add(gameKey);
 
         // The controllers as the App reads them (#72), through SDL as the test sets it up.
-        _controllers = ControllerInput.Create(Sdl, Main, new DeviceTreeEmulatedPads(() => [.. XusbDevices], AppLog.Write));
+        _controllers = ControllerInput.Create(Sdl, Main, Time, new DeviceTreeEmulatedPads(() => [.. XusbDevices], AppLog.Write));
         _running = _app.RunningGames;
         PanNotices = new PanNotices(Main.Toast, () => IsArcadiaInFront, OverlayNotices.Add);
         Pan.WhyLeftAlone = () => ControllerSupport.WhyPanIsLeftAlone;

@@ -196,6 +196,88 @@ public sealed class EveryControllerForGamesTests
         Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);
     }
 
+    /// <summary>
+    /// #410 (owner's rc.2 test): HidHide gone after the restart, Pan on, a DualSense connected. Pan answers "HidHide's
+    /// driver missing"; the settings show only "HidHide fehlt" with "Installieren": no "HidHide ist nicht aktiv" beside
+    /// it and no "Controller zuordnen", as nothing is emulated.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T410-1")]
+    public async Task With_a_part_missing_only_its_row_shows_and_there_is_nothing_to_assign()
+    {
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam { HidHideVersion = null });
+        using var _ = arcadia;
+        arcadia.Pan.Hiding = PanReason.HidHideMissing;
+        arcadia.Sdl.Plug(DualSense);
+        arcadia.StartControllers();
+        arcadia.IsArcadiaInFront = false;
+        await arcadia.TickSteamControllerAsync();
+        arcadia.PollControllers();
+
+        var controller = OpenControllerSettings(arcadia);
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Zeile „HidHide fehlt“");
+
+        Assert.Equal(["issue:hidhide-missing"], RowsBelow(controller).Where(key => key != PanRows.RestoreKey));
+        Assert.Equal("Installieren", Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).ActionText);
+        Assert.Equal(0, arcadia.XboxPads.Plugged);
+        // On, but not as running: the switch points to the problem below.
+        Assert.Equal("Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.", controller.Rows.OfType<SetupSwitchRowViewModel>().Single().Subtitle);
+    }
+
+    /// <summary>
+    /// #410, second half of T410-1: "Installieren" on "HidHide fehlt" sets HidHide up and asks for Arcadia's restart;
+    /// once Pan can hide again, the part row is gone and "Controller zuordnen" is back.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T410-1")]
+    public async Task After_installing_the_missing_part_Controller_zuordnen_is_back()
+    {
+        var steam = new FakeSteam { HidHideVersion = null };
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, steam);
+        using var _ = arcadia;
+        arcadia.Pan.Hiding = PanReason.HidHideMissing;
+        arcadia.Sdl.Plug(DualSense);
+        arcadia.StartControllers();
+        arcadia.IsArcadiaInFront = false;
+        await arcadia.TickSteamControllerAsync();
+        arcadia.PollControllers();
+        var controller = OpenControllerSettings(arcadia);
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Zeile „HidHide fehlt“");
+        Assert.DoesNotContain(controller.Rows, row => row.Key == PanRows.LayoutsKey);
+
+        Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).Activate();
+        Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => controller.Rows.All(row => row.Key != "issue:hidhide-missing"), "„HidHide fehlt“ verschwindet");
+        Assert.Equal(HidHideRelease.Version, steam.HidHideVersion);
+        Assert.NotEmpty(arcadia.Restarts);
+
+        // The restarted Arcadia finds HidHide's driver running: Pan hides again.
+        arcadia.Pan.Hiding = null;
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == PanRows.LayoutsKey), "„Controller zuordnen“");
+        Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:hidhide", StringComparison.Ordinal));
+    }
+
+    /// <summary>#410 (QE): an old HidHide still lets the emulation run; then the controllers can still be assigned.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T410-1")]
+    public async Task With_an_old_part_that_still_runs_the_controllers_can_be_assigned()
+    {
+        var arcadia = await StartInBackgroundAsync(new FakeSteam { HidHideVersion = new Version(1, 0, 0, 0) }, pads: DualSense);
+        using var _ = arcadia;
+
+        var controller = OpenControllerSettings(arcadia);
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-unsupported"), "die Zeile zum alten HidHide");
+
+        Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);
+        Assert.Contains(PanRows.LayoutsKey, RowsBelow(controller));
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T238-7")]
     public async Task A_controller_Pan_cant_hide_reaches_games_directly_and_one_row_lists_it_with_why()

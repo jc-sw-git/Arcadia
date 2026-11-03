@@ -74,6 +74,7 @@ its file.
 | [396-pan-hides-controllers-arcadia-cant-see.md](396-pan-hides-controllers-arcadia-cant-see.md) | #396 | Pan hides controllers Arcadia itself can no longer see | 3 |
 | [402-pan-off-by-default.md](402-pan-off-by-default.md) | #402 | Pan off by default; "Treiber installieren" also on a fresh install | 5 |
 | [407-driver-install-waits-for-restart-or-firmware-update.md](407-driver-install-waits-for-restart-or-firmware-update.md) | #407 | Driver install waits for a pending restart or a firmware update | 5 |
+| [410-missing-part-hides-emulation-rows.md](410-missing-part-hides-emulation-rows.md) | #410 | A missing part shows a contradicting HidHide row and still offers "Controller zuordnen" | 1 |
 | [403-spiele-sehen-lists-the-steam-controller.md](403-spiele-sehen-lists-the-steam-controller.md) | #403 | "Spiele sehen" sometimes leaves out the connected Steam Controller | 2 |
 
 ## Exploratory test
@@ -117,4 +118,5 @@ Charter: –. Time box: –. Findings: –.
 | T396-1 to T396-3 (fakes) | `tests/Arcadia.App.Tests/PanEmulationTests.cs`, `EmulationSetupTests.cs`, `tests/Arcadia.Core.Tests/PanEmulationTests.cs`, `TakenOverControllersTests.cs` |
 | T402-1, T402-2, T402-3 (VIIPER folder) | `tests/Arcadia.App.Tests/EmulationSetupTests.cs`, `tests/Arcadia.Core.Tests/ViiperInstallationTests.cs`, `tests/Arcadia.Core.Tests/ControllerSupportTests.cs` (default and saved choice) |
 | T407-2, T407-3, T407-4 | `tests/Arcadia.App.Tests/EmulationSetupTests.cs` |
+| T410-1 | `tests/Arcadia.App.Tests/EveryControllerForGamesTests.cs` |
 | T403-1 (fakes) | `tests/Arcadia.App.Tests/EveryControllerForGamesTests.cs`, `tests/Arcadia.Core.Tests/SteamControllerSightingTests.cs` |

@@ -17,11 +17,11 @@ Automated: `PanUpdateAtStartTests` (T297-4; T297-2 within T326-4; the rest moved
       Start dauert deshalb etwas länger"), no question; the UAC prompt comes, confirmed, the library shows with the
       toast "Pan: aktualisiert"; `Pan.exe --version` in Program Files is the bundled one. · E2E: yes (acceptance test;
       the real prompt and exe in T297-9)~~ Replaced by T326-1 (#326).
-- [ ] **T297-2** No Pan installed, or exactly the bundled one: Arcadia starts straight into the library, no page, no
+- [x] **T297-2** No Pan installed, or exactly the bundled one: Arcadia starts straight into the library, no page, no
       prompt. · E2E: yes
 - [ ] ~~**T297-3** Pan switched off in the settings ("Controller-Wächter (Pan)" Aus) and another Pan installed: the update
       runs all the same; Pan stays switched off. · E2E: yes~~ Replaced by T326-4 (switched off: no update at start, the settings offer it) (#326).
-- [ ] **T297-4** The update installs no driver, needs no network, and neither closes Steam nor waits for a running
+- [x] **T297-4** The update installs no driver, needs no network, and neither closes Steam nor waits for a running
       Steam game; a missing usbip-win2 or HidHide stays the "Treiber installieren" row. · E2E: yes (fakes; offline on
       the real PC in T297-10)
 - [ ] ~~**T297-5** A firmware hold from before the start (Arcadia ended during "Steam will die Firmware aktualisieren"):
@@ -33,10 +33,10 @@ Automated: `PanUpdateAtStartTests` (T297-4; T297-2 within T326-4; the rest moved
       one prompt, then the library shows, toast "Pan: entfernt und ausgeschaltet", Pan switched off; that prompt
       declined, the page stays. · E2E: yes~~ Replaced by T326-3 and T326-7 (no failed page, no "Pan entfernen") (#326).
 - [ ] ~~**T297-8** On the failed page [B] ends Arcadia; while the prompt is up, [B] does nothing. · E2E: yes~~ Replaced by T326-7 and T326-8 (#326).
-- [ ] **T297-9** Downgrade: a Pan *newer* than the bundled one (installed by a later build) is replaced by the older
+- [x] **T297-9** Downgrade: a Pan *newer* than the bundled one (installed by a later build) is replaced by the older
       bundled one; `pan.log` shows the install, the service runs, the Xbox pad works in a game. · E2E: no (real UAC,
       service, two builds)
-- [ ] **T297-10** Network unplugged, another Pan installed: the update works the same (no download). · E2E: no (real
+- [x] **T297-10** Network unplugged, another Pan installed: the update works the same (no download). · E2E: no (real
       PC offline)
 - [ ] **T297-11** Arcadia closed on the page (window ✕ or Task Manager) before the prompt is answered: nothing changed,
       the next start shows the page again. · E2E: no (real process end during UAC)
@@ -49,3 +49,5 @@ History:
 |---|---|---|---|---|---|
 | T297-1 … T297-8 | 2026-10-28 | Claude | PR branch, Debug, Linux cloud container, acceptance tests with a faked Pan; each seen red once by a mutation of the code it covers | ✅ | Windows CI and owner's PC open |
 | T297-8 (prompt up) | 2026-10-28 | Claude (QE review) | PR branch, Debug, Linux cloud container, new acceptance test with the Windows prompt held open; red once each by dropping the busy guard of [B] and of [X] | ✅ | – |
+| T297-2, T297-4, T297-9, T297-10 | 2026-11-02 | owner | v0.2.0 release candidate (rc.1/rc.2), owner's PC, Windows 11, real Steam and controllers | ✅ | Acceptance review #222 |
+| T297-11 | 2026-11-02 | owner | – | ➖ not testable by hand | covered by the automated tests only |

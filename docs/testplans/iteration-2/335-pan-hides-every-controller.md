@@ -10,7 +10,7 @@ Check script A1–A5 (owner's PC, Windows 11, HidHide 1.5.230): results in #238.
 interfaces (restart only on reconnect), which Pan reports as `ControllerNeedsReplug`. Not tested: DualSense by
 Bluetooth, GameInput.
 
-- [ ] **T335-1** DualSense (USB) and 8BitDo (dongle) connected, Arcadia starts and takes both over: a probe outside the
+- [x] **T335-1** DualSense (USB) and 8BitDo (dongle) connected, Arcadia starts and takes both over: a probe outside the
       allow list sees neither through XInput, Windows.Gaming.Input, raw HID and SDL3, Steam's controller settings list
       neither; `pan.log` says "Controller 054C:0CE6 hidden" and "Controller 2DC8:310B hidden … only fully taken over
       once reconnected". After a reconnect of the 8BitDo Steam doesn't list it either. Then plug the DualSense into
@@ -36,3 +36,4 @@ History:
 | A1–A5 | 2026-10-30 | owner | check script v3 and probe, Windows 11, HidHide 1.5.230 | ✅ A1, A4, A5 (DS4, DualSense) · ❌ A2, A3 for XInput pads, adaptive triggers, Switch 2 Pro unseen | Results in #238; XInput restart reported as replug (this PR), slot and kinds go to #238 |
 | T335-4, T335-5 | 2026-10-30 | Claude | branch `feat/pan-hides-every-controller-335`, Linux container, fakes | ✅ | – |
 | real driver | 2026-10-30 | Claude | PR #337 at 6b4f310, Windows CI runner (Server 2025), HidHide 1.5.230, made-up instance ids | ✅ `HidHideTests` hide and show a HID collection and an XInput interface, HidHide as before | – |
+| T335-1 | 2026-11-02 | owner | v0.2.0 release candidate (rc.1/rc.2), owner's PC, Windows 11, real Steam and controllers | ✅ | Acceptance review #222 |

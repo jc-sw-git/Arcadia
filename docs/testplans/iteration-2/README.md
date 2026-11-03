@@ -3,7 +3,14 @@
 Milestone "Iteration 2". Format and rules: [README](../README.md). The ticks are set by the owner's full test
 before the merge.
 
-**Acceptance review:** release candidate –, by –, on –.
+**Acceptance review:** release candidates v0.2.0-rc.1 and v0.2.0-rc.2, by the owner, on 2026-11-01 to 2026-11-02 (#222).
+Run by hand: only cases never run by hand before whose failure would block the release (first setup, controllers in
+daily use, "Controller wiederherstellen", ending Arcadia normally and hard, a hard reset, uninstall with and without
+the drivers, the sign-in's host check) and the Pan update at start; all passed, the results are in each issue's file.
+Not run by hand, not release-critical (owner, 2026-11-02): the other open cases of #213, #214, #238, #242, #243,
+#270, #278, #296, #308, #326, #335, #367, #369, #372; they stay covered by their automated tests. T178-12 waits for
+#146. Budgets: measured in #272. CI health (PR runs of 2026-11-01): wall-clock 9–12 min, slowest test step 6 min,
+84 headless window tests.
 
 One file per issue. A PR that closes an issue adds its file and lists it here; whoever tests an issue reads only
 its file.
@@ -79,7 +86,7 @@ its file.
 
 ## Exploratory test
 
-Charter: –. Time box: –. Findings: –.
+Charter: switch between Arcadia, Steam and running games with controllers only and look for a controller that gets lost, arrives twice or sticks, and for moments where Arcadia doesn't say what is happening. Time box: 90 minutes. Findings: none that weren't already handled (owner, 2026-11-03).
 
 ## Acceptance tests
 

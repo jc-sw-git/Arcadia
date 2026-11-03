@@ -18,7 +18,7 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
       · E2E: no (real pads, HidHide); the flow with fakes in `EveryControllerForGamesTests`
 - [ ] **T238-2** As T238-1 with the DualSense by Bluetooth, switched on while the game runs: the game sees one new pad,
       never two. · E2E: no (real pads)
-- [ ] **T238-3** Back + Start with each pad in a running game: Arcadia reacts, the game's input log never shows it; a
+- [x] **T238-3** Back + Start with each pad in a running game: Arcadia reacts, the game's input log never shows it; a
       short ⧉ reaches the game as a tap; ⧉ held brings Arcadia back and the game sees ⧉ held (after 100 ms).
       · E2E: yes (`EveryControllerForGamesTests`)
 - [ ] **T238-4** Arcadia in front, then the mouse mode on: the game reads rest from every pad. With "Steams
@@ -35,12 +35,12 @@ T335-1 to T335-3 (Pan's hiding on real hardware, `335-pan-hides-every-controller
 - [ ] **T238-7** A controller Pan can't hide: it reaches the game directly, no pad of Arcadia's; the info row
       "… lässt sich nicht verstecken" lists it with its reason. Pan off: every pad reaches the game directly and the row
       is gone. · E2E: yes (`EveryControllerForGamesTests`), by hand with any controller the row names
-- [ ] **T238-8** Kill `Arcadia.exe` in Task Manager mid-game: the real pads are back in the game within 10 s.
+- [x] **T238-8** Kill `Arcadia.exe` in Task Manager mid-game: the real pads are back in the game within 10 s.
       · E2E: no (Pan, HidHide)
 - [ ] **T238-9** Kill `viiper.exe` mid-game: the pads come back at the next tick; after 4 kills in 5 minutes the
       emulation stops with a toast and the real pads are visible. · E2E: no (real VIIPER); the give-up with fakes in
       `TakenOverControllersTests`
-- [ ] **T238-10** Reboot while pads are hidden (hard reset): after login every pad is visible to games.
+- [x] **T238-10** Reboot while pads are hidden (hard reset): after login every pad is visible to games.
       · E2E: no (reboot)
 - [x] **T238-11** A game runs 10 minutes with DualSense (USB), 8BitDo (dongle) and the Steam Controller (mode
       „Arcadia“) in use beside each other, the DualSense's gyro on (a game with DualSense support, or Steam's
@@ -92,3 +92,4 @@ History:
 | T238-11 pacing and forwarding (fakes) | 2026-10-31 | Claude | branch `feat/forward-latency-238` (part 4), Linux container, fakes and fake clock | ✅ 22 tests (`ReadPacingTests`, `PadForwarderTests`, `LatencyStatsTests`, the switch in `TakenOverControllersTests` and `SteamControllerXboxPadTests`, `Sampled` in `SdlGamepadSourceTests`); full suite green. Red once each: fast reads also while the pads rest (QE finding), a fallback wait cut to 0 ms (QE finding), without the one-slot wait behind a slow send. Not run: real pads, the Windows timer, CPU | owner's T238-11 on Windows |
 | Latency check script (`checks/238-latency/`, v2) and `arcadia.log` | 2026-10-31 | owner, evaluated by Claude | Windows 11, owner's PC, branch `feat/forward-latency-238` at 4d9fb28 (Debug), DualSense USB, 8BitDo Ultimate 2 dongle, Steam Controller (puck, mode „Arcadia“), a game in the background, ~1 min per pad | ✅ real controller → emulated pad as a game reads it: DualSense (HID, exact) mean 0.80 ms, p99 1.60, max 3.04 (238 changes); 8BitDo (XInput, probe polls 1 kHz, so ±1 ms) mean 1.11, p99 1.56, max 2.17 (274); Steam Controller presses mean 1.14, p99 2.08, max 2.44 (105; releases not measurable: the probe merged SDL's two entries of the puck). Log: read → VIIPER mean 46–85 µs, p99 ≤ 140 µs; read gap mean 1.2–1.4 ms, p99 1.7–2.0 ms, steady-state max 10–21 ms (rare); CPU 0.13–0.37 % of all cores; copy puck → VIIPER mean 37 µs, p99 130 µs. Not run: the 10-minute session | Gaps over SDL's let-go for a hide no longer counted (they showed up to 0.95 s); 10-minute T238-11 still open |
 | T238-11 | 2026-10-31 | owner | as the latency check above | ✅ passed on the owner's word with the ~1-minute runs per pad instead of 10 minutes | – |
+| T238-3, T238-8, T238-10 | 2026-11-02 | owner | v0.2.0 release candidate (rc.1/rc.2), owner's PC, Windows 11, real Steam and controllers | ✅ | Acceptance review #222 |

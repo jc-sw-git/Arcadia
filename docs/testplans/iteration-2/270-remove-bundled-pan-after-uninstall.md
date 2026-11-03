@@ -9,7 +9,7 @@ Pan and the drivers installed, `pan.log` (`%ProgramData%\Arcadia\Pan`, readable 
 Automated: `UninstallHandOffTests` (T270-4 … T270-6); the Windows CI runner's `ServiceTests` runs `--uninstall` from
 outside Program Files, waits for the hand-off copy and checks the service is gone and the started Pan.exe still there.
 
-- [ ] **T270-1** Uninstall Arcadia (Windows Settings → Apps), "Treiber … auch entfernen?" answered yes, UAC confirmed:
+- [x] **T270-1** Uninstall Arcadia (Windows Settings → Apps), "Treiber … auch entfernen?" answered yes, UAC confirmed:
       right after the uninstaller closes, `%LocalAppData%\Arcadia` is gone or empty (A1: with the build before this PR
       exactly `current\Pan\Pan.exe` stayed); within a few minutes the drivers are gone (usbip-win2 and HidHide missing
       from Apps), `Pan-Uninstall\Pan.exe` no longer runs, `pan.log` is gone with the data folder. A2: the copy kept running
@@ -17,7 +17,7 @@ outside Program Files, waits for the hand-off copy and checks the service is gon
       deferred to the acceptance review (needs an installer of the branch; owner, 2026-10-28)
 - [ ] **T270-2** After T270-1 or T270-3, restart Windows: `%ProgramFiles%\Arcadia\Pan-Uninstall` and the then empty
       `%ProgramFiles%\Arcadia` are gone. · E2E: no (reboot); deferred to the acceptance review (as T270-1)
-- [ ] **T270-3** Same as T270-1 with the drivers question answered no: Pan's service and `%ProgramFiles%\Arcadia\Pan` are
+- [x] **T270-3** Same as T270-1 with the drivers question answered no: Pan's service and `%ProgramFiles%\Arcadia\Pan` are
       gone, usbip-win2 and HidHide stay installed, nothing is left in `%LocalAppData%\Arcadia`. · E2E: no (as T270-1); deferred to the acceptance review (as T270-1)
 - [ ] **T270-4** `Pan.exe --uninstall` started by hand, elevated, from Arcadia's folder (`%LocalAppData%\Arcadia\current\Pan`)
       while Arcadia stays installed: the prompt returns at once with "The uninstall goes on in …", the service goes, the
@@ -34,3 +34,4 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T270-4 … T270-6 | 2026-10-28 | Claude | PR branch, unit tests on Linux (cloud container); `ServiceTests` only on the Windows CI runner | ✅ unit tests | Windows CI and owner's PC open |
+| T270-1, T270-3 | 2026-11-02 | owner | v0.2.0 release candidate (rc.1/rc.2), owner's PC, Windows 11, real Steam and controllers | ✅ | Acceptance review #222 |

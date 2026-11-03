@@ -153,7 +153,7 @@ internal sealed class ArcadiaComposition
             parts.FirstRun,
             time,
             parts.FolderCheck);
-        main.ShowPanUpdateIfDue();
+        main.PanDialogs.ShowPanUpdateIfDue();
         parts.WebPages.Attach(main);
         return new ArcadiaComposition(launchers, controllerSupport, launchedGames, runningGames, main, time, settings);
     }

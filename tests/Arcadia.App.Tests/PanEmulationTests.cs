@@ -55,7 +55,7 @@ public sealed class PanEmulationTests
     public async Task The_switch_says_Pan_runs_and_switched_off_it_hides_the_mode_and_keeps_Controller_wiederherstellen()
     {
         using var arcadia = await StartAsync();
-        Assert.True(arcadia.Main.ShowControllerSupport);
+        Assert.True(arcadia.Main.ControllerMode.ShowControllerSupport);
         var controller = OpenControllerSettings(arcadia);
 
         var pan = Switch(controller);
@@ -80,7 +80,7 @@ public sealed class PanEmulationTests
         Assert.Equal([1u], arcadia.Pan.Stopped);
 
         arcadia.Press(UiAction.Back);
-        Assert.False(arcadia.Main.ShowControllerSupport, "kein Modus, solange Pan aus ist");
+        Assert.False(arcadia.Main.ControllerMode.ShowControllerSupport, "kein Modus, solange Pan aus ist");
         Assert.False(arcadia.Main.Status.HasControllerStatus);
 
         // On again: the emulation comes back at the next tick.
@@ -413,7 +413,7 @@ public sealed class PanEmulationTests
         Assert.Equal("Pan räumt noch auf", row.Title);
         Assert.True(row.IsInfo);
         Assert.Equal("Wird eingerichtet …", Switch(controller).Subtitle);
-        Assert.False(arcadia.Main.ControllerModeBroken, "kein Problem, es geht von selbst weiter");
+        Assert.False(arcadia.Main.ControllerMode.ControllerModeBroken, "kein Problem, es geht von selbst weiter");
 
         arcadia.Pan.Missing = null;
         await arcadia.TickSteamControllerAsync();
@@ -428,7 +428,7 @@ public sealed class PanEmulationTests
         using var arcadia = await StartAsync();
         arcadia.Pan.Missing = "Pan antwortet nicht";
         await arcadia.TickSteamControllerAsync();
-        Assert.True(arcadia.Main.ControllerModeBroken);
+        Assert.True(arcadia.Main.ControllerMode.ControllerModeBroken);
 
         arcadia.Hold(UiAction.Accept, TimeSpan.FromMilliseconds(1100));
         var detail = arcadia.Detail!;
@@ -461,7 +461,7 @@ public sealed class PanEmulationTests
         using var arcadia = await StartAsync(copy: true, new FakeSteam { IsSteamRunning = true });
 
         Assert.Single(arcadia.Pan.Hidden);
-        Assert.Null(arcadia.Main.PanDialog);
+        Assert.Null(arcadia.Main.PanDialogs.PanDialog);
         Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);
     }
 
@@ -471,7 +471,7 @@ public sealed class PanEmulationTests
         var arcadia = await StartAsync(copy: true, new FakeSteam { IsSteamRunning = true });
         Assert.Single(arcadia.Pan.Hidden);
         Assert.False(arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, RebootIntoBootloader, forwarding: true));
-        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Hinweis „Steam will die Firmware aktualisieren“");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.FirmwareAttempt is not null, "der Hinweis „Steam will die Firmware aktualisieren“");
         return arcadia;
     }
 
@@ -481,10 +481,10 @@ public sealed class PanEmulationTests
     {
         using var arcadia = await StartAsync(copy: true, new FakeSteam { IsSteamRunning = true });
         var shown = 0;
-        arcadia.Main.PanDialogShown += (_, _) => shown++;
+        arcadia.Main.PanDialogs.PanDialogShown += (_, _) => shown++;
 
         arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, RebootIntoBootloader, forwarding: true);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Hinweis „Steam will die Firmware aktualisieren“");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.FirmwareAttempt is not null, "der Hinweis „Steam will die Firmware aktualisieren“");
         arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, RebootIntoBootloader, forwarding: true);
 
         // PanDialogShown brings the window back in front of Steam's (App: ForegroundGuard.BringBack).
@@ -497,8 +497,8 @@ public sealed class PanEmulationTests
     {
         var shown = 0;
         using var arcadia = await StartUpdateAttemptAsync();
-        arcadia.Main.PanDialogShown += (_, _) => shown++;
-        var notice = arcadia.Main.FirmwareAttempt!;
+        arcadia.Main.PanDialogs.PanDialogShown += (_, _) => shown++;
+        var notice = arcadia.Main.PanDialogs.FirmwareAttempt!;
         Assert.Equal("Steam will die Firmware aktualisieren", notice.Title);
         Assert.True(notice.CloseButton.IsFocused);
         Assert.Equal("Schließen", notice.Legend);
@@ -508,7 +508,7 @@ public sealed class PanEmulationTests
         arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, RebootIntoBootloader, forwarding: true);
         arcadia.Press(UiAction.Back);
 
-        Assert.Null(arcadia.Main.FirmwareAttempt);
+        Assert.Null(arcadia.Main.PanDialogs.FirmwareAttempt);
         Assert.Empty(arcadia.Pan.Unhidden);
         await arcadia.TickSteamControllerAsync();
         Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);
@@ -517,7 +517,7 @@ public sealed class PanEmulationTests
         // A later attempt shows it again.
         arcadia.Wait(FirmwareAttemptWatch.Quiet);
         arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, RebootIntoBootloader, forwarding: true);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Hinweis beim nächsten Versuch");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.FirmwareAttempt is not null, "der Hinweis beim nächsten Versuch");
     }
 
     [AvaloniaFact]
@@ -525,7 +525,7 @@ public sealed class PanEmulationTests
     public async Task Controller_freigeben_shows_them_to_Steam_until_Pan_is_switched_off_and_on()
     {
         using var arcadia = await StartUpdateAttemptAsync();
-        var notice = arcadia.Main.FirmwareAttempt!;
+        var notice = arcadia.Main.PanDialogs.FirmwareAttempt!;
 
         arcadia.Press(UiAction.Left, 2);
         Assert.True(notice.ReleaseButton.IsFocused);
@@ -536,12 +536,12 @@ public sealed class PanEmulationTests
         Assert.Contains("aus- und wieder einschalten", notice.ReleasedNext);
 
         arcadia.Press(UiAction.Back);
-        Assert.Null(arcadia.Main.FirmwareAttempt);
+        Assert.Null(arcadia.Main.PanDialogs.FirmwareAttempt);
         arcadia.Wait(PanEmulation.HideRetry);
         await arcadia.TickSteamControllerAsync();
         Assert.Single(arcadia.Pan.Hidden);
         Assert.Equal(PanEmulationProblem.Excluded, arcadia.ForGames.Status.Problem);
-        Assert.False(arcadia.Main.ControllerModeBroken, "freigegeben ist kein Problem");
+        Assert.False(arcadia.Main.ControllerMode.ControllerModeBroken, "freigegeben ist kein Problem");
 
         var controller = OpenControllerSettings(arcadia);
         Assert.Equal(PanRows.ExcludedSubtitle, Switch(controller).Subtitle);
@@ -576,13 +576,13 @@ public sealed class PanEmulationTests
         arcadia.GameInFront = "steam:620";
         arcadia.IsArcadiaInFront = false;
         var shown = 0;
-        arcadia.Main.PanDialogShown += (_, _) => shown++;
+        arcadia.Main.PanDialogs.PanDialogShown += (_, _) => shown++;
 
         arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, RebootIntoBootloader, forwarding: true);
 
         await arcadia.WaitUntilAsync(() => arcadia.OverlayNotices.Count == 1, "der Hinweis über dem Spiel");
         Assert.Equal(SteamControllerForGames.FirmwareInGameText, arcadia.OverlayNotices[0]);
-        Assert.Null(arcadia.Main.FirmwareAttempt);
+        Assert.Null(arcadia.Main.PanDialogs.FirmwareAttempt);
         Assert.Equal(0, shown);
     }
 

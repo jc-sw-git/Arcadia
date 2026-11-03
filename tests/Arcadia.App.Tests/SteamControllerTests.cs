@@ -125,21 +125,21 @@ public sealed class SteamControllerTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.StartControllers();
-        Assert.False(arcadia.Main.ShowControllerSupport);
+        Assert.False(arcadia.Main.ControllerMode.ShowControllerSupport);
 
         var pad = arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.PollControllers();
-        Assert.True(arcadia.Main.ShowControllerSupport, "SDL sees the Steam Controller");
+        Assert.True(arcadia.Main.ControllerMode.ShowControllerSupport, "SDL sees the Steam Controller");
 
         // Switched off (or the puck pulled): SDL reports it gone at once.
         arcadia.Sdl.Unplug(pad);
         arcadia.PollControllers();
-        Assert.False(arcadia.Main.ShowControllerSupport, "SDL no longer sees it");
+        Assert.False(arcadia.Main.ControllerMode.ShowControllerSupport, "SDL no longer sees it");
 
         // Switched on again: a new SDL id, and it works at once.
         var again = arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.PollControllers();
-        Assert.True(arcadia.Main.ShowControllerSupport);
+        Assert.True(arcadia.Main.ControllerMode.ShowControllerSupport);
         var first = arcadia.Main.Library.FocusedGame!.Game;
         arcadia.PressOn(again, B.DPadRight);
         Assert.NotSame(first, arcadia.Main.Library.FocusedGame!.Game);
@@ -153,6 +153,6 @@ public sealed class SteamControllerTests
         arcadia.Sdl.Plug(KnownPads.XboxSeries);
         arcadia.StartControllers();
 
-        Assert.False(arcadia.Main.ShowControllerSupport);
+        Assert.False(arcadia.Main.ControllerMode.ShowControllerSupport);
     }
 }

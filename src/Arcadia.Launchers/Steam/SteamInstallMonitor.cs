@@ -32,6 +32,10 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
     private readonly TimeProvider _time = time ?? TimeProvider.System;
     private readonly Dictionary<string, Tracked> _active = new(StringComparer.Ordinal);
     private IReadOnlyDictionary<string, SteamManifestState> _previous = new Dictionary<string, SteamManifestState>();
+    private Dictionary<string, KnownManifest> _known = new(StringComparer.Ordinal);
+
+    /// <summary>How old a manifest must have been when it was read to be taken from <see cref="ReadKnown"/>'s cache.</summary>
+    private static readonly TimeSpan SettleTime = TimeSpan.FromSeconds(2);
     private SteamContentLog? _contentLog;
     private string? _contentLogRoot;
     private bool _primed;
@@ -106,8 +110,13 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
 
         _previous = manifests;
         _primed = true;
-        return new InstallSnapshot(active, finished);
+        return new InstallSnapshot(active, finished, UpdatesOf(manifests));
     }
+
+    // Only installed games: a new install's manifest flags an update too, but its tile shows the install.
+    private static Dictionary<string, bool> UpdatesOf(Dictionary<string, SteamManifestState> manifests) => manifests
+        .Where(m => (m.Value.Flags & FullyInstalled) != 0)
+        .ToDictionary(m => m.Key, m => m.Value.UpdatePending, StringComparer.Ordinal);
 
     // Without the content log only the manifests' byte counters hint which app Steam works on.
     private string? AppWhoseBytesMovedLast(Dictionary<string, SteamManifestState> manifests) => _active
@@ -216,7 +225,8 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
             Number("BytesToDownload"),
             Number("BytesDownloaded"),
             Number("BytesToStage"),
-            Number("BytesStaged"));
+            Number("BytesStaged"),
+            Number("TargetBuildID"));
     }
 
     // Gone after an uninstall, or after cancelling a new install; an installed game's build survives in its last manifest.
@@ -243,36 +253,76 @@ public sealed class SteamInstallMonitor(Func<SteamInstallation?>? locate = null,
         return _contentLog.Update() ? _contentLog : null;
     }
 
-    private static Dictionary<string, SteamManifestState> ReadManifests(SteamInstallation? steam, CancellationToken cancellationToken)
+    private Dictionary<string, SteamManifestState> ReadManifests(SteamInstallation? steam, CancellationToken cancellationToken)
     {
         var manifests = new Dictionary<string, SteamManifestState>(StringComparer.Ordinal);
-        if (steam is null)
+        var read = new Dictionary<string, KnownManifest>(StringComparer.Ordinal);
+        if (steam is not null)
         {
-            return manifests;
-        }
-
-        foreach (var library in SteamScanner.LibraryPaths(steam.RootPath, SteamScanner.ReadText(Path.Combine(steam.RootPath, "steamapps", "libraryfolders.vdf"))))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            foreach (var file in SteamScanner.ManifestFiles(library))
+            foreach (var library in SteamScanner.LibraryPaths(steam.RootPath, SteamScanner.ReadText(Path.Combine(steam.RootPath, "steamapps", "libraryfolders.vdf"))))
             {
-                // Steam updates its runtimes and redistributables on its own; they are no games to report.
-                if (ParseState(SteamScanner.ReadText(file)) is { } manifest && !SteamScanner.IsTool(manifest.AppId, manifest.Name))
+                cancellationToken.ThrowIfCancellationRequested();
+                foreach (var file in SteamScanner.ManifestFiles(library))
                 {
-                    manifests[manifest.AppId.ToString(CultureInfo.InvariantCulture)] = manifest;
+                    // Steam updates its runtimes and redistributables on its own; they are no games to report.
+                    if (ReadKnown(file) is { } entry && !SteamScanner.IsTool(entry.State.AppId, entry.State.Name))
+                    {
+                        read[file] = entry;
+                        manifests[entry.State.AppId.ToString(CultureInfo.InvariantCulture)] = entry.State;
+                    }
                 }
             }
         }
 
+        // Only now: a poll cancelled above keeps the files read before.
+        _known = read;
         return manifests;
     }
+
+    /// <summary>
+    /// Parses a manifest only when it changed since the last poll: a poll reads every manifest, every 2 s during an
+    /// install, beside a running game (#288 measured 45 ms per poll for 1,000 games without this, 8 ms with it). A file's
+    /// time has coarse steps and Steam rewrites a manifest several times a second with the same length (flags 6 → 4), so
+    /// only a file that was already <see cref="SettleTime"/> old when it was read counts as unchanged. A manifest Steam
+    /// is writing just now keeps its last state until it parses again; null for one never read whole.
+    /// </summary>
+    private KnownManifest? ReadKnown(string file)
+    {
+        var known = _known.GetValueOrDefault(file);
+        DateTime writtenAt;
+        long length;
+        try
+        {
+            var info = new FileInfo(file);
+            (writtenAt, length) = (info.LastWriteTimeUtc, info.Length);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return known;
+        }
+
+        if (known is not null && known.WrittenAt == writtenAt && known.Length == length && known.ReadAt - writtenAt > SettleTime)
+        {
+            return known;
+        }
+
+        var readAt = DateTime.UtcNow;
+        return ParseState(SteamScanner.ReadText(file)) is { } state ? new KnownManifest(state, writtenAt, length, readAt) : known;
+    }
+
+    private sealed record KnownManifest(SteamManifestState State, DateTime WrittenAt, long Length, DateTime ReadAt);
 
     private sealed record Tracked((long Downloaded, long Staged) Bytes, DateTimeOffset? MovedAt, InstallPhase LastPhase);
 }
 
-/// <summary>What one app manifest says about an installation in progress.</summary>
-public sealed record SteamManifestState(uint AppId, string Name, int Flags, long BuildId, long BytesToDownload, long BytesDownloaded, long BytesToStage, long BytesStaged)
+/// <summary>What one app manifest says about an installation in progress and a pending update.</summary>
+/// <param name="TargetBuildId">The build Steam updates to; 0 if the manifest doesn't say.</param>
+public sealed record SteamManifestState(
+    uint AppId, string Name, int Flags, long BuildId, long BytesToDownload, long BytesDownloaded, long BytesToStage, long BytesStaged, long TargetBuildId = 0)
 {
+    /// <summary>Whether Steam has an update for the app (<see cref="SteamPendingUpdate"/>).</summary>
+    public bool UpdatePending => SteamPendingUpdate.IsPending(Flags, BuildId, TargetBuildId, BytesToDownload, BytesDownloaded);
+
     public (long Downloaded, long Staged) Bytes => (BytesDownloaded, BytesStaged);
 
     /// <summary>

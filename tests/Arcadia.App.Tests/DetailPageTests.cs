@@ -130,6 +130,37 @@ public sealed class DetailPageTests
     }
 
     [AvaloniaFact]
+    public async Task An_update_the_launcher_reports_or_drops_shows_and_goes_live_where_focus_stays()
+    {
+        var alpha = Installed("Alpha");
+        using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Gog, alpha, Installed("Bravo"))]);
+        arcadia.Hold(UiAction.Accept, PastHoldTime);
+        var page = arcadia.Detail!.Current;
+        Assert.False(page.HasUpdateNote);
+
+        arcadia.Installs.SetUpdate(alpha, true);
+        await arcadia.FollowInstallsAsync();
+        page = arcadia.Detail!.Current;
+        Assert.Equal("Alpha", page.Tile.Title);
+        Assert.True(page.Tile.UpdateAvailable);
+        Assert.Equal("GOG Galaxy installiert das Update eventuell, bevor das Spiel startet.", page.UpdateNote);
+        Assert.True(page.TopRow[0].IsFocused);
+
+        arcadia.Installs.SetUpdate(alpha, false);
+        await arcadia.FollowInstallsAsync();
+        page = arcadia.Detail!.Current;
+        Assert.False(page.Tile.UpdateAvailable);
+        Assert.False(page.HasUpdateNote);
+        Assert.True(page.TopRow[0].IsFocused);
+
+        arcadia.Press(UiAction.Back);
+        Assert.False(arcadia.FocusedGame!.UpdateAvailable);
+        arcadia.Installs.SetUpdate(alpha, true);
+        await arcadia.FollowInstallsAsync();
+        Assert.True(arcadia.FocusedGame!.UpdateAvailable);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T11-8")]
     public async Task An_update_keeps_Spielen_with_a_note_and_a_game_not_installed_offers_Installieren_and_its_progress()
     {

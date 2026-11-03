@@ -24,7 +24,7 @@ public sealed class SteamInstallMonitorTests : IDisposable
 
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
-    private void Write(string appId, int flags, long downloaded = 0, long staged = 0, long buildId = 0, string name = "Game", long toDownload = 2571409488, long toStage = 4956889523) =>
+    private void Write(string appId, int flags, long downloaded = 0, long staged = 0, long buildId = 0, string name = "Game", long toDownload = 2571409488, long toStage = 4956889523, long targetBuildId = 0) =>
         File.WriteAllText(Path.Combine(_steamApps, $"appmanifest_{appId}.acf"), $$"""
             "AppState"
             {
@@ -36,6 +36,7 @@ public sealed class SteamInstallMonitorTests : IDisposable
             	"BytesToStage"		"{{toStage}}"
             	"BytesStaged"		"{{staged}}"
             	"buildid"		"{{buildId}}"
+            	"TargetBuildID"		"{{targetBuildId}}"
             }
             """);
 
@@ -136,6 +137,42 @@ public sealed class SteamInstallMonitorTests : IDisposable
         Assert.Empty(first.Finished);
         Write("228980", flags: 4, buildId: 24098430, name: "Steamworks Common Redistributables");
         Assert.Empty(Poll().Finished);
+    }
+
+    // Half-Life 2 at a Steam start (#288): flagged for seconds with the same build and nothing to download.
+    [Fact]
+    public void Reports_the_update_state_of_installed_games_as_it_changes()
+    {
+        const string HalfLife2 = "220";
+        Write(HalfLife2, flags: 4, buildId: 19307283, targetBuildId: 19307283, toDownload: 0);
+        Write(SystemShock, flags: 6, buildId: 23429717, targetBuildId: 26384423, toDownload: 129207952);
+        Write(AgeOfEmpires, flags: 2, buildId: 0);
+        Assert.Equal(new Dictionary<string, bool> { [HalfLife2] = false, [SystemShock] = true }, _monitor.Poll().Updates);
+
+        Write(HalfLife2, flags: 6, buildId: 19307283, targetBuildId: 19307283, toDownload: 0);
+        Assert.False(Poll().Updates![HalfLife2]);
+
+        Write(HalfLife2, flags: 6, buildId: 19307283, targetBuildId: 19400000, toDownload: 0);
+        Assert.True(Poll().Updates![HalfLife2]);
+
+        Write(SystemShock, flags: 4, buildId: 26384423, targetBuildId: 26384423, toDownload: 129207952, downloaded: 129207952);
+        Assert.False(Poll().Updates![SystemShock]);
+    }
+
+    [Fact]
+    public void A_manifest_Steam_is_writing_keeps_its_last_state_and_a_settled_one_is_read_again_once_it_changes()
+    {
+        var manifest = Path.Combine(_steamApps, $"appmanifest_{SystemShock}.acf");
+        Write(SystemShock, flags: 6, buildId: 23429717, targetBuildId: 26384423, toDownload: 129207952);
+        File.SetLastWriteTimeUtc(manifest, DateTime.UtcNow.AddMinutes(-5));
+        Assert.True(_monitor.Poll().Updates![SystemShock]);
+
+        File.WriteAllText(manifest, "\"AppState\" { \"appid\" \"238210\"");
+        Assert.True(Poll().Updates![SystemShock]);
+
+        Write(SystemShock, flags: 4, buildId: 26384423, targetBuildId: 26384423, toDownload: 129207952, downloaded: 129207952);
+        File.SetLastWriteTimeUtc(manifest, DateTime.UtcNow.AddMinutes(-4));
+        Assert.False(Poll().Updates![SystemShock]);
     }
 
     [Fact]

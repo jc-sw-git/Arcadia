@@ -20,6 +20,7 @@ mode fully controllable by gamepad (incl. Steam Controller), desktop mode by mou
 dotnet build Arcadia.slnx
 dotnet test Arcadia.slnx
 dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all launchers
+tools/ci/run-tests.sh 4                               # after a Release build: all tests as CI runs them, ~2.5 min not 7
 ```
 
 - .NET 10 SDK. `Directory.Build.props` sets `TreatWarningsAsErrors` — keep the build warning-free.

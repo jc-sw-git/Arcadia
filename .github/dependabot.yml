@@ -1,0 +1,18 @@
+# Weekly update PRs for the pinned GitHub Actions (by commit SHA, see the workflows) and the NuGet packages. Grouped,
+# so a week's updates of one kind arrive as one PR; each goes through CI and the owner's review like any other.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      nuget:
+        patterns: ["*"]

@@ -35,19 +35,6 @@ public sealed partial class ConfirmationViewModel : ViewModelBase
 
     public bool IsCancelFocused => !IsConfirmFocused;
 
-    /// <summary>Runs the confirmed action itself.</summary>
-    /// <returns>False if the action closes the dialog.</returns>
-    public bool Handle(UiAction action)
-    {
-        var answer = Answer(action);
-        if (answer == ConfirmationAnswer.Confirmed)
-        {
-            _confirm();
-        }
-
-        return answer == ConfirmationAnswer.Open;
-    }
-
     /// <summary>
     /// Moves the focus, or says how the press answered the question without running the action, so the caller can close
     /// the dialog before <see cref="Confirm"/>: the confirmed action may open the next one.
@@ -71,15 +58,18 @@ public sealed partial class ConfirmationViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Runs the action, e.g. for a mouse click; the caller closes the dialog.</summary>
+    /// <summary>Runs the action, after A (<see cref="Answer"/>) or a click; the caller has closed the dialog first.</summary>
     public void Confirm() => _confirm();
 
-    /// <summary>A click on the confirming button of a dialog that closes itself (a settings category's).</summary>
+    /// <summary>
+    /// A click on the confirming button of a dialog that closes itself (a settings category's). Closed first, as after A:
+    /// the action may open the next dialog.
+    /// </summary>
     [RelayCommand]
     private void ConfirmAndClose()
     {
-        _confirm();
         _close?.Invoke();
+        _confirm();
     }
 
     /// <summary>A click on "Abbrechen" or beside the dialog.</summary>

@@ -406,8 +406,18 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
     {
         switch (Dialog)
         {
-            case ConfirmationViewModel confirmation when !confirmation.Handle(action):
-                Dialog = null;
+            case ConfirmationViewModel confirmation:
+                var answer = confirmation.Answer(action);
+                if (answer != ConfirmationAnswer.Open)
+                {
+                    // Closed first: the confirmed action may open the next dialog.
+                    Dialog = null;
+                    if (answer == ConfirmationAnswer.Confirmed)
+                    {
+                        confirmation.Confirm();
+                    }
+                }
+
                 break;
             case SettingsQuestionViewModel question:
                 question.Handle(action);

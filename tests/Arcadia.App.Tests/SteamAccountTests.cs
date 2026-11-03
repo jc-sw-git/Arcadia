@@ -337,6 +337,44 @@ public sealed class SteamAccountTests
         Assert.Empty(arcadia.Search!.Hits);
     }
 
+    [AvaloniaTheory]
+    [Trait("TestCase", "T83-7")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Confirming_the_sign_out_closes_the_question_before_signing_out_so_a_dialog_the_sign_out_opened_would_stay(bool byClick)
+    {
+        using var files = SteamWithOwnedGames();
+        using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);
+        await SignInAsync(arcadia, files);
+        var settings = (LauncherSettingsViewModel)arcadia.Main.Settings!.Selected;
+        var account = arcadia.SteamAccount!;
+        object? dialogWhenSignedOut = null;
+        var signedOut = false;
+        account.StateChanged += (_, _) =>
+        {
+            if (!signedOut && account.State.Step == AccountStep.SignedOut)
+            {
+                signedOut = true;
+                dialogWhenSignedOut = settings.Dialog;
+            }
+        };
+
+        arcadia.Press(UiAction.Accept);
+        var question = Assert.IsType<ConfirmationViewModel>(settings.Dialog);
+        if (byClick)
+        {
+            question.ConfirmAndCloseCommand.Execute(null);
+        }
+        else
+        {
+            arcadia.Press(UiAction.Left).Press(UiAction.Accept);
+        }
+
+        Assert.True(signedOut);
+        Assert.Null(dialogWhenSignedOut);
+        Assert.Null(settings.Dialog);
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T83-1")]
     public async Task The_account_group_comes_first_and_is_disabled_while_Steam_is_inactive()

@@ -16,7 +16,7 @@
   a 26 px rounded square directly above the title on a tile and a search hit, a line with icon and name under the
   preview's title and a chip after the launcher chip on the detail page; games get none. Round = state (top right),
   rounded square = kind.
-- Count line beside the tab's name (#141, replaces "331 Spiele · 1 installiert · Seite 1 von 14"): one part per type in
+- Count line beside the tab's name (#141): one part per type in
   the order Spiele, Software, Werkzeuge, Soundtracks, each total + type icon, then "(installed + drive-with-check icon)"
   unless all are installed; types without entries left out; parts split by a 1 × 24 px divider; a tooltip says it in
   words ("331 Spiele, davon 1 installiert · 2 Werkzeuge"). No page number (the pager shows it); an empty tab keeps its

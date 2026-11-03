@@ -111,6 +111,7 @@ internal sealed class ArcadiaDriver : IDisposable
             new NoProcesses(), Updates, Path.Combine(folder, "logos"), FolderCheck, webPages)
         {
             Open = Open,
+            Logs = Logs,
             SteamProgram = (ILauncherProgram?)steam ?? files?.ControllerSupport,
         });
         ControllerSupport = _app.ControllerSupport;
@@ -148,6 +149,9 @@ internal sealed class ArcadiaDriver : IDisposable
     }
 
     public string Folder { get; }
+
+    /// <summary>The logs "Über Arcadia" opens (#433), never the real ones.</summary>
+    public FakeLogFiles Logs { get; } = new();
 
     /// <summary>The virtual Xbox pads VIIPER would plug in for games (#213).</summary>
     public FakeVirtualXboxPads XboxPads { get; } = new();

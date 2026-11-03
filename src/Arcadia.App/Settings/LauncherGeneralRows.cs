@@ -162,7 +162,7 @@ internal sealed class LauncherGeneralRows
         _category.Editor = null;
         if (editor.Rejection is { } reason)
         {
-            _category.Host.Notify($"{row.Title} nicht übernommen: {reason}");
+            _category.Host.Warn($"{row.Title} nicht übernommen: {reason}");
         }
 
         editor.Dispose();
@@ -200,7 +200,7 @@ internal sealed class LauncherGeneralRows
             var import = await host.Logos.ImportAsync(id, path);
             if (import.FileName is not { } fileName)
             {
-                host.Notify($"Logo nicht übernommen: {import.Problem}");
+                host.Warn($"Logo nicht übernommen: {import.Problem}");
                 return;
             }
 

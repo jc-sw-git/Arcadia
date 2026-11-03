@@ -38,7 +38,7 @@ public static class EmulationParts
     /// HidHide was uninstalled and is still there until Windows restarts (owner's B2 test, 2026-10-27). No "Installieren":
     /// its setup fails while the old service waits for deletion.
     /// </summary>
-    public static HealthIssue HidHideRemovalPending { get; } = new("hidhide-removal-pending", HealthSeverity.Warning, "HidHide: Neustart ausstehend",
+    public static HealthIssue HidHideRemovalPending { get; } = new("hidhide-removal-pending", HealthSeverity.Info, "HidHide: Neustart ausstehend",
         HidHideRemovalPendingText, Summary: "HidHide wurde deinstalliert, Windows entfernt es beim Neustart");
 
     public const string HidHideRemovalPendingText =
@@ -61,7 +61,7 @@ public static class EmulationParts
     /// The usbip driver was updated and Windows wants a restart; with SISR gone (#213) there is nothing to restart in
     /// Arcadia, so the row only says so (owner's B2 test, 2026-10-27: "SISR neu starten" was left over).
     /// </summary>
-    public static HealthIssue RebootPending { get; } = new("reboot-pending", HealthSeverity.Warning, "Windows-Neustart ausstehend",
+    public static HealthIssue RebootPending { get; } = new("reboot-pending", HealthSeverity.Info, "Windows-Neustart ausstehend",
         "Der usbip-Treiber wurde aktualisiert und ist erst nach einem Neustart des PCs ganz aktiv. Bis dahin kann der Steam Controller in Spielen kurz aussetzen; Arcadia verbindet ihn dann selbst neu.",
         Summary: "Bis zum Neustart kann der Steam Controller in Spielen aussetzen.");
 

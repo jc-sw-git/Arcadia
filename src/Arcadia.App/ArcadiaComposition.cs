@@ -42,6 +42,9 @@ internal sealed record ArcadiaParts(
 
     /// <summary>Opens a launcher's URI or program; null: the system's shell.</summary>
     public Func<LaunchTarget, bool>? Open { get; init; }
+
+    /// <summary>Arcadia's logs for "Über Arcadia" (#433); null: the real files.</summary>
+    public Messages.ILogFiles? Logs { get; init; }
 }
 
 /// <summary>What the controllers are wired to: the parts that need SDL, VIIPER, Pan's pipe or a window in the App.</summary>
@@ -153,6 +156,11 @@ internal sealed class ArcadiaComposition
             parts.FirstRun,
             time,
             parts.FolderCheck);
+        if (parts.Logs is { } logs)
+        {
+            main.Logs = logs;
+        }
+
         main.PanDialogs.ShowPanUpdateIfDue();
         parts.WebPages.Attach(main);
         return new ArcadiaComposition(launchers, controllerSupport, launchedGames, runningGames, main, time, settings);

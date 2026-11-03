@@ -1385,6 +1385,34 @@
                     </StackPanel>
                   </Border>
                 </DataTemplate>
+                <!-- An entry of "Letzte Meldungen" (#433); symbol and colour from the statusIcon styles. -->
+                <DataTemplate x:DataType="settings:InfoMessage">
+                  <Border Classes="messageEntry">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                      <Path Classes="statusIcon" Classes.info="{Binding IsInfo}" Classes.error="{Binding IsError}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                      <StackPanel Grid.Column="1" Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                          <TextBlock Classes="messageTime" Text="{Binding TimeText}" />
+                          <Border Classes="kindChip" Classes.toast="{Binding IsToast}">
+                            <TextBlock Text="{Binding KindText}" />
+                          </Border>
+                          <Border Classes="repeatChip" IsVisible="{Binding HasRepeats}">
+                            <TextBlock Text="{Binding RepeatsText}" />
+                          </Border>
+                          <Border Classes="endChip" IsVisible="{Binding HasEnded}">
+                            <TextBlock Text="{Binding EndText}" />
+                          </Border>
+                        </StackPanel>
+                        <TextBlock Classes="messageText" Text="{Binding Text}" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+                <DataTemplate x:DataType="settings:InfoEmpty">
+                  <Border Classes="infoSection">
+                    <TextBlock Classes="infoText" Text="{Binding Text}" />
+                  </Border>
+                </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoError">
                   <TextBlock Text="{Binding Text}" FontSize="16" Foreground="{StaticResource Danger}" TextWrapping="Wrap" />
                 </DataTemplate>
@@ -1561,7 +1589,7 @@
               <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="{Binding FocusedRow?.ActivateText, TargetNullValue=''}" IsVisible="{Binding FocusedRow?.ShowsActivateHint, TargetNullValue=False}" />
               <ctl:KeyHint Pad="Y" Keys="V" Alt="Ziehen" Text="{Binding Selected.YActionText}" IsVisible="{Binding Selected.YActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="X" Keys="F" Text="{Binding Selected.XActionText}" IsVisible="{Binding Selected.XActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
-              <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="Infotext" IsVisible="{Binding InfoOverflows}" />
+              <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="{Binding FocusedRow?.ScrollText, TargetNullValue=''}" IsVisible="{Binding InfoOverflows}" />
               <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Klick" Text="Launcher" IsVisible="{Binding Selected.Head, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="Klick" Text="Kategorie" IsVisible="{Binding HasSeveralCategories}" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="Zurück" />

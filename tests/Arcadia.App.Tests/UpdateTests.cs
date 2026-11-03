@@ -13,7 +13,7 @@ public sealed class UpdateTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync(releases: new FakeReleases("0.1.0", ("0.1.0", ["Erste Version"])));
         var about = OpenAbout(arcadia);
-        Assert.Equal(["arcadia-version", "arcadia-check"], about.Rows.Select(row => row.Key));
+        Assert.Equal(["arcadia-version", "arcadia-check"], about.Rows.Where(row => row.Group == "VERSION").Select(row => row.Key));
 
         arcadia.Press(UiAction.Down);
         Assert.Equal("Nach Updates suchen", arcadia.Main.Settings!.FocusedRow?.Title);

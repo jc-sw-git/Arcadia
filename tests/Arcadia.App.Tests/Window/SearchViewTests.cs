@@ -610,7 +610,7 @@ public sealed class SearchViewTests
         // The arrow up comes before the one down.
         var arrows = tab.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Where(path => !path.Classes.Contains("keyboardIcon")).ToList();
         Assert.Equal([!isOut, isOut], arrows.Select(arrow => arrow.IsEffectivelyVisible));
-        if (arcadia.Arcadia.Main.UsesController)
+        if (arcadia.Arcadia.Main.Input.UsesController)
         {
             Assert.Equal([isOut ? "B" : "X"], GlyphTexts(tab));
         }

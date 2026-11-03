@@ -42,7 +42,7 @@ public sealed class HoldButtonFillTests
         Thread.Sleep(TimeSpan.FromMilliseconds(200));
         shown.Settle();
 
-        Assert.False(arcadia.Main.FirmwareAttempt!.IsReleased);
+        Assert.False(arcadia.Main.PanDialogs.FirmwareAttempt!.IsReleased);
         Assert.Equal(0, fill.ScaleX);
 
         // The next press fills from empty again.
@@ -65,7 +65,7 @@ public sealed class HoldButtonFillTests
         arcadia.StartControllers();
         await arcadia.TickSteamControllerAsync();
         arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, [1, 0x90, 0x00], forwarding: true);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Hinweis „Steam will die Firmware aktualisieren“");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.FirmwareAttempt is not null, "der Hinweis „Steam will die Firmware aktualisieren“");
         shown.Settle();
         return shown;
     }

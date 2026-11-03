@@ -37,13 +37,13 @@ public sealed class PanGuardianTests
         await arcadia.TickSteamControllerAsync();
 
         Assert.Equal(0, arcadia.XboxPads.Plugged);
-        Assert.True(arcadia.Main.ControllerModeBroken);
+        Assert.True(arcadia.Main.ControllerMode.ControllerModeBroken);
         Assert.Contains("ohne Treiber", arcadia.ForGames.Routing.Current.Why);
 
         arcadia.Pan.Return();
         await arcadia.TickSteamControllerAsync();
         Assert.Equal(1, arcadia.XboxPads.Plugged);
-        Assert.False(arcadia.Main.ControllerModeBroken);
+        Assert.False(arcadia.Main.ControllerMode.ControllerModeBroken);
     }
 
     [AvaloniaFact]
@@ -97,12 +97,12 @@ public sealed class PanGuardianTests
 
         Assert.Equal(1, arcadia.XboxPads.Unplugged);
         Assert.Equal(1, arcadia.XboxPads.Plugged);
-        Assert.True(arcadia.Main.ControllerModeBroken);
+        Assert.True(arcadia.Main.ControllerMode.ControllerModeBroken);
 
         arcadia.Pan.Return();
         await arcadia.TickSteamControllerAsync();
         Assert.Equal(2, arcadia.XboxPads.Plugged);
-        Assert.False(arcadia.Main.ControllerModeBroken);
+        Assert.False(arcadia.Main.ControllerMode.ControllerModeBroken);
     }
 
     [AvaloniaFact]

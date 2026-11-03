@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace Arcadia.App.ViewModels;
 
 /// <summary>The short message at the bottom of the library; a newer message replaces the current one.</summary>
-public partial class ToastViewModel(TimeProvider time) : ViewModelBase
+public partial class ToastViewModel(TimeProvider time) : ViewModelBase, IDisposable
 {
     public static readonly TimeSpan Duration = TimeSpan.FromSeconds(4);
 
@@ -49,6 +49,13 @@ public partial class ToastViewModel(TimeProvider time) : ViewModelBase
             StopExpiry();
             Text = null;
         }
+    }
+
+    /// <summary>The window closes: a pending hide is cancelled.</summary>
+    public void Dispose()
+    {
+        StopExpiry();
+        GC.SuppressFinalize(this);
     }
 
     private void StopExpiry()

@@ -34,11 +34,11 @@
         <Border Name="TabDividerLeft" Grid.Column="1" Classes="divider tabDivider" Margin="20,0" />
 
         <DockPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsTabStripShown}">
-          <Button DockPanel.Dock="Left" Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Margin="0,0,12,0"
+          <Button DockPanel.Dock="Left" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="0,0,12,0"
                   Command="{Binding LauncherTabs.PreviousCommand}" ToolTip.Tip="Vorheriger Launcher (Umschalt+Q)">
             <ctl:KeyText Pad="LB" Keys="⇧ Q" />
           </Button>
-          <Button DockPanel.Dock="Right" Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Margin="12,0,0,0"
+          <Button DockPanel.Dock="Right" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="12,0,0,0"
                   Command="{Binding LauncherTabs.NextCommand}" ToolTip.Tip="Nächster Launcher (Umschalt+E)">
             <ctl:KeyText Pad="RB" Keys="⇧ E" />
           </Button>
@@ -81,7 +81,7 @@
             <TextBlock Text="Controller wird eingerichtet …" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
           </StackPanel>
           <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  IsVisible="{Binding Status.HasControllerStatus}" Command="{Binding OpenControllerSettingsCommand}" ToolTip.Tip="{Binding Status.ControllerStatusText}">
+                  IsVisible="{Binding Status.HasControllerStatus}" Command="{Binding ControllerMode.OpenControllerSettingsCommand}" ToolTip.Tip="{Binding Status.ControllerStatusText}">
             <!-- Symbol and colour come from the statusIcon styles, so no local Data or Stroke. -->
             <Path Classes="statusIcon" Classes.info="{Binding Status.IsControllerStatusInfo}" Classes.error="{Binding Status.IsControllerStatusError}" />
           </Button>
@@ -272,19 +272,19 @@
                       <TextBlock Text="{Binding LocationText}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
                     </StackPanel>
                   </Grid>
-                  <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowControllerSupport, TargetNullValue=False}">
+                  <StackPanel Spacing="6" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerMode.ShowControllerSupport, TargetNullValue=False}">
                     <TextBlock Classes="label" Text="STEAM CONTROLLER" />
                     <!-- A plain value, not a dropdown: the mouse click switches it; the controller gets it with #10.
                          While Pan's emulation doesn't run it is greyed out with a triangle, and a click leads to why (#242). -->
-                    <Button Classes="plain modeValue" Classes.broken="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeBroken, TargetNullValue=False}"
-                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CycleControllerSupportCommand}"
+                    <Button Classes="plain modeValue" Classes.broken="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerMode.ControllerModeBroken, TargetNullValue=False}"
+                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerMode.CycleControllerSupportCommand}"
                             IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
                             ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Standard“, „Arcadia“ und „Steam-Eingabe“'}">
                       <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.FocusedControllerSupportText}" />
+                        <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerMode.FocusedControllerSupportText}" />
                         <Path Classes="statusIcon small" VerticalAlignment="Center"
-                              IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeBroken, TargetNullValue=False}"
-                              ToolTip.Tip="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerModeUnavailableReason}" />
+                              IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerMode.ControllerModeBroken, TargetNullValue=False}"
+                              ToolTip.Tip="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerMode.ControllerModeUnavailableReason}" />
                       </StackPanel>
                     </Button>
                   </StackPanel>
@@ -391,7 +391,7 @@
 
           <Panel Grid.Row="1" Margin="0,0,80,0">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Command="{Binding Library.PreviousPageCommand}" ToolTip.Tip="Vorherige Seite (Q, Bild ↑ oder Umschalt+←)">
+              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Command="{Binding Library.PreviousPageCommand}" ToolTip.Tip="Vorherige Seite (Q, Bild ↑ oder Umschalt+←)">
                 <ctl:KeyText Pad="LT" Keys="Q" />
               </Button>
               <ItemsControl ItemsSource="{Binding Library.PageButtons}" Margin="10,0">
@@ -411,7 +411,7 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Command="{Binding Library.NextPageCommand}" ToolTip.Tip="Nächste Seite (E, Bild ↓ oder Umschalt+→)">
+              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Command="{Binding Library.NextPageCommand}" ToolTip.Tip="Nächste Seite (E, Bild ↓ oder Umschalt+→)">
                 <ctl:KeyText Pad="RT" Keys="E" />
               </Button>
             </StackPanel>
@@ -861,7 +861,7 @@
                 HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
           <Panel>
           <Button Classes="plain dialogClose" Margin="0,-32,-40,0" ToolTip.Tip="Schließen"
-                  IsVisible="{Binding ShowsCloseButtons}" Command="{Binding CloseViewOptionsCommand}">
+                  IsVisible="{Binding Input.ShowsCloseButtons}" Command="{Binding CloseViewOptionsCommand}">
             <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
           </Button>
           <StackPanel Spacing="40" DataContext="{Binding ViewOptions}" x:DataType="vm:ViewOptionsViewModel">
@@ -1035,11 +1035,11 @@
             <!-- As the launcher tabs: in the middle, the selected one centred, faded where more follow (MainWindow.axaml.cs). -->
             <Border Name="CategoryDividerLeft" Grid.Column="1" Classes="divider tabDivider" Margin="20,0" />
             <DockPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center">
-              <Button DockPanel.Dock="Left" Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Margin="0,0,12,0"
+              <Button DockPanel.Dock="Left" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="0,0,12,0"
                       IsVisible="{Binding Settings?.HasSeveralCategories, TargetNullValue=False}" Command="{Binding Settings?.PreviousCategoryCommand}" ToolTip.Tip="Vorherige Kategorie (⇧ Q)">
                 <ctl:KeyText Pad="LB" Keys="⇧ Q" />
               </Button>
-              <Button DockPanel.Dock="Right" Classes="plain glyphButton keycap" Classes.kbd="{Binding !UsesController}" Margin="12,0,0,0"
+              <Button DockPanel.Dock="Right" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="12,0,0,0"
                       IsVisible="{Binding Settings?.HasSeveralCategories, TargetNullValue=False}" Command="{Binding Settings?.NextCategoryCommand}" ToolTip.Tip="Nächste Kategorie (⇧ E)">
                 <ctl:KeyText Pad="RB" Keys="⇧ E" />
               </Button>
@@ -1077,7 +1077,7 @@
               <TextBlock Text="{Binding Status.Date}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
               <TextBlock Text="{Binding Status.Clock}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
               <!-- Mouse or keyboard in use: ✕ closes; the controller has B (owner, 2026-10-22). -->
-              <Button Classes="plain dialogClose" VerticalAlignment="Center" ToolTip.Tip="Schließen (Esc)" IsVisible="{Binding ShowsCloseButtons}" Command="{Binding CloseSettingsCommand}">
+              <Button Classes="plain dialogClose" VerticalAlignment="Center" ToolTip.Tip="Schließen (Esc)" IsVisible="{Binding Input.ShowsCloseButtons}" Command="{Binding CloseSettingsCommand}">
                 <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
               </Button>
             </StackPanel>
@@ -1664,7 +1664,7 @@
                   </StackPanel>
                   <Panel IsVisible="{Binding !IsRemovingSisrPrompt}">
                     <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
-                            IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding ClosePromptCommand}">
+                            IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding ClosePromptCommand}">
                       <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
                     </Button>
                   </Panel>
@@ -1705,7 +1705,7 @@
                       </StackPanel>
                     </StackPanel>
                     <Button Classes="plain dialogClose" Margin="0,-20,-28,0" ToolTip.Tip="Schließen"
-                            IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CancelCommand}">
+                            IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CancelCommand}">
                       <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
                     </Button>
                   </Panel>
@@ -1724,11 +1724,11 @@
       <!-- The installed Pan isn't this Arcadia's and Pan is on (#297, #326, artboards T326F01–F09): a page over everything
            but Pan's dialogs. [A] updates, [B] goes on without Pan, which then waits until the old Pan has ended; if it
            doesn't, [A] restores the controllers or checks again, [B] ends Arcadia. -->
-      <Panel Grid.RowSpan="4" IsVisible="{Binding IsPanUpdateShown}">
+      <Panel Grid.RowSpan="4" IsVisible="{Binding PanDialogs.IsPanUpdateShown}">
         <!-- Covers the library entirely, in the bars beside the layout too: it isn't there yet for the player. -->
         <Border Classes="bleedAll" Background="{StaticResource Bg}" />
         <Border Classes="prompt" Width="920" HorizontalAlignment="Center" VerticalAlignment="Center">
-          <StackPanel Spacing="22" DataContext="{Binding PanUpdate}" x:DataType="vm:PanUpdatePageViewModel">
+          <StackPanel Spacing="22" DataContext="{Binding PanDialogs.PanUpdate}" x:DataType="vm:PanUpdatePageViewModel">
             <StackPanel Orientation="Horizontal" Spacing="18">
               <Border Classes="promptIcon" IsVisible="{Binding IsBusy}">
                 <Path Classes="spinner" HorizontalAlignment="Center" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
@@ -1785,10 +1785,10 @@
 
       <!-- Pan's firmware notice (#295; artboard T242Firmware without its wait): over everything, the settings and the
            first start too. Not clicked away; [B] closes it as "Schließen". -->
-      <Panel Grid.RowSpan="4" IsVisible="{Binding IsPanDialogOpen}">
+      <Panel Grid.RowSpan="4" IsVisible="{Binding PanDialogs.IsPanDialogOpen}">
         <Border Classes="bleedAll" Background="{StaticResource Scrim}" />
-        <Border Classes="prompt" Width="920" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding FirmwareAttempt, Converter={x:Static ObjectConverters.IsNotNull}}">
-          <Panel DataContext="{Binding FirmwareAttempt}" x:DataType="vm:FirmwareAttemptViewModel">
+        <Border Classes="prompt" Width="920" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding PanDialogs.FirmwareAttempt, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Panel DataContext="{Binding PanDialogs.FirmwareAttempt}" x:DataType="vm:FirmwareAttemptViewModel">
             <StackPanel Spacing="22" IsVisible="{Binding IsAsking}">
               <StackPanel Orientation="Horizontal" Spacing="18">
                 <Border Classes="promptIcon warning">
@@ -1855,7 +1855,7 @@
                   <TextBlock Text="{Binding ReleasedNext}" FontSize="17" TextWrapping="Wrap" />
                 </StackPanel>
               </Border>
-              <Button Classes="plain action focused" Content="OK" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.CloseFirmwareNoteCommand}" />
+              <Button Classes="plain action focused" Content="OK" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.PanDialogs.CloseFirmwareNoteCommand}" />
               <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                   <ctl:KeyHint Pad="A" Keys="Leertaste" Text="OK" />

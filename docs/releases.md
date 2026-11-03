@@ -32,20 +32,26 @@
   stable one) and lists each issue their bodies name (`Closes`/`Fixes`/`Resolves`/`Part of #N`) once, under the
   issue's title, grouped into "New and changed" (stories), "Fixes" (`bug`) and "Under the hood" (`type:tech-debt`;
   refactorings matter to plugin authors and contributors). A sub-issue is listed as its parent. A PR that names no
-  issue gets its own entry, grouped by its branch prefix. Left out:
-  - PRs that don't change the product (docs, process, tests, CI, spikes): label `no-changelog`;
-    `label-pr-changelog.yml` sets it on PRs from `doc/`, `ci/` and `test/` branches when they are opened; any other PR
-    that doesn't belong gets it by hand. Its issues then count only through other PRs.
-  - Bugs that never shipped in a release: a `bug` issue whose body has the line `Introduced by #N` (the PR or issue
-    that brought the bug; written when the bug is filed or found) is left out when #N is in the same release. A bug
-    without such a line that never shipped gets `no-changelog` on the issue by hand.
+  issue gets its own entry, grouped by its branch prefix. The script leaves out by itself:
+  - PRs that don't change the product: from a `doc/`, `ci/` or `test/` branch, labelled `no-changelog`, or touching
+    only tests, docs, `.github/`, `.claude/`, `tools/ci/`, `tools/dev/` or top-level `.md` files.
+    `label-pr-changelog.yml` sets `no-changelog` on `doc/`, `ci/` and `test/` PRs; any other PR that doesn't belong
+    gets it by hand. Its issues then count only through other PRs.
+  - Issues labelled `no-changelog` (e.g. test infrastructure, process) or `type:spike`.
+  - Bugs that never shipped: a `bug` issue whose body has the line `Introduced by #N` (the PR or issue that brought
+    the bug) is left out when #N is in the same release; `Introduced by vX.Y.Z` means it shipped there. Cause unknown or
+    outside Arcadia (a launcher, Windows): the oldest release that has the bug; older than 0.1.0: `v0.1.0`. The CI
+    check `Bug origin` fails a PR that closes or is part of a bug without one of these lines.
 
   So issue titles are written to be read there: English, naming the change (a bug: what goes wrong). Before a release
-  the thread reads the generated notes against these rules and edits the release body. "Was ist neu" shows the
+  the thread reads the generated notes against these rules; corrections go into the issues and PRs (labels, titles,
+  origin lines), never into the release body by hand, and the workflow "Rewrite release notes" (`release-notes.yml`,
+  Claude can start it) regenerates the body of a published release from them. "Was ist neu" shows the
   bullets.
 - To release, run the workflow "Tag release" on `main` with the version: `tag-release.yml` sets the tag `vX.Y.Z` and
   starts `release.yml`. Claude can start it; its cloud sessions can't push tags (the git proxy answers 403).
-- Every CI run on Windows packs the installer; only pushes to `main` upload it as an artifact (1 day). The account's
+- Only CI runs of pushes to `main` pack the installer and upload it as an artifact (1 day), which saves a PR's run a
+  minute; a PR that changes packing is checked by the first run on `main` after its merge. The account's
   artifact storage is small and counted per hour over the billing month, so `prune-artifacts.yml` keeps only the
   newest 5 of each artifact name, and a failed upload only warns (#115). Every CI run measures code coverage on
   Windows and uploads it as `coverage-report` (HTML, 7 days); locally `dotnet test Arcadia.slnx --collect:"XPlat Code

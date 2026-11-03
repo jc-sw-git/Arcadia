@@ -155,10 +155,19 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <summary>The dialog over the page, if any.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsRemovingSisrPrompt), nameof(IsQuestionPrompt), nameof(IsWarningPrompt),
-        nameof(PromptBackText), nameof(SteamStopTitle), nameof(SteamStopText), nameof(SteamStopDetail), nameof(GamePromptText), nameof(CanRetryGamePrompt), nameof(ConfirmSteamStopText), nameof(RemovingSisrText))]
+        nameof(PromptBackText), nameof(SteamStopTitle), nameof(SteamStopText), nameof(SteamStopDetail), nameof(GamePromptText), nameof(CanRetryGamePrompt), nameof(ConfirmSteamStopText), nameof(RemovingSisrText),
+        nameof(ShowsUsbLine))]
     public partial SettingsPrompt Prompt { get; private set; }
 
-    partial void OnPromptChanged(SettingsPrompt value) => Dialog = value == SettingsPrompt.None ? null : this;
+    partial void OnPromptChanged(SettingsPrompt value) => Dialog = (object?)InstallDialog ?? (value == SettingsPrompt.None ? null : this);
+
+    /// <summary>"Treiber werden installiert" while a driver install from these rows runs or failed (#413); null otherwise.</summary>
+    public DriverInstallDialogViewModel? InstallDialog { get; private set; }
+
+    /// <summary>The row the install started from: the focus goes back there when its dialog closes (S3, D10).</summary>
+    private string? _installStartRow;
+
+    private int _installRefreshPosted;
 
     public bool IsGamePrompt => Prompt == SettingsPrompt.SteamGameRunning;
 
@@ -220,6 +229,11 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     public bool HasSteamStopDetail => SteamStopDetail.Length > 0;
 
+    public const string UsbLineText = "Während der Installation können Maus, Tastatur und Controller kurz nicht reagieren. Das ist normal.";
+
+    /// <summary>The question before an install that runs usbip-win2's installer warns of the short freeze (#413, D5, D12).</summary>
+    public bool ShowsUsbLine => Prompt == SettingsPrompt.ConfirmSteamStop && !_forSisr && _steamStopFix is { } fix && _support.InstallsUsbip(fix);
+
     public string ConfirmSteamStopText => _forSisr ? "Weiter" : StopsSteam ? "Steam beenden und installieren" : "Installieren";
 
     /// <summary>What the game prompt asks for, below the game's name.</summary>
@@ -248,6 +262,12 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     public override void HandleDialog(UiAction action)
     {
+        if (InstallDialog is { } install)
+        {
+            install.Handle(action);
+            return;
+        }
+
         if (Layouts is { } layouts)
         {
             layouts.Handle(action);
@@ -280,6 +300,11 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _support.Sisr.Removed -= OnSisrRemoved;
         _pan.Changed -= OnPanChanged;
         _panRows.LayoutsRequested -= OpenLayouts;
+        if (InstallDialog is { } install)
+        {
+            install.Progress.Changed -= OnInstallChanged;
+        }
+
         _support.ClearError();
     }
 
@@ -320,7 +345,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         }
 
         Layouts = null;
-        Dialog = Prompt == SettingsPrompt.None ? null : this;
+        Dialog = (object?)InstallDialog ?? (Prompt == SettingsPrompt.None ? null : this);
     }
 
     /// <summary>
@@ -442,6 +467,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             return;
         }
 
+        _installStartRow = FocusedRow?.Key;
+
         if (_support.StopsSteamFor(fix) || _support.InstallsHidHide(fix) || (fix == HealthFix.InstallDrivers && EmulationParts.AllMissing(_support.Issues)))
         {
             _steamStopFix = fix;
@@ -531,6 +558,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     private void Refresh()
     {
+        SyncInstallDialog();
         var rows = _panRows.Build();
         _rowAboveSisr = rows.LastOrDefault()?.Key;
         if (Layouts is { } layouts)
@@ -569,6 +597,83 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         ]);
 
         FocusPromptButton();
+    }
+
+    /// <summary>
+    /// Opens the progress dialog when the support starts an install, and closes it by itself after a success that needs no
+    /// restart (D6); a restart keeps it open at "Arcadia neu starten" until Arcadia ends.
+    /// </summary>
+    private void SyncInstallDialog()
+    {
+        var installation = _support.Installation;
+        if (installation is not null && InstallDialog?.Progress != installation)
+        {
+            if (InstallDialog is { } old)
+            {
+                old.Progress.Changed -= OnInstallChanged;
+            }
+
+            InstallDialog = new DriverInstallDialogViewModel(installation, CloseInstallDialog);
+            installation.Changed += OnInstallChanged;
+            Layouts = null;
+            Prompt = SettingsPrompt.None;
+            Dialog = InstallDialog;
+            OnPropertyChanged(nameof(InstallDialog));
+        }
+
+        if (InstallDialog is not { } dialog)
+        {
+            return;
+        }
+
+        dialog.Refresh();
+        if (dialog.Progress is { IsOver: true, Failed: false } done && done.StateOf(DriverInstallStepKind.ArcadiaRestart) != DriverInstallStepState.Running)
+        {
+            CloseInstallDialog();
+        }
+    }
+
+    private void OnInstallChanged(object? sender, EventArgs e)
+    {
+        // Downloads report often: one refresh at a time is enough.
+        if (Interlocked.Exchange(ref _installRefreshPosted, 1) == 1)
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            Volatile.Write(ref _installRefreshPosted, 0);
+            if (!_disposed)
+            {
+                Refresh();
+            }
+        });
+    }
+
+    /// <summary>"Schließen", A or B after a failure, or by itself after a success: the focus goes back to the row (S3, D10).</summary>
+    private void CloseInstallDialog()
+    {
+        if (InstallDialog is not { } dialog)
+        {
+            return;
+        }
+
+        dialog.Progress.Changed -= OnInstallChanged;
+        InstallDialog = null;
+        OnPropertyChanged(nameof(InstallDialog));
+        _support.DismissInstallation();
+        Dialog = Prompt == SettingsPrompt.None ? null : this;
+        Refresh();
+        if (_installStartRow is { } key && Rows.Any(row => row.Key == key))
+        {
+            FocusRow(key);
+        }
+        else if (Rows.Count > 0)
+        {
+            // The starting row went with the problem it showed: the first row, Pan's switch, says the part is there (D10).
+            FocusRow(Rows[0].Key);
+        }
     }
 
     private void FocusPromptButton()

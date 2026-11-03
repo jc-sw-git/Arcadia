@@ -113,6 +113,9 @@ public sealed class GitHubReleaseClient(HttpClient http)
     }
 }
 
+/// <summary>How far a download is; <see cref="Total"/> null when the size isn't known.</summary>
+public readonly record struct DownloadProgress(long Received, long? Total);
+
 public static class VerifiedDownload
 {
     /// <summary>
@@ -120,7 +123,8 @@ public static class VerifiedDownload
     /// digest GitHub publishes. Assets without a published digest are rejected. Nothing is left
     /// at <paramref name="targetFile"/> unless the download is complete and verified.
     /// </summary>
-    public static async Task DownloadAsync(HttpClient http, ReleaseAsset asset, string targetFile, CancellationToken cancellationToken = default)
+    public static async Task DownloadAsync(HttpClient http, ReleaseAsset asset, string targetFile, CancellationToken cancellationToken = default,
+        IProgress<DownloadProgress>? progress = null)
     {
         if (asset.Sha256 is null)
         {
@@ -136,7 +140,17 @@ public static class VerifiedDownload
                 using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 response.EnsureSuccessStatusCode();
                 await using var file = File.Create(targetFile);
-                await response.Content.CopyToAsync(file, cancellationToken);
+                await using var body = await response.Content.ReadAsStreamAsync(cancellationToken);
+                var total = response.Content.Headers.ContentLength ?? (asset.Size > 0 ? asset.Size : null);
+                var buffer = new byte[81920];
+                long received = 0;
+                int read;
+                while ((read = await ReadBodyAsync(body, buffer, cancellationToken)) > 0)
+                {
+                    await file.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                    received += read;
+                    progress?.Report(new DownloadProgress(received, total));
+                }
             }
 
             string actual;
@@ -155,6 +169,19 @@ public static class VerifiedDownload
             // A download cut off (timeout, offline, Arcadia closing) would stay in %TEMP% for good.
             File.Delete(targetFile);
             throw;
+        }
+    }
+
+    /// <summary>A connection cut off midway is a network error, as HttpContent.CopyToAsync reports it, not a disk error.</summary>
+    private static async ValueTask<int> ReadBodyAsync(Stream body, byte[] buffer, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await body.ReadAsync(buffer, cancellationToken);
+        }
+        catch (IOException exception)
+        {
+            throw new HttpRequestException(exception.Message, exception);
         }
     }
 }

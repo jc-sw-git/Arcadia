@@ -28,22 +28,22 @@ public interface IControllerSupportPlatform
     Version? HidHideVersion { get; }
 
     /// <summary>
-    /// <see cref="InstallDriversAsync"/> would run HidHide's installer now, which restarts the puck afterwards (#296):
+    /// A driver install would run HidHide's installer now, which restarts the puck afterwards (#296):
     /// HidHide is missing or of an unsupported version, and no uninstall waits for a restart.
     /// </summary>
     bool InstallsHidHide => ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion);
 
     /// <summary>
-    /// Installs or updates what is missing of usbip-win2, HidHide and Pan, with one Windows prompt (#243); false if the
-    /// user declined it.
+    /// The Windows prompt of a driver install (#413, D7): elevated Pan, waiting for the installers of
+    /// <paramref name="plan"/>; null if the user declined the prompt. Nothing else happens before it.
     /// </summary>
-    Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken);
+    Task<IPanInstallRun?> StartPanInstallAsync(PanInstallPlan plan, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// "Neu installieren" for a HidHide that doesn't answer as expected (#242): the pinned installer over the installed
-    /// one, Pan with it, one Windows prompt; false if the user declined it.
-    /// </summary>
-    Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(false);
+    /// <summary>usbip-win2's latest installer into <paramref name="folder"/>, checked by GitHub's SHA-256; returns its path.</summary>
+    Task<string> DownloadUsbipInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken);
+
+    /// <summary>The pinned HidHide installer into <paramref name="folder"/>, checked by its pinned SHA-256; returns its path.</summary>
+    Task<string> DownloadHidHideInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken);
 
     /// <summary>
     /// The update at start (#297): only Pan's <c>--install</c> with the bundled exe, no driver installer, so no download
@@ -96,61 +96,17 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     public bool InstallsHidHide => HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending;
 
-    public async Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            return false;
-        }
+    public Task<IPanInstallRun?> StartPanInstallAsync(PanInstallPlan plan, CancellationToken cancellationToken) =>
+        OperatingSystem.IsWindows() ? PanSetup.StartInstallAsync(plan, cancellationToken) : Task.FromResult<IPanInstallRun?>(null);
 
-        // The driver only when it is missing or too old: its installer replaces the emulated host controller and
-        // then wants a reboot. HidHide likewise: one of a supported version stays (e.g. DS4Windows's), with its lists.
-        string? usbipInstaller = null;
-        string? hidHideInstaller = null;
-        try
-        {
-            usbipInstaller = IsUsbipReady ? null : await UsbipDriver.DownloadInstallerAsync(http, cancellationToken);
-            hidHideInstaller = InstallsHidHide ? await HidHideInstallation.DownloadInstallerAsync(http, cancellationToken) : null;
-            return await PanSetup.InstallAsync(usbipInstaller, hidHideInstaller, cancellationToken);
-        }
-        finally
-        {
-            foreach (var installer in new[] { usbipInstaller, hidHideInstaller })
-            {
-                if (installer is not null)
-                {
-                    File.Delete(installer);
-                }
-            }
-        }
-    }
+    public Task<string> DownloadUsbipInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
+        OperatingSystem.IsWindows() ? UsbipDriver.DownloadInstallerAsync(http, folder, progress, cancellationToken) : throw new PlatformNotSupportedException();
+
+    public Task<string> DownloadHidHideInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
+        OperatingSystem.IsWindows() ? HidHideInstallation.DownloadInstallerAsync(http, folder, progress, cancellationToken) : throw new PlatformNotSupportedException();
 
     public Task<bool> UpdatePanAsync(CancellationToken cancellationToken) =>
-        OperatingSystem.IsWindows() ? PanSetup.InstallAsync(null, null, cancellationToken) : Task.FromResult(false);
-
-    public async Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken)
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            return false;
-        }
-
-        // The service checked it too; the repair arguments over another version would be an up- or downgrade.
-        if (HidHideVersion is not { } installed || !HidHideRelease.IsPinnedDriver(installed))
-        {
-            throw new InvalidOperationException($"HidHide {HidHideRelease.Version} ist nicht installiert; „Neu installieren“ geht nur darüber.");
-        }
-
-        var installer = await HidHideInstallation.DownloadInstallerAsync(http, cancellationToken);
-        try
-        {
-            return await PanSetup.InstallAsync(null, installer, cancellationToken, repairHidHide: true);
-        }
-        finally
-        {
-            File.Delete(installer);
-        }
-    }
+        OperatingSystem.IsWindows() ? PanSetup.UpdateAsync(cancellationToken) : Task.FromResult(false);
 
     /// <summary>
     /// Missing or older than Pan supports. A newer major one is left alone: its installer would be a downgrade, and

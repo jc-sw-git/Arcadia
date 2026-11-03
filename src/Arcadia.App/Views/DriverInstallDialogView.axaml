@@ -1,0 +1,85 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:settings="using:Arcadia.App.Settings"
+             x:Class="Arcadia.App.Views.DriverInstallDialogView"
+             x:DataType="settings:DriverInstallDialogViewModel">
+
+  <!-- "Treiber werden installiert" (#413, designs T413Dialog): the bar, the run's steps, the USB hint. No button and no
+       close while it runs (D2); after a failure the error and [Schließen]. A click beside it does nothing. -->
+  <Panel>
+    <Border Background="{StaticResource Scrim}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Classes="bleedAll" />
+    <Border Classes="prompt" Width="920" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <StackPanel Spacing="22">
+        <StackPanel Orientation="Horizontal" Spacing="18">
+          <Border Classes="promptIcon" Classes.failed="{Binding IsFailed}">
+            <Panel>
+              <TextBlock Text="↓" IsVisible="{Binding IsRunning}" />
+              <TextBlock Text="!" IsVisible="{Binding IsFailed}" />
+            </Panel>
+          </Border>
+          <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <Border Classes="usbHint" IsVisible="{Binding ShowsUsbHint}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+            <Path Classes="statusIcon info" VerticalAlignment="Top" />
+            <StackPanel Grid.Column="1" Spacing="6">
+              <TextBlock Text="{x:Static settings:DriverInstallDialogViewModel.UsbHintTitle}" FontSize="17" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" TextWrapping="Wrap" />
+              <TextBlock Text="{x:Static settings:DriverInstallDialogViewModel.UsbHintText}" FontSize="16" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <StackPanel Spacing="10">
+          <ProgressBar Classes="installRun" Classes.failed="{Binding IsFailed}" Minimum="0" Maximum="100" Value="{Binding Value}" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="installCount" Text="{Binding StepCount}" />
+            <TextBlock Grid.Column="1" Classes="installCount" Text="{Binding Percent}" />
+          </Grid>
+        </StackPanel>
+
+        <ItemsControl Name="StepList" ItemsSource="{Binding Steps}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="4" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="settings:DriverInstallStepViewModel">
+              <Border Classes="installStep" Classes.running="{Binding IsRunning}" Classes.failed="{Binding IsFailed}" Classes.pending="{Binding IsPending}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                  <Panel Width="24" Height="24" VerticalAlignment="Center">
+                    <Path Classes="stepDone" IsVisible="{Binding IsDone}" Data="M5 12.5l4.5 4.5L19 7.5" />
+                    <Path Classes="spinner" IsVisible="{Binding IsRunning}"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                    <Ellipse Classes="stepPending" IsVisible="{Binding IsPending}" />
+                    <Path Classes="stepFailed" IsVisible="{Binding IsFailed}" Data="M6.5 6.5l11 11M17.5 6.5l-11 11" />
+                  </Panel>
+                  <TextBlock Grid.Column="1" Classes="stepTitle" Text="{Binding Title}" />
+                  <TextBlock Grid.Column="2" Classes="installCount" Text="{Binding Detail}" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <StackPanel Spacing="22" IsVisible="{Binding IsFailed}">
+          <Border Classes="installError">
+            <TextBlock Text="{Binding Error}" FontSize="16" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
+          </Border>
+          <StackPanel Orientation="Horizontal">
+            <Button Classes="plain action primaryAction focused" Command="{Binding CloseCommand}" Content="Schließen" />
+          </StackPanel>
+        </StackPanel>
+
+        <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+          <Panel MinHeight="28" HorizontalAlignment="Right">
+            <TextBlock Classes="installCount" Text="{Binding Footer}" IsVisible="{Binding IsRunning}" VerticalAlignment="Center" />
+            <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Schließen" IsVisible="{Binding IsFailed}" />
+          </Panel>
+        </Border>
+      </StackPanel>
+    </Border>
+  </Panel>
+</UserControl>

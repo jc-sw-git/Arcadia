@@ -11,7 +11,10 @@ The controller emulation for games and Pan, its guardian service. What was verif
   of the launcher that owns Steam Input (`ILauncherProgram`); the project doesn't reference `Arcadia.Launchers`.
 - `EmulationParts`: usbip-win2, VIIPER, Pan and HidHide, and the rows that say one is missing. `UsbipDriver`
   (installed version, `MinimumVersion`, the latest installer), `HidHideInstallation` (installed or not, the pinned
-  installer), `GitHubReleases.cs` (`GitHubReleaseClient`, `VerifiedDownload`: GitHub's SHA-256 checked).
+  installer), `GitHubReleases.cs` (`GitHubReleaseClient`, `VerifiedDownload`: GitHub's SHA-256 checked, bytes reported).
+- A driver install from the settings (#413): `DriverInstallation` runs its steps (Windows prompt first, VIIPER, Steam,
+  downloads, hand-over, Pan's report and exit), `DriverInstallProgress` is the dialog's model (steps, weighted bar that
+  never goes back), `ControllerSupportService.Installation` shows it to the App.
 - `ControllerSupportRemoval`: what goes at Arcadia's uninstall. `SisrLeftovers` (`ControllerSupportService.Sisr`): the
   group "SISR" and "SISR entfernen", run as one of the service's actions; `SisrInstallation`/`WindowsSisrSystem`: what
   an older Arcadia left of SISR on disk ([sisr-removal.md](../controller-support/sisr-removal.md)).
@@ -40,7 +43,8 @@ The controller emulation for games and Pan, its guardian service. What was verif
 **Pan's client** (`Pan/`)
 - `PanClient` (`IEmulationGuardian`, heartbeat, reconnect), `PanTransport.cs` (`PanPipeTransport`, `PanServiceStart`:
   starting the service and waiting for it), `PanSetup` (runs the bundled `Pan.exe` elevated: install, uninstall,
-  restore), `PanCompatibility` (only the bundled Pan, by SHA-256).
+  restore), `PanInstallRun` (an elevated install waiting for its hand-over: the pipe, its report, `abort` on dispose),
+  `PanExitCodes` (what Arcadia says to each exit code), `PanCompatibility` (only the bundled Pan, by SHA-256).
 - `PanEmulation`: hide once at the start, show at the end, every plug registered with Pan; its states and problems
   for the settings. `TakenOverControllers`: every other controller Arcadia takes over, hidden and emulated, sent from
   the reading thread. `ControllerLayouts`: the choices of "Controller zuordnen" per model.
@@ -54,6 +58,8 @@ Pan's decisions, no dependencies, AOT-clean.
 - Hiding: `Hiding.cs` (`SteamControllerHiding`: HidHide versions and states Pan works with, the user's entries kept),
   `ControllerHiding.cs` (`ControllerModel`: a model by its USB ids, never an instance), `HidHideWire` (HidHide's driver interface),
   `HidHideRelease`/`HidHideSetup`.
+- An install run (#413): `InstallRun` (its command line), `InstallHandOver` (the `go`/`abort` message, checked against
+  the run), `InstallReport` (the step report and its writer).
 - Installers: `InstallerSignature` (`PublisherPin`, `WinTrustAuthenticode`, `UsbipRelease`: who may have signed one).
 - VIIPER's ports: `UsbipPorts`, `TcpListeners`, `ViiperListeners` (only Arcadia's `viiper.exe` on 127.0.0.1).
 - Uninstall: `UninstallOrder`, `PendingUninstall` (the marker a later start finishes, #422), `SelfRemoval` and
@@ -63,6 +69,7 @@ Pan's decisions, no dependencies, AOT-clean.
 ## `src/Arcadia.Pan`
 
 `Pan.exe`, the guardian service, Native AOT, `InvariantGlobalization`. `Program` (arguments), `ServiceDescriptions`,
-`PanLog`; `Windows/`: `ServiceHost` (SCM), `PipeServer`, `ServiceSetup` (`--install`, the service), `PanUninstall` (`--uninstall`, the finish at start), `ArcadiaProbe`, `UsbipInstall`,
+`PanLog`; `Windows/`: `ServiceHost` (SCM), `PipeServer`, `InstallCommand` (`--install`: hand-over, report, steps),
+`InstallHandOverPipe` (the run's pipe), `ServiceSetup` (the service), `PanUninstall` (`--uninstall`, the finish at start), `ArcadiaProbe`, `UsbipInstall`,
 `HidHideInstall`, `DriverRemoval` (`--remove-drivers`), `Restore` (`--restore`), `WindowsCleanup`, `WindowsHiding`,
 `WindowsStaleDevices`, `UnbiasedClock`, `Native`. Details: `docs/controller-support/pan.md`.

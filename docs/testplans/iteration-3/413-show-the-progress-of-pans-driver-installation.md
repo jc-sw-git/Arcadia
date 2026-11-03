@@ -103,4 +103,4 @@ History:
 |---|---|---|---|---|---|
 | T413-1 to T413-24 (unit, VM, window), T413-12, -14, -17, -26 (Pan unit) | 2026-11-03 | Claude (thread) | Debug, Linux cloud container | pass | footer still showed "B Zurück" while running: fixed |
 | T413-25, T413-26 (`InstallHandOverPipeTests`, `ServiceTests` hand-over: real Pan installed through the pipe) | 2026-11-03 | Claude (thread) | Release, Windows CI runner (cee2435) | pass | – |
-| T413-1 to T413-29 (owner's full test before the merge) | 2026-11-03 | Juri (owner) | PR #440 (1a9e6a7), owner's PC | pass | – |
+| T413-1 to T413-29 (owner's full test before the merge) | 2026-11-03 | owner (jc-sw-git) | PR #440 (1a9e6a7), owner's PC | pass | – |

@@ -81,9 +81,12 @@ public static class ControllerSupportRemoval
         + "Windows entfernt die Treiber für die Controller-Emulation erst beim nächsten Neustart des PCs ganz. "
         + "Starte den PC neu, bevor du Arcadia wieder installierst.";
 
-    /// <summary>A driver the uninstall removed waits for the PC's restart (#407).</summary>
-    [SupportedOSPlatform("windows")]
-    public static bool DriverRemovalPending() => HidHideInstallation.IsRemovalPending() || UsbipDriver.IsRemovalPending();
+    /// <summary>
+    /// Whether <see cref="RestartNotice"/> is due (#423): the player chose to remove a driver and Pan's elevated uninstall
+    /// started. Not from the drivers' state: Pan hands off to its copy (#270) and returns before the copy removed
+    /// anything, and a removed driver practically always waits for the restart, so a notice too many beats a missing one.
+    /// </summary>
+    public static bool RestartNoticeDue(bool removeDrivers, PanUninstallResult pan) => removeDrivers && pan == PanUninstallResult.Started;
 
     /// <summary>
     /// How long <see cref="RestartNotice"/> stays open: what is left of the uninstall hook's limit, less a margin so

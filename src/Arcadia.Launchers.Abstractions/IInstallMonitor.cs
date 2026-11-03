@@ -36,7 +36,12 @@ public enum InstallOutcome
 
 /// <param name="Active">Running installations by <see cref="Game.Id"/>.</param>
 /// <param name="Finished">Installations that ended since the previous poll, by game id.</param>
-public sealed record InstallSnapshot(IReadOnlyDictionary<string, InstallProgress> Active, IReadOnlyDictionary<string, InstallOutcome> Finished)
+/// <param name="Updates">Whether each installed game has an update (<see cref="Game.UpdateAvailable"/>), by game id, as
+/// the launcher says now; null if the monitor doesn't tell. Lets an update appear or go without a rescan (#288).</param>
+public sealed record InstallSnapshot(
+    IReadOnlyDictionary<string, InstallProgress> Active,
+    IReadOnlyDictionary<string, InstallOutcome> Finished,
+    IReadOnlyDictionary<string, bool>? Updates = null)
 {
     public static InstallSnapshot Empty { get; } = new(new Dictionary<string, InstallProgress>(), new Dictionary<string, InstallOutcome>());
 }

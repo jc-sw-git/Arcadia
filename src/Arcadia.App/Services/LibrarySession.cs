@@ -82,7 +82,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     /// <summary>A launcher was read again, maybe with nothing changed: its "Zuletzt eingelesen" changed anyway.</summary>
     public event EventHandler? LaunchersRead;
 
-    /// <summary>A game's install state changed (<see cref="InstallStateOf"/>).</summary>
+    /// <summary>A game's install state or update changed (<see cref="InstallStateOf"/>, <see cref="UpdateOf"/>).</summary>
     public event EventHandler? InstallStatesChanged;
 
     /// <summary>A game started, runs or ended (<see cref="RunStateOf"/>).</summary>
@@ -103,6 +103,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     public DateTimeOffset? ScannedAt(string launcherId) => _library.ScannedAt(launcherId);
 
     public InstallProgress? InstallStateOf(string gameKey) => _installs.StateOf(gameKey);
+
+    /// <summary>Whether the launcher says now that the game has an update, newer than the scan; null if it doesn't tell (#288).</summary>
+    public bool? UpdateOf(string gameKey) => _installs.UpdateOf(gameKey);
 
     public RunState? RunStateOf(string gameKey) => _running.StateOf(gameKey);
 

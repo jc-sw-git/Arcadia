@@ -24,7 +24,7 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
     private readonly MonitorPolls<InstallSnapshot> _monitors = new(time, PollDeadline, (launcherId, ex) => $"Installationen von {launcherId} nicht lesbar: {ex}");
 
     // What each launcher reported last; a monitor that fails or is late keeps showing it.
-    private readonly Dictionary<string, IReadOnlyDictionary<string, InstallProgress>> _lastActive = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, InstallSnapshot> _last = new(StringComparer.Ordinal);
 
     // Install dialogs Arcadia opened in a watched launcher that the user hasn't confirmed yet.
     private readonly Dictionary<string, DateTimeOffset> _awaitingConfirmation = new(StringComparer.Ordinal);
@@ -33,6 +33,7 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
     private readonly HashSet<string> _pending = new(StringComparer.Ordinal);
 
     private Dictionary<string, InstallProgress> _installs = new(StringComparer.Ordinal);
+    private Dictionary<string, bool> _updates = new(StringComparer.Ordinal);
     private bool _polling;
 
     /// <summary>Where a monitor that failed or didn't answer in time is written, once per failure.</summary>
@@ -47,6 +48,12 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
 
     /// <summary>What the installation of a game is doing, or null if none runs.</summary>
     public InstallProgress? StateOf(string gameKey) => _installs.GetValueOrDefault(gameKey);
+
+    /// <summary>
+    /// Whether the launcher's monitor says the installed game has an update now (#288), newer than the last scan;
+    /// null if the monitor doesn't tell, then the scan's <see cref="Game.UpdateAvailable"/> holds.
+    /// </summary>
+    public bool? UpdateOf(string gameKey) => _updates.TryGetValue(gameKey, out var update) ? update : null;
 
     /// <summary>
     /// Records that the launcher's install dialog was opened for <paramref name="game"/>; opening it again restarts
@@ -110,15 +117,21 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
     }
 
     private InstallSnapshot LastOf(string launcherId) =>
-        new(_lastActive.GetValueOrDefault(launcherId) ?? InstallSnapshot.Empty.Active, InstallSnapshot.Empty.Finished);
+        _last.GetValueOrDefault(launcherId) is { } last ? last with { Finished = InstallSnapshot.Empty.Finished } : InstallSnapshot.Empty;
 
     private List<InstallResult> Apply(List<(string LauncherId, InstallSnapshot Snapshot)> snapshots)
     {
         var installs = new Dictionary<string, InstallProgress>(StringComparer.Ordinal);
+        var updates = new Dictionary<string, bool>(StringComparer.Ordinal);
         var results = new List<InstallResult>();
         foreach (var (launcherId, snapshot) in snapshots)
         {
-            _lastActive[launcherId] = snapshot.Active;
+            _last[launcherId] = snapshot;
+            foreach (var (id, update) in snapshot.Updates ?? new Dictionary<string, bool>())
+            {
+                updates[Game.KeyOf(launcherId, id)] = update;
+            }
+
             foreach (var (id, progress) in snapshot.Active)
             {
                 var key = Game.KeyOf(launcherId, id);
@@ -148,6 +161,7 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
         }
 
         _installs = installs;
+        _updates = updates;
         return results;
     }
 }

@@ -13,15 +13,21 @@ updates:
       actions:
         patterns: ["*"]
   - package-ecosystem: nuget
-    directory: /
+    # Listed by folder, not as "/": only with several directories does group-by below bring a new major version to
+    # all projects in one PR instead of one PR per project.
+    directories: ["/src/*", "/tests/*", "/tools/dev/*"]
     schedule:
       interval: monthly
-    # Only minor and patch updates are grouped: a new major version comes as a PR of its own, so one that breaks the
-    # build doesn't hold back the others.
+    # Minor and patch updates come as one PR; a new major version comes as a PR of its own (for all projects at once),
+    # so one that breaks the build doesn't hold back the others.
     groups:
       nuget:
         patterns: ["*"]
         update-types: [minor, patch]
+      nuget-major:
+        patterns: ["*"]
+        update-types: [major]
+        group-by: dependency-name
     ignore:
       # Avalonia.Headless.XUnit is built against xunit v3's 3.x API: with xunit 4 the window tests aren't even found
       # (MissingMethodException in discovery). The VS runner 4 belongs to
@@ -30,3 +36,7 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: xunit.runner.visualstudio
         update-types: [version-update:semver-major]
+      # Svg.Skia 5.2 needs SkiaSharp 4, while Avalonia 12.1 ships SkiaSharp 3's native library on Linux: every
+      # window test fails there. Lift once Avalonia moves to SkiaSharp 4.
+      - dependency-name: Svg.Skia
+        versions: [">=5.2.0"]

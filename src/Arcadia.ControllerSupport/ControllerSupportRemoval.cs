@@ -20,19 +20,6 @@ public sealed record InstalledParts(bool Sisr, bool Viiper, bool Usbip, bool Hid
 /// entfernen" in the settings removes them (<see cref="SisrInstallation"/>, #214). usbip-win2 and HidHide go in Pan's
 /// <c>--uninstall --remove-drivers</c>, inside its one UAC prompt and after Pan undid its own HidHide entries.
 /// </summary>
-/// <summary>How Pan's elevated uninstall went at Arcadia's uninstall.</summary>
-public enum PanUninstallResult
-{
-    /// <summary>Nothing to remove, or no Pan in the package.</summary>
-    NotRun,
-
-    /// <summary>The UAC prompt was declined: Pan and the drivers stay.</summary>
-    Declined,
-
-    /// <summary>Pan runs elevated; it may still be at work (hand-off, timeout) or have failed partway.</summary>
-    Started,
-}
-
 public static class ControllerSupportRemoval
 {
     private static string LocalAppData => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);

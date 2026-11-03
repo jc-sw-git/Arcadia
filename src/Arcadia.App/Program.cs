@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -185,6 +186,12 @@ sealed partial class Program
         {
             // Past the UAC prompt Pan runs on elevated or failed partway; unknown counts as started, so the notice shows.
             AppLog.Write($"Pan konnte nicht entfernt werden: {ex.Message}");
+        }
+        catch (Win32Exception ex)
+        {
+            // Pan never started (e.g. elevation blocked by policy): nothing was removed, and the hook must go on.
+            AppLog.Write($"Pan konnte nicht gestartet werden: {ex.Message}");
+            return PanUninstallResult.NotRun;
         }
 
         return PanUninstallResult.Started;

@@ -67,7 +67,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         _firstRun = firstRun;
         _time = time;
         LauncherTabs = new LauncherTabsViewModel(logos.BadgeOf);
-        Messages = new RecentMessages(time);
+        Messages = new RecentMessages(time, AppLog.Write);
         Status = new StatusBarViewModel(controllerSupport, updates, time, new StatusMessageChanges(Messages));
         Toast = new ToastViewModel(time, Messages);
         Session = new LibrarySession(library, installs, running, launchedGames, time);
@@ -786,8 +786,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
         {
-            AppLog.Write($"Log {kind} nicht geöffnet: {ex.Message}");
-            Toast.Show(HealthSeverity.Error, $"{LogNames.Of(kind)} konnte nicht geöffnet werden: {ex.Message}");
+            // The system's message is English and may name the user's profile: only the log gets it (without the profile).
+            AppLog.Write($"Log {kind} nicht geöffnet: {ex.GetType().Name}: {ex.Message}");
+            Toast.Show(HealthSeverity.Error, $"{LogNames.Of(kind)} konnte nicht geöffnet werden: {LogNames.WhyNotOpened(ex)}");
             return;
         }
 

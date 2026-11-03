@@ -13,7 +13,7 @@ public sealed class ToastTests
     public void A_message_hides_after_its_duration_and_a_newer_one_keeps_its_own_time()
     {
         var time = new FakeTimeProvider();
-        var toast = new ToastViewModel(time, new Messages.RecentMessages(time));
+        var toast = new ToastViewModel(time, new Messages.RecentMessages(time, _ => { }));
 
         toast.Show(HealthSeverity.Info, "erste");
         time.Advance(ToastViewModel.Duration / 2);
@@ -31,7 +31,7 @@ public sealed class ToastTests
     public void A_sticky_message_stays_until_the_next_one()
     {
         var time = new FakeTimeProvider();
-        var toast = new ToastViewModel(time, new Messages.RecentMessages(time));
+        var toast = new ToastViewModel(time, new Messages.RecentMessages(time, _ => { }));
 
         toast.Show(HealthSeverity.Info, "bleibt", sticky: true);
         time.Advance(ToastViewModel.Duration * 2);

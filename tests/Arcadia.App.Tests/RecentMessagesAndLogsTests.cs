@@ -144,7 +144,7 @@ public sealed class RecentMessagesAndLogsTests
         Assert.Same(list, arcadia.Main.Settings!.FocusedRow);
     }
 
-    [AvaloniaFact(Skip = "QE-Befund PR #437: Meldungen landen nicht in arcadia.log, obwohl die Liste das verspricht")]
+    [AvaloniaFact]
     [Trait("TestCase", "T433-7")]
     public async Task After_the_start_and_a_restart_the_list_is_empty_but_arcadia_log_keeps_the_toasts()
     {

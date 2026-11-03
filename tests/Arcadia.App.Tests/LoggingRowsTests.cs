@@ -11,7 +11,7 @@ namespace Arcadia.App.Tests;
 public sealed class LoggingRowsTests : IDisposable
 {
     private readonly string _folder = Directory.CreateTempSubdirectory("arcadia-logging-").FullName;
-    private readonly RecentMessages _messages = new(new FakeTimeProvider(new DateTimeOffset(2026, 11, 3, 10, 41, 0, TimeSpan.Zero)));
+    private readonly RecentMessages _messages = new(new FakeTimeProvider(new DateTimeOffset(2026, 11, 3, 10, 41, 0, TimeSpan.Zero)), _ => { });
     private readonly FakeLogFiles _logs = new();
     private readonly List<LogKind> _opened = [];
     private readonly SettingsService _settings;
@@ -136,6 +136,19 @@ public sealed class LoggingRowsTests : IDisposable
         Assert.EndsWith("viiper.log", logs.ShownPathOf(LogKind.Viiper), StringComparison.Ordinal);
         Assert.EndsWith("pan.log", logs.ShownPathOf(LogKind.Pan), StringComparison.Ordinal);
         Assert.Throws<InvalidEnumArgumentException>(() => logs.Open((LogKind)42));
+    }
+
+    [Theory]
+    [Trait("TestCase", "T433-24")]
+    [InlineData(1155, "Windows kennt kein Programm für .log-Dateien.")]
+    [InlineData(5, "Windows verweigert den Zugriff.")]
+    [InlineData(2, "Die Datei gibt es nicht mehr.")]
+    [InlineData(1223, "Details stehen in arcadia.log.")]
+    public void Why_a_log_did_not_open_is_German_and_names_no_path(int code, string reason)
+    {
+        var error = new Win32Exception(code, @"An error occurred trying to start process 'C:\Users\Beispiel\AppData\Roaming\Arcadia\logs\arcadia.log'");
+
+        Assert.Equal(reason, LogNames.WhyNotOpened(error));
     }
 
     private SettingsRowViewModel Row(string key) => _rows.Rows.Single(row => row.Key == key);

@@ -77,9 +77,24 @@ public sealed class LogFiles : ILogFiles
     };
 }
 
-/// <summary>A log's file name as the player reads it in a toast.</summary>
+/// <summary>A log's file name and why it didn't open, as the player reads them in a toast.</summary>
 public static class LogNames
 {
+    // Windows' error codes from ShellExecute.
+    private const int FileNotFound = 2;
+    private const int AccessDenied = 5;
+    private const int NoAssociation = 1155;
+
+    /// <summary>In German and without a path, unlike the system's message, which may name the user's profile.</summary>
+    public static string WhyNotOpened(Exception error) => error switch
+    {
+        Win32Exception { NativeErrorCode: NoAssociation } => "Windows kennt kein Programm für .log-Dateien.",
+        Win32Exception { NativeErrorCode: AccessDenied } or UnauthorizedAccessException => "Windows verweigert den Zugriff.",
+        Win32Exception { NativeErrorCode: FileNotFound } or FileNotFoundException => "Die Datei gibt es nicht mehr.",
+        TimeoutException => "Windows hat nicht rechtzeitig geantwortet.",
+        _ => "Details stehen in arcadia.log.",
+    };
+
     public static string Of(LogKind kind) => kind switch
     {
         LogKind.Arcadia => "arcadia.log",

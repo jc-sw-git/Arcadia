@@ -16,7 +16,7 @@ public sealed class RecentMessagesTests
     [InlineData(51, 50)]
     public void The_list_keeps_the_newest_fifty(int added, int kept)
     {
-        var messages = new RecentMessages(_time);
+        var messages = new RecentMessages(_time, _ => { });
         for (var i = 1; i <= added; i++)
         {
             messages.Add(HealthSeverity.Info, MessageKind.Toast, $"Meldung {i}");
@@ -32,7 +32,7 @@ public sealed class RecentMessagesTests
     [Trait("TestCase", "T433-13")]
     public void A_new_entry_drops_the_oldest_whatever_its_level()
     {
-        var messages = new RecentMessages(_time);
+        var messages = new RecentMessages(_time, _ => { });
         messages.Add(HealthSeverity.Info, MessageKind.Toast, "älteste, Info");
         for (var i = 0; i < RecentMessages.Capacity - 1; i++)
         {
@@ -49,7 +49,7 @@ public sealed class RecentMessagesTests
     [Trait("TestCase", "T433-14")]
     public void Clearing_empties_the_list_and_says_so_once()
     {
-        var messages = new RecentMessages(_time);
+        var messages = new RecentMessages(_time, _ => { });
         var changes = 0;
         messages.Add(HealthSeverity.Error, MessageKind.Toast, "Fehler");
         messages.Changed += (_, _) => changes++;
@@ -65,7 +65,7 @@ public sealed class RecentMessagesTests
     [Trait("TestCase", "T433-9")]
     public async Task Senders_on_other_threads_all_reach_the_list_in_their_order()
     {
-        var messages = new RecentMessages(_time);
+        var messages = new RecentMessages(_time, _ => { });
         const int senders = 4;
         const int each = 12;
         using var start = new Barrier(senders);
@@ -93,7 +93,7 @@ public sealed class RecentMessagesTests
     [Trait("TestCase", "T433-17")]
     public void A_status_message_is_an_entry_when_it_appears_and_when_it_is_resolved()
     {
-        var messages = new RecentMessages(_time);
+        var messages = new RecentMessages(_time, _ => { });
         var status = new StatusMessageChanges(messages);
 
         status.Show([new StatusMessage("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt")]);
@@ -110,7 +110,7 @@ public sealed class RecentMessagesTests
     [Trait("TestCase", "T433-18")]
     public void A_changed_level_adds_one_entry_and_an_unchanged_refresh_none()
     {
-        var messages = new RecentMessages(_time);
+        var messages = new RecentMessages(_time, _ => { });
         var status = new StatusMessageChanges(messages);
         var pan = new StatusMessage("pan-not-running", HealthSeverity.Warning, "Pan läuft nicht");
 
@@ -130,7 +130,7 @@ public sealed class RecentMessagesTests
     [Trait("TestCase", "T433-17")]
     public void A_resolved_error_keeps_its_level()
     {
-        var messages = new RecentMessages(_time);
+        var messages = new RecentMessages(_time, _ => { });
         var status = new StatusMessageChanges(messages);
 
         status.Show([new StatusMessage("pan-not-running", HealthSeverity.Error, "Pan läuft nicht")]);

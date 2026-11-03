@@ -15,9 +15,11 @@ public sealed record RecentMessage(DateTimeOffset Time, HealthSeverity Level, Me
 
 /// <summary>
 /// The toasts and status changes since Arcadia started, newest first, at most <see cref="Capacity"/> (#433). In memory
-/// only: arcadia.log keeps the whole history. Callable from any thread; <see cref="Changed"/> comes on the caller's.
+/// only; every entry is also written to arcadia.log, which keeps the whole history. Callable from any thread;
+/// <see cref="Changed"/> comes on the caller's.
 /// </summary>
-public sealed class RecentMessages(TimeProvider time)
+/// <param name="log">arcadia.log; the list's text promises that it holds every message.</param>
+public sealed class RecentMessages(TimeProvider time, Action<string> log)
 {
     public const int Capacity = 50;
 
@@ -49,6 +51,7 @@ public sealed class RecentMessages(TimeProvider time)
 
     public void Add(HealthSeverity level, MessageKind kind, string text)
     {
+        log($"{(kind == MessageKind.Toast ? "Meldung" : "Status")} ({level}): {text}");
         lock (_gate)
         {
             _entries.Add(new RecentMessage(time.GetLocalNow(), level, kind, text));

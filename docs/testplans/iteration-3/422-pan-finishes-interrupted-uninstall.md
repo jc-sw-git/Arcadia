@@ -41,3 +41,4 @@ History:
 |---|---|---|---|---|---|
 | T422-2, T422-3 (cancel), T422-5, T422-6, T422-7, T422-10 (unit) | 2026-11-03 | Claude (thread) | Debug, Linux cloud container | pass | – |
 | T422-1, -2, -3, -4, -6, -7 (acceptance: uninstall and Windows starts chained, real marker file; each red once against a mutated `UninstallOrder`/`SelfRemoval`/`PendingUninstallFile`) | 2026-11-03 | Claude (QE review) | Debug, Linux cloud container | pass | – |
+| T422-4, T422-10 (`ServiceTests`: real service installed beside a stand-in `Arcadia.exe`, the stand-in deleted, the service restarted: it removed itself, exe moved into `Pan-Uninstall`) | 2026-11-03 | Claude (thread) | Release single-file Pan, Windows CI runner (8166ce1) | pass | first runs red: the record was lost when the data folder was set aside (fixed in 3526a95) |

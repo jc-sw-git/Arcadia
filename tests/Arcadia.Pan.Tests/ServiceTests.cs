@@ -288,16 +288,18 @@ public sealed class ServiceTests : IDisposable
         // T422-4: installed again, then its Arcadia goes without an uninstall (the UAC prompt declined): at its next start
         // the service finds no Arcadia and removes itself; its running exe moves into Pan-Uninstall for the next boot.
         Assert.Equal(0, Run(pan, "--install", "--expect-hash", hash));
-        // The pipe opens only after the service looked for Arcadia: until then the stand-in must stay.
+        // The pipe opens once the service runs, so it can be stopped. The pipe opens before the service looks for
+        // Arcadia, so the stand-in goes only while the service is stopped: deleted earlier, a late first look finds no
+        // Arcadia and Pan removes itself under the test's hands (#434).
         await using (await ConnectAsync())
         {
         }
 
-        File.Delete(Path.Combine(_work, "arcadia", ArcadiaInstallations.ExecutableName));
         using (var service = new ServiceController(PanPaths.ServiceName))
         {
             service.Stop();
             service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+            File.Delete(Path.Combine(_work, "arcadia", ArcadiaInstallations.ExecutableName));
             service.Start();
         }
 

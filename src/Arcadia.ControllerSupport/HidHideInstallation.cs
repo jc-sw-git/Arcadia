@@ -65,14 +65,15 @@ public static class HidHideInstallation
     /// Downloads the pinned HidHide installer into Arcadia's temp folder and checks its SHA-256; Pan checks the
     /// signature of its own copy before it runs it.
     /// </summary>
-    public static async Task<string> DownloadInstallerAsync(HttpClient http, CancellationToken cancellationToken)
+    public static async Task<string> DownloadInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
     {
-        var installer = Path.Combine(Path.GetTempPath(), "Arcadia", HidHideRelease.InstallerName);
+        var installer = Path.Combine(folder, HidHideRelease.InstallerName);
         await VerifiedDownload.DownloadAsync(
             http,
             new ReleaseAsset(HidHideRelease.InstallerName, HidHideRelease.InstallerUrl, HidHideRelease.InstallerSize, HidHideRelease.Sha256),
             installer,
-            cancellationToken);
+            cancellationToken,
+            progress);
         return installer;
     }
 }

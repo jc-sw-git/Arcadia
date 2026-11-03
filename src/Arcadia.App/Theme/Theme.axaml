@@ -1427,6 +1427,92 @@
     <Setter Property="CornerRadius" Value="10" />
     <Setter Property="Padding" Value="20,16" />
   </Style>
+  <!-- "Treiber werden installiert" (#413, designs T413Dialog). -->
+  <Style Selector="Border.promptIcon.failed">
+    <Setter Property="Background" Value="{StaticResource DangerSurface}" />
+  </Style>
+  <Style Selector="Border.promptIcon.failed TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="Border.usbHint">
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{StaticResource PromptBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="22,16" />
+  </Style>
+  <Style Selector="ProgressBar.installRun">
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="12" />
+    <Setter Property="Height" Value="12" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Background" Value="{StaticResource ProgressTrack}" />
+    <Setter Property="Foreground" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="ProgressBar.installRun.failed">
+    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="TextBlock.installCount">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.installStep">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="CornerRadius" Value="10" />
+  </Style>
+  <Style Selector="Border.installStep.running">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Border.installStep.failed">
+    <Setter Property="Background" Value="{StaticResource DangerSurface}" />
+  </Style>
+  <Style Selector="Border.installStep TextBlock.stepTitle">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.installStep.running TextBlock.stepTitle">
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Border.installStep.pending TextBlock.stepTitle">
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Border.installStep.failed TextBlock.stepTitle">
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="Path.stepDone, Path.stepFailed">
+    <Setter Property="StrokeThickness" Value="2.6" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Stretch" Value="None" />
+  </Style>
+  <Style Selector="Path.stepDone">
+    <Setter Property="Stroke" Value="{StaticResource Success}" />
+  </Style>
+  <Style Selector="Path.stepFailed">
+    <Setter Property="Stroke" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="Ellipse.stepPending">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Stroke" Value="{StaticResource TextFaint}" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.installError">
+    <Setter Property="Background" Value="{StaticResource DangerSurface}" />
+    <Setter Property="BorderBrush" Value="{StaticResource DangerBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="22,16" />
+  </Style>
   <!-- "Controller zuordnen" (#238 D3a, designs T238Modal). -->
   <Style Selector="Path.layoutsIcon">
     <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />

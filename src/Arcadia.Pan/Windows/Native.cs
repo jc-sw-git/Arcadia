@@ -77,6 +77,13 @@ internal static unsafe partial class Native
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetNamedPipeClientProcessId(nint pipe, out uint clientProcessId);
 
+    // Tokens: whose process Arcadia's is, for the hand-over pipe's DACL (#413)
+    public const uint TokenQuery = 0x0008;
+
+    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool OpenProcessToken(nint process, uint desiredAccess, out nint token);
+
     // Clock
     [LibraryImport("kernel32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

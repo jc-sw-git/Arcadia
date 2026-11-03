@@ -152,7 +152,7 @@ public sealed class EmulationSetupTests
     [Trait("TestCase", "T243-32")]
     public async Task A_HidHide_setup_that_fails_inside_Pan_s_install_keeps_its_row_with_the_error_while_Pan_is_set_up()
     {
-        const string error = "Pan ist eingerichtet, HidHide aber nicht – Details stehen in pan.log. HidHide lässt sich auch selbst installieren: https://github.com/nefarius/HidHide/releases";
+        var error = Arcadia.ControllerSupport.Pan.PanExitCodes.ErrorFor(Arcadia.ControllerSupport.Pan.PanExitCodes.HidHideFailed, "--install").Message;
         var steam = new FakeSteam { IsPanReady = false, HidHideVersion = null, HidHideInstallError = error };
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
@@ -206,10 +206,12 @@ public sealed class EmulationSetupTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T243-33")]
-    public async Task A_declined_install_of_every_part_keeps_VIIPER_and_shows_its_error_at_the_first_part_left()
+    [Trait("TestCase", "T413-9")]
+    public async Task A_declined_install_of_every_part_installs_nothing_not_even_VIIPER_and_shows_its_error_at_the_switch()
     {
         const string error = "Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Installieren“ wählen und die Abfrage bestätigen.";
-        var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideVersion = null, InstallError = error };
+        var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideVersion = null, IsSteamRunning = true };
+        steam.Pan.Declines = true;
         steam.Viiper.IsInstalled = false;
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
@@ -217,17 +219,25 @@ public sealed class EmulationSetupTests
 
         Switch(controller).Activate();
         ConfirmDriversInstall(arcadia, controller);
-        await arcadia.WaitUntilAsync(() => controller.Rows.OfType<ActionRowViewModel>().Any(row => row.HasProblem), "der Fehler an einer Zeile");
+        await arcadia.WaitUntilAsync(() => controller.InstallDialog is { IsFailed: true }, "die abgelehnte Abfrage im Dialog");
 
-        // VIIPER needs no Windows prompt and came before it: the rest is three parts with one error, at the first.
-        Assert.True(steam.Viiper.IsInstalled);
-        Assert.Equal(["issue:usbip-missing", "issue:pan-missing", "issue:hidhide-missing"], controller.Rows.Where(row => row.Key.StartsWith("issue:", StringComparison.Ordinal)).Select(row => row.Key));
-        var failed = Assert.Single(controller.Rows.OfType<ActionRowViewModel>(), row => row.HasProblem);
-        Assert.Equal("issue:usbip-missing", failed.Key);
-        Assert.Equal(error, failed.Problem);
+        // The Windows prompt comes first (#413, D7): declined, nothing else happened, not even VIIPER; Steam still runs.
+        Assert.Equal(["prompt", "declined"], steam.Pan.Calls);
+        Assert.False(steam.Viiper.IsInstalled);
+        Assert.True(steam.IsSteamRunning);
+        Assert.Equal(0, steam.SteamStops);
+        var dialog = controller.InstallDialog!;
+        Assert.Equal(DriverInstallStepState.Failed, dialog.Steps[0].State);
+        Assert.All(dialog.Steps.Skip(1), step => Assert.Equal(DriverInstallStepState.Pending, step.State));
+        Assert.Equal(error, dialog.Error);
+
+        // A closes it; the switch, where it started, has the focus and offers "Erneut versuchen" with the error.
+        arcadia.Press(UiAction.Accept);
+        Assert.Null(controller.InstallDialog);
         var pan = Switch(controller);
-        Assert.False(pan.HasProblem);
-        Assert.Equal(ProblemText, pan.Subtitle);
+        Assert.Equal(PanRows.MainKey, controller.FocusedRow?.Key);
+        Assert.Equal("Erneut versuchen", pan.InstallText);
+        Assert.Equal(error, arcadia.ControllerSupport.LastError);
     }
 
     /// <summary>

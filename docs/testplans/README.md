@@ -38,6 +38,9 @@ not the whole folder.
   **Review** (at most 10, those only he can run, plus a focus for exploratory testing); the rest is covered by
   the automated tests and the quality engineer's own run, recorded in the History. The acceptance review at the
   end of an iteration hands him at most 30 cases. The thread records the ticks and pushes.
+- **Restart or installation → release candidate:** a case that needs a Windows restart or an installation,
+  update or uninstall of Arcadia is marked `· RC` and never handed over in a PR; the iteration's overview lists it
+  under "Release candidate tests", and the owner runs them on the release candidate. They don't count toward the 30.
   A push that changes only `docs/testplans/**` on top of a green commit skips build and tests and runs only the
   `Testplan` check (`tools/ci/detect-testplan-only.sh`). If the acceptance review at the end of the iteration finds
   that a later issue changed the behaviour, the test case is open again and retested on the release candidate.

@@ -71,7 +71,7 @@ Every step that runs HidHide's installer ("Treiber installieren" and its part ro
 unsupported; "Neu installieren" for "HidHide antwortet unerwartet", which runs the pinned installer with Windows
 Installer's reinstall, `HidHideRelease.RepairArguments`, not yet run on a real PC) runs only with Steam closed: the
 installer restarts the puck, which then is Steam's and may be mid-update. The settings ask "Steam beenden?" (or name a
-running Steam game); `InstallWithSteamClosedAsync` closes Steam, installs, starts it again also after a failure.
+running Steam game); `ControllerSupportService.WithSteamClosedAsync` closes Steam, installs, starts it again also after a failure.
 "Neu installieren" is offered only over the very driver it installs (`HidHideRelease.IsPinnedDriver`) and refused
 while Pan hides the puck (`ControllerSupportService.PanHoldsPuck`). No flash risk either way: a flash runs only on a
 bootloader (`1005`, `1007`).

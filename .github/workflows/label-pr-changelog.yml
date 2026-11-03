@@ -14,6 +14,7 @@ permissions:
 jobs:
   label:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
       # Passed via env, never interpolated into the script: the branch name is user input.

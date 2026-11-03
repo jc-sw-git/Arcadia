@@ -1,0 +1,25 @@
+name: Bug origin
+
+# A closed bug must say where it came from, so the release notes can leave out bugs that never shipped.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  bug-origin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Closed bugs name their origin
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Passed via env, never interpolated into the script: the description is user input.
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: tools/ci/check-bug-origin.sh

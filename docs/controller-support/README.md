@@ -38,7 +38,8 @@ this, is never started any more; Arcadia only removes it on request ([sisr-remov
 | Latency of the emulated pads: 1 ms reads while pads get states for a game, sending on the reading thread, what `arcadia.log` measures (D9) | [pad-latency.md](pad-latency.md) |
 | Pan removes the stale device entries Arcadia's emulated devices leave in Windows | [pan-stale-devices.md](pan-stale-devices.md) |
 | Pan's puck restart: who may hold the puck, the copy is never restarted | [pan-puck-restart.md](pan-puck-restart.md) |
-| Pan: setup with one UAC prompt, uninstall, `--restore`, the data folder, exit codes | [pan-setup.md](pan-setup.md) |
+| Pan: setup with one UAC prompt, `--restore`, the data folder, exit codes | [pan-setup.md](pan-setup.md) |
+| Pan: uninstall, pending uninstall retried at Windows starts, removing itself without Arcadia | [pan-uninstall.md](pan-uninstall.md) |
 | Pan: the update at start, announced and declinable | [pan-update.md](pan-update.md) |
 | Steam Controller firmware updates: Steam's update path (spike #295), the notice, Pan's bootloader check | [steam-controller-firmware.md](steam-controller-firmware.md) |
 | Pan: known limits and accepted risks | [pan-risks.md](pan-risks.md) |

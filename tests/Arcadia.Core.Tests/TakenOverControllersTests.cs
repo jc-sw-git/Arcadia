@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Input;
 using Arcadia.Pan;
@@ -306,7 +305,11 @@ public sealed class TakenOverControllersTests
         Assert.Equal(0x1000 | XboxPadState.GuideBit, sent.Buttons);
         _time.Advance(TimeSpan.FromSeconds(1));
         _others.Feed([DualSense, EightBitDo with { Buttons = PadButtons.View | PadButtons.Menu }]);
-        await Task.Delay(50);
+
+        // A later state that does go out: once it arrived, View and Menu had their turn before it, so their absence
+        // is not a matter of waiting long enough.
+        _others.Feed([DualSense, EightBitDo with { Buttons = PadButtons.B }]);
+        await eightBitDoPad.WaitForAsync(state => state.Buttons == 0x2000);
         Assert.DoesNotContain(eightBitDoPad.Sent, state => (state.Buttons & 0x0030) != 0);
     }
 
@@ -484,23 +487,18 @@ public sealed class TakenOverControllersTests
         var pad = _pads.All[0];
 
         // The forwarding runs on its own thread: its first state can take longer than a fixed wait on a slow CI runner.
-        var firstState = Stopwatch.StartNew();
-        while (pad.States.Count == 0 && firstState.Elapsed < TimeSpan.FromSeconds(5))
-        {
-            await Task.Delay(10);
-        }
-
-        await Task.Delay(50);
+        await WaitForStateAsync(pad, _ => true);
         var before = pad.States.Count;
-        Assert.NotEqual(0, before);
 
         for (var i = 1; i <= 5; i++)
         {
             _others.Feed([EightBitDo with { Motion = new MotionReading(true, new SensorAxes(i, 0, 0), default) }]);
         }
 
-        await Task.Delay(50);
-        Assert.Equal(before, pad.States.Count);
+        // A button does give a new state: once it arrived, the motion reads had their turn before it.
+        _others.Feed([EightBitDo with { Buttons = PadButtons.A }]);
+        await WaitForStateAsync(pad, state => state.Buttons == PadButtons.A);
+        Assert.Equal(before + 1, pad.States.Count);
     }
 
     private static async Task<VirtualPadState> WaitForStateAsync(FakeVirtualXboxPads.FakePad pad, Func<VirtualPadState, bool> test)

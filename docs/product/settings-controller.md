@@ -31,7 +31,8 @@ The page and its status messages: [settings.md](settings.md).
   when a driver it removed waits for the restart. "Controller wiederherstellen" (Pan's `--restore`)
   stands below the problems, indented like them, while Pan is installed, also while the switch is off. While a part is
   missing, too old or waits for the restart, only the part rows show (nothing from the emulation's state, which would
-  only follow from it) and "Controller zuordnen" is hidden: nothing is emulated then.
+  only follow from it) and "Controller zuordnen" is hidden while the emulation doesn't run (an old usbip-win2 or
+  HidHide may still let it run).
 - Controllers Arcadia saw right before a hide and doesn't see again within 5 s (#396; HidHide installed while Arcadia
   ran): the emulation ends, Pan shows them, a toast says so, and nothing is hidden until Arcadia restarts, also after
   switching Pan off and on. The row "Arcadia sieht deine Controller nicht mehr" (yellow triangle, the switch's lamp

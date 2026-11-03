@@ -262,6 +262,22 @@ public sealed class EveryControllerForGamesTests
         Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:hidhide", StringComparison.Ordinal));
     }
 
+    /// <summary>#410 (QE): an old HidHide still lets the emulation run; then the controllers can still be assigned.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T410-1")]
+    public async Task With_an_old_part_that_still_runs_the_controllers_can_be_assigned()
+    {
+        var arcadia = await StartInBackgroundAsync(new FakeSteam { HidHideVersion = new Version(1, 0, 0, 0) }, pads: DualSense);
+        using var _ = arcadia;
+
+        var controller = OpenControllerSettings(arcadia);
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-unsupported"), "die Zeile zum alten HidHide");
+
+        Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);
+        Assert.Contains(PanRows.LayoutsKey, RowsBelow(controller));
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T238-7")]
     public async Task A_controller_Pan_cant_hide_reaches_games_directly_and_one_row_lists_it_with_why()

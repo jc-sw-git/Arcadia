@@ -223,8 +223,9 @@ public sealed class PanRows
         var blockerRows = blockers.Select(blocker => IssueRow(blocker, failed: null)).ToList();
         FirstWarningKey = blockerRows.FirstOrDefault()?.Key
             ?? warnings.FirstOrDefault(row => row.Severity > HealthSeverity.Info)?.Key ?? warnings.FirstOrDefault()?.Key;
-        // Nothing to assign while a part is missing: the emulation doesn't run (#410).
-        var layouts = !notHere && !allMissing && IsOn && !PartMissing && UpdateLayouts();
+        // Nothing to assign while a missing part keeps the emulation from running (#410); an old usbip-win2 or HidHide may
+        // still let it run, and then the controllers can be assigned.
+        var layouts = !notHere && !allMissing && IsOn && (!PartMissing || status.State == PanEmulationState.Running) && UpdateLayouts();
         return
         [
             Main,

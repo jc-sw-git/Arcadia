@@ -19,6 +19,7 @@ its file.
 | [418](418-explain-back-pan-install-and-removal.md) | #418 | Explain-back: Pan install and removal | none (doc fixes) |
 | [420](420-split-launchersettingsviewmodel-by-concern.md) | #420 | Split LauncherSettingsViewModel by concern | none (refactoring) |
 | [422](422-pan-finishes-interrupted-uninstall.md) | #422 | Pan finishes an interrupted uninstall and removes itself without Arcadia | T422-1 to T422-12 |
+| [429](429-close-launcher-confirmation-before-action.md) | #429 | Close the launcher settings' confirmation before its action runs | none (order of closing and confirming; touches T83-7) |
 | [434](434-pan-service-test-race.md) | #434 | Pan service test fails when a Pan process exits while it is checked | none (test race, automated test only) |
 
 ## Release candidate tests (restart or installation)

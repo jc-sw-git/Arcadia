@@ -13,6 +13,32 @@ public static class PanUninstall
 {
     public static PendingUninstallFile Marker => new(Path.Combine(PanPaths.DataDirectory, PendingUninstallFile.FileName));
 
+    public static RecordedInstallsFile RecordedInstalls => new(Path.Combine(PanPaths.DataDirectory, RecordedInstallsFile.FileName));
+
+    /// <summary>
+    /// Records an <c>Arcadia.exe</c> so the service finds it at its start even where Velopack's installer didn't put it
+    /// (a build run from its folder): the one beside the bundled Pan at <c>--install</c>, and every client named so.
+    /// Only ever evidence that Arcadia is there, so a client that only borrows the name keeps Pan installed, nothing
+    /// more. Best effort: unrecorded, only Velopack's places count.
+    /// </summary>
+    public static void RecordArcadia(string? executable, Action<string> log)
+    {
+        if (executable is null || !string.Equals(Path.GetFileName(executable), ArcadiaInstallations.ExecutableName, StringComparison.OrdinalIgnoreCase)
+            || RecordedInstalls.Load().Contains(executable, StringComparer.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        try
+        {
+            RecordedInstalls.Add(executable);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            log($"{executable} not recorded: {ex.Message}");
+        }
+    }
+
     /// <summary>
     /// <c>--uninstall [--remove-drivers]</c>: a data folder that isn't ours is neither written nor deleted, and gets no
     /// marker, so nothing retries there; the service and Program Files go anyway.

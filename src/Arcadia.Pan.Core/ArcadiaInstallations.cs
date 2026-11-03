@@ -61,12 +61,18 @@ public sealed class RecordedInstallsFile(string path)
 {
     public const string FileName = "arcadia-installs.txt";
 
-    /// <summary>Only fully qualified paths; a file that can't be read gives none (then only Velopack's places count).</summary>
+    /// <summary>A file this large is not one Pan wrote (8 short lines): it is not read.</summary>
+    public const long MaxBytes = 64 * 1024;
+
+    /// <summary>
+    /// Only fully qualified paths; a file that can't be read, or is too large, gives none (then only Velopack's places
+    /// count). Also read from a data folder Pan is about to set aside, so its content is never trusted further.
+    /// </summary>
     public IReadOnlyList<string> Load()
     {
         try
         {
-            return File.Exists(path)
+            return File.Exists(path) && new FileInfo(path).Length <= MaxBytes
                 ? File.ReadAllLines(path).Select(line => line.Trim()).Where(IsUsable).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
                 : [];
         }

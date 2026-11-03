@@ -83,6 +83,16 @@ public sealed class ArcadiaInstallationsTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T422-10")]
+    public void A_record_too_large_to_be_Pans_is_not_read()
+    {
+        var file = Path.Combine(_root, RecordedInstallsFile.FileName);
+        File.WriteAllText(file, Path.Combine(_root, "Arcadia.exe") + Environment.NewLine + new string('x', (int)RecordedInstallsFile.MaxBytes));
+
+        Assert.Empty(new RecordedInstallsFile(file).Load());
+    }
+
+    [Fact]
     [Trait("TestCase", "T422-6")]
     public void The_marker_survives_a_restart_of_Pan_and_an_unreadable_one_never_removes_the_drivers()
     {

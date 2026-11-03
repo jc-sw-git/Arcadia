@@ -88,7 +88,11 @@ internal static class Program
                         log.Write("Pending uninstall cancelled: Pan is being installed again");
                     }
 
-                    RecordArcadia(log);
+                    if (ArcadiaInstallations.BesideBundledPan(OwnPath()) is { } arcadia && File.Exists(arcadia))
+                    {
+                        PanUninstall.RecordArcadia(arcadia, log.Write);
+                    }
+
                     UninstallHandOff.RemoveLeftover(OwnPath(), PanPaths.HandOffDirectory, log.Write);
 
                     if (Option(args, "--usbip-installer") is { } usbipInstaller)
@@ -249,27 +253,6 @@ internal static class Program
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// The Arcadia whose bundled Pan runs <c>--install</c>, so the service finds it at its start even without Velopack's
-    /// installer (a build run from its folder, #422). Best effort: unrecorded, only Velopack's places count.
-    /// </summary>
-    private static void RecordArcadia(PanLog log)
-    {
-        if (ArcadiaInstallations.BesideBundledPan(OwnPath()) is not { } arcadia || !File.Exists(arcadia))
-        {
-            return;
-        }
-
-        try
-        {
-            new RecordedInstallsFile(Path.Combine(PanPaths.DataDirectory, RecordedInstallsFile.FileName)).Add(arcadia);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            log.Write($"{arcadia} not recorded: {ex.Message}");
-        }
     }
 
     private static string OwnPath() => Environment.ProcessPath ?? throw new InvalidOperationException("own path unknown");

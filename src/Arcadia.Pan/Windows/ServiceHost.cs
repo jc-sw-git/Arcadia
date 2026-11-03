@@ -92,9 +92,16 @@ public static class ServiceHost
         IReadOnlyList<string> setAside = [];
         if (ServiceSetup.CheckDataDirectory() is { } problem)
         {
+            // The recorded Arcadias go over into the new folder: only ever evidence that Arcadia is there, so even a
+            // planted line can only keep Pan installed, while losing them would let Pan remove itself (#422).
+            var recorded = PanUninstall.RecordedInstalls.Load();
             try
             {
                 setAside = ServiceSetup.SecureDataDirectory();
+                foreach (var arcadia in recorded)
+                {
+                    PanUninstall.RecordArcadia(arcadia, log.Write);
+                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
             {
@@ -141,6 +148,7 @@ public static class ServiceHost
         var server = new PipeServer(guardian, log.Write);
         using var idle = new IdleStop(IdleTimeout, () => guardian.ShowRetryPending, stop.Cancel, log.Write);
         server.ClientPresent += idle.ClientPresent;
+        server.ClientAccepted += image => PanUninstall.RecordArcadia(image, log.Write);
         idle.ClientPresent(false);
         var serving = server.RunAsync(serve.Token);
         var watch = WatchAsync(guardian, serve.Token);

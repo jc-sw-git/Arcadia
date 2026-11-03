@@ -1,7 +1,6 @@
 using System.IO.Pipes;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Pan;
-using Microsoft.Extensions.Time.Testing;
 
 namespace Arcadia.Core.Tests;
 
@@ -15,7 +14,7 @@ public sealed class PanClientTests : IAsyncDisposable
     private static readonly TimeSpan Soon = TimeSpan.FromSeconds(30);
     private const string LeftAlone = "Pan wird aktualisiert";
 
-    private readonly FakeTimeProvider _time = new();
+    private readonly TimerWatchingTimeProvider _time = new();
     private readonly List<string> _log = [];
     private readonly FakePanServer _server;
     private readonly PanClient _client;
@@ -279,9 +278,10 @@ public sealed class PanClientTests : IAsyncDisposable
         await WaitUntil(() => _client.Unavailable() == "Pan ist nicht eingerichtet", "Grund");
         Assert.Equal(1, _server.Connections);
 
+        // The next try waits the slow time, not the usual one; the clock moves only once that wait has begun.
         _server.Refuse = null;
-        _time.Advance(PanClient.Retry);
-        await Task.Delay(50);
+        await WaitUntil(() => _time.HasTimer(PanClient.SlowRetry), "langsames Wiederholen");
+        Assert.False(_time.HasTimer(PanClient.Retry));
         Assert.False(_client.IsConnected);
         _time.Advance(PanClient.SlowRetry);
         await WaitUntil(() => _client.IsConnected, "verbunden nach dem langsamen Wiederholen");

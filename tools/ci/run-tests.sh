@@ -10,13 +10,15 @@ set -uo pipefail
 shards="${1:?number of App test shards}"
 shift
 work="$(mktemp -d)"
-app_tests=tests/Arcadia.App.Tests
-app_dll="$app_tests/bin/Release/net10.0/Arcadia.App.Tests.dll"
+trap 'rm -rf "$work"' EXIT
+app_bin=tests/Arcadia.App.Tests/bin/Release/net10.0
+app_dll="$app_bin/Arcadia.App.Tests.dll"
 # A test that hangs ends its run after this instead of holding the runner until the job's timeout.
-common=(--configuration Release --no-build --blame-hang-timeout 5m --blame-hang-dump-type none "$@")
+common=(--blame-hang-timeout 5m --blame-hang-dump-type none "$@")
 
 # xunit v3 test projects are programs; this lists the test methods without running them.
-mapfile -t methods < <(dotnet "$app_dll" -list methods -noColor | grep -E '^Arcadia\.' | tr -d '\r' | sort)
+# Sorted bytewise: the same shards on every OS and in every language.
+mapfile -t methods < <(dotnet "$app_dll" -list methods -noColor | grep -E '^Arcadia\.' | tr -d '\r' | LC_ALL=C sort)
 if (( ${#methods[@]} == 0 )); then
   echo "::error::No test methods found in $app_dll"
   exit 1
@@ -44,10 +46,13 @@ start() {
   names+=("$name")
 }
 
-start core tests/Arcadia.Core.Tests/Arcadia.Core.Tests.csproj
-start pan tests/Arcadia.Pan.Tests/Arcadia.Pan.Tests.csproj
+start core tests/Arcadia.Core.Tests/Arcadia.Core.Tests.csproj --configuration Release --no-build
+start pan tests/Arcadia.Pan.Tests/Arcadia.Pan.Tests.csproj --configuration Release --no-build
+# Each shard runs from its own copy of the build: coverage instruments the assemblies in their folder, and on Windows
+# shards sharing one folder lock each other's files.
 for (( shard = 0; shard < shards; shard++ )); do
-  start "app-shard-$shard" "$app_tests/Arcadia.App.Tests.csproj" --settings "$work/shard-$shard.runsettings"
+  cp -R "$app_bin" "$work/app-shard-$shard"
+  start "app-shard-$shard" "$work/app-shard-$shard/Arcadia.App.Tests.dll" --settings "$work/shard-$shard.runsettings"
 done
 
 failed=0
@@ -65,13 +70,15 @@ for i in "${!pids[@]}"; do
   fi
 done
 
-# A name the filter doesn't match would drop its test without a word: every method runs at least once. Counted from
-# the result files: the console output is in the runner's language (German on Linux, see ci.yml).
-app_total=$(cat "$work"/app-shard-*.trx 2>/dev/null | grep -oE '<Counters total="[0-9]+"' | grep -oE '[0-9]+' \
-  | awk '{ sum += $1 } END { print sum + 0 }')
-echo "App tests run: $app_total cases of ${#methods[@]} methods."
-if (( failed == 0 && app_total < ${#methods[@]} )); then
-  echo "::error::The App test shards ran fewer tests than there are test methods."
+# A name the filter doesn't match would drop its test without a word: every listed method must have run. Read from the
+# result files, which are the same in every language (the console output is German on Linux, see ci.yml).
+mapfile -t ran < <(cat "$work"/app-shard-*.trx 2>/dev/null | grep -oE '<TestMethod [^>]*className="[^"]+" name="[^"]+"' \
+  | sed -E 's/.*className="([^"]+)" name="([^"]+)"/\1.\2/' | LC_ALL=C sort -u)
+missing=$(LC_ALL=C comm -23 <(printf '%s\n' "${methods[@]}") <(printf '%s\n' "${ran[@]}"))
+echo "App test methods run: ${#ran[@]} of ${#methods[@]}."
+if (( failed == 0 )) && [[ -n "$missing" ]]; then
+  echo "::error::App test methods that ran in no shard:"
+  echo "$missing"
   failed=1
 fi
 

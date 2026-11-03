@@ -36,8 +36,7 @@ public sealed class LibraryServiceTests
 
         var load = service.LoadAsync();
         await WhenScanning();
-        _time.Advance(LibraryService.ScanDeadline);
-        var libraries = await load;
+        var libraries = await PastTheDeadline(load);
 
         Assert.Empty(libraries.Single(l => l.Launcher.Id == "epic").Games);
         Assert.True(libraries.Single(l => l.Launcher.Id == "epic").ScanFailed);
@@ -60,10 +59,29 @@ public sealed class LibraryServiceTests
         _epic.Gate!.SetResult();
     }
 
-    // The deadline runs on fake time: both scans must have started (after the launchers were located) before it moves.
+    // Polled without blocking a thread: on a busy runner the scans need the thread pool too.
     private async Task WhenScanning()
     {
-        Assert.True(SpinWait.SpinUntil(() => _epic.Scans == 1 && _gog.Scans == 1, TimeSpan.FromSeconds(10)));
-        await Task.Delay(100);
+        var until = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (!(_epic.Scans == 1 && _gog.Scans == 1))
+        {
+            Assert.True(DateTime.UtcNow < until, "Die Scans haben nicht angefangen.");
+            await Task.Delay(10);
+        }
+    }
+
+    // The deadline runs on fake time, and its wait may begin only after the scan started: the clock moves on until the
+    // load ends, so a wait that began late still sees its deadline pass.
+    private async Task<T> PastTheDeadline<T>(Task<T> load)
+    {
+        var until = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (!load.IsCompleted)
+        {
+            Assert.True(DateTime.UtcNow < until, "Das Laden endete nicht an der Frist.");
+            _time.Advance(LibraryService.ScanDeadline);
+            await Task.Delay(10);
+        }
+
+        return await load;
     }
 }

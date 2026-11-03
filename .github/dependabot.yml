@@ -6,6 +6,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # CI only: left out of the release notes like ci/ branches (label-pr-changelog.yml).
+    labels: [no-changelog]
     groups:
       actions:
         patterns: ["*"]

@@ -11,3 +11,5 @@ itself (both OSes green, run times before and after in the PR) and the test suit
 | `tools/ci/run-tests.sh 3` | 2026-11-03 | Claude | same | pass | 2:53; App shards 182 + 169 + 182 = 533 |
 | `tools/ci/run-tests.sh 4` | 2026-11-03 | Claude | same | pass | 2:33; App shards 130 + 137 + 133 + 133 = 533 |
 | The two `TakenOverControllersTests` without fixed waits, 25 runs | 2026-11-03 | Claude | same | pass | 25 of 25 |
+| `run-tests.sh 4` under `LANG=de_DE.UTF-8` with 4 extra busy cores, twice, after the first CI run | 2026-11-03 | Claude | same | pass | App shards 3:05 to 3:43, Core 39/46 s; 476 of 476 methods ran |
+| Coverage with 4 shards (`--collect:"XPlat Code Coverage"`) | 2026-11-03 | Claude | same | pass | 4 Cobertura files beside Core's and Pan's |

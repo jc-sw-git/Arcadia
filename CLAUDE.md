@@ -57,11 +57,15 @@ milestone again; this list keeps it small.
   Network and process waits have a timeout.
 - **Secure:** no user- or file-supplied string goes unchecked into a process start, path or URI;
   downloads are verified; no secrets or personal data in logs; admin rights only where unavoidable;
-  test data and docs use made-up ids, names and paths, never the owner's.
+  test data and docs use made-up ids, names and paths, never the owner's. A PR touching a risk path
+  (`tools/ci/risk-paths.txt`: admin rights, drivers, device hiding, process starts, accounts) gets the risk lines
+  in its **Handoff** and a security review (`docs/personas/`).
 - **Controller first:** every new flow works with a gamepad alone (no mouse/keyboard), B goes back.
   Anything that can't (e.g. UAC) is named in the PR.
 - **Readable:** names say what things are; methods do one thing; comments explain *why*, not *what*.
-  A developer new to the code understands the change from the diff and `CLAUDE.md`.
+  A developer new to the code understands the change from the diff and `CLAUDE.md`. Files are cut by concern, not
+  by length. Tech debt found or left behind (e.g. a file covering too much) is fixed in the same PR; only when that
+  would clearly exceed the thread's context, it becomes a `type:tech-debt` issue and the PR says why.
 - **Modular:** launcher-specific code stays in its launcher folder; UI and Core don't special-case launchers.
   A launcher is one `ILauncherIntegration`, registered in `BuiltInLaunchers`; built-in launchers use only
   `Arcadia.Launchers.Abstractions` (and `Arcadia.Platform`'s process helpers), as a plugin would; Steam is reached as
@@ -71,12 +75,13 @@ milestone again; this list keeps it small.
 - **Verified for real:** UI, input, launcher and Steam Controller changes were run and looked at
   (`.claude/skills/arcadia-verify`); what was only checked mechanically is said so.
 - **Docs current:** `CLAUDE.md` / `docs/` updated when a fact, rule or workflow changed.
-- **Test plan:** a PR that closes an issue adds that issue's manual tests as its own file in
-  `docs/testplans/iteration-<n>/` (IDs `T<issue>-<n>`, each marked `E2E: yes/no`) and records the test runs done
+- **Test plan:** a PR that closes an issue adds that issue's test cases, as agreed in the issue before implementation,
+  as its own file in `docs/testplans/iteration-<n>/` (IDs `T<issue>-<n>`, each marked `E2E: yes/no`) and records the test runs done
   during implementation with their real environment; if nothing new needs a manual test, the file says so in one
   line with the reason. The `Testplan` CI check fails without it.
-- **Tested before merge:** all of the issue's tests (unit, integration, an acceptance test per `E2E: yes` case) are in
-  the same PR before the owner tests it with the issue's test plan file (`docs/testplans/README.md`).
+- **Tested before merge:** all of the issue's tests (unit, integration, an acceptance test per `E2E: yes` case) and the
+  quality engineer's own run of the app are in the same PR before the owner tests the few cases the PR hands him
+  (`docs/testplans/README.md`).
 - **Performant:** no blocking work on the UI thread; code on a hot path (start, scan, library,
   input, running in the background beside a game) stays within the budgets below, measured when touched.
 

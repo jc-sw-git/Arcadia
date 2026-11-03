@@ -9,6 +9,11 @@ not the whole folder.
 
 ## Rules
 
+- **Test cases come from the specification, before any code:** the quality engineer derives them from the issue
+  and its design and writes them into the issue; the PR copies them into the issue's file. Test level per case:
+  a window test only for layout, bindings and real click paths; one acceptance test per acceptance criterion,
+  variants as unit tests. Issues on drivers or installation get manual cases for a fresh install and for a
+  driver arriving while Arcadia runs.
 - **Every PR that closes an issue extends the test plan** with a file holding that issue's test cases
   and a line in the overview
   (Definition of Done in `CLAUDE.md`; the CI check `Testplan` checks it). If an issue needs no
@@ -29,7 +34,10 @@ not the whole folder.
   display, mechanical only) go there too, with an honest environment.
 - **Failures** name cause and consequence: the new issue and where it went (fixed in this
   iteration, next iteration, backlog).
-- **The ticks** are set by the owner's full test of the file before the merge; the thread records them and pushes.
+- **The owner's test before the merge** covers only the cases the quality engineer hands him in the PR's
+  **Review** (at most 10, those only he can run, plus a focus for exploratory testing); the rest is covered by
+  the automated tests and the quality engineer's own run, recorded in the History. The acceptance review at the
+  end of an iteration hands him at most 30 cases. The thread records the ticks and pushes.
   A push that changes only `docs/testplans/**` on top of a green commit skips build and tests and runs only the
   `Testplan` check (`tools/ci/detect-testplan-only.sh`). If the acceptance review at the end of the iteration finds
   that a later issue changed the behaviour, the test case is open again and retested on the release candidate.

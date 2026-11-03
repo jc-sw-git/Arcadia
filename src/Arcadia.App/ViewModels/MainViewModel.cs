@@ -68,7 +68,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         _time = time;
         LauncherTabs = new LauncherTabsViewModel(logos.BadgeOf);
         Messages = new RecentMessages(time, AppLog.Write);
-        Status = new StatusBarViewModel(controllerSupport, updates, time, new StatusMessageChanges(Messages));
+        Status = new StatusBarViewModel(controllerSupport, updates, time, new StatusMessageChanges(Messages, AppLog.Write));
         Toast = new ToastViewModel(time, Messages);
         Session = new LibrarySession(library, installs, running, launchedGames, time);
         Session.LibrariesChanged += (_, _) => ApplyLibraries(Session.Libraries);
@@ -755,7 +755,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             launchers,
             new ControllerSettingsViewModel(_controllerSupport, changes, ControllerMode.Pan, GameInTheWay, (level, message) => Toast.Show(level, message),
                 (new Func<bool>(() => steam is not null && Session.Launchers.IsFound(steam)), OpenSteamControllerSettings)),
-            new AboutSettingsViewModel(_updates, _updates.InstallAsync, Messages, changes, Logs, kind => OpenLogAsync(kind).Forget("Log öffnen")),
+            new AboutSettingsViewModel(_updates, _updates.InstallAsync, Messages, changes, Logs, _time, kind => OpenLogAsync(kind).Forget("Log öffnen")),
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
 
@@ -865,7 +865,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         GC.SuppressFinalize(this);
     }
 
-    private void OnAppError(string message) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(HealthSeverity.Error, message));
+    private void OnAppError(string message, Arcadia.Input.ErrorStreak? streak) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(HealthSeverity.Error, message, repeats: streak));
 
     // Pan's screens cover the window: the dialog layer's state follows them.
     private void OnPanDialogsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

@@ -21,8 +21,14 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
     private readonly LoggingRows _logging;
     private bool _disposed;
 
+    /// <summary>How often "×N" is read again while the category is shown (#433): repeats come without an event.</summary>
+    public static readonly TimeSpan RepeatsInterval = TimeSpan.FromSeconds(1);
+
+    // Kept so it isn't collected; it ticks until the category is disposed.
+    private readonly ITimer _repeats;
+
     public AboutSettingsViewModel(ArcadiaUpdateService updates, Func<Task> installUpdate, RecentMessages messages, SettingsChanges changes, ILogFiles logs,
-        Action<LogKind> openLog)
+        TimeProvider time, Action<LogKind> openLog)
         : base("Über Arcadia", "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z M12 11v6 M12 7.5v.01")
     {
         _updates = updates;
@@ -44,6 +50,13 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
         _changelog = new InfoRowViewModel("arcadia-changelog", "Was ist neu") { Group = Group };
         _updates.Changed += OnUpdatesChanged;
         _messages.Changed += OnMessagesChanged;
+        _repeats = time.CreateTimer(_ => Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed)
+            {
+                _logging.RefreshIfRepeated();
+            }
+        }, DispatcherPriority.Background), null, RepeatsInterval, RepeatsInterval);
         Refresh();
     }
 
@@ -53,6 +66,7 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
     public override void Dispose()
     {
         _disposed = true;
+        _repeats.Dispose();
         _updates.Changed -= OnUpdatesChanged;
         _messages.Changed -= OnMessagesChanged;
     }

@@ -26,9 +26,10 @@ public partial class ToastViewModel(TimeProvider time, RecentMessages history) :
 
     /// <param name="level">No default (#433): every caller says whether it is information, a warning or an error.</param>
     /// <param name="sticky">Stays until the next message, e.g. while a launcher starts.</param>
-    public void Show(HealthSeverity level, string message, bool sticky = false)
+    /// <param name="repeats">How often an unexpected error came again since this toast (#399), shown as "×N" in its entry.</param>
+    public void Show(HealthSeverity level, string message, bool sticky = false, Arcadia.Input.ErrorStreak? repeats = null)
     {
-        history.Add(level, MessageKind.Toast, message);
+        history.Add(level, MessageKind.Toast, message, repeats);
         StopExpiry();
         Text = message;
         if (sticky)

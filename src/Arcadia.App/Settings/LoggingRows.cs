@@ -30,6 +30,7 @@ public sealed class LoggingRows
     private readonly SwitchRowViewModel _errors;
     private readonly ActionRowViewModel _clear;
     private readonly IReadOnlyList<(LogKind Kind, ActionRowViewModel Row)> _logRows;
+    private long _repeatsShown;
 
     /// <param name="openLog">Opens a log; it says itself when that fails.</param>
     public LoggingRows(RecentMessages messages, SettingsChanges changes, ILogFiles logs, Action<LogKind> openLog)
@@ -64,10 +65,23 @@ public sealed class LoggingRows
     /// <summary>In the order the controller moves through them.</summary>
     public IReadOnlyList<SettingsRowViewModel> Rows => [_list, _info, _warnings, _errors, _clear, .. _logRows.Select(log => log.Row)];
 
+    /// <summary>
+    /// An error came again since the list was built ("×N" grows, #399): only then the list is built anew, so the panel
+    /// doesn't jump every second. Reading the counts allocates nothing per entry.
+    /// </summary>
+    public void RefreshIfRepeated()
+    {
+        if (RepeatsOf(_messages.Entries) != _repeatsShown)
+        {
+            Refresh();
+        }
+    }
+
     /// <summary>The list or a filter changed, or the page shows again (a log may have appeared meanwhile); UI thread.</summary>
     public void Refresh()
     {
         var all = _messages.Entries;
+        _repeatsShown = RepeatsOf(all);
         var settings = _changes.Current;
         var shown = all.Where(entry => IsListed(entry.Level, settings)).ToList();
 
@@ -99,6 +113,17 @@ public sealed class LoggingRows
         {
             ShowLogState(kind, row);
         }
+    }
+
+    private static long RepeatsOf(IReadOnlyList<RecentMessage> entries)
+    {
+        long sum = 0;
+        foreach (var entry in entries)
+        {
+            sum += entry.Repeats?.Repeats ?? 0;
+        }
+
+        return sum;
     }
 
     private static bool IsListed(HealthSeverity level, AppSettings settings) => level switch

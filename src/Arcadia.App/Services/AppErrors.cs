@@ -7,11 +7,22 @@ namespace Arcadia.App.Services;
 /// </summary>
 public static class AppErrors
 {
-    /// <summary>Raised with a user-facing message after an unexpected error was logged.</summary>
-    public static event Action<string>? Occurred;
+    /// <summary>
+    /// Raised with a user-facing message after an unexpected error was logged; with the error's streak when its source
+    /// throttles repeats (#399), so its entry in "Letzte Meldungen" counts them (#433).
+    /// </summary>
+    public static event Action<string, Arcadia.Input.ErrorStreak?>? Occurred;
 
     /// <param name="context">What Arcadia was doing, in German, for the log and the toast.</param>
-    public static void Report(Exception exception, string context)
+    public static void Report(Exception exception, string context) => Report(exception, context, streak: null);
+
+    /// <summary>
+    /// For the places that throttle their repeats (<see cref="Arcadia.Input.RepeatedErrors{TKey}"/>, #399): called with the first
+    /// error of a streak only, reported like any other; the toast's entry shows how often it came again ("×N", #433).
+    /// </summary>
+    public static void ReportRepeating(Exception exception, string context, Arcadia.Input.ErrorStreak streak) => Report(exception, context, streak);
+
+    private static void Report(Exception exception, string context, Arcadia.Input.ErrorStreak? streak)
     {
         if (exception is OperationCanceledException)
         {
@@ -21,7 +32,7 @@ public static class AppErrors
         AppLog.Write($"Unerwarteter Fehler ({context}): {exception}");
         try
         {
-            Occurred?.Invoke($"Unerwarteter Fehler ({context}) – Details stehen in arcadia.log.");
+            Occurred?.Invoke($"Unerwarteter Fehler ({context}) – Details stehen in arcadia.log.", streak);
         }
         catch (Exception ex)
         {
@@ -29,13 +40,6 @@ public static class AppErrors
             AppLog.Write($"Fehler beim Anzeigen eines Fehlers: {ex}");
         }
     }
-
-    /// <summary>
-    /// For the places that throttle their repeats (<see cref="Arcadia.Input.RepeatedErrors{TKey}"/>, #399): called with the first
-    /// error of a streak only, reported like any other.
-    /// </summary>
-    /// <param name="streak">How often the error came again since; shown with the toast's entry with #433.</param>
-    public static void ReportRepeating(Exception exception, string context, Arcadia.Input.ErrorStreak streak) => Report(exception, context);
 
     /// <summary>Runs <paramref name="action"/> and reports instead of throwing whatever it throws.</summary>
     public static async Task Guard(Func<Task> action, string context)

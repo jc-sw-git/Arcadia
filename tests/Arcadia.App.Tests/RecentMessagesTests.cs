@@ -1,4 +1,5 @@
 using Arcadia.App.Messages;
+using Arcadia.App.Settings;
 using Arcadia.ControllerSupport;
 using Microsoft.Extensions.Time.Testing;
 
@@ -91,19 +92,20 @@ public sealed class RecentMessagesTests
 
     [Fact]
     [Trait("TestCase", "T433-17")]
-    public void A_status_message_is_an_entry_when_it_appears_and_when_it_is_resolved()
+    public void A_status_message_is_one_entry_that_is_marked_when_it_is_resolved()
     {
         var messages = new RecentMessages(_time, _ => { });
-        var status = new StatusMessageChanges(messages);
+        var status = new StatusMessageChanges(messages, _ => { });
 
         status.Show([new StatusMessage("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt")]);
+        Assert.Null(Assert.Single(messages.Entries).ResolvedAt);
+        _time.Advance(TimeSpan.FromMinutes(3));
         status.Show([]);
 
-        Assert.Equal(
-        [
-            (HealthSeverity.Warning, MessageKind.Status, "Behoben: Wächterdienst Pan fehlt"),
-            (HealthSeverity.Warning, MessageKind.Status, "Wächterdienst Pan fehlt"),
-        ], messages.Entries.Select(e => (e.Level, e.Kind, e.Text)));
+        var entry = Assert.Single(messages.Entries);
+        Assert.Equal((HealthSeverity.Warning, MessageKind.Status, "Wächterdienst Pan fehlt"), (entry.Level, entry.Kind, entry.Text));
+        Assert.Equal(_time.GetLocalNow(), entry.ResolvedAt);
+        Assert.StartsWith("Behoben ", InfoMessage.Of(entry).EndText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -111,7 +113,7 @@ public sealed class RecentMessagesTests
     public void A_changed_level_adds_one_entry_and_an_unchanged_refresh_none()
     {
         var messages = new RecentMessages(_time, _ => { });
-        var status = new StatusMessageChanges(messages);
+        var status = new StatusMessageChanges(messages, _ => { });
         var pan = new StatusMessage("pan-not-running", HealthSeverity.Warning, "Pan läuft nicht");
 
         status.Show([pan]);
@@ -124,6 +126,8 @@ public sealed class RecentMessagesTests
         status.Show([pan with { Level = HealthSeverity.Error }]);
 
         Assert.Equal([HealthSeverity.Error, HealthSeverity.Warning], messages.Entries.Select(e => e.Level));
+        Assert.Equal([null, HealthSeverity.Error], messages.Entries.Select(e => e.ChangedTo));
+        Assert.Equal("Jetzt Fehler", InfoMessage.Of(messages.Entries[1]).EndText);
     }
 
     [Fact]
@@ -131,7 +135,7 @@ public sealed class RecentMessagesTests
     public void A_resolved_error_keeps_its_level()
     {
         var messages = new RecentMessages(_time, _ => { });
-        var status = new StatusMessageChanges(messages);
+        var status = new StatusMessageChanges(messages, _ => { });
 
         status.Show([new StatusMessage("pan-not-running", HealthSeverity.Error, "Pan läuft nicht")]);
         status.Show([]);

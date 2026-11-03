@@ -13,7 +13,7 @@ public sealed class AppErrorsTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         const string Context = "Test T399-9";
         var toasts = new List<string>();
-        void Heard(string message)
+        void Heard(string message, Arcadia.Input.ErrorStreak? streak)
         {
             if (message.Contains(Context, StringComparison.Ordinal))
             {

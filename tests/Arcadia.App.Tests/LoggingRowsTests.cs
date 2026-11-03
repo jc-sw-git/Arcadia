@@ -151,6 +151,33 @@ public sealed class LoggingRowsTests : IDisposable
         Assert.Equal(reason, LogNames.WhyNotOpened(error));
     }
 
+    [Fact]
+    [Trait("TestCase", "T433-19")]
+    public void Repeats_of_a_throttled_error_grow_its_count_and_add_no_line()
+    {
+        var time = new FakeTimeProvider();
+        var errors = new Arcadia.Input.RepeatedErrors<string>(time, _ => { }, _ => null);
+        void Throw() => errors.Report("sdl", "Controller lesen", new InvalidOperationException("kaputt"),
+            (_, context, streak) => _messages.Add(HealthSeverity.Error, MessageKind.Toast, context, streak));
+        Throw();
+        _rows.Refresh();
+
+        for (var i = 0; i < 37; i++)
+        {
+            Throw();
+        }
+
+        _rows.RefreshIfRepeated();
+        var entry = Assert.Single(Row("logging-list").Info.OfType<InfoMessage>());
+        Assert.Equal("×37", entry.RepeatsText);
+
+        // After the quiet period the next error is a new entry with its own count.
+        time.Advance(Arcadia.Input.RepeatedErrors<string>.QuietPeriod);
+        Throw();
+        _rows.Refresh();
+        Assert.Equal(["", "×37"], Row("logging-list").Info.OfType<InfoMessage>().Select(e => e.RepeatsText));
+    }
+
     private SettingsRowViewModel Row(string key) => _rows.Rows.Single(row => row.Key == key);
 
     private List<string> ShownEntries() => [.. Row("logging-list").Info.OfType<InfoMessage>().Select(entry => entry.Text)];

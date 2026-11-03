@@ -186,8 +186,10 @@ public sealed class RecentMessagesAndLogsTests
         await arcadia.WaitUntilAsync(() => steam.IsPanReady, "Pan installiert");
         await arcadia.TickControllerSupportAsync();
         await arcadia.WaitUntilAsync(() => !arcadia.Main.Status.HasControllerStatus, "der Header ist wieder leer");
-        var resolved = arcadia.Main.Messages.Entries[0];
-        Assert.Equal((HealthSeverity.Warning, MessageKind.Status, "Behoben: Wächterdienst Pan fehlt"), (resolved.Level, resolved.Kind, resolved.Text));
+        // The entry itself is marked "Behoben" (owner): no second line.
+        var resolved = Assert.Single(arcadia.Main.Messages.Entries);
+        Assert.Equal((HealthSeverity.Warning, MessageKind.Status, "Wächterdienst Pan fehlt"), (resolved.Level, resolved.Kind, resolved.Text));
+        Assert.NotNull(resolved.ResolvedAt);
 
         arcadia.Press(UiAction.Back);
         arcadia.Wait(TimeSpan.FromSeconds(1));
@@ -195,6 +197,7 @@ public sealed class RecentMessagesAndLogsTests
         var shown = Entries(arcadia.FocusRow("logging-list"))[0];
         Assert.Equal("Status", shown.KindText);
         Assert.False(shown.IsError || shown.IsInfo, "das gelbe Dreieck");
+        Assert.StartsWith("Behoben ", shown.EndText, StringComparison.Ordinal);
     }
 
     [AvaloniaFact]
@@ -408,14 +411,17 @@ public sealed class RecentMessagesAndLogsTests
         var controller = OpenController(arcadia);
         controller.Rows.Single(r => r.Key == "pan:stopped").Activate();
         await arcadia.TickSteamControllerAsync();
-        await arcadia.WaitUntilAsync(() => Statuses(arcadia).Count == 3, "„Behoben: Pan läuft nicht“");
-        Assert.Equal((HealthSeverity.Error, StatusMessageChanges.ResolvedPrefix + StatusBarViewModel.PanNotRunningText), (Statuses(arcadia)[0].Level, Statuses(arcadia)[0].Text));
+        await arcadia.WaitUntilAsync(() => Statuses(arcadia)[0].ResolvedAt is not null, "„Pan läuft nicht“ als behoben markiert");
+        Assert.Equal(2, Statuses(arcadia).Count);
+        Assert.Equal((HealthSeverity.Error, StatusBarViewModel.PanNotRunningText), (Statuses(arcadia)[0].Level, Statuses(arcadia)[0].Text));
+        Assert.Equal(HealthSeverity.Error, Statuses(arcadia)[1].ChangedTo);
 
-        // Only "Fehler" on: the error and its end show, the warning doesn't.
+        // Only "Fehler" on: the error shows with its end, the warning doesn't.
         arcadia.Press(UiAction.Back);
         OpenAbout(arcadia);
-        var shown = Entries(Row(arcadia, "logging-list")).Where(entry => !entry.IsToast).Select(entry => entry.Text).ToList();
-        Assert.Equal([StatusMessageChanges.ResolvedPrefix + StatusBarViewModel.PanNotRunningText, StatusBarViewModel.PanNotRunningText], shown);
+        var shown = Assert.Single(Entries(Row(arcadia, "logging-list")), entry => !entry.IsToast);
+        Assert.Equal(StatusBarViewModel.PanNotRunningText, shown.Text);
+        Assert.StartsWith("Behoben ", shown.EndText, StringComparison.Ordinal);
     }
 
     [AvaloniaFact]

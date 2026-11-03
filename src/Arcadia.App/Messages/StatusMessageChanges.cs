@@ -6,33 +6,40 @@ namespace Arcadia.App.Messages;
 public sealed record StatusMessage(string Id, HealthSeverity Level, string Text);
 
 /// <summary>
-/// Turns the status messages shown now into entries of <see cref="RecentMessages"/> (#433): one when a message appears,
-/// one when its level changes, and "Behoben: …" with the level of the message it ends when it goes. A refresh that
-/// changes nothing adds nothing. Status messages are states, so only their changes are events.
+/// Turns the status messages shown now into entries of <see cref="RecentMessages"/> (#433): one when a message appears
+/// and one when its level changes (the older entry then says so); when it goes, its entry is marked "Behoben" in place
+/// (owner), so every status entry without the mark is still pending. A refresh that changes nothing changes nothing.
 /// </summary>
-public sealed class StatusMessageChanges(RecentMessages messages)
+public sealed class StatusMessageChanges(RecentMessages messages, Action<string> log)
 {
-    public const string ResolvedPrefix = "Behoben: ";
-
     private readonly object _gate = new();
-    private Dictionary<string, StatusMessage> _shown = [];
+    private Dictionary<string, (StatusMessage Message, long Entry)> _shown = [];
 
     public void Show(IEnumerable<StatusMessage> current)
     {
-        // Under the gate, so two threads reporting at once add their entries in the order they were seen.
+        // Under the gate, so two threads reporting at once change the list in the order they were seen.
         lock (_gate)
         {
-            var now = new Dictionary<string, StatusMessage>();
+            var now = new Dictionary<string, (StatusMessage Message, long Entry)>();
             foreach (var message in current)
             {
-                now.TryAdd(message.Id, message);
-            }
-
-            foreach (var (id, message) in now)
-            {
-                if (!_shown.TryGetValue(id, out var before) || before.Level != message.Level)
+                if (now.ContainsKey(message.Id))
                 {
-                    messages.Add(message.Level, MessageKind.Status, message.Text);
+                    continue;
+                }
+
+                if (!_shown.TryGetValue(message.Id, out var before))
+                {
+                    now[message.Id] = (message, messages.Add(message.Level, MessageKind.Status, message.Text));
+                }
+                else if (before.Message.Level != message.Level)
+                {
+                    messages.End(before.Entry, changedTo: message.Level);
+                    now[message.Id] = (message, messages.Add(message.Level, MessageKind.Status, message.Text));
+                }
+                else
+                {
+                    now[message.Id] = before;
                 }
             }
 
@@ -40,7 +47,8 @@ public sealed class StatusMessageChanges(RecentMessages messages)
             {
                 if (!now.ContainsKey(id))
                 {
-                    messages.Add(before.Level, MessageKind.Status, ResolvedPrefix + before.Text);
+                    log($"Status behoben ({before.Message.Level}): {before.Message.Text}");
+                    messages.End(before.Entry);
                 }
             }
 

@@ -1396,6 +1396,12 @@
                           <Border Classes="kindChip" Classes.toast="{Binding IsToast}">
                             <TextBlock Text="{Binding KindText}" />
                           </Border>
+                          <Border Classes="repeatChip" IsVisible="{Binding HasRepeats}">
+                            <TextBlock Text="{Binding RepeatsText}" />
+                          </Border>
+                          <Border Classes="endChip" IsVisible="{Binding HasEnded}">
+                            <TextBlock Text="{Binding EndText}" />
+                          </Border>
                         </StackPanel>
                         <TextBlock Classes="messageText" Text="{Binding Text}" />
                       </StackPanel>

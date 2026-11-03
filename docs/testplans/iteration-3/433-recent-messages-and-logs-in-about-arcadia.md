@@ -63,10 +63,10 @@ says otherwise; B goes back. Acceptance tests use `ArcadiaDriver` (fake time, fa
 - [ ] **T433-16** Pan's notices, also the overlay ones while a game is in front, are entries with the level listed in
       the PR. · E2E: yes
 - [ ] **T433-17** Steam closed while Arcadia runs: a status entry (yellow triangle, chip "Status") "Steam läuft nicht";
-      Steam started again: an entry "Behoben: Steam läuft nicht", also a warning. With only "Fehler" on, an error
-      status and its "Behoben: …" show, the warning pair doesn't. · E2E: yes
+      Steam started again: that entry gets the chip "Behoben hh:mm", no new entry, and keeps its level. With only
+      "Fehler" on, an error status shows with its "Behoben", the warning doesn't. · E2E: yes
 - [ ] **T433-18** A status message whose level changes (e.g. Pan's status from warning to error) adds one entry with
-      the new level; a health refresh that changes nothing adds none, also over minutes of fake time. · E2E: yes
+      the new level and marks the older one "Jetzt Fehler"; a health refresh that changes nothing adds none, also over minutes of fake time. · E2E: yes
 - [ ] **T433-19** Repeats (#399): a throttled source throws again 37 times within the quiet period: still one entry,
       its chip "×37" grows while the list is on screen; after the quiet period its next toast is a new entry with its
       own count. · E2E: yes (deferred to #399 if #433 merges first)
@@ -101,3 +101,5 @@ History:
 | T433-1, -2, -4 (partly), -23 | 2026-11-03 | implementation | Branch, Linux, Xvfb, `--demo`, keys | ✅ group laid out as designed; a demo start is an info entry with chip "Meldung"; greyed log rows keep the focus ring, no A in the footer | 200 % scaling, 50 entries and Windows' default app not looked at here |
 | T433-1, -2, -5 to -18, -20, -21, -23, -24 (acceptance) | 2026-11-03 | QE | Branch, Linux cloud container, `RecentMessagesAndLogsTests` | ✅ 17 green, each red once against a deliberate break (toast not kept, status changes dropped, filter ignored or not saved, no controller event, no error toast, missing log active, row order, scroll hint, chip word, all-hidden text, overlay not kept, "Liste leeren" not greyed, no live refresh, Pan levels, "Behoben" level, capacity 51); ❌ T433-7: a toast is not in `arcadia.log` (test skipped) | finding to the implementation; T433-17 runs with "Wächterdienst Pan fehlt" and "Pan läuft nicht", Arcadia has no status "Steam läuft nicht" |
 | T433-4 (partly), -23 | 2026-11-03 | QE | Branch, Linux, Xvfb, `--demo`, keys | ✅ list with three entries, chips, focus ring on "Liste leeren" and on the greyed "Pan-Log öffnen", no A in its footer | 200 % scaling, 50 entries with fade, T433-3 (mouse) not looked at |
+| T433-19 (unit level) | 2026-11-03 | implementation | Branch after merging main with #399, Linux, `dotnet test` | ✅ `LoggingRowsTests.Repeats_of_a_throttled_error_grow_its_count_and_add_no_line` | ×N wired through `AppErrors.ReportRepeating`; acceptance test for the QE |
+| T433-17, -18 (unit and acceptance) | 2026-11-03 | implementation | Branch, Linux, `dotnet test` | ✅ resolved status marked in its own entry ("Behoben hh:mm"), older entry "Jetzt Fehler"; HidHide/usbip restart pending is Info | owner's feedback on PR #437; QE acceptance tests adapted |

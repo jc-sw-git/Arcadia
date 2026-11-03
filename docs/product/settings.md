@@ -26,7 +26,7 @@
 ## Status messages
 
 `HealthIssue` (header, the settings row and category they belong to) has three levels, each with its own symbol:
-**Info** (round blue i) for intended behaviour in a situation, e.g. "Windows-Neustart ausstehend", or a launcher
+**Info** (round blue i) for intended behaviour in a situation, e.g. "Windows-Neustart ausstehend" (also HidHide's and usbip's restart pending), or a launcher
 without games; **Warning** (yellow triangle with !) when a function is impaired and the user must act, e.g. Steam not
 running, usbip driver missing, SISR running beside Pan; **Error** (red X) for lasting failures, e.g. Pan keeps ending
 at once. The header shows the worst level; info alone doesn't make a status unhealthy. A failed fix shows its error at
@@ -49,8 +49,10 @@ controllers not recognised). Pan's notices take the level of their source. The U
   "Warnungen", "Fehler" (all on by default, saved; they only hide), "Liste leeren" (no question, greyed out while
   empty), "Arcadia-Log öffnen", "VIIPER-Log öffnen", "Pan-Log öffnen".
 - The list: the last 50 toasts and status changes since Arcadia started, newest first, in memory only (arcadia.log
-  keeps everything). A status message is an entry when it appears and when its level changes, and "Behoben: …" with
-  its last level when it goes. Each entry: level symbol, time, chip "Meldung" or "Status".
+  keeps everything). A status message is an entry when it appears; when it goes, that entry gets the chip "Behoben hh:mm"
+  in place, so a status entry without it is still pending. A level change adds an entry with the new level and marks
+  the older one "Jetzt <Level>". Each entry: level symbol, time, chip "Meldung" or "Status", and "×N" for an unexpected
+  error that came again N times without a toast of its own (#399); the count grows while the list is shown.
 - A log opens in Windows' default app for `.log`; opened by controller, the mouse mode comes on for it (also with
   "Mausmodus: Aus"), without the on-screen keyboard, and goes off again once Arcadia is back in front if it came on for
   it. A log that doesn't exist is greyed out with the reason ("Pan ist nicht installiert", "Die Datei gibt es noch

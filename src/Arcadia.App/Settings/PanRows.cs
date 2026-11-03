@@ -629,8 +629,8 @@ public sealed class PanRows
             "In HidHide sind Geräte eingetragen, aber „Enable device hiding“ ist aus. Pan müsste es einschalten und würde diese Geräte dann mit verstecken, deshalb tut es das nicht. Schalte es in der HidHide-Konfiguration ein oder trage die Geräte dort aus.", issue.Severity),
         // Nothing to do but wait for the restart: the blue i, not the triangle (designs).
         "reboot-pending" => ("Bis dahin können Controller in Spielen kurz aussetzen",
-            "Der usbip-Treiber wurde aktualisiert und ist erst nach einem Neustart des PCs ganz aktiv. Bis dahin kann ein emulierter Controller kurz aussetzen; Arcadia verbindet ihn dann selbst neu.", HealthSeverity.Info),
-        "hidhide-removal-pending" => (EmulationParts.HidHideRemovalPending.Summary!, EmulationParts.HidHideRemovalPendingText, HealthSeverity.Info),
+            "Der usbip-Treiber wurde aktualisiert und ist erst nach einem Neustart des PCs ganz aktiv. Bis dahin kann ein emulierter Controller kurz aussetzen; Arcadia verbindet ihn dann selbst neu.", issue.Severity),
+        "hidhide-removal-pending" => (EmulationParts.HidHideRemovalPending.Summary!, EmulationParts.HidHideRemovalPendingText, issue.Severity),
         _ => (issue.ShortText, issue.Detail, issue.Severity),
     };
 

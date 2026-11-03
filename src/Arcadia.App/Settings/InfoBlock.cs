@@ -113,8 +113,14 @@ public sealed record InfoExample(string Sample, string Effect) : InfoBlock;
 /// <summary>
 /// An entry of "Letzte Meldungen" (#433): its level's symbol, time, a chip "Meldung" (a toast) or "Status", and its text.
 /// </summary>
-public sealed record InfoMessage(string TimeText, HealthSeverity Level, bool IsToast, string Text) : InfoBlock
+/// <param name="RepeatsText">"×37" for an error that came again 37 times without a toast of its own (#399); empty: none.</param>
+/// <param name="EndText">How a status message ended, e.g. "Behoben 10:38" or "Jetzt Fehler"; empty: still pending.</param>
+public sealed record InfoMessage(string TimeText, HealthSeverity Level, bool IsToast, string Text, string RepeatsText = "", string EndText = "") : InfoBlock
 {
+    public bool HasRepeats => RepeatsText.Length > 0;
+
+    public bool HasEnded => EndText.Length > 0;
+
     public bool IsInfo => Level == HealthSeverity.Info;
 
     public bool IsError => Level == HealthSeverity.Error;
@@ -122,7 +128,21 @@ public sealed record InfoMessage(string TimeText, HealthSeverity Level, bool IsT
     public string KindText => IsToast ? "Meldung" : "Status";
 
     public static InfoMessage Of(Messages.RecentMessage message) =>
-        new(Services.Formatting.Clock(message.Time), message.Level, message.Kind == Messages.MessageKind.Toast, message.Text);
+        new(Services.Formatting.Clock(message.Time), message.Level, message.Kind == Messages.MessageKind.Toast, message.Text,
+            message.Repeats?.Repeats is > 0 and var repeats ? $"×{repeats}" : string.Empty,
+            message switch
+            {
+                { ResolvedAt: { } at } => $"Behoben {Services.Formatting.Clock(at)}",
+                { ChangedTo: { } level } => $"Jetzt {LevelName(level)}",
+                _ => string.Empty,
+            });
+
+    private static string LevelName(HealthSeverity level) => level switch
+    {
+        HealthSeverity.Info => "Info",
+        HealthSeverity.Warning => "Warnung",
+        _ => "Fehler",
+    };
 }
 
 /// <summary>A framed paragraph in place of a list that shows nothing, e.g. "Noch keine Meldungen …" (#433).</summary>

@@ -27,7 +27,7 @@ the process start to the shown library and the working set (line `Bibliothek: â€
 
 ## 2. Tell the owner before driving the app
 
-The owner frequently tests by hand at the same time; key presses from both collide (this happened).
+The owner frequently tests by hand at the same time; key presses from both collide.
 Say "I'm driving Arcadia for ~1 min, please don't touch it" before running the scripts below.
 
 ## 3. Look at it

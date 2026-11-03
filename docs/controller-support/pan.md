@@ -25,8 +25,8 @@ Once nothing emulates, it removes the stale device entries Arcadia's emulated de
 
 - Named pipe `\\.\pipe\ArcadiaPan`, fixed-size messages (kind, protocol version, generation, value); the commands and
   replies are in `PanMessage`. A command a Pan doesn't know gets `Rejected(NotRegistered)` or `Unsupported`; the client
-  reads any reply but the expected one as "not supported", so new commands stay within the version. Since #304 the
-  protocol is version 2 (`EmulationStarted` carries the usbip port).
+  reads any reply but the expected one as "not supported", so new commands stay within the version. The protocol
+  is version 2 (`EmulationStarted` carries the usbip port).
 - Pan takes the first client of the active console session (`ProcessIdToSessionId` == `WTSGetActiveConsoleSessionId`);
   a second client or one from another session gets `Refused`. The pipe's DACL: SYSTEM full, Interactive read/write,
   nobody else; `FILE_FLAG_FIRST_PIPE_INSTANCE`, so nobody can squat the name (a taken name is retried every 5 s,

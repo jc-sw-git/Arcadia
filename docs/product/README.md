@@ -32,6 +32,6 @@ Decisions that hold across areas; the files beside this one hold the decisions p
 - **Plugins, later.** Third-party plugins come later: themes that can change the design fundamentally, and features
   on top. Core functions can't be changed by a plugin, at most read or interacted with through a small versioned
   interface. .NET has no sandbox, so in-process vs out-of-process (IPC) is decided in spike #71 before any plugin
-  loading is built. Already in place: the DoD items "Themeable" and "Modular", `Arcadia.Launchers.Abstractions`.
+  loading is built.
 - **Open source.** Arcadia is GPL-3.0 and will be fully open source with external contributors; prefer choices that
   lower their entry barrier (English, small files, launcher contributions without core changes).

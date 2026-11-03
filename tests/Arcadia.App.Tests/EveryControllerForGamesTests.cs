@@ -225,6 +225,43 @@ public sealed class EveryControllerForGamesTests
         Assert.Equal("Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.", controller.Rows.OfType<SetupSwitchRowViewModel>().Single().Subtitle);
     }
 
+    /// <summary>
+    /// #410, second half of T410-1: "Installieren" on "HidHide fehlt" sets HidHide up and asks for Arcadia's restart;
+    /// once Pan can hide again, the part row is gone and "Controller zuordnen" is back.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T410-1")]
+    public async Task After_installing_the_missing_part_Controller_zuordnen_is_back()
+    {
+        var steam = new FakeSteam { HidHideVersion = null };
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, steam);
+        using var _ = arcadia;
+        arcadia.Pan.Hiding = PanReason.HidHideMissing;
+        arcadia.Sdl.Plug(DualSense);
+        arcadia.StartControllers();
+        arcadia.IsArcadiaInFront = false;
+        await arcadia.TickSteamControllerAsync();
+        arcadia.PollControllers();
+        var controller = OpenControllerSettings(arcadia);
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Zeile „HidHide fehlt“");
+        Assert.DoesNotContain(controller.Rows, row => row.Key == PanRows.LayoutsKey);
+
+        Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).Activate();
+        Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => controller.Rows.All(row => row.Key != "issue:hidhide-missing"), "„HidHide fehlt“ verschwindet");
+        Assert.Equal(HidHideRelease.Version, steam.HidHideVersion);
+        Assert.NotEmpty(arcadia.Restarts);
+
+        // The restarted Arcadia finds HidHide's driver running: Pan hides again.
+        arcadia.Pan.Hiding = null;
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == PanRows.LayoutsKey), "„Controller zuordnen“");
+        Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:hidhide", StringComparison.Ordinal));
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T238-7")]
     public async Task A_controller_Pan_cant_hide_reaches_games_directly_and_one_row_lists_it_with_why()

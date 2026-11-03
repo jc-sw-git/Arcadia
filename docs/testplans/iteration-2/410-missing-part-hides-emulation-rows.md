@@ -18,3 +18,4 @@ History:
 |---|---|---|---|---|---|
 | T410-1 (owner, before the fix) | 2026-11-03 | Juri | 0.2.0-rc.2 (from #406), Windows, own PC, HidHide gone after the restart | ❌ "HidHide fehlt" and "HidHide ist nicht aktiv" together, "Controller zuordnen" offered | #410 |
 | T410-1 (automated) | 2026-11-03 | Claude | PR branch, Debug, Linux cloud container, faked parts; seen red with both guards removed (both rows and "Controller zuordnen" shown) | ✅ | – |
+| T410-1 (QE, after "Installieren") | 2026-11-03 | Claude | PR branch, Debug, Linux cloud container, faked parts; seen red with the layouts guard removed | ✅ | – |

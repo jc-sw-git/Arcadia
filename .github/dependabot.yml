@@ -1,12 +1,12 @@
-# Weekly update PRs for the pinned GitHub Actions (by commit SHA, see the workflows) and the NuGet packages. Grouped,
-# so a week's actions updates, or a week's minor and patch NuGet updates, arrive as one PR; each goes through CI and
+# Monthly update PRs for the pinned GitHub Actions (by commit SHA, see the workflows) and the NuGet packages. Grouped,
+# so a month's actions updates, or a month's minor and patch NuGet updates, arrive as one PR; each goes through CI and
 # the owner's review like any other.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     # CI only: left out of the release notes like ci/ branches (label-pr-changelog.yml).
     labels: [no-changelog]
     groups:
@@ -15,7 +15,7 @@ updates:
   - package-ecosystem: nuget
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     # Only minor and patch updates are grouped: a new major version comes as a PR of its own, so one that breaks the
     # build doesn't hold back the others.
     groups:

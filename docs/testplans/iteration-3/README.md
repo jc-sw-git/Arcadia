@@ -35,3 +35,4 @@ Charter: –. Time box: –. Findings: –.
 
 | Test cases | Tests |
 |---|---|
+| T433-1, -2, -5 to -18, -20, -21, -23, -24 | `RecentMessagesAndLogsTests` (T433-7 "arcadia.log keeps the toasts" skipped until the QE finding is fixed) |

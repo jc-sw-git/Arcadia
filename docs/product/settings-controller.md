@@ -38,15 +38,7 @@ The page and its status messages: [settings.md](settings.md).
   switching Pan off and on. The row "Arcadia sieht deine Controller nicht mehr" (yellow triangle, the switch's lamp
   yellow) lists them in the box "NICHT MEHR SICHTBAR FÜR ARCADIA", ends with "Kommt diese Meldung nach dem Neustart von
   Arcadia wieder, starte Windows neu.", and offers "Arcadia neu starten".
-- "Treiber installieren" asks "Treiber installieren?" first: it names the third-party parts, the one Windows prompt
-  and that a restart of the PC is recommended afterwards; below, Steam closing, Arcadia's restart after HidHide, and the
-  puck's restart only while a Steam Controller or puck is plugged in.
-- Every other install that runs HidHide's installer ("Installieren", "Aktualisieren", "Neu installieren") asks
-  "HidHide installieren?" first, also without Steam running: Arcadia restarts once afterwards, as
-  only a new Arcadia sees what Pan hides; with Steam running the same dialog says Steam closes ("Steam beenden und
-  installieren"). After the install Pan hides nothing until Arcadia has restarted, which it does by itself; if that
-  fails, the row "Arcadia startet nach der HidHide-Installation neu" (blue i) offers "Arcadia neu starten". No Windows
-  restart is needed for this.
+- Installing the drivers (questions first, the progress dialog): [settings-controller-install.md](settings-controller-install.md).
 - Every other controller (#238, designs T238F05–F07), only while the emulation runs: one warning per firmware tool that
   runs, "Xbox Zubehör ist geöffnet" / "PlayStation Accessories ist geöffnet" (subtitle "Arcadia übernimmt den …,
   sobald du … schließt", box "WARTET AUF ÜBERNAHME"), gone once the tool has ended; then, with the blue i, one row for

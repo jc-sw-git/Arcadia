@@ -4,11 +4,27 @@ How Pan ([pan.md](pan.md)) gets onto the PC. The update at start: [pan-update.md
 
 ## Install: one UAC prompt for drivers and service
 
-- "Treiber installieren" (settings, or a fix row "… fehlt"): `ControllerSupportPlatform.InstallDriversAsync` downloads
-  the usbip-win2 installer only when the driver is missing or too old (`VerifiedDownload`, GitHub's SHA-256) and
-  HidHide's when it is missing or older than supported (pinned in `HidHideRelease`: 1.5.230, URL, SHA-256, size), then
-  runs the bundled `Pan.exe --install --expect-hash <sha256> [--usbip-installer … --usbip-sha256 …]
-  [--hidhide-installer …]` elevated. VIIPER is not part of the installer: it is fetched from the Arcadia fork (pinned in `ViiperRelease`, SHA-256) without UAC, first in the same step, into `%APPDATA%\Arcadia\viiper\` (an update replaces the program folder).
+- A driver install from the settings (`DriverInstallation`, progress in `DriverInstallProgress`, #413) starts with the
+  Windows prompt: `PanSetup.StartInstallAsync` runs the bundled `Pan.exe --install --expect-hash <sha256> --run <id>
+  --client <Arcadia's pid> --installers <%TEMP%\Arcadia\<id>> [--usbip] [--hidhide [--hidhide-repair]]` elevated
+  (`InstallRun`: id 128 random bits; a half run on the command line is refused before anything is touched). Declined:
+  nothing else happens. Then Arcadia installs VIIPER (no UAC; pinned in `ViiperRelease`, SHA-256, into
+  `%APPDATA%\Arcadia\viiper\`), checks again for a Steam game or a firmware update, closes Steam if HidHide is
+  installed, downloads the installers into the run's folder (usbip-win2 only when missing or too old, `VerifiedDownload`,
+  GitHub's SHA-256; HidHide when missing or older than supported, pinned in `HidHideRelease`: 1.5.230, URL, SHA-256,
+  size), each step with its own timeout, and hands them over.
+- Hand-over (`InstallHandOver`, `InstallHandOverPipe`): elevated Pan secures its data folder, then waits for one message
+  on the pipe `Arcadia.Pan.Install.<id>` (first instance, DACL: Arcadia's user only, read/write). Arcadia checks that
+  the pipe's server is the Pan it started; Pan hears only `<pid>`, and refuses a `<pid>` that started after itself.
+  `go` (UTF-8, ≤ 4 KB, one `key=value` per line: `usbip=`, `usbip-sha256=`, `hidhide=`) must name exactly the installers
+  the command line announced, each directly in `--installers`, no reparse point (exit 3 otherwise); HidHide's hash is
+  always the pinned one. `abort`, Arcadia's exit, a broken pipe, no `go` within `PanTimeouts.HandOver` (30 min, more
+  than Arcadia's steps up to the hand-over) or a pipe name already taken end Pan with exit 9 and one `pan.log` line,
+  nothing changed beyond securing the data folder. A failure between prompt and hand-over sends `abort`, then starts
+  Steam again. Exit 9 that Arcadia didn't cause has its own message (`PanExitCodes`).
+- Step report: Pan writes `install-<id>.report` into its data folder (users read only; earlier reports deleted): `run
+  <id>`, then `usbip|hidhide|pan running|done|failed` per line. Display only: the exit code decides how the run ends; a
+  report of another run, a garbled one or none makes the dialog show Pan's steps as one.
 - Pan (elevated) checks each installer on a copy in its data folder (the user can't swap it after the check): the
   SHA-256 Arcadia names (the one it checked at the download; it ties the run to that file, but it comes from the
   unelevated client, so it is no version floor: [pan-risks.md](pan-risks.md)) and
@@ -24,7 +40,7 @@ How Pan ([pan.md](pan.md)) gets onto the PC. The update at start: [pan-update.md
   expected hash, and creates the service: quoted image path, auto start, an English description (Pan runs with `InvariantGlobalization`), recovery,
   90 s pre-shutdown, a DACL under which users start and query but never change. A declined prompt is a failed action
   ("… abgelehnt"); exit code 3 points to `pan.log`.
-- "HidHide antwortet unerwartet" → "Neu installieren": `--install --hidhide-installer … --hidhide-repair` runs the
+- "HidHide antwortet unerwartet" → "Neu installieren": a run with `--hidhide --hidhide-repair` runs the
   pinned installer with Windows Installer's reinstall, one prompt; only over the very driver it installs and never
   while Pan hides the puck or a firmware attempt runs; with Steam closed ([steam-controller-copy-windows.md](steam-controller-copy-windows.md)).
 
@@ -59,4 +75,4 @@ How Pan leaves the PC, also when something gets in the way: [pan-uninstall.md](p
 - Exit codes of `Pan.exe`: 0 done, 3 failed (`pan.log`), 4 data folder not securable (`--install`), 5 restore
   incomplete (`--restore`, `--uninstall`: what failed stays in the journal; after `--uninstall` the service stays and
   retries at every start; Arcadia shows "Pan konnte nicht alles aufräumen …"), 6 Pan installed but HidHide not,
-  7 a driver stayed (Pan retries at the next start, or gave up), 8 unelevated.
+  7 a driver stayed (Pan retries at the next start, or gave up), 8 unelevated, 9 the install ended before the hand-over.

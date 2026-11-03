@@ -7,6 +7,7 @@
     <ProjectReference Include="..\Arcadia.Platform\Arcadia.Platform.csproj" />
     <ProjectReference Include="..\Arcadia.Input\Arcadia.Input.csproj" />
     <ProjectReference Include="..\Arcadia.Pan.Core\Arcadia.Pan.Core.csproj" />
+    <InternalsVisibleTo Include="Arcadia.Core.Tests" />
   </ItemGroup>
 
   <ItemGroup>

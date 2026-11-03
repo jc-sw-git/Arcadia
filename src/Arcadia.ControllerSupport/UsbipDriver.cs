@@ -209,12 +209,11 @@ public static class UsbipDriver
     }
 
     /// <summary>
-    /// Downloads the latest usbip-win2 installer into Arcadia's temp folder and returns its path. The SHA-256 from
-    /// GitHub proves the download is what GitHub lists; Pan's <c>--install --usbip-installer</c> checks the signature
-    /// (who built it, also if the release account was taken over) and runs it in the one elevated setup step (#243).
-    /// The caller deletes the file.
+    /// Downloads the latest usbip-win2 installer into <paramref name="folder"/> (the install run's, #413) and returns its
+    /// path. The SHA-256 from GitHub proves the download is what GitHub lists; Pan, handed it after the prompt, checks the
+    /// signature (who built it, also if the release account was taken over) and runs it (#243). The caller deletes the file.
     /// </summary>
-    public static async Task<string> DownloadInstallerAsync(HttpClient http, CancellationToken cancellationToken = default)
+    public static async Task<string> DownloadInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken = default)
     {
         var release = await new GitHubReleaseClient(http).GetLatestAsync("vadimgrn", "usbip-win2", cancellationToken)
             ?? throw new InvalidOperationException("Die aktuelle usbip-win2-Version konnte nicht ermittelt werden.");
@@ -223,8 +222,9 @@ public static class UsbipDriver
                                            && n.EndsWith($"-{arch}.exe", StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException($"Kein usbip-win2-Installer für {arch} gefunden.");
 
-        var installer = Path.Combine(Path.GetTempPath(), "Arcadia", asset.Name);
-        await VerifiedDownload.DownloadAsync(http, asset, installer, cancellationToken);
+        // The name is the release's: only a plain file name lands in the run's folder.
+        var installer = Path.Combine(folder, Path.GetFileName(asset.Name));
+        await VerifiedDownload.DownloadAsync(http, asset, installer, cancellationToken, progress);
         return installer;
     }
 }

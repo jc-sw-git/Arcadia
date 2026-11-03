@@ -32,7 +32,7 @@ How Pan ([pan.md](pan.md)) leaves the PC with Arcadia; the install: [pan-setup.m
   to 8, carried over when the data folder is set aside; a build without the installer). Twice, 10 s apart, so a
   Velopack update swapping `current` can't make Pan go; a place it can't read keeps Pan, and so does a client
   that connects meanwhile (the pipe is open while Pan looks: an Arcadia it doesn't know). It only reads attributes there, never writes or deletes in a user's folder. Any Arcadia found cancels a pending
-  uninstall, and `--install` deletes the marker first thing (also while a finish runs: it stops before the drivers and
+  uninstall, and `--install` deletes the marker first thing, a driver install right after its hand-over (also while a finish runs: it stops before the drivers and
   before the service goes). `--console` never removes itself.
 - Hand-off (#270): `--uninstall` from anywhere but `%ProgramFiles%\Arcadia` copies itself to `Pan-Uninstall\Pan.exe`
   there, checks the copy's SHA-256, starts it with the same arguments and exits, so the hook ends in seconds and

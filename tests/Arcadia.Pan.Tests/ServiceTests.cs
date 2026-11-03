@@ -111,19 +111,24 @@ public sealed class ServiceTests : IDisposable
         }
 
         // T243-32: a HidHide installer not signed by HidHide's publisher (here a copy of Windows' signed ping.exe) is
-        // never run; Pan is set up anyway, as HidHide matters only for hiding, and its exit code says so (#243 B2).
-        var notHidHide = Path.Combine(Path.GetTempPath(), $"arcadia-not-hidhide-{Guid.NewGuid():N}.exe");
+        // never run; Pan is set up anyway, as HidHide matters only for hiding, and its exit code says so (#243 B2). It
+        // comes over the run's hand-over after the prompt (#413), as from Arcadia.
+        var run = new InstallRun(InstallRun.NewId(), Environment.ProcessId, Path.Combine(_work, "installers"), Usbip: false, HidHide: true, HidHideRepair: false);
+        Directory.CreateDirectory(run.InstallersFolder);
+        var notHidHide = Path.Combine(run.InstallersFolder, "HidHide.exe");
         File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), notHidHide);
-        try
-        {
-            Assert.Equal(6, Run(pan, "--install", "--expect-hash", hash, "--hidhide-installer", notHidHide));
-        }
-        finally
-        {
-            File.Delete(notHidHide);
-        }
+        Assert.Equal(6, await InstallWithHandOverAsync(pan, hash, run, new HandedOverInstallers(null, null, notHidHide)));
 
         Assert.False(File.Exists(Path.Combine(PanPaths.DataDirectory, "hidhide-installer.exe")), "the refused copy is gone");
+
+        // T413-17: an abort before the hand-over ends Pan with exit 9 and changes nothing: the wrong hash here would end
+        // Pan's own setup with exit 3, the installed Pan stays as it is, no report of the run, one log line says why.
+        var aborted = new InstallRun(InstallRun.NewId(), Environment.ProcessId, run.InstallersFolder, Usbip: true, HidHide: true, HidHideRepair: false);
+        Assert.Equal(InstallHandOver.EndedExitCode, await InstallWithMessageAsync(pan, new string('0', 64), aborted, InstallHandOver.Abort()));
+        Assert.Equal(hash, Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(PanPaths.InstalledExecutable))));
+        Assert.False(File.Exists(InstallReport.PathOf(PanPaths.DataDirectory, aborted.Id)), "no step report before the hand-over");
+        Assert.False(File.Exists(Path.Combine(PanPaths.DataDirectory, "hidhide-installer.exe")), "no installer copied");
+        Assert.Contains("Ended before the hand-over: abort; nothing changed", ReadShared(PanPaths.LogPath));
         using (var service = new ServiceController(PanPaths.ServiceName))
         {
             service.WaitForStatus(ServiceControllerStatus.Running, ReplyTimeout);
@@ -438,6 +443,35 @@ public sealed class ServiceTests : IDisposable
         var buffer = new byte[PanMessage.Size];
         await pipe.ReadExactlyAsync(buffer, limit.Token);
         return PanMessage.Read(buffer);
+    }
+
+    /// <summary>
+    /// <c>--install</c> of a run (#413) with this process as Arcadia: connects to the run's pipe, checks that Pan made it,
+    /// sends <c>go</c> and waits for Pan's exit.
+    /// </summary>
+    internal static Task<int> InstallWithHandOverAsync(string pan, string hash, InstallRun run, HandedOverInstallers installers) =>
+        InstallWithMessageAsync(pan, hash, run, InstallHandOver.Go(installers));
+
+    /// <summary>As <see cref="InstallWithHandOverAsync"/>, with any message, e.g. <c>abort</c>.</summary>
+    internal static async Task<int> InstallWithMessageAsync(string pan, string hash, InstallRun run, byte[] message)
+    {
+        var info = new ProcessStartInfo(pan) { UseShellExecute = false, CreateNoWindow = true };
+        foreach (var argument in (string[])["--install", "--expect-hash", hash, .. run.ToArguments()])
+        {
+            info.ArgumentList.Add(argument);
+        }
+
+        using var process = Process.Start(info)!;
+        await using (var pipe = new NamedPipeClientStream(".", InstallHandOver.PipeName(run.Id), PipeDirection.InOut, PipeOptions.Asynchronous))
+        {
+            await pipe.ConnectAsync(TimeSpan.FromSeconds(30), CancellationToken.None);
+            await pipe.WriteAsync(message);
+            // As Arcadia does: the pipe stays open until Pan has read the message.
+            pipe.WaitForPipeDrain();
+        }
+
+        Assert.True(process.WaitForExit(TimeSpan.FromMinutes(5)), "Pan finished after the hand-over");
+        return process.ExitCode;
     }
 
     private static int Run(string exe, params string[] arguments)

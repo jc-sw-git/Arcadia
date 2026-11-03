@@ -196,6 +196,9 @@ public sealed class ControllerSupportService
     /// </summary>
     public bool StopsSteamFor(HealthFix fix) => _steam.IsRunning && RestartsPuck(fix);
 
+    /// <summary>The fix runs usbip-win2's installer, which may freeze USB devices for a moment (#413, D5).</summary>
+    public bool InstallsUsbip(HealthFix fix) => fix == HealthFix.InstallDrivers && IsSupportedPlatform && !_platform.IsUsbipReady;
+
     private bool RestartsPuck(HealthFix fix) => fix switch
     {
         HealthFix.ReinstallHidHide => true,
@@ -297,42 +300,44 @@ public sealed class ControllerSupportService
     }
 
     /// <summary>
-    /// What is missing of the controller emulation (#243): VIIPER (no prompt), then the usbip driver, HidHide and Pan in
-    /// one Windows prompt, only if one of them is missing.
-    /// Inside a busy action; throws when the prompt was declined, so the action fails visibly.
+    /// What is missing of the controller emulation (#243, #413): VIIPER (no prompt), and the usbip driver, HidHide and Pan
+    /// with one Windows prompt, only if one of them is missing; the prompt comes first (D7). Inside a busy action; throws
+    /// when the prompt was declined or a step failed, so the action fails visibly; <see cref="Installation"/> shows each step.
     /// </summary>
     private async Task InstallDriversAsync(CancellationToken cancellationToken)
     {
         // Also behind the rows' "Installieren" (#407): an install restarts the puck and controllers, which could cut a
         // firmware update off. Checked fresh; a failed check doesn't block, Pan refuses to hide during a flash anyway.
-        if (SafeCheck(() => _platform.FirmwareUpdateRuns, "ob ein Firmware-Update läuft"))
+        if (FirmwareBlocksInstall() is { } firmware)
         {
-            throw new InvalidOperationException(FirmwareUpdateBlocksInstallText);
+            throw new InvalidOperationException(firmware);
         }
 
-        if (Viiper is { IsInstalled: false } own)
-        {
-            SetBusyText("VIIPER wird installiert …");
-            await WithTimeoutAsync(token => own.InstallAsync(_http, token), InstallTimeout, "Der VIIPER-Download", cancellationToken);
-            Log?.Invoke("VIIPER eingerichtet");
-        }
-
-        if (_platform.IsUsbipReady && _platform.IsPanReady && !ControllerSupportPlatform.HidHideNeedsInstaller(_platform.HidHideVersion))
+        var needsPan = !(_platform.IsUsbipReady && _platform.IsPanReady && !ControllerSupportPlatform.HidHideNeedsInstaller(_platform.HidHideVersion));
+        var installsHidHide = needsPan && _platform.InstallsHidHide;
+        var plan = new DriverInstallPlan(
+            Prompt: needsPan,
+            Viiper: Viiper is { IsInstalled: false },
+            SteamCloses: installsHidHide && _steam.IsRunning,
+            Usbip: needsPan && !_platform.IsUsbipReady,
+            HidHide: installsHidHide,
+            HidHideRepair: false,
+            Restarts: installsHidHide);
+        if (!plan.Prompt && !plan.Viiper)
         {
             return;
+        }
+
+        // A Steam game blocks before the prompt, as before #413: no prompt appears.
+        if (plan.SteamCloses && SteamGameBlockingInstall() is { } game)
+        {
+            throw new InvalidOperationException(DriverInstallBlocker(game));
         }
 
         var usbipWasReady = _platform.IsUsbipReady;
         try
         {
-            SetBusyText(DriversBusyText);
-            var installed = await WithSteamClosedAsync(_platform.InstallsHidHide, "die Treiber-Installation (der Puck startet dabei neu)", DriverInstallBlocker,
-                token => WithTimeoutAsync(t => _platform.InstallDriversAsync(_http, t), DriversInstallTimeout, "Die Treiber-Installation", token),
-                waitForSteam: installed => installed, cancellationToken);
-            if (!installed)
-            {
-                throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Installieren“ wählen und die Abfrage bestätigen.");
-            }
+            await RunInstallationAsync(plan, "Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Installieren“ wählen und die Abfrage bestätigen.", cancellationToken);
         }
         finally
         {
@@ -343,8 +348,73 @@ public sealed class ControllerSupportService
             }
         }
 
-        Log?.Invoke("Treiber eingerichtet (usbip-win2, HidHide und Pan)");
+        if (plan.Prompt)
+        {
+            Log?.Invoke("Treiber eingerichtet (usbip-win2, HidHide und Pan)");
+        }
     }
+
+    /// <summary>"Neu installieren" for a HidHide that answers unexpectedly (#242), with the progress dialog (#413, D3).</summary>
+    private async Task ReinstallHidHideAsync(CancellationToken cancellationToken)
+    {
+        // Pan runs HidHide's installer before it replaces itself: a filter reinstall while the puck is hidden or held
+        // for a firmware attempt could show Steam the real puck mid-attempt (decision 8).
+        if (PanHoldsPuck?.Invoke() == true)
+        {
+            throw new InvalidOperationException(HidHideReinstallWhileHiddenText);
+        }
+
+        // Checked before the prompt: a reinstall that can't run must not ask or close Steam for nothing.
+        if (_platform.HidHideVersion is not { } installed || !HidHideRelease.IsPinnedDriver(installed))
+        {
+            throw new InvalidOperationException($"„Neu installieren“ geht nur über HidHide {HidHideRelease.Version}; installiert ist eine andere Version.");
+        }
+
+        if (_steam.IsRunning && SteamGameBlockingInstall() is { } game)
+        {
+            throw new InvalidOperationException(DriverInstallBlocker(game));
+        }
+
+        // HidHide answering unexpectedly means Pan can't hide: the puck is Steam's, and the installer restarts it.
+        var plan = new DriverInstallPlan(Prompt: true, Viiper: false, SteamCloses: _steam.IsRunning, Usbip: false, HidHide: true, HidHideRepair: true, Restarts: true);
+        await RunInstallationAsync(plan, "Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Neu installieren“ wählen und die Abfrage bestätigen.", cancellationToken);
+        Log?.Invoke("HidHide neu installiert");
+    }
+
+    /// <summary>
+    /// The install a settings row started (#413): its steps for the progress dialog, from the prompt to Steam's start.
+    /// Stays after the run until the settings dismiss it, so a failure can be read; a new Arcadia starts without it.
+    /// </summary>
+    public DriverInstallProgress? Installation { get; private set; }
+
+    /// <summary>The dialog was closed (after a failure) or closed by itself (success): nothing to show any more.</summary>
+    public void DismissInstallation()
+    {
+        if (Installation is { IsOver: true })
+        {
+            Installation = null;
+            OnChanged();
+        }
+    }
+
+    private async Task RunInstallationAsync(DriverInstallPlan plan, string declinedText, CancellationToken cancellationToken)
+    {
+        // The settings follow the steps themselves: a download reports too often to refresh every row each time.
+        var progress = new DriverInstallProgress(plan);
+        Installation = progress;
+        OnChanged();
+        var installation = new DriverInstallation(progress, _platform, _steam, _http, _time, Viiper)
+        {
+            BlockerBeforeChanges = () => FirmwareBlocksInstall() ?? (SteamGameBlockingInstall() is { } game && progress.Plan.SteamCloses ? DriverInstallBlocker(game) : null),
+            DeclinedText = declinedText,
+            Log = Log,
+        };
+        SetBusyText(plan.Prompt ? DriversBusyText : "VIIPER wird installiert …");
+        await installation.RunAsync(cancellationToken);
+    }
+
+    private string? FirmwareBlocksInstall() =>
+        SafeCheck(() => _platform.FirmwareUpdateRuns, "ob ein Firmware-Update läuft") ? FirmwareUpdateBlocksInstallText : null;
 
     /// <summary>
     /// Runs <paramref name="work"/>, with Steam closed when <paramref name="needsSteamClosed"/> and Steam runs: closed
@@ -610,6 +680,21 @@ public sealed class ControllerSupportService
             }
 
             _hidHideInstalling = false;
+            if (Installation is { } installation && !installation.IsOver)
+            {
+                if (_restartPending && !_shuttingDown && LastError is null)
+                {
+                    installation.Start(DriverInstallStepKind.ArcadiaRestart);
+                }
+                else if (LastError is { } error && !installation.Failed)
+                {
+                    // Failed before any step began (e.g. Pan's bundle missing): shown at the first step.
+                    installation.Fail(installation.Steps[0].Kind, error);
+                }
+
+                installation.End();
+            }
+
             OnChanged();
         }
 
@@ -622,32 +707,7 @@ public sealed class ControllerSupportService
     private Task RunFixAsync(HealthFix fix, CancellationToken cancellationToken) => fix switch
     {
         HealthFix.InstallDrivers => RunBusyAsync(DriversBusyText, InstallDriversAndSwitchPanOnAsync, cancellationToken),
-        HealthFix.ReinstallHidHide => RunBusyAsync(DriversBusyText, async token =>
-        {
-            // Pan runs HidHide's installer before it replaces itself: a filter reinstall while the puck is hidden or held
-            // for a firmware attempt could show Steam the real puck mid-attempt (decision 8).
-            if (PanHoldsPuck?.Invoke() == true)
-            {
-                throw new InvalidOperationException(HidHideReinstallWhileHiddenText);
-            }
-
-            // Checked before Steam closes: a reinstall that can't run must not close it for nothing.
-            if (_platform.HidHideVersion is not { } installed || !HidHideRelease.IsPinnedDriver(installed))
-            {
-                throw new InvalidOperationException($"„Neu installieren“ geht nur über HidHide {HidHideRelease.Version}; installiert ist eine andere Version.");
-            }
-
-            // HidHide answering unexpectedly means Pan can't hide: the puck is Steam's, and the installer restarts it.
-            var reinstalled = await WithSteamClosedAsync(needsSteamClosed: true, "die HidHide-Installation (der Puck startet dabei neu)", DriverInstallBlocker,
-                ct => WithTimeoutAsync(t => _platform.ReinstallHidHideAsync(_http, t), DriversInstallTimeout, "Die HidHide-Installation", ct),
-                waitForSteam: done => done, token);
-            if (!reinstalled)
-            {
-                throw new InvalidOperationException("Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Neu installieren“ wählen und die Abfrage bestätigen.");
-            }
-
-            Log?.Invoke("HidHide neu installiert");
-        }, cancellationToken),
+        HealthFix.ReinstallHidHide => RunBusyAsync(DriversBusyText, ReinstallHidHideAsync, cancellationToken),
         _ => Task.CompletedTask,
     };
 

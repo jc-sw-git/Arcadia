@@ -10,6 +10,7 @@ its file.
 
 | File | Issue | Title | Test cases |
 |---|---|---|---|
+| [343](343-cancelled-steam-install-dialog.md) | #343 | Steam: cancelled install dialog leaves the game on "Bitte in Steam bestätigen" | T343-1 to T343-14 |
 | [370](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths | T370-1 to T370-6 |
 | [376](376-ci-hygiene.md) | #376 | CI hygiene: job timeouts, SHA-pinned actions, Dependabot, concurrency, split the App tests | none (CI only) |
 | [399](399-show-repeated-error-again-after-quiet-period.md) | #399 | Show a repeated unexpected error again after a quiet period | T399-1 to T399-17 |

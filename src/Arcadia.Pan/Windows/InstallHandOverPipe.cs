@@ -96,7 +96,18 @@ internal sealed class InstallHandOverPipe : IHandOverChannel, IDisposable
         var read = 0;
         while (read < buffer.Length)
         {
-            var n = await _pipe.ReadAsync(buffer.AsMemory(read), cancellationToken);
+            int n;
+            try
+            {
+                n = await _pipe.ReadAsync(buffer.AsMemory(read), cancellationToken);
+            }
+            catch (IOException) when (read > 0)
+            {
+                // Arcadia writes its message and closes the pipe at once; a read after that close reports a broken pipe
+                // instead of the end, though the message before it arrived whole.
+                break;
+            }
+
             if (n == 0)
             {
                 break;

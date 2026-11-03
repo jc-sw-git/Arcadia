@@ -17,7 +17,7 @@ its file.
 | [418](418-explain-back-pan-install-and-removal.md) | #418 | Explain-back: Pan install and removal | none (doc fixes) |
 | [420](420-split-launchersettingsviewmodel-by-concern.md) | #420 | Split LauncherSettingsViewModel by concern | none (refactoring) |
 | [422](422-pan-finishes-interrupted-uninstall.md) | #422 | Pan finishes an interrupted uninstall and removes itself without Arcadia | T422-1 to T422-12 |
-| [423](423-restart-notice-at-uninstall.md) | #423 | Restart notice at the uninstall never shows | none new (T407-1, RC) |
+| [423](423-restart-notice-at-uninstall.md) | #423 | Restart notice at the uninstall never shows | T423-1; touches T407-1 (both RC) |
 | [434](434-pan-service-test-race.md) | #434 | Pan service test fails when a Pan process exits while it is checked | none (test race, automated test only) |
 
 ## Release candidate tests (restart or installation)
@@ -28,7 +28,7 @@ of the acceptance review.
 | Issue | Test cases |
 |---|---|
 | #422 | T422-4, T422-8, T422-11, T422-1, T422-3, T422-9, T422-12 (in this order, one PC with Pan, the drivers and the puck) |
-| #423 | T407-1, then T407-2 (uninstall with Ja and UAC accepted; reinstall before restarting) |
+| #423 | T407-1, then T407-2 (uninstall with Ja and UAC accepted; reinstall before restarting); T423-1 with T422-4 |
 
 ## Exploratory test
 

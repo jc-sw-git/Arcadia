@@ -28,7 +28,8 @@ The page and its status messages: [settings.md](settings.md).
   "HidHide-Version wird nicht unterstützt" with "Aktualisieren"), "Steam Controller lässt sich nicht verstecken",
   "Emulation startet nicht", "Emulation angehalten" with "Erneut versuchen"; "Windows-Neustart ausstehend", "HidHide:
   Neustart ausstehend" and "Pan räumt noch auf" carry the blue i. The uninstall ends with a message to restart the PC
-  when a driver it removed waits for the restart. "Controller wiederherstellen" (Pan's `--restore`)
+  whenever the player chose to remove a driver and Pan's uninstall started (UAC accepted): a removed driver
+  practically always waits for the restart, and its state can't tell yet while Pan's copy is still at work. "Controller wiederherstellen" (Pan's `--restore`)
   stands below the problems, indented like them, while Pan is installed, also while the switch is off. While a part is
   missing, too old or waits for the restart, only the part rows show (nothing from the emulation's state, which would
   only follow from it) and "Controller zuordnen" is hidden while the emulation doesn't run (an old usbip-win2 or

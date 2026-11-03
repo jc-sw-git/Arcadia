@@ -20,6 +20,19 @@ public sealed record InstalledParts(bool Sisr, bool Viiper, bool Usbip, bool Hid
 /// entfernen" in the settings removes them (<see cref="SisrInstallation"/>, #214). usbip-win2 and HidHide go in Pan's
 /// <c>--uninstall --remove-drivers</c>, inside its one UAC prompt and after Pan undid its own HidHide entries.
 /// </summary>
+/// <summary>How Pan's elevated uninstall went at Arcadia's uninstall.</summary>
+public enum PanUninstallResult
+{
+    /// <summary>Nothing to remove, or no Pan in the package.</summary>
+    NotRun,
+
+    /// <summary>The UAC prompt was declined: Pan and the drivers stay.</summary>
+    Declined,
+
+    /// <summary>Pan runs elevated; it may still be at work (hand-off, timeout) or have failed partway.</summary>
+    Started,
+}
+
 public static class ControllerSupportRemoval
 {
     private static string LocalAppData => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -81,9 +94,12 @@ public static class ControllerSupportRemoval
         + "Windows entfernt die Treiber für die Controller-Emulation erst beim nächsten Neustart des PCs ganz. "
         + "Starte den PC neu, bevor du Arcadia wieder installierst.";
 
-    /// <summary>A driver the uninstall removed waits for the PC's restart (#407).</summary>
-    [SupportedOSPlatform("windows")]
-    public static bool DriverRemovalPending() => HidHideInstallation.IsRemovalPending() || UsbipDriver.IsRemovalPending();
+    /// <summary>
+    /// Whether <see cref="RestartNotice"/> is due (#423): the player chose to remove a driver and Pan's elevated uninstall
+    /// started. Not from the drivers' state: Pan hands off to its copy (#270) and returns before the copy removed
+    /// anything, and a removed driver practically always waits for the restart, so a notice too many beats a missing one.
+    /// </summary>
+    public static bool RestartNoticeDue(bool removeDrivers, PanUninstallResult pan) => removeDrivers && pan == PanUninstallResult.Started;
 
     /// <summary>
     /// How long <see cref="RestartNotice"/> stays open: what is left of the uninstall hook's limit, less a margin so

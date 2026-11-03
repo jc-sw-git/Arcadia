@@ -186,7 +186,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     private void OnTilePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(GameTileViewModel.InstallState) or nameof(GameTileViewModel.RunState))
+        if (e.PropertyName is nameof(GameTileViewModel.InstallState) or nameof(GameTileViewModel.RunState) or nameof(GameTileViewModel.LauncherReportsUpdate))
         {
             OnPropertyChanged(nameof(UpdateNote));
             OnPropertyChanged(nameof(HasUpdateNote));

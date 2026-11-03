@@ -120,6 +120,15 @@ public sealed class ServiceTests : IDisposable
         Assert.Equal(6, await InstallWithHandOverAsync(pan, hash, run, new HandedOverInstallers(null, null, notHidHide)));
 
         Assert.False(File.Exists(Path.Combine(PanPaths.DataDirectory, "hidhide-installer.exe")), "the refused copy is gone");
+
+        // T413-17: an abort before the hand-over ends Pan with exit 9 and changes nothing: the wrong hash here would end
+        // Pan's own setup with exit 3, the installed Pan stays as it is, no report of the run, one log line says why.
+        var aborted = new InstallRun(InstallRun.NewId(), Environment.ProcessId, run.InstallersFolder, Usbip: true, HidHide: true, HidHideRepair: false);
+        Assert.Equal(InstallHandOver.EndedExitCode, await InstallWithMessageAsync(pan, new string('0', 64), aborted, InstallHandOver.Abort()));
+        Assert.Equal(hash, Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(PanPaths.InstalledExecutable))));
+        Assert.False(File.Exists(InstallReport.PathOf(PanPaths.DataDirectory, aborted.Id)), "no step report before the hand-over");
+        Assert.False(File.Exists(Path.Combine(PanPaths.DataDirectory, "hidhide-installer.exe")), "no installer copied");
+        Assert.Contains("Ended before the hand-over: abort; nothing changed", ReadShared(PanPaths.LogPath));
         using (var service = new ServiceController(PanPaths.ServiceName))
         {
             service.WaitForStatus(ServiceControllerStatus.Running, ReplyTimeout);
@@ -453,7 +462,11 @@ public sealed class ServiceTests : IDisposable
     /// <c>--install</c> of a run (#413) with this process as Arcadia: connects to the run's pipe, checks that Pan made it,
     /// sends <c>go</c> and waits for Pan's exit.
     /// </summary>
-    internal static async Task<int> InstallWithHandOverAsync(string pan, string hash, InstallRun run, HandedOverInstallers installers)
+    internal static Task<int> InstallWithHandOverAsync(string pan, string hash, InstallRun run, HandedOverInstallers installers) =>
+        InstallWithMessageAsync(pan, hash, run, InstallHandOver.Go(installers));
+
+    /// <summary>As <see cref="InstallWithHandOverAsync"/>, with any message, e.g. <c>abort</c>.</summary>
+    internal static async Task<int> InstallWithMessageAsync(string pan, string hash, InstallRun run, byte[] message)
     {
         var info = new ProcessStartInfo(pan) { UseShellExecute = false, CreateNoWindow = true };
         foreach (var argument in (string[])["--install", "--expect-hash", hash, .. run.ToArguments()])
@@ -465,7 +478,7 @@ public sealed class ServiceTests : IDisposable
         await using (var pipe = new NamedPipeClientStream(".", InstallHandOver.PipeName(run.Id), PipeDirection.InOut, PipeOptions.Asynchronous))
         {
             await pipe.ConnectAsync(TimeSpan.FromSeconds(30), CancellationToken.None);
-            await pipe.WriteAsync(InstallHandOver.Go(installers));
+            await pipe.WriteAsync(message);
         }
 
         Assert.True(process.WaitForExit(TimeSpan.FromMinutes(5)), "Pan finished after the hand-over");

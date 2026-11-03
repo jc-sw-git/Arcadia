@@ -442,6 +442,78 @@ public sealed partial class ControllerSupportServiceTests
         Assert.True(values[^1] > values[^2], "Pan's end moves the bar on");
     }
 
+    [Fact]
+    [Trait("TestCase", "T413-17")]
+    public async Task A_Pan_that_hangs_after_the_hand_over_turns_the_step_it_is_at_red_and_keeps_the_bar()
+    {
+        // S6: the running step turns red at the existing timeout; here Pan's report says usbip-win2 is done and HidHide runs.
+        var service = CreateForInstall();
+        _platform.IsUsbipReady = false;
+        _platform.HidHideVersion = null;
+        _platform.IsSteamRunning = false;
+        _platform.Pan.Running = new();
+
+        var install = service.ApplyFixAsync(HealthFix.InstallDrivers);
+        await WaitForAsync(() => _platform.Pan.HandOvers == 1, "die Übergabe");
+        _platform.Pan.Report(PanInstallStep.Usbip, PanStepState.Done);
+        _platform.Pan.Report(PanInstallStep.HidHide, PanStepState.Running);
+        await WaitForAsync(() => { _time.Advance(DriverInstallation.ReportInterval); return State(service, HidHideInstall) == DriverInstallStepState.Running; }, "HidHide läuft");
+        var value = service.Installation!.Value;
+        await WaitForAsync(() => { _time.Advance(TimeSpan.FromMinutes(1)); return install.IsCompleted; }, "der Timeout");
+        await install;
+
+        Assert.Contains("nicht innerhalb von", service.LastError);
+        Assert.Equal(DriverInstallStepState.Done, State(service, UsbipInstall));
+        Assert.Equal(DriverInstallStepState.Failed, State(service, HidHideInstall));
+        Assert.Equal(DriverInstallStepState.Pending, State(service, DriverInstallStepKind.PanSetup));
+        Assert.Equal(value, service.Installation.Value);
+        Assert.Empty(_restarts);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T413-14")]
+    [Trait("TestCase", "T413-17")]
+    public async Task A_Pan_without_a_report_that_hangs_turns_its_one_step_red()
+    {
+        var service = CreateForInstall();
+        _platform.IsUsbipReady = false;
+        _platform.IsSteamRunning = false;
+        _platform.Pan.WritesNoReport = true;
+        _platform.Pan.Running = new();
+
+        var install = service.ApplyFixAsync(HealthFix.InstallDrivers);
+        await WaitForAsync(() => _platform.Pan.HandOvers == 1, "die Übergabe");
+        await WaitForAsync(() => { _time.Advance(DriverInstallation.ReportInterval); return service.Installation!.Has(PanFallback); }, "der eine Schritt");
+        await WaitForAsync(() => { _time.Advance(TimeSpan.FromMinutes(1)); return install.IsCompleted; }, "der Timeout");
+        await install;
+
+        Assert.Contains("nicht innerhalb von", service.LastError);
+        Assert.Equal(DriverInstallStepState.Failed, State(service, PanFallback));
+        Assert.True(service.Installation!.IsOver);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T413-18")]
+    public async Task An_Arcadia_started_while_an_earlier_one_s_Pan_still_installs_shows_no_dialog()
+    {
+        var first = CreateForInstall();
+        _platform.IsUsbipReady = false;
+        _platform.IsSteamRunning = false;
+        _platform.Pan.Running = new();
+        var install = first.ApplyFixAsync(HealthFix.InstallDrivers);
+        await WaitForAsync(() => _platform.Pan.HandOvers == 1, "die Übergabe");
+        _platform.Pan.Report(PanInstallStep.Usbip, PanStepState.Running);
+
+        // The first Arcadia is gone (its view models with it); Pan installs on and its report is still there.
+        var next = CreateForInstall();
+        await next.RefreshAsync();
+
+        Assert.Null(next.Installation);
+        Assert.NotNull(first.Installation);
+        _platform.Pan.Running.SetResult();
+        await install;
+    }
+
     /// <summary>VIIPER's download as the run sees it, noted in Pan's list of calls so the order shows.</summary>
     private sealed class NotingViiper(FakeElevatedPan pan) : IViiperInstallation
     {

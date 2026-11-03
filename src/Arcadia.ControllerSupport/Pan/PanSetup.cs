@@ -11,7 +11,7 @@ namespace Arcadia.ControllerSupport.Pan;
 /// Installs, updates, removes and restores with Pan.exe (#243). Arcadia ships Pan in <c>Pan\Pan.exe</c> beside its
 /// own exe (the user's folder, writable by anyone who can write there); every command runs the bundled exe elevated,
 /// with one UAC prompt, and <c>--install</c> gets the SHA-256 Arcadia computed so the copy in Program Files is checked
-/// against it after the copy. The usbip-win2 and HidHide installers ride along in the same prompt.
+/// against it after the copy. A driver install's prompt comes first, its installers after it (#413, <see cref="StartInstallAsync"/>).
 /// </summary>
 [SupportedOSPlatform("windows")]
 public static class PanSetup
@@ -21,18 +21,6 @@ public static class PanSetup
     public static string BundledExecutable => Path.Combine(AppContext.BaseDirectory, "Pan", "Pan.exe");
 
     public static bool IsBundled => File.Exists(BundledExecutable);
-
-    /// <summary>Pan's exit code when <c>--install</c> couldn't secure the data folder (<c>Program.DataFolderExitCode</c> in Pan).</summary>
-    private const int DataFolderExitCode = 4;
-
-    /// <summary>Pan's exit code when <c>--restore</c> or <c>--uninstall</c> could not undo everything (<c>Program.RestoreIncompleteExitCode</c> in Pan).</summary>
-    private const int RestoreIncompleteExitCode = 5;
-
-    /// <summary>Pan's exit code when <c>--install</c> set Pan up but not HidHide (<c>Program.HidHideFailedExitCode</c> in Pan).</summary>
-    private const int HidHideFailedExitCode = 6;
-
-    /// <summary>Pan's exit code when <c>--uninstall --remove-drivers</c> left a driver (<c>Program.DriversNotRemovedExitCode</c> in Pan).</summary>
-    private const int DriversNotRemovedExitCode = 7;
 
     /// <summary>The service exists and its exe is in place.</summary>
     public static bool IsInstalled => PanPipeTransport.ServiceExists() && File.Exists(PanPaths.InstalledExecutable);
@@ -49,40 +37,46 @@ public static class PanSetup
             () => PanCompatibilityCheck.HashOf(PanPaths.InstalledExecutable));
 
     /// <summary>
-    /// <c>Pan.exe --install</c> elevated: the usbip-win2 and HidHide installers first when given, then Pan itself.
-    /// <paramref name="repairHidHide"/>: HidHide's installer runs over the same version ("Neu installieren").
+    /// The Windows prompt of a driver install (#413, D7): <c>Pan.exe --install --run …</c> elevated, which waits for the
+    /// installers until <see cref="IPanInstallRun.HandOverAsync"/>; nothing is downloaded or closed before. Connected
+    /// right away, so a Pan that ends early (exit 4, 8, 9) ends the run before Arcadia touches VIIPER or Steam.
     /// </summary>
-    /// <returns>False if the user declined the UAC prompt.</returns>
-    /// <exception cref="InvalidOperationException">Pan reported an error; its log says which (<see cref="PanPaths.LogPath"/>).</exception>
-    public static async Task<bool> InstallAsync(string? usbipInstaller, string? hidHideInstaller, CancellationToken cancellationToken, bool repairHidHide = false)
+    /// <returns>Null if the user declined the prompt.</returns>
+    public static async Task<IPanInstallRun?> StartInstallAsync(PanInstallPlan plan, CancellationToken cancellationToken)
     {
         if (!IsBundled)
         {
             throw new InvalidOperationException(MissingBundle);
         }
 
-        var arguments = new List<string> { "--install", "--expect-hash", HashOf(BundledExecutable) };
-        if (usbipInstaller is not null)
+        var id = InstallRun.NewId();
+        var run = new InstallRun(id, Environment.ProcessId, Path.Combine(Path.GetTempPath(), "Arcadia", id), plan.Usbip, plan.HidHide, plan.HidHideRepair);
+        Directory.CreateDirectory(run.InstallersFolder);
+        var process = StartElevated(["--install", "--expect-hash", HashOf(BundledExecutable), .. run.ToArguments()]);
+        if (process is null)
         {
-            // The hash of the file Arcadia verified at the download: Pan runs only that file, not any signed one.
-            arguments.Add("--usbip-installer");
-            arguments.Add(usbipInstaller);
-            arguments.Add("--usbip-sha256");
-            arguments.Add(HashOf(usbipInstaller));
+            Directory.Delete(run.InstallersFolder, recursive: true);
+            return null;
         }
 
-        if (hidHideInstaller is not null)
+        try
         {
-            arguments.Add("--hidhide-installer");
-            arguments.Add(hidHideInstaller);
-            if (repairHidHide)
-            {
-                arguments.Add("--hidhide-repair");
-            }
+            return await PanInstallRun.ConnectAsync(process, run, cancellationToken);
         }
-
-        return await RunElevatedAsync(arguments, PanTimeouts.Install, cancellationToken);
+        catch
+        {
+            process.Dispose();
+            throw;
+        }
     }
+
+    /// <summary>
+    /// Pan's update (#297, #326): <c>Pan.exe --install</c> elevated with the bundled exe only, no installers, so nothing
+    /// to hand over.
+    /// </summary>
+    /// <returns>False if the user declined the UAC prompt.</returns>
+    public static Task<bool> UpdateAsync(CancellationToken cancellationToken) =>
+        RunElevatedAsync(["--install", "--expect-hash", HashOf(BundledExecutable)], PanTimeouts.Install, cancellationToken);
 
     /// <summary>
     /// <c>Pan.exe --uninstall</c> elevated: stops the service (its stop tears every emulation down), removes it and Pan's
@@ -95,6 +89,34 @@ public static class PanSetup
     public static Task<bool> RestoreAsync(CancellationToken cancellationToken) => RunElevatedAsync(["--restore"], PanTimeouts.Restore, cancellationToken);
 
     private static async Task<bool> RunElevatedAsync(IReadOnlyList<string> arguments, TimeSpan wait, CancellationToken cancellationToken)
+    {
+        using var process = StartElevated(arguments);
+        if (process is null)
+        {
+            return false;
+        }
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(wait);
+        try
+        {
+            await process.WaitForExitAsync(timeout.Token);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new System.TimeoutException($"Pan {arguments[0]} hat nach {wait.TotalMinutes:0} Minuten nicht geantwortet.");
+        }
+
+        if (process.ExitCode != 0)
+        {
+            throw PanExitCodes.ErrorFor(process.ExitCode, arguments[0]);
+        }
+
+        return true;
+    }
+
+    /// <summary>The bundled Pan started elevated with one UAC prompt; null if the user declined it.</summary>
+    private static Process? StartElevated(IReadOnlyList<string> arguments)
     {
         var exe = BundledExecutable;
         if (!File.Exists(exe))
@@ -110,49 +132,11 @@ public static class PanSetup
 
         try
         {
-            using var process = Process.Start(info) ?? throw new InvalidOperationException("Pan konnte nicht gestartet werden.");
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(wait);
-            try
-            {
-                await process.WaitForExitAsync(timeout.Token);
-            }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-            {
-                throw new System.TimeoutException($"Pan {arguments[0]} hat nach {wait.TotalMinutes:0} Minuten nicht geantwortet.");
-            }
-
-            if (process.ExitCode == DataFolderExitCode)
-            {
-                // Pan could not log this: nothing of it may be written into a folder it doesn't own.
-                throw new InvalidOperationException($"Pan konnte seinen Datenordner {PanPaths.DataDirectory} nicht sichern – bitte den Ordner prüfen oder entfernen und es noch einmal versuchen.");
-            }
-
-            if (process.ExitCode == RestoreIncompleteExitCode)
-            {
-                throw new InvalidOperationException($"Pan konnte nicht alles aufräumen – das Journal bleibt erhalten; Details stehen in {PanPaths.LogPath}. Ein Neustart von Pan oder \"Pan.exe --restore\" versucht es noch einmal.");
-            }
-
-            if (process.ExitCode == HidHideFailedExitCode)
-            {
-                throw new InvalidOperationException($"Pan ist eingerichtet, HidHide aber nicht – Details stehen in {PanPaths.LogPath}. HidHide lässt sich auch selbst installieren: {HidHideRelease.ManualInstallUrl}");
-            }
-
-            if (process.ExitCode == DriversNotRemovedExitCode)
-            {
-                throw new InvalidOperationException($"Pan ist entfernt, aber nicht jeder Treiber – Details stehen in {PanPaths.LogPath}; der Rest lässt sich unter Windows-Einstellungen → Apps entfernen.");
-            }
-
-            if (process.ExitCode != 0)
-            {
-                throw new InvalidOperationException($"Pan {arguments[0]} meldete Fehler {process.ExitCode} – Details stehen in {PanPaths.LogPath}.");
-            }
-
-            return true;
+            return Process.Start(info) ?? throw new InvalidOperationException("Pan konnte nicht gestartet werden.");
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == ErrorCancelled)
         {
-            return false;
+            return null;
         }
     }
 

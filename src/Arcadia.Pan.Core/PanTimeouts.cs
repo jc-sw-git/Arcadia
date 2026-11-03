@@ -27,6 +27,14 @@ public static class PanTimeouts
     /// <summary>The last removal of stale device entries at <c>--uninstall</c> (#347): it stops between two entries after this.</summary>
     public static readonly TimeSpan StaleDevices = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// How long elevated Pan waits for Arcadia's hand-over after the prompt (#413): Arcadia's steps up to it (VIIPER, the
+    /// checks, closing Steam, the downloads) each have their own timeout, and a test in Arcadia pins that their sum plus a
+    /// margin stays below this, so Pan never gives up while Arcadia still works within its limits. Fixed here, as Pan
+    /// can't see Arcadia's timeouts.
+    /// </summary>
+    public static readonly TimeSpan HandOver = TimeSpan.FromMinutes(30);
+
     public static TimeSpan Install => UsbipInstaller + HidHideInstaller + PuckRestart + ServiceSteps;
 
     public static TimeSpan Uninstall => ServiceSteps + StaleDevices + DriverUninstaller + DriverUninstaller;

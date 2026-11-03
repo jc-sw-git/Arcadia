@@ -1548,6 +1548,8 @@
               <ctl:KeyHint Pad="≡" Keys="Enter" Text="Übernehmen" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="Verwerfen" />
             </StackPanel>
+            <!-- A dialog with its own hints (a running driver install, #413 D2) hides the page's, so no "B Zurück" shows. -->
+            <Panel IsVisible="{Binding Selected.ShowsPageHints}">
             <Panel IsVisible="{Binding !Selected.IsEditing}">
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding Selected.IsReordering}">
               <ctl:KeyHint Pad="▲▼" Keys="W|S" Alt="Ziehen" Text="Verschieben" />
@@ -1564,6 +1566,7 @@
               <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="Klick" Text="Kategorie" IsVisible="{Binding HasSeveralCategories}" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="Zurück" />
             </StackPanel>
+            </Panel>
             </Panel>
             </Panel>
           </Border>
@@ -1633,6 +1636,12 @@
                     <StackPanel Spacing="14" IsVisible="{Binding IsSteamStopPrompt}">
                       <TextBlock Classes="promptBody" Text="{Binding SteamStopText}" />
                       <TextBlock Classes="promptBody" Text="{Binding SteamStopDetail}" IsVisible="{Binding HasSteamStopDetail}" />
+                      <Border Classes="usbHint" IsVisible="{Binding ShowsUsbLine}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                          <Path Classes="statusIcon info" VerticalAlignment="Top" />
+                          <TextBlock Grid.Column="1" Text="{x:Static settings:ControllerSettingsViewModel.UsbLineText}" FontSize="16" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
+                        </Grid>
+                      </Border>
                     </StackPanel>
                     <StackPanel Spacing="18" IsVisible="{Binding IsRemovingSisrPrompt}">
                       <TextBlock Classes="promptBody" Text="{Binding RemovingSisrText}" />
@@ -1674,6 +1683,9 @@
             </DataTemplate>
             <DataTemplate x:DataType="settings:ControllerLayoutsViewModel">
               <views:ControllerLayoutsView />
+            </DataTemplate>
+            <DataTemplate x:DataType="settings:DriverInstallDialogViewModel">
+              <views:DriverInstallDialogView />
             </DataTemplate>
             <!-- A question of a category, e.g. "Alle Spiele auf die Vorauswahl setzen?" on a launcher's page (#178):
                  [A] answers yes, [B] no; each button names its pad button or key (design T178Spiel). -->

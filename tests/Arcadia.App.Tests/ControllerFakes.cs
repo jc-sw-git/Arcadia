@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Arcadia.ControllerSupport;
+using Arcadia.Tests.Pan;
 using Arcadia.Tests.Sisr;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
@@ -183,7 +184,7 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
     /// <summary>Set, "Installieren" fails with this message (e.g. the bundled Pan.exe is missing).</summary>
     public string? InstallError { get; set; }
 
-    /// <summary>Set, the install sets up usbip-win2 and Pan but not HidHide and fails with this text (Pan's exit code 6, #243 B2).</summary>
+    /// <summary>Set, the install sets up usbip-win2 and Pan but not HidHide: Pan's exit code 6 (#243 B2), with its own text.</summary>
     public string? HidHideInstallError { get; set; }
 
     public bool InstallsHidHide => ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending;
@@ -204,37 +205,73 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
 
     private int _puckRestartsWhileSteamRuns;
 
-    public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
-    {
-        Interlocked.Increment(ref _driverInstalls);
-        if (IsSteamRunning && InstallsHidHide)
-        {
-            Interlocked.Increment(ref _puckRestartsWhileSteamRuns);
-        }
+    /// <summary>
+    /// Elevated Pan of the driver installs (#413): the prompt, the hand-over, the report and the exit code. Set up so a
+    /// confirmed prompt installs what the run brings, as today's tests expect; a test can hold or fail any step.
+    /// </summary>
+    public FakeElevatedPan Pan { get; }
 
+    public FakeSteam()
+    {
+        Pan = new FakeElevatedPan
+        {
+            OnHandOver = plan =>
+            {
+                if (plan.HidHideRepair)
+                {
+                    Interlocked.Increment(ref _hidHideReinstalls);
+                    HidHideReinstalled?.Invoke();
+                }
+                else
+                {
+                    Interlocked.Increment(ref _driverInstalls);
+                }
+
+                if (IsSteamRunning && plan.HidHide)
+                {
+                    Interlocked.Increment(ref _puckRestartsWhileSteamRuns);
+                }
+            },
+            OnExit = (plan, exitCode) =>
+            {
+                if (plan.HidHideRepair || exitCode is not (0 or 6))
+                {
+                    return;
+                }
+
+                // Exit 6: Pan and the usbip driver are set up, HidHide is not.
+                IsUsbipReady = true;
+                IsPanReady = true;
+                PanFailing = false;
+                if (exitCode == 0 && plan.HidHide)
+                {
+                    HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
+                }
+            },
+        };
+    }
+
+    public Task<Arcadia.ControllerSupport.Pan.IPanInstallRun?> StartPanInstallAsync(Arcadia.ControllerSupport.Pan.PanInstallPlan plan, CancellationToken cancellationToken)
+    {
         if (InstallError is { } error)
         {
+            // E.g. the bundled Pan.exe is missing: nothing starts, no prompt.
             throw new InvalidOperationException(error);
         }
 
-        if (HidHideInstallError is { } hidHideError)
+        if (HidHideInstallError is not null)
         {
-            // Pan's exit code 6: Pan and the usbip driver are set up, HidHide is not (PanSetup throws after them).
-            IsUsbipReady = true;
-            IsPanReady = true;
-            throw new InvalidOperationException(hidHideError);
+            Pan.ExitCode = Arcadia.ControllerSupport.Pan.PanExitCodes.HidHideFailed;
         }
 
-        IsUsbipReady = true;
-        IsPanReady = true;
-        PanFailing = false;
-        if (InstallsHidHide)
-        {
-            HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
-        }
-
-        return Task.FromResult(true);
+        return Pan.StartAsync(plan, cancellationToken);
     }
+
+    public Task<string> DownloadUsbipInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
+        Pan.DownloadAsync("usbip-win2", folder, progress, cancellationToken);
+
+    public Task<string> DownloadHidHideInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
+        Pan.DownloadAsync("HidHide", folder, progress, cancellationToken);
 
     /// <summary>How often "Neu installieren" ran HidHide's installer over the installed one (#242).</summary>
     public int HidHideReinstalls => Volatile.Read(ref _hidHideReinstalls);
@@ -243,18 +280,6 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
 
     /// <summary>Called by "Neu installieren", as the real reinstall repairs the driver Pan talks to.</summary>
     public Action? HidHideReinstalled { get; set; }
-
-    public Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken)
-    {
-        Interlocked.Increment(ref _hidHideReinstalls);
-        if (IsSteamRunning)
-        {
-            Interlocked.Increment(ref _puckRestartsWhileSteamRuns);
-        }
-
-        HidHideReinstalled?.Invoke();
-        return Task.FromResult(true);
-    }
 
     /// <summary>How often Pan's <c>--restore</c> ran ("Controller wiederherstellen").</summary>
     public int Restores => Volatile.Read(ref _restores);

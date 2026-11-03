@@ -3,16 +3,14 @@ namespace Arcadia.Input;
 /// <summary>
 /// The handlers of one event, each called on its own: a handler that throws is reported and the other handlers, and
 /// the thread that raises the event, go on (DoD: robust). An event raised every millisecond would repeat the same
-/// error a thousand times a second, so each handler is reported once. Adding and removing copy the list, so raising
-/// allocates nothing (hot path: <see cref="SdlGamepadSource"/>'s poll thread).
+/// error a thousand times a second, so each handler is a source of <see cref="RepeatedErrors{TKey}"/> (#399). Adding
+/// and removing copy the list, so raising allocates nothing (hot path: <see cref="SdlGamepadSource"/>'s poll thread).
 /// </summary>
-internal sealed class GuardedHandlers<T>(string context, Action<Exception, string> unexpected, Action<string> log)
+internal sealed class GuardedHandlers<T>(string context, Action<Exception, string, ErrorStreak> unexpected, Action<string> log, TimeProvider time)
 {
     private readonly Lock _lock = new();
     private Action<T>[] _handlers = [];
-
-    // The raising thread only: every event of a source is raised on its one poll thread.
-    private readonly HashSet<Action<T>> _reported = [];
+    private readonly RepeatedErrors<Action<T>> _errors = new(time, log, NameOf);
 
     public void Add(Action<T>? handler)
     {
@@ -59,21 +57,18 @@ internal sealed class GuardedHandlers<T>(string context, Action<Exception, strin
         }
     }
 
-    private void Report(Action<T> handler, Exception error)
+    private void Report(Action<T> handler, Exception error) => _errors.Report(handler, context, error, unexpected);
+
+    /// <summary>Which handler repeats its error, for the log: two of one event share the context.</summary>
+    private static string NameOf(Action<T> handler)
     {
-        if (!_reported.Add(handler))
+        // A lambda's method lives in a compiler-made class ("<>c") inside the class that wrote it.
+        var type = handler.Method.DeclaringType;
+        while (type is { DeclaringType: not null } && type.Name.StartsWith('<'))
         {
-            return;
+            type = type.DeclaringType;
         }
 
-        try
-        {
-            unexpected(error, context);
-            log($"{context}: weitere Fehler dieses Empfängers werden nicht gemeldet");
-        }
-        catch (Exception)
-        {
-            // Reporting must not end the poll thread in turn; the next handler still gets the event.
-        }
+        return $"{type?.Name}.{handler.Method.Name}";
     }
 }

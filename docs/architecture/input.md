@@ -10,6 +10,9 @@ Controller input and the mouse mode. Findings on the controllers: `docs/controll
   plugged in itself. `SteamControllerPresence`, `ControllerInUse` (whose symbols the hints show).
 - `ReadPacing`/`PreciseWait`/`LatencyStats`: 1 ms reads while pads are forwarded, their log
   ([pad-latency.md](../controller-support/pad-latency.md)).
+- `RepeatedErrors`: the unexpected errors of places that repeat them (`GuardedHandlers` of the SDL events, and in
+  `Arcadia.ControllerSupport` `TakenOverControllers` and `PanClient`): per source one toast per streak, repeats at most
+  one log line a minute, a new streak after 10 quiet minutes (#399); `ErrorStreak` counts its repeats.
 - `XboxPadState`, `VirtualPadState` (what an emulated pad of any kind reports) and `ComboWithholding` (a controller's
   reading without Arcadia's combos).
 

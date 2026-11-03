@@ -32,7 +32,7 @@ such check is possible, say so, list what you tried and ask for an environment o
 artifact. No hypotheses before this exists.
 
 **Third-party behaviour is observed, not read.** For Steam, Epic, VIIPER or drivers, what their source code
-or docs suggest is a hypothesis, not a fact (two Iteration 1 fixes built on such guesses failed on the owner's PC).
+or docs suggest is a hypothesis, not a fact.
 Observe it first (their logs, a probe line, one run on the owner's PC), then build. A behaviour found that way
 that a test fake doesn't model goes into the fake first (with the doc it comes from) and goes red there, then the fix.
 

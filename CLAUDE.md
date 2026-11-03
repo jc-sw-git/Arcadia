@@ -159,8 +159,7 @@ Every step of a session resends its whole context, so keep it small:
 
 ## Git
 
-- Commit and push to feature branches freely; never push to `main`. Changes reach `main` only through a PR
-  that the owner reviews and merges.
+- Commit and push to feature branches freely; never push to `main`. Changes reach `main` only through a PR.
 - Branch names: `{prefix}/{issue-title}-{issue-number}` in kebab case, e.g. `fix/steam-scanner-crash-42`; without
   an issue, drop the number. Prefixes: `feat` (new or changed feature behaviour), `fix` (bug fix), `ci` (CI only),
   `test` (tests only), `doc` (docs only, agent skills included), `td` (any other product code change, i.e. tech
@@ -170,5 +169,6 @@ Every step of a session resends its whole context, so keep it small:
   finds them.
 - Opening a PR needs no OK. Link it to its issue, close it when all its PRs are merged
   (`docs/process/issues-and-prs.md`); the PR gets the sections **Handoff** and **Review** (`docs/personas/README.md`).
-  Merges, releases, comments only on the owner's word.
+  Merges, releases, comments only on the owner's word; it stands for a PR that hands him nothing to test
+  (`docs/personas/architect.md` → Done when).
 - License: GPL-3.0-only. Third-party notes in `THIRD-PARTY-NOTICES.md`.

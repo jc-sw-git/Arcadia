@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Arcadia.Input;
 using Arcadia.Pan;
 using Arcadia.Platform;
@@ -73,21 +72,23 @@ public sealed class TakenOverControllers
     private bool _connectedChanged;
     private bool _forwarding;
 
-    // Which of the settings Feed reads already failed: Feed runs every millisecond, the error is reported once.
-    private readonly ConcurrentDictionary<string, bool> _reported = [];
+    // Per delegate Feed reads (by name): Feed runs every millisecond, a streak of errors is toasted once (#399).
+    private readonly RepeatedErrors<string> _errors;
 
     public TakenOverControllers(TimeProvider time, Action<string> log)
     {
         _time = time;
         _log = log;
-        Unexpected = (error, context) => log($"Unerwarteter Fehler ({context}): {error}");
+        _errors = new(time, log, static name => name);
+        Unexpected = (error, context, _) => log($"Unerwarteter Fehler ({context}): {error}");
     }
 
     /// <summary>
-    /// Called once per delegate that throws in <see cref="Feed"/>, with a context for the log and the toast; Feed goes on
-    /// with that delegate's safe value (no forwarding, the default combos and kind, no rumble or light). Logs by default.
+    /// Called with the first error of a streak of a delegate that throws in <see cref="Feed"/> (#399), with a context for
+    /// the log and the toast; Feed goes on with that delegate's safe value (no forwarding, the default combos and kind,
+    /// no rumble or light). Logs by default.
     /// </summary>
-    public Action<Exception, string> Unexpected { get; init; }
+    public Action<Exception, string, ErrorStreak> Unexpected { get; init; }
 
     /// <summary>Read on every poll: false while Arcadia is in front or the mouse mode is on, then every pad reports rest.</summary>
     public Func<bool> ForwardingAllowed { get; init; } = () => true;
@@ -269,7 +270,7 @@ public sealed class TakenOverControllers
             }
             catch (Exception ex)
             {
-                ReportOnce(ex, "Rumble/Light");
+                Report(ex, "Rumble/Light");
             }
         }
     }
@@ -285,7 +286,7 @@ public sealed class TakenOverControllers
         }
         catch (Exception ex)
         {
-            ReportOnce(ex, name);
+            Report(ex, name);
             return fallback;
         }
     }
@@ -298,28 +299,12 @@ public sealed class TakenOverControllers
         }
         catch (Exception ex)
         {
-            ReportOnce(ex, nameof(LayoutOf));
+            Report(ex, nameof(LayoutOf));
             return null;
         }
     }
 
-    private void ReportOnce(Exception error, string name)
-    {
-        if (!_reported.TryAdd(name, true))
-        {
-            return;
-        }
-
-        try
-        {
-            Unexpected(error, "Controller für Spiele");
-            _log($"Controller für Spiele: weitere Fehler von {name} werden nicht gemeldet");
-        }
-        catch (Exception)
-        {
-            // Reporting must not end the reads in turn.
-        }
-    }
+    private void Report(Exception error, string name) => _errors.Report(name, "Controller für Spiele", error, Unexpected);
 
     private void NoteForwarding(bool forwarding)
     {
@@ -332,7 +317,7 @@ public sealed class TakenOverControllers
             }
             catch (Exception ex)
             {
-                ReportOnce(ex, nameof(Forwarding));
+                Report(ex, nameof(Forwarding));
             }
         }
     }
@@ -885,7 +870,7 @@ public sealed class TakenOverControllers
         }
         catch (Exception ex)
         {
-            ReportOnce(ex, nameof(Changed));
+            Report(ex, nameof(Changed));
         }
     }
 

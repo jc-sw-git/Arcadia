@@ -16,6 +16,7 @@ its file.
 | [418](418-explain-back-pan-install-and-removal.md) | #418 | Explain-back: Pan install and removal | none (doc fixes) |
 | [420](420-split-launchersettingsviewmodel-by-concern.md) | #420 | Split LauncherSettingsViewModel by concern | none (refactoring) |
 | [422](422-pan-finishes-interrupted-uninstall.md) | #422 | Pan finishes an interrupted uninstall and removes itself without Arcadia | T422-1 to T422-12 |
+| [433](433-recent-messages-and-logs-in-about-arcadia.md) | #433 | Show recent toasts and status messages and open the logs in "Über Arcadia" | T433-1 to T433-25 |
 
 ## Release candidate tests (restart or installation)
 

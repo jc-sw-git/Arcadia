@@ -54,4 +54,23 @@ public class ControllerSupportRemovalTests
     {
         Assert.Null(ControllerSupportRemoval.RestartNoticeTime(TimeSpan.FromSeconds(elapsedSeconds), TimeSpan.FromSeconds(60)));
     }
+
+    [Fact]
+    [Trait("TestCase", "T407-1")]
+    public void The_restart_notice_shows_when_Pan_started_removing_the_drivers()
+    {
+        // Right after Pan's hand-off (#270) its copy hasn't touched the drivers yet, so their state can't decide this.
+        Assert.True(ControllerSupportRemoval.RestartNoticeDue(removeDrivers: true, PanUninstallResult.Started));
+    }
+
+    [Theory]
+    [Trait("TestCase", "T407-1")]
+    [InlineData(true, PanUninstallResult.Declined)]
+    [InlineData(true, PanUninstallResult.NotRun)]
+    [InlineData(false, PanUninstallResult.Started)]
+    [InlineData(false, PanUninstallResult.NotRun)]
+    public void Without_drivers_on_their_way_out_no_restart_notice_shows(bool removeDrivers, PanUninstallResult pan)
+    {
+        Assert.False(ControllerSupportRemoval.RestartNoticeDue(removeDrivers, pan));
+    }
 }

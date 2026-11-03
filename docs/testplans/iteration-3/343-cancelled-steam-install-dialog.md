@@ -44,3 +44,6 @@ History:
 |---|---|---|---|---|---|
 | T343-1, T343-3, T343-4, T343-6 | 2026-11-03 | implementation (unit, `InstallTrackerTests`) | cloud container, Linux, Debug | passed | – |
 | T343-3 (Epic engine, A again opens Epic once more) | 2026-11-03 | implementation (`EntryTypeTests`) | cloud container, Linux, Debug, headless | passed | – |
+| T343-1…T343-8 (acceptance, `CancelledInstallDialogTests`) | 2026-11-03 | QE review | cloud container, Linux, Debug, headless | T343-3 on the detail page failed, the rest passed | detail page and game menu show the waiting game's button disabled, so A there does nothing: fix in this PR |
+| red once: T343-1…T343-4, T343-6, T343-8 without the PR's `src/` changes; T343-5 with the progress of a just confirmed install held back one poll | 2026-11-03 | QE review | cloud container, Linux, Debug, headless | failed as expected | – |
+| T343-7 (restart): regression, not made red: nothing keeps the waiting state across a restart to break | 2026-11-03 | QE review | – | – | – |

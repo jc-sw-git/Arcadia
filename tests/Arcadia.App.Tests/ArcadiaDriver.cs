@@ -630,12 +630,20 @@ internal sealed class ArcadiaDriver : IDisposable
 
     private static readonly TimeSpan InstallProgressInterval = TimeSpan.FromSeconds(2);
 
+    /// <summary>Thrown when Arcadia hands something to a launcher, as Windows does when the launcher can't be started; null opens it.</summary>
+    public Exception? OpenFailure { get; set; }
+
     /// <summary>Records what Arcadia hands to a launcher; a demo game's <see cref="LaunchTarget.None"/> opens nothing, as on the PC.</summary>
     private bool Open(LaunchTarget target)
     {
         if (target is LaunchTarget.None)
         {
             return false;
+        }
+
+        if (OpenFailure is { } failure)
+        {
+            throw failure;
         }
 
         lock (_opened)

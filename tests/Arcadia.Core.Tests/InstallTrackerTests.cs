@@ -167,6 +167,7 @@ public sealed class InstallTrackerTests
     }
 
     [Fact]
+    [Trait("TestCase", "T343-9")]
     public void Unwatched_launchers_stay_pending_until_a_scan_shows_the_game_installed()
     {
         var tracker = CreateTracker();

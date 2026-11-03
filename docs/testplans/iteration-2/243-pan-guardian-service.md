@@ -130,7 +130,7 @@ part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it w
       the switch, still greyed out until #214, reads "Nicht mehr nötig – …"; `pan.log` names the Nefarius signature, "HidHide 1.5.230 installed" (or "setup still runs … left running"
       after 2 min on a PC where its last step hangs) and the puck restart. · E2E: yes (`EmulationSetupTests`; the
       foreign-signed installer refused with exit 6: `ServiceTests` on the Windows runner)
-- [ ] **T243-33** Every part missing (usbip-win2, HidHide, Pan uninstalled, SISR's folder removed): no part rows, the
+- [x] **T243-33** Every part missing (usbip-win2, HidHide, Pan uninstalled, SISR's folder removed): no part rows, the
       setting itself offers "Treiber installieren", the info panel names all four parts; A → VIIPER downloads without a
       prompt, then one UAC prompt for the rest and no installer window (usbip-win2's Inno wizard stays hidden); afterwards
       all four are there, `pan.log` names the SHA-256 and signature checks of both installers. UAC declined: the error stands at the
@@ -147,7 +147,7 @@ part missing: uninstall HidHide (and usbip-win2, Pan) in Windows' Apps. How it w
       waiting when Arcadia comes back. A notice during a View hold over the game stands below "Zurück zu Arcadia", whose
       frame keeps filling. · E2E: yes for which of the two (`EmulationSetupTests`, `PanGuardianTests`); no
       for the overlay over a real game
-- [ ] **T243-37** Uninstall Arcadia (Windows' Apps): the question "Treiber für die Controller-Emulation auch entfernen?"
+- [x] **T243-37** Uninstall Arcadia (Windows' Apps): the question "Treiber für die Controller-Emulation auch entfernen?"
       lists usbip-win2 and HidHide, No is the default. No → Pan gone, both drivers stay. Reinstalled, Yes → one UAC
       prompt, Pan gone, then HidHide and usbip-win2 gone from Windows' Apps; the Steam Controller works in Steam.
       · E2E: no (Velopack's uninstall, UAC; the question's text: `ControllerSupportRemovalTests`)
@@ -235,3 +235,4 @@ History:
 | T243-21 (Release, #272: `Run-Check-272.ps1` and the `checks/238-latency` v2 probe, Steam Controller only) | 2026-11-01 | owner, evaluated by Claude | Windows 11, owner's PC (32 logical cores), RC 0.2.0-rc.1 (5c95f46) installed with the Velopack installer, Pan 0.2.0 as Native AOT, Castlevania on "Arcadia" for 19 min | partly | CPU of all cores: Pan 0.003 % without a game, 0.001 % with it; Arcadia 0.14 % / 0.30 %; VIIPER 0.24 % / 0.26 %; no peak beside the game's start, played as usual. Latency (there is no emulation without Pan to compare): read → VIIPER mean 62 µs, p99 120 µs, max 1.9 ms; read gap mean 1.34 ms, p99 2.0 ms, max 12.8 ms (as in #238); game-side presses mean 1.05 ms, p99 1.57 ms, max 1.60 ms (139; 12 matched to the next press at ~199 ms dropped, releases not measurable, both the probe's two SDL entries of the puck). Pan's RAM grows ~1 MB/min, 7 → 22 MB in 23 min: over the 20 MB budget → #360 |
 | T243-21 rewritten (#360: an hour with a game; the latency as the time a press takes to reach the game, since nothing is emulated without Pan); cause of the growth reproduced, `PanMemoryTests` | 2026-11-01 | Claude (thread) | Linux cloud container (33 MB L3), a Native AOT probe allocating small garbage as Pan's heartbeat does: without a setting the GC's gen-0 budget is 17.3 MB and the memory grows by the amount allocated to +17 MB, then stays flat after the first collection (as on the owner's PC); with `System.GC.Gen0MaxBudget` 2 MB it stays at +2 MB with a collection every 2 MB. `PanMemoryTests` seen red with the setting removed. Pan itself only on Windows | pass | the owner's hour on Windows (`Run-Check-360.ps1`) |
 | T243-21, memory part after #360 | 2026-11-01 | owner | – | not run | the owner decided not to measure the hour: the cause is reproduced and the fix verified by `PanMemoryTests` and the AOT probe; a later release candidate may check it with `checks/360/Run-Check-360-v2.ps1` |
+| T243-33, T243-37 | 2026-11-02 | owner | v0.2.0 release candidate (rc.1/rc.2), owner's PC, Windows 11, real Steam and controllers | ✅ | Acceptance review #222 |

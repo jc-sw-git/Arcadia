@@ -20,12 +20,12 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
       copy passes input, firmware, reset, bootloader, serial, pairing and unknown types never; reads always pass.
       `arcadia.log` names each dropped type once, without its payload. · E2E: yes (`SteamControllerCopyFilterTests`;
       the real traffic after part C)
-- [ ] **T242-2** With no game running and Arcadia in front, Steam's controller test shows a controller at rest (only
+- [x] **T242-2** With no game running and Arcadia in front, Steam's controller test shows a controller at rest (only
       the Steam button and "…" react); with Steam in front it shows every input; with a game on "Arcadia" running, the
       game gets Arcadia's Xbox pad and Steam a controller at rest. · E2E: yes (routing rules; the real Steam after part C)
-- [ ] **T242-3** In a game on "Steam-Eingabe", every button, stick, trackpad and the gyro reach the game through
+- [x] **T242-3** In a game on "Steam-Eingabe", every button, stick, trackpad and the gyro reach the game through
       Steam; ⧉ + ≡ still opens Arcadia and never reaches Steam. · E2E: yes (filter; the real game after part C)
-- [ ] **T242-4** At Arcadia's start the puck restarts once (hidden), Steam sees exactly one Steam Controller (the
+- [x] **T242-4** At Arcadia's start the puck restarts once (hidden), Steam sees exactly one Steam Controller (the
       copy), `joy.cpl` lists no second one; switching a game's mode or starting a game never makes it drop out.
       · E2E: yes (order hide → copy → pad; the real devices after part C)
 - [ ] **T242-5** Einstellungen → Controller → "Controller-Wächter (Pan)" off: the copy and the pad end, the puck is
@@ -44,7 +44,7 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
       attempt and starts anew with a new one; 25 s later "Steam hat aufgegeben", "Controller freigeben" (held 1 s)
       shows the puck and the note how the update goes on; the settings row then says "Für ein Firmware-Update
       freigegeben". · E2E: yes (the dialog and the wait; Steam's real update path after part C)
-- [ ] **T242-9** Arcadia closed normally: pad and copy go, then the puck is shown and Steam reads it directly again,
+- [x] **T242-9** Arcadia closed normally: pad and copy go, then the puck is shown and Steam reads it directly again,
       `pan.log` logs the planned exit; a teardown by Pan (Arcadia suspended) drops both and a new emulation starts by
       itself. · E2E: yes
 - [ ] **T242-10** Pan switched on but not running (e.g. VIIPER missing): the mode on the detail page is greyed with the
@@ -125,3 +125,4 @@ Automated: `tests/Arcadia.Core.Tests` (`PanEmulationTests`, `SteamControllerCopy
 | T242-4, T242-17, T242-26, T242-27 after the QE fixes (Core: `HidProxyTests` only a puck on a known hardware host is the real one, CDC requests other than the line settings count; `ViiperXboxPadsTests` no copy on a VIIPER Arcadia didn't start; `ControllerSupportServiceTests` no HidHide reinstall while Pan hides or holds, nor over another version; `EmulationPartsTests` no fix offered over another version; `ViiperInstallationTests` a viiper.exe that isn't the pinned build counts as missing and is replaced; fork: `TestOtherCdcRequestsGoToTheClient`) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Go 1.27.2; Pan 180, Core 1905, App 359, fork `go test ./...`; each new test seen red once by mutation (unknown host taken for the puck, foreign server used, hold not checked, version not checked, fix offered over any version, partial version compare, every file counted, CDC all housekeeping in Arcadia and in the fork). Not covered by a test: the read race at close in `WindowsPuck` (Windows only) | pass | Windows open |
 | T242-27 the pin (fork release `arcadia-f1baf515abba`, built by the fork's "Arcadia build" with `go vet` and `go test`: SHA-256 and size checked again by hand against `Viiper.targets`; `dotnet build` downloads it into `obj/`, checks it and copies it next to the App and the tests; all tests with the pinned build compiled in) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container; Pan 180, Core 1905, App 359 | pass | running it on Windows open |
 | T242-1, T242-2, T242-4, T242-6, T242-26, T242-27 after the security and code reviews of 1238f81 (Core: `SteamControllerCopyBridgeTests` a GET_REPORT of an input report gets the filtered last report, never the puck, and nothing once it no longer passes; a call to the puck that doesn't end makes closing throw; a VIIPER that stops reading breaks the copy; `PanEmulationTests` a lost copy that won't go ends the emulation; `ControllerSupportServiceTests` no HidHide reinstall while Steam runs; `ViiperInstallationTests` the replaced file is moved aside and removed; `HidProxyTests` with two pucks one is copied; `ViiperXboxPadsTests` only Arcadia's server may listen on the port; App: `EmulationSetupTests` "Neu installieren" while Steam runs) | 2026-10-28 | Claude (thread) | Debug, Linux cloud container, Avalonia headless; Pan 180, Core 1918, App 360; each new test seen red once by mutation (input GET_REPORT from the puck, stale report kept, closing without the throw, send watch off, lost copy replaced, Steam guard off in Core and App, old files kept, unknown USB device copied, both pucks mixed, any listener taken for Arcadia's, no listener taken for Arcadia's). Only mechanical: renaming a running `viiper.exe` aside (Linux overwrites running files), Windows' TCP table (`WindowsFact`, runs in Windows CI). Two pucks: unit test only, no manual case (owner) | pass | Windows open |
+| T242-2, T242-3, T242-4, T242-9 | 2026-11-02 | owner | v0.2.0 release candidate (rc.1/rc.2), owner's PC, Windows 11, real Steam and controllers | ✅ | Acceptance review #222 |

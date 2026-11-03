@@ -47,7 +47,7 @@ started again, Steam game, Steam that won't close, SISR that won't stop, warning
       If Arcadia is killed while Steam is closed for the removal, Steam stays closed. · E2E: yes (the kill by hand)
 - [x] **T214-9** `settings.json` with `SteamControllerSupport` and `LastSisrUpdateCheck`: both are gone after the next
       change of a setting; the per-game modes (`ControllerSupportOverrides`) stay. · E2E: yes
-- [ ] **T214-10** Update from Arcadia 0.1.0 with SISR running (it kept running across the update): the new Arcadia stops
+- [x] **T214-10** Update from Arcadia 0.1.0 with SISR running (it kept running across the update): the new Arcadia stops
       it at start, also a `viiper.exe` from SISR's folder left without its SISR; afterwards the Steam Controller works
       in the desktop as before (Steam's own layout, not the marker's) and `usbip port` lists no pad of the old VIIPER.
       An SISR started by hand (double-click on `SISR.exe`) keeps running with its VIIPER. · E2E: yes (processes faked;
@@ -68,3 +68,4 @@ History:
 | T214-3, -4, -8, -10 | 2026-10-28 | Claude | after the QE review: same container; SISR stopped only after Steam closed, clean-up after the stop, causes shown in the row; new acceptance tests each seen red once (see the PR) | ✅ | Windows CI and owner's PC open |
 | T214-1 to T214-13 | 2026-10-29 | owner | owner's PC, Windows, PR branch with feat/replace-sisr of 2026-10-29 | ✅ except T214-4, T214-10, T214-13 (deferred to the acceptance review); finding outside #214: the fill of a hold button stayed where it was when let go | fill fixed in this PR (`Theme.axaml`, `HoldButtonFillTests`, T242-20) |
 | T214-12 | 2026-10-29 | owner | owner's PC, Windows, Steam with two accounts (marker in one), Run-Check-214 with `SisrMarkerCheck` (Arcadia's `SteamShortcuts.RemoveByExecutable`) | ✅ marker removed with Steam closed, not shown after Steam's start, still gone after Steam exited again | the removal with Steam closed holds; no change |
+| T214-10 | 2026-11-02 | owner | v0.2.0 release candidate (rc.1/rc.2), owner's PC, Windows 11, real Steam and controllers | ✅ | Acceptance review #222 |

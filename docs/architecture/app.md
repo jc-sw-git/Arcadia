@@ -55,8 +55,13 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
   - `SettingsPageViewModel` (categories, LB/RB, B), one `SettingsCategoryViewModel` per category; a new category is a
     subclass added in `MainViewModel.ShowSettings`.
   - `LauncherSettingsViewModel` with `LauncherRowViewModel`s and its `ILauncherSettingsHost` (#136), and a page per
-    launcher (#137) with the rows in `Settings/LauncherPageRows.cs` (`LauncherPageHeadViewModel`, `LauncherActiveRowViewModel`), its Steam Controller default `LauncherControllerModeRowViewModel` and the
-    reset's `SettingsQuestionViewModel` as its `Dialog` (#178); `ControllerSettingsViewModel` (`PanRows`, `SisrRows`, the Steam prompts as
+    launcher (#137). It only routes the input and puts the rows together; its parts get what they need through
+    `ILauncherCategory`: `LauncherOrder` (on/off, lifting and dragging), `LauncherRowStates` (a list row's state and
+    info), and per page group `LauncherAccountRow`, `LauncherGeneralRows` (name, keyword, logo), `LauncherLibraryRows`
+    (folder, library switches, rescan) and `LauncherControllerRows` (Steam Controller default, its reset's
+    `SettingsQuestionViewModel` as `Dialog` (#178), Steam's desktop layout). The page's own row types are in
+    `Settings/LauncherPageRows.cs` (`LauncherPageHeadViewModel`, `LauncherActiveRowViewModel`,
+    `LauncherControllerModeRowViewModel`); `ControllerSettingsViewModel` (`PanRows`, `SisrRows`, the Steam prompts as
     its `Dialog`); `AboutSettingsViewModel`.
   - Rows (`SettingsRowViewModel`): `ChoiceRowViewModel`, `SwitchRowViewModel`, `ActionRowViewModel`,
     `InfoRowViewModel`, `TextRowViewModel` with `TextEditorViewModel` (a text written with the on-screen keyboard and

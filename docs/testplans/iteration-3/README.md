@@ -14,6 +14,7 @@ its file.
 | [376](376-ci-hygiene.md) | #376 | CI hygiene: job timeouts, SHA-pinned actions, Dependabot, concurrency, split the App tests | none (CI only) |
 | [415](415-move-controller-and-pan-block-out-of-mainviewmodel.md) | #415 | Move the controller and Pan block out of MainViewModel | none (refactoring) |
 | [418](418-explain-back-pan-install-and-removal.md) | #418 | Explain-back: Pan install and removal | none (doc fixes) |
+| [420](420-split-launchersettingsviewmodel-by-concern.md) | #420 | Split LauncherSettingsViewModel by concern | none (refactoring) |
 | [422](422-pan-finishes-interrupted-uninstall.md) | #422 | Pan finishes an interrupted uninstall and removes itself without Arcadia | T422-1 to T422-12 |
 
 ## Release candidate tests (restart or installation)

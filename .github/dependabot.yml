@@ -1,5 +1,6 @@
 # Weekly update PRs for the pinned GitHub Actions (by commit SHA, see the workflows) and the NuGet packages. Grouped,
-# so a week's updates of one kind arrive as one PR; each goes through CI and the owner's review like any other.
+# so a week's actions updates, or a week's minor and patch NuGet updates, arrive as one PR; each goes through CI and
+# the owner's review like any other.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -15,6 +16,17 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Only minor and patch updates are grouped: a new major version comes as a PR of its own, so one that breaks the
+    # build doesn't hold back the others.
     groups:
       nuget:
         patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # Avalonia.Headless.XUnit is built against xunit v3's 3.x API: with xunit 4 the window tests aren't even found
+      # (MissingMethodException in discovery). The VS runner 4 belongs to
+      # xunit 4. Lift both once Avalonia.Headless.XUnit supports xunit 4.
+      - dependency-name: xunit.v3
+        update-types: [version-update:semver-major]
+      - dependency-name: xunit.runner.visualstudio
+        update-types: [version-update:semver-major]

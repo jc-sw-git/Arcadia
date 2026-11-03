@@ -281,7 +281,7 @@ public sealed class ServiceTests : IDisposable
         Assert.True(WaitForHandOff(TimeSpan.FromMinutes(3)), "the hand-off copy finished");
         // Without this the test is green when Pan quietly uninstalled in place: only a hand-off leaves the copy, which
         // waits for the reboot to go (QE review of #270).
-        Assert.True(File.Exists(Path.Combine(PanPaths.HandOffDirectory, PanPaths.ExecutableName)), "the uninstall ran in the hand-off copy, which stays until the next boot");
+        Assert.True(File.Exists(HandOffCopy.Executable), "the uninstall ran in the hand-off copy, which stays until the next boot");
         Assert.Contains("1060", Output("sc.exe", "query", PanPaths.ServiceName));
         Assert.False(Directory.Exists(PanPaths.InstallDirectory), "Program Files\\Arcadia\\Pan is gone");
 
@@ -316,25 +316,10 @@ public sealed class ServiceTests : IDisposable
     /// <summary>Waits until no Pan.exe from the hand-off folder runs any more (#270).</summary>
     private static bool WaitForHandOff(TimeSpan timeout)
     {
-        var copy = Path.Combine(PanPaths.HandOffDirectory, PanPaths.ExecutableName);
         var until = DateTime.UtcNow + timeout;
         while (DateTime.UtcNow < until)
         {
-            var running = Process.GetProcessesByName("Pan").Any(process =>
-            {
-                using (process)
-                {
-                    try
-                    {
-                        return string.Equals(process.MainModule?.FileName, copy, StringComparison.OrdinalIgnoreCase);
-                    }
-                    catch (System.ComponentModel.Win32Exception)
-                    {
-                        return false;
-                    }
-                }
-            });
-            if (!running)
+            if (HandOffCopy.RunningId(Environment.ProcessId) is null)
             {
                 return true;
             }

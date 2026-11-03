@@ -86,7 +86,7 @@ its file.
 
 ## Exploratory test
 
-Charter: switch between Arcadia, Steam and running games with controllers only and look for a controller that gets lost, arrives twice or sticks, and for moments where Arcadia doesn't say what is happening. Time box: 90 minutes. Findings: none reported (owner, 2026-11-03).
+Charter: switch between Arcadia, Steam and running games with controllers only and look for a controller that gets lost, arrives twice or sticks, and for moments where Arcadia doesn't say what is happening. Time box: 90 minutes. Findings: none that weren't already handled (owner, 2026-11-03).
 
 ## Acceptance tests
 

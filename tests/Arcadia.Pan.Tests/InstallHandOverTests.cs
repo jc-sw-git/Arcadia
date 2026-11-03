@@ -135,6 +135,18 @@ public sealed class InstallHandOverTests : IDisposable
 
     [Fact]
     [Trait("TestCase", "T413-17")]
+    public async Task A_pipe_that_refuses_the_read_counts_as_Arcadia_gone()
+    {
+        var channel = new FakeChannel();
+        channel.Message.SetException(new UnauthorizedAccessException());
+
+        var result = await InstallHandOver.WaitAsync(channel, Run(), TimeSpan.FromMinutes(30), TimeProvider.System, _ => false);
+
+        Assert.Equal(HandOverEnd.ArcadiaGone, result.End);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T413-17")]
     public async Task No_go_within_the_hand_over_time_ends_the_wait()
     {
         var channel = new FakeChannel();

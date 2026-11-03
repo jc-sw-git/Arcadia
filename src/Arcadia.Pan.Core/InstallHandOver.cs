@@ -105,7 +105,8 @@ public static class InstallHandOver
                 {
                     message = await receive;
                 }
-                catch (IOException)
+                // A broken or refused pipe gives no installers, so Pan ends as without Arcadia: nothing changed (exit 9).
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
                 {
                     return new(HandOverEnd.ArcadiaGone);
                 }

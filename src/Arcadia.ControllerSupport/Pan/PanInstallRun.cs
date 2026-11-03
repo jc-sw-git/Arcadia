@@ -75,6 +75,7 @@ internal sealed class PanInstallRun : IPanInstallRun
             var exited = process.WaitForExitAsync(limit.Token);
             if (await Task.WhenAny(connect, exited) != connect || !connect.IsCompletedSuccessfully)
             {
+                await limit.CancelAsync();
                 await Ignore(connect);
                 if (process.HasExited)
                 {

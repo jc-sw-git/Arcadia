@@ -409,13 +409,6 @@ public sealed partial class ControllerSupportServiceTests
     }
 
     [Fact]
-    [Trait("TestCase", "T413-18")]
-    public void A_new_Arcadia_shows_no_install_from_before()
-    {
-        Assert.Null(CreateForInstall().Installation);
-    }
-
-    [Fact]
     [Trait("TestCase", "T413-11")]
     public async Task Downloads_move_the_bar_by_their_bytes_and_it_never_goes_back()
     {

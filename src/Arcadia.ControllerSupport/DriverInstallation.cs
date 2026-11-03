@@ -195,7 +195,11 @@ internal sealed class DriverInstallation(
 
             if (time.GetUtcNow() - start >= PanTimeout)
             {
-                throw new TimeoutException($"Die Treiber-Installation hat nicht innerhalb von {PanTimeout.TotalSeconds:0} Sekunden geantwortet.");
+                // The step Pan is at turns red, not the first one Arcadia started (S6).
+                var timeout = new TimeoutException($"Die Treiber-Installation hat nicht innerhalb von {PanTimeout.TotalSeconds:0} Sekunden geantwortet.");
+                _panDecided = true;
+                progress.PanEnded(FailedPanStep(run) ?? progress.OpenPanStep(), timeout.Message);
+                throw timeout;
             }
 
             await Task.WhenAny(run.Exited, Task.Delay(ReportInterval, time, cancellationToken));

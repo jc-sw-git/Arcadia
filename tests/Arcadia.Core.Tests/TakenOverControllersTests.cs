@@ -74,7 +74,7 @@ public sealed class TakenOverControllersTests
     private static GamepadReading Reading(int padId, PadDevice device) =>
         new GamepadReading(padId, PadButtons.None, default, default) with { Device = device, Type = device.Type };
 
-    /// <summary>#370: a throwing setting falls back to its safe value, is reported once, and the reads go on.</summary>
+    /// <summary>#370: a throwing setting falls back to its safe value, is reported once in a streak (#399), and the reads go on.</summary>
     [Fact]
     public void A_throwing_setting_is_reported_once_and_Feed_goes_on_with_its_safe_value()
     {
@@ -84,7 +84,7 @@ public sealed class TakenOverControllersTests
             ForwardingAllowed = () => throw new InvalidOperationException("forwarding broke"),
             Combos = () => throw new InvalidOperationException("combos broke"),
             LayoutOf = _ => throw new InvalidOperationException("layout broke"),
-            Unexpected = (error, context) => reported.Add($"{context}: {error.Message}"),
+            Unexpected = (error, context, _) => reported.Add($"{context}: {error.Message}"),
         };
 
         others.Feed([DualSense]);
@@ -94,6 +94,49 @@ public sealed class TakenOverControllersTests
         Assert.Equal(
             ["Controller für Spiele: forwarding broke", "Controller für Spiele: combos broke", "Controller für Spiele: layout broke"],
             reported);
+    }
+
+    /// <summary>#399: each delegate Feed reads is a source of its own; after ten quiet minutes it toasts again.</summary>
+    [Fact]
+    [Trait("TestCase", "T399-8")]
+    [Trait("TestCase", "T399-12")]
+    public void Each_throwing_delegate_is_its_own_source_and_toasts_again_after_the_quiet_period()
+    {
+        var reported = new List<string>();
+        var broken = true;
+        var others = new TakenOverControllers(_time, Log)
+        {
+            Combos = () => broken ? throw new InvalidOperationException("combos broke") : new ComboWithholdingOptions(BackAndStart: true),
+            LayoutOf = _ => broken ? throw new InvalidOperationException("layout broke") : null,
+            Unexpected = (error, context, _) =>
+            {
+                reported.Add($"{context}: {error.Message}");
+                throw new InvalidOperationException("toast broke");
+            },
+        };
+        others.Changed += () => throw new InvalidOperationException("subscriber broke");
+
+        others.Feed([DualSense]);
+        others.Feed([]);
+        _time.Advance(RepeatedErrors<string>.SummaryInterval);
+        others.Feed([DualSense]);
+
+        Assert.Equal(DualSenseModel, Assert.Single(others.Connected).Model);
+        Assert.Equal(
+            ["Controller für Spiele: combos broke", "Controller für Spiele: layout broke", "Controller für Spiele: subscriber broke"],
+            reported);
+        var lines = string.Join("\n", _log);
+        Assert.Contains("Unerwarteter Fehler (Controller für Spiele, Combos) wiederholt: 2×", lines);
+        Assert.Contains("Unerwarteter Fehler (Controller für Spiele, Changed) wiederholt: 2×", lines);
+        Assert.DoesNotContain("werden nicht gemeldet", lines);
+
+        broken = false;
+        _time.Advance(RepeatedErrors<string>.QuietPeriod);
+        others.Feed([DualSense]);
+        broken = true;
+        others.Feed([DualSense, EightBitDo]);
+
+        Assert.Equal(["combos broke", "layout broke", "subscriber broke", "combos broke", "layout broke", "subscriber broke"], reported.Select(r => r[(r.IndexOf(": ", StringComparison.Ordinal) + 2)..]));
     }
 
     /// <summary>#238 D9, QE finding of #353: 1 ms reads only while a pad gets states, not while it rests for Arcadia in front.</summary>

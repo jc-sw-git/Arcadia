@@ -1,3 +1,4 @@
+using Arcadia.Input;
 using Arcadia.Pan;
 
 namespace Arcadia.ControllerSupport.Pan;
@@ -64,22 +65,24 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     private Task? _keeper;
     private Task? _sender;
 
-    // Which background loops already reported an unexpected error: they retry every few seconds, the toast comes once.
-    private readonly HashSet<string> _reported = [];
+    // Per context: the background loops retry every few seconds, a streak of errors is toasted once (#399).
+    private readonly RepeatedErrors<string> _errors;
 
     public PanClient(IPanTransport transport, TimeProvider time, Action<string> log)
     {
         _transport = transport;
         _time = time;
         _log = log;
-        Unexpected = (error, context) => log($"Unerwarteter Fehler ({context}): {error}");
+        _errors = new(time, log, static _ => null);
+        Unexpected = (error, context, _) => log($"Unerwarteter Fehler ({context}): {error}");
     }
 
     /// <summary>
     /// Called with a context for the log and the toast when a subscriber of an event, or the connection keeper or the
-    /// heartbeat, throws something nobody expected; both loops go on. Logs the error with its stack by default.
+    /// heartbeat, throws something nobody expected, for the first error of a streak (#399); both loops go on. Logs the
+    /// error with its stack by default.
     /// </summary>
-    public Action<Exception, string> Unexpected { get; init; }
+    public Action<Exception, string, ErrorStreak> Unexpected { get; init; }
 
     public event Action<uint, PanReason>? TornDown;
 
@@ -938,31 +941,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         }
     }
 
-    /// <summary>Logs every time, but reports (toast) once per context: the loops would repeat it every few seconds.</summary>
-    private void ReportUnexpected(Exception error, string context)
-    {
-        bool first;
-        lock (_lock)
-        {
-            first = _reported.Add(context);
-        }
-
-        try
-        {
-            if (first)
-            {
-                Unexpected(error, context);
-            }
-            else
-            {
-                _log($"Pan: wieder unerwarteter Fehler ({context}): {error.Message}");
-            }
-        }
-        catch (Exception)
-        {
-            // Reporting must not end the loop or the request in turn.
-        }
-    }
+    private void ReportUnexpected(Exception error, string context) => _errors.Report(context, context, error, Unexpected);
 }
 
 /// <summary>

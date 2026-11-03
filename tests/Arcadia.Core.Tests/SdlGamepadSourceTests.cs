@@ -339,10 +339,10 @@ public sealed class SdlGamepadSourceTests : IDisposable
 
     /// <summary>#370: one broken consumer must not cost every controller for the session.</summary>
     [Fact]
-    public void A_throwing_Sampled_or_button_handler_is_reported_once_and_the_controllers_keep_working()
+    public void A_throwing_Sampled_or_button_handler_is_reported_and_the_controllers_keep_working()
     {
         var reported = new List<string>();
-        using var source = new SdlGamepadSource(_sdl, _ => { }, _failures.Add, unexpected: (error, context) => reported.Add($"{context}: {error.Message}"));
+        using var source = new SdlGamepadSource(_sdl, _ => { }, _failures.Add, unexpected: (error, context, _) => reported.Add($"{context}: {error.Message}"));
         var events = new List<string>();
         source.Sampled += _ => throw new InvalidOperationException("Sampled broke");
         source.ButtonPressed += _ => throw new InvalidOperationException("Press broke");

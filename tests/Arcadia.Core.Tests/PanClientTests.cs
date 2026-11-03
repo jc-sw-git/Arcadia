@@ -317,7 +317,7 @@ public sealed class PanClientTests : IAsyncDisposable
         await using var client = new PanClient(_server, _time, Log)
         {
             RequestTimeout = TimeSpan.FromSeconds(10),
-            Unexpected = (error, context) => { lock (reported) reported.Add($"{context}: {error.Message}"); },
+            Unexpected = (error, context, _) => { lock (reported) reported.Add($"{context}: {error.Message}"); },
         };
         client.Lost += _ => throw new ApplicationException("handler broke");
         client.Lost += reason => { lock (heard) heard.Add(reason); };
@@ -337,14 +337,14 @@ public sealed class PanClientTests : IAsyncDisposable
 
     /// <summary>#370: an error nobody expected in one attempt is reported and the keeper tries again, not ends.</summary>
     [Fact]
-    public async Task A_throwing_transport_is_reported_once_and_the_keeper_keeps_trying()
+    public async Task A_throwing_transport_is_reported_and_the_keeper_keeps_trying()
     {
         var reported = new List<string>();
         var transport = new ThrowingOnce(_server);
         await using var client = new PanClient(transport, _time, Log)
         {
             RequestTimeout = TimeSpan.FromSeconds(10),
-            Unexpected = (error, context) => { lock (reported) reported.Add($"{context}: {error.Message}"); },
+            Unexpected = (error, context, _) => { lock (reported) reported.Add($"{context}: {error.Message}"); },
         };
 
         client.Start();
@@ -352,6 +352,29 @@ public sealed class PanClientTests : IAsyncDisposable
         await AdvanceUntil(() => client.IsConnected, "verbunden nach dem Fehler");
 
         Assert.Equal("Verbindung zu Pan halten: transport broke", Assert.Single(reported));
+    }
+
+    /// <summary>#399: a toast that throws doesn't cost the keeper its next attempt.</summary>
+    [Fact]
+    [Trait("TestCase", "T399-12")]
+    public async Task A_throwing_toast_does_not_end_the_keeper()
+    {
+        var reported = new List<string>();
+        await using var client = new PanClient(new ThrowingOnce(_server), _time, Log)
+        {
+            RequestTimeout = TimeSpan.FromSeconds(10),
+            Unexpected = (error, context, _) =>
+            {
+                lock (reported) reported.Add($"{context}: {error.Message}");
+                throw new InvalidOperationException("toast broke");
+            },
+        };
+
+        client.Start();
+        await client.FirstAttempt.WaitAsync(Soon);
+        await AdvanceUntil(() => client.IsConnected, "verbunden nach dem Fehler");
+
+        Assert.Equal(["Verbindung zu Pan halten: transport broke"], reported);
     }
 
     /// <summary>

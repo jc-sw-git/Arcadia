@@ -60,7 +60,7 @@ the folder.
   `%ProgramFiles%\Arcadia` for the next boot (safe there, never in the user's folder: a planted junction). After a
   hand-off Arcadia sees exit 0 before the copy has removed anything, so exit codes 5 and 7 never reach it; the copy's
   result stays in `pan.log` (`UninstallHandOff`). If the copy fails (not creatable, not startable, or a build that isn't
-  a single file), Pan uninstalls in place and Arcadia gets its exit code within the 40 s.
+  a single file), Pan uninstalls in place and Arcadia gets its exit code only if it ends within the 40 s.
 - An uninstalled HidHide stays until Windows restarts: its service key and driver file remain, so its version still
   reads. `HidHideInstallation.IsRemovalPending` (`DeleteFlag` on the service, or the driver file in
   `PendingFileRenameOperations`) gives the row "HidHide: Neustart ausstehend" without a fix, and Pan isn't asked about

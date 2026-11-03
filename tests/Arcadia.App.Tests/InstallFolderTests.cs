@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Arcadia.App.Input;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
@@ -46,13 +45,11 @@ public sealed class InstallFolderTests
         await arcadia.FolderChecksAnsweredAsync();
         var checks = arcadia.Folders.Checks;
 
+        // The checks block until Answer: a focus move that waited for one would never return, so no clock is needed.
         arcadia.Folders.Hang();
-        var watch = Stopwatch.StartNew();
         arcadia.Press(UiAction.Right, times: 5);
-        watch.Stop();
 
         Assert.Equal("Foxtrot", arcadia.FocusedGame?.Title);
-        Assert.InRange(watch.ElapsedMilliseconds, 0, 1000);
 
         // Bravo's check hangs; of Charlie to Foxtrot only the last waits behind it.
         await arcadia.WaitUntilAsync(() => arcadia.Folders.Checks == checks + 1, "Bravos Prüfung läuft");

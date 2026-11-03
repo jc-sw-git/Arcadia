@@ -45,7 +45,8 @@
   bullets.
 - To release, run the workflow "Tag release" on `main` with the version: `tag-release.yml` sets the tag `vX.Y.Z` and
   starts `release.yml`. Claude can start it; its cloud sessions can't push tags (the git proxy answers 403).
-- Every CI run on Windows packs the installer; only pushes to `main` upload it as an artifact (1 day). The account's
+- Only CI runs of pushes to `main` pack the installer and upload it as an artifact (1 day), which saves a PR's run a
+  minute; a PR that changes packing is checked by the first run on `main` after its merge. The account's
   artifact storage is small and counted per hour over the billing month, so `prune-artifacts.yml` keeps only the
   newest 5 of each artifact name, and a failed upload only warns (#115). Every CI run measures code coverage on
   Windows and uploads it as `coverage-report` (HTML, 7 days); locally `dotnet test Arcadia.slnx --collect:"XPlat Code

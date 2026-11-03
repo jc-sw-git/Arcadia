@@ -17,3 +17,4 @@ History:
 | `RestartNoticeDue` with today's logic (driver state read right after Pan's hand-off, faked as nothing pending) | 2026-11-03 | Claude | PR branch, Debug, Linux cloud container | ❌ no notice | decision no longer reads the driver state |
 | `ControllerSupportRemovalTests` | 2026-11-03 | Claude | PR branch, Debug, Linux cloud container | ✅ 12 passed | – |
 | QE review: `ControllerSupportRemovalTests`, build of the solution | 2026-11-03 | Claude (QE) | PR branch 38b844e, Debug, Linux cloud container | ✅ 12 passed, 0 warnings | T423-1 added for scenario 2 |
+| QE findings fixed (enum in its own file; a blocked elevation counts as not run): all tests, build | 2026-11-03 | Claude | PR branch 61f2464, Debug, Linux cloud container | ✅ 0 warnings, `ControllerSupportRemovalTests` 12 passed | T407-1, T407-2, T423-1 stay for the RC test |

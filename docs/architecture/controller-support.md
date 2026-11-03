@@ -56,12 +56,13 @@ Pan's decisions, no dependencies, AOT-clean.
   `HidHideRelease`/`HidHideSetup`.
 - Installers: `InstallerSignature` (`PublisherPin`, `WinTrustAuthenticode`, `UsbipRelease`: who may have signed one).
 - VIIPER's ports: `UsbipPorts`, `TcpListeners`, `ViiperListeners` (only Arcadia's `viiper.exe` on 127.0.0.1).
-- Uninstall: `UninstallOrder`, `UninstallHandOff` (the copy in `%ProgramFiles%`, #270), `DriverUninstall`.
+- Uninstall: `UninstallOrder`, `PendingUninstall` (the marker a later start finishes, #422), `SelfRemoval` and
+  `ArcadiaInstallations` (no Arcadia left, #422), `UninstallHandOff` (the copy in `%ProgramFiles%`, #270), `DriverUninstall`.
 - `StaleDevices.cs` (`StaleDeviceCleanup`, #347), `DataFolderRights`, `PanPaths`.
 
 ## `src/Arcadia.Pan`
 
 `Pan.exe`, the guardian service, Native AOT, `InvariantGlobalization`. `Program` (arguments), `ServiceDescriptions`,
-`PanLog`; `Windows/`: `ServiceHost` (SCM), `PipeServer`, `ServiceSetup` (`--install`/`--uninstall`), `UsbipInstall`,
+`PanLog`; `Windows/`: `ServiceHost` (SCM), `PipeServer`, `ServiceSetup` (`--install`, the service), `PanUninstall` (`--uninstall`, the finish at start), `ArcadiaProbe`, `UsbipInstall`,
 `HidHideInstall`, `DriverRemoval` (`--remove-drivers`), `Restore` (`--restore`), `WindowsCleanup`, `WindowsHiding`,
 `WindowsStaleDevices`, `UnbiasedClock`, `Native`. Details: `docs/controller-support/pan.md`.

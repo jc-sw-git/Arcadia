@@ -29,7 +29,23 @@ internal sealed class TestLauncher(LauncherSpec spec, DateTimeOffset now, Record
 
     public IReadOnlyList<LibraryTypeOption> LibraryOptions => spec.Options ?? [];
 
-    public string? Locate() => spec.IsInstalled ? "Test" : null;
+    public ILauncherFolderChoice? FolderChoice => spec.FolderChoice;
+
+    // A launcher not installed is found only in a folder picked by hand (#138).
+    public string? Locate() => spec.IsInstalled ? "Test" : spec.FolderChoice?.Chosen;
+}
+
+/// <summary>A launcher's folder picked by hand (#138): only <paramref name="launcherFolder"/> holds the launcher.</summary>
+internal sealed class TestFolderChoice(string launcherFolder) : ILauncherFolderChoice
+{
+    public string Expected => "test.exe";
+
+    /// <summary>The folder Arcadia looks for the launcher in, as it last said; null: as usual.</summary>
+    public string? Chosen { get; private set; }
+
+    public string? Find(string folder) => folder == launcherFolder ? folder : null;
+
+    public void Use(string? folder) => Chosen = folder;
 }
 
 /// <summary>

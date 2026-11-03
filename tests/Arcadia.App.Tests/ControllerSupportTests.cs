@@ -23,7 +23,7 @@ public sealed class ControllerSupportTests
         await arcadia.WaitUntilAsync(() => arcadia.Main.Status is { HasControllerStatus: true, HasArcadiaUpdate: true }, "beide Symbole im Header");
 
         // The warning (Pan missing) opens "Controller", wherever the settings were.
-        arcadia.Click(arcadia.Main.OpenControllerSettingsCommand);
+        arcadia.Click(arcadia.Main.ControllerMode.OpenControllerSettingsCommand);
         Assert.Equal("Controller", arcadia.Main.Settings!.Selected.Name);
         arcadia.Press(UiAction.Back);
 
@@ -40,18 +40,18 @@ public sealed class ControllerSupportTests
         using var arcadia = await ArcadiaDriver.StartAsync(
             [new LauncherSpec(KnownLaunchers.Steam, 3), new LauncherSpec(KnownLaunchers.Gog, 3)], Launchers(KnownLaunchers.Steam, KnownLaunchers.Gog));
         arcadia.StartControllers();
-        Assert.False(arcadia.Main.ShowControllerSupport, "Ohne Steam Controller zeigt die Vorschau keinen Modus.");
+        Assert.False(arcadia.Main.ControllerMode.ShowControllerSupport, "Ohne Steam Controller zeigt die Vorschau keinen Modus.");
 
         // No switch any more (#213): the Steam Controller alone brings the mode.
         arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.PollControllers();
-        Assert.True(arcadia.Main.ShowControllerSupport);
+        Assert.True(arcadia.Main.ControllerMode.ShowControllerSupport);
         Assert.Equal("Steam", arcadia.SelectedTab?.Name);
-        Assert.Equal("Standard (Steam-Eingabe)", arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal("Standard (Steam-Eingabe)", arcadia.Main.ControllerMode.FocusedControllerSupportText);
 
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("GOG Galaxy", arcadia.SelectedTab?.Name);
-        Assert.Equal("Standard (Arcadia)", arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal("Standard (Arcadia)", arcadia.Main.ControllerMode.FocusedControllerSupportText);
     }
 
     [AvaloniaFact]
@@ -65,7 +65,7 @@ public sealed class ControllerSupportTests
         using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, 3)], settings);
         arcadia.Sdl.Plug(KnownPads.SteamController);
         arcadia.StartControllers();
-        Assert.True(arcadia.Main.ShowControllerSupport, "der Steam Controller ist erkannt");
+        Assert.True(arcadia.Main.ControllerMode.ShowControllerSupport, "der Steam Controller ist erkannt");
 
         // The context menu names what each choice switches to.
         arcadia.Press(UiAction.Options);

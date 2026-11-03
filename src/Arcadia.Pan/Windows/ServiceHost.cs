@@ -92,9 +92,16 @@ public static class ServiceHost
         IReadOnlyList<string> setAside = [];
         if (ServiceSetup.CheckDataDirectory() is { } problem)
         {
+            // The recorded Arcadias go over into the new folder: only ever evidence that Arcadia is there, so even a
+            // planted line can only keep Pan installed, while losing them would let Pan remove itself (#422).
+            var recorded = PanUninstall.RecordedInstalls.Load();
             try
             {
                 setAside = ServiceSetup.SecureDataDirectory();
+                foreach (var arcadia in recorded)
+                {
+                    PanUninstall.RecordArcadia(arcadia, log.Write);
+                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
             {
@@ -121,7 +128,7 @@ public static class ServiceHost
         _guardian = guardian;
         guardian.UnplannedEnd += end => log.Write($"Unplanned end: {end.Reason}, generation {end.Generation}, client {end.ClientPid}, emulating {end.WasEmulating} (crash report: #244)");
         log.Write($"Pan {typeof(ServiceHost).Assembly.GetName().Version} starting (protocol {PanMessage.ProtocolVersion}, gen-0 budget {Gen0BudgetText()})");
-        await guardian.RecoverAsync();
+        var recovered = await guardian.RecoverAsync();
         // Not awaited: the pipe takes Arcadia at once, only a new emulation waits for it (#347). Never faults; the stop awaits it.
         guardian.CleanUpStaleDevices("Pan started");
         Report(Native.ServiceRunning);
@@ -133,13 +140,22 @@ public static class ServiceHost
         var server = new PipeServer(guardian, log.Write);
         using var idle = new IdleStop(IdleTimeout, () => guardian.ShowRetryPending, stop.Cancel, log.Write);
         server.ClientPresent += idle.ClientPresent;
+        server.ClientAccepted += image => PanUninstall.RecordArcadia(image, log.Write);
+        var clientCame = false;
+        server.ClientPresent += present => clientCame |= present;
         idle.ClientPresent(false);
         var serving = server.RunAsync(serve.Token);
         var watch = WatchAsync(guardian, serve.Token);
-        var stopRequested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using (stop.Token.Register(() => stopRequested.TrySetResult()))
+        // A pending uninstall, or no Arcadia left (#422), with the pipe already open: a client that comes meanwhile
+        // (an Arcadia Pan doesn't know yet) keeps Pan. Not for --console, which a developer runs by hand.
+        var finish = consoleStop is null && await PanUninstall.ShouldFinishAsync(recovered, () => Volatile.Read(ref clientCame), log.Write);
+        if (!finish)
         {
-            await Task.WhenAny(serving, stopRequested.Task);
+            var stopRequested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using (stop.Token.Register(() => stopRequested.TrySetResult()))
+            {
+                await Task.WhenAny(serving, stopRequested.Task);
+            }
         }
 
         // The stop's teardown runs while the client's pipe is still open, so its notice (TornDown, ServiceStopping)
@@ -162,6 +178,12 @@ public static class ServiceHost
         }
         catch (OperationCanceledException)
         {
+        }
+
+        if (finish)
+        {
+            await PanUninstall.FinishInServiceAsync(log);
+            return;
         }
 
         log.Write("Pan stopped");

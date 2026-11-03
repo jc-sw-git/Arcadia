@@ -10,7 +10,7 @@ and runs only when the player confirms; declined, Pan is switched off and Arcadi
 - Not installed: no check, no page. A build without a bundled Pan (`NotBundled`, a Debug build that skipped it)
   checks nothing. Different: `IsPanUpdateDue`; Pan's emulation waits meanwhile, since the update ends whatever the old
   Pan runs.
-- **Pan on:** the page "Neue Pan-Version" (`PanUpdatePageViewModel`, `MainViewModel.PanUpdate`) covers everything but
+- **Pan on:** the page "Neue Pan-Version" (`PanUpdatePageViewModel`, `PanDialogsViewModel.PanUpdate`) covers everything but
   Pan's own dialogs and says Windows asks next. [A] "Aktualisieren" starts the update, [B] "Ohne Pan weiter" declines.
   Nothing below the page takes a press; while a Windows prompt is up or the countdown runs, every press is ignored.
 - **Pan off:** no page. The switch "Controller-Wächter (Pan)" reads "Neue Pan-Version verfügbar" with the blue i and

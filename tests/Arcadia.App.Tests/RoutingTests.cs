@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.App.ViewModels;
 using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;
@@ -64,5 +65,18 @@ public sealed class RoutingTests
         Assert.True(arcadia.Main.IsViewOptionsOpen);
         Assert.False(arcadia.Main.IsSettingsOpen);
         Assert.Null(arcadia.Search);
+    }
+
+    [AvaloniaFact]
+    public async Task A_on_a_confirmation_closes_it_before_its_action_so_a_dialog_the_action_opens_stays_open()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        IGameActionsOwner window = arcadia.Main;
+        var next = new ConfirmationViewModel("Zweite Frage", "Noch etwas?", "Ja", () => { });
+        window.Confirm(new ConfirmationViewModel("Erste Frage", "Sicher?", "Ja", () => window.Confirm(next)));
+
+        arcadia.Press(UiAction.Left).Press(UiAction.Accept);
+
+        Assert.Same(next, arcadia.Main.Confirmation);
     }
 }

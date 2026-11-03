@@ -28,7 +28,7 @@ public static class InputHints
         }
     }
 
-    /// <summary>The printing of the controller in use (<see cref="ViewModels.MainViewModel.ButtonSymbols"/>).</summary>
+    /// <summary>The printing of the controller in use (<see cref="ViewModels.InputInUseViewModel.ButtonSymbols"/>).</summary>
     public static ButtonSymbols Symbols
     {
         get => _symbols;

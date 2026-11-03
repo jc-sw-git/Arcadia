@@ -71,9 +71,9 @@ public sealed partial class FirstRunViewModel : ViewModelBase, IPage
     [ObservableProperty]
     public partial InfoTabBar TabBar { get; private set; } = new([]);
 
-    public string TabBarTitle => LauncherSettingsViewModel.OrderPreviewTitle;
+    public string TabBarTitle => LauncherTexts.OrderPreviewTitle;
 
-    public string TabBarSubtitle => LauncherSettingsViewModel.OrderPreviewSubtitle;
+    public string TabBarSubtitle => LauncherTexts.OrderPreviewSubtitle;
 
     /// <summary>Another launcher has the focus: the view brings it into sight.</summary>
     public event EventHandler? FocusMoved;

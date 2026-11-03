@@ -51,7 +51,7 @@ public sealed class PanUpdateAtStartTests
     private static async Task<PanUpdatePageViewModel> StuckAsync(ArcadiaDriver arcadia)
     {
         await arcadia.PanAnsweredAtStartAsync();
-        var page = arcadia.Main.PanUpdate!;
+        var page = arcadia.Main.PanDialogs.PanUpdate!;
         arcadia.Press(UiAction.Back);
         Assert.Equal(PanUpdateState.Stopping, page.State);
         await RunClockUntilAsync(arcadia, () => page.State == PanUpdateState.Stuck, "Stufe 1 „Controller freigeben“");
@@ -65,7 +65,7 @@ public sealed class PanUpdateAtStartTests
         var steam = OldPan();
         using var arcadia = await StartAsync(steam);
 
-        var page = arcadia.Main.PanUpdate;
+        var page = arcadia.Main.PanDialogs.PanUpdate;
         Assert.NotNull(page);
         Assert.Equal(PanUpdatePageViewModel.NoticeTitle, page.Title);
         Assert.Equal(PanUpdatePageViewModel.NoticeHint, page.Hint);
@@ -80,7 +80,7 @@ public sealed class PanUpdateAtStartTests
         Assert.False(arcadia.Main.IsSettingsOpen);
 
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
 
         Assert.Equal(1, steam.PanUpdates);
         Assert.Equal(PanUpdatePageViewModel.UpdatedToast, arcadia.Main.Toast.Text);
@@ -101,7 +101,7 @@ public sealed class PanUpdateAtStartTests
         using (var arcadia = await StartAsync(steam))
         {
             await arcadia.PanAnsweredAtStartAsync();
-            var page = arcadia.Main.PanUpdate!;
+            var page = arcadia.Main.PanDialogs.PanUpdate!;
 
             arcadia.Press(UiAction.Back);
 
@@ -122,7 +122,7 @@ public sealed class PanUpdateAtStartTests
 
             await RunClockUntilAsync(arcadia, () => page.SecondsLeft <= 40, "der Countdown läuft");
             steam.IsPanRunning = false;
-            await RunClockUntilAsync(arcadia, () => arcadia.Main.PanUpdate is null, "die Bibliothek, sobald sich das alte Pan beendet hat");
+            await RunClockUntilAsync(arcadia, () => arcadia.Main.PanDialogs.PanUpdate is null, "die Bibliothek, sobald sich das alte Pan beendet hat");
 
             Assert.Equal(PanUpdatePageViewModel.DeclinedToast, arcadia.Main.Toast.Text);
             Assert.Equal(0, steam.PanUpdates);
@@ -130,7 +130,7 @@ public sealed class PanUpdateAtStartTests
         }
 
         using var next = await StartAsync(steam, after);
-        Assert.Null(next.Main.PanUpdate);
+        Assert.Null(next.Main.PanDialogs.PanUpdate);
         Assert.True(next.ControllerSupport.IsPanUpdateDue, "the settings still offer the update");
     }
 
@@ -144,7 +144,7 @@ public sealed class PanUpdateAtStartTests
         {
             await arcadia.PanAnsweredAtStartAsync();
             arcadia.Press(UiAction.Accept);
-            await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek ohne Pan");
+            await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.PanUpdate is null, "die Bibliothek ohne Pan");
 
             Assert.Equal(PanUpdatePageViewModel.DeclinedToast, arcadia.Main.Toast.Text);
             Assert.False(arcadia.Settings.Current.PanEnabled);
@@ -157,7 +157,7 @@ public sealed class PanUpdateAtStartTests
         using var again = await StartAsync(failed);
         await again.PanAnsweredAtStartAsync();
         again.Press(UiAction.Accept);
-        await again.WaitUntilAsync(() => again.Main.PanUpdate is null, "die Bibliothek ohne Pan");
+        await again.WaitUntilAsync(() => again.Main.PanDialogs.PanUpdate is null, "die Bibliothek ohne Pan");
 
         Assert.Equal(PanUpdatePageViewModel.FailedToast, again.Main.Toast.Text);
         Assert.False(again.Settings.Current.PanEnabled);
@@ -175,21 +175,21 @@ public sealed class PanUpdateAtStartTests
         using (var arcadia = await StartAsync(none))
         {
             await arcadia.PanAnsweredAtStartAsync();
-            Assert.Null(arcadia.Main.PanUpdate);
+            Assert.Null(arcadia.Main.PanDialogs.PanUpdate);
         }
 
         var same = new FakeSteam();
         using (var arcadia = await StartAsync(same))
         {
             await arcadia.PanAnsweredAtStartAsync();
-            Assert.Null(arcadia.Main.PanUpdate);
+            Assert.Null(arcadia.Main.PanDialogs.PanUpdate);
             Assert.Equal(0, same.PanUpdates);
         }
 
         var off = OldPan();
         using var withOff = await StartAsync(off, Chosen(panEnabled: false));
         await withOff.PanAnsweredAtStartAsync();
-        Assert.Null(withOff.Main.PanUpdate);
+        Assert.Null(withOff.Main.PanDialogs.PanUpdate);
         Assert.Equal(0, off.PanUpdates);
         Assert.False(withOff.ControllerSupport.MayTalkToPan);
 
@@ -312,19 +312,19 @@ public sealed class PanUpdateAtStartTests
         var steam = OldPan();
         steam.IsSteamRunning = true;
         using var arcadia = await StartAsync(steam);
-        var page = arcadia.Main.PanUpdate!;
+        var page = arcadia.Main.PanDialogs.PanUpdate!;
         arcadia.Press(UiAction.Accept);
         Assert.Equal(PanUpdateState.Waiting, page.State);
 
         // One dialog at a time: the notice of a firmware attempt (#295) is closed before the update's Windows prompt.
-        arcadia.Main.ShowFirmwareAttempt();
+        arcadia.Main.PanDialogs.ShowFirmwareAttempt();
         await arcadia.PanAnsweredAtStartAsync();
-        Assert.NotNull(arcadia.Main.FirmwareAttempt);
+        Assert.NotNull(arcadia.Main.PanDialogs.FirmwareAttempt);
         Assert.Equal(0, steam.PanUpdates);
 
         arcadia.Press(UiAction.Accept);
-        Assert.Null(arcadia.Main.FirmwareAttempt);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
+        Assert.Null(arcadia.Main.PanDialogs.FirmwareAttempt);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
         Assert.Equal(1, steam.PanUpdates);
     }
 
@@ -345,7 +345,7 @@ public sealed class PanUpdateAtStartTests
         Assert.Equal(0, steam.Restores);
 
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der Wiederherstellung");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.PanUpdate is null, "die Bibliothek nach der Wiederherstellung");
         Assert.Equal(1, steam.Restores);
         Assert.Equal(PanUpdatePageViewModel.RestoredToast, arcadia.Main.Toast.Text);
         Assert.False(arcadia.Settings.Current.PanEnabled);
@@ -383,7 +383,7 @@ public sealed class PanUpdateAtStartTests
         // Cleaned up by hand: the old Pan gives up and ends.
         steam.IsPanRunning = false;
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.PanUpdate is null, "die Bibliothek");
         Assert.Equal(PanUpdatePageViewModel.DeclinedToast, arcadia.Main.Toast.Text);
     }
 
@@ -428,7 +428,7 @@ public sealed class PanUpdateAtStartTests
         Assert.Equal(ControllerSupportService.PanUpdatingReason, arcadia.ControllerSupport.WhyPanIsLeftAlone);
 
         prompt.SetResult();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate?.State != PanUpdateState.Updating, "das Ende der Aktualisierung");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.PanUpdate?.State != PanUpdateState.Updating, "das Ende der Aktualisierung");
         Assert.Equal(succeeds ? null : ControllerSupportService.OldPanOffReason, arcadia.ControllerSupport.WhyPanIsLeftAlone);
     }
 
@@ -449,7 +449,7 @@ public sealed class PanUpdateAtStartTests
         Assert.Equal(ControllerSupportService.PanUpdatingReason, arcadia.ControllerSupport.WhyPanIsLeftAlone);
 
         prompt.SetResult();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate?.State != PanUpdateState.Updating, "das Ende der Aktualisierung");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.PanUpdate?.State != PanUpdateState.Updating, "das Ende der Aktualisierung");
         Assert.False(arcadia.ControllerSupport.IsPanUpdating);
         Assert.Equal(ControllerSupportService.OldPanOffReason, arcadia.ControllerSupport.WhyPanIsLeftAlone);
     }
@@ -466,7 +466,7 @@ public sealed class PanUpdateAtStartTests
         arcadia.Main.QuitRequested += (_, _) => quit++;
 
         await arcadia.PanAnsweredAtStartAsync();
-        var page = arcadia.Main.PanUpdate!;
+        var page = arcadia.Main.PanDialogs.PanUpdate!;
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => steam.PanUpdates == 1, "die Windows-Abfrage der Aktualisierung");
         Assert.Equal(PanUpdateState.Updating, page.State);
@@ -480,10 +480,10 @@ public sealed class PanUpdateAtStartTests
         Assert.Equal(1, steam.PanUpdates);
         Assert.True(arcadia.Settings.Current.PanEnabled);
         Assert.False(arcadia.Main.IsSettingsOpen);
-        Assert.Same(page, arcadia.Main.PanUpdate);
+        Assert.Same(page, arcadia.Main.PanDialogs.PanUpdate);
 
         prompt.SetResult();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der bestätigten Abfrage");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.PanUpdate is null, "die Bibliothek nach der bestätigten Abfrage");
         Assert.Equal(1, steam.PanUpdates);
     }
 
@@ -512,10 +512,10 @@ public sealed class PanUpdateAtStartTests
         Assert.Equal(0, quit);
         Assert.Equal(1, steam.Restores);
         Assert.False(arcadia.Main.IsSettingsOpen);
-        Assert.Same(page, arcadia.Main.PanUpdate);
+        Assert.Same(page, arcadia.Main.PanDialogs.PanUpdate);
 
         prompt.SetResult();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der bestätigten Abfrage");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.PanUpdate is null, "die Bibliothek nach der bestätigten Abfrage");
         Assert.Equal(1, steam.Restores);
         Assert.Equal(PanUpdatePageViewModel.RestoredToast, arcadia.Main.Toast.Text);
     }
@@ -533,7 +533,7 @@ public sealed class PanUpdateAtStartTests
 
         await arcadia.PanAnsweredAtStartAsync();
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.PanUpdate is null, "die Bibliothek nach der Aktualisierung");
 
         Assert.Equal(1, steam.PanUpdates);
         Assert.Equal(0, steam.DriverInstalls);

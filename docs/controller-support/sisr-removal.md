@@ -53,4 +53,4 @@ administrator rights; usbip-win2 stays (Pan needs it), and so do the per-game mo
   (`EmulationParts.SisrRunning`), also with the group hidden; settings-only, never in the header.
 - The old settings `SteamControllerSupport` and `LastSisrUpdateCheck` are ignored on load and dropped at the next save;
   `ControllerSupportOverrides` stays.
-- The uninstall still asks about SISR with the other parts ([pan-setup.md](pan-setup.md)).
+- The uninstall still asks about SISR with the other parts ([pan-uninstall.md](pan-uninstall.md)).

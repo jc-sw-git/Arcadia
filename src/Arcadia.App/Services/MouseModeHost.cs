@@ -196,7 +196,7 @@ public sealed class MouseModeHost : IDisposable
             return;
         }
 
-        if (_viewModel.IsWebSignInOpen && _viewModel.UsesController && !_heldForWebPage)
+        if (_viewModel.IsWebSignInOpen && _viewModel.Input.UsesController && !_heldForWebPage)
         {
             _heldForWebPage = true;
             _keyboardForWebPage = !_mode.IsKeyboardOpen;

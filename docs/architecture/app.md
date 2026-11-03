@@ -15,7 +15,11 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
 - `MainViewModel` routes each press to the topmost layer (first start or settings, else a dialog, else the page on
   top; what a page leaves, ≡ and X, opens the settings or the search), keeps the rules between pages, holds the
   dialogs and wires the parts (#155, #210). It runs one lifecycle for every page (`OnPagesChanged`: top change, closed
-  pages disposed; contract on `IPage`).
+  pages disposed; contract on `IPage`). The controller and Pan parts are its own view models, which Main only wires
+  and routes to: `InputInUseViewModel` (input kind and controller in use, the hints' printing and the dialogs' ✕,
+  #127, #215), `ControllerModeViewModel` (the per-game Steam Controller mode, whether Pan's emulation runs, the way
+  to the controller settings; host `IControllerModeHost`, #213, #242) and `PanDialogsViewModel` (Pan's firmware
+  notice and update page over everything, #295, #326).
 - Pages are `IPage`s and ask Main through `IPageHost` to close, show a game's menu or the shared filter dialog.
 - `LibraryViewModel`: the cover grid of the selected tab, its pages, focus, view and sort, drawn in
   `TileSlotViewModel` places that keep their controls when page or tab change (#229), and `EmptyTabViewModel` for a
@@ -51,8 +55,13 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
   - `SettingsPageViewModel` (categories, LB/RB, B), one `SettingsCategoryViewModel` per category; a new category is a
     subclass added in `MainViewModel.ShowSettings`.
   - `LauncherSettingsViewModel` with `LauncherRowViewModel`s and its `ILauncherSettingsHost` (#136), and a page per
-    launcher (#137) with the rows in `Settings/LauncherPageRows.cs` (`LauncherPageHeadViewModel`, `LauncherActiveRowViewModel`), its Steam Controller default `LauncherControllerModeRowViewModel` and the
-    reset's `SettingsQuestionViewModel` as its `Dialog` (#178); `ControllerSettingsViewModel` (`PanRows`, `SisrRows`, the Steam prompts as
+    launcher (#137). It only routes the input and puts the rows together; its parts get what they need through
+    `ILauncherCategory`: `LauncherOrder` (on/off, lifting and dragging), `LauncherRowStates` (a list row's state and
+    info), and per page group `LauncherAccountRow`, `LauncherGeneralRows` (name, keyword, logo), `LauncherLibraryRows`
+    (folder, library switches, rescan) and `LauncherControllerRows` (Steam Controller default, its reset's
+    `SettingsQuestionViewModel` as `Dialog` (#178), Steam's desktop layout). The page's own row types are in
+    `Settings/LauncherPageRows.cs` (`LauncherPageHeadViewModel`, `LauncherActiveRowViewModel`,
+    `LauncherControllerModeRowViewModel`); `ControllerSettingsViewModel` (`PanRows`, `SisrRows`, the Steam prompts as
     its `Dialog`); `AboutSettingsViewModel`.
   - Rows (`SettingsRowViewModel`): `ChoiceRowViewModel`, `SwitchRowViewModel`, `ActionRowViewModel`,
     `InfoRowViewModel`, `TextRowViewModel` with `TextEditorViewModel` (a text written with the on-screen keyboard and
@@ -69,7 +78,7 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
 `Controls/`: `LauncherLogo` (draws a `LauncherBadge`: logo, picture or letter tile, wherever a launcher is named),
 `ButtonTextBlock` (buttons drawn framed inside a text), `KeyHint`/`KeyText` (a hint or label showing the controller's
 button or the keyboard's key, after `Input/InputHints`), `PadGlyph` (one controller button in the printing of the
-controller in use, `InputHints.Symbols` from `MainViewModel.ButtonSymbols`, #215), `HoldRing`, `RevealPanel` (the
+controller in use, `InputHints.Symbols` from `InputInUseViewModel.ButtonSymbols`, #215), `HoldRing`, `RevealPanel` (the
 sliding keyboard), `SharedWidthRow` and `CollapsingStack` (the shrinking chips), `CentredDockPanel` (a key's name
 centred between icon and button), `ScreenEdgeFill`. `Input/GamepadRouting` takes the controller's buttons to
 `MainViewModel`, ⧉/≡ through `SoloButtons`, and tells it the controller in use (`ControllerInUse`).

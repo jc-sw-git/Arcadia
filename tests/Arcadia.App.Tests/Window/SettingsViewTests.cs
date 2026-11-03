@@ -389,11 +389,11 @@ public sealed class SettingsViewTests
             new AppSettings { ActiveLaunchers = ["steam", "gog"], PanEnabled = true });
         arcadia.Arcadia.Sdl.Plug(Arcadia.Tests.Sdl.KnownPads.SteamController);
         arcadia.Arcadia.StartControllers();
-        Assert.True(arcadia.Arcadia.Main.ShowControllerSupport, "der Steam Controller ist erkannt");
+        Assert.True(arcadia.Arcadia.Main.ControllerMode.ShowControllerSupport, "der Steam Controller ist erkannt");
         arcadia.Settle();
 
         var mode = Assert.Single(arcadia.Window.GetVisualDescendants().OfType<Button>(), button => button.Classes.Contains("modeValue") && button.IsEffectivelyVisible
-            && button.Command == arcadia.Arcadia.Main.CycleControllerSupportCommand);
+            && button.Command == arcadia.Arcadia.Main.ControllerMode.CycleControllerSupportCommand);
         Assert.Equal("Standard (Steam-Eingabe)", Text(mode));
         arcadia.Click(mode);
         Assert.Equal(ControllerModes.Arcadia, Text(mode));

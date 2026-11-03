@@ -72,9 +72,9 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
 
     public override bool CanChange => HasSwitch;
 
-    public override string PreviewTitle => LauncherSettingsViewModel.OrderPreviewTitle;
+    public override string PreviewTitle => LauncherTexts.OrderPreviewTitle;
 
-    public override string PreviewSubtitle => LauncherSettingsViewModel.OrderPreviewSubtitle;
+    public override string PreviewSubtitle => LauncherTexts.OrderPreviewSubtitle;
 
     public override string InfoTitle => "LAUNCHER-DETAILS";
 

@@ -7,13 +7,13 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace Arcadia.App.ViewModels;
 
 /// <summary>The right end of the header: clock, Steam Controller status and the Arcadia update symbol.</summary>
-public partial class StatusBarViewModel : ViewModelBase
+public partial class StatusBarViewModel : ViewModelBase, IDisposable
 {
     private readonly ControllerSupportService _controllerSupport;
     private readonly ArcadiaUpdateService _updates;
     private readonly TimeProvider _time;
 
-    // Kept so it isn't collected; it ticks for as long as Arcadia runs.
+    // Kept so it isn't collected; it ticks until the window is disposed.
     private readonly ITimer _clock;
 
     private static readonly TimeSpan ClockInterval = TimeSpan.FromSeconds(1);
@@ -28,8 +28,8 @@ public partial class StatusBarViewModel : ViewModelBase
         _controllerSupport = controllerSupport;
         _updates = updates;
         _time = time;
-        _controllerSupport.Changed += (_, _) => Dispatcher.UIThread.Post(UpdateControllerSupportState);
-        _updates.Changed += (_, _) => Dispatcher.UIThread.Post(UpdateArcadiaUpdateState);
+        _controllerSupport.Changed += OnControllerSupportChanged;
+        _updates.Changed += OnUpdatesChanged;
         UpdateClock();
         _clock = time.CreateTimer(_ => Dispatcher.UIThread.Post(UpdateClock, DispatcherPriority.Background), null, ClockInterval, ClockInterval);
         UpdateControllerSupportState();
@@ -73,6 +73,19 @@ public partial class StatusBarViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string Date { get; private set; } = string.Empty;
+
+    /// <summary>Stops the clock and lets go of the services, which outlive the window in the tests.</summary>
+    public void Dispose()
+    {
+        _clock.Dispose();
+        _controllerSupport.Changed -= OnControllerSupportChanged;
+        _updates.Changed -= OnUpdatesChanged;
+        GC.SuppressFinalize(this);
+    }
+
+    private void OnControllerSupportChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(UpdateControllerSupportState);
+
+    private void OnUpdatesChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(UpdateArcadiaUpdateState);
 
     private void UpdateClock()
     {

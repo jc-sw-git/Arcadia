@@ -39,7 +39,7 @@ public sealed class ButtonSymbolsTests
         arcadia.Settle();
         var symbols = ButtonSymbolSets.For(Pad(type).Type);
 
-        Assert.Equal(symbols, arcadia.Arcadia.Main.ButtonSymbols);
+        Assert.Equal(symbols, arcadia.Arcadia.Main.Input.ButtonSymbols);
         Assert.Contains(arcadia.FooterHints(), hint => hint.StartsWith(confirm + " ", StringComparison.Ordinal));
         Assert.Contains(arcadia.FooterHints(), hint => hint.StartsWith(tabs + " ", StringComparison.Ordinal));
         Assert.Contains(arcadia.FooterHints(), hint => hint == options + " Optionen");
@@ -114,13 +114,13 @@ public sealed class ButtonSymbolsTests
         withPad.Arcadia.Sdl.Plug(KnownPads.SwitchPro);
         withPad.Arcadia.StartControllers();
         withPad.Settle();
-        Assert.True(withPad.Arcadia.Main.UsesController);
-        Assert.Equal(ButtonSymbols.Nintendo, withPad.Arcadia.Main.ButtonSymbols);
+        Assert.True(withPad.Arcadia.Main.Input.UsesController);
+        Assert.Equal(ButtonSymbols.Nintendo, withPad.Arcadia.Main.Input.ButtonSymbols);
 
         using var restarted = await withPad.RestartAsync();
         restarted.Arcadia.StartControllers();
         restarted.Settle();
-        Assert.False(restarted.Arcadia.Main.UsesController, "without a controller the hints show the keyboard");
+        Assert.False(restarted.Arcadia.Main.Input.UsesController, "without a controller the hints show the keyboard");
         Assert.All(ArcadiaWindow.Glyphs(restarted.Window), glyph => Assert.IsNotType<PadGlyph>(glyph));
         Assert.Contains(restarted.FooterHints(), hint => hint.StartsWith("Leertaste", StringComparison.Ordinal));
     }
@@ -136,7 +136,7 @@ public sealed class ButtonSymbolsTests
 
         arcadia.Arcadia.StartControllers();
         arcadia.Settle();
-        Assert.False(arcadia.Arcadia.Main.UsesController);
+        Assert.False(arcadia.Arcadia.Main.Input.UsesController);
         Assert.All(ArcadiaWindow.Glyphs(arcadia.Window), glyph => Assert.IsNotType<PadGlyph>(glyph));
         Assert.Contains(arcadia.FooterHints(), hint => hint.StartsWith("Leertaste", StringComparison.Ordinal));
     }
@@ -161,24 +161,24 @@ public sealed class ButtonSymbolsTests
         arcadia.Arcadia.PollControllers();
         arcadia.Settle();
         Assert.Contains("B", ConfirmHints(arcadia));
-        Assert.True(arcadia.Arcadia.Main.UsesController);
+        Assert.True(arcadia.Arcadia.Main.Input.UsesController);
 
         arcadia.Arcadia.Sdl.Unplug(switchPro);
         arcadia.Arcadia.PollControllers();
         arcadia.Settle();
-        Assert.False(arcadia.Arcadia.Main.UsesController);
+        Assert.False(arcadia.Arcadia.Main.Input.UsesController);
         Assert.All(ArcadiaWindow.Glyphs(arcadia.Window), glyph => Assert.IsNotType<PadGlyph>(glyph));
 
         var xbox = arcadia.Arcadia.Sdl.Plug(KnownPads.XboxSeries);
         arcadia.Arcadia.PollControllers().PollControllers();
         arcadia.Settle();
-        Assert.False(arcadia.Arcadia.Main.UsesController, "a controller plugged in changes nothing until it is used");
-        Assert.Equal(ButtonSymbols.Nintendo, arcadia.Arcadia.Main.ButtonSymbols);
+        Assert.False(arcadia.Arcadia.Main.Input.UsesController, "a controller plugged in changes nothing until it is used");
+        Assert.Equal(ButtonSymbols.Nintendo, arcadia.Arcadia.Main.Input.ButtonSymbols);
 
         arcadia.Arcadia.PressOn(xbox, B.DPadLeft);
         arcadia.Settle();
-        Assert.True(arcadia.Arcadia.Main.UsesController);
-        Assert.Equal(ButtonSymbols.Xbox, arcadia.Arcadia.Main.ButtonSymbols);
+        Assert.True(arcadia.Arcadia.Main.Input.UsesController);
+        Assert.Equal(ButtonSymbols.Xbox, arcadia.Arcadia.Main.Input.ButtonSymbols);
     }
 
     /// <summary>T215-6: on a Nintendo pad the bottom button is printed B, and it still confirms.</summary>

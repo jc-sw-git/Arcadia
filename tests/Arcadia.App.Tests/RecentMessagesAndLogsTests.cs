@@ -483,6 +483,25 @@ public sealed class RecentMessagesAndLogsTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T433-23")]
+    public async Task Pan_installed_on_the_Controller_page_makes_its_log_active_when_RB_leads_back_to_Ueber_Arcadia()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        OpenAbout(arcadia);
+        Assert.True(Row(arcadia, "logging-log-pan").IsDimmed);
+
+        // The same settings page: RB moves between the categories it already built.
+        arcadia.Press(UiAction.PreviousTab);
+        Assert.Equal("Controller", arcadia.Main.Settings!.Selected.Name);
+        arcadia.Logs.States[LogKind.Pan] = LogFileState.Present;
+        arcadia.Press(UiAction.NextTab);
+
+        Assert.Equal("Über Arcadia", arcadia.Main.Settings!.Selected.Name);
+        Assert.False(Row(arcadia, "logging-log-pan").IsDimmed);
+        Assert.True(Row(arcadia, "logging-log-pan").CanActivate);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T433-24")]
     public async Task A_log_Windows_cannot_open_is_an_error_toast_and_entry_and_asks_for_no_mouse_mode()
     {

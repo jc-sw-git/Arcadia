@@ -57,6 +57,21 @@ public interface IControllerSupportPlatform
 
     /// <summary>Problems with what Arcadia's own pad depends on: the usbip driver and Pan (#243).</summary>
     IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now);
+
+    /// <summary>
+    /// A driver change waits for the PC's restart (#407): HidHide or usbip-win2 was uninstalled, or usbip-win2 was
+    /// installed since the PC started. An install before the restart would meet a half removed or half set up driver.
+    /// </summary>
+    bool DriverChangePending(AppSettings settings, DateTimeOffset now) => false;
+
+    /// <summary>
+    /// A controller's firmware may be flashed now (#407): a Steam Controller or puck is in its bootloader, or a vendor's
+    /// firmware tool runs (<see cref="ControllerList.FirmwareTools"/>). An install restarts the puck and controllers.
+    /// </summary>
+    bool FirmwareUpdateRuns => false;
+
+    /// <summary>A Steam Controller (by cable) or its puck is plugged in (#407).</summary>
+    bool SteamControllerPlugged => false;
 }
 
 /// <summary>The real Windows.</summary>
@@ -143,6 +158,34 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
     /// </summary>
     public static bool HidHideNeedsInstaller(Version? installed) =>
         installed is null || (installed.Major <= SteamControllerHiding.SupportedMajorVersion && !HidHideRelease.IsSupported(installed));
+
+    public bool DriverChangePending(AppSettings settings, DateTimeOffset now) =>
+        OperatingSystem.IsWindows()
+        && (HidHideRemovalPending || UsbipDriver.IsRemovalPending() || settings.UsbipInstalledAt is { } installedAt && installedAt > LastBootTime(now));
+
+    public bool FirmwareUpdateRuns =>
+        OperatingSystem.IsWindows()
+        && (FirmwareToolRuns() || ValveBootloaders.Present());
+
+    /// <summary>One snapshot of the process list for all the tools' names, not one per name.</summary>
+    private static bool FirmwareToolRuns()
+    {
+        var processes = Process.GetProcesses();
+        try
+        {
+            var running = processes.Select(process => process.ProcessName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return ControllerList.FirmwareTools.Any(tool => tool.ProcessNames.Any(running.Contains));
+        }
+        finally
+        {
+            foreach (var process in processes)
+            {
+                process.Dispose();
+            }
+        }
+    }
+
+    public bool SteamControllerPlugged => OperatingSystem.IsWindows() && Copy.WindowsPuck.Present() is not null;
 
     public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) =>
         OperatingSystem.IsWindows() ? PanSetup.RestoreAsync(cancellationToken) : Task.FromResult(false);

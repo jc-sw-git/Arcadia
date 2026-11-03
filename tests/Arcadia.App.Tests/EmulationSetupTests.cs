@@ -37,6 +37,15 @@ public sealed class EmulationSetupTests
         arcadia.Press(UiAction.Accept);
     }
 
+    /// <summary>"Treiber installieren" with every part missing asks first what it installs (#407).</summary>
+    private static void ConfirmDriversInstall(ArcadiaDriver arcadia, ControllerSettingsViewModel controller)
+    {
+        Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);
+        Assert.Equal(ControllerSettingsViewModel.DriversInstallTitle, controller.SteamStopTitle);
+        Assert.Equal(ControllerSettingsViewModel.DriversInstallText, controller.SteamStopText);
+        arcadia.Press(UiAction.Accept);
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T243-32")]
     public async Task A_missing_HidHide_greys_out_the_switch_and_its_row_installs_it()
@@ -186,7 +195,7 @@ public sealed class EmulationSetupTests
         Assert.Equal(HealthSeverity.Warning, controller.Marker);
 
         pan.Activate();
-        ConfirmHidHideInstall(arcadia, controller);
+        ConfirmDriversInstall(arcadia, controller);
         await arcadia.WaitUntilAsync(() => Switch(controller).IsSwitch, "eingerichtet");
 
         Assert.Equal(1, steam.DriverInstalls);
@@ -207,7 +216,7 @@ public sealed class EmulationSetupTests
         await arcadia.WaitUntilAsync(() => Switch(controller).IsInstall, "„Treiber installieren“ an der Einstellung");
 
         Switch(controller).Activate();
-        ConfirmHidHideInstall(arcadia, controller);
+        ConfirmDriversInstall(arcadia, controller);
         await arcadia.WaitUntilAsync(() => controller.Rows.OfType<ActionRowViewModel>().Any(row => row.HasProblem), "der Fehler an einer Zeile");
 
         // VIIPER needs no Windows prompt and came before it: the rest is three parts with one error, at the first.
@@ -219,6 +228,116 @@ public sealed class EmulationSetupTests
         var pan = Switch(controller);
         Assert.False(pan.HasProblem);
         Assert.Equal(ProblemText, pan.Subtitle);
+    }
+
+    /// <summary>
+    /// #407 (owner's rc.2 test): Arcadia uninstalled with its drivers, installed again before the PC restarted. The
+    /// install would meet the half removed HidHide, so "Treiber installieren" is greyed out until the restart.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T407-2")]
+    public async Task While_a_driver_change_waits_for_the_restart_Treiber_installieren_is_greyed_out_and_says_why()
+    {
+        var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideRemovalPending = true };
+        steam.Viiper.IsInstalled = false;
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:install-restart-pending"), "die Zeile „Windows-Neustart ausstehend“");
+        var pan = Switch(controller);
+        Assert.True(pan.IsInstall);
+        Assert.True(pan.IsLocked);
+        Assert.True(pan.IsDimmed);
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:install-restart-pending"));
+        Assert.Equal("Windows-Neustart ausstehend", row.Title);
+        Assert.Equal("Treiberänderungen stehen noch aus", row.Subtitle);
+        Assert.True(row.IsInfo);
+        Assert.Equal(string.Empty, row.ActionText);
+        Assert.Equal(row.Key, controller.PanWarningKey);
+
+        pan.Activate();
+        Assert.Equal(SettingsPrompt.None, controller.Prompt);
+        Assert.Equal(0, steam.DriverInstalls);
+
+        // After the restart HidHide is gone: every part is missing and nothing waits any more.
+        steam.HidHideRemovalPending = false;
+        steam.HidHideVersion = null;
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => !Switch(controller).IsLocked, "„Treiber installieren“ wieder wählbar");
+        Assert.DoesNotContain(controller.Rows, row => row.Key == "issue:install-restart-pending");
+        Switch(controller).Activate();
+        ConfirmDriversInstall(arcadia, controller);
+        await arcadia.WaitUntilAsync(() => Switch(controller).IsSwitch, "eingerichtet");
+        Assert.Equal(1, steam.DriverInstalls);
+    }
+
+    /// <summary>#407: an install restarts the puck and controllers, so it waits while a firmware update runs.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T407-3")]
+    public async Task While_a_firmware_update_runs_Treiber_installieren_is_greyed_out_and_says_why()
+    {
+        var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideVersion = null, FirmwareUpdateRuns = true };
+        steam.Viiper.IsInstalled = false;
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:install-firmware-update"), "die Zeile „Controller-Update wird durchgeführt“");
+        Assert.True(Switch(controller).IsLocked);
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:install-firmware-update"));
+        Assert.Equal("Controller-Update wird durchgeführt", row.Title);
+        Assert.Equal("Treiber kann während eines Firmware-Updates nicht installiert werden", row.Subtitle);
+        Assert.True(row.IsInfo);
+        Assert.DoesNotContain(controller.Rows, row => row.Key == "issue:install-restart-pending");
+
+        steam.FirmwareUpdateRuns = false;
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => !Switch(controller).IsLocked, "„Treiber installieren“ wieder wählbar");
+        Assert.DoesNotContain(controller.Rows, row => row.Key == "issue:install-firmware-update");
+    }
+
+    /// <summary>#407: a row's "Installieren" (Pan on, one part missing) doesn't run during a firmware update either.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T407-3")]
+    public async Task During_a_firmware_update_a_rows_install_stops_before_the_Windows_prompt()
+    {
+        var steam = new FakeSteam { HidHideVersion = null, FirmwareUpdateRuns = true };
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Zeile „HidHide fehlt“");
+
+        Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).Activate();
+        ConfirmHidHideInstall(arcadia, controller);
+        await arcadia.WaitUntilAsync(() => controller.Rows.OfType<ActionRowViewModel>().Any(row => row.HasProblem), "der Fehler an der Zeile");
+
+        Assert.Equal(0, steam.DriverInstalls);
+        Assert.Equal(ControllerSupportService.FirmwareUpdateBlocksInstallText, controller.Rows.OfType<ActionRowViewModel>().Single(row => row.HasProblem).Problem);
+    }
+
+    /// <summary>#407: "Treiber installieren?" names the puck's restart only when a Steam Controller or puck is plugged in.</summary>
+    [AvaloniaTheory]
+    [Trait("TestCase", "T407-4")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Treiber_installieren_asks_first_and_names_the_puck_only_when_one_is_plugged_in(bool plugged)
+    {
+        var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideVersion = null, SteamControllerPlugged = plugged };
+        steam.Viiper.IsInstalled = false;
+        var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
+        using var _ = arcadia;
+        await arcadia.WaitUntilAsync(() => Switch(controller).IsInstall && !Switch(controller).IsLocked, "„Treiber installieren“ an der Einstellung");
+
+        Switch(controller).Activate();
+
+        Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);
+        Assert.Equal("Treiber installieren?", controller.SteamStopTitle);
+        Assert.Contains("Nach der Installation ist ein Neustart des PCs empfohlen.", controller.SteamStopText);
+        Assert.Equal(plugged, controller.SteamStopDetail.Contains(ControllerSettingsViewModel.PuckRestartText, StringComparison.Ordinal));
+        Assert.Equal("Installieren", controller.ConfirmSteamStopText);
+
+        // B goes back: nothing installed.
+        arcadia.Press(UiAction.Back);
+        Assert.Equal(SettingsPrompt.None, controller.Prompt);
+        Assert.Equal(0, steam.DriverInstalls);
     }
 
     /// <summary>#402: a fresh install has none of Pan's parts, Pan is off, and the one thing shown is the install button.</summary>
@@ -269,7 +388,7 @@ public sealed class EmulationSetupTests
         await arcadia.WaitUntilAsync(() => Switch(controller).IsInstall, "„Treiber installieren“ an der Einstellung");
 
         Switch(controller).Activate();
-        ConfirmHidHideInstall(arcadia, controller);
+        ConfirmDriversInstall(arcadia, controller);
         await arcadia.WaitUntilAsync(() => Switch(controller).IsSwitch, "eingerichtet");
 
         Assert.Equal(1, steam.DriverInstalls);
@@ -347,6 +466,7 @@ public sealed class EmulationSetupTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T243-41")]
+    [Trait("TestCase", "T407-2")]
     public async Task An_uninstalled_HidHide_waiting_for_the_restart_says_so_and_offers_no_install()
     {
         // Owner's B2 test (2026-10-27): until the restart HidHide's service and driver file stay, so its version read as
@@ -360,7 +480,9 @@ public sealed class EmulationSetupTests
         await arcadia.TickControllerSupportAsync();
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-removal-pending"));
         Assert.Equal("HidHide: Neustart ausstehend", row.Title);
-        Assert.Equal("Windows entfernt HidHide beim nächsten Neustart", row.Subtitle);
+        // #407: says what happened and what comes after the restart.
+        Assert.Equal("HidHide wurde deinstalliert, Windows entfernt es beim Neustart", row.Subtitle);
+        Assert.Contains(row.Info, block => block is InfoText { Text: var text } && text.Contains("Nach dem Neustart bietet Arcadia hier „Installieren“ an.", StringComparison.Ordinal));
         Assert.Equal(string.Empty, row.ActionText);
         // Nothing to do but restart: the blue i (#242).
         Assert.True(row.IsInfo);
@@ -373,6 +495,7 @@ public sealed class EmulationSetupTests
         await arcadia.TickControllerSupportAsync();
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Meldung „HidHide fehlt“");
         Assert.DoesNotContain(controller.Rows, row => row.Key == "issue:hidhide-removal-pending");
+        Assert.Equal("Installieren", Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).ActionText);
     }
 
     [AvaloniaFact]

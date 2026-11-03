@@ -39,6 +39,23 @@ public static class UsbipDriver
         return null;
     }
 
+    /// <summary>
+    /// usbip-win2 was uninstalled and Windows removes its driver only at the next restart (#407): Windows marks such a
+    /// service with <c>DeleteFlag</c>, as for HidHide (<see cref="HidHideWire.RemovalPending"/>).
+    /// </summary>
+    public static bool IsRemovalPending()
+    {
+        try
+        {
+            using var service = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{ControllerService}");
+            return service is not null && HidHideWire.RemovalPending(service.GetValue("DeleteFlag") as int?, null, null);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>The command of usbip-win2's own uninstaller, or null if it isn't installed.</summary>
     public static string? UninstallCommand() =>
         UninstallEntries().Select(e => e.UninstallString).FirstOrDefault(c => !string.IsNullOrWhiteSpace(c));

@@ -57,11 +57,12 @@ every teardown trigger). What the client emulates for them: [every-controller.md
 
 ## Firmware tools (#238 D8)
 
-- While Xbox Accessories (Microsoft's pads) or Sony's DualSense firmware updater (Sony's pads) runs, Pan hides nothing
+- While Xbox Accessories (Microsoft's pads) or PlayStation Accessories (Sony's pads) runs, Pan hides nothing
   of that vendor, also at an arrival, and answers `FirmwareToolRuns`. A tool started while a pad is hidden doesn't
   show it; the client shows it by `ShowController` (excluded) or Pan off.
-- Process names in `ControllerList.FirmwareTools` (`XboxDevices`, `XboxAccessories`; `FWupdater`,
-  `FWupdaterDualSense`), not yet confirmed on a real install (T335-5).
+- Process names in `ControllerList.FirmwareTools` (`XboxDevices`, `XboxAccessories`; `PlayStationAccessories`,
+  confirmed on the owner's PC, and the older updater's `FWupdater`, `FWupdaterDualSense`). Xbox's names are not yet
+  confirmed on a real install (T335-5).
 
 ## Showing again
 

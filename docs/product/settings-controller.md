@@ -13,7 +13,11 @@ The page and its status messages: [settings.md](settings.md).
   werden von Arcadia verwaltet" (green), "Wird eingerichtet …", "Bereit – kein Controller verbunden" (grey),
   "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter." (yellow), "Angehalten – der Grund steht darunter"
   (red). Every part missing: the row offers "Treiber installieren" ("Wird installiert …", after a failure "Erneut
-  versuchen" with the red X and the error in the info panel). While a game runs or starts the switch is greyed out:
+  versuchen" with the red X and the error in the info panel). It is greyed out, with a row below (blue i) saying why,
+  while a driver change waits for the PC's restart ("Windows-Neustart ausstehend": HidHide or usbip-win2 uninstalled,
+  usbip-win2 installed since the PC started; the text names no driver) or a controller's firmware is flashed
+  ("Controller-Update wird durchgeführt": a Steam Controller or puck in its bootloader, Xbox Zubehör or PlayStation
+  Accessories open). A row's "Installieren" fails with a message during a firmware update. While a game runs or starts the switch is greyed out:
   "Erst änderbar, wenn „…“ beendet ist". Off Windows: "Auf diesem System noch nicht verfügbar". Its info panel says
   the mode is chosen per launcher on its page and changed per game in its details.
 - Below it, indented, one row per reason: a missing part (usbip, VIIPER, Pan, HidHide: a warning row with
@@ -23,21 +27,25 @@ The page and its status messages: [settings.md](settings.md).
   "HidHide-Konfiguration ist geöffnet … Bitte schließe sie", asked only while the settings are open; an old HidHide:
   "HidHide-Version wird nicht unterstützt" with "Aktualisieren"), "Steam Controller lässt sich nicht verstecken",
   "Emulation startet nicht", "Emulation angehalten" with "Erneut versuchen"; "Windows-Neustart ausstehend", "HidHide:
-  Neustart ausstehend" and "Pan räumt noch auf" carry the blue i. "Controller wiederherstellen" (Pan's `--restore`)
+  Neustart ausstehend" and "Pan räumt noch auf" carry the blue i. The uninstall ends with a message to restart the PC
+  when a driver it removed waits for the restart. "Controller wiederherstellen" (Pan's `--restore`)
   stands below the problems, indented like them, while Pan is installed, also while the switch is off.
 - Controllers Arcadia saw right before a hide and doesn't see again within 5 s (#396; HidHide installed while Arcadia
   ran): the emulation ends, Pan shows them, a toast says so, and nothing is hidden until Arcadia restarts, also after
   switching Pan off and on. The row "Arcadia sieht deine Controller nicht mehr" (yellow triangle, the switch's lamp
   yellow) lists them in the box "NICHT MEHR SICHTBAR FÜR ARCADIA", ends with "Kommt diese Meldung nach dem Neustart von
   Arcadia wieder, starte Windows neu.", and offers "Arcadia neu starten".
-- Every install that runs HidHide's installer ("Installieren", "Aktualisieren", "Neu installieren", "Treiber
-  installieren") asks "HidHide installieren?" first, also without Steam running: Arcadia restarts once afterwards, as
+- "Treiber installieren" asks "Treiber installieren?" first: it names the third-party parts, the one Windows prompt
+  and that a restart of the PC is recommended afterwards; below, Steam closing, Arcadia's restart after HidHide, and the
+  puck's restart only while a Steam Controller or puck is plugged in.
+- Every other install that runs HidHide's installer ("Installieren", "Aktualisieren", "Neu installieren") asks
+  "HidHide installieren?" first, also without Steam running: Arcadia restarts once afterwards, as
   only a new Arcadia sees what Pan hides; with Steam running the same dialog says Steam closes ("Steam beenden und
   installieren"). After the install Pan hides nothing until Arcadia has restarted, which it does by itself; if that
   fails, the row "Arcadia startet nach der HidHide-Installation neu" (blue i) offers "Arcadia neu starten". No Windows
   restart is needed for this.
 - Every other controller (#238, designs T238F05–F07), only while the emulation runs: one warning per firmware tool that
-  runs, "Xbox Zubehör ist geöffnet" / "DualSense-Firmware-Updater ist geöffnet" (subtitle "Arcadia übernimmt den …,
+  runs, "Xbox Zubehör ist geöffnet" / "PlayStation Accessories ist geöffnet" (subtitle "Arcadia übernimmt den …,
   sobald du … schließt", box "WARTET AUF ÜBERNAHME"), gone once the tool has ended; then, with the blue i, one row for
   the connected controllers Pan couldn't hide: "<Name> lässt sich nicht verstecken" / "<n> Controller lassen sich nicht
   verstecken", box "BETROFFEN" with each name and why. Not shown while Pan is off (the player chose that).

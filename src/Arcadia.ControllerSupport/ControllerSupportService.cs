@@ -262,11 +262,14 @@ public sealed class ControllerSupportService
 
             // Pan's HidHide states are asked only while the settings are open, so they go with them: "Bitte schließe
             // sie" must not stay in the header after the user closed HidHide's configuration (QE review of PR #264).
-            var issues = WatchSetup || !_driversChecked
+            var checkParts = WatchSetup || !_driversChecked;
+            var issues = checkParts
                 ? await CheckEmulationPartsAsync(cancellationToken)
                 : Issues.Where(issue => !EmulationParts.IsSettingsOnly(issue)).ToList();
             _driversChecked = true;
-            if (!issues.SequenceEqual(Issues) || sisrChanged)
+            // Process list, device list and HID enumeration: only when the parts are checked, not beside a game.
+            var installStateChanged = checkParts && UpdateInstallState(issues);
+            if (!issues.SequenceEqual(Issues) || sisrChanged || installStateChanged)
             {
                 Issues = issues;
                 OnChanged();
@@ -277,6 +280,9 @@ public sealed class ControllerSupportService
             Volatile.Write(ref _ticking, 0);
         }
     }
+
+    public const string FirmwareUpdateBlocksInstallText =
+        "Während ein Firmware-Update deiner Controller läuft, lassen sich keine Treiber installieren. Schließe das Update ab und versuche es dann erneut.";
 
     public const string DriversBusyText = "Treiber werden installiert – bitte die Windows-Abfrage bestätigen …";
 
@@ -297,6 +303,13 @@ public sealed class ControllerSupportService
     /// </summary>
     private async Task InstallDriversAsync(CancellationToken cancellationToken)
     {
+        // Also behind the rows' "Installieren" (#407): an install restarts the puck and controllers, which could cut a
+        // firmware update off. Checked fresh; a failed check doesn't block, Pan refuses to hide during a flash anyway.
+        if (SafeCheck(() => _platform.FirmwareUpdateRuns, "ob ein Firmware-Update läuft"))
+        {
+            throw new InvalidOperationException(FirmwareUpdateBlocksInstallText);
+        }
+
         if (Viiper is { IsInstalled: false } own)
         {
             SetBusyText("VIIPER wird installiert …");
@@ -641,6 +654,7 @@ public sealed class ControllerSupportService
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
         Issues = IsSupportedPlatform ? await CheckEmulationPartsAsync(cancellationToken) : [];
+        UpdateInstallState(Issues);
         _panInstalled = CheckPanInstalled();
         Sisr.Refresh(IsSupportedPlatform);
         OnChanged();
@@ -676,6 +690,47 @@ public sealed class ControllerSupportService
         }
 
         return EmulationParts.InRowOrder(issues);
+    }
+
+    /// <summary>
+    /// What keeps "Treiber installieren" from running now (#407), as rows: a driver change waiting for the PC's restart, a
+    /// controller's firmware update. Checked while every part is missing (only then is the button there), else empty.
+    /// </summary>
+    public IReadOnlyList<HealthIssue> InstallBlockers { get; private set; } = [];
+
+    /// <summary>A Steam Controller or its puck is plugged in; checked like <see cref="InstallBlockers"/> (#407).</summary>
+    public bool SteamControllerPlugged { get; private set; }
+
+    /// <summary>True if <see cref="InstallBlockers"/> or <see cref="SteamControllerPlugged"/> changed.</summary>
+    private bool UpdateInstallState(IReadOnlyList<HealthIssue> issues)
+    {
+        var allMissing = IsSupportedPlatform && EmulationParts.AllMissing(issues);
+        var blockers = allMissing ? CheckInstallBlockers() : [];
+        var plugged = allMissing && SafeCheck(() => _platform.SteamControllerPlugged, "ob ein Steam Controller angeschlossen ist");
+        var changed = !blockers.SequenceEqual(InstallBlockers) || plugged != SteamControllerPlugged;
+        InstallBlockers = blockers;
+        SteamControllerPlugged = plugged;
+        return changed;
+    }
+
+    private List<HealthIssue> CheckInstallBlockers() =>
+    [
+        .. SafeCheck(() => _platform.DriverChangePending(Settings, _time.GetUtcNow()), "ob Treiberänderungen ausstehen") ? [EmulationParts.DriverChangesPending] : Array.Empty<HealthIssue>(),
+        .. SafeCheck(() => _platform.FirmwareUpdateRuns, "ob ein Firmware-Update läuft") ? [EmulationParts.FirmwareUpdateRuns] : Array.Empty<HealthIssue>(),
+    ];
+
+    /// <summary>A check that fails counts as false and is logged: the install itself checks the firmware again.</summary>
+    private bool SafeCheck(Func<bool> check, string what)
+    {
+        try
+        {
+            return check();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException)
+        {
+            Log?.Invoke($"Nicht geprüft, {what}: {ex.Message}");
+            return false;
+        }
     }
 
     /// <summary>Pan, the guardian service, is installed (#243); rechecked with every refresh. "Controller wiederherstellen" needs it.</summary>

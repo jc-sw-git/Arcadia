@@ -188,6 +188,17 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
 
     public bool InstallsHidHide => ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending;
 
+    /// <summary>A driver change waits for the PC's restart (#407); the uninstalled HidHide counts too, as on Windows.</summary>
+    public bool DriverChangeWaits { get; set; }
+
+    public bool DriverChangePending(AppSettings settings, DateTimeOffset now) => DriverChangeWaits || HidHideRemovalPending;
+
+    /// <summary>A controller's firmware is flashed now (#407).</summary>
+    public bool FirmwareUpdateRuns { get; set; }
+
+    /// <summary>A Steam Controller or its puck is plugged in (#407).</summary>
+    public bool SteamControllerPlugged { get; set; }
+
     /// <summary>HidHide's installer ran, and with it the puck's restart, while Steam ran (#296): never should.</summary>
     public int PuckRestartsWhileSteamRuns => Volatile.Read(ref _puckRestartsWhileSteamRuns);
 

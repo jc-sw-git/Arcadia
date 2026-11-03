@@ -182,6 +182,8 @@ public sealed class PanRows
         var status = _pan.Status;
         var notHere = !_support.IsSupportedPlatform;
         var allMissing = !notHere && EmulationParts.AllMissing(_support.Issues);
+        // #407: a pending restart or a firmware update keeps the install greyed out, with the reason as a row below.
+        var blockers = allMissing && !IsBusy ? _support.InstallBlockers : [];
         var installFailed = allMissing && _support.FailedFix == HealthFix.InstallDrivers && _support.LastError is not null;
         var game = _gameInTheWay();
         var warnings = !notHere && !allMissing && IsOn ? WarningRows(status) : [];
@@ -194,11 +196,11 @@ public sealed class PanRows
         Main.Update(
             notHere ? SetupRowMode.Unavailable : allMissing ? SetupRowMode.Install : SetupRowMode.Switch,
             !notHere && !allMissing && IsOn,
-            isLocked: IsBusy || _updating || (game is not null && !allMissing),
+            isLocked: IsBusy || _updating || (game is not null && !allMissing) || blockers.Count > 0,
             unavailableText: "Auf diesem System noch nicht verfügbar",
             status: Subtitle(status, allMissing, installFailed, problem, game, excluded, updateDue));
         // A running game would lose its controller mid-game: greyed out like "Auf Werkseinstellungen zurücksetzen".
-        Main.IsDimmed = notHere || (game is not null && !allMissing && !IsBusy);
+        Main.IsDimmed = notHere || (game is not null && !allMissing && !IsBusy) || blockers.Count > 0;
         Main.Severity = installFailed ? HealthSeverity.Error : updateDue && !_updating ? HealthSeverity.Info : null;
         Main.ShowLamp(notHere || allMissing || updateDue ? null
             : !IsOn ? RowLamp.Resting
@@ -215,11 +217,14 @@ public sealed class PanRows
             : status.State == PanEmulationState.Stopped ? HealthSeverity.Error
             : problem || allMissing ? HealthSeverity.Warning
             : null;
-        FirstWarningKey = warnings.FirstOrDefault(row => row.Severity > HealthSeverity.Info)?.Key ?? warnings.FirstOrDefault()?.Key;
+        var blockerRows = blockers.Select(blocker => IssueRow(blocker, failed: null)).ToList();
+        FirstWarningKey = blockerRows.FirstOrDefault()?.Key
+            ?? warnings.FirstOrDefault(row => row.Severity > HealthSeverity.Info)?.Key ?? warnings.FirstOrDefault()?.Key;
         var layouts = !notHere && !allMissing && IsOn && UpdateLayouts();
         return
         [
             Main,
+            .. blockerRows,
             .. warnings,
             .. layouts ? [Layouts] : Array.Empty<SettingsRowViewModel>(),
             .. _support.PanInstalled ? [Restore] : Array.Empty<SettingsRowViewModel>(),
@@ -452,7 +457,7 @@ public sealed class PanRows
         foreach (var vendor in _pan.WaitingForTool.GroupBy(waiting => waiting.Model.Vendor))
         {
             var (tool, controller, it) = vendor.Key == ControllerList.Sony
-                ? ("DualSense-Firmware-Updater", "den DualSense", "ihn")
+                ? ("PlayStation Accessories", "den DualSense", "ihn")
                 : ("Xbox Zubehör", "den Xbox Controller", "es");
             var row = Row($"pan:firmware-tool:{vendor.Key:X4}", $"{tool} ist geöffnet", $"Arcadia übernimmt {controller}, sobald du {it} schließt", HealthSeverity.Warning,
                 $"Mit {tool} aktualisierst du die Firmware {(vendor.Key == ControllerList.Sony ? "deines DualSense" : "deines Xbox Controllers")}. Damit ein Update nicht abbricht, übernimmt Arcadia den Controller erst, wenn {tool} geschlossen ist.",
@@ -618,8 +623,7 @@ public sealed class PanRows
         // Nothing to do but wait for the restart: the blue i, not the triangle (designs).
         "reboot-pending" => ("Bis dahin können Controller in Spielen kurz aussetzen",
             "Der usbip-Treiber wurde aktualisiert und ist erst nach einem Neustart des PCs ganz aktiv. Bis dahin kann ein emulierter Controller kurz aussetzen; Arcadia verbindet ihn dann selbst neu.", HealthSeverity.Info),
-        "hidhide-removal-pending" => ("Windows entfernt HidHide beim nächsten Neustart",
-            "HidHide wurde deinstalliert, Windows entfernt es aber erst beim nächsten Neustart des PCs. Danach lässt es sich hier wieder installieren.", HealthSeverity.Info),
+        "hidhide-removal-pending" => (EmulationParts.HidHideRemovalPending.Summary!, EmulationParts.HidHideRemovalPendingText, HealthSeverity.Info),
         _ => (issue.ShortText, issue.Detail, issue.Severity),
     };
 

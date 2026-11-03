@@ -23,10 +23,6 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
     private const string DropGroup = "NICHT AKTIV · HIERHER VERSCHIEBEN SCHALTET IHN AB";
     private const string ListYAction = "Verschieben";
 
-    /// <summary>The box with the tabs in miniature beside the list and the page (owner, 2026-10-23).</summary>
-    internal const string OrderPreviewTitle = "LAUNCHER-REIHENFOLGE";
-
-    internal const string OrderPreviewSubtitle = "Eine Vorschau der Reihenfolge, in der die Launcher aufgeführt werden";
     private const string ListXAction = "Alle neu einlesen";
 
     private readonly ILauncherSettingsHost _host;

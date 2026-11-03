@@ -662,7 +662,7 @@ internal readonly record struct StartArguments(bool Demo = false, bool FirstRun 
 /// </summary>
 internal sealed record LauncherSpec(
     LauncherInfo Launcher, int Games, bool IsInstalled = true, IReadOnlyList<Game>? Library = null, bool IsDemo = false,
-    IReadOnlyList<LibraryTypeOption>? Options = null, IReadOnlyList<string>? Running = null)
+    IReadOnlyList<LibraryTypeOption>? Options = null, IReadOnlyList<string>? Running = null, TestFolderChoice? FolderChoice = null)
 {
     public static LauncherSpec With(LauncherInfo launcher, params Game[] library) => new(launcher, library.Length, Library: library);
 

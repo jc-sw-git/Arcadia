@@ -30,15 +30,15 @@ internal sealed class LauncherGeneralRows
         {
             Group = GeneralGroup,
             Subtitle = "Als Tab zeigen, in der Suche und beim Einlesen",
-            PreviewTitle = LauncherSettingsViewModel.OrderPreviewTitle,
-            PreviewSubtitle = LauncherSettingsViewModel.OrderPreviewSubtitle,
+            PreviewTitle = LauncherTexts.OrderPreviewTitle,
+            PreviewSubtitle = LauncherTexts.OrderPreviewSubtitle,
         };
         _nameRow = new TextRowViewModel("launcher-name", "Name im Tab", () => PageInfo.DisplayName, Edit)
         {
             Group = GeneralGroup,
             Subtitle = "So heißt der Tab in der Leiste",
-            PreviewTitle = LauncherSettingsViewModel.OrderPreviewTitle,
-            PreviewSubtitle = LauncherSettingsViewModel.OrderPreviewSubtitle,
+            PreviewTitle = LauncherTexts.OrderPreviewTitle,
+            PreviewSubtitle = LauncherTexts.OrderPreviewSubtitle,
         };
         _keywordRow = new TextRowViewModel("launcher-keyword", "Such-Kürzel", () => PageInfo.SearchKeyword, Edit)
         {
@@ -50,16 +50,16 @@ internal sealed class LauncherGeneralRows
         {
             Group = GeneralGroup,
             ActionText = "Hochladen …",
-            PreviewTitle = LauncherSettingsViewModel.OrderPreviewTitle,
-            PreviewSubtitle = LauncherSettingsViewModel.OrderPreviewSubtitle,
+            PreviewTitle = LauncherTexts.OrderPreviewTitle,
+            PreviewSubtitle = LauncherTexts.OrderPreviewSubtitle,
         };
         _defaultLogoRow = new ActionRowViewModel("launcher-logo-default", "Standardlogo", RestoreLogo)
         {
             Group = GeneralGroup,
             Indent = 1,
             ActionText = "Wiederherstellen",
-            PreviewTitle = LauncherSettingsViewModel.OrderPreviewTitle,
-            PreviewSubtitle = LauncherSettingsViewModel.OrderPreviewSubtitle,
+            PreviewTitle = LauncherTexts.OrderPreviewTitle,
+            PreviewSubtitle = LauncherTexts.OrderPreviewSubtitle,
         };
     }
 

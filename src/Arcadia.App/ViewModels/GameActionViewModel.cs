@@ -166,7 +166,11 @@ public sealed partial class GameActionViewModel : ViewModelBase
 
         // While an installation, update or uninstall runs, its status takes the place of the primary action. A running
         // game is brought back to the front; one being started says so again instead of starting twice (#95).
-        actions.Add(busy
+        // A waiting game stays enabled: A opens the launcher's install dialog again, no launcher reports a cancelled
+        // one (#343).
+        actions.Add(tile.InstallState is { Phase: InstallPhase.AwaitingConfirmation }
+            ? new(GameActionKind.Play, tile.InstallStatusText, null, true, () => host.Play(tile))
+            : busy
             ? new(GameActionKind.Play, tile.InstallStatusText, tile.ShowLauncherControlsHint ? $"Pausieren und Abbrechen in {launcher}" : null, false, () => { })
             : !game.IsInstalled
                 ? game.InstallBlockedReason is { } blocked

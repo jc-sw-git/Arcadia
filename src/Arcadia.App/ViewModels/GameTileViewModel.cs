@@ -126,7 +126,8 @@ public partial class GameTileViewModel : ViewModelBase
     public bool ShowInstallBadge => !Game.IsInstalled && InstallState is null;
 
     /// <summary>False while an installation runs, so it can't be requested twice, and while it can't be installed now.</summary>
-    public bool CanActivate => InstallState is null && !IsInstallBlocked;
+    // A waiting game opens the launcher's install dialog again: no launcher reports a cancelled one (#343).
+    public bool CanActivate => InstallState is null or { Phase: InstallPhase.AwaitingConfirmation } && !IsInstallBlocked;
 
     /// <summary>Not installed, and the launcher can't install it right now (#83: Steam runs with another account).</summary>
     public bool IsInstallBlocked => !Game.IsInstalled && InstallState is null && Game.InstallBlockedReason is not null;

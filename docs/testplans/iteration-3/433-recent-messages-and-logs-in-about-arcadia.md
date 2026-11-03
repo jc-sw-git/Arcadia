@@ -76,7 +76,7 @@ says otherwise; B goes back. Acceptance tests use `ArcadiaDriver` (fake time, fa
 **Opening a log**
 
 - [ ] **T433-21** Big Picture, gamepad, "Mausmodus: Aus": A on "Arcadia-Log öffnen" opens `arcadia.log` in Windows'
-      default app for `.log`, the mouse mode goes on; with Arcadia back in front it goes off again. With the mouse
+      default app for `.log`, the mouse mode goes on, the on-screen keyboard stays closed; with Arcadia back in front it goes off again. With the mouse
       mode already on it stays on afterwards. The same for "VIIPER-Log öffnen" and, with Pan installed,
       "Pan-Log öffnen". · E2E: yes (fake opener)
 - [ ] **T433-22** On the owner's PC with only the Steam Controller: A on each of the three log rows opens the real file

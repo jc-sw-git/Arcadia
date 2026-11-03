@@ -8,7 +8,8 @@ T340-1, T354-1, T357-2, T396-1.
 
 The two fixes taken over from #377 have unit tests without a manual case: a confirmation closes before its action runs
 (`RoutingTests.A_on_a_confirmation_closes_it_before_its_action_…`), and a disposed window leaves the static error event
-(`WindowLifetimeTests`).
+(`WindowLifetimeTests`, which also checks that the header clock stops and the window leaves the controller support's and
+Pan's events).
 
 **Measurement** (budget: gamepad input to visible focus move < 50 ms): Release, Avalonia headless, 5,000 games, 400
 D-pad presses per run, three runs each, alternating. The view model's share of a press (`Bild:` "Verarbeitung"): before
@@ -21,3 +22,4 @@ History:
 |---|---|---|---|---|---|
 | All App, Core and Pan tests | 2026-11-03 | Claude | PR branch, Linux cloud container, Avalonia headless | ✅ | – |
 | Focus measurement before/after | 2026-11-03 | Claude | `main` and PR branch, Release, Linux cloud container, Avalonia headless | ✅ within budget | – |
+| QE review: both #377 tests red without their fix, green with it; app run (uninstall confirmation: A on "Deinstallieren" closes it and the demo toast shows; window closed cleanly, `Arcadia beendet.` without errors) | 2026-11-03 | Claude (QE) | PR branch, Debug, Linux cloud container, Xvfb `--demo`, keys | ✅ | – |

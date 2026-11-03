@@ -37,3 +37,6 @@ Charter: –. Time box: –. Findings: –.
 
 | Test cases | Tests |
 |---|---|
+| T288-1, T288-3, T288-4 | `SteamUpdateTests.While_Arcadia_is_open_a_Steam_update_appears_and_goes_without_a_rescan_or_a_toast_and_a_brief_flag_with_nothing_new_never_shows` |
+| T288-2, T288-7 | `SteamUpdateTests.At_the_start_a_real_Steam_update_shows_on_the_cover_and_the_detail_page_and_a_flag_with_nothing_new_doesnt` |
+| T288-5 | `SteamUpdateTests.On_the_detail_page_the_update_note_appears_and_goes_while_page_and_focus_stay` |

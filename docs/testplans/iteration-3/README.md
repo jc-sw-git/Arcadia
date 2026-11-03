@@ -12,6 +12,7 @@ its file.
 |---|---|---|---|
 | [370](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths | T370-1 to T370-6 |
 | [376](376-ci-hygiene.md) | #376 | CI hygiene: job timeouts, SHA-pinned actions, Dependabot, concurrency, split the App tests | none (CI only) |
+| [399](399-show-repeated-error-again-after-quiet-period.md) | #399 | Show a repeated unexpected error again after a quiet period | T399-1 to T399-17 |
 | [415](415-move-controller-and-pan-block-out-of-mainviewmodel.md) | #415 | Move the controller and Pan block out of MainViewModel | none (refactoring) |
 | [418](418-explain-back-pan-install-and-removal.md) | #418 | Explain-back: Pan install and removal | none (doc fixes) |
 | [420](420-split-launchersettingsviewmodel-by-concern.md) | #420 | Split LauncherSettingsViewModel by concern | none (refactoring) |

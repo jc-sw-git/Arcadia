@@ -43,8 +43,8 @@ jobs:
       - name: Write release notes
         run: |
           $tag = '${{ github.ref_name }}'
-          # gh prints the notes line by line; join them back, or interpolation would put them on one line.
-          $generated = (gh api "repos/${{ github.repository }}/releases/generate-notes" -f tag_name=$tag --jq .body) -join "`n"
+          # One entry per issue; which PRs and issues count: docs/releases.md.
+          $generated = ./tools/release/Write-ReleaseNotes.ps1 -Tag $tag -Repository '${{ github.repository }}'
           @"
           **Installation:** download and run ``Arcadia-win-Setup.exe``. Installed versions update themselves.
           Windows SmartScreen warns because Arcadia isn't signed yet: "More info" → "Run anyway".

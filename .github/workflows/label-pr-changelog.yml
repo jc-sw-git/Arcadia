@@ -1,6 +1,6 @@
 name: Label PR for changelog
 
-# Release notes list only PRs that change something for the player (docs/releases.md). Branch prefix decides the
+# Release notes list only issues and PRs that change the product (docs/releases.md). Branch prefix decides the
 # default: doc/, ci/ and test/ PRs get `no-changelog`; feat/, fix/ and td/ PRs stay in: refactorings and tech debt change
 # the product too, which matters to plugin authors and contributors.
 on:

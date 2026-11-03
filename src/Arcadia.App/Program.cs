@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -135,10 +136,11 @@ sealed partial class Program
             RemoveData();
         }
 
-        RemovePan(removeDrivers: removeParts && parts.Drivers);
+        var removeDrivers = removeParts && parts.Drivers;
+        var pan = RemovePan(removeDrivers);
 
         // Windows keeps a loaded driver until the next restart (#407); a new install before then can't set the drivers up.
-        if (removeParts && parts.Drivers && ControllerSupportRemoval.DriverRemovalPending())
+        if (ControllerSupportRemoval.RestartNoticeDue(removeDrivers, pan))
         {
             var noticeTime = ControllerSupportRemoval.RestartNoticeTime(elapsed.Elapsed, UninstallHookLimit);
             // Not into a log folder the player just chose to delete: writing would create it again.
@@ -164,11 +166,11 @@ sealed partial class Program
     /// its own, finishes the drivers' uninstallers even if the hook ends first, and what it can't finish at the next starts.
     /// </summary>
     [SupportedOSPlatform("windows")]
-    private static void RemovePan(bool removeDrivers)
+    private static PanUninstallResult RemovePan(bool removeDrivers)
     {
         if (!PanSetup.IsBundled || (!removeDrivers && !PanSetup.IsInstalled && !Directory.Exists(PanPaths.InstallDirectory)))
         {
-            return;
+            return PanUninstallResult.NotRun;
         }
 
         try
@@ -177,12 +179,22 @@ sealed partial class Program
             if (!PanSetup.UninstallAsync(removeDrivers, limit.Token).GetAwaiter().GetResult())
             {
                 AppLog.Write("Pan bleibt installiert: die Windows-Abfrage wurde abgelehnt");
+                return PanUninstallResult.Declined;
             }
         }
         catch (Exception ex) when (ex is InvalidOperationException or TimeoutException or OperationCanceledException)
         {
+            // Past the UAC prompt Pan runs on elevated or failed partway; unknown counts as started, so the notice shows.
             AppLog.Write($"Pan konnte nicht entfernt werden: {ex.Message}");
         }
+        catch (Win32Exception ex)
+        {
+            // Pan never started (e.g. elevation blocked by policy): nothing was removed, and the hook must go on.
+            AppLog.Write($"Pan konnte nicht gestartet werden: {ex.Message}");
+            return PanUninstallResult.NotRun;
+        }
+
+        return PanUninstallResult.Started;
     }
 
     private static bool AskToRemoveData(uint timeoutMs)

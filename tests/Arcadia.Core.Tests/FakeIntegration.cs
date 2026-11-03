@@ -70,6 +70,9 @@ internal sealed class FakeMonitor(string launcherId) : IInstallMonitor
 
     public Dictionary<string, InstallOutcome> Finished { get; } = [];
 
+    /// <summary>Whether each installed game has an update; null reports none, like a monitor that doesn't tell.</summary>
+    public Dictionary<string, bool>? Updates { get; set; }
+
     public ManualResetEventSlim? Gate { get; init; }
 
     public bool Fails { get; set; }
@@ -93,7 +96,10 @@ internal sealed class FakeMonitor(string launcherId) : IInstallMonitor
             throw new InvalidOperationException("broken plugin");
         }
 
-        return new InstallSnapshot(new Dictionary<string, InstallProgress>(Active), new Dictionary<string, InstallOutcome>(Finished));
+        return new InstallSnapshot(
+            new Dictionary<string, InstallProgress>(Active),
+            new Dictionary<string, InstallOutcome>(Finished),
+            Updates is null ? null : new Dictionary<string, bool>(Updates));
     }
 }
 

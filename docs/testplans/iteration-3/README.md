@@ -10,6 +10,7 @@ its file.
 
 | File | Issue | Title | Test cases |
 |---|---|---|---|
+| [288](288-steam-update-shown-that-steam-dropped.md) | #288 | Steam: update shown that Steam dropped seconds later | T288-1 to T288-9 |
 | [343](343-cancelled-steam-install-dialog.md) | #343 | Steam: cancelled install dialog leaves the game on "Bitte in Steam bestätigen" | T343-1 to T343-14 |
 | [370](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths | T370-1 to T370-6 |
 | [376](376-ci-hygiene.md) | #376 | CI hygiene: job timeouts, SHA-pinned actions, Dependabot, concurrency, split the App tests | none (CI only) |
@@ -20,6 +21,7 @@ its file.
 | [420](420-split-launchersettingsviewmodel-by-concern.md) | #420 | Split LauncherSettingsViewModel by concern | none (refactoring) |
 | [422](422-pan-finishes-interrupted-uninstall.md) | #422 | Pan finishes an interrupted uninstall and removes itself without Arcadia | T422-1 to T422-12 |
 | [433](433-recent-messages-and-logs-in-about-arcadia.md) | #433 | Show recent toasts and status messages and open the logs in "Über Arcadia" | T433-1 to T433-25 |
+| [423](423-restart-notice-at-uninstall.md) | #423 | Restart notice at the uninstall never shows | T423-1; touches T407-1 (both RC) |
 | [429](429-close-launcher-confirmation-before-action.md) | #429 | Close the launcher settings' confirmation before its action runs | none (order of closing and confirming; touches T83-7) |
 | [434](434-pan-service-test-race.md) | #434 | Pan service test fails when a Pan process exits while it is checked | none (test race, automated test only) |
 
@@ -31,6 +33,7 @@ of the acceptance review.
 | Issue | Test cases |
 |---|---|
 | #422 | T422-4, T422-8, T422-11, T422-1, T422-3, T422-9, T422-12 (in this order, one PC with Pan, the drivers and the puck) |
+| #423 | T407-1, then T407-2 (uninstall with Ja and UAC accepted; reinstall before restarting); T423-1 with T422-4 |
 
 ## Exploratory test
 
@@ -40,4 +43,7 @@ Charter: –. Time box: –. Findings: –.
 
 | Test cases | Tests |
 |---|---|
-| T433-1, -2, -5 to -18, -20, -21, -23, -24 | `RecentMessagesAndLogsTests` (T433-7 "arcadia.log keeps the toasts" skipped until the QE finding is fixed) |
+| T433-1, -2, -5 to -21, -23, -24 | `RecentMessagesAndLogsTests` (T433-7 included); T433-19 in `LoggingRowsTests` |
+| T288-1, T288-3, T288-4 | `SteamUpdateTests.While_Arcadia_is_open_a_Steam_update_appears_and_goes_without_a_rescan_or_a_toast_and_a_brief_flag_with_nothing_new_never_shows` |
+| T288-2, T288-7 | `SteamUpdateTests.At_the_start_a_real_Steam_update_shows_on_the_cover_and_the_detail_page_and_a_flag_with_nothing_new_doesnt` |
+| T288-5 | `SteamUpdateTests.On_the_detail_page_the_update_note_appears_and_goes_while_page_and_focus_stay` |

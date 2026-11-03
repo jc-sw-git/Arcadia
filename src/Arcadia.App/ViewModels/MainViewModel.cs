@@ -586,6 +586,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private void ShowStates(GameTileViewModel tile)
     {
         tile.InstallState = Session.InstallStateOf(tile.Game.Key);
+        tile.LauncherReportsUpdate = Session.UpdateOf(tile.Game.Key);
         tile.RunState = Session.RunStateOf(tile.Game.Key);
     }
 
@@ -597,6 +598,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         foreach (var tile in ShownTiles())
         {
             tile.InstallState = Session.InstallStateOf(tile.Game.Key);
+            tile.LauncherReportsUpdate = Session.UpdateOf(tile.Game.Key);
         }
     }
 

@@ -1,0 +1,43 @@
+name: Rewrite release notes
+
+# Regenerates the notes of a published release after its issues or PRs were corrected (labels, titles,
+# "Introduced by" lines; rules in docs/releases.md). Keeps the release's header (installation, licence) and replaces
+# everything from the first "### " section on. The packages and the update feed stay as they are.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, e.g. v0.2.0'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  rewrite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # Passed via env, never interpolated into the script: the input is user input.
+      TAG: ${{ inputs.tag }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - name: Rewrite the notes
+        run: |
+          if ($env:TAG -notmatch '^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "'$env:TAG' is not a release tag like v1.2.3" }
+          $body = gh release view $env:TAG --repo $env:GITHUB_REPOSITORY --json body --jq .body
+          if ($LASTEXITCODE -ne 0) { throw "No release $env:TAG" }
+          $header = ($body -join "`n") -replace '(?s)\n### .*$', ''
+          $generated = ./tools/release/Write-ReleaseNotes.ps1 -Tag $env:TAG -Repository $env:GITHUB_REPOSITORY
+          "$($header.TrimEnd())`n`n$($generated -join "`n")" | Set-Content -Encoding utf8 release-notes.md
+          gh release edit $env:TAG --repo $env:GITHUB_REPOSITORY --notes-file release-notes.md
+          if ($LASTEXITCODE -ne 0) { throw 'gh release edit failed' }
+          Get-Content release-notes.md

@@ -4,9 +4,11 @@
 .DESCRIPTION
   Reads the PRs merged into main between the previous release tag and -Tag (first-parent history), takes the issues
   each PR names in its body ("Closes #N", "Fixes #N", "Resolves #N", "Part of #N") and lists every issue once,
-  however many PRs it took. A PR that names no issue gets an entry of its own. Left out:
-  - PRs labelled `no-changelog` (docs, process, tests, CI, spikes);
-  - issues labelled `no-changelog`;
+  however many PRs it took. A PR that names no issue gets an entry of its own. Left out, enforced here rather than
+  left to labels someone has to remember:
+  - PRs that change no product file (only tests, docs, CI, agent files; see Test-ProductChange);
+  - PRs from `doc/`, `ci/` and `test/` branches, and PRs labelled `no-changelog`;
+  - issues labelled `no-changelog` or `type:spike`;
   - bug issues whose body says "Introduced by #N" for a PR N in the same range or an issue such a PR names: that bug
     never shipped.
   The previous tag of a stable release is the previous stable one ("Was ist neu" shows stable releases only), so its
@@ -55,7 +57,15 @@ function Find-PreviousTag([string]$tag) {
     return $newest.Tag
 }
 
-function Get-Json([string]$path) { gh api $path | ConvertFrom-Json }
+# A call now and then comes back empty under load ("unexpected end of JSON input"); retry before giving up.
+function Get-Json([string]$path) {
+    foreach ($try in 1..3) {
+        $json = gh api $path
+        if ($LASTEXITCODE -eq 0 -and $json) { return ($json -join "`n") | ConvertFrom-Json }
+        Start-Sleep -Seconds (5 * $try)
+    }
+    throw "gh api $path failed three times"
+}
 
 function Get-Kind($labels, [string]$branch) {
     if ($labels -contains 'bug' -or $branch -like 'fix/*') { return 'Fixes' }
@@ -66,22 +76,40 @@ function Get-Kind($labels, [string]$branch) {
 if (-not $PreviousTag) { $PreviousTag = Find-PreviousTag $Tag }
 $range = if ($PreviousTag) { "$PreviousTag..$Tag" } else { $Tag }
 
+# Files that never reach a player: a PR touching only these is left out whatever its branch or labels say.
+$nonProductPaths = '^(tests/|docs/|\.github/|\.claude/|tools/ci/|tools/dev/)|^[^/]+\.md$'
+
+function Test-ProductChange([string]$commit) {
+    $files = @(git diff --name-only "$commit^1" $commit)
+    if ($LASTEXITCODE -ne 0) { throw "git diff $commit failed" }
+    return @($files | Where-Object { $_ -notmatch $nonProductPaths }).Count -gt 0
+}
+
 # Merge commits say "Merge pull request #N from …", squash merges end in "(#N)".
-$prNumbers = git log --first-parent --reverse --format='%s' $range | ForEach-Object {
-    if ($_ -match '^Merge pull request #(\d+)\b' -or $_ -match '\(#(\d+)\)$') { [int]$Matches[1] }
+$commitOf = [System.Collections.Generic.Dictionary[int, string]]::new()
+$prNumbers = [System.Collections.Generic.List[int]]::new()
+git log --first-parent --reverse --format='%H %s' $range | ForEach-Object {
+    $hash, $subject = $_ -split ' ', 2
+    if ($subject -match '^Merge pull request #(\d+)\b' -or $subject -match '\(#(\d+)\)$') {
+        $n = [int]$Matches[1]
+        if (-not $commitOf.ContainsKey($n)) { $prNumbers.Add($n) }
+        $commitOf[$n] = $hash
+    }
 }
 if ($LASTEXITCODE -ne 0) { throw "git log $range failed" }
 
-$prs = foreach ($n in $prNumbers | Select-Object -Unique) {
+$prs = foreach ($n in $prNumbers) {
     $pr = Get-Json "repos/$Repository/pulls/$n"
     $issues = [regex]::Matches([string]$pr.body, '(?im)\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|part of)\s*:?\s+#(\d+)') |
         ForEach-Object { [int]$_.Groups[1].Value } | Select-Object -Unique
     [pscustomobject]@{
         Number = $n; Title = $pr.title.Trim(); Branch = $pr.head.ref
-        Labels = @($pr.labels.name); Issues = @($issues)
+        Labels = @($pr.labels.name); Issues = @($issues); Product = Test-ProductChange $commitOf[$n]
     }
 }
-$prs = @($prs | Where-Object { $_.Labels -notcontains 'no-changelog' })
+$prs = @($prs | Where-Object {
+    $_.Product -and $_.Labels -notcontains 'no-changelog' -and $_.Branch -notmatch '^(doc|ci|test)/'
+})
 # What this release brings: a bug introduced by one of these never shipped.
 $newInRange = @($prNumbers) + @($prs | ForEach-Object { $_.Issues })
 
@@ -94,9 +122,9 @@ function Get-Issue([int]$n) {
 function Test-IssueIncluded($issue) {
     if ($issue.pull_request) { return $false }   # "#N" named a PR, not an issue
     $labels = @($issue.labels.name)
-    if ($labels -contains 'no-changelog') { return $false }
+    if ($labels -contains 'no-changelog' -or $labels -contains 'type:spike') { return $false }
     if ($labels -contains 'bug') {
-        foreach ($m in [regex]::Matches([string]$issue.body, '(?i)introduced (?:by|in) (?:PR )?#(\d+)')) {
+        foreach ($m in [regex]::Matches([string]$issue.body, '(?i)introduced (?:by|in):? (?:PR )?#(\d+)')) {
             if ($newInRange -contains [int]$m.Groups[1].Value) { return $false }
         }
     }

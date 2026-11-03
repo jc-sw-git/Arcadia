@@ -20,4 +20,5 @@ threads can't use GraphQL. A keyword in a PR into a feature branch links nothing
 
 The release notes are built from these links, one entry per issue (`docs/releases.md`): the issue's own title shows
 there, and a PR without a keyword shows under its PR title. A `bug` issue gets the line `Introduced by #N` (the PR or
-issue that brought the bug) as soon as it is known, so a bug that never reached a release stays out of the notes.
+issue that brought the bug), or `Introduced by vX.Y.Z` when it shipped there (cause unknown: `docs/releases.md`), as soon as it is known, so a bug that
+never reached a release stays out of the notes. The CI check `Bug origin` fails a PR that closes a bug without it.

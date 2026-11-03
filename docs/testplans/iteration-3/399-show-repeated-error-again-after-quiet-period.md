@@ -94,4 +94,5 @@ History:
 | T399-2 to T399-6, T399-8, T399-10 to T399-15, T399-17 | 2026-11-03 | Implementation | Debug, Linux cloud container, .NET 10.0.114, fake time (`RepeatedErrorsTests`, `GuardedHandlersTests`, `TakenOverControllersTests`, `PanClientTests`) | passed | – |
 | T399-9 | 2026-11-03 | Implementation | Debug, Linux cloud container, headless (`AppErrorsTests`) | passed | – |
 | T399-16 | 2026-11-03 | Implementation | review of the diff | not needed | the good path of `GuardedHandlers.Raise` and `TakenOverControllers.Forwarding` is unchanged; T399-15 measures 0 bytes |
-| T399-1, T399-3, T399-7 (acceptance) | – | – | – | open | written by the QE review |
+| T399-1, T399-3, T399-7 (acceptance) | 2026-11-03 | QE review | Debug, Linux cloud container, .NET 10, headless, fake time (`RepeatedErrorTests`); each red once against a planted fault (no quiet period, a line per repeat, one toast for all sources) | passed | "Verbindung zu Pan halten" stands in for "Heartbeat an Pan": the heartbeat catches its own errors, so it can't be made to fail; T399-7's second source is a broken poll handler ("Controller-Eingabe") |
+| T399-16 | 2026-11-03 | QE review | review of the diff | not needed | confirmed: `Raise`, `Forwarding` and the delegate reads are unchanged; only the catch blocks call the throttle |

@@ -498,6 +498,12 @@ internal sealed class ArcadiaDriver : IDisposable
     }
 
     /// <summary>One read of the controllers, as the App does every 8 ms.</summary>
+    /// <summary>
+    /// A handler of the controllers' poll that throws on every poll from now on, as a broken component would (#399): the
+    /// error reaches the log and the toast as the App reports it.
+    /// </summary>
+    public void BreakAPollHandler(string message) => _controllers.Polled += _ => throw new InvalidOperationException(message);
+
     public ArcadiaDriver PollControllers()
     {
         _controllers.Poll((long)Time.GetElapsedTime(0).TotalMilliseconds);

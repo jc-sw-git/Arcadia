@@ -23,3 +23,4 @@ History:
 | All App, Core and Pan tests | 2026-11-03 | Claude | PR branch, Linux cloud container, Avalonia headless | ✅ | – |
 | Focus measurement before/after | 2026-11-03 | Claude | `main` and PR branch, Release, Linux cloud container, Avalonia headless | ✅ within budget | – |
 | QE review: both #377 tests red without their fix, green with it; app run (uninstall confirmation: A on "Deinstallieren" closes it and the demo toast shows; window closed cleanly, `Arcadia beendet.` without errors) | 2026-11-03 | Claude (QE) | PR branch, Debug, Linux cloud container, Xvfb `--demo`, keys | ✅ | – |
+| Owner's manual test: the 5 cases of the PR's Review section | 2026-11-03 | Owner | PR branch, Windows, Steam Controller, Pan on | ✅ | Pan update page and firmware notice move to the RC test |

@@ -51,6 +51,10 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
 - `Keyboard/`: the one on-screen keyboard (#110): `OnScreenKeyboardViewModel` (drawn by `Views/OnScreenKeyboardView`)
   with `BoardKeyViewModel`, `KeyboardLevels` (shift/AltGr), `LayoutMenuViewModel`, `IKeyboardTarget` (what it types
   into; its user greys out or leaves out keys, `BoardKeyState`) and `WindowInFrontTarget` (the mouse mode's).
+- `Messages/` (#433): `RecentMessages` (the last 50 toasts and status changes, any thread), `StatusMessageChanges`
+  (the header's status messages turned into entries; fed by `StatusBarViewModel`), `ILogFiles`/`LogFiles` (the three
+  logs by `LogKind`, never a path). `ToastViewModel.Show` takes a level and records every toast; the group "LOGGING" is
+  `Settings/LoggingRows`, and a log opened by controller makes `MouseModeHost` hold the mouse mode until Arcadia is back.
 - `Settings/`: the settings page (#15):
   - `SettingsPageViewModel` (categories, LB/RB, B), one `SettingsCategoryViewModel` per category; a new category is a
     subclass added in `MainViewModel.ShowSettings`.

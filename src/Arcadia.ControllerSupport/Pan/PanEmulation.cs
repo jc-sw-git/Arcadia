@@ -225,8 +225,8 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary><see cref="Status"/> or <see cref="Retrying"/> changed; any thread.</summary>
     public event Action? Changed;
 
-    /// <summary>A notice for a toast or the in-game notice: hiding lost, back again, given up. Any thread.</summary>
-    public event Action<string>? Notice;
+    /// <summary>A notice for a toast or the in-game notice with its level (#433): hiding lost, back again, given up. Any thread.</summary>
+    public event Action<HealthSeverity, string>? Notice;
 
     /// <summary>Every 2 s, off the UI thread: starts, checks and ends the emulation as needed. Never throws.</summary>
     public async Task TickAsync(CancellationToken cancellationToken = default)
@@ -302,19 +302,19 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
-        var text = state switch
+        (HealthSeverity Level, string Text)? notice = state switch
         {
-            PanEmulationState.Running => RunningAgainText,
-            PanEmulationState.Paused or PanEmulationState.Stopped or PanEmulationState.Unavailable => RetryFailedText,
-            PanEmulationState.Ready when _status.Problem == PanEmulationProblem.Excluded => RetryExcludedText,
-            PanEmulationState.Ready => RetryNoControllerText,
+            PanEmulationState.Running => (HealthSeverity.Info, RunningAgainText),
+            PanEmulationState.Paused or PanEmulationState.Stopped or PanEmulationState.Unavailable => (HealthSeverity.Warning, RetryFailedText),
+            PanEmulationState.Ready when _status.Problem == PanEmulationProblem.Excluded => (HealthSeverity.Info, RetryExcludedText),
+            PanEmulationState.Ready => (HealthSeverity.Info, RetryNoControllerText),
             _ => null,
         };
         _log($"Pan-Emulation: „Erneut versuchen“ beendet ({state})");
         Changed?.Invoke();
-        if (text is not null)
+        if (notice is { } shown)
         {
-            Notice?.Invoke(text);
+            Notice?.Invoke(shown.Level, shown.Text);
         }
     }
 
@@ -669,7 +669,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             await EndAsync(session, $"Verstecken verloren ({holds})");
             _pausedByLoss = true;
             SetStatus(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, holds, $"Verstecken verloren: {holds}"));
-            Notice?.Invoke(PausedText);
+            Notice?.Invoke(HealthSeverity.Warning, PausedText);
             return;
         }
 
@@ -696,7 +696,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             // "Erneut versuchen" says the same when its tick ends.
             if (Volatile.Read(ref _retry) != 2)
             {
-                Notice?.Invoke(RunningAgainText);
+                Notice?.Invoke(HealthSeverity.Info, RunningAgainText);
             }
         }
     }
@@ -734,7 +734,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         _log($"Pan-Emulation {session.Generation}: Arcadia sieht die versteckten Controller nicht mehr ({string.Join(", ", notVisible)}); HidHide lässt diesen Prozess nicht durch, erst ein Neustart von Arcadia hilft");
         await EndAsync(session, "Arcadia sieht die versteckten Controller nicht");
         SetStatus(NotVisibleStatus(notVisible));
-        Notice?.Invoke(NotVisibleText);
+        Notice?.Invoke(HealthSeverity.Warning, NotVisibleText);
         return false;
     }
 
@@ -1030,7 +1030,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         }
 
         _log($"Pan-Emulation: {MaxFailuresPerWindow + 1} Ausfälle in {FailureWindow.TotalMinutes:0} Minuten, Arcadia versucht es erst nach „Erneut versuchen“ wieder");
-        Notice?.Invoke(StoppedText);
+        Notice?.Invoke(HealthSeverity.Error, StoppedText);
     }
 
     private void SetStatus(PanEmulationStatus status)

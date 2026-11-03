@@ -121,10 +121,10 @@ public sealed partial class PanDialogsViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        PanUpdate = new PanUpdatePageViewModel(_controllerSupport, _time, StartPanUpdate, toast =>
+        PanUpdate = new PanUpdatePageViewModel(_controllerSupport, _time, StartPanUpdate, (level, toast) =>
         {
             PanUpdate = null;
-            _toast.Show(toast);
+            _toast.Show(level, toast);
         }, _quit);
     }
 

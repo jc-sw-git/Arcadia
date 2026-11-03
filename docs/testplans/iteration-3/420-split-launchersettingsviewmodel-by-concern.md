@@ -19,3 +19,5 @@ History:
 | All App, Core and Pan tests | 2026-11-03 | Claude | PR branch, Release, Linux cloud container, Avalonia headless | ✅ 3,256 passed, 24 skipped (with `LauncherLogoAndFolderTests`) | – |
 | `LauncherLogoAndFolderTests` against `main` | 2026-11-03 | Claude | `main` with the new tests copied in, same environment | ✅ 6 passed: they hold the old behaviour | – |
 | Focus latency, view model level: 400 presses each, before (`main`) / after | 2026-11-03 | Claude | Release, Linux cloud container, Avalonia headless, no rendering | ✅ list ▼ p99 0.08 / 0.01 ms, page ▼ p99 0.10 / 0.01 ms, LT/RT p99 0.55 / 0.20 ms, page open and close p99 1.2 / 0.5 ms; all far below 50 ms, the difference is noise | – |
+| QE run of the app: launcher list, lift and move, page, LT/RT | 2026-11-03 | Claude | b37f361, Linux, Xvfb, `--demo`, keys for the pad | ✅ as before, no error in `arcadia.log` | – |
+| Owner cases: Steam account sign-in and sign-out; Steam Controller mode and its reset with Pan on; logo upload in the Windows file dialog and restore | 2026-11-03 | owner | PR branch, Windows, controller | ✅ passed | – |

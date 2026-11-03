@@ -233,8 +233,10 @@ public sealed class EntryTypeTests
         // No dialog opens by itself there: Arcadia says so and waits for the start in Epic, not for a confirmation.
         Assert.Equal("Epic Games wird geöffnet – starte dort selbst die Installation von „Unreal Engine“.", arcadia.Main.Toast.Text);
         Assert.Equal(("Bitte in Epic Games starten", "Wartet"), (tile.InstallStatusText, tile.InstallShortText));
+        // A again opens it again: Epic doesn't say whether the player closed it (#343).
         arcadia.Press(UiAction.Accept);
-        Assert.Equal("Die Installation von „Unreal Engine“ wartet darauf, dass du sie in Epic Games startest.", arcadia.Main.Toast.Text);
+        Assert.Equal(2, arcadia.Opened.Count(t => t == new LaunchTarget.ProtocolUri("com.epicgames.launcher://ue/library")));
+        Assert.Equal("Epic Games wird geöffnet – starte dort selbst die Installation von „Unreal Engine“.", arcadia.Main.Toast.Text);
     }
 
     [AvaloniaFact]

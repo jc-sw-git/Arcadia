@@ -23,3 +23,6 @@
   installed it says "Installieren". While software or a tool runs, A says "Weiter tüfteln" instead of "Zurück ins
   Spiel". A soundtrack is handed to its launcher, so it gets no "Startet" or "Läuft" state: Steam
   plays it and, a moment later, also shows the soundtrack's page, as "In Steam öffnen" does. Its detail page notes "Steam spielt den Soundtrack ab." under the actions.
+- After "Installieren" the game shows "Bitte in … bestätigen" (an Epic engine: "Bitte in … starten") for 1 minute,
+  then "Installieren" again: launchers don't report a cancelled install dialog, and a later confirm still shows its
+  progress. A on a waiting game opens the launcher's install dialog again and restarts the minute (#343).

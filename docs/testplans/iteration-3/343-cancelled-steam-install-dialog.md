@@ -42,3 +42,5 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
+| T343-1, T343-3, T343-4, T343-6 | 2026-11-03 | implementation (unit, `InstallTrackerTests`) | cloud container, Linux, Debug | passed | – |
+| T343-3 (Epic engine, A again opens Epic once more) | 2026-11-03 | implementation (`EntryTypeTests`) | cloud container, Linux, Debug, headless | passed | – |

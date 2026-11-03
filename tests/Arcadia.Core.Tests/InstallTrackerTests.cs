@@ -52,6 +52,67 @@ public sealed class InstallTrackerTests
     }
 
     [Fact]
+    [Trait("TestCase", "T343-1")]
+    public void Waits_one_minute_for_the_install_dialog() =>
+        Assert.Equal(TimeSpan.FromMinutes(1), InstallTracker.ConfirmationTimeout);
+
+    [Fact]
+    [Trait("TestCase", "T343-3")]
+    public async Task Opening_the_install_dialog_again_restarts_the_wait()
+    {
+        var tracker = CreateTracker();
+        var game = GameOf("epic", "a");
+        tracker.Started(game);
+
+        _time.Advance(TimeSpan.FromSeconds(50));
+        tracker.Started(game);
+        _time.Advance(TimeSpan.FromSeconds(50));
+        await tracker.PollAsync();
+        Assert.Equal(InstallPhase.AwaitingConfirmation, tracker.StateOf(game.Key)?.Phase);
+
+        _time.Advance(TimeSpan.FromSeconds(11));
+        await tracker.PollAsync();
+        Assert.Null(tracker.StateOf(game.Key));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T343-6")]
+    public async Task Each_waiting_game_ends_after_its_own_minute()
+    {
+        var tracker = CreateTracker();
+        var first = GameOf("epic", "a");
+        var second = GameOf("epic", "b");
+        tracker.Started(first);
+        _time.Advance(TimeSpan.FromSeconds(30));
+        tracker.Started(second);
+
+        _time.Advance(TimeSpan.FromSeconds(31));
+        await tracker.PollAsync();
+        Assert.Null(tracker.StateOf(first.Key));
+        Assert.Equal(InstallPhase.AwaitingConfirmation, tracker.StateOf(second.Key)?.Phase);
+
+        _time.Advance(TimeSpan.FromSeconds(30));
+        await tracker.PollAsync();
+        Assert.Null(tracker.StateOf(second.Key));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T343-4")]
+    public async Task A_confirm_after_the_wait_ended_still_shows_its_progress()
+    {
+        var tracker = CreateTracker();
+        var game = GameOf("epic", "a");
+        tracker.Started(game);
+        _time.Advance(InstallTracker.ConfirmationTimeout + TimeSpan.FromSeconds(1));
+        await tracker.PollAsync();
+        Assert.Null(tracker.StateOf(game.Key));
+
+        _epic.Active["a"] = new InstallProgress(InstallPhase.Downloading);
+        await tracker.PollAsync();
+        Assert.Equal(InstallPhase.Downloading, tracker.StateOf(game.Key)?.Phase);
+    }
+
+    [Fact]
     public async Task Follows_progress_until_the_install_completes()
     {
         var tracker = CreateTracker();

@@ -191,13 +191,16 @@ public sealed class GameActions : IGameActionHost
     /// </summary>
     public void Start(GameTileViewModel tile)
     {
+        if (tile.InstallState is { Phase: InstallPhase.AwaitingConfirmation })
+        {
+            // The player may have closed the launcher's dialog, which no launcher reports (#343): open it again.
+            Install(tile);
+            return;
+        }
+
         if (tile.InstallState is { } install)
         {
-            _toast.Show(install.Phase == InstallPhase.AwaitingConfirmation
-                ? tile.Game.InstallStartsInLauncher
-                    ? $"Die Installation von „{tile.Title}“ wartet darauf, dass du sie in {tile.LauncherName} startest."
-                    : $"Die Installation von „{tile.Title}“ wartet auf deine Bestätigung in {tile.LauncherName}."
-                : install.Phase == InstallPhase.Uninstalling
+            _toast.Show(install.Phase == InstallPhase.Uninstalling
                     ? $"„{tile.Title}“ wird gerade deinstalliert."
                     : $"„{tile.Title}“ wird bereits {(tile.IsInstalled ? "aktualisiert" : "installiert")} – Pausieren und Abbrechen in {tile.LauncherName}.");
             return;

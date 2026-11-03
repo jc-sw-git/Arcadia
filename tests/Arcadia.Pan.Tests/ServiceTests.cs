@@ -291,6 +291,8 @@ public sealed class ServiceTests : IDisposable
         File.Delete(Path.Combine(_work, "arcadia", ArcadiaInstallations.ExecutableName));
         using (var service = new ServiceController(PanPaths.ServiceName))
         {
+            // Still starting right after --install, it accepts no stop yet.
+            service.WaitForStatus(ServiceControllerStatus.Running, ReplyTimeout);
             service.Stop();
             service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
             service.Start();

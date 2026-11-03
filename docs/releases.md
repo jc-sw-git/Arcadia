@@ -39,8 +39,9 @@
     gets it by hand. Its issues then count only through other PRs.
   - Issues labelled `no-changelog` (e.g. test infrastructure, process) or `type:spike`.
   - Bugs that never shipped: a `bug` issue whose body has the line `Introduced by #N` (the PR or issue that brought
-    the bug) is left out when #N is in the same release; `Introduced by vX.Y.Z` means it shipped there. The CI check
-    `Bug origin` fails a PR that closes a bug without one of these lines.
+    the bug) is left out when #N is in the same release; `Introduced by vX.Y.Z` means it shipped there. Cause unknown or
+    outside Arcadia (a launcher, Windows): the oldest release that has the bug; older than 0.1.0: `v0.1.0`. The CI
+    check `Bug origin` fails a PR that closes or is part of a bug without one of these lines.
 
   So issue titles are written to be read there: English, naming the change (a bug: what goes wrong). Before a release
   the thread reads the generated notes against these rules; corrections go into the issues and PRs (labels, titles,

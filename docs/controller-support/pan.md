@@ -14,7 +14,7 @@ Once nothing emulates, it removes the stale device entries Arcadia's emulated de
 - `src/Arcadia.Pan` → `Pan.exe`, Native AOT, published by `Pack.ps1` to `Pan\Pan.exe` beside `Arcadia.exe` (needs the
   C++ build tools; the CI's Windows runner has them; a Debug build on Windows publishes a framework-dependent one,
   `PublishPanForDebug`, `-p:ArcadiaSkipPan=true` skips it): `ServiceHost` (SCM, pre-shutdown, power resume),
-  `PipeServer`, `ServiceSetup` (`--install`, `--uninstall`), `UsbipInstall`, `Restore` (`--restore`), `WindowsCleanup`,
+  `PipeServer`, `InstallCommand` (`--install`), `ServiceSetup`, `UsbipInstall`, `Restore` (`--restore`), `WindowsCleanup`,
   `PanLog` (`%ProgramData%\Arcadia\Pan\pan.log`, 1 MB rotation). `--console` runs it in a console, `--version` prints
   version and protocol.
 - `src/Arcadia.ControllerSupport/Pan`: `PanClient` (`IEmulationGuardian`), `PanPipeTransport`, `GuardedXboxPads` (the

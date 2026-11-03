@@ -45,7 +45,14 @@ internal sealed class SteamPc(SteamFolder steam) : IControllerSupportPlatform, I
     /// <summary>The user closed Steam.</summary>
     public void CloseSteam() => IsSteamRunning = false;
 
-    public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(true);
+    public Task<Arcadia.ControllerSupport.Pan.IPanInstallRun?> StartPanInstallAsync(Arcadia.ControllerSupport.Pan.PanInstallPlan plan, CancellationToken cancellationToken) =>
+        Task.FromResult<Arcadia.ControllerSupport.Pan.IPanInstallRun?>(null);
+
+    public Task<string> DownloadUsbipInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
+        throw new PlatformNotSupportedException();
+
+    public Task<string> DownloadHidHideInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
+        throw new PlatformNotSupportedException();
 
     public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(true);
 

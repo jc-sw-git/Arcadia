@@ -1,7 +1,9 @@
 using System.ComponentModel;
 using System.Net;
 using Arcadia.ControllerSupport;
+using Arcadia.ControllerSupport.Pan;
 using Arcadia.Launchers;
+using Arcadia.Tests.Pan;
 using Arcadia.Tests.Sisr;
 using Arcadia.Pan;
 using Arcadia.Core.Launchers;
@@ -16,7 +18,7 @@ namespace Arcadia.Core.Tests;
 /// The controller emulation's parts (usbip-win2, VIIPER, Pan, HidHide), their fixes with Steam closed when they restart
 /// the puck, Pan's update and removal, and SISR's group (#214), against a fake platform and fake time.
 /// </summary>
-public sealed class ControllerSupportServiceTests : IDisposable
+public sealed partial class ControllerSupportServiceTests : IDisposable
 {
     private readonly FakeTimeProvider _time = new();
     private readonly FakePlatform _platform = new();
@@ -192,7 +194,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         await service.ApplyFixAsync(HealthFix.ReinstallHidHide);
 
-        Assert.Equal(1, _platform.HidHideReinstalls);
+        Assert.Equal(1, _platform.Pan.Prompts);
+        Assert.True(_platform.Pan.LastPlan is { HidHide: true, HidHideRepair: true, Usbip: false });
+        Assert.Equal(declined ? 0 : 1, _platform.HidHideReinstalls);
         Assert.Equal(0, _platform.UsbipInstalls);
         Assert.Equal(declined, service.LastError?.Contains("„Neu installieren“", StringComparison.Ordinal) ?? false);
     }
@@ -281,23 +285,41 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
     [Theory]
     [Trait("TestCase", "T296-5")]
-    [InlineData(HealthFix.InstallDrivers, "declined")]
-    [InlineData(HealthFix.InstallDrivers, "failed")]
-    [InlineData(HealthFix.ReinstallHidHide, "declined")]
-    public async Task Steam_closed_for_a_driver_install_starts_again_when_the_install_fails(HealthFix fix, string outcome)
+    [Trait("TestCase", "T413-15")]
+    [InlineData(HealthFix.InstallDrivers)]
+    [InlineData(HealthFix.ReinstallHidHide)]
+    public async Task Steam_closed_for_a_driver_install_starts_again_when_the_install_fails(HealthFix fix)
     {
         var service = Create();
         _platform.IsSteamRunning = true;
         _platform.HidHideVersion = fix == HealthFix.ReinstallHidHide ? PinnedHidHideDriver : null;
-        _platform.UsbipInstallDeclined = outcome == "declined";
-        _platform.HidHideReinstallDeclined = outcome == "declined";
-        _platform.UsbipInstallError = outcome == "failed" ? new IOException("Download abgebrochen") : null;
+        _platform.Pan.ExitCode = 3;
 
         await service.ApplyFixAsync(fix);
 
         Assert.NotNull(service.LastError);
         Assert.Equal((1, 1), (_platform.SteamStops, _platform.SteamStarts));
         Assert.True(_platform.IsSteamRunning);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T413-9")]
+    [InlineData(HealthFix.InstallDrivers)]
+    [InlineData(HealthFix.ReinstallHidHide)]
+    public async Task A_declined_Windows_prompt_leaves_Steam_running_and_downloads_nothing(HealthFix fix)
+    {
+        var service = Create();
+        _platform.IsSteamRunning = true;
+        _platform.HidHideVersion = fix == HealthFix.ReinstallHidHide ? PinnedHidHideDriver : null;
+        _platform.UsbipInstallDeclined = true;
+        _platform.HidHideReinstallDeclined = true;
+
+        await service.ApplyFixAsync(fix);
+
+        Assert.Contains("abgelehnt", service.LastError);
+        Assert.Equal((0, 0), (_platform.SteamStops, _platform.SteamStarts));
+        Assert.True(_platform.IsSteamRunning);
+        Assert.Equal(["prompt", "declined"], _platform.Pan.Calls);
     }
 
     [Fact]
@@ -309,6 +331,7 @@ public sealed class ControllerSupportServiceTests : IDisposable
         _platform.HidHideVersion = null;
         using var cancel = new CancellationTokenSource();
         _platform.DuringDriverInstall = cancel.Cancel;
+        _platform.Pan.Running = new();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ApplyFixAsync(HealthFix.InstallDrivers, cancel.Token));
 
@@ -1071,6 +1094,9 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public string? SteamGame { get; set; }
 
+        /// <summary>A controller's firmware is flashed now (#407).</summary>
+        public bool FirmwareUpdateRuns { get; set; }
+
         public bool SteamRefusesToExit { get; set; }
 
         public bool UsbipInstallDeclined { get; set; }
@@ -1092,11 +1118,13 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
             SteamStops++;
             IsSteamRunning = false;
+            Pan.Note("steam close");
             return Task.FromResult(true);
         }
 
         public void StartSteam()
         {
+            Pan.Note("steam start");
             SteamStarts++;
             IsSteamRunning = !SteamWontStart;
         }
@@ -1154,41 +1182,61 @@ public sealed class ControllerSupportServiceTests : IDisposable
 
         public bool InstallsHidHide => ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending;
 
-        /// <summary>Runs inside the driver install, e.g. to cancel it midway.</summary>
+        /// <summary>Runs inside the driver install as Pan gets the installers, e.g. to cancel it midway.</summary>
         public Action? DuringDriverInstall { get; set; }
 
-        public Task<bool> ReinstallHidHideAsync(HttpClient http, CancellationToken cancellationToken)
+        /// <summary>Elevated Pan of the driver installs (#413); its answers are set from the properties above unless a test sets them.</summary>
+        public FakeElevatedPan Pan { get; }
+
+        public FakePlatform()
         {
-            HidHideReinstalls++;
-            PuckRestartsWhileSteamRuns += IsSteamRunning ? 1 : 0;
-            return Task.FromResult(!HidHideReinstallDeclined);
+            Pan = new FakeElevatedPan
+            {
+                OnHandOver = plan =>
+                {
+                    if (plan.HidHideRepair)
+                    {
+                        HidHideReinstalls++;
+                    }
+                    else
+                    {
+                        UsbipInstalls++;
+                    }
+
+                    PuckRestartsWhileSteamRuns += IsSteamRunning && plan.HidHide ? 1 : 0;
+                    DuringDriverInstall?.Invoke();
+                },
+                OnExit = (plan, exitCode) =>
+                {
+                    if (plan.HidHideRepair)
+                    {
+                        return;
+                    }
+
+                    IsUsbipReady |= plan.Usbip && exitCode is 0 or 6;
+                    IsPanReady |= exitCode is 0 or 6;
+                    if (plan.HidHide && exitCode == 0)
+                    {
+                        HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
+                    }
+                },
+            };
         }
 
-        public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken)
+        public Task<IPanInstallRun?> StartPanInstallAsync(PanInstallPlan plan, CancellationToken cancellationToken)
         {
-            UsbipInstalls++;
-            PuckRestartsWhileSteamRuns += IsSteamRunning && InstallsHidHide ? 1 : 0;
-            DuringDriverInstall?.Invoke();
-            cancellationToken.ThrowIfCancellationRequested();
-            if (UsbipInstallError is { } error)
-            {
-                throw error;
-            }
-
-            IsUsbipReady = !UsbipInstallDeclined;
-            IsPanReady = !UsbipInstallDeclined;
-            if (HidHideInstallError is { } hidHideError)
-            {
-                throw hidHideError;
-            }
-
-            if (!UsbipInstallDeclined && InstallsHidHide)
-            {
-                HidHideVersion = Arcadia.Pan.HidHideRelease.Version;
-            }
-
-            return Task.FromResult(!UsbipInstallDeclined);
+            Pan.Declines = plan.HidHideRepair ? HidHideReinstallDeclined : UsbipInstallDeclined;
+            Pan.UsbipDownloadError = UsbipInstallError;
+            Pan.HidHideDownloadError = plan.Usbip ? null : UsbipInstallError;
+            Pan.ExitCode = HidHideInstallError is not null ? 6 : Pan.ExitCode;
+            return Pan.StartAsync(plan, cancellationToken);
         }
+
+        public Task<string> DownloadUsbipInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
+            Pan.DownloadAsync("usbip-win2", folder, progress, cancellationToken);
+
+        public Task<string> DownloadHidHideInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
+            Pan.DownloadAsync("HidHide", folder, progress, cancellationToken);
 
         public bool RestoreDeclined { get; set; }
 

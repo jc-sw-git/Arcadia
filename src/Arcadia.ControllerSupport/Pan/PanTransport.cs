@@ -308,7 +308,7 @@ public sealed partial class PanPipeTransport(Action<string> log, Func<string?>? 
 
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool GetNamedPipeServerProcessId(nint pipe, out uint serverProcessId);
+    internal static partial bool GetNamedPipeServerProcessId(nint pipe, out uint serverProcessId);
 }
 
 /// <summary>Where there is no Pan (not Windows): says so, and the client tries only slowly.</summary>

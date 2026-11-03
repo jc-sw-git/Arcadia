@@ -267,7 +267,14 @@ internal sealed class NoControllerSupportPlatform : IControllerSupportPlatform
 
     public Version? HidHideVersion => null;
 
-    public Task<bool> InstallDriversAsync(HttpClient http, CancellationToken cancellationToken) => Task.FromResult(false);
+    public Task<Arcadia.ControllerSupport.Pan.IPanInstallRun?> StartPanInstallAsync(Arcadia.ControllerSupport.Pan.PanInstallPlan plan, CancellationToken cancellationToken) =>
+        Task.FromResult<Arcadia.ControllerSupport.Pan.IPanInstallRun?>(null);
+
+    public Task<string> DownloadUsbipInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
+        throw new PlatformNotSupportedException();
+
+    public Task<string> DownloadHidHideInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
+        throw new PlatformNotSupportedException();
 
     public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(false);
 

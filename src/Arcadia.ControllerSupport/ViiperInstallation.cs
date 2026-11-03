@@ -13,6 +13,9 @@ public interface IViiperInstallation
     /// administrator rights, as the folder is the user's own. Throws when nothing is pinned or the check fails.
     /// </summary>
     Task InstallAsync(HttpClient http, CancellationToken cancellationToken);
+
+    /// <summary>As <see cref="InstallAsync(HttpClient, CancellationToken)"/>, reporting the download's bytes (#413).</summary>
+    Task InstallAsync(HttpClient http, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken) => InstallAsync(http, cancellationToken);
 }
 
 /// <param name="executable">Where <c>viiper.exe</c> lives: in Arcadia's data folder (<see cref="InDataFolder"/>).</param>
@@ -71,7 +74,9 @@ public sealed class ViiperInstallation(string executable, ReleaseAsset pinned) :
         }
     }
 
-    public async Task InstallAsync(HttpClient http, CancellationToken cancellationToken)
+    public Task InstallAsync(HttpClient http, CancellationToken cancellationToken) => InstallAsync(http, null, cancellationToken);
+
+    public async Task InstallAsync(HttpClient http, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
     {
         if (pinned.Sha256 is null)
         {
@@ -81,7 +86,7 @@ public sealed class ViiperInstallation(string executable, ReleaseAsset pinned) :
         // Downloaded beside it and moved only once checked, so a viiper.exe that failed the check never sits where it runs.
         Directory.CreateDirectory(Path.GetDirectoryName(executable)!);
         var download = executable + ".download";
-        await VerifiedDownload.DownloadAsync(http, pinned, download, cancellationToken);
+        await VerifiedDownload.DownloadAsync(http, pinned, download, cancellationToken, progress);
         MoveRunningAside();
         File.Move(download, executable, overwrite: true);
     }

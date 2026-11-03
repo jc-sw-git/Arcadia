@@ -6,7 +6,8 @@ namespace Arcadia.Pan;
 /// <summary>
 /// <c>Pan.exe</c> (#243). Without arguments it runs as the service (or, started from a console, says how to use
 /// it). Commands, all started elevated by Arcadia or by hand:
-/// <c>--install [--expect-hash sha256] [--usbip-installer path --usbip-sha256 sha256] [--hidhide-installer path [--hidhide-repair]]</c>,
+/// <c>--install [--expect-hash sha256] [--run id --client pid --installers folder [--usbip] [--hidhide [--hidhide-repair]]]</c>
+/// (the installers come over the run's hand-over pipe, <see cref="InstallHandOver"/>),
 /// <c>--uninstall [--remove-drivers]</c>, <c>--restore</c>, <c>--console</c> (the service in a console, for development),
 /// <c>--version</c>.
 /// </summary>
@@ -63,64 +64,7 @@ internal static class Program
 
                     return 0;
                 case "--install":
-                    // The log lives in the data folder: secured before anything is written there (review, bug 1). A
-                    // failure here can't be logged, so its own exit code tells Arcadia what to say.
-                    IReadOnlyList<string> setAside;
-                    try
-                    {
-                        setAside = ServiceSetup.SecureDataDirectory();
-                    }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
-                    {
-                        Console.Error.WriteLine($"The data folder could not be secured: {ex.Message}");
-                        return DataFolderExitCode;
-                    }
-
-                    log.TrustFolder();
-                    foreach (var folder in setAside)
-                    {
-                        log.Write($"Data folder not trusted: {folder}; made anew, its journal not used");
-                    }
-
-                    // The player wants Arcadia again: an uninstall still pending goes before anything is installed (#422).
-                    if (PanUninstall.Marker.Delete())
-                    {
-                        log.Write("Pending uninstall cancelled: Pan is being installed again");
-                    }
-
-                    if (ArcadiaInstallations.BesideBundledPan(OwnPath()) is { } arcadia && File.Exists(arcadia))
-                    {
-                        PanUninstall.RecordArcadia(arcadia, log.Write);
-                    }
-
-                    UninstallHandOff.RemoveLeftover(OwnPath(), PanPaths.HandOffDirectory, log.Write);
-
-                    if (Option(args, "--usbip-installer") is { } usbipInstaller)
-                    {
-                        var usbipHash = Option(args, "--usbip-sha256")
-                            ?? throw new InvalidOperationException("--usbip-installer needs --usbip-sha256 (the hash Arcadia checked at the download)");
-                        UsbipInstall.RunAsync(usbipInstaller, usbipHash, log.Write).GetAwaiter().GetResult();
-                    }
-
-                    // HidHide matters only for showing Steam a copy of the puck (#242); a failed HidHide must not cost
-                    // the player Pan and with it the Xbox pad, so Pan is set up anyway and the exit code says so.
-                    var hidHideFailed = false;
-                    if (Option(args, "--hidhide-installer") is { } hidHideInstaller)
-                    {
-                        try
-                        {
-                            HidHideInstall.RunAsync(hidHideInstaller, args.Contains("--hidhide-repair", StringComparer.OrdinalIgnoreCase), log.Write).GetAwaiter().GetResult();
-                        }
-                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception)
-                        {
-                            log.Write($"HidHide not installed: {ex.Message}");
-                            Console.Error.WriteLine(ex.Message);
-                            hidHideFailed = true;
-                        }
-                    }
-
-                    ServiceSetup.Install(OwnPath(), Option(args, "--expect-hash"), log.Write);
-                    return hidHideFailed ? HidHideFailedExitCode : 0;
+                    return InstallCommand.Run(args, log, OwnPath());
                 case "--uninstall":
                     // Runs at every Arcadia uninstall, also where Pan never was: a data folder that isn't ours is
                     // neither written nor deleted elevated (review, bug 1); the service and Program Files go anyway.
@@ -190,9 +134,12 @@ internal static class Program
         {
             log.Write($"{command} failed: {ex.Message}");
             Console.Error.WriteLine($"{command} failed: {ex.Message}");
-            return 3;
+            return FailedExitCode;
         }
     }
+
+    /// <summary>Exit code of a command that failed; <c>pan.log</c> says why.</summary>
+    public const int FailedExitCode = 3;
 
     /// <summary>Exit code of <c>--install</c> when the data folder can't be secured; Arcadia names the folder then.</summary>
     public const int DataFolderExitCode = 4;
@@ -244,19 +191,6 @@ internal static class Program
     }
 
     private static bool Flag(string[] args, string name) => args.Skip(1).Contains(name, StringComparer.OrdinalIgnoreCase);
-
-    private static string? Option(string[] args, string name)
-    {
-        for (var i = 1; i + 1 < args.Length; i++)
-        {
-            if (args[i].Equals(name, StringComparison.OrdinalIgnoreCase))
-            {
-                return args[i + 1];
-            }
-        }
-
-        return null;
-    }
 
     private static string Version() => (typeof(Program).Assembly.GetName().Version ?? new Version(0, 0)).ToString(3);
 }

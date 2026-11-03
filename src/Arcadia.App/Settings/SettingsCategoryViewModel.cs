@@ -50,7 +50,14 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
 
     /// <summary>A dialog of the category over the page (e.g. "Steam beenden?"); it takes every input until it closes.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsPageHints))]
     public partial object? Dialog { get; protected set; }
+
+    /// <summary>
+    /// False while a dialog that brings its own hints covers the page, e.g. a driver install, which nothing may leave
+    /// while it runs (#413, D2): the footer then shows no "B Zurück".
+    /// </summary>
+    public bool ShowsPageHints => Dialog is not IHasOwnHints;
 
     /// <summary>What Y does on the rows, for the footer (e.g. "Verschieben"); null if nothing.</summary>
     [ObservableProperty]

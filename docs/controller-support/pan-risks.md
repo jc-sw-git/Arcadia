@@ -14,6 +14,11 @@ would close it, so a later story can pick it up. Don't "fix" one of these in pas
   and the asset's URL and name are not checked. Each needs an elevated `Pan.exe` run, which already gives SYSTEM code
   (above). Countermeasure with the code signing (#271): the minimum version in Pan, the copy under an admin-only DACL,
   host and name of the asset checked.
+- **The install's hand-over trusts Arcadia's user (#413):** elevated Pan takes the installers from whoever runs as
+  that user and as `<pid>`; the pipe's DACL, the pid and start-time checks keep other users and later processes out,
+  not same-user code, which could already swap `Pan.exe` (above). The `go` can only name installers the command line
+  announced, in the run's folder; HidHide's hash stays pinned, usbip-win2's is the client's as before. Countermeasure:
+  code signing (#271). A same-user process can also take the pipe name first: Pan ends with exit 9, nothing changed.
 - **`%ProgramFiles%\Arcadia\Pan`** is trusted as Program Files is: only administrators can write there; a junction
   planted by an administrator is not defended against.
 - **A usbip step left behind after its 10 s timeout** keeps running with a cancelled token; `usbip.exe` itself is

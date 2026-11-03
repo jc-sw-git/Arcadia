@@ -1,6 +1,6 @@
-# Pan: setup, uninstall, restore, data folder
+# Pan: setup, restore, data folder
 
-How Pan ([pan.md](pan.md)) gets onto the PC and off it again. The update at start: [pan-update.md](pan-update.md).
+How Pan ([pan.md](pan.md)) gets onto the PC. The update at start: [pan-update.md](pan-update.md); the uninstall: [pan-uninstall.md](pan-uninstall.md).
 
 ## Install: one UAC prompt for drivers and service
 
@@ -19,7 +19,7 @@ How Pan ([pan.md](pan.md)) gets onto the PC and off it again. The update at star
   (`HidHideSetup.Judge`). HidHide's setup can hang at its last step (updater registration): Pan waits 2 min, accepts a
   supported driver in place and leaves the setup running. Then a connected puck is restarted (10 s, best effort) so
   HidHide filters it without a reboot. A HidHide failure doesn't stop Pan's install (exit code 6; Arcadia names the
-  log and the manual download). A supported HidHide already installed is reused.
+  log and the manual download); a usbip-win2 failure does: it runs first, and neither HidHide nor Pan follows (exit 3). A supported HidHide already installed is reused.
 - Pan copies itself to `%ProgramFiles%\Arcadia\Pan\Pan.exe`, compares the copy's SHA-256 with the source and the
   expected hash, and creates the service: quoted image path, auto start, an English description (Pan runs with `InvariantGlobalization`), recovery,
   90 s pre-shutdown, a DACL under which users start and query but never change. A declined prompt is a failed action
@@ -41,28 +41,7 @@ the folder.
 
 ## Uninstall
 
-- Velopack hook (`Program.OnBeforeUninstall`): one question "Treiber für die Controller-Emulation auch entfernen?"
-  listing what is there (usbip-win2, HidHide, SISR and its VIIPER as in [sisr-removal.md](sisr-removal.md)), default
-  no (other programs may use the drivers; `ControllerSupportRemoval.Question`). Then `Pan.exe --uninstall
-  [--remove-drivers]` elevated, one UAC prompt, no question about Pan itself (it exists for Arcadia alone): stop (=
-  teardown), delete the service, undo the journal, delete both folders and the empty `%ProgramData%\Arcadia` (a file in
-  use goes at the next boot, `MoveFileEx`). Declined: the service stays, idles and stops itself; `Pan.exe --uninstall`
-  by hand removes it.
-- `--remove-drivers` only after the undo is confirmed (`UninstallOrder`: removing HidHide shows the real puck, so an
-  incomplete undo or a data folder that isn't Pan's keeps the drivers, exit 5 or 7) and before the data folder goes:
-  HidHide first (`msiexec /x {GUID} /qn /norestart` from its uninstall entry), then usbip-win2 (its Inno `unins*.exe`,
-  `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART`), 3 min each, 0/3010 = removed; a driver that stays keeps the data
-  folder with `pan.log`. Arcadia's wait per command is the sum of Pan's step budgets (`PanTimeouts`: install ~10 min,
-  uninstall 9 min).
-- Hand-off (#270): `--uninstall` from anywhere but `%ProgramFiles%\Arcadia` copies itself to `Pan-Uninstall\Pan.exe`
-  there, checks the copy's SHA-256, starts it with the same arguments and exits, so the hook ends in seconds and
-  Velopack deletes the bundled exe. The copy schedules itself, `Pan-Uninstall` and the then empty
-  `%ProgramFiles%\Arcadia` for the next boot (safe there, never in the user's folder: a planted junction). Arcadia
-  then sees exit 0; the copy's result stays in `pan.log` (`UninstallHandOff`).
-- An uninstalled HidHide stays until Windows restarts: its service key and driver file remain, so its version still
-  reads. `HidHideInstallation.IsRemovalPending` (`DeleteFlag` on the service, or the driver file in
-  `PendingFileRenameOperations`) gives the row "HidHide: Neustart ausstehend" without a fix, and Pan isn't asked about
-  it. The usbip restart row offers no fix either (`EmulationParts.RebootPending`).
+How Pan leaves the PC, also when something gets in the way: [pan-uninstall.md](pan-uninstall.md).
 
 ## Restore, missing parts, exit codes
 
@@ -78,6 +57,6 @@ the folder.
   Pan and HidHide are there, Arcadia asks Pan `CheckHiding` (25 s reply timeout) and shows its answer as a row.
   Without Pan no pad is plugged in (`GuardedXboxPads.Unavailable`) and the per-game mode is greyed out.
 - Exit codes of `Pan.exe`: 0 done, 3 failed (`pan.log`), 4 data folder not securable (`--install`), 5 restore
-  incomplete (`--restore`, `--uninstall`: what failed stays in the journal, `Pan.exe` stays in Program Files for the
-  next `--restore` or install; Arcadia shows "Pan konnte nicht alles aufräumen …"), 6 Pan installed but HidHide not,
-  7 Pan removed but a driver stayed, 8 unelevated.
+  incomplete (`--restore`, `--uninstall`: what failed stays in the journal; after `--uninstall` the service stays and
+  retries at every start; Arcadia shows "Pan konnte nicht alles aufräumen …"), 6 Pan installed but HidHide not,
+  7 a driver stayed (Pan retries at the next start, or gave up), 8 unelevated.

@@ -328,7 +328,7 @@ public partial class MainWindow : Window
     private void OnPointerMovedAnywhere(object? sender, PointerEventArgs e)
     {
         var position = e.GetPosition(this);
-        if (_viewModel is null || _viewModel.ShowsCloseButtons)
+        if (_viewModel is null || _viewModel.Input.ShowsCloseButtons)
         {
             _restingPointer = position;
             return;

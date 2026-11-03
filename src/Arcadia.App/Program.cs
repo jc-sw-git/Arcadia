@@ -114,6 +114,7 @@ sealed partial class Program
     private static void OnBeforeUninstall(SemanticVersion version)
     {
         var elapsed = Stopwatch.StartNew();
+        ControllerSupportRemoval.RemoveOwnViiper(AppLog.Write);
         var parts = ControllerSupportRemoval.FindInstalledParts();
         var hasData = Directory.Exists(LogLocation.DataFolder);
         var questions = (parts.Any ? 1u : 0u) + (hasData ? 1u : 0u);
@@ -158,9 +159,9 @@ sealed partial class Program
     /// <summary>
     /// Pan goes with Arcadia, always (#243): it exists for Arcadia alone. One UAC prompt, and only when Pan is there or
     /// the drivers are to go (admin rights only where unavoidable): usbip-win2 and HidHide go in the same prompt, after
-    /// Pan undid its own HidHide entries (#243 part B2). Declined, the service stays (harmless: it idles and stops
-    /// itself) and <c>Pan.exe --uninstall</c> removes it by hand. Capped so Velopack's hook limit holds; Pan, started
-    /// elevated on its own, finishes the drivers' uninstallers even if the hook ends first.
+    /// Pan undid its own HidHide entries (#243 part B2). Declined, the service stays and removes itself at the next
+    /// Windows start, when it finds no Arcadia (#422). Capped so Velopack's hook limit holds; Pan, started elevated on
+    /// its own, finishes the drivers' uninstallers even if the hook ends first, and what it can't finish at the next starts.
     /// </summary>
     [SupportedOSPlatform("windows")]
     private static void RemovePan(bool removeDrivers)

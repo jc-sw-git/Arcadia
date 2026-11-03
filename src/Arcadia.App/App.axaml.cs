@@ -155,7 +155,7 @@ public partial class App : Application
             var ownPads = new OwnPadModels();
             _gamepad = ControllerInput.Create(viewModel, ownPads);
             var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
-            viewModel.Dialogs = new SystemDialogs(window, () => viewModel.UsesController, () => mouseMode);
+            viewModel.Dialogs = new SystemDialogs(window, () => viewModel.Input.UsesController, () => mouseMode);
 
             // VIIPER is only Arcadia's own build of its fork (#242 part B), started and
             // checked by Arcadia (#304); a build without a pinned one has no VIIPER at all, so no pad and no copy.
@@ -189,8 +189,8 @@ public partial class App : Application
                 RestartSelf(reason, RestartArguments(args, window.IsActive, runningGames.StartedFromArcadia), desktop, message => viewModel.Toast.Show(message)));
             viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
             // A firmware update Steam tries through the copy (#295): Arcadia is behind Steam's window, and the player is
-            // to read why it fails. Not while a game is in front: a toast says it there (MainViewModel.ShowFirmwareAttempt).
-            viewModel.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
+            // to read why it fails. Not while a game is in front: a toast says it there (PanDialogsViewModel.ShowFirmwareAttempt).
+            viewModel.PanDialogs.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
             _gamepad.Start();
 
             var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), "Controller-Überwachung"));
@@ -270,7 +270,7 @@ public partial class App : Application
                     Dispatcher.UIThread.Post(() =>
                     {
                         xboxPadTick.Start();
-                        viewModel.PanAnsweredAtStart();
+                        viewModel.PanDialogs.PanAnsweredAtStart();
                     });
                 }
 

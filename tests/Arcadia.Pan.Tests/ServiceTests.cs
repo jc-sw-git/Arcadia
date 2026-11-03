@@ -284,6 +284,33 @@ public sealed class ServiceTests : IDisposable
         Assert.True(File.Exists(Path.Combine(PanPaths.HandOffDirectory, PanPaths.ExecutableName)), "the uninstall ran in the hand-off copy, which stays until the next boot");
         Assert.Contains("1060", Output("sc.exe", "query", PanPaths.ServiceName));
         Assert.False(Directory.Exists(PanPaths.InstallDirectory), "Program Files\\Arcadia\\Pan is gone");
+
+        // T422-4: installed again, then its Arcadia goes without an uninstall (the UAC prompt declined): at its next start
+        // the service finds no Arcadia and removes itself; its running exe moves into Pan-Uninstall for the next boot.
+        Assert.Equal(0, Run(pan, "--install", "--expect-hash", hash));
+        // The pipe opens only after the service looked for Arcadia: until then the stand-in must stay.
+        await using (await ConnectAsync())
+        {
+        }
+
+        File.Delete(Path.Combine(_work, "arcadia", ArcadiaInstallations.ExecutableName));
+        using (var service = new ServiceController(PanPaths.ServiceName))
+        {
+            service.Stop();
+            service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+            service.Start();
+        }
+
+        var until = DateTime.UtcNow + SelfRemoval.SecondLookDelay + TimeSpan.FromSeconds(60);
+        while (DateTime.UtcNow < until && !Output("sc.exe", "query", PanPaths.ServiceName).Contains("1060"))
+        {
+            Thread.Sleep(500);
+        }
+
+        Assert.Contains("1060", Output("sc.exe", "query", PanPaths.ServiceName));
+        Assert.False(File.Exists(PanPaths.InstalledExecutable), "the running Pan.exe moved out of Program Files\\Arcadia\\Pan");
+        Assert.False(Directory.Exists(PanPaths.DataDirectory), "the data folder is gone");
+        Assert.Contains(Directory.EnumerateFiles(PanPaths.HandOffDirectory), file => Path.GetFileName(file).StartsWith("Pan-retired-", StringComparison.Ordinal));
     }
 
     /// <summary>Waits until no Pan.exe from the hand-off folder runs any more (#270).</summary>
@@ -345,7 +372,11 @@ public sealed class ServiceTests : IDisposable
     private async Task<string> PublishPanAsync()
     {
         var root = RepositoryRoot();
-        var output = Path.Combine(_work, "publish");
+        // As the installer ships it: Pan\Pan.exe beside Arcadia.exe, which --install records, so the service finds an
+        // Arcadia at its start and doesn't remove itself (#422).
+        var output = Path.Combine(_work, "arcadia", "Pan");
+        Directory.CreateDirectory(output);
+        await File.WriteAllTextAsync(Path.Combine(_work, "arcadia", ArcadiaInstallations.ExecutableName), "stand-in");
         var info = new ProcessStartInfo("dotnet")
         {
             RedirectStandardOutput = true,

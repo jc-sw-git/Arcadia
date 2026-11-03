@@ -25,6 +25,9 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
     /// <summary>A client connected or left; the host uses it to stop Pan when nobody needs it.</summary>
     public event Action<bool>? ClientPresent;
 
+    /// <summary>A client was accepted, with its exe's path (null if unreadable): the host records an Arcadia from it (#422).</summary>
+    public event Action<string?>? ClientAccepted;
+
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         NamedPipeServerStream? listening = null;
@@ -171,6 +174,7 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
             }
 
             ClientPresent?.Invoke(true);
+            ClientAccepted?.Invoke(Win32ImagePathOf(process));
             using var gone = new CancellationTokenSource();
             using var processWait = new ProcessWaitHandle(processHandle);
             // When Arcadia dies, its pipe breaks before its process object is signalled, so this callback can run
@@ -269,6 +273,13 @@ public sealed class PipeServer(Guardian guardian, Action<string> log)
         var buffer = stackalloc char[1024];
         var size = 1024u;
         return Native.QueryFullProcessImageNameW(process, Native.ProcessNameNative, buffer, ref size) ? new string(buffer, 0, (int)size) : null;
+    }
+
+    private static unsafe string? Win32ImagePathOf(nint process)
+    {
+        var buffer = stackalloc char[1024];
+        var size = 1024u;
+        return Native.QueryFullProcessImageNameW(process, 0, buffer, ref size) ? new string(buffer, 0, (int)size) : null;
     }
 
     private sealed class ProcessWaitHandle : WaitHandle

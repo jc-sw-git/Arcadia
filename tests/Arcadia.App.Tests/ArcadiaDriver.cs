@@ -211,7 +211,7 @@ internal sealed class ArcadiaDriver : IDisposable
     public async Task PanAnsweredAtStartAsync()
     {
         await ForGames.Emulation.TickAsync();
-        Dispatcher.UIThread.Post(Main.PanAnsweredAtStart);
+        Dispatcher.UIThread.Post(Main.PanDialogs.PanAnsweredAtStart);
         Dispatcher.UIThread.RunJobs();
     }
 

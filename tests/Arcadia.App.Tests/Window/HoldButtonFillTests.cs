@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Arcadia.App.Input;
 using Arcadia.ControllerSupport.Copy;
 using Arcadia.Core.Launchers;
@@ -30,29 +31,35 @@ public sealed class HoldButtonFillTests
         var fill = FillOf(shown, "Controller freigeben");
         Assert.Equal(0, fill.ScaleX);
 
-        // „Controller freigeben“ holds for 1 s: half way, then let go.
+        // „Controller freigeben“ holds for 1 s: let go before. The fill is an Avalonia animation on the real clock, which a
+        // test can't set; it is bounded by the time measured instead of a fixed range, so a slow runner can't break it.
+        var held = Stopwatch.StartNew();
         arcadia.PressDown(UiAction.Accept);
         shown.Settle();
-        Thread.Sleep(TimeSpan.FromMilliseconds(500));
+        Thread.Sleep(TimeSpan.FromMilliseconds(300));
         shown.Settle();
-        Assert.InRange(fill.ScaleX, 0.2, 0.95);
+        Assert.InRange(fill.ScaleX, double.Epsilon, AtMost(held.Elapsed));
 
         arcadia.LetGo(UiAction.Accept);
         shown.Settle();
-        Thread.Sleep(TimeSpan.FromMilliseconds(200));
+        Thread.Sleep(TimeSpan.FromMilliseconds(100));
         shown.Settle();
 
-        Assert.False(arcadia.Main.FirmwareAttempt!.IsReleased);
+        Assert.False(arcadia.Main.PanDialogs.FirmwareAttempt!.IsReleased);
         Assert.Equal(0, fill.ScaleX);
 
-        // The next press fills from empty again.
+        // The next press fills from empty again: no further than the time since this press allows.
+        held.Restart();
         arcadia.PressDown(UiAction.Accept);
         shown.Settle();
-        Thread.Sleep(TimeSpan.FromMilliseconds(250));
+        Thread.Sleep(TimeSpan.FromMilliseconds(100));
         shown.Settle();
-        Assert.InRange(fill.ScaleX, 0.05, 0.6);
+        Assert.InRange(fill.ScaleX, double.Epsilon, AtMost(held.Elapsed));
         arcadia.LetGo(UiAction.Accept);
     }
+
+    /// <summary>The fill a 1 s hold reaches at most after <paramref name="held"/>; it starts on the frame after the press.</summary>
+    private static double AtMost(TimeSpan held) => Math.Min(1, held.TotalSeconds);
 
     /// <summary>The notice of a firmware update Steam tried through the copy (#295): its buttons act only when held.</summary>
     private static async Task<ArcadiaWindow> FirmwareNoticeAsync()
@@ -65,7 +72,7 @@ public sealed class HoldButtonFillTests
         arcadia.StartControllers();
         await arcadia.TickSteamControllerAsync();
         arcadia.ForGames.CopyFilter.FromSteam(SteamReportKind.SetFeature, [1, 0x90, 0x00], forwarding: true);
-        await arcadia.WaitUntilAsync(() => arcadia.Main.FirmwareAttempt is not null, "der Hinweis „Steam will die Firmware aktualisieren“");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.PanDialogs.FirmwareAttempt is not null, "der Hinweis „Steam will die Firmware aktualisieren“");
         shown.Settle();
         return shown;
     }

@@ -82,6 +82,17 @@ internal static class Program
                         log.Write($"Data folder not trusted: {folder}; made anew, its journal not used");
                     }
 
+                    // The player wants Arcadia again: an uninstall still pending goes before anything is installed (#422).
+                    if (PanUninstall.Marker.Delete())
+                    {
+                        log.Write("Pending uninstall cancelled: Pan is being installed again");
+                    }
+
+                    if (ArcadiaInstallations.BesideBundledPan(OwnPath()) is { } arcadia && File.Exists(arcadia))
+                    {
+                        PanUninstall.RecordArcadia(arcadia, log.Write);
+                    }
+
                     UninstallHandOff.RemoveLeftover(OwnPath(), PanPaths.HandOffDirectory, log.Write);
 
                     if (Option(args, "--usbip-installer") is { } usbipInstaller)
@@ -144,14 +155,13 @@ internal static class Program
                     var data = dataProblem is null ? DataFolder.Ours
                         : Directory.Exists(PanPaths.DataDirectory) || File.Exists(PanPaths.DataDirectory) ? DataFolder.NotOurs
                         : DataFolder.Missing;
-                    // The drivers only when the user said yes at Arcadia's uninstall (#243 part B2).
-                    Func<Task<bool>>? removeDrivers = Flag(args, "--remove-drivers") ? () => DriverRemoval.RunAsync(log.Write) : null;
                     try
                     {
-                        return ServiceSetup.UninstallAsync(data, removeDrivers, log.StopFileLogging, log.Write).GetAwaiter().GetResult() switch
+                        // The drivers only when the user said yes at Arcadia's uninstall (#243 part B2).
+                        return PanUninstall.RunAsync(data, Flag(args, "--remove-drivers"), log.StopFileLogging, log.Write).GetAwaiter().GetResult() switch
                         {
                             UninstallOutcome.RestoreIncomplete => RestoreIncompleteExitCode,
-                            UninstallOutcome.DriversLeft => DriversNotRemovedExitCode,
+                            UninstallOutcome.DriversPending or UninstallOutcome.DriversLeft => DriversNotRemovedExitCode,
                             _ => 0,
                         };
                     }
@@ -159,7 +169,7 @@ internal static class Program
                     {
                         if (UninstallHandOff.IsInside(ownPath, PanPaths.HandOffDirectory))
                         {
-                            ServiceSetup.ScheduleHandOffRemoval(ownPath, log.Write);
+                            PanUninstall.ScheduleHandOffRemoval(ownPath, log.Write);
                         }
                     }
                 case "--restore":
@@ -189,7 +199,8 @@ internal static class Program
 
     /// <summary>
     /// Exit code of <c>--restore</c> and <c>--uninstall</c> when something listed in the journal could not be undone;
-    /// the journal and Pan.exe stay for another <c>--restore</c>, and Arcadia says so.
+    /// the journal and Pan.exe stay for another <c>--restore</c>, and Arcadia says so. After <c>--uninstall</c> the
+    /// service stays too and tries again at every Windows start (#422).
     /// </summary>
     public const int RestoreIncompleteExitCode = 5;
 
@@ -199,7 +210,10 @@ internal static class Program
     /// </summary>
     public const int HidHideFailedExitCode = 6;
 
-    /// <summary>Exit code of <c>--uninstall --remove-drivers</c> when Pan went but a driver stayed; <c>pan.log</c> says which.</summary>
+    /// <summary>
+    /// Exit code of <c>--uninstall --remove-drivers</c> when a driver stayed: Pan tries again at the next Windows start,
+    /// or (no trusted data folder, attempts used up) went and left it; <c>pan.log</c> says which.
+    /// </summary>
     public const int DriversNotRemovedExitCode = 7;
 
     /// <summary>Exit code of a command that changes the machine, run without administrator rights: nothing was done.</summary>

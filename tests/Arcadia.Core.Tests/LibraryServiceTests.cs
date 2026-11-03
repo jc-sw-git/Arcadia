@@ -2,13 +2,12 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
-using Microsoft.Extensions.Time.Testing;
 
 namespace Arcadia.Core.Tests;
 
 public sealed class LibraryServiceTests
 {
-    private readonly FakeTimeProvider _time = new();
+    private readonly TimerWatchingTimeProvider _time = new();
 
     // Ignores its token, as a scanner stuck in a file read on a share that went away would.
     private readonly FakeScanner _epic = new(KnownLaunchers.Epic) { Gate = new TaskCompletionSource() };
@@ -36,8 +35,7 @@ public sealed class LibraryServiceTests
 
         var load = service.LoadAsync();
         await WhenScanning();
-        _time.Advance(LibraryService.ScanDeadline);
-        var libraries = await load;
+        var libraries = await PastTheDeadline(load);
 
         Assert.Empty(libraries.Single(l => l.Launcher.Id == "epic").Games);
         Assert.True(libraries.Single(l => l.Launcher.Id == "epic").ScanFailed);
@@ -60,10 +58,30 @@ public sealed class LibraryServiceTests
         _epic.Gate!.SetResult();
     }
 
-    // The deadline runs on fake time: both scans must have started (after the launchers were located) before it moves.
+    // Polled without blocking a thread: on a busy runner the scans need the thread pool too.
     private async Task WhenScanning()
     {
-        Assert.True(SpinWait.SpinUntil(() => _epic.Scans == 1 && _gog.Scans == 1, TimeSpan.FromSeconds(10)));
-        await Task.Delay(100);
+        var until = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (!(_epic.Scans == 1 && _gog.Scans == 1))
+        {
+            Assert.True(DateTime.UtcNow < until, "Die Scans haben nicht angefangen.");
+            await Task.Delay(10);
+        }
+    }
+
+    // The deadline runs on fake time, and its waits begin only around the scans: each scan's expiry, and the wait for
+    // the scan that hangs (the one that answered needs none). The clock moves once, when all three exist.
+    private async Task<T> PastTheDeadline<T>(Task<T> load)
+    {
+        var until = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (_time.TimersCreated(LibraryService.ScanDeadline) < 3)
+        {
+            Assert.True(DateTime.UtcNow < until, "Die Frist hat nicht angefangen.");
+            await Task.Delay(10);
+        }
+
+        Assert.False(load.IsCompleted);
+        _time.Advance(LibraryService.ScanDeadline);
+        return await load.WaitAsync(TimeSpan.FromSeconds(30));
     }
 }

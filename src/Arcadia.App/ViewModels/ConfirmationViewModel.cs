@@ -35,28 +35,39 @@ public sealed partial class ConfirmationViewModel : ViewModelBase
 
     public bool IsCancelFocused => !IsConfirmFocused;
 
+    /// <summary>Runs the confirmed action itself.</summary>
     /// <returns>False if the action closes the dialog.</returns>
     public bool Handle(UiAction action)
+    {
+        var answer = Answer(action);
+        if (answer == ConfirmationAnswer.Confirmed)
+        {
+            _confirm();
+        }
+
+        return answer == ConfirmationAnswer.Open;
+    }
+
+    /// <summary>
+    /// Moves the focus, or says how the press answered the question without running the action, so the caller can close
+    /// the dialog before <see cref="Confirm"/>: the confirmed action may open the next one.
+    /// </summary>
+    public ConfirmationAnswer Answer(UiAction action)
     {
         switch (action)
         {
             case UiAction.Left:
                 IsConfirmFocused = true;
-                return true;
+                return ConfirmationAnswer.Open;
             case UiAction.Right:
                 IsConfirmFocused = false;
-                return true;
+                return ConfirmationAnswer.Open;
             case UiAction.Accept:
-                if (IsConfirmFocused)
-                {
-                    _confirm();
-                }
-
-                return false;
+                return IsConfirmFocused ? ConfirmationAnswer.Confirmed : ConfirmationAnswer.Cancelled;
             case UiAction.Back:
-                return false;
+                return ConfirmationAnswer.Cancelled;
             default:
-                return true;
+                return ConfirmationAnswer.Open;
         }
     }
 
@@ -74,4 +85,17 @@ public sealed partial class ConfirmationViewModel : ViewModelBase
     /// <summary>A click on "Abbrechen" or beside the dialog.</summary>
     [RelayCommand]
     private void Cancel() => _close?.Invoke();
+}
+
+/// <summary>How a press answered a <see cref="ConfirmationViewModel"/>.</summary>
+public enum ConfirmationAnswer
+{
+    /// <summary>Not answered: the dialog stays open.</summary>
+    Open,
+
+    /// <summary>A on the confirming button.</summary>
+    Confirmed,
+
+    /// <summary>B, or A on "Abbrechen".</summary>
+    Cancelled,
 }

@@ -53,7 +53,7 @@ public sealed class GamepadRouting
     {
         if (_inUse.Drop())
         {
-            Dispatcher.UIThread.Post(() => _viewModel.SetControllerInUse(null));
+            Dispatcher.UIThread.Post(() => _viewModel.Input.SetControllerInUse(null));
         }
 
         _viewAndMenu.Reset();
@@ -61,7 +61,7 @@ public sealed class GamepadRouting
         Dispatcher.UIThread.Post(_viewModel.CancelHold);
         if (_steamController.Drop())
         {
-            Dispatcher.UIThread.Post(() => _viewModel.SetSteamControllerSeen(false));
+            Dispatcher.UIThread.Post(() => _viewModel.ControllerMode.SetSteamControllerSeen(false));
         }
     }
 
@@ -75,13 +75,13 @@ public sealed class GamepadRouting
         if (_inUse.Note(pads))
         {
             var inUse = _inUse.Current;
-            Dispatcher.UIThread.Post(() => _viewModel.SetControllerInUse(inUse));
+            Dispatcher.UIThread.Post(() => _viewModel.Input.SetControllerInUse(inUse));
         }
 
         if (_steamController.Note(pads))
         {
             var connected = _steamController.IsConnected;
-            Dispatcher.UIThread.Post(() => _viewModel.SetSteamControllerSeen(connected));
+            Dispatcher.UIThread.Post(() => _viewModel.ControllerMode.SetSteamControllerSeen(connected));
         }
     }
 

@@ -60,8 +60,8 @@ internal sealed class ArcadiaWindow : IDisposable
     {
         var arcadia = await ArcadiaDriver.StartAsync(launchers, settings, steam, arguments: arguments);
         // The glyphs follow one switch for the whole app; a test before may have left it on the keyboard or another controller.
-        Input.InputHints.UsesController = arcadia.Main.UsesController;
-        Input.InputHints.Symbols = arcadia.Main.ButtonSymbols;
+        Input.InputHints.UsesController = arcadia.Main.Input.UsesController;
+        Input.InputHints.Symbols = arcadia.Main.Input.ButtonSymbols;
         var window = new MainWindow { DataContext = arcadia.Main, Width = width, Height = height };
         window.SetRenderScaling(scaling);
         window.Show();
@@ -76,8 +76,8 @@ internal sealed class ArcadiaWindow : IDisposable
         Window.Close();
         Dispatcher.UIThread.RunJobs();
         var restarted = await Arcadia.RestartAsync();
-        Input.InputHints.UsesController = restarted.Main.UsesController;
-        Input.InputHints.Symbols = restarted.Main.ButtonSymbols;
+        Input.InputHints.UsesController = restarted.Main.Input.UsesController;
+        Input.InputHints.Symbols = restarted.Main.Input.ButtonSymbols;
         var window = new MainWindow { DataContext = restarted.Main, Width = Window.Width, Height = Window.Height };
         window.Show();
         var shown = new ArcadiaWindow(restarted, window, ownsArcadia: false);

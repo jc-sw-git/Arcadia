@@ -74,8 +74,8 @@ public sealed class LauncherControllerModeTests
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("GOG Galaxy", arcadia.SelectedTab?.Name);
         var ownChoice = arcadia.FocusedGame!.Game;
-        arcadia.Click(arcadia.Main.CycleControllerSupportCommand);
-        Assert.Equal(ControllerModes.Arcadia, arcadia.Main.FocusedControllerSupportText);
+        arcadia.Click(arcadia.Main.ControllerMode.CycleControllerSupportCommand);
+        Assert.Equal(ControllerModes.Arcadia, arcadia.Main.ControllerMode.FocusedControllerSupportText);
 
         var launchers = arcadia.OpenLauncherSettings();
         ModeRow(arcadia, launchers, "gog");
@@ -84,11 +84,11 @@ public sealed class LauncherControllerModeTests
         Assert.False(arcadia.Main.IsSettingsOpen);
 
         Assert.Equal(ownChoice.Key, arcadia.FocusedGame!.Game.Key);
-        Assert.Equal(ControllerModes.Arcadia, arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal(ControllerModes.Arcadia, arcadia.Main.ControllerMode.FocusedControllerSupportText);
         arcadia.Press(UiAction.Right);
-        Assert.Equal("Standard (Steam-Eingabe)", arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal("Standard (Steam-Eingabe)", arcadia.Main.ControllerMode.FocusedControllerSupportText);
         arcadia.Press(UiAction.PreviousTab);
-        Assert.Equal("Standard (Steam-Eingabe)", arcadia.Main.FocusedControllerSupportText);
+        Assert.Equal("Standard (Steam-Eingabe)", arcadia.Main.ControllerMode.FocusedControllerSupportText);
 
         // The GOG game on "Standard" now starts without Arcadia's pad; the one with its own choice keeps it.
         arcadia.Press(UiAction.NextTab).Press(UiAction.Right);
@@ -138,11 +138,11 @@ public sealed class LauncherControllerModeTests
     public async Task The_preview_and_the_context_menu_cycle_through_the_same_three_values()
     {
         using var arcadia = await StartWithSteamControllerAsync();
-        string[] shown = [arcadia.Main.FocusedControllerSupportText];
+        string[] shown = [arcadia.Main.ControllerMode.FocusedControllerSupportText];
         for (var click = 0; click < 3; click++)
         {
-            arcadia.Click(arcadia.Main.CycleControllerSupportCommand);
-            shown = [.. shown, arcadia.Main.FocusedControllerSupportText];
+            arcadia.Click(arcadia.Main.ControllerMode.CycleControllerSupportCommand);
+            shown = [.. shown, arcadia.Main.ControllerMode.FocusedControllerSupportText];
         }
 
         Assert.Equal(["Standard (Steam-Eingabe)", ControllerModes.Arcadia, ControllerModes.Steam, "Standard (Steam-Eingabe)"], shown);
@@ -392,6 +392,6 @@ public sealed class LauncherControllerModeTests
             arcadia.Press(arcadia.PageGames.ToList().IndexOf(arcadia.FocusedGame!) < target ? UiAction.Right : UiAction.Left);
         }
 
-        return arcadia.Main.FocusedControllerSupportText;
+        return arcadia.Main.ControllerMode.FocusedControllerSupportText;
     }
 }

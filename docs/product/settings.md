@@ -33,6 +33,29 @@ at once. The header shows the worst level; info alone doesn't make a status unhe
 its own row (the error icon, the message in place of the subtitle with how to go on, the detail panel), not at the
 switch.
 
+## Toast levels
+
+Every toast has a level like a status message (#433): **Info** for progress and confirmations ("… wird gestartet …",
+installed, rescans, every "Demo-Spiel: …"), **Warning** when the action didn't happen and the player can retry or act
+(another start running, no window found, not installable here, a launcher refused, a scan failed), **Error** for
+failures ("… konnte nicht gestartet werden …", unexpected errors, a failed save or install, a file that won't open,
+controllers not recognised). Pan's notices take the level of their source. The UI never says "Toast": a toast is a
+"Meldung", a status message a "Status".
+
+## Category "Über Arcadia"
+
+- Group "VERSION": the version, the search for updates, the update, "Was ist neu".
+- Group "LOGGING" (#433): "Letzte Meldungen" (the list in the info panel, RS scrolls), indented switches "Info",
+  "Warnungen", "Fehler" (all on by default, saved; they only hide), "Liste leeren" (no question, greyed out while
+  empty), "Arcadia-Log öffnen", "VIIPER-Log öffnen", "Pan-Log öffnen".
+- The list: the last 50 toasts and status changes since Arcadia started, newest first, in memory only (arcadia.log
+  keeps everything). A status message is an entry when it appears and when its level changes, and "Behoben: …" with
+  its last level when it goes. Each entry: level symbol, time, chip "Meldung" or "Status".
+- A log opens in Windows' default app for `.log`; opened by controller, the mouse mode comes on for it (also with
+  "Mausmodus: Aus"), without the on-screen keyboard, and goes off again once Arcadia is back in front if it came on for
+  it. A log that doesn't exist is greyed out with the reason ("Pan ist nicht installiert", "Die Datei gibt es noch
+  nicht"); its info panel shows the path. Failing to open is an error toast.
+
 ## Category "Controller"
 
 Its rows (Pan, the mouse mode, Steam, SISR): [settings-controller.md](settings-controller.md).

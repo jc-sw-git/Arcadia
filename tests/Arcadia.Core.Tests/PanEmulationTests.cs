@@ -34,7 +34,7 @@ public sealed class PanEmulationTests
             Enabled = () => _enabled,
             SteamControllerPresent = () => _present,
         };
-        _emulation.Notice += _notices.Add;
+        _emulation.Notice += (_, text) => _notices.Add(text);
     }
 
     private PanEmulationState State => _emulation.Status.State;
@@ -299,7 +299,7 @@ public sealed class PanEmulationTests
     public async Task Erneut_versuchen_is_answered_only_by_a_tick_that_began_after_the_press()
     {
         var notices = new List<string>();
-        _emulation.Notice += notices.Add;
+        _emulation.Notice += (_, text) => notices.Add(text);
         _pan.HideResult = PanReason.HidingFailed;
         _pan.PuckRestart = () =>
         {
@@ -323,7 +323,7 @@ public sealed class PanEmulationTests
     public async Task Erneut_versuchen_that_finds_no_Steam_Controller_says_so()
     {
         var notices = new List<string>();
-        _emulation.Notice += notices.Add;
+        _emulation.Notice += (_, text) => notices.Add(text);
         _pan.HideResult = PanReason.HidingFailed;
         await _emulation.TickAsync();
 
@@ -341,7 +341,7 @@ public sealed class PanEmulationTests
     public async Task Erneut_versuchen_after_a_lost_hiding_says_it_runs_again_once()
     {
         var notices = new List<string>();
-        _emulation.Notice += notices.Add;
+        _emulation.Notice += (_, text) => notices.Add(text);
         await _emulation.TickAsync();
         _pan.HidingHolds = PanReason.HidingLost;
         await _emulation.TickAsync();

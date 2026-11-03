@@ -97,3 +97,5 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
+| T433-1, -8 to -14, -17, -18, -23, -25 (unit level) | 2026-11-03 | implementation | Branch, Linux cloud container, `dotnet test` (App, Core, Pan) | ✅ unit tests `RecentMessagesTests`, `LoggingRowsTests` green; whole suite green | acceptance tests follow in the QE review |
+| T433-1, -2, -4 (partly), -23 | 2026-11-03 | implementation | Branch, Linux, Xvfb, `--demo`, keys | ✅ group laid out as designed; a demo start is an info entry with chip "Meldung"; greyed log rows keep the focus ring, no A in the footer | 200 % scaling, 50 entries and Windows' default app not looked at here |

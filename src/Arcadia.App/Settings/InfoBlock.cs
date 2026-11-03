@@ -109,3 +109,21 @@ public sealed record InfoLauncher(string Name, Services.LauncherBadge Badge, str
 
 /// <summary>Something to type and what it does, e.g. "/steam hollow" – "sucht nur in Steam" (#137).</summary>
 public sealed record InfoExample(string Sample, string Effect) : InfoBlock;
+
+/// <summary>
+/// An entry of "Letzte Meldungen" (#433): its level's symbol, time, a chip "Meldung" (a toast) or "Status", and its text.
+/// </summary>
+public sealed record InfoMessage(string TimeText, HealthSeverity Level, bool IsToast, string Text) : InfoBlock
+{
+    public bool IsInfo => Level == HealthSeverity.Info;
+
+    public bool IsError => Level == HealthSeverity.Error;
+
+    public string KindText => IsToast ? "Meldung" : "Status";
+
+    public static InfoMessage Of(Messages.RecentMessage message) =>
+        new(Services.Formatting.Clock(message.Time), message.Level, message.Kind == Messages.MessageKind.Toast, message.Text);
+}
+
+/// <summary>A framed paragraph in place of a list that shows nothing, e.g. "Noch keine Meldungen …" (#433).</summary>
+public sealed record InfoEmpty(string Text) : InfoBlock;

@@ -20,8 +20,17 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     [NotifyPropertyChangedFor(nameof(InfoTitle))]
     public partial string Title { get; set; } = title;
 
-    /// <summary>The heading of the info panel: the title in capitals, like the group headings.</summary>
-    public virtual string InfoTitle => Title.ToUpper(System.Globalization.CultureInfo.GetCultureInfo("de-DE"));
+    /// <summary>The heading of the info panel: the title in capitals, like the group headings, or <see cref="PanelTitle"/>.</summary>
+    public virtual string InfoTitle => PanelTitle ?? Title.ToUpper(System.Globalization.CultureInfo.GetCultureInfo("de-DE"));
+
+    /// <summary>
+    /// A heading of the info panel other than the title, for rows that show the same panel (e.g. "LETZTE MELDUNGEN" on its
+    /// switches, #433); null: the title.
+    /// </summary>
+    public string? PanelTitle { get; init; }
+
+    /// <summary>What RS does on the info panel, for the footer: "Blättern" where it holds a list (#433).</summary>
+    public string ScrollText { get; init; } = "Infotext";
 
     /// <summary>One short line below the title; the long explanation goes into <see cref="Info"/>.</summary>
     [ObservableProperty]

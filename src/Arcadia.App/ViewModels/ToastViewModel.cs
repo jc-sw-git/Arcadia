@@ -1,10 +1,15 @@
+using Arcadia.App.Messages;
 using Arcadia.App.Services;
+using Arcadia.ControllerSupport;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Arcadia.App.ViewModels;
 
-/// <summary>The short message at the bottom of the library; a newer message replaces the current one.</summary>
-public partial class ToastViewModel(TimeProvider time) : ViewModelBase, IDisposable
+/// <summary>
+/// The short message at the bottom of the library; a newer message replaces the current one. Each one is also kept in
+/// <see cref="RecentMessages"/> for "Letzte Meldungen" (#433).
+/// </summary>
+public partial class ToastViewModel(TimeProvider time, RecentMessages history) : ViewModelBase, IDisposable
 {
     public static readonly TimeSpan Duration = TimeSpan.FromSeconds(4);
 
@@ -16,9 +21,14 @@ public partial class ToastViewModel(TimeProvider time) : ViewModelBase, IDisposa
 
     public bool IsVisible => Text is not null;
 
+    /// <summary>Where every message is kept, also one shown elsewhere because Arcadia is behind a game.</summary>
+    public RecentMessages History => history;
+
+    /// <param name="level">No default (#433): every caller says whether it is information, a warning or an error.</param>
     /// <param name="sticky">Stays until the next message, e.g. while a launcher starts.</param>
-    public void Show(string message, bool sticky = false)
+    public void Show(HealthSeverity level, string message, bool sticky = false)
     {
+        history.Add(level, MessageKind.Toast, message);
         StopExpiry();
         Text = message;
         if (sticky)

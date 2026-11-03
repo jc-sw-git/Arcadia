@@ -96,6 +96,10 @@ public sealed class MouseModeHost : IDisposable
     private bool _heldForWebPage;
     private bool _keyboardForWebPage;
 
+    // A log opened by controller (#433): held until Arcadia was behind the log's app and is in front again.
+    private bool _heldForLog;
+    private bool _leftFrontForLog;
+
     public MouseModeHost(IGamepadSource gamepad, SettingsService settings, MainWindow window, MainViewModel viewModel, TimeProvider time)
     {
         _gamepad = gamepad;
@@ -149,6 +153,7 @@ public sealed class MouseModeHost : IDisposable
         _window.Activated += OnArcadiaActivated;
         _window.Deactivated += OnArcadiaDeactivated;
         _viewModel.PropertyChanged += OnViewModelChanged;
+        _viewModel.LogOpenedByController += OnLogOpenedByController;
     }
 
     /// <summary>Gamepad input is the mouse's now, not Arcadia's navigation. Readable from any thread.</summary>
@@ -219,10 +224,51 @@ public sealed class MouseModeHost : IDisposable
         }
     }
 
+    /// <summary>
+    /// A log opened by controller (#433): the log's app is used with the mouse, so the mode comes on for it, whatever the
+    /// settings say, without the keyboard (owner's decision); it goes off again once Arcadia is back in front, if it came
+    /// on for it. The app may already have taken the front before this runs.
+    /// </summary>
+    private void OnLogOpenedByController(object? sender, EventArgs e)
+    {
+        _leftFrontForLog = !OwnsForeground();
+        if (_heldForLog)
+        {
+            return;
+        }
+
+        _heldForLog = true;
+        AppLog.Write("Log per Controller geöffnet: Mausmodus für das Programm");
+        _mode.HoldForDialog(true);
+    }
+
+    /// <summary>Arcadia came to the front or left it: a log's hold ends once Arcadia is back.</summary>
+    private void FollowLogHold(bool arcadiaInFront)
+    {
+        if (!_heldForLog)
+        {
+            return;
+        }
+
+        if (!arcadiaInFront)
+        {
+            _leftFrontForLog = true;
+            return;
+        }
+
+        if (_leftFrontForLog)
+        {
+            _heldForLog = false;
+            AppLog.Write("Arcadia wieder vorne: Mausmodus für das Log endet");
+            _mode.HoldForDialog(false);
+        }
+    }
+
     /// <summary>Call after the gamepad source stopped polling: lets go of a held mouse button or key.</summary>
     public void Dispose()
     {
         _viewModel.PropertyChanged -= OnViewModelChanged;
+        _viewModel.LogOpenedByController -= OnLogOpenedByController;
         _gamepad.Polled -= OnPolled;
         _gamepad.Lost -= OnControllersLost;
         _foregroundCheck.Stop();
@@ -564,6 +610,7 @@ public sealed class MouseModeHost : IDisposable
         }
 
         _ownsForeground = inFront;
+        FollowLogHold(inFront);
         _focusLossSettle.Stop();
         if (inFront)
         {

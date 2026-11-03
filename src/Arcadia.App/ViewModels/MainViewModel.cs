@@ -1,5 +1,6 @@
 using Arcadia.App.Input;
 using Arcadia.App.Keyboard;
+using Arcadia.App.Messages;
 using Arcadia.App.Search;
 using Arcadia.App.Services;
 using Arcadia.App.Settings;
@@ -66,8 +67,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         _firstRun = firstRun;
         _time = time;
         LauncherTabs = new LauncherTabsViewModel(logos.BadgeOf);
-        Status = new StatusBarViewModel(controllerSupport, updates, time);
-        Toast = new ToastViewModel(time);
+        Messages = new RecentMessages(time);
+        Status = new StatusBarViewModel(controllerSupport, updates, time, new StatusMessageChanges(Messages));
+        Toast = new ToastViewModel(time, Messages);
         Session = new LibrarySession(library, installs, running, launchedGames, time);
         Session.LibrariesChanged += (_, _) => ApplyLibraries(Session.Libraries);
         Session.LaunchersRead += (_, _) => RefreshLauncherSettings();
@@ -94,6 +96,17 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         AppErrors.Occurred += OnAppError;
         ControllerMode.FocusedGameChanged();
     }
+
+    /// <summary>The toasts and status changes since the start, for "Letzte Meldungen" (#433).</summary>
+    public RecentMessages Messages { get; }
+
+    /// <summary>Arcadia's logs, which "Über Arcadia" opens (#433); the tests put a fake in.</summary>
+    public ILogFiles Logs { get; set; } = new LogFiles();
+
+    /// <summary>A log opened by controller (#433): the mouse mode holds on until Arcadia is back in front.</summary>
+    public event EventHandler? LogOpenedByController;
+
+    private static readonly TimeSpan LogOpenTimeout = TimeSpan.FromSeconds(10);
 
     public StatusBarViewModel Status { get; }
 
@@ -478,7 +491,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             AppLog.Write($"Launcherauswahl nicht gespeichert: {ex.Message}");
-            Toast.Show("Die Launcherauswahl konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
+            Toast.Show(HealthSeverity.Error, "Die Launcherauswahl konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
         }
 
         AppLog.Write($"Ersteinrichtung abgeschlossen, aktive Launcher: {string.Join(", ", active)}");
@@ -607,8 +620,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     private void ShowNotice(LibraryNotice notice)
     {
-        var (text, sticky) = LibraryToasts.For(notice, LauncherTabs);
-        Toast.Show(text, sticky);
+        var (level, text, sticky) = LibraryToasts.For(notice, LauncherTabs);
+        Toast.Show(level, text, sticky);
     }
 
     /// <summary>
@@ -740,9 +753,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         SettingsCategoryViewModel[] categories =
         [
             launchers,
-            new ControllerSettingsViewModel(_controllerSupport, changes, ControllerMode.Pan, GameInTheWay, message => Toast.Show(message),
+            new ControllerSettingsViewModel(_controllerSupport, changes, ControllerMode.Pan, GameInTheWay, (level, message) => Toast.Show(level, message),
                 (new Func<bool>(() => steam is not null && Session.Launchers.IsFound(steam)), OpenSteamControllerSettings)),
-            new AboutSettingsViewModel(_updates, _updates.InstallAsync),
+            new AboutSettingsViewModel(_updates, _updates.InstallAsync, Messages, changes, Logs, kind => OpenLogAsync(kind).Forget("Log öffnen")),
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
 
@@ -761,6 +774,29 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     [RelayCommand]
     private void CloseSettings() => Settings = null;
+
+    /// <summary>Opens a log in the system's default app (#433); a failure is an error toast, never an exception.</summary>
+    private async Task OpenLogAsync(LogKind kind)
+    {
+        var byController = Input.UsesController;
+        try
+        {
+            // Off the UI thread: the shell may take a moment to find the app for .log.
+            await Task.Run(() => Logs.Open(kind)).WaitAsync(LogOpenTimeout, _time);
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
+        {
+            AppLog.Write($"Log {kind} nicht geöffnet: {ex.Message}");
+            Toast.Show(HealthSeverity.Error, $"{LogNames.Of(kind)} konnte nicht geöffnet werden: {ex.Message}");
+            return;
+        }
+
+        // Used with the mouse and keyboard: opened by controller, the mouse mode comes on for it, as for a web page (#280).
+        if (byController)
+        {
+            LogOpenedByController?.Invoke(this, EventArgs.Empty);
+        }
+    }
 
     partial void OnSettingsChanged(SettingsPageViewModel? value)
     {
@@ -828,7 +864,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         GC.SuppressFinalize(this);
     }
 
-    private void OnAppError(string message) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(message));
+    private void OnAppError(string message) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(HealthSeverity.Error, message));
 
     // Pan's screens cover the window: the dialog layer's state follows them.
     private void OnPanDialogsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -873,7 +909,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             AppLog.Write($"Individueller Mausmodus nicht gespeichert: {ex.Message}");
-            Toast.Show("Die Änderung konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
+            Toast.Show(HealthSeverity.Error, "Die Änderung konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
         }
 
         UpdateGameMouseModeState();
@@ -954,7 +990,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             AppLog.Write($"Ansicht nicht gespeichert: {ex.Message}");
-            Toast.Show("Die Ansicht konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
+            Toast.Show(HealthSeverity.Error, "Die Ansicht konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
         }
     }
 
@@ -1070,7 +1106,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         return keyboard;
     }
 
-    void ILauncherSettingsHost.Notify(string message) => Toast.Show(message);
+    void ILauncherSettingsHost.Warn(string message) => Toast.Show(HealthSeverity.Warning, message);
 
     GameTileViewModel? IControllerModeHost.FocusedTile => Library.FocusedGame;
 

@@ -107,12 +107,12 @@ public sealed class PanRows
     private readonly IPanEmulationView _pan;
     private readonly Func<string?> _gameInTheWay;
     private readonly Action<HealthFix> _applyFix;
-    private readonly Action<string> _notify;
+    private readonly Action<HealthSeverity, string> _notify;
     private readonly Dictionary<string, ActionRowViewModel> _rows = [];
 
     /// <param name="notify">Shows a toast, e.g. how switching on with a due update ended (#326).</param>
     public PanRows(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay, Action<HealthFix> applyFix,
-        Action<string> notify)
+        Action<HealthSeverity, string> notify)
     {
         _notify = notify;
         _support = support;
@@ -356,7 +356,7 @@ public sealed class PanRows
             Services.AppLog.Write("Controller-Wächter (Pan): aktualisiert und an");
         }
 
-        _notify(updated ? PanUpdatePageViewModel.UpdatedToast : NotUpdatedToast);
+        _notify(updated ? HealthSeverity.Info : HealthSeverity.Warning, updated ? PanUpdatePageViewModel.UpdatedToast : NotUpdatedToast);
         Switched?.Invoke();
     }
 

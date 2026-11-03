@@ -1,3 +1,4 @@
+using Arcadia.ControllerSupport;
 using Arcadia.App.ViewModels;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -12,11 +13,11 @@ public sealed class ToastTests
     public void A_message_hides_after_its_duration_and_a_newer_one_keeps_its_own_time()
     {
         var time = new FakeTimeProvider();
-        var toast = new ToastViewModel(time);
+        var toast = new ToastViewModel(time, new Messages.RecentMessages(time));
 
-        toast.Show("erste");
+        toast.Show(HealthSeverity.Info, "erste");
         time.Advance(ToastViewModel.Duration / 2);
-        toast.Show("zweite");
+        toast.Show(HealthSeverity.Info, "zweite");
         time.Advance(ToastViewModel.Duration / 2);
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("zweite", toast.Text);
@@ -30,9 +31,9 @@ public sealed class ToastTests
     public void A_sticky_message_stays_until_the_next_one()
     {
         var time = new FakeTimeProvider();
-        var toast = new ToastViewModel(time);
+        var toast = new ToastViewModel(time, new Messages.RecentMessages(time));
 
-        toast.Show("bleibt", sticky: true);
+        toast.Show(HealthSeverity.Info, "bleibt", sticky: true);
         time.Advance(ToastViewModel.Duration * 2);
         Dispatcher.UIThread.RunJobs();
 

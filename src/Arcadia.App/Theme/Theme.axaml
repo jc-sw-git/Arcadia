@@ -1142,6 +1142,45 @@
     <Setter Property="CornerRadius" Value="16" />
     <Setter Property="Padding" Value="22,18" />
   </Style>
+  <!-- "Letzte Meldungen" (#433): one entry per line, divided by a rule; the kind as a chip. -->
+  <Style Selector="Border.messageEntry">
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="4,12" />
+  </Style>
+  <Style Selector="TextBlock.messageTime">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.messageText">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="LineHeight" Value="25" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <!-- A toast ("Meldung") filled, a status message outlined. -->
+  <Style Selector="Border.kindChip">
+    <Setter Property="BorderBrush" Value="{StaticResource Line}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="8,2" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.kindChip TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="LetterSpacing" Value="1" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+  </Style>
+  <Style Selector="Border.kindChip.toast">
+    <Setter Property="Background" Value="{StaticResource InfoNoteSurface}" />
+    <Setter Property="BorderBrush" Value="{StaticResource InfoNoteSurface}" />
+  </Style>
+  <Style Selector="Border.kindChip.toast TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource InfoNoteText}" />
+  </Style>
   <Style Selector="TextBlock.infoText">
     <Setter Property="FontSize" Value="18" />
     <Setter Property="LineHeight" Value="27" />
@@ -1260,6 +1299,16 @@
   </Style>
   <Style Selector="Border.rowGo.disabled">
     <Setter Property="Opacity" Value="0.5" />
+  </Style>
+  <!-- Focused but not now (e.g. a log that doesn't exist, #433): no accent, A does nothing there. -->
+  <Style Selector="Button.settingRow.focused Border.rowGo.disabled">
+    <Setter Property="Background" Value="{StaticResource SurfaceDisabled}" />
+  </Style>
+  <Style Selector="Button.settingRow.focused Border.rowGo.disabled > Grid > TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Button.settingRow.focused Border.rowGo.disabled Path">
+    <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
   </Style>
   <Style Selector="TextBlock.rowValue">
     <Setter Property="FontSize" Value="16" />

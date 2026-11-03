@@ -79,6 +79,16 @@ public sealed record AppSettings
     public bool IgnoreSteamDesktopLayout { get; init; } = true;
 
     /// <summary>
+    /// Which levels "Letzte Meldungen" shows (#433): all on by default, also in a settings.json written before them. The
+    /// filter only hides, it never drops an entry.
+    /// </summary>
+    public bool ListsInfoMessages { get; init; } = true;
+
+    public bool ListsWarnings { get; init; } = true;
+
+    public bool ListsErrors { get; init; } = true;
+
+    /// <summary>
     /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
     /// hand — with the defaults, instead of failing on them later.
     /// </summary>

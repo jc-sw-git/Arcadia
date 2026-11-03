@@ -46,7 +46,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     private readonly ControllerSupportService _support;
     private readonly SettingsChanges _changes;
-    private readonly Action<string> _notify;
+    private readonly Action<HealthSeverity, string> _notify;
     private readonly IPanEmulationView _pan;
     private readonly PanRows _panRows;
     private readonly SisrRows _sisrRows;
@@ -86,7 +86,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <param name="notify">Shows a toast, e.g. "SISR ist vollständig entfernt."</param>
     /// <param name="steam">Steam is installed, and opening its launcher page: the group "Steam" at the end leads there.</param>
     public ControllerSettingsViewModel(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay,
-        Action<string> notify, (Func<bool> IsInstalled, Action OpenPage)? steam = null)
+        Action<HealthSeverity, string> notify, (Func<bool> IsInstalled, Action OpenPage)? steam = null)
         : base("Controller", "M7 7h10a5 5 0 0 1 4.6 6.9l-1.3 3.2a2.3 2.3 0 0 1-3.9.6L14.6 16H9.4l-1.8 1.7a2.3 2.3 0 0 1-3.9-.6l-1.3-3.2A5 5 0 0 1 7 7z M8 10v3 M6.5 11.5h3 M16 10.5v.01 M17.5 12.5v.01")
     {
         _support = support;
@@ -373,7 +373,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             return;
         }
 
-        _notify("SISR ist vollständig entfernt.");
+        _notify(HealthSeverity.Info, "SISR ist vollständig entfernt.");
         Refresh();
         FocusRowAboveSisr();
     });

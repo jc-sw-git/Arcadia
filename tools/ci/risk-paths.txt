@@ -18,3 +18,4 @@ src/Arcadia.Launchers/DirectLauncherClient.cs
 src/Arcadia.Launchers/Epic/EpicLauncherClient.cs
 src/Arcadia.Launchers/Steam/SteamInstallation.cs
 src/Arcadia.Launchers/Steam/Account/**
+src/Arcadia.App/Messages/LogFiles.cs

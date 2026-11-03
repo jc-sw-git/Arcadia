@@ -150,7 +150,7 @@ internal sealed class LauncherLibraryRows
 
             if (await Task.Run(() => choice.Find(folder)) is not { } root)
             {
-                host.Notify($"Dort liegt kein {name}: Arcadia sucht {choice.Expected}.");
+                host.Warn($"Dort liegt kein {name}: Arcadia sucht {choice.Expected}.");
                 return;
             }
 

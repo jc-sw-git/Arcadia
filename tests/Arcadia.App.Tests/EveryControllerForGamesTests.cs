@@ -196,6 +196,35 @@ public sealed class EveryControllerForGamesTests
         Assert.Equal(PanEmulationState.Running, arcadia.ForGames.Status.State);
     }
 
+    /// <summary>
+    /// #410 (owner's rc.2 test): HidHide gone after the restart, Pan on, a DualSense connected. Pan answers "HidHide's
+    /// driver missing"; the settings show only "HidHide fehlt" with "Installieren": no "HidHide ist nicht aktiv" beside
+    /// it and no "Controller zuordnen", as nothing is emulated.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T410-1")]
+    public async Task With_a_part_missing_only_its_row_shows_and_there_is_nothing_to_assign()
+    {
+        var arcadia = await ArcadiaDriver.StartAsync(SteamAndGog, new AppSettings { PanEnabled = true, ActiveLaunchers = ["steam", "gog"] }, new FakeSteam { HidHideVersion = null });
+        using var _ = arcadia;
+        arcadia.Pan.Hiding = PanReason.HidHideMissing;
+        arcadia.Sdl.Plug(DualSense);
+        arcadia.StartControllers();
+        arcadia.IsArcadiaInFront = false;
+        await arcadia.TickSteamControllerAsync();
+        arcadia.PollControllers();
+
+        var controller = OpenControllerSettings(arcadia);
+        await arcadia.TickControllerSupportAsync();
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Zeile „HidHide fehlt“");
+
+        Assert.Equal(["issue:hidhide-missing"], RowsBelow(controller).Where(key => key != PanRows.RestoreKey));
+        Assert.Equal("Installieren", Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).ActionText);
+        Assert.Equal(0, arcadia.XboxPads.Plugged);
+        // On, but not as running: the switch points to the problem below.
+        Assert.Equal("Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.", controller.Rows.OfType<SetupSwitchRowViewModel>().Single().Subtitle);
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T238-7")]
     public async Task A_controller_Pan_cant_hide_reaches_games_directly_and_one_row_lists_it_with_why()

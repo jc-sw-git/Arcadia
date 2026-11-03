@@ -174,6 +174,9 @@ public sealed class PanRows
 
     private bool IsBusy => _support.BusyText is not null;
 
+    /// <summary>A part of the emulation is missing, too old or waits for the restart (<see cref="EmulationParts.IsMissingPart"/>).</summary>
+    private bool PartMissing => _support.Issues.Any(EmulationParts.IsMissingPart);
+
     private bool IsInstalling => _support.BusyText == ControllerSupportService.DriversBusyText;
 
     /// <summary>The rows of the group, in order; call on every change of the support, the emulation or the settings.</summary>
@@ -220,7 +223,8 @@ public sealed class PanRows
         var blockerRows = blockers.Select(blocker => IssueRow(blocker, failed: null)).ToList();
         FirstWarningKey = blockerRows.FirstOrDefault()?.Key
             ?? warnings.FirstOrDefault(row => row.Severity > HealthSeverity.Info)?.Key ?? warnings.FirstOrDefault()?.Key;
-        var layouts = !notHere && !allMissing && IsOn && UpdateLayouts();
+        // Nothing to assign while a part is missing: the emulation doesn't run (#410).
+        var layouts = !notHere && !allMissing && IsOn && !PartMissing && UpdateLayouts();
         return
         [
             Main,
@@ -370,7 +374,9 @@ public sealed class PanRows
             ids.Add(issue.Id);
         }
 
-        foreach (var (id, row) in EmulationRows(status))
+        // A part is missing: the emulation can't run, and its part rows say what to do. What the emulation reports then
+        // only follows from it and could contradict them, e.g. "HidHide ist nicht aktiv" beside "HidHide fehlt" (#410).
+        foreach (var (id, row) in PartMissing ? [] : EmulationRows(status))
         {
             if (ids.Add(id))
             {

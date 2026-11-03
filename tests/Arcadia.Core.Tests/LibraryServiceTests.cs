@@ -2,13 +2,12 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
-using Microsoft.Extensions.Time.Testing;
 
 namespace Arcadia.Core.Tests;
 
 public sealed class LibraryServiceTests
 {
-    private readonly FakeTimeProvider _time = new();
+    private readonly TimerWatchingTimeProvider _time = new();
 
     // Ignores its token, as a scanner stuck in a file read on a share that went away would.
     private readonly FakeScanner _epic = new(KnownLaunchers.Epic) { Gate = new TaskCompletionSource() };
@@ -70,18 +69,19 @@ public sealed class LibraryServiceTests
         }
     }
 
-    // The deadline runs on fake time, and its wait may begin only after the scan started: the clock moves on until the
-    // load ends, so a wait that began late still sees its deadline pass.
+    // The deadline runs on fake time, and its waits begin only around the scans: each scan's expiry, and the wait for
+    // the scan that hangs (the one that answered needs none). The clock moves once, when all three exist.
     private async Task<T> PastTheDeadline<T>(Task<T> load)
     {
         var until = DateTime.UtcNow + TimeSpan.FromSeconds(30);
-        while (!load.IsCompleted)
+        while (_time.TimersCreated(LibraryService.ScanDeadline) < 3)
         {
-            Assert.True(DateTime.UtcNow < until, "Das Laden endete nicht an der Frist.");
-            _time.Advance(LibraryService.ScanDeadline);
+            Assert.True(DateTime.UtcNow < until, "Die Frist hat nicht angefangen.");
             await Task.Delay(10);
         }
 
-        return await load;
+        Assert.False(load.IsCompleted);
+        _time.Advance(LibraryService.ScanDeadline);
+        return await load.WaitAsync(TimeSpan.FromSeconds(30));
     }
 }

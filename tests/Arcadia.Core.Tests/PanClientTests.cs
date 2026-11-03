@@ -284,7 +284,7 @@ public sealed class PanClientTests : IAsyncDisposable
         Assert.False(_time.HasTimer(PanClient.Retry));
         Assert.False(_client.IsConnected);
         _time.Advance(PanClient.SlowRetry);
-        await WaitUntil(() => _client.IsConnected, "verbunden nach dem langsamen Wiederholen");
+        await AdvanceUntil(() => _client.IsConnected, "verbunden nach dem langsamen Wiederholen");
     }
 
     [Fact]

@@ -12,11 +12,14 @@ public sealed class TimerWatchingTimeProvider : FakeTimeProvider
     private readonly List<TimeSpan> _dueTimes = [];
 
     /// <summary>Whether a timer was ever created to fire after <paramref name="dueTime"/>.</summary>
-    public bool HasTimer(TimeSpan dueTime)
+    public bool HasTimer(TimeSpan dueTime) => TimersCreated(dueTime) > 0;
+
+    /// <summary>How many timers were created to fire after <paramref name="dueTime"/>.</summary>
+    public int TimersCreated(TimeSpan dueTime)
     {
         lock (_lock)
         {
-            return _dueTimes.Contains(dueTime);
+            return _dueTimes.Count(due => due == dueTime);
         }
     }
 

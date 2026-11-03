@@ -30,6 +30,9 @@ internal sealed record SteamApp(string AppId, string Name)
 
     public long BytesStaged { get; init; }
 
+    /// <summary>The build Steam updates to; null leaves the key out, as older manifests do (#288).</summary>
+    public long? TargetBuildId { get; init; }
+
     public string InstallDir => new(Name.Where(c => char.IsLetterOrDigit(c) || c == ' ').ToArray());
 
     public string Acf => $$"""
@@ -49,6 +52,7 @@ internal sealed record SteamApp(string AppId, string Name)
         	"BytesDownloaded"		"{{BytesDownloaded}}"
         	"BytesToStage"		"{{BytesToStage}}"
         	"BytesStaged"		"{{BytesStaged}}"
+        {{(TargetBuildId is { } target ? $"\t\"TargetBuildID\"\t\t\"{target}\"" : string.Empty)}}
         	"UserConfig"
         	{
         		"language"		"german"

@@ -15,7 +15,7 @@ public sealed class SteamScannerTests : IDisposable
         }
     }
 
-    private static string Manifest(string appId, string name, string installDir = "Game", int stateFlags = 4, string buildId = "22479045", string lastPlayed = "1775679163", string lastOwner = "76561197960278073") => $$"""
+    private static string Manifest(string appId, string name, string installDir = "Game", int stateFlags = 4, string buildId = "22479045", string lastPlayed = "1775679163", string lastOwner = "76561197960278073", string extra = "") => $$"""
         "AppState"
         {
         	"appid"		"{{appId}}"
@@ -28,6 +28,7 @@ public sealed class SteamScannerTests : IDisposable
         	"SizeOnDisk"		"8207380004"
         	"buildid"		"{{buildId}}"
         	"LastOwner"		"{{lastOwner}}"
+        	{{extra}}
         	"UserConfig"
         	{
         		"language"		"english"
@@ -306,6 +307,24 @@ public sealed class SteamScannerTests : IDisposable
         Assert.Equal(new SteamPlayStats(null, null), stats[220]);
         Assert.Empty(SteamScanner.ReadPlayStats(null));
         Assert.Empty(SteamScanner.ReadPlayStats("broken {"));
+    }
+
+    // At a Steam start Steam flags Half-Life 2 for a few seconds although nothing changed: same build, nothing to
+    // download (owner's content_log, #288). After a finished update the byte counters stay in the manifest.
+    [Theory]
+    [InlineData(6, "22479045", "0", "0", false)]
+    [InlineData(6, "22479045", "28153264", "28153264", false)]
+    [InlineData(6, "26384423", "129207952", "0", true)]
+    [InlineData(6, "26384423", "0", "0", true)]
+    [InlineData(6, "22479045", "907462542", "1000", true)]
+    [InlineData(4, "26384423", "129207952", "0", false)]
+    public void Pending_update_needs_a_new_build_or_bytes_left_to_download(int stateFlags, string targetBuildId, string toDownload, string downloaded, bool updateAvailable)
+    {
+        var extra = $"\"TargetBuildID\" \"{targetBuildId}\" \"BytesToDownload\" \"{toDownload}\" \"BytesDownloaded\" \"{downloaded}\"";
+
+        var game = SteamScanner.ParseManifest(Manifest("220", "Half-Life 2", stateFlags: stateFlags, extra: extra), _root);
+
+        Assert.Equal(updateAvailable, game?.UpdateAvailable);
     }
 
     [Fact]

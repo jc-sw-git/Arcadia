@@ -144,6 +144,33 @@ public sealed class InstallTrackerTests
     }
 
     [Fact]
+    public async Task Takes_the_update_state_a_monitor_reports_and_keeps_it_while_the_monitor_fails()
+    {
+        var steam = new FakeMonitor("steam") { Updates = new() { ["220"] = true, ["440"] = false } };
+        var tracker = TwoLaunchers(steam, []);
+        Assert.Null(tracker.UpdateOf("steam:220"));
+
+        await tracker.PollAsync();
+        Assert.True(tracker.UpdateOf("steam:220"));
+        Assert.False(tracker.UpdateOf("steam:440"));
+        Assert.Null(tracker.UpdateOf("epic:a"));
+
+        steam.Updates["220"] = false;
+        await tracker.PollAsync();
+        Assert.False(tracker.UpdateOf("steam:220"));
+
+        steam.Updates["220"] = true;
+        steam.Fails = true;
+        await tracker.PollAsync();
+        Assert.False(tracker.UpdateOf("steam:220"));
+
+        steam.Fails = false;
+        steam.Updates.Remove("220");
+        await tracker.PollAsync();
+        Assert.Null(tracker.UpdateOf("steam:220"));
+    }
+
+    [Fact]
     public async Task A_failing_monitor_keeps_its_progress_while_the_others_apply()
     {
         var steam = new FakeMonitor("steam");

@@ -3,8 +3,13 @@
 ## Library (`SteamScanner`)
 
 Libraries from `steamapps/libraryfolders.vdf` (`path`), one `appmanifest_<appid>.acf` per installed app; libraries are
-re-read on every scan, so added or missing drives need no handling of their own. `StateFlags` bit 2 = update pending
-(4 = installed, 6 = with update); a first install without `buildid` is not shown. An app nobody owns any more keeps its
+re-read on every scan, so added or missing drives need no handling of their own. `StateFlags` bit 2 = update flagged
+(4 = installed, 6 = with update); a first install without `buildid` is not shown. The flag alone isn't an update
+(`SteamPendingUpdate`): at a Steam start Steam flags Half-Life 2 for seconds with the same build and 0 bytes to
+download, then drops it (content log: `Dependency removed: parent 380, child 220` … `has no changes`). A real update has
+`TargetBuildID` ≠ `buildid` or `BytesDownloaded` < `BytesToDownload`; both counters stay in the manifest after a finished
+update. Older manifests lack `TargetBuildID`; there the flag decides. `SteamInstallMonitor` reports the update state with
+every poll, so it shows and goes live; it parses a manifest only when its time or length changed. An app nobody owns any more keeps its
 manifest and files, but Steam writes `LastOwner` `0` and hides it from the library (e.g. the Half-Life 2 episodes after
 Valve merged them into Half-Life 2); Arcadia hides it too. Owned apps carry the account's SteamID64 (family sharing not
 checked, presumably the lender's); such manifests also had `StateFlags` bit 64, meaning unknown, so only `LastOwner`

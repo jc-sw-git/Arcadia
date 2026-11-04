@@ -6,7 +6,7 @@ test cases from the quality engineer before implementation: these are its scenar
 criteria one to one, for the quality engineer to check in the review. Acceptance tests use `ArcadiaDriver` (fake
 Steam, Pan and releases, fake time).
 
-**Status:** Automated: T166-1 to T166-7, T166-9 to T166-14, T166-17, the failing download of T166-8 · QE: T166-15 · Open for the owner: T166-16; T166-8's real update is an RC test
+**Status:** Automated: T166-1 to T166-7, T166-9 to T166-14, T166-17, the failing download of T166-8 · QE: T166-15 · Owner: T166-16 done; T166-8's real update is an RC test
 
 **Opening**
 
@@ -54,7 +54,7 @@ Steam, Pan and releases, fake time).
       when entries go; more than five entries fade at the bottom; long title and short text end with "…", "seit hh:mm"
       and the buttons never cut; footer as designed; empty state centred, confetti falls once; 200 % scaling.
       · E2E: no (looking at the real window; QE's own run)
-- [ ] **T166-16** **Owner:** A game or the mouse mode comes to the front while the modal is open: back in Arcadia it is open as it
+- [x] **T166-16** **Owner:** A game or the mouse mode comes to the front while the modal is open: back in Arcadia it is open as it
       was. · E2E: no (Arcadia really going to the background on Windows)
 
 History:
@@ -65,3 +65,4 @@ History:
 | T166-1 to T166-14, T166-17 (+ new test for "seit" on a level change, T166-4) | 2026-11-04 | QE (Claude) | PR branch, Release, `tools/ci/run-tests.sh 4`, Linux container, headless | ✅ (automated, all 3,500 tests green) | – |
 | T166-15 | 2026-11-04 | QE (Claude) | PR branch, Release, headless window captures on Linux (fake Steam and Pan, DualSense and keyboard simulated, render scaling 2) | ✅ focus ring on first, middle, last entry and both buttons; chip Y/△/V and hover like the search chip; top edge stays (120 px with 2, 1, 0 entries); fade under the sixth entry; long title and short text end with "…", "seit" and buttons whole; footer; empty state centred with ✕ | Not seen: real Windows display scaling and the confetti's motion (only its end state) |
 | T166-8 (update loading: progress in the entry, no second start) | 2026-11-04 | Claude | PR branch, `dotnet test`, Linux container, headless, download held by the fake feed | ❌ before the fix (the entry showed nothing while loading), ✅ after | Fixed in this PR (QE finding) |
+| T166-16 | 2026-11-04 | Owner | Windows, real app | ✅ | – |

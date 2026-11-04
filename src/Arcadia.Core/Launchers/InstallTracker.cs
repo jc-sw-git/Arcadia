@@ -12,8 +12,11 @@ public sealed record InstallResult(string GameKey, InstallOutcome Outcome);
 /// </summary>
 public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time)
 {
-    /// <summary>Epic gives up on its install dialog after 10 minutes.</summary>
-    public static readonly TimeSpan ConfirmationTimeout = TimeSpan.FromMinutes(10);
+    /// <summary>
+    /// How long a game shows that it waits for the launcher's install dialog. Launchers don't say when the player cancels
+    /// it (Steam logs nothing), so the hint ends on its own; a later confirm still shows up through the monitor (#343).
+    /// </summary>
+    public static readonly TimeSpan ConfirmationTimeout = TimeSpan.FromMinutes(1);
 
     /// <summary>How long a poll waits for a monitor; a launcher folder on a share that went away can hang one.</summary>
     public static readonly TimeSpan PollDeadline = TimeSpan.FromSeconds(10);
@@ -53,7 +56,8 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
     public bool? UpdateOf(string gameKey) => _updates.TryGetValue(gameKey, out var update) ? update : null;
 
     /// <summary>
-    /// Records that the launcher's install dialog was opened for <paramref name="game"/>.
+    /// Records that the launcher's install dialog was opened for <paramref name="game"/>; opening it again restarts
+    /// <see cref="ConfirmationTimeout"/>.
     /// </summary>
     /// <returns>The state to show until the next poll, or null if the launcher isn't watched.</returns>
     public InstallProgress? Started(Game game)

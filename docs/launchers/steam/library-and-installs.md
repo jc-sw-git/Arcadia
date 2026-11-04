@@ -37,6 +37,11 @@ Steam, and of two links opened at once Steam got only the second.
 
 ## Installs (`SteamInstallMonitor`)
 
+`steam://install/<id>` opens Steam's install dialog. Steam logs no cancel of it: `console_log.txt` has only
+`ExecuteSteamURL`, `content_log.txt` reports the app (`state changed : Update Required,…`) about 2 s after the confirm,
+`webhelper.txt` at most the popup's first creation (`PopupWindow_InstallModal_…`), never its closing. So Arcadia's
+"Bitte in Steam bestätigen" ends after `InstallTracker.ConfirmationTimeout` (1 min), and a later confirm shows up
+through the monitor (#343).
 A new install's manifest appears with `StateFlags` 2 and `buildid` 0, then 1026 (+1024 started) while downloading *or*
 waiting, 1538 (+512) when paused, 4 when done; an update of an installed game is 1030. Steam downloads one app at a
 time but flags all waiting ones alike, so the app whose `BytesDownloaded`/`BytesStaged` moved last is the downloading

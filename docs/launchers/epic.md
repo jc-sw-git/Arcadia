@@ -23,6 +23,10 @@ re-sends once if no process appears from the install directory within 30 s. If t
   version. Launchable add-ons (UEFN: `Fortnite_Studio`) count by `addons/launchable` even though their
   `mainGameItem`/`MainGameAppName` names a game. Installing an engine queues its plugins (`QuixelBridge_<v>`,
   `FabPlugin_<v>`, categories `plugins/engine`) as followers with their own manifests in the engine's folder.
+- `…?action=install` for a game opens Epic's install dialog; a confirm logs `AppInstallUriHandler: Install-location
+  selector concluded for AppId <id> (accepted=true)`, then `RequestAppInstall`. A cancelled dialog was not seen in
+  the logs yet (presumably `accepted=false`), so Arcadia doesn't use the line: the waiting state ends after
+  `InstallTracker.ConfirmationTimeout` (#343).
 - `…?action=install` for an engine logs "dispatching install" but shows no dialog, so Arcadia opens
   `com.epicgames.launcher://ue/library` instead; no dialog opens there either: the user starts the installation
   (`Game.InstallStartsInLauncher`), and only then does it show in Arcadia with its progress.

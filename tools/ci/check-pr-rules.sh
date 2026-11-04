@@ -36,7 +36,10 @@ done < tools/ci/risk-paths.txt
 if [[ -n "$risk_file" ]]; then
   handoff=$(section Handoff)
   for line in "Risk, on the player's PC:" "Risk, logs and undo:"; do
-    if ! grep -F "**$line**" <<< "$handoff" | grep -qE '\*\*[[:space:]]*[^[:space:]*]'; then
+    # What follows the bold label; an empty rest means the line is still the bare label.
+    written=$(grep -F "**$line**" <<< "$handoff" | head -1 || true)
+    rest="${written#*"**$line**"}"
+    if [[ -z "$written" || "$rest" =~ ^[[:space:]]*$ ]]; then
       errors+=("The PR touches the risk path $risk_file; its Handoff needs the line '**$line** …' filled in (docs/personas/architect.md).")
     fi
   done

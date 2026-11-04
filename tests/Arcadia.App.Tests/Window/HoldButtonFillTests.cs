@@ -59,7 +59,12 @@ public sealed class HoldButtonFillTests
     }
 
     /// <summary>The fill a 1 s hold reaches at most after <paramref name="held"/>; it starts on the frame after the press.</summary>
-    private static double AtMost(TimeSpan held) => Math.Min(1, held.TotalSeconds);
+    /// <summary>
+    /// The animation starts on the render clock's last tick, which can be a frame before the stopwatch started: on a
+    /// Windows runner it was 3 ms ahead (0.334 after 0.331 s). One frame of slack covers that without letting a fill
+    /// that doesn't follow the hold pass.
+    /// </summary>
+    private static double AtMost(TimeSpan held) => Math.Min(1, held.TotalSeconds + 1.0 / 60);
 
     /// <summary>The notice of a firmware update Steam tried through the copy (#295): its buttons act only when held.</summary>
     private static async Task<ArcadiaWindow> FirmwareNoticeAsync()

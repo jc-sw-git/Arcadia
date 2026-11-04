@@ -454,8 +454,11 @@ public sealed class RecentMessagesAndLogsTests
         foreach (var (key, kind) in new[] { ("logging-log-arcadia", LogKind.Arcadia), ("logging-log-viiper", LogKind.Viiper), ("logging-log-pan", LogKind.Pan) })
         {
             arcadia.FocusRow(key);
+            // Waits for this log by its count, taken before A: LastOrDefault() of the empty list is LogKind.Arcadia, so a
+            // wait on the last kind alone was met before Arcadia's open had run, and the next open could overtake it.
+            var expected = arcadia.Logs.Opened.Count + 1;
             arcadia.Press(UiAction.Accept);
-            await arcadia.WaitUntilAsync(() => arcadia.Logs.Opened.LastOrDefault() == kind && byController == arcadia.Logs.Opened.Count, $"{kind} geöffnet");
+            await arcadia.WaitUntilAsync(() => arcadia.Logs.Opened is { } opened && opened.Count == expected && opened[^1] == kind && byController == expected, $"{kind} geöffnet");
         }
 
         Assert.Equal([LogKind.Arcadia, LogKind.Viiper, LogKind.Pan], arcadia.Logs.Opened);

@@ -1,7 +1,7 @@
 # Test plans
 
 One test plan per feature iteration, as a folder (`iteration-1/`, `iteration-2/`, …): one file per
-issue (`<issue, three digits>-<title>.md`, e.g. `015-settings-page.md`) and a `README.md` as the
+issue (`<issue, three digits>-<title>.md`, e.g. `015-settings-page.md`, a copy of [TEMPLATE.md](TEMPLATE.md)) and a `README.md` as the
 overview with the list of files, the acceptance review, the exploratory test and the acceptance tests.
 It is the only source for all manual tests of that iteration: what is to be tested, who tested what
 and when, what went wrong and what came of it. Whoever tests or extends an issue reads only its file,
@@ -21,6 +21,10 @@ not the whole folder.
   existing test cases), it still gets a section with one line saying why,
   and names the existing test cases it touches:
   `# #67 Split MainViewModel` → "No new test cases: pure refactoring; touches T41-3 to T41-6."
+- **Layout:** every issue file is a copy of [TEMPLATE.md](TEMPLATE.md). It shows at a glance what is left for the
+  owner: a case is ticked (`[x]`) as soon as an automated test or the quality engineer's run passed it; the cases handed
+  to him stay open and start with **Owner:**; the **Status:** line names which cases are automated, which the quality
+  engineer ran and which are open for the owner.
 - **Test case IDs** are `T<issue>-<running number>`, e.g. `T15-2`. What belongs to no issue
   (the groundwork in Iteration 1) is in `grundgeruest.md` with `G-<n>`. They never change; an
   outdated test case is ~~struck through~~ with a reason, not deleted.
@@ -62,21 +66,3 @@ not the whole folder.
   behaviour); the case is safety-critical (HidHide, VIIPER, firmware, crash); or the quality engineer wrote
   the test.
 - **Review** per PR (quality engineer): does every test cover the text of its test case IDs, where are the gaps?
-
-## Template for an issue
-
-File `iteration-<n>/<issue, three digits>-<title>.md`:
-
-```markdown
-# #<issue> <title>
-
-- [ ] **T<issue>-1** <What to do, what must happen; controller only, B goes back> · E2E: yes
-- [ ] **T<issue>-2** <…> · E2E: no (<reason>)
-
-History:
-
-| Test | Date | Who | Build / environment | Result | Consequence |
-|---|---|---|---|---|---|
-| T<issue>-1 | YYYY-MM-DD | Claude | PR #…, demo data | ✅ | – |
-| T<issue>-2 | YYYY-MM-DD | owner | v0.x.y-rc1, real PC | ❌ <cause> | #… (fixed in this iteration / iteration N+1 / backlog) |
-```

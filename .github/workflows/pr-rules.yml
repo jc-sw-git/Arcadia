@@ -1,0 +1,44 @@
+name: PR rules
+
+# Our own way of working, not a rule for contributors: only the owner's PRs (Claude's included, they are opened under
+# his account) run these jobs; others skip them, which a required check counts as passed.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-rules:
+    if: github.event.pull_request.user.login == 'jc-sw-git'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: The CI checks still go red on broken fixtures
+        run: tools/ci/tests/run.sh
+      - name: Branch, Handoff and Review follow the PR rules
+        env:
+          # Passed via env, never interpolated into the script: description and branch are user input.
+          PR_BODY: ${{ github.event.pull_request.body }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: tools/ci/check-pr-rules.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
+  privacy:
+    if: github.event.pull_request.user.login == 'jc-sw-git'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: No private names, ids or paths
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PRIVATE_TERMS: ${{ secrets.PRIVATE_TERMS }}
+        run: tools/ci/check-privacy.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"

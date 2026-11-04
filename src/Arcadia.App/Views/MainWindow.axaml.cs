@@ -20,9 +20,6 @@ public partial class MainWindow : Window
     /// <summary>Space between a cover and its context menu, and between the menu and the window's edge.</summary>
     private const double MenuGap = 24;
 
-    /// <summary>Height of the fades at the grid's edges (Border.listFade in Theme.axaml).</summary>
-    private const double ListFadeHeight = 96;
-
     /// <summary>Closer than this, the launcher chips and the sort button get a divider between them.</summary>
     private const double SortDividerGap = 48;
 
@@ -38,9 +35,6 @@ public partial class MainWindow : Window
     private const double HitRowTop = 8;
 
     private const double HitGridTop = 40;
-
-    /// <summary>The focus ring around a setting reaches this far beyond it (FocusRing in Theme.axaml).</summary>
-    private const double FocusRingRoom = 8;
 
     /// <summary>A step of RS (or Shift+W/S) through the settings' info panel.</summary>
     private const double InfoScrollStep = 160;
@@ -138,11 +132,9 @@ public partial class MainWindow : Window
             _keysDown.Clear();
             _viewModel?.CancelHold();
         };
-        GridScroller.ScrollChanged += (_, _) => UpdateGridFades();
-        _tabs = new TabStrip(TabScroller, TabList, TabEdgeLeft, TabEdgeRight, TabDividerLeft, TabDividerRight, () => _viewModel?.IsTabStripShown != false);
-        _categories = new TabStrip(CategoryScroller, CategoryList, CategoryEdgeLeft, CategoryEdgeRight, CategoryDividerLeft, CategoryDividerRight, () => true);
-        InfoScroller.ScrollChanged += (_, _) => UpdateInfoFades();
-        InfoScroller.SizeChanged += (_, _) => UpdateInfoFades();
+        _tabs = new TabStrip(TabScroller, TabList, TabDividerLeft, TabDividerRight, () => _viewModel?.IsTabStripShown != false);
+        _categories = new TabStrip(CategoryScroller, CategoryList, CategoryDividerLeft, CategoryDividerRight, () => true);
+        InfoScroller.ScrollChanged += (_, _) => UpdateInfoOverflow();
 
         // Coming back from a launcher: games may have been installed or uninstalled there.
         Activated += (_, _) => _viewModel?.Session.RefreshLibraryAsync().Forget("Bibliothek aktualisieren");
@@ -531,7 +523,7 @@ public partial class MainWindow : Window
                 Dispatcher.UIThread.Post(PlaceGameMenu, DispatcherPriority.Loaded);
                 break;
             case nameof(MainViewModel.IsTabStripShown):
-                Dispatcher.UIThread.Post(_tabs.UpdateEdges, DispatcherPriority.Loaded);
+                Dispatcher.UIThread.Post(_tabs.UpdateDividers, DispatcherPriority.Loaded);
                 break;
             case nameof(MainViewModel.Settings):
                 FollowSettingsPage(_viewModel?.Settings);
@@ -618,18 +610,8 @@ public partial class MainWindow : Window
         }
         else if (index > 0 && GameGrid.ContainerFromIndex(index) is { } cover)
         {
-            // Keeps the focused cover clear of the edge fades; at the ends the scroll range stops it.
-            cover.BringIntoView(new Rect(cover.Bounds.Size).Inflate(new Thickness(0, ListFadeHeight)));
+            GridFade.ScrollIntoView(cover);
         }
-    }
-
-    /// <summary>A fade shows only at an edge the grid can still scroll towards (#102).</summary>
-    private void UpdateGridFades()
-    {
-        var offset = GridScroller.Offset.Y;
-        var max = GridScroller.Extent.Height - GridScroller.Viewport.Height;
-        GridFadeTop.Classes.Set("shown", offset > 1);
-        GridFadeBottom.Classes.Set("shown", offset < max - 1);
     }
 
     /// <summary>The settings page opened or closed: its focus and its info panel are followed from here on.</summary>
@@ -660,14 +642,13 @@ public partial class MainWindow : Window
 
         _categories.Center(page.Selected);
         InfoScroller.Offset = default;
-        UpdateInfoFades();
+        UpdateInfoOverflow();
         var byPointer = _focusedByPointer;
         _focusedByPointer = false;
         if (!byPointer && page.FocusedRow is { } row && SettingsRows.ContainerFromItem(row) is { } container)
         {
-            // With room for the focus ring, and above it for the group's heading the row may stand under.
-            var bounds = new Rect(container.Bounds.Size).Inflate(FocusRingRoom);
-            container.BringIntoView(row.StartsGroup ? bounds.Inflate(new Thickness(0, SettingsGroupRoom, 0, 0)) : bounds);
+            // Clear of the fades with its focus ring, and at a group's start with the group's heading above it.
+            SettingsRowsFade.ScrollIntoView(container, row.StartsGroup ? new Thickness(0, SettingsGroupRoom, 0, 0) : default);
         }
     }, DispatcherPriority.Loaded);
 
@@ -677,13 +658,10 @@ public partial class MainWindow : Window
         InfoScroller.Offset = new Vector(0, Math.Clamp(InfoScroller.Offset.Y + (direction * InfoScrollStep), 0, max));
     }
 
-    /// <summary>A fade shows only at an edge the info panel can still scroll towards; the footer then names RS.</summary>
-    private void UpdateInfoFades()
+    /// <summary>While the info panel can scroll, the footer names RS.</summary>
+    private void UpdateInfoOverflow()
     {
-        var offset = InfoScroller.Offset.Y;
         var max = InfoScroller.Extent.Height - InfoScroller.Viewport.Height;
-        InfoFadeTop.Classes.Set("shown", offset > 1);
-        InfoFadeBottom.Classes.Set("shown", offset < max - 1);
         if (_settingsPage is { } page)
         {
             page.InfoOverflows = max > 1;

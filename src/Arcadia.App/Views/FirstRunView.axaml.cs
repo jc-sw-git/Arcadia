@@ -9,9 +9,6 @@ namespace Arcadia.App.Views;
 
 public partial class FirstRunView : UserControl
 {
-    /// <summary>Room around a row for its focus ring when it is brought into view.</summary>
-    private const double FocusRingRoom = 8;
-
     /// <summary>Room above a group's first row for the group's heading.</summary>
     private const double GroupHeadingRoom = 48;
 
@@ -77,8 +74,7 @@ public partial class FirstRunView : UserControl
 
         if ((FoundRows.ContainerFromItem(row) ?? MissingRows.ContainerFromItem(row)) is { } container)
         {
-            var bounds = new Rect(container.Bounds.Size).Inflate(FocusRingRoom);
-            container.BringIntoView(row.StartsGroup ? bounds.Inflate(new Thickness(0, GroupHeadingRoom, 0, 0)) : bounds);
+            RowsFade.ScrollIntoView(container, row.StartsGroup ? new Thickness(0, GroupHeadingRoom, 0, 0) : default);
         }
     }, DispatcherPriority.Loaded);
 }

@@ -11,6 +11,9 @@ permissions:
 
 jobs:
   bug-origin:
+    # Our own way of working (docs/testplans/, docs/releases.md), not a rule for contributors: their PRs skip it,
+    # which a required check counts as passed.
+    if: github.event.pull_request.user.login == 'jc-sw-git'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

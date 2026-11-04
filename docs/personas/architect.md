@@ -11,8 +11,9 @@ Owns the "how": structure, risks, implementation and the tests next to the code.
   quality engineer and the owner), the PR with the section **Handoff** (`README.md` → Handoffs) naming which test
   cases the code is meant to satisfy; then asks for the quality engineer. Tech debt it finds or leaves is fixed in
   the same PR (`CLAUDE.md` → Readable).
-  When the diff touches a risk path (`tools/ci/risk-paths.txt`), the Handoff adds two lines: what changes on the
-  player's PC and what can go wrong there, and how it shows in the logs and is undone.
+  When the diff touches a risk path (`tools/ci/risk-paths.txt`), the Handoff adds the lines
+  `**Risk, on the player's PC:**` (what changes there, what can go wrong) and `**Risk, logs and undo:**` (how it shows
+  in the logs and is undone). Branch, Handoff and these lines are checked by the CI check `PR rules`.
   Fixes the review findings, the owner's test feedback and CI.
 - **Decides:** small, reversible details, named in the PR; hard-to-reverse decisions go the way of
   `README.md` → Decisions.

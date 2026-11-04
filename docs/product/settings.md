@@ -6,11 +6,15 @@
   the header like the launcher tabs (LB/RB, Shift+Q/E, a click; Q/E = LT/RT switch tabs inside a category, e.g.
   launcher pages, as in the library), only those with content; a warning or an error of a category shows its symbol
   beside the name, info nothing. Choosing a category's tab opens it at its top level (the launcher list, not the
-  launcher page left there).
+  launcher page left there) and at its first row, scrolled to the top, not at the row left there (#237); coming back
+  from a launcher's page, the list stands on that launcher.
 - Pattern "Leiste" for every category: one column of rows, ▲ ▼ (W/S) move, ◀ ▶ (A/D) change switches and choices at
   once, A (Space) starts actions; only settings and actions are rows, facts about a setting (e.g. Pan's status, what a
   removal takes) are boxes (`InfoSection`) below its description in the info panel. The info panel beside the rows
   explains the focused row, RS (Shift+W/S, the wheel) scrolls it, fades show more; the mouse over a row focuses it.
+- Rows that don't fit fade into the page at an edge where more rows follow, none where everything fits (#237, same
+  look as the library). ▲ ▼ and a jump to a row scroll it out of the fades with its focus ring, at a group's first row
+  with the heading; the mouse focuses a row under a fade without scrolling, a click passes through, the wheel scrolls.
 - ◀ ▶ wrap at the ends of a value range (e.g. Zeigergeschwindigkeit 1 → ◀ → 9; a switch flips with either arrow), so
   an arrow is never greyed out just for standing at an end (a click on a greyed-out arrow fell through to the row and
   changed the value the other way). Only a value that can't be taken greys an arrow out (e.g. "Aktiv" for a launcher

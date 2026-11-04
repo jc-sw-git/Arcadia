@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Fails a pull request that closes an issue without adding that issue's tests to the test plan
 # (Definition of Done in CLAUDE.md, format in docs/testplans/README.md).
+# Every issue file the PR adds or changes must also keep the template's layout (tools/ci/check-testplan-file.sh).
 # Usage: check-testplan.sh <base-sha> <head-sha>, PR description in $PR_BODY.
 set -euo pipefail
 
@@ -18,6 +19,15 @@ if (( ${#unlisted[@]} )); then
   echo "::error::Not listed in their iteration's README.md: ${unlisted[*]}"
   exit 1
 fi
+
+reviewed=no
+grep -qE '^## +Review'$'\r''?$' <<< "${PR_BODY:-}" && reviewed=yes
+layout_failed=0
+while IFS= read -r file; do
+  [[ "$(basename "$file")" == README.md ]] && continue
+  tools/ci/check-testplan-file.sh "$file" "$reviewed" || layout_failed=1
+done < <(git diff --name-only --diff-filter=AM "$base...$head" -- 'docs/testplans/iteration-*/*.md')
+(( layout_failed == 0 )) || exit 1
 
 # GitHub's closing keywords, e.g. "Closes #23", "fixes #8".
 issues=$(printf '%s' "${PR_BODY:-}" \

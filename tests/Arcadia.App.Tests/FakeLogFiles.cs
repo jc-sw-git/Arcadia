@@ -12,7 +12,19 @@ internal sealed class FakeLogFiles : ILogFiles
         [LogKind.Pan] = LogFileState.PanNotInstalled,
     };
 
-    public List<LogKind> Opened { get; } = [];
+    private readonly List<LogKind> _opened = [];
+
+    /// <summary>The logs opened so far, in order; a copy, as <see cref="Open"/> runs off the UI thread.</summary>
+    public IReadOnlyList<LogKind> Opened
+    {
+        get
+        {
+            lock (_opened)
+            {
+                return [.. _opened];
+            }
+        }
+    }
 
     /// <summary>What <see cref="Open"/> throws, as Windows does without an app for .log or without access.</summary>
     public Exception? Failure { get; set; }
@@ -28,9 +40,9 @@ internal sealed class FakeLogFiles : ILogFiles
             throw failure;
         }
 
-        lock (Opened)
+        lock (_opened)
         {
-            Opened.Add(kind);
+            _opened.Add(kind);
         }
     }
 }

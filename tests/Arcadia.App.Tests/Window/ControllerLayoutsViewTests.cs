@@ -1,3 +1,4 @@
+using Arcadia.App.Controls;
 using Arcadia.App.Input;
 using Arcadia.App.Settings;
 using Arcadia.Core.Launchers;
@@ -61,8 +62,8 @@ public sealed class ControllerLayoutsViewTests
     private static Button RowButton(ArcadiaWindow arcadia, ControllerLayoutRowViewModel row) => Assert.Single(
         arcadia.Window.GetVisualDescendants().OfType<Button>(), button => button.Classes.Contains("settingRow") && button.DataContext == row && button.IsEffectivelyVisible);
 
-    private static Border Fade(ArcadiaWindow arcadia, string name) =>
-        Assert.Single(arcadia.Window.GetVisualDescendants().OfType<Border>(), border => border.Name == name && border.IsEffectivelyVisible);
+    private static EdgeFade Fade(ArcadiaWindow arcadia) =>
+        Assert.Single(arcadia.Window.GetVisualDescendants().OfType<EdgeFade>(), fade => fade.Name == "RowsFade" && fade.IsEffectivelyVisible);
 
     /// <summary>Set ARCADIA_CAPTURES to a folder to look at the drawn states (not needed for the test).</summary>
     private static void Keep(ArcadiaWindow arcadia, string name)
@@ -87,8 +88,8 @@ public sealed class ControllerLayoutsViewTests
         arcadia.Press(UiAction.Down, times: 2);
         arcadia.AssertRingAround(RowButton(arcadia, layouts.Rows[2]), "letzte Zeile");
         Keep(arcadia, "layouts-last");
-        Assert.DoesNotContain("shown", Fade(arcadia, "FadeTop").Classes);
-        Assert.DoesNotContain("shown", Fade(arcadia, "FadeBottom").Classes);
+        Assert.False(Fade(arcadia).ShowsStart);
+        Assert.False(Fade(arcadia).ShowsEnd);
         RingGeometry.AssertNoRingCutOff(arcadia.Window, () => arcadia.Settle().WaitForTransitions(), "Controller zuordnen");
     }
 
@@ -99,15 +100,15 @@ public sealed class ControllerLayoutsViewTests
         var (arcadia, layouts) = await OpenAsync(Many);
         using var _ = arcadia;
         Assert.Equal(Many.Length, layouts.Rows.Count);
-        Assert.DoesNotContain("shown", Fade(arcadia, "FadeTop").Classes);
-        Assert.Contains("shown", Fade(arcadia, "FadeBottom").Classes);
+        Assert.False(Fade(arcadia).ShowsStart);
+        Assert.True(Fade(arcadia).ShowsEnd);
         Keep(arcadia, "layouts-many-top");
 
         arcadia.Press(UiAction.Down, times: Many.Length - 1);
         arcadia.Settle();
         arcadia.AssertRingAround(RowButton(arcadia, layouts.Rows[^1]), "letzte von vielen Zeilen");
-        Assert.Contains("shown", Fade(arcadia, "FadeTop").Classes);
-        Assert.DoesNotContain("shown", Fade(arcadia, "FadeBottom").Classes);
+        Assert.True(Fade(arcadia).ShowsStart);
+        Assert.False(Fade(arcadia).ShowsEnd);
         Keep(arcadia, "layouts-many-end");
         RingGeometry.AssertNoRingCutOff(arcadia.Window, () => arcadia.Settle().WaitForTransitions(), "Controller zuordnen, viele");
 

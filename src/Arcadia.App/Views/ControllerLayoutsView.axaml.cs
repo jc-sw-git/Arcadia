@@ -10,9 +10,6 @@ namespace Arcadia.App.Views;
 /// <summary>"Controller zuordnen" (#238 D3a): keeps the focused row in sight and fades the list where more rows follow.</summary>
 public partial class ControllerLayoutsView : UserControl
 {
-    /// <summary>Room around a row for its focus ring, and past the fades, when it is brought into view.</summary>
-    private const double FocusRoom = 8;
-
     /// <summary>As in the settings: a few pixels of "move" under a resting pointer don't count (the rows scrolled under it).</summary>
     private const double PointerMoveThreshold = 6;
 
@@ -23,7 +20,6 @@ public partial class ControllerLayoutsView : UserControl
     public ControllerLayoutsView()
     {
         InitializeComponent();
-        RowsScroller.ScrollChanged += (_, _) => UpdateFades();
         RowsScroller.AddHandler(PointerMovedEvent, OnRowPointerMoved, RoutingStrategies.Bubble, handledEventsToo: true);
     }
 
@@ -66,17 +62,7 @@ public partial class ControllerLayoutsView : UserControl
         _focusedByPointer = false;
         if (!byPointer && _viewModel?.FocusedRow is { } row && LayoutRows.ContainerFromItem(row) is { } container)
         {
-            container.BringIntoView(new Rect(container.Bounds.Size).Inflate(new Thickness(0, FocusRoom + FadeBottom.Height / 2)));
+            RowsFade.ScrollIntoView(container);
         }
-
-        UpdateFades();
     }, DispatcherPriority.Loaded);
-
-    private void UpdateFades()
-    {
-        var offset = RowsScroller.Offset.Y;
-        var max = RowsScroller.Extent.Height - RowsScroller.Viewport.Height;
-        FadeTop.Classes.Set("shown", offset > 1);
-        FadeBottom.Classes.Set("shown", offset < max - 1);
-    }
 }

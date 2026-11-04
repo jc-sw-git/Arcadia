@@ -267,13 +267,17 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         return true;
     }
 
-    /// <summary>The tab "Launcher" is chosen again: the list, on the launcher whose page was open (owner, 2026-10-30).</summary>
+    /// <summary>The tab "Launcher" is chosen again: the list, on the launcher whose page was open, else its first row.</summary>
     public override void ShowTopLevel()
     {
         if (_page is { } id)
         {
             ClosePage();
             Focus(_rows[id]);
+        }
+        else
+        {
+            base.ShowTopLevel();
         }
     }
 

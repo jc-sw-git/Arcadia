@@ -1,3 +1,4 @@
+using Arcadia.App.Controls;
 using Arcadia.App.Input;
 using Arcadia.App.ViewModels;
 using Avalonia;
@@ -33,8 +34,9 @@ public sealed class GridFadeTests
         AssertFades(arcadia, top: true, bottom: true);
 
         // Softly: both fades change their opacity over a moment, not at once.
-        Assert.All(new[] { "GridFadeTop", "GridFadeBottom" }, name => Assert.Contains(
-            arcadia.Named<Border>(name).Transitions ?? [],
+        var fade = arcadia.Named<EdgeFade>("GridFade");
+        Assert.All(new[] { fade.StartFade, fade.EndFade }, strip => Assert.Contains(
+            strip.Transitions ?? [],
             transition => transition is DoubleTransition { Property.Name: "Opacity", Duration.TotalMilliseconds: > 0 }));
     }
 
@@ -102,8 +104,9 @@ public sealed class GridFadeTests
     private static void AssertFades(ArcadiaWindow arcadia, bool top, bool bottom)
     {
         arcadia.WaitForTransitions();
-        Assert.Equal(top ? 1 : 0, arcadia.Named<Border>("GridFadeTop").Opacity, 2);
-        Assert.Equal(bottom ? 1 : 0, arcadia.Named<Border>("GridFadeBottom").Opacity, 2);
+        var fade = arcadia.Named<EdgeFade>("GridFade");
+        Assert.Equal(top ? 1 : 0, fade.StartFade.Opacity, 2);
+        Assert.Equal(bottom ? 1 : 0, fade.EndFade.Opacity, 2);
     }
 
     /// <summary>Not the focused tile: its lift and ring reach into the grid's padding.</summary>
@@ -115,12 +118,12 @@ public sealed class GridFadeTests
         arcadia.WaitForTransitions();
         var tile = arcadia.Tile(arcadia.Arcadia.FocusedGame!);
         var focused = arcadia.Bounds(tile);
-        foreach (var name in new[] { "GridFadeTop", "GridFadeBottom" })
+        var fade = arcadia.Named<EdgeFade>("GridFade");
+        foreach (var strip in new[] { fade.StartFade, fade.EndFade })
         {
-            var fade = arcadia.Named<Border>(name);
-            if (fade.Opacity > 0)
+            if (strip.Opacity > 0)
             {
-                Assert.False(arcadia.Bounds(fade).Intersects(focused), $"{when}: Fokus unter {name}");
+                Assert.False(arcadia.Bounds(strip).Intersects(focused), $"{when}: Fokus unter der Ausblendung");
             }
         }
 

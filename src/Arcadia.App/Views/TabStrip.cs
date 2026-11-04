@@ -7,8 +7,8 @@ namespace Arcadia.App.Views;
 
 /// <summary>
 /// A tab strip in the header: the launcher tabs and the settings categories (#15). When not all tabs fit, the strip
-/// turns so the selected tab stands in its middle, as far as the ends allow, it fades out where more tabs follow, and the
-/// wheel turns it; at its widest, dividers mark the gaps to logo and status (owner, 2026-10-21).
+/// turns so the selected tab stands in its middle, as far as the ends allow, and the wheel turns it; at its widest,
+/// dividers mark the gaps to logo and status (owner, 2026-10-21). Its edges fade by themselves (<c>EdgeFade</c>).
 /// </summary>
 internal sealed class TabStrip
 {
@@ -16,23 +16,19 @@ internal sealed class TabStrip
 
     private readonly ScrollViewer _scroller;
     private readonly ItemsControl _list;
-    private readonly Control _edgeLeft;
-    private readonly Control _edgeRight;
     private readonly Control _dividerLeft;
     private readonly Control _dividerRight;
     private readonly Func<bool> _isShown;
 
-    public TabStrip(ScrollViewer scroller, ItemsControl list, Control edgeLeft, Control edgeRight, Control dividerLeft, Control dividerRight, Func<bool> isShown)
+    public TabStrip(ScrollViewer scroller, ItemsControl list, Control dividerLeft, Control dividerRight, Func<bool> isShown)
     {
         _scroller = scroller;
         _list = list;
-        _edgeLeft = edgeLeft;
-        _edgeRight = edgeRight;
         _dividerLeft = dividerLeft;
         _dividerRight = dividerRight;
         _isShown = isShown;
-        scroller.ScrollChanged += (_, _) => UpdateEdges();
-        scroller.SizeChanged += (_, _) => UpdateEdges();
+        scroller.ScrollChanged += (_, _) => UpdateDividers();
+        scroller.SizeChanged += (_, _) => UpdateDividers();
         scroller.PointerWheelChanged += OnWheel;
     }
 
@@ -48,13 +44,9 @@ internal sealed class TabStrip
         SetOffset(left + (container.Bounds.Width / 2) - (_scroller.Viewport.Width / 2));
     }
 
-    public void UpdateEdges()
+    public void UpdateDividers()
     {
-        var offset = _scroller.Offset.X;
         var max = Math.Max(0, _scroller.Extent.Width - _scroller.Viewport.Width);
-        _edgeLeft.IsVisible = offset > 1;
-        _edgeRight.IsVisible = offset < max - 1;
-
         var widest = max > 0 && _isShown();
         _dividerLeft.Classes.Set("shown", widest);
         _dividerRight.Classes.Set("shown", widest);
@@ -70,6 +62,6 @@ internal sealed class TabStrip
     {
         var max = Math.Max(0, _scroller.Extent.Width - _scroller.Viewport.Width);
         _scroller.Offset = new Vector(Math.Clamp(offset, 0, max), 0);
-        Dispatcher.UIThread.Post(UpdateEdges, DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(UpdateDividers, DispatcherPriority.Background);
     }
 }

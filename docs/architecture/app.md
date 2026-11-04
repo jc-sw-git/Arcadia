@@ -75,7 +75,7 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
   - `ControllerLayoutsViewModel`: the modal "Controller zuordnen" (#238), one `ControllerLayoutRowViewModel` per model.
 - `ViewModels/TypeCountLine`, drawn by `Views/CountLineView`: the count line per type in the header and on the
   launcher page, with `Controls/LineIcon` (a stroked icon geometry from `Theme.axaml`).
-- `Views/TabStrip`: launcher tabs and categories (centred, faded, wheel).
+- `Views/TabStrip`: launcher tabs and categories (centred, wheel, dividers at its widest).
 
 ## Controls
 
@@ -84,7 +84,9 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
 button or the keyboard's key, after `Input/InputHints`), `PadGlyph` (one controller button in the printing of the
 controller in use, `InputHints.Symbols` from `InputInUseViewModel.ButtonSymbols`, #215), `HoldRing`, `RevealPanel` (the
 sliding keyboard), `SharedWidthRow` and `CollapsingStack` (the shrinking chips), `CentredDockPanel` (a key's name
-centred between icon and button), `ScreenEdgeFill`. `Input/GamepadRouting` takes the controller's buttons to
+centred between icon and button), `ScreenEdgeFill`, `EdgeFade` (#237: the one edge fade of every list or strip that
+fades where it is cut off; per place orientation, edges, sizes, colour, condition or `ScrollTarget`, `FocusRoom` with
+`ScrollIntoView`; defaults in the style `ctl|EdgeFade` in `Theme.axaml`). `Input/GamepadRouting` takes the controller's buttons to
 `MainViewModel`, ⧉/≡ through `SoloButtons`, and tells it the controller in use (`ControllerInUse`).
 
 ## Services

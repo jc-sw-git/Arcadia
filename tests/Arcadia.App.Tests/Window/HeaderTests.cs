@@ -1,3 +1,4 @@
+using Arcadia.App.Controls;
 using Arcadia.App.Input;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Launchers;
@@ -104,8 +105,8 @@ public sealed class HeaderTests
                 arcadia.Bounds(dividerRight),
                 scroller,
                 dividerLeft.Opacity > 0.99 && dividerRight.Opacity > 0.99,
-                arcadia.Named<Border>("TabEdgeLeft").IsVisible,
-                arcadia.Named<Border>("TabEdgeRight").IsVisible);
+                arcadia.Named<EdgeFade>("TabFade").ShowsStart,
+                arcadia.Named<EdgeFade>("TabFade").ShowsEnd);
         }
     }
 }

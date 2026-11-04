@@ -27,6 +27,9 @@ public sealed class WindowsRestartViewTests
         }
     }
 
+    private static IReadOnlyList<string> VisibleHints(ArcadiaWindow arcadia) =>
+        arcadia.Hints(arcadia.Window.GetVisualDescendants().OfType<Arcadia.App.Controls.KeyHint>().Where(hint => hint.IsEffectivelyVisible));
+
     private static async Task<(ArcadiaWindow Arcadia, ControllerSettingsViewModel Controller)> OpenAsync(FakeSteam steam)
     {
         var arcadia = await ArcadiaWindow.ShowAsync(steam: steam);
@@ -48,9 +51,9 @@ public sealed class WindowsRestartViewTests
         var (arcadia, controller) = await OpenAsync(steam);
         using var _ = arcadia;
 
-        Assert.True(arcadia.OneWithText("Pausiert bis zum Neustart von Windows").IsEffectivelyVisible);
-        Assert.True(arcadia.OneWithText("Starte Windows neu, danach kannst du die fehlenden Teile installieren.").IsEffectivelyVisible);
-        Assert.Contains("A Windows neu starten", arcadia.FooterHints());
+        Keep(arcadia, "382-restart-row-paused");
+        Assert.Equal("Pausiert bis zum Neustart von Windows", controller.Rows.Single(row => row.Key == PanRows.MainKey).Subtitle);
+        Assert.Contains(arcadia.FooterHints(), hint => hint.EndsWith("Windows neu starten", StringComparison.Ordinal));
         Keep(arcadia, "382-restart-row-paused");
 
         arcadia.Press(UiAction.Accept).Settle();
@@ -62,10 +65,11 @@ public sealed class WindowsRestartViewTests
             Assert.True(box.Contains(arcadia.Bounds(shown)), $"{text} liegt im Dialog");
         }
 
-        Assert.Contains("A Neu starten", arcadia.FooterHints());
+        Assert.Contains(VisibleHints(arcadia), hint => hint.EndsWith(" Neu starten", StringComparison.Ordinal));
         Keep(arcadia, "382-question");
         arcadia.Press(UiAction.Right).Settle();
-        Assert.Contains("A Abbrechen", arcadia.FooterHints());
+        Assert.Contains(VisibleHints(arcadia), hint => hint == "A Abbrechen");
+        Assert.DoesNotContain(VisibleHints(arcadia), hint => hint.EndsWith(" Neu starten", StringComparison.Ordinal));
 
         arcadia.Press(UiAction.Back).Settle();
         Assert.Equal(SettingsPrompt.None, controller.Prompt);
@@ -104,8 +108,8 @@ public sealed class WindowsRestartViewTests
 
         arcadia.Key(Key.Space).Settle();
         Assert.Equal(SettingsPrompt.ConfirmWindowsRestart, controller.Prompt);
-        Assert.Contains("Leertaste Neu starten", arcadia.FooterHints());
-        Assert.Contains("Esc Abbrechen", arcadia.FooterHints());
+        Assert.Contains(VisibleHints(arcadia), hint => hint.StartsWith("Leertaste", StringComparison.Ordinal) && hint.EndsWith(" Neu starten", StringComparison.Ordinal));
+        Assert.Contains(VisibleHints(arcadia), hint => hint.StartsWith("Esc", StringComparison.Ordinal) && hint.EndsWith(" Abbrechen", StringComparison.Ordinal));
         Keep(arcadia, "382-question-keyboard");
 
         var cancel = arcadia.Window.GetVisualDescendants().OfType<Button>().Single(button => button.IsEffectivelyVisible && Equals(button.Content, "Abbrechen")

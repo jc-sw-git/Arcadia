@@ -32,7 +32,7 @@ checklist as far as part A has it, for the quality engineer to check in the revi
       · E2E: yes
 - [x] **T465-9** The detail page turns through the hits only (LT/RT); the search (X) finds entries the filter hides.
       · E2E: yes
-- [ ] **T465-10** With the mouse: click the funnel, a category, a value, "Alle Filter zurücksetzen"; the ✕ top right and
+- [x] **T465-10** With the mouse: click the funnel, a category, a value, "Alle Filter zurücksetzen"; the ✕ top right and
       a click beside the modal close and apply; the hints show the keyboard's keys (G, C, Leertaste, Esc). · E2E: no
       (layout and real clicks: window test or the quality engineer's run)
 
@@ -49,7 +49,7 @@ checklist as far as part A has it, for the quality engineer to check in the revi
 
 **Look**
 
-- [ ] **T465-14** Focus ring visible on "Alle Filter zurücksetzen", on the last category, on the first and last type in
+- [x] **T465-14** Focus ring visible on "Alle Filter zurücksetzen", on the last category, on the first and last type in
       the 3-column grid (right edge); margins to the modal's edge top, bottom and beside the footer; "1.204 von 5.000"
       at the funnel (`--demo-games 5000` with a filter); funnel in its three states; hints for Xbox, PlayStation and
       keyboard. · E2E: no (look, the quality engineer's run)
@@ -60,3 +60,4 @@ History:
 |---|---|---|---|---|---|
 | T465-1 to T465-9, T465-11 to T465-13 | 2026-11-04 | Claude (implementation) | branch of the PR, `dotnet test`, Linux container | ✅ | – |
 | T465-1 to T465-9, T465-11 to T465-13 | 2026-11-04 | Claude (implementation) | after the QE findings B1–B5, `dotnet test`, Linux container | ✅ | – |
+| T465-10, T465-14 | 2026-11-04 | Claude (QE review) | branch at 5738853, Debug build under Xvfb, `--demo --demo-games 5000`, GOG with tools, software and soundtracks; keyboard and mouse, no gamepad | ✅ after fixes | first run found B1 (▶ on the reset row: two focus rings) and B2 (mouse reset left the focus in hidden values), fixed in 5738853; PlayStation hints checked only in code (R3/L3 glyphs are the same) |

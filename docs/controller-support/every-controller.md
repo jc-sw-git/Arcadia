@@ -40,7 +40,8 @@ Steam; the other controllers stay taken over. Product rules: `docs/product/contr
 - Rumble: VIIPER's output report (2 bytes, large/small motor) raises `IVirtualXboxPad.Rumbled`; Arcadia holds the
   rumble on the real controller with `HoldRumble` (2 s, renewed every second while it lasts, 0 stops it). Unplugging a
   pad stops it. After a let-go the controller's new SDL id gets the motors the game set last again. The report is read with the pad's own token, cancelled before `ViiperDevice.DisposeAsync`: that waits
-  for its read loop, which otherwise waits for the next report, so an unplug would hang until the game rumbles.
+  for its read loop, which otherwise waits for the next report, so an unplug would hang until the game rumbles. A stream VIIPER closed ends the read by clearing the handler, not with an exception: one passed into
+  Viiper.Client's loop stops a debugger ("Just My Code") and freezes Arcadia with the puck open (#470).
 - A lost pad is replugged; Pan taking it away doesn't count. Three losses in 5 minutes give up (`GaveUp`, a notice),
   "Controller wiederherstellen" and Retry forget them.
 

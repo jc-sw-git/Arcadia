@@ -1,6 +1,6 @@
 # #471 "Controller wiederherstellen" ends the emulation even when the Windows prompt is declined
 
-**Status:** Automated: T471-1, T471-2, T471-3 · QE: – · Open for the owner: T471-4
+**Status:** Automated: T471-1, T471-2, T471-3 · QE: – · Owner: T471-4 done
 
 - [x] **T471-1** The Steam Controller's pad runs in a game, "Controller wiederherstellen", decline the Windows prompt:
       the pad stays plugged in, Arcadia never let go of Pan (no "von Pan beendet"), the row shows "Die
@@ -16,7 +16,7 @@
       with exit 9 (exit 3 for another message) and restores nothing; without `--run` (by hand) it restores at once;
       Arcadia's steps up to the `go` fit into Pan's wait. · E2E: no (elevated Pan; the wait and the message are unit
       tests: `RestoreHandOverTests`, `Arcadia_s_steps_from_the_restore_prompt_to_the_go_fit_into_Pan_s_wait`)
-- [ ] **T471-4** **Owner:** real PC, Steam Controller in a game (Xbox pad active): "Controller wiederherstellen",
+- [x] **T471-4** **Owner:** real PC, Steam Controller in a game (Xbox pad active): "Controller wiederherstellen",
       decline the Windows prompt: the controller keeps working in the game without a drop-out. Again, accept it: the
       controller drops out briefly and comes back by itself; `pan.log` shows "Go received" before "Restore complete"
       (or "Nothing to restore"). · E2E: no (UAC, real Steam Controller)
@@ -28,3 +28,4 @@ History:
 | T471-1, T471-2, T471-3 and all other tests (`dotnet test Arcadia.slnx`; Windows-only pipe tests skipped there) | 2026-11-04 | Claude | PR branch e541664, Debug, Linux cloud container | ✅ Pan 433, Core 2448, App 624 passed, 0 warnings | – |
 | T471-1, T471-2 red once (QE): let go before the platform call in `ControllerSupportService.RestoreControllersAsync` | 2026-11-04 | Claude (QE) | PR branch 36a7fb5, Debug, Linux cloud container | ✅ 2 Core and 2 App tests red with the mutation, green without | – |
 | All tests (QE run, `dotnet test Arcadia.slnx`; Windows-only pipe tests skipped there) | 2026-11-04 | Claude (QE) | PR branch 36a7fb5, Debug, Linux cloud container | ✅ Pan 433, Core 2448, App 624 passed, 0 warnings | – |
+| T471-4 (owner case, accepted for merge) | 2026-11-04 | jc-sw-git | PR branch, real PC | ✅ Owner released the PR for merge | – |

@@ -82,11 +82,11 @@ no Arcadia (re)install and no Windows restart is needed.
 **Elevation and security**
 - [x] **T413-25** One prompt per run; the pipe's DACL grants read/write to Arcadia's user only; another process is
       refused, Arcadia still gets through; the run id has 128 random bits. Elevation with another account: untested.
-      · E2E: yes (`HandOverPipeTests`, Windows CI; `InstallReportTests`)
+      · E2E: yes (`InstallHandOverPipeTests`, Windows CI; `InstallReportTests`)
 - [x] **T413-26** Refused hand-overs, one each: unannounced installer, HidHide missing or with its own hash, path
       outside the folder, `..`, relative, missing or bad hash, unknown or repeated line, no `go`, no line break, over
       4 KB, a link or junction; a half or malformed run on the command line; pipe already there → exit 9; a client
-      started after Pan → refused. · E2E: yes (`InstallHandOverTests`, `InstallReportTests`, `HandOverPipeTests`)
+      started after Pan → refused. · E2E: yes (`InstallHandOverTests`, `InstallReportTests`, `InstallHandOverPipeTests`)
 
 **Owner's PC (real drivers, real UAC)**
 - [x] **T413-27** Full install with USB mouse and keyboard: the Windows prompt first, before Steam closes; each step ✓
@@ -102,5 +102,5 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T413-1 to T413-24 (unit, VM, window), T413-12, -14, -17, -26 (Pan unit) | 2026-11-03 | Claude (thread) | Debug, Linux cloud container | pass | footer still showed "B Zurück" while running: fixed |
-| T413-25, T413-26 (`HandOverPipeTests`, `ServiceTests` hand-over: real Pan installed through the pipe) | 2026-11-03 | Claude (thread) | Release, Windows CI runner (cee2435) | pass | – |
+| T413-25, T413-26 (`InstallHandOverPipeTests`, `ServiceTests` hand-over: real Pan installed through the pipe) | 2026-11-03 | Claude (thread) | Release, Windows CI runner (cee2435) | pass | – |
 | T413-1 to T413-29 (owner's full test before the merge) | 2026-11-03 | owner (jc-sw-git) | PR #440 (1a9e6a7), owner's PC | pass | – |

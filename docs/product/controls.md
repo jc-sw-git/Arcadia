@@ -2,11 +2,11 @@
 
 ## Buttons and keys
 
-- One "Ansicht" modal (Y) for sort + page size. X = search (all launchers, on-screen keyboard, `/steam-epic term`
-  prefix, keyword per launcher), R3 = keyboard layout switch, View/⧉ or right click = context menu, Menu/☰ = settings.
+- One "Ansicht" modal (L3) for sort + page size; Y = the header's status messages in a modal (`settings.md`). X = search (all launchers, on-screen keyboard, `/steam-epic term`
+  prefix, keyword per launcher), R3 = the library's filter (#44), keyboard layout switch where a keyboard is open, View/⧉ or right click = context menu, Menu/☰ = settings.
   The context menu stands beside the cover after a right click on it, over the preview's "Optionen" button after ⧉, R
   or a click on that button. No "all launchers" tab. No dedicated favourite button.
-- The keyboard plays like a game, one hand on WASD: WASD move, Space = A (held: details), Esc = B, F = X, V = Y,
+- The keyboard plays like a game, one hand on WASD: WASD move, Space = A (held: details), Esc = B, F = X, V = Y, C = L3, G = R3,
   Q/E = LT/RT, Shift+Q/E = LB/RB, 1 … 0 = launcher tab 1–10, Enter = ≡, R = ⧉. Arrows, Page Up/Down, Ctrl+Tab, F2,
   the menu key and Shift+F10 stay as unadvertised alternatives. In the search a real keyboard types, so only keys
   without text act there (arrows, Enter = ≡ starts the hit, Esc, Page Up/Down).

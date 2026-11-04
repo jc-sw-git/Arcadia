@@ -98,7 +98,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     [ObservableProperty]
     public partial bool IsFocused { get; set; }
 
-    /// <summary>Lifted to be moved, e.g. a launcher with Y or the mouse (#136): ▲ ▼ move it until it is put down.</summary>
+    /// <summary>Lifted to be moved, e.g. a launcher with L3 or the mouse (#136): ▲ ▼ move it until it is put down.</summary>
     [ObservableProperty]
     public partial bool IsLifted { get; set; }
 

@@ -69,19 +69,19 @@ public sealed class LauncherViewTests
         arcadia.Key(Key.Enter);
         Assert.Equal("gog", arcadia.LauncherCategory().FocusedRow?.Key);
 
-        // V lifts, S moves, V puts down: the tabs follow at once.
-        arcadia.Key(Key.V);
+        // C lifts, S moves, C puts down: the tabs follow at once.
+        arcadia.Key(Key.C);
         Assert.Contains("lifted", arcadia.RowButton(arcadia.LauncherRow("gog")).Classes);
-        Assert.Equal(["W S / Ziehen Verschieben", "V / Loslassen Ablegen", "Esc Abbrechen"], arcadia.SettingsFooter());
+        Assert.Equal(["W S / Ziehen Verschieben", "C / Loslassen Ablegen", "Esc Abbrechen"], arcadia.SettingsFooter());
         arcadia.Key(Key.S);
         Assert.Equal(["xbox", "gog", "amazon"], arcadia.LauncherCategory().LauncherKeys());
         Assert.True(arcadia.Bounds(arcadia.RowButton(arcadia.LauncherRow("gog"))).Top > arcadia.Bounds(arcadia.RowButton(arcadia.LauncherRow("xbox"))).Bottom, "GOG steht unter Xbox");
-        arcadia.Key(Key.V);
+        arcadia.Key(Key.C);
         Assert.DoesNotContain("lifted", arcadia.RowButton(arcadia.LauncherRow("gog")).Classes);
         Assert.Equal(["Xbox", "GOG Galaxy", "Amazon Games"], arcadia.Arcadia.TabNames());
 
         // Esc while lifted puts everything back.
-        arcadia.Key(Key.V).Key(Key.S).Key(Key.Escape);
+        arcadia.Key(Key.C).Key(Key.S).Key(Key.Escape);
         Assert.True(arcadia.Arcadia.Main.IsSettingsOpen);
         Assert.False(arcadia.LauncherCategory().IsReordering);
         Assert.Equal(["xbox", "gog", "amazon"], arcadia.LauncherCategory().LauncherKeys());

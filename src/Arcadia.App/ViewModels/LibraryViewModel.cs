@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Arcadia.App.Filter;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.Core.Library;
@@ -26,11 +27,17 @@ public interface ILibraryHost : IPageHost
 
     /// <summary>The sort or page size changed: a detail page from the library and the open view dialog follow.</summary>
     void ViewChanged();
+
+    /// <summary>R3, G or a click on the funnel (#44): the tab's filter modal over the library.</summary>
+    void ShowFilter(FilterModalViewModel modal);
+
+    /// <summary>The filter modal closes; the library then applies its choice.</summary>
+    void CloseFilter(FilterModalViewModel modal);
 }
 
 /// <summary>
 /// The library page (#210): the selected tab's covers in pages of the grid, the focused game's preview, the view (sort and
-/// page size) and an empty tab's message. It lies under every other page and is never closed.
+/// page size), the tab's filter (#44) and an empty tab's message. It lies under every other page and is never closed.
 /// </summary>
 /// <remarks>
 /// UI thread only. It owns no timers: the hold of A on a cover is the one <see cref="GameActions"/>' of the window.
@@ -102,13 +109,35 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
     [ObservableProperty]
     public partial string ViewSummary { get; private set; } = string.Empty;
 
+    /// <summary>The tab has a category to filter by (#44): the funnel names R3 and opens the modal.</summary>
+    [ObservableProperty]
+    public partial bool CanFilter { get; private set; }
+
+    /// <summary>The tab is filtered: the funnel is filled, in the accent colour, with <see cref="FilterHitsText"/>.</summary>
+    [ObservableProperty]
+    public partial bool IsFiltered { get; private set; }
+
+    /// <summary>"19 von 412" at the funnel while <see cref="IsFiltered"/>.</summary>
+    [ObservableProperty]
+    public partial string FilterHitsText { get; private set; } = string.Empty;
+
+    /// <summary>The filter hides every entry of the tab: the library says so instead of covers (#44).</summary>
+    [ObservableProperty]
+    public partial bool FilterHidesAll { get; private set; }
+
+    /// <summary>"Steam hat 412 Einträge, der Filter blendet gerade alle aus." under the no-hits message.</summary>
+    [ObservableProperty]
+    public partial string FilterHidesAllText { get; private set; } = string.Empty;
+
+    public const string NoHitsTitle = "Keine Einträge passen zu deinen Filtern.";
+
     [ObservableProperty]
     public partial string RangeText { get; private set; } = string.Empty;
 
     /// <summary>The library's sort order, as the detail page names it.</summary>
     public string SortLabel => Formatting.SortLabel(_settings.Current.LibrarySort);
 
-    /// <summary>The grid, A on a cover, ⧉, LB/RB, LT/RT and Y; false for ≡ and X, which open pages over it.</summary>
+    /// <summary>The grid, A on a cover, ⧉, LB/RB, LT/RT and L3; false for ≡ and X, which open pages over it.</summary>
     public bool Handle(UiAction action)
     {
         if (EmptyTab is { } empty && action is UiAction.Left or UiAction.Right or UiAction.Accept)
@@ -130,6 +159,10 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
                 break;
             case UiAction.Right:
                 MoveFocus(1);
+                break;
+            case UiAction.Accept when FilterHidesAll:
+                // The no-hits message's only button, "Filter ändern".
+                OpenFilter();
                 break;
             case UiAction.Accept:
                 // Tapped starts the game, held opens the details; both are decided by the release or the timer.
@@ -156,6 +189,10 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
                 break;
             case UiAction.ViewOptions:
                 OpenViewOptions();
+                break;
+            // R3 is the filter here (#44); the on-screen keyboard's layout menu only where a keyboard is open.
+            case UiAction.KeyboardLayout:
+                OpenFilter();
                 break;
             default:
                 return false;
@@ -262,7 +299,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
             return;
         }
 
-        var pageSize = PageSizes.Effective(_settings.Current.PreferredPageSize, tab.Count);
+        var pageSize = PageSizes.Effective(_settings.Current.PreferredPageSize, Shown(tab).Games.Count);
         _requestedPage = index / pageSize;
         Refresh(focusIndex: index % pageSize);
     }
@@ -280,38 +317,52 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
             _tabs.Choose(tab);
         }
 
-        var index = Carousel.Find(SortedGames(tab), game.Key, 0);
+        // A game the tab's filter hides (from the search, which ignores the filter): the tab from its first page.
+        var index = Carousel.Find(ShownGames(tab), game.Key, 0);
         if (index >= 0)
         {
             ShowAt(index);
         }
+        else
+        {
+            ShowTab();
+        }
     }
 
     /// <summary>
-    /// The tab's games in the library's sort order, as the detail page turns through them. Each tab is sorted once and kept
-    /// while its games and the sort stay the same (#228): a page change or the detail page's way in and out would otherwise
-    /// sort the whole tab again. A rescan hands a tab a new list (also for a changed playtime or "Zuletzt gespielt"), so
-    /// comparing the list itself is enough.
+    /// The tab's games its filter lets through (#44), in the library's sort order, as the detail page turns through them.
+    /// Each tab is sorted and filtered once and kept while its games, the sort and its filter stay the same (#228): a page
+    /// change or the detail page's way in and out would otherwise sort the whole tab again. A rescan hands a tab a new list
+    /// (also for a changed playtime or "Zuletzt gespielt"), so comparing the list itself is enough.
     /// </summary>
-    public IReadOnlyList<Game> SortedGames(LauncherTabViewModel tab) => Sorted(tab).Games;
+    public IReadOnlyList<Game> ShownGames(LauncherTabViewModel tab) => Shown(tab).Games;
 
-    private SortedTab Sorted(LauncherTabViewModel tab)
+    private ShownTab Shown(LauncherTabViewModel tab)
     {
         var sort = _settings.Current.LibrarySort;
-        if (_sorted.TryGetValue(tab, out var sorted) && ReferenceEquals(sorted.Source, tab.Games) && sorted.Sort == sort)
+        if (!_sorted.TryGetValue(tab, out var sorted) || !ReferenceEquals(sorted.Source, tab.Games) || sorted.Sort != sort)
         {
-            return sorted;
+            sorted = new SortedTab(tab.Games, sort, GameSorter.Sort(tab.Games, sort, Formatting.Culture), TypeCountLine.Of(tab.Games),
+                FilterOffer.Of(tab.Games), null);
         }
 
-        sorted = new SortedTab(tab.Games, sort, GameSorter.Sort(tab.Games, sort, Formatting.Culture), TypeCountLine.Of(tab.Games));
+        // What the tab doesn't offer (a kind switched off, a rescan) drops out of the saved filter, which stays as it was (#44 case 17).
+        var filter = _settings.Current.FilterOf(tab.Launcher.Id).Within(sorted.Offer);
+        if (sorted.Shown is not { } shown || !shown.Filter.Equals(filter))
+        {
+            shown = new ShownTab(filter, filter.Apply(sorted.Games));
+            sorted = sorted with { Shown = shown };
+        }
+
         _sorted[tab] = sorted;
-        return sorted;
+        return shown;
     }
 
     /// <summary>The "Ansicht" dialog of the selected tab; <paramref name="forDetailPage"/> adds what it means there.</summary>
     public ViewOptionsViewModel? CreateViewOptions(bool forDetailPage) => _tabs.SelectedTab is not { } tab ? null : ViewOptionsViewModel.ForLibrary(
         tab.Name,
-        tab.Count,
+        // The page sizes count only what the filter lets through (#44).
+        Shown(tab).Games.Count,
         _settings.Current.LibrarySort,
         _settings.Current.PreferredPageSize,
         sort => ChangeView(settings => settings with { LibrarySort = sort }),
@@ -324,6 +375,41 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         if (_tabs.SelectedTab is not null)
         {
             _host.ShowViewOptions(this, () => CreateViewOptions(forDetailPage: false));
+        }
+    }
+
+    /// <summary>
+    /// R3, G, a click on the funnel or on "Filter ändern" (#44): the modal counts the tab's entries as they are now and,
+    /// once closed, its choice is the tab's filter. Nothing happens in a tab without a category to filter by.
+    /// </summary>
+    [RelayCommand]
+    private void OpenFilter()
+    {
+        if (_tabs.SelectedTab is not { } tab || EmptyTab is not null)
+        {
+            return;
+        }
+
+        var offer = FilterOffer.Of(tab.Games);
+        if (offer.HasAny)
+        {
+            var saved = _settings.Current.FilterOf(tab.Launcher.Id);
+            _host.ShowFilter(new FilterModalViewModel(tab.Name, tab.Games, offer, saved.Within(offer), modal =>
+            {
+                _host.CloseFilter(modal);
+                ApplyFilter(tab, modal.WasReset ? modal.Chosen : modal.Chosen.Over(saved, offer));
+            }));
+        }
+    }
+
+    /// <summary>The modal closed: the choice is saved for the tab, and the tab shows its hits from the first page.</summary>
+    private void ApplyFilter(LauncherTabViewModel tab, GameFilter filter)
+    {
+        _saveView(settings => settings.WithFilter(tab.Launcher.Id, filter));
+        if (tab == _tabs.SelectedTab)
+        {
+            _requestedPage = 0;
+            Refresh(focusIndex: 0);
         }
     }
 
@@ -360,7 +446,8 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
             return;
         }
 
-        var window = PageWindow.For(tab.Count, PageSizes.Effective(_settings.Current.PreferredPageSize, tab.Count), page);
+        var hits = Shown(tab).Games.Count;
+        var window = PageWindow.For(hits, PageSizes.Effective(_settings.Current.PreferredPageSize, hits), page);
         if (window.PageIndex == _requestedPage)
         {
             return;
@@ -436,9 +523,10 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         }
 
         var view = _settings.Current;
-        var pageSize = PageSizes.Effective(view.PreferredPageSize, tab.Count);
-        var snapshot = Sorted(tab);
-        var sorted = snapshot.Games;
+        var shownTab = Shown(tab);
+        var snapshot = _sorted[tab];
+        var sorted = shownTab.Games;
+        var pageSize = PageSizes.Effective(view.PreferredPageSize, sorted.Count);
         var window = PageWindow.For(sorted.Count, pageSize, _requestedPage);
         _requestedPage = window.PageIndex;
 
@@ -474,11 +562,22 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
             : new EmptyTabViewModel(tab, () => _host.OpenLauncherSettings(tab.Launcher.Id), () => _host.Rescan(tab.Launcher));
         // The page number is the pager's below the covers (owner, 2026-10-26).
         CountText = EmptyTab?.Summary ?? string.Empty;
+        // The count line keeps counting the whole tab; the funnel says how many the filter lets through (#44).
         Counts = EmptyTab is null ? snapshot.Counts : TypeCountLine.None;
+        CanFilter = EmptyTab is null && snapshot.Offer.HasAny;
+        IsFiltered = CanFilter && shownTab.Filter.IsActive;
+        FilterHitsText = IsFiltered ? $"{Formatting.Count(sorted.Count)} von {Formatting.Count(tab.Count)}" : string.Empty;
+        FilterHidesAll = EmptyTab is null && sorted.Count == 0;
+        FilterHidesAllText = FilterHidesAll
+            ? $"{tab.Name} hat {(tab.Count == 1 ? "1 Eintrag" : $"{Formatting.Count(tab.Count)} Einträge")}, der Filter blendet gerade alle aus."
+            : string.Empty;
         RangeText = window.Length == 0 ? string.Empty : $"{window.Start + 1}–{window.Start + window.Length} von {sorted.Count}";
         ViewSummary = $"{Formatting.SortLabel(view.LibrarySort)}  ·  {pageSize} pro Seite";
     }
 
-    /// <summary>A tab's games sorted, what they were sorted from, and its count line.</summary>
-    private sealed record SortedTab(IReadOnlyList<Game> Source, SortOrder Sort, IReadOnlyList<Game> Games, TypeCountLine Counts);
+    /// <summary>A tab's games sorted, what they were sorted from, its count line, what it offers to filter and what its filter shows.</summary>
+    private sealed record SortedTab(IReadOnlyList<Game> Source, SortOrder Sort, IReadOnlyList<Game> Games, TypeCountLine Counts, FilterOffer Offer, ShownTab? Shown);
+
+    /// <summary>The tab's filter as it applies, and the sorted games it lets through.</summary>
+    private sealed record ShownTab(GameFilter Filter, IReadOnlyList<Game> Games);
 }

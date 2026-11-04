@@ -151,7 +151,7 @@ public sealed class SearchViewTests
         Assert.Equal("holl", search.Text);
 
         // L3: the filter's launchers switch the same way.
-        arcadia.Press(UiAction.Filter);
+        arcadia.Press(UiAction.ViewOptions);
         Assert.True(main.IsViewOptionsOpen);
         arcadia.Click(FilterLauncher(arcadia, "Xbox"));
         Assert.Equal(["GOG Galaxy", "Amazon Games"], ChipsOn(search));
@@ -522,7 +522,7 @@ public sealed class SearchViewTests
         Assert.True(main.IsSearchShown);
 
         // Filter and sort with L3, or the button in the row of chips.
-        arcadia.Press(UiAction.Filter);
+        arcadia.Press(UiAction.ViewOptions);
         Assert.True(main.IsViewOptionsOpen);
         arcadia.Press(UiAction.Back).Click(arcadia.Named<Button>("SearchSortButton"));
         Assert.True(main.IsViewOptionsOpen);

@@ -333,24 +333,24 @@ public sealed class LibraryTests
         using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, games.Count, Library: games)]);
         var library = arcadia.Main.Library;
         var tab = arcadia.SelectedTab!;
-        var sorted = library.SortedGames(tab);
+        var sorted = library.ShownGames(tab);
 
         // Pages turned and the detail page opened and left: the same sorted list, not a new sort of the whole tab.
         arcadia.Press(UiAction.NextPage).Press(UiAction.PreviousPage)
             .Hold(UiAction.Accept, TimeSpan.FromMilliseconds(1100)).Press(UiAction.Back);
         Assert.Null(arcadia.Main.Detail);
-        Assert.Same(sorted, library.SortedGames(tab));
+        Assert.Same(sorted, library.ShownGames(tab));
         await arcadia.RescanAsync();
-        Assert.Same(sorted, library.SortedGames(tab));
+        Assert.Same(sorted, library.ShownGames(tab));
 
         ChooseSort(arcadia, row: 0, column: 1);
-        var byNameDescending = library.SortedGames(tab);
+        var byNameDescending = library.ShownGames(tab);
         Assert.Equal("Spiel 30", byNameDescending[0].Title);
         Assert.Equal(["Spiel 30", "Spiel 29"], Titles(arcadia).Take(2));
 
         games.Add(TestGames.Installed(KnownLaunchers.Gog, "Spiel 99", Day(2025, 2, 1)));
         await arcadia.RescanAsync();
-        Assert.Equal("Spiel 99", library.SortedGames(tab)[0].Title);
+        Assert.Equal("Spiel 99", library.ShownGames(tab)[0].Title);
         Assert.Equal(["Spiel 99", "Spiel 30"], Titles(arcadia).Take(2));
     }
 
@@ -379,7 +379,7 @@ public sealed class LibraryTests
     {
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
-        var sorted = new WeakReference(arcadia.Main.Library.SortedGames(arcadia.SelectedTab!));
+        var sorted = new WeakReference(arcadia.Main.Library.ShownGames(arcadia.SelectedTab!));
         arcadia.Press(UiAction.PreviousTab);
         Assert.Equal(KnownLaunchers.Gog.Id, arcadia.SelectedTab?.Launcher.Id);
         return sorted;

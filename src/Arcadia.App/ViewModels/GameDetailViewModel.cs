@@ -27,7 +27,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     private readonly Func<ViewOptionsViewModel?>? _createViewOptions;
 
     /// <param name="tabName">Null when the page was opened from the search; then it has no sort order either.</param>
-    /// <param name="createViewOptions">The library's "Ansicht" dialog for Y; null from the search, whose hits keep their order.</param>
+    /// <param name="createViewOptions">The library's "Ansicht" dialog for L3; null from the search, whose hits keep their order.</param>
     public GameDetailViewModel(
         string? tabName,
         IReadOnlyList<Game> games,
@@ -58,7 +58,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
 
     public string? TabName { get; }
 
-    /// <summary>Opened from a library tab: LB/RB switch the tab and Y changes the sort.</summary>
+    /// <summary>Opened from a library tab: LB/RB switch the tab and L3 changes the sort.</summary>
     public bool IsFromLibrary => TabName is not null;
 
     public bool IsFromSearch => TabName is null;
@@ -89,7 +89,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
 
     /// <summary>
     /// D-pad and A act on the buttons of the shown game, LT/RT turn the carousel, B closes the page. From a tab LB/RB switch
-    /// it and Y changes the sort; the hits of the search belong to no tab and keep its order. False for ≡ and X.
+    /// it and L3 changes the sort; the hits of the search belong to no tab and keep its order. False for ≡ and X.
     /// </summary>
     public bool Handle(UiAction action)
     {
@@ -126,7 +126,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         return true;
     }
 
-    /// <summary>Y or the sort button beside the position: the library's "Ansicht" dialog, from a tab only.</summary>
+    /// <summary>L3 or the sort button beside the position: the library's "Ansicht" dialog, from a tab only.</summary>
     [RelayCommand]
     private void OpenViewOptions()
     {

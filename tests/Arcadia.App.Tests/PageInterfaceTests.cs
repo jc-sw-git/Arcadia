@@ -138,7 +138,7 @@ public sealed class PageInterfaceTests
     {
         arcadia.Press(UiAction.Search);
         var search = new WeakReference(arcadia.Search);
-        arcadia.Press(UiAction.Filter).Press(UiAction.Back);
+        arcadia.Press(UiAction.ViewOptions).Press(UiAction.Back);
         Assert.False(arcadia.Main.IsViewOptionsOpen);
         arcadia.Press(UiAction.Back, times: 2);
         Assert.Null(arcadia.Search);

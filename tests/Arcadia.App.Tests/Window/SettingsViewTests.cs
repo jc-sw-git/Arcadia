@@ -348,7 +348,7 @@ public sealed class SettingsViewTests
         arcadia.Press(UiAction.Back);
 
         // "Filter und Sortierung" over the search: the ✕ closes the filter, the search stays.
-        arcadia.Press(UiAction.Search).Press(UiAction.Filter);
+        arcadia.Press(UiAction.Search).Press(UiAction.ViewOptions);
         Assert.Null(arcadia.VisibleClose(main.CloseViewOptionsCommand));
         Wiggle(arcadia);
         arcadia.Click(arcadia.CloseButton(main.CloseViewOptionsCommand));

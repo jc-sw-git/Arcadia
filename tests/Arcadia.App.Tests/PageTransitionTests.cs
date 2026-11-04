@@ -241,7 +241,7 @@ public sealed class PageTransitionTests
     {
         var (games, gog) = Changeable(KnownLaunchers.Gog, "River Crossing", "River Raid");
         using var arcadia = await SearchAsync([gog], "river");
-        arcadia.Press(UiAction.Filter);
+        arcadia.Press(UiAction.ViewOptions);
         Assert.True(arcadia.Main.ViewOptions?.HasLaunchers);
 
         games.Add(Game(KnownLaunchers.Gog, "River Delta"));
@@ -283,7 +283,7 @@ public sealed class PageTransitionTests
         Assert.True(search.IsKeyboardOut);
         Assert.Same(search, arcadia.Search);
 
-        arcadia.Press(UiAction.Filter);
+        arcadia.Press(UiAction.ViewOptions);
         Assert.True(arcadia.Main.IsViewOptionsOpen);
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsViewOptionsOpen);

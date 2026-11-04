@@ -17,6 +17,15 @@ public static class GameTypeTexts
         _ => "Software",
     };
 
+    /// <summary>"Werkzeuge", for the filter's values and its summary (#44).</summary>
+    public static string PluralName(GameType type) => type switch
+    {
+        GameType.Game => "Spiele",
+        GameType.Tool => "Werkzeuge",
+        GameType.Soundtrack => "Soundtracks",
+        _ => "Software",
+    };
+
     /// <summary>"331 Spiele", "1 Werkzeug", for the count line's tooltip.</summary>
     public static string Count(GameType type, int count)
     {

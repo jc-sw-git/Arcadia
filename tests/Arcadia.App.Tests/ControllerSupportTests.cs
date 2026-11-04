@@ -9,12 +9,12 @@ using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;
 
-/// <summary>The Steam Controller's mode per game in the preview and on the detail page (#92, #127), and the header's symbols.</summary>
+/// <summary>The Steam Controller's mode per game in the preview and on the detail page (#92, #127), and the header's status chip (#166).</summary>
 public sealed class ControllerSupportTests
 {
     [AvaloniaFact]
-    [Trait("TestCase", "T15-10")]
-    public async Task The_header_symbols_open_their_category_Controller_for_a_missing_part_and_Ueber_Arcadia_for_Arcadias_update()
+    [Trait("TestCase", "T166-13")]
+    public async Task A_click_on_the_header_s_status_chip_opens_the_status_modal_with_the_missing_part_and_Arcadia_s_update()
     {
         var steam = new FakeSteam { IsSteamRunning = true, IsPanReady = false };
         using var arcadia = await ArcadiaDriver.StartAsync(steam: steam, releases: new FakeReleases("0.1.0", ("0.2.0", ["Neu"])));
@@ -22,15 +22,12 @@ public sealed class ControllerSupportTests
         await arcadia.Updates.CheckIfDueAsync();
         await arcadia.WaitUntilAsync(() => arcadia.Main.Status is { HasControllerStatus: true, HasArcadiaUpdate: true }, "beide Symbole im Header");
 
-        // The warning (Pan missing) opens "Controller", wherever the settings were.
-        arcadia.Click(arcadia.Main.ControllerMode.OpenControllerSettingsCommand);
-        Assert.Equal("Controller", arcadia.Main.Settings!.Selected.Name);
-        arcadia.Press(UiAction.Back);
-
-        arcadia.Click(arcadia.Main.OpenAboutSettingsCommand);
-        Assert.Equal("Über Arcadia", arcadia.Main.Settings!.Selected.Name);
-        arcadia.Press(UiAction.Back);
+        // Since #166 the symbols open the modal, no longer their category.
+        arcadia.Click(arcadia.Main.OpenStatusModalCommand);
         Assert.False(arcadia.Main.IsSettingsOpen);
+        Assert.Equal(["Wächterdienst Pan fehlt", "Arcadia 0.2.0 verfügbar"], arcadia.Main.StatusModal!.Entries.Select(entry => entry.Title));
+        arcadia.Press(UiAction.Back);
+        Assert.False(arcadia.Main.IsStatusModalOpen);
     }
 
     [AvaloniaFact]

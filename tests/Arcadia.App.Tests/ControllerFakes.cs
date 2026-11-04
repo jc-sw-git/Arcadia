@@ -360,11 +360,14 @@ internal sealed class FakeNetwork(FakeReleases? releases) : HttpMessageHandler
 /// </summary>
 internal sealed class FakeReleases(string installed, params (string Version, string[] Changes)[] published)
 {
+    /// <summary>Set, a download reports 40 % and waits for it before it fails, so a test sees it running.</summary>
+    public TaskCompletionSource? HeldDownload { get; init; }
+
     public UpdateManager Manager(string folder)
     {
         var packages = Directory.CreateDirectory(Path.Combine(folder, "packages")).FullName;
         var locator = new TestVelopackLocator("Arcadia", installed, packages, null);
-        return new UpdateManager(new FeedSource(Feed()), locator: locator);
+        return new UpdateManager(new FeedSource(Feed(), HeldDownload), locator: locator);
     }
 
     public object GitHubList() => published.Select(release => new
@@ -390,12 +393,20 @@ internal sealed class FakeReleases(string installed, params (string Version, str
         })],
     };
 
-    private sealed class FeedSource(VelopackAssetFeed feed) : IUpdateSource
+    private sealed class FeedSource(VelopackAssetFeed feed, TaskCompletionSource? held) : IUpdateSource
     {
         public Task<VelopackAssetFeed> GetReleaseFeed(IVelopackLogger logger, string? appId, string channel, Guid? stagingId = null, VelopackAsset? latestLocalRelease = null) =>
             Task.FromResult(feed);
 
-        public Task DownloadReleaseEntry(IVelopackLogger logger, VelopackAsset releaseEntry, string localFile, Action<int> progress, CancellationToken cancelToken = default) =>
+        public async Task DownloadReleaseEntry(IVelopackLogger logger, VelopackAsset releaseEntry, string localFile, Action<int> progress, CancellationToken cancelToken = default)
+        {
+            if (held is not null)
+            {
+                progress(40);
+                await held.Task;
+            }
+
             throw new InvalidOperationException("Die Abnahmetests laden kein Update.");
+        }
     }
 }

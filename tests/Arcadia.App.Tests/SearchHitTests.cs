@@ -172,7 +172,7 @@ public sealed class SearchHitTests
         var main = arcadia.Main;
         var search = arcadia.Search!;
 
-        arcadia.Press(UiAction.Filter);
+        arcadia.Press(UiAction.ViewOptions);
         var filter = Assert.IsType<ViewOptionsViewModel>(main.ViewOptions);
         Assert.Equal("Filter und Sortierung", filter.Title);
         Assert.Equal(["Alle Launcher", "GOG Galaxy", "Xbox"], filter.LauncherRows.Single().Select(option => option.Label));
@@ -208,7 +208,7 @@ public sealed class SearchHitTests
 
         arcadia.Press(UiAction.Back);
         Assert.False(main.IsViewOptionsOpen);
-        arcadia.Press(UiAction.Filter).Press(UiAction.Filter);
+        arcadia.Press(UiAction.ViewOptions).Press(UiAction.ViewOptions);
         Assert.False(main.IsViewOptionsOpen);
         Assert.Equal("Sortiert nach Zuletzt gespielt · älteste zuerst", search.SortText);
 

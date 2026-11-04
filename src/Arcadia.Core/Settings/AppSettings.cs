@@ -60,6 +60,12 @@ public sealed record AppSettings
     /// <summary>Name, search keyword, logo and folder the user gave a launcher (#137, #138), by <see cref="LauncherInfo.Id"/>.</summary>
     public IReadOnlyDictionary<string, LauncherPreferences> Launchers { get; init; } = new Dictionary<string, LauncherPreferences>();
 
+    /// <summary>
+    /// Each tab's filter (#44), by <see cref="LauncherInfo.Id"/>; a tab without an entry is unfiltered. Kept while its
+    /// launcher is switched off, so the filter is back when it returns. Sort and page size stay global.
+    /// </summary>
+    public IReadOnlyDictionary<string, SavedFilter> LibraryFilters { get; init; } = new Dictionary<string, SavedFilter>();
+
     /// <summary>The <see cref="LauncherInfo.Id"/> of the tab Arcadia opens with; null for the first tab.</summary>
     public string? LastTabLauncherId { get; init; }
 
@@ -88,6 +94,9 @@ public sealed record AppSettings
 
     public bool ListsErrors { get; init; } = true;
 
+    /// <summary>The status modal's order (#166): "Neueste zuerst" when true, else "Dringlichkeit", for every opening.</summary>
+    public bool SortsStatusByNewest { get; init; }
+
     /// <summary>
     /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
     /// hand — with the defaults, instead of failing on them later.
@@ -104,6 +113,26 @@ public sealed record AppSettings
         MouseMode = (MouseMode ?? new MouseModeSettings()).WithValidValues(),
         ReturnWithView = (ReturnWithView ?? new ReturnWithViewSettings()).WithValidValues(),
     };
+
+    /// <summary>The filter saved for the launcher's tab, without what this version doesn't know; none for no entry.</summary>
+    public GameFilter FilterOf(string launcherId) =>
+        (LibraryFilters ?? new Dictionary<string, SavedFilter>()).GetValueOrDefault(launcherId)?.ToFilter() ?? GameFilter.None;
+
+    /// <summary>Saves the filter of the launcher's tab; no filter removes its entry.</summary>
+    public AppSettings WithFilter(string launcherId, GameFilter filter)
+    {
+        var filters = new Dictionary<string, SavedFilter>(LibraryFilters ?? new Dictionary<string, SavedFilter>(), StringComparer.Ordinal);
+        if (SavedFilter.From(filter) is { } saved)
+        {
+            filters[launcherId] = saved;
+        }
+        else
+        {
+            filters.Remove(launcherId);
+        }
+
+        return this with { LibraryFilters = filters };
+    }
 
     /// <summary>What the user changed about the launcher; nothing changed gives an empty entry.</summary>
     public LauncherPreferences PreferencesOf(string launcherId) =>

@@ -50,3 +50,4 @@ History:
 | red once: T343-1…T343-4, T343-6, T343-8 without the PR's `src/` changes; T343-5 with the progress of a just confirmed install held back one poll | 2026-11-03 | QE review | cloud container, Linux, Debug, headless | failed as expected | – |
 | T343-7 (restart): regression, not made red: nothing keeps the waiting state across a restart to break | 2026-11-03 | QE review | – | – | – |
 | T343-10…T343-14 | 2026-11-04 | owner | PR #452, real PC, real Steam and Epic | passed (ticked on the owner's word) | – |
+| T343-1…T343-9 (all tests, `run-tests.sh`, after merging main) | 2026-11-04 | implementation | cloud container, Linux, Release, headless | passed | – |

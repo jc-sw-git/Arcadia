@@ -19,14 +19,14 @@ public sealed class SettingsServiceTests : IDisposable
         new SettingsService(new SettingsStore(SettingsPath)).Update(settings => settings with
         {
             LibrarySort = sort,
-            PreferredPageSize = 50,
+            PreferredPageSize = 64,
             LastTabLauncherId = "epic",
         });
 
         var restarted = new SettingsService(new SettingsStore(SettingsPath)).Current;
 
         Assert.Equal(sort, restarted.LibrarySort);
-        Assert.Equal(50, restarted.PreferredPageSize);
+        Assert.Equal(64, restarted.PreferredPageSize);
         Assert.Equal("epic", restarted.LastTabLauncherId);
     }
 
@@ -83,6 +83,69 @@ public sealed class SettingsServiceTests : IDisposable
         Assert.Equal(SortOrder.Default, loaded.LibrarySort);
         Assert.Equal(PageSizes.Default, loaded.PreferredPageSize);
         Assert.Equal("gog", loaded.LastTabLauncherId);
+    }
+
+    /// <summary>T24-3: a size of an older Arcadia, or one written by hand, becomes 24 and is saved so at the start.</summary>
+    [Theory]
+    [InlineData("10")]
+    [InlineData("25")]
+    [InlineData("50")]
+    [InlineData("100")]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("7")]
+    [InlineData("1000")]
+    [Trait("TestCase", "T24-3")]
+    public void A_page_size_that_no_longer_exists_becomes_24_and_is_saved_at_the_start(string saved)
+    {
+        File.WriteAllText(SettingsPath, $$"""{ "PreferredPageSize": {{saved}}, "LastTabLauncherId": "gog" }""");
+
+        var loaded = new SettingsService(new SettingsStore(SettingsPath)).Current;
+
+        Assert.Equal(24, loaded.PreferredPageSize);
+        var file = new SettingsStore(SettingsPath).Load();
+        Assert.Equal((24, "gog"), (file.PreferredPageSize, file.LastTabLauncherId));
+    }
+
+    /// <summary>T24-3, failure case: a page size written as a string makes the file unreadable; it is kept aside, 24 applies.</summary>
+    [Fact]
+    [Trait("TestCase", "T24-3")]
+    public void A_page_size_written_as_text_gives_the_defaults_and_keeps_the_file_aside()
+    {
+        File.WriteAllText(SettingsPath, """{ "PreferredPageSize": "25" }""");
+
+        var loaded = new SettingsService(new SettingsStore(SettingsPath)).Current;
+
+        Assert.Equal(24, loaded.PreferredPageSize);
+        Assert.True(File.Exists(SettingsPath + ".broken"));
+    }
+
+    /// <summary>A valid size isn't written again at the start: nothing changed, so settings.json stays untouched.</summary>
+    [Fact]
+    public void A_valid_page_size_is_not_saved_again_at_the_start()
+    {
+        File.WriteAllText(SettingsPath, """{ "PreferredPageSize": 64 }""");
+        var written = File.GetLastWriteTimeUtc(SettingsPath) - TimeSpan.FromHours(1);
+        File.SetLastWriteTimeUtc(SettingsPath, written);
+
+        _ = new SettingsService(new SettingsStore(SettingsPath)).Current;
+
+        Assert.Equal(written, File.GetLastWriteTimeUtc(SettingsPath));
+    }
+
+    /// <summary>A replaced page size that can't be saved at the start (read-only folder, lock) doesn't stop Arcadia.</summary>
+    [Fact]
+    public void A_replaced_page_size_that_cant_be_saved_at_the_start_still_applies()
+    {
+        File.WriteAllText(SettingsPath, """{ "PreferredPageSize": 25 }""");
+        Directory.CreateDirectory(SettingsPath + ".tmp");  // the temp file can't be written now
+
+        var service = new SettingsService(new SettingsStore(SettingsPath));
+
+        Assert.Equal(24, service.Current.PreferredPageSize);
+        Directory.Delete(SettingsPath + ".tmp");
+        service.Update(settings => settings with { LastTabLauncherId = "epic" });
+        Assert.Equal(24, new SettingsStore(SettingsPath).Load().PreferredPageSize);
     }
 
     [Fact]
@@ -181,7 +244,7 @@ public sealed class SettingsServiceTests : IDisposable
             .ToList();
 
         // The UI saves the view while Steam Controller Support saves from the thread pool.
-        var pageSizes = new[] { 10, 25, 50, 100 };
+        var pageSizes = new[] { 24, 64, 128, 64 };
         Parallel.Invoke(
             () => Parallel.ForEach(games, game => service.Update(settings => settings.WithControllerModeChoice(game.Key, false))),
             () => Parallel.For(0, 200, i => service.Update(settings => settings with { PreferredPageSize = pageSizes[i % 4], LastTabLauncherId = "steam" })));
@@ -198,38 +261,38 @@ public sealed class SettingsServiceTests : IDisposable
         var service = new SettingsService(new SettingsStore(SettingsPath));
         Directory.CreateDirectory(SettingsPath + ".tmp");  // the temp file can't be written now
 
-        var error = Record.Exception(() => service.Update(settings => settings with { PreferredPageSize = 100 }));
+        var error = Record.Exception(() => service.Update(settings => settings with { PreferredPageSize = 128 }));
         Assert.True(error is IOException or UnauthorizedAccessException, $"unexpected {error}");
-        Assert.Equal(100, service.Current.PreferredPageSize);
+        Assert.Equal(128, service.Current.PreferredPageSize);
 
         Directory.Delete(SettingsPath + ".tmp");
         service.Update(settings => settings with { LastTabLauncherId = "epic" });
-        Assert.Equal(100, new SettingsStore(SettingsPath).Load().PreferredPageSize);
+        Assert.Equal(128, new SettingsStore(SettingsPath).Load().PreferredPageSize);
     }
 
     [Fact]
     public void A_settings_file_locked_at_the_start_is_not_overwritten()
     {
-        File.WriteAllText(SettingsPath, """{ "PreferredPageSize": 50, "ActiveLaunchers": ["steam"] }""");
+        File.WriteAllText(SettingsPath, """{ "PreferredPageSize": 64, "ActiveLaunchers": ["steam"] }""");
         SettingsService service;
         using (new FileStream(SettingsPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
             service = new SettingsService(new SettingsStore(SettingsPath));
         }
 
-        var error = Record.Exception(() => service.Update(settings => settings with { PreferredPageSize = 100 }));
+        var error = Record.Exception(() => service.Update(settings => settings with { PreferredPageSize = 128 }));
 
         Assert.IsType<IOException>(error);
-        Assert.Equal(100, service.Current.PreferredPageSize);
+        Assert.Equal(128, service.Current.PreferredPageSize);
         var kept = new SettingsStore(SettingsPath).Load();
-        Assert.Equal(50, kept.PreferredPageSize);
+        Assert.Equal(64, kept.PreferredPageSize);
         Assert.Equal(["steam"], kept.ActiveLaunchers);
     }
 
     [Fact]
     public void A_settings_file_locked_only_for_a_moment_is_read()
     {
-        File.WriteAllText(SettingsPath, """{ "PreferredPageSize": 50 }""");
+        File.WriteAllText(SettingsPath, """{ "PreferredPageSize": 64 }""");
         var locked = new FileStream(SettingsPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
         // A thread of its own: a busy thread pool (all tests run in parallel) could release the lock too late.
@@ -242,8 +305,8 @@ public sealed class SettingsServiceTests : IDisposable
         var service = new SettingsService(new SettingsStore(SettingsPath));
         release.Join();
 
-        Assert.Equal(50, service.Current.PreferredPageSize);
-        service.Update(settings => settings with { PreferredPageSize = 100 });
-        Assert.Equal(100, new SettingsStore(SettingsPath).Load().PreferredPageSize);
+        Assert.Equal(64, service.Current.PreferredPageSize);
+        service.Update(settings => settings with { PreferredPageSize = 128 });
+        Assert.Equal(128, new SettingsStore(SettingsPath).Load().PreferredPageSize);
     }
 }

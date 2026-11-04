@@ -59,6 +59,9 @@ public sealed partial class BoardKeyViewModel : ViewModelBase
 
     public bool IsHideKey => Key.Kind == BoardKeyKind.Hide;
 
+    /// <summary>The tab key's ↹ is a theme icon (<c>KeyIconTab</c>): neither embedded font has the character (#24).</summary>
+    public bool IsTabKey => Key.Kind == BoardKeyKind.Tab;
+
     public bool HasSymbol => Symbol.Length > 0;
 
     /// <summary>A key with a name shows its symbol at the left edge; one without (the arrows) in the middle, as its label.</summary>
@@ -119,7 +122,7 @@ public sealed partial class BoardKeyViewModel : ViewModelBase
     private static (string Symbol, string Text, string? Glyph) Face(BoardKey key) => key.Kind switch
     {
         BoardKeyKind.Backspace => ("⌫", "Löschen", "X"),
-        BoardKeyKind.Tab => ("↹", "Tab", null),
+        BoardKeyKind.Tab => (string.Empty, "Tab", null),
         BoardKeyKind.Enter => ("↵", "Enter", "≡"),
         BoardKeyKind.Shift => ("⇧", key.Width >= 2 ? "Umschalt" : string.Empty, "LB"),
         BoardKeyKind.Space => ("␣", "Leertaste", "Y"),

@@ -7,8 +7,8 @@ Search (#12).
 - Opened with X the on-screen keyboard is out and the hits sit in one row above it (sliding sideways, faded
   neighbours at the edges, LT/RT buttons beside them, "RS Treffer wählen" above).
 - Opened with F or a click, or after B, a real key or the tab on the keyboard's top edge, the keyboard slides in and
-  the hits fill a grid that scrolls up and down (faded rows at the top and bottom); the D-pad and A act on the hits as
-  on covers. X brings the keyboard back.
+  the hits fill a grid of two whole rows that scrolls up and down (no row before or after peeks in); the D-pad and A
+  act on the hits as on covers. X brings the keyboard back.
 - The legend at the bottom is always there and names the input in use: the controller's buttons, or mouse and
   keyboard (it never hides, so the keyboard above it doesn't move under a click).
 

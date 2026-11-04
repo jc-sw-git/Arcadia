@@ -8,7 +8,8 @@ On-screen keyboard (#129, #110). Where the search and the mouse mode use it: `se
   or plugins.
 - A 1:1 replica of the chosen real keyboard, like Steam's: the keys where the real one has them (DE, UK, FR, ES ISO
   with the tall Enter, US ANSI), ⌫ ↹ ↵ ⇧ space and AltGr with symbol and name (the name centred in the key, symbol or
-  icon at its left edge, the button at its right), caps lock a blank key the focus skips, no Ctrl/Alt/Win.
+  icon at its left edge, the button at its right; ↹ is a theme icon, no embedded font has it), caps lock a blank key
+  the focus skips, no Ctrl/Alt/Win.
 - A right block with "Layout: DE" (R3), "Nach oben/unten" (⧉), "Ausblenden" (B) and the arrows.
 - On the normal level a key shows its character large, the shift one small above (left out when it is just the capital
   letter) and the AltGr one small at the bottom right. With shift or AltGr on, only that level's characters; keys

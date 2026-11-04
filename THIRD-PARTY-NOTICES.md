@@ -102,6 +102,8 @@ Native parts with their own licences:
   (https://chromium.googlesource.com/angle/angle/+/main/LICENSE).
 - **Inter** (the font, from Avalonia.Fonts.Inter): SIL Open Font License 1.1, Copyright The Inter Project Authors
   (https://github.com/rsms/inter/blob/master/LICENSE.txt).
+- **Figtree** (the font, embedded in `Arcadia.dll` from `src/Arcadia.App/Assets/Fonts`): SIL Open Font License 1.1,
+  Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree/blob/master/OFL.txt).
 
 MIT licence, as it applies to each library above with its own copyright line:
 

@@ -5,12 +5,27 @@ namespace Arcadia.Core.Settings;
 /// (the library view on the UI thread, Steam Controller Support on the thread pool) goes through
 /// <see cref="Update"/>, so no part saves a stale copy over another part's change.
 /// </summary>
-public sealed class SettingsService(SettingsStore store)
+public sealed class SettingsService
 {
     private readonly Lock _lock = new();
 
+    private readonly SettingsStore _store;
+
     // Volatile: the thread pool reads what the UI thread wrote, without taking the lock.
-    private volatile AppSettings _current = store.Load().WithValidLibraryView().WithValidMouseMode();
+    private volatile AppSettings _current;
+
+    public SettingsService(SettingsStore store)
+    {
+        _store = store;
+        var loaded = store.Load();
+        _current = loaded.WithValidLibraryView().WithValidMouseMode();
+        if (loaded.LibrarySort != _current.LibrarySort || loaded.PreferredPageSize != _current.PreferredPageSize)
+        {
+            // A view value this version replaced, e.g. a page size of an older Arcadia (#24): saved at once, so
+            // settings.json says what the library shows.
+            SaveReplacedValues();
+        }
+    }
 
     public AppSettings Current => _current;
 
@@ -23,7 +38,19 @@ public sealed class SettingsService(SettingsStore store)
         lock (_lock)
         {
             _current = change(_current);
-            store.Save(_current);
+            _store.Save(_current);
+        }
+    }
+
+    private void SaveReplacedValues()
+    {
+        try
+        {
+            _store.Save(_current);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Locked or read-only now: the replaced values still apply, and the next change saves them.
         }
     }
 }

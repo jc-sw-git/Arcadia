@@ -29,7 +29,18 @@ Two steps per issue, each in its own thread.
 - **Delivers:** the tests as commits and a section **Review** in the PR description: findings (bug or
   optional, file, effect), which checks ran and how they went, the line `Process metrics: found by QE n, owner
   test n, other n | owner test rounds n`, and **for the owner** at most 10 cases only he can run (real hardware,
-  UAC, his PC), the important ones only, plus a focus for exploratory testing. It sends the findings
+  UAC, his PC), the important ones only, plus a focus for exploratory testing. It ticks the issue's test plan file
+  (`docs/testplans/TEMPLATE.md`). The Review ends with this checklist, each box ticked or ending in `n/a: <reason>`
+  (the CI check `PR rules` fails on an open box):
+  ```markdown
+  - [ ] Definition of Done in `CLAUDE.md` checked: robust, secure, controller first (B goes back), readable, performant
+  - [ ] No personal data and no real ids, names or paths in code, tests, docs, logs and the PR
+  - [ ] App run and looked at (`.claude/skills/arcadia-verify`); what was only checked mechanically is named
+  - [ ] New or changed UI texts listed (old → new) and following `docs/product/ui-texts.md`
+  - [ ] `CLAUDE.md` / `docs/` current where a fact or rule changed, each rule in one place only
+  - [ ] Every new acceptance test was red once, with the change that made it red named
+  - [ ] Test plan file ticked; its Status line names every **Owner:** case
+  ``` It sends the findings
   to the architect, who fixes them; it doesn't fix product code itself.
 - **Doesn't:** post PR comments, approve or merge, rewrite the design of the change.
 - **Decision reviews:** for a hard-to-reverse proposal (`README.md` → Decisions) it checks options and risks

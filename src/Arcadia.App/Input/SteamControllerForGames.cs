@@ -139,6 +139,9 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             },
             // A HidHide install runs, or Arcadia restarts after one: this process wouldn't see what Pan hides (#396).
             HeldBack = () => controllerSupport.HoldsEmulation,
+            // A removed driver waits for the Windows restart (#382, D1); without HidHide Pan isn't asked to hide (S1).
+            PausedForWindowsRestart = () => controllerSupport.PausesForWindowsRestart,
+            HidHideUsable = () => controllerSupport.HidHideUsable,
         };
         var routing = new SteamControllerRouting(
             activeGames,

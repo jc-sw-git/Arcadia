@@ -35,35 +35,66 @@ public static class EmulationParts
         HealthFix.InstallDrivers, "Neu einrichten", Summary: "„Neu einrichten“ behebt das meist.");
 
     /// <summary>
-    /// HidHide was uninstalled and is still there until Windows restarts (owner's B2 test, 2026-10-27). No "Installieren":
-    /// its setup fails while the old service waits for deletion.
+    /// HidHide was uninstalled and is still there until Windows restarts. Counts as a missing part (so "Treiber
+    /// installieren" knows every part is gone) but never shows: the restart row stands for it (#382, D2).
     /// </summary>
     public static HealthIssue HidHideRemovalPending { get; } = new("hidhide-removal-pending", HealthSeverity.Info, "HidHide: Neustart ausstehend",
-        HidHideRemovalPendingText, Summary: "HidHide wurde deinstalliert, Windows entfernt es beim Neustart");
+        "HidHide wurde deinstalliert, Windows entfernt es beim nächsten Neustart.");
 
-    public const string HidHideRemovalPendingText =
-        "HidHide wurde deinstalliert, Windows entfernt es aber erst beim nächsten Neustart des PCs. Bis dahin lässt es sich nicht neu installieren. Nach dem Neustart bietet Arcadia hier „Installieren“ an.";
+    public const string WindowsRestartId = "windows-restart";
+    public const string WindowsRestartTitle = "Windows-Neustart ausstehend";
+    public const string WindowsRestartLabel = "Windows neu starten";
+
+    public const string PausedSummary = "Starte Windows neu, danach kannst du die fehlenden Teile installieren.";
+    public const string PausedText = "Ein Treiber wurde deinstalliert. Windows entfernt ihn ganz erst beim nächsten Neustart.";
+    public const string PausedMore = "Bis dahin pausiert Pan: Arcadia emuliert und versteckt keine Controller, Spiele und Steam sehen deine Controller direkt. Der Schalter bleibt an, nach dem Neustart läuft Pan von selbst weiter.";
+    public const string PausedBoxTitle = "NACH DEM NEUSTART";
+    public const string PausedBoxText = "Fehlt dann noch etwas, steht es hier mit „Installieren“. Ein Druck richtet alles Fehlende in einem Durchgang ein, mit einer Windows-Abfrage.";
+
+    public const string RecommendedSummary = "Starte Windows neu, damit der neue Treiber ganz aktiv ist.";
+    public const string RecommendedText = "Ein Treiber wurde neu installiert. Pan läuft schon, ganz aktiv ist der Treiber aber erst nach einem Neustart von Windows.";
+    public const string RecommendedMore = "Bis dahin kann ein emulierter Controller kurz aussetzen; Arcadia verbindet ihn dann selbst neu.";
+    public const string RecommendedBoxTitle = "KEINE EILE";
+    public const string RecommendedBoxText = "Der Neustart kann warten, bis es dir passt. Die Zeile bleibt, bis Windows neu gestartet ist.";
 
     /// <summary>
-    /// "Treiber installieren" waits for the PC's restart (#407): a driver was uninstalled or installed and Windows finishes
-    /// that only at the restart. Kept general on purpose: the reason is often not knowable for sure.
+    /// The one restart row (#382, D2, artboards T382F01, T382F04): a driver removal pauses Pan until the restart, a fresh
+    /// usbip-win2 only recommends it. The texts name no driver: which one is often not knowable for sure.
     /// </summary>
-    public static HealthIssue DriverChangesPending { get; } = new("install-restart-pending", HealthSeverity.Info, "Windows-Neustart ausstehend",
-        "Arcadia hat erkannt, dass noch einige Treiberänderungen ausstehen. Um eine reibungslose Installation der notwendigen Treiber für den Controller-Wächter Pan zu gewährleisten, solltest du daher erst deinen Computer neustarten.",
-        Summary: "Treiberänderungen stehen noch aus");
+    public static HealthIssue WindowsRestartRequired { get; } = new(WindowsRestartId, HealthSeverity.Info, WindowsRestartTitle,
+        $"{PausedText} {PausedMore}", HealthFix.RestartWindows, WindowsRestartLabel, PausedSummary);
+
+    /// <inheritdoc cref="WindowsRestartRequired"/>
+    public static HealthIssue WindowsRestartRecommended { get; } = new(WindowsRestartId, HealthSeverity.Info, WindowsRestartTitle,
+        $"{RecommendedText} {RecommendedMore}", HealthFix.RestartWindows, WindowsRestartLabel, RecommendedSummary);
+
+    /// <summary>The restart row for <paramref name="restart"/>, or null when none is pending.</summary>
+    public static HealthIssue? WindowsRestart(PendingRestart restart) => restart switch
+    {
+        PendingRestart.Required => WindowsRestartRequired,
+        PendingRestart.Recommended => WindowsRestartRecommended,
+        _ => null,
+    };
+
+    /// <summary>
+    /// The rows as the settings show them (#382): while a driver removal waits for the restart, the restart row instead
+    /// of every part row (nothing can be installed until then) and of HidHide's states (Pan isn't asked); else the rows
+    /// with the restart recommendation after the parts.
+    /// </summary>
+    public static IReadOnlyList<HealthIssue> WithRestart(IReadOnlyList<HealthIssue> issues, PendingRestart restart) => restart switch
+    {
+        PendingRestart.Required => [WindowsRestartRequired, .. issues.Where(issue => !IsMissingPart(issue) && !IsHidingState(issue))],
+        PendingRestart.Recommended => InRowOrder([.. issues, WindowsRestartRecommended]),
+        _ => issues,
+    };
+
+    /// <summary>HidHide is installed in a version Pan can use: only then is Pan asked whether it can hide (#382, S1).</summary>
+    public static bool HidHideUsable(IEnumerable<HealthIssue> issues) => !issues.Any(issue => IsMissingPart(issue) && issue.Id.StartsWith("hidhide-", StringComparison.Ordinal));
 
     /// <summary>"Treiber installieren" waits while a controller's firmware is flashed (#407): the install restarts the puck and controllers.</summary>
     public static HealthIssue FirmwareUpdateRuns { get; } = new("install-firmware-update", HealthSeverity.Info, "Controller-Update wird durchgeführt",
         "Um die Sicherheit deiner Controller zu gewährleisten, können die Treiber nicht installiert werden, so lange ein Firmware-Update deiner Controller durchgeführt wird. Schließe das Update erst ab, bevor du die Treiber installierst.",
         Summary: "Treiber kann während eines Firmware-Updates nicht installiert werden");
-
-    /// <summary>
-    /// The usbip driver was updated and Windows wants a restart; with SISR gone (#213) there is nothing to restart in
-    /// Arcadia, so the row only says so (owner's B2 test, 2026-10-27: "SISR neu starten" was left over).
-    /// </summary>
-    public static HealthIssue RebootPending { get; } = new("reboot-pending", HealthSeverity.Info, "Windows-Neustart ausstehend",
-        "Der usbip-Treiber wurde aktualisiert und ist erst nach einem Neustart des PCs ganz aktiv. Bis dahin kann der Steam Controller in Spielen kurz aussetzen; Arcadia verbindet ihn dann selbst neu.",
-        Summary: "Bis zum Neustart kann der Steam Controller in Spielen aussetzen.");
 
     /// <summary>
     /// An SISR runs while Pan is on (#214 decision 5): both take the Steam Controller, so games get input twice or not at

@@ -662,6 +662,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         {
             tile.RunState = Session.RunStateOf(tile.Game.Key);
         }
+
+        Settings?.Categories.OfType<ControllerSettingsViewModel>().FirstOrDefault()?.RunningGamesChanged();
     }
 
     private void ShowNotice(LibraryNotice notice)

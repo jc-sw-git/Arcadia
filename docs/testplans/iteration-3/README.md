@@ -31,6 +31,7 @@ its file.
 | [459](459-log-row-test-t433-21-fails-on-windows-ci.md) | #459 | Log-row test T433-21 fails on Windows CI now and then | none (test race in T433-21, automated test only) |
 | [470](470-debugger-stops-at-restore-controllers.md) | #470 | Debugger stops Arcadia at "Controller wiederherstellen" while a virtual Xbox pad is plugged in | T470-1, T470-2 |
 | [465](465-filter-library-by-installed-state-and-type.md) | #465 | Filter the library by installed state and type | T465-1 to T465-14 |
+| [382](382-smooth-out-the-controller-setup-after-an-update.md) | #382 | Smooth out the controller setup after an update: one restart row, no wrong hints, no extra puck restarts | T382-1 to T382-34 |
 
 ## Release candidate tests (restart or installation)
 
@@ -42,6 +43,7 @@ of the acceptance review.
 | #422 | T422-4, T422-8, T422-11, T422-1, T422-3, T422-9, T422-12 (in this order, one PC with Pan, the drivers and the puck) |
 | #166 | T166-8 (the update from the status modal on the installed release candidate) |
 | #423 | T407-1, then T407-2 (uninstall with Ja and UAC accepted; reinstall before restarting); T423-1 with T422-4 |
+| #382 | T382-30, then T382-31 (Windows unrestarted in between), T382-32, T382-33, T382-34 (the update end to end) |
 
 ## Exploratory test
 
@@ -59,3 +61,5 @@ Charter: –. Time box: –. Findings: –.
 | T288-2, T288-7 | `SteamUpdateTests.At_the_start_a_real_Steam_update_shows_on_the_cover_and_the_detail_page_and_a_flag_with_nothing_new_doesnt` |
 | T288-5 | `SteamUpdateTests.On_the_detail_page_the_update_note_appears_and_goes_while_page_and_focus_stay` |
 | T343-1…T343-8 | `tests/Arcadia.App.Tests/CancelledInstallDialogTests.cs` |
+| T382-7, -9, -10 | `EmulationSetupTests` (restart row); variants T382-2, -8, -11, -29 in `ControllerSupportRestartTests` (Core), T382-3, -4 in `UnchangedPanTests` (Pan) |
+| T382-1, -5, -6, -8, -12 to -17, -20, -21, -26 to -28 | `WindowsRestartTests`; T382-18, -19, -22, -23, -25 in `Window/WindowsRestartViewTests` |

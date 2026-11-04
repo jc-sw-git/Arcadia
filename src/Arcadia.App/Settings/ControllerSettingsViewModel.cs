@@ -32,6 +32,9 @@ public enum SettingsPrompt
 
     /// <summary>"SISR entfernen" runs (#214): what it does right now.</summary>
     RemovingSisr,
+
+    /// <summary>"Windows neu starten?" (#382, S4, artboard T382F05): [Neu starten] restarts Windows, B cancels.</summary>
+    ConfirmWindowsRestart,
 }
 
 /// <summary>
@@ -67,6 +70,9 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private readonly PromptButtonViewModel _closeGamePrompt;
     private readonly PromptButtonViewModel _confirmSteamStop;
     private readonly PromptButtonViewModel _cancelSteamStop;
+    private readonly PromptButtonViewModel _confirmRestart;
+    private readonly PromptButtonViewModel _cancelRestart;
+    private readonly Func<string?> _gameInTheWay;
 
     /// <summary>The driver fix the Steam prompts are open for (#296): it restarts the puck, so Steam closes for it.</summary>
     private HealthFix? _steamStopFix;
@@ -93,6 +99,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _changes = changes;
         _notify = notify;
         _pan = pan;
+        _gameInTheWay = gameInTheWay;
         _panRows = new PanRows(support, changes, pan, gameInTheWay, ApplyFix, notify);
         _panRows.Switched += Refresh;
         _panRows.LayoutsRequested += OpenLayouts;
@@ -114,6 +121,9 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _closeGamePrompt = new PromptButtonViewModel(ClosePrompt);
         _confirmSteamStop = new PromptButtonViewModel(ConfirmSteamStop);
         _cancelSteamStop = new PromptButtonViewModel(ClosePrompt);
+        _confirmRestart = new PromptButtonViewModel(ConfirmWindowsRestart);
+        _cancelRestart = new PromptButtonViewModel(ClosePrompt);
+        ConfirmRestartCommand = new RelayCommand(ConfirmWindowsRestart);
         RetryInstallCommand = new RelayCommand(ContinueSteamStop);
         ConfirmSteamStopCommand = new RelayCommand(ConfirmSteamStop);
         ClosePromptCommand = new RelayCommand(ClosePrompt);
@@ -145,6 +155,13 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     public PromptButtonViewModel CancelSteamStopItem => _cancelSteamStop;
 
+    public PromptButtonViewModel ConfirmRestartItem => _confirmRestart;
+
+    public PromptButtonViewModel CancelRestartItem => _cancelRestart;
+
+    /// <summary>[Neu starten] in "Windows neu starten?" (#382).</summary>
+    public IRelayCommand ConfirmRestartCommand { get; }
+
     public IRelayCommand RetryInstallCommand { get; }
 
     public IRelayCommand ConfirmSteamStopCommand { get; }
@@ -154,7 +171,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     /// <summary>The dialog over the page, if any.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsRemovingSisrPrompt), nameof(IsQuestionPrompt), nameof(IsWarningPrompt),
+    [NotifyPropertyChangedFor(nameof(IsGamePrompt), nameof(IsSteamStopPrompt), nameof(IsRemovingSisrPrompt), nameof(IsQuestionPrompt), nameof(IsWarningPrompt), nameof(IsRestartPrompt),
         nameof(PromptBackText), nameof(SteamStopTitle), nameof(SteamStopText), nameof(SteamStopDetail), nameof(GamePromptText), nameof(CanRetryGamePrompt), nameof(ConfirmSteamStopText), nameof(RemovingSisrText),
         nameof(ShowsUsbLine))]
     public partial SettingsPrompt Prompt { get; private set; }
@@ -175,8 +192,10 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     public bool IsRemovingSisrPrompt => Prompt == SettingsPrompt.RemovingSisr;
 
+    public bool IsRestartPrompt => Prompt == SettingsPrompt.ConfirmWindowsRestart;
+
     /// <summary>The prompt asks a question, or reports what runs ("?").</summary>
-    public bool IsQuestionPrompt => Prompt is SettingsPrompt.ConfirmSteamStop or SettingsPrompt.RemovingSisr;
+    public bool IsQuestionPrompt => Prompt is SettingsPrompt.ConfirmSteamStop or SettingsPrompt.RemovingSisr or SettingsPrompt.ConfirmWindowsRestart;
 
     /// <summary>The prompt reports a problem ("!") rather than asking ("?").</summary>
     public bool IsWarningPrompt => Prompt is SettingsPrompt.SteamGameRunning;
@@ -184,13 +203,22 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <summary>The prompts that wait for Steam: they end when the action becomes moot.</summary>
     private bool IsSteamPrompt => Prompt is SettingsPrompt.SteamGameRunning or SettingsPrompt.ConfirmSteamStop;
 
-    public string PromptBackText => Prompt is SettingsPrompt.ConfirmSteamStop ? "Abbrechen" : "Schließen";
+    /// <summary>The prompts a game starting cuts short: the timer looks once a second.</summary>
+    private bool WatchesGames => IsSteamPrompt || IsRestartPrompt;
+
+    public string PromptBackText => Prompt is SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ConfirmWindowsRestart ? "Abbrechen" : "Schließen";
+
+    /// <summary>The footer's [A]: what the focused button does in "Windows neu starten?" (designs), else "Auswählen".</summary>
+    public string PromptSelectText => IsRestartPrompt ? (_cancelRestart.IsFocused ? "Abbrechen" : "Neu starten") : "Auswählen";
+
+    public const string RestartTitle = "Windows neu starten?";
+    public const string RestartText = "Windows schließt dabei alle Programme, auch Arcadia. Speichere vorher offene Arbeit in anderen Programmen.";
 
     /// <summary>The fix the prompt is open for runs HidHide's installer: Arcadia restarts after it (#396).</summary>
     private bool InstallsHidHide => !_forSisr && _steamStopFix is { } fix && _support.InstallsHidHide(fix);
 
     /// <summary>The fix is "Treiber installieren" with every part missing (#407): it always asks first, what it installs.</summary>
-    private bool InstallsEverything => !_forSisr && _steamStopFix == HealthFix.InstallDrivers && EmulationParts.AllMissing(_support.Issues);
+    private bool InstallsEverything => !_forSisr && _steamStopFix == HealthFix.InstallDrivers && _support.AllPartsMissing;
 
     public const string DriversInstallTitle = "Treiber installieren?";
 
@@ -469,7 +497,18 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
         _installStartRow = FocusedRow?.Key;
 
-        if (_support.StopsSteamFor(fix) || _support.InstallsHidHide(fix) || (fix == HealthFix.InstallDrivers && EmulationParts.AllMissing(_support.Issues)))
+        if (fix == HealthFix.RestartWindows)
+        {
+            // The row is greyed out while a game runs; checked again, the game may have started a moment ago.
+            if (_gameInTheWay() is null)
+            {
+                ShowPrompt(SettingsPrompt.ConfirmWindowsRestart);
+            }
+
+            return;
+        }
+
+        if (_support.StopsSteamFor(fix) || _support.InstallsHidHide(fix) || (fix == HealthFix.InstallDrivers && _support.AllPartsMissing))
         {
             _steamStopFix = fix;
             _forSisr = false;
@@ -478,6 +517,26 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         }
 
         _support.ApplyFixAsync(fix).Forget("Problem beheben");
+    }
+
+    /// <summary>[Neu starten]: Windows restarts, and with it Arcadia; refused, a toast says so and the row stays (F07).</summary>
+    private void ConfirmWindowsRestart()
+    {
+        ShowPrompt(SettingsPrompt.None);
+        if (_gameInTheWay() is not null)
+        {
+            return;
+        }
+
+        RestartWindowsAsync().Forget("Windows neu starten");
+    }
+
+    private async Task RestartWindowsAsync()
+    {
+        if (!await Task.Run(() => _support.RestartWindowsAsync()))
+        {
+            _notify(HealthSeverity.Error, $"{ControllerSupportService.RestartRefusedTitle}. {ControllerSupportService.RestartRefusedText}");
+        }
     }
 
     private void ConfirmSteamStop()
@@ -506,7 +565,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         var opens = prompt != SettingsPrompt.None && prompt != Prompt;
         Prompt = prompt;
         OnPropertyChanged(nameof(HasSteamStopDetail));
-        if (IsSteamPrompt)
+        if (WatchesGames)
         {
             _promptCheck.Start();
         }
@@ -543,10 +602,20 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
                 RunningGame = game;
                 ShowPrompt(SettingsPrompt.SteamGameRunning);
                 break;
+            case SettingsPrompt.ConfirmWindowsRestart when _gameInTheWay() is not null:
+                // An A meant for the question must not cut off a game that just started (Q3); the row is greyed out now.
+                ShowPrompt(SettingsPrompt.None);
+                break;
         }
 
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// A game started or ended: the rows a game greys out ("Windows neu starten", Pan's switch) follow it, as neither Pan
+    /// nor the support changes with it.
+    /// </summary>
+    public void RunningGamesChanged() => OnSupportChanged(this, EventArgs.Empty);
 
     private void OnSupportChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
     {
@@ -574,7 +643,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         }
 
         Marker = _panRows.Marker;
-        if (IsSteamPrompt && IsBusy)
+        if ((IsSteamPrompt || IsRestartPrompt) && IsBusy)
         {
             // Something else started: the question is moot.
             Prompt = SettingsPrompt.None;
@@ -684,6 +753,8 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         {
             button.IsFocused = Prompt != SettingsPrompt.None && buttons.Count > 0 && button == buttons[_promptFocus];
         }
+
+        OnPropertyChanged(nameof(PromptSelectText));
     }
 
     /// <summary>While a prompt is open, only its buttons can be focused.</summary>
@@ -692,10 +763,11 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         SettingsPrompt.SteamGameRunning when CanRetryGamePrompt => [_retryInstall, _closeGamePrompt],
         SettingsPrompt.SteamGameRunning => [_closeGamePrompt],
         SettingsPrompt.ConfirmSteamStop => [_confirmSteamStop, _cancelSteamStop],
+        SettingsPrompt.ConfirmWindowsRestart => [_confirmRestart, _cancelRestart],
         _ => [],
     };
 
-    private IEnumerable<PromptButtonViewModel> AllPromptButtons() => [_retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop];
+    private IEnumerable<PromptButtonViewModel> AllPromptButtons() => [_retryInstall, _closeGamePrompt, _confirmSteamStop, _cancelSteamStop, _confirmRestart, _cancelRestart];
 
     private void MovePromptFocus(int delta)
     {
@@ -708,5 +780,6 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         buttons[_promptFocus].IsFocused = false;
         _promptFocus = Math.Clamp(_promptFocus + delta, 0, buttons.Count - 1);
         buttons[_promptFocus].IsFocused = true;
+        OnPropertyChanged(nameof(PromptSelectText));
     }
 }

@@ -36,6 +36,9 @@ How Pan ([pan.md](pan.md)) gets onto the PC. The update at start: [pan-update.md
   supported driver in place and leaves the setup running. Then a connected puck is restarted (10 s, best effort) so
   HidHide filters it without a reboot. A HidHide failure doesn't stop Pan's install (exit code 6; Arcadia names the
   log and the manual download); a usbip-win2 failure does: it runs first, and neither HidHide nor Pan follows (exit 3). A supported HidHide already installed is reused.
+- An installed Pan whose exe has the bundled SHA-256 (and the expected one) and whose service exists is kept
+  (`UnchangedPan`, #382): no copy, the service isn't stopped or recreated (a running emulation goes on), its
+  description, recovery, pre-shutdown and DACL are set again in place, a stopped service is started. Anything else:
 - Pan copies itself to `%ProgramFiles%\Arcadia\Pan\Pan.exe`, compares the copy's SHA-256 with the source and the
   expected hash, and creates the service: quoted image path, auto start, an English description (Pan runs with `InvariantGlobalization`), recovery,
   90 s pre-shutdown, a DACL under which users start and query but never change. A declined prompt is a failed action
@@ -70,7 +73,9 @@ How Pan leaves the PC, also when something gets in the way: [pan-uninstall.md](p
 - Missing parts (`EmulationParts`): usbip-win2, VIIPER, Pan and HidHide each get a warning row with "Installieren" (an
   old HidHide: "Aktualisieren"; a newer major: no fix); with every part missing the setting itself offers "Treiber
   installieren" (`ControllerSupportService.CheckEmulationPartsAsync`, `CheckDrivers`). While the settings are open and
-  Pan and HidHide are there, Arcadia asks Pan `CheckHiding` (25 s reply timeout) and shows its answer as a row.
+  Pan and a supported HidHide are there, Arcadia asks Pan `CheckHiding` (25 s reply timeout) and shows its answer as a
+  row; the emulation asks before each start only then too (#382), without HidHide it pauses without asking. A driver
+  change waiting for the Windows restart is one row instead (`PendingRestart`, `EmulationParts.WithRestart`).
   Without Pan no pad is plugged in (`GuardedXboxPads.Unavailable`) and the per-game mode is greyed out.
 - Exit codes of `Pan.exe`: 0 done, 3 failed (`pan.log`), 4 data folder not securable (`--install`), 5 restore
   incomplete (`--restore`, `--uninstall`: what failed stays in the journal; after `--uninstall` the service stays and

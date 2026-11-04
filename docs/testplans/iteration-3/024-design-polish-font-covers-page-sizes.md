@@ -5,7 +5,7 @@ updated Main, Search, GameDetail boards). Controller only unless a case says oth
 (key C). Acceptance tests use `ArcadiaDriver` (demo or fixture libraries with made-up games), window tests
 `ArcadiaWindow` at 1920 × 1080.
 
-**Status:** Automated: T24-1 to T24-4, T24-6 to T24-13 · QE: T24-10, T24-14 (open until Review finding 2 is fixed) · Open for the owner: T24-5, T24-15, T24-16
+**Status:** Automated: T24-1 to T24-4, T24-6 to T24-13 · QE: T24-10, T24-14 (its finding is Review finding 2) · Open for the owner: T24-5, T24-15, T24-16
 
 **Page sizes**
 
@@ -58,7 +58,7 @@ updated Main, Search, GameDetail boards). Controller only unless a case says oth
 - [x] **T24-13** On-screen keyboard: "Tab" shows the icon `KeyIconTab` beside its name, "Andocken" the ⧉ icon, Enter
       the ≡ icon; ⌫ ↵ ⇧ ␣ stay characters and look as before (Inter fallback, compared with a screenshot of `main`);
       on the focused key the icon follows the text colour. · E2E: yes (window test)
-- [ ] **T24-14** Screenshot of every view (`tools/dev/Screenshot-Arcadia.ps1` or the Linux run) compared with
+- [x] **T24-14** Screenshot of every view (`tools/dev/Screenshot-Arcadia.ps1` or the Linux run) compared with
       `docs/designs/*.png` and the board "T24Feinschliff"; every difference outside this issue is filed and listed to
       the owner. · E2E: no (visual comparison by the quality engineer)
 

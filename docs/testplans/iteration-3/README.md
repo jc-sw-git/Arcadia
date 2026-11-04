@@ -12,6 +12,7 @@ its file.
 |---|---|---|---|
 | [237](237-settings-rows-edge-fade.md) | #237 | Fade out the settings rows where the list can still scroll, with one shared edge fade | T237-1 to T237-8 |
 | [288](288-steam-update-shown-that-steam-dropped.md) | #288 | Steam: update shown that Steam dropped seconds later | T288-1 to T288-9 |
+| [106](106-epic-cancelled-install-keeps-waiting.md) | #106 | Epic: cancelled install keeps showing "Warte auf Bestätigung" | none (covered by T343-2, T343-14) |
 | [343](343-cancelled-steam-install-dialog.md) | #343 | Steam: cancelled install dialog leaves the game on "Bitte in Steam bestätigen" | T343-1 to T343-14 |
 | [370](370-guard-the-remaining-unguarded-paths.md) | #370 | Guard the remaining unguarded paths | T370-1 to T370-6 |
 | [376](376-ci-hygiene.md) | #376 | CI hygiene: job timeouts, SHA-pinned actions, Dependabot, concurrency, split the App tests | none (CI only) |

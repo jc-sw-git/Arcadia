@@ -1,6 +1,6 @@
 # #471 "Controller wiederherstellen" ends the emulation even when the Windows prompt is declined
 
-**Status:** Automated: T471-1, T471-2, T471-3 · QE: – · Owner: T471-4 done
+**Status:** Automated: T471-1, T471-2, T471-3 · QE: – · Open for the owner: – (T471-4 done)
 
 - [x] **T471-1** The Steam Controller's pad runs in a game, "Controller wiederherstellen", decline the Windows prompt:
       the pad stays plugged in, Arcadia never let go of Pan (no "von Pan beendet"), the row shows "Die
